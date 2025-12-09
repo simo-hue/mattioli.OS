@@ -1,0 +1,152 @@
+import { useState, useEffect, useCallback } from 'react';
+
+export type ReadingStatus = 'done' | 'missed' | null;
+
+export interface ReadingRecord {
+  [date: string]: ReadingStatus;
+}
+
+const STORAGE_KEY = 'reading-tracker-data';
+
+export function useReadingTracker() {
+  const [records, setRecords] = useState<ReadingRecord>({});
+
+  // Load from localStorage on mount
+  useEffect(() => {
+    const stored = localStorage.getItem(STORAGE_KEY);
+    if (stored) {
+      try {
+        setRecords(JSON.parse(stored));
+      } catch (e) {
+        console.error('Failed to parse reading records:', e);
+      }
+    }
+  }, []);
+
+  // Save to localStorage whenever records change
+  useEffect(() => {
+    localStorage.setItem(STORAGE_KEY, JSON.stringify(records));
+  }, [records]);
+
+  const getDateKey = (date: Date): string => {
+    return date.toISOString().split('T')[0];
+  };
+
+  const getStatus = useCallback((date: Date): ReadingStatus => {
+    return records[getDateKey(date)] || null;
+  }, [records]);
+
+  const setStatus = useCallback((date: Date, status: ReadingStatus) => {
+    const key = getDateKey(date);
+    setRecords(prev => {
+      if (status === null) {
+        const { [key]: _, ...rest } = prev;
+        return rest;
+      }
+      return { ...prev, [key]: status };
+    });
+  }, []);
+
+  const toggleStatus = useCallback((date: Date) => {
+    const currentStatus = getStatus(date);
+    let newStatus: ReadingStatus;
+    
+    if (currentStatus === null) {
+      newStatus = 'done';
+    } else if (currentStatus === 'done') {
+      newStatus = 'missed';
+    } else {
+      newStatus = null;
+    }
+    
+    setStatus(date, newStatus);
+  }, [getStatus, setStatus]);
+
+  const getStats = useCallback(() => {
+    const today = new Date();
+    const currentMonth = today.getMonth();
+    const currentYear = today.getFullYear();
+    
+    let totalDone = 0;
+    let totalMissed = 0;
+    let monthDone = 0;
+    let monthMissed = 0;
+    let currentStreak = 0;
+    let longestStreak = 0;
+    let tempStreak = 0;
+
+    // Calculate totals
+    Object.entries(records).forEach(([dateStr, status]) => {
+      const date = new Date(dateStr);
+      
+      if (status === 'done') {
+        totalDone++;
+        if (date.getMonth() === currentMonth && date.getFullYear() === currentYear) {
+          monthDone++;
+        }
+      } else if (status === 'missed') {
+        totalMissed++;
+        if (date.getMonth() === currentMonth && date.getFullYear() === currentYear) {
+          monthMissed++;
+        }
+      }
+    });
+
+    // Calculate streaks (sort dates and iterate)
+    const sortedDates = Object.keys(records)
+      .filter(date => records[date] === 'done')
+      .sort();
+
+    for (let i = 0; i < sortedDates.length; i++) {
+      const current = new Date(sortedDates[i]);
+      const prev = i > 0 ? new Date(sortedDates[i - 1]) : null;
+      
+      if (prev) {
+        const diffDays = Math.floor((current.getTime() - prev.getTime()) / (1000 * 60 * 60 * 24));
+        if (diffDays === 1) {
+          tempStreak++;
+        } else {
+          tempStreak = 1;
+        }
+      } else {
+        tempStreak = 1;
+      }
+      
+      longestStreak = Math.max(longestStreak, tempStreak);
+    }
+
+    // Calculate current streak (from today backwards)
+    const todayKey = getDateKey(today);
+    let checkDate = new Date(today);
+    
+    while (true) {
+      const key = getDateKey(checkDate);
+      if (records[key] === 'done') {
+        currentStreak++;
+        checkDate.setDate(checkDate.getDate() - 1);
+      } else if (key === todayKey && !records[key]) {
+        // Today hasn't been marked yet, check yesterday
+        checkDate.setDate(checkDate.getDate() - 1);
+      } else {
+        break;
+      }
+    }
+
+    return {
+      totalDone,
+      totalMissed,
+      monthDone,
+      monthMissed,
+      currentStreak,
+      longestStreak,
+    };
+  }, [records]);
+
+  return {
+    records,
+    getStatus,
+    setStatus,
+    toggleStatus,
+    getStats,
+  };
+}

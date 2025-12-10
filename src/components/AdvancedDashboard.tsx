@@ -2,9 +2,10 @@ import { OverallStats, YearStats, MonthStats } from '@/hooks/useReadingStats';
 import { cn } from '@/lib/utils';
 import { 
   Book, BookX, Flame, Trophy, Calendar, TrendingUp, 
-  Target, Activity, Star, Clock, Award, Zap
+  Target, Activity, Star, Clock, Award, Zap, Timer, Lightbulb
 } from 'lucide-react';
 import { StatsCard } from './StatsCard';
+import { WeeklyTrendChart } from './WeeklyTrendChart';
 
 interface AdvancedDashboardProps {
   overall: OverallStats;
@@ -101,6 +102,68 @@ export function AdvancedDashboard({ overall, currentYearStats, currentMonthStats
               <p className="text-sm text-destructive">{overall.worstDayOfWeek.percentage}% lettura</p>
             </div>
           )}
+        </div>
+      )}
+
+      {/* New Advanced Metrics */}
+      <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 animate-fade-in" style={{ animationDelay: '280ms' }}>
+        {/* Average time between sessions */}
+        {overall.averageTimeBetweenSessions !== null && (
+          <div className="bg-card border border-border rounded-xl p-4">
+            <div className="flex items-center gap-2 mb-2">
+              <Timer className="w-4 h-4 text-primary" />
+              <span className="text-xs text-muted-foreground">Tempo medio tra sessioni</span>
+            </div>
+            <p className="text-2xl font-display font-bold text-foreground">
+              {overall.averageTimeBetweenSessions} <span className="text-sm text-muted-foreground">giorni</span>
+            </p>
+            <p className="text-xs text-muted-foreground mt-1">
+              {overall.averageTimeBetweenSessions <= 1.5 ? 'Ottima costanza!' : 
+               overall.averageTimeBetweenSessions <= 3 ? 'Buon ritmo' : 'Prova a leggere più spesso'}
+            </p>
+          </div>
+        )}
+
+        {/* Monthly goal prediction */}
+        {overall.monthlyGoalPrediction && (
+          <div className={cn(
+            "border rounded-xl p-4",
+            overall.monthlyGoalPrediction.onTrack 
+              ? "bg-success/5 border-success/20" 
+              : "bg-warning/5 border-warning/20"
+          )}>
+            <div className="flex items-center gap-2 mb-2">
+              <Lightbulb className={cn(
+                "w-4 h-4",
+                overall.monthlyGoalPrediction.onTrack ? "text-success" : "text-warning"
+              )} />
+              <span className="text-xs text-muted-foreground">Previsione mensile</span>
+            </div>
+            <p className="text-2xl font-display font-bold text-foreground">
+              ~{overall.monthlyGoalPrediction.predictedDays} <span className="text-sm text-muted-foreground">giorni</span>
+            </p>
+            <p className={cn(
+              "text-xs mt-1",
+              overall.monthlyGoalPrediction.onTrack ? "text-success" : "text-warning"
+            )}>
+              {overall.monthlyGoalPrediction.onTrack 
+                ? 'Sei in linea con l\'obiettivo!' 
+                : `Ti mancano ${overall.monthlyGoalPrediction.daysNeeded} giorni per completare il mese`}
+            </p>
+          </div>
+        )}
+      </div>
+
+      {/* Weekly Trend Chart */}
+      {overall.weeklyTrend.length > 0 && (
+        <div className="bg-card rounded-xl p-5 border border-border animate-fade-in" style={{ animationDelay: '320ms' }}>
+          <div className="flex items-center gap-2 mb-4">
+            <TrendingUp className="w-5 h-5 text-primary" />
+            <h3 className="font-display font-semibold text-foreground">
+              Trend settimanale
+            </h3>
+          </div>
+          <WeeklyTrendChart data={overall.weeklyTrend} />
         </div>
       )}
 

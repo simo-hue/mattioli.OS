@@ -45,6 +45,14 @@ export interface YearStats {
   weeklyBreakdown: WeekStats[];
 }
 
+export interface WeeklyTrend {
+  weekNumber: number;
+  weekLabel: string;
+  daysRead: number;
+  percentage: number;
+  trend: 'up' | 'down' | 'stable';
+}
+
 export interface OverallStats {
   totalDaysRead: number;
   totalDaysMissed: number;
@@ -58,6 +66,9 @@ export interface OverallStats {
   consistencyScore: number;
   bestDayOfWeek: { day: string; percentage: number } | null;
   worstDayOfWeek: { day: string; percentage: number } | null;
+  averageTimeBetweenSessions: number | null; // in days
+  monthlyGoalPrediction: { predictedDays: number; onTrack: boolean; daysNeeded: number } | null;
+  weeklyTrend: WeeklyTrend[];
 }
 
 const MONTH_NAMES = [
@@ -209,6 +220,80 @@ export function useReadingStats(records: ReadingRecord) {
       worstDayOfWeek = null;
     }
 
+    // Average time between reading sessions
+    let averageTimeBetweenSessions: number | null = null;
+    if (readDates.length >= 2) {
+      let totalGaps = 0;
+      for (let i = 1; i < readDates.length; i++) {
+        const prev = new Date(readDates[i - 1]);
+        const curr = new Date(readDates[i]);
+        const diffDays = Math.floor((curr.getTime() - prev.getTime()) / (1000 * 60 * 60 * 24));
+        totalGaps += diffDays;
+      }
+      averageTimeBetweenSessions = Math.round((totalGaps / (readDates.length - 1)) * 10) / 10;
+    }
+
+    // Monthly goal prediction (assuming goal is reading every day)
+    const todayMonth = today.getMonth();
+    const todayYear = today.getFullYear();
+    const daysInCurrentMonth = new Date(todayYear, todayMonth + 1, 0).getDate();
+    const daysElapsedThisMonth = today.getDate();
+    const daysRemainingThisMonth = daysInCurrentMonth - daysElapsedThisMonth;
+    const currentMonthReadCount = allDays.filter(d => d.month === todayMonth && d.year === todayYear && d.status === 'done').length;
+    
+    let monthlyGoalPrediction: { predictedDays: number; onTrack: boolean; daysNeeded: number } | null = null;
+    if (daysElapsedThisMonth > 0) {
+      const dailyRate = currentMonthReadCount / daysElapsedThisMonth;
+      const predictedDays = Math.round(currentMonthReadCount + (dailyRate * daysRemainingThisMonth));
+      const daysNeeded = daysInCurrentMonth - currentMonthReadCount;
+      const onTrack = dailyRate >= 0.7; // 70% is considered on track
+      monthlyGoalPrediction = { predictedDays, onTrack, daysNeeded };
+    }
+
+    // Weekly trend (last 4 weeks)
+    const weeklyTrend: WeeklyTrend[] = [];
+    for (let i = 3; i >= 0; i--) {
+      const weekStart = new Date(today);
+      weekStart.setDate(today.getDate() - today.getDay() - (i * 7)); // Start of week (Sunday)
+      weekStart.setHours(0, 0, 0, 0);
+      
+      const weekEnd = new Date(weekStart);
+      weekEnd.setDate(weekStart.getDate() + 6);
+      weekEnd.setHours(23, 59, 59, 999);
+      
+      let daysRead = 0;
+      let daysInWeek = 0;
+      
+      for (let d = new Date(weekStart); d <= weekEnd && d <= today; d.setDate(d.getDate() + 1)) {
+        const key = d.toISOString().split('T')[0];
+        daysInWeek++;
+        if (records[key] === 'done') {
+          daysRead++;
+        }
+      }
+      
+      const pct = daysInWeek > 0 ? Math.round((daysRead / daysInWeek) * 100) : 0;
+      const weekNum = getWeekNumber(weekStart);
+      
+      weeklyTrend.push({
+        weekNumber: weekNum,
+        weekLabel: i === 0 ? 'Questa' : i === 1 ? 'Scorsa' : `${i} sett. fa`,
+        daysRead,
+        percentage: pct,
+        trend: 'stable',
+      });
+    }
+    
+    // Calculate trends
+    for (let i = 1; i < weeklyTrend.length; i++) {
+      const diff = weeklyTrend[i].percentage - weeklyTrend[i - 1].percentage;
+      if (diff > 10) {
+        weeklyTrend[i].trend = 'up';
+      } else if (diff < -10) {
+        weeklyTrend[i].trend = 'down';
+      }
+    }
+
     const overall: OverallStats = {
       totalDaysRead,
       totalDaysMissed,
@@ -222,6 +307,9 @@ export function useReadingStats(records: ReadingRecord) {
       consistencyScore,
       bestDayOfWeek,
       worstDayOfWeek,
+      averageTimeBetweenSessions,
+      monthlyGoalPrediction,
+      weeklyTrend,
     };
 
     // Year stats
@@ -311,18 +399,15 @@ export function useReadingStats(records: ReadingRecord) {
       };
     });
 
-    // Current month stats - calculate percentage based on days elapsed, not just marked days
-    const currentMonth = today.getMonth();
-    const currentYear = today.getFullYear();
-    const currentMonthDays = allDays.filter(d => d.month === currentMonth && d.year === currentYear);
+    // Current month stats - reusing already calculated values
+    const currentMonthDays = allDays.filter(d => d.month === todayMonth && d.year === todayYear);
     const currentMonthReadDates = currentMonthDays.filter(d => d.status === 'done').map(d => d.date).sort();
-    const daysElapsedThisMonth = today.getDate(); // Days elapsed in current month (1-based)
     const markedDaysThisMonth = currentMonthDays.length;
     
     const monthStats: MonthStats = {
-      month: currentMonth,
-      year: currentYear,
-      name: MONTH_NAMES[currentMonth],
+      month: todayMonth,
+      year: todayYear,
+      name: MONTH_NAMES[todayMonth],
       daysRead: currentMonthReadDates.length,
       daysMissed: currentMonthDays.filter(d => d.status === 'missed').length,
       daysTotal: markedDaysThisMonth,
@@ -337,7 +422,7 @@ export function useReadingStats(records: ReadingRecord) {
       overall,
       yearlyStats,
       currentMonthStats: monthStats,
-      currentYearStats: yearlyStats.find(y => y.year === currentYear) || null,
+      currentYearStats: yearlyStats.find(y => y.year === todayYear) || null,
     };
   }, [records]);
 

@@ -2,9 +2,11 @@ import { BookOpen } from 'lucide-react';
 import { ReadingCalendar } from '@/components/ReadingCalendar';
 import { StatsTabs } from '@/components/StatsTabs';
 import { useReadingTracker } from '@/hooks/useReadingTracker';
+import { useMonthlyGoal } from '@/hooks/useMonthlyGoal';
 
 const Index = () => {
   const { records, getStatus, toggleStatus } = useReadingTracker();
+  const { goal, updateGoal } = useMonthlyGoal();
 
   return (
     <div className="min-h-screen bg-background">
@@ -48,7 +50,7 @@ const Index = () => {
 
           {/* Stats section */}
           <div className="lg:col-span-3">
-            <StatsTabs records={records} />
+            <StatsTabs records={records} monthlyGoal={goal} onGoalChange={updateGoal} />
           </div>
         </div>
       </main>

@@ -10,9 +10,11 @@ import { BarChart2, Grid3X3, PieChart } from 'lucide-react';
 
 interface StatsTabsProps {
   records: ReadingRecord;
+  monthlyGoal: number;
+  onGoalChange: (newGoal: number) => void;
 }
 
-export function StatsTabs({ records }: StatsTabsProps) {
+export function StatsTabs({ records, monthlyGoal, onGoalChange }: StatsTabsProps) {
   const stats = useReadingStats(records);
   const currentYear = new Date().getFullYear();
   const [selectedYear, setSelectedYear] = useState(currentYear);
@@ -46,6 +48,9 @@ export function StatsTabs({ records }: StatsTabsProps) {
             overall={stats.overall}
             currentYearStats={stats.currentYearStats}
             currentMonthStats={stats.currentMonthStats}
+            records={records}
+            monthlyGoal={monthlyGoal}
+            onGoalChange={onGoalChange}
           />
         </TabsContent>
 

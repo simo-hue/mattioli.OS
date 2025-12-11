@@ -1,4 +1,6 @@
 import { OverallStats, YearStats, MonthStats } from '@/hooks/useReadingStats';
+import { ReadingRecord } from '@/hooks/useReadingTracker';
+import { useBadges } from '@/hooks/useBadges';
 import { cn } from '@/lib/utils';
 import { 
   Book, BookX, Flame, Trophy, Calendar, TrendingUp, 
@@ -6,14 +8,30 @@ import {
 } from 'lucide-react';
 import { StatsCard } from './StatsCard';
 import { WeeklyTrendChart } from './WeeklyTrendChart';
+import { BadgesDisplay } from './BadgesDisplay';
+import { MonthlyGoalSetting } from './MonthlyGoalSetting';
 
 interface AdvancedDashboardProps {
   overall: OverallStats;
   currentYearStats: YearStats | null;
   currentMonthStats: MonthStats;
+  records: ReadingRecord;
+  monthlyGoal: number;
+  onGoalChange: (newGoal: number) => void;
 }
 
-export function AdvancedDashboard({ overall, currentYearStats, currentMonthStats }: AdvancedDashboardProps) {
+export function AdvancedDashboard({ overall, currentYearStats, currentMonthStats, records, monthlyGoal, onGoalChange }: AdvancedDashboardProps) {
+  const { badges, unlockedCount, totalBadges } = useBadges(
+    overall,
+    records,
+    currentMonthStats,
+    currentYearStats,
+    monthlyGoal
+  );
+
+  const today = new Date();
+  const daysInCurrentMonth = new Date(today.getFullYear(), today.getMonth() + 1, 0).getDate();
+
   return (
     <div className="space-y-6">
       {/* Header */}
@@ -46,6 +64,21 @@ export function AdvancedDashboard({ overall, currentYearStats, currentMonthStats
             </p>
           </div>
         </div>
+      </div>
+
+      {/* Monthly Goal & Badges */}
+      <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+        <MonthlyGoalSetting
+          goal={monthlyGoal}
+          onGoalChange={onGoalChange}
+          currentProgress={currentMonthStats.daysRead}
+          daysInMonth={daysInCurrentMonth}
+        />
+        <BadgesDisplay
+          badges={badges}
+          unlockedCount={unlockedCount}
+          totalBadges={totalBadges}
+        />
       </div>
 
       {/* Quick stats grid */}

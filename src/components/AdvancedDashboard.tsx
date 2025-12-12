@@ -33,33 +33,33 @@ export function AdvancedDashboard({ overall, currentYearStats, currentMonthStats
   const daysInCurrentMonth = new Date(today.getFullYear(), today.getMonth() + 1, 0).getDate();
 
   return (
-    <div className="space-y-6">
+    <div className="space-y-4 sm:space-y-6">
       {/* Header */}
       <div className="animate-fade-in">
-        <h2 className="text-2xl font-display font-semibold text-foreground mb-1">
+        <h2 className="text-xl sm:text-2xl font-display font-semibold text-foreground mb-1">
           Panoramica
         </h2>
-        <p className="text-muted-foreground">
+        <p className="text-sm text-muted-foreground">
           Le tue statistiche di lettura complete
         </p>
       </div>
 
       {/* Streak highlight */}
-      <div className="bg-gradient-to-br from-primary/10 via-accent/20 to-primary/5 rounded-2xl p-6 border border-primary/20 animate-fade-in">
-        <div className="flex items-center gap-4">
-          <div className="p-3 bg-primary/20 rounded-xl">
-            <Flame className="w-8 h-8 text-primary" />
+      <div className="bg-gradient-to-br from-primary/10 via-accent/20 to-primary/5 rounded-xl sm:rounded-2xl p-4 sm:p-6 border border-primary/20 animate-fade-in">
+        <div className="flex items-center gap-3 sm:gap-4">
+          <div className="p-2 sm:p-3 bg-primary/20 rounded-lg sm:rounded-xl">
+            <Flame className="w-6 h-6 sm:w-8 sm:h-8 text-primary" />
           </div>
-          <div className="flex-1">
-            <p className="text-sm font-medium text-muted-foreground">Serie attuale</p>
-            <p className="text-4xl font-display font-bold text-foreground">
-              {overall.currentStreak} <span className="text-xl text-muted-foreground">giorni</span>
+          <div className="flex-1 min-w-0">
+            <p className="text-xs sm:text-sm font-medium text-muted-foreground">Serie attuale</p>
+            <p className="text-2xl sm:text-4xl font-display font-bold text-foreground">
+              {overall.currentStreak} <span className="text-sm sm:text-xl text-muted-foreground">giorni</span>
             </p>
           </div>
-          <div className="text-right">
-            <p className="text-xs text-muted-foreground">Record</p>
-            <p className="text-lg font-semibold text-primary flex items-center gap-1">
-              <Trophy className="w-4 h-4" />
+          <div className="text-right flex-shrink-0">
+            <p className="text-[10px] sm:text-xs text-muted-foreground">Record</p>
+            <p className="text-base sm:text-lg font-semibold text-primary flex items-center gap-1 justify-end">
+              <Trophy className="w-3 h-3 sm:w-4 sm:h-4" />
               {overall.longestStreak}
             </p>
           </div>
@@ -82,7 +82,7 @@ export function AdvancedDashboard({ overall, currentYearStats, currentMonthStats
       </div>
 
       {/* Quick stats grid */}
-      <div className="grid grid-cols-2 gap-3">
+      <div className="grid grid-cols-2 gap-2 sm:gap-3">
         <StatsCard
           title="Totale letti"
           value={overall.totalDaysRead}
@@ -114,43 +114,43 @@ export function AdvancedDashboard({ overall, currentYearStats, currentMonthStats
 
       {/* Best/Worst day of week */}
       {(overall.bestDayOfWeek || overall.worstDayOfWeek) && (
-        <div className="grid grid-cols-2 gap-3 animate-fade-in" style={{ animationDelay: '300ms' }}>
+        <div className="grid grid-cols-2 gap-2 sm:gap-3 animate-fade-in" style={{ animationDelay: '300ms' }}>
           {overall.bestDayOfWeek && (
-            <div className="bg-success/5 border border-success/20 rounded-xl p-4">
-              <div className="flex items-center gap-2 mb-1">
-                <Star className="w-4 h-4 text-success" />
-                <span className="text-xs text-muted-foreground">Giorno migliore</span>
+            <div className="bg-success/5 border border-success/20 rounded-lg sm:rounded-xl p-3 sm:p-4">
+              <div className="flex items-center gap-1.5 sm:gap-2 mb-1">
+                <Star className="w-3 h-3 sm:w-4 sm:h-4 text-success" />
+                <span className="text-[10px] sm:text-xs text-muted-foreground">Giorno migliore</span>
               </div>
-              <p className="font-semibold text-foreground">{overall.bestDayOfWeek.day}</p>
-              <p className="text-sm text-success">{overall.bestDayOfWeek.percentage}% lettura</p>
+              <p className="font-semibold text-sm sm:text-base text-foreground">{overall.bestDayOfWeek.day}</p>
+              <p className="text-xs sm:text-sm text-success">{overall.bestDayOfWeek.percentage}% lettura</p>
             </div>
           )}
           {overall.worstDayOfWeek && (
-            <div className="bg-destructive/5 border border-destructive/20 rounded-xl p-4">
-              <div className="flex items-center gap-2 mb-1">
-                <Activity className="w-4 h-4 text-destructive" />
-                <span className="text-xs text-muted-foreground">Da migliorare</span>
+            <div className="bg-destructive/5 border border-destructive/20 rounded-lg sm:rounded-xl p-3 sm:p-4">
+              <div className="flex items-center gap-1.5 sm:gap-2 mb-1">
+                <Activity className="w-3 h-3 sm:w-4 sm:h-4 text-destructive" />
+                <span className="text-[10px] sm:text-xs text-muted-foreground">Da migliorare</span>
               </div>
-              <p className="font-semibold text-foreground">{overall.worstDayOfWeek.day}</p>
-              <p className="text-sm text-destructive">{overall.worstDayOfWeek.percentage}% lettura</p>
+              <p className="font-semibold text-sm sm:text-base text-foreground">{overall.worstDayOfWeek.day}</p>
+              <p className="text-xs sm:text-sm text-destructive">{overall.worstDayOfWeek.percentage}% lettura</p>
             </div>
           )}
         </div>
       )}
 
       {/* New Advanced Metrics */}
-      <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 animate-fade-in" style={{ animationDelay: '280ms' }}>
+      <div className="grid grid-cols-1 sm:grid-cols-2 gap-2 sm:gap-3 animate-fade-in" style={{ animationDelay: '280ms' }}>
         {/* Average time between sessions */}
         {overall.averageTimeBetweenSessions !== null && (
-          <div className="bg-card border border-border rounded-xl p-4">
-            <div className="flex items-center gap-2 mb-2">
-              <Timer className="w-4 h-4 text-primary" />
-              <span className="text-xs text-muted-foreground">Tempo medio tra sessioni</span>
+          <div className="bg-card border border-border rounded-lg sm:rounded-xl p-3 sm:p-4">
+            <div className="flex items-center gap-1.5 sm:gap-2 mb-2">
+              <Timer className="w-3 h-3 sm:w-4 sm:h-4 text-primary" />
+              <span className="text-[10px] sm:text-xs text-muted-foreground">Tempo medio tra sessioni</span>
             </div>
-            <p className="text-2xl font-display font-bold text-foreground">
-              {overall.averageTimeBetweenSessions} <span className="text-sm text-muted-foreground">giorni</span>
+            <p className="text-xl sm:text-2xl font-display font-bold text-foreground">
+              {overall.averageTimeBetweenSessions} <span className="text-xs sm:text-sm text-muted-foreground">giorni</span>
             </p>
-            <p className="text-xs text-muted-foreground mt-1">
+            <p className="text-[10px] sm:text-xs text-muted-foreground mt-1">
               {overall.averageTimeBetweenSessions <= 1.5 ? 'Ottima costanza!' : 
                overall.averageTimeBetweenSessions <= 3 ? 'Buon ritmo' : 'Prova a leggere più spesso'}
             </p>
@@ -160,23 +160,23 @@ export function AdvancedDashboard({ overall, currentYearStats, currentMonthStats
         {/* Monthly goal prediction */}
         {overall.monthlyGoalPrediction && (
           <div className={cn(
-            "border rounded-xl p-4",
+            "border rounded-lg sm:rounded-xl p-3 sm:p-4",
             overall.monthlyGoalPrediction.onTrack 
               ? "bg-success/5 border-success/20" 
               : "bg-warning/5 border-warning/20"
           )}>
-            <div className="flex items-center gap-2 mb-2">
+            <div className="flex items-center gap-1.5 sm:gap-2 mb-2">
               <Lightbulb className={cn(
-                "w-4 h-4",
+                "w-3 h-3 sm:w-4 sm:h-4",
                 overall.monthlyGoalPrediction.onTrack ? "text-success" : "text-warning"
               )} />
-              <span className="text-xs text-muted-foreground">Previsione mensile</span>
+              <span className="text-[10px] sm:text-xs text-muted-foreground">Previsione mensile</span>
             </div>
-            <p className="text-2xl font-display font-bold text-foreground">
-              ~{overall.monthlyGoalPrediction.predictedDays} <span className="text-sm text-muted-foreground">giorni</span>
+            <p className="text-xl sm:text-2xl font-display font-bold text-foreground">
+              ~{overall.monthlyGoalPrediction.predictedDays} <span className="text-xs sm:text-sm text-muted-foreground">giorni</span>
             </p>
             <p className={cn(
-              "text-xs mt-1",
+              "text-[10px] sm:text-xs mt-1",
               overall.monthlyGoalPrediction.onTrack ? "text-success" : "text-warning"
             )}>
               {overall.monthlyGoalPrediction.onTrack 
@@ -189,10 +189,10 @@ export function AdvancedDashboard({ overall, currentYearStats, currentMonthStats
 
       {/* Weekly Trend Chart */}
       {overall.weeklyTrend.length > 0 && (
-        <div className="bg-card rounded-xl p-5 border border-border animate-fade-in" style={{ animationDelay: '320ms' }}>
-          <div className="flex items-center gap-2 mb-4">
-            <TrendingUp className="w-5 h-5 text-primary" />
-            <h3 className="font-display font-semibold text-foreground">
+        <div className="bg-card rounded-lg sm:rounded-xl p-4 sm:p-5 border border-border animate-fade-in" style={{ animationDelay: '320ms' }}>
+          <div className="flex items-center gap-2 mb-3 sm:mb-4">
+            <TrendingUp className="w-4 h-4 sm:w-5 sm:h-5 text-primary" />
+            <h3 className="font-display font-semibold text-sm sm:text-base text-foreground">
               Trend settimanale
             </h3>
           </div>
@@ -201,30 +201,30 @@ export function AdvancedDashboard({ overall, currentYearStats, currentMonthStats
       )}
 
       {/* Current month details */}
-      <div className="bg-card rounded-xl p-5 border border-border animate-fade-in" style={{ animationDelay: '350ms' }}>
-        <div className="flex items-center gap-2 mb-4">
-          <Calendar className="w-5 h-5 text-primary" />
-          <h3 className="font-display font-semibold text-foreground">
+      <div className="bg-card rounded-lg sm:rounded-xl p-4 sm:p-5 border border-border animate-fade-in" style={{ animationDelay: '350ms' }}>
+        <div className="flex items-center gap-2 mb-3 sm:mb-4">
+          <Calendar className="w-4 h-4 sm:w-5 sm:h-5 text-primary" />
+          <h3 className="font-display font-semibold text-sm sm:text-base text-foreground">
             {currentMonthStats.name} {currentMonthStats.year}
           </h3>
         </div>
         
-        <div className="space-y-3">
+        <div className="space-y-2 sm:space-y-3">
           <div className="flex justify-between items-center">
-            <span className="text-sm text-muted-foreground">Giorni letti</span>
-            <span className="font-semibold text-success">{currentMonthStats.daysRead}</span>
+            <span className="text-xs sm:text-sm text-muted-foreground">Giorni letti</span>
+            <span className="font-semibold text-sm sm:text-base text-success">{currentMonthStats.daysRead}</span>
           </div>
           <div className="flex justify-between items-center">
-            <span className="text-sm text-muted-foreground">Giorni saltati</span>
-            <span className="font-semibold text-destructive">{currentMonthStats.daysMissed}</span>
+            <span className="text-xs sm:text-sm text-muted-foreground">Giorni saltati</span>
+            <span className="font-semibold text-sm sm:text-base text-destructive">{currentMonthStats.daysMissed}</span>
           </div>
           <div className="flex justify-between items-center">
-            <span className="text-sm text-muted-foreground">Serie migliore</span>
-            <span className="font-semibold text-primary">{currentMonthStats.bestStreak} giorni</span>
+            <span className="text-xs sm:text-sm text-muted-foreground">Serie migliore</span>
+            <span className="font-semibold text-sm sm:text-base text-primary">{currentMonthStats.bestStreak} giorni</span>
           </div>
           
           <div className="pt-2">
-            <div className="flex justify-between text-xs mb-1">
+            <div className="flex justify-between text-[10px] sm:text-xs mb-1">
               <span className="text-muted-foreground">Progresso</span>
               <span className={cn(
                 "font-semibold",
@@ -234,7 +234,7 @@ export function AdvancedDashboard({ overall, currentYearStats, currentMonthStats
                 {currentMonthStats.percentage}%
               </span>
             </div>
-            <div className="h-2 bg-muted rounded-full overflow-hidden">
+            <div className="h-1.5 sm:h-2 bg-muted rounded-full overflow-hidden">
               <div 
                 className={cn(
                   "h-full rounded-full transition-all duration-500",
@@ -250,38 +250,38 @@ export function AdvancedDashboard({ overall, currentYearStats, currentMonthStats
 
       {/* Year summary */}
       {currentYearStats && (
-        <div className="bg-card rounded-xl p-5 border border-border animate-fade-in" style={{ animationDelay: '400ms' }}>
-          <div className="flex items-center gap-2 mb-4">
-            <Award className="w-5 h-5 text-primary" />
-            <h3 className="font-display font-semibold text-foreground">
+        <div className="bg-card rounded-lg sm:rounded-xl p-4 sm:p-5 border border-border animate-fade-in" style={{ animationDelay: '400ms' }}>
+          <div className="flex items-center gap-2 mb-3 sm:mb-4">
+            <Award className="w-4 h-4 sm:w-5 sm:h-5 text-primary" />
+            <h3 className="font-display font-semibold text-sm sm:text-base text-foreground">
               Anno {currentYearStats.year}
             </h3>
           </div>
           
-          <div className="grid grid-cols-2 gap-4">
+          <div className="grid grid-cols-2 gap-3 sm:gap-4">
             <div>
-              <p className="text-xs text-muted-foreground">Media settimanale</p>
-              <p className="text-xl font-display font-bold text-foreground">
-                {currentYearStats.averagePerWeek} <span className="text-sm text-muted-foreground">giorni</span>
+              <p className="text-[10px] sm:text-xs text-muted-foreground">Media settimanale</p>
+              <p className="text-lg sm:text-xl font-display font-bold text-foreground">
+                {currentYearStats.averagePerWeek} <span className="text-xs sm:text-sm text-muted-foreground">giorni</span>
               </p>
             </div>
             <div>
-              <p className="text-xs text-muted-foreground">Media mensile</p>
-              <p className="text-xl font-display font-bold text-foreground">
-                {currentYearStats.averagePerMonth} <span className="text-sm text-muted-foreground">giorni</span>
+              <p className="text-[10px] sm:text-xs text-muted-foreground">Media mensile</p>
+              <p className="text-lg sm:text-xl font-display font-bold text-foreground">
+                {currentYearStats.averagePerMonth} <span className="text-xs sm:text-sm text-muted-foreground">giorni</span>
               </p>
             </div>
             <div>
-              <p className="text-xs text-muted-foreground">Serie record</p>
-              <p className="text-xl font-display font-bold text-primary flex items-center gap-1">
-                <Zap className="w-4 h-4" />
+              <p className="text-[10px] sm:text-xs text-muted-foreground">Serie record</p>
+              <p className="text-lg sm:text-xl font-display font-bold text-primary flex items-center gap-1">
+                <Zap className="w-3 h-3 sm:w-4 sm:h-4" />
                 {currentYearStats.longestStreak}
               </p>
             </div>
             <div>
-              <p className="text-xs text-muted-foreground">Tasso successo</p>
+              <p className="text-[10px] sm:text-xs text-muted-foreground">Tasso successo</p>
               <p className={cn(
-                "text-xl font-display font-bold",
+                "text-lg sm:text-xl font-display font-bold",
                 currentYearStats.percentage >= 70 ? "text-success" : 
                 currentYearStats.percentage >= 40 ? "text-foreground" : "text-destructive"
               )}>

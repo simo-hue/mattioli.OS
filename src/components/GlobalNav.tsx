@@ -10,14 +10,14 @@ const navItems = [
 
 export function GlobalNav() {
   return (
-    <nav className="flex items-center justify-center gap-2">
+    <nav className="flex items-center justify-center gap-1 sm:gap-2">
       {navItems.map(({ to, label, icon: Icon }) => (
         <NavLink
           key={to}
           to={to}
           className={({ isActive }) =>
             cn(
-              "flex items-center gap-2 px-4 py-2 rounded-lg text-sm font-medium transition-all",
+              "flex items-center gap-1.5 sm:gap-2 px-2.5 sm:px-4 py-2 rounded-lg text-xs sm:text-sm font-medium transition-all",
               "hover:bg-accent",
               isActive
                 ? "bg-primary text-primary-foreground hover:bg-primary/90"
@@ -26,7 +26,7 @@ export function GlobalNav() {
           }
         >
           <Icon className="w-4 h-4" />
-          <span className="hidden sm:inline">{label}</span>
+          <span className="hidden xs:inline sm:inline">{label}</span>
         </NavLink>
       ))}
     </nav>

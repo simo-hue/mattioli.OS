@@ -87,23 +87,23 @@ export function YearlyHeatmap({ records, year }: YearlyHeatmapProps) {
   };
 
   return (
-    <div className="bg-card rounded-xl p-4 border border-border overflow-x-auto">
-      <h3 className="font-display font-semibold text-foreground mb-4">
+    <div className="bg-card rounded-lg sm:rounded-xl p-3 sm:p-4 border border-border overflow-x-auto">
+      <h3 className="font-display font-semibold text-sm sm:text-base text-foreground mb-3 sm:mb-4">
         Mappa annuale {year}
       </h3>
       
       <div className="inline-flex flex-col gap-1 min-w-max">
         {/* Month labels */}
-        <div className="flex ml-8 mb-1">
+        <div className="flex ml-6 sm:ml-8 mb-1">
           {monthLabels.map(({ month, weekIndex }, i) => (
             <div
               key={`${month}-${i}`}
-              className="text-xs text-muted-foreground"
+              className="text-[10px] sm:text-xs text-muted-foreground"
               style={{ 
                 position: 'relative',
-                left: `${weekIndex * 14}px`,
+                left: `${weekIndex * 12}px`,
                 marginRight: i < monthLabels.length - 1 
-                  ? `${(monthLabels[i + 1].weekIndex - weekIndex - 1) * 14}px`
+                  ? `${(monthLabels[i + 1].weekIndex - weekIndex - 1) * 12}px`
                   : 0
               }}
             >
@@ -112,20 +112,20 @@ export function YearlyHeatmap({ records, year }: YearlyHeatmapProps) {
           ))}
         </div>
         
-        <div className="flex gap-1">
+        <div className="flex gap-0.5 sm:gap-1">
           {/* Day labels */}
-          <div className="flex flex-col gap-1 mr-1">
+          <div className="flex flex-col gap-0.5 sm:gap-1 mr-0.5 sm:mr-1">
             {DAYS.map((day, i) => (
-              <div key={i} className="w-6 h-3 text-xs text-muted-foreground flex items-center">
+              <div key={i} className="w-5 sm:w-6 h-2.5 sm:h-3 text-[8px] sm:text-xs text-muted-foreground flex items-center">
                 {day}
               </div>
             ))}
           </div>
           
           {/* Heatmap grid */}
-          <div className="flex gap-[2px]">
+          <div className="flex gap-[1px] sm:gap-[2px]">
             {weeks.map((week, weekIndex) => (
-              <div key={weekIndex} className="flex flex-col gap-[2px]">
+              <div key={weekIndex} className="flex flex-col gap-[1px] sm:gap-[2px]">
                 {week.map((day, dayIndex) => {
                   const isCurrentYear = day.date.getFullYear() === year;
                   const isFuture = day.date > new Date();
@@ -135,7 +135,7 @@ export function YearlyHeatmap({ records, year }: YearlyHeatmapProps) {
                       <TooltipTrigger asChild>
                         <div
                           className={cn(
-                            "w-3 h-3 rounded-sm transition-all",
+                            "w-2.5 h-2.5 sm:w-3 sm:h-3 rounded-sm transition-all",
                             !isCurrentYear && "opacity-0",
                             isCurrentYear && isFuture && "bg-muted/30",
                             isCurrentYear && !isFuture && day.status === null && "bg-reading-neutral/50",
@@ -164,14 +164,14 @@ export function YearlyHeatmap({ records, year }: YearlyHeatmapProps) {
       </div>
       
       {/* Legend */}
-      <div className="flex items-center gap-4 mt-4 text-xs text-muted-foreground">
+      <div className="flex items-center gap-2 sm:gap-4 mt-3 sm:mt-4 text-[10px] sm:text-xs text-muted-foreground">
         <span>Meno</span>
-        <div className="flex gap-1">
-          <div className="w-3 h-3 rounded-sm bg-reading-neutral/50" />
-          <div className="w-3 h-3 rounded-sm bg-reading-missed/50" />
-          <div className="w-3 h-3 rounded-sm bg-reading-missed" />
-          <div className="w-3 h-3 rounded-sm bg-reading-done/50" />
-          <div className="w-3 h-3 rounded-sm bg-reading-done" />
+        <div className="flex gap-0.5 sm:gap-1">
+          <div className="w-2.5 h-2.5 sm:w-3 sm:h-3 rounded-sm bg-reading-neutral/50" />
+          <div className="w-2.5 h-2.5 sm:w-3 sm:h-3 rounded-sm bg-reading-missed/50" />
+          <div className="w-2.5 h-2.5 sm:w-3 sm:h-3 rounded-sm bg-reading-missed" />
+          <div className="w-2.5 h-2.5 sm:w-3 sm:h-3 rounded-sm bg-reading-done/50" />
+          <div className="w-2.5 h-2.5 sm:w-3 sm:h-3 rounded-sm bg-reading-done" />
         </div>
         <span>Più</span>
       </div>

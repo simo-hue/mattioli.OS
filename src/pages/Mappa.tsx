@@ -17,14 +17,14 @@ const Mappa = () => {
   const selectedYearStats = stats.yearlyStats.find(y => y.year === selectedYear);
 
   return (
-    <div className="container mx-auto px-4 py-8 max-w-4xl">
-      <div className="space-y-6">
-        <div className="flex items-center justify-between">
+    <div className="container mx-auto px-3 sm:px-4 py-4 sm:py-8 max-w-4xl">
+      <div className="space-y-4 sm:space-y-6">
+        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
           <div>
-            <h1 className="text-2xl font-display font-semibold text-foreground">
+            <h1 className="text-xl sm:text-2xl font-display font-semibold text-foreground">
               Mappa attività
             </h1>
-            <p className="text-muted-foreground">
+            <p className="text-sm text-muted-foreground">
               Visualizza il tuo anno di lettura
             </p>
           </div>
@@ -32,7 +32,7 @@ const Mappa = () => {
             value={selectedYear.toString()} 
             onValueChange={(v) => setSelectedYear(parseInt(v))}
           >
-            <SelectTrigger className="w-32">
+            <SelectTrigger className="w-full sm:w-32">
               <SelectValue />
             </SelectTrigger>
             <SelectContent>
@@ -48,22 +48,22 @@ const Mappa = () => {
         <YearlyHeatmap records={records} year={selectedYear} />
         
         {selectedYearStats && (
-          <div className="grid grid-cols-2 sm:grid-cols-4 gap-4">
-            <div className="bg-card rounded-lg p-4 border border-border text-center">
-              <p className="text-2xl font-display font-bold text-success">{selectedYearStats.totalDaysRead}</p>
-              <p className="text-xs text-muted-foreground">Giorni letti</p>
+          <div className="grid grid-cols-2 gap-3 sm:grid-cols-4 sm:gap-4">
+            <div className="bg-card rounded-lg p-3 sm:p-4 border border-border text-center">
+              <p className="text-xl sm:text-2xl font-display font-bold text-success">{selectedYearStats.totalDaysRead}</p>
+              <p className="text-[10px] sm:text-xs text-muted-foreground">Giorni letti</p>
             </div>
-            <div className="bg-card rounded-lg p-4 border border-border text-center">
-              <p className="text-2xl font-display font-bold text-destructive">{selectedYearStats.totalDaysMissed}</p>
-              <p className="text-xs text-muted-foreground">Giorni saltati</p>
+            <div className="bg-card rounded-lg p-3 sm:p-4 border border-border text-center">
+              <p className="text-xl sm:text-2xl font-display font-bold text-destructive">{selectedYearStats.totalDaysMissed}</p>
+              <p className="text-[10px] sm:text-xs text-muted-foreground">Giorni saltati</p>
             </div>
-            <div className="bg-card rounded-lg p-4 border border-border text-center">
-              <p className="text-2xl font-display font-bold text-primary">{selectedYearStats.longestStreak}</p>
-              <p className="text-xs text-muted-foreground">Serie record</p>
+            <div className="bg-card rounded-lg p-3 sm:p-4 border border-border text-center">
+              <p className="text-xl sm:text-2xl font-display font-bold text-primary">{selectedYearStats.longestStreak}</p>
+              <p className="text-[10px] sm:text-xs text-muted-foreground">Serie record</p>
             </div>
-            <div className="bg-card rounded-lg p-4 border border-border text-center">
-              <p className="text-2xl font-display font-bold text-foreground">{selectedYearStats.percentage}%</p>
-              <p className="text-xs text-muted-foreground">Tasso successo</p>
+            <div className="bg-card rounded-lg p-3 sm:p-4 border border-border text-center">
+              <p className="text-xl sm:text-2xl font-display font-bold text-foreground">{selectedYearStats.percentage}%</p>
+              <p className="text-[10px] sm:text-xs text-muted-foreground">Tasso successo</p>
             </div>
           </div>
         )}

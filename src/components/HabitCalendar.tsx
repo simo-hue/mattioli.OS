@@ -2,12 +2,12 @@ import { useState } from 'react';
 import { ChevronLeft, ChevronRight, RotateCcw } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { cn } from '@/lib/utils';
-import { Habit, HabitRecord } from '@/hooks/useHabitTracker';
+import { Goal, GoalLogsMap } from '@/types/goals';
 import { DayDetailsModal } from './DayDetailsModal';
 
 interface HabitCalendarProps {
-    habits: Habit[];
-    records: HabitRecord;
+    habits: Goal[];
+    records: GoalLogsMap;
     onToggleHabit: (date: Date, habitId: string) => void;
 }
 
@@ -157,7 +157,7 @@ export function HabitCalendar({ habits, records, onToggleHabit }: HabitCalendarP
 
     return (
         <>
-            <div className="glass-panel rounded-3xl p-4 sm:p-6 animate-scale-in">
+            <div className="w-full h-full p-4 sm:p-6 animate-scale-in">
                 {/* Header */}
                 <div className="flex items-center justify-between mb-6">
                     <Button variant="ghost" size="icon" onClick={goToPrevMonth}>

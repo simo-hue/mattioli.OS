@@ -4,12 +4,10 @@ import { Button } from '@/components/ui/button';
 import {
     Dialog,
     DialogContent,
-    DialogDescription,
     DialogHeader,
     DialogTitle,
     DialogTrigger,
 } from '@/components/ui/dialog';
-import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import {
     Select,
@@ -18,12 +16,11 @@ import {
     SelectTrigger,
     SelectValue,
 } from '@/components/ui/select';
-import { Habit } from '@/hooks/useHabitTracker';
 import { ScrollArea } from '@/components/ui/scroll-area';
 
 interface HabitSettingsProps {
-    habits: Habit[];
-    onAddHabit: (title: string, color: string) => void;
+    habits: Goal[];
+    onAddHabit: (goal: { title: string; color: string }) => void;
     onRemoveHabit: (id: string) => void;
 }
 
@@ -43,10 +40,11 @@ export function HabitSettings({ habits, onAddHabit, onRemoveHabit }: HabitSettin
     const [newHabitColor, setNewHabitColor] = useState(PRESET_COLORS[0].value);
 
     const handleAdd = () => {
-        if (!newHabitTitle.trim()) return;
-        onAddHabit(newHabitTitle, newHabitColor);
-        setNewHabitTitle('');
-        setNewHabitColor(PRESET_COLORS[0].value);
+        if (newHabitTitle.trim()) {
+            onAddHabit({ title: newHabitTitle, color: newHabitColor });
+            setNewHabitTitle('');
+            setNewHabitColor(PRESET_COLORS[0].value);
+        }
     };
 
     return (

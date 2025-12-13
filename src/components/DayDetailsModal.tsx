@@ -2,22 +2,25 @@ import { format } from 'date-fns';
 import { it } from 'date-fns/locale';
 import { Check, X } from 'lucide-react';
 import { Button } from '@/components/ui/button';
+import { ScrollArea } from '@/components/ui/scroll-area';
 import {
     Dialog,
     DialogContent,
     DialogHeader,
     DialogTitle,
 } from '@/components/ui/dialog';
-import { Habit, DayRecord } from '@/hooks/useHabitTracker';
+import { Button } from '@/components/ui/button';
+import { format } from 'date-fns';
+import { it } from 'date-fns/locale';
+import { Goal } from '@/types/goals';
 import { cn } from '@/lib/utils';
-import { ScrollArea } from '@/components/ui/scroll-area';
 
 interface DayDetailsModalProps {
-    date: Date | null;
     isOpen: boolean;
     onClose: () => void;
-    habits: Habit[];
-    dayRecord: DayRecord;
+    date: Date | null;
+    habits: Goal[];
+    dayRecord: { [key: string]: string | null };
     onToggleHabit: (habitId: string) => void;
 }
 

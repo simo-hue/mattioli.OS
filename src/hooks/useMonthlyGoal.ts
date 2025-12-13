@@ -1,22 +1,52 @@
 import { useState, useEffect } from 'react';
+import { supabase } from '@/integrations/supabase/client';
 
-const STORAGE_KEY = 'reading-monthly-goal';
+const GOAL_KEY = 'monthly_goal';
 const DEFAULT_GOAL = 20;
 
 export function useMonthlyGoal() {
-  const [goal, setGoal] = useState<number>(() => {
-    const stored = localStorage.getItem(STORAGE_KEY);
-    return stored ? parseInt(stored, 10) : DEFAULT_GOAL;
-  });
+  const [goal, setGoal] = useState<number>(DEFAULT_GOAL);
+  const [isLoading, setIsLoading] = useState(true);
 
+  // Load from Supabase on mount
   useEffect(() => {
-    localStorage.setItem(STORAGE_KEY, goal.toString());
-  }, [goal]);
+    const fetchGoal = async () => {
+      setIsLoading(true);
+      const { data, error } = await supabase
+        .from('user_settings')
+        .select('value')
+        .eq('key', GOAL_KEY)
+        .maybeSingle();
+      
+      if (error) {
+        console.error('Failed to fetch monthly goal:', error);
+      } else if (data) {
+        setGoal(parseInt(data.value, 10));
+      }
+      setIsLoading(false);
+    };
 
-  const updateGoal = (newGoal: number) => {
+    fetchGoal();
+  }, []);
+
+  const updateGoal = async (newGoal: number) => {
     const clampedGoal = Math.max(1, Math.min(31, newGoal));
+    
+    // Optimistic update
     setGoal(clampedGoal);
+
+    // Upsert to database
+    const { error } = await supabase
+      .from('user_settings')
+      .upsert(
+        { key: GOAL_KEY, value: clampedGoal.toString() },
+        { onConflict: 'key' }
+      );
+    
+    if (error) {
+      console.error('Failed to save monthly goal:', error);
+    }
   };
 
-  return { goal, updateGoal };
+  return { goal, updateGoal, isLoading };
 }

@@ -1,4 +1,5 @@
 import { useState, useEffect, useCallback } from 'react';
+import { supabase } from '@/integrations/supabase/client';
 
 export type ReadingStatus = 'done' | 'missed' | null;
 
@@ -6,27 +7,32 @@ export interface ReadingRecord {
   [date: string]: ReadingStatus;
 }
 
-const STORAGE_KEY = 'reading-tracker-data';
-
 export function useReadingTracker() {
   const [records, setRecords] = useState<ReadingRecord>({});
+  const [isLoading, setIsLoading] = useState(true);
 
-  // Load from localStorage on mount
+  // Load from Supabase on mount
   useEffect(() => {
-    const stored = localStorage.getItem(STORAGE_KEY);
-    if (stored) {
-      try {
-        setRecords(JSON.parse(stored));
-      } catch (e) {
-        console.error('Failed to parse reading records:', e);
+    const fetchRecords = async () => {
+      setIsLoading(true);
+      const { data, error } = await supabase
+        .from('reading_logs')
+        .select('date, status');
+      
+      if (error) {
+        console.error('Failed to fetch reading records:', error);
+      } else if (data) {
+        const recordsMap: ReadingRecord = {};
+        data.forEach((row) => {
+          recordsMap[row.date] = row.status as ReadingStatus;
+        });
+        setRecords(recordsMap);
       }
-    }
-  }, []);
+      setIsLoading(false);
+    };
 
-  // Save to localStorage whenever records change
-  useEffect(() => {
-    localStorage.setItem(STORAGE_KEY, JSON.stringify(records));
-  }, [records]);
+    fetchRecords();
+  }, []);
 
   const getDateKey = (date: Date): string => {
     return date.toISOString().split('T')[0];
@@ -36,8 +42,10 @@ export function useReadingTracker() {
     return records[getDateKey(date)] || null;
   }, [records]);
 
-  const setStatus = useCallback((date: Date, status: ReadingStatus) => {
+  const setStatus = useCallback(async (date: Date, status: ReadingStatus) => {
     const key = getDateKey(date);
+    
+    // Optimistic update
     setRecords(prev => {
       if (status === null) {
         const { [key]: _, ...rest } = prev;
@@ -45,6 +53,30 @@ export function useReadingTracker() {
       }
       return { ...prev, [key]: status };
     });
+
+    if (status === null) {
+      // Delete from database
+      const { error } = await supabase
+        .from('reading_logs')
+        .delete()
+        .eq('date', key);
+      
+      if (error) {
+        console.error('Failed to delete reading record:', error);
+      }
+    } else {
+      // Upsert to database
+      const { error } = await supabase
+        .from('reading_logs')
+        .upsert(
+          { date: key, status },
+          { onConflict: 'date' }
+        );
+      
+      if (error) {
+        console.error('Failed to save reading record:', error);
+      }
+    }
   }, []);
 
   const toggleStatus = useCallback((date: Date) => {
@@ -144,6 +176,7 @@ export function useReadingTracker() {
 
   return {
     records,
+    isLoading,
     getStatus,
     setStatus,
     toggleStatus,

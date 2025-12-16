@@ -53,14 +53,19 @@ export function useGoals() {
     // CREATE GOAL
     const createGoalMutation = useMutation({
         mutationFn: async (newGoal: Partial<Goal>) => {
+            const { data: { session } } = await supabase.auth.getSession();
+            if (!session) {
+                throw new Error('Non sei autenticato. Effettua il login.');
+            }
+
             const { data, error } = await supabase
                 .from('goals')
                 .insert([{
-                    title: newGoal.title,
-                    color: newGoal.color,
-                    start_date: newGoal.start_date || new Date().toISOString().split('T')[0]
-                    // user_id is handled by RLS/Trigger usually, or explicit if policy requires
-                }])
+                    title: newGoal.title!,
+                    color: newGoal.color!,
+                    start_date: newGoal.start_date || new Date().toISOString().split('T')[0],
+                    user_id: session.user.id
+                }] as any)
                 .select()
                 .single();
 
@@ -95,6 +100,7 @@ export function useGoals() {
     const toggleLogMutation = useMutation({
         mutationFn: async ({ goalId, date, currentStatus }: { goalId: string, date: Date, currentStatus: GoalStatus }) => {
             const dateStr = date.toISOString().split('T')[0];
+            const { data: { session } } = await supabase.auth.getSession(); // Get session for user_id
 
             // Logic: None -> Done -> Missed -> None
             let nextStatus: GoalStatus = 'done';
@@ -116,8 +122,9 @@ export function useGoals() {
                     .upsert({
                         goal_id: goalId,
                         date: dateStr,
-                        status: nextStatus
-                    }, { onConflict: 'goal_id, date' });
+                        status: nextStatus,
+                        user_id: session?.user.id // Add user_id if session exists (it should)
+                    } as any, { onConflict: 'goal_id, date' });
                 if (error) throw error;
             }
             return { goalId, dateStr, nextStatus };

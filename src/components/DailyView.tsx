@@ -23,6 +23,12 @@ export function DailyView({ habits, records, onToggleHabit }: DailyViewProps) {
             </div>
 
             <div className="space-y-3">
+                {habits.length === 0 && (
+                    <div className="text-center py-12 border border-dashed border-white/10 rounded-xl">
+                        <p className="text-muted-foreground">Nessun obiettivo per oggi.</p>
+                        <p className="text-xs text-muted-foreground/60 mt-1">Aggiungine alcuni dalle impostazioni.</p>
+                    </div>
+                )}
                 {habits.map(habit => {
                     const status = dayRecord[habit.id];
                     return (
@@ -30,8 +36,8 @@ export function DailyView({ habits, records, onToggleHabit }: DailyViewProps) {
                             key={habit.id}
                             onClick={() => onToggleHabit(today, habit.id)}
                             className={cn(
-                                "group relative overflow-hidden p-4 rounded-xl border border-white/5 bg-white/5 hover:bg-white/10 transition-all cursor-pointer flex items-center justify-between",
-                                status === 'done' && "border-primary/20"
+                                "group relative overflow-hidden p-4 rounded-xl border border-white/10 bg-white/5 hover:bg-white/10 transition-all cursor-pointer flex items-center justify-between",
+                                status === 'done' && "border-primary/20 bg-primary/5"
                             )}
                         >
                             {/* Progress Fill Background */}

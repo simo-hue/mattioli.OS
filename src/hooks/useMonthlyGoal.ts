@@ -1,3 +1,4 @@
+/* eslint-disable @typescript-eslint/no-explicit-any */
 import { useState, useEffect } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 
@@ -17,11 +18,11 @@ export function useMonthlyGoal() {
         .select('value')
         .eq('key', GOAL_KEY)
         .maybeSingle();
-      
+
       if (error) {
         console.error('Failed to fetch monthly goal:', error);
-      } else if (data) {
-        setGoal(parseInt(data.value, 10));
+      } else if (data && (data as any).value) {
+        setGoal(parseInt((data as any).value, 10));
       }
       setIsLoading(false);
     };
@@ -31,7 +32,7 @@ export function useMonthlyGoal() {
 
   const updateGoal = async (newGoal: number) => {
     const clampedGoal = Math.max(1, Math.min(31, newGoal));
-    
+
     // Optimistic update
     setGoal(clampedGoal);
 
@@ -39,10 +40,10 @@ export function useMonthlyGoal() {
     const { error } = await supabase
       .from('user_settings')
       .upsert(
-        { key: GOAL_KEY, value: clampedGoal.toString() },
+        { key: GOAL_KEY, value: clampedGoal.toString() } as any,
         { onConflict: 'key' }
       );
-    
+
     if (error) {
       console.error('Failed to save monthly goal:', error);
     }

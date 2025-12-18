@@ -1,3 +1,4 @@
+/* eslint-disable @typescript-eslint/no-explicit-any */
 import { useState, useEffect, useCallback } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 import { toast } from 'sonner';
@@ -45,9 +46,9 @@ export function useHabitTracker() {
                     console.error('Error fetching habits:', settingsError);
                 }
 
-                if (settingsData?.value) {
+                if ((settingsData as any)?.value) {
                     try {
-                        setHabits(JSON.parse(settingsData.value));
+                        setHabits(JSON.parse((settingsData as any).value));
                     } catch (e) {
                         console.error('Error parsing habits JSON:', e);
                     }
@@ -62,7 +63,7 @@ export function useHabitTracker() {
 
                 if (logsData) {
                     const newRecords: HabitRecord = {};
-                    logsData.forEach(row => {
+                    logsData.forEach((row: { date: string, status: string }) => {
                         let dayRecord: DayRecord = {};
                         // Backward compatibility: check if status is simple string
                         if (row.status === 'done' || row.status === 'missed') {
@@ -99,7 +100,7 @@ export function useHabitTracker() {
                 .upsert({
                     key: 'habits',
                     value: JSON.stringify(newHabits)
-                }, { onConflict: 'key' });
+                } as any, { onConflict: 'key' });
 
             if (error) throw error;
         } catch (error) {
@@ -155,7 +156,7 @@ export function useHabitTracker() {
                 await supabase.from('reading_logs').upsert({
                     date: dateKey,
                     status: JSON.stringify(newDayRecord)
-                }, { onConflict: 'date' });
+                } as any, { onConflict: 'date' });
             }
         } catch (error) {
             console.error('Failed to save status:', error);

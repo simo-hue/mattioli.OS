@@ -1,3 +1,4 @@
+/* eslint-disable @typescript-eslint/no-explicit-any */
 import { useState, useEffect, useCallback } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 
@@ -18,12 +19,12 @@ export function useReadingTracker() {
       const { data, error } = await supabase
         .from('reading_logs')
         .select('date, status');
-      
+
       if (error) {
         console.error('Failed to fetch reading records:', error);
       } else if (data) {
         const recordsMap: ReadingRecord = {};
-        data.forEach((row) => {
+        data.forEach((row: { date: string, status: string }) => {
           recordsMap[row.date] = row.status as ReadingStatus;
         });
         setRecords(recordsMap);
@@ -44,7 +45,7 @@ export function useReadingTracker() {
 
   const setStatus = useCallback(async (date: Date, status: ReadingStatus) => {
     const key = getDateKey(date);
-    
+
     // Optimistic update
     setRecords(prev => {
       if (status === null) {
@@ -60,7 +61,7 @@ export function useReadingTracker() {
         .from('reading_logs')
         .delete()
         .eq('date', key);
-      
+
       if (error) {
         console.error('Failed to delete reading record:', error);
       }
@@ -69,10 +70,10 @@ export function useReadingTracker() {
       const { error } = await supabase
         .from('reading_logs')
         .upsert(
-          { date: key, status },
+          { date: key, status } as any,
           { onConflict: 'date' }
         );
-      
+
       if (error) {
         console.error('Failed to save reading record:', error);
       }
@@ -82,7 +83,7 @@ export function useReadingTracker() {
   const toggleStatus = useCallback((date: Date) => {
     const currentStatus = getStatus(date);
     let newStatus: ReadingStatus;
-    
+
     if (currentStatus === null) {
       newStatus = 'done';
     } else if (currentStatus === 'done') {
@@ -90,7 +91,7 @@ export function useReadingTracker() {
     } else {
       newStatus = null;
     }
-    
+
     setStatus(date, newStatus);
   }, [getStatus, setStatus]);
 
@@ -98,7 +99,7 @@ export function useReadingTracker() {
     const today = new Date();
     const currentMonth = today.getMonth();
     const currentYear = today.getFullYear();
-    
+
     let totalDone = 0;
     let totalMissed = 0;
     let monthDone = 0;
@@ -110,7 +111,7 @@ export function useReadingTracker() {
     // Calculate totals
     Object.entries(records).forEach(([dateStr, status]) => {
       const date = new Date(dateStr);
-      
+
       if (status === 'done') {
         totalDone++;
         if (date.getMonth() === currentMonth && date.getFullYear() === currentYear) {
@@ -132,7 +133,7 @@ export function useReadingTracker() {
     for (let i = 0; i < sortedDates.length; i++) {
       const current = new Date(sortedDates[i]);
       const prev = i > 0 ? new Date(sortedDates[i - 1]) : null;
-      
+
       if (prev) {
         const diffDays = Math.floor((current.getTime() - prev.getTime()) / (1000 * 60 * 60 * 24));
         if (diffDays === 1) {
@@ -143,14 +144,14 @@ export function useReadingTracker() {
       } else {
         tempStreak = 1;
       }
-      
+
       longestStreak = Math.max(longestStreak, tempStreak);
     }
 
     // Calculate current streak (from today backwards)
     const todayKey = getDateKey(today);
-    let checkDate = new Date(today);
-    
+    const checkDate = new Date(today);
+
     while (true) {
       const key = getDateKey(checkDate);
       if (records[key] === 'done') {

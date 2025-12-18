@@ -15,7 +15,7 @@ export function DayOfWeekChart({ data }: DayOfWeekChartProps) {
     // Find best day for highlighting
     const maxRate = Math.max(...data.map(d => d.rate));
 
-    const CustomTooltip = ({ active, payload, label }: any) => {
+    const CustomTooltip = ({ active, payload, label }: { active?: boolean, payload?: { value: number; payload: { fullDate: string } }[], label?: string }) => {
         if (active && payload && payload.length) {
             return (
                 <div className="bg-background/95 backdrop-blur text-xs p-2 rounded-lg border border-border shadow-xl">

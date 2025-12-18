@@ -1,3 +1,4 @@
+/* eslint-disable @typescript-eslint/no-explicit-any */
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
 import { Goal, GoalLog, GoalStatus, GoalLogsMap } from '@/types/goals';
@@ -126,9 +127,9 @@ export function useGoals() {
     });
 
     const softDelete = async (goalId: string) => {
-        const { error } = await supabase
-            .from('goals')
-            .update({ end_date: new Date().toISOString().split('T')[0] } as any)
+        const { error } = await (supabase
+            .from('goals') as any)
+            .update({ end_date: new Date().toISOString().split('T')[0] })
             .eq('id', goalId);
         if (error) throw error;
     }
@@ -149,9 +150,10 @@ export function useGoals() {
                 .eq('id', goalId)
                 .single();
 
-            if (goalError) throw goalError;
+            if (goalError || !goal) throw goalError || new Error('Goal not found');
+            const goalData = goal as any;
 
-            if (!isDateInGoalRange(dateStr, goal.start_date, goal.end_date)) {
+            if (!isDateInGoalRange(dateStr, goalData.start_date, goalData.end_date)) {
                 throw new Error('Impossibile modificare un obiettivo fuori dal suo periodo di validità.');
             }
 

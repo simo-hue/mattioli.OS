@@ -25,7 +25,7 @@ export function YearlyHeatmap({ records, year }: YearlyHeatmapProps) {
     const endDate = new Date(year, 11, 31);
     const today = new Date();
 
-    let currentDate = new Date(startDate);
+    const currentDate = new Date(startDate);
     let currentWeek: { date: Date; status: 'done' | 'missed' | null }[] = [];
 
     while (currentDate <= endDate || currentWeek.length > 0) {

@@ -88,7 +88,7 @@ function getWeekNumber(date: Date): number {
 
 function calculateStreak(sortedDates: string[]): number {
   if (sortedDates.length === 0) return 0;
-  
+
   let maxStreak = 1;
   let currentStreak = 1;
 
@@ -96,7 +96,7 @@ function calculateStreak(sortedDates: string[]): number {
     const prev = new Date(sortedDates[i - 1]);
     const curr = new Date(sortedDates[i]);
     const diffDays = Math.floor((curr.getTime() - prev.getTime()) / (1000 * 60 * 60 * 24));
-    
+
     if (diffDays === 1) {
       currentStreak++;
       maxStreak = Math.max(maxStreak, currentStreak);
@@ -143,18 +143,18 @@ export function useReadingStats(records: ReadingRecord) {
     let currentStreak = 0;
     const today = new Date();
     const todayKey = today.toISOString().split('T')[0];
-    
+
     // If today is marked as missed, streak is 0
     if (records[todayKey] === 'missed') {
       currentStreak = 0;
     } else {
-      let checkDate = new Date(today);
-      
+      const checkDate = new Date(today);
+
       // If today isn't marked yet, start checking from yesterday
       if (!records[todayKey]) {
         checkDate.setDate(checkDate.getDate() - 1);
       }
-      
+
       while (true) {
         const key = checkDate.toISOString().split('T')[0];
         if (records[key] === 'done') {
@@ -170,12 +170,12 @@ export function useReadingStats(records: ReadingRecord) {
     const allDates = Object.keys(records).sort();
     const firstRecordDate = allDates.length > 0 ? new Date(allDates[0]) : null;
     const lastRecordDate = allDates.length > 0 ? new Date(allDates[allDates.length - 1]) : null;
-    const daysSinceStart = firstRecordDate 
+    const daysSinceStart = firstRecordDate
       ? Math.floor((today.getTime() - firstRecordDate.getTime()) / (1000 * 60 * 60 * 24)) + 1
       : 0;
 
     // Consistency score (% of days marked since start)
-    const consistencyScore = daysSinceStart > 0 
+    const consistencyScore = daysSinceStart > 0
       ? Math.round((totalDaysMarked / daysSinceStart) * 100)
       : 0;
 
@@ -214,7 +214,7 @@ export function useReadingStats(records: ReadingRecord) {
         }
       }
     });
-    
+
     // If best and worst are the same, don't show worst
     if (bestDayNum === worstDayNum) {
       worstDayOfWeek = null;
@@ -240,7 +240,7 @@ export function useReadingStats(records: ReadingRecord) {
     const daysElapsedThisMonth = today.getDate();
     const daysRemainingThisMonth = daysInCurrentMonth - daysElapsedThisMonth;
     const currentMonthReadCount = allDays.filter(d => d.month === todayMonth && d.year === todayYear && d.status === 'done').length;
-    
+
     let monthlyGoalPrediction: { predictedDays: number; onTrack: boolean; daysNeeded: number } | null = null;
     if (daysElapsedThisMonth > 0) {
       const dailyRate = currentMonthReadCount / daysElapsedThisMonth;
@@ -256,14 +256,14 @@ export function useReadingStats(records: ReadingRecord) {
       const weekStart = new Date(today);
       weekStart.setDate(today.getDate() - today.getDay() - (i * 7)); // Start of week (Sunday)
       weekStart.setHours(0, 0, 0, 0);
-      
+
       const weekEnd = new Date(weekStart);
       weekEnd.setDate(weekStart.getDate() + 6);
       weekEnd.setHours(23, 59, 59, 999);
-      
+
       let daysRead = 0;
       let daysInWeek = 0;
-      
+
       for (let d = new Date(weekStart); d <= weekEnd && d <= today; d.setDate(d.getDate() + 1)) {
         const key = d.toISOString().split('T')[0];
         daysInWeek++;
@@ -271,10 +271,10 @@ export function useReadingStats(records: ReadingRecord) {
           daysRead++;
         }
       }
-      
+
       const pct = daysInWeek > 0 ? Math.round((daysRead / daysInWeek) * 100) : 0;
       const weekNum = getWeekNumber(weekStart);
-      
+
       weeklyTrend.push({
         weekNumber: weekNum,
         weekLabel: i === 0 ? 'Questa' : i === 1 ? 'Scorsa' : `${i} sett. fa`,
@@ -283,7 +283,7 @@ export function useReadingStats(records: ReadingRecord) {
         trend: 'stable',
       });
     }
-    
+
     // Calculate trends
     for (let i = 1; i < weeklyTrend.length; i++) {
       const diff = weeklyTrend[i].percentage - weeklyTrend[i - 1].percentage;
@@ -318,7 +318,7 @@ export function useReadingStats(records: ReadingRecord) {
       const yearDays = allDays.filter(d => d.year === year);
       const yearReadDates = yearDays.filter(d => d.status === 'done').map(d => d.date).sort();
       const yearMissedDates = yearDays.filter(d => d.status === 'missed');
-      
+
       const totalDaysRead = yearReadDates.length;
       const totalDaysMissed = yearMissedDates.length;
       const totalDaysMarked = totalDaysRead + totalDaysMissed;
@@ -331,11 +331,11 @@ export function useReadingStats(records: ReadingRecord) {
         const monthDays = yearDays.filter(d => d.month === month);
         const monthReadDates = monthDays.filter(d => d.status === 'done').map(d => d.date).sort();
         const monthMissedDates = monthDays.filter(d => d.status === 'missed');
-        
+
         const daysRead = monthReadDates.length;
         const daysMissed = monthMissedDates.length;
         const daysTotal = daysRead + daysMissed;
-        
+
         monthlyBreakdown.push({
           month,
           year,
@@ -356,7 +356,7 @@ export function useReadingStats(records: ReadingRecord) {
         const daysRead = weekDays.filter(d => d.status === 'done').length;
         const daysMissed = weekDays.filter(d => d.status === 'missed').length;
         const daysTotal = daysRead + daysMissed;
-        
+
         weeklyBreakdown.push({
           weekNumber,
           year,
@@ -368,7 +368,7 @@ export function useReadingStats(records: ReadingRecord) {
       });
 
       const monthsWithData = monthlyBreakdown.filter(m => m.daysTotal > 0);
-      const bestMonth = monthsWithData.length > 0 
+      const bestMonth = monthsWithData.length > 0
         ? monthsWithData.reduce((a, b) => a.percentage > b.percentage ? a : b)
         : null;
       const worstMonth = monthsWithData.length > 0
@@ -403,7 +403,7 @@ export function useReadingStats(records: ReadingRecord) {
     const currentMonthDays = allDays.filter(d => d.month === todayMonth && d.year === todayYear);
     const currentMonthReadDates = currentMonthDays.filter(d => d.status === 'done').map(d => d.date).sort();
     const markedDaysThisMonth = currentMonthDays.length;
-    
+
     const monthStats: MonthStats = {
       month: todayMonth,
       year: todayYear,
@@ -412,8 +412,8 @@ export function useReadingStats(records: ReadingRecord) {
       daysMissed: currentMonthDays.filter(d => d.status === 'missed').length,
       daysTotal: markedDaysThisMonth,
       // Use marked days for percentage if any exist, otherwise 0
-      percentage: markedDaysThisMonth > 0 
-        ? Math.round((currentMonthReadDates.length / markedDaysThisMonth) * 100) 
+      percentage: markedDaysThisMonth > 0
+        ? Math.round((currentMonthReadDates.length / markedDaysThisMonth) * 100)
         : 0,
       bestStreak: calculateStreak(currentMonthReadDates),
     };

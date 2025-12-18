@@ -89,8 +89,8 @@ const Stats = () => {
                                         </div>
                                     </div>
                                 </div>
-                                <div className="flex gap-8 text-sm text-muted-foreground text-right">
-                                    <div className="hidden sm:flex flex-col items-end">
+                                <div className="flex gap-2 sm:gap-8 text-sm text-muted-foreground text-right">
+                                    <div className="flex flex-col items-end">
                                         <span className="text-[10px] uppercase tracking-widest font-bold opacity-60 mb-0.5 flex items-center gap-1">
                                             <Trophy className="w-3 h-3 text-yellow-500" /> Best
                                         </span>

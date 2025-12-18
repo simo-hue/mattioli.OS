@@ -118,9 +118,9 @@ const Index = () => {
               <AlertDialog>
                 <AlertDialogTrigger asChild>
                   <Button
-                    variant="outline"
+                    variant="ghost"
                     size="icon"
-                    className="h-8 w-8 sm:h-9 sm:w-9 text-destructive hover:text-destructive hover:bg-destructive/10 border-destructive/20"
+                    className="h-8 w-8 sm:h-9 sm:w-9 bg-red-500/10 text-red-500 hover:bg-red-500 hover:text-white border-red-500/20"
                     title="Hard Reset (Elimina tutto)"
                   >
                     <Trash2 className="h-4 w-4" />

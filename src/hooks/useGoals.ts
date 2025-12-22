@@ -65,7 +65,7 @@ export function useGoals() {
                 .insert([{
                     title: newGoal.title!,
                     color: newGoal.color!,
-                    start_date: newGoal.start_date || new Date().toISOString().split('T')[0],
+                    start_date: newGoal.start_date || getLocalDateKey(new Date()),
                     user_id: session.user.id
                 }] as any)
                 .select()
@@ -89,7 +89,7 @@ export function useGoals() {
 
         const { error } = await (supabase
             .from('goals') as any)
-            .update({ end_date: yesterday.toISOString().split('T')[0] })
+            .update({ end_date: getLocalDateKey(yesterday) })
             .eq('id', goalId);
     };
 
@@ -167,7 +167,7 @@ export function useGoals() {
         }
     });
 
-    const activeGoals = (goals || []).filter(g => !g.end_date || g.end_date >= new Date().toISOString().split('T')[0]);
+    const activeGoals = (goals || []).filter(g => !g.end_date || g.end_date >= getLocalDateKey(new Date()));
 
     // TOGGLE STATUS
     const toggleLogMutation = useMutation({

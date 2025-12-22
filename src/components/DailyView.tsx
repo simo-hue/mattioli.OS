@@ -12,7 +12,7 @@ interface DailyViewProps {
 
 export function DailyView({ habits, records, onToggleHabit }: DailyViewProps) {
     const today = new Date();
-    const dateKey = today.toISOString().split('T')[0];
+    const dateKey = format(today, 'yyyy-MM-dd');
     const dayRecord = records[dateKey] || {};
 
     // Filter habits valid for today

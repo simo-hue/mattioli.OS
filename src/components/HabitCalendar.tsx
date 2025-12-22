@@ -204,7 +204,7 @@ export function HabitCalendar({ habits, records, onToggleHabit }: HabitCalendarP
                 onClose={() => setSelectedDate(null)}
                 date={selectedDate}
                 habits={habits}
-                dayRecord={selectedDate ? (records[selectedDate.toISOString().split('T')[0]] || {}) : {}}
+                dayRecord={selectedDate ? (records[format(selectedDate, 'yyyy-MM-dd')] || {}) : {}}
                 onToggleHabit={(habitId) => selectedDate && onToggleHabit(selectedDate, habitId)}
             />
         </>

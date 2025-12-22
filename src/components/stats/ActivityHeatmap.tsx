@@ -1,6 +1,6 @@
 import { DayActivity } from '@/hooks/useHabitStats';
 import { cn } from '@/lib/utils';
-import { differenceInDays, subDays } from 'date-fns';
+import { differenceInDays, subDays, format } from 'date-fns';
 
 interface ActivityHeatmapProps {
     data: DayActivity[];
@@ -20,7 +20,7 @@ export function ActivityHeatmap({ data }: ActivityHeatmapProps) {
     const fullData: DayActivity[] = [];
     for (let i = daysToShow - 1; i >= 0; i--) {
         const date = subDays(today, i);
-        const key = date.toISOString().split('T')[0];
+        const key = format(date, 'yyyy-MM-dd');
         const found = relevantData.find(d => d.date === key);
         fullData.push(found || { date: key, count: 0, intensity: 0 });
     }

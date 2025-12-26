@@ -29,15 +29,31 @@ export function useGoals() {
     const { data: logs, isLoading: isLoadingLogs } = useQuery({
         queryKey: ['goal_logs'],
         queryFn: async () => {
-            const { data, error } = await supabase
-                .from('goal_logs')
-                .select('*');
+            let allLogs: GoalLog[] = [];
+            let from = 0;
+            const step = 1000;
+            let keepFetching = true;
 
-            if (error) {
-                console.error(error);
-                return [];
+            while (keepFetching) {
+                const { data, error } = await supabase
+                    .from('goal_logs')
+                    .select('*')
+                    .range(from, from + step - 1);
+
+                if (error) {
+                    console.error(error);
+                    throw error;
+                }
+
+                if (data && data.length > 0) {
+                    allLogs = [...allLogs, ...(data as GoalLog[])];
+                    if (data.length < step) keepFetching = false;
+                    else from += step;
+                } else {
+                    keepFetching = false;
+                }
             }
-            return data as GoalLog[];
+            return allLogs;
         },
     });
 

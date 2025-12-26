@@ -54,10 +54,29 @@ export function useHabitTracker() {
                     }
                 }
 
-                // 2. Fetch Records from reading_logs
-                const { data: logsData, error: logsError } = await supabase
-                    .from('reading_logs')
-                    .select('date, status');
+                // 2. Fetch Records from reading_logs using pagination
+                let logsData: any[] = [];
+                let from = 0;
+                const step = 1000;
+                let keepFetching = true;
+
+                while (keepFetching) {
+                    const { data, error } = await supabase
+                        .from('reading_logs')
+                        .select('date, status')
+                        .range(from, from + step - 1);
+
+                    if (error) throw error;
+
+                    if (data && data.length > 0) {
+                        logsData = [...logsData, ...data];
+                        if (data.length < step) keepFetching = false;
+                        else from += step;
+                    } else {
+                        keepFetching = false;
+                    }
+                }
+                const logsError = null; // Error handled inside loop
 
                 if (logsError) throw logsError;
 

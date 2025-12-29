@@ -10,6 +10,7 @@ interface HabitCalendarProps {
     habits: Goal[];
     records: GoalLogsMap;
     onToggleHabit: (date: Date, habitId: string) => void;
+    isPrivacyMode?: boolean;
 }
 
 const DAYS = ['Lun', 'Mar', 'Mer', 'Gio', 'Ven', 'Sab', 'Dom'];
@@ -18,7 +19,7 @@ const MONTHS = [
     'Luglio', 'Agosto', 'Settembre', 'Ottobre', 'Novembre', 'Dicembre'
 ];
 
-export function HabitCalendar({ habits, records, onToggleHabit }: HabitCalendarProps) {
+export function HabitCalendar({ habits, records, onToggleHabit, isPrivacyMode = false }: HabitCalendarProps) {
     const [currentDate, setCurrentDate] = useState(new Date());
     const [selectedDate, setSelectedDate] = useState<Date | null>(null);
 
@@ -132,15 +133,16 @@ export function HabitCalendar({ habits, records, onToggleHabit }: HabitCalendarP
                     )}
                 >
                     <span className={cn(
-                        "text-[clamp(0.7rem,2.5vw,0.9rem)] font-medium mb-[2px] font-mono-nums",
+                        "text-[clamp(0.7rem,2.5vw,0.9rem)] font-medium mb-[2px] font-mono-nums transition-all duration-300",
                         isToday(day) && "text-primary font-bold",
-                        hasActivity && "text-foreground"
+                        hasActivity && "text-foreground",
+                        isPrivacyMode && "blur-[2px]"
                     )}>
                         {day}
                     </span>
 
                     {/* Dots Indicator - Refined for tech look */}
-                    <div className="flex flex-wrap items-center justify-center gap-0.5 px-1 w-full max-w-[80%]">
+                    <div className={cn("flex flex-wrap items-center justify-center gap-0.5 px-1 w-full max-w-[80%] transition-all duration-300", isPrivacyMode && "blur-[1px]")}>
                         {validHabits.map(habit => {
                             const status = dayRecord[habit.id];
                             if (!status) return null;
@@ -206,6 +208,7 @@ export function HabitCalendar({ habits, records, onToggleHabit }: HabitCalendarP
                 habits={habits}
                 records={records}
                 onToggleHabit={(habitId) => selectedDate && onToggleHabit(selectedDate, habitId)}
+                isPrivacyMode={isPrivacyMode}
             />
         </>
     );

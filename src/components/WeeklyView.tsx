@@ -1,22 +1,28 @@
 import { useState, useMemo } from 'react';
-import { format, startOfWeek, addDays, isSameDay } from 'date-fns';
+import { format, startOfWeek, addDays, isSameDay, subDays, endOfWeek } from 'date-fns';
 import { it } from 'date-fns/locale';
 import { cn } from '@/lib/utils';
 import { Goal, GoalLogsMap } from '@/types/goals';
 import { DayDetailsModal } from './DayDetailsModal';
+import { ChevronLeft, ChevronRight } from 'lucide-react';
 
 interface WeeklyViewProps {
     habits: Goal[];
     records: GoalLogsMap;
     onToggleHabit: (date: Date, habitId: string) => void;
+    isPrivacyMode?: boolean;
 }
 
-export function WeeklyView({ habits, records, onToggleHabit }: WeeklyViewProps) {
-    // Stable today reference to avoid re-calculating weekStart on every render (microseconds shift)
+export function WeeklyView({ habits, records, onToggleHabit, isPrivacyMode = false }: WeeklyViewProps) {
+    // Stable today reference for "future" checks
     const today = useMemo(() => new Date(), []);
 
-    // Stable weekStart
-    const weekStart = useMemo(() => startOfWeek(today, { weekStartsOn: 1 }), [today]); // Monday
+    // State for the currently visible week
+    const [currentDate, setCurrentDate] = useState(new Date());
+
+    // Determine the start of the visible week
+    const weekStart = useMemo(() => startOfWeek(currentDate, { weekStartsOn: 1 }), [currentDate]); // Monday
+    const weekEnd = useMemo(() => endOfWeek(currentDate, { weekStartsOn: 1 }), [currentDate]);
 
     const [selectedDate, setSelectedDate] = useState<Date | null>(null);
 
@@ -24,22 +30,51 @@ export function WeeklyView({ habits, records, onToggleHabit }: WeeklyViewProps) 
         return Array.from({ length: 7 }).map((_, i) => addDays(weekStart, i));
     }, [weekStart]);
 
-    // Memoize the day record for the modal to ensure referential stability if content hasn't changed, 
-    // but here we want IT TO CHANGE if records changes. 
-    // We compute the key explicitly.
-    const selectedDateKey = selectedDate ? format(selectedDate, 'yyyy-MM-dd') : null;
-    const selectedDayRecord = selectedDateKey ? (records[selectedDateKey] || {}) : {};
+    const handlePrevWeek = () => {
+        setCurrentDate(prev => subDays(prev, 7));
+    };
+
+    const handleNextWeek = () => {
+        setCurrentDate(prev => addDays(prev, 7));
+    };
+
+    // Formatted date range for title
+    const dateRangeTitle = useMemo(() => {
+        const start = format(weekStart, 'd', { locale: it });
+        const end = format(weekEnd, 'd MMMM', { locale: it }); // e.g. "15 Ottobre"
+        return `${start} - ${end}`;
+    }, [weekStart, weekEnd]);
+
+    const isCurrentWeek = isSameDay(startOfWeek(today, { weekStartsOn: 1 }), weekStart);
 
     return (
         <div className="w-full h-full p-6 animate-scale-in">
-            <h2 className="text-xl font-display font-bold mb-6">Questa Settimana</h2>
+            <div className="flex items-center justify-between mb-6">
+                <h2 className="text-xl font-display font-bold capitalize">
+                    {dateRangeTitle}
+                </h2>
+                <div className="flex items-center gap-2">
+                    <button
+                        onClick={handlePrevWeek}
+                        className="p-2 rounded-lg hover:bg-white/5 transition-colors active:scale-95"
+                    >
+                        <ChevronLeft className="w-5 h-5" />
+                    </button>
+                    <button
+                        onClick={handleNextWeek}
+                        className="p-2 rounded-lg hover:bg-white/5 transition-colors active:scale-95"
+                    >
+                        <ChevronRight className="w-5 h-5" />
+                    </button>
+                </div>
+            </div>
 
             <div className="grid grid-cols-7 gap-2 sm:gap-4">
                 {weekDays.map((date) => {
                     const dateKey = format(date, 'yyyy-MM-dd');
                     const dayRecord = records[dateKey] || {};
                     const isToday = isSameDay(date, today);
-                    // Reset today to midnight for correct comparison
+                    // Check against actual today for future disabling
                     const todayMidnight = new Date(today);
                     todayMidnight.setHours(0, 0, 0, 0);
                     const isFuture = date > todayMidnight;
@@ -60,8 +95,7 @@ export function WeeklyView({ habits, records, onToggleHabit }: WeeklyViewProps) 
                                 <div className="text-lg font-mono font-bold">{format(date, 'd')}</div>
                             </button>
 
-                            {/* Habits Column caused by grid */}
-                            <div className="flex flex-col gap-2">
+                            <div className={cn("flex flex-col gap-2 transition-all duration-300", isPrivacyMode && "blur-[2px]")}>
                                 {habits.map(habit => {
                                     const isStarted = habit.start_date <= dateKey;
                                     const isEnded = habit.end_date && habit.end_date < dateKey;
@@ -82,7 +116,7 @@ export function WeeklyView({ habits, records, onToggleHabit }: WeeklyViewProps) 
                                                 isFuture && "opacity-30 cursor-not-allowed",
                                                 status === 'done' && "opacity-100 shadow-[0_0_10px_currentColor]",
                                                 status === 'missed' && "opacity-50 grayscale",
-                                                !status && !isFuture && "bg-white/5"
+                                                !status && !isFuture && "bg-white/5",
                                             )}
                                             style={{
                                                 backgroundColor: status === 'done' ? habit.color : undefined,
@@ -106,6 +140,7 @@ export function WeeklyView({ habits, records, onToggleHabit }: WeeklyViewProps) 
                 habits={habits}
                 records={records}
                 onToggleHabit={(habitId) => selectedDate && onToggleHabit(selectedDate, habitId)}
+                isPrivacyMode={isPrivacyMode}
             />
         </div >
     );

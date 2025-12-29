@@ -12,6 +12,7 @@ import MacroGoals from "./pages/MacroGoals";
 
 import Auth from "./pages/Auth";
 import NotFound from "./pages/NotFound";
+import { PrivacyProvider } from "@/context/PrivacyContext";
 
 const queryClient = new QueryClient();
 
@@ -46,29 +47,31 @@ const ProtectedRoute = ({ children }: { children: React.ReactNode }) => {
 const App = () => {
   return (
     <QueryClientProvider client={queryClient}>
-      <TooltipProvider>
-        <Toaster />
-        <Sonner />
-        <HashRouter future={{ v7_startTransition: true, v7_relativeSplatPath: true }}>
-          <Routes>
-            <Route path="/auth" element={<Auth />} />
+      <PrivacyProvider>
+        <TooltipProvider>
+          <Toaster />
+          <Sonner />
+          <HashRouter future={{ v7_startTransition: true, v7_relativeSplatPath: true }}>
+            <Routes>
+              <Route path="/auth" element={<Auth />} />
 
-            <Route element={
-              <ProtectedRoute>
-                <Layout />
-              </ProtectedRoute>
-            }>
-              <Route path="/" element={<Index />} />
-              <Route path="/stats" element={<Stats />} />
-              <Route path="/macro-goals" element={<MacroGoals />} />
+              <Route element={
+                <ProtectedRoute>
+                  <Layout />
+                </ProtectedRoute>
+              }>
+                <Route path="/" element={<Index />} />
+                <Route path="/stats" element={<Stats />} />
+                <Route path="/macro-goals" element={<MacroGoals />} />
 
-            </Route>
+              </Route>
 
-            {/* ADD ALL CUSTOM ROUTES ABOVE THE CATCH-ALL "*" ROUTE */}
-            <Route path="*" element={<NotFound />} />
-          </Routes>
-        </HashRouter>
-      </TooltipProvider>
+              {/* ADD ALL CUSTOM ROUTES ABOVE THE CATCH-ALL "*" ROUTE */}
+              <Route path="*" element={<NotFound />} />
+            </Routes>
+          </HashRouter>
+        </TooltipProvider>
+      </PrivacyProvider>
     </QueryClientProvider>
   );
 };

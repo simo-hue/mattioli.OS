@@ -21,10 +21,13 @@ import {
 import { ScrollArea } from '@/components/ui/scroll-area';
 import { Goal } from '@/types/goals';
 
+import { cn } from '@/lib/utils';
+
 interface HabitSettingsProps {
     habits: Goal[];
     onAddHabit: (goal: { title: string; color: string }) => void;
     onRemoveHabit: (id: string) => void;
+    isPrivacyMode?: boolean;
 }
 
 const PRESET_COLORS = [
@@ -50,7 +53,7 @@ import {
     AlertDialogTrigger,
 } from "@/components/ui/alert-dialog" // Manual import as not installed by shadcn yet
 
-export function HabitSettings({ habits, onAddHabit, onRemoveHabit, isDeleting }: HabitSettingsProps & { isDeleting?: boolean }) {
+export function HabitSettings({ habits, onAddHabit, onRemoveHabit, isDeleting, isPrivacyMode = false }: HabitSettingsProps & { isDeleting?: boolean }) {
     const [newHabitTitle, setNewHabitTitle] = useState('');
     const [newHabitColor, setNewHabitColor] = useState(PRESET_COLORS[0].value);
     const [habitToDelete, setHabitToDelete] = useState<string | null>(null);
@@ -154,7 +157,7 @@ export function HabitSettings({ habits, onAddHabit, onRemoveHabit, isDeleting }:
                                                 className="h-3 w-3 rounded-full shadow-[0_0_8px_currentColor]"
                                                 style={{ backgroundColor: habit.color, color: habit.color }}
                                             />
-                                            <span className="text-sm font-medium">{habit.title}</span>
+                                            <span className={cn("text-sm font-medium transition-all duration-300", isPrivacyMode && "blur-sm")}>{habit.title}</span>
                                         </div>
 
                                         <AlertDialog>

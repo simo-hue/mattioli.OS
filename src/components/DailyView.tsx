@@ -8,9 +8,10 @@ interface DailyViewProps {
     habits: Goal[];
     records: GoalLogsMap;
     onToggleHabit: (date: Date, habitId: string) => void;
+    isPrivacyMode?: boolean;
 }
 
-export function DailyView({ habits, records, onToggleHabit }: DailyViewProps) {
+export function DailyView({ habits, records, onToggleHabit, isPrivacyMode = false }: DailyViewProps) {
     const today = new Date();
     const dateKey = format(today, 'yyyy-MM-dd');
     const dayRecord = records[dateKey] || {};
@@ -70,8 +71,9 @@ export function DailyView({ habits, records, onToggleHabit }: DailyViewProps) {
                                     <Check className="w-5 h-5" />
                                 </div>
                                 <span className={cn(
-                                    "text-lg font-medium transition-colors",
-                                    status === 'done' ? "text-foreground" : "text-muted-foreground group-hover:text-foreground"
+                                    "text-lg font-medium transition-colors transition-all duration-300",
+                                    status === 'done' ? "text-foreground" : "text-muted-foreground group-hover:text-foreground",
+                                    isPrivacyMode && "blur-sm"
                                 )}>
                                     {habit.title}
                                 </span>

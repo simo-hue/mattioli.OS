@@ -2,7 +2,7 @@ import { format } from 'date-fns';
 import { it } from 'date-fns/locale';
 import { Check, X } from 'lucide-react';
 import { Button } from '@/components/ui/button';
-import { ScrollArea } from '@/components/ui/scroll-area';
+// import { ScrollArea } from '@/components/ui/scroll-area';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from '@/components/ui/dialog';
 import { Goal, GoalLogsMap } from '@/types/goals';
 import { cn } from '@/lib/utils';
@@ -14,6 +14,7 @@ interface DayDetailsModalProps {
     habits: Goal[];
     records: GoalLogsMap;
     onToggleHabit: (habitId: string) => void;
+    isPrivacyMode?: boolean;
 }
 
 export function DayDetailsModal({
@@ -23,6 +24,7 @@ export function DayDetailsModal({
     habits,
     records,
     onToggleHabit,
+    isPrivacyMode = false
 }: DayDetailsModalProps) {
     if (!date) return null;
 
@@ -46,7 +48,7 @@ export function DayDetailsModal({
                 </DialogHeader>
 
                 <div className="py-2">
-                    <ScrollArea className="max-h-[60vh]">
+                    <div className="max-h-[60vh] overflow-y-auto">
                         <div className="space-y-3 pr-4">
                             {validHabits.map((habit) => {
                                 const dayRecord = records[dateKey] || {};
@@ -72,8 +74,9 @@ export function DayDetailsModal({
                                                 style={{ backgroundColor: habit.color }}
                                             />
                                             <span className={cn(
-                                                "font-medium transition-colors",
-                                                (isDone || isMissed) && "text-foreground"
+                                                "font-medium transition-colors transition-all duration-300",
+                                                (isDone || isMissed) && "text-foreground",
+                                                isPrivacyMode && "blur-sm"
                                             )}>
                                                 {habit.title}
                                             </span>
@@ -90,7 +93,7 @@ export function DayDetailsModal({
                                 );
                             })}
                         </div>
-                    </ScrollArea>
+                    </div>
                 </div>
             </DialogContent>
         </Dialog>

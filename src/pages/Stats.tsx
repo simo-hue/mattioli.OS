@@ -8,10 +8,13 @@ import { DayOfWeekChart } from '@/components/stats/DayOfWeekChart';
 import { PeriodComparison } from '@/components/stats/PeriodComparison';
 import { CriticalAnalysis } from '@/components/stats/CriticalAnalysis';
 import { Trophy } from 'lucide-react';
+import { usePrivacy } from '@/context/PrivacyContext';
+import { cn } from '@/lib/utils';
 
 const Stats = () => {
     const { goals, logs } = useGoals();
     const stats = useHabitStats(goals, logs);
+    const { isPrivacyMode } = usePrivacy();
 
     // Find best habit safely
     const bestHabit = stats.habitStats.length > 0
@@ -23,21 +26,24 @@ const Stats = () => {
             {/* Background Glow */}
             <div className="fixed top-20 left-1/2 -translate-x-1/2 w-[800px] h-[800px] bg-primary/5 blur-[120px] rounded-full pointer-events-none -z-10" />
 
-            <div className="space-y-2">
+            <div className={cn("space-y-2 transition-all duration-300", isPrivacyMode && "blur-sm")}>
                 <h1 className="text-3xl sm:text-4xl font-display font-bold text-foreground">Le tue Statistiche</h1>
                 <p className="text-muted-foreground font-light text-lg">Analisi dettagliata delle tue performance.</p>
             </div>
 
             {/* Overview Cards */}
-            <StatsOverview
-                globalStats={{
-                    totalActiveDays: stats.totalActiveDays,
-                    globalSuccessRate: stats.globalSuccessRate,
-                    bestStreak: stats.bestStreak,
-                    worstDay: stats.worstDay,
-                }}
-                bestHabit={bestHabit || undefined}
-            />
+            {/* Overview Cards */}
+            <div className={cn("transition-all duration-300", isPrivacyMode && "blur-sm")}>
+                <StatsOverview
+                    globalStats={{
+                        totalActiveDays: stats.totalActiveDays,
+                        globalSuccessRate: stats.globalSuccessRate,
+                        bestStreak: stats.bestStreak,
+                        worstDay: stats.worstDay,
+                    }}
+                    bestHabit={bestHabit || undefined}
+                />
+            </div>
 
             {/* Heatmap - Full Width */}
             <div className="glass-panel rounded-3xl p-6">
@@ -49,10 +55,16 @@ const Stats = () => {
             </div>
 
             {/* Period Comparison */}
-            <PeriodComparison comparisons={stats.comparisons} goals={goals} />
+            {/* Period Comparison */}
+            <div className={cn("transition-all duration-300", isPrivacyMode && "blur-sm")}>
+                <PeriodComparison comparisons={stats.comparisons} goals={goals} />
+            </div>
 
             {/* Critical Analysis */}
-            <CriticalAnalysis criticalHabits={stats.criticalHabits} />
+            {/* Critical Analysis */}
+            <div className={cn("transition-all duration-300", isPrivacyMode && "blur-sm")}>
+                <CriticalAnalysis criticalHabits={stats.criticalHabits} />
+            </div>
 
             {/* Charts Row 1: Trends & Radar */}
             <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
@@ -62,7 +74,7 @@ const Stats = () => {
                         <TrendChart data={stats.trendData} />
                     </div>
                 </div>
-                <div className="glass-panel rounded-3xl p-6 h-[400px] flex flex-col">
+                <div className={cn("glass-panel rounded-3xl p-6 h-[400px] flex flex-col transition-all duration-300", isPrivacyMode && "blur-sm")}>
                     <h3 className="text-lg font-display font-semibold mb-4">Focus Abitudini</h3>
                     <div className="flex-1 w-full min-h-0">
                         <HabitRadar stats={stats.habitStats} />
@@ -85,7 +97,7 @@ const Stats = () => {
             </div>
 
             {/* Detailed Table */}
-            <div className="glass-panel rounded-3xl p-6">
+            <div className={cn("glass-panel rounded-3xl p-6 transition-all duration-300", isPrivacyMode && "blur-sm")}>
                 <h3 className="text-lg font-display font-semibold mb-6">Dettagli Abitudini</h3>
                 <div className="space-y-3">
                     {stats.habitStats.length === 0 ? (

@@ -13,6 +13,7 @@ import { useGoalCategories } from '@/hooks/useGoalCategories';
 import { useGoalBackup, ImportReport } from '@/hooks/useGoalBackup';
 import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
 import { Label } from "@/components/ui/label";
+import { usePrivacy } from '@/context/PrivacyContext';
 import {
     Select,
     SelectContent,
@@ -73,6 +74,7 @@ export function LongTermGoals() {
     const queryClient = useQueryClient();
 
     const { getLabel } = useGoalCategories();
+    const { isPrivacyMode } = usePrivacy();
 
     // Dynamic color object creation to include labels
     const getGoalColorClass = (colorValue: string | null) => {
@@ -551,7 +553,7 @@ export function LongTermGoals() {
             </div>
 
             {/* Title */}
-            <div className="text-2xl font-bold tracking-tight text-white flex items-center gap-3">
+            <div className={cn("text-2xl font-bold tracking-tight text-white flex items-center gap-3 transition-all duration-300", isPrivacyMode && view !== 'stats' && "blur-sm")}>
                 {view === 'stats' ? (
                     <span className="text-transparent bg-clip-text bg-gradient-to-r from-blue-400 to-purple-400">
                         Analytics {selectedYear === 'all' ? `Dal ${startYear} al ${currentYear}` : selectedYear}
@@ -572,7 +574,7 @@ export function LongTermGoals() {
             {view === 'stats' ? (
                 <MacroGoalsStats year={selectedYear} />
             ) : (
-                <>
+                <div className={cn("transition-all duration-300", isPrivacyMode && "blur-sm")}>
                     {/* Input */}
                     <form onSubmit={handleCreate} className="flex gap-2">
                         <Input
@@ -587,7 +589,7 @@ export function LongTermGoals() {
                     </form>
 
                     {/* List */}
-                    <div className="space-y-2">
+                    <div className="space-y-2 mt-2">
                         {isLoading ? (
                             <div className="flex justify-center p-8 text-muted-foreground"><Loader2 className="w-6 h-6 animate-spin" /></div>
                         ) : goals?.length === 0 ? (
@@ -669,9 +671,10 @@ export function LongTermGoals() {
                             })
                         )}
                     </div>
-                </>
-            )}
+                </div>
+            )
+            }
 
-        </div>
+        </div >
     );
 }

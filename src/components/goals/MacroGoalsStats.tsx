@@ -15,14 +15,14 @@ interface MacroGoalsStatsProps {
     year: number | string;
 }
 
-type GoalType = 'annual' | 'quarterly' | 'monthly' | 'weekly' | 'stats';
+type GoalType = 'annual' | 'quarterly' | 'monthly' | 'weekly' | 'lifetime' | 'stats';
 
 interface LongTermGoal {
     id: string;
     title: string;
     is_completed: boolean;
     type: GoalType;
-    year: number;
+    year: number | null;
     quarter: number | null;
     month: number | null;
     week_number: number | null;
@@ -89,17 +89,24 @@ export function MacroGoalsStats({ year }: MacroGoalsStatsProps) {
     const completionRate = Math.round((completedGoals / totalGoals) * 100) || 0;
 
     // Calculate dynamic start year for "All Time" label
-    const minYear = allGoals.length > 0 ? Math.min(...allGoals.map(g => g.year)) : new Date().getFullYear();
+    const lifetimeGoals = allGoals.filter(g => g.type === 'lifetime');
+    const timeBasedGoals = allGoals.filter(g => g.type !== 'lifetime');
+
+    // Calculate dynamic start year for "All Time" label (ignoring lifetime goals for start year)
+    const validYears = timeBasedGoals.map(g => g.year).filter((y): y is number => y !== null);
+    const minYear = validYears.length > 0 ? Math.min(...validYears) : new Date().getFullYear();
 
     const byType = {
         annual: allGoals.filter(g => g.type === 'annual').length,
         quarterly: allGoals.filter(g => g.type === 'quarterly').length,
         monthly: allGoals.filter(g => g.type === 'monthly').length,
         weekly: allGoals.filter(g => g.type === 'weekly').length,
+        lifetime: lifetimeGoals.length,
     };
 
     // Calculate best type for generic use
     const typeStats = [
+        { type: 'Lifetime', total: byType.lifetime, completed: lifetimeGoals.filter(g => g.is_completed).length },
         { type: 'Annuale', total: byType.annual, completed: allGoals.filter(g => g.type === 'annual' && g.is_completed).length },
         { type: 'Trimestrale', total: byType.quarterly, completed: allGoals.filter(g => g.type === 'quarterly' && g.is_completed).length },
         { type: 'Mensile', total: byType.monthly, completed: allGoals.filter(g => g.type === 'monthly' && g.is_completed).length },
@@ -161,7 +168,8 @@ export function MacroGoalsStats({ year }: MacroGoalsStatsProps) {
 
         // Group by Year
         const yearlyStatsMap: Record<number, { total: number; completed: number; rate: number }> = {};
-        allGoals.forEach(g => {
+        timeBasedGoals.forEach(g => {
+            if (g.year === null) return;
             if (!yearlyStatsMap[g.year]) yearlyStatsMap[g.year] = { total: 0, completed: 0, rate: 0 };
             yearlyStatsMap[g.year].total++;
             if (g.is_completed) yearlyStatsMap[g.year].completed++;
@@ -186,7 +194,7 @@ export function MacroGoalsStats({ year }: MacroGoalsStatsProps) {
             rate: 0
         }));
 
-        allGoals.forEach(g => {
+        timeBasedGoals.forEach(g => {
             const q = g.quarter;
 
             if (q && q >= 1 && q <= 4) {
@@ -209,7 +217,7 @@ export function MacroGoalsStats({ year }: MacroGoalsStatsProps) {
             rate: 0
         }));
 
-        allGoals.forEach(g => {
+        timeBasedGoals.forEach(g => {
             if (g.month && g.month >= 1 && g.month <= 12) {
                 const idx = g.month - 1;
                 monthlyHistoricalData[idx].total++;
@@ -224,10 +232,10 @@ export function MacroGoalsStats({ year }: MacroGoalsStatsProps) {
         // --- CATEGORY EVOLUTION DATA (Stacked Bar by Year) ---
         const categoryEvolutionData: any[] = [];
         // Get all unique years sorted
-        const uniqueYears = Array.from(new Set(allGoals.map(g => g.year))).sort((a, b) => a - b);
+        const uniqueYears = Array.from(new Set(timeBasedGoals.map(g => g.year).filter((y): y is number => y !== null))).sort((a, b) => a - b);
 
         uniqueYears.forEach(y => {
-            const yearGoals = allGoals.filter(g => g.year === y);
+            const yearGoals = timeBasedGoals.filter(g => g.year === y);
             const row: any = { year: y.toString(), total: yearGoals.length };
 
             // Initialize all colors to 0, but ONLY active ones
@@ -523,7 +531,7 @@ export function MacroGoalsStats({ year }: MacroGoalsStatsProps) {
     let runningTotal = 0;
     let runningCompleted = 0;
 
-    allGoals.forEach(g => {
+    timeBasedGoals.forEach(g => {
         let mIdx = 0;
         if (g.month) mIdx = g.month - 1;
         if (mIdx < 0) mIdx = 0;

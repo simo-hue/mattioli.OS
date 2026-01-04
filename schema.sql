@@ -92,10 +92,11 @@ CREATE TABLE public.goal_logs (
 DO $$
 BEGIN
     IF NOT EXISTS (SELECT 1 FROM pg_type WHERE typname = 'long_term_goal_type') THEN
-        CREATE TYPE public.long_term_goal_type AS ENUM ('annual', 'monthly', 'weekly', 'quarterly');
+        CREATE TYPE public.long_term_goal_type AS ENUM ('annual', 'monthly', 'weekly', 'quarterly', 'lifetime');
     ELSE
         -- Ensure 'quarterly' exists if type already exists
         ALTER TYPE public.long_term_goal_type ADD VALUE IF NOT EXISTS 'quarterly';
+        ALTER TYPE public.long_term_goal_type ADD VALUE IF NOT EXISTS 'lifetime';
     END IF;
 END $$;
 
@@ -108,7 +109,7 @@ CREATE TABLE public.long_term_goals (
     title text NOT NULL,
     is_completed boolean DEFAULT false NOT NULL,
     type public.long_term_goal_type NOT NULL,
-    year integer NOT NULL,
+    year integer,
     month integer CHECK (month >= 1 AND month <= 12),
     week_number integer CHECK (week_number >= 1 AND week_number <= 53),
     quarter integer CHECK (quarter >= 1 AND quarter <= 4),

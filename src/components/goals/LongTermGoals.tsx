@@ -36,7 +36,7 @@ import {
 import { format, getQuarter, getWeekOfMonth, getWeeksInMonth, startOfMonth } from 'date-fns';
 import { it } from 'date-fns/locale';
 
-type GoalType = 'annual' | 'quarterly' | 'monthly' | 'weekly' | 'stats';
+type GoalType = 'annual' | 'quarterly' | 'monthly' | 'weekly' | 'lifetime' | 'stats';
 
 export interface LongTermGoal {
     id: string;
@@ -124,7 +124,7 @@ export function LongTermGoals() {
                 .order('color', { ascending: true, nullsFirst: false }) // Group by color
                 .order('created_at', { ascending: true });
 
-            if (selectedYear !== 'all') {
+            if (selectedYear !== 'all' && view !== 'lifetime') {
                 query = query.eq('year', parseInt(selectedYear));
             }
 
@@ -152,7 +152,7 @@ export function LongTermGoals() {
                 user_id: user.id,
                 title,
                 type: view,
-                year: selectedYear === 'all' ? new Date().getFullYear() : parseInt(selectedYear),
+                year: view === 'lifetime' ? null : (selectedYear === 'all' ? new Date().getFullYear() : parseInt(selectedYear)),
                 quarter: view === 'quarterly' ? selectedQuarter : null,
                 month: (view === 'monthly' || view === 'weekly') ? selectedMonth : null,
                 week_number: view === 'weekly' ? selectedWeek : null,
@@ -409,7 +409,8 @@ export function LongTermGoals() {
                 {/* 1. View Mode Switcher */}
                 <div className="flex justify-center w-full">
                     <Tabs value={view} onValueChange={(v) => setView(v as GoalType)} className="w-full max-w-2xl">
-                        <TabsList className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-5 w-full h-auto p-1 bg-secondary/30 backdrop-blur-sm border border-white/5 gap-1">
+                        <TabsList className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-6 w-full h-auto p-1 bg-secondary/30 backdrop-blur-sm border border-white/5 gap-1">
+                            <TabsTrigger value="lifetime" className="w-full">Lifetime</TabsTrigger>
                             <TabsTrigger value="annual" className="w-full">Annuale</TabsTrigger>
                             <TabsTrigger value="quarterly" className="w-full">Trimestrale</TabsTrigger>
                             <TabsTrigger value="monthly" className="w-full">Mensile</TabsTrigger>
@@ -557,12 +558,13 @@ export function LongTermGoals() {
                 {/* Dynamic Title Context */}
                 {view !== 'stats' && (
                     <div className={cn("text-2xl font-bold tracking-tight text-white flex items-center gap-3 transition-all duration-300 pl-2", isPrivacyMode && "blur-sm")}>
+                        {view === 'lifetime' && <span className="text-emerald-400">Lifetime</span>}
                         {view === 'annual' && <span className="text-primary">{selectedYear === 'all' ? 'Tutti gli anni' : selectedYear}</span>}
                         {view === 'quarterly' && <span className="text-amber-500">Q{selectedQuarter} {selectedYear !== 'all' && selectedYear}</span>}
                         {view === 'monthly' && <span className="text-blue-400">{months.find(m => m.value === selectedMonth)?.label}</span>}
                         {view === 'weekly' && <span className="text-purple-400">Settimana {selectedWeek}</span>}
                         <span className="text-muted-foreground text-lg font-normal">
-                            {view === 'annual' ? 'Obiettivi Annuali' : view === 'quarterly' ? 'Obiettivi Trimestrali' : view === 'monthly' ? 'Obiettivi Mensili' : 'Obiettivi Settimanali'}
+                            {view === 'lifetime' ? 'Obiettivi a Lungo Termine' : view === 'annual' ? 'Obiettivi Annuali' : view === 'quarterly' ? 'Obiettivi Trimestrali' : view === 'monthly' ? 'Obiettivi Mensili' : 'Obiettivi Settimanali'}
                         </span>
                     </div>
                 )}
@@ -577,7 +579,7 @@ export function LongTermGoals() {
                     <form onSubmit={handleCreate} className="flex gap-2">
                         <Input
                             className="flex-1 bg-background/50"
-                            placeholder={`Aggiungi obiettivo ${view === 'annual' ? 'annuale' : view === 'quarterly' ? 'trimestrale' : view === 'monthly' ? 'mensile' : 'settimanale'}...`}
+                            placeholder={`Aggiungi obiettivo ${view === 'lifetime' ? 'lifetime' : view === 'annual' ? 'annuale' : view === 'quarterly' ? 'trimestrale' : view === 'monthly' ? 'mensile' : 'settimanale'}...`}
                             value={newGoalTitle}
                             onChange={(e) => setNewGoalTitle(e.target.value)}
                         />

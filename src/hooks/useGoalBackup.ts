@@ -117,8 +117,8 @@ export function useGoalBackup() {
 
                     // --- ANALYSIS PHASE ---
                     // Fetch existing goals with all data to compare
-                    const { data: existingGoals, error: fetchError } = await supabase
-                        .from('long_term_goals')
+                    const { data: existingGoals, error: fetchError } = await (supabase
+                        .from('long_term_goals') as any)
                         .select('*')
                         .eq('user_id', user.id);
 
@@ -135,16 +135,26 @@ export function useGoalBackup() {
                     const goalsToUpsert: any[] = [];
 
                     for (const importedGoal of backup.goals) {
+                        let goalData = { ...importedGoal };
+
+                        // Migration: Handle legacy is_completed boolean
+                        if (!goalData.status && goalData.is_completed !== undefined) {
+                            goalData.status = goalData.is_completed ? 'completed' : 'active';
+                            delete goalData.is_completed;
+                        } else if (!goalData.status) {
+                            goalData.status = 'active'; // Fallback
+                        }
+
                         let newGoal = {
-                            ...importedGoal,
+                            ...goalData,
                             user_id: user.id // Force ownership
                         };
 
-                        let existingGoal = existingGoalsMap.get(newGoal.id);
+                        let existingGoal = existingGoalsMap.get(newGoal.id) as any;
 
                         // SMART MATCHING: If ID not found, try to find by Content (Title + Type + Year)
                         if (!existingGoal) {
-                            const candidate = existingGoals?.find(g =>
+                            const candidate = existingGoals?.find((g: any) =>
                                 !claimedDbIds.has(g.id) &&
                                 g.title === newGoal.title &&
                                 g.type === newGoal.type &&
@@ -163,7 +173,7 @@ export function useGoalBackup() {
                             // Compare relevant fields to check for actual changes
                             const hasChanges =
                                 existingGoal.title !== newGoal.title ||
-                                existingGoal.is_completed !== newGoal.is_completed ||
+                                existingGoal.status !== newGoal.status ||
                                 existingGoal.type !== newGoal.type ||
                                 existingGoal.year !== newGoal.year ||
                                 existingGoal.month !== newGoal.month ||
@@ -185,8 +195,8 @@ export function useGoalBackup() {
                     // --- ACTION PHASE ---
                     // 1. Upsert only changed or new goals
                     if (goalsToUpsert.length > 0) {
-                        const { error: goalsError } = await supabase
-                            .from('long_term_goals')
+                        const { error: goalsError } = await (supabase
+                            .from('long_term_goals') as any)
                             .upsert(goalsToUpsert);
 
                         if (goalsError) throw goalsError;
@@ -195,11 +205,13 @@ export function useGoalBackup() {
                     // 2. Restore Settings
                     let settingsUpdated = false;
                     if (backup.settings) {
-                        const { data: existing } = await supabase
-                            .from('goal_category_settings')
+                        const { data: existing } = await (supabase
+                            .from('goal_category_settings') as any)
                             .select('*')
                             .eq('user_id', user.id)
                             .single();
+
+                        const existingSettings = existing as any;
 
                         const settingsData = {
                             user_id: user.id,
@@ -207,17 +219,17 @@ export function useGoalBackup() {
                         };
 
                         // Compare settings content
-                        const settingsChanged = !existing || JSON.stringify(existing.mappings) !== JSON.stringify(settingsData.mappings);
+                        const settingsChanged = !existingSettings || JSON.stringify(existingSettings.mappings) !== JSON.stringify(settingsData.mappings);
 
                         if (settingsChanged) {
-                            if (existing) {
-                                await supabase
-                                    .from('goal_category_settings')
+                            if (existingSettings) {
+                                await (supabase
+                                    .from('goal_category_settings') as any)
                                     .update({ mappings: settingsData.mappings })
-                                    .eq('id', existing.id);
+                                    .eq('id', existingSettings.id);
                             } else {
-                                await supabase
-                                    .from('goal_category_settings')
+                                await (supabase
+                                    .from('goal_category_settings') as any)
                                     .insert(settingsData);
                             }
                             settingsUpdated = true;

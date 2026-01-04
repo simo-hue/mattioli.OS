@@ -20,7 +20,7 @@ type GoalType = 'annual' | 'quarterly' | 'monthly' | 'weekly' | 'lifetime' | 'st
 interface LongTermGoal {
     id: string;
     title: string;
-    is_completed: boolean;
+    status: 'active' | 'completed' | 'failed';
     type: GoalType;
     year: number | null;
     quarter: number | null;
@@ -85,7 +85,7 @@ export function MacroGoalsStats({ year }: MacroGoalsStatsProps) {
 
     // --- KPIs ---
     const totalGoals = allGoals.length;
-    const completedGoals = allGoals.filter(g => g.is_completed).length;
+    const completedGoals = allGoals.filter(g => g.status === 'completed').length;
     const completionRate = Math.round((completedGoals / totalGoals) * 100) || 0;
 
     // Calculate dynamic start year for "All Time" label
@@ -106,11 +106,11 @@ export function MacroGoalsStats({ year }: MacroGoalsStatsProps) {
 
     // Calculate best type for generic use
     const typeStats = [
-        { type: 'Lifetime', total: byType.lifetime, completed: lifetimeGoals.filter(g => g.is_completed).length },
-        { type: 'Annuale', total: byType.annual, completed: allGoals.filter(g => g.type === 'annual' && g.is_completed).length },
-        { type: 'Trimestrale', total: byType.quarterly, completed: allGoals.filter(g => g.type === 'quarterly' && g.is_completed).length },
-        { type: 'Mensile', total: byType.monthly, completed: allGoals.filter(g => g.type === 'monthly' && g.is_completed).length },
-        { type: 'Settimanale', total: byType.weekly, completed: allGoals.filter(g => g.type === 'weekly' && g.is_completed).length },
+        { type: 'Lifetime', total: byType.lifetime, completed: lifetimeGoals.filter(g => g.status === 'completed').length },
+        { type: 'Annuale', total: byType.annual, completed: allGoals.filter(g => g.type === 'annual' && g.status === 'completed').length },
+        { type: 'Trimestrale', total: byType.quarterly, completed: allGoals.filter(g => g.type === 'quarterly' && g.status === 'completed').length },
+        { type: 'Mensile', total: byType.monthly, completed: allGoals.filter(g => g.type === 'monthly' && g.status === 'completed').length },
+        { type: 'Settimanale', total: byType.weekly, completed: allGoals.filter(g => g.type === 'weekly' && g.status === 'completed').length },
     ].map(t => ({
         ...t,
         rate: t.total > 0 ? Math.round((t.completed / t.total) * 100) : 0
@@ -137,7 +137,7 @@ export function MacroGoalsStats({ year }: MacroGoalsStatsProps) {
         if (isActive) {
             if (!categoryStats[c]) categoryStats[c] = { total: 0, completed: 0 };
             categoryStats[c].total++;
-            if (g.is_completed) categoryStats[c].completed++;
+            if (g.status === 'completed') categoryStats[c].completed++;
         }
     });
 
@@ -172,7 +172,7 @@ export function MacroGoalsStats({ year }: MacroGoalsStatsProps) {
             if (g.year === null) return;
             if (!yearlyStatsMap[g.year]) yearlyStatsMap[g.year] = { total: 0, completed: 0, rate: 0 };
             yearlyStatsMap[g.year].total++;
-            if (g.is_completed) yearlyStatsMap[g.year].completed++;
+            if (g.status === 'completed') yearlyStatsMap[g.year].completed++;
         });
 
         const yearlyData = Object.entries(yearlyStatsMap).map(([y, s]) => ({
@@ -200,7 +200,7 @@ export function MacroGoalsStats({ year }: MacroGoalsStatsProps) {
             if (q && q >= 1 && q <= 4) {
                 const idx = q - 1;
                 seasonalData[idx].total++;
-                if (g.is_completed) seasonalData[idx].completed++;
+                if (g.status === 'completed') seasonalData[idx].completed++;
             }
         });
 
@@ -221,7 +221,7 @@ export function MacroGoalsStats({ year }: MacroGoalsStatsProps) {
             if (g.month && g.month >= 1 && g.month <= 12) {
                 const idx = g.month - 1;
                 monthlyHistoricalData[idx].total++;
-                if (g.is_completed) monthlyHistoricalData[idx].completed++;
+                if (g.status === 'completed') monthlyHistoricalData[idx].completed++;
             }
         });
 
@@ -538,7 +538,7 @@ export function MacroGoalsStats({ year }: MacroGoalsStatsProps) {
         if (mIdx > 11) mIdx = 11;
 
         monthlyData[mIdx].total++;
-        if (g.is_completed) monthlyData[mIdx].completed++;
+        if (g.status === 'completed') monthlyData[mIdx].completed++;
     });
 
     monthlyData.forEach(d => {
@@ -562,7 +562,7 @@ export function MacroGoalsStats({ year }: MacroGoalsStatsProps) {
         if (g.quarter && g.quarter >= 1 && g.quarter <= 4) {
             const idx = g.quarter - 1;
             quarterlyData[idx].total++;
-            if (g.is_completed) quarterlyData[idx].completed++;
+            if (g.status === 'completed') quarterlyData[idx].completed++;
         }
     });
 

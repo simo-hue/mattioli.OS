@@ -41,7 +41,7 @@ type GoalType = 'annual' | 'quarterly' | 'monthly' | 'weekly' | 'lifetime' | 'st
 export interface LongTermGoal {
     id: string;
     title: string;
-    is_completed: boolean;
+    status: 'active' | 'completed' | 'failed';
     type: GoalType;
     year: number;
     quarter: number | null;
@@ -76,6 +76,16 @@ export function LongTermGoals() {
     const [newGoalColor, setNewGoalColor] = useState<string | null>(null);
 
     const queryClient = useQueryClient();
+
+    const [pendingUpdates, setPendingUpdates] = useState<Record<string, 'active' | 'completed' | 'failed'>>({});
+    const updateTimeouts = useRef<Record<string, NodeJS.Timeout>>({});
+
+    // Cleanup timeouts on unmount
+    useEffect(() => {
+        return () => {
+            Object.values(updateTimeouts.current).forEach(clearTimeout);
+        };
+    }, []);
 
     const { getLabel } = useGoalCategories();
     const { isPrivacyMode } = usePrivacy();
@@ -120,7 +130,7 @@ export function LongTermGoals() {
             let query = supabase.from('long_term_goals')
                 .select('*')
                 .eq('type', view)
-                .order('is_completed', { ascending: true })
+                .order('status', { ascending: true }) // active -> completed -> failed
                 .order('color', { ascending: true, nullsFirst: false }) // Group by color
                 .order('created_at', { ascending: true });
 
@@ -156,7 +166,7 @@ export function LongTermGoals() {
                 quarter: view === 'quarterly' ? selectedQuarter : null,
                 month: (view === 'monthly' || view === 'weekly') ? selectedMonth : null,
                 week_number: view === 'weekly' ? selectedWeek : null,
-                is_completed: false, // Default to false
+                status: 'active', // Default to active
                 color: color,
             };
 
@@ -180,11 +190,11 @@ export function LongTermGoals() {
         },
     });
 
-    const toggleGoalMutation = useMutation({
-        mutationFn: async ({ id, is_completed }: { id: string; is_completed: boolean }) => {
+    const updateStatusMutation = useMutation({
+        mutationFn: async ({ id, status }: { id: string; status: 'active' | 'completed' | 'failed' }) => {
             const { error } = await (supabase
                 .from('long_term_goals') as any)
-                .update({ is_completed })
+                .update({ status })
                 .eq('id', id);
 
             if (error) throw error;
@@ -625,34 +635,94 @@ export function LongTermGoals() {
                             </div>
                         ) : (
                             goals?.map((goal, index) => {
-                                const isFirstCompleted = goal.is_completed && (index === 0 || !goals[index - 1].is_completed);
+                                const effectiveStatus = pendingUpdates[goal.id] || goal.status;
+                                const prevGoal = goals[index - 1];
+                                const showCompletedHeader = goal.status === 'completed' && (!prevGoal || prevGoal.status !== 'completed');
+                                const showFailedHeader = goal.status === 'failed' && (!prevGoal || prevGoal.status !== 'failed');
+
+                                const handleStatusToggle = () => {
+                                    if (updateTimeouts.current[goal.id]) {
+                                        clearTimeout(updateTimeouts.current[goal.id]);
+                                    }
+
+                                    const current = pendingUpdates[goal.id] || goal.status;
+                                    const next = current === 'active' ? 'completed' :
+                                        current === 'completed' ? 'failed' :
+                                            'active';
+
+                                    setPendingUpdates(prev => ({ ...prev, [goal.id]: next }));
+
+                                    updateTimeouts.current[goal.id] = setTimeout(() => {
+                                        updateStatusMutation.mutate({ id: goal.id, status: next }, {
+                                            onSuccess: () => {
+                                                setPendingUpdates(prev => {
+                                                    const newState = { ...prev };
+                                                    delete newState[goal.id];
+                                                    return newState;
+                                                });
+                                                delete updateTimeouts.current[goal.id];
+                                            }
+                                        });
+                                    }, 2000);
+                                };
 
                                 return (
                                     <div key={goal.id}>
-                                        {isFirstCompleted && index > 0 && (
+                                        {showCompletedHeader && (
                                             <div className="flex items-center gap-4 py-6">
                                                 <div className="h-px bg-white/10 flex-1" />
-                                                <span className="text-xs font-medium text-white/40 uppercase tracking-widest">Completati</span>
+                                                <span className="text-xs font-medium text-emerald-500/70 uppercase tracking-widest">Completati</span>
+                                                <div className="h-px bg-white/10 flex-1" />
+                                            </div>
+                                        )}
+                                        {showFailedHeader && (
+                                            <div className="flex items-center gap-4 py-6">
+                                                <div className="h-px bg-white/10 flex-1" />
+                                                <span className="text-xs font-medium text-destructive/70 uppercase tracking-widest">Falliti</span>
                                                 <div className="h-px bg-white/10 flex-1" />
                                             </div>
                                         )}
                                         <div
                                             className={cn(
-                                                "group flex items-center gap-3 p-4 rounded-xl border transition-all",
-                                                goal.is_completed
-                                                    ? "opacity-60 bg-green-500/5 border-green-500/10"
-                                                    : (getGoalColorClass(goal.color))
+                                                "group flex items-center gap-3 p-4 rounded-xl border transition-all duration-300",
+                                                effectiveStatus === 'completed'
+                                                    ? "opacity-60 bg-emerald-500/5 border-emerald-500/10"
+                                                    : effectiveStatus === 'failed'
+                                                        ? "opacity-60 bg-destructive/5 border-destructive/10"
+                                                        : (getGoalColorClass(goal.color))
                                             )}
                                         >
-                                            <Checkbox
-                                                checked={goal.is_completed}
-                                                onCheckedChange={(checked) => toggleGoalMutation.mutate({ id: goal.id, is_completed: checked as boolean })}
-                                                className="w-5 h-5 border-white/20 data-[state=checked]:bg-green-500 data-[state=checked]:border-green-500"
-                                            />
+                                            <div
+                                                onClick={handleStatusToggle}
+                                                className={cn(
+                                                    "w-5 h-5 rounded flex items-center justify-center border cursor-pointer transition-all duration-300 hover:scale-110",
+                                                    effectiveStatus === 'active' && "border-white/20 hover:border-white/40",
+                                                    effectiveStatus === 'completed' && "bg-emerald-500 border-emerald-500 text-white",
+                                                    effectiveStatus === 'failed' && "bg-destructive border-destructive text-white"
+                                                )}
+                                            >
+                                                {effectiveStatus === 'active' && <div className="w-full h-full" />}
+
+                                                {effectiveStatus === 'completed' && (
+                                                    <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="3" strokeLinecap="round" strokeLinejoin="round" className="animate-in zoom-in duration-200">
+                                                        <polyline points="20 6 9 17 4 12" />
+                                                    </svg>
+                                                )}
+
+                                                {effectiveStatus === 'failed' && (
+                                                    <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="3" strokeLinecap="round" strokeLinejoin="round" className="animate-in zoom-in duration-200">
+                                                        <line x1="18" y1="6" x2="6" y2="18" />
+                                                        <line x1="6" y1="6" x2="18" y2="18" />
+                                                    </svg>
+                                                )}
+                                            </div>
+
                                             <span className={cn(
-                                                "flex-1 font-medium transition-all",
-                                                goal.is_completed && "line-through text-muted-foreground"
-                                            )}>
+                                                "flex-1 font-medium transition-all cursor-pointer duration-300",
+                                                effectiveStatus === 'completed' && "text-emerald-500/80 line-through",
+                                                effectiveStatus === 'failed' && "text-destructive/80 line-through",
+                                                effectiveStatus === 'active' && "text-foreground"
+                                            )} onClick={handleStatusToggle}>
                                                 {goal.title}
                                             </span>
 

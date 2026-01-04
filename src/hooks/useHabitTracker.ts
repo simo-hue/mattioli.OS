@@ -119,7 +119,7 @@ export function useHabitTracker() {
                 .upsert({
                     key: 'habits',
                     value: JSON.stringify(newHabits)
-                } as any, { onConflict: 'key' });
+                } as any, { onConflict: 'user_id, key' });
 
             if (error) throw error;
         } catch (error) {
@@ -175,7 +175,7 @@ export function useHabitTracker() {
                 await supabase.from('reading_logs').upsert({
                     date: dateKey,
                     status: JSON.stringify(newDayRecord)
-                } as any, { onConflict: 'date' });
+                } as any, { onConflict: 'user_id, date' });
             }
         } catch (error) {
             console.error('Failed to save status:', error);

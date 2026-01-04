@@ -71,7 +71,7 @@ export function useReadingTracker() {
         .from('reading_logs')
         .upsert(
           { date: key, status } as any,
-          { onConflict: 'date' }
+          { onConflict: 'user_id, date' }
         );
 
       if (error) {

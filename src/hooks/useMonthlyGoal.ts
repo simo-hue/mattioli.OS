@@ -41,7 +41,7 @@ export function useMonthlyGoal() {
       .from('user_settings')
       .upsert(
         { key: GOAL_KEY, value: clampedGoal.toString() } as any,
-        { onConflict: 'key' }
+        { onConflict: 'user_id, key' }
       );
 
     if (error) {

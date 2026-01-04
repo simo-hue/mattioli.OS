@@ -182,3 +182,25 @@ CREATE TRIGGER update_goals_updated_at BEFORE UPDATE ON public.goals FOR EACH RO
 CREATE TRIGGER update_goal_logs_updated_at BEFORE UPDATE ON public.goal_logs FOR EACH ROW EXECUTE FUNCTION public.update_updated_at_column();
 CREATE TRIGGER update_long_term_goals_updated_at BEFORE UPDATE ON public.long_term_goals FOR EACH ROW EXECUTE FUNCTION public.update_updated_at_column();
 CREATE TRIGGER update_goal_category_settings_updated_at BEFORE UPDATE ON public.goal_category_settings FOR EACH ROW EXECUTE FUNCTION public.update_updated_at_column();
+
+--
+-- Table: public.user_memos
+--
+CREATE TABLE public.user_memos (
+    id uuid DEFAULT gen_random_uuid() NOT NULL PRIMARY KEY,
+    user_id uuid REFERENCES auth.users(id) ON DELETE CASCADE NOT NULL,
+    content text,
+    created_at timestamp with time zone DEFAULT now() NOT NULL,
+    updated_at timestamp with time zone DEFAULT now() NOT NULL,
+    CONSTRAINT user_memos_user_id_key UNIQUE (user_id)
+);
+
+ALTER TABLE public.user_memos ENABLE ROW LEVEL SECURITY;
+
+-- user_memos policies
+CREATE POLICY "Users can view their own memo" ON public.user_memos FOR SELECT USING (auth.uid() = user_id);
+CREATE POLICY "Users can insert their own memo" ON public.user_memos FOR INSERT WITH CHECK (auth.uid() = user_id);
+CREATE POLICY "Users can update their own memo" ON public.user_memos FOR UPDATE USING (auth.uid() = user_id);
+CREATE POLICY "Users can delete their own memo" ON public.user_memos FOR DELETE USING (auth.uid() = user_id);
+
+CREATE TRIGGER update_user_memos_updated_at BEFORE UPDATE ON public.user_memos FOR EACH ROW EXECUTE FUNCTION public.update_updated_at_column();

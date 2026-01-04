@@ -6,6 +6,7 @@ import { HabitCalendar } from '@/components/HabitCalendar';
 import { WeeklyView } from '@/components/WeeklyView';
 import { DailyView } from '@/components/DailyView';
 import { HabitSettings } from '@/components/HabitSettings';
+import { MemoModal } from '@/components/MemoModal';
 import { Tabs, TabsList, TabsTrigger, TabsContent } from "@/components/ui/tabs";
 import { Button } from '@/components/ui/button';
 import { Switch } from "@/components/ui/switch";
@@ -121,6 +122,7 @@ const Index = () => {
             </div>
 
             <div className="pt-0 lg:pt-4 border-t-0 lg:border-t border-white/5 flex gap-2 justify-end lg:justify-start">
+              <MemoModal />
               <HabitSettings
                 habits={goals}
                 onAddHabit={createGoal}

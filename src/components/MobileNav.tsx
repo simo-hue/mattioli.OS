@@ -31,7 +31,7 @@ export function MobileNav() {
                                     "relative p-1.5 rounded-xl transition-all duration-300",
                                     isActive ? "bg-primary/20" : "group-hover:bg-white/5"
                                 )}>
-                                    <Icon className={cn("w-6 h-6", isActive && "fill-current")} />
+                                    <Icon className={cn("w-6 h-6")} />
                                     {isActive && (
                                         <span className="absolute inset-0 rounded-xl ring-2 ring-primary/20 animate-pulse-success" />
                                     )}

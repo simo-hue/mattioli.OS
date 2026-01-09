@@ -54,12 +54,16 @@ export function HabitCalendar({ habits, records, onToggleHabit, isPrivacyMode = 
         return date > todayStart;
     };
 
+    // Calculate number of rows needed
+    const totalSlots = startDay + daysInMonth;
+    const numRows = Math.ceil(totalSlots / 7);
+
     const renderDays = () => {
         const days = [];
 
         // Empty cells
         for (let i = 0; i < startDay; i++) {
-            days.push(<div key={`empty-${i}`} className="aspect-square" />);
+            days.push(<div key={`empty-${i}`} className="aspect-square lg:aspect-auto lg:h-full" />);
         }
 
         // Days
@@ -81,42 +85,22 @@ export function HabitCalendar({ habits, records, onToggleHabit, isPrivacyMode = 
             const missedCount = validHabits.filter(h => dayRecord[h.id] === 'missed').length; // Tracked but failed
             const markedCount = completedCount + missedCount;
 
-            // Percentage based on TOTAL habits, not just marked ones, for "Today's Goal" feel?
-            // User said "number of tasks to complete". That implies total habits.
+            // Percentage based on TOTAL habits
             const totalHabits = validHabits.length;
             let completionPct = 0;
             if (totalHabits > 0) {
                 completionPct = completedCount / totalHabits;
             }
 
-            // Calculate color
-            // Hue: 0 (Red) -> 142 (Green)
-            // Saturation: ~70%
-            // Lightness: ~90% for background (so text remains readable)
-            // Or maybe stronger colors with white text?
-            // "Gradient from green to red" usually implies solid fill.
-
             let style = {};
-            // Only apply color if there is at least one completion or miss, OR if it's in the past/today?
-            // If nothing is marked, should it be red? Maybe neutral until marked?
-            // If the user hasn't done anything yet today, it shouldn't scream RED immediately? 
-            // "to see if a day was good or not" implies retroactive checking.
-
-            // Let's apply color if > 0 habits are completed OR if the day is in the past and marked?
-            // Actually simply: if completedCount > 0, show color. 
-            // If completedCount == 0, is it "bad" (Red) or "neutral" (White)?
-            // If I marked a habit as "missed", it counts towards being "bad".
-
             const hasActivity = markedCount > 0;
-            const isFullSuccess = totalHabits > 0 && completedCount === totalHabits;
 
             if (hasActivity && totalHabits > 0) {
                 const hue = Math.round(completionPct * 142); // 0 to 142
-                // Tech look: Dark background, colored border/glow
                 style = {
-                    backgroundColor: `hsl(${hue}, 70%, 10%, 0.3)`, // Darker, transparent bg
-                    borderColor: `hsl(${hue}, 80%, 40%, 0.5)`, // Subtle border
-                    boxShadow: completionPct === 1 ? `0 0 10px hsl(${hue}, 80%, 40%, 0.2)` : 'none' // Glow for 100%
+                    backgroundColor: `hsl(${hue}, 70%, 10%, 0.3)`,
+                    borderColor: `hsl(${hue}, 80%, 40%, 0.5)`,
+                    boxShadow: completionPct === 1 ? `0 0 10px hsl(${hue}, 80%, 40%, 0.2)` : 'none'
                 };
             }
 
@@ -127,7 +111,7 @@ export function HabitCalendar({ habits, records, onToggleHabit, isPrivacyMode = 
                     disabled={future}
                     style={style}
                     className={cn(
-                        "aspect-square rounded-xl flex flex-col items-center justify-start py-[clamp(4px,1vw,8px)] transition-all duration-300 relative border border-white/5 hover:border-white/20 hover:bg-white/5 group",
+                        "aspect-square lg:aspect-auto lg:h-full rounded-xl flex flex-col items-center justify-start py-[clamp(4px,1vw,8px)] transition-all duration-300 relative border border-white/5 hover:border-white/20 hover:bg-white/5 group",
                         future && "opacity-30 cursor-not-allowed",
                         isToday(day) && !hasActivity && "bg-white/5 ring-1 ring-primary/50",
                         // Visual cue for editable days (Today or Yesterday < 12h)
@@ -169,9 +153,9 @@ export function HabitCalendar({ habits, records, onToggleHabit, isPrivacyMode = 
 
     return (
         <>
-            <div className="w-full h-full p-4 sm:p-6 animate-scale-in">
+            <div className="w-full h-full p-2 sm:p-4 animate-scale-in flex flex-col">
                 {/* Header */}
-                <div className="flex items-center justify-between mb-6">
+                <div className="flex items-center justify-between mb-6 shrink-0">
                     <Button variant="ghost" size="icon" onClick={goToPrevMonth}>
                         <ChevronLeft className="h-5 w-5" />
                     </Button>
@@ -191,14 +175,22 @@ export function HabitCalendar({ habits, records, onToggleHabit, isPrivacyMode = 
                 </div>
 
                 {/* Calendar */}
-                <div className="grid grid-cols-7 gap-[clamp(4px,1.5vw,12px)] mb-2">
+                <div className="grid grid-cols-7 gap-[clamp(4px,1.5vw,12px)] mb-2 shrink-0">
                     {DAYS.map(d => (
                         <div key={d} className="text-center text-[10px] sm:text-xs font-semibold text-muted-foreground uppercase tracking-wider py-2">
                             {d}
                         </div>
                     ))}
                 </div>
-                <div className="grid grid-cols-7 gap-[clamp(4px,1.5vw,12px)]">
+                {/* Days Grid: flex-1 to take available height on desktop, h-full to fill it */}
+                <div
+                    className={cn(
+                        "grid grid-cols-7 gap-[clamp(4px,1.5vw,12px)]",
+                        "lg:flex-1 lg:h-full lg:overflow-hidden",
+                        numRows === 6 ? "lg:grid-rows-6" :
+                            numRows === 5 ? "lg:grid-rows-5" : "lg:grid-rows-4"
+                    )}
+                >
                     {renderDays()}
                 </div>
             </div>

@@ -250,10 +250,10 @@ const Index = () => {
         </div>
 
         {/* MAIN STAGE (Cols 4-12) */}
-        <div className="lg:col-span-9 space-y-6">
+        <div className="lg:col-span-9 flex flex-col lg:h-[calc(100dvh-5rem)] lg:overflow-hidden">
 
-          <Tabs defaultValue="month" value={view} onValueChange={setView} className="w-full">
-            <div className="flex flex-col sm:flex-row items-center justify-between gap-4 mb-4 lg:mb-6">
+          <Tabs defaultValue="month" value={view} onValueChange={setView} className="w-full h-full flex flex-col">
+            <div className="flex flex-col sm:flex-row items-center justify-between gap-4 mb-4 lg:mb-4 shrink-0">
               <TabsList className="grid w-full grid-cols-3 bg-card/40 border border-white/10 backdrop-blur-md rounded-xl p-1 shadow-sm">
                 <TabsTrigger value="month" className="rounded-lg data-[state=active]:bg-primary/20 data-[state=active]:text-primary font-medium text-xs sm:text-sm py-2">
                   <Calendar className="w-4 h-4 mr-1.5 xs:mr-2" />
@@ -270,7 +270,7 @@ const Index = () => {
               </TabsList>
             </div>
 
-            <div className="min-h-[600px] glass-panel rounded-2xl p-1 sm:p-2">
+            <div className="flex-1 flex flex-col min-h-0 glass-panel rounded-2xl p-1 sm:p-2 lg:overflow-hidden">
               <TabsContent value="month" className="mt-0 animate-scale-in h-full">
                 <HabitCalendar
                   habits={goals}

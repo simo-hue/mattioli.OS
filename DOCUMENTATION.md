@@ -15,3 +15,6 @@
   - `docs/assets/Daily Tasks view mensile.png`: Main dashboard preview.
   - `docs/assets/...`: Comprehensive screenshot gallery for Daily Tasks and Macro Goals.
 - **Asset Requests**: Updated `TO_SIMO_DO.md` to request GIFs for higher visual impact.
+- **UI Improvements**:
+  - **Calendar**: Fixed desktop responsive height and removed ghost tabs layout issues.
+  - **Export**: Added confirmation dialog for data export.

@@ -170,15 +170,33 @@ const Index = () => {
                 isDeleting={isDeleting}
                 isPrivacyMode={isPrivacyMode}
               />
-              <Button
-                variant="outline"
-                size="icon"
-                className="h-10 w-10 sm:h-9 sm:w-9"
-                onClick={handleExport}
-                title="Esporta dati CSV"
-              >
-                <Download className="h-4 w-4" />
-              </Button>
+              <AlertDialog>
+                <AlertDialogTrigger asChild>
+                  <Button
+                    variant="outline"
+                    size="icon"
+                    className="h-10 w-10 sm:h-9 sm:w-9"
+                    title="Esporta dati CSV"
+                  >
+                    <Download className="h-4 w-4" />
+                  </Button>
+                </AlertDialogTrigger>
+                <AlertDialogContent>
+                  <AlertDialogHeader>
+                    <AlertDialogTitle>Esportare i dati?</AlertDialogTitle>
+                    <AlertDialogDescription>
+                      Verrà scaricato un file CSV contenente tutto lo storico delle tue abitudini. <br />
+                      Vuoi procedere con il download?
+                    </AlertDialogDescription>
+                  </AlertDialogHeader>
+                  <AlertDialogFooter>
+                    <AlertDialogCancel>Annulla</AlertDialogCancel>
+                    <AlertDialogAction onClick={handleExport}>
+                      Esporta CSV
+                    </AlertDialogAction>
+                  </AlertDialogFooter>
+                </AlertDialogContent>
+              </AlertDialog>
 
               <AlertDialog>
                 <AlertDialogTrigger asChild>

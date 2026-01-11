@@ -98,7 +98,7 @@ const Index = () => {
   const [view, setView] = useState("month");
 
   return (
-    <div className="flex-1 h-dvh lg:min-h-dvh lg:h-auto overflow-hidden lg:overflow-visible flex flex-col pt-8 pb-0 sm:pb-8 px-4 sm:px-8 animate-fade-in relative z-10 w-full max-w-[2400px] mx-auto">
+    <div className="flex-1 h-full overflow-hidden flex flex-col pt-4 lg:pt-8 pb-0 sm:pb-8 px-4 sm:px-8 animate-fade-in relative z-10 w-full max-w-[2400px] mx-auto">
 
       {/* Background Glow */}
       <div className="fixed top-[-20%] left-[-10%] w-[50%] h-[50%] bg-primary/5 blur-[120px] rounded-full pointer-events-none -z-10" />
@@ -288,7 +288,7 @@ const Index = () => {
               </TabsList>
             </div>
 
-            <div className="flex-none lg:flex-1 flex flex-col h-auto lg:h-full lg:min-h-0 glass-panel rounded-2xl p-1 sm:p-2 lg:overflow-hidden">
+            <div className="flex-1 flex flex-col min-h-0 glass-panel rounded-xl sm:rounded-2xl p-0 sm:p-2 overflow-hidden">
               <TabsContent value="month" className="mt-0 animate-scale-in h-full">
                 <HabitCalendar
                   habits={goals}

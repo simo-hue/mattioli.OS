@@ -111,7 +111,7 @@ export function HabitCalendar({ habits, records, onToggleHabit, isPrivacyMode = 
                     disabled={future}
                     style={style}
                     className={cn(
-                        "aspect-square w-full rounded-xl flex flex-col items-center justify-start py-[clamp(4px,1vw,8px)] transition-all duration-300 relative border border-white/5 hover:border-white/20 hover:bg-white/5 group",
+                        "w-full h-full rounded-xl flex flex-col items-center justify-start py-[clamp(4px,1vw,8px)] transition-all duration-300 relative border border-white/5 hover:border-white/20 hover:bg-white/5 group",
                         future && "opacity-30 cursor-not-allowed",
                         isToday(day) && !hasActivity && "bg-white/5 ring-1 ring-primary/50",
                         // Visual cue for editable days (Today or Yesterday < 12h)
@@ -153,7 +153,7 @@ export function HabitCalendar({ habits, records, onToggleHabit, isPrivacyMode = 
 
     return (
         <>
-            <div className="w-full h-auto lg:h-full p-2 sm:p-4 animate-scale-in flex flex-col">
+            <div className="w-full h-full p-2 sm:p-4 animate-scale-in flex flex-col">
                 {/* Header */}
                 <div className="flex items-center justify-between mb-2 sm:mb-6 shrink-0">
                     <Button variant="ghost" size="icon" onClick={goToPrevMonth}>
@@ -182,12 +182,10 @@ export function HabitCalendar({ habits, records, onToggleHabit, isPrivacyMode = 
                         </div>
                     ))}
                 </div>
-                {/* Days Grid: flex-1 to take available height on desktop, h-full to fill it */}
+                {/* Days Grid: fills all available vertical space, rows distribute evenly */}
                 <div
-                    className={cn(
-                        "grid grid-cols-7 gap-[clamp(1px,1.5vw,8px)]",
-                        "h-auto lg:flex-1 lg:h-full lg:min-h-0 overflow-hidden"
-                    )}
+                    className="grid grid-cols-7 gap-[clamp(2px,1vw,8px)] flex-1 min-h-0"
+                    style={{ gridTemplateRows: `repeat(${numRows}, 1fr)` }}
                 >
                     {renderDays()}
                 </div>

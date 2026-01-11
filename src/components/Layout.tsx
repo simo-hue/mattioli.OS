@@ -6,7 +6,7 @@ import { MobileNav } from './MobileNav';
 
 export function Layout() {
   return (
-    <div className="min-h-screen bg-background flex flex-col relative w-full overflow-x-hidden selection:bg-primary/20">
+    <div className="h-dvh lg:min-h-screen bg-background flex flex-col relative w-full overflow-hidden lg:overflow-x-hidden selection:bg-primary/20">
       {/* Header */}
       <header className="border-b border-border bg-background/80 backdrop-blur-md sticky top-0 z-50 transition-all duration-300">
         <div className="h-16 flex items-center justify-between px-4 sm:px-8 max-w-[2400px] mx-auto w-full relative">
@@ -30,7 +30,7 @@ export function Layout() {
       </header>
 
       {/* Main content */}
-      <main className="flex-1 pb-24 lg:pb-0 scroll-smooth">
+      <main className="flex-1 min-h-0 overflow-hidden lg:overflow-visible pb-20 lg:pb-0">
         <Outlet />
       </main>
 

@@ -1,9 +1,9 @@
 import { useState, useEffect } from 'react';
-import { HexColorPicker, HexColorInput } from 'react-colorful';
-import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
+import { HexColorPicker } from 'react-colorful';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
+import { Sheet, SheetContent, SheetHeader, SheetTitle, SheetTrigger } from '@/components/ui/sheet';
 import { cn } from '@/lib/utils';
 
 // Preset colors matching the system
@@ -107,9 +107,10 @@ export function ColorPicker({ value, onChange, className }: ColorPickerProps) {
     };
 
     return (
-        <Popover open={open} onOpenChange={setOpen} modal={false}>
-            <PopoverTrigger asChild>
+        <Sheet open={open} onOpenChange={setOpen}>
+            <SheetTrigger asChild>
                 <Button
+                    type="button"
                     variant="outline"
                     className={cn(
                         "w-full justify-start gap-3 h-10 rounded-xl bg-black/20 border-white/10 hover:bg-white/5",
@@ -122,22 +123,19 @@ export function ColorPicker({ value, onChange, className }: ColorPickerProps) {
                     />
                     <span className="font-mono text-sm uppercase tracking-wider">{hexValue}</span>
                 </Button>
-            </PopoverTrigger>
-            <PopoverContent
-                className="w-[280px] p-4 bg-[#0a0a0a]/95 backdrop-blur-2xl border-white/10 z-[100]"
-                align="start"
-                side="top"
-                sideOffset={8}
-                onPointerDownOutside={(e) => e.preventDefault()}
-                onInteractOutside={(e) => e.preventDefault()}
-            >
-                <div className="space-y-4">
+            </SheetTrigger>
+            <SheetContent side="bottom" className="bg-[#0a0a0a]/95 backdrop-blur-2xl border-white/10">
+                <SheetHeader className="pb-4">
+                    <SheetTitle>Seleziona Colore</SheetTitle>
+                </SheetHeader>
+
+                <div className="space-y-6 pb-6 max-w-md mx-auto">
                     {/* Color Wheel */}
                     <div className="flex justify-center">
                         <HexColorPicker
                             color={hexValue}
                             onChange={handleColorChange}
-                            style={{ width: '100%', height: '160px' }}
+                            style={{ width: '100%', height: '180px' }}
                         />
                     </div>
 
@@ -146,13 +144,13 @@ export function ColorPicker({ value, onChange, className }: ColorPickerProps) {
                         <Label className="text-xs uppercase tracking-wider text-muted-foreground">
                             Codice HEX
                         </Label>
-                        <div className="flex items-center gap-2">
+                        <div className="flex items-center gap-3">
                             <div
-                                className="h-9 w-9 rounded-lg border border-white/10 shrink-0 shadow-[0_0_12px_currentColor]"
+                                className="h-12 w-12 rounded-xl border border-white/10 shrink-0 shadow-[0_0_15px_currentColor]"
                                 style={{ backgroundColor: hexValue, color: hexValue }}
                             />
                             <div className="flex-1 relative">
-                                <span className="absolute left-3 top-1/2 -translate-y-1/2 text-muted-foreground font-mono">#</span>
+                                <span className="absolute left-4 top-1/2 -translate-y-1/2 text-muted-foreground font-mono text-lg">#</span>
                                 <Input
                                     value={hexValue.replace('#', '')}
                                     onChange={(e) => {
@@ -163,7 +161,7 @@ export function ColorPicker({ value, onChange, className }: ColorPickerProps) {
                                             setHexValue('#' + val);
                                         }
                                     }}
-                                    className="pl-7 font-mono uppercase bg-black/20 border-white/10 h-9 rounded-lg"
+                                    className="pl-10 font-mono uppercase bg-black/30 border-white/10 h-12 rounded-xl text-lg"
                                     maxLength={6}
                                     placeholder="4ade80"
                                 />
@@ -176,15 +174,16 @@ export function ColorPicker({ value, onChange, className }: ColorPickerProps) {
                         <Label className="text-xs uppercase tracking-wider text-muted-foreground">
                             Colori Rapidi
                         </Label>
-                        <div className="grid grid-cols-4 gap-2">
+                        <div className="grid grid-cols-8 gap-2">
                             {PRESET_COLORS.map((preset) => (
                                 <button
                                     key={preset.hex}
+                                    type="button"
                                     onClick={() => handlePresetClick(preset.hex)}
                                     className={cn(
-                                        "h-8 w-full rounded-lg border-2 transition-all hover:scale-110 shadow-[0_0_8px_currentColor]",
+                                        "aspect-square w-full rounded-xl border-2 transition-all hover:scale-110 shadow-[0_0_8px_currentColor]",
                                         hexValue.toLowerCase() === preset.hex.toLowerCase()
-                                            ? "border-white"
+                                            ? "border-white scale-110"
                                             : "border-transparent"
                                     )}
                                     style={{ backgroundColor: preset.hex, color: preset.hex }}
@@ -193,8 +192,16 @@ export function ColorPicker({ value, onChange, className }: ColorPickerProps) {
                             ))}
                         </div>
                     </div>
+
+                    {/* Confirm Button */}
+                    <Button
+                        onClick={() => setOpen(false)}
+                        className="w-full h-12 rounded-xl text-base"
+                    >
+                        Conferma Colore
+                    </Button>
                 </div>
-            </PopoverContent>
-        </Popover>
+            </SheetContent>
+        </Sheet>
     );
 }

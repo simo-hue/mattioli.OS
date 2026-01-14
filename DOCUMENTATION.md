@@ -51,9 +51,12 @@ Pannello di insights azionabili con tre sezioni:
 ### Integrazione nella Pagina Stats
 
 #### Vista Globale (Tutti i Goals)
-Nel tab **"Analisi"**:
-1. `MoodEnergyInsights`: pannello con insights sulle abitudini sensibili e resilienti
-2. `MoodEnergyHabitMatrix`: matrice heatmap di tutte le abitudini
+Nuovo tab dedicato **"Mood & Energia"** (5° tab):
+1. `MoodCorrelationChart`: grafico esistente di correlazione mood/energia vs produttività generale
+2. `MoodEnergyInsights`: pannello con insights sulle abitudini sensibili e resilienti
+3. `MoodEnergyHabitMatrix`: matrice heatmap di tutte le abitudini vs mood/energia
+
+Questo tab è completamente separato dagli altri e contiene TUTTE le statistiche relative a mood ed energia.
 
 #### Vista Singola Abitudine
 Nuovo tab **"Mood & Energia"** (5° tab):

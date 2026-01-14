@@ -39,9 +39,9 @@ export const MoodEnergyHabitMatrix = ({ correlations }: MoodEnergyHabitMatrixPro
     return (
         <Card className="glass-panel shadow-lg hover:shadow-xl transition-shadow duration-300">
             <CardHeader>
-                <CardTitle className="text-base sm:text-lg">Matrice: Abitudini vs Mood & Energia</CardTitle>
+                <CardTitle className="text-base sm:text-lg">Performance per Livello</CardTitle>
                 <p className="text-sm text-muted-foreground">
-                    Tasso di completamento (%) per livello di mood ed energia
+                    Completamento (%) per mood ed energia
                 </p>
             </CardHeader>
             <CardContent className="overflow-x-auto">

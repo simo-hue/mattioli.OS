@@ -32,7 +32,7 @@ export const MoodEnergyInsights = ({ insights }: MoodEnergyInsightsProps) => {
                     <CardHeader>
                         <CardTitle className="text-base sm:text-lg flex items-center gap-2">
                             <Sparkles className="w-5 h-5 text-orange-500" />
-                            Abitudini Sensibili al Mood
+                            Mood
                         </CardTitle>
                         <p className="text-sm text-muted-foreground">
                             Queste abitudini hanno bisogno di un buon mood per essere completate
@@ -86,7 +86,7 @@ export const MoodEnergyInsights = ({ insights }: MoodEnergyInsightsProps) => {
                     <CardHeader>
                         <CardTitle className="text-base sm:text-lg flex items-center gap-2">
                             <Zap className="w-5 h-5 text-yellow-500" />
-                            Abitudini Sensibili all'Energia
+                            Energia
                         </CardTitle>
                         <p className="text-sm text-muted-foreground">
                             Queste abitudini richiedono alta energia per essere completate
@@ -140,7 +140,7 @@ export const MoodEnergyInsights = ({ insights }: MoodEnergyInsightsProps) => {
                     <CardHeader>
                         <CardTitle className="text-base sm:text-lg flex items-center gap-2">
                             <Shield className="w-5 h-5 text-green-500" />
-                            Abitudini Resilienti
+                            Resilienti
                         </CardTitle>
                         <p className="text-sm text-muted-foreground">
                             Queste abitudini vengono mantenute anche quando mood ed energia sono bassi

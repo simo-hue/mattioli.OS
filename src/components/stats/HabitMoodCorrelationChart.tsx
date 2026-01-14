@@ -157,7 +157,7 @@ export const HabitMoodCorrelationChart = ({ correlation }: HabitMoodCorrelationC
             {/* Chart 1: Average Mood/Energy when Completed vs Missed */}
             <Card className="glass-panel shadow-lg hover:shadow-xl transition-shadow duration-300">
                 <CardHeader>
-                    <CardTitle className="text-base sm:text-lg">Mood & Energia: Completato vs Mancato</CardTitle>
+                    <CardTitle className="text-base sm:text-lg">Completato vs Mancato</CardTitle>
                 </CardHeader>
                 <CardContent className="h-[300px]">
                     <ResponsiveContainer width="100%" height="100%">
@@ -200,7 +200,7 @@ export const HabitMoodCorrelationChart = ({ correlation }: HabitMoodCorrelationC
             {/* Chart 2: Completion Rate by Mood/Energy Range */}
             <Card className="glass-panel shadow-lg hover:shadow-xl transition-shadow duration-300">
                 <CardHeader>
-                    <CardTitle className="text-base sm:text-lg">Tasso di Completamento per Livello</CardTitle>
+                    <CardTitle className="text-base sm:text-lg">Performance per Livello</CardTitle>
                 </CardHeader>
                 <CardContent className="h-[300px]">
                     <ResponsiveContainer width="100%" height="100%">

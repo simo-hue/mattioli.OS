@@ -236,11 +236,15 @@ const Stats = () => {
             {selectedGoalId === null ? (
                 // GLOBAL VIEW - All Goals
                 <Tabs defaultValue="panoramica" className="w-full">
-                    <TabsList className="grid w-full grid-cols-4 mb-4 shrink-0">
+                    <TabsList className="grid w-full grid-cols-5 mb-4 shrink-0">
                         <TabsTrigger value="panoramica" className="text-xs sm:text-sm">Panoramica</TabsTrigger>
                         <TabsTrigger value="trend" className="text-xs sm:text-sm">Trend</TabsTrigger>
                         <TabsTrigger value="analisi" className="text-xs sm:text-sm">Analisi</TabsTrigger>
                         <TabsTrigger value="abitudini" className="text-xs sm:text-sm">Abitudini</TabsTrigger>
+                        <TabsTrigger value="mood-energia" className="text-xs sm:text-sm flex items-center gap-1">
+                            <span className="hidden sm:inline">Mood</span>
+                            <span className="sm:hidden">M&E</span>
+                        </TabsTrigger>
                     </TabsList>
 
                     <TabsContent value="panoramica" className="mt-0 space-y-6">
@@ -255,9 +259,7 @@ const Stats = () => {
                                 bestHabit={bestHabit || undefined}
                             />
                         </div>
-                        <div className={cn("transition-all duration-300", isPrivacyMode && "blur-sm")}>
-                            <MoodCorrelationChart />
-                        </div>
+
                         <div className="glass-panel rounded-3xl p-4 sm:p-6">
                             <h3 className="text-base sm:text-lg font-display font-semibold mb-4 flex items-center gap-2">
                                 <span className="w-2 h-2 rounded-sm bg-primary animate-pulse" />
@@ -292,12 +294,6 @@ const Stats = () => {
                     <TabsContent value="analisi" className="mt-0 space-y-6">
                         <div className={cn("transition-all duration-300", isPrivacyMode && "blur-sm")}>
                             <CriticalAnalysis criticalHabits={stats.criticalHabits} />
-                        </div>
-                        <div className={cn("transition-all duration-300", isPrivacyMode && "blur-sm")}>
-                            <MoodEnergyInsights insights={insights} />
-                        </div>
-                        <div className={cn("transition-all duration-300", isPrivacyMode && "blur-sm")}>
-                            <MoodEnergyHabitMatrix correlations={correlations} />
                         </div>
                         <div className="grid grid-cols-1 md:grid-cols-2 gap-4 sm:gap-6">
                             <div className={cn("glass-panel rounded-3xl p-4 sm:p-6 h-[300px] sm:h-[350px] flex flex-col transition-all duration-300", isPrivacyMode && "blur-sm")}>
@@ -361,6 +357,18 @@ const Stats = () => {
                                     ))
                                 )}
                             </div>
+                        </div>
+                    </TabsContent>
+
+                    <TabsContent value="mood-energia" className="mt-0 space-y-6">
+                        <div className={cn("transition-all duration-300", isPrivacyMode && "blur-sm")}>
+                            <MoodCorrelationChart />
+                        </div>
+                        <div className={cn("transition-all duration-300", isPrivacyMode && "blur-sm")}>
+                            <MoodEnergyInsights insights={insights} />
+                        </div>
+                        <div className={cn("transition-all duration-300", isPrivacyMode && "blur-sm")}>
+                            <MoodEnergyHabitMatrix correlations={correlations} />
                         </div>
                     </TabsContent>
                 </Tabs>

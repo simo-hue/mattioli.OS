@@ -2,31 +2,28 @@
 
 ## Priorità: Testing
 
-### 1. Testare Statistiche Mood & Energia
+### 1. Testare Nuovo Tab "Mood & Energia" (Vista Globale)
 - [ ] Apri l'applicazione habit tracker
 - [ ] Vai alla pagina **Stats**
 - [ ] Seleziona **"Tutti i Goals"** dal dropdown
-- [ ] Naviga al tab **"Analisi"**
-- [ ] Verifica che appaiano i nuovi pannelli:
+- [ ] Verifica che ci siano ora **5 tab**: Panoramica, Trend, Analisi, Abitudini, **Mood & Energia** ✨
+- [ ] Clicca sul tab **"Mood & Energia"** (o "M&E" su mobile)
+- [ ] Verifica che appaiano:
+  - Grafico "Mood & Energy vs Productivity" (esistente)
   - Pannello "Abitudini Sensibili al Mood"
-  - Pannello "Abitudini Sensibili all'Energia"  
+  - Pannello "Abitudini Sensibili all'Energia"
   - Pannello "Abitudini Resilienti"
   - Matrice "Abitudini vs Mood & Energia"
 
-### 2. Testare Vista Singola Abitudine
-- [ ] Seleziona una specifica abitudine dal dropdown nella pagina Stats
-- [ ] Verifica che apparisca un 5° tab chiamato **"Mood & Energia"** (con icona sparkles ✨)
-- [ ] Clicca sul tab "Mood & Energia"
-- [ ] Verifica che vengano mostrati:
-  - 4 card KPI (Correlazione Mood, Correlazione Energia, Mood Medio, Energia Media)
-  - Badge di classificazione (Sensibile al Mood / Energia / Resiliente / Neutrale)
-  - Grafico "Mood & Energia: Completato vs Mancato"
-  - Grafico "Tasso di Completamento per Livello"
-  - Info sui giorni analizzati
+### 2. Verificare Rimozione da Altri Tab
+- [ ] Nel tab **"Panoramica"**: verifica che NON ci sia più il grafico "Mood & Energy vs Productivity"
+- [ ] Nel tab **"Analisi"**: verifica che NON ci siano più i pannelli mood/energia
 
-### 3. Testare con Dati Insufficienti
-- [ ] Se hai abitudini con meno di 5 giorni di dati mood/energia, selezionale
-- [ ] Verifica che venga mostrato un messaggio appropriato invece dei grafici
+### 3. Testare Vista Singola Abitudine
+- [ ] Seleziona una specifica abitudine dal dropdown
+- [ ] Verifica che ci sia il tab **"Mood & Energia"** (5° tab)
+- [ ] Clicca sul tab
+- [ ] Verifica che vengano mostrati i grafici di correlazione specifica per quell'abitudine
 
 ### 4. Registrare Mood ed Energia
 Per ottenere statistiche accurate:
@@ -35,17 +32,17 @@ Per ottenere statistiche accurate:
 - [ ] Più dati accumuli, più accurate saranno le correlazioni
 
 ### 5. Verificare Responsiveness
-- [ ] Testa tutte le nuove visualizzazioni su:
-  - Desktop
-  - Tablet
-  - Mobile
-- [ ] Verifica che i grafici si ridimensionino correttamente
-- [ ] Controlla che il tab "M&E" (abbreviato) sia visibile su mobile
+- [ ] Testa il nuovo tab "Mood & Energia" su:
+  - Desktop (dovrebbe mostrare "Mood & Energia")
+  - Mobile (dovrebbe mostrare "M&E")
+- [ ] Verifica che tutti i componenti si ridimensionino correttamente
+- [ ] Controlla che i grafici siano leggibili
 
 ### 6. Testare Dark Mode
 - [ ] Attiva la modalità scura
-- [ ] Verifica che tutti i nuovi componenti siano ben visibili
-- [ ] Controlla colori e contrasti dei grafici
+- [ ] Vai al tab "Mood & Energia"
+- [ ] Verifica che tutti i componenti siano ben visibili
+- [ ] Controlla colori e contrasti di grafici e pannelli
 
 ## Note
 Se trovi problemi o comportamenti inaspettati, annota i dettagli per la correzione.

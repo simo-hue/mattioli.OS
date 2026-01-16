@@ -15,6 +15,7 @@ import CompleteBackup from "./pages/CompleteBackup";
 import Auth from "./pages/Auth";
 import NotFound from "./pages/NotFound";
 import { PrivacyProvider } from "@/context/PrivacyContext";
+import { AIProvider } from "@/context/AIContext";
 
 const queryClient = new QueryClient();
 
@@ -50,31 +51,33 @@ const App = () => {
   return (
     <QueryClientProvider client={queryClient}>
       <PrivacyProvider>
-        <TooltipProvider>
-          <Toaster />
-          <Sonner />
-          <HashRouter future={{ v7_startTransition: true, v7_relativeSplatPath: true }}>
-            <Routes>
-              <Route path="/auth" element={<Auth />} />
+        <AIProvider>
+          <TooltipProvider>
+            <Toaster />
+            <Sonner />
+            <HashRouter future={{ v7_startTransition: true, v7_relativeSplatPath: true }}>
+              <Routes>
+                <Route path="/auth" element={<Auth />} />
 
-              <Route element={
-                <ProtectedRoute>
-                  <Layout />
-                </ProtectedRoute>
-              }>
-                <Route path="/" element={<Index />} />
-                <Route path="/stats" element={<Stats />} />
-                <Route path="/macro-goals" element={<MacroGoals />} />
-                <Route path="/ai-coach" element={<AICoach />} />
-                <Route path="/complete-backup" element={<CompleteBackup />} />
+                <Route element={
+                  <ProtectedRoute>
+                    <Layout />
+                  </ProtectedRoute>
+                }>
+                  <Route path="/" element={<Index />} />
+                  <Route path="/stats" element={<Stats />} />
+                  <Route path="/macro-goals" element={<MacroGoals />} />
+                  <Route path="/ai-coach" element={<AICoach />} />
+                  <Route path="/complete-backup" element={<CompleteBackup />} />
 
-              </Route>
+                </Route>
 
-              {/* ADD ALL CUSTOM ROUTES ABOVE THE CATCH-ALL "*" ROUTE */}
-              <Route path="*" element={<NotFound />} />
-            </Routes>
-          </HashRouter>
-        </TooltipProvider>
+                {/* ADD ALL CUSTOM ROUTES ABOVE THE CATCH-ALL "*" ROUTE */}
+                <Route path="*" element={<NotFound />} />
+              </Routes>
+            </HashRouter>
+          </TooltipProvider>
+        </AIProvider>
       </PrivacyProvider>
     </QueryClientProvider>
   );

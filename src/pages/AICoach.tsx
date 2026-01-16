@@ -2,11 +2,12 @@ import { useState, useEffect, useRef } from 'react';
 import { useGoals } from '@/hooks/useGoals';
 import { useHabitStats } from '@/hooks/useHabitStats';
 import { usePrivacy } from '@/context/PrivacyContext';
+import { useAI } from '@/context/AIContext';
 import { Button } from '@/components/ui/button';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Alert, AlertDescription } from '@/components/ui/alert';
-import { Sparkles, Loader2, AlertTriangle, Download, Cpu, StopCircle, FileText, Calendar, Zap } from 'lucide-react';
+import { Sparkles, Loader2, AlertTriangle, Download, Cpu, StopCircle, FileText, Calendar, Zap, Bot } from 'lucide-react';
 import { toast } from 'sonner';
 import ReactMarkdown from 'react-markdown';
 import remarkGfm from 'remark-gfm';
@@ -23,6 +24,7 @@ const AICoach = () => {
     const { goals, logs } = useGoals();
     const stats = useHabitStats(goals, logs, 'weekly');
     const { isPrivacyMode } = usePrivacy();
+    const { isAIEnabled } = useAI();
     const abortControllerRef = useRef<AbortController | null>(null);
 
     const [models, setModels] = useState<OllamaModel[]>([]);
@@ -167,6 +169,23 @@ const AICoach = () => {
         const gb = bytes / (1024 ** 3);
         return gb.toFixed(1) + ' GB';
     };
+
+    // Se AI disabilitato, mostra messaggio
+    if (!isAIEnabled) {
+        return (
+            <div className="container mx-auto px-4 py-6 max-w-4xl animate-fade-in pb-32">
+                <div className="glass-panel rounded-3xl p-12 text-center space-y-4">
+                    <Bot className="w-16 h-16 mx-auto text-muted-foreground opacity-50" />
+                    <div>
+                        <h2 className="text-2xl font-display font-semibold text-foreground mb-2">AI Coach Disabilitato</h2>
+                        <p className="text-muted-foreground">
+                            Attiva lo switch "AI" nel Protocollo per utilizzare questa funzionalità.
+                        </p>
+                    </div>
+                </div>
+            </div>
+        );
+    }
 
     return (
         <div className="container mx-auto px-4 py-6 max-w-4xl animate-fade-in pb-32 space-y-6">

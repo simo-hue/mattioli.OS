@@ -14,7 +14,7 @@ Complete guide for developers or anyone wishing to self-host the application.
 ### 1. Clone the Repository
 Download the source code to your machine.
 ```bash
-git clone https://github.com/YOUR_USER/habit-tracker.git
+git clone https://github.com/simo-hue/habit-tracker.git
 cd habit-tracker
 ```
 

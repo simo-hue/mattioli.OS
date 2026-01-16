@@ -2,6 +2,7 @@ import { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useGoals } from '@/hooks/useGoals';
 import { usePrivacy } from '@/context/PrivacyContext';
+import { useAI } from '@/context/AIContext';
 import { toast } from 'sonner';
 import { HabitCalendar } from '@/components/HabitCalendar';
 import { WeeklyView } from '@/components/WeeklyView';
@@ -24,7 +25,7 @@ import {
   AlertDialogTrigger,
 
 } from "@/components/ui/alert-dialog";
-import { LayoutGrid, Calendar, ListTodo, Download, Trash2, Eye, EyeOff, Wifi, WifiOff, AlertTriangle, HeartPulse, Circle, Database } from 'lucide-react';
+import { LayoutGrid, Calendar, ListTodo, Download, Trash2, Eye, EyeOff, Wifi, WifiOff, AlertTriangle, HeartPulse, Circle, Database, Bot } from 'lucide-react';
 import { MoodInput } from '@/components/mood/MoodInput';
 import { useSystemStatus } from '@/hooks/useSystemStatus';
 import { useTodaysMood } from '@/hooks/useMoods';
@@ -51,6 +52,7 @@ const Index = () => {
   } = useGoals();
 
   const { isPrivacyMode, setIsPrivacyMode } = usePrivacy();
+  const { isAIEnabled, setIsAIEnabled } = useAI();
 
   const handleExport = () => {
     if (!rawLogs || !allGoals) {
@@ -119,16 +121,29 @@ const Index = () => {
                 <p className="text-muted-foreground text-xs lg:text-sm">Esecuzione giornaliera.</p>
               </div>
 
-              <div className="flex items-center space-x-2 lg:pt-2">
-                <Switch
-                  id="privacy-mode"
-                  checked={isPrivacyMode}
-                  onCheckedChange={setIsPrivacyMode}
-                />
-                <Label htmlFor="privacy-mode" className="text-xs text-muted-foreground flex items-center gap-2 cursor-pointer sr-only lg:not-sr-only lg:flex">
-                  {isPrivacyMode ? <EyeOff className="w-3 h-3" /> : <Eye className="w-3 h-3" />}
-                  Privacy
-                </Label>
+              <div className="flex items-center gap-4">
+                <div className="flex items-center space-x-2">
+                  <Switch
+                    id="privacy-mode"
+                    checked={isPrivacyMode}
+                    onCheckedChange={setIsPrivacyMode}
+                  />
+                  <Label htmlFor="privacy-mode" className="text-xs text-muted-foreground flex items-center gap-2 cursor-pointer sr-only lg:not-sr-only lg:flex">
+                    {isPrivacyMode ? <EyeOff className="w-3 h-3" /> : <Eye className="w-3 h-3" />}
+                    Privacy
+                  </Label>
+                </div>
+                <div className="flex items-center space-x-2">
+                  <Switch
+                    id="ai-mode"
+                    checked={isAIEnabled}
+                    onCheckedChange={setIsAIEnabled}
+                  />
+                  <Label htmlFor="ai-mode" className="text-xs text-muted-foreground flex items-center gap-2 cursor-pointer sr-only lg:not-sr-only lg:flex">
+                    <Bot className="w-3 h-3" />
+                    AI
+                  </Label>
+                </div>
               </div>
             </div>
 

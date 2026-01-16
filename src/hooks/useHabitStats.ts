@@ -9,6 +9,7 @@ export interface HabitStat {
     color: string;
     currentStreak: number;
     longestStreak: number;
+    worstStreak: number;
     totalDays: number;
     completionRate: number;
 }
@@ -63,6 +64,8 @@ export function useHabitStats(goals: Goal[], logs: GoalLogsMap, trendTimeframe: 
             let currentStreak = 0;
             let longestStreak = 0;
             let tempStreak = 0;
+            let worstStreak = 0;
+            let tempNegativeStreak = 0;
             let totalDone = 0;
 
             // Calculate validity period (days since start_date until today)
@@ -133,7 +136,7 @@ export function useHabitStats(goals: Goal[], logs: GoalLogsMap, trendTimeframe: 
                 daysBack++;
             }
 
-            // Simplified loop for Longest Streak & Total Done
+            // Simplified loop for Longest Streak, Worst Streak & Total Done
             // Iterate all days from start_date to today
             if (daysSinceStart > 0) {
                 for (let i = 0; i < daysSinceStart; i++) {
@@ -144,16 +147,25 @@ export function useHabitStats(goals: Goal[], logs: GoalLogsMap, trendTimeframe: 
                     if (status === 'done') {
                         totalDone++;
                         tempStreak++;
-                    } else if (status === 'missed') {
-                        // Only reset on missed
-                        longestStreak = Math.max(longestStreak, tempStreak);
-                        tempStreak = 0;
+                        // Reset negative streak when task is completed
+                        worstStreak = Math.max(worstStreak, tempNegativeStreak);
+                        tempNegativeStreak = 0;
+                    } else if (status === 'missed' || status === null) {
+                        // Count as negative streak (missed or not tracked)
+                        tempNegativeStreak++;
+                        // Only reset positive streak on missed
+                        if (status === 'missed') {
+                            longestStreak = Math.max(longestStreak, tempStreak);
+                            tempStreak = 0;
+                        }
                     } else {
-                        // Empty or Skipped -> Continue without resetting, but don't increment
-                        // This effectively "bridges" the gap.
+                        // Skipped -> Continue without resetting
+                        // This effectively "bridges" the gap for positive streaks
+                        // but doesn't count as negative either
                     }
                 }
                 longestStreak = Math.max(longestStreak, tempStreak);
+                worstStreak = Math.max(worstStreak, tempNegativeStreak);
             }
 
             // Completion Rate (Last 30 days)
@@ -180,6 +192,7 @@ export function useHabitStats(goals: Goal[], logs: GoalLogsMap, trendTimeframe: 
                 color: goal.color,
                 currentStreak, // Simplified for now
                 longestStreak,
+                worstStreak,
                 totalDays: totalDone,
                 completionRate
             };

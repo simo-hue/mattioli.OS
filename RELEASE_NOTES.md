@@ -292,7 +292,7 @@ node --version
 ### Quick Start
 ```bash
 # 1. Clone repository
-git clone https://github.com/YOUR_USER/habit-tracker.git
+git clone https://github.com/simo-hue/habit-tracker.git
 cd habit-tracker
 
 # 2. Install dependencies

@@ -30,7 +30,7 @@ Get up and running in **seconds**.
 
 ```bash
 # 1. Clone the repo
-git clone https://github.com/YOUR_USER/habit-tracker.git
+git clone https://github.com/simo-hue/habit-tracker.git
 
 # 2. Enter the directory
 cd habit-tracker

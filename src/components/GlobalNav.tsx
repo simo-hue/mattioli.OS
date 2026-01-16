@@ -1,18 +1,29 @@
 import { NavLink } from 'react-router-dom';
 import { cn } from '@/lib/utils';
-import { PieChart, Grid3X3, BarChart2, Sparkles } from 'lucide-react';
+import { PieChart, BarChart2, Sparkles } from 'lucide-react';
+import { useAI } from '@/context/AIContext';
 
 const navItems = [
   { to: '/stats', label: 'Statistiche', icon: BarChart2 },
   { to: '/ai-coach', label: 'AI Coach', icon: Sparkles },
   { to: '/macro-goals', label: 'Macro Obiettivi', icon: PieChart },
-
 ];
 
 export function GlobalNav() {
+  const { isAIEnabled } = useAI();
+
+  // Filter navigation items based on AI state
+  const visibleNavItems = navItems.filter(item => {
+    // Hide AI Coach if AI is disabled
+    if (item.to === '/ai-coach' && !isAIEnabled) {
+      return false;
+    }
+    return true;
+  });
+
   return (
     <nav className="flex items-center justify-center gap-1 sm:gap-2">
-      {navItems.map(({ to, label, icon: Icon }) => (
+      {visibleNavItems.map(({ to, label, icon: Icon }) => (
         <NavLink
           key={to}
           to={to}

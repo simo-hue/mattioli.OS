@@ -12,8 +12,10 @@ import { MoodCorrelationChart } from '@/components/stats/MoodCorrelationChart';
 import { HabitMoodCorrelationChart } from '@/components/stats/HabitMoodCorrelationChart';
 import { MoodEnergyHabitMatrix } from '@/components/stats/MoodEnergyHabitMatrix';
 import { MoodEnergyInsights } from '@/components/stats/MoodEnergyInsights';
-import { Trophy, TrendingDown, AlertTriangle, Calendar, Target, MoveLeft, AlignLeft, Sparkles } from 'lucide-react';
+import { WorstStreakAnalysis } from '@/components/stats/WorstStreakAnalysis';
+import { Trophy, TrendingDown, AlertTriangle, Calendar, Target, MoveLeft, AlignLeft, Sparkles, Flame, TrendingUp } from 'lucide-react';
 import { usePrivacy } from '@/context/PrivacyContext';
+import { useAI } from '@/context/AIContext';
 import { cn } from '@/lib/utils';
 import { useMemo, useState } from 'react';
 import { Tabs, TabsList, TabsTrigger, TabsContent } from '@/components/ui/tabs';
@@ -25,14 +27,35 @@ const Stats = () => {
     const { goals, allGoals, logs } = useGoals();
     const [trendTimeframe, setTrendTimeframe] = useState<Timeframe>('weekly');
     const [selectedGoalId, setSelectedGoalId] = useState<string | null>(null);
+    const [habitSortBy, setHabitSortBy] = useState<'rate' | 'best' | 'worst' | 'current' | 'name'>('rate');
     const stats = useHabitStats(goals, logs, trendTimeframe);
     const { isPrivacyMode } = usePrivacy();
+    const { isAIEnabled } = useAI();
     const { correlations, insights } = useHabitMoodCorrelation(goals, logs);
 
     // Find selected goal
     const selectedGoal = useMemo(() => {
         return allGoals.find(g => g.id === selectedGoalId) || null;
     }, [allGoals, selectedGoalId]);
+
+    // Sort habits based on selected criteria
+    const sortedHabits = useMemo(() => {
+        const habitsCopy = [...stats.habitStats];
+        switch (habitSortBy) {
+            case 'rate':
+                return habitsCopy.sort((a, b) => b.completionRate - a.completionRate);
+            case 'best':
+                return habitsCopy.sort((a, b) => b.longestStreak - a.longestStreak);
+            case 'worst':
+                return habitsCopy.sort((a, b) => b.worstStreak - a.worstStreak);
+            case 'current':
+                return habitsCopy.sort((a, b) => b.currentStreak - a.currentStreak);
+            case 'name':
+                return habitsCopy.sort((a, b) => a.title.localeCompare(b.title));
+            default:
+                return habitsCopy;
+        }
+    }, [stats.habitStats, habitSortBy]);
 
     // Calculate single goal stats
     const singleGoalStats = useMemo(() => {
@@ -260,31 +283,33 @@ const Stats = () => {
                         </div>
 
                         {/* AI Coach Card - Desktop Only */}
-                        <div className="hidden lg:block">
-                            <div
-                                onClick={() => window.location.hash = '/ai-coach'}
-                                className="glass-panel rounded-3xl p-6 cursor-pointer hover:scale-[1.02] transition-all duration-300 border-2 border-primary/20 hover:border-primary/40 group"
-                            >
-                                <div className="flex items-start gap-4">
-                                    <div className="w-14 h-14 rounded-2xl bg-gradient-to-br from-primary/20 to-purple-500/20 flex items-center justify-center shrink-0 group-hover:scale-110 transition-transform">
-                                        <Sparkles className="w-7 h-7 text-primary animate-pulse" />
-                                    </div>
-                                    <div className="flex-1">
-                                        <h3 className="text-lg sm:text-xl font-display font-semibold mb-2 flex items-center gap-2">
-                                            AI Coach
-                                            <span className="text-xs bg-primary/20 text-primary px-2 py-0.5 rounded-full font-normal">Nuovo</span>
-                                        </h3>
-                                        <p className="text-sm text-muted-foreground mb-3">
-                                            Genera un report settimanale personalizzato con analisi AI dei tuoi progressi e suggerimenti concreti per migliorare.
-                                        </p>
-                                        <div className="flex items-center gap-2 text-xs text-primary">
-                                            <span className="font-semibold">Clicca per iniziare</span>
-                                            <span>→</span>
+                        {isAIEnabled && (
+                            <div className="hidden lg:block">
+                                <div
+                                    onClick={() => window.location.hash = '/ai-coach'}
+                                    className="glass-panel rounded-3xl p-6 cursor-pointer hover:scale-[1.02] transition-all duration-300 border-2 border-primary/20 hover:border-primary/40 group"
+                                >
+                                    <div className="flex items-start gap-4">
+                                        <div className="w-14 h-14 rounded-2xl bg-gradient-to-br from-primary/20 to-purple-500/20 flex items-center justify-center shrink-0 group-hover:scale-110 transition-transform">
+                                            <Sparkles className="w-7 h-7 text-primary animate-pulse" />
+                                        </div>
+                                        <div className="flex-1">
+                                            <h3 className="text-lg sm:text-xl font-display font-semibold mb-2 flex items-center gap-2">
+                                                AI Coach
+                                                <span className="text-xs bg-primary/20 text-primary px-2 py-0.5 rounded-full font-normal">Nuovo</span>
+                                            </h3>
+                                            <p className="text-sm text-muted-foreground mb-3">
+                                                Genera un report settimanale personalizzato con analisi AI dei tuoi progressi e suggerimenti concreti per migliorare.
+                                            </p>
+                                            <div className="flex items-center gap-2 text-xs text-primary">
+                                                <span className="font-semibold">Clicca per iniziare</span>
+                                                <span>→</span>
+                                            </div>
                                         </div>
                                     </div>
                                 </div>
                             </div>
-                        </div>
+                        )}
 
                         <div className="glass-panel rounded-3xl p-4 sm:p-6">
                             <h3 className="text-base sm:text-lg font-display font-semibold mb-4 flex items-center gap-2">
@@ -321,6 +346,9 @@ const Stats = () => {
                         <div className={cn("transition-all duration-300", isPrivacyMode && "blur-sm")}>
                             <CriticalAnalysis criticalHabits={stats.criticalHabits} />
                         </div>
+                        <div className={cn("transition-all duration-300", isPrivacyMode && "blur-sm")}>
+                            <WorstStreakAnalysis habitStats={stats.habitStats} />
+                        </div>
                         <div className="grid grid-cols-1 md:grid-cols-2 gap-4 sm:gap-6">
                             <div className={cn("glass-panel rounded-3xl p-4 sm:p-6 h-[300px] sm:h-[350px] flex flex-col transition-all duration-300", isPrivacyMode && "blur-sm")}>
                                 <h3 className="text-base sm:text-lg font-display font-semibold mb-3">Focus Abitudini</h3>
@@ -345,12 +373,54 @@ const Stats = () => {
 
                     <TabsContent value="abitudini" className="mt-0">
                         <div className={cn("glass-panel rounded-3xl p-4 sm:p-6 transition-all duration-300", isPrivacyMode && "blur-sm")}>
-                            <h3 className="text-base sm:text-lg font-display font-semibold mb-4 sm:mb-6">Dettagli Abitudini</h3>
+                            {/* Header with title and sort selector */}
+                            <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3 mb-4 sm:mb-6">
+                                <h3 className="text-base sm:text-lg font-display font-semibold">Dettagli Abitudini</h3>
+                                <Select value={habitSortBy} onValueChange={(value: any) => setHabitSortBy(value)}>
+                                    <SelectTrigger className="w-full sm:w-[200px] glass-card border-white/10">
+                                        <SelectValue />
+                                    </SelectTrigger>
+                                    <SelectContent>
+                                        <SelectItem value="rate">
+                                            <div className="flex items-center gap-2">
+                                                <TrendingUp className="w-4 h-4 text-primary" />
+                                                <span>Rate</span>
+                                            </div>
+                                        </SelectItem>
+                                        <SelectItem value="best">
+                                            <div className="flex items-center gap-2">
+                                                <Trophy className="w-4 h-4 text-yellow-500" />
+                                                <span>Best Streak</span>
+                                            </div>
+                                        </SelectItem>
+                                        <SelectItem value="worst">
+                                            <div className="flex items-center gap-2">
+                                                <TrendingDown className="w-4 h-4 text-destructive" />
+                                                <span>Worst Streak</span>
+                                            </div>
+                                        </SelectItem>
+                                        <SelectItem value="current">
+                                            <div className="flex items-center gap-2">
+                                                <Flame className="w-4 h-4 text-orange-500" />
+                                                <span>Serie Attuale</span>
+                                            </div>
+                                        </SelectItem>
+                                        <SelectItem value="name">
+                                            <div className="flex items-center gap-2">
+                                                <AlignLeft className="w-4 h-4" />
+                                                <span>Nome</span>
+                                            </div>
+                                        </SelectItem>
+                                    </SelectContent>
+                                </Select>
+                            </div>
+
+                            {/* Habits list */}
                             <div className="space-y-3">
                                 {stats.habitStats.length === 0 ? (
                                     <p className="text-muted-foreground text-center py-8">Nessuna abitudine tracciata ancora.</p>
                                 ) : (
-                                    [...stats.habitStats].sort((a, b) => b.completionRate - a.completionRate).map(habit => (
+                                    sortedHabits.map(habit => (
                                         <div key={habit.id} className="glass-card rounded-xl p-3 sm:p-4 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3 sm:gap-4 group cursor-pointer hover:bg-white/5 transition-colors" onClick={() => setSelectedGoalId(habit.id)}>
                                             <div className="flex items-center gap-3 sm:gap-4 w-full sm:w-auto">
                                                 <div className="w-8 h-8 sm:w-10 sm:h-10 rounded-xl flex items-center justify-center bg-white/5 border border-white/10 group-hover:scale-110 transition-transform duration-300 shadow-lg shrink-0" style={{ borderColor: `${habit.color}40`, boxShadow: `0 0 20px ${habit.color}10` }}>
@@ -363,12 +433,18 @@ const Stats = () => {
                                                     </div>
                                                 </div>
                                             </div>
-                                            <div className="grid grid-cols-3 gap-3 sm:flex sm:gap-6 text-sm text-muted-foreground w-full sm:w-auto justify-between sm:justify-end">
+                                            <div className="grid grid-cols-4 gap-3 sm:flex sm:gap-6 text-sm text-muted-foreground w-full sm:w-auto justify-between sm:justify-end">
                                                 <div className="flex flex-col items-center sm:items-end">
                                                     <span className="text-[9px] sm:text-[10px] uppercase tracking-widest font-bold opacity-60 mb-0.5 flex items-center gap-1">
                                                         <Trophy className="w-2.5 h-2.5 sm:w-3 sm:h-3 text-yellow-500" /> Best
                                                     </span>
                                                     <span className="font-mono text-base sm:text-lg font-bold text-foreground">{habit.longestStreak}<span className="text-[10px] sm:text-xs font-sans font-normal opacity-50">gg</span></span>
+                                                </div>
+                                                <div className="flex flex-col items-center sm:items-end">
+                                                    <span className="text-[9px] sm:text-[10px] uppercase tracking-widest font-bold opacity-60 mb-0.5 flex items-center gap-1">
+                                                        <TrendingDown className="w-2.5 h-2.5 sm:w-3 sm:h-3 text-destructive" /> Worst
+                                                    </span>
+                                                    <span className="font-mono text-base sm:text-lg font-bold text-destructive">{habit.worstStreak}<span className="text-[10px] sm:text-xs font-sans font-normal opacity-50">gg</span></span>
                                                 </div>
                                                 <div className="flex flex-col items-center sm:items-end">
                                                     <span className="text-[9px] sm:text-[10px] uppercase tracking-widest font-bold opacity-60 mb-0.5">Serie</span>

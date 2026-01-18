@@ -1,38 +1,5 @@
 # Test Manuali - Soft-Delete Abitudini
 
-## Test 2: Visibilità nelle Statistiche
-1. [ ] Navigare alla pagina `/stats` (cliccare sulla tab Statistiche)
-2. [ ] Aprire il selettore delle abitudini (dropdown in alto)
-3. [ ] **Verifica**:
-   - [ ] "Test Soft Delete" appare nella lista con dicitura "(archiviato)"
-4. [ ] Selezionare "Test Soft Delete" dal dropdown
-5. [ ] **Verifica statistiche**:
-   - [ ] Vedo le statistiche calcolate fino ad oggi
-   - [ ] Il calendario annuale mostra i giorni completati (verde)
-   - [ ] I trend riflettono i dati storici
-   - [ ] Current streak, best streak, ecc. sono calcolati correttamente
-
-## Test 3: Range di Editing - Oggi
-1. [ ] Tornare alla vista calendario (tab Mese nel Protocollo)
-2. [ ] **Verifica per OGGI**:
-   - [ ] Posso ancora vedere il log di oggi per "Test Soft Delete"
-   - [ ] Posso modificare lo stato di oggi (click su oggi)
-   - [ ] Il toggle funziona correttamente (done → missed → null → done)
-
-## Test 4: Range di Editing - Domani (test futuro)
-⚠️ **NOTA**: Questo test può essere fatto solo domani o modificando la data di sistema
-
-**Opzione A - Aspettare domani**:
-1. [ ] Domani, aprire l'applicazione
-2. [ ] Verificare che "Test Soft Delete" NON appaia nelle viste giornaliere
-3. [ ] Verificare che non posso aggiungere log per domani per questa abitudine
-
-**Opzione B - Modificare data di sistema** (sconsigliato, può causare problemi):
-1. [ ] Cambiare la data di sistema a domani
-2. [ ] Ricaricare l'applicazione
-3. [ ] Verificare comportamento come Opzione A
-4. [ ] ⚠️ Ricordarsi di ripristinare la data corretta
-
 ## Test 5: Database Verification
 1. [ ] Aprire Supabase Dashboard
 2. [ ] Navigare a Table Editor → goals

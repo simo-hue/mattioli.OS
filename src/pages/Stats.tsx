@@ -476,43 +476,118 @@ const Stats = () => {
                                 {stats.habitStats.length === 0 ? (
                                     <p className="text-muted-foreground text-center py-8">Nessuna abitudine tracciata ancora.</p>
                                 ) : (
-                                    sortedHabits.map(habit => (
-                                        <div key={habit.id} className="glass-card rounded-xl p-3 sm:p-4 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3 sm:gap-4 group cursor-pointer hover:bg-white/5 transition-colors" onClick={() => setSelectedGoalId(habit.id)}>
-                                            <div className="flex items-center gap-3 sm:gap-4 w-full sm:w-auto">
-                                                <div className="w-8 h-8 sm:w-10 sm:h-10 rounded-xl flex items-center justify-center bg-white/5 border border-white/10 group-hover:scale-110 transition-transform duration-300 shadow-lg shrink-0" style={{ borderColor: `${habit.color}40`, boxShadow: `0 0 20px ${habit.color}10` }}>
-                                                    <div className="w-2.5 h-2.5 sm:w-3 sm:h-3 rounded-sm" style={{ backgroundColor: habit.color }} />
-                                                </div>
-                                                <div className="min-w-0">
-                                                    <span className="font-semibold text-foreground text-base sm:text-lg truncate block">{habit.title}</span>
-                                                    <div className="h-1 w-16 sm:w-20 bg-secondary rounded-full mt-1 overflow-hidden">
-                                                        <div className="h-full bg-primary transition-all duration-500" style={{ width: `${habit.completionRate}%`, backgroundColor: habit.color }} />
-                                                    </div>
-                                                </div>
-                                            </div>
-                                            <div className="grid grid-cols-4 gap-3 sm:flex sm:gap-6 text-sm text-muted-foreground w-full sm:w-auto justify-between sm:justify-end">
-                                                <div className="flex flex-col items-center sm:items-end">
-                                                    <span className="text-[9px] sm:text-[10px] uppercase tracking-widest font-bold opacity-60 mb-0.5 flex items-center gap-1">
-                                                        <Trophy className="w-2.5 h-2.5 sm:w-3 sm:h-3 text-yellow-500" /> Best
-                                                    </span>
-                                                    <span className="font-mono text-base sm:text-lg font-bold text-foreground">{habit.longestStreak}<span className="text-[10px] sm:text-xs font-sans font-normal opacity-50">gg</span></span>
-                                                </div>
-                                                <div className="flex flex-col items-center sm:items-end">
-                                                    <span className="text-[9px] sm:text-[10px] uppercase tracking-widest font-bold opacity-60 mb-0.5 flex items-center gap-1">
-                                                        <TrendingDown className="w-2.5 h-2.5 sm:w-3 sm:h-3 text-destructive" /> Worst
-                                                    </span>
-                                                    <span className="font-mono text-base sm:text-lg font-bold text-destructive">{habit.worstStreak}<span className="text-[10px] sm:text-xs font-sans font-normal opacity-50">gg</span></span>
-                                                </div>
-                                                <div className="flex flex-col items-center sm:items-end">
-                                                    <span className="text-[9px] sm:text-[10px] uppercase tracking-widest font-bold opacity-60 mb-0.5">Serie</span>
-                                                    <span className="font-mono text-base sm:text-lg font-bold text-foreground">{habit.currentStreak}<span className="text-[10px] sm:text-xs font-sans font-normal opacity-50">gg</span></span>
-                                                </div>
-                                                <div className="flex flex-col items-center sm:items-end">
-                                                    <span className="text-[9px] sm:text-[10px] uppercase tracking-widest font-bold opacity-60 mb-0.5">Rate</span>
-                                                    <span className="font-mono text-base sm:text-lg font-bold text-foreground">{habit.completionRate}<span className="text-[10px] sm:text-sm">%</span></span>
-                                                </div>
-                                            </div>
-                                        </div>
-                                    ))
+                                    <>
+                                        {/* Active Habits */}
+                                        {(() => {
+                                            const activeHabits = sortedHabits.filter(h => {
+                                                const goal = allGoals.find(g => g.id === h.id);
+                                                return goal && !goal.end_date;
+                                            });
+                                            const archivedHabits = sortedHabits.filter(h => {
+                                                const goal = allGoals.find(g => g.id === h.id);
+                                                return goal && goal.end_date;
+                                            });
+
+                                            return (
+                                                <>
+                                                    {/* Active Habits Section */}
+                                                    {activeHabits.map(habit => (
+                                                        <div key={habit.id} className="glass-card rounded-xl p-3 sm:p-4 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3 sm:gap-4 group cursor-pointer hover:bg-white/5 transition-colors" onClick={() => setSelectedGoalId(habit.id)}>
+                                                            <div className="flex items-center gap-3 sm:gap-4 w-full sm:w-auto">
+                                                                <div className="w-8 h-8 sm:w-10 sm:h-10 rounded-xl flex items-center justify-center bg-white/5 border border-white/10 group-hover:scale-110 transition-transform duration-300 shadow-lg shrink-0" style={{ borderColor: `${habit.color}40`, boxShadow: `0 0 20px ${habit.color}10` }}>
+                                                                    <div className="w-2.5 h-2.5 sm:w-3 sm:h-3 rounded-sm" style={{ backgroundColor: habit.color }} />
+                                                                </div>
+                                                                <div className="min-w-0">
+                                                                    <span className="font-semibold text-foreground text-base sm:text-lg truncate block">{habit.title}</span>
+                                                                    <div className="h-1 w-16 sm:w-20 bg-secondary rounded-full mt-1 overflow-hidden">
+                                                                        <div className="h-full bg-primary transition-all duration-500" style={{ width: `${habit.completionRate}%`, backgroundColor: habit.color }} />
+                                                                    </div>
+                                                                </div>
+                                                            </div>
+                                                            <div className="grid grid-cols-4 gap-3 sm:flex sm:gap-6 text-sm text-muted-foreground w-full sm:w-auto justify-between sm:justify-end">
+                                                                <div className="flex flex-col items-center sm:items-end">
+                                                                    <span className="text-[9px] sm:text-[10px] uppercase tracking-widest font-bold opacity-60 mb-0.5 flex items-center gap-1">
+                                                                        <Trophy className="w-2.5 h-2.5 sm:w-3 sm:h-3 text-yellow-500" /> Best
+                                                                    </span>
+                                                                    <span className="font-mono text-base sm:text-lg font-bold text-foreground">{habit.longestStreak}<span className="text-[10px] sm:text-xs font-sans font-normal opacity-50">gg</span></span>
+                                                                </div>
+                                                                <div className="flex flex-col items-center sm:items-end">
+                                                                    <span className="text-[9px] sm:text-[10px] uppercase tracking-widest font-bold opacity-60 mb-0.5 flex items-center gap-1">
+                                                                        <TrendingDown className="w-2.5 h-2.5 sm:w-3 sm:h-3 text-destructive" /> Worst
+                                                                    </span>
+                                                                    <span className="font-mono text-base sm:text-lg font-bold text-destructive">{habit.worstStreak}<span className="text-[10px] sm:text-xs font-sans font-normal opacity-50">gg</span></span>
+                                                                </div>
+                                                                <div className="flex flex-col items-center sm:items-end">
+                                                                    <span className="text-[9px] sm:text-[10px] uppercase tracking-widest font-bold opacity-60 mb-0.5">Serie</span>
+                                                                    <span className="font-mono text-base sm:text-lg font-bold text-foreground">{habit.currentStreak}<span className="text-[10px] sm:text-xs font-sans font-normal opacity-50">gg</span></span>
+                                                                </div>
+                                                                <div className="flex flex-col items-center sm:items-end">
+                                                                    <span className="text-[9px] sm:text-[10px] uppercase tracking-widest font-bold opacity-60 mb-0.5">Rate</span>
+                                                                    <span className="font-mono text-base sm:text-lg font-bold text-foreground">{habit.completionRate}<span className="text-[10px] sm:text-sm">%</span></span>
+                                                                </div>
+                                                            </div>
+                                                        </div>
+                                                    ))}
+
+                                                    {/* Separator for Archived Habits */}
+                                                    {archivedHabits.length > 0 && (
+                                                        <div className="relative py-4">
+                                                            <div className="absolute inset-0 flex items-center">
+                                                                <div className="w-full border-t border-white/10"></div>
+                                                            </div>
+                                                            <div className="relative flex justify-center">
+                                                                <span className="bg-[#0a0a0a] px-3 text-xs uppercase tracking-widest text-muted-foreground font-semibold">
+                                                                    Archiviate ({archivedHabits.length})
+                                                                </span>
+                                                            </div>
+                                                        </div>
+                                                    )}
+
+                                                    {/* Archived Habits Section */}
+                                                    {archivedHabits.map(habit => (
+                                                        <div key={habit.id} className="glass-card rounded-xl p-3 sm:p-4 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3 sm:gap-4 group cursor-pointer hover:bg-white/5 transition-colors opacity-60" onClick={() => setSelectedGoalId(habit.id)}>
+                                                            <div className="flex items-center gap-3 sm:gap-4 w-full sm:w-auto">
+                                                                <div className="w-8 h-8 sm:w-10 sm:h-10 rounded-xl flex items-center justify-center bg-white/5 border border-white/10 group-hover:scale-110 transition-transform duration-300 shadow-lg shrink-0" style={{ borderColor: `${habit.color}40`, boxShadow: `0 0 20px ${habit.color}10` }}>
+                                                                    <div className="w-2.5 h-2.5 sm:w-3 sm:h-3 rounded-sm" style={{ backgroundColor: habit.color }} />
+                                                                </div>
+                                                                <div className="min-w-0">
+                                                                    <div className="flex items-center gap-2">
+                                                                        <span className="font-semibold text-foreground text-base sm:text-lg truncate">{habit.title}</span>
+                                                                        <span className="text-xs text-muted-foreground shrink-0">(archiviato)</span>
+                                                                    </div>
+                                                                    <div className="h-1 w-16 sm:w-20 bg-secondary rounded-full mt-1 overflow-hidden">
+                                                                        <div className="h-full bg-primary transition-all duration-500" style={{ width: `${habit.completionRate}%`, backgroundColor: habit.color }} />
+                                                                    </div>
+                                                                </div>
+                                                            </div>
+                                                            <div className="grid grid-cols-4 gap-3 sm:flex sm:gap-6 text-sm text-muted-foreground w-full sm:w-auto justify-between sm:justify-end">
+                                                                <div className="flex flex-col items-center sm:items-end">
+                                                                    <span className="text-[9px] sm:text-[10px] uppercase tracking-widest font-bold opacity-60 mb-0.5 flex items-center gap-1">
+                                                                        <Trophy className="w-2.5 h-2.5 sm:w-3 sm:h-3 text-yellow-500" /> Best
+                                                                    </span>
+                                                                    <span className="font-mono text-base sm:text-lg font-bold text-foreground">{habit.longestStreak}<span className="text-[10px] sm:text-xs font-sans font-normal opacity-50">gg</span></span>
+                                                                </div>
+                                                                <div className="flex flex-col items-center sm:items-end">
+                                                                    <span className="text-[9px] sm:text-[10px] uppercase tracking-widest font-bold opacity-60 mb-0.5 flex items-center gap-1">
+                                                                        <TrendingDown className="w-2.5 h-2.5 sm:w-3 sm:h-3 text-destructive" /> Worst
+                                                                    </span>
+                                                                    <span className="font-mono text-base sm:text-lg font-bold text-destructive">{habit.worstStreak}<span className="text-[10px] sm:text-xs font-sans font-normal opacity-50">gg</span></span>
+                                                                </div>
+                                                                <div className="flex flex-col items-center sm:items-end">
+                                                                    <span className="text-[9px] sm:text-[10px] uppercase tracking-widest font-bold opacity-60 mb-0.5">Serie</span>
+                                                                    <span className="font-mono text-base sm:text-lg font-bold text-foreground">{habit.currentStreak}<span className="text-[10px] sm:text-xs font-sans font-normal opacity-50">gg</span></span>
+                                                                </div>
+                                                                <div className="flex flex-col items-center sm:items-end">
+                                                                    <span className="text-[9px] sm:text-[10px] uppercase tracking-widest font-bold opacity-60 mb-0.5">Rate</span>
+                                                                    <span className="font-mono text-base sm:text-lg font-bold text-foreground">{habit.completionRate}<span className="text-[10px] sm:text-sm">%</span></span>
+                                                                </div>
+                                                            </div>
+                                                        </div>
+                                                    ))}
+                                                </>
+                                            );
+                                        })()}
+                                    </>
                                 )}
                             </div>
                         </div>

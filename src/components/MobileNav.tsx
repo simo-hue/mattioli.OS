@@ -3,9 +3,9 @@ import { cn } from '@/lib/utils';
 import { PieChart, Home, BarChart2 } from 'lucide-react';
 
 const mobileNavItems = [
-    { to: '/dashboard', label: 'Home', icon: Home },
-    { to: '/stats', label: 'Stats', icon: BarChart2 },
-    { to: '/macro-goals', label: 'Obiettivi', icon: PieChart },
+    { to: '/sw/dashboard', label: 'Home', icon: Home },
+    { to: '/sw/stats', label: 'Stats', icon: BarChart2 },
+    { to: '/sw/macro-goals', label: 'Obiettivi', icon: PieChart },
 ];
 
 export function MobileNav() {

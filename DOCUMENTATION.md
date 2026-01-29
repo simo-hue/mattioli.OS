@@ -2,7 +2,36 @@
 
 ## 📅 Log Modifiche (Ultimi aggiornamenti)
 
+### [2026-01-29] App Prefix Refactoring (/sw)
+- **Modifica Architetturale**: Tutte le rotte dell'applicazione autenticata sono state spostate sotto il prefisso `/sw/`.
+- **Obiettivo**: Separare nettamente il sito pubblico (Landing, Features, FAQ) dalla Web App vera e propria.
+- **Rotte Aggiornate**:
+  - Dashboard: `/sw/dashboard`
+  - Statistiche: `/sw/stats`
+  - Macro Obiettivi: `/sw/macro-goals`
+  - AI Coach: `/sw/ai-coach`
+  - Backup: `/sw/complete-backup`
+- **File Modificati**: `App.tsx`, `Auth.tsx`, `Layout.tsx`, `GlobalNav.tsx`, `MobileNav.tsx`.
+- **Base Path**: Mantenuto `/mattioli.OS/` per compatibilità con GitHub Pages.
+
+### [2026-01-23] SEO Fix per GitHub Pages - Static Routes Generation
+- **Problema**: Google Search Console restituiva 404 su rotte come `/features` perché GitHub Pages cercava cartelle fisiche che non esistevano (routing client-side).
+- **Soluzione**: Implementato script post-build che duplica `index.html` in tutte le rotte pubbliche.
+- **Script creato**: `scripts/generate-static-routes.js` - Script Node.js che:
+  - Viene eseguito automaticamente dopo `vite build`
+  - Crea fisicamente le cartelle per ogni rotta pubblica (features, faq, tech, philosophy, get-started, creator)
+  - Copia `dist/index.html` in ogni cartella come `index.html`
+  - Fornisce logging dettagliato con emoji e statistiche
+- **Package.json**: Modificato script `build` da `vite build` a `vite build && node scripts/generate-static-routes.js`
+- **Benefici**:
+  - Google ora riceve **200 OK** invece di **404 Not Found**
+  - Tutte le rotte pubbliche sono indicizzabili
+  - Funziona con la SPA e il routing client-side
+  - Deploy automatico senza passi manuali aggiuntivi
+- **Testing**: Build eseguito con successo, 6 rotte statiche generate correttamente
+
 ### [2026-01-20] SEO e Google Search Console
+
 - **Sitemap**: Creata `public/sitemap.xml` per indicizzare correttamente tutte le pagine pubbliche.
 - **Robots.txt**: Aggiornato per includere il link alla sitemap e permettere l'indicizzazione.
 - **Metadata**: Aggiornato `index.html` con:

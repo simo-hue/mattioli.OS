@@ -13,7 +13,7 @@ export function Layout() {
 
           <div className="absolute inset-0 bg-gradient-to-r from-primary/5 via-transparent to-primary/5 pointer-events-none lg:hidden" />
 
-          <Link to="/dashboard" className="flex items-center gap-2 sm:gap-3 group relative z-10 active:scale-95 transition-transform">
+          <Link to="/sw/dashboard" className="flex items-center gap-2 sm:gap-3 group relative z-10 active:scale-95 transition-transform">
             <div className="relative">
               <Command className="h-6 w-6 sm:h-6 sm:w-6 text-primary animate-pulse" />
               <div className="absolute inset-0 bg-primary/20 blur-lg rounded-full opacity-50" />

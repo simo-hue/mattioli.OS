@@ -73,17 +73,16 @@ const App = () => {
                 <Route path="/get-started" element={<GetStartedPage />} />
                 <Route path="/creator" element={<CreatorPage />} />
 
-                <Route element={
+                <Route path="sw" element={
                   <ProtectedRoute>
                     <Layout />
                   </ProtectedRoute>
                 }>
-                  <Route path="/dashboard" element={<Index />} />
-                  <Route path="/stats" element={<Stats />} />
-                  <Route path="/macro-goals" element={<MacroGoals />} />
-                  <Route path="/ai-coach" element={<AICoach />} />
-                  <Route path="/complete-backup" element={<CompleteBackup />} />
-
+                  <Route path="dashboard" element={<Index />} />
+                  <Route path="stats" element={<Stats />} />
+                  <Route path="macro-goals" element={<MacroGoals />} />
+                  <Route path="ai-coach" element={<AICoach />} />
+                  <Route path="complete-backup" element={<CompleteBackup />} />
                 </Route>
 
                 {/* ADD ALL CUSTOM ROUTES ABOVE THE CATCH-ALL "*" ROUTE */}

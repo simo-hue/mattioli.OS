@@ -4,9 +4,9 @@ import { PieChart, BarChart2, Sparkles } from 'lucide-react';
 import { useAI } from '@/context/AIContext';
 
 const navItems = [
-  { to: '/stats', label: 'Statistiche', icon: BarChart2 },
-  { to: '/ai-coach', label: 'AI Coach', icon: Sparkles },
-  { to: '/macro-goals', label: 'Macro Obiettivi', icon: PieChart },
+  { to: '/sw/stats', label: 'Statistiche', icon: BarChart2 },
+  { to: '/sw/ai-coach', label: 'AI Coach', icon: Sparkles },
+  { to: '/sw/macro-goals', label: 'Macro Obiettivi', icon: PieChart },
 ];
 
 export function GlobalNav() {

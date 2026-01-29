@@ -17,7 +17,7 @@ const Auth = () => {
     useEffect(() => {
         // Check if user is already logged in
         supabase.auth.getSession().then(({ data: { session } }) => {
-            if (session) navigate("/dashboard");
+            if (session) navigate("/sw/dashboard");
         });
     }, [navigate]);
 
@@ -36,7 +36,7 @@ const Auth = () => {
                 });
                 if (error) throw error;
                 toast.success("Accesso effettuato");
-                navigate("/dashboard");
+                navigate("/sw/dashboard");
             }
         } catch (error: any) {
             toast.error(error.message);

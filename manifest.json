@@ -9,12 +9,12 @@
     "scope": "/mattioli.OS/",
     "icons": [
         {
-            "src": "/mattioli.OS/pwa-icon-v5.png",
+            "src": "pwa-icon-v5.png",
             "sizes": "192x192",
             "type": "image/png"
         },
         {
-            "src": "/mattioli.OS/pwa-icon-v5.png",
+            "src": "pwa-icon-v5.png",
             "sizes": "512x512",
             "type": "image/png"
         }

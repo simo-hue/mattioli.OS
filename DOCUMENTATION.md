@@ -2,6 +2,13 @@
 
 ## 📅 Log Modifiche (Ultimi aggiornamenti)
 
+### [2026-02-12] Settimane Passate: Stile Opacità nel Selettore (Macro Goals)
+- **Feature**: Le settimane passate nel dropdown del selettore settimana ora appaiono con lo stesso stile visivo dei mesi passati (testo opaco + italico).
+- **Bug Fix Correlato**: Corretto un bug di operator precedence nel selettore mese che impediva l'applicazione dello stile italico quando si navigava su anni passati.
+- **Dettagli Tecnici**: Aggiunte costanti `currentMonth` e `currentWeek` per confronto; la condizione ora verifica: anno passato OR mese passato OR (stesso mese e settimana < settimana corrente).
+- **File Modificato**: `src/components/goals/LongTermGoals.tsx`
+- **Testing**: Build TypeScript verificata con successo (`tsc --noEmit`).
+
 ### [2026-02-02] Fix Calcolo Settimana Corrente (Macro Goals)
 - **Problema**: Il sistema calcolava erroneamente la settimana corrente. Ad esempio, il 2 Febbraio 2026 (Lunedì) veniva considerato "Settimana 2" invece di "Settimana 1", causando:
   - Navigazione alla settimana sbagliata nella sezione Goals Settimanali

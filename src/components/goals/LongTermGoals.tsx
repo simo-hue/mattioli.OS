@@ -315,6 +315,8 @@ export function LongTermGoals() {
 
     // Generate year range: startYear to (Current Year + 5)
     const currentYear = new Date().getFullYear();
+    const currentMonth = new Date().getMonth() + 1;
+    const currentWeek = getLogicalWeekOfMonth(new Date());
     const years = Array.from({ length: (currentYear + 5) - startYear + 1 }, (_, i) => startYear + i);
 
     return (
@@ -490,7 +492,10 @@ export function LongTermGoals() {
                                 <SelectContent>
                                     {months.map(m => (
                                         <SelectItem key={m.value} value={m.value.toString()} className={cn(
-                                            (selectedYear !== 'all' && parseInt(selectedYear) < currentYear) || (selectedYear === currentYear.toString() && m.value < (new Date().getMonth() + 1)) && "text-muted-foreground italic"
+                                            (
+                                                (selectedYear !== 'all' && parseInt(selectedYear) < currentYear) ||
+                                                (selectedYear === currentYear.toString() && m.value < currentMonth)
+                                            ) && "text-muted-foreground italic"
                                         )}>
                                             {m.label}
                                         </SelectItem>
@@ -507,7 +512,11 @@ export function LongTermGoals() {
                                 <SelectContent>
                                     {Array.from({ length: getLogicalWeeksInMonth(new Date(selectedYear === 'all' ? currentYear : parseInt(selectedYear), selectedMonth - 1, 1)) }, (_, i) => i + 1).map(w => (
                                         <SelectItem key={w} value={w.toString()} className={cn(
-                                            (selectedYear !== 'all' && parseInt(selectedYear) < currentYear) || (selectedYear === currentYear.toString() && selectedMonth < (new Date().getMonth() + 1)) && "text-muted-foreground italic"
+                                            (
+                                                (selectedYear !== 'all' && parseInt(selectedYear) < currentYear) ||
+                                                (selectedYear === currentYear.toString() && selectedMonth < currentMonth) ||
+                                                (selectedYear === currentYear.toString() && selectedMonth === currentMonth && w < currentWeek)
+                                            ) && "text-muted-foreground italic"
                                         )}>
                                             Settimana {w}
                                         </SelectItem>

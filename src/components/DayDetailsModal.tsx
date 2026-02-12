@@ -1,6 +1,7 @@
 import { format } from 'date-fns';
 import { it } from 'date-fns/locale';
-import { Check, X, Calendar, Activity, CheckCircle2, XCircle, Circle } from 'lucide-react';
+import { Check, X, Calendar, Activity, CheckCircle2, XCircle, Circle, Flame, HeartCrack } from 'lucide-react';
+import { calculateStreakForDay } from '@/lib/streakUtils';
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 import { Goal, GoalLogsMap } from '@/types/goals';
 import { cn } from '@/lib/utils';
@@ -137,6 +138,14 @@ export function DayDetailsModal({
                             const isDone = status === 'done';
                             const isMissed = status === 'missed';
 
+                            // Calculate Streak
+                            const streak = calculateStreakForDay(
+                                habit.id,
+                                date,
+                                records,
+                                new Date(habit.start_date)
+                            );
+
                             return (
                                 <div
                                     key={habit.id}
@@ -177,15 +186,34 @@ export function DayDetailsModal({
                                         </div>
 
                                         <div className="flex flex-col">
-                                            <span className={cn(
-                                                "font-medium prose-sm transition-all duration-300",
-                                                isDone && "text-success",
-                                                isMissed && "text-muted-foreground line-through decoration-destructive/50",
-                                                !isDone && !isMissed && "text-foreground group-hover:text-primary",
-                                                isPrivacyMode && "blur-sm"
-                                            )}>
-                                                {habit.title}
-                                            </span>
+                                            <div className="flex items-center gap-2">
+                                                <span className={cn(
+                                                    "font-medium prose-sm transition-all duration-300",
+                                                    isDone && "text-success",
+                                                    isMissed && "text-muted-foreground line-through decoration-destructive/50",
+                                                    !isDone && !isMissed && "text-foreground group-hover:text-primary",
+                                                    isPrivacyMode && "blur-sm"
+                                                )}>
+                                                    {habit.title}
+                                                </span>
+
+                                                {/* Visual Streak Badge */}
+                                                {streak.count > 0 && (
+                                                    <div className={cn(
+                                                        "flex items-center gap-1 px-1.5 py-0.5 rounded-full text-[10px] font-bold border shadow-sm animate-in zoom-in duration-300",
+                                                        streak.type === 'positive'
+                                                            ? "bg-orange-500/10 border-orange-500/20 text-orange-500"
+                                                            : "bg-destructive/10 border-destructive/20 text-destructive"
+                                                    )}>
+                                                        {streak.type === 'positive' ? (
+                                                            <Flame className="w-3 h-3 fill-orange-500 animate-pulse" />
+                                                        ) : (
+                                                            <HeartCrack className="w-3 h-3 fill-destructive/20" />
+                                                        )}
+                                                        <span>{streak.count}</span>
+                                                    </div>
+                                                )}
+                                            </div>
                                         </div>
                                     </div>
 

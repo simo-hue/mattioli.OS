@@ -17,6 +17,15 @@
 - **Files Modificati**: `src/components/DayDetailsModal.tsx`, `src/index.css`.
 - **Testing**: Verifica manuale UI/UX.
 
+### [2026-02-12] Visual Streak Tracking (Day Details)
+- **Feature**: Aggiunta visualizzazione della streak corrente per ogni singola abitudine nel popup dettagli giorno.
+- **Design**:
+  - **Streak Positiva (🔥)**: Conta i giorni consecutivi di completamento (incluso oggi o ieri). Icona Fiamma animata (pulse), colore Arancio.
+  - **Streak Negativa (💔)**: Conta i giorni consecutivi mancati. Icona Cuore Spezzato, colore Rosso/Destructive.
+- **Logica**: Nuova utility `src/lib/streakUtils.ts` per calcolare le streak relative a qualsiasi data passata, gestendo anche gli stati "pending" (es. oggi non ancora fatto ma ieri sì -> streak positiva mantenuta).
+- **Files Modificati**: `src/components/DayDetailsModal.tsx`, `src/lib/streakUtils.ts`.
+- **Testing**: Build TypeScript verificata.
+
 ### [2026-02-12] Settimane Passate: Stile Opacità nel Selettore (Macro Goals)
 - **Feature**: Le settimane passate nel dropdown del selettore settimana ora appaiono con lo stesso stile visivo dei mesi passati (testo opaco + italico).
 - **Bug Fix Correlato**: Corretto un bug di operator precedence nel selettore mese che impediva l'applicazione dello stile italico quando si navigava su anni passati.

@@ -26,6 +26,14 @@
 - **Files Modificati**: `src/components/DayDetailsModal.tsx`, `src/lib/streakUtils.ts`.
 - **Testing**: Build TypeScript verificata.
 
+### [2026-02-12] Console & Manifest Fixes
+- **Fix**: Risolti vari warning in console:
+  - **Manifest**: Risalvato `manifest.json` per correggere probremi di codifica/syntax error.
+  - **Meta Tags**: Aggiunto `mobile-web-app-capable` in `index.html` per standard compliance.
+  - **Manifest Paths**: Aggiornati i percorsi in `index.html` e `manifest.json` per essere relativi (rimosso prefisso `/mattioli.OS/`) per evitare errori di caricamento (HTML fallback) in development mode.
+  - **Accessibility**: Aggiunto `aria-describedby={undefined}` al `DialogContent` del DayDetailsModal per rimuovere il warning di accessibilità di Radix UI.
+- **Files Modificati**: `public/manifest.json`, `index.html`, `src/components/DayDetailsModal.tsx`.
+
 ### [2026-02-12] Settimane Passate: Stile Opacità nel Selettore (Macro Goals)
 - **Feature**: Le settimane passate nel dropdown del selettore settimana ora appaiono con lo stesso stile visivo dei mesi passati (testo opaco + italico).
 - **Bug Fix Correlato**: Corretto un bug di operator precedence nel selettore mese che impediva l'applicazione dello stile italico quando si navigava su anni passati.

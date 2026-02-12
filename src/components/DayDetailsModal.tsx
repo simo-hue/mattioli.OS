@@ -101,7 +101,7 @@ export function DayDetailsModal({
 
     return (
         <Dialog open={isOpen} onOpenChange={onClose}>
-            <DialogContent className="sm:max-w-[420px] p-0 gap-0 overflow-hidden border-white/10 bg-background/60 backdrop-blur-xl shadow-2xl">
+            <DialogContent aria-describedby={undefined} className="sm:max-w-[420px] p-0 gap-0 overflow-hidden border-white/10 bg-background/60 backdrop-blur-xl shadow-2xl">
                 {/* Header Section */}
                 <div className="relative p-5 pb-6 overflow-hidden">
                     {/* Background Gradient/Glow */}

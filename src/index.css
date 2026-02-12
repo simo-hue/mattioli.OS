@@ -130,6 +130,23 @@
     @apply bg-card/40 backdrop-blur-md border border-white/10 hover:border-white/20 transition-all duration-300;
   }
 
+  .habit-row-glass {
+    @apply bg-card/30 backdrop-blur-sm border border-white/5 hover:bg-card/50 hover:border-white/10 transition-all duration-300;
+  }
+
+  /* Hide scrollbar for Chrome, Safari and Opera */
+  .no-scrollbar::-webkit-scrollbar {
+    display: none;
+  }
+
+  /* Hide scrollbar for IE, Edge and Firefox */
+  .no-scrollbar {
+    -ms-overflow-style: none;
+    /* IE and Edge */
+    scrollbar-width: none;
+    /* Firefox */
+  }
+
   .text-fluid-sm {
     font-size: clamp(0.75rem, 2vw, 0.875rem);
   }
@@ -177,6 +194,28 @@
     }
 
     100% {
+      opacity: 1;
+      transform: translateY(0);
+    }
+  }
+
+  @keyframes ring-fill {
+    from {
+      stroke-dashoffset: 100;
+    }
+
+    to {
+      stroke-dashoffset: var(--target-offset);
+    }
+  }
+
+  @keyframes slide-in-row {
+    from {
+      opacity: 0;
+      transform: translateY(10px);
+    }
+
+    to {
       opacity: 1;
       transform: translateY(0);
     }

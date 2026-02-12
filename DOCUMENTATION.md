@@ -2,6 +2,21 @@
 
 ## 📅 Log Modifiche (Ultimi aggiornamenti)
 
+### [2026-02-12] Popup Redesign (Daily Habits)
+- **Feature**: Ridisegnato DayDetailsModal con stile glassmorphic, progress ring e animazioni.
+- **Miglioramenti**:
+  - Header con data gerarchica e anello di progresso SVG
+  - Righe abitudini con animazione a cascata (stagger)
+  - Footer con statistiche (fatti/mancati/restanti)
+  - Colorazione contestuale e feedback visivo
+  - **Cleanup**: Rimosso indicatore circolare "Action" sulla destra delle righe (richiesta user).
+  - **Style**: Nascosta la scrollbar (invisibile) per look più pulito.
+  - **Layout**: Spostato il contatore (x/y) alla sinistra del cerchio di progresso e ridotto padding header.
+  - **Header**: Data e giorno ora sono sulla stessa riga per risparmiare spazio verticale.
+  - **Fix**: Aggiunto margine destro al contatore per evitare sovrapposizione con il tasto di chiusura "X".
+- **Files Modificati**: `src/components/DayDetailsModal.tsx`, `src/index.css`.
+- **Testing**: Verifica manuale UI/UX.
+
 ### [2026-02-12] Settimane Passate: Stile Opacità nel Selettore (Macro Goals)
 - **Feature**: Le settimane passate nel dropdown del selettore settimana ora appaiono con lo stesso stile visivo dei mesi passati (testo opaco + italico).
 - **Bug Fix Correlato**: Corretto un bug di operator precedence nel selettore mese che impediva l'applicazione dello stile italico quando si navigava su anni passati.

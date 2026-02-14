@@ -4,7 +4,7 @@ import { supabase } from '@/integrations/supabase/client';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Checkbox } from '@/components/ui/checkbox';
-import { Trash2, Plus, Calendar as CalendarIcon, Loader2, Download, Upload, PieChart } from 'lucide-react';
+import { Trash2, Plus, Calendar as CalendarIcon, Loader2, Download, Upload, PieChart, Pencil } from 'lucide-react';
 import { toast } from 'sonner';
 import { cn } from '@/lib/utils';
 import { MacroGoalsStats } from './MacroGoalsStats';
@@ -36,6 +36,15 @@ import {
 import { format, getQuarter } from 'date-fns';
 import { getLogicalWeekOfMonth, getLogicalWeeksInMonth } from '@/lib/dateUtils';
 import { it } from 'date-fns/locale';
+
+import {
+    Dialog,
+    DialogContent,
+    DialogDescription,
+    DialogFooter,
+    DialogHeader,
+    DialogTitle,
+} from "@/components/ui/dialog";
 
 type GoalType = 'annual' | 'quarterly' | 'monthly' | 'weekly' | 'lifetime' | 'stats';
 
@@ -75,6 +84,7 @@ export function LongTermGoals() {
     const [importReport, setImportReport] = useState<ImportReport | null>(null);
     const [newGoalTitle, setNewGoalTitle] = useState('');
     const [newGoalColor, setNewGoalColor] = useState<string | null>(null);
+    const [editingGoal, setEditingGoal] = useState<{ id: string, title: string } | null>(null);
 
     const queryClient = useQueryClient();
 
@@ -234,6 +244,21 @@ export function LongTermGoals() {
         }
     });
 
+    const updateTitleMutation = useMutation({
+        mutationFn: async ({ id, title }: { id: string, title: string }) => {
+            const { error } = await (supabase.from('long_term_goals') as any).update({ title }).eq('id', id);
+            if (error) throw error;
+        },
+        onSuccess: () => {
+            queryClient.invalidateQueries({ queryKey: ['longTermGoals'] });
+            setEditingGoal(null);
+            toast.success('Obiettivo aggiornato');
+        },
+        onError: () => {
+            toast.error('Errore aggiornamento titolo');
+        }
+    });
+
     const deleteGoalMutation = useMutation({
         mutationFn: async (id: string) => {
             const { error } = await supabase
@@ -321,6 +346,35 @@ export function LongTermGoals() {
 
     return (
         <div className="space-y-6 animate-fade-in p-2 md:p-0">
+            {/* Edit Dialog */}
+            <Dialog open={!!editingGoal} onOpenChange={(open) => !open && setEditingGoal(null)}>
+                <DialogContent>
+                    <DialogHeader>
+                        <DialogTitle>Modifica Obiettivo</DialogTitle>
+                        <DialogDescription>
+                            Modifica il titolo del tuo obiettivo.
+                        </DialogDescription>
+                    </DialogHeader>
+                    <div className="py-4">
+                        <Input
+                            value={editingGoal?.title || ''}
+                            onChange={(e) => setEditingGoal(prev => prev ? { ...prev, title: e.target.value } : null)}
+                            placeholder="Titolo obiettivo..."
+                        />
+                    </div>
+                    <DialogFooter>
+                        <Button variant="outline" onClick={() => setEditingGoal(null)}>Annulla</Button>
+                        <Button
+                            onClick={() => editingGoal && updateTitleMutation.mutate({ id: editingGoal.id, title: editingGoal.title })}
+                            disabled={updateTitleMutation.isPending || !editingGoal?.title.trim()}
+                        >
+                            {updateTitleMutation.isPending ? <Loader2 className="w-4 h-4 animate-spin mr-2" /> : null}
+                            Salva Modifiche
+                        </Button>
+                    </DialogFooter>
+                </DialogContent>
+            </Dialog>
+
             {/* Report Dialog */}
             <AlertDialog open={!!importReport} onOpenChange={(open) => !open && setImportReport(null)}>
                 <AlertDialogContent className="max-w-3xl max-h-[85vh] overflow-y-auto">
@@ -779,6 +833,15 @@ export function LongTermGoals() {
                                                         ))}
                                                     </SelectContent>
                                                 </Select>
+
+                                                <Button
+                                                    variant="ghost"
+                                                    size="icon"
+                                                    className="text-muted-foreground hover:bg-white/10 hover:text-white h-8 w-8"
+                                                    onClick={() => setEditingGoal({ id: goal.id, title: goal.title })}
+                                                >
+                                                    <Pencil className="w-4 h-4" />
+                                                </Button>
 
                                                 <AlertDialog>
                                                     <AlertDialogTrigger asChild>

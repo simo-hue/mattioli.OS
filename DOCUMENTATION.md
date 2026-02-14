@@ -2,6 +2,13 @@
 
 ## 📅 Log Modifiche (Ultimi aggiornamenti)
 
+### [2026-02-14] Edit Macro Goals
+- **Feature**: Aggiunta la possibilità di modificare il titolo dei macro obiettivi.
+- **UI**: Aggiunta icona "Matita" accanto al tasto elimina; cliccando si apre un dialog di modifica.
+- **Tech**: Implementata `updateTitleMutation` e stato locale `editingGoal` in `LongTermGoals.tsx`.
+- **File Modificati**: `src/components/goals/LongTermGoals.tsx`.
+- **Testing**: Verifica manuale UI/UX.
+
 ### [2026-02-12] Popup Redesign (Daily Habits)
 - **Feature**: Ridisegnato DayDetailsModal con stile glassmorphic, progress ring e animazioni.
 - **Miglioramenti**:

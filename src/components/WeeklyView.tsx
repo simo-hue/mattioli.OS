@@ -142,7 +142,7 @@ export function WeeklyView({ habits, records, onToggleHabit, isPrivacyMode = fal
                 records={records}
                 onToggleHabit={(habitId) => selectedDate && onToggleHabit(selectedDate, habitId)}
                 isPrivacyMode={isPrivacyMode}
-                readonly={true}
+                readonly={selectedDate ? !(isSameDay(selectedDate, today) || isSameDay(selectedDate, subDays(today, 1))) : true}
             />
         </div >
     );

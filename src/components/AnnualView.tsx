@@ -159,7 +159,7 @@ export function AnnualView({ habits, records, onToggleHabit, isPrivacyMode = fal
                 records={records}
                 onToggleHabit={(habitId) => selectedDate && onToggleHabit(selectedDate, habitId)}
                 isPrivacyMode={isPrivacyMode}
-                readonly={selectedDate ? !(isSameDay(selectedDate, new Date()) || (isSameDay(selectedDate, subDays(new Date(), 1)) && new Date().getHours() < 12)) : true}
+                readonly={selectedDate ? !(isSameDay(selectedDate, new Date()) || isSameDay(selectedDate, subDays(new Date(), 1))) : true}
             />
         </>
     );

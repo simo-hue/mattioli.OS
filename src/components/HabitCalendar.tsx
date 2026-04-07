@@ -115,7 +115,7 @@ export function HabitCalendar({ habits, records, onToggleHabit, isPrivacyMode = 
                         future && "opacity-30 cursor-not-allowed",
                         isToday(day) && !hasActivity && "bg-white/5 ring-1 ring-primary/50",
                         // Visual cue for editable days (Today or Yesterday < 12h)
-                        !future && (isSameDay(date, new Date()) || (isSameDay(date, subDays(new Date(), 1)) && new Date().getHours() < 12)) && "ring-1 ring-primary/30 bg-primary/5"
+                        !future && (isSameDay(date, new Date()) || isSameDay(date, subDays(new Date(), 1))) && "ring-1 ring-primary/30 bg-primary/5"
                     )}
                 >
                     <span className={cn(
@@ -199,7 +199,7 @@ export function HabitCalendar({ habits, records, onToggleHabit, isPrivacyMode = 
                 records={records}
                 onToggleHabit={(habitId) => selectedDate && onToggleHabit(selectedDate, habitId)}
                 isPrivacyMode={isPrivacyMode}
-                readonly={selectedDate ? !(isSameDay(selectedDate, new Date()) || (isSameDay(selectedDate, subDays(new Date(), 1)) && new Date().getHours() < 12)) : true}
+                readonly={selectedDate ? !(isSameDay(selectedDate, new Date()) || isSameDay(selectedDate, subDays(new Date(), 1))) : true}
             />
         </>
     );

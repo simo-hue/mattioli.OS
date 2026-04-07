@@ -2026,3 +2026,18 @@ Risolto problema di caricamento risorse (404) su GitHub Pages causato dal cambio
 #### 2. Istruzioni Manuali
 **File**: `TO_SIMO_DO.md`
 - Aggiunta sezione per il rebuild e redeploy manuale necessario per applicare le modifiche.
+
+## 02 Aprile 2026 - Extended Edit Window
+
+### Descrizione
+Modificata la restrizione temporale per la modifica delle abitudini passate. Precedentemente, le abitudini del giorno precedente erano modificabili solo fino alle 12:00 (mezzogiorno). La modifica permette ora una finestra di un giorno intero (full day window).
+
+### Modifiche Apportate
+
+#### 1. Componenti UI (AnnualView, HabitCalendar, WeeklyView)
+- Rimossa la condizione `new Date().getHours() < 12` per i log del giorno precedente.
+- Ora è possibile modificare i dati di "Oggi" e "Ieri" in qualsiasi momento.
+- I dati precedenti all'altro ieri rimangono in sola lettura per preservare l'integrità storica.
+
+#### 2. Visual Feedback
+- Aggiornato l'indicatore visivo (halo/ring) nel calendario per evidenziare sia oggi che ieri come giorni attivi/modificabili.

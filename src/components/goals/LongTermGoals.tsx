@@ -4,7 +4,7 @@ import { supabase } from '@/integrations/supabase/client';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Checkbox } from '@/components/ui/checkbox';
-import { Trash2, Plus, Calendar as CalendarIcon, Loader2, Download, Upload, PieChart, Pencil } from 'lucide-react';
+import { Trash2, Plus, Calendar as CalendarIcon, Loader2, Download, Upload, PieChart, Pencil, ArrowRightToLine } from 'lucide-react';
 import { toast } from 'sonner';
 import { cn } from '@/lib/utils';
 import { MacroGoalsStats } from './MacroGoalsStats';
@@ -256,6 +256,70 @@ export function LongTermGoals() {
         },
         onError: () => {
             toast.error('Errore aggiornamento titolo');
+        }
+    });
+
+    // Segna come fallito e copia nella settimana successiva
+    const failAndCopyToNextWeekMutation = useMutation({
+        mutationFn: async (goal: LongTermGoal) => {
+            const { data: { user } } = await supabase.auth.getUser();
+            if (!user) throw new Error('Not authenticated');
+
+            // Step 1: segna l'obiettivo corrente come fallito
+            const { error: failError } = await (supabase.from('long_term_goals') as any)
+                .update({ status: 'failed' })
+                .eq('id', goal.id);
+            if (failError) throw failError;
+
+            // Step 2: calcola settimana e mese successivi
+            const currentWeekNum = goal.week_number ?? 1;
+            const currentMonthNum = goal.month ?? 1;
+            const currentYearNum = goal.year ?? new Date().getFullYear();
+
+            // Quante settimane ha il mese corrente?
+            const weeksInCurrentMonth = getLogicalWeeksInMonth(
+                new Date(currentYearNum, currentMonthNum - 1, 1)
+            );
+
+            let nextWeek: number;
+            let nextMonth: number;
+            let nextYear: number;
+
+            if (currentWeekNum < weeksInCurrentMonth) {
+                // Stessa mese, settimana successiva
+                nextWeek = currentWeekNum + 1;
+                nextMonth = currentMonthNum;
+                nextYear = currentYearNum;
+            } else {
+                // Vai al mese successivo, prima settimana
+                nextWeek = 1;
+                nextMonth = currentMonthNum === 12 ? 1 : currentMonthNum + 1;
+                nextYear = currentMonthNum === 12 ? currentYearNum + 1 : currentYearNum;
+            }
+
+            // Step 3: crea il goal nella settimana successiva
+            const nextGoal = {
+                user_id: user.id,
+                title: goal.title,
+                type: 'weekly',
+                year: nextYear,
+                quarter: null,
+                month: nextMonth,
+                week_number: nextWeek,
+                status: 'active',
+                color: goal.color,
+            };
+
+            const { error: createError } = await (supabase.from('long_term_goals') as any)
+                .insert(nextGoal);
+            if (createError) throw createError;
+        },
+        onSuccess: () => {
+            queryClient.invalidateQueries({ queryKey: ['longTermGoals'] });
+            toast.success('Goal segnato come fallito e copiato nella settimana successiva! 🚀');
+        },
+        onError: (error) => {
+            toast.error(`Errore: ${error.message}`);
         }
     });
 
@@ -833,6 +897,22 @@ export function LongTermGoals() {
                                                         ))}
                                                     </SelectContent>
                                                 </Select>
+
+                                                {/* Fail & Copy to Next Week — solo vista settimanale */}
+                                                {view === 'weekly' && effectiveStatus === 'active' && (
+                                                    <Button
+                                                        variant="ghost"
+                                                        size="icon"
+                                                        className="text-amber-500 hover:bg-amber-500/15 hover:text-amber-400 h-8 w-8"
+                                                        title="Segna come fallito e copia nella settimana successiva"
+                                                        disabled={failAndCopyToNextWeekMutation.isPending}
+                                                        onClick={() => failAndCopyToNextWeekMutation.mutate(goal)}
+                                                    >
+                                                        {failAndCopyToNextWeekMutation.isPending
+                                                            ? <Loader2 className="w-4 h-4 animate-spin" />
+                                                            : <ArrowRightToLine className="w-4 h-4" />}
+                                                    </Button>
+                                                )}
 
                                                 <Button
                                                     variant="ghost"

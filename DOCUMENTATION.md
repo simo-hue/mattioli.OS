@@ -2,6 +2,17 @@
 
 ## 📅 Log Modifiche (Ultimi aggiornamenti)
 
+### [2026-04-07] Fail & Copy to Next Week (Macro Obiettivi Settimanali)
+- **Feature**: Aggiunto nuovo pulsante "Fail & Copy" nella vista settimanale dei Macro Obiettivi.
+- **Funzionamento**: Con un singolo click il pulsante (icona `ArrowRightToLine`, colore ambra) esegue due azioni atomiche:
+  1. Segna l'obiettivo corrente come **fallito**.
+  2. Crea una copia identica (stesso titolo, stesso colore/categoria) nella **settimana successiva**.
+- **Logica settimana successiva**: Gestisce correttamente il cambio mese (es. ultima settimana di Aprile → Settimana 1 di Maggio) e il cambio anno (es. ultima settimana di Dicembre → Settimana 1 di Gennaio anno+1).
+- **UX**: Il pulsante è visibile **solo al hover** e **solo in vista `weekly`**, appare tra il selettore colore e il pulsante modifica (matita). È disabilitato se lo stato non è `active` (non ha senso copiare un goal già completato).
+- **Tech**: Nuova `failAndCopyToNextWeekMutation` (TanStack Query `useMutation`) in `LongTermGoals.tsx`. Utilizza `getLogicalWeeksInMonth` (da `dateUtils.ts`) per il calcolo corretto delle settimane per mese.
+- **File Modificato**: `src/components/goals/LongTermGoals.tsx`
+- **Testing**: Build TypeScript verificata con `tsc --noEmit` — nessun errore.
+
 ### [2026-02-14] Edit Macro Goals
 - **Feature**: Aggiunta la possibilità di modificare il titolo dei macro obiettivi.
 - **UI**: Aggiunta icona "Matita" accanto al tasto elimina; cliccando si apre un dialog di modifica.

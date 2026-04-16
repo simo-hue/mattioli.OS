@@ -44,17 +44,24 @@ export function getLogicalWeekOfMonth(date: Date): number {
     // Conta quante settimane complete dalla prima settimana con lunedì nel mese
     const weeksDiff = differenceInWeeks(dateWeekStart, effectiveFirstMonday);
 
-    // +1 perché la prima settimana è "1" (non "0")
-    // +1 extra se c'erano giorni prima del primo lunedì (es. 1 Feb domenica = settimana 1,
-    // quindi il 2 Feb lunedì è ancora settimana 1, non settimana 2)
-    // In realtà: il primo lunedì del mese È la settimana 1 (o lo è insieme ai giorni precedenti)
+    // Calcoliamo i giorni "orfani" all'inizio del mese prima del primo vero lunedì
+    const daysBeforeFirstMonday = Math.round((effectiveFirstMonday.getTime() - monthStart.getTime()) / (1000 * 60 * 60 * 24));
 
-    // Se il mese inizia di lunedì, firstMondayOfMonth == monthStart, quindi weeksDiff + 1 è corretto
-    // Se il mese NON inizia di lunedì (es. domenica), effectiveFirstMonday è il primo lunedì NEL mese,
-    // e i giorni precedenti sono "settimana 0" che vogliamo chiamare "settimana 1",
-    // quindi il primo lunedì effettivo diventa anch'esso settimana 1.
+    // Di base, il primo venero lunedì segna l'inizio della Settimana 1
+    let baseWeek = 1;
 
-    return weeksDiff + 1;
+    // Tuttavia, se ci sono giorni prima del primo lunedì...
+    if (daysBeforeFirstMonday > 1) {
+        // Se i giorni sono > 1 (il mese inizia di sab, ven, gio, mer, mar)
+        // Allora questi giorni costituiscono da soli la "Settimana 1"
+        // di conseguenza, il primo lunedì segna l'inizio della "Settimana 2".
+        baseWeek = 2;
+    } 
+    // Se daysBeforeFirstMonday == 1 (inizia di domenica), come da specifica, 
+    // la domenica viene accorpata alla prima settimana intera successiva.
+    // Quindi baseWeek rimane 1.
+
+    return weeksDiff + baseWeek;
 }
 
 /**

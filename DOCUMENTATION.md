@@ -2041,3 +2041,7 @@ Modificata la restrizione temporale per la modifica delle abitudini passate. Pre
 
 #### 2. Visual Feedback
 - Aggiornato l'indicatore visivo (halo/ring) nel calendario per evidenziare sia oggi che ieri come giorni attivi/modificabili.
+
+- [2026-04-16 10:14]: Bugfix - Weekly goals calculation offset
+  - *Details*: Fixed a logical bug in `getLogicalWeekOfMonth` that incorrectly merged the first partial week of a month with the first full week. This caused the current week to be offset by 1, resulting in past weeks appearing as current (active) visually.
+  - *Tech Notes*: Updated `src/lib/dateUtils.ts` to properly detect the `daysBeforeFirstMonday`. If `> 1`, the first Monday will rightly increment the `baseWeek` to 2. Sunday is still merged with Monday as intended by design (1-day partial week logic remains intact).

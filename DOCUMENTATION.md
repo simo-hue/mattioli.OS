@@ -2,6 +2,33 @@
 
 ## 📅 Log Modifiche (Ultimi aggiornamenti)
 
+### [2026-04-22] Flutter Mobile — Home Screen Redesign (PWA-Consistent)
+- **Feature**: Completamente ridisegnata la Home Screen dell'app Flutter (`mobile/`) per replicare fedelmente la grafica della PWA mostrata nello screenshot della pagina dei Daily Habits.
+- **Dettagli**:
+  - **AppBar**: Sostituita con custom `_AppBar` che mostra icona `⌘`, titolo `Mattioli.OS` e pallino di stato verde (stile identico alla PWA).
+  - **ProtocolloPanel**: Nuovo widget che replica il pannello sidebar della PWA — titolo "Protocollo", sottotitolo, 2 toggle custom (Privacy / AI), riga di 6 action button icon (HeartPulse, FileText, Settings, Download, Database, Trash).
+  - **ViewTabBar**: Tab selector glassmorphic con 4 voci: Mese / Settimana / Anno / Vita — con icone Lucide e highlight animato sull'attivo.
+  - **HabitCalendarWidget**: Calendario mensile completo: navigazione mese ←/→, intestazione giorni (Lun…Dom), griglia 7×n con celle colorate dinamicamente in base alla percentuale di completamento (hue 0° rosso → 142° verde), habit dots colorati, highlight oggi/ieri, fade future days.
+  - **AppBottomNavBar**: Barra di navigazione inferiore con Home / Stats / Obiettivi — icone animate e active state.
+  - **Animazioni**: Fade-in all'avvio, AnimatedSwitcher tra le viste, AnimatedContainer su toggle e tab.
+- **Tech Notes**:
+  - Riverpod aggiornato a pattern Riverpod 3 (`NotifierProvider` + `Notifier`) — rimosso `StateProvider` legacy.
+  - Tema aggiornato in `core/theme.dart` con tutti i token di design della PWA (background, card, border, muted, success, primary).
+  - Icone: `lucide_icons_flutter 3.1.13` — usati nomi corretti (`chartBar`, `chartPie`, `house`, `heartPulse`, ecc.).
+  - Confronto date ISO string via `.compareTo()` invece di operatori `<=`/`>=` non supportati su `String` in Dart.
+  - Build iOS Simulator verificata ✅ — `flutter analyze` clean ✅.
+- **File Creati**:
+  - `mobile/lib/ui/widgets/bottom_nav_bar.dart`
+  - `mobile/lib/ui/widgets/protocollo_panel.dart`
+  - `mobile/lib/ui/widgets/view_tab_bar.dart`
+  - `mobile/lib/ui/widgets/habit_calendar_widget.dart`
+- **File Modificati**:
+  - `mobile/lib/core/theme.dart` — Design tokens completi
+  - `mobile/lib/models/goal.dart` — Aggiunto `color`, `startDate`, `endDate`
+  - `mobile/lib/providers/goal_provider.dart` — Riverpod 3 Notifiers + mock data
+  - `mobile/lib/ui/screens/dashboard_screen.dart` — HomeScreen completa
+  - `mobile/lib/main.dart` — Route a `HomeScreen`
+
 ### [2026-04-07] Fail & Copy to Next Week (Macro Obiettivi Settimanali)
 - **Feature**: Aggiunto nuovo pulsante "Fail & Copy" nella vista settimanale dei Macro Obiettivi.
 - **Funzionamento**: Con un singolo click il pulsante (icona `ArrowRightToLine`, colore ambra) esegue due azioni atomiche:

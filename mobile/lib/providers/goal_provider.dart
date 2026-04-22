@@ -2,7 +2,8 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../models/goal.dart';
 
-// --- Goals provider (mock data, will be replaced with Supabase) ---
+// ─── Goals provider (mock data, future: Supabase) ───────────────────────────
+
 final goalsProvider = Provider<List<Goal>>((ref) {
   final now = DateTime.now();
   final startDate =
@@ -14,7 +15,7 @@ final goalsProvider = Provider<List<Goal>>((ref) {
       title: 'Meditazione',
       description: '10 minuti',
       icon: 'heart',
-      color: const Color(0xFF7C3AED), // purple
+      color: const Color(0xFF7C3AED),
       isCompleted: true,
       startDate: startDate,
     ),
@@ -23,7 +24,7 @@ final goalsProvider = Provider<List<Goal>>((ref) {
       title: 'Lettura',
       description: '20 pagine',
       icon: 'book',
-      color: const Color(0xFF3B82F6), // blue
+      color: const Color(0xFF3B82F6),
       isCompleted: false,
       startDate: startDate,
     ),
@@ -32,7 +33,7 @@ final goalsProvider = Provider<List<Goal>>((ref) {
       title: 'Allenamento',
       description: '45 minuti',
       icon: 'dumbbell',
-      color: const Color(0xFF10B981), // green
+      color: const Color(0xFF10B981),
       isCompleted: false,
       startDate: startDate,
     ),
@@ -41,7 +42,7 @@ final goalsProvider = Provider<List<Goal>>((ref) {
       title: 'Diario',
       description: 'Riflessione quotidiana',
       icon: 'pencil',
-      color: const Color(0xFFF59E0B), // amber
+      color: const Color(0xFFF59E0B),
       isCompleted: true,
       startDate: startDate,
     ),
@@ -50,90 +51,102 @@ final goalsProvider = Provider<List<Goal>>((ref) {
       title: 'Camminata',
       description: '30 minuti',
       icon: 'footprints',
-      color: const Color(0xFFEC4899), // pink
+      color: const Color(0xFFEC4899),
       isCompleted: false,
       startDate: startDate,
     ),
   ];
 });
 
-// --- Habit logs provider: Map<dateKey, Map<habitId, status>> ---
-// status: 'done' | 'missed'
+// ─── Habit logs: Map<dateKey, Map<habitId, status>> ─────────────────────────
+
 typedef HabitLogsMap = Map<String, Map<String, String>>;
 
-final habitLogsProvider = StateProvider<HabitLogsMap>((ref) {
-  final now = DateTime.now();
-  final year = now.year;
-  final month = now.month;
+class HabitLogsNotifier extends Notifier<HabitLogsMap> {
+  @override
+  HabitLogsMap build() {
+    final now = DateTime.now();
+    final year = now.year;
+    final month = now.month;
 
-  // Generate some mock data for the current month
-  final logs = <String, Map<String, String>>{};
+    String dateKey(int day) =>
+        '$year-${month.toString().padLeft(2, '0')}-${day.toString().padLeft(2, '0')}';
 
-  // Helper
-  String dateKey(int day) =>
-      '$year-${month.toString().padLeft(2, '0')}-${day.toString().padLeft(2, '0')}';
+    final mockData = <int, Map<String, String>>{
+      1: {'1': 'done', '2': 'done', '3': 'missed', '4': 'done'},
+      2: {'1': 'done', '2': 'missed', '4': 'done', '5': 'done'},
+      3: {'1': 'done', '3': 'done'},
+      4: {'2': 'done', '4': 'done', '5': 'missed'},
+      5: {'1': 'done', '2': 'done', '3': 'done', '4': 'done', '5': 'done'},
+      6: {'1': 'missed', '3': 'done', '4': 'done'},
+      7: {'1': 'done', '2': 'done', '3': 'done', '4': 'missed', '5': 'done'},
+      8: {'1': 'done', '2': 'done', '3': 'done', '4': 'done', '5': 'done'},
+      9: {'1': 'done', '2': 'missed', '3': 'done', '5': 'done'},
+      10: {'2': 'done', '3': 'done', '4': 'done'},
+      11: {'1': 'done', '3': 'done', '4': 'done', '5': 'done'},
+      12: {'1': 'done', '2': 'done', '3': 'done', '4': 'done'},
+      13: {'1': 'done', '2': 'done', '3': 'done', '4': 'done', '5': 'done'},
+      14: {'1': 'done', '2': 'done', '3': 'done', '4': 'missed', '5': 'done'},
+      15: {'1': 'done', '2': 'done', '3': 'done', '4': 'done', '5': 'done'},
+      16: {'1': 'done', '2': 'done', '3': 'done', '4': 'done', '5': 'done'},
+      17: {'1': 'done', '2': 'missed', '3': 'done', '4': 'done'},
+      18: {'1': 'done', '3': 'done', '4': 'done', '5': 'done'},
+      19: {'1': 'done', '2': 'done', '3': 'missed', '4': 'done', '5': 'done'},
+      20: {'1': 'done', '2': 'done', '3': 'done', '4': 'done', '5': 'done'},
+      21: {'1': 'done', '2': 'done', '3': 'done', '4': 'done'},
+    };
 
-  // Mock completions for past days
-  final mockData = {
-    1: {'1': 'done', '2': 'done', '3': 'missed', '4': 'done'},
-    2: {'1': 'done', '2': 'missed', '4': 'done', '5': 'done'},
-    3: {'1': 'done', '3': 'done'},
-    4: {'2': 'done', '4': 'done', '5': 'missed'},
-    5: {'1': 'done', '2': 'done', '3': 'done', '4': 'done', '5': 'done'},
-    6: {'1': 'missed', '3': 'done', '4': 'done'},
-    7: {'1': 'done', '2': 'done', '3': 'done', '4': 'missed', '5': 'done'},
-    8: {'1': 'done', '2': 'done', '3': 'done', '4': 'done', '5': 'done'},
-    9: {'1': 'done', '2': 'missed', '3': 'done', '5': 'done'},
-    10: {'2': 'done', '3': 'done', '4': 'done'},
-    11: {'1': 'done', '3': 'done', '4': 'done', '5': 'done'},
-    12: {'1': 'done', '2': 'done', '3': 'done', '4': 'done'},
-    13: {'1': 'done', '2': 'done', '3': 'done', '4': 'done', '5': 'done'},
-    14: {'1': 'done', '2': 'done', '3': 'done', '4': 'missed', '5': 'done'},
-    15: {'1': 'done', '2': 'done', '3': 'done', '4': 'done', '5': 'done'},
-    16: {'1': 'done', '2': 'done', '3': 'done', '4': 'done', '5': 'done'},
-    17: {'1': 'done', '2': 'missed', '3': 'done', '4': 'done'},
-    18: {'1': 'done', '3': 'done', '4': 'done', '5': 'done'},
-    19: {'1': 'done', '2': 'done', '3': 'missed', '4': 'done', '5': 'done'},
-    20: {'1': 'done', '2': 'done', '3': 'done', '4': 'done', '5': 'done'},
-    21: {'1': 'done', '2': 'done', '3': 'done', '4': 'done'},
-  };
+    final logs = <String, Map<String, String>>{};
+    mockData.forEach((day, habits) {
+      if (day <= now.day) {
+        logs[dateKey(day)] = habits;
+      }
+    });
+    return logs;
+  }
 
-  mockData.forEach((day, habits) {
-    if (day <= now.day) {
-      logs[dateKey(day)] = habits;
-    }
-  });
-
-  return logs;
-});
-
-// --- View tab provider ---
-enum CalendarView { month, week, year, vita }
-
-final calendarViewProvider = StateProvider<CalendarView>(
-  (_) => CalendarView.month,
-);
-
-// --- Privacy mode provider ---
-final privacyModeProvider = StateProvider<bool>((_) => false);
-
-// --- Toggle habit action ---
-final toggleHabitProvider = Provider<Function(DateTime, String)>((ref) {
-  return (DateTime date, String habitId) {
+  void toggle(DateTime date, String habitId) {
     final dateKey =
         '${date.year}-${date.month.toString().padLeft(2, '0')}-${date.day.toString().padLeft(2, '0')}';
-    ref.read(habitLogsProvider.notifier).update((state) {
-      final newState = Map<String, Map<String, String>>.from(state);
-      final dayLogs = Map<String, String>.from(newState[dateKey] ?? {});
+    final newState = Map<String, Map<String, String>>.from(state);
+    final dayLogs = Map<String, String>.from(newState[dateKey] ?? {});
 
-      if (dayLogs[habitId] == 'done') {
-        dayLogs.remove(habitId);
-      } else {
-        dayLogs[habitId] = 'done';
-      }
+    if (dayLogs[habitId] == 'done') {
+      dayLogs.remove(habitId);
+    } else {
+      dayLogs[habitId] = 'done';
+    }
 
-      newState[dateKey] = dayLogs;
-      return newState;
-    });
-  };
-});
+    newState[dateKey] = dayLogs;
+    state = newState;
+  }
+}
+
+final habitLogsProvider =
+    NotifierProvider<HabitLogsNotifier, HabitLogsMap>(HabitLogsNotifier.new);
+
+// ─── Calendar view enum & provider ───────────────────────────────────────────
+
+enum CalendarView { month, week, year, vita }
+
+class CalendarViewNotifier extends Notifier<CalendarView> {
+  @override
+  CalendarView build() => CalendarView.month;
+  void setView(CalendarView v) => state = v;
+}
+
+final calendarViewProvider =
+    NotifierProvider<CalendarViewNotifier, CalendarView>(
+        CalendarViewNotifier.new);
+
+// ─── Privacy mode provider ────────────────────────────────────────────────────
+
+class PrivacyModeNotifier extends Notifier<bool> {
+  @override
+  bool build() => false;
+  void toggle() => state = !state;
+  void set(bool v) => state = v;
+}
+
+final privacyModeProvider =
+    NotifierProvider<PrivacyModeNotifier, bool>(PrivacyModeNotifier.new);

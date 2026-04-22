@@ -31,7 +31,7 @@ class ViewTabBar extends ConsumerWidget {
           final isActive = currentView == tab.view;
           return Expanded(
             child: GestureDetector(
-              onTap: () => ref.read(calendarViewProvider.notifier).state = tab.view,
+              onTap: () => ref.read(calendarViewProvider.notifier).setView(tab.view),
               child: AnimatedContainer(
                 duration: const Duration(milliseconds: 200),
                 decoration: BoxDecoration(

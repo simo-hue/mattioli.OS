@@ -50,7 +50,7 @@ class ProtocolloPanel extends ConsumerWidget {
                   _CompactToggle(
                     value: isPrivacy,
                     onChanged: (v) =>
-                        ref.read(privacyModeProvider.notifier).state = v,
+                        ref.read(privacyModeProvider.notifier).set(v),
                   ),
                   const SizedBox(width: 8),
                   _CompactToggle(
@@ -142,13 +142,11 @@ class _ActionButton extends StatelessWidget {
   final IconData icon;
   final bool isHighlighted;
   final bool isDestructive;
-  final VoidCallback? onTap;
 
   const _ActionButton({
     required this.icon,
     this.isHighlighted = false,
     this.isDestructive = false,
-    this.onTap,
   });
 
   @override
@@ -167,18 +165,15 @@ class _ActionButton extends StatelessWidget {
       borderColor = const Color(0x33EF4444);
     }
 
-    return GestureDetector(
-      onTap: onTap,
-      child: Container(
-        width: 36,
-        height: 36,
-        decoration: BoxDecoration(
-          color: bgColor,
-          borderRadius: BorderRadius.circular(8),
-          border: Border.all(color: borderColor, width: 1),
-        ),
-        child: Icon(icon, size: 16, color: iconColor),
+    return Container(
+      width: 36,
+      height: 36,
+      decoration: BoxDecoration(
+        color: bgColor,
+        borderRadius: BorderRadius.circular(8),
+        border: Border.all(color: borderColor, width: 1),
       ),
+      child: Icon(icon, size: 16, color: iconColor),
     );
   }
 }

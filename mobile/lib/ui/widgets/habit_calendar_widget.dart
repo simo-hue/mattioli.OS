@@ -186,8 +186,8 @@ class _HabitCalendarWidgetState extends ConsumerState<HabitCalendarWidget> {
 
                     // Valid habits for this date
                     final validHabits = habits.where((h) {
-                      return h.startDate <= dateKey &&
-                          (h.endDate == null || h.endDate! >= dateKey);
+                      return h.startDate.compareTo(dateKey) <= 0 &&
+                          (h.endDate == null || h.endDate!.compareTo(dateKey) >= 0);
                     }).toList();
 
                     final totalHabits = validHabits.length;

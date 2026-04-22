@@ -16,8 +16,8 @@ class AppBottomNavBar extends StatelessWidget {
   Widget build(BuildContext context) {
     final items = [
       _NavItem(icon: LucideIcons.house, label: 'Home'),
-      _NavItem(icon: LucideIcons.barChart2, label: 'Stats'),
-      _NavItem(icon: LucideIcons.pieChart, label: 'Obiettivi'),
+      _NavItem(icon: LucideIcons.chartBar, label: 'Stats'),
+      _NavItem(icon: LucideIcons.chartPie, label: 'Obiettivi'),
     ];
 
     return Container(
@@ -30,7 +30,7 @@ class AppBottomNavBar extends StatelessWidget {
       child: SafeArea(
         top: false,
         child: SizedBox(
-          height: 60,
+          height: 64,
           child: Row(
             mainAxisAlignment: MainAxisAlignment.spaceAround,
             children: List.generate(items.length, (index) {
@@ -76,7 +76,7 @@ class _NavBarItem extends StatelessWidget {
       behavior: HitTestBehavior.opaque,
       child: AnimatedContainer(
         duration: const Duration(milliseconds: 200),
-        padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 6),
+        padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 4),
         child: Column(
           mainAxisSize: MainAxisSize.min,
           mainAxisAlignment: MainAxisAlignment.center,

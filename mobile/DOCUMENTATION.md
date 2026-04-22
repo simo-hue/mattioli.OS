@@ -1,5 +1,9 @@
 # DOCUMENTATION
 
+- [2026-04-22 10:07]: Avvio Simulatore iOS e Debug
+  *Details*: Avviato il simulatore iPhone 17 e lanciata l'applicazione in modalità debug per testare le ultime modifiche alle statistiche.
+  *Tech Notes*: Eseguito `flutter run` con successo su iPhone 17.
+
 - [2026-04-22 09:15]: Implementazione Viste Dashboard
   *Details*: Implementate le visualizzazioni settimanale, annuale e vita per pareggiare le funzionalità della PWA.
   *Tech Notes*: 
@@ -40,3 +44,14 @@
     - Creato `NoteNotifier` (Riverpod `AsyncNotifier`) per gestire l'I/O asincrono su `SharedPreferencesAsync`.
     - Implementato `QuickNotesModal` con un'interfaccia pulita, text area full-screen e salvataggio con debouncing (800ms).
     - Collegato all'icona del documento in `ProtocolloPanel`.
+
+- [2026-04-22 10:04]: [Flutter] Implementazione Statistiche (Tab Info)
+  *Details*: Creata la base per la schermata delle statistiche e completata fedelmente l'implementazione del tab "Info".
+  *Tech Notes*:
+    - Refactor di `dashboard_screen.dart` per supportare navigazione a schede via `IndexedStack` collegato ad `AppBottomNavBar`.
+    - Creato `StatisticsScreen` con header personalizzato, selettore dei goals (mockup basato sui dati reali) e barra dei tab (`Info`, `Trend`, `Alert`, `Abitudini`, `Mood`).
+    - Modificata l'intera schermata per utilizzare `SingleChildScrollView`, permettendo ad header, tab e contenuto di scorrere come un'unica pagina fluida per massimizzare lo spazio dei contenuti.
+    - Creato `InfoTabWidget` contenente la griglia delle metriche principali (Completamento, Miglior Serie, Top Performer, Giorno Peggiore).
+    - Implementata la sezione "Abitudini Chiave" con scroll orizzontale, calcolo delle correlazioni e badge per connessioni e media.
+    - Aggiunte le sezioni "Analisi Correlazioni", "Correlazioni Positive" e "Correlazioni Negative" utilizzando box e detail card stilizzate come da PWA.
+

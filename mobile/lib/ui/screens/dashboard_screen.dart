@@ -11,6 +11,7 @@ import '../widgets/habit_calendar_widget.dart';
 import '../widgets/weekly_view_widget.dart';
 import '../widgets/yearly_view_widget.dart';
 import '../widgets/life_view_widget.dart';
+import 'statistics_screen.dart';
 
 class HomeScreen extends ConsumerStatefulWidget {
   const HomeScreen({super.key});
@@ -62,70 +63,12 @@ class _HomeScreenState extends ConsumerState<HomeScreen>
         preferredSize: const Size.fromHeight(52),
         child: _AppBar(),
       ),
-      body: Stack(
+      body: IndexedStack(
+        index: _selectedNavIndex,
         children: [
-          // Background glow effect (matches PWA)
-          Positioned(
-            top: -100,
-            left: -80,
-            child: Container(
-              width: 300,
-              height: 300,
-              decoration: BoxDecoration(
-                shape: BoxShape.circle,
-                gradient: RadialGradient(
-                  colors: [
-                    AppColors.primary.withValues(alpha: 0.04),
-                    Colors.transparent,
-                  ],
-                ),
-              ),
-            ),
-          ),
-
-          FadeTransition(
-            opacity: _fadeAnimation,
-            child: Padding(
-              padding: const EdgeInsets.fromLTRB(14, 8, 14, 0),
-              child: Column(
-                children: [
-                  // Protocollo command panel
-                  const ProtocolloPanel(),
-                  const SizedBox(height: 10),
-
-                  // View tab selector
-                  const ViewTabBar(),
-                  const SizedBox(height: 10),
-
-                  // Calendar content - Expanded to take remaining space
-                  Expanded(
-                    child: AnimatedSwitcher(
-                      duration: const Duration(milliseconds: 250),
-                      switchInCurve: Curves.easeOut,
-                      switchOutCurve: Curves.easeIn,
-                      transitionBuilder: (child, animation) {
-                        return FadeTransition(
-                          opacity: animation,
-                          child: SlideTransition(
-                            position: Tween<Offset>(
-                              begin: const Offset(0, 0.02),
-                              end: Offset.zero,
-                            ).animate(animation),
-                            child: child,
-                          ),
-                        );
-                      },
-                      child: _buildViewContent(currentView),
-                    ),
-                  ),
-
-                  // Bottom padding for nav bar (now redundant since it's a column, 
-                  // but we might need a small spacer)
-                  const SizedBox(height: 10),
-                ],
-              ),
-            ),
-          ),
+          _buildHomeBody(currentView),
+          const StatisticsScreen(), // Tab 1: Stats
+          const Center(child: Text('Obiettivi - Coming Soon', style: TextStyle(color: AppColors.mutedForeground))), // Tab 2: Obiettivi
         ],
       ),
       bottomNavigationBar: AppBottomNavBar(
@@ -135,6 +78,65 @@ class _HomeScreenState extends ConsumerState<HomeScreen>
           HapticFeedback.lightImpact();
         },
       ),
+    );
+  }
+
+  Widget _buildHomeBody(CalendarView currentView) {
+    return Stack(
+      children: [
+        Positioned(
+          top: -100,
+          left: -80,
+          child: Container(
+            width: 300,
+            height: 300,
+            decoration: BoxDecoration(
+              shape: BoxShape.circle,
+              gradient: RadialGradient(
+                colors: [
+                  AppColors.primary.withValues(alpha: 0.04),
+                  Colors.transparent,
+                ],
+              ),
+            ),
+          ),
+        ),
+        FadeTransition(
+          opacity: _fadeAnimation,
+          child: Padding(
+            padding: const EdgeInsets.fromLTRB(14, 8, 14, 0),
+            child: Column(
+              children: [
+                const ProtocolloPanel(),
+                const SizedBox(height: 10),
+                const ViewTabBar(),
+                const SizedBox(height: 10),
+                Expanded(
+                  child: AnimatedSwitcher(
+                    duration: const Duration(milliseconds: 250),
+                    switchInCurve: Curves.easeOut,
+                    switchOutCurve: Curves.easeIn,
+                    transitionBuilder: (child, animation) {
+                      return FadeTransition(
+                        opacity: animation,
+                        child: SlideTransition(
+                          position: Tween<Offset>(
+                            begin: const Offset(0, 0.02),
+                            end: Offset.zero,
+                          ).animate(animation),
+                          child: child,
+                        ),
+                      );
+                    },
+                    child: _buildViewContent(currentView),
+                  ),
+                ),
+                const SizedBox(height: 10),
+              ],
+            ),
+          ),
+        ),
+      ],
     );
   }
 

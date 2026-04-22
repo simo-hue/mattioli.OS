@@ -9,6 +9,7 @@ import '../../models/macro_goal.dart';
 import '../../providers/macro_goals_provider.dart';
 import '../widgets/macro_goals/goal_item_widget.dart';
 import '../widgets/macro_goals/add_goal_bar.dart';
+import '../widgets/macro_goals/macro_goals_stats_view.dart';
 
 class MacroGoalsScreen extends ConsumerStatefulWidget {
   const MacroGoalsScreen({super.key});
@@ -19,6 +20,7 @@ class MacroGoalsScreen extends ConsumerStatefulWidget {
 
 class _MacroGoalsScreenState extends ConsumerState<MacroGoalsScreen> {
   bool _isForward = true;
+  bool _showStats = false;
 
   @override
   Widget build(BuildContext context) {
@@ -44,10 +46,13 @@ class _MacroGoalsScreenState extends ConsumerState<MacroGoalsScreen> {
             // ── Unified Native Header ─────────────────────────────────────
             _buildUnifiedHeader(context, ref, viewState),
 
-            // ── Native Period Navigator Stepper ───────────────────────────
-            _buildPeriodNavigator(context, ref, viewState),
+            if (_showStats)
+              const Expanded(child: MacroGoalsStatsView())
+            else ...[
+              // ── Native Period Navigator Stepper ───────────────────────────
+              _buildPeriodNavigator(context, ref, viewState),
 
-            const SizedBox(height: 16),
+              const SizedBox(height: 16),
 
             // ── Add goal input ────────────────────────────────────────────
             AddGoalBar(viewState: viewState),
@@ -98,10 +103,11 @@ class _MacroGoalsScreenState extends ConsumerState<MacroGoalsScreen> {
               ),
             ),
           ],
-        ),
+        ],
       ),
-    );
-  }
+    ),
+  );
+}
 
   Widget _buildUnifiedHeader(BuildContext context, WidgetRef ref, MacroGoalsViewState vs) {
     String typeLabel = '';
@@ -114,51 +120,129 @@ class _MacroGoalsScreenState extends ConsumerState<MacroGoalsScreen> {
     }
 
     return Padding(
-      padding: const EdgeInsets.fromLTRB(16, 12, 16, 4),
-      child: Row(
-        mainAxisAlignment: MainAxisAlignment.spaceBetween,
+      padding: const EdgeInsets.fromLTRB(16, 12, 16, 8),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          Text(
-            'Obiettivi',
-            style: GoogleFonts.inter(
-              fontSize: 28,
-              fontWeight: FontWeight.w700,
-              color: AppColors.foreground,
-              letterSpacing: -0.5,
-            ),
-          ),
-          GestureDetector(
-            onTap: () {
-              HapticFeedback.lightImpact();
-              _showTypePicker(context, ref, vs);
-            },
-            child: Container(
-              padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 8),
-              decoration: BoxDecoration(
-                color: AppColors.card,
-                borderRadius: BorderRadius.circular(20),
-                border: Border.all(color: AppColors.borderHover, width: 1.5),
+          Row(
+            mainAxisAlignment: MainAxisAlignment.spaceBetween,
+            children: [
+              Text(
+                'Obiettivi',
+                style: GoogleFonts.inter(
+                  fontSize: 28,
+                  fontWeight: FontWeight.w700,
+                  color: AppColors.foreground,
+                  letterSpacing: -1,
+                ),
               ),
-              child: Row(
-                children: [
-                  Icon(LucideIcons.target, size: 14, color: AppColors.primary),
-                  const SizedBox(width: 6),
-                  Text(
-                    typeLabel, 
-                    style: GoogleFonts.inter(
-                      fontSize: 14, 
-                      fontWeight: FontWeight.w600, 
-                      color: AppColors.foreground,
-                      letterSpacing: -0.2,
-                    ),
-                  ),
-                  const SizedBox(width: 4),
-                  Icon(LucideIcons.chevronDown, size: 14, color: AppColors.mutedForeground),
-                ],
-              ),
-            ),
+              if (!_showStats) _buildTypePicker(context, ref, vs),
+            ],
           ),
+          const SizedBox(height: 16),
+          _buildModeToggle(),
         ],
+      ),
+    );
+  }
+
+  Widget _buildTypePicker(BuildContext context, WidgetRef ref, MacroGoalsViewState vs) {
+    String typeLabel = '';
+    switch (vs.selectedType) {
+      case GoalType.lifetime: typeLabel = 'Lifetime'; break;
+      case GoalType.annual: typeLabel = 'Annuale'; break;
+      case GoalType.quarterly: typeLabel = 'Trimestrale'; break;
+      case GoalType.monthly: typeLabel = 'Mensile'; break;
+      case GoalType.weekly: typeLabel = 'Settimanale'; break;
+    }
+
+    return GestureDetector(
+      onTap: () {
+        HapticFeedback.lightImpact();
+        _showTypePicker(context, ref, vs);
+      },
+      child: Container(
+        padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+        decoration: BoxDecoration(
+          color: AppColors.card.withValues(alpha: 0.5),
+          borderRadius: BorderRadius.circular(12),
+          border: Border.all(color: AppColors.borderHover),
+        ),
+        child: Row(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            Icon(LucideIcons.target, size: 12, color: AppColors.primary),
+            const SizedBox(width: 6),
+            Text(
+              typeLabel,
+              style: GoogleFonts.inter(
+                fontSize: 13,
+                fontWeight: FontWeight.w600,
+                color: AppColors.foreground,
+              ),
+            ),
+            const SizedBox(width: 4),
+            Icon(LucideIcons.chevronDown, size: 12, color: AppColors.mutedForeground),
+          ],
+        ),
+      ),
+    );
+  }
+
+  Widget _buildModeToggle() {
+    return Container(
+      height: 42,
+      padding: const EdgeInsets.all(4),
+      decoration: BoxDecoration(
+        color: AppColors.card.withValues(alpha: 0.3),
+        borderRadius: BorderRadius.circular(12),
+        border: Border.all(color: AppColors.borderHover),
+      ),
+      child: Row(
+        children: [
+          _buildToggleItem(false, LucideIcons.listTodo, 'I miei obiettivi'),
+          _buildToggleItem(true, LucideIcons.chartBar, 'Analisi Performance'),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildToggleItem(bool stats, IconData icon, String label) {
+    final active = _showStats == stats;
+    return Expanded(
+      child: GestureDetector(
+        onTap: () {
+          if (_showStats != stats) {
+            setState(() => _showStats = stats);
+            HapticFeedback.selectionClick();
+          }
+        },
+        child: AnimatedContainer(
+          duration: const Duration(milliseconds: 200),
+          decoration: BoxDecoration(
+            color: active ? AppColors.primary.withValues(alpha: 0.1) : Colors.transparent,
+            borderRadius: BorderRadius.circular(8),
+          ),
+          child: Row(
+            mainAxisAlignment: MainAxisAlignment.center,
+            children: [
+              Icon(
+                icon,
+                size: 16,
+                color: active ? AppColors.primary : AppColors.mutedForeground,
+              ),
+              const SizedBox(width: 8),
+              Text(
+                label,
+                style: GoogleFonts.inter(
+                  fontSize: 13,
+                  fontWeight: active ? FontWeight.w600 : FontWeight.w500,
+                  color: active ? AppColors.primary : AppColors.mutedForeground,
+                ),
+              ),
+            ],
+          ),
+        ),
       ),
     );
   }

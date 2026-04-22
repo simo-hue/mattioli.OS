@@ -19,7 +19,6 @@ class GoalItemWidget extends ConsumerStatefulWidget {
 
 class _GoalItemWidgetState extends ConsumerState<GoalItemWidget>
     with SingleTickerProviderStateMixin {
-  bool _hovered = false;
 
   // ── Status cycle: active → completed → failed → active ──────────────────
   GoalStatus get _nextStatus {
@@ -318,11 +317,6 @@ class _GoalItemWidgetState extends ConsumerState<GoalItemWidget>
     return Padding(
       padding: const EdgeInsets.only(bottom: 6),
       child: GestureDetector(
-        onLongPress: () {
-          setState(() => _hovered = true);
-          Future.delayed(
-              const Duration(seconds: 3), () => setState(() => _hovered = false));
-        },
         child: AnimatedContainer(
           duration: const Duration(milliseconds: 250),
           padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 12),

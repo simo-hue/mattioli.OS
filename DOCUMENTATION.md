@@ -2,6 +2,45 @@
 
 ## 📅 Log Modifiche (Ultimi aggiornamenti)
 
+### [2026-04-22] Flutter Mobile — Macro Goals Header & Analytics Redesign
+- **UX Redesign**: Sostituita la piccola icona delle statistiche con un moderno **Segmented Toggle** ("I miei obiettivi" vs "Analisi Performance") per rendere l'accesso ai dati molto più intuitivo e professionale.
+- **Header Layout**: Ottimizzato lo spazio dell'header separando il titolo principale dal selettore di tipologia (Settimanale/Mensile/ecc.), migliorando la leggibilità su schermi piccoli.
+- **Premium Aesthetics**: 
+  - Introdotto un design **glassmorphic** per il toggle di navigazione.
+  - Aggiunti **gradienti lineari** e bordi sfumati alle card delle statistiche (`HighlightCard` e `CardBase`).
+  - Pulizia generale della gerarchia visiva per un look da "High-End Productivity App".
+- **Conditional UI**: Il selettore di tipologia scompare dinamicamente quando si attiva la vista analisi, focalizzando l'attenzione sui dati e riducendo il rumore visivo.
+### [2026-04-22] Flutter Mobile — Dashboard Globale ed Evoluzione Storica (Macro Goals)
+- **Global Dashboard**: Implementata la vista "Tutti gli anni" che aggrega i dati storici dal primo obiettivo tracciato.
+- **Progressione Annuale**: Inserito grafico a barre in pile (Stacked Bar) per visualizzare il volume di Attivi, Falliti e Completati per ogni anno.
+- **Distribuzione Tipologie**: Aggiunta barra orizzontale a gradiente per analizzare la ripartizione tra Weekly, Monthly, Quarterly, Annual e Lifetime.
+- **Stagionalità Trimestrale**: Calcolo aggregato delle performance Q1-Q4 attraverso gli anni.
+- **Performance Mensile Storica**: Line Chart con punti bianchi in evidenza che traccia il tasso medio di successo mensile su tutto lo storico.
+- **Evoluzione Interessi**: Grafico stacked per mostrare come sono variate le aree di focus (Categorie) nel corso degli anni.
+### [2026-04-22] Flutter Mobile — Build Fix: Lucide Icons Normalization
+- **Bug Fix**: Risolti errori di compilazione nel processo di build iOS/Android.
+  - Sostituito `LucideIcons.barChart` (mancante) con `LucideIcons.chartBar` in `macro_goals_screen.dart`.
+  - Sostituito `LucideIcons.checkCircle` (mancante) con `LucideIcons.circleCheck` in `macro_goals_stats_view.dart`.
+- **Code Clean-up**: Rimossi diversi warning di analisi (Flutter Analyze):
+  - Eliminati campi e variabili inutilizzate in `macro_goals_stats_view.dart` e `goal_item_widget.dart`.
+  - Ottimizzata la gestione dei loop e delle liste (`prefer_is_empty`).
+- **Verifica**: Eseguito `flutter analyze` con successo (Clean Output ✅).
+
+### [2026-04-22] Flutter Mobile — Analytics Dashboard (Macro Goals)
+- **Feature**: Implementata in Flutter la vista delle Performance (Statistiche) per i Macro Obiettivi, perfettamente identica alla Web App.
+- **Toggle Mode**: Aggiunto un elegante button (icona BarChart) nel `_buildUnifiedHeader` di "Obiettivi". Cliccandolo avverrà uno snap all'interfaccia delle performance mantenendo il titolo macro in alto e nascondendo le list view.
+- **Metriche Core**: Implementato il calcolo client-side locale su tutti i nodi di obiettivi per derivare "Punto di Forza" (best category), "Mese Migliore", "Tipologia Efficace" e le 4 KPI "Totale, Completati, Successo, Trend". L'interruttore Anno permette di visualizzare "Tutti gli anni" o il singolo anno.
+- **Libreria Charts**: Aggiunta la dipendenza ufficiale `fl_chart: ^0.69.0` a `pubspec.yaml` per gestire grafici avanzati nativi.
+- **Grafici Implementati**:
+  - `LineChart`: (Velocità cumulativa) - Interpolazione ad area con due spot di rendering (Totale sfumato vs Completati sfumato).
+  - `RadarChart`: Performance di tasso di completamento basato sulle `kDefaultCategories` (Corsi, Dev, Money, ecc.). Raggio animato spider.
+  - `BarChart` e Compositi: Attività trimestrale (2 bars side/side per Q, color Ambra vs Emerald) e Attività Mensile.
+  - `PieChart`: Distribuzione degli obiettivi, con una magnifica legenda a griglia full responsive in basso.
+- **Files Creati/Modificati**:
+  - Creato `ui/widgets/macro_goals/macro_goals_stats_view.dart`.
+  - Modificato `ui/screens/macro_goals_screen.dart` (aggiunta gestione state `_showStats` e rendering differenziato).
+  - Introdotto `fl_chart` in `pubspec.yaml`.
+
 ### [2026-04-22] Flutter Mobile — Premium UI/UX Redesign (Macro Goals)
 - **Feature**: Ridisegnata completamente l'esperienza utente della pagina Macro Obiettivi in ottica "Senior Mobile UI/UX", sostituendo le tab orizzontali stile web con un pattern nativo mobile.
 - **Unified Header**: Il titolo "Obiettivi" ora affianca un pulsante dropdown integrato (`[ Tipo ▾]`) che attiva un BottomSheet moderno e pulito per switchare la tipologia degli obiettivi, risparmiando ampio spazio verticale e risultando più intuitivo a livello touch.

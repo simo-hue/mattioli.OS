@@ -1,5 +1,11 @@
 # DOCUMENTATION
 
+- [2026-04-22 10:33]: Riavvio Applicazione e Guida Comandi
+  *Details*: Riavviata l'app per visualizzare le modifiche alla schermata statistiche e creato il file di riferimento per i comandi Flutter.
+  *Tech Notes*: 
+    - Eseguito `flutter run` su iPhone 17.
+    - Creato `mobile/FLUTTER_COMMANDS.md`.
+
 - [2026-04-22 10:07]: Avvio Simulatore iOS e Debug
   *Details*: Avviato il simulatore iPhone 17 e lanciata l'applicazione in modalità debug per testare le ultime modifiche alle statistiche.
   *Tech Notes*: Eseguito `flutter run` con successo su iPhone 17.
@@ -54,4 +60,8 @@
     - Creato `InfoTabWidget` contenente la griglia delle metriche principali (Completamento, Miglior Serie, Top Performer, Giorno Peggiore).
     - Implementata la sezione "Abitudini Chiave" con scroll orizzontale, calcolo delle correlazioni e badge per connessioni e media.
     - Aggiunte le sezioni "Analisi Correlazioni", "Correlazioni Positive" e "Correlazioni Negative" utilizzando box e detail card stilizzate come da PWA.
+    - Aggiunta la sezione "Attività Recente" in fondo al tab Info, implementata con una heatmap a griglia in stile GitHub (matrix di pallini con 5 livelli di intensità cromatica).
+    - Implementato il selettore "Tutti gli Habits" tramite bottom sheet. La selezione di un habit specifico modifica dinamicamente i tab della pagina (`Overview`, `Calendario`, `Performance`, `Miglioramento`, `Mood`).
+    - Creato `HabitOverviewTabWidget` per la visualizzazione "Overview" di un singolo habit. Include una griglia per le metriche chiave (Serie attuale, Record, Completamento, Mancati), un blocco "Trend Ultimi 30 Giorni" a griglia colorata per i successi/fallimenti e una sezione avanzata per le Correlazioni specifiche (Positive e Negative) isolate per l'abitudine selezionata.
+    - Creato `HabitCalendarioTabWidget` per il tab "Calendario" del singolo habit, raffigurante un heatmap annuale esteso con dati mock per 365 giorni e relativa legenda (Completato, Mancato, Non tracciato).
 

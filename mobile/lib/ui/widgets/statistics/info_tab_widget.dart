@@ -19,6 +19,8 @@ class InfoTabWidget extends StatelessWidget {
         _CorrelazioniPositiveSection(),
         SizedBox(height: 16),
         _CorrelazioniNegativeSection(),
+        SizedBox(height: 16),
+        _AttivitaRecenteSection(),
         SizedBox(height: 32),
       ],
     );
@@ -740,6 +742,157 @@ class _CorrelazioniNegativeSection extends StatelessWidget {
           desc: 'Quando completi "1 YT-Video", è raro che completi anche "Caviglia".',
         ),
       ],
+    );
+  }
+}
+
+class _AttivitaRecenteSection extends StatelessWidget {
+  const _AttivitaRecenteSection();
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      padding: const EdgeInsets.all(16),
+      decoration: BoxDecoration(
+        color: AppColors.card,
+        borderRadius: BorderRadius.circular(16),
+        border: Border.all(color: AppColors.border, width: 1),
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Row(
+            children: [
+              Container(
+                width: 10,
+                height: 10,
+                decoration: const BoxDecoration(
+                  color: AppColors.mutedForeground,
+                  shape: BoxShape.circle,
+                ),
+              ),
+              const SizedBox(width: 8),
+              const Text(
+                'Attività Recente',
+                style: TextStyle(
+                  fontFamily: 'Inter',
+                  fontSize: 16,
+                  fontWeight: FontWeight.w700,
+                  color: AppColors.foreground,
+                ),
+              ),
+            ],
+          ),
+          const SizedBox(height: 16),
+          Container(
+            padding: const EdgeInsets.all(16),
+            decoration: BoxDecoration(
+              color: AppColors.background,
+              borderRadius: BorderRadius.circular(16),
+              border: Border.all(color: AppColors.border, width: 1),
+            ),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                const Text(
+                  'Costanza',
+                  style: TextStyle(
+                    fontFamily: 'Inter',
+                    fontSize: 18,
+                    fontWeight: FontWeight.w700,
+                    color: AppColors.foreground,
+                  ),
+                ),
+                const SizedBox(height: 24),
+                _buildActivityGrid(),
+                const SizedBox(height: 16),
+                Row(
+                  mainAxisAlignment: MainAxisAlignment.end,
+                  children: [
+                    const Text('Meno', style: TextStyle(fontFamily: 'Inter', fontSize: 12, color: AppColors.mutedForeground)),
+                    const SizedBox(width: 8),
+                    _buildDot(0),
+                    const SizedBox(width: 4),
+                    _buildDot(1),
+                    const SizedBox(width: 4),
+                    _buildDot(2),
+                    const SizedBox(width: 4),
+                    _buildDot(3),
+                    const SizedBox(width: 4),
+                    _buildDot(4),
+                    const SizedBox(width: 8),
+                    const Text('Più', style: TextStyle(fontFamily: 'Inter', fontSize: 12, color: AppColors.mutedForeground)),
+                  ],
+                ),
+              ],
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildDot(int intensity) {
+    return Container(
+      width: 12,
+      height: 12,
+      decoration: BoxDecoration(
+        color: _getColor(intensity),
+        shape: BoxShape.circle,
+      ),
+    );
+  }
+
+  Color _getColor(int intensity) {
+    switch (intensity) {
+      case 0: return const Color(0xFF18181B);
+      case 1: return const Color(0xFF3F3F46);
+      case 2: return const Color(0xFF71717A);
+      case 3: return const Color(0xFFA1A1AA);
+      case 4: return const Color(0xFFFFFFFF);
+      default: return const Color(0xFF18181B);
+    }
+  }
+
+  Widget _buildActivityGrid() {
+    final pattern = [
+      [2,3,4,4,3,3,3,4,4,4,3,3,3,4,3,3,3,4],
+      [3,3,3,3,2,3,3,3,2,3,2,3,3,2,3,2,4,4],
+      [2,2,2,3,3,3,2,3,3,3,3,2,4,4,4,3,3,3],
+      [2,1,2,3,3,1,1,2,3,1,0,3,2,3,3,2,2,2],
+      [3,3,2,0,2,3,3,2,3,2,1,1,2,2,2,2,2,2],
+      [-1,-1,-1,3,3,3,3,2,3,2,3,3,3,-1,-1,-1,-1,-1],
+    ];
+
+    return SingleChildScrollView(
+      scrollDirection: Axis.horizontal,
+      child: Row(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: List.generate(pattern[0].length, (colIndex) {
+          return Padding(
+            padding: EdgeInsets.only(right: colIndex == pattern[0].length - 1 ? 0 : 6.0),
+            child: Column(
+              children: List.generate(pattern.length, (rowIndex) {
+                final intensity = pattern[rowIndex][colIndex];
+                if (intensity == -1) {
+                  return const SizedBox(width: 14, height: 20); 
+                }
+                return Padding(
+                  padding: const EdgeInsets.only(bottom: 6.0),
+                  child: Container(
+                    width: 14,
+                    height: 14,
+                    decoration: BoxDecoration(
+                      color: _getColor(intensity),
+                      shape: BoxShape.circle,
+                    ),
+                  ),
+                );
+              }),
+            ),
+          );
+        }),
+      ),
     );
   }
 }

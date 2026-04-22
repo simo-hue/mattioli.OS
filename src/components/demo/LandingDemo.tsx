@@ -1041,7 +1041,7 @@ export function LandingDemo() {
 
             {/* Label */}
             <div className="absolute -bottom-3 left-1/2 -translate-x-1/2 px-4 py-1.5 bg-zinc-900 border border-white/10 rounded-full text-xs text-zinc-400">
-                ✨ Interactive Demo — Explore all sections
+                Interactive Demo — Explore all sections
             </div>
         </motion.div>
     );

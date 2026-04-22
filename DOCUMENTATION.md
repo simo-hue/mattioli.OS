@@ -2045,3 +2045,21 @@ Modificata la restrizione temporale per la modifica delle abitudini passate. Pre
 - [2026-04-16 10:14]: Bugfix - Weekly goals calculation offset
   - *Details*: Fixed a logical bug in `getLogicalWeekOfMonth` that incorrectly merged the first partial week of a month with the first full week. This caused the current week to be offset by 1, resulting in past weeks appearing as current (active) visually.
   - *Tech Notes*: Updated `src/lib/dateUtils.ts` to properly detect the `daysBeforeFirstMonday`. If `> 1`, the first Monday will rightly increment the `baseWeek` to 2. Sunday is still merged with Monday as intended by design (1-day partial week logic remains intact).
+
+- [2026-04-22]: Flutter Mobile App Port (Phase 1)
+  - *Details*: Migrated the foundation of the web app into a Flutter mobile application targeting iOS.
+  - *Tech Notes*:
+    - Created new flutter project in `mobile/`.
+    - Added `flutter_riverpod`, `go_router`, `google_fonts`, `lucide_icons_flutter`.
+    - Created `lib/core/theme.dart` matching the Tailwind minimal tech dark mode.
+    - Scaffolded a basic `DashboardScreen` to verify UI styling.
+
+## Current Status
+- Finished Phase 1 (Setup and mock UI).
+- Immediate next step: The user must run the app in the iOS simulator to verify the UI.
+
+- [2026-04-22]: Flutter Environment Fix
+  - *Details*: Resolved missing CocoaPods dependency via Homebrew. Identified incorrect Xcode path configuration.
+  - *Tech Notes*:
+    - Installed `cocoapods` via brew.
+    - Diagnosed that `xcode-select` points to Command Line Tools instead of full Xcode.

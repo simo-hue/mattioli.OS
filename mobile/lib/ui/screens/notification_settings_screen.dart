@@ -273,12 +273,15 @@ class NotificationSettingsScreen extends ConsumerWidget {
               children: [
                 Row(
                   children: [
-                    Text(
-                      title,
-                      style: TextStyle(
-                        color: isLocked ? AppColors.mutedForeground : AppColors.foreground,
-                        fontSize: 15,
-                        fontWeight: FontWeight.w600,
+                    Flexible(
+                      child: Text(
+                        title,
+                        style: TextStyle(
+                          color: isLocked ? AppColors.mutedForeground : AppColors.foreground,
+                          fontSize: 15,
+                          fontWeight: FontWeight.w600,
+                        ),
+                        overflow: TextOverflow.ellipsis,
                       ),
                     ),
                     if (isLocked) ...[

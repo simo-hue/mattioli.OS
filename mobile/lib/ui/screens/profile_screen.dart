@@ -54,7 +54,7 @@ class _ProfileScreenState extends ConsumerState<ProfileScreen> {
         physics: const AlwaysScrollableScrollPhysics(),
         slivers: [
           SliverAppBar(
-            expandedHeight: 280,
+            expandedHeight: 200,
             pinned: true,
             stretch: true,
             backgroundColor: AppColors.background,
@@ -78,8 +78,8 @@ class _ProfileScreenState extends ConsumerState<ProfileScreen> {
                       child: Stack(
                         children: [
                           Container(
-                            width: 110,
-                            height: 110,
+                            width: 90,
+                            height: 90,
                             decoration: BoxDecoration(
                               shape: BoxShape.circle,
                               gradient: LinearGradient(
@@ -96,7 +96,7 @@ class _ProfileScreenState extends ConsumerState<ProfileScreen> {
                               ),
                             ),
                             child: ClipRRect(
-                              borderRadius: BorderRadius.circular(55),
+                              borderRadius: BorderRadius.circular(45),
                               child: _profileImage != null
                                   ? Image.file(
                                       _profileImage!,
@@ -137,7 +137,7 @@ class _ProfileScreenState extends ConsumerState<ProfileScreen> {
                       '${userProfile.firstName} ${userProfile.lastName}',
                       style: const TextStyle(
                         color: AppColors.foreground,
-                        fontSize: 22,
+                        fontSize: 20,
                         fontWeight: FontWeight.w800,
                         letterSpacing: -0.8,
                       ),
@@ -174,7 +174,7 @@ class _ProfileScreenState extends ConsumerState<ProfileScreen> {
             ),
           ),
           SliverPadding(
-            padding: const EdgeInsets.fromLTRB(20, 10, 20, 40),
+            padding: const EdgeInsets.fromLTRB(20, 0, 20, 30),
             sliver: SliverList(
               delegate: SliverChildListDelegate([
                 const Text(
@@ -186,7 +186,7 @@ class _ProfileScreenState extends ConsumerState<ProfileScreen> {
                     letterSpacing: 1.2,
                   ),
                 ),
-                const SizedBox(height: 16),
+                const SizedBox(height: 8),
                 _buildProfileOption(
                   context: context,
                   icon: LucideIcons.user,
@@ -223,7 +223,7 @@ class _ProfileScreenState extends ConsumerState<ProfileScreen> {
                     Navigator.push(context, PrivacySettingsScreen.route());
                   },
                 ),
-                const SizedBox(height: 32),
+                const SizedBox(height: 24),
                 const Text(
                   'SISTEMA',
                   style: TextStyle(
@@ -233,7 +233,7 @@ class _ProfileScreenState extends ConsumerState<ProfileScreen> {
                     letterSpacing: 1.2,
                   ),
                 ),
-                const SizedBox(height: 16),
+                const SizedBox(height: 8),
                 // Logout Button
                 GestureDetector(
                   onTap: () {
@@ -264,7 +264,7 @@ class _ProfileScreenState extends ConsumerState<ProfileScreen> {
                     ),
                   ),
                 ),
-                const SizedBox(height: 24),
+                const SizedBox(height: 16),
                 Center(
                   child: Text(
                     'Versione 1.0.0 (Build 20260422)',

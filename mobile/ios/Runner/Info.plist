@@ -66,5 +66,11 @@
 		<string>UIInterfaceOrientationLandscapeLeft</string>
 		<string>UIInterfaceOrientationLandscapeRight</string>
 	</array>
+	<key>NSPhotoLibraryUsageDescription</key>
+	<string>Questa app richiede l'accesso alla galleria per permetterti di caricare la tua foto profilo.</string>
+	<key>NSCameraUsageDescription</key>
+	<string>Questa app richiede l'accesso alla fotocamera per permetterti di scattare una foto profilo.</string>
+	<key>NSMicrophoneUsageDescription</key>
+	<string>Questa app richiede l'accesso al microfono (richiesto da image_picker anche se non usato direttamente per le foto).</string>
 </dict>
 </plist>

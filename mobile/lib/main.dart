@@ -5,7 +5,31 @@ import 'core/theme.dart';
 import 'providers/settings_provider.dart';
 import 'ui/screens/dashboard_screen.dart';
 
-void main() {
+import 'core/notifications.dart';
+
+void main() async {
+  WidgetsFlutterBinding.ensureInitialized();
+  
+  // Initialize notifications
+  try {
+    final notificationService = NotificationService();
+    await notificationService.init().timeout(const Duration(seconds: 3));
+  } catch (e) {
+    debugPrint('Notification initialization failed or timed out: $e');
+  }
+
+  // Handle Flutter errors globally
+  ErrorWidget.builder = (FlutterErrorDetails details) {
+    return Scaffold(
+      body: Center(
+        child: Text(
+          'Error: ${details.exception}',
+          style: const TextStyle(color: Colors.red),
+        ),
+      ),
+    );
+  };
+  
   runApp(
     const ProviderScope(
       child: MattioliOSApp(),

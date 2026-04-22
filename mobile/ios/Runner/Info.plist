@@ -72,5 +72,7 @@
 	<string>Questa app richiede l'accesso alla fotocamera per permetterti di scattare una foto profilo.</string>
 	<key>NSMicrophoneUsageDescription</key>
 	<string>Questa app richiede l'accesso al microfono (richiesto da image_picker anche se non usato direttamente per le foto).</string>
+	<key>NSFaceIDUsageDescription</key>
+	<string>Questa app richiede l'accesso al FaceID per proteggere i tuoi dati personali.</string>
 </dict>
 </plist>

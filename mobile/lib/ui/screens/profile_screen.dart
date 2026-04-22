@@ -8,6 +8,8 @@ import '../../core/theme.dart';
 import '../../providers/user_provider.dart';
 import 'personal_info_screen.dart';
 import 'app_settings_screen.dart';
+import 'notification_settings_screen.dart';
+import 'privacy_settings_screen.dart';
 import '../../core/haptics.dart';
 
 class ProfileScreen extends ConsumerStatefulWidget {
@@ -208,14 +210,18 @@ class _ProfileScreenState extends ConsumerState<ProfileScreen> {
                   icon: LucideIcons.bell,
                   title: 'Notifiche',
                   subtitle: 'Promemoria e avvisi di sistema',
-                  onTap: () {},
+                  onTap: () {
+                    Navigator.push(context, NotificationSettingsScreen.route());
+                  },
                 ),
                 _buildProfileOption(
                   context: context,
                   icon: LucideIcons.shield,
                   title: 'Privacy e Sicurezza',
-                  subtitle: 'Gestione dati e password',
-                  onTap: () {},
+                  subtitle: 'Gestione dati e biometrica',
+                  onTap: () {
+                    Navigator.push(context, PrivacySettingsScreen.route());
+                  },
                 ),
                 const SizedBox(height: 32),
                 const Text(

@@ -9,7 +9,17 @@
   - **Validazione Real-Time**: Implementato un sistema di controllo della **luminanza in tempo reale** all'interno del picker. Se il colore è troppo scuro per il tema attivo, appare un avviso visivo immediato e il tasto di verifica viene disabilitato per garantire l'accessibilità.
   - **Verifica & Wow-Effect Globale**: Il pop-up di conferma e la **transizione scenografica** si attivano per ogni scelta valida, assicurando una UX fluida e professionale.
   - Centralizzazione del tema tramite `settingsProvider` e ascolto dinamico nel `MaterialApp`.
-  - **Haptic Feedback Professionale**: Implementato un sistema di feedback aptico (vibrazioni tattili) coerente e centralizzato. Tutte le interazioni (cambio tab, toggle, salvataggi, errori) rispettano ora la preferenza globale dell'utente nelle impostazioni.
+  - **Haptic Feedback Professionale**: Implementato un sistema di feedback aptico coerente e centralizzato.
+  - **Sottomenu Notifiche (Production Ready)**: Implementata la logica reale utilizzando `flutter_local_notifications`.
+    - **Smart Scheduling**: I promemoria per le abitudini (09:00) e la review serale (21:00) vengono programmati o cancellati in tempo reale in base ai toggle.
+    - **Focus Mode**: Implementata la logica di soppressione delle notifiche basata sull'app-level Focus Mode.
+    - **Timezone Support**: Gestione corretta degli orari tramite `timezone` e `flutter_timezone`.
+    - **Esclusive PRO**: Suggerimenti Predittivi AI, Deep Work Insights e Modalità Focus avanzata (Muto).
+    - Design coerente con icone Lucide e feedback aptico integrato.
+  - **Sottomenu Privacy e Sicurezza**: Gestione della protezione dei dati.
+    - **Biometric Lock (PRO)**: Integrazione con `local_auth` per FaceID/TouchID all'avvio dell'app.
+    - **Data Management**: Opzioni per esportazione dati (JSON/CSV) e cancellazione account conformi al GDPR.
+    - **Analytics**: Controllo dell'utente sulla telemetria anonima.
   - **Calendario**: Configurazione vista predefinita (**Giorno, Settimana, Anno, Vita**) tramite un nuovo menu modale bottom-sheet in stile premium.
   - Aggiunta gestione per inizio settimana e visibilità weekend.
   - **UX**: Switch per abilitare/disabilitare il Feedback Aptico globale.

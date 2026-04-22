@@ -10,11 +10,18 @@ import '../../providers/macro_goals_provider.dart';
 import '../widgets/macro_goals/goal_item_widget.dart';
 import '../widgets/macro_goals/add_goal_bar.dart';
 
-class MacroGoalsScreen extends ConsumerWidget {
+class MacroGoalsScreen extends ConsumerStatefulWidget {
   const MacroGoalsScreen({super.key});
 
   @override
-  Widget build(BuildContext context, WidgetRef ref) {
+  ConsumerState<MacroGoalsScreen> createState() => _MacroGoalsScreenState();
+}
+
+class _MacroGoalsScreenState extends ConsumerState<MacroGoalsScreen> {
+  bool _isForward = true;
+
+  @override
+  Widget build(BuildContext context) {
     final viewState = ref.watch(macroGoalsViewProvider);
     
     // Force re-compute on state change
@@ -49,9 +56,45 @@ class MacroGoalsScreen extends ConsumerWidget {
 
             // ── Goals list ────────────────────────────────────────────────
             Expanded(
-              child: _GoalsList(
-                goals: filteredGoals,
-                viewState: viewState,
+              child: GestureDetector(
+                behavior: HitTestBehavior.opaque,
+                onHorizontalDragEnd: (details) {
+                  if (viewState.selectedType == GoalType.lifetime) return;
+                  const velocityThreshold = 300.0;
+                  final vx = details.primaryVelocity ?? 0.0;
+                  if (vx < -velocityThreshold) {
+                    setState(() => _isForward = true);
+                    ref.read(macroGoalsViewProvider.notifier).nextPeriod();
+                    HapticFeedback.lightImpact();
+                  } else if (vx > velocityThreshold) {
+                    setState(() => _isForward = false);
+                    ref.read(macroGoalsViewProvider.notifier).prevPeriod();
+                    HapticFeedback.lightImpact();
+                  }
+                },
+                child: AnimatedSwitcher(
+                  duration: const Duration(milliseconds: 250),
+                  switchInCurve: Curves.easeOutCubic,
+                  switchOutCurve: Curves.easeOutCubic,
+                  transitionBuilder: (child, animation) {
+                    final isNext = child.key == ValueKey('${viewState.selectedType}-${viewState.selectedYear}-${viewState.selectedMonth}-${viewState.selectedWeek}-${viewState.selectedQuarter}');
+                    return SlideTransition(
+                      position: Tween<Offset>(
+                        begin: Offset(_isForward ? 0.05 : -0.05, 0.0),
+                        end: Offset.zero,
+                      ).animate(animation),
+                      child: FadeTransition(
+                        opacity: animation,
+                        child: child,
+                      ),
+                    );
+                  },
+                  child: _GoalsList(
+                    key: ValueKey('${viewState.selectedType}-${viewState.selectedYear}-${viewState.selectedMonth}-${viewState.selectedWeek}-${viewState.selectedQuarter}'),
+                    goals: filteredGoals,
+                    viewState: viewState,
+                  ),
+                ),
               ),
             ),
           ],
@@ -229,6 +272,7 @@ class MacroGoalsScreen extends ConsumerWidget {
           // Previous Button
           GestureDetector(
             onTap: () {
+              setState(() => _isForward = false);
               ref.read(macroGoalsViewProvider.notifier).prevPeriod();
               HapticFeedback.lightImpact();
             },
@@ -259,6 +303,7 @@ class MacroGoalsScreen extends ConsumerWidget {
           // Next Button
           GestureDetector(
             onTap: () {
+              setState(() => _isForward = true);
               ref.read(macroGoalsViewProvider.notifier).nextPeriod();
               HapticFeedback.lightImpact();
             },
@@ -283,7 +328,7 @@ class _GoalsList extends ConsumerWidget {
   final List<MacroGoal> goals;
   final MacroGoalsViewState viewState;
 
-  const _GoalsList({required this.goals, required this.viewState});
+  const _GoalsList({super.key, required this.goals, required this.viewState});
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {

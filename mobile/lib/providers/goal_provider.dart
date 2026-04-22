@@ -4,59 +4,84 @@ import '../models/goal.dart';
 
 // ─── Goals provider (mock data, future: Supabase) ───────────────────────────
 
-final goalsProvider = Provider<List<Goal>>((ref) {
-  final now = DateTime.now();
-  final startDate =
-      '${now.year}-${now.month.toString().padLeft(2, '0')}-01';
+class GoalsNotifier extends Notifier<List<Goal>> {
+  @override
+  List<Goal> build() {
+    final now = DateTime.now();
+    final startDate = '${now.year}-${now.month.toString().padLeft(2, '0')}-01';
 
-  return [
-    Goal(
-      id: '1',
-      title: 'Meditazione',
-      description: '10 minuti',
-      icon: 'heart',
-      color: const Color(0xFF7C3AED),
-      isCompleted: true,
-      startDate: startDate,
-    ),
-    Goal(
-      id: '2',
-      title: 'Lettura',
-      description: '20 pagine',
-      icon: 'book',
-      color: const Color(0xFF3B82F6),
-      isCompleted: false,
-      startDate: startDate,
-    ),
-    Goal(
-      id: '3',
-      title: 'Allenamento',
-      description: '45 minuti',
-      icon: 'dumbbell',
-      color: const Color(0xFF10B981),
-      isCompleted: false,
-      startDate: startDate,
-    ),
-    Goal(
-      id: '4',
-      title: 'Diario',
-      description: 'Riflessione quotidiana',
-      icon: 'pencil',
-      color: const Color(0xFFF59E0B),
-      isCompleted: true,
-      startDate: startDate,
-    ),
-    Goal(
-      id: '5',
-      title: 'Camminata',
-      description: '30 minuti',
-      icon: 'footprints',
-      color: const Color(0xFFEC4899),
-      isCompleted: false,
-      startDate: startDate,
-    ),
-  ];
-});
+    return [
+      Goal(
+        id: '1',
+        title: 'Meditazione',
+        description: '10 minuti',
+        icon: 'heart',
+        color: const Color(0xFF7C3AED),
+        isCompleted: true,
+        startDate: startDate,
+      ),
+      Goal(
+        id: '2',
+        title: 'Lettura',
+        description: '20 pagine',
+        icon: 'book',
+        color: const Color(0xFF3B82F6),
+        isCompleted: false,
+        startDate: startDate,
+      ),
+      Goal(
+        id: '3',
+        title: 'Allenamento',
+        description: '45 minuti',
+        icon: 'dumbbell',
+        color: const Color(0xFF10B981),
+        isCompleted: false,
+        startDate: startDate,
+      ),
+      Goal(
+        id: '4',
+        title: 'Diario',
+        description: 'Riflessione quotidiana',
+        icon: 'pencil',
+        color: const Color(0xFFF59E0B),
+        isCompleted: true,
+        startDate: startDate,
+      ),
+      Goal(
+        id: '5',
+        title: 'Camminata',
+        description: '30 minuti',
+        icon: 'footprints',
+        color: const Color(0xFFEC4899),
+        isCompleted: false,
+        startDate: startDate,
+      ),
+    ];
+  }
+
+  void addHabit(Goal habit) {
+    state = [...state, habit];
+  }
+
+  void updateHabit(Goal updatedHabit) {
+    state = state.map((h) => h.id == updatedHabit.id ? updatedHabit : h).toList();
+  }
+
+  void deleteHabit(String id) {
+    state = state.where((h) => h.id != id).toList();
+  }
+
+  void reorder(int oldIndex, int newIndex) {
+    final list = List<Goal>.from(state);
+    if (newIndex > oldIndex) newIndex -= 1;
+    final item = list.removeAt(oldIndex);
+    list.insert(newIndex, item);
+    state = list;
+  }
+}
+
+final goalsProvider =
+    NotifierProvider<GoalsNotifier, List<Goal>>(GoalsNotifier.new);
 
 // ─── Habit logs: Map<dateKey, Map<habitId, status>> ─────────────────────────
 

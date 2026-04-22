@@ -4,6 +4,8 @@ import 'package:lucide_icons_flutter/lucide_icons.dart';
 import '../../core/theme.dart';
 import '../../providers/goal_provider.dart';
 import 'daily_check_in_modal.dart';
+import 'habit_management_modal.dart';
+import 'quick_notes_modal.dart';
 
 /// "Protocollo" command panel matching the PWA sidebar card
 class ProtocolloPanel extends ConsumerWidget {
@@ -75,9 +77,15 @@ class ProtocolloPanel extends ConsumerWidget {
                 onTap: () => DailyCheckInModal.show(context),
               ),
               const SizedBox(width: 8),
-              _ActionButton(icon: LucideIcons.fileText),
+              _ActionButton(
+                icon: LucideIcons.fileText,
+                onTap: () => QuickNotesModal.show(context),
+              ),
               const SizedBox(width: 8),
-              _ActionButton(icon: LucideIcons.settings),
+              _ActionButton(
+                icon: LucideIcons.settings,
+                onTap: () => HabitManagementModal.show(context),
+              ),
               const SizedBox(width: 8),
               _ActionButton(icon: LucideIcons.download),
               const SizedBox(width: 8),

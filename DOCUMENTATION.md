@@ -5,7 +5,9 @@
 ### [2026-04-22] Flutter Mobile — Profile Submenus: App Settings
 - **Sottomenu Impostazioni App**: Implementata la gestione completa delle preferenze dell'applicazione.
   - **Visual**: Toggle per Tema (Dark/Light), Trasparenze (Glassmorphism) e **Colore Accento Avanzato**.
-  - Sostituito il selettore statico con un menu modale che offre 3 preset premium e un **Color Picker personalizzato** completo (RGB sliders) per una personalizzazione totale.
+  - Sostituito il selettore statico con un menu modale che offre 3 preset premium e un **Color Picker personalizzato** completo (RGB sliders).
+  - **Validazione Real-Time**: Implementato un sistema di controllo della **luminanza in tempo reale** all'interno del picker. Se il colore è troppo scuro per il tema attivo, appare un avviso visivo immediato e il tasto di verifica viene disabilitato per garantire l'accessibilità.
+  - **Verifica & Wow-Effect Globale**: Il pop-up di conferma e la **transizione scenografica** si attivano per ogni scelta valida, assicurando una UX fluida e professionale.
   - Centralizzazione del tema tramite `settingsProvider` e ascolto dinamico nel `MaterialApp`.
   - **Calendario**: Configurazione vista predefinita (**Giorno, Settimana, Anno, Vita**) tramite un nuovo menu modale bottom-sheet in stile premium.
   - Aggiunta gestione per inizio settimana e visibilità weekend.

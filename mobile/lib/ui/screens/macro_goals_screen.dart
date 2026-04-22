@@ -25,6 +25,7 @@ class _MacroGoalsScreenState extends ConsumerState<MacroGoalsScreen> {
   @override
   Widget build(BuildContext context) {
     final viewState = ref.watch(macroGoalsViewProvider);
+    final primaryColor = Theme.of(context).colorScheme.primary;
     
     // Force re-compute on state change
     ref.watch(macroGoalsProvider);
@@ -44,7 +45,7 @@ class _MacroGoalsScreenState extends ConsumerState<MacroGoalsScreen> {
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
             // ── Unified Native Header ─────────────────────────────────────
-            _buildUnifiedHeader(context, ref, viewState),
+            _buildUnifiedHeader(context, ref, viewState, primaryColor),
 
             if (_showStats)
               const Expanded(child: MacroGoalsStatsView())
@@ -82,7 +83,6 @@ class _MacroGoalsScreenState extends ConsumerState<MacroGoalsScreen> {
                   switchInCurve: Curves.easeOutCubic,
                   switchOutCurve: Curves.easeOutCubic,
                   transitionBuilder: (child, animation) {
-                    final isNext = child.key == ValueKey('${viewState.selectedType}-${viewState.selectedYear}-${viewState.selectedMonth}-${viewState.selectedWeek}-${viewState.selectedQuarter}');
                     return SlideTransition(
                       position: Tween<Offset>(
                         begin: Offset(_isForward ? 0.05 : -0.05, 0.0),
@@ -109,16 +109,7 @@ class _MacroGoalsScreenState extends ConsumerState<MacroGoalsScreen> {
   );
 }
 
-  Widget _buildUnifiedHeader(BuildContext context, WidgetRef ref, MacroGoalsViewState vs) {
-    String typeLabel = '';
-    switch (vs.selectedType) {
-      case GoalType.lifetime: typeLabel = 'Lifetime'; break;
-      case GoalType.annual: typeLabel = 'Annuale'; break;
-      case GoalType.quarterly: typeLabel = 'Trimestrale'; break;
-      case GoalType.monthly: typeLabel = 'Mensile'; break;
-      case GoalType.weekly: typeLabel = 'Settimanale'; break;
-    }
-
+  Widget _buildUnifiedHeader(BuildContext context, WidgetRef ref, MacroGoalsViewState vs, Color primaryColor) {
     return Padding(
       padding: const EdgeInsets.fromLTRB(16, 12, 16, 8),
       child: Column(
@@ -136,17 +127,17 @@ class _MacroGoalsScreenState extends ConsumerState<MacroGoalsScreen> {
                   letterSpacing: -1,
                 ),
               ),
-              if (!_showStats) _buildTypePicker(context, ref, vs),
+              if (!_showStats) _buildTypePicker(context, ref, vs, primaryColor),
             ],
           ),
           const SizedBox(height: 16),
-          _buildModeToggle(),
+          _buildModeToggle(primaryColor),
         ],
       ),
     );
   }
 
-  Widget _buildTypePicker(BuildContext context, WidgetRef ref, MacroGoalsViewState vs) {
+  Widget _buildTypePicker(BuildContext context, WidgetRef ref, MacroGoalsViewState vs, Color primaryColor) {
     String typeLabel = '';
     switch (vs.selectedType) {
       case GoalType.lifetime: typeLabel = 'Lifetime'; break;
@@ -159,7 +150,7 @@ class _MacroGoalsScreenState extends ConsumerState<MacroGoalsScreen> {
     return GestureDetector(
       onTap: () {
         HapticFeedback.lightImpact();
-        _showTypePicker(context, ref, vs);
+        _showTypePicker(context, ref, vs, primaryColor);
       },
       child: Container(
         padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
@@ -171,7 +162,7 @@ class _MacroGoalsScreenState extends ConsumerState<MacroGoalsScreen> {
         child: Row(
           mainAxisSize: MainAxisSize.min,
           children: [
-            Icon(LucideIcons.target, size: 12, color: AppColors.primary),
+            Icon(LucideIcons.target, size: 12, color: primaryColor),
             const SizedBox(width: 6),
             Text(
               typeLabel,
@@ -182,14 +173,14 @@ class _MacroGoalsScreenState extends ConsumerState<MacroGoalsScreen> {
               ),
             ),
             const SizedBox(width: 4),
-            Icon(LucideIcons.chevronDown, size: 12, color: AppColors.mutedForeground),
+            const Icon(LucideIcons.chevronDown, size: 12, color: AppColors.mutedForeground),
           ],
         ),
       ),
     );
   }
 
-  Widget _buildModeToggle() {
+  Widget _buildModeToggle(Color primaryColor) {
     return Container(
       height: 42,
       padding: const EdgeInsets.all(4),
@@ -200,14 +191,14 @@ class _MacroGoalsScreenState extends ConsumerState<MacroGoalsScreen> {
       ),
       child: Row(
         children: [
-          _buildToggleItem(false, LucideIcons.listTodo, 'I miei obiettivi'),
-          _buildToggleItem(true, LucideIcons.chartBar, 'Analisi Performance'),
+          _buildToggleItem(primaryColor, false, LucideIcons.listTodo, 'I miei obiettivi'),
+          _buildToggleItem(primaryColor, true, LucideIcons.chartBar, 'Analisi Performance'),
         ],
       ),
     );
   }
 
-  Widget _buildToggleItem(bool stats, IconData icon, String label) {
+  Widget _buildToggleItem(Color primaryColor, bool stats, IconData icon, String label) {
     final active = _showStats == stats;
     return Expanded(
       child: GestureDetector(
@@ -220,7 +211,7 @@ class _MacroGoalsScreenState extends ConsumerState<MacroGoalsScreen> {
         child: AnimatedContainer(
           duration: const Duration(milliseconds: 200),
           decoration: BoxDecoration(
-            color: active ? AppColors.primary.withValues(alpha: 0.1) : Colors.transparent,
+            color: active ? primaryColor.withValues(alpha: 0.1) : Colors.transparent,
             borderRadius: BorderRadius.circular(8),
           ),
           child: Row(
@@ -229,7 +220,7 @@ class _MacroGoalsScreenState extends ConsumerState<MacroGoalsScreen> {
               Icon(
                 icon,
                 size: 16,
-                color: active ? AppColors.primary : AppColors.mutedForeground,
+                color: active ? primaryColor : AppColors.mutedForeground,
               ),
               const SizedBox(width: 8),
               Text(
@@ -237,7 +228,7 @@ class _MacroGoalsScreenState extends ConsumerState<MacroGoalsScreen> {
                 style: GoogleFonts.inter(
                   fontSize: 13,
                   fontWeight: active ? FontWeight.w600 : FontWeight.w500,
-                  color: active ? AppColors.primary : AppColors.mutedForeground,
+                  color: active ? primaryColor : AppColors.mutedForeground,
                 ),
               ),
             ],
@@ -247,7 +238,7 @@ class _MacroGoalsScreenState extends ConsumerState<MacroGoalsScreen> {
     );
   }
 
-  void _showTypePicker(BuildContext context, WidgetRef ref, MacroGoalsViewState vs) {
+  void _showTypePicker(BuildContext context, WidgetRef ref, MacroGoalsViewState vs, Color primaryColor) {
     final types = [
       (t: GoalType.lifetime, l: 'Lifetime'),
       (t: GoalType.annual, l: 'Annuale'),
@@ -294,7 +285,7 @@ class _MacroGoalsScreenState extends ConsumerState<MacroGoalsScreen> {
                     fontWeight: isSel ? FontWeight.w600 : FontWeight.w400,
                   ),
                 ),
-                trailing: isSel ? const Icon(Icons.check, color: AppColors.primary) : null,
+                trailing: isSel ? Icon(Icons.check, color: primaryColor) : null,
                 onTap: () {
                   ref.read(macroGoalsViewProvider.notifier).setType(type.t);
                   Navigator.pop(context);

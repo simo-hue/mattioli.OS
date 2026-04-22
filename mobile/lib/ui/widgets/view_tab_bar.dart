@@ -11,6 +11,7 @@ class ViewTabBar extends ConsumerWidget {
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final currentView = ref.watch(calendarViewProvider);
+    final primaryColor = Theme.of(context).colorScheme.primary;
 
     final tabs = [
       _TabItem(view: CalendarView.month, icon: LucideIcons.calendar, label: 'Mese'),
@@ -42,13 +43,13 @@ class ViewTabBar extends ConsumerWidget {
                 curve: Curves.easeOutCubic,
                 decoration: BoxDecoration(
                   color: isActive
-                      ? AppColors.primary.withValues(alpha: 0.9)
+                      ? primaryColor.withValues(alpha: 0.9)
                       : Colors.transparent,
                   borderRadius: BorderRadius.circular(10),
                   boxShadow: isActive
                       ? [
                           BoxShadow(
-                            color: AppColors.primary.withValues(alpha: 0.2),
+                            color: primaryColor.withValues(alpha: 0.2),
                             blurRadius: 10,
                             offset: const Offset(0, 4),
                           ),

@@ -84,6 +84,7 @@ class _HomeScreenState extends ConsumerState<HomeScreen>
   }
 
   Widget _buildHomeBody(CalendarView currentView) {
+    final primaryColor = Theme.of(context).colorScheme.primary;
     return Stack(
       children: [
         Positioned(
@@ -96,7 +97,7 @@ class _HomeScreenState extends ConsumerState<HomeScreen>
               shape: BoxShape.circle,
               gradient: RadialGradient(
                 colors: [
-                  AppColors.primary.withValues(alpha: 0.04),
+                  primaryColor.withValues(alpha: 0.04),
                   Colors.transparent,
                 ],
               ),
@@ -160,6 +161,7 @@ class _HomeScreenState extends ConsumerState<HomeScreen>
 class _AppBar extends ConsumerWidget {
   @override
   Widget build(BuildContext context, WidgetRef ref) {
+    final primaryColor = Theme.of(context).colorScheme.primary;
     return Container(
       decoration: BoxDecoration(
         color: AppColors.background,
@@ -221,7 +223,7 @@ class _AppBar extends ConsumerWidget {
                 children: [
                   Text(
                     'Mattioli.OS',
-                    style: TextStyle(
+                    style: const TextStyle(
                       fontFamily: 'Inter',
                       fontSize: 18,
                       fontWeight: FontWeight.w700,
@@ -242,7 +244,7 @@ class _AppBar extends ConsumerWidget {
                       const SizedBox(width: 4),
                       Text(
                         'Sistema Attivo',
-                        style: TextStyle(
+                        style: const TextStyle(
                           fontSize: 10,
                           fontWeight: FontWeight.w500,
                           color: AppColors.mutedForeground,
@@ -272,7 +274,7 @@ class _AppBar extends ConsumerWidget {
                   decoration: BoxDecoration(
                     shape: BoxShape.circle,
                     border: Border.all(
-                      color: AppColors.primary.withValues(alpha: 0.3),
+                      color: primaryColor.withValues(alpha: 0.3),
                       width: 1.5,
                     ),
                   ),

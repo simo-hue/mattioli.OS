@@ -59,6 +59,7 @@ class AppSettingsScreen extends ConsumerWidget {
             _buildSectionHeader('ASPETTO & VISUAL'),
             _buildSettingsCard([
               _buildSwitchRow(
+                context: context,
                 icon: LucideIcons.moon,
                 title: 'Modalità Scura',
                 value: settings.themeMode == 'dark',
@@ -69,6 +70,7 @@ class AppSettingsScreen extends ConsumerWidget {
               ),
               _buildDivider(),
               _buildSwitchRow(
+                context: context,
                 icon: LucideIcons.sparkles,
                 title: 'Effetti Trasparenza',
                 value: settings.glassEffects,
@@ -79,6 +81,7 @@ class AppSettingsScreen extends ConsumerWidget {
               ),
               _buildDivider(),
               _buildActionRow(
+                context: context,
                 icon: LucideIcons.palette,
                 title: 'Colore Accento',
                 trailing: Container(
@@ -107,6 +110,7 @@ class AppSettingsScreen extends ConsumerWidget {
             _buildSectionHeader('CALENDARIO & DASHBOARD'),
             _buildSettingsCard([
               _buildActionRow(
+                context: context,
                 icon: LucideIcons.calendar,
                 title: 'Vista Predefinita',
                 trailingText: settings.defaultCalendarView.toUpperCase(),
@@ -156,6 +160,7 @@ class AppSettingsScreen extends ConsumerWidget {
               ),
               _buildDivider(),
               _buildSwitchRow(
+                context: context,
                 icon: LucideIcons.calendarDays,
                 title: 'Inizia di Lunedì',
                 value: settings.startWeekOnMonday,
@@ -166,6 +171,7 @@ class AppSettingsScreen extends ConsumerWidget {
               ),
               _buildDivider(),
               _buildSwitchRow(
+                context: context,
                 icon: LucideIcons.calendarRange,
                 title: 'Mostra Weekend',
                 value: settings.showWeekend,
@@ -179,6 +185,7 @@ class AppSettingsScreen extends ConsumerWidget {
             _buildSectionHeader('ESPERIENZA UTENTE'),
             _buildSettingsCard([
               _buildSwitchRow(
+                context: context,
                 icon: LucideIcons.vibrate,
                 title: 'Feedback Aptico',
                 value: settings.hapticFeedback,
@@ -192,6 +199,7 @@ class AppSettingsScreen extends ConsumerWidget {
             _buildSectionHeader('UNITÀ E LINGUA'),
             _buildSettingsCard([
               _buildActionRow(
+                context: context,
                 icon: LucideIcons.languages,
                 title: 'Lingua',
                 trailingText: settings.language,
@@ -201,6 +209,7 @@ class AppSettingsScreen extends ConsumerWidget {
               ),
               _buildDivider(),
               _buildSwitchRow(
+                context: context,
                 icon: LucideIcons.clock,
                 title: 'Formato 24h',
                 value: settings.timeFormat24h,
@@ -214,6 +223,7 @@ class AppSettingsScreen extends ConsumerWidget {
             _buildSectionHeader('AI & SISTEMA'),
             _buildSettingsCard([
               _buildSwitchRow(
+                context: context,
                 icon: LucideIcons.brainCircuit,
                 title: 'Suggerimenti AI',
                 subtitle: 'Analisi intelligente delle abitudini',
@@ -275,6 +285,7 @@ class AppSettingsScreen extends ConsumerWidget {
   }
 
   Widget _buildSwitchRow({
+    required BuildContext context,
     required IconData icon,
     required String title,
     String? subtitle,
@@ -282,6 +293,7 @@ class AppSettingsScreen extends ConsumerWidget {
     required ValueChanged<bool> onChanged,
     bool isLocked = false,
   }) {
+    final primaryColor = Theme.of(context).colorScheme.primary;
     return Padding(
       padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
       child: Row(
@@ -294,7 +306,7 @@ class AppSettingsScreen extends ConsumerWidget {
               borderRadius: BorderRadius.circular(10),
               border: Border.all(color: AppColors.border),
             ),
-            child: Icon(icon, size: 18, color: isLocked ? AppColors.mutedForeground : AppColors.primary),
+            child: Icon(icon, size: 18, color: isLocked ? AppColors.mutedForeground : primaryColor),
           ),
           const SizedBox(width: 16),
           Expanded(
@@ -344,8 +356,8 @@ class AppSettingsScreen extends ConsumerWidget {
             child: Switch(
               value: value,
               onChanged: onChanged,
-              activeTrackColor: AppColors.success.withValues(alpha: 0.5),
-              activeColor: AppColors.success,
+              activeTrackColor: primaryColor.withValues(alpha: 0.5),
+              activeThumbColor: primaryColor,
               inactiveThumbColor: AppColors.mutedForeground,
               inactiveTrackColor: AppColors.border,
             ),
@@ -356,12 +368,14 @@ class AppSettingsScreen extends ConsumerWidget {
   }
 
   Widget _buildActionRow({
+    required BuildContext context,
     required IconData icon,
     required String title,
     Widget? trailing,
     String? trailingText,
     required VoidCallback onTap,
   }) {
+    final primaryColor = Theme.of(context).colorScheme.primary;
     return InkWell(
       onTap: onTap,
       borderRadius: BorderRadius.circular(20),
@@ -377,7 +391,7 @@ class AppSettingsScreen extends ConsumerWidget {
                 borderRadius: BorderRadius.circular(10),
                 border: Border.all(color: AppColors.border),
               ),
-              child: Icon(icon, size: 18, color: AppColors.primary),
+              child: Icon(icon, size: 18, color: primaryColor),
             ),
             const SizedBox(width: 16),
             Expanded(
@@ -496,9 +510,9 @@ class AppSettingsScreen extends ConsumerWidget {
   Widget _buildColorOption(BuildContext context, WidgetRef ref, Color color, bool isSelected) {
     return GestureDetector(
       onTap: () {
-        ref.read(settingsProvider.notifier).setAccentColor(color);
         HapticFeedback.mediumImpact();
-        Navigator.pop(context);
+        Navigator.pop(context); // Close bottom sheet
+        _showValidationDialog(context, ref, color);
       },
       child: Container(
         width: 54,
@@ -527,49 +541,134 @@ class AppSettingsScreen extends ConsumerWidget {
     );
   }
 
-  void _showFullColorPicker(BuildContext context, WidgetRef ref, Color currentColor) {
-    Color pickedColor = currentColor;
+  void _showFullColorPicker(BuildContext parentContext, WidgetRef ref, Color currentColor) {
+    final themeMode = ref.read(settingsProvider).themeMode;
+
+    showDialog(
+      context: parentContext,
+      builder: (dialogContext) {
+        Color pickedColor = currentColor;
+        return StatefulBuilder(
+          builder: (context, setState) {
+            final double luminance = pickedColor.computeLuminance();
+            final bool isTooDark = themeMode == 'dark' && luminance < 0.15;
+
+            return AlertDialog(
+              backgroundColor: AppColors.card,
+              shape: RoundedRectangleBorder(
+                borderRadius: BorderRadius.circular(24),
+                side: BorderSide(
+                  color: isTooDark ? AppColors.destructive.withValues(alpha: 0.5) : AppColors.border,
+                  width: isTooDark ? 2 : 1,
+                ),
+              ),
+              title: Row(
+                children: [
+                  const Text('Colore Personalizzato'),
+                  const Spacer(),
+                  if (isTooDark)
+                    const Icon(LucideIcons.triangleAlert, color: AppColors.destructive, size: 20),
+                ],
+              ),
+              content: SingleChildScrollView(
+                child: Column(
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    SlidePicker(
+                      pickerColor: pickedColor,
+                      onColorChanged: (color) {
+                        setState(() => pickedColor = color);
+                      },
+                      colorModel: ColorModel.rgb,
+                      enableAlpha: false,
+                      displayThumbColor: true,
+                      showParams: true,
+                      showLabel: true,
+                    ),
+                    if (isTooDark) ...[
+                      const SizedBox(height: 16),
+                      Container(
+                        padding: const EdgeInsets.all(12),
+                        decoration: BoxDecoration(
+                          color: AppColors.destructive.withValues(alpha: 0.1),
+                          borderRadius: BorderRadius.circular(12),
+                        ),
+                        child: const Row(
+                          children: [
+                            Icon(LucideIcons.info, size: 16, color: AppColors.destructive),
+                            SizedBox(width: 8),
+                            Expanded(
+                              child: Text(
+                                'Colore troppo scuro per la visibilità in Dark Mode.',
+                                style: TextStyle(color: AppColors.destructive, fontSize: 11, fontWeight: FontWeight.w600),
+                              ),
+                            ),
+                          ],
+                        ),
+                      ),
+                    ],
+                  ],
+                ),
+              ),
+              actions: [
+                TextButton(
+                  onPressed: () => Navigator.pop(dialogContext),
+                  child: const Text('Annulla', style: TextStyle(color: AppColors.mutedForeground)),
+                ),
+                ElevatedButton(
+                  onPressed: isTooDark
+                      ? null
+                      : () {
+                          Navigator.of(dialogContext).pop();
+                          Navigator.of(parentContext).pop();
+                          _showValidationDialog(parentContext, ref, pickedColor);
+                        },
+                  style: ElevatedButton.styleFrom(
+                    backgroundColor: isTooDark ? AppColors.border : Theme.of(dialogContext).colorScheme.primary,
+                    foregroundColor: AppColors.background,
+                    shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+                  ),
+                  child: const Text('Verifica'),
+                ),
+              ],
+            );
+          },
+        );
+      },
+    );
+  }
+
+  void _showValidationDialog(BuildContext context, WidgetRef ref, Color testColor) {
     showDialog(
       context: context,
-      builder: (context) => AlertDialog(
-        backgroundColor: AppColors.card,
-        shape: RoundedRectangleBorder(
-          borderRadius: BorderRadius.circular(24),
-          side: const BorderSide(color: AppColors.border),
-        ),
-        title: const Text('Colore Personalizzato'),
-        content: SingleChildScrollView(
-          child: SlidePicker(
-            pickerColor: currentColor,
-            onColorChanged: (color) => pickedColor = color,
-            colorModel: ColorModel.rgb,
-            enableAlpha: false,
-            displayThumbColor: true,
-            showParams: true,
-            showLabel: true,
-          ),
-        ),
-        actions: [
-          TextButton(
-            onPressed: () => Navigator.pop(context),
-            child: const Text('Annulla', style: TextStyle(color: AppColors.mutedForeground)),
-          ),
-          ElevatedButton(
-            onPressed: () {
-              ref.read(settingsProvider.notifier).setAccentColor(pickedColor);
-              Navigator.pop(context); // Close dialog
-              Navigator.pop(context); // Close bottom sheet
-            },
-            style: ElevatedButton.styleFrom(
-              backgroundColor: AppColors.primary,
-              foregroundColor: AppColors.background,
-              shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
-            ),
-            child: const Text('Salva'),
-          ),
-        ],
-      ),
+      barrierDismissible: false,
+      builder: (context) => _ValidationDialog(testColor: testColor, onConfirm: () {
+        // SCENOGRAPHIC ANIMATION TRIGGER
+        _applyColorWithAnimation(context, ref, testColor);
+      }),
     );
+  }
+
+  void _applyColorWithAnimation(BuildContext context, WidgetRef ref, Color newColor) {
+    // We show a full screen overlay that fades in/out to create a "wow" transition
+    final overlay = OverlayEntry(
+      builder: (context) => _ScenographicTransition(color: newColor),
+    );
+
+    Overlay.of(context).insert(overlay);
+
+    // Apply the color in the middle of the animation
+    Future.delayed(const Duration(milliseconds: 400), () {
+      ref.read(settingsProvider.notifier).setAccentColor(newColor);
+    });
+
+    // Remove overlay after animation
+    Future.delayed(const Duration(milliseconds: 1200), () {
+      overlay.remove();
+      // Also close the settings bottom sheet if it was open (from presets)
+      // Actually we are in a dialog here, so the bottom sheet of presets might still be there
+      // Navigator.of(context).popUntil((route) => route.isFirst); // Too aggressive
+    });
   }
 
   Widget _buildViewOption(
@@ -580,6 +679,7 @@ class AppSettingsScreen extends ConsumerWidget {
     String currentValue,
   ) {
     final isSelected = value == currentValue;
+    final primaryColor = Theme.of(context).colorScheme.primary;
     return ListTile(
       onTap: () {
         ref.read(settingsProvider.notifier).updateSettings(
@@ -592,14 +692,161 @@ class AppSettingsScreen extends ConsumerWidget {
       title: Text(
         label,
         style: TextStyle(
-          color: isSelected ? AppColors.primary : AppColors.foreground,
+          color: isSelected ? primaryColor : AppColors.foreground,
           fontSize: 16,
           fontWeight: isSelected ? FontWeight.w700 : FontWeight.w500,
         ),
       ),
       trailing: isSelected
-          ? const Icon(LucideIcons.check, color: AppColors.primary, size: 20)
+          ? Icon(LucideIcons.check, color: primaryColor, size: 20)
           : null,
+    );
+  }
+}
+
+class _ValidationDialog extends StatelessWidget {
+  final Color testColor;
+  final VoidCallback onConfirm;
+
+  const _ValidationDialog({required this.testColor, required this.onConfirm});
+
+  @override
+  Widget build(BuildContext context) {
+    return AlertDialog(
+      backgroundColor: AppColors.card,
+      shape: RoundedRectangleBorder(
+        borderRadius: BorderRadius.circular(28),
+        side: BorderSide(color: testColor.withValues(alpha: 0.3), width: 2),
+      ),
+      content: Column(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          Container(
+            padding: const EdgeInsets.all(20),
+            decoration: BoxDecoration(
+              color: testColor.withValues(alpha: 0.1),
+              shape: BoxShape.circle,
+            ),
+            child: Icon(LucideIcons.eye, color: testColor, size: 40),
+          ),
+          const SizedBox(height: 24),
+          const Text(
+            'Verifica Visibilità',
+            style: TextStyle(
+              color: AppColors.foreground,
+              fontSize: 22,
+              fontWeight: FontWeight.w800,
+            ),
+          ),
+          const SizedBox(height: 12),
+          Text(
+            'Riesci a leggere chiaramente questo testo e a vedere il pulsante qui sotto?',
+            textAlign: TextAlign.center,
+            style: TextStyle(
+              color: AppColors.mutedForeground.withValues(alpha: 0.8),
+              fontSize: 14,
+              height: 1.5,
+            ),
+          ),
+          const SizedBox(height: 32),
+          GestureDetector(
+            onTap: () {
+              Navigator.pop(context);
+              onConfirm();
+            },
+            child: Container(
+              width: double.infinity,
+              height: 56,
+              decoration: BoxDecoration(
+                color: testColor,
+                borderRadius: BorderRadius.circular(16),
+                boxShadow: [
+                  BoxShadow(
+                    color: testColor.withValues(alpha: 0.4),
+                    blurRadius: 15,
+                    spreadRadius: 2,
+                  )
+                ],
+              ),
+              child: const Center(
+                child: Text(
+                  'SI, CONFERMA',
+                  style: TextStyle(
+                    color: Colors.black,
+                    fontWeight: FontWeight.w900,
+                    letterSpacing: 1,
+                  ),
+                ),
+              ),
+            ),
+          ),
+          const SizedBox(height: 12),
+          TextButton(
+            onPressed: () => Navigator.pop(context),
+            child: Text(
+              'NO, TORNA INDIETRO',
+              style: TextStyle(color: testColor.withValues(alpha: 0.6), fontSize: 12, fontWeight: FontWeight.w700),
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+class _ScenographicTransition extends StatefulWidget {
+  final Color color;
+  const _ScenographicTransition({required this.color});
+
+  @override
+  State<_ScenographicTransition> createState() => _ScenographicTransitionState();
+}
+
+class _ScenographicTransitionState extends State<_ScenographicTransition> with SingleTickerProviderStateMixin {
+  late AnimationController _controller;
+  late Animation<double> _scale;
+  late Animation<double> _fade;
+
+  @override
+  void initState() {
+    super.initState();
+    _controller = AnimationController(vsync: this, duration: const Duration(milliseconds: 1000));
+    _scale = Tween<double>(begin: 0.0, end: 5.0).animate(CurvedAnimation(parent: _controller, curve: const Interval(0.0, 0.7, curve: Curves.easeInCubic)));
+    _fade = TweenSequence<double>([
+      TweenSequenceItem(tween: Tween<double>(begin: 0.0, end: 1.0), weight: 30),
+      TweenSequenceItem(tween: ConstantTween<double>(1.0), weight: 40),
+      TweenSequenceItem(tween: Tween<double>(begin: 1.0, end: 0.0), weight: 30),
+    ]).animate(_controller);
+
+    _controller.forward();
+  }
+
+  @override
+  void dispose() {
+    _controller.dispose();
+    super.dispose();
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return FadeTransition(
+      opacity: _fade,
+      child: Material(
+        color: Colors.transparent,
+        child: Center(
+          child: ScaleTransition(
+            scale: _scale,
+            child: Container(
+              width: 200,
+              height: 200,
+              decoration: BoxDecoration(
+                shape: BoxShape.circle,
+                color: widget.color,
+              ),
+            ),
+          ),
+        ),
+      ),
     );
   }
 }

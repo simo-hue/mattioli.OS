@@ -1,13 +1,16 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import 'package:lucide_icons_flutter/lucide_icons.dart';
+
 import '../../core/theme.dart';
 import '../../providers/goal_provider.dart';
 import '../widgets/bottom_nav_bar.dart';
 import '../widgets/protocollo_panel.dart';
 import '../widgets/view_tab_bar.dart';
 import '../widgets/habit_calendar_widget.dart';
+import '../widgets/weekly_view_widget.dart';
+import '../widgets/yearly_view_widget.dart';
+import '../widgets/life_view_widget.dart';
 
 class HomeScreen extends ConsumerStatefulWidget {
   const HomeScreen({super.key});
@@ -148,23 +151,11 @@ class _HomeScreenState extends ConsumerState<HomeScreen>
       case CalendarView.month:
         return const HabitCalendarWidget(key: ValueKey('month'));
       case CalendarView.week:
-        return const _PlaceholderView(
-          key: ValueKey('week'),
-          label: 'Vista Settimana',
-          icon: LucideIcons.layoutGrid,
-        );
+        return const WeeklyViewWidget(key: ValueKey('week'));
       case CalendarView.year:
-        return const _PlaceholderView(
-          key: ValueKey('year'),
-          label: 'Vista Anno',
-          icon: LucideIcons.layoutDashboard,
-        );
+        return const YearlyViewWidget(key: ValueKey('year'));
       case CalendarView.vita:
-        return const _PlaceholderView(
-          key: ValueKey('vita'),
-          label: 'Vista Vita',
-          icon: LucideIcons.hourglass,
-        );
+        return const LifeViewWidget(key: ValueKey('vita'));
     }
   }
 }
@@ -229,48 +220,4 @@ class _AppBar extends ConsumerWidget {
   }
 }
 
-class _PlaceholderView extends StatelessWidget {
-  final String label;
-  final IconData icon;
 
-  const _PlaceholderView({
-    super.key,
-    required this.label,
-    required this.icon,
-  });
-
-  @override
-  Widget build(BuildContext context) {
-    return Container(
-      height: 420,
-      decoration: AppTheme.glassPanelDecoration(radius: 14),
-      child: Center(
-        child: Column(
-          mainAxisAlignment: MainAxisAlignment.center,
-          children: [
-            Icon(icon, size: 36, color: AppColors.mutedForeground),
-            const SizedBox(height: 12),
-            Text(
-              label,
-              style: const TextStyle(
-                fontFamily: 'Inter',
-                fontSize: 14,
-                color: AppColors.mutedForeground,
-                fontWeight: FontWeight.w500,
-              ),
-            ),
-            const SizedBox(height: 6),
-            Text(
-              'In arrivo',
-              style: TextStyle(
-                fontFamily: 'Inter',
-                fontSize: 11,
-                color: AppColors.mutedForeground.withValues(alpha: 0.5),
-              ),
-            ),
-          ],
-        ),
-      ),
-    );
-  }
-}

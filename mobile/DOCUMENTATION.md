@@ -94,3 +94,11 @@
     - Creato `day_details_modal.dart` contenente `DayDetailsModal`, `GoalLogCard` e `StreakBadge`.
     - Refactor di `habit_calendar_widget.dart` per utilizzare il nuovo componente esterno.
     - Aggiornata la vista settimanale (`weekly_view_widget.dart`) per aprire il pannello di dettaglio al click su una "capsula" di abitudine, permettendo la gestione degli stati (fatto/fallito) tramite lo stesso pannello premium usato nel calendario mensile.
+
+- [2026-04-22 11:27]: [Flutter] Implementazione Tab Trend Globale (Statistiche)
+  *Details*: Creata la visualizzazione "Trend" per tutti i goals nella schermata statistiche.
+  *Tech Notes*:
+    - Creato `GlobalTrendTabWidget` con un grafico ad area smooth personalizzato tramite `CustomPaint`.
+    - Implementati selettori di timeframe (Sett, Mese, Anno, Tutto) con feedback aptico e animazioni di selezione.
+    - Implementata la sezione "Confronto Temporale" con una griglia responsive di card che mostrano il delta percentuale rispetto al periodo precedente.
+    - Integrata la nuova visualizzazione in `StatisticsScreen.dart` per il caso "Tutti gli Habits".

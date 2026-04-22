@@ -5,6 +5,7 @@ import '../../core/theme.dart';
 import '../../models/goal.dart';
 import '../../providers/goal_provider.dart';
 import '../widgets/statistics/info_tab_widget.dart';
+import '../widgets/statistics/global_trend_tab_widget.dart';
 import '../widgets/statistics/habit_overview_tab_widget.dart';
 import '../widgets/statistics/habit_calendario_tab_widget.dart';
 import '../widgets/statistics/habit_performance_tab_widget.dart';
@@ -185,6 +186,8 @@ class _StatisticsScreenState extends ConsumerState<StatisticsScreen> {
       switch (_selectedTab) {
         case 'Info':
           return const InfoTabWidget(key: ValueKey('Info'));
+        case 'Trend':
+          return const GlobalTrendTabWidget(key: ValueKey('GlobalTrend'));
         default:
           return Center(
             key: ValueKey(_selectedTab),

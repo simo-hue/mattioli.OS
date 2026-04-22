@@ -2,6 +2,24 @@
 
 ## 📅 Log Modifiche (Ultimi aggiornamenti)
 
+### [2026-04-22] Flutter Mobile — Macro Goals Screen (PWA-Consistent)
+- **Feature**: Implementazione della schermata "Macro Obiettivi" su Flutter mantenendo la coerenza visiva e funzionale con la Progressive Web App.
+- **Supporto Gerarchico**: Pieno supporto ai target Lifetime, Annuale, Trimestrale, Mensile e Settimanale tramite il `GoalTypeTabBar`.
+- **Selettori di Periodo**: Aggiunti bottom sheet (pill dropdowns) per filtrare coerentemente l'anno, il trimestre, il mese e la settimana corrente a fronte del context.
+- **Gestore Categorie**: Integrazione colori personalizzati per identificare ogni macro area con indicatori visivi (`_ActionButtons` e dot indicator).
+- **Lista Obiettivi**: Separazione netta tra elementi da fare, completati (`COMPLETATI`) e falliti (`FALLITI`). Meccanismo touch/hold sulle card per i controlli inline (Action Buttons swipe-reveal).
+- **Gestione Stato**: Setup completo Architettura `MacroGoalsNotifier` con `riverpod` per l'inserimento, cambio stato ciclico (`active` -> `completed` -> `failed`), editazione titolo ed eliminazione goal.
+- **File Creati**:
+  - `mobile/lib/models/macro_goal.dart`
+  - `mobile/lib/providers/macro_goals_provider.dart`
+  - `mobile/lib/ui/screens/macro_goals_screen.dart`
+  - `mobile/lib/ui/widgets/macro_goals/add_goal_bar.dart`
+  - `mobile/lib/ui/widgets/macro_goals/goal_item_widget.dart`
+  - `mobile/lib/ui/widgets/macro_goals/period_selector_bar.dart`
+  - `mobile/lib/ui/widgets/macro_goals/type_tab_bar.dart`
+- **File Modificati**:
+  - `mobile/lib/ui/screens/dashboard_screen.dart` - Aggiunto nel tab index 2
+
 ### [2026-04-22] Flutter Mobile — Home Screen Redesign (PWA-Consistent)
 - **Feature**: Completamente ridisegnata la Home Screen dell'app Flutter (`mobile/`) per replicare fedelmente la grafica della PWA mostrata nello screenshot della pagina dei Daily Habits.
 - **Dettagli**:
@@ -2090,3 +2108,18 @@ Modificata la restrizione temporale per la modifica delle abitudini passate. Pre
   - *Tech Notes*:
     - Installed `cocoapods` via brew.
     - Diagnosed that `xcode-select` points to Command Line Tools instead of full Xcode.
+
+- [2026-04-22 15:00]: Flutter SDK Installation
+  - *Details*: Installed Flutter SDK (stable channel) on Apple Silicon Macbook.
+  - *Tech Notes*:
+    - Cloned repo to `~/development/flutter`.
+    - Updated `~/.zshrc` to include Flutter in the PATH.
+    - Verified with `flutter doctor`.
+    - Dependencies identified: Missing Xcode, Android SDK, and CocoaPods (logged in TO_SIMO_DO.md).
+    - Current architecture: arm64.
+
+## Current Status
+- Flutter SDK: **Installed**
+- PATH Configuration: **Done**
+- Environment dependencies (iOS/Android): **Pending User Action** (see TO_SIMO_DO.md)
+

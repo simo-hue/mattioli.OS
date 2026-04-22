@@ -12,6 +12,7 @@ import '../widgets/weekly_view_widget.dart';
 import '../widgets/yearly_view_widget.dart';
 import '../widgets/life_view_widget.dart';
 import 'statistics_screen.dart';
+import 'macro_goals_screen.dart';
 
 class HomeScreen extends ConsumerStatefulWidget {
   const HomeScreen({super.key});
@@ -68,7 +69,7 @@ class _HomeScreenState extends ConsumerState<HomeScreen>
         children: [
           _buildHomeBody(currentView),
           const StatisticsScreen(), // Tab 1: Stats
-          const Center(child: Text('Obiettivi - Coming Soon', style: TextStyle(color: AppColors.mutedForeground))), // Tab 2: Obiettivi
+          const MacroGoalsScreen(), // Tab 2: Obiettivi
         ],
       ),
       bottomNavigationBar: AppBottomNavBar(

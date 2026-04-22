@@ -12,7 +12,7 @@
     [x] Performance
     [x] Miglioramento
     [x] Mood
-    [ ] Rinominare i nomi lunghi ( miglioramento, performance, calendario ) con nomi che siano più brevi per aiutare la visualizzazione ( devono però rimanere chiari )
+    [x] Rinominare i nomi lunghi ( miglioramento, performance, calendario ) con nomi che siano più brevi per aiutare la visualizzazione ( devono però rimanere chiari )
 
 [ ] Gestione degli utenti
     [ ] Menu privato

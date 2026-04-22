@@ -26,12 +26,12 @@ class _StatisticsScreenState extends ConsumerState<StatisticsScreen> {
   void _selectGoal(String? goalId) {
     setState(() {
       _selectedGoalId = goalId;
-      if (goalId == null) {
-        _tabs = ['Info', 'Trend', 'Alert', 'Abitudini', 'Mood'];
+      if (_selectedGoalId == null) {
+        _tabs = ['Info', 'Trend', 'Alert', 'Habit', 'Mood'];
         _selectedTab = 'Info';
       } else {
-        _tabs = ['Overview', 'Calendario', 'Performance', 'Miglioramento', 'Mood'];
-        _selectedTab = 'Overview';
+        _tabs = ['Info', 'Trend', 'Stats', 'Alert', 'Mood'];
+        _selectedTab = 'Info';
       }
     });
   }
@@ -193,24 +193,24 @@ class _StatisticsScreenState extends ConsumerState<StatisticsScreen> {
       }
     } else {
       switch (_selectedTab) {
-        case 'Overview':
+        case 'Info':
           return HabitOverviewTabWidget(
-            key: ValueKey('Overview_$_selectedGoalId'),
+            key: ValueKey('Info_$_selectedGoalId'),
             goalId: _selectedGoalId!,
           );
-        case 'Calendario':
+        case 'Trend':
           return HabitCalendarioTabWidget(
-            key: ValueKey('Calendario_$_selectedGoalId'),
+            key: ValueKey('Trend_$_selectedGoalId'),
             goalId: _selectedGoalId!,
           );
-        case 'Performance':
+        case 'Stats':
           return HabitPerformanceTabWidget(
-            key: ValueKey('Performance_$_selectedGoalId'),
+            key: ValueKey('Stats_$_selectedGoalId'),
             goalId: _selectedGoalId!,
           );
-        case 'Miglioramento':
+        case 'Alert':
           return HabitMiglioramentoTabWidget(
-            key: ValueKey('Miglioramento_$_selectedGoalId'),
+            key: ValueKey('Alert_$_selectedGoalId'),
             goalId: _selectedGoalId!,
           );
         case 'Mood':

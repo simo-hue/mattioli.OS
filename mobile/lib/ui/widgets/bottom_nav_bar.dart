@@ -16,7 +16,7 @@ class AppBottomNavBar extends StatelessWidget {
   Widget build(BuildContext context) {
     final items = [
       _NavItem(icon: LucideIcons.house, label: 'Home'),
-      _NavItem(icon: LucideIcons.chartBar, label: 'Stats'),
+      _NavItem(icon: LucideIcons.chartBar, label: 'Statistiche'),
       _NavItem(icon: LucideIcons.chartPie, label: 'Obiettivi'),
     ];
 

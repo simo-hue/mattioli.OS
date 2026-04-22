@@ -67,4 +67,5 @@
     - Creato `HabitPerformanceTabWidget` per il tab "Performance". Include un grafico a barre responsive personalizzato per visualizzare il completamento per giorno della settimana (da Lun a Dom) e due box di approfondimento: "Giorno più debole" (rosso) e il nuovo richiesto "Giorno più forte" (verde).
     - Creato `HabitMiglioramentoTabWidget` per il tab "Miglioramento", comprendente la card "Serie Negativa Peggiore" con l'icona rossa, l'elenco degli "Streak Interrotti" in box arrotondati e la sezione "💡 Suggerimenti" finale, il tutto perfettamente fedele al design system.
     - Creato `HabitMoodTabWidget` per il tab "Mood", implementando una griglia di metriche di correlazione (Mood ed Energia), un grafico a barre comparativo "Completato vs Mancato" e un grafico a linee avanzato (tramite CustomPaint) per la "Performance per Livello" (Basso, Medio, Alto), completo di leggende animate e footer informativo.
+    - Rinominate le label dei tab per una migliore visualizzazione su mobile: `Overview` -> `Info`, `Calendario` -> `Trend`, `Performance` -> `Stats`, `Miglioramento` -> `Alert`. Questo risolve i problemi di wrapping e sovrapposizione su schermi piccoli.
 

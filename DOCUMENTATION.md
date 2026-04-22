@@ -2,10 +2,14 @@
 
 ## 📅 Log Modifiche (Ultimi aggiornamenti)
 
+### [2026-04-22] Flutter Mobile — Premium UI/UX Redesign (Macro Goals)
+- **Feature**: Ridisegnata completamente l'esperienza utente della pagina Macro Obiettivi in ottica "Senior Mobile UI/UX", sostituendo le tab orizzontali stile web con un pattern nativo mobile.
+- **Unified Header**: Il titolo "Obiettivi" ora affianca un pulsante dropdown integrato (`[ Tipo ▾]`) che attiva un BottomSheet moderno e pulito per switchare la tipologia degli obiettivi, risparmiando ampio spazio verticale e risultando più intuitivo a livello touch.
+- **Native Timeline Stepper**: Rimpiazzati i "pill selector menu" a scorrimento con una vera barra di navigazione temporale formata dai comandi `< Titolo Contesto >`. Funzionalità integrata in `MacroGoalsViewNotifier` tramite le nuove action `prevPeriod()` e `nextPeriod()` capaci di calcolare shift intelligenti (ad es. scalare le settimane saltando nel mese/anno corretto).
+- **Clean Interface**: Rimossi i text title ridondanti pre-esistenti; ora il "Stepper" funge nativamente anche come Context Title. Tutto il blocco logico richiede la metà dei pixel e libera la visuale unicamente per interagire coi task.
+- **File Eliminati (Deprecati)**: `type_tab_bar.dart` e `period_selector_bar.dart`.
+
 ### [2026-04-22] Flutter Mobile — Macro Goals Screen (PWA-Consistent)
-- **Feature**: Implementazione della schermata "Macro Obiettivi" su Flutter mantenendo la coerenza visiva e funzionale con la Progressive Web App.
-- **Supporto Gerarchico**: Pieno supporto ai target Lifetime, Annuale, Trimestrale, Mensile e Settimanale tramite il `GoalTypeTabBar`.
-- **Selettori di Periodo**: Aggiunti bottom sheet (pill dropdowns) per filtrare coerentemente l'anno, il trimestre, il mese e la settimana corrente a fronte del context.
 - **Gestore Categorie**: Integrazione colori personalizzati per identificare ogni macro area con indicatori visivi (`_ActionButtons` e dot indicator).
 - **Lista Obiettivi**: Separazione netta tra elementi da fare, completati (`COMPLETATI`) e falliti (`FALLITI`). Meccanismo touch/hold sulle card per i controlli inline (Action Buttons swipe-reveal).
 - **Gestione Stato**: Setup completo Architettura `MacroGoalsNotifier` con `riverpod` per l'inserimento, cambio stato ciclico (`active` -> `completed` -> `failed`), editazione titolo ed eliminazione goal.

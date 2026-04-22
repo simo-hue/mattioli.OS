@@ -5,6 +5,7 @@ import 'package:lucide_icons_flutter/lucide_icons.dart';
 import 'package:flutter_colorpicker/flutter_colorpicker.dart';
 import '../../core/theme.dart';
 import '../../providers/settings_provider.dart';
+import '../../core/haptics.dart';
 
 class AppSettingsScreen extends ConsumerWidget {
   const AppSettingsScreen({super.key});
@@ -65,7 +66,7 @@ class AppSettingsScreen extends ConsumerWidget {
                 value: settings.themeMode == 'dark',
                 onChanged: (val) {
                   notifier.updateSettings(settings.copyWith(themeMode: val ? 'dark' : 'light'));
-                  HapticFeedback.lightImpact();
+                  ref.hapticLight();
                 },
               ),
               _buildDivider(),
@@ -76,7 +77,7 @@ class AppSettingsScreen extends ConsumerWidget {
                 value: settings.glassEffects,
                 onChanged: (val) {
                   notifier.updateSettings(settings.copyWith(glassEffects: val));
-                  HapticFeedback.lightImpact();
+                  ref.hapticLight();
                 },
               ),
               _buildDivider(),
@@ -101,7 +102,7 @@ class AppSettingsScreen extends ConsumerWidget {
                   ),
                 ),
                 onTap: () {
-                  HapticFeedback.lightImpact();
+                  ref.hapticLight();
                   _showAccentColorPicker(context, ref, settings.accentColor);
                 },
               ),
@@ -115,7 +116,7 @@ class AppSettingsScreen extends ConsumerWidget {
                 title: 'Vista Predefinita',
                 trailingText: settings.defaultCalendarView.toUpperCase(),
                 onTap: () {
-                  HapticFeedback.lightImpact();
+                  ref.hapticLight();
                   showModalBottomSheet(
                     context: context,
                     backgroundColor: Colors.transparent,
@@ -166,7 +167,7 @@ class AppSettingsScreen extends ConsumerWidget {
                 value: settings.startWeekOnMonday,
                 onChanged: (val) {
                   notifier.updateSettings(settings.copyWith(startWeekOnMonday: val));
-                  HapticFeedback.lightImpact();
+                  ref.hapticLight();
                 },
               ),
               _buildDivider(),
@@ -177,7 +178,7 @@ class AppSettingsScreen extends ConsumerWidget {
                 value: settings.showWeekend,
                 onChanged: (val) {
                   notifier.updateSettings(settings.copyWith(showWeekend: val));
-                  HapticFeedback.lightImpact();
+                  ref.hapticLight();
                 },
               ),
             ]),
@@ -191,7 +192,7 @@ class AppSettingsScreen extends ConsumerWidget {
                 value: settings.hapticFeedback,
                 onChanged: (val) {
                   notifier.updateSettings(settings.copyWith(hapticFeedback: val));
-                  if (val) HapticFeedback.mediumImpact();
+                  if (val) ref.hapticMedium();
                 },
               ),
             ]),
@@ -204,7 +205,7 @@ class AppSettingsScreen extends ConsumerWidget {
                 title: 'Lingua',
                 trailingText: settings.language,
                 onTap: () {
-                  HapticFeedback.lightImpact();
+                  ref.hapticLight();
                 },
               ),
               _buildDivider(),
@@ -215,7 +216,7 @@ class AppSettingsScreen extends ConsumerWidget {
                 value: settings.timeFormat24h,
                 onChanged: (val) {
                   notifier.updateSettings(settings.copyWith(timeFormat24h: val));
-                  HapticFeedback.lightImpact();
+                  ref.hapticLight();
                 },
               ),
             ]),
@@ -232,9 +233,9 @@ class AppSettingsScreen extends ConsumerWidget {
                 onChanged: (val) {
                   if (settings.isPro) {
                     notifier.updateSettings(settings.copyWith(aiSuggestions: val));
-                    HapticFeedback.lightImpact();
+                    ref.hapticLight();
                   } else {
-                    HapticFeedback.heavyImpact();
+                    ref.hapticHeavy();
                     // Show PRO promo or similar
                     ScaffoldMessenger.of(context).showSnackBar(
                       const SnackBar(
@@ -510,7 +511,7 @@ class AppSettingsScreen extends ConsumerWidget {
   Widget _buildColorOption(BuildContext context, WidgetRef ref, Color color, bool isSelected) {
     return GestureDetector(
       onTap: () {
-        HapticFeedback.mediumImpact();
+        ref.hapticMedium();
         Navigator.pop(context); // Close bottom sheet
         _showValidationDialog(context, ref, color);
       },
@@ -685,7 +686,7 @@ class AppSettingsScreen extends ConsumerWidget {
         ref.read(settingsProvider.notifier).updateSettings(
               ref.read(settingsProvider).copyWith(defaultCalendarView: value),
             );
-        HapticFeedback.mediumImpact();
+        ref.hapticMedium();
         Navigator.pop(context);
       },
       contentPadding: const EdgeInsets.symmetric(horizontal: 24, vertical: 4),

@@ -8,6 +8,7 @@ import '../../core/theme.dart';
 import '../../providers/user_provider.dart';
 import 'personal_info_screen.dart';
 import 'app_settings_screen.dart';
+import '../../core/haptics.dart';
 
 class ProfileScreen extends ConsumerStatefulWidget {
   const ProfileScreen({super.key});
@@ -33,7 +34,7 @@ class _ProfileScreenState extends ConsumerState<ProfileScreen> {
         setState(() {
           _profileImage = File(image.path);
         });
-        HapticFeedback.mediumImpact();
+        ref.hapticMedium();
       }
     } catch (e) {
       debugPrint('Error picking image: $e');
@@ -230,7 +231,7 @@ class _ProfileScreenState extends ConsumerState<ProfileScreen> {
                 // Logout Button
                 GestureDetector(
                   onTap: () {
-                    HapticFeedback.heavyImpact();
+                    ref.hapticHeavy();
                     Navigator.pop(context);
                   },
                   child: Container(
@@ -329,7 +330,7 @@ class _ProfileScreenState extends ConsumerState<ProfileScreen> {
           color: AppColors.mutedForeground,
         ),
         onTap: () {
-          HapticFeedback.lightImpact();
+          ref.hapticLight();
           onTap();
         },
       ),

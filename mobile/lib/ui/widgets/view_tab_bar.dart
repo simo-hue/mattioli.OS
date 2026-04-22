@@ -4,6 +4,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:lucide_icons_flutter/lucide_icons.dart';
 import '../../core/theme.dart';
 import '../../providers/goal_provider.dart';
+import '../../core/haptics.dart';
 
 class ViewTabBar extends ConsumerWidget {
   const ViewTabBar({super.key});
@@ -35,7 +36,7 @@ class ViewTabBar extends ConsumerWidget {
           return Expanded(
             child: GestureDetector(
               onTap: () {
-                HapticFeedback.selectionClick();
+                ref.hapticSelection();
                 ref.read(calendarViewProvider.notifier).setView(tab.view);
               },
               child: AnimatedContainer(

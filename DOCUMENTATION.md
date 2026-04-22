@@ -9,6 +9,7 @@
   - **Validazione Real-Time**: Implementato un sistema di controllo della **luminanza in tempo reale** all'interno del picker. Se il colore è troppo scuro per il tema attivo, appare un avviso visivo immediato e il tasto di verifica viene disabilitato per garantire l'accessibilità.
   - **Verifica & Wow-Effect Globale**: Il pop-up di conferma e la **transizione scenografica** si attivano per ogni scelta valida, assicurando una UX fluida e professionale.
   - Centralizzazione del tema tramite `settingsProvider` e ascolto dinamico nel `MaterialApp`.
+  - **Haptic Feedback Professionale**: Implementato un sistema di feedback aptico (vibrazioni tattili) coerente e centralizzato. Tutte le interazioni (cambio tab, toggle, salvataggi, errori) rispettano ora la preferenza globale dell'utente nelle impostazioni.
   - **Calendario**: Configurazione vista predefinita (**Giorno, Settimana, Anno, Vita**) tramite un nuovo menu modale bottom-sheet in stile premium.
   - Aggiunta gestione per inizio settimana e visibilità weekend.
   - **UX**: Switch per abilitare/disabilitare il Feedback Aptico globale.

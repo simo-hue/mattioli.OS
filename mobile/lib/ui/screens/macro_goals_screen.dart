@@ -10,6 +10,7 @@ import '../../providers/macro_goals_provider.dart';
 import '../widgets/macro_goals/goal_item_widget.dart';
 import '../widgets/macro_goals/add_goal_bar.dart';
 import '../widgets/macro_goals/macro_goals_stats_view.dart';
+import '../../core/haptics.dart';
 
 class MacroGoalsScreen extends ConsumerStatefulWidget {
   const MacroGoalsScreen({super.key});
@@ -71,11 +72,11 @@ class _MacroGoalsScreenState extends ConsumerState<MacroGoalsScreen> {
                   if (vx < -velocityThreshold) {
                     setState(() => _isForward = true);
                     ref.read(macroGoalsViewProvider.notifier).nextPeriod();
-                    HapticFeedback.lightImpact();
+                    ref.hapticLight();
                   } else if (vx > velocityThreshold) {
                     setState(() => _isForward = false);
                     ref.read(macroGoalsViewProvider.notifier).prevPeriod();
-                    HapticFeedback.lightImpact();
+                    ref.hapticLight();
                   }
                 },
                 child: AnimatedSwitcher(
@@ -149,7 +150,7 @@ class _MacroGoalsScreenState extends ConsumerState<MacroGoalsScreen> {
 
     return GestureDetector(
       onTap: () {
-        HapticFeedback.lightImpact();
+        ref.hapticLight();
         _showTypePicker(context, ref, vs, primaryColor);
       },
       child: Container(
@@ -205,7 +206,7 @@ class _MacroGoalsScreenState extends ConsumerState<MacroGoalsScreen> {
         onTap: () {
           if (_showStats != stats) {
             setState(() => _showStats = stats);
-            HapticFeedback.selectionClick();
+            ref.hapticSelection();
           }
         },
         child: AnimatedContainer(
@@ -289,7 +290,7 @@ class _MacroGoalsScreenState extends ConsumerState<MacroGoalsScreen> {
                 onTap: () {
                   ref.read(macroGoalsViewProvider.notifier).setType(type.t);
                   Navigator.pop(context);
-                  HapticFeedback.selectionClick();
+                  ref.hapticSelection();
                 },
               );
             }),
@@ -349,7 +350,7 @@ class _MacroGoalsScreenState extends ConsumerState<MacroGoalsScreen> {
             onTap: () {
               setState(() => _isForward = false);
               ref.read(macroGoalsViewProvider.notifier).prevPeriod();
-              HapticFeedback.lightImpact();
+              ref.hapticLight();
             },
             child: Container(
               padding: const EdgeInsets.all(8),
@@ -380,7 +381,7 @@ class _MacroGoalsScreenState extends ConsumerState<MacroGoalsScreen> {
             onTap: () {
               setState(() => _isForward = true);
               ref.read(macroGoalsViewProvider.notifier).nextPeriod();
-              HapticFeedback.lightImpact();
+              ref.hapticLight();
             },
             child: Container(
               padding: const EdgeInsets.all(8),

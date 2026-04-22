@@ -14,6 +14,7 @@ import '../widgets/life_view_widget.dart';
 import 'statistics_screen.dart';
 import 'macro_goals_screen.dart';
 import 'profile_screen.dart';
+import '../../core/haptics.dart';
 
 class HomeScreen extends ConsumerStatefulWidget {
   const HomeScreen({super.key});
@@ -77,7 +78,7 @@ class _HomeScreenState extends ConsumerState<HomeScreen>
         currentIndex: _selectedNavIndex,
         onTap: (index) {
           setState(() => _selectedNavIndex = index);
-          HapticFeedback.lightImpact();
+          ref.hapticLight();
         },
       ),
     );
@@ -259,7 +260,7 @@ class _AppBar extends ConsumerWidget {
               // Profile icon
               GestureDetector(
                 onTap: () {
-                  HapticFeedback.mediumImpact();
+                  ref.hapticMedium();
                   Navigator.push(
                     context,
                     MaterialPageRoute(

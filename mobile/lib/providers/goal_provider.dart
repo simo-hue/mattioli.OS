@@ -130,16 +130,19 @@ class HabitLogsNotifier extends Notifier<HabitLogsMap> {
     return logs;
   }
 
-  void toggle(DateTime date, String habitId) {
+  void cycleStatus(DateTime date, String habitId) {
     final dateKey =
         '${date.year}-${date.month.toString().padLeft(2, '0')}-${date.day.toString().padLeft(2, '0')}';
     final newState = Map<String, Map<String, String>>.from(state);
     final dayLogs = Map<String, String>.from(newState[dateKey] ?? {});
 
-    if (dayLogs[habitId] == 'done') {
-      dayLogs.remove(habitId);
-    } else {
+    final currentStatus = dayLogs[habitId];
+    if (currentStatus == null) {
       dayLogs[habitId] = 'done';
+    } else if (currentStatus == 'done') {
+      dayLogs[habitId] = 'missed';
+    } else {
+      dayLogs.remove(habitId);
     }
 
     newState[dateKey] = dayLogs;

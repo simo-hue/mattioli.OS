@@ -6,8 +6,8 @@
     [ ] Abitudini
     [ ] Mood
 
-[ ] Implementare stats per singoli goal
-    [ ] Overview
+[x] Implementare stats per singoli goal
+    [x] Overview
     [x] Calendario
     [x] Performance
     [x] Miglioramento

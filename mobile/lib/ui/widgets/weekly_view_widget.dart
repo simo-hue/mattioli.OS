@@ -175,7 +175,7 @@ class _WeeklyViewWidgetState extends ConsumerState<WeeklyViewWidget> {
                                   isFuture: isFuture,
                                   isPrivacy: isPrivacy,
                                   onTap: isFuture ? null : () {
-                                    ref.read(habitLogsProvider.notifier).toggle(dayDate, habit.id);
+                                    ref.read(habitLogsProvider.notifier).cycleStatus(dayDate, habit.id);
                                     HapticFeedback.selectionClick();
                                   },
                                 ),
@@ -238,32 +238,42 @@ class _HabitCapsule extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final bool isDone = status == 'done';
-    
+    final bool isMissed = status == 'missed';
+
+    Color capsuleColor = Colors.transparent;
+    Color borderColor = AppColors.border.withValues(alpha: 0.5);
+    List<BoxShadow>? shadows;
+
+    if (isDone) {
+      capsuleColor = isPrivacy ? AppColors.muted : color;
+      borderColor = isPrivacy ? AppColors.border : color.withValues(alpha: 0.5);
+      if (!isPrivacy) {
+        shadows = [
+          BoxShadow(
+            color: color.withValues(alpha: 0.4),
+            blurRadius: 8,
+            spreadRadius: -1,
+          )
+        ];
+      }
+    } else if (isMissed) {
+      capsuleColor = const Color(0xFFEF4444).withValues(alpha: 0.2);
+      borderColor = const Color(0xFFEF4444).withValues(alpha: 0.5);
+    }
+
     return GestureDetector(
       onTap: onTap,
       child: AnimatedContainer(
         duration: const Duration(milliseconds: 200),
         height: 16,
         decoration: BoxDecoration(
-          color: isDone 
-              ? (isPrivacy ? AppColors.muted : color)
-              : Colors.transparent,
+          color: capsuleColor,
           borderRadius: BorderRadius.circular(8),
           border: Border.all(
-            color: isDone 
-                ? (isPrivacy ? AppColors.border : color.withValues(alpha: 0.5))
-                : AppColors.border.withValues(alpha: 0.5),
+            color: borderColor,
             width: 1,
           ),
-          boxShadow: isDone && !isPrivacy
-              ? [
-                  BoxShadow(
-                    color: color.withValues(alpha: 0.4),
-                    blurRadius: 8,
-                    spreadRadius: -1,
-                  )
-                ]
-              : null,
+          boxShadow: shadows,
         ),
       ),
     );

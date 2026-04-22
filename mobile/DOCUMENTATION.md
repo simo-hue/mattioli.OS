@@ -68,4 +68,22 @@
     - Creato `HabitMiglioramentoTabWidget` per il tab "Miglioramento", comprendente la card "Serie Negativa Peggiore" con l'icona rossa, l'elenco degli "Streak Interrotti" in box arrotondati e la sezione "💡 Suggerimenti" finale, il tutto perfettamente fedele al design system.
     - Creato `HabitMoodTabWidget` per il tab "Mood", implementando una griglia di metriche di correlazione (Mood ed Energia), un grafico a barre comparativo "Completato vs Mancato" e un grafico a linee avanzato (tramite CustomPaint) per la "Performance per Livello" (Basso, Medio, Alto), completo di leggende animate e footer informativo.
     - Rinominate le label dei tab per una migliore visualizzazione su mobile: `Overview` -> `Info`, `Calendario` -> `Trend`, `Performance` -> `Stats`, `Miglioramento` -> `Alert`. Questo risolve i problemi di wrapping e sovrapposizione su schermi piccoli.
+    - Aggiornata la barra di navigazione inferiore (Bottom NavBar): rinominata l'etichetta `Stats` in `Statistiche` per coerenza con la lingua italiana del resto dell'app.
 
+
+- [2026-04-22 11:20]: [Flutter] Implementazione Dettaglio Giorno e Ciclo Stati Habit
+  *Details*: Implementata la visualizzazione del dettaglio giornaliero al click su un giorno del calendario mensile. Aggiunto il ciclo a 3 stati per il tracciamento delle abitudini.
+  *Tech Notes*:
+    - Aggiornato `HabitLogsNotifier` per supportare il ciclo a 3 stati: `null` -> `completato` (verde) -> `fallito` (rosso) -> `null`.
+    - Implementato `_showDayDetails` in `HabitCalendarWidget` tramite `showModalBottomSheet`.
+    - Creato il widget `_GoalLogCard` con estetica premium: bordi e background colorati in base allo stato, icone dinamiche (check/x/circle) e supporto per testo sbarrato (strikethrough) in caso di fallimento.
+    - Aggiunto il badge `_StreakBadge` per visualizzare la serie attuale (mock) con icone dinamiche (fiamma/cuore spezzato) e colori coordinati.
+    - Integrato feedback aptico al tocco delle card.
+
+- [2026-04-22 11:22]: [Flutter] Bug Fix e Allineamento Stati
+  *Details*: Corretti errori di compilazione e allineata la logica di tracciamento in tutte le visualizzazioni.
+  *Tech Notes*:
+    - Corretti errori di sintassi (parentesi e punti e virgola mancanti) in `habit_calendar_widget.dart`.
+    - Aggiunti import mancanti (`flutter/services.dart` e `lucide_icons_flutter`).
+    - Aggiornato `weekly_view_widget.dart` per utilizzare il nuovo metodo `cycleStatus` invece del vecchio `toggle`.
+    - Aggiornato il widget `_HabitCapsule` nella vista settimanale per visualizzare correttamente lo stato "fallito" (rosso), garantendo coerenza visiva in tutta l'app.

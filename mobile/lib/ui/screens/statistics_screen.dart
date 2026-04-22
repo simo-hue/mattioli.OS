@@ -7,6 +7,9 @@ import '../../providers/goal_provider.dart';
 import '../widgets/statistics/info_tab_widget.dart';
 import '../widgets/statistics/habit_overview_tab_widget.dart';
 import '../widgets/statistics/habit_calendario_tab_widget.dart';
+import '../widgets/statistics/habit_performance_tab_widget.dart';
+import '../widgets/statistics/habit_miglioramento_tab_widget.dart';
+import '../widgets/statistics/habit_mood_tab_widget.dart';
 
 class StatisticsScreen extends ConsumerStatefulWidget {
   const StatisticsScreen({super.key});
@@ -198,6 +201,22 @@ class _StatisticsScreenState extends ConsumerState<StatisticsScreen> {
         case 'Calendario':
           return HabitCalendarioTabWidget(
             key: ValueKey('Calendario_$_selectedGoalId'),
+            goalId: _selectedGoalId!,
+          );
+        case 'Performance':
+          return HabitPerformanceTabWidget(
+            key: ValueKey('Performance_$_selectedGoalId'),
+            goalId: _selectedGoalId!,
+          );
+        case 'Miglioramento':
+          return HabitMiglioramentoTabWidget(
+            key: ValueKey('Miglioramento_$_selectedGoalId'),
+            goalId: _selectedGoalId!,
+          );
+        case 'Mood':
+        case '✨ Mood':
+          return HabitMoodTabWidget(
+            key: ValueKey('Mood_$_selectedGoalId'),
             goalId: _selectedGoalId!,
           );
         default:

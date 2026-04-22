@@ -71,6 +71,7 @@ class _NavBarItem extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final primaryColor = Theme.of(context).colorScheme.primary;
     return GestureDetector(
       onTap: onTap,
       behavior: HitTestBehavior.opaque,
@@ -86,14 +87,14 @@ class _NavBarItem extends StatelessWidget {
               padding: const EdgeInsets.all(6),
               decoration: BoxDecoration(
                 color: isActive
-                    ? AppColors.primary.withValues(alpha: 0.15)
+                    ? primaryColor.withValues(alpha: 0.15)
                     : Colors.transparent,
                 borderRadius: BorderRadius.circular(10),
               ),
               child: Icon(
                 icon,
                 size: 22,
-                color: isActive ? AppColors.primary : AppColors.mutedForeground,
+                color: isActive ? primaryColor : AppColors.mutedForeground,
               ),
             ),
             const SizedBox(height: 2),
@@ -104,7 +105,7 @@ class _NavBarItem extends StatelessWidget {
                 fontSize: 10,
                 fontWeight: FontWeight.w500,
                 color:
-                    isActive ? AppColors.primary : AppColors.mutedForeground,
+                    isActive ? primaryColor : AppColors.mutedForeground,
                 letterSpacing: 0.3,
               ),
             ),

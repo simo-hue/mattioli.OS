@@ -33,31 +33,44 @@ class AppColors {
 }
 
 class AppTheme {
-  static ThemeData get darkTheme {
+  static ThemeData darkTheme(Color? accentColor) {
+    final Color primaryColor = accentColor ?? AppColors.primary;
     final baseTextTheme = GoogleFonts.interTextTheme(ThemeData.dark().textTheme);
 
-    return ThemeData.dark().copyWith(
+    return ThemeData(
+      brightness: Brightness.dark,
       scaffoldBackgroundColor: AppColors.background,
-      primaryColor: AppColors.primary,
-      colorScheme: const ColorScheme.dark(
-        primary: AppColors.primary,
+      primaryColor: primaryColor,
+      colorScheme: ColorScheme.dark(
+        primary: primaryColor,
+        secondary: primaryColor,
         surface: AppColors.card,
         onSurface: AppColors.foreground,
         error: AppColors.destructive,
         outline: AppColors.border,
       ),
-      appBarTheme: AppBarTheme(
+      appBarTheme: const AppBarTheme(
         backgroundColor: AppColors.background,
         surfaceTintColor: Colors.transparent,
         elevation: 0,
         centerTitle: false,
-        iconTheme: const IconThemeData(color: AppColors.foreground),
-        titleTextStyle: GoogleFonts.inter(
+        iconTheme: IconThemeData(color: AppColors.foreground),
+        titleTextStyle: TextStyle(
           color: AppColors.foreground,
           fontSize: 18,
           fontWeight: FontWeight.w600,
           letterSpacing: -0.5,
         ),
+      ),
+      switchTheme: SwitchThemeData(
+        thumbColor: MaterialStateProperty.resolveWith((states) {
+          if (states.contains(MaterialState.selected)) return AppColors.success;
+          return AppColors.mutedForeground;
+        }),
+        trackColor: MaterialStateProperty.resolveWith((states) {
+          if (states.contains(MaterialState.selected)) return AppColors.success.withValues(alpha: 0.5);
+          return AppColors.border;
+        }),
       ),
       cardTheme: CardThemeData(
         color: AppColors.card,

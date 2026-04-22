@@ -2,7 +2,34 @@
 
 ## 📅 Log Modifiche (Ultimi aggiornamenti)
 
-### [2026-04-22] Flutter Mobile — UI/UX Premium Redesign (AppBar & Calendar)
+### [2026-04-22] Flutter Mobile — Profile Submenus: App Settings
+- **Sottomenu Impostazioni App**: Implementata la gestione completa delle preferenze dell'applicazione.
+  - **Visual**: Toggle per Tema (Dark/Light), Trasparenze (Glassmorphism) e **Colore Accento Avanzato**.
+  - Sostituito il selettore statico con un menu modale che offre 3 preset premium e un **Color Picker personalizzato** completo (RGB sliders) per una personalizzazione totale.
+  - Centralizzazione del tema tramite `settingsProvider` e ascolto dinamico nel `MaterialApp`.
+  - **Calendario**: Configurazione vista predefinita (**Giorno, Settimana, Anno, Vita**) tramite un nuovo menu modale bottom-sheet in stile premium.
+  - Aggiunta gestione per inizio settimana e visibilità weekend.
+  - **UX**: Switch per abilitare/disabilitare il Feedback Aptico globale.
+  - **General**: Selezione lingua e formato orario (24h/12h).
+  - **AI & Sistema**: Introdotto lo switch "Suggerimenti AI" bloccato per utenti **PRO** con badge dedicato e feedback visivo.
+- **State Management & Stabilità**:
+  - Risolto un bug critico (`Null subtype of Color`) rendendo la classe `AppSettings` resiliente alla corruzione dello stato durante i reload.
+  - **Navigazione Persistente**: Ottimizzata la gestione del `GoRouter` tramite `routerProvider`. Ora il cambio di qualsiasi impostazione (tema, colori, preferenze) non resetta più la navigazione e l'utente rimane correttamente nella pagina corrente.
+- **Premium UI**: Utilizzo di card raggruppate con icone Lucide e switch personalizzati in stile iOS/Glass.
+
+### [2026-04-22] Flutter Mobile — Profile Submenus: Personal Information
+- **Scrollable Profile Page**: Ridisegnata la pagina profilo per supportare lo scrolling dinamico.
+  - Implementato `CustomScrollView` con `SliverAppBar`.
+  - Aggiunto effetto `FlexibleSpaceBar` che riduce le dimensioni dell'header (avatar e nome) durante lo scroll.
+  - Abilitata la fisica `AlwaysScrollableScrollPhysics` per garantire il feedback di rimbalzo (bounce) anche con contenuti ridotti.
+- **Sottomenu Informazioni Personali**: Implementata la prima pagina di dettaglio del profilo.
+  - Campi obbligatori: Nome, Cognome, Email con validazione real-time.
+  - Campo opzionale: Numero di telefono.
+  - Integrazione con `userProfileProvider` per la persistenza dello stato durante la sessione.
+- **Smooth Animations**: Implementata una transizione personalizzata `SlideTransition` con curva `Curves.easeOutCubic` (400ms) per un'esperienza di navigazione fluida e coerente in entrata e uscita dai sottomenu.
+- **Form UI**: Design dei campi di input coerente con lo stile glassmorphic dell'app (sfondi semitrasparenti, bordi rifiniti, focus state evidenziato).
+
+### [2026-04-22] Flutter Mobile — Profile Page Implementation
 - **Taller AppBar**: Aumentata l'altezza della AppBar per un look più arioso e professionale.
   - Inserito il sottotitolo "Sistema Attivo" con un indicatore di stato pulsante.
   - Redesign dell'icona `⌘` con gradienti e ombre per un effetto "premium hardware", ora con dimensioni uniformate all'immagine del profilo (38x38).

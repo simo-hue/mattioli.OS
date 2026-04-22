@@ -5,6 +5,9 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:image_picker/image_picker.dart';
 import 'package:lucide_icons_flutter/lucide_icons.dart';
 import '../../core/theme.dart';
+import '../../providers/user_provider.dart';
+import 'personal_info_screen.dart';
+import 'app_settings_screen.dart';
 
 class ProfileScreen extends ConsumerStatefulWidget {
   const ProfileScreen({super.key});
@@ -39,215 +42,248 @@ class _ProfileScreenState extends ConsumerState<ProfileScreen> {
 
   @override
   Widget build(BuildContext context) {
+    final userProfile = ref.watch(userProfileProvider);
+    final primaryColor = Theme.of(context).colorScheme.primary;
+
     return Scaffold(
       backgroundColor: AppColors.background,
-      appBar: AppBar(
-        backgroundColor: AppColors.background,
-        elevation: 0,
-        leading: IconButton(
-          icon: const Icon(LucideIcons.chevronLeft, color: AppColors.foreground),
-          onPressed: () => Navigator.pop(context),
-        ),
-        title: const Text(
-          'Profilo Utente',
-          style: TextStyle(
-            color: AppColors.foreground,
-            fontSize: 18,
-            fontWeight: FontWeight.w600,
-          ),
-        ),
-        centerTitle: true,
-      ),
-      body: SingleChildScrollView(
-        padding: const EdgeInsets.all(20),
-        child: Column(
-          children: [
-            const SizedBox(height: 20),
-            Center(
-              child: GestureDetector(
-                onTap: _pickImage,
-                child: Stack(
+      body: CustomScrollView(
+        physics: const AlwaysScrollableScrollPhysics(),
+        slivers: [
+          SliverAppBar(
+            expandedHeight: 280,
+            pinned: true,
+            stretch: true,
+            backgroundColor: AppColors.background,
+            elevation: 0,
+            leading: IconButton(
+              icon: const Icon(LucideIcons.chevronLeft, color: AppColors.foreground),
+              onPressed: () => Navigator.pop(context),
+            ),
+            flexibleSpace: FlexibleSpaceBar(
+              stretchModes: const [
+                StretchMode.zoomBackground,
+                StretchMode.blurBackground,
+              ],
+              background: Container(
+                padding: const EdgeInsets.only(top: 60),
+                child: Column(
+                  mainAxisAlignment: MainAxisAlignment.center,
                   children: [
-                    Container(
-                      width: 120,
-                      height: 120,
-                      decoration: BoxDecoration(
-                        shape: BoxShape.circle,
-                        gradient: LinearGradient(
-                          colors: [
-                            AppColors.primary.withValues(alpha: 0.1),
-                            AppColors.primary.withValues(alpha: 0.05),
-                          ],
-                          begin: Alignment.topLeft,
-                          end: Alignment.bottomRight,
-                        ),
-                        border: Border.all(
-                          color: AppColors.primary.withValues(alpha: 0.2),
-                          width: 2,
-                        ),
-                        boxShadow: [
-                          BoxShadow(
-                            color: Colors.black.withValues(alpha: 0.3),
-                            blurRadius: 20,
-                            offset: const Offset(0, 10),
+                    GestureDetector(
+                      onTap: _pickImage,
+                      child: Stack(
+                        children: [
+                          Container(
+                            width: 110,
+                            height: 110,
+                            decoration: BoxDecoration(
+                              shape: BoxShape.circle,
+                              gradient: LinearGradient(
+                                colors: [
+                                  primaryColor.withValues(alpha: 0.1),
+                                  primaryColor.withValues(alpha: 0.05),
+                                ],
+                                begin: Alignment.topLeft,
+                                end: Alignment.bottomRight,
+                              ),
+                              border: Border.all(
+                                color: primaryColor.withValues(alpha: 0.2),
+                                width: 2,
+                              ),
+                            ),
+                            child: ClipRRect(
+                              borderRadius: BorderRadius.circular(55),
+                              child: _profileImage != null
+                                  ? Image.file(
+                                      _profileImage!,
+                                      fit: BoxFit.cover,
+                                    )
+                                  : Container(
+                                      color: AppColors.card,
+                                      child: const Icon(
+                                        LucideIcons.user,
+                                        size: 50,
+                                        color: AppColors.mutedForeground,
+                                      ),
+                                    ),
+                            ),
+                          ),
+                          Positioned(
+                            bottom: 0,
+                            right: 0,
+                            child: Container(
+                              padding: const EdgeInsets.all(6),
+                              decoration: BoxDecoration(
+                                color: primaryColor,
+                                shape: BoxShape.circle,
+                                border: Border.all(color: AppColors.background, width: 2),
+                              ),
+                              child: const Icon(
+                                LucideIcons.camera,
+                                size: 14,
+                                color: AppColors.background,
+                              ),
+                            ),
                           ),
                         ],
                       ),
-                      child: ClipRRect(
-                        borderRadius: BorderRadius.circular(60),
-                        child: _profileImage != null
-                            ? Image.file(
-                                _profileImage!,
-                                fit: BoxFit.cover,
-                              )
-                            : Container(
-                                color: AppColors.card,
-                                child: const Icon(
-                                  LucideIcons.user,
-                                  size: 60,
-                                  color: AppColors.mutedForeground,
-                                ),
-                              ),
+                    ),
+                    const SizedBox(height: 16),
+                    Text(
+                      '${userProfile.firstName} ${userProfile.lastName}',
+                      style: const TextStyle(
+                        color: AppColors.foreground,
+                        fontSize: 22,
+                        fontWeight: FontWeight.w800,
+                        letterSpacing: -0.8,
                       ),
                     ),
-                    // Edit badge
-                    Positioned(
-                      bottom: 0,
-                      right: 0,
-                      child: Container(
-                        padding: const EdgeInsets.all(8),
-                        decoration: BoxDecoration(
-                          color: AppColors.primary,
-                          shape: BoxShape.circle,
-                          border: Border.all(color: AppColors.background, width: 3),
-                          boxShadow: [
-                            BoxShadow(
-                              color: Colors.black.withValues(alpha: 0.3),
-                              blurRadius: 10,
+                    const SizedBox(height: 6),
+                    Container(
+                      padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 3),
+                      decoration: BoxDecoration(
+                        color: AppColors.success.withValues(alpha: 0.1),
+                        borderRadius: BorderRadius.circular(20),
+                        border: Border.all(
+                          color: AppColors.success.withValues(alpha: 0.2),
+                        ),
+                      ),
+                      child: Row(
+                        mainAxisSize: MainAxisSize.min,
+                        children: [
+                          const Icon(LucideIcons.shieldCheck, size: 10, color: AppColors.success),
+                          const SizedBox(width: 4),
+                          Text(
+                            'Account Verificato',
+                            style: const TextStyle(
+                              color: AppColors.success,
+                              fontSize: 10,
+                              fontWeight: FontWeight.w700,
                             ),
-                          ],
-                        ),
-                        child: const Icon(
-                          LucideIcons.camera,
-                          size: 16,
-                          color: AppColors.background,
-                        ),
+                          ),
+                        ],
                       ),
                     ),
                   ],
                 ),
               ),
             ),
-            const SizedBox(height: 24),
-            Text(
-              'Simone Mattioli',
-              style: TextStyle(
-                color: AppColors.foreground,
-                fontSize: 24,
-                fontWeight: FontWeight.w800,
-                letterSpacing: -0.8,
-              ),
-            ),
-            const SizedBox(height: 4),
-            Container(
-              padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 4),
-              decoration: BoxDecoration(
-                color: AppColors.success.withValues(alpha: 0.1),
-                borderRadius: BorderRadius.circular(20),
-                border: Border.all(
-                  color: AppColors.success.withValues(alpha: 0.2),
-                  width: 1,
+          ),
+          SliverPadding(
+            padding: const EdgeInsets.fromLTRB(20, 10, 20, 40),
+            sliver: SliverList(
+              delegate: SliverChildListDelegate([
+                const Text(
+                  'IMPOSTAZIONI ACCOUNT',
+                  style: TextStyle(
+                    fontSize: 10,
+                    fontWeight: FontWeight.w800,
+                    color: AppColors.mutedForeground,
+                    letterSpacing: 1.2,
+                  ),
                 ),
-              ),
-              child: Row(
-                mainAxisSize: MainAxisSize.min,
-                children: [
-                  const Icon(LucideIcons.shieldCheck, size: 12, color: AppColors.success),
-                  const SizedBox(width: 6),
-                  Text(
-                    'Account Verificato',
-                    style: TextStyle(
-                      color: AppColors.success,
-                      fontSize: 11,
-                      fontWeight: FontWeight.w700,
-                      letterSpacing: 0.2,
+                const SizedBox(height: 16),
+                _buildProfileOption(
+                  context: context,
+                  icon: LucideIcons.user,
+                  title: 'Informazioni Personali',
+                  subtitle: userProfile.email,
+                  onTap: () {
+                    Navigator.push(context, PersonalInfoScreen.route());
+                  },
+                ),
+                _buildProfileOption(
+                  context: context,
+                  icon: LucideIcons.settings,
+                  title: 'Impostazioni App',
+                  subtitle: 'Lingua, Tema, Unità di misura',
+                  onTap: () {
+                    Navigator.push(context, AppSettingsScreen.route());
+                  },
+                ),
+                _buildProfileOption(
+                  context: context,
+                  icon: LucideIcons.bell,
+                  title: 'Notifiche',
+                  subtitle: 'Promemoria e avvisi di sistema',
+                  onTap: () {},
+                ),
+                _buildProfileOption(
+                  context: context,
+                  icon: LucideIcons.shield,
+                  title: 'Privacy e Sicurezza',
+                  subtitle: 'Gestione dati e password',
+                  onTap: () {},
+                ),
+                const SizedBox(height: 32),
+                const Text(
+                  'SISTEMA',
+                  style: TextStyle(
+                    fontSize: 10,
+                    fontWeight: FontWeight.w800,
+                    color: AppColors.mutedForeground,
+                    letterSpacing: 1.2,
+                  ),
+                ),
+                const SizedBox(height: 16),
+                // Logout Button
+                GestureDetector(
+                  onTap: () {
+                    HapticFeedback.heavyImpact();
+                    Navigator.pop(context);
+                  },
+                  child: Container(
+                    width: double.infinity,
+                    height: 58,
+                    decoration: BoxDecoration(
+                      color: AppColors.destructive.withValues(alpha: 0.1),
+                      borderRadius: BorderRadius.circular(18),
+                      border: Border.all(
+                        color: AppColors.destructive.withValues(alpha: 0.2),
+                        width: 1,
+                      ),
+                    ),
+                    child: const Center(
+                      child: Text(
+                        'Disconnetti Sessione',
+                        style: TextStyle(
+                          color: AppColors.destructive,
+                          fontSize: 15,
+                          fontWeight: FontWeight.w700,
+                          letterSpacing: -0.2,
+                        ),
+                      ),
                     ),
                   ),
-                ],
-              ),
-            ),
-            const SizedBox(height: 40),
-            _buildProfileOption(
-              icon: LucideIcons.user,
-              title: 'Informazioni Personali',
-              subtitle: 'simone@mattioli.os',
-            ),
-            _buildProfileOption(
-              icon: LucideIcons.settings,
-              title: 'Impostazioni App',
-              subtitle: 'Lingua, Tema, Unità di misura',
-            ),
-            _buildProfileOption(
-              icon: LucideIcons.bell,
-              title: 'Notifiche',
-              subtitle: 'Promemoria e avvisi di sistema',
-            ),
-            _buildProfileOption(
-              icon: LucideIcons.shield,
-              title: 'Privacy e Sicurezza',
-              subtitle: 'Gestione dati e password',
-            ),
-            const SizedBox(height: 40),
-            // Logout Button
-            GestureDetector(
-              onTap: () {
-                HapticFeedback.heavyImpact();
-                Navigator.pop(context);
-              },
-              child: Container(
-                width: double.infinity,
-                height: 58,
-                decoration: BoxDecoration(
-                  color: AppColors.destructive.withValues(alpha: 0.1),
-                  borderRadius: BorderRadius.circular(18),
-                  border: Border.all(
-                    color: AppColors.destructive.withValues(alpha: 0.2),
-                    width: 1,
-                  ),
                 ),
-                child: const Center(
+                const SizedBox(height: 24),
+                Center(
                   child: Text(
-                    'Disconnetti Sessione',
+                    'Versione 1.0.0 (Build 20260422)',
                     style: TextStyle(
-                      color: AppColors.destructive,
-                      fontSize: 16,
-                      fontWeight: FontWeight.w700,
-                      letterSpacing: -0.2,
+                      color: AppColors.mutedForeground.withValues(alpha: 0.5),
+                      fontSize: 10,
+                      fontWeight: FontWeight.w500,
                     ),
                   ),
                 ),
-              ),
+              ]),
             ),
-            const SizedBox(height: 20),
-            Text(
-              'Versione 1.0.0 (Build 20260422)',
-              style: TextStyle(
-                color: AppColors.mutedForeground.withValues(alpha: 0.5),
-                fontSize: 10,
-                fontWeight: FontWeight.w500,
-              ),
-            ),
-          ],
-        ),
+          ),
+        ],
       ),
     );
   }
 
   Widget _buildProfileOption({
+    required BuildContext context,
     required IconData icon,
     required String title,
     required String subtitle,
+    required VoidCallback onTap,
   }) {
+    final primaryColor = Theme.of(context).colorScheme.primary;
     return Container(
       margin: const EdgeInsets.only(bottom: 12),
       decoration: BoxDecoration(
@@ -268,7 +304,7 @@ class _ProfileScreenState extends ConsumerState<ProfileScreen> {
             borderRadius: BorderRadius.circular(12),
             border: Border.all(color: AppColors.border),
           ),
-          child: Icon(icon, size: 20, color: AppColors.primary),
+          child: Icon(icon, size: 20, color: primaryColor),
         ),
         title: Text(
           title,
@@ -294,6 +330,7 @@ class _ProfileScreenState extends ConsumerState<ProfileScreen> {
         ),
         onTap: () {
           HapticFeedback.lightImpact();
+          onTap();
         },
       ),
     );

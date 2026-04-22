@@ -1,5 +1,4 @@
 import 'package:flutter/material.dart';
-import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:lucide_icons_flutter/lucide_icons.dart';
 import '../../core/theme.dart';
@@ -95,52 +94,57 @@ class _HabitCalendarWidgetState extends ConsumerState<HabitCalendarWidget> {
         children: [
           // Calendar header
           Padding(
-            padding: const EdgeInsets.fromLTRB(8, 10, 8, 4),
+            padding: const EdgeInsets.fromLTRB(16, 16, 16, 8),
             child: Row(
               mainAxisAlignment: MainAxisAlignment.spaceBetween,
               children: [
-                // Prev button
-                _NavButton(
-                  icon: Icons.chevron_left,
-                  onTap: _goToPrev,
-                ),
-                // Month + Year + Today button
+                // Month + Year
                 GestureDetector(
                   onTap: _goToToday,
-                  child: RichText(
-                    text: TextSpan(
-                      children: [
-                        TextSpan(
-                          text: '${_kMonths[month - 1]} ',
-                          style: const TextStyle(
-                            fontFamily: 'Inter',
-                            fontSize: 16,
-                            fontWeight: FontWeight.w700,
-                            color: AppColors.foreground,
-                            letterSpacing: -0.3,
-                          ),
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Text(
+                        _kMonths[month - 1],
+                        style: const TextStyle(
+                          fontFamily: 'Inter',
+                          fontSize: 22,
+                          fontWeight: FontWeight.w800,
+                          color: AppColors.foreground,
+                          letterSpacing: -0.8,
                         ),
-                        TextSpan(
-                          text: '$year',
-                          style: const TextStyle(
-                            fontFamily: 'Inter',
-                            fontSize: 16,
-                            fontWeight: FontWeight.w300,
-                            color: AppColors.mutedForeground,
-                            letterSpacing: -0.3,
-                          ),
+                      ),
+                      Text(
+                        '$year',
+                        style: const TextStyle(
+                          fontFamily: 'Inter',
+                          fontSize: 14,
+                          fontWeight: FontWeight.w500,
+                          color: AppColors.mutedForeground,
+                          letterSpacing: 0.5,
                         ),
-                      ],
-                    ),
+                      ),
+                    ],
                   ),
                 ),
-                _NavButton(
-                  icon: Icons.chevron_right,
-                  onTap: _goToNext,
+                // Navigation buttons
+                Row(
+                  children: [
+                    _NavButton(
+                      icon: LucideIcons.chevronLeft,
+                      onTap: _goToPrev,
+                    ),
+                    const SizedBox(width: 4),
+                    _NavButton(
+                      icon: LucideIcons.chevronRight,
+                      onTap: _goToNext,
+                    ),
+                  ],
                 ),
               ],
             ),
           ),
+          const SizedBox(height: 12),
 
           // Day labels row
           Padding(
@@ -262,13 +266,14 @@ class _NavButton extends StatelessWidget {
     return GestureDetector(
       onTap: onTap,
       child: Container(
-        width: 32,
-        height: 32,
+        width: 36,
+        height: 36,
         decoration: BoxDecoration(
-          color: Colors.transparent,
-          borderRadius: BorderRadius.circular(8),
+          color: AppColors.card,
+          borderRadius: BorderRadius.circular(10),
+          border: Border.all(color: AppColors.border, width: 1),
         ),
-        child: Icon(icon, size: 20, color: AppColors.mutedForeground),
+        child: Icon(icon, size: 18, color: AppColors.foreground),
       ),
     );
   }

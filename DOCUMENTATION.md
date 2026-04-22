@@ -2,6 +2,52 @@
 
 ## 📅 Log Modifiche (Ultimi aggiornamenti)
 
+### [2026-04-22] Flutter Mobile — UI/UX Premium Redesign (AppBar & Calendar)
+- **Taller AppBar**: Aumentata l'altezza della AppBar per un look più arioso e professionale.
+  - Inserito il sottotitolo "Sistema Attivo" con un indicatore di stato pulsante.
+  - Redesign dell'icona `⌘` con gradienti e ombre per un effetto "premium hardware", ora con dimensioni uniformate all'immagine del profilo (38x38).
+  - Avatar profilo circolare con bordo rifinito.
+- **Segmented View Control**: Ridisegnata la `ViewTabBar` come un controllo segmentato di alta qualità.
+  - Background glassmorphic scuro.
+  - Selezione attiva con colore di contrasto inverso (testo scuro su fondo chiaro) per massima leggibilità, ombre soffuse e icone coordinate.
+  - Altezza aumentata a 52px per una migliore usabilità touch.
+  - Transizioni e feedback haptico migliorati.
+- **Calendar Header Reorganization**: Completamente rivista la parte superiore del calendario.
+  - Titolo del mese e anno molto più audaci (Bold/ExtraBold) con gerarchia visiva chiara.
+  - Navigazione spostata a destra con pulsanti circolari rifiniti e icone `Lucide`.
+  - Spaziature ottimizzate per rendere la griglia del calendario il vero punto focale.
+- **Layout Consistency**: Uniformati i padding (16px/20px) e le distanze tra i blocchi logici (Protocollo, Navigation, Calendar) per una sensazione di ordine e pulizia superiore.
+
+### [2026-04-22] Flutter Mobile — HomeScreen Restructuring & Protocollo Panel Revolution
+- **Protocollo Panel Revolution**: Trasformato il vecchio box statico in un sistema di **Action Tiles** dinamiche e moderne.
+  - Sostituito il titolo classico con un'intestazione in maiuscolo spaziato (`PROTOCOLLO`) e una linea di separazione a gradiente.
+  - Implementate tre "Tile" interattive con pesi visivi differenti (`flex` logic).
+  - La tile **Daily Check-in** è più grande per incoraggiare l'azione principale.
+  - Ogni tile ha un effetto "glow" d'angolo coordinato al colore dell'azione e bordi arrotondati (20px).
+  - Aggiunti micro-testi descrittivi per ogni azione per una migliore UX.
+- **Custom Color Picker**: Introdotta la possibilità di scegliere colori personalizzati per le abitudini.
+  - Integrata la libreria `flutter_colorpicker`.
+  - Aggiunto un pulsante "+" nella sezione colori della gestione abitudini che apre un selettore cromatico completo.
+  - Feedback visivo immediato sulla tile selezionata anche per colori fuori dai preset.
+
+### [2026-04-22] Flutter Mobile — HomeScreen Restructuring & Profile Page
+- **Protocollo Panel Cleanup**: Semplificato il box "Protocollo" mantenendo solo le funzioni essenziali richieste:
+  - **Daily Mood** (Icona Cuore)
+  - **Quick Notes** (Icona Documento)
+  - **Habit Management** (Icona Ingranaggio)
+  - Rimossi i toggle di Privacy/AI e i pulsanti Download/Database/Trash per un design più pulito e focalizzato.
+- **User Profile Integration**: 
+  - Aggiunta l'icona del profilo utente (avatar circolare) nell'AppBar della HomeScreen.
+  - Implementata navigazione alla nuova **ProfileScreen**.
+- **New Feature: Profile Page**: Creata una nuova schermata `ProfileScreen` con design glassmorphic premium che include:
+  - Header con Avatar e badge di verifica.
+  - Informazioni utente (Nome, Email).
+  - Opzioni di gestione (Impostazioni, Privacy, Notifiche) con icone Lucide.
+  - Pulsante di Logout integrato.
+- **UX/UI Improvements**: 
+  - Aggiunto feedback haptico (vibrazione leggera) al tocco dell'icona profilo.
+  - Transizioni fluide tra le schermate.
+
 ### [2026-04-22] Flutter Mobile — Macro Goals Header & Analytics Redesign
 - **UX Redesign**: Sostituita la piccola icona delle statistiche con un moderno **Segmented Toggle** ("I miei obiettivi" vs "Analisi Performance") per rendere l'accesso ai dati molto più intuitivo e professionale.
 - **Header Layout**: Ottimizzato lo spazio dell'header separando il titolo principale dal selettore di tipologia (Settimanale/Mensile/ecc.), migliorando la leggibilità su schermi piccoli.

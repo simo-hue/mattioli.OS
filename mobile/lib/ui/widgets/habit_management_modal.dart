@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:lucide_icons_flutter/lucide_icons.dart';
+import 'package:flutter_colorpicker/flutter_colorpicker.dart';
 import '../../core/theme.dart';
 import '../../models/goal.dart';
 import '../../providers/goal_provider.dart';
@@ -78,6 +79,29 @@ class _HabitManagementModalState extends ConsumerState<HabitManagementModal> {
       _nameController.text = habit.title;
       _selectedColor = habit.color;
     });
+  }
+
+  void _showColorPicker() {
+    showDialog(
+      context: context,
+      builder: (context) => AlertDialog(
+        backgroundColor: AppColors.card,
+        title: const Text('Scegli un colore', style: TextStyle(color: AppColors.foreground)),
+        content: SingleChildScrollView(
+          child: ColorPicker(
+            pickerColor: _selectedColor,
+            onColorChanged: (color) => setState(() => _selectedColor = color),
+            pickerAreaHeightPercent: 0.8,
+          ),
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(context),
+            child: const Text('Ok', style: TextStyle(color: AppColors.foreground)),
+          ),
+        ],
+      ),
+    );
   }
 
   @override
@@ -193,27 +217,46 @@ class _HabitManagementModalState extends ConsumerState<HabitManagementModal> {
                 Wrap(
                   spacing: 10,
                   runSpacing: 10,
-                  children: _presetColors.map((color) {
-                    final isSelected = _selectedColor == color;
-                    return GestureDetector(
-                      onTap: () => setState(() => _selectedColor = color),
+                  children: [
+                    ..._presetColors.map((color) {
+                      final isSelected = _selectedColor == color;
+                      return GestureDetector(
+                        onTap: () => setState(() => _selectedColor = color),
+                        child: Container(
+                          width: 28,
+                          height: 28,
+                          decoration: BoxDecoration(
+                            color: color,
+                            shape: BoxShape.circle,
+                            border: Border.all(
+                              color: isSelected ? Colors.white : Colors.transparent,
+                              width: 2,
+                            ),
+                            boxShadow: isSelected ? [
+                              BoxShadow(color: color.withValues(alpha: 0.5), blurRadius: 8, spreadRadius: 0)
+                            ] : null,
+                          ),
+                        ),
+                      );
+                    }),
+                    // Custom Color Picker Button
+                    GestureDetector(
+                      onTap: _showColorPicker,
                       child: Container(
                         width: 28,
                         height: 28,
                         decoration: BoxDecoration(
-                          color: color,
+                          color: AppColors.muted,
                           shape: BoxShape.circle,
                           border: Border.all(
-                            color: isSelected ? Colors.white : Colors.transparent,
+                            color: !_presetColors.contains(_selectedColor) ? Colors.white : Colors.transparent,
                             width: 2,
                           ),
-                          boxShadow: isSelected ? [
-                            BoxShadow(color: color.withValues(alpha: 0.5), blurRadius: 8, spreadRadius: 0)
-                          ] : null,
                         ),
+                        child: const Icon(LucideIcons.plus, size: 14, color: AppColors.foreground),
                       ),
-                    );
-                  }).toList(),
+                    ),
+                  ],
                 ),
                 const SizedBox(height: 24),
                 SizedBox(

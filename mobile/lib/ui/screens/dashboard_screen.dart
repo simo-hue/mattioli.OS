@@ -13,6 +13,7 @@ import '../widgets/yearly_view_widget.dart';
 import '../widgets/life_view_widget.dart';
 import 'statistics_screen.dart';
 import 'macro_goals_screen.dart';
+import 'profile_screen.dart';
 
 class HomeScreen extends ConsumerStatefulWidget {
   const HomeScreen({super.key});
@@ -61,7 +62,7 @@ class _HomeScreenState extends ConsumerState<HomeScreen>
       backgroundColor: AppColors.background,
       // Custom app bar
       appBar: PreferredSize(
-        preferredSize: const Size.fromHeight(52),
+        preferredSize: const Size.fromHeight(72),
         child: _AppBar(),
       ),
       body: IndexedStack(
@@ -105,13 +106,14 @@ class _HomeScreenState extends ConsumerState<HomeScreen>
         FadeTransition(
           opacity: _fadeAnimation,
           child: Padding(
-            padding: const EdgeInsets.fromLTRB(14, 8, 14, 0),
+            padding: const EdgeInsets.fromLTRB(16, 12, 16, 0),
             child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
               children: [
                 const ProtocolloPanel(),
-                const SizedBox(height: 10),
+                const SizedBox(height: 20),
                 const ViewTabBar(),
-                const SizedBox(height: 10),
+                const SizedBox(height: 12),
                 Expanded(
                   child: AnimatedSwitcher(
                     duration: const Duration(milliseconds: 250),
@@ -159,52 +161,131 @@ class _AppBar extends ConsumerWidget {
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     return Container(
-      color: AppColors.background,
+      decoration: BoxDecoration(
+        color: AppColors.background,
+        border: Border(
+          bottom: BorderSide(
+            color: AppColors.border.withValues(alpha: 0.5),
+            width: 0.5,
+          ),
+        ),
+      ),
       child: SafeArea(
         bottom: false,
         child: Padding(
-          padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+          padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 8),
           child: Row(
             children: [
-              // ⌘ icon
+              // ⌘ icon with a more premium look
               Container(
-                width: 28,
-                height: 28,
+                width: 38,
+                height: 38,
                 decoration: BoxDecoration(
-                  color: AppColors.card,
-                  borderRadius: BorderRadius.circular(6),
-                  border: Border.all(color: AppColors.border, width: 1),
+                  gradient: LinearGradient(
+                    colors: [
+                      AppColors.card,
+                      AppColors.background,
+                    ],
+                    begin: Alignment.topLeft,
+                    end: Alignment.bottomRight,
+                  ),
+                  borderRadius: BorderRadius.circular(10),
+                  border: Border.all(
+                    color: AppColors.border.withValues(alpha: 0.8),
+                    width: 1,
+                  ),
+                  boxShadow: [
+                    BoxShadow(
+                      color: Colors.black.withValues(alpha: 0.2),
+                      blurRadius: 4,
+                      offset: const Offset(0, 2),
+                    ),
+                  ],
                 ),
                 child: const Center(
                   child: Text(
                     '⌘',
                     style: TextStyle(
-                      fontSize: 14,
+                      fontSize: 20,
+                      fontWeight: FontWeight.w600,
                       color: AppColors.foreground,
                       height: 1,
                     ),
                   ),
                 ),
               ),
-              const SizedBox(width: 8),
-              Text(
-                'Mattioli.OS',
-                style: TextStyle(
-                  fontFamily: 'Inter',
-                  fontSize: 17,
-                  fontWeight: FontWeight.w600,
-                  color: AppColors.foreground,
-                  letterSpacing: -0.3,
-                ),
+              const SizedBox(width: 12),
+              Column(
+                mainAxisSize: MainAxisSize.min,
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text(
+                    'Mattioli.OS',
+                    style: TextStyle(
+                      fontFamily: 'Inter',
+                      fontSize: 18,
+                      fontWeight: FontWeight.w700,
+                      color: AppColors.foreground,
+                      letterSpacing: -0.5,
+                    ),
+                  ),
+                  Row(
+                    children: [
+                      Container(
+                        width: 6,
+                        height: 6,
+                        decoration: const BoxDecoration(
+                          color: AppColors.success,
+                          shape: BoxShape.circle,
+                        ),
+                      ),
+                      const SizedBox(width: 4),
+                      Text(
+                        'Sistema Attivo',
+                        style: TextStyle(
+                          fontSize: 10,
+                          fontWeight: FontWeight.w500,
+                          color: AppColors.mutedForeground,
+                          letterSpacing: 0.2,
+                        ),
+                      ),
+                    ],
+                  ),
+                ],
               ),
               const Spacer(),
-              // Status dot
-              Container(
-                width: 7,
-                height: 7,
-                decoration: const BoxDecoration(
-                  color: AppColors.success,
-                  shape: BoxShape.circle,
+              // Profile icon
+              GestureDetector(
+                onTap: () {
+                  HapticFeedback.mediumImpact();
+                  Navigator.push(
+                    context,
+                    MaterialPageRoute(
+                      builder: (context) => const ProfileScreen(),
+                    ),
+                  );
+                },
+                child: Container(
+                  width: 38,
+                  height: 38,
+                  padding: const EdgeInsets.all(2),
+                  decoration: BoxDecoration(
+                    shape: BoxShape.circle,
+                    border: Border.all(
+                      color: AppColors.primary.withValues(alpha: 0.3),
+                      width: 1.5,
+                    ),
+                  ),
+                  child: Container(
+                    decoration: BoxDecoration(
+                      color: AppColors.card,
+                      shape: BoxShape.circle,
+                      image: const DecorationImage(
+                        image: NetworkImage('https://github.com/simonemattioli.png'),
+                        fit: BoxFit.cover,
+                      ),
+                    ),
+                  ),
                 ),
               ),
             ],

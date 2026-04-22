@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:lucide_icons_flutter/lucide_icons.dart';
 import '../../core/theme.dart';
@@ -19,11 +20,12 @@ class ViewTabBar extends ConsumerWidget {
     ];
 
     return Container(
-      height: 40,
+      height: 52,
+      margin: const EdgeInsets.symmetric(vertical: 4),
       decoration: BoxDecoration(
-        color: AppColors.card.withValues(alpha: 0.4),
-        borderRadius: BorderRadius.circular(12),
-        border: Border.all(color: AppColors.borderHover, width: 1),
+        color: AppColors.card.withValues(alpha: 0.3),
+        borderRadius: BorderRadius.circular(14),
+        border: Border.all(color: AppColors.border.withValues(alpha: 0.5), width: 1),
       ),
       padding: const EdgeInsets.all(4),
       child: Row(
@@ -31,38 +33,52 @@ class ViewTabBar extends ConsumerWidget {
           final isActive = currentView == tab.view;
           return Expanded(
             child: GestureDetector(
-              onTap: () => ref.read(calendarViewProvider.notifier).setView(tab.view),
+              onTap: () {
+                HapticFeedback.selectionClick();
+                ref.read(calendarViewProvider.notifier).setView(tab.view);
+              },
               child: AnimatedContainer(
-                duration: const Duration(milliseconds: 200),
+                duration: const Duration(milliseconds: 300),
+                curve: Curves.easeOutCubic,
                 decoration: BoxDecoration(
                   color: isActive
-                      ? AppColors.primary.withValues(alpha: 0.15)
+                      ? AppColors.primary.withValues(alpha: 0.9)
                       : Colors.transparent,
-                  borderRadius: BorderRadius.circular(8),
+                  borderRadius: BorderRadius.circular(10),
+                  boxShadow: isActive
+                      ? [
+                          BoxShadow(
+                            color: AppColors.primary.withValues(alpha: 0.2),
+                            blurRadius: 10,
+                            offset: const Offset(0, 4),
+                          ),
+                        ]
+                      : [],
                 ),
                 child: Row(
                   mainAxisAlignment: MainAxisAlignment.center,
                   children: [
                     Icon(
                       tab.icon,
-                      size: 13,
+                      size: 14,
                       color: isActive
-                          ? AppColors.primary
+                          ? AppColors.background
                           : AppColors.mutedForeground,
                     ),
-                    const SizedBox(width: 4),
+                    const SizedBox(width: 6),
                     Flexible(
                       child: Text(
                         tab.label,
                         overflow: TextOverflow.ellipsis,
                         style: TextStyle(
                           fontFamily: 'Inter',
-                          fontSize: 11,
+                          fontSize: 12,
                           fontWeight:
-                              isActive ? FontWeight.w600 : FontWeight.w400,
+                              isActive ? FontWeight.w700 : FontWeight.w500,
                           color: isActive
-                              ? AppColors.primary
+                              ? AppColors.background
                               : AppColors.mutedForeground,
+                          letterSpacing: -0.2,
                         ),
                       ),
                     ),

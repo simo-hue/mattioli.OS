@@ -3,6 +3,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:lucide_icons_flutter/lucide_icons.dart';
 import '../../core/theme.dart';
 import '../../providers/goal_provider.dart';
+import 'daily_check_in_modal.dart';
 
 /// "Protocollo" command panel matching the PWA sidebar card
 class ProtocolloPanel extends ConsumerWidget {
@@ -71,6 +72,7 @@ class ProtocolloPanel extends ConsumerWidget {
               _ActionButton(
                 icon: LucideIcons.heartPulse,
                 isHighlighted: true,
+                onTap: () => DailyCheckInModal.show(context),
               ),
               const SizedBox(width: 8),
               _ActionButton(icon: LucideIcons.fileText),
@@ -142,11 +144,13 @@ class _ActionButton extends StatelessWidget {
   final IconData icon;
   final bool isHighlighted;
   final bool isDestructive;
+  final VoidCallback? onTap;
 
   const _ActionButton({
     required this.icon,
     this.isHighlighted = false,
     this.isDestructive = false,
+    this.onTap,
   });
 
   @override
@@ -165,15 +169,18 @@ class _ActionButton extends StatelessWidget {
       borderColor = const Color(0x33EF4444);
     }
 
-    return Container(
-      width: 36,
-      height: 36,
-      decoration: BoxDecoration(
-        color: bgColor,
-        borderRadius: BorderRadius.circular(8),
-        border: Border.all(color: borderColor, width: 1),
+    return GestureDetector(
+      onTap: onTap,
+      child: Container(
+        width: 36,
+        height: 36,
+        decoration: BoxDecoration(
+          color: bgColor,
+          borderRadius: BorderRadius.circular(8),
+          border: Border.all(color: borderColor, width: 1),
+        ),
+        child: Icon(icon, size: 16, color: iconColor),
       ),
-      child: Icon(icon, size: 16, color: iconColor),
     );
   }
 }

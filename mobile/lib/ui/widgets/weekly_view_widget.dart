@@ -4,6 +4,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../core/theme.dart';
 
 import '../../providers/goal_provider.dart';
+import 'day_details_modal.dart';
 
 const _kDays = ['LUN', 'MAR', 'MER', 'GIO', 'VEN', 'SAB', 'DOM'];
 const _kMonths = [
@@ -175,8 +176,13 @@ class _WeeklyViewWidgetState extends ConsumerState<WeeklyViewWidget> {
                                   isFuture: isFuture,
                                   isPrivacy: isPrivacy,
                                   onTap: isFuture ? null : () {
-                                    ref.read(habitLogsProvider.notifier).cycleStatus(dayDate, habit.id);
-                                    HapticFeedback.selectionClick();
+                                    showModalBottomSheet(
+                                      context: context,
+                                      backgroundColor: Colors.transparent,
+                                      isScrollControlled: true,
+                                      builder: (context) => DayDetailsModal(date: dayDate),
+                                    );
+                                    HapticFeedback.mediumImpact();
                                   },
                                 ),
                               ),

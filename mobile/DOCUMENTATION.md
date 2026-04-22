@@ -87,3 +87,10 @@
     - Aggiunti import mancanti (`flutter/services.dart` e `lucide_icons_flutter`).
     - Aggiornato `weekly_view_widget.dart` per utilizzare il nuovo metodo `cycleStatus` invece del vecchio `toggle`.
     - Aggiornato il widget `_HabitCapsule` nella vista settimanale per visualizzare correttamente lo stato "fallito" (rosso), garantendo coerenza visiva in tutta l'app.
+
+- [2026-04-22 11:23]: [Flutter] Refactor e Integrazione Modale Dettaglio
+  *Details*: Estratto il modale di dettaglio giorno come componente riutilizzabile e integrato nella vista settimanale.
+  *Tech Notes*:
+    - Creato `day_details_modal.dart` contenente `DayDetailsModal`, `GoalLogCard` e `StreakBadge`.
+    - Refactor di `habit_calendar_widget.dart` per utilizzare il nuovo componente esterno.
+    - Aggiornata la vista settimanale (`weekly_view_widget.dart`) per aprire il pannello di dettaglio al click su una "capsula" di abitudine, permettendo la gestione degli stati (fatto/fallito) tramite lo stesso pannello premium usato nel calendario mensile.

@@ -56,22 +56,32 @@ class _YearlyViewWidgetState extends ConsumerState<YearlyViewWidget> {
           ),
           const SizedBox(height: 20),
 
-          // Grid of months - Now responsive
+          // Grid of months - Now perfectly responsive to fit 6 rows
           Expanded(
-            child: GridView.builder(
-              physics: const BouncingScrollPhysics(),
-              gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
-                crossAxisCount: 2,
-                crossAxisSpacing: 16,
-                mainAxisSpacing: 16,
-                childAspectRatio: 2.2,
-              ),
-              itemCount: 12,
-              itemBuilder: (context, index) {
-                return _MonthDensityWidget(
-                  year: _currentYear,
-                  month: index + 1,
-                  label: _kMonthShort[index],
+            child: LayoutBuilder(
+              builder: (context, constraints) {
+                const double crossAxisSpacing = 16;
+                const double mainAxisSpacing = 16;
+                final double cellWidth = (constraints.maxWidth - crossAxisSpacing) / 2;
+                final double cellHeight = (constraints.maxHeight - (mainAxisSpacing * 5)) / 6;
+                final double aspectRatio = cellWidth / cellHeight;
+
+                return GridView.builder(
+                  physics: const NeverScrollableScrollPhysics(), // Fits perfectly, no scroll needed
+                  gridDelegate: SliverGridDelegateWithFixedCrossAxisCount(
+                    crossAxisCount: 2,
+                    crossAxisSpacing: crossAxisSpacing,
+                    mainAxisSpacing: mainAxisSpacing,
+                    childAspectRatio: aspectRatio > 0 ? aspectRatio : 2.2,
+                  ),
+                  itemCount: 12,
+                  itemBuilder: (context, index) {
+                    return _MonthDensityWidget(
+                      year: _currentYear,
+                      month: index + 1,
+                      label: _kMonthShort[index],
+                    );
+                  },
                 );
               },
             ),

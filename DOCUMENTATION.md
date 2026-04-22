@@ -2,6 +2,15 @@
 
 ## 📅 Log Modifiche (Ultimi aggiornamenti)
 
+### [2026-04-22] Flutter Mobile — Bottom Navigation Bar Redesign
+- **Details**: Redesigned the bottom navigation bar into a modern, floating glassmorphism dock.
+- **Tech Notes**:
+  - Replaced standard container with `BackdropFilter` for real-time background blur.
+  - Implemented floating dock styling with rounded corners (24px) and subtle border.
+  - Added micro-animations: `AnimatedScale` for icons and `AnimatedContainer` for a dot indicator.
+  - Switched font to `GoogleFonts.outfit` for a more premium look.
+  - Integrated `HapticFeedback` for improved tactile experience.
+
 ### [2026-04-22] Flutter Mobile — Profile Submenus: App Settings
 - **Sottomenu Impostazioni App**: Implementata la gestione completa delle preferenze dell'applicazione.
   - **Visual**: Toggle per Tema (Dark/Light), Trasparenze (Glassmorphism) e **Colore Accento Avanzato**.
@@ -133,6 +142,15 @@
 - **Swipe Gestures & Fluidity**: Aggiunto supporto nativo per lo swipe laterale sulla lista degli obiettivi. Uno swipe cambierà in maniera immediata il periodo visualizzato. Inoltre, ogni transizione logica adesso è accompagnata da un elegante **Custom AnimatedSwitcher**, che esegue un "Fade+Slide" direzionale (verso sinistra o verso destra a seconda che tu vada avanti o indietro nel tempo), donando una fluidità e responsività organica e ultra-premium all'applicazione.
 - **Native Timeline Stepper**: Rimpiazzati i "pill selector menu" a scorrimento con una vera barra di navigazione temporale formata dai comandi `< Titolo Contesto >`. Funzionalità integrata in `MacroGoalsViewNotifier` tramite le nuove action `prevPeriod()` e `nextPeriod()` capaci di calcolare shift intelligenti (ad es. scalare le settimane saltando nel mese/anno corretto).
 - **Clean Interface**: Rimossi i text title ridondanti pre-esistenti; ora il "Stepper" funge nativamente anche come Context Title. Tutto il blocco logico richiede la metà dei pixel e libera la visuale unicamente per interagire coi task.
+- **Task completion tracking**:
+    - [x] Redesign `bottom_nav_bar.dart` with floating glassmorphism dock
+    - [x] Add `BackdropFilter` for blur effect
+    - [x] Implement floating container with rounded corners
+    - [x] Add animated active state (scale + indicator)
+    - [x] Refine typography and icon sizes
+    - [x] Add haptic feedback
+    - [x] Update `DOCUMENTATION.md` with the architectural/UI changes
+    - [x] Verify the UI on the simulator
 - **File Eliminati (Deprecati)**: `type_tab_bar.dart` e `period_selector_bar.dart`.
 
 ### [2026-04-22] Flutter Mobile — Macro Goals Screen (PWA-Consistent)

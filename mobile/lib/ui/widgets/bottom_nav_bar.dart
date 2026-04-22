@@ -1,4 +1,7 @@
+import 'dart:ui';
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
+import 'package:google_fonts/google_fonts.dart';
 import 'package:lucide_icons_flutter/lucide_icons.dart';
 import '../../core/theme.dart';
 
@@ -21,28 +24,54 @@ class AppBottomNavBar extends StatelessWidget {
     ];
 
     return Container(
-      decoration: BoxDecoration(
-        color: const Color(0xFF0A0A0A).withValues(alpha: 0.9),
-        border: const Border(
-          top: BorderSide(color: AppColors.borderHover, width: 1),
+      padding: const EdgeInsets.fromLTRB(16, 0, 16, 24),
+      decoration: const BoxDecoration(
+        gradient: LinearGradient(
+          begin: Alignment.topCenter,
+          end: Alignment.bottomCenter,
+          colors: [
+            Colors.transparent,
+            Color(0x40000000),
+          ],
         ),
       ),
-      child: SafeArea(
-        top: false,
-        child: SizedBox(
-          height: 64,
-          child: Row(
-            mainAxisAlignment: MainAxisAlignment.spaceAround,
-            children: List.generate(items.length, (index) {
-              final item = items[index];
-              final isActive = currentIndex == index;
-              return _NavBarItem(
-                icon: item.icon,
-                label: item.label,
-                isActive: isActive,
-                onTap: () => onTap(index),
-              );
-            }),
+      child: ClipRRect(
+        borderRadius: BorderRadius.circular(24),
+        child: BackdropFilter(
+          filter: ImageFilter.blur(sigmaX: 12, sigmaY: 12),
+          child: Container(
+            height: 72,
+            decoration: BoxDecoration(
+              color: const Color(0xFF0F0F0F).withValues(alpha: 0.7),
+              borderRadius: BorderRadius.circular(24),
+              border: Border.all(
+                color: Colors.white.withValues(alpha: 0.08),
+                width: 1,
+              ),
+              boxShadow: [
+                BoxShadow(
+                  color: Colors.black.withValues(alpha: 0.4),
+                  blurRadius: 20,
+                  offset: const Offset(0, 4),
+                ),
+              ],
+            ),
+            child: Row(
+              mainAxisAlignment: MainAxisAlignment.spaceAround,
+              children: List.generate(items.length, (index) {
+                final item = items[index];
+                final isActive = currentIndex == index;
+                return _NavBarItem(
+                  icon: item.icon,
+                  label: item.label,
+                  isActive: isActive,
+                  onTap: () {
+                    HapticFeedback.lightImpact();
+                    onTap(index);
+                  },
+                );
+              }),
+            ),
           ),
         ),
       ),
@@ -72,41 +101,67 @@ class _NavBarItem extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final primaryColor = Theme.of(context).colorScheme.primary;
-    return GestureDetector(
-      onTap: onTap,
-      behavior: HitTestBehavior.opaque,
-      child: AnimatedContainer(
-        duration: const Duration(milliseconds: 200),
-        padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 4),
+    
+    return Expanded(
+      child: GestureDetector(
+        onTap: onTap,
+        behavior: HitTestBehavior.opaque,
         child: Column(
-          mainAxisSize: MainAxisSize.min,
           mainAxisAlignment: MainAxisAlignment.center,
           children: [
-            AnimatedContainer(
+            AnimatedScale(
+              scale: isActive ? 1.15 : 1.0,
               duration: const Duration(milliseconds: 200),
-              padding: const EdgeInsets.all(6),
-              decoration: BoxDecoration(
-                color: isActive
-                    ? primaryColor.withValues(alpha: 0.15)
-                    : Colors.transparent,
-                borderRadius: BorderRadius.circular(10),
-              ),
-              child: Icon(
-                icon,
-                size: 22,
-                color: isActive ? primaryColor : AppColors.mutedForeground,
+              curve: Curves.easeOutBack,
+              child: Stack(
+                alignment: Alignment.center,
+                children: [
+                  AnimatedContainer(
+                    duration: const Duration(milliseconds: 300),
+                    width: isActive ? 44 : 0,
+                    height: isActive ? 44 : 0,
+                    decoration: BoxDecoration(
+                      color: primaryColor.withValues(alpha: 0.1),
+                      shape: BoxShape.circle,
+                    ),
+                  ),
+                  Icon(
+                    icon,
+                    size: 24,
+                    color: isActive ? primaryColor : AppColors.mutedForeground.withValues(alpha: 0.6),
+                  ),
+                ],
               ),
             ),
+            const SizedBox(height: 4),
+            AnimatedDefaultTextStyle(
+              duration: const Duration(milliseconds: 200),
+              style: GoogleFonts.outfit(
+                fontSize: 11,
+                fontWeight: isActive ? FontWeight.w600 : FontWeight.w500,
+                color: isActive ? primaryColor : AppColors.mutedForeground.withValues(alpha: 0.6),
+                letterSpacing: 0.2,
+              ),
+              child: Text(label),
+            ),
             const SizedBox(height: 2),
-            Text(
-              label,
-              style: TextStyle(
-                fontFamily: 'Inter',
-                fontSize: 10,
-                fontWeight: FontWeight.w500,
-                color:
-                    isActive ? primaryColor : AppColors.mutedForeground,
-                letterSpacing: 0.3,
+            // Subtly animated dot indicator
+            AnimatedContainer(
+              duration: const Duration(milliseconds: 250),
+              curve: Curves.easeOutCubic,
+              width: isActive ? 4 : 0,
+              height: isActive ? 4 : 0,
+              decoration: BoxDecoration(
+                color: primaryColor,
+                shape: BoxShape.circle,
+                boxShadow: [
+                  if (isActive)
+                    BoxShadow(
+                      color: primaryColor.withValues(alpha: 0.5),
+                      blurRadius: 4,
+                      spreadRadius: 1,
+                    ),
+                ],
               ),
             ),
           ],

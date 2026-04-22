@@ -164,70 +164,73 @@ class _HabitCalendarWidgetState extends ConsumerState<HabitCalendarWidget> {
 
           const SizedBox(height: 4),
 
-          // Calendar grid
-          Padding(
-            padding: const EdgeInsets.fromLTRB(6, 0, 6, 8),
-            child: Column(
-              children: List.generate(numRows, (row) {
-                return Row(
-                  children: List.generate(7, (col) {
-                    final slot = row * 7 + col;
-                    final day = slot - startDayOfWeek + 1;
+          // Calendar grid - Now responsive
+          Expanded(
+            child: SingleChildScrollView(
+              physics: const BouncingScrollPhysics(),
+              padding: const EdgeInsets.fromLTRB(6, 0, 6, 8),
+              child: Column(
+                children: List.generate(numRows, (row) {
+                  return Row(
+                    children: List.generate(7, (col) {
+                      final slot = row * 7 + col;
+                      final day = slot - startDayOfWeek + 1;
 
-                    if (day < 1 || day > daysInMonth) {
-                      return Expanded(child: _EmptyCell(hasContent: false));
-                    }
+                      if (day < 1 || day > daysInMonth) {
+                        return Expanded(child: _EmptyCell(hasContent: false));
+                      }
 
-                    final dateKey = _dateKey(year, month, day);
-                    final dayRecord = logs[dateKey] ?? {};
-                    final future = _isFuture(year, month, day);
-                    final today = _isToday(year, month, day);
-                    final editableDay = _isYesterdayOrToday(year, month, day);
+                      final dateKey = _dateKey(year, month, day);
+                      final dayRecord = logs[dateKey] ?? {};
+                      final future = _isFuture(year, month, day);
+                      final today = _isToday(year, month, day);
+                      final editableDay = _isYesterdayOrToday(year, month, day);
 
-                    // Valid habits for this date
-                    final validHabits = habits.where((h) {
-                      return h.startDate.compareTo(dateKey) <= 0 &&
-                          (h.endDate == null || h.endDate!.compareTo(dateKey) >= 0);
-                    }).toList();
+                      // Valid habits for this date
+                      final validHabits = habits.where((h) {
+                        return h.startDate.compareTo(dateKey) <= 0 &&
+                            (h.endDate == null || h.endDate!.compareTo(dateKey) >= 0);
+                      }).toList();
 
-                    final totalHabits = validHabits.length;
-                    final completedCount = validHabits
-                        .where((h) => dayRecord[h.id] == 'done')
-                        .length;
-                    final missedCount = validHabits
-                        .where((h) => dayRecord[h.id] == 'missed')
-                        .length;
-                    final hasActivity =
-                        (completedCount + missedCount) > 0;
+                      final totalHabits = validHabits.length;
+                      final completedCount = validHabits
+                          .where((h) => dayRecord[h.id] == 'done')
+                          .length;
+                      final missedCount = validHabits
+                          .where((h) => dayRecord[h.id] == 'missed')
+                          .length;
+                      final hasActivity =
+                          (completedCount + missedCount) > 0;
 
-                    double completionPct = totalHabits > 0
-                        ? completedCount / totalHabits
-                        : 0.0;
+                      double completionPct = totalHabits > 0
+                          ? completedCount / totalHabits
+                          : 0.0;
 
-                    return Expanded(
-                      child: Padding(
-                        padding: const EdgeInsets.all(2),
-                        child: _DayCell(
-                          day: day,
-                          isToday: today,
-                          isFuture: future,
-                          isEditableDay: editableDay,
-                          hasActivity: hasActivity,
-                          completionPct: completionPct,
-                          validHabits: validHabits,
-                          dayRecord: dayRecord,
-                          isPrivacy: isPrivacy,
-                          onTap: future
-                              ? null
-                              : () {
-                                  // TODO: show day details modal
-                                },
+                      return Expanded(
+                        child: Padding(
+                          padding: const EdgeInsets.all(2),
+                          child: _DayCell(
+                            day: day,
+                            isToday: today,
+                            isFuture: future,
+                            isEditableDay: editableDay,
+                            hasActivity: hasActivity,
+                            completionPct: completionPct,
+                            validHabits: validHabits,
+                            dayRecord: dayRecord,
+                            isPrivacy: isPrivacy,
+                            onTap: future
+                                ? null
+                                : () {
+                                    // TODO: show day details modal
+                                  },
+                          ),
                         ),
-                      ),
-                    );
-                  }),
-                );
-              }),
+                      );
+                    }),
+                  );
+                }),
+              ),
             ),
           ),
         ],

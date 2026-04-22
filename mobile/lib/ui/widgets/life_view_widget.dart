@@ -78,18 +78,19 @@ class LifeViewWidget extends ConsumerWidget {
           ),
           const SizedBox(height: 24),
 
-          // Life Grid
-          // We'll use a Wrap or a GridView. Given the number of dots, Wrap might be slow if not optimized.
-          // Let's use a CustomPainter for the grid to ensure extreme performance.
-          SizedBox(
-            width: double.infinity,
-            height: 400,
-            child: CustomPaint(
-              painter: _LifeGridPainter(
-                totalMonths: totalMonths,
-                livedMonths: livedMonths,
-                currentMonth: livedMonths, // Just highlight the last lived month
-              ),
+          // Life Grid - Now responsive
+          Expanded(
+            child: LayoutBuilder(
+              builder: (context, constraints) {
+                return CustomPaint(
+                  size: Size(constraints.maxWidth, constraints.maxHeight),
+                  painter: _LifeGridPainter(
+                    totalMonths: totalMonths,
+                    livedMonths: livedMonths,
+                    currentMonth: livedMonths,
+                  ),
+                );
+              },
             ),
           ),
 

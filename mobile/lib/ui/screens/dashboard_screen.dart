@@ -85,53 +85,45 @@ class _HomeScreenState extends ConsumerState<HomeScreen>
 
           FadeTransition(
             opacity: _fadeAnimation,
-            child: Column(
-              children: [
-                Expanded(
-                  child: CustomScrollView(
-                    physics: const BouncingScrollPhysics(),
-                    slivers: [
-                      SliverPadding(
-                        padding: const EdgeInsets.fromLTRB(14, 8, 14, 0),
-                        sliver: SliverList(
-                          delegate: SliverChildListDelegate([
-                            // Protocollo command panel
-                            const ProtocolloPanel(),
-                            const SizedBox(height: 10),
+            child: Padding(
+              padding: const EdgeInsets.fromLTRB(14, 8, 14, 0),
+              child: Column(
+                children: [
+                  // Protocollo command panel
+                  const ProtocolloPanel(),
+                  const SizedBox(height: 10),
 
-                            // View tab selector
-                            const ViewTabBar(),
-                            const SizedBox(height: 10),
+                  // View tab selector
+                  const ViewTabBar(),
+                  const SizedBox(height: 10),
 
-                            // Calendar content
-                            AnimatedSwitcher(
-                              duration: const Duration(milliseconds: 250),
-                              switchInCurve: Curves.easeOut,
-                              switchOutCurve: Curves.easeIn,
-                              transitionBuilder: (child, animation) {
-                                return FadeTransition(
-                                  opacity: animation,
-                                  child: SlideTransition(
-                                    position: Tween<Offset>(
-                                      begin: const Offset(0, 0.03),
-                                      end: Offset.zero,
-                                    ).animate(animation),
-                                    child: child,
-                                  ),
-                                );
-                              },
-                              child: _buildViewContent(currentView),
-                            ),
-
-                            // Bottom padding for nav bar
-                            const SizedBox(height: 80),
-                          ]),
-                        ),
-                      ),
-                    ],
+                  // Calendar content - Expanded to take remaining space
+                  Expanded(
+                    child: AnimatedSwitcher(
+                      duration: const Duration(milliseconds: 250),
+                      switchInCurve: Curves.easeOut,
+                      switchOutCurve: Curves.easeIn,
+                      transitionBuilder: (child, animation) {
+                        return FadeTransition(
+                          opacity: animation,
+                          child: SlideTransition(
+                            position: Tween<Offset>(
+                              begin: const Offset(0, 0.02),
+                              end: Offset.zero,
+                            ).animate(animation),
+                            child: child,
+                          ),
+                        );
+                      },
+                      child: _buildViewContent(currentView),
+                    ),
                   ),
-                ),
-              ],
+
+                  // Bottom padding for nav bar (now redundant since it's a column, 
+                  // but we might need a small spacer)
+                  const SizedBox(height: 10),
+                ],
+              ),
             ),
           ),
         ],

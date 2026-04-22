@@ -56,24 +56,25 @@ class _YearlyViewWidgetState extends ConsumerState<YearlyViewWidget> {
           ),
           const SizedBox(height: 20),
 
-          // Grid of months
-          GridView.builder(
-            shrinkWrap: true,
-            physics: const NeverScrollableScrollPhysics(),
-            gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
-              crossAxisCount: 2,
-              crossAxisSpacing: 16,
-              mainAxisSpacing: 16,
-              childAspectRatio: 2.2,
+          // Grid of months - Now responsive
+          Expanded(
+            child: GridView.builder(
+              physics: const BouncingScrollPhysics(),
+              gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
+                crossAxisCount: 2,
+                crossAxisSpacing: 16,
+                mainAxisSpacing: 16,
+                childAspectRatio: 2.2,
+              ),
+              itemCount: 12,
+              itemBuilder: (context, index) {
+                return _MonthDensityWidget(
+                  year: _currentYear,
+                  month: index + 1,
+                  label: _kMonthShort[index],
+                );
+              },
             ),
-            itemCount: 12,
-            itemBuilder: (context, index) {
-              return _MonthDensityWidget(
-                year: _currentYear,
-                month: index + 1,
-                label: _kMonthShort[index],
-              );
-            },
           ),
         ],
       ),

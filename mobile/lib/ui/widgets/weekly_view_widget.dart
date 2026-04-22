@@ -148,46 +148,49 @@ class _WeeklyViewWidgetState extends ConsumerState<WeeklyViewWidget> {
           ),
           const SizedBox(height: 16),
 
-          // Habit Stacks
-          Column(
-            children: [
-              // We divide the habits into blocks to match the PWA look if needed, 
-              // but for now let's just list them all.
-              ...habits.asMap().entries.map((entry) {
-                final habit = entry.value;
+          // Habit Stacks - Scrollable if too many
+          Expanded(
+            child: SingleChildScrollView(
+              physics: const BouncingScrollPhysics(),
+              child: Column(
+                children: [
+                  ...habits.asMap().entries.map((entry) {
+                    final habit = entry.value;
 
-                return Column(
-                  children: [
-                    Row(
-                      children: List.generate(7, (dayIdx) {
-                        final dayDate = _currentWeekStart.add(Duration(days: dayIdx));
-                        final dayKey = _dateKey(dayDate);
-                        final status = logs[dayKey]?[habit.id];
-                        final isFuture = dayDate.isAfter(DateTime.now());
+                    return Column(
+                      children: [
+                        Row(
+                          children: List.generate(7, (dayIdx) {
+                            final dayDate = _currentWeekStart.add(Duration(days: dayIdx));
+                            final dayKey = _dateKey(dayDate);
+                            final status = logs[dayKey]?[habit.id];
+                            final isFuture = dayDate.isAfter(DateTime.now());
 
-                        return Expanded(
-                          child: Padding(
-                            padding: const EdgeInsets.symmetric(horizontal: 4, vertical: 4),
-                            child: _HabitCapsule(
-                              color: habit.color,
-                              status: status,
-                              isFuture: isFuture,
-                              isPrivacy: isPrivacy,
-                              onTap: isFuture ? null : () {
-                                ref.read(habitLogsProvider.notifier).toggle(dayDate, habit.id);
-                                HapticFeedback.selectionClick();
-                              },
-                            ),
-                          ),
-                        );
-                      }),
-                    ),
-                    // Optional spacing between groups
-                    if (entry.key == 2 || entry.key == 6) const SizedBox(height: 12),
-                  ],
-                );
-              })
-            ],
+                            return Expanded(
+                              child: Padding(
+                                padding: const EdgeInsets.symmetric(horizontal: 4, vertical: 4),
+                                child: _HabitCapsule(
+                                  color: habit.color,
+                                  status: status,
+                                  isFuture: isFuture,
+                                  isPrivacy: isPrivacy,
+                                  onTap: isFuture ? null : () {
+                                    ref.read(habitLogsProvider.notifier).toggle(dayDate, habit.id);
+                                    HapticFeedback.selectionClick();
+                                  },
+                                ),
+                              ),
+                            );
+                          }),
+                        ),
+                        // Optional spacing between groups
+                        if (entry.key == 2 || entry.key == 6) const SizedBox(height: 12),
+                      ],
+                    );
+                  })
+                ],
+              ),
+            ),
           ),
         ],
       ),

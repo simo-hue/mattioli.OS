@@ -2266,6 +2266,13 @@ Modificata la restrizione temporale per la modifica delle abitudini passate. Pre
     - Dependencies identified: Missing Xcode, Android SDK, and CocoaPods (logged in TO_SIMO_DO.md).
     - Current architecture: arm64.
 
+- [2026-04-23 08:00]: Dashboard Swipe Navigation
+  - *Details*: Implemented horizontal swipe navigation for Month, Week, and Year views in the mobile dashboard. Added smooth transition animations (Fade + Slide) for a premium user experience.
+  - *Tech Notes*:
+    - Wrapped `HabitCalendarWidget`, `WeeklyViewWidget`, and `YearlyViewWidget` with `GestureDetector` for swipe detection.
+    - Integrated `AnimatedSwitcher` in all three widgets to handle date transitions.
+    - Threshold-based gesture detection to prevent accidental triggers.
+
 ## Current Status
 - Flutter SDK: **Installed**
 - PATH Configuration: **Done**

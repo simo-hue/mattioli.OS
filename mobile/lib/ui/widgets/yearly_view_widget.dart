@@ -18,77 +18,113 @@ class YearlyViewWidget extends ConsumerStatefulWidget {
 
 class _YearlyViewWidgetState extends ConsumerState<YearlyViewWidget> {
   int _currentYear = DateTime.now().year;
+  int _slideDirection = 1; // 1 for next, -1 for prev
 
   void _goToPrev() {
-    setState(() => _currentYear--);
+    setState(() {
+      _slideDirection = -1;
+      _currentYear--;
+    });
     HapticFeedback.lightImpact();
   }
 
   void _goToNext() {
-    setState(() => _currentYear++);
+    setState(() {
+      _slideDirection = 1;
+      _currentYear++;
+    });
     HapticFeedback.lightImpact();
   }
 
   @override
   Widget build(BuildContext context) {
-    return Container(
-      padding: const EdgeInsets.symmetric(vertical: 16, horizontal: 12),
-      decoration: AppTheme.glassPanelDecoration(radius: 14),
-      child: Column(
-        children: [
-          // Header
-          Row(
-            mainAxisAlignment: MainAxisAlignment.spaceBetween,
-            children: [
-              _NavButton(icon: Icons.chevron_left, onTap: _goToPrev),
-              Text(
-                '$_currentYear',
-                style: const TextStyle(
-                  fontFamily: 'Inter',
-                  fontSize: 18,
-                  fontWeight: FontWeight.w700,
-                  color: AppColors.foreground,
-                  letterSpacing: -0.5,
-                ),
+    return GestureDetector(
+      onHorizontalDragEnd: (details) {
+        const threshold = 200;
+        if (details.primaryVelocity! > threshold) {
+          _goToPrev();
+        } else if (details.primaryVelocity! < -threshold) {
+          _goToNext();
+        }
+      },
+      child: Container(
+        padding: const EdgeInsets.symmetric(vertical: 16, horizontal: 12),
+        decoration: AppTheme.glassPanelDecoration(radius: 14),
+        child: AnimatedSwitcher(
+          duration: const Duration(milliseconds: 300),
+          switchInCurve: Curves.easeOut,
+          switchOutCurve: Curves.easeIn,
+          transitionBuilder: (child, animation) {
+            return FadeTransition(
+              opacity: animation,
+              child: SlideTransition(
+                position: Tween<Offset>(
+                  begin: Offset(0.1 * _slideDirection, 0),
+                  end: Offset.zero,
+                ).animate(animation),
+                child: child,
               ),
-              _NavButton(icon: Icons.chevron_right, onTap: _goToNext),
-            ],
-          ),
-          const SizedBox(height: 20),
-
-          // Grid of months - Now perfectly responsive to fit 6 rows
-          Expanded(
-            child: LayoutBuilder(
-              builder: (context, constraints) {
-                const double crossAxisSpacing = 16;
-                const double mainAxisSpacing = 16;
-                final double cellWidth = (constraints.maxWidth - crossAxisSpacing) / 2;
-                final double cellHeight = (constraints.maxHeight - (mainAxisSpacing * 5)) / 6;
-                final double aspectRatio = cellWidth / cellHeight;
-
-                return GridView.builder(
-                  physics: const NeverScrollableScrollPhysics(), // Fits perfectly, no scroll needed
-                  gridDelegate: SliverGridDelegateWithFixedCrossAxisCount(
-                    crossAxisCount: 2,
-                    crossAxisSpacing: crossAxisSpacing,
-                    mainAxisSpacing: mainAxisSpacing,
-                    childAspectRatio: aspectRatio > 0 ? aspectRatio : 2.2,
+            );
+          },
+          child: Column(
+            key: ValueKey('$_currentYear'),
+            children: [
+              // Header
+              Row(
+                mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                children: [
+                  _NavButton(icon: Icons.chevron_left, onTap: _goToPrev),
+                  Text(
+                    '$_currentYear',
+                    style: const TextStyle(
+                      fontFamily: 'Inter',
+                      fontSize: 18,
+                      fontWeight: FontWeight.w700,
+                      color: AppColors.foreground,
+                      letterSpacing: -0.5,
+                    ),
                   ),
-                  itemCount: 12,
-                  itemBuilder: (context, index) {
-                    return _MonthDensityWidget(
-                      year: _currentYear,
-                      month: index + 1,
-                      label: _kMonthShort[index],
+                  _NavButton(icon: Icons.chevron_right, onTap: _goToNext),
+                ],
+              ),
+              const SizedBox(height: 20),
+    
+              // Grid of months - Now perfectly responsive to fit 6 rows
+              Expanded(
+                child: LayoutBuilder(
+                  builder: (context, constraints) {
+                    const double crossAxisSpacing = 16;
+                    const double mainAxisSpacing = 16;
+                    final double cellWidth = (constraints.maxWidth - crossAxisSpacing) / 2;
+                    final double cellHeight = (constraints.maxHeight - (mainAxisSpacing * 5)) / 6;
+                    final double aspectRatio = cellWidth / cellHeight;
+    
+                    return GridView.builder(
+                      physics: const NeverScrollableScrollPhysics(), // Fits perfectly, no scroll needed
+                      gridDelegate: SliverGridDelegateWithFixedCrossAxisCount(
+                        crossAxisCount: 2,
+                        crossAxisSpacing: crossAxisSpacing,
+                        mainAxisSpacing: mainAxisSpacing,
+                        childAspectRatio: aspectRatio > 0 ? aspectRatio : 2.2,
+                      ),
+                      itemCount: 12,
+                      itemBuilder: (context, index) {
+                        return _MonthDensityWidget(
+                          year: _currentYear,
+                          month: index + 1,
+                          label: _kMonthShort[index],
+                        );
+                      },
                     );
                   },
-                );
-              },
-            ),
+                ),
+              ),
+            ],
           ),
-        ],
+        ),
       ),
     );
+
   }
 }
 

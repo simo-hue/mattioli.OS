@@ -9,20 +9,21 @@ class InfoTabWidget extends StatelessWidget {
   Widget build(BuildContext context) {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
-      children: const [
-        _TopStatsGrid(),
-        SizedBox(height: 16),
-        _AbitudiniChiaveSection(),
-        SizedBox(height: 16),
-        _AnalisiCorrelazioniSection(),
-        SizedBox(height: 16),
-        _CorrelazioniPositiveSection(),
-        SizedBox(height: 16),
-        _CorrelazioniNegativeSection(),
-        SizedBox(height: 16),
-        _AttivitaRecenteSection(),
-        SizedBox(height: 32),
+      children: [
+        const _TopStatsGrid(),
+        const SizedBox(height: 16),
+        const _AbitudiniChiaveSection(),
+        const SizedBox(height: 16),
+        const _AnalisiCorrelazioniSection(),
+        const SizedBox(height: 16),
+        const _CorrelazioniPositiveSection(),
+        const SizedBox(height: 16),
+        const _CorrelazioniNegativeSection(),
+        const SizedBox(height: 16),
+        const _AttivitaRecenteSection(),
+        const SizedBox(height: 32),
       ],
+
     );
   }
 }
@@ -36,55 +37,58 @@ class _TopStatsGrid extends StatelessWidget {
       shrinkWrap: true,
       physics: const NeverScrollableScrollPhysics(),
       crossAxisCount: 2,
-      mainAxisSpacing: 10,
-      crossAxisSpacing: 10,
-      childAspectRatio: 1.8,
-      children: const [
+      mainAxisSpacing: 12,
+      crossAxisSpacing: 12,
+      childAspectRatio: 1.6, // Adjusted for better text fit
+      children: [
         _StatCard(
           icon: LucideIcons.target,
           title: 'Completamento',
           value: '44%',
-          subtitle: 'globale',
+          subtitle: 'Globale',
+          accentColor: Color(0xFF8B5CF6),
         ),
         _StatCard(
           icon: LucideIcons.flame,
           title: 'Miglior Serie',
           value: '48',
-          subtitle: 'giorni',
-          iconColor: Color(0xFFF97316),
+          subtitle: 'Giorni',
+          accentColor: Color(0xFFF97316),
         ),
         _StatCard(
           icon: LucideIcons.trophy,
           title: 'Top Performer',
           value: 'Caviglie',
-          subtitle: '86% completamento',
-          iconColor: Color(0xFFEAB308),
+          subtitle: '86% Rate',
+          accentColor: Color(0xFF10B981),
         ),
         _StatCard(
           icon: LucideIcons.triangleAlert,
-          title: 'Giorno Peggiore',
-          value: 'sabato',
+          title: 'Giorno Critico',
+          value: 'Sabato',
           subtitle: 'Focus richiesto',
-          iconColor: Color(0xFFEAB308),
+          accentColor: Color(0xFFEF4444),
         ),
       ],
+
     );
   }
 }
+
 
 class _StatCard extends StatelessWidget {
   final IconData icon;
   final String title;
   final String value;
   final String subtitle;
-  final Color? iconColor;
+  final Color accentColor;
 
   const _StatCard({
     required this.icon,
     required this.title,
     required this.value,
     required this.subtitle,
-    this.iconColor,
+    required this.accentColor,
   });
 
   @override
@@ -92,31 +96,42 @@ class _StatCard extends StatelessWidget {
     return Container(
       decoration: BoxDecoration(
         color: AppColors.card,
-        borderRadius: BorderRadius.circular(12),
+        borderRadius: BorderRadius.circular(20), // More rounded
         border: Border.all(color: AppColors.border, width: 1),
+        boxShadow: [
+          BoxShadow(
+            color: Colors.black.withValues(alpha: 0.05),
+            blurRadius: 10,
+            offset: const Offset(0, 4),
+          ),
+        ],
       ),
       clipBehavior: Clip.hardEdge,
       child: Stack(
         children: [
+          // Background Glow
           Positioned(
-            right: -10,
-            bottom: -10,
-            child: Icon(
-              icon,
-              size: 70,
-              color: (iconColor ?? AppColors.mutedForeground).withValues(alpha: 0.08),
+            right: -15,
+            top: -15,
+            child: Container(
+              width: 60,
+              height: 60,
+              decoration: BoxDecoration(
+                color: accentColor.withValues(alpha: 0.1),
+                shape: BoxShape.circle,
+              ),
             ),
           ),
           Padding(
-            padding: const EdgeInsets.all(12.0),
+            padding: const EdgeInsets.all(16.0),
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               mainAxisAlignment: MainAxisAlignment.spaceBetween,
               children: [
                 Row(
                   children: [
-                    Icon(icon, size: 14, color: AppColors.mutedForeground),
-                    const SizedBox(width: 6),
+                    Icon(icon, size: 14, color: accentColor),
+                    const SizedBox(width: 8),
                     Text(
                       title,
                       style: const TextStyle(
@@ -124,36 +139,36 @@ class _StatCard extends StatelessWidget {
                         fontSize: 11,
                         fontWeight: FontWeight.w600,
                         color: AppColors.mutedForeground,
+                        letterSpacing: 0.2,
                       ),
                     ),
                   ],
                 ),
-                Row(
-                  crossAxisAlignment: CrossAxisAlignment.baseline,
-                  textBaseline: TextBaseline.alphabetic,
+                Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
                     Text(
                       value,
                       style: const TextStyle(
                         fontFamily: 'Inter',
-                        fontSize: 22,
-                        fontWeight: FontWeight.w800,
+                        fontSize: 24,
+                        fontWeight: FontWeight.w900,
                         color: AppColors.foreground,
-                        letterSpacing: -0.5,
+                        letterSpacing: -1,
+                        height: 1,
                       ),
                     ),
-                    const SizedBox(width: 4),
-                    Expanded(
-                      child: Text(
-                        subtitle,
-                        style: const TextStyle(
-                          fontFamily: 'Inter',
-                          fontSize: 10,
-                          color: AppColors.mutedForeground,
-                        ),
-                        maxLines: 1,
-                        overflow: TextOverflow.ellipsis,
+                    const SizedBox(height: 4),
+                    Text(
+                      subtitle,
+                      style: const TextStyle(
+                        fontFamily: 'Inter',
+                        fontSize: 10,
+                        fontWeight: FontWeight.w500,
+                        color: AppColors.mutedForeground,
                       ),
+                      maxLines: 1,
+                      overflow: TextOverflow.ellipsis,
                     ),
                   ],
                 ),
@@ -165,6 +180,7 @@ class _StatCard extends StatelessWidget {
     );
   }
 }
+
 
 class _AbitudiniChiaveSection extends StatelessWidget {
   const _AbitudiniChiaveSection();
@@ -321,68 +337,154 @@ class _AbitudineChiaveCard extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Container(
-      width: 260,
-      padding: const EdgeInsets.all(14),
+      width: 280,
+      padding: const EdgeInsets.all(16),
       decoration: BoxDecoration(
         color: AppColors.background,
-        borderRadius: BorderRadius.circular(12),
-        border: Border.all(color: AppColors.borderHover, width: 1),
+        borderRadius: BorderRadius.circular(20),
+        border: Border.all(color: AppColors.border, width: 1),
+        boxShadow: [
+          BoxShadow(
+            color: Colors.black.withValues(alpha: 0.1),
+            blurRadius: 15,
+            offset: const Offset(0, 8),
+          ),
+        ],
       ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           Row(
             children: [
-              Container(width: 8, height: 8, decoration: BoxDecoration(color: dotColor, shape: BoxShape.circle)),
-              const SizedBox(width: 8),
-              Expanded(
-                child: Text(title, style: const TextStyle(fontFamily: 'Inter', fontSize: 14, fontWeight: FontWeight.w600, color: AppColors.foreground)),
+              Container(
+                width: 10,
+                height: 10,
+                decoration: BoxDecoration(
+                  color: dotColor,
+                  shape: BoxShape.circle,
+                  boxShadow: [
+                    BoxShadow(color: dotColor.withValues(alpha: 0.4), blurRadius: 4, spreadRadius: 1),
+                  ],
+                ),
               ),
-              const Icon(LucideIcons.crown, size: 16, color: Color(0xFF10B981)),
+              const SizedBox(width: 10),
+              Expanded(
+                child: Text(
+                  title,
+                  style: const TextStyle(
+                    fontFamily: 'Inter',
+                    fontSize: 16,
+                    fontWeight: FontWeight.w700,
+                    color: AppColors.foreground,
+                    letterSpacing: -0.3,
+                  ),
+                ),
+              ),
+              const Icon(LucideIcons.crown, size: 18, color: Color(0xFF10B981)),
             ],
           ),
-          const SizedBox(height: 12),
+          const SizedBox(height: 14),
           Row(
             children: [
               Container(
-                padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
-                decoration: BoxDecoration(color: const Color(0xFF10B981).withValues(alpha: 0.15), borderRadius: BorderRadius.circular(4)),
-                child: const Text('Alto Impatto', style: TextStyle(fontFamily: 'Inter', fontSize: 9, fontWeight: FontWeight.w600, color: Color(0xFF10B981))),
+                padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+                decoration: BoxDecoration(
+                  color: const Color(0xFF10B981).withValues(alpha: 0.15),
+                  borderRadius: BorderRadius.circular(8),
+                ),
+                child: const Text(
+                  'Alto Impatto',
+                  style: TextStyle(
+                    fontFamily: 'Inter',
+                    fontSize: 10,
+                    fontWeight: FontWeight.w700,
+                    color: Color(0xFF10B981),
+                  ),
+                ),
               ),
-              const SizedBox(width: 8),
-              Text('${correlations.length + extraConnections} connessioni', style: const TextStyle(fontFamily: 'Inter', fontSize: 10, color: AppColors.mutedForeground)),
+              const SizedBox(width: 10),
+              Text(
+                '${correlations.length + extraConnections} connessioni',
+                style: const TextStyle(
+                  fontFamily: 'Inter',
+                  fontSize: 11,
+                  fontWeight: FontWeight.w500,
+                  color: AppColors.mutedForeground,
+                ),
+              ),
             ],
           ),
-          const SizedBox(height: 12),
+          const SizedBox(height: 16),
           ...correlations.map((c) {
             final isPositive = c.value.startsWith('+');
             return Padding(
-              padding: const EdgeInsets.only(bottom: 6),
+              padding: const EdgeInsets.only(bottom: 8),
               child: Row(
                 mainAxisAlignment: MainAxisAlignment.spaceBetween,
                 children: [
-                  Text(c.key, style: const TextStyle(fontFamily: 'Inter', fontSize: 11, color: AppColors.mutedForeground)),
-                  Text(c.value, style: TextStyle(fontFamily: 'Inter', fontSize: 11, fontWeight: FontWeight.w600, color: isPositive ? const Color(0xFF10B981) : AppColors.mutedForeground)),
+                  Text(
+                    c.key,
+                    style: const TextStyle(
+                      fontFamily: 'Inter',
+                      fontSize: 12,
+                      color: AppColors.mutedForeground,
+                    ),
+                  ),
+                  Text(
+                    c.value,
+                    style: TextStyle(
+                      fontFamily: 'Inter',
+                      fontSize: 12,
+                      fontWeight: FontWeight.w700,
+                      color: isPositive ? const Color(0xFF10B981) : const Color(0xFFEF4444),
+                    ),
+                  ),
                 ],
               ),
             );
           }),
-          const SizedBox(height: 4),
-          Center(child: Text('+$extraConnections altre connessioni', style: const TextStyle(fontFamily: 'Inter', fontSize: 9, color: AppColors.mutedForeground))),
-          const SizedBox(height: 12),
-          Container(height: 1, color: AppColors.border),
-          const SizedBox(height: 12),
+          const SizedBox(height: 8),
+          Center(
+            child: Text(
+              '+$extraConnections altre connessioni',
+              style: const TextStyle(
+                fontFamily: 'Inter',
+                fontSize: 10,
+                color: AppColors.mutedForeground,
+                fontStyle: FontStyle.italic,
+              ),
+            ),
+          ),
+          const SizedBox(height: 16),
+          Divider(color: AppColors.border, height: 1),
+          const SizedBox(height: 14),
           Row(
             mainAxisAlignment: MainAxisAlignment.spaceBetween,
             children: [
               Row(
                 children: const [
-                  Icon(LucideIcons.trendingUp, size: 12, color: AppColors.mutedForeground),
-                  SizedBox(width: 4),
-                  Text('Media', style: TextStyle(fontFamily: 'Inter', fontSize: 11, color: AppColors.mutedForeground)),
+                  Icon(LucideIcons.chartSpline, size: 14, color: AppColors.mutedForeground),
+                  SizedBox(width: 6),
+                  Text(
+                    'Media Impatto',
+                    style: TextStyle(
+                      fontFamily: 'Inter',
+                      fontSize: 12,
+                      fontWeight: FontWeight.w500,
+                      color: AppColors.mutedForeground,
+                    ),
+                  ),
                 ],
               ),
-              Text(media, style: const TextStyle(fontFamily: 'Inter', fontSize: 12, fontWeight: FontWeight.w700, color: AppColors.foreground)),
+              Text(
+                media,
+                style: const TextStyle(
+                  fontFamily: 'Inter',
+                  fontSize: 14,
+                  fontWeight: FontWeight.w800,
+                  color: AppColors.foreground,
+                ),
+              ),
             ],
           ),
         ],
@@ -390,6 +492,7 @@ class _AbitudineChiaveCard extends StatelessWidget {
     );
   }
 }
+
 
 class _AnalisiCorrelazioniSection extends StatelessWidget {
   const _AnalisiCorrelazioniSection();

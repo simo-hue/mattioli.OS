@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:lucide_icons_flutter/lucide_icons.dart';
 import '../../core/theme.dart';
@@ -58,27 +59,30 @@ class _StatisticsScreenState extends ConsumerState<StatisticsScreen> {
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
-                    const SizedBox(height: 10),
+                    const SizedBox(height: 12),
                     const Text(
-                      'Le tue Statistiche',
+                      'Statistiche',
                       style: TextStyle(
                         fontFamily: 'Inter',
-                        fontSize: 28,
-                        fontWeight: FontWeight.w800,
+                        fontSize: 32,
+                        fontWeight: FontWeight.w900,
                         color: AppColors.foreground,
-                        letterSpacing: -1.0,
+                        letterSpacing: -1.2,
+                        height: 1.1,
                       ),
                     ),
-                    const SizedBox(height: 4),
-                    const Text(
+                    const SizedBox(height: 6),
+                    Text(
                       'Analisi dettagliata delle tue performance.',
                       style: TextStyle(
                         fontFamily: 'Inter',
                         fontSize: 14,
-                        color: AppColors.mutedForeground,
+                        fontWeight: FontWeight.w500,
+                        color: AppColors.mutedForeground.withValues(alpha: 0.7),
                       ),
                     ),
-                    const SizedBox(height: 20),
+                    const SizedBox(height: 24),
+
 
                     _buildGoalDropdown(goals),
                     const SizedBox(height: 16),
@@ -105,76 +109,110 @@ class _StatisticsScreenState extends ConsumerState<StatisticsScreen> {
 
   Widget _buildGoalDropdown(List<Goal> goals) {
     String displayTitle = 'Tutti gli Habits';
+    Color displayColor = AppColors.foreground;
+    
     if (_selectedGoalId != null) {
       final match = goals.where((g) => g.id == _selectedGoalId).toList();
       if (match.isNotEmpty) {
         displayTitle = match.first.title;
-      } else if (goals.isNotEmpty) {
-        displayTitle = goals.first.title;
+        displayColor = match.first.color;
       }
     }
 
     return GestureDetector(
       onTap: () {
+        HapticFeedback.lightImpact();
         _showGoalSelector(goals);
       },
       child: Container(
-        padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
+        padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
         decoration: BoxDecoration(
-          color: AppColors.card,
-          borderRadius: BorderRadius.circular(12),
-          border: Border.all(color: AppColors.border, width: 1),
+          color: AppColors.card.withValues(alpha: 0.5),
+          borderRadius: BorderRadius.circular(16),
+          border: Border.all(color: AppColors.border.withValues(alpha: 0.5), width: 1),
+          boxShadow: [
+            BoxShadow(
+              color: Colors.black.withValues(alpha: 0.05),
+              blurRadius: 10,
+              offset: const Offset(0, 4),
+            ),
+          ],
         ),
         child: Row(
           children: [
-            const Icon(LucideIcons.target, size: 18, color: AppColors.foreground),
-            const SizedBox(width: 10),
+            Container(
+              padding: const EdgeInsets.all(8),
+              decoration: BoxDecoration(
+                color: displayColor.withValues(alpha: 0.1),
+                borderRadius: BorderRadius.circular(10),
+              ),
+              child: Icon(LucideIcons.target, size: 16, color: displayColor),
+            ),
+            const SizedBox(width: 12),
             Text(
               displayTitle,
               style: const TextStyle(
                 fontFamily: 'Inter',
                 fontSize: 15,
-                fontWeight: FontWeight.w500,
+                fontWeight: FontWeight.w700,
                 color: AppColors.foreground,
+                letterSpacing: -0.2,
               ),
             ),
             const Spacer(),
-            const Icon(LucideIcons.chevronDown, size: 18, color: AppColors.mutedForeground),
+            const Icon(LucideIcons.chevronDown, size: 16, color: AppColors.mutedForeground),
           ],
         ),
       ),
     );
   }
 
+
   Widget _buildTabs() {
     return Container(
-      height: 38,
+      height: 44,
+      padding: const EdgeInsets.all(4),
       decoration: BoxDecoration(
-        color: AppColors.card,
-        borderRadius: BorderRadius.circular(8),
-        border: Border.all(color: AppColors.border, width: 1),
+        color: AppColors.card.withValues(alpha: 0.3),
+        borderRadius: BorderRadius.circular(14),
+        border: Border.all(color: AppColors.border.withValues(alpha: 0.5), width: 1),
       ),
       child: Row(
         children: _tabs.map((tab) {
           final isSelected = _selectedTab == tab;
           return Expanded(
             child: GestureDetector(
-              onTap: () => setState(() => _selectedTab = tab),
+              onTap: () {
+                if (!isSelected) {
+                  HapticFeedback.selectionClick();
+                  setState(() => _selectedTab = tab);
+                }
+              },
               behavior: HitTestBehavior.opaque,
-              child: Container(
+              child: AnimatedContainer(
+                duration: const Duration(milliseconds: 250),
+                curve: Curves.easeInOut,
                 decoration: BoxDecoration(
-                  color: isSelected ? AppColors.muted : Colors.transparent,
-                  borderRadius: BorderRadius.circular(6),
+                  color: isSelected ? AppColors.foreground : Colors.transparent,
+                  borderRadius: BorderRadius.circular(10),
+                  boxShadow: isSelected
+                      ? [
+                          BoxShadow(
+                            color: Colors.black.withValues(alpha: 0.3),
+                            blurRadius: 8,
+                            offset: const Offset(0, 2),
+                          )
+                        ]
+                      : null,
                 ),
-                margin: const EdgeInsets.all(2),
                 alignment: Alignment.center,
                 child: Text(
                   tab,
                   style: TextStyle(
                     fontFamily: 'Inter',
-                    fontSize: 12,
-                    fontWeight: isSelected ? FontWeight.w600 : FontWeight.w500,
-                    color: isSelected ? AppColors.foreground : AppColors.mutedForeground,
+                    fontSize: 11,
+                    fontWeight: isSelected ? FontWeight.w800 : FontWeight.w600,
+                    color: isSelected ? AppColors.background : AppColors.mutedForeground,
                   ),
                 ),
               ),
@@ -184,6 +222,7 @@ class _StatisticsScreenState extends ConsumerState<StatisticsScreen> {
       ),
     );
   }
+
 
   Widget _buildTabContent() {
     if (_selectedGoalId == null) {
@@ -259,14 +298,16 @@ class _StatisticsScreenState extends ConsumerState<StatisticsScreen> {
               mainAxisSize: MainAxisSize.min,
               children: [
                 const Text(
-                  'Seleziona Habit',
+                  'SELEZIONA HABIT',
                   style: TextStyle(
                     fontFamily: 'Inter',
-                    fontSize: 18,
-                    fontWeight: FontWeight.w700,
-                    color: AppColors.foreground,
+                    fontSize: 10,
+                    fontWeight: FontWeight.w800,
+                    color: AppColors.mutedForeground,
+                    letterSpacing: 1.2,
                   ),
                 ),
+
                 const SizedBox(height: 16),
                 ListTile(
                   leading: Container(

@@ -1,5 +1,7 @@
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:lucide_icons_flutter/lucide_icons.dart';
+
 import '../../../core/theme.dart';
 
 class GlobalHabitsTabWidget extends StatefulWidget {
@@ -99,30 +101,17 @@ class _GlobalHabitsTabWidgetState extends State<GlobalHabitsTabWidget> {
   }
 
   Widget _buildSortDropdown() {
-    return PopupMenuButton<String>(
-      initialValue: _sortBy,
-      onSelected: (String value) {
-        setState(() => _sortBy = value);
+    return GestureDetector(
+      onTap: () {
+        HapticFeedback.lightImpact();
+        _showSortPicker();
       },
-      offset: const Offset(0, 44),
-      color: Colors.black, // Pure black for maximum contrast and professionalism
-      elevation: 8,
-
-      shadowColor: Colors.black.withValues(alpha: 0.5),
-      surfaceTintColor: Colors.transparent,
-      shape: RoundedRectangleBorder(
-        borderRadius: BorderRadius.circular(20),
-        side: BorderSide(color: Colors.white.withValues(alpha: 0.15), width: 1),
-      ),
-
-
-
       child: AnimatedContainer(
         duration: const Duration(milliseconds: 200),
         padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 8),
         decoration: BoxDecoration(
           color: AppColors.card,
-          borderRadius: BorderRadius.circular(20), // More rounded
+          borderRadius: BorderRadius.circular(20),
           border: Border.all(
             color: Colors.white.withValues(alpha: 0.08),
             width: 1,
@@ -154,123 +143,87 @@ class _GlobalHabitsTabWidgetState extends State<GlobalHabitsTabWidget> {
           ],
         ),
       ),
-      itemBuilder: (BuildContext context) => <PopupMenuEntry<String>>[
-        _buildPopupItem('Rate', LucideIcons.trendingUp),
-        _buildPopupItem('Best Streak', LucideIcons.trophy),
-        _buildPopupItem('Worst Streak', LucideIcons.trendingDown),
-        _buildPopupItem('Serie Attuale', LucideIcons.flame),
-        _buildPopupItem('Nome', LucideIcons.list),
-      ],
     );
   }
 
-  PopupMenuItem<String> _buildPopupItem(String value, IconData icon) {
-    final isSelected = _sortBy == value;
-    final primaryColor = Theme.of(context).colorScheme.primary;
+  void _showSortPicker() {
+    final options = [
+      (val: 'Rate', icon: LucideIcons.trendingUp),
+      (val: 'Best Streak', icon: LucideIcons.trophy),
+      (val: 'Worst Streak', icon: LucideIcons.trendingDown),
+      (val: 'Serie Attuale', icon: LucideIcons.flame),
+      (val: 'Nome', icon: LucideIcons.list),
+    ];
 
-    return PopupMenuItem<String>(
-      value: value,
-      padding: EdgeInsets.zero,
-      height: 58, // Slightly taller for more presence
-      child: Theme(
-        data: Theme.of(context).copyWith(
-          hoverColor: Colors.transparent,
-          splashColor: Colors.transparent,
-          highlightColor: Colors.transparent,
-        ),
-        child: Stack(
-
-        children: [
-          // Content without background box
-          Container(
-            margin: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
-            padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 8),
-            decoration: const BoxDecoration(
-              color: Colors.transparent, // Fully transparent background
+    showModalBottomSheet(
+      context: context,
+      backgroundColor: AppColors.card,
+      shape: const RoundedRectangleBorder(
+        borderRadius: BorderRadius.vertical(top: Radius.circular(24)),
+      ),
+      builder: (context) => SafeArea(
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            const SizedBox(height: 12),
+            Container(
+              width: 40,
+              height: 4,
+              decoration: BoxDecoration(
+                color: AppColors.border,
+                borderRadius: BorderRadius.circular(2),
+              ),
             ),
-
-            child: Row(
-              children: [
-                // Icon with Glow
-                Container(
-                  decoration: BoxDecoration(
-                    boxShadow: isSelected
-                        ? [
-                            BoxShadow(
-                              color: primaryColor.withValues(alpha: 0.3),
-                              blurRadius: 10,
-                              spreadRadius: 1,
-                            )
-                          ]
-                        : null,
+            const SizedBox(height: 20),
+            const Padding(
+              padding: EdgeInsets.only(bottom: 12),
+              child: Align(
+                alignment: Alignment.center,
+                child: Text(
+                  'ORDINA PER',
+                  style: TextStyle(
+                    fontFamily: 'Inter',
+                    fontSize: 10,
+                    fontWeight: FontWeight.w800,
+                    color: AppColors.mutedForeground,
+                    letterSpacing: 1.2,
                   ),
-                  child: Icon(
-                    icon,
-                    size: 18,
-                    color: isSelected ? primaryColor : AppColors.mutedForeground.withValues(alpha: 0.7),
-                  ),
-                ),
-                const SizedBox(width: 14),
-                // Text
-                Expanded(
-                  child: Text(
-                    value,
-                    style: TextStyle(
-                      fontFamily: 'Inter',
-                      fontSize: 14,
-                      fontWeight: isSelected ? FontWeight.w700 : FontWeight.w500,
-                      color: isSelected ? Colors.white : AppColors.mutedForeground,
-                      letterSpacing: -0.2,
-                    ),
-                  ),
-                ),
-                // Selection Indicator (Minimalist Dot or Check)
-                if (isSelected)
-                  Container(
-                    width: 6,
-                    height: 6,
-                    decoration: BoxDecoration(
-                      color: primaryColor,
-                      shape: BoxShape.circle,
-                      boxShadow: [
-                        BoxShadow(
-                          color: primaryColor.withValues(alpha: 0.6),
-                          blurRadius: 6,
-                        ),
-                      ],
-                    ),
-                  ),
-              ],
-            ),
-          ),
-          // Left Accent Bar
-          if (isSelected)
-            Positioned(
-              left: 6,
-              top: 14,
-              bottom: 14,
-              child: Container(
-                width: 3,
-                decoration: BoxDecoration(
-                  color: primaryColor,
-                  borderRadius: BorderRadius.circular(2),
-                  boxShadow: [
-                    BoxShadow(
-                      color: primaryColor.withValues(alpha: 0.5),
-                      blurRadius: 4,
-                    ),
-                  ],
                 ),
               ),
             ),
-        ],
+
+            ...options.map((opt) {
+              final isSel = _sortBy == opt.val;
+              final primaryColor = Theme.of(context).colorScheme.primary;
+              return ListTile(
+                leading: Icon(
+                  opt.icon, 
+                  size: 20, 
+                  color: isSel ? primaryColor : AppColors.mutedForeground.withValues(alpha: 0.6)
+                ),
+                title: Text(
+                  opt.val,
+                  style: TextStyle(
+                    fontFamily: 'Inter',
+                    fontSize: 16,
+                    fontWeight: isSel ? FontWeight.w700 : FontWeight.w500,
+                    color: isSel ? AppColors.foreground : AppColors.mutedForeground,
+                  ),
+                ),
+                trailing: isSel ? Icon(LucideIcons.check, color: primaryColor, size: 20) : null,
+                onTap: () {
+                  HapticFeedback.selectionClick();
+                  setState(() => _sortBy = opt.val);
+                  Navigator.pop(context);
+                },
+              );
+            }),
+            const SizedBox(height: 20),
+          ],
+        ),
       ),
-    ),
     );
   }
-
-
-
 
 
   IconData _getSortIcon(String sort) {
@@ -283,6 +236,7 @@ class _GlobalHabitsTabWidgetState extends State<GlobalHabitsTabWidget> {
       default: return LucideIcons.trendingUp;
     }
   }
+
 }
 
 class _HabitDetailCard extends StatelessWidget {

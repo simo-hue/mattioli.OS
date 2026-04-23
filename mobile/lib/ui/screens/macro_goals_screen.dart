@@ -268,13 +268,23 @@ class _MacroGoalsScreenState extends ConsumerState<MacroGoalsScreen> {
               ),
             ),
             const SizedBox(height: 12),
-            Padding(
-              padding: const EdgeInsets.only(left: 16, bottom: 8),
+            const Padding(
+              padding: EdgeInsets.only(bottom: 12),
               child: Align(
-                alignment: Alignment.centerLeft,
-                child: Text('Tipo Pianificazione', style: GoogleFonts.inter(fontWeight: FontWeight.w600, color: AppColors.mutedForeground, fontSize: 13)),
+                alignment: Alignment.center,
+                child: Text(
+                  'TIPO PIANIFICAZIONE', 
+                  style: TextStyle(
+                    fontFamily: 'Inter', 
+                    fontWeight: FontWeight.w800, 
+                    color: AppColors.mutedForeground, 
+                    fontSize: 10,
+                    letterSpacing: 1.2,
+                  )
+                ),
               ),
             ),
+
             ...types.map((type) {
               final isSel = type.t == vs.selectedType;
               return ListTile(

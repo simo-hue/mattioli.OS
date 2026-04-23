@@ -61,47 +61,50 @@ class LifeViewWidget extends ConsumerWidget {
 
           // Stats Block
           Container(
-            padding: const EdgeInsets.all(16),
+            padding: const EdgeInsets.symmetric(vertical: 20, horizontal: 16),
             decoration: BoxDecoration(
-              color: AppColors.cardElevated,
-              borderRadius: BorderRadius.circular(12),
-              border: Border.all(color: AppColors.border, width: 1),
+              color: AppColors.card.withValues(alpha: 0.3),
+              borderRadius: BorderRadius.circular(20),
+              border: Border.all(color: AppColors.border.withValues(alpha: 0.5), width: 1),
             ),
             child: Row(
               mainAxisAlignment: MainAxisAlignment.spaceAround,
               children: [
                 _StatItem(value: '$livedMonths', label: 'MESI VISSUTI'),
-                _StatItem(value: '$age', label: 'ANNI'),
-                _StatItem(value: '$remainingMonths', label: 'MESI RIMANENTI'),
+                _StatItem(value: '$age', label: 'ETÀ ATTUALE'),
+                _StatItem(value: '$remainingMonths', label: 'RIMANENTI'),
               ],
             ),
           ),
-          const SizedBox(height: 24),
+          const SizedBox(height: 32),
 
-          // Life Grid - Now responsive
+          // Life Grid - Responsive and optimized
           Expanded(
-            child: LayoutBuilder(
-              builder: (context, constraints) {
-                return CustomPaint(
-                  size: Size(constraints.maxWidth, constraints.maxHeight),
-                  painter: _LifeGridPainter(
-                    totalMonths: totalMonths,
-                    livedMonths: livedMonths,
-                    currentMonth: livedMonths,
-                  ),
-                );
-              },
+            child: RepaintBoundary(
+              child: LayoutBuilder(
+                builder: (context, constraints) {
+                  return CustomPaint(
+                    size: Size(constraints.maxWidth, constraints.maxHeight),
+                    painter: _LifeGridPainter(
+                      totalMonths: totalMonths,
+                      livedMonths: livedMonths,
+                      currentMonth: livedMonths,
+                    ),
+                  );
+                },
+              ),
             ),
           ),
 
-          const SizedBox(height: 16),
+          const SizedBox(height: 20),
           Row(
             mainAxisAlignment: MainAxisAlignment.spaceBetween,
             children: [
-              Text('nato', style: TextStyle(fontSize: 10, color: AppColors.mutedForeground.withValues(alpha: 0.5))),
-              Text('morto', style: TextStyle(fontSize: 10, color: AppColors.mutedForeground.withValues(alpha: 0.5))),
+              Text('nascita', style: TextStyle(fontSize: 10, fontWeight: FontWeight.w600, color: AppColors.mutedForeground.withValues(alpha: 0.4), letterSpacing: 0.5)),
+              Text('orizzonte (85 anni)', style: TextStyle(fontSize: 10, fontWeight: FontWeight.w600, color: AppColors.mutedForeground.withValues(alpha: 0.4), letterSpacing: 0.5)),
             ],
           )
+
         ],
       ),
     );

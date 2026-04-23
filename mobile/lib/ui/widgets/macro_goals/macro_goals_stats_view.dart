@@ -1,5 +1,7 @@
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+
 import 'package:fl_chart/fl_chart.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:lucide_icons_flutter/lucide_icons.dart';
@@ -252,32 +254,136 @@ class _MacroGoalsStatsViewState extends ConsumerState<MacroGoalsStatsView> {
   // ─── Component Builders ───────────────────────────────────────────────────
 
   Widget _buildYearSelector(List<int> years) {
-    return Container(
-      height: 36,
-      padding: const EdgeInsets.symmetric(horizontal: 12),
-      decoration: BoxDecoration(
-        color: AppColors.card,
-        border: Border.all(color: AppColors.borderHover),
-        borderRadius: BorderRadius.circular(10),
-      ),
-      child: DropdownButtonHideUnderline(
-        child: DropdownButton<String>(
-          value: _selectedYear,
-          dropdownColor: AppColors.card,
-          icon: Icon(LucideIcons.chevronDown, size: 14, color: AppColors.mutedForeground),
-          style: GoogleFonts.inter(fontSize: 13, fontWeight: FontWeight.w500, color: AppColors.foreground),
-          onChanged: (v) {
-            if (v != null) setState(() => _selectedYear = v);
-          },
-          items: [
-            const DropdownMenuItem(value: 'all', child: Text('Tutti gli anni')),
-            for (var y in years)
-              DropdownMenuItem(value: '$y', child: Text('$y')),
+    String displayLabel = _selectedYear == 'all' ? 'Tutti gli anni' : _selectedYear;
+
+    return GestureDetector(
+      onTap: () {
+        HapticFeedback.lightImpact();
+        _showYearPicker(years);
+      },
+      child: Container(
+        height: 38,
+        padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 8),
+        decoration: BoxDecoration(
+          color: AppColors.card.withValues(alpha: 0.5),
+          borderRadius: BorderRadius.circular(14),
+          border: Border.all(color: AppColors.border.withValues(alpha: 0.5), width: 1),
+        ),
+        child: Row(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            Icon(LucideIcons.calendar, size: 14, color: Theme.of(context).colorScheme.primary),
+            const SizedBox(width: 8),
+            Text(
+              displayLabel,
+              style: const TextStyle(
+                fontFamily: 'Inter',
+                fontSize: 13,
+                fontWeight: FontWeight.w600,
+                color: AppColors.foreground,
+              ),
+            ),
+            const SizedBox(width: 6),
+            const Icon(LucideIcons.chevronDown, size: 14, color: AppColors.mutedForeground),
           ],
         ),
       ),
     );
   }
+
+  void _showYearPicker(List<int> years) {
+    final primaryColor = Theme.of(context).colorScheme.primary;
+    
+    showModalBottomSheet(
+      context: context,
+      backgroundColor: AppColors.card,
+      shape: const RoundedRectangleBorder(
+        borderRadius: BorderRadius.vertical(top: Radius.circular(24)),
+      ),
+      builder: (context) => SafeArea(
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            const SizedBox(height: 12),
+            Container(
+              width: 40,
+              height: 4,
+              decoration: BoxDecoration(
+                color: AppColors.border,
+                borderRadius: BorderRadius.circular(2),
+              ),
+            ),
+            const SizedBox(height: 20),
+            const Padding(
+              padding: EdgeInsets.only(bottom: 12),
+              child: Align(
+                alignment: Alignment.center,
+                child: Text(
+                  'SELEZIONA ANNO', 
+                  style: TextStyle(
+                    fontFamily: 'Inter', 
+                    fontWeight: FontWeight.w800, 
+                    color: AppColors.mutedForeground, 
+                    fontSize: 10,
+                    letterSpacing: 1.2,
+                  )
+                ),
+              ),
+            ),
+            ListTile(
+              leading: Icon(
+                LucideIcons.calendarRange,
+                size: 20,
+                color: _selectedYear == 'all' ? primaryColor : AppColors.mutedForeground.withValues(alpha: 0.6),
+              ),
+              title: Text(
+                'Tutti gli anni',
+                style: TextStyle(
+                  fontFamily: 'Inter',
+                  fontSize: 16,
+                  fontWeight: _selectedYear == 'all' ? FontWeight.w700 : FontWeight.w500,
+                  color: _selectedYear == 'all' ? AppColors.foreground : AppColors.mutedForeground,
+                ),
+              ),
+              trailing: _selectedYear == 'all' ? Icon(LucideIcons.check, color: primaryColor, size: 20) : null,
+              onTap: () {
+                HapticFeedback.selectionClick();
+                setState(() => _selectedYear = 'all');
+                Navigator.pop(context);
+              },
+            ),
+            ...years.map((y) {
+              final isSel = _selectedYear == '$y';
+              return ListTile(
+                leading: Icon(
+                  LucideIcons.calendar,
+                  size: 20,
+                  color: isSel ? primaryColor : AppColors.mutedForeground.withValues(alpha: 0.6),
+                ),
+                title: Text(
+                  '$y',
+                  style: TextStyle(
+                    fontFamily: 'Inter',
+                    fontSize: 16,
+                    fontWeight: isSel ? FontWeight.w700 : FontWeight.w500,
+                    color: isSel ? AppColors.foreground : AppColors.mutedForeground,
+                  ),
+                ),
+                trailing: isSel ? Icon(LucideIcons.check, color: primaryColor, size: 20) : null,
+                onTap: () {
+                  HapticFeedback.selectionClick();
+                  setState(() => _selectedYear = '$y');
+                  Navigator.pop(context);
+                },
+              );
+            }),
+            const SizedBox(height: 20),
+          ],
+        ),
+      ),
+    );
+  }
+
 
   Widget _buildHighlightCard({
     required String title,

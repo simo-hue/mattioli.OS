@@ -241,33 +241,33 @@ class _MacroGoalsScreenState extends ConsumerState<MacroGoalsScreen> {
 
   void _showTypePicker(BuildContext context, WidgetRef ref, MacroGoalsViewState vs, Color primaryColor) {
     final types = [
-      (t: GoalType.lifetime, l: 'Lifetime'),
-      (t: GoalType.annual, l: 'Annuale'),
-      (t: GoalType.quarterly, l: 'Trimestrale'),
-      (t: GoalType.monthly, l: 'Mensile'),
-      (t: GoalType.weekly, l: 'Settimanale'),
+      (t: GoalType.lifetime, l: 'LIFETIME', i: LucideIcons.infinity),
+      (t: GoalType.annual, l: 'ANNUALE', i: LucideIcons.calendar),
+      (t: GoalType.quarterly, l: 'TRIMESTRALE', i: LucideIcons.calendarRange),
+      (t: GoalType.monthly, l: 'MENSILE', i: LucideIcons.calendarDays),
+      (t: GoalType.weekly, l: 'SETTIMANALE', i: LucideIcons.clock),
     ];
 
     showModalBottomSheet(
       context: context,
       backgroundColor: AppColors.card,
       shape: const RoundedRectangleBorder(
-        borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
+        borderRadius: BorderRadius.vertical(top: Radius.circular(24)),
       ),
       builder: (_) => SafeArea(
         child: Column(
           mainAxisSize: MainAxisSize.min,
           children: [
-            const SizedBox(height: 8),
+            const SizedBox(height: 12),
             Container(
-              width: 36,
+              width: 40,
               height: 4,
               decoration: BoxDecoration(
-                color: AppColors.borderActive,
+                color: AppColors.border,
                 borderRadius: BorderRadius.circular(2),
               ),
             ),
-            const SizedBox(height: 12),
+            const SizedBox(height: 20),
             const Padding(
               padding: EdgeInsets.only(bottom: 12),
               child: Align(
@@ -284,19 +284,24 @@ class _MacroGoalsScreenState extends ConsumerState<MacroGoalsScreen> {
                 ),
               ),
             ),
-
             ...types.map((type) {
               final isSel = type.t == vs.selectedType;
               return ListTile(
+                leading: Icon(
+                  type.i,
+                  size: 20,
+                  color: isSel ? primaryColor : AppColors.mutedForeground.withValues(alpha: 0.6),
+                ),
                 title: Text(
                   type.l,
-                  style: GoogleFonts.inter(
+                  style: TextStyle(
+                    fontFamily: 'Inter',
                     fontSize: 16,
                     color: isSel ? AppColors.foreground : AppColors.mutedForeground,
-                    fontWeight: isSel ? FontWeight.w600 : FontWeight.w400,
+                    fontWeight: isSel ? FontWeight.w700 : FontWeight.w500,
                   ),
                 ),
-                trailing: isSel ? Icon(Icons.check, color: primaryColor) : null,
+                trailing: isSel ? Icon(LucideIcons.check, color: primaryColor, size: 20) : null,
                 onTap: () {
                   ref.read(macroGoalsViewProvider.notifier).setType(type.t);
                   Navigator.pop(context);
@@ -304,11 +309,12 @@ class _MacroGoalsScreenState extends ConsumerState<MacroGoalsScreen> {
                 },
               );
             }),
-            const SizedBox(height: 16),
+            const SizedBox(height: 20),
           ],
         ),
       ),
     );
+
   }
 
   Widget _buildPeriodNavigator(BuildContext context, WidgetRef ref, MacroGoalsViewState vs) {

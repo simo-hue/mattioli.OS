@@ -2284,6 +2284,12 @@ Modificata la restrizione temporale per la modifica delle abitudini passate. Pre
     - Replaced `LucideIcons.settings` with `LucideIcons.listTodo`.
     - Updated color to a distinct Violet (`#8B5CF6`) to separate it from global system settings.
 
+- [2026-04-23 08:11]: UI/UX Optimization - Unified Modal Scrolling
+  - *Details*: Refactored the Habit Management modal to use a single `CustomScrollView` with slivers, allowing the entire modal content (including the 'Add Habit' form) to scroll naturally together.
+  - *Tech Notes*:
+    - Replaced `Column` + `Expanded` + `ReorderableListView` with `CustomScrollView` + `SliverToBoxAdapter` + `SliverReorderableList`.
+    - Eliminated nested scroll views and "limited box" scrolling behavior for a smoother, more professional feel.
+
 ## Current Status
 - Flutter SDK: **Installed**
 - PATH Configuration: **Done**

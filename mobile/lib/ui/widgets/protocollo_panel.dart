@@ -74,13 +74,14 @@ class ProtocolloPanel extends ConsumerWidget {
             Expanded(
               flex: 2,
               child: _ActionTile(
-                icon: LucideIcons.settings,
-                label: 'Config',
+                icon: LucideIcons.listTodo,
+                label: 'Gestione',
                 subtitle: 'Abitudini',
-                color: AppColors.mutedForeground,
+                color: const Color(0xFF8B5CF6),
                 onTap: () => HabitManagementModal.show(context),
               ),
             ),
+
           ],
         ),
       ],

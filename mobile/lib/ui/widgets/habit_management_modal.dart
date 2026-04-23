@@ -36,8 +36,8 @@ class _HabitManagementModalState extends ConsumerState<HabitManagementModal> {
     const Color(0xFFEF4444),
     const Color(0xFFF59E0B),
     const Color(0xFF10B981),
-    const Color(0xFF6366F1),
   ];
+
 
   void _onSave() {
     if (_nameController.text.trim().isEmpty) return;

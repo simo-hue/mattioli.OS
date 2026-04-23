@@ -2273,6 +2273,17 @@ Modificata la restrizione temporale per la modifica delle abitudini passate. Pre
     - Integrated `AnimatedSwitcher` in all three widgets to handle date transitions.
     - Threshold-based gesture detection to prevent accidental triggers.
 
+- [2026-04-23 08:07]: UI Optimization - Color Picker Alignment
+  - *Details*: Reorganized the color picker in the Habit Management modal to fit all preset colors and the custom color button ("+") on a single row.
+  - *Tech Notes*:
+    - Reduced preset colors from 8 to 7 to ensure the "+" button fits on the same line in standard mobile widths.
+
+- [2026-04-23 08:08]: UX Refinement - Habit Management Icon
+  - *Details*: Changed the "Config" icon (gear) in the Protocollo panel to a more intuitive "List/Todo" icon and renamed the label to "Gestione".
+  - *Tech Notes*:
+    - Replaced `LucideIcons.settings` with `LucideIcons.listTodo`.
+    - Updated color to a distinct Violet (`#8B5CF6`) to separate it from global system settings.
+
 ## Current Status
 - Flutter SDK: **Installed**
 - PATH Configuration: **Done**

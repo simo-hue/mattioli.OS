@@ -2290,6 +2290,40 @@ Modificata la restrizione temporale per la modifica delle abitudini passate. Pre
     - Replaced `Column` + `Expanded` + `ReorderableListView` with `CustomScrollView` + `SliverToBoxAdapter` + `SliverReorderableList`.
     - Eliminated nested scroll views and "limited box" scrolling behavior for a smoother, more professional feel.
 
+- [2026-04-23 08:13]: UI Redesign - Apple-Style Bottom Navigation
+  - *Details*: Redesigned the bottom navigation bar to achieve a premium "Apple-style" look with glassmorphism and fixed a clipping issue where the active indicator's glow was being cut off.
+  - *Tech Notes*:
+    - Increased navbar height from 72px to 84px and added safety margins.
+    - Enhanced glassmorphism: increased `BackdropFilter` blur to 20px, thinned the border to 0.5px, and updated background opacity.
+    - Switched typography to `GoogleFonts.inter` for a cleaner aesthetic.
+    - Updated haptic feedback to `selectionClick()` for a more native iOS feel.
+
+- [2026-04-23 08:35]: Feature Implementation - Global Alerts Statistics
+  - *Details*: Implemented the "Alert" tab for the global statistics view (all habits) to match the webapp's design. This provides a detailed analysis of improvement areas, worst streaks, failure patterns, and practical suggestions.
+  - *Tech Notes*:
+    - Created `GlobalAlertsTabWidget`.
+    - Implemented horizontal scrollable cards for "Aree di Miglioramento".
+    - Added sections for "Analisi Worst Streaks", "Analisi Fallimenti & Pattern di Recupero", "Confronto Performance", and "Suggerimenti Pratici".
+    - Fixed compilation errors related to Lucide icons and RadarChart styling.
+    - (Updated): Removed Radar and Bar charts per user request to keep the view focused.
+
+- [2026-04-23 08:50]: Feature Implementation - Global Habits Details View
+  - *Details*: Implemented the "Abitudini" tab for the global statistics view, providing a high-level overview of all habits with key performance metrics.
+  - *Tech Notes*:
+    - Created `GlobalHabitsTabWidget`.
+    - Implemented a sorting dropdown (PopupMenuButton) with categories: Rate, Best Streak, Worst Streak, Serie Attuale, Nome.
+    - Designed custom list tiles for habits, each showing a color-coded indicator, mini-progress bar, and a 4-column statistic grid (BEST, WORST, SERIE, RATE).
+    - Integrated the new widget into the `StatisticsScreen` tab switcher.
+
+- [2026-04-23 09:18]: Feature Implementation - Global Mood Statistics
+  - *Details*: Implemented the "Mood" tab for global statistics, visualizing the correlation between well-being (Mood & Energy) and habit productivity.
+  - *Tech Notes*:
+    - Created `GlobalMoodTabWidget`.
+    - Integrated a triple line chart using `fl_chart` to show Habit Completion %, Mood, and Energy on the same timeline.
+    - Added categorization for "Mood-Sensitive" vs "Resilient" habits based on performance data.
+    - Implemented a time-range selector (7gg, 14gg, 30gg, Tutto).
+    - Designed actionable insight cards and a "Suggerimenti" section.
+
 ## Current Status
 - Flutter SDK: **Installed**
 - PATH Configuration: **Done**

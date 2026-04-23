@@ -11,6 +11,10 @@ import '../widgets/statistics/habit_calendario_tab_widget.dart';
 import '../widgets/statistics/habit_performance_tab_widget.dart';
 import '../widgets/statistics/habit_miglioramento_tab_widget.dart';
 import '../widgets/statistics/habit_mood_tab_widget.dart';
+import '../widgets/statistics/global_alerts_tab_widget.dart';
+import '../widgets/statistics/global_habits_tab_widget.dart';
+import '../widgets/statistics/global_mood_tab_widget.dart';
+
 
 class StatisticsScreen extends ConsumerStatefulWidget {
   const StatisticsScreen({super.key});
@@ -188,11 +192,19 @@ class _StatisticsScreenState extends ConsumerState<StatisticsScreen> {
           return const InfoTabWidget(key: ValueKey('Info'));
         case 'Trend':
           return const GlobalTrendTabWidget(key: ValueKey('GlobalTrend'));
+        case 'Alert':
+          return const GlobalAlertsTabWidget(key: ValueKey('GlobalAlert'));
+        case 'Abitudini':
+          return const GlobalHabitsTabWidget(key: ValueKey('GlobalHabits'));
+        case 'Mood':
+          return const GlobalMoodTabWidget(key: ValueKey('GlobalMood'));
         default:
           return Center(
             key: ValueKey(_selectedTab),
             child: Text('$_selectedTab - Coming Soon', style: const TextStyle(color: AppColors.mutedForeground)),
           );
+
+
       }
     } else {
       switch (_selectedTab) {

@@ -1,5 +1,13 @@
 # DOCUMENTATION
 
+- [2026-04-23 12:15]: Backend Architecture Guide
+  *Details*: Created a detailed guide for transitioning the mobile app from a personal tool with Supabase to a professional, multi-user production backend.
+  *Tech Notes*: 
+    - Comparative analysis of Supabase, Firebase, and Appwrite.
+    - Recommended implementation of Row Level Security (RLS) for multi-tenancy.
+    - Architecture proposal using the Repository Pattern with Riverpod.
+    - Roadmap for App Store publication (Scaling, Offline support, Monitoring).
+
 - [2026-04-22 10:33]: Riavvio Applicazione e Guida Comandi
   *Details*: Riavviata l'app per visualizzare le modifiche alla schermata statistiche e creato il file di riferimento per i comandi Flutter.
   *Tech Notes*: 

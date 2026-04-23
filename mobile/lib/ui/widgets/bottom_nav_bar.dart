@@ -24,24 +24,23 @@ class AppBottomNavBar extends StatelessWidget {
       _NavItem(icon: LucideIcons.chartPie, label: 'Obiettivi'),
     ];
 
-    return Container(
-      width: double.infinity,
-      decoration: BoxDecoration(
-        color: Colors.transparent,
-        border: Border(
-          top: BorderSide(
-            color: Colors.white.withValues(alpha: 0.08),
-            width: 0.5,
+    return ClipRRect(
+      child: BackdropFilter(
+        filter: ImageFilter.blur(sigmaX: 20, sigmaY: 20),
+        child: Container(
+          width: double.infinity,
+          height: 64 + bottomPadding, // Slimmer height
+          decoration: BoxDecoration(
+            color: const Color(0xCC050505), // Deeper black glass
+            border: Border(
+              top: BorderSide(
+                color: Colors.white.withValues(alpha: 0.08),
+                width: 0.5,
+              ),
+            ),
           ),
-        ),
-      ),
-      child: ClipRect( // Full width doesn't need rounding
-        child: BackdropFilter(
-          filter: ImageFilter.blur(sigmaX: 25, sigmaY: 25),
-          child: Container(
-            padding: EdgeInsets.only(bottom: bottomPadding > 0 ? bottomPadding : 12),
-            height: 72 + (bottomPadding > 0 ? bottomPadding : 12),
-            color: const Color(0xE60A0A0A), // Richer dark glass
+          child: SafeArea(
+            top: false,
             child: Row(
               mainAxisAlignment: MainAxisAlignment.spaceAround,
               children: List.generate(items.length, (index) {
@@ -63,7 +62,6 @@ class AppBottomNavBar extends StatelessWidget {
       ),
     );
   }
-
 }
 
 class _NavItem {
@@ -96,67 +94,45 @@ class _NavBarItem extends StatelessWidget {
         child: Column(
           mainAxisAlignment: MainAxisAlignment.center,
           children: [
-            const SizedBox(height: 4), // Top margin for balance
+            const SizedBox(height: 4),
             AnimatedScale(
-              scale: isActive ? 1.1 : 1.0,
-              duration: const Duration(milliseconds: 250),
-              curve: Curves.easeOutCubic,
+              scale: isActive ? 1.05 : 1.0,
+              duration: const Duration(milliseconds: 200),
               child: Stack(
                 alignment: Alignment.center,
                 children: [
-                  AnimatedContainer(
-                    duration: const Duration(milliseconds: 400),
-                    width: isActive ? 40 : 0,
-                    height: isActive ? 40 : 0,
-                    decoration: BoxDecoration(
-                      color: primaryColor.withValues(alpha: 0.08),
-                      shape: BoxShape.circle,
+                  if (isActive)
+                    Container(
+                      width: 32,
+                      height: 32,
+                      decoration: BoxDecoration(
+                        color: primaryColor.withValues(alpha: 0.1),
+                        shape: BoxShape.circle,
+                      ),
                     ),
-                  ),
                   Icon(
                     icon,
-                    size: 22,
-                    color: isActive ? primaryColor : AppColors.mutedForeground.withValues(alpha: 0.5),
+                    size: 20, // Slightly smaller icon
+                    color: isActive ? primaryColor : AppColors.mutedForeground.withValues(alpha: 0.4),
                   ),
                 ],
               ),
             ),
-            const SizedBox(height: 6),
-            AnimatedDefaultTextStyle(
-              duration: const Duration(milliseconds: 250),
-              style: GoogleFonts.inter( // Using Inter for cleaner look
+            const SizedBox(height: 4),
+            Text(
+              label,
+              style: GoogleFonts.inter(
                 fontSize: 10,
-                fontWeight: isActive ? FontWeight.w600 : FontWeight.w500,
-                color: isActive ? primaryColor : AppColors.mutedForeground.withValues(alpha: 0.5),
-                letterSpacing: -0.1,
-              ),
-              child: Text(label),
-            ),
-            const SizedBox(height: 6),
-            // Subtly animated dot indicator with enough space
-            AnimatedContainer(
-              duration: const Duration(milliseconds: 300),
-              curve: Curves.easeOutBack,
-              width: isActive ? 3 : 0,
-              height: isActive ? 3 : 0,
-              decoration: BoxDecoration(
-                color: primaryColor,
-                shape: BoxShape.circle,
-                boxShadow: [
-                  if (isActive)
-                    BoxShadow(
-                      color: primaryColor.withValues(alpha: 0.6),
-                      blurRadius: 6,
-                      spreadRadius: 2,
-                    ),
-                ],
+                fontWeight: isActive ? FontWeight.w700 : FontWeight.w500,
+                color: isActive ? primaryColor : AppColors.mutedForeground.withValues(alpha: 0.4),
+                letterSpacing: -0.2,
               ),
             ),
-            const SizedBox(height: 2), // Bottom safety margin
+            const SizedBox(height: 2),
           ],
         ),
       ),
     );
-
   }
 }
+

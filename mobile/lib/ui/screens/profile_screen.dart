@@ -174,7 +174,8 @@ class _ProfileScreenState extends ConsumerState<ProfileScreen> {
             ),
           ),
           SliverPadding(
-            padding: const EdgeInsets.fromLTRB(20, 0, 20, 30),
+            padding: const EdgeInsets.fromLTRB(16, 0, 16, 30),
+
             sliver: SliverList(
               delegate: SliverChildListDelegate([
                 const Text(

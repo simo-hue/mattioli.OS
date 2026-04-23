@@ -17,46 +17,31 @@ class AppBottomNavBar extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final bottomPadding = MediaQuery.of(context).padding.bottom;
     final items = [
       _NavItem(icon: LucideIcons.house, label: 'Home'),
       _NavItem(icon: LucideIcons.activity, label: 'Statistiche'),
       _NavItem(icon: LucideIcons.chartPie, label: 'Obiettivi'),
     ];
 
-
     return Container(
-      padding: const EdgeInsets.fromLTRB(24, 0, 24, 32), // More centered floating
+      width: double.infinity,
       decoration: BoxDecoration(
-        gradient: LinearGradient(
-          begin: Alignment.topCenter,
-          end: Alignment.bottomCenter,
-          colors: [
-            Colors.transparent,
-            Colors.black.withValues(alpha: 0.2),
-          ],
+        color: Colors.transparent,
+        border: Border(
+          top: BorderSide(
+            color: Colors.white.withValues(alpha: 0.08),
+            width: 0.5,
+          ),
         ),
       ),
-      child: ClipRRect(
-        borderRadius: BorderRadius.circular(32),
+      child: ClipRect( // Full width doesn't need rounding
         child: BackdropFilter(
-          filter: ImageFilter.blur(sigmaX: 20, sigmaY: 20), // Stronger blur for Apple look
+          filter: ImageFilter.blur(sigmaX: 25, sigmaY: 25),
           child: Container(
-            height: 84, // Increased height to prevent clipping
-            decoration: BoxDecoration(
-              color: const Color(0xCC0A0A0A), // More premium dark glass
-              borderRadius: BorderRadius.circular(32),
-              border: Border.all(
-                color: Colors.white.withValues(alpha: 0.1),
-                width: 0.5, // Thinner, more precise border
-              ),
-              boxShadow: [
-                BoxShadow(
-                  color: Colors.black.withValues(alpha: 0.3),
-                  blurRadius: 25,
-                  offset: const Offset(0, 8),
-                ),
-              ],
-            ),
+            padding: EdgeInsets.only(bottom: bottomPadding > 0 ? bottomPadding : 12),
+            height: 72 + (bottomPadding > 0 ? bottomPadding : 12),
+            color: const Color(0xE60A0A0A), // Richer dark glass
             child: Row(
               mainAxisAlignment: MainAxisAlignment.spaceAround,
               children: List.generate(items.length, (index) {
@@ -67,7 +52,7 @@ class AppBottomNavBar extends StatelessWidget {
                   label: item.label,
                   isActive: isActive,
                   onTap: () {
-                    HapticFeedback.selectionClick(); // Different haptic for Apple feel
+                    HapticFeedback.selectionClick();
                     onTap(index);
                   },
                 );
@@ -77,8 +62,8 @@ class AppBottomNavBar extends StatelessWidget {
         ),
       ),
     );
-
   }
+
 }
 
 class _NavItem {

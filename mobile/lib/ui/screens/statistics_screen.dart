@@ -55,7 +55,7 @@ class _StatisticsScreenState extends ConsumerState<StatisticsScreen> {
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
               Padding(
-                padding: const EdgeInsets.symmetric(horizontal: 14.0),
+                padding: const EdgeInsets.symmetric(horizontal: 16.0),
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
@@ -94,12 +94,13 @@ class _StatisticsScreenState extends ConsumerState<StatisticsScreen> {
               ),
               
               Padding(
-                padding: const EdgeInsets.symmetric(horizontal: 14.0),
+                padding: const EdgeInsets.symmetric(horizontal: 16.0),
                 child: AnimatedSwitcher(
                   duration: const Duration(milliseconds: 200),
                   child: _buildTabContent(),
                 ),
               ),
+
             ],
           ),
         ),

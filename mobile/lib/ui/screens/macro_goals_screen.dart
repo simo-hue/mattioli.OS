@@ -463,7 +463,8 @@ class _GoalsList extends ConsumerWidget {
     }
 
     return ListView.builder(
-      padding: const EdgeInsets.fromLTRB(14, 0, 14, 20),
+      padding: const EdgeInsets.fromLTRB(16, 0, 16, 20),
+
       physics: const BouncingScrollPhysics(),
       itemCount: _buildItems(goals).length,
       itemBuilder: (context, index) {

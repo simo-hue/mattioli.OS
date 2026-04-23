@@ -317,6 +317,7 @@ class _HabitManagementModalState extends ConsumerState<HabitManagementModal> {
                 final habit = habits[index];
                 return _HabitListItem(
                   key: ValueKey(habit.id),
+                  index: index,
                   habit: habit,
                   onEdit: () => _onEdit(habit),
                   onDelete: () {
@@ -325,6 +326,7 @@ class _HabitManagementModalState extends ConsumerState<HabitManagementModal> {
                   },
                 );
               },
+
             ),
           ),
         ],
@@ -334,12 +336,14 @@ class _HabitManagementModalState extends ConsumerState<HabitManagementModal> {
 }
 
 class _HabitListItem extends StatelessWidget {
+  final int index;
   final Goal habit;
   final VoidCallback onEdit;
   final VoidCallback onDelete;
 
   const _HabitListItem({
     super.key,
+    required this.index,
     required this.habit,
     required this.onEdit,
     required this.onDelete,
@@ -357,7 +361,14 @@ class _HabitListItem extends StatelessWidget {
       ),
       child: Row(
         children: [
-          const Icon(LucideIcons.gripVertical, size: 16, color: AppColors.mutedForeground),
+          ReorderableDragStartListener(
+            index: index,
+            child: const Padding(
+              padding: EdgeInsets.symmetric(vertical: 4, horizontal: 8),
+              child: Icon(LucideIcons.gripVertical, size: 16, color: AppColors.mutedForeground),
+            ),
+          ),
+
           const SizedBox(width: 12),
           Container(
             width: 14,

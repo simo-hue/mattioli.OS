@@ -19,9 +19,10 @@ class AppBottomNavBar extends StatelessWidget {
   Widget build(BuildContext context) {
     final items = [
       _NavItem(icon: LucideIcons.house, label: 'Home'),
-      _NavItem(icon: LucideIcons.chartBar, label: 'Statistiche'),
+      _NavItem(icon: LucideIcons.activity, label: 'Statistiche'),
       _NavItem(icon: LucideIcons.chartPie, label: 'Obiettivi'),
     ];
+
 
     return Container(
       padding: const EdgeInsets.fromLTRB(24, 0, 24, 32), // More centered floating

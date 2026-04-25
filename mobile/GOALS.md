@@ -1,10 +1,10 @@
-[ ] Implementare MACRO GOALS
+[x] Implementare MACRO GOALS
 
-[ ] Implementare stats per tutti i goals
-    [ ] Trend
-    [ ] Alert
-    [ ] Abitudini
-    [ ] Mood
+[x] Implementare stats per tutti i goals
+    [x] Trend
+    [x] Alert
+    [x] Abitudini
+    [x] Mood
 
 [x] Implementare stats per singoli goal
     [x] Overview
@@ -15,12 +15,25 @@
     [x] Rinominare i nomi lunghi ( miglioramento, performance, calendario ) con nomi che siano più brevi per aiutare la visualizzazione ( devono però rimanere chiari )
 
 [ ] Gestione degli utenti
-    [ ] Menu privato
-    [ ] Impostazioni e info Account 
-    [ ] Gestione della lingua
+    [x] Menu privato
+    [x] Impostazioni e info Account 
     [ ] Gestione della lingua
     [ ] Analytics as a PRO Plan per quelle avanzate
     [ ] Lingua 
 
 [ ] Integrazione dell' AI
     [ ] Teoricamente dovrei avere API calls con FIREBASE
+    [ ] Chat all'interno dell'app oppure solo suggerimenti e analisi dei trend?
+    [ ] chat tramite bottoni del tiPO:
+        - analisi trend
+        - cosa posso fare per migliorare la performance? 
+        - su cosa devo porre più attenzione?
+        
+[ ] Animazioni più professionali e fluide
+    [ ] Animazione della selezione del colore
+    [ ] Animazione della navigazione tra le schede
+    [ ] Animazione di swipe tra mesi/anni/settimane
+
+[ ] Impostazioni reali per applicazione
+    [ ] Notifiche
+    [ ] Feedback Aptico da implementare veramente

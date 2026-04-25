@@ -1,108 +1,85 @@
-# 🏗️ Backend Architecture Guide: From Personal Tool to Global Scale
+# 🏗️ Backend Architecture: Mattioli.OS (Enterprise Grade)
 
-Benvenuto, Collega. Passare da un tool personale a un'applicazione pronta per il mercato (App Store) richiede un cambio di paradigma significativo. Non si tratta più solo di far funzionare le cose, ma di garantire **sicurezza**, **integrità dei dati**, **performance** e **manutenibilità** a lungo termine.
-
-In questa guida analizzeremo come trasformare il backend di **Mattioli.OS** in una soluzione professionale.
+Questa documentazione definisce l'infrastruttura backend necessaria per scalare **Mattioli.OS** da strumento personale ad applicazione multi-utente pronta per App Store e Google Play Store.
 
 ---
 
-## 🏛️ 1. L'Architettura del Backend Professional
+## 📋 1. Stack Tecnologico & Costi Operativi
 
-Quando si scala per più utenti, il backend deve gestire tre pilastri fondamentali:
+Per garantire affidabilità e costi prevedibili, l'architettura si basa su **Supabase** (PostgreSQL as a Service).
 
-1.  **Identità (Auth):** Chi è l'utente?
-2.  **Isolamento (Multi-tenancy):** Come garantisco che l'utente A non veda i dati dell'utente B?
-3.  **Integrità (Business Logic):** Come evito che il client (l'app mobile) invii dati corrotti o illogici?
-
----
-
-## ⚡ 2. Analisi dei Tool: Supabase vs Firebase vs Others
-
-### 🚀 Supabase (Consigliato: Continuità & Potenza SQL)
-Dato che lo stai già usando, Supabase è la scelta più logica. È basato su **PostgreSQL**, il database relazionale più solido al mondo.
-
-*   **Punto di Forza (RLS):** La *Row Level Security* (RLS) ti permette di definire le regole di accesso direttamente nel database. Invece di scrivere filtri complessi nell'app (`where user_id = current_user`), il database lo fa per te in modo nativo e sicuro.
-*   **Scalabilità:** PostgreSQL gestisce milioni di record senza battere ciglio. Con Supabase hai anche gli **Edge Functions** (Deno) per logica server-side veloce e vicina all'utente.
-*   **Pro:** SQL completo, Relazioni (JOIN), Auth integrato, Real-time tramite WAL.
-*   **Contro:** Richiede una conoscenza minima di SQL per le query più avanzate.
-
-### 🔥 Firebase (Lo Standard Industry)
-Firebase è l'ecosistema di Google. È un database NoSQL (Document-based).
-
-*   **Punto di Forza:** Integrazione plug-and-play con Flutter (entrambi Google). Le notifiche (FCM) e l'Analytics sono i migliori sul mercato.
-*   **Scalabilità:** Quasi infinita, ma i costi possono esplodere se non ottimizzi le letture (si paga per ogni documento letto/scritto).
-*   **Pro:** Semplicità estrema, documentazione sterminata, integrazione nativa con Google Cloud.
-*   **Contro:** *Vendor Lock-in* totale (difficile migrare via), query complesse limitate (niente JOIN).
-
-### 🛠️ Appwrite (L'alternativa Open Source)
-Appwrite è molto simile a Firebase ma è open-source e può essere self-hosted.
-
-*   **Punto di Forza:** Privacy-first. Puoi ospitarlo sui tuoi server (es. un VPS in Italia) per avere il controllo totale dei dati.
-*   **Pro:** API pulitissima, supporto Docker eccellente.
-*   **Contro:** Community più piccola rispetto ai due colossi sopra.
+### 💳 Analisi dei Costi (Piano Lancio)
+1.  **Supabase Pro Plan ($25/mese):**
+    *   **Perché:** Previene l'ibernazione del DB, offre backup giornalieri e gestisce fino a 100,000 utenti attivi mensili (MAU).
+    *   **Incluso:** 8GB di storage DB, 100GB di file storage (per foto profilo/allegati).
+2.  **Store Fees:**
+    *   **Apple Developer:** $99/anno.
+    *   **Google Play:** $25 (una tantum).
+3.  **AI Logic (Pay-as-you-go):**
+    *   Utilizzo di OpenAI GPT-4o-mini via Edge Functions (~$0.10 per 1000 interazioni medie).
 
 ---
 
-## 🛠️ 3. Come strutturare Supabase per la Produzione
+## 🗄️ 2. Schema del Database (PostgreSQL)
 
-Se decidi di restare su Supabase (che ti consiglio vivamente per la natura relazionale di Mattioli.OS — abitudini, obiettivi, log), ecco come farlo professionalmente:
+La struttura è relazionale e ottimizzata per le performance. Ogni tabella utilizza l'UUID di Supabase Auth come chiave di isolamento.
 
-### A. Row Level Security (RLS) - MANDATORIO
-Non fidarti mai del client. Ogni tabella deve avere l'RLS abilitato.
+### Principali Entità:
+*   **`profiles`**: Dati utente, preferenze, lingua, impostazioni abbonamento.
+*   **`macro_goals`**: Obiettivi principali (Titolo, Colore, Scadenza, User_ID).
+*   **`habits`**: Abitudini collegate ai macro goal (Frequenza, Streak).
+*   **`daily_logs`**: Record giornalieri che collegano Mood, Note e completamento Abitudini.
+*   **`ai_insights`**: Cache delle analisi generate dall'AI per risparmiare token e tempo di caricamento.
+
+---
+
+## 🔐 3. Sicurezza: Row Level Security (RLS)
+
+Il cuore della sicurezza non è nel codice Flutter, ma nel Database. Ogni tabella deve avere l'RLS attivo.
+
+**Esempio di Policy di Sicurezza:**
 ```sql
--- Esempio: Solo il proprietario può vedere i propri obiettivi
-ALTER TABLE goals ENABLE ROW LEVEL SECURITY;
+-- Abilita RLS sulla tabella goals
+ALTER TABLE macro_goals ENABLE ROW LEVEL SECURITY;
 
-CREATE POLICY "Users can only see their own goals" 
-ON goals FOR SELECT 
+-- Crea una policy che permette agli utenti di vedere solo i propri dati
+CREATE POLICY "Users can only access their own data"
+ON macro_goals
+FOR ALL -- SELECT, INSERT, UPDATE, DELETE
 USING (auth.uid() = user_id);
 ```
 
-### B. Database Migrations
-Non modificare più le tabelle dalla dashboard UI. Usa le **Migrations**. Questo ti permette di:
-1. Versionare il database (come fai con il codice).
-2. Avere un ambiente di "Staging" (test) identico a quello di "Production".
+---
 
-### C. Edge Functions per la Logica AI
-L'AI Coach di Mattioli.OS non dovrebbe girare solo sul client (rischio di timeout, consumo batteria). Sposta la logica pesante su **Supabase Edge Functions**. Questo ti permette di nascondere le tue API Keys (es. OpenAI/Anthropic) e non esporle nell'app.
+## 🤖 4. Integrazione AI (Edge Functions)
+
+Per mantenere segrete le API Key e non pesare sulla batteria dello smartphone, la logica AI risiede su **Supabase Edge Functions** (Deno).
+
+### Flusso AI Coach:
+1.  **Trigger:** L'utente preme "Analizza i miei Trend".
+2.  **Request:** L'app invia un token JWT alla Edge Function.
+3.  **Processing:** La funzione recupera i dati degli ultimi 30 giorni dal DB (lato server, molto veloce).
+4.  **LLM:** Invia i dati a OpenAI/Anthropic con un system prompt specifico.
+5.  **Response:** Restituisce un JSON strutturato con suggerimenti e statistiche.
 
 ---
 
-## 🏗️ 4. Architettura Mobile (Flutter Side)
+## 🔄 5. Sincronizzazione & Stato Offline
 
-Per reggere il carico e non impazzire con i bug, devi separare le responsabilità. Non chiamare Supabase direttamente dai widget.
-
-### Il Pattern "Repository"
-1.  **Data Source:** Il client Supabase (`supabase.from('goals')...`).
-2.  **Repository:** Una classe che fa da "ponte". Prende i dati grezzi e li trasforma in oggetti Dart (Models). Gestisce anche l'error handling (es. "Nessuna connessione").
-3.  **Providers (Riverpod):** I Notifier ascoltano il Repository e notificano la UI.
-
-```mermaid
-graph LR
-    UI[Widgets] --> P[Riverpod Providers]
-    P --> R[Repository]
-    R --> DS[Supabase Client]
-    DS --> DB[(PostgreSQL)]
-```
+L'app mobile deve essere "Offline-First" per una UX fluida.
+*   **Local Cache:** Utilizzo di **Isar/Hive** per salvare i dati localmente.
+*   **Sync Strategy:** All'avvio, l'app confronta il `last_updated_at` locale con quello del server.
+*   **Real-time:** Utilizzo dei **Postgres Changes** di Supabase per aggiornare la UI istantaneamente se l'utente modifica qualcosa da un altro dispositivo (es. iPad o Web).
 
 ---
 
-## 📈 5. Roadmap per la Pubblicazione
+## 🚀 6. Roadmap di Implementazione
 
-1.  **Ambiente di Produzione:** Crea un nuovo progetto Supabase dedicato alla produzione. Non usare quello di sviluppo.
-2.  **Caching Locale:** Usa `Hive` o `Isar` nel cellulare per salvare i dati offline. Un utente non dovrebbe vedere una schermata bianca se non ha internet.
-3.  **Error Monitoring:** Integra **Sentry** o **Firebase Crashlytics**. Devi sapere se l'app crasha prima che te lo dica l'utente con una recensione da 1 stella.
-4.  **Legal/GDPR:** Dato che gestisci dati personali (abitudini, mood), assicurati di avere una Privacy Policy chiara e la possibilità per l'utente di cancellare l'account (obbligatorio per App Store).
-
----
-
-## ⚖️ Il mio verdetto finale
-
-Resta su **Supabase**. 
-Per un OS di produttività come il tuo, la struttura dei dati è fondamentale. Le relazioni tra Abitudini, Streak e Macro Goal sono molto più semplici da gestire con SQL che con le collezioni NoSQL di Firebase.
-
-**Prossimo step consigliato:**
-Iniziare a implementare l'Auth in Flutter e migrare i tuoi `MockData` nel `macro_goals_provider.dart` verso chiamate asincrone al Repository.
+1.  **Phase 1 (Settimana 1):** Configurazione progetto Supabase, tabelle e RLS.
+2.  **Phase 2 (Settimana 1):** Migrazione del sistema di Auth (Email/Google/Apple Sign-in).
+3.  **Phase 3 (Settimana 2):** Creazione del layer Repository in Flutter per sostituire i dati Mock.
+4.  **Phase 4 (Settimana 3):** Implementazione Edge Functions per l'AI Coach.
+5.  **Phase 5 (Settimana 4):** Test di carico, implementazione Sentry per i crash e sottomissione agli Store.
 
 ---
-*Documentazione redatta da Antigravity - Senior Flutter Developer*
+*Documentazione tecnica aggiornata da Antigravity - Database & Mobile Architect*

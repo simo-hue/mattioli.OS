@@ -110,3 +110,18 @@
     - Implementati selettori di timeframe (Sett, Mese, Anno, Tutto) con feedback aptico e animazioni di selezione.
     - Implementata la sezione "Confronto Temporale" con una griglia responsive di card che mostrano il delta percentuale rispetto al periodo precedente.
     - Integrata la nuova visualizzazione in `StatisticsScreen.dart` per il caso "Tutti gli Habits".
+- [2026-04-23 18:10]: Cost Analysis & Backend Deep Dive
+  *Details*: Riscritto il backend architecture con focus su costi reali, database schema e integrazione AI.
+  *Tech Notes*: 
+    - Definizione costi fissi: $99/anno (Apple), $25/una tantum (Google), $25/mese (Supabase Pro).
+    - Schema DB dettagliato (profiles, goals, habits, logs).
+    - Architettura Edge Functions per AI Coach.
+    - Strategia Sync Offline-First.
+
+- [2026-04-25 21:44]: Financial Plan Strategy v2.0
+  *Details*: Espansione massiva del piano di business con 4 modelli di monetizzazione.
+  *Tech Notes*: 
+    - Analisi ricavi netti post-tasse e commissioni store (15%).
+    - Inserimento modelli: Subscription, Lifetime, AI Tokens, B2B/Corporate.
+    - Definizione metriche KPI (LTV, CAC, Churn Rate).
+    - Strategia di mitigazione rischi per costi AI e scalabilità DB.

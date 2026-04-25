@@ -37,3 +37,10 @@
 [ ] Impostazioni reali per applicazione
     [ ] Notifiche
     [ ] Feedback Aptico da implementare veramente
+
+
+[ ] Feature Premium
+    [ ] Icloud Sync
+    [ ] App per Mac ( non solo tramite webApp salvata )
+    [ ] Per Apple watch
+    [ ] Widget per schermata Home

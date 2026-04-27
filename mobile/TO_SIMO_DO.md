@@ -32,3 +32,6 @@
 - [ ] Testare lo swipe orizzontale tra le schede principali.
 - [ ] Verificare che lo stato (es. scroll o filtri selezionati) venga mantenuto quando si cambia tab e si torna indietro.
 - [ ] Confermare che il feedback aptico (vibrazione leggera) sia piacevole al cambio tab.
+
+## Future Features
+- [ ] Implementare la sincronizzazione reale con **iCloud** (attualmente solo placeholder).

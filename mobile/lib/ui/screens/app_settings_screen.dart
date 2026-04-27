@@ -3,6 +3,7 @@ import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:lucide_icons_flutter/lucide_icons.dart';
 import 'package:flutter_colorpicker/flutter_colorpicker.dart';
+import 'package:google_fonts/google_fonts.dart';
 import '../../core/theme.dart';
 import '../../providers/settings_provider.dart';
 import '../../core/haptics.dart';
@@ -255,6 +256,19 @@ class AppSettingsScreen extends ConsumerWidget {
                 },
               ),
             ]),
+            const SizedBox(height: 32),
+            _buildSectionHeader(context.l10n.translate('CLOUD & SYNC')),
+            _buildSettingsCard([
+              _buildSwitchRow(
+                context: context,
+                icon: LucideIcons.cloud,
+                title: context.l10n.translate('ICLOUD'),
+                subtitle: context.l10n.translate('icloud_subtitle'),
+                value: false,
+                isComingSoon: true,
+                onChanged: (val) {},
+              ),
+            ]),
             const SizedBox(height: 40),
           ],
         ),
@@ -301,8 +315,11 @@ class AppSettingsScreen extends ConsumerWidget {
     required bool value,
     required ValueChanged<bool> onChanged,
     bool isLocked = false,
+    bool isComingSoon = false,
   }) {
     final primaryColor = Theme.of(context).colorScheme.primary;
+    final isDisabled = isLocked || isComingSoon;
+    
     return Padding(
       padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
       child: Row(
@@ -315,7 +332,7 @@ class AppSettingsScreen extends ConsumerWidget {
               borderRadius: BorderRadius.circular(10),
               border: Border.all(color: AppColors.border),
             ),
-            child: Icon(icon, size: 18, color: isLocked ? AppColors.mutedForeground : primaryColor),
+            child: Icon(icon, size: 18, color: isDisabled ? AppColors.mutedForeground : primaryColor),
           ),
           const SizedBox(width: 16),
           Expanded(
@@ -326,8 +343,8 @@ class AppSettingsScreen extends ConsumerWidget {
                   children: [
                     Text(
                       title,
-                      style: TextStyle(
-                        color: isLocked ? AppColors.mutedForeground : AppColors.foreground,
+                      style: GoogleFonts.inter(
+                        color: isDisabled ? AppColors.mutedForeground : AppColors.foreground,
                         fontSize: 15,
                         fontWeight: FontWeight.w600,
                       ),
@@ -341,9 +358,24 @@ class AppSettingsScreen extends ConsumerWidget {
                           borderRadius: BorderRadius.circular(4),
                           border: Border.all(color: Colors.amber.withValues(alpha: 0.4)),
                         ),
-                        child: const Text(
+                        child: Text(
                           'PRO',
-                          style: TextStyle(color: Colors.amber, fontSize: 9, fontWeight: FontWeight.w900),
+                          style: GoogleFonts.inter(color: Colors.amber, fontSize: 9, fontWeight: FontWeight.w900),
+                        ),
+                      ),
+                    ],
+                    if (isComingSoon) ...[
+                      const SizedBox(width: 8),
+                      Container(
+                        padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
+                        decoration: BoxDecoration(
+                          color: primaryColor.withValues(alpha: 0.1),
+                          borderRadius: BorderRadius.circular(4),
+                          border: Border.all(color: primaryColor.withValues(alpha: 0.3)),
+                        ),
+                        child: Text(
+                          context.l10n.translate('coming_soon'),
+                          style: GoogleFonts.inter(color: primaryColor, fontSize: 9, fontWeight: FontWeight.w900),
                         ),
                       ),
                     ],
@@ -352,7 +384,7 @@ class AppSettingsScreen extends ConsumerWidget {
                 if (subtitle != null)
                   Text(
                     subtitle,
-                    style: TextStyle(
+                    style: GoogleFonts.inter(
                       color: AppColors.mutedForeground.withValues(alpha: 0.7),
                       fontSize: 12,
                     ),
@@ -364,7 +396,7 @@ class AppSettingsScreen extends ConsumerWidget {
             scale: 0.8,
             child: Switch(
               value: value,
-              onChanged: (val) => onChanged(val),
+              onChanged: isDisabled ? null : (val) => onChanged(val),
               activeTrackColor: primaryColor.withValues(alpha: 0.5),
               activeThumbColor: primaryColor,
               inactiveThumbColor: AppColors.mutedForeground,
@@ -406,7 +438,7 @@ class AppSettingsScreen extends ConsumerWidget {
             Expanded(
               child: Text(
                 title,
-                style: const TextStyle(
+                style: GoogleFonts.inter(
                   color: AppColors.foreground,
                   fontSize: 15,
                   fontWeight: FontWeight.w600,
@@ -416,7 +448,7 @@ class AppSettingsScreen extends ConsumerWidget {
             if (trailingText != null)
               Text(
                 trailingText,
-                style: const TextStyle(
+                style: GoogleFonts.inter(
                   color: AppColors.mutedForeground,
                   fontSize: 13,
                   fontWeight: FontWeight.w500,

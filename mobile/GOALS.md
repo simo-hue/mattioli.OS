@@ -29,10 +29,10 @@
         - cosa posso fare per migliorare la performance? 
         - su cosa devo porre più attenzione?
         
-[ ] Animazioni più professionali e fluide
-    [ ] Animazione della selezione del colore
+[x] Animazioni più professionali e fluide
+    [x] Animazione della selezione del colore
     [x] Animazione della navigazione tra le schede
-    [ ] Animazione di swipe tra mesi/anni/settimane
+    [x] Animazione di swipe tra mesi/anni/settimane
 
 [x] Impostazioni reali per applicazione
     [x] Notifiche
@@ -40,7 +40,7 @@
 
 
 [ ] Feature Premium
-    [ ] Icloud Sync
+    [-] Icloud Sync ( Costo 99 / anno, da capire se è lo stesso costo per pubblicare app)
     [ ] App per Mac ( non solo tramite webApp salvata )
     [ ] Per Apple watch
     [ ] Widget per schermata Home

@@ -12,3 +12,10 @@
 ## [2026-04-27 15:30]: Premium Tab Animations
 - *Details*: Replaced static IndexedStack with a custom-animated PageView. Added a depth transition effect (scale + fade) for elegant tab switching.
 - *Tech Notes*: Implemented PageController, custom transition logic via AnimatedBuilder, and state persistence using AutomaticKeepAliveClientMixin for all main screens (Home, Stats, Goals).
+
+## [2026-04-27 18:35]: iCloud Sync Placeholder
+- *Details*: Added a placeholder for iCloud Synchronization in the App Settings.
+- *Tech Notes*:
+  - Added new section "CLOUD & SYNC" in `app_settings_screen.dart`.
+  - Implemented a `isComingSoon` badge in `_buildSwitchRow` for future features.
+  - Added localization keys for both Italian and English.

@@ -237,6 +237,10 @@ class AppLocalizations {
       'october': 'Ottobre',
       'november': 'Novembre',
       'december': 'Dicembre',
+      'cloud_sync_section': 'SINCRO & CLOUD',
+      'icloud_sync': 'Sincronizzazione iCloud',
+      'coming_soon': 'PROSSIMAMENTE',
+      'icloud_subtitle': 'Backup automatico e sincronizzazione tra dispositivi Apple',
     },
     'English': {
       'app_title': 'mattioli.OS',
@@ -467,6 +471,10 @@ class AppLocalizations {
       'october': 'October',
       'november': 'November',
       'december': 'December',
+      'cloud_sync_section': 'CLOUD & SYNC',
+      'icloud_sync': 'iCloud Sync',
+      'coming_soon': 'COMING SOON',
+      'icloud_subtitle': 'Automatic backup and sync across Apple devices',
     },
   };
 

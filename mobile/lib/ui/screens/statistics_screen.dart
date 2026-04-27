@@ -5,6 +5,7 @@ import 'package:lucide_icons_flutter/lucide_icons.dart';
 import '../../core/theme.dart';
 import '../../models/goal.dart';
 import '../../providers/goal_provider.dart';
+import '../../core/haptics.dart';
 import '../widgets/statistics/info_tab_widget.dart';
 import '../widgets/statistics/global_trend_tab_widget.dart';
 import '../widgets/statistics/habit_overview_tab_widget.dart';
@@ -122,7 +123,7 @@ class _StatisticsScreenState extends ConsumerState<StatisticsScreen> {
 
     return GestureDetector(
       onTap: () {
-        HapticFeedback.lightImpact();
+        ref.hapticAction();
         _showGoalSelector(goals);
       },
       child: Container(
@@ -185,7 +186,7 @@ class _StatisticsScreenState extends ConsumerState<StatisticsScreen> {
             child: GestureDetector(
               onTap: () {
                 if (!isSelected) {
-                  HapticFeedback.selectionClick();
+                  ref.hapticSelection();
                   setState(() => _selectedTab = tab);
                 }
               },
@@ -194,7 +195,7 @@ class _StatisticsScreenState extends ConsumerState<StatisticsScreen> {
                 duration: const Duration(milliseconds: 250),
                 curve: Curves.easeInOut,
                 decoration: BoxDecoration(
-                  color: isSelected ? AppColors.foreground : Colors.transparent,
+                  color: isSelected ? Theme.of(context).colorScheme.primary : Colors.transparent,
                   borderRadius: BorderRadius.circular(10),
                   boxShadow: isSelected
                       ? [

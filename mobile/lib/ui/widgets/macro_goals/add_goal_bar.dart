@@ -249,7 +249,7 @@ class _AddGoalBarState extends ConsumerState<AddGoalBar> {
               width: 44,
               height: 44,
               decoration: BoxDecoration(
-                color: AppColors.foreground,
+                color: Theme.of(context).colorScheme.primary,
                 borderRadius: BorderRadius.circular(12),
               ),
               child: Icon(

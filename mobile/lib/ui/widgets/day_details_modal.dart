@@ -5,6 +5,7 @@ import 'package:lucide_icons_flutter/lucide_icons.dart';
 import '../../core/theme.dart';
 import '../../models/goal.dart';
 import '../../providers/goal_provider.dart';
+import '../../core/haptics.dart';
 
 const _kMonths = [
   'Gennaio', 'Febbraio', 'Marzo', 'Aprile', 'Maggio', 'Giugno',
@@ -113,7 +114,7 @@ class DayDetailsModal extends ConsumerWidget {
   }
 }
 
-class GoalLogCard extends StatelessWidget {
+class GoalLogCard extends ConsumerWidget {
   final Goal habit;
   final String? status; // 'done', 'missed', or null
   final VoidCallback onTap;
@@ -126,7 +127,7 @@ class GoalLogCard extends StatelessWidget {
   });
 
   @override
-  Widget build(BuildContext context) {
+  Widget build(BuildContext context, WidgetRef ref) {
     Color cardColor = AppColors.card;
     Color borderColor = AppColors.border;
     Color textColor = AppColors.foreground;
@@ -157,7 +158,7 @@ class GoalLogCard extends StatelessWidget {
 
     return GestureDetector(
       onTap: () {
-        HapticFeedback.lightImpact();
+        ref.hapticLight();
         onTap();
       },
       child: AnimatedContainer(

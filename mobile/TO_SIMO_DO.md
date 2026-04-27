@@ -12,3 +12,11 @@
 - [ ] Verificare i requisiti per l'**Apple Small Business Program** (commissione al 15% invece di 30%).
 - [ ] Definire i limiti di utilizzo AI per i vari piani (Basic, Premium, Elite).
 - [ ] Valutare l'implementazione di **RevenueCat** o **Glassfy** per gestire gli abbonamenti in modo semplice.
+
+## Verifica UI (Post-Fix Colore Accento)
+- [ ] Effettuare un **Hot Reload / Restart** dell'applicazione per forzare il refresh del tema globale in tutti i componenti.
+- [ ] Verificare che il colore selezionato nelle Impostazioni sia ora visibile in:
+  - Bottone "Salva Modifiche" in Informazioni Personali.
+  - Indicatori del calendario nel dashboard.
+  - Selettori delle schede (Tabs) in Statistiche e Obiettivi.
+  - Bottoni principali nei vari Modal (es. Check-in Giornaliero).

@@ -1,10 +1,9 @@
 import 'package:flutter/material.dart';
-import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../core/theme.dart';
-
 import '../../providers/goal_provider.dart';
 import 'day_details_modal.dart';
+import '../../core/haptics.dart';
 
 const _kDays = ['LUN', 'MAR', 'MER', 'GIO', 'VEN', 'SAB', 'DOM'];
 const _kMonths = [
@@ -38,7 +37,7 @@ class _WeeklyViewWidgetState extends ConsumerState<WeeklyViewWidget> {
       _slideDirection = -1;
       _currentWeekStart = _currentWeekStart.subtract(const Duration(days: 7));
     });
-    HapticFeedback.lightImpact();
+    ref.hapticAction();
   }
 
   void _goToNext() {
@@ -46,7 +45,7 @@ class _WeeklyViewWidgetState extends ConsumerState<WeeklyViewWidget> {
       _slideDirection = 1;
       _currentWeekStart = _currentWeekStart.add(const Duration(days: 7));
     });
-    HapticFeedback.lightImpact();
+    ref.hapticAction();
   }
 
   String _formatDateRange() {
@@ -211,7 +210,7 @@ class _WeeklyViewWidgetState extends ConsumerState<WeeklyViewWidget> {
                                           isScrollControlled: true,
                                           builder: (context) => DayDetailsModal(date: dayDate),
                                         );
-                                        HapticFeedback.mediumImpact();
+                                        ref.hapticAction();
                                       },
                                     ),
                                   ),

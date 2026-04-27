@@ -136,7 +136,7 @@ class _QuickNotesModalState extends ConsumerState<QuickNotesModal> {
               ),
               padding: const EdgeInsets.all(16),
               child: noteAsync.isLoading && !_isInitialized
-                ? const Center(child: CircularProgressIndicator(color: AppColors.primary))
+                ? Center(child: CircularProgressIndicator(color: Theme.of(context).colorScheme.primary))
                 : TextField(
                     controller: _controller,
                     maxLines: null,

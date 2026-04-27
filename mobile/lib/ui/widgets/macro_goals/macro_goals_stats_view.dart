@@ -614,13 +614,13 @@ class _MacroGoalsStatsViewState extends ConsumerState<MacroGoalsStatsView> {
               LineChartBarData(
                 spots: compSpots,
                 isCurved: true,
-                color: const Color(0xFF34D399), // Emerald
+                color: Theme.of(context).colorScheme.primary,
                 barWidth: 2,
                 isStrokeCapRound: true,
                 dotData: FlDotData(show: false),
                 belowBarData: BarAreaData(
                   show: true,
-                  color: const Color(0xFF34D399).withValues(alpha: 0.15),
+                  color: Theme.of(context).colorScheme.primary.withValues(alpha: 0.15),
                 ),
               ),
             ],
@@ -712,7 +712,7 @@ class _MacroGoalsStatsViewState extends ConsumerState<MacroGoalsStatsView> {
           x: q,
           barRods: [
             BarChartRodData(toY: tot, color: const Color(0xFFD97706), width: 10, borderRadius: BorderRadius.circular(2)),
-            BarChartRodData(toY: comp, color: const Color(0xFF10B981), width: 10, borderRadius: BorderRadius.circular(2)),
+            BarChartRodData(toY: comp, color: Theme.of(context).colorScheme.primary, width: 10, borderRadius: BorderRadius.circular(2)),
           ],
         ),
       );
@@ -911,7 +911,7 @@ class _MacroGoalsStatsViewState extends ConsumerState<MacroGoalsStatsView> {
             rodStackItems: [
               BarChartRodStackItem(0, act, const Color(0xFF3B82F6)), // Attivi - Blue
               BarChartRodStackItem(act, act + fail, const Color(0xFFEF4444)), // Falliti - Red
-              BarChartRodStackItem(act + fail, tot, const Color(0xFF10B981)), // Completati - Green
+              BarChartRodStackItem(act + fail, tot, Theme.of(context).colorScheme.primary), // Completati - Dynamic Accent
             ],
           )
         ],
@@ -943,7 +943,7 @@ class _MacroGoalsStatsViewState extends ConsumerState<MacroGoalsStatsView> {
           _buildLegend([
             _LegendItem('Attivi', const Color(0xFF3B82F6)),
             _LegendItem('Falliti', const Color(0xFFEF4444)),
-            _LegendItem('Completati', const Color(0xFF10B981)),
+            _LegendItem('Completati', Theme.of(context).colorScheme.primary),
           ]),
         ],
       ),
@@ -990,7 +990,18 @@ class _MacroGoalsStatsViewState extends ConsumerState<MacroGoalsStatsView> {
                     FractionallySizedBox(
                       alignment: Alignment.centerLeft,
                       widthFactor: maxV == 0 ? 0 : e.value / maxV,
-                      child: Container(height: 18, decoration: BoxDecoration(gradient: const LinearGradient(colors: [Color(0xFF8B5CF6), Color(0xFFA78BFA)]), borderRadius: BorderRadius.circular(4))),
+                      child: Container(
+                        height: 18, 
+                        decoration: BoxDecoration(
+                          gradient: LinearGradient(
+                            colors: [
+                              Theme.of(context).colorScheme.primary,
+                              Theme.of(context).colorScheme.primary.withValues(alpha: 0.7),
+                            ],
+                          ), 
+                          borderRadius: BorderRadius.circular(4),
+                        ),
+                      ),
                     ),
                   ],
                 ),
@@ -1021,7 +1032,7 @@ class _MacroGoalsStatsViewState extends ConsumerState<MacroGoalsStatsView> {
           rodStackItems: [
             BarChartRodStackItem(0, act, const Color(0xFF3B82F6)),
             BarChartRodStackItem(act, act+fail, const Color(0xFFD97706)),
-            BarChartRodStackItem(act+fail, tot, const Color(0xFF10B981)),
+            BarChartRodStackItem(act+fail, tot, Theme.of(context).colorScheme.primary),
           ]
         )
       ]));
@@ -1044,7 +1055,7 @@ class _MacroGoalsStatsViewState extends ConsumerState<MacroGoalsStatsView> {
           _buildLegend([
             _LegendItem('Attivi', const Color(0xFF3B82F6)),
             _LegendItem('Falliti', const Color(0xFFD97706)),
-            _LegendItem('Compl.', const Color(0xFF10B981)),
+            _LegendItem('Compl.', Theme.of(context).colorScheme.primary),
           ]),
         ],
       ),
@@ -1078,10 +1089,10 @@ class _MacroGoalsStatsViewState extends ConsumerState<MacroGoalsStatsView> {
         ),
         minY: 0, maxY: 100, minX: 1, maxX: 12,
         lineBarsData: [LineChartBarData(
-          spots: spots, color: const Color(0xFFEC4899),
+          spots: spots, color: Theme.of(context).colorScheme.primary,
           barWidth: 3, isCurved: true, 
-          dotData: FlDotData(show: true, getDotPainter: (spot, percent, barData, index) => FlDotCirclePainter(radius: 3, color: const Color(0xFFEC4899), strokeWidth: 1, strokeColor: Colors.white)),
-          belowBarData: BarAreaData(show: true, color: const Color(0xFFEC4899).withValues(alpha: 0.1)),
+          dotData: FlDotData(show: true, getDotPainter: (spot, percent, barData, index) => FlDotCirclePainter(radius: 3, color: Theme.of(context).colorScheme.primary, strokeWidth: 1, strokeColor: Colors.white)),
+          belowBarData: BarAreaData(show: true, color: Theme.of(context).colorScheme.primary.withValues(alpha: 0.1)),
         )],
       ))),
     );

@@ -36,7 +36,7 @@
 
 [ ] Impostazioni reali per applicazione
     [x] Notifiche
-    [ ] Feedback Aptico da implementare veramente
+    [x] Feedback Aptico da implementare veramente
 
 
 [ ] Feature Premium

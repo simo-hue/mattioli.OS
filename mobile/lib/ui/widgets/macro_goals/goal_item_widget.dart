@@ -7,6 +7,7 @@ import 'package:lucide_icons_flutter/lucide_icons.dart';
 import '../../../core/theme.dart';
 import '../../../models/macro_goal.dart';
 import '../../../providers/macro_goals_provider.dart';
+import '../../../core/haptics.dart';
 
 class GoalItemWidget extends ConsumerStatefulWidget {
   final MacroGoal goal;
@@ -36,12 +37,12 @@ class _GoalItemWidgetState extends ConsumerState<GoalItemWidget>
     ref
         .read(macroGoalsProvider.notifier)
         .updateStatus(widget.goal.id, _nextStatus);
-    HapticFeedback.lightImpact();
+    ref.hapticAction();
   }
 
   void _delete() {
     ref.read(macroGoalsProvider.notifier).deleteGoal(widget.goal.id);
-    HapticFeedback.mediumImpact();
+    ref.hapticMedium();
   }
 
   void _showEditDialog() {
@@ -236,7 +237,7 @@ class _GoalItemWidgetState extends ConsumerState<GoalItemWidget>
                         .read(macroGoalsProvider.notifier)
                         .updateCategory(widget.goal.id, cat.key);
                     Navigator.pop(context);
-                    HapticFeedback.selectionClick();
+                    ref.hapticSelection();
                   },
                 ),
               ),

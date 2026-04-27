@@ -1,11 +1,12 @@
 import 'dart:ui';
 import 'package:flutter/material.dart';
-import 'package:flutter/services.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:lucide_icons_flutter/lucide_icons.dart';
 import '../../core/theme.dart';
+import '../../core/haptics.dart';
 
-class AppBottomNavBar extends StatelessWidget {
+class AppBottomNavBar extends ConsumerWidget {
   final int currentIndex;
   final Function(int) onTap;
 
@@ -16,7 +17,7 @@ class AppBottomNavBar extends StatelessWidget {
   });
 
   @override
-  Widget build(BuildContext context) {
+  Widget build(BuildContext context, WidgetRef ref) {
     final bottomPadding = MediaQuery.of(context).padding.bottom;
     final items = [
       _NavItem(icon: LucideIcons.house, label: 'Home'),
@@ -51,7 +52,7 @@ class AppBottomNavBar extends StatelessWidget {
                   label: item.label,
                   isActive: isActive,
                   onTap: () {
-                    HapticFeedback.selectionClick();
+                    ref.hapticSelection();
                     onTap(index);
                   },
                 );
@@ -135,4 +136,3 @@ class _NavBarItem extends StatelessWidget {
     );
   }
 }
-

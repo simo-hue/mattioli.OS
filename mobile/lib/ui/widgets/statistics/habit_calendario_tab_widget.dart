@@ -74,7 +74,7 @@ class _CalendarioAnnualeCard extends StatelessWidget {
             children: days.map((status) {
               Color color;
               if (status == 1) {
-                color = const Color(0xFF10B981); // Completato (Green)
+                color = Theme.of(context).colorScheme.primary; // Completato (Dynamic Accent)
               } else if (status == 2) {
                 color = const Color(0xFFEF4444); // Mancato (Red)
               } else {
@@ -97,7 +97,7 @@ class _CalendarioAnnualeCard extends StatelessWidget {
           // Legend
           Row(
             children: [
-              _buildLegendItem(const Color(0xFF10B981), 'Completato'),
+              _buildLegendItem(Theme.of(context).colorScheme.primary, 'Completato'),
               const SizedBox(width: 16),
               _buildLegendItem(const Color(0xFFEF4444), 'Mancato'),
               const SizedBox(width: 16),

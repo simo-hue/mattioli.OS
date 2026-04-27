@@ -43,7 +43,7 @@ class ViewTabBar extends ConsumerWidget {
                 duration: const Duration(milliseconds: 250),
                 curve: Curves.easeInOut,
                 decoration: BoxDecoration(
-                  color: isActive ? AppColors.foreground : Colors.transparent,
+                  color: isActive ? Theme.of(context).colorScheme.primary : Colors.transparent,
                   borderRadius: BorderRadius.circular(10),
                   boxShadow: isActive
                       ? [

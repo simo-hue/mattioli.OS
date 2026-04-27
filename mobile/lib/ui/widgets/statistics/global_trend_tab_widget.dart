@@ -122,7 +122,9 @@ class _GlobalTrendTabWidgetState extends ConsumerState<GlobalTrendTabWidget> {
             height: 160,
             width: double.infinity,
             child: CustomPaint(
-              painter: _SmoothAreaChartPainter(),
+              painter: _SmoothAreaChartPainter(
+                accentColor: Theme.of(context).colorScheme.primary,
+              ),
             ),
           ),
           const SizedBox(height: 16),
@@ -375,13 +377,13 @@ class _GlobalTrendTabWidgetState extends ConsumerState<GlobalTrendTabWidget> {
               curve: Curves.easeInOut,
               padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 7),
               decoration: BoxDecoration(
-                color: isSel ? AppColors.foreground : Colors.transparent,
-                borderRadius: BorderRadius.circular(9),
+                color: isSel ? Theme.of(context).colorScheme.primary : Colors.transparent,
+                borderRadius: BorderRadius.circular(10),
                 boxShadow: isSel
                     ? [
                         BoxShadow(
-                          color: Colors.black.withValues(alpha: 0.4),
-                          blurRadius: 8,
+                          color: Colors.black.withValues(alpha: 0.1),
+                          blurRadius: 4,
                           offset: const Offset(0, 2),
                         )
                       ]
@@ -389,10 +391,10 @@ class _GlobalTrendTabWidgetState extends ConsumerState<GlobalTrendTabWidget> {
               ),
               child: Text(
                 opt,
+                textAlign: TextAlign.center,
                 style: TextStyle(
-                  fontFamily: 'Inter',
-                  fontSize: 11,
-                  fontWeight: isSel ? FontWeight.w800 : FontWeight.w600,
+                  fontSize: 13,
+                  fontWeight: isSel ? FontWeight.w700 : FontWeight.w500,
                   color: isSel ? AppColors.background : AppColors.mutedForeground,
                 ),
               ),
@@ -405,6 +407,9 @@ class _GlobalTrendTabWidgetState extends ConsumerState<GlobalTrendTabWidget> {
 }
 
 class _SmoothAreaChartPainter extends CustomPainter {
+  final Color accentColor;
+  _SmoothAreaChartPainter({required this.accentColor});
+
   @override
   void paint(Canvas canvas, Size size) {
     // 1. Draw Grid Lines
@@ -419,7 +424,7 @@ class _SmoothAreaChartPainter extends CustomPainter {
     }
 
     final paint = Paint()
-      ..color = Colors.white
+      ..color = accentColor
       ..style = PaintingStyle.stroke
       ..strokeWidth = 3.5
       ..strokeCap = StrokeCap.round;
@@ -429,8 +434,8 @@ class _SmoothAreaChartPainter extends CustomPainter {
         begin: Alignment.topCenter,
         end: Alignment.bottomCenter,
         colors: [
-          Colors.white.withValues(alpha: 0.15),
-          Colors.white.withValues(alpha: 0.0),
+          accentColor.withValues(alpha: 0.15),
+          accentColor.withValues(alpha: 0.0),
         ],
       ).createShader(Rect.fromLTWH(0, 0, size.width, size.height))
       ..style = PaintingStyle.fill;
@@ -470,7 +475,7 @@ class _SmoothAreaChartPainter extends CustomPainter {
     
     // 4. Add subtle bloom glow
     final glowPaint = Paint()
-      ..color = Colors.white.withValues(alpha: 0.15)
+      ..color = accentColor.withValues(alpha: 0.15)
       ..style = PaintingStyle.stroke
       ..strokeWidth = 10
       ..maskFilter = const MaskFilter.blur(BlurStyle.normal, 8);
@@ -482,7 +487,7 @@ class _SmoothAreaChartPainter extends CustomPainter {
       ..style = PaintingStyle.fill;
     
     final dotOutlinePaint = Paint()
-      ..color = Colors.white
+      ..color = accentColor
       ..style = PaintingStyle.stroke
       ..strokeWidth = 2.5;
 
@@ -495,7 +500,7 @@ class _SmoothAreaChartPainter extends CustomPainter {
         // Final point specific highlight
         if (i == points.length - 1) {
           final pulsePaint = Paint()
-            ..color = Colors.white.withValues(alpha: 0.2)
+            ..color = accentColor.withValues(alpha: 0.2)
             ..style = PaintingStyle.fill;
           canvas.drawCircle(points[i], 12, pulsePaint);
         }

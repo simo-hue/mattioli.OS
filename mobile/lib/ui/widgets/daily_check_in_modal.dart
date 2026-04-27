@@ -1,9 +1,10 @@
 import 'package:flutter/material.dart';
-import 'package:flutter/services.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:lucide_icons_flutter/lucide_icons.dart';
 import '../../core/theme.dart';
+import '../../core/haptics.dart';
 
-class DailyCheckInModal extends StatefulWidget {
+class DailyCheckInModal extends ConsumerStatefulWidget {
   const DailyCheckInModal({super.key});
 
   static Future<void> show(BuildContext context) {
@@ -16,10 +17,10 @@ class DailyCheckInModal extends StatefulWidget {
   }
 
   @override
-  State<DailyCheckInModal> createState() => _DailyCheckInModalState();
+  ConsumerState<DailyCheckInModal> createState() => _DailyCheckInModalState();
 }
 
-class _DailyCheckInModalState extends State<DailyCheckInModal> {
+class _DailyCheckInModalState extends ConsumerState<DailyCheckInModal> {
   double _mood = 9.0;
   double _energy = 8.0;
 
@@ -133,23 +134,23 @@ class _DailyCheckInModalState extends State<DailyCheckInModal> {
                   height: 52,
                   child: ElevatedButton(
                     onPressed: () {
-                      HapticFeedback.mediumImpact();
+                      ref.hapticSuccess();
                       Navigator.pop(context);
                     },
                     style: ElevatedButton.styleFrom(
-                      backgroundColor: AppColors.foreground,
+                      backgroundColor: Theme.of(context).colorScheme.primary,
                       foregroundColor: AppColors.background,
                       shape: RoundedRectangleBorder(
                         borderRadius: BorderRadius.circular(12),
                       ),
                       elevation: 0,
                     ),
-                    child: const Row(
+                    child: Row(
                       mainAxisAlignment: MainAxisAlignment.center,
                       children: [
-                        Icon(LucideIcons.save, size: 18),
-                        SizedBox(width: 10),
-                        Text(
+                        const Icon(LucideIcons.save, size: 18),
+                        const SizedBox(width: 10),
+                        const Text(
                           'Update Daily Status',
                           style: TextStyle(
                             fontSize: 15,
@@ -204,10 +205,10 @@ class _DailyCheckInModalState extends State<DailyCheckInModal> {
         const SizedBox(height: 12),
         SliderTheme(
           data: SliderTheme.of(context).copyWith(
-            activeTrackColor: Colors.white,
+            activeTrackColor: Theme.of(context).colorScheme.primary,
             inactiveTrackColor: AppColors.border,
-            thumbColor: Colors.white,
-            overlayColor: Colors.white.withValues(alpha: 0.1),
+            thumbColor: Theme.of(context).colorScheme.primary,
+            overlayColor: Theme.of(context).colorScheme.primary.withValues(alpha: 0.1),
             trackHeight: 4,
             thumbShape: const RoundSliderThumbShape(enabledThumbRadius: 10),
           ),
@@ -218,7 +219,7 @@ class _DailyCheckInModalState extends State<DailyCheckInModal> {
             divisions: 10,
             onChanged: (v) {
               onChanged(v);
-              HapticFeedback.lightImpact();
+              ref.hapticAction();
             },
           ),
         ),

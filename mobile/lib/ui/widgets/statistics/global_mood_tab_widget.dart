@@ -101,7 +101,7 @@ class _GlobalMoodTabWidgetState extends State<GlobalMoodTabWidget> {
                 duration: const Duration(milliseconds: 200),
                 padding: const EdgeInsets.symmetric(vertical: 10),
                 decoration: BoxDecoration(
-                  color: isSelected ? AppColors.muted : Colors.transparent,
+                  color: isSelected ? Theme.of(context).colorScheme.primary : Colors.transparent,
                   borderRadius: BorderRadius.circular(10),
                   boxShadow: isSelected
                       ? [
@@ -119,7 +119,7 @@ class _GlobalMoodTabWidgetState extends State<GlobalMoodTabWidget> {
                   style: TextStyle(
                     fontSize: 13,
                     fontWeight: isSelected ? FontWeight.w700 : FontWeight.w500,
-                    color: isSelected ? AppColors.foreground : AppColors.mutedForeground,
+                    color: isSelected ? AppColors.background : AppColors.mutedForeground,
                   ),
                 ),
               ),

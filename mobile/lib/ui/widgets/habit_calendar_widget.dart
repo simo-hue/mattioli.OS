@@ -5,6 +5,7 @@ import '../../core/theme.dart';
 import '../../models/goal.dart';
 import '../../providers/goal_provider.dart';
 import 'day_details_modal.dart';
+import '../../core/haptics.dart';
 
 const _kDays = ['Lun', 'Mar', 'Mer', 'Gio', 'Ven', 'Sab', 'Dom'];
 const _kMonths = [
@@ -61,6 +62,7 @@ class _HabitCalendarWidgetState extends ConsumerState<HabitCalendarWidget> {
       _slideDirection = -1;
       _currentDate = DateTime(_currentDate.year, _currentDate.month - 1, 1);
     });
+    ref.hapticAction();
   }
 
   void _goToNext() {
@@ -68,12 +70,14 @@ class _HabitCalendarWidgetState extends ConsumerState<HabitCalendarWidget> {
       _slideDirection = 1;
       _currentDate = DateTime(_currentDate.year, _currentDate.month + 1, 1);
     });
+    ref.hapticAction();
   }
 
   void _goToToday() {
     setState(() {
       _currentDate = DateTime.now();
     });
+    ref.hapticAction();
   }
 
   @override
@@ -280,6 +284,7 @@ class _HabitCalendarWidgetState extends ConsumerState<HabitCalendarWidget> {
   }
 
   void _showDayDetails(DateTime date) {
+    ref.hapticAction();
     showModalBottomSheet(
       context: context,
       backgroundColor: Colors.transparent,
@@ -366,13 +371,13 @@ class _DayCell extends StatelessWidget {
     }
 
     if (isEditableDay && !hasActivity) {
-      bgColor = AppColors.primary.withValues(alpha: 0.04);
-      borderColor = AppColors.primary.withValues(alpha: 0.25);
+      bgColor = Theme.of(context).colorScheme.primary.withValues(alpha: 0.04);
+      borderColor = Theme.of(context).colorScheme.primary.withValues(alpha: 0.25);
     }
 
     if (isToday && !hasActivity) {
       bgColor = Colors.white.withValues(alpha: 0.04);
-      borderColor = AppColors.primary.withValues(alpha: 0.4);
+      borderColor = Theme.of(context).colorScheme.primary.withValues(alpha: 0.4);
     }
 
     if (isFuture) {
@@ -421,7 +426,7 @@ class _DayCell extends StatelessWidget {
                     fontSize: 11,
                     fontWeight: isToday ? FontWeight.w700 : FontWeight.w500,
                     color: isToday
-                        ? AppColors.primary
+                        ? Theme.of(context).colorScheme.primary
                         : hasActivity
                             ? AppColors.foreground
                             : AppColors.mutedForeground,

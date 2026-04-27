@@ -102,7 +102,7 @@ class _PerformanceChartCard extends StatelessWidget {
                 width: double.infinity,
                 height: fillHeight,
                 decoration: BoxDecoration(
-                  color: const Color(0xFFF59E0B), // Orange color
+                  color: Theme.of(context).colorScheme.primary, // Dynamic accent color
                   borderRadius: BorderRadius.circular(6),
                 ),
               ),

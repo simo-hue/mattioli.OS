@@ -214,7 +214,7 @@ class _MacroGoalsScreenState extends ConsumerState<MacroGoalsScreen> {
           duration: const Duration(milliseconds: 250),
           curve: Curves.easeInOut,
           decoration: BoxDecoration(
-            color: active ? AppColors.foreground : Colors.transparent,
+            color: active ? Theme.of(context).colorScheme.primary : Colors.transparent,
             borderRadius: BorderRadius.circular(10),
             boxShadow: active
                 ? [

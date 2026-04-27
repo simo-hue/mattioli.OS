@@ -136,3 +136,8 @@
     - Allineati i colori: `AppColors.foreground` per il tab attivo e `AppColors.background` per il testo attivo.
     - Regolata la tipografia (Inter, 11px, Bold per attivo) e le ombre.
     - Aggiunto `HitTestBehavior.opaque` per migliorare la reattività del tocco.
+- [2026-04-27 10:31]: [Flutter] Ottimizzazione Analisi Performance Obiettivi
+  *Details*: Migliorata la pulizia visiva della dashboard delle performance.
+  *Tech Notes*:
+    - Accorciato il sottotitolo del box "Totale Storico" in `dal {anno}` per uniformare l'altezza dei box di highlight.
+    - Nascoste le etichette numeriche (0.0, 33.3, 66.7) dal grafico radar delle categorie per un look più minimal e pulito.

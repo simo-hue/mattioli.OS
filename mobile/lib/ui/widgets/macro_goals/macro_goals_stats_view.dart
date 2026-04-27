@@ -677,6 +677,7 @@ class _MacroGoalsStatsViewState extends ConsumerState<MacroGoalsStatsView> {
             borderData: FlBorderData(show: false),
             radarBorderData: BorderSide(color: AppColors.borderActive),
             tickBorderData: BorderSide(color: AppColors.borderActive, width: 0.5),
+            ticksTextStyle: const TextStyle(color: Colors.transparent),
             getTitle: (index, angle) {
               final cats = catRates.keys.toList();
               return RadarChartTitle(

@@ -3,7 +3,9 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import 'core/theme.dart';
 import 'providers/settings_provider.dart';
+import 'providers/auth_provider.dart';
 import 'ui/screens/dashboard_screen.dart';
+import 'ui/screens/auth_screen.dart';
 
 import 'core/notifications.dart';
 
@@ -37,15 +39,39 @@ void main() async {
   );
 }
 
+// Global provider for GoRouter
 final routerProvider = Provider<GoRouter>((ref) {
+  final authState = ref.watch(authProvider);
+
   return GoRouter(
     initialLocation: '/',
+    debugLogDiagnostics: true, // Enable diagnostic logs
     routes: [
       GoRoute(
         path: '/',
         builder: (context, state) => const HomeScreen(),
       ),
+      GoRoute(
+        path: '/login',
+        builder: (context, state) => const AuthScreen(),
+      ),
     ],
+    redirect: (context, state) {
+      final isLoggedIn = authState.isLoggedIn;
+      final isLoggingIn = state.matchedLocation == '/login';
+
+      debugPrint('Auth Redirect: isLoggedIn=$isLoggedIn, currentPath=${state.matchedLocation}');
+
+      if (!isLoggedIn && !isLoggingIn) {
+        debugPrint('Redirecting to /login');
+        return '/login';
+      }
+      if (isLoggedIn && isLoggingIn) {
+        debugPrint('Redirecting to /');
+        return '/';
+      }
+      return null;
+    },
   );
 });
 
@@ -57,7 +83,7 @@ class MattioliOSApp extends ConsumerWidget {
     final settings = ref.watch(settingsProvider);
     final router = ref.watch(routerProvider);
 
-    // Safety fallback for accentColor to avoid Null subtype errors during hot reload
+    // Safety fallback for accentColor
     final Color effectiveAccentColor = settings.accentColor;
 
     return MaterialApp.router(

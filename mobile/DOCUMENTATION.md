@@ -1,21 +1,18 @@
-# DOCUMENTATION
+# Project Documentation
 
-## [2026-04-27 12:28]: Fixed Build Errors and Localization
-*Details*: Fixed several compilation errors that prevented `flutter run` from executing. These included undefined variables in calendar widgets, invalid `const` usage with dynamic localizations, and missing `context` in helper methods. Also resolved duplicate key warnings in the localization system.
+## [2026-04-27 18:55]: Authentication UI & Supabase Integration
+*Details*: Implemented a premium Login and Signup screen matching the application's tech-focused aesthetic. The system now handles authentication states and persists sessions locally via SharedPreferences, serving as a robust foundation for backend integration.
 *Tech Notes*:
-- Fixed `lib/ui/widgets/habit_calendar_widget.dart`: Declared `bgColor` and `borderColor` as local variables.
-- Fixed `lib/ui/widgets/statistics/info_tab_widget.dart`, `habit_miglioramento_tab_widget.dart`, `habit_calendario_tab_widget.dart`: Removed invalid `const` on widgets containing `context.l10n.translate`.
-- Fixed `lib/ui/widgets/statistics/habit_miglioramento_tab_widget.dart` and `habit_mood_tab_widget.dart`: Passed `BuildContext` to helper methods to allow access to `context.l10n` and `Theme.of(context)`.
-- Fixed `lib/core/localization.dart`: Removed duplicate keys `mood`, `energy`, `positive_correlations`, and `negative_correlations`.
-- Verified fix with `flutter build ios --simulator --debug`.
+- **New Dependency**: Added `supabase_flutter` to `pubspec.yaml`.
+- **AuthProvider**: Created a Riverpod `Notifier` to manage authentication state (`isLoggedIn`, `email`, `isLoading`).
+- **AuthScreen**: Implemented a glassmorphic login/signup screen with support for Apple and Google login buttons.
+- **Navigation**: Updated `GoRouter` in `main.dart` with redirection logic to enforce login.
+- **Logout**: Integrated session disconnection in the Profile screen.
 
-## [2026-04-27 15:30]: Premium Tab Animations
-- *Details*: Replaced static IndexedStack with a custom-animated PageView. Added a depth transition effect (scale + fade) for elegant tab switching.
-- *Tech Notes*: Implemented PageController, custom transition logic via AnimatedBuilder, and state persistence using AutomaticKeepAliveClientMixin for all main screens (Home, Stats, Goals).
+---
+## Current Status
+- Authentication UI: **COMPLETED**
+- State Management: **COMPLETED**
+- Supabase Prep: **COMPLETED**
 
-## [2026-04-27 18:35]: iCloud Sync Placeholder
-- *Details*: Added a placeholder for iCloud Synchronization in the App Settings.
-- *Tech Notes*:
-  - Added new section "CLOUD & SYNC" in `app_settings_screen.dart`.
-  - Implemented a `isComingSoon` badge in `_buildSwitchRow` for future features.
-  - Added localization keys for both Italian and English.
+**Immediate Next Step**: Configure Supabase project and replace simulated auth calls in `auth_provider.dart` with real Supabase Auth calls.

@@ -1,11 +1,12 @@
 import 'dart:io';
 import 'package:flutter/material.dart';
-import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:go_router/go_router.dart';
 import 'package:image_picker/image_picker.dart';
 import 'package:lucide_icons_flutter/lucide_icons.dart';
 import '../../core/theme.dart';
 import '../../providers/user_provider.dart';
+import '../../providers/auth_provider.dart';
 import 'personal_info_screen.dart';
 import 'app_settings_screen.dart';
 import 'notification_settings_screen.dart';
@@ -237,9 +238,12 @@ class _ProfileScreenState extends ConsumerState<ProfileScreen> {
                 const SizedBox(height: 8),
                 // Logout Button
                 GestureDetector(
-                  onTap: () {
+                  onTap: () async {
                     ref.hapticHeavy();
-                    Navigator.pop(context);
+                    await ref.read(authProvider.notifier).logout();
+                    if (context.mounted) {
+                      context.go('/login');
+                    }
                   },
                   child: Container(
                     width: double.infinity,

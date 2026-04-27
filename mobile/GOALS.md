@@ -42,5 +42,11 @@
 [ ] Feature Premium
     [-] Icloud Sync ( Costo 99 / anno, da capire se è lo stesso costo per pubblicare app)
     [ ] App per Mac ( non solo tramite webApp salvata )
-    [ ] Per Apple watch
-    [ ] Widget per schermata Home
+    [ ] Per Apple watch ( servono in swift, comming soon )
+    [ ] Widget per schermata Home ( servono in swift, comming soon )
+
+
+
+[ ] Database
+    [ ] Stiamo lavorando nella cartella "mobile". Agisci come un esperto database dev.
+Voglio consideri il database e la sua struttura che abbiamo utilizzato per la web app per creare la nuova versione ( quella ufficiale che verrà pubblicata sugli stores ).

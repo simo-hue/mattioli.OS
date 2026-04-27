@@ -6,6 +6,8 @@
 - [ ] Creare progetto su **Supabase** e attivare il **Pro Plan** ($25/mese) per evitare ibernazione e avere backup.
 - [ ] Configurare le **Row Level Security (RLS)** su Supabase seguendo la guida in `BACKEND_ARCHITECTURE.md`.
 - [ ] Recuperare le API Key di **OpenAI** o **Anthropic** per l'AI Coach.
+- [ ] Configurare **Google Sign-In** e **Sign in with Apple** nella dashboard di Supabase.
+- [ ] Inserire `SUPABASE_URL` e `SUPABASE_ANON_KEY` nel file di configurazione (o `main.dart`) quando sarai pronto per l'integrazione reale.
 
 ## Strategia Business & Revenue
 - [ ] Decidere se lanciare l'offerta **Lifetime Access** (€99) per i primi 500 utenti.

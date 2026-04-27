@@ -119,8 +119,8 @@ class _AddGoalBarState extends ConsumerState<AddGoalBar> {
                   ),
                 ),
                 trailing: _selectedCategory == null
-                    ? const Icon(Icons.check,
-                        color: Color(0xFF34D399), size: 18)
+                    ? Icon(Icons.check,
+                        color: Theme.of(context).colorScheme.primary, size: 18)
                     : null,
                 onTap: () {
                   setState(() => _selectedCategory = null);
@@ -150,8 +150,8 @@ class _AddGoalBarState extends ConsumerState<AddGoalBar> {
                       ),
                     ),
                     trailing: _selectedCategory == cat.key
-                        ? const Icon(Icons.check,
-                            color: Color(0xFF34D399), size: 18)
+                        ? Icon(Icons.check,
+                            color: Theme.of(context).colorScheme.primary, size: 18)
                         : null,
                     onTap: () {
                       setState(() => _selectedCategory = cat.key);

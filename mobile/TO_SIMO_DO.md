@@ -20,3 +20,9 @@
   - Indicatori del calendario nel dashboard.
   - Selettori delle schede (Tabs) in Statistiche e Obiettivi.
   - Bottoni principali nei vari Modal (es. Check-in Giornaliero).
+
+## Verifica Localizzazione (Post-Implementazione)
+- [ ] Cambiare la lingua da Italiano a Inglese nelle Impostazioni.
+- [ ] Verificare che l'animazione di transizione sia fluida.
+- [ ] Controllare che TUTTE le scritte nella pagina Statistiche (Grafici, Legende, Insight) cambino correttamente.
+- [ ] Verificare che i nomi dei giorni nei grafici e nelle heatmap siano tradotti.

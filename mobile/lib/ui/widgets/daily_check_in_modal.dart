@@ -3,6 +3,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:lucide_icons_flutter/lucide_icons.dart';
 import '../../core/theme.dart';
 import '../../core/haptics.dart';
+import '../../core/localization.dart';
 
 class DailyCheckInModal extends ConsumerStatefulWidget {
   const DailyCheckInModal({super.key});
@@ -63,9 +64,9 @@ class _DailyCheckInModalState extends ConsumerState<DailyCheckInModal> {
           const SizedBox(height: 24),
 
           // Header
-          const Text(
-            'Daily Check-in',
-            style: TextStyle(
+          Text(
+            context.l10n.translate('daily_check_in'),
+            style: const TextStyle(
               fontFamily: 'Inter',
               fontSize: 22,
               fontWeight: FontWeight.w700,
@@ -74,9 +75,9 @@ class _DailyCheckInModalState extends ConsumerState<DailyCheckInModal> {
             ),
           ),
           const SizedBox(height: 4),
-          const Text(
-            'Traccia il tuo umore ed energia.',
-            style: TextStyle(
+          Text(
+            context.l10n.translate('track_mood_energy'),
+            style: const TextStyle(
               fontFamily: 'Inter',
               fontSize: 14,
               color: AppColors.mutedForeground,
@@ -95,9 +96,9 @@ class _DailyCheckInModalState extends ConsumerState<DailyCheckInModal> {
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                const Text(
-                  'Daily Check-in',
-                  style: TextStyle(
+                Text(
+                  context.l10n.translate('daily_check_in'),
+                  style: const TextStyle(
                     fontFamily: 'Inter',
                     fontSize: 18,
                     fontWeight: FontWeight.w600,
@@ -108,7 +109,7 @@ class _DailyCheckInModalState extends ConsumerState<DailyCheckInModal> {
 
                 // Mood Section
                 _buildSliderSection(
-                  label: 'Mood',
+                  label: context.l10n.translate('mood'),
                   icon: LucideIcons.heart,
                   value: _mood,
                   emoji: _getMoodEmoji(_mood.round()),
@@ -119,7 +120,7 @@ class _DailyCheckInModalState extends ConsumerState<DailyCheckInModal> {
 
                 // Energy Section
                 _buildSliderSection(
-                  label: 'Energy',
+                  label: context.l10n.translate('energy'),
                   icon: LucideIcons.zap,
                   value: _energy,
                   emoji: _getEnergyEmoji(_energy.round()),
@@ -150,8 +151,8 @@ class _DailyCheckInModalState extends ConsumerState<DailyCheckInModal> {
                       children: [
                         const Icon(LucideIcons.save, size: 18),
                         const SizedBox(width: 10),
-                        const Text(
-                          'Update Daily Status',
+                        Text(
+                          context.l10n.translate('update_status'),
                           style: TextStyle(
                             fontSize: 15,
                             fontWeight: FontWeight.w600,

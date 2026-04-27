@@ -54,7 +54,7 @@ class LifeViewWidget extends ConsumerWidget {
             children: [
               _LegendItem(color: Colors.blue.withValues(alpha: 0.4), label: 'Pre-tracking'),
               const SizedBox(width: 16),
-              const _LegendItem(color: AppColors.success, label: 'Attuale'),
+              _LegendItem(color: const Color(0xFF10B981), label: 'Attuale'),
             ],
           ),
           const SizedBox(height: 24),
@@ -89,6 +89,7 @@ class LifeViewWidget extends ConsumerWidget {
                       totalMonths: totalMonths,
                       livedMonths: livedMonths,
                       currentMonth: livedMonths,
+                      accentColor: Theme.of(context).colorScheme.primary,
                     ),
                   );
                 },
@@ -174,11 +175,13 @@ class _LifeGridPainter extends CustomPainter {
   final int totalMonths;
   final int livedMonths;
   final int currentMonth;
+  final Color accentColor;
 
   _LifeGridPainter({
     required this.totalMonths,
     required this.livedMonths,
     required this.currentMonth,
+    required this.accentColor,
   });
 
   @override
@@ -188,9 +191,9 @@ class _LifeGridPainter extends CustomPainter {
     final int dotsPerRow = (size.width / (dotSize + spacing)).floor();
     
     final Paint preTrackingPaint = Paint()..color = Colors.blue.withValues(alpha: 0.2);
-    final Paint livedPaint = Paint()..color = AppColors.success.withValues(alpha: 0.8);
+    final Paint livedPaint = Paint()..color = accentColor.withValues(alpha: 0.8);
     final Paint currentPaint = Paint()
-      ..color = AppColors.success
+      ..color = const Color(0xFF10B981)
       ..style = PaintingStyle.fill;
     final Paint currentStrokePaint = Paint()
       ..color = Colors.white

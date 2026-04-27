@@ -196,8 +196,8 @@ class _GoalItemWidgetState extends ConsumerState<GoalItemWidget>
                     style:
                         GoogleFonts.inter(color: AppColors.mutedForeground)),
                 trailing: widget.goal.categoryKey == null
-                    ? const Icon(Icons.check,
-                        color: Color(0xFF34D399), size: 18)
+                    ? Icon(Icons.check,
+                        color: Theme.of(context).colorScheme.primary, size: 18)
                     : null,
                 onTap: () {
                   ref
@@ -229,8 +229,8 @@ class _GoalItemWidgetState extends ConsumerState<GoalItemWidget>
                     ),
                   ),
                   trailing: widget.goal.categoryKey == cat.key
-                      ? const Icon(Icons.check,
-                          color: Color(0xFF34D399), size: 18)
+                      ? Icon(Icons.check,
+                          color: Theme.of(context).colorScheme.primary, size: 18)
                       : null,
                   onTap: () {
                     ref
@@ -264,8 +264,8 @@ class _GoalItemWidgetState extends ConsumerState<GoalItemWidget>
     Color bgColor;
 
     if (isCompleted) {
-      borderColor = const Color(0xFF34D399).withValues(alpha: 0.15);
-      bgColor = const Color(0xFF34D399).withValues(alpha: 0.05);
+      borderColor = const Color(0xFF10B981).withValues(alpha: 0.15);
+      bgColor = const Color(0xFF10B981).withValues(alpha: 0.05);
     } else if (isFailed) {
       borderColor = AppColors.destructive.withValues(alpha: 0.2);
       bgColor = AppColors.destructive.withValues(alpha: 0.06);
@@ -286,9 +286,9 @@ class _GoalItemWidgetState extends ConsumerState<GoalItemWidget>
       Widget? icon;
 
       if (isCompleted) {
-        checkBg = const Color(0xFF34D399);
-        checkBorder = const Color(0xFF34D399);
-        icon = const Icon(Icons.check, color: Colors.black, size: 12);
+        checkBg = const Color(0xFF10B981);
+        checkBorder = const Color(0xFF10B981);
+        icon = Icon(Icons.check, color: AppColors.background, size: 12);
       } else if (isFailed) {
         checkBg = AppColors.destructive;
         checkBorder = AppColors.destructive;
@@ -355,7 +355,7 @@ class _GoalItemWidgetState extends ConsumerState<GoalItemWidget>
                       fontSize: 14,
                       fontWeight: FontWeight.w500,
                       color: isCompleted
-                          ? const Color(0xFF34D399).withValues(alpha: 0.7)
+                          ? Theme.of(context).colorScheme.primary.withValues(alpha: 0.7)
                           : isFailed
                               ? AppColors.destructive.withValues(alpha: 0.7)
                               : AppColors.foreground,
@@ -363,7 +363,7 @@ class _GoalItemWidgetState extends ConsumerState<GoalItemWidget>
                           ? TextDecoration.lineThrough
                           : TextDecoration.none,
                       decorationColor: isCompleted
-                          ? const Color(0xFF34D399).withValues(alpha: 0.5)
+                          ? Theme.of(context).colorScheme.primary.withValues(alpha: 0.5)
                           : AppColors.destructive.withValues(alpha: 0.5),
                     ),
                   ),

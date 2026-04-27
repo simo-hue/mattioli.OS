@@ -139,12 +139,14 @@ class GoalLogCard extends ConsumerWidget {
     // Mock streak
     final int mockStreak = 7 - (habit.id.hashCode % 5);
 
+    final primaryColor = Theme.of(context).colorScheme.primary;
+
     if (status == 'done') {
-      cardColor = const Color(0xFF064E3B).withValues(alpha: 0.2); // Very dark green
-      borderColor = const Color(0xFF10B981).withValues(alpha: 0.4);
-      textColor = const Color(0xFF10B981);
-      iconBgColor = const Color(0xFF064E3B).withValues(alpha: 0.4);
-      iconColor = const Color(0xFF10B981);
+      cardColor = primaryColor.withValues(alpha: 0.15); 
+      borderColor = primaryColor.withValues(alpha: 0.4);
+      textColor = primaryColor;
+      iconBgColor = primaryColor.withValues(alpha: 0.2);
+      iconColor = primaryColor;
       icon = LucideIcons.check;
     } else if (status == 'missed') {
       cardColor = const Color(0xFF450A0A).withValues(alpha: 0.2); // Very dark red
@@ -226,14 +228,16 @@ class StreakBadge extends StatelessWidget {
     IconData icon = LucideIcons.flame;
     Color iconColor = const Color(0xFFF97316); // Orange
 
+    final primaryColor = Theme.of(context).colorScheme.primary;
+
     if (isMissed) {
       bgColor = const Color(0xFF450A0A).withValues(alpha: 0.5);
       textColor = const Color(0xFFEF4444);
       icon = LucideIcons.heartCrack;
       iconColor = const Color(0xFFEF4444);
     } else if (isDone) {
-      bgColor = const Color(0xFF064E3B).withValues(alpha: 0.5);
-      textColor = const Color(0xFF10B981);
+      bgColor = primaryColor.withValues(alpha: 0.2);
+      textColor = primaryColor;
     }
 
     return Container(

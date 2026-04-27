@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:lucide_icons_flutter/lucide_icons.dart';
 import '../../../core/theme.dart';
+import '../../../core/localization.dart';
 
 class InfoTabWidget extends StatelessWidget {
   const InfoTabWidget({super.key});
@@ -43,31 +44,31 @@ class _TopStatsGrid extends StatelessWidget {
       children: [
         _StatCard(
           icon: LucideIcons.target,
-          title: 'Completamento',
+          title: context.l10n.translate('completion'),
           value: '44%',
-          subtitle: 'Globale',
-          accentColor: Color(0xFF8B5CF6),
+          subtitle: context.l10n.translate('global'),
+          accentColor: Theme.of(context).colorScheme.primary,
         ),
         _StatCard(
           icon: LucideIcons.flame,
-          title: 'Miglior Serie',
+          title: context.l10n.translate('best_streak'),
           value: '48',
-          subtitle: 'Giorni',
-          accentColor: Color(0xFFF97316),
+          subtitle: context.l10n.translate('days'),
+          accentColor: Theme.of(context).colorScheme.primary,
         ),
         _StatCard(
           icon: LucideIcons.trophy,
-          title: 'Top Performer',
+          title: context.l10n.translate('top_performer'),
           value: 'Caviglie',
           subtitle: '86% Rate',
-          accentColor: Color(0xFF10B981),
+          accentColor: Theme.of(context).colorScheme.primary,
         ),
         _StatCard(
           icon: LucideIcons.triangleAlert,
-          title: 'Giorno Critico',
-          value: 'Sabato',
-          subtitle: 'Focus richiesto',
-          accentColor: Color(0xFFEF4444),
+          title: context.l10n.translate('critical_day'),
+          value: context.l10n.translate('sat'),
+          subtitle: context.l10n.translate('focus_required'),
+          accentColor: const Color(0xFFEF4444),
         ),
       ],
 
@@ -210,13 +211,13 @@ class _AbitudiniChiaveSection extends StatelessWidget {
                   child: const Icon(LucideIcons.crown, size: 18, color: Color(0xFFEAB308)),
                 ),
                 const SizedBox(width: 12),
-                const Expanded(
+                Expanded(
                   child: Column(
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
                       Text(
-                        'Abitudini Chiave',
-                        style: TextStyle(
+                        context.l10n.translate('key_habits'),
+                        style: const TextStyle(
                           fontFamily: 'Inter',
                           fontSize: 16,
                           fontWeight: FontWeight.w700,
@@ -224,8 +225,8 @@ class _AbitudiniChiaveSection extends StatelessWidget {
                         ),
                       ),
                       Text(
-                        'Abitudini che influenzano positivamente molte altre',
-                        style: TextStyle(
+                        context.l10n.translate('key_habits_desc'),
+                        style: const TextStyle(
                           fontFamily: 'Inter',
                           fontSize: 11,
                           color: AppColors.mutedForeground,
@@ -300,11 +301,11 @@ class _AbitudiniChiaveSection extends StatelessWidget {
                   const SizedBox(width: 8),
                   Expanded(
                     child: RichText(
-                      text: const TextSpan(
-                        style: TextStyle(fontFamily: 'Inter', fontSize: 10, color: AppColors.mutedForeground, height: 1.4),
+                      text: TextSpan(
+                        style: const TextStyle(fontFamily: 'Inter', fontSize: 10, color: AppColors.mutedForeground, height: 1.4),
                         children: [
-                          TextSpan(text: 'Suggerimento: ', style: TextStyle(fontWeight: FontWeight.w700, color: AppColors.foreground)),
-                          TextSpan(text: 'Le abitudini chiave hanno un effetto "domino" su altre. Concentrati a mantenerle costanti per migliorare l\'intero sistema delle tue abitudini.'),
+                          TextSpan(text: '${context.l10n.translate('suggestion')}: ', style: const TextStyle(fontWeight: FontWeight.w700, color: AppColors.foreground)),
+                          TextSpan(text: context.l10n.translate('suggestion_domino')),
                         ],
                       ),
                     ),
@@ -380,7 +381,7 @@ class _AbitudineChiaveCard extends StatelessWidget {
                   ),
                 ),
               ),
-              const Icon(LucideIcons.crown, size: 18, color: Color(0xFF10B981)),
+              Icon(LucideIcons.crown, size: 18, color: Theme.of(context).colorScheme.primary),
             ],
           ),
           const SizedBox(height: 14),
@@ -389,22 +390,22 @@ class _AbitudineChiaveCard extends StatelessWidget {
               Container(
                 padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
                 decoration: BoxDecoration(
-                  color: const Color(0xFF10B981).withValues(alpha: 0.15),
+                  color: Theme.of(context).colorScheme.primary.withValues(alpha: 0.15),
                   borderRadius: BorderRadius.circular(8),
                 ),
-                child: const Text(
-                  'Alto Impatto',
+                child: Text(
+                  context.l10n.translate('high_impact'),
                   style: TextStyle(
                     fontFamily: 'Inter',
                     fontSize: 10,
                     fontWeight: FontWeight.w700,
-                    color: Color(0xFF10B981),
+                    color: Theme.of(context).colorScheme.primary,
                   ),
                 ),
               ),
               const SizedBox(width: 10),
               Text(
-                '${correlations.length + extraConnections} connessioni',
+                '${correlations.length + extraConnections} ${context.l10n.translate('connections')}',
                 style: const TextStyle(
                   fontFamily: 'Inter',
                   fontSize: 11,
@@ -462,12 +463,12 @@ class _AbitudineChiaveCard extends StatelessWidget {
             mainAxisAlignment: MainAxisAlignment.spaceBetween,
             children: [
               Row(
-                children: const [
-                  Icon(LucideIcons.chartSpline, size: 14, color: AppColors.mutedForeground),
-                  SizedBox(width: 6),
+                children: [
+                  const Icon(LucideIcons.chartSpline, size: 14, color: AppColors.mutedForeground),
+                  const SizedBox(width: 6),
                   Text(
-                    'Media Impatto',
-                    style: TextStyle(
+                    context.l10n.translate('avg_impact'),
+                    style: const TextStyle(
                       fontFamily: 'Inter',
                       fontSize: 12,
                       fontWeight: FontWeight.w500,
@@ -520,25 +521,25 @@ class _AnalisiCorrelazioniSection extends StatelessWidget {
                 child: const Icon(LucideIcons.gitCommitVertical, size: 18, color: Color(0xFF3B82F6)),
               ),
               const SizedBox(width: 12),
-              const Column(
+              Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  Text('Analisi Correlazioni', style: TextStyle(fontFamily: 'Inter', fontSize: 16, fontWeight: FontWeight.w700, color: AppColors.foreground)),
-                  Text('Pattern tra le tue abitudini', style: TextStyle(fontFamily: 'Inter', fontSize: 11, color: AppColors.mutedForeground)),
+                  Text(context.l10n.translate('correlation_analysis'), style: const TextStyle(fontFamily: 'Inter', fontSize: 16, fontWeight: FontWeight.w700, color: AppColors.foreground)),
+                  Text(context.l10n.translate('patterns_desc'), style: const TextStyle(fontFamily: 'Inter', fontSize: 11, color: AppColors.mutedForeground)),
                 ],
               ),
             ],
           ),
           const SizedBox(height: 16),
           Row(
-            children: const [
-              Expanded(child: _CorrelazioneStatBox(title: 'Coppie Analizzate', value: '16')),
-              SizedBox(width: 8),
-              Expanded(child: _CorrelazioneStatBox(title: 'Correlazione Media', value: '+0.52')),
-              SizedBox(width: 8),
-              Expanded(child: _CorrelazioneStatBox(title: 'Positive', value: '5', valueColor: Color(0xFF10B981))),
-              SizedBox(width: 8),
-              Expanded(child: _CorrelazioneStatBox(title: 'Negative', value: '3', valueColor: Color(0xFFEF4444))),
+            children: [
+              Expanded(child: _CorrelazioneStatBox(title: context.l10n.translate('pairs_analyzed'), value: '16')),
+              const SizedBox(width: 8),
+              Expanded(child: _CorrelazioneStatBox(title: context.l10n.translate('avg_correlation'), value: '+0.52')),
+              const SizedBox(width: 8),
+              Expanded(child: _CorrelazioneStatBox(title: context.l10n.translate('positive'), value: '5', valueColor: Theme.of(context).colorScheme.primary)),
+              const SizedBox(width: 8),
+              Expanded(child: _CorrelazioneStatBox(title: context.l10n.translate('negative'), value: '3', valueColor: const Color(0xFFEF4444))),
             ],
           ),
           const SizedBox(height: 16),
@@ -557,10 +558,10 @@ class _AnalisiCorrelazioniSection extends StatelessWidget {
                 Expanded(
                   child: Column(
                     crossAxisAlignment: CrossAxisAlignment.start,
-                    children: const [
-                      Text('Abitudini Isolate', style: TextStyle(fontFamily: 'Inter', fontSize: 11, fontWeight: FontWeight.w700, color: Color(0xFFEAB308))),
-                      SizedBox(height: 2),
-                      Text('5 abitudini non hanno correlazioni significative con le altre. Potrebbero essere indipendenti o necessitare di più dati.', style: TextStyle(fontFamily: 'Inter', fontSize: 10, color: AppColors.mutedForeground, height: 1.4)),
+                    children: [
+                      Text(context.l10n.translate('isolated_habits'), style: const TextStyle(fontFamily: 'Inter', fontSize: 11, fontWeight: FontWeight.w700, color: Color(0xFFEAB308))),
+                      const SizedBox(height: 2),
+                      Text(context.l10n.translate('isolated_habits_desc'), style: const TextStyle(fontFamily: 'Inter', fontSize: 10, color: AppColors.mutedForeground, height: 1.4)),
                     ],
                   ),
                 ),
@@ -604,20 +605,21 @@ class _CorrelazioniPositiveSection extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final primaryColor = Theme.of(context).colorScheme.primary;
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
-      children: const [
+      children: [
         Row(
           children: [
-            Icon(LucideIcons.heart, size: 16, color: Color(0xFF10B981)),
-            SizedBox(width: 8),
-            Text('Correlazioni Positive', style: TextStyle(fontFamily: 'Inter', fontSize: 14, fontWeight: FontWeight.w700, color: AppColors.foreground)),
+            const Icon(LucideIcons.heart, size: 16, color: Color(0xFF10B981)),
+            const SizedBox(width: 8),
+            Text(context.l10n.translate('positive_correlations'), style: const TextStyle(fontFamily: 'Inter', fontSize: 14, fontWeight: FontWeight.w700, color: AppColors.foreground)),
           ],
         ),
-        SizedBox(height: 12),
+        const SizedBox(height: 12),
         _CorrelazioneDetailCard(
           tag: 'Correlazione Positiva - Forte',
-          tagColor: Color(0xFF10B981),
+          tagColor: const Color(0xFF10B981),
           habit1: '20 Flessioni 1',
           habit1Color: Color(0xFFEF4444),
           habit2: '20 Flessioni 2',
@@ -630,7 +632,7 @@ class _CorrelazioniPositiveSection extends StatelessWidget {
         SizedBox(height: 8),
         _CorrelazioneDetailCard(
           tag: 'Correlazione Positiva - Forte',
-          tagColor: Color(0xFF10B981),
+          tagColor: const Color(0xFF10B981),
           habit1: '20 Flessioni 2',
           habit1Color: Color(0xFFEF4444),
           habit2: '20 Flessioni 3',
@@ -643,7 +645,7 @@ class _CorrelazioniPositiveSection extends StatelessWidget {
         SizedBox(height: 8),
         _CorrelazioneDetailCard(
           tag: 'Correlazione Positiva - Forte',
-          tagColor: Color(0xFF10B981),
+          tagColor: const Color(0xFF10B981),
           habit1: '20 Flessioni 3',
           habit1Color: Color(0xFFEF4444),
           habit2: '20 Flessioni 4',
@@ -656,7 +658,7 @@ class _CorrelazioniPositiveSection extends StatelessWidget {
         SizedBox(height: 8),
         _CorrelazioneDetailCard(
           tag: 'Correlazione Positiva - Forte',
-          tagColor: Color(0xFF10B981),
+          tagColor: const Color(0xFF10B981),
           habit1: '20 Flessioni 1',
           habit1Color: Color(0xFFEF4444),
           habit2: '20 Flessioni 3',
@@ -669,7 +671,7 @@ class _CorrelazioniPositiveSection extends StatelessWidget {
         SizedBox(height: 8),
         _CorrelazioneDetailCard(
           tag: 'Correlazione Positiva - Forte',
-          tagColor: Color(0xFF10B981),
+          tagColor: const Color(0xFF10B981),
           habit1: '20 Flessioni 2',
           habit1Color: Color(0xFFEF4444),
           habit2: '20 Flessioni 4',
@@ -824,9 +826,9 @@ class _CorrelazioniNegativeSection extends StatelessWidget {
       children: const [
         Row(
           children: [
-            Icon(LucideIcons.triangleAlert, size: 16, color: Color(0xFFEAB308)),
-            SizedBox(width: 8),
-            Text('Correlazioni Negative', style: TextStyle(fontFamily: 'Inter', fontSize: 14, fontWeight: FontWeight.w700, color: AppColors.foreground)),
+            const Icon(LucideIcons.triangleAlert, size: 16, color: Color(0xFFEAB308)),
+            const SizedBox(width: 8),
+            const Text('Correlazioni Negative', style: TextStyle(fontFamily: 'Inter', fontSize: 14, fontWeight: FontWeight.w700, color: AppColors.foreground)),
           ],
         ),
         SizedBox(height: 4),

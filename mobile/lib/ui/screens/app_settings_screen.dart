@@ -6,6 +6,7 @@ import 'package:flutter_colorpicker/flutter_colorpicker.dart';
 import '../../core/theme.dart';
 import '../../providers/settings_provider.dart';
 import '../../core/haptics.dart';
+import '../../core/localization.dart';
 
 class AppSettingsScreen extends ConsumerWidget {
   const AppSettingsScreen({super.key});
@@ -41,9 +42,9 @@ class AppSettingsScreen extends ConsumerWidget {
           icon: const Icon(LucideIcons.chevronLeft, color: AppColors.foreground),
           onPressed: () => Navigator.pop(context),
         ),
-        title: const Text(
-          'Impostazioni App',
-          style: TextStyle(
+        title: Text(
+          context.l10n.translate('settings_title'),
+          style: const TextStyle(
             color: AppColors.foreground,
             fontSize: 18,
             fontWeight: FontWeight.w700,
@@ -57,12 +58,12 @@ class AppSettingsScreen extends ConsumerWidget {
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            _buildSectionHeader('ASPETTO & VISUAL'),
+            _buildSectionHeader(context.l10n.translate('appearance_section')),
             _buildSettingsCard([
               _buildSwitchRow(
                 context: context,
                 icon: LucideIcons.moon,
-                title: 'Modalità Scura',
+                title: context.l10n.translate('dark_mode'),
                 value: settings.themeMode == 'dark',
                 onChanged: (val) {
                   final currentSettings = ref.read(settingsProvider);
@@ -74,7 +75,7 @@ class AppSettingsScreen extends ConsumerWidget {
               _buildSwitchRow(
                 context: context,
                 icon: LucideIcons.sparkles,
-                title: 'Effetti Trasparenza',
+                title: context.l10n.translate('glass_effects'),
                 value: settings.glassEffects,
                 onChanged: (val) {
                   final currentSettings = ref.read(settingsProvider);
@@ -86,7 +87,7 @@ class AppSettingsScreen extends ConsumerWidget {
               _buildActionRow(
                 context: context,
                 icon: LucideIcons.palette,
-                title: 'Colore Accento',
+                title: context.l10n.translate('accent_color'),
                 trailing: Container(
                   width: 24,
                   height: 24,
@@ -110,12 +111,12 @@ class AppSettingsScreen extends ConsumerWidget {
               ),
             ]),
             const SizedBox(height: 32),
-            _buildSectionHeader('CALENDARIO & DASHBOARD'),
+            _buildSectionHeader(context.l10n.translate('calendar_section')),
             _buildSettingsCard([
               _buildActionRow(
                 context: context,
                 icon: LucideIcons.calendar,
-                title: 'Vista Predefinita',
+                title: context.l10n.translate('default_view'),
                 trailingText: settings.defaultCalendarView.toUpperCase(),
                 onTap: () {
                   ref.hapticLight();
@@ -165,7 +166,7 @@ class AppSettingsScreen extends ConsumerWidget {
               _buildSwitchRow(
                 context: context,
                 icon: LucideIcons.calendarDays,
-                title: 'Inizia di Lunedì',
+                title: context.l10n.translate('start_monday'),
                 value: settings.startWeekOnMonday,
                 onChanged: (val) {
                   final currentSettings = ref.read(settingsProvider);
@@ -177,7 +178,7 @@ class AppSettingsScreen extends ConsumerWidget {
               _buildSwitchRow(
                 context: context,
                 icon: LucideIcons.calendarRange,
-                title: 'Mostra Weekend',
+                title: context.l10n.translate('show_weekend'),
                 value: settings.showWeekend,
                 onChanged: (val) {
                   final currentSettings = ref.read(settingsProvider);
@@ -187,12 +188,12 @@ class AppSettingsScreen extends ConsumerWidget {
               ),
             ]),
             const SizedBox(height: 32),
-            _buildSectionHeader('ESPERIENZA UTENTE'),
+            _buildSectionHeader(context.l10n.translate('user_exp_section')),
             _buildSettingsCard([
               _buildSwitchRow(
                 context: context,
                 icon: LucideIcons.vibrate,
-                title: 'Feedback Aptico',
+                title: context.l10n.translate('haptic_feedback'),
                 value: settings.hapticFeedback,
                 onChanged: (val) {
                   final currentSettings = ref.read(settingsProvider);
@@ -202,22 +203,23 @@ class AppSettingsScreen extends ConsumerWidget {
               ),
             ]),
             const SizedBox(height: 32),
-            _buildSectionHeader('UNITÀ E LINGUA'),
+            _buildSectionHeader(context.l10n.translate('units_lang_section')),
             _buildSettingsCard([
               _buildActionRow(
                 context: context,
                 icon: LucideIcons.languages,
-                title: 'Lingua',
+                title: context.l10n.translate('language'),
                 trailingText: settings.language,
                 onTap: () {
                   ref.hapticLight();
+                  _showLanguageSelector(context, ref, settings.language);
                 },
               ),
               _buildDivider(),
               _buildSwitchRow(
                 context: context,
                 icon: LucideIcons.clock,
-                title: 'Formato 24h',
+                title: context.l10n.translate('format_24h'),
                 value: settings.timeFormat24h,
                 onChanged: (val) {
                   final currentSettings = ref.read(settingsProvider);
@@ -227,13 +229,13 @@ class AppSettingsScreen extends ConsumerWidget {
               ),
             ]),
             const SizedBox(height: 32),
-            _buildSectionHeader('AI & SISTEMA'),
+            _buildSectionHeader(context.l10n.translate('ai_system_section')),
             _buildSettingsCard([
               _buildSwitchRow(
                 context: context,
                 icon: LucideIcons.brainCircuit,
-                title: 'Suggerimenti AI',
-                subtitle: 'Analisi intelligente delle abitudini',
+                title: context.l10n.translate('ai_suggestions'),
+                subtitle: context.l10n.translate('ai_subtitle'),
                 value: settings.aiSuggestions,
                 isLocked: !settings.isPro,
                 onChanged: (val) {
@@ -244,8 +246,8 @@ class AppSettingsScreen extends ConsumerWidget {
                   } else {
                     ref.hapticHeavy();
                     ScaffoldMessenger.of(context).showSnackBar(
-                      const SnackBar(
-                        content: Text('Questa funzione è disponibile solo per utenti PRO'),
+                      SnackBar(
+                        content: Text(context.l10n.translate('pro_only')),
                         backgroundColor: Colors.amber,
                       ),
                     );
@@ -709,6 +711,94 @@ class AppSettingsScreen extends ConsumerWidget {
           : null,
     );
   }
+
+  void _showLanguageSelector(BuildContext context, WidgetRef ref, String currentLanguage) {
+    showModalBottomSheet(
+      context: context,
+      backgroundColor: Colors.transparent,
+      builder: (context) => Container(
+        decoration: BoxDecoration(
+          color: AppColors.card,
+          borderRadius: const BorderRadius.vertical(top: Radius.circular(24)),
+          border: Border.all(color: AppColors.border),
+        ),
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            const SizedBox(height: 12),
+            Container(
+              width: 40,
+              height: 4,
+              decoration: BoxDecoration(
+                color: AppColors.border,
+                borderRadius: BorderRadius.circular(2),
+              ),
+            ),
+            const SizedBox(height: 24),
+            Text(
+              context.l10n.translate('language'),
+              style: const TextStyle(
+                color: AppColors.foreground,
+                fontSize: 18,
+                fontWeight: FontWeight.w700,
+              ),
+            ),
+            const SizedBox(height: 24),
+            _buildLanguageOption(context, ref, 'Italiano', currentLanguage),
+            _buildLanguageOption(context, ref, 'English', currentLanguage),
+            const SizedBox(height: 40),
+          ],
+        ),
+      ),
+    );
+  }
+
+  Widget _buildLanguageOption(BuildContext context, WidgetRef ref, String language, String currentLanguage) {
+    final isSelected = language == currentLanguage;
+    final primaryColor = Theme.of(context).colorScheme.primary;
+    return ListTile(
+      onTap: () {
+        if (!isSelected) {
+          Navigator.pop(context);
+          _applyLanguageWithAnimation(context, ref, language);
+        } else {
+          Navigator.pop(context);
+        }
+      },
+      contentPadding: const EdgeInsets.symmetric(horizontal: 24, vertical: 4),
+      title: Text(
+        language,
+        style: TextStyle(
+          color: isSelected ? primaryColor : AppColors.foreground,
+          fontSize: 16,
+          fontWeight: isSelected ? FontWeight.w700 : FontWeight.w500,
+        ),
+      ),
+      trailing: isSelected ? Icon(LucideIcons.check, color: primaryColor, size: 20) : null,
+    );
+  }
+
+  void _applyLanguageWithAnimation(BuildContext context, WidgetRef ref, String newLanguage) {
+    ref.hapticSuccess();
+    
+    final overlay = OverlayEntry(
+      builder: (context) => _LanguageTransition(
+        color: Theme.of(context).colorScheme.primary,
+        language: newLanguage,
+      ),
+    );
+
+    Overlay.of(context).insert(overlay);
+
+    Future.delayed(const Duration(milliseconds: 400), () {
+      final currentSettings = ref.read(settingsProvider);
+      ref.read(settingsProvider.notifier).updateSettings(currentSettings.copyWith(language: newLanguage));
+    });
+
+    Future.delayed(const Duration(milliseconds: 1200), () {
+      overlay.remove();
+    });
+  }
 }
 
 class _ValidationDialog extends StatelessWidget {
@@ -852,6 +942,86 @@ class _ScenographicTransitionState extends State<_ScenographicTransition> with S
               ),
             ),
           ),
+        ),
+      ),
+    );
+  }
+}
+
+class _LanguageTransition extends StatefulWidget {
+  final Color color;
+  final String language;
+  const _LanguageTransition({required this.color, required this.language});
+
+  @override
+  State<_LanguageTransition> createState() => _LanguageTransitionState();
+}
+
+class _LanguageTransitionState extends State<_LanguageTransition> with SingleTickerProviderStateMixin {
+  late AnimationController _controller;
+  late Animation<double> _scale;
+  late Animation<double> _fade;
+
+  @override
+  void initState() {
+    super.initState();
+    _controller = AnimationController(vsync: this, duration: const Duration(milliseconds: 1000));
+    _scale = Tween<double>(begin: 0.0, end: 6.0).animate(CurvedAnimation(parent: _controller, curve: const Interval(0.0, 0.7, curve: Curves.easeInCubic)));
+    _fade = TweenSequence<double>([
+      TweenSequenceItem(tween: Tween<double>(begin: 0.0, end: 1.0), weight: 30),
+      TweenSequenceItem(tween: ConstantTween<double>(1.0), weight: 40),
+      TweenSequenceItem(tween: Tween<double>(begin: 1.0, end: 0.0), weight: 30),
+    ]).animate(_controller);
+
+    _controller.forward();
+  }
+
+  @override
+  void dispose() {
+    _controller.dispose();
+    super.dispose();
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return FadeTransition(
+      opacity: _fade,
+      child: Material(
+        color: Colors.transparent,
+        child: Stack(
+          children: [
+            Center(
+              child: ScaleTransition(
+                scale: _scale,
+                child: Container(
+                  width: 200,
+                  height: 200,
+                  decoration: BoxDecoration(
+                    shape: BoxShape.circle,
+                    color: widget.color,
+                  ),
+                ),
+              ),
+            ),
+            Center(
+              child: Column(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  const Icon(LucideIcons.languages, color: Colors.black, size: 60),
+                  const SizedBox(height: 16),
+                  Text(
+                    widget.language.toUpperCase(),
+                    style: const TextStyle(
+                      color: Colors.black,
+                      fontSize: 24,
+                      fontWeight: FontWeight.w900,
+                      letterSpacing: 2,
+                    ),
+                  ),
+                ],
+              ),
+            ),
+          ],
         ),
       ),
     );

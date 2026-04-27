@@ -5,6 +5,7 @@ import 'package:lucide_icons_flutter/lucide_icons.dart';
 import '../../core/theme.dart';
 import '../../providers/goal_provider.dart';
 import '../../core/haptics.dart';
+import '../../core/localization.dart';
 
 class ViewTabBar extends ConsumerWidget {
   const ViewTabBar({super.key});
@@ -14,10 +15,10 @@ class ViewTabBar extends ConsumerWidget {
     final currentView = ref.watch(calendarViewProvider);
 
     final tabs = [
-      _TabItem(view: CalendarView.month, label: 'Mese'),
-      _TabItem(view: CalendarView.week, label: 'Settimana'),
-      _TabItem(view: CalendarView.year, label: 'Anno'),
-      _TabItem(view: CalendarView.vita, label: 'Vita'),
+      _TabItem(view: CalendarView.month, label: context.l10n.translate('month')),
+      _TabItem(view: CalendarView.week, label: context.l10n.translate('week')),
+      _TabItem(view: CalendarView.year, label: context.l10n.translate('year')),
+      _TabItem(view: CalendarView.vita, label: context.l10n.translate('life')),
     ];
 
     return Container(

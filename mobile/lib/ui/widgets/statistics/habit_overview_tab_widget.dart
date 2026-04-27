@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:lucide_icons_flutter/lucide_icons.dart';
 import '../../../core/theme.dart';
+import '../../../core/localization.dart';
 
 class HabitOverviewTabWidget extends StatelessWidget {
   final String goalId;
@@ -12,9 +13,9 @@ class HabitOverviewTabWidget extends StatelessWidget {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        const _TopStatsGrid(),
+        _TopStatsGrid(),
         const SizedBox(height: 16),
-        const _TrendUltimi30Giorni(),
+        _TrendUltimi30Giorni(),
         const SizedBox(height: 16),
         _CorrelazioniSection(goalId: goalId),
         const SizedBox(height: 32),
@@ -35,30 +36,30 @@ class _TopStatsGrid extends StatelessWidget {
       mainAxisSpacing: 10,
       crossAxisSpacing: 10,
       childAspectRatio: 1.8,
-      children: const [
+      children: [
         _StatCard(
-          title: 'SERIE ATTUALE',
+          title: context.l10n.translate('current_streak_caps'),
           value: '0',
-          subtitle: 'giorni',
-          valueColor: Color(0xFFEF4444), // Red
+          subtitle: context.l10n.translate('days'),
+          valueColor: const Color(0xFFEF4444), // Red
         ),
         _StatCard(
-          title: 'RECORD',
+          title: context.l10n.translate('record_streak_caps'),
           value: '34',
-          subtitle: 'giorni',
-          valueColor: Color(0xFFEAB308), // Yellow
+          subtitle: context.l10n.translate('days'),
+          valueColor: const Color(0xFFEAB308), // Yellow
         ),
         _StatCard(
-          title: 'COMPLETAMENTO',
+          title: context.l10n.translate('completion_caps'),
           value: '55%',
-          subtitle: '67/122 gg',
+          subtitle: '67/122 ${context.l10n.translate('days_short')}',
           valueColor: AppColors.foreground,
         ),
         _StatCard(
-          title: 'MANCATI',
+          title: context.l10n.translate('missed_caps'),
           value: '40',
-          subtitle: 'giorni',
-          valueColor: Color(0xFFEF4444), // Red
+          subtitle: context.l10n.translate('days'),
+          valueColor: const Color(0xFFEF4444), // Red
         ),
       ],
     );
@@ -149,9 +150,9 @@ class _TrendUltimi30Giorni extends StatelessWidget {
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          const Text(
-            'Trend Ultimi 30 Giorni',
-            style: TextStyle(
+          Text(
+            context.l10n.translate('trend_last_30_days'),
+            style: const TextStyle(
               fontFamily: 'Inter',
               fontSize: 16,
               fontWeight: FontWeight.w700,
@@ -172,7 +173,7 @@ class _TrendUltimi30Giorni extends StatelessWidget {
               final status = statuses[index];
               Color color;
               if (status == 1) {
-                color = const Color(0xFF10B981); // Green
+                color = Theme.of(context).colorScheme.primary; 
               } else if (status == 0) {
                 color = const Color(0xFFFF0000); // Red
               } else {
@@ -190,13 +191,13 @@ class _TrendUltimi30Giorni extends StatelessWidget {
           const SizedBox(height: 16),
           Row(
             children: [
-              Container(width: 10, height: 10, decoration: const BoxDecoration(color: Color(0xFF10B981), shape: BoxShape.circle)),
+              Container(width: 10, height: 10, decoration: BoxDecoration(color: Theme.of(context).colorScheme.primary, shape: BoxShape.circle)),
               const SizedBox(width: 6),
-              const Text('Completato', style: TextStyle(fontFamily: 'Inter', fontSize: 11, color: AppColors.mutedForeground)),
+              Text(context.l10n.translate('completed'), style: const TextStyle(fontFamily: 'Inter', fontSize: 11, color: AppColors.mutedForeground)),
               const SizedBox(width: 16),
               Container(width: 10, height: 10, decoration: const BoxDecoration(color: Color(0xFF18181B), shape: BoxShape.circle)),
               const SizedBox(width: 6),
-              const Text('Non completato', style: TextStyle(fontFamily: 'Inter', fontSize: 11, color: AppColors.mutedForeground)),
+              Text(context.l10n.translate('not_completed'), style: const TextStyle(fontFamily: 'Inter', fontSize: 11, color: AppColors.mutedForeground)),
             ],
           )
         ],
@@ -211,6 +212,7 @@ class _CorrelazioniSection extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final primaryColor = Theme.of(context).colorScheme.primary;
     return Container(
       decoration: BoxDecoration(
         color: AppColors.card,
@@ -221,9 +223,9 @@ class _CorrelazioniSection extends StatelessWidget {
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          const Text(
-            'Correlazioni con "20 Flessioni 1"', // Mock title for now
-            style: TextStyle(
+          Text(
+            '${context.l10n.translate('correlations_with')} "20 Flessioni 1"', // Mock title for now
+            style: const TextStyle(
               fontFamily: 'Inter',
               fontSize: 16,
               fontWeight: FontWeight.w700,
@@ -231,9 +233,9 @@ class _CorrelazioniSection extends StatelessWidget {
             ),
           ),
           const SizedBox(height: 4),
-          const Text(
-            'Come questa abitudine si relaziona con le altre',
-            style: TextStyle(
+          Text(
+            context.l10n.translate('how_habit_relates'),
+            style: const TextStyle(
               fontFamily: 'Inter',
               fontSize: 12,
               color: AppColors.mutedForeground,
@@ -243,12 +245,12 @@ class _CorrelazioniSection extends StatelessWidget {
           
           // Positive Correlations
           Row(
-            children: const [
-              Icon(LucideIcons.trendingUp, size: 14, color: Color(0xFF10B981)),
-              SizedBox(width: 8),
+            children: [
+              const Icon(LucideIcons.trendingUp, size: 14, color: Color(0xFF10B981)),
+              const SizedBox(width: 8),
               Text(
-                'Correlazioni Positive',
-                style: TextStyle(
+                context.l10n.translate('positive_correlations'),
+                style: const TextStyle(
                   fontFamily: 'Inter',
                   fontSize: 12,
                   fontWeight: FontWeight.w600,
@@ -258,46 +260,46 @@ class _CorrelazioniSection extends StatelessWidget {
             ],
           ),
           const SizedBox(height: 12),
-          const _CorrelazioneCard(
+          _CorrelazioneCard(
             habitName: '20 Flessioni 2',
-            habitColor: Color(0xFFEF4444),
+            habitColor: const Color(0xFFEF4444),
             strengthText: 'Forte (+0.92)',
-            strengthColor: Color(0xFF10B981),
-            subtitle: '94% insieme',
+            strengthColor: const Color(0xFF10B981),
+            subtitle: '94% ${context.l10n.translate('together')}',
             description: 'Quando completi "20 Flessioni 1", hai una probabilità del 94% di completare anche "20 Flessioni 2". Considera di farle insieme come routine consolidata.',
-            borderColor: Color(0xFF10B981),
+            borderColor: const Color(0xFF10B981),
           ),
           const SizedBox(height: 8),
-          const _CorrelazioneCard(
+          _CorrelazioneCard(
             habitName: '20 Flessioni 3',
-            habitColor: Color(0xFFEF4444),
+            habitColor: const Color(0xFFEF4444),
             strengthText: 'Forte (+0.77)',
-            strengthColor: Color(0xFF10B981),
+            strengthColor: const Color(0xFF10B981),
             subtitle: '81% insieme',
             description: 'Quando completi "20 Flessioni 1", hai una probabilità del 81% di completare anche "20 Flessioni 3". Considera di farle insieme come routine consolidata.',
-            borderColor: Color(0xFF10B981),
+            borderColor: const Color(0xFF10B981),
           ),
           const SizedBox(height: 8),
-          const _CorrelazioneCard(
+          _CorrelazioneCard(
             habitName: '20 Flessioni 4',
-            habitColor: Color(0xFFEF4444),
+            habitColor: const Color(0xFFEF4444),
             strengthText: 'Forte (+0.62)',
-            strengthColor: Color(0xFF10B981),
+            strengthColor: const Color(0xFF10B981),
             subtitle: '53% insieme',
             description: 'Quando completi "20 Flessioni 1", hai una probabilità del 53% di completare anche "20 Flessioni 4". Considera di farle insieme come routine consolidata.',
-            borderColor: Color(0xFF10B981),
+            borderColor: const Color(0xFF10B981),
           ),
           
           const SizedBox(height: 24),
           
           // Negative Correlations
           Row(
-            children: const [
-              Icon(LucideIcons.trendingDown, size: 14, color: Color(0xFFEF4444)),
-              SizedBox(width: 8),
+            children: [
+              const Icon(LucideIcons.trendingDown, size: 14, color: Color(0xFFEF4444)),
+              const SizedBox(width: 8),
               Text(
-                'Correlazioni Negative',
-                style: TextStyle(
+                context.l10n.translate('negative_correlations'),
+                style: const TextStyle(
                   fontFamily: 'Inter',
                   fontSize: 12,
                   fontWeight: FontWeight.w600,
@@ -307,14 +309,14 @@ class _CorrelazioniSection extends StatelessWidget {
             ],
           ),
           const SizedBox(height: 12),
-          const _CorrelazioneCard(
+          _CorrelazioneCard(
             habitName: '1 YT-Video',
-            habitColor: Color(0xFFEF4444),
+            habitColor: const Color(0xFFEF4444),
             strengthText: 'Moderata (-0.30)',
-            strengthColor: Color(0xFFEF4444),
+            strengthColor: const Color(0xFFEF4444),
             subtitle: '93 giorni',
             description: '"20 Flessioni 1" e "1 YT-Video" raramente vengono completate lo stesso giorno. Potrebbero competere per tempo/energia - considera di pianificarle in giorni diversi.',
-            borderColor: Color(0xFFEF4444),
+            borderColor: const Color(0xFFEF4444),
           ),
 
           const SizedBox(height: 24),
@@ -330,10 +332,10 @@ class _CorrelazioniSection extends StatelessWidget {
               children: [
                 const Icon(LucideIcons.info, size: 16, color: Color(0xFF3B82F6)),
                 const SizedBox(width: 12),
-                const Expanded(
+                Expanded(
                   child: Text(
-                    'Le correlazioni positive suggeriscono abitudini che funzionano bene insieme. Le negative indicano possibili conflitti di tempo o energia.',
-                    style: TextStyle(
+                    context.l10n.translate('correlation_info'),
+                    style: const TextStyle(
                       fontFamily: 'Inter',
                       fontSize: 11,
                       color: AppColors.mutedForeground,

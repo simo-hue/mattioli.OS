@@ -153,13 +153,13 @@ class _MacroGoalsStatsViewState extends ConsumerState<MacroGoalsStatsView> {
         ],
       ),
       const SizedBox(height: 12),
-      _buildHighlightCard(title: 'Tipologia Efficace', value: bestTypeLabel, subtitle: '$bestTypeRate% di successo', icon: LucideIcons.brainCircuit, color: const Color(0xFF10B981), fullWidth: true),
+      _buildHighlightCard(title: 'Tipologia Efficace', value: bestTypeLabel, subtitle: '$bestTypeRate% di successo', icon: LucideIcons.brainCircuit, color: Theme.of(context).colorScheme.primary, fullWidth: true),
       const SizedBox(height: 16),
       Row(
         children: [
           Expanded(child: _buildKpiCard('Totale', '$totalGoals', LucideIcons.target)),
           const SizedBox(width: 8),
-          Expanded(child: _buildKpiCard('Completati', '$completedGoals', LucideIcons.circleCheck, color: const Color(0xFF34D399))),
+          Expanded(child: _buildKpiCard('Completati', '$completedGoals', LucideIcons.circleCheck, color: Theme.of(context).colorScheme.primary)),
           const SizedBox(width: 8),
           Expanded(child: _buildKpiCard('Successo', '$successRate%', LucideIcons.trophy, color: const Color(0xFFFBBF24))),
           const SizedBox(width: 8),
@@ -218,7 +218,7 @@ class _MacroGoalsStatsViewState extends ConsumerState<MacroGoalsStatsView> {
         children: [
           Expanded(child: _buildHighlightCard(title: 'Totale Storico', value: '$total', subtitle: 'dal ${sortedYears.isNotEmpty ? sortedYears.first : '-'}', icon: LucideIcons.target, color: const Color(0xFF6366F1))),
           const SizedBox(width: 12),
-          Expanded(child: _buildHighlightCard(title: 'Successo Globale', value: '$succ%', subtitle: '$comp obiettivi completati', icon: LucideIcons.trophy, color: const Color(0xFF10B981))),
+          Expanded(child: _buildHighlightCard(title: 'Successo Globale', value: '$succ%', subtitle: '$comp obiettivi completati', icon: LucideIcons.trophy, color: Theme.of(context).colorScheme.primary)),
         ],
       ),
       const SizedBox(height: 12),

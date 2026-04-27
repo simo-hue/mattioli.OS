@@ -17,9 +17,9 @@
 [ ] Gestione degli utenti
     [x] Menu privato
     [x] Impostazioni e info Account 
-    [ ] Gestione della lingua
+    [x] Gestione della lingua
     [ ] Analytics as a PRO Plan per quelle avanzate
-    [ ] Lingua 
+    [x] Lingua 
 
 [ ] Integrazione dell' AI
     [ ] Teoricamente dovrei avere API calls con FIREBASE
@@ -34,7 +34,7 @@
     [ ] Animazione della navigazione tra le schede
     [ ] Animazione di swipe tra mesi/anni/settimane
 
-[ ] Impostazioni reali per applicazione
+[x] Impostazioni reali per applicazione
     [x] Notifiche
     [x] Feedback Aptico da implementare veramente
 

@@ -473,17 +473,17 @@ class _GoalsList extends ConsumerWidget {
       itemBuilder: (context, index) {
         final item = _buildItems(goals)[index];
         if (item is _SectionHeader) {
-          return _buildSectionHeader(item.status);
+          return _buildSectionHeader(context, item.status);
         }
         return GoalItemWidget(goal: item as MacroGoal);
       },
     );
   }
 
-  Widget _buildSectionHeader(GoalStatus status) {
+  Widget _buildSectionHeader(BuildContext context, GoalStatus status) {
     final label = status == GoalStatus.completed ? 'COMPLETATI' : 'FALLITI';
     final color = status == GoalStatus.completed
-        ? const Color(0xFF34D399).withValues(alpha: 0.7)
+        ? const Color(0xFF10B981).withValues(alpha: 0.7)
         : AppColors.destructive.withValues(alpha: 0.7);
 
     return Padding(

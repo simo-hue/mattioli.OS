@@ -146,21 +146,21 @@ class _ProfileScreenState extends ConsumerState<ProfileScreen> {
                     Container(
                       padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 3),
                       decoration: BoxDecoration(
-                        color: AppColors.success.withValues(alpha: 0.1),
+                        color: primaryColor.withValues(alpha: 0.1),
                         borderRadius: BorderRadius.circular(20),
                         border: Border.all(
-                          color: AppColors.success.withValues(alpha: 0.2),
+                          color: const Color(0xFF10B981).withValues(alpha: 0.2),
                         ),
                       ),
                       child: Row(
                         mainAxisSize: MainAxisSize.min,
                         children: [
-                          const Icon(LucideIcons.shieldCheck, size: 10, color: AppColors.success),
+                          const Icon(LucideIcons.shieldCheck, size: 10, color: Color(0xFF10B981)),
                           const SizedBox(width: 4),
-                          Text(
+                          const Text(
                             'Account Verificato',
-                            style: const TextStyle(
-                              color: AppColors.success,
+                            style: TextStyle(
+                              color: Color(0xFF10B981),
                               fontSize: 10,
                               fontWeight: FontWeight.w700,
                             ),

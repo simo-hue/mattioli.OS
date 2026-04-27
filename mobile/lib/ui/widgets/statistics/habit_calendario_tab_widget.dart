@@ -2,6 +2,7 @@ import 'dart:math';
 import 'package:flutter/material.dart';
 import 'package:lucide_icons_flutter/lucide_icons.dart';
 import '../../../core/theme.dart';
+import '../../../core/localization.dart';
 
 class HabitCalendarioTabWidget extends StatelessWidget {
   final String goalId;
@@ -51,18 +52,18 @@ class _CalendarioAnnualeCard extends StatelessWidget {
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           Row(
-            children: const [
+            children: [
               Icon(LucideIcons.calendar, size: 20, color: AppColors.foreground),
               SizedBox(width: 10),
-              Text(
-                'Calendario Annuale',
-                style: TextStyle(
-                  fontFamily: 'Inter',
-                  fontSize: 16,
-                  fontWeight: FontWeight.w700,
-                  color: AppColors.foreground,
-                ),
+            Text(
+              context.l10n.translate('annual_calendar'),
+              style: const TextStyle(
+                fontFamily: 'Inter',
+                fontSize: 16,
+                fontWeight: FontWeight.w700,
+                color: AppColors.foreground,
               ),
+            ),
             ],
           ),
           const SizedBox(height: 24),
@@ -97,11 +98,11 @@ class _CalendarioAnnualeCard extends StatelessWidget {
           // Legend
           Row(
             children: [
-              _buildLegendItem(Theme.of(context).colorScheme.primary, 'Completato'),
+              _buildLegendItem(Theme.of(context).colorScheme.primary, context.l10n.translate('completed')),
               const SizedBox(width: 16),
-              _buildLegendItem(const Color(0xFFEF4444), 'Mancato'),
+              _buildLegendItem(const Color(0xFFEF4444), context.l10n.translate('missed')),
               const SizedBox(width: 16),
-              _buildLegendItem(const Color(0xFF18181B), 'Non tracciato'),
+              _buildLegendItem(const Color(0xFF18181B), context.l10n.translate('not_tracked')),
             ],
           ),
         ],

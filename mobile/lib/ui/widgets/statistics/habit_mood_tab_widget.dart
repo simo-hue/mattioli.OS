@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:lucide_icons_flutter/lucide_icons.dart';
 import '../../../core/theme.dart';
+import '../../../core/localization.dart';
 import 'dart:ui' as ui;
 
 class HabitMoodTabWidget extends StatelessWidget {
@@ -13,15 +14,15 @@ class HabitMoodTabWidget extends StatelessWidget {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        const _TopMetricsGrid(),
+        _TopMetricsGrid(),
         const SizedBox(height: 12),
-        const _ResilienteBadge(),
+        _ResilienteBadge(),
         const SizedBox(height: 24),
-        const _CompletatoVsMancatoCard(),
+        _CompletatoVsMancatoCard(),
         const SizedBox(height: 16),
-        const _PerformancePerLivelloCard(),
+        _PerformancePerLivelloCard(),
         const SizedBox(height: 16),
-        const _FooterInfo(),
+        _FooterInfo(),
         const SizedBox(height: 32),
       ],
     );
@@ -40,11 +41,11 @@ class _TopMetricsGrid extends StatelessWidget {
       shrinkWrap: true,
       physics: const NeverScrollableScrollPhysics(),
       childAspectRatio: 1.8,
-      children: const [
-        _MetricCard(title: 'Correlazione Mood', value: '-20%', subtitle: 'Nessuna'),
-        _MetricCard(title: 'Correlazione Energia', value: '-6%', subtitle: 'Nessuna'),
-        _MetricCard(title: 'Mood Medio (✓)', value: '6.1', subtitle: 'su 10', isRed: true),
-        _MetricCard(title: 'Energia Media (✓)', value: '6.7', subtitle: 'su 10', isRed: true),
+      children: [
+        _MetricCard(title: context.l10n.translate('mood_correlation'), value: '-20%', subtitle: context.l10n.translate('none')),
+        _MetricCard(title: context.l10n.translate('energy_correlation'), value: '-6%', subtitle: context.l10n.translate('none')),
+        _MetricCard(title: context.l10n.translate('avg_mood_checked'), value: '6.1', subtitle: context.l10n.translate('on_10'), isRed: true),
+        _MetricCard(title: context.l10n.translate('avg_energy_checked'), value: '6.7', subtitle: context.l10n.translate('on_10'), isRed: true),
       ],
     );
   }
@@ -123,20 +124,20 @@ class _ResilienteBadge extends StatelessWidget {
       decoration: BoxDecoration(
         color: AppColors.card,
         borderRadius: BorderRadius.circular(20),
-        border: Border.all(color: const Color(0xFF10B981).withValues(alpha: 0.3), width: 1),
+        border: Border.all(color: Theme.of(context).colorScheme.primary.withValues(alpha: 0.3), width: 1),
       ),
       child: Row(
         mainAxisSize: MainAxisSize.min,
-        children: const [
-          Icon(LucideIcons.activity, size: 14, color: Color(0xFF10B981)),
-          SizedBox(width: 6),
+        children: [
+          Icon(LucideIcons.activity, size: 14, color: Theme.of(context).colorScheme.primary),
+          const SizedBox(width: 6),
           Text(
-            'Resiliente',
+            context.l10n.translate('resilient_label'),
             style: TextStyle(
               fontFamily: 'Inter',
               fontSize: 12,
               fontWeight: FontWeight.w600,
-              color: Color(0xFF10B981),
+              color: Theme.of(context).colorScheme.primary,
             ),
           ),
         ],
@@ -160,9 +161,9 @@ class _CompletatoVsMancatoCard extends StatelessWidget {
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          const Text(
-            'Completato vs Mancato',
-            style: TextStyle(
+          Text(
+            context.l10n.translate('completed_vs_missed'),
+            style: const TextStyle(
               fontFamily: 'Inter',
               fontSize: 16,
               fontWeight: FontWeight.w700,
@@ -177,11 +178,11 @@ class _CompletatoVsMancatoCard extends StatelessWidget {
                 // Y Axis
                 Column(
                   mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                  children: const [
-                    Text('10', style: TextStyle(fontSize: 10, color: AppColors.mutedForeground)),
-                    Text('6', style: TextStyle(fontSize: 10, color: AppColors.mutedForeground)),
-                    Text('3', style: TextStyle(fontSize: 10, color: AppColors.mutedForeground)),
-                    Text('0', style: TextStyle(fontSize: 10, color: AppColors.mutedForeground)),
+                  children: [
+                    const Text('10', style: TextStyle(fontSize: 10, color: AppColors.mutedForeground)),
+                    const Text('6', style: TextStyle(fontSize: 10, color: AppColors.mutedForeground)),
+                    const Text('3', style: TextStyle(fontSize: 10, color: AppColors.mutedForeground)),
+                    const Text('0', style: TextStyle(fontSize: 10, color: AppColors.mutedForeground)),
                   ],
                 ),
                 const SizedBox(width: 12),
@@ -198,9 +199,9 @@ class _CompletatoVsMancatoCard extends StatelessWidget {
                       Row(
                         crossAxisAlignment: CrossAxisAlignment.end,
                         children: [
-                          Expanded(child: _buildBarGroup('Completato', 6.0, 6.7)),
+                          Expanded(child: _buildBarGroup(context, context.l10n.translate('completed'), 6.0, 6.7)),
                           const SizedBox(width: 16),
-                          Expanded(child: _buildBarGroup('Mancato', 7.0, 7.0)),
+                          Expanded(child: _buildBarGroup(context, context.l10n.translate('missed'), 7.0, 7.0)),
                         ],
                       ),
                     ],
@@ -214,9 +215,9 @@ class _CompletatoVsMancatoCard extends StatelessWidget {
           Row(
             mainAxisAlignment: MainAxisAlignment.center,
             children: [
-              _buildLegendItem(const Color(0xFF10B981), 'Mood'),
+              _buildLegendItem(context, const Color(0xFF10B981), context.l10n.translate('mood')),
               const SizedBox(width: 16),
-              _buildLegendItem(const Color(0xFFF59E0B), 'Energia'),
+              _buildLegendItem(context, const Color(0xFFF59E0B), context.l10n.translate('energy')),
             ],
           ),
         ],
@@ -232,7 +233,7 @@ class _CompletatoVsMancatoCard extends StatelessWidget {
     );
   }
 
-  Widget _buildBarGroup(String label, double moodValue, double energiaValue) {
+  Widget _buildBarGroup(BuildContext context, String label, double moodValue, double energiaValue) {
     // max is 10
     final double moodPct = moodValue / 10.0;
     final double energiaPct = energiaValue / 10.0;
@@ -250,9 +251,9 @@ class _CompletatoVsMancatoCard extends StatelessWidget {
                   heightFactor: moodPct,
                   alignment: Alignment.bottomCenter,
                   child: Container(
-                    decoration: const BoxDecoration(
-                      color: Color(0xFF10B981),
-                      borderRadius: BorderRadius.vertical(top: Radius.circular(4)),
+                    decoration: BoxDecoration(
+                      color: const Color(0xFF10B981),
+                      borderRadius: const BorderRadius.vertical(top: Radius.circular(4)),
                     ),
                   ),
                 ),
@@ -286,7 +287,7 @@ class _CompletatoVsMancatoCard extends StatelessWidget {
     );
   }
 
-  Widget _buildLegendItem(Color color, String label) {
+  Widget _buildLegendItem(BuildContext context, Color color, String label) {
     return Row(
       children: [
         Container(width: 12, height: 12, color: color),
@@ -320,9 +321,9 @@ class _PerformancePerLivelloCard extends StatelessWidget {
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          const Text(
-            'Performance per Livello',
-            style: TextStyle(
+          Text(
+            context.l10n.translate('performance_per_level'),
+            style: const TextStyle(
               fontFamily: 'Inter',
               fontSize: 16,
               fontWeight: FontWeight.w700,
@@ -330,9 +331,9 @@ class _PerformancePerLivelloCard extends StatelessWidget {
             ),
           ),
           const SizedBox(height: 4),
-          const Text(
-            'Basso (1-4) • Medio (5-7) • Alto (8-10)',
-            style: TextStyle(
+          Text(
+            context.l10n.translate('low_med_high_desc'),
+            style: const TextStyle(
               fontFamily: 'Inter',
               fontSize: 12,
               color: AppColors.mutedForeground,
@@ -346,12 +347,12 @@ class _PerformancePerLivelloCard extends StatelessWidget {
                 // Y Axis
                 Column(
                   mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                  children: const [
-                    Text('100%', style: TextStyle(fontSize: 10, color: AppColors.mutedForeground)),
-                    Text('75%', style: TextStyle(fontSize: 10, color: AppColors.mutedForeground)),
-                    Text('50%', style: TextStyle(fontSize: 10, color: AppColors.mutedForeground)),
-                    Text('25%', style: TextStyle(fontSize: 10, color: AppColors.mutedForeground)),
-                    Text('0%', style: TextStyle(fontSize: 10, color: AppColors.mutedForeground)),
+                  children: [
+                    const Text('100%', style: TextStyle(fontSize: 10, color: AppColors.mutedForeground)),
+                    const Text('75%', style: TextStyle(fontSize: 10, color: AppColors.mutedForeground)),
+                    const Text('50%', style: TextStyle(fontSize: 10, color: AppColors.mutedForeground)),
+                    const Text('25%', style: TextStyle(fontSize: 10, color: AppColors.mutedForeground)),
+                    const Text('0%', style: TextStyle(fontSize: 10, color: AppColors.mutedForeground)),
                   ],
                 ),
                 const SizedBox(width: 12),
@@ -367,7 +368,7 @@ class _PerformancePerLivelloCard extends StatelessWidget {
                       // Line Chart Custom Paint
                       Positioned.fill(
                         child: CustomPaint(
-                          painter: _LineChartPainter(),
+                          painter: _LineChartPainter(moodColor: const Color(0xFF10B981)),
                         ),
                       ),
                       // X Axis Labels
@@ -377,10 +378,10 @@ class _PerformancePerLivelloCard extends StatelessWidget {
                         right: 0,
                         child: Row(
                           mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                          children: const [
-                            Text('Basso', style: TextStyle(fontSize: 10, color: AppColors.mutedForeground)),
-                            Text('Medio', style: TextStyle(fontSize: 10, color: AppColors.mutedForeground)),
-                            Text('Alto', style: TextStyle(fontSize: 10, color: AppColors.mutedForeground)),
+                          children: [
+                            Text(context.l10n.translate('low'), style: const TextStyle(fontSize: 10, color: AppColors.mutedForeground)),
+                            Text(context.l10n.translate('medium'), style: const TextStyle(fontSize: 10, color: AppColors.mutedForeground)),
+                            Text(context.l10n.translate('high'), style: const TextStyle(fontSize: 10, color: AppColors.mutedForeground)),
                           ],
                         ),
                       ),
@@ -395,9 +396,9 @@ class _PerformancePerLivelloCard extends StatelessWidget {
           Row(
             mainAxisAlignment: MainAxisAlignment.center,
             children: [
-              _buildLineLegendItem(const Color(0xFF10B981), 'Con Mood', false),
+              _buildLineLegendItem(const Color(0xFF10B981), context.l10n.translate('with_mood'), false),
               const SizedBox(width: 16),
-              _buildLineLegendItem(const Color(0xFFF59E0B), 'Con Energia', true),
+              _buildLineLegendItem(const Color(0xFFF59E0B), context.l10n.translate('with_energy'), true),
             ],
           ),
         ],
@@ -437,6 +438,9 @@ class _PerformancePerLivelloCard extends StatelessWidget {
 }
 
 class _LineChartPainter extends CustomPainter {
+  final Color moodColor;
+  _LineChartPainter({required this.moodColor});
+
   @override
   void paint(Canvas canvas, Size size) {
     // Values from 0.0 to 1.0 representing percentage
@@ -450,7 +454,7 @@ class _LineChartPainter extends CustomPainter {
 
     // Draw Mood Line
     final moodPaint = Paint()
-      ..color = const Color(0xFF10B981)
+      ..color = moodColor
       ..strokeWidth = 2.5
       ..style = PaintingStyle.stroke;
 
@@ -495,7 +499,7 @@ class _LineChartPainter extends CustomPainter {
       double ey = height - (height * energiaPts[i]);
 
       final moodDotStroke = Paint()
-        ..color = const Color(0xFF10B981)
+        ..color = moodColor
         ..strokeWidth = 2
         ..style = PaintingStyle.stroke;
       canvas.drawCircle(Offset(x, my), 4, dotPaintFill);
@@ -549,9 +553,12 @@ class _FooterInfo extends StatelessWidget {
         border: Border.all(color: AppColors.border, width: 1),
       ),
       padding: const EdgeInsets.symmetric(vertical: 16, horizontal: 16),
-      child: const Text(
-        'Analisi basata su 76 giorni con dati mood/energia (46 completati, 30 mancati)',
-        style: TextStyle(
+      child: Text(
+        context.l10n.translate('analysis_based_on')
+            .replaceFirst('count', '76')
+            .replaceFirst('done', '46')
+            .replaceFirst('missed', '30'),
+        style: const TextStyle(
           fontFamily: 'Inter',
           fontSize: 11,
           color: AppColors.mutedForeground,

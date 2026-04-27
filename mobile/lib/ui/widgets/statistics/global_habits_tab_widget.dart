@@ -3,6 +3,7 @@ import 'package:flutter/services.dart';
 import 'package:lucide_icons_flutter/lucide_icons.dart';
 
 import '../../../core/theme.dart';
+import '../../../core/localization.dart';
 
 class GlobalHabitsTabWidget extends StatefulWidget {
   const GlobalHabitsTabWidget({super.key});
@@ -12,7 +13,7 @@ class GlobalHabitsTabWidget extends StatefulWidget {
 }
 
 class _GlobalHabitsTabWidgetState extends State<GlobalHabitsTabWidget> {
-  String _sortBy = 'Rate';
+  String _sortBy = 'rate';
 
   final List<Map<String, dynamic>> _habits = [
     {
@@ -73,9 +74,9 @@ class _GlobalHabitsTabWidgetState extends State<GlobalHabitsTabWidget> {
         Row(
           mainAxisAlignment: MainAxisAlignment.spaceBetween,
           children: [
-            const Text(
-              'Dettagli Abitudini',
-              style: TextStyle(
+            Text(
+              context.l10n.translate('habit_details'),
+              style: const TextStyle(
                 fontFamily: 'Inter',
                 fontSize: 18,
                 fontWeight: FontWeight.w700,
@@ -130,7 +131,10 @@ class _GlobalHabitsTabWidgetState extends State<GlobalHabitsTabWidget> {
             Icon(_getSortIcon(_sortBy), size: 14, color: Theme.of(context).colorScheme.primary),
             const SizedBox(width: 8),
             Text(
-              _sortBy,
+              context.l10n.translate(_sortBy == 'rate' ? 'rate' : 
+                                     _sortBy == 'best_streak_label' ? 'best_streak_label' :
+                                     _sortBy == 'worst_streak_label' ? 'worst_streak_label' :
+                                     _sortBy == 'current_streak_label' ? 'current_streak_label' : 'first_name'),
               style: const TextStyle(
                 fontFamily: 'Inter',
                 fontSize: 12,
@@ -148,11 +152,11 @@ class _GlobalHabitsTabWidgetState extends State<GlobalHabitsTabWidget> {
 
   void _showSortPicker() {
     final options = [
-      (val: 'Rate', icon: LucideIcons.trendingUp),
-      (val: 'Best Streak', icon: LucideIcons.trophy),
-      (val: 'Worst Streak', icon: LucideIcons.trendingDown),
-      (val: 'Serie Attuale', icon: LucideIcons.flame),
-      (val: 'Nome', icon: LucideIcons.list),
+      (val: 'rate', icon: LucideIcons.trendingUp),
+      (val: 'best_streak_label', icon: LucideIcons.trophy),
+      (val: 'worst_streak_label', icon: LucideIcons.trendingDown),
+      (val: 'current_streak_label', icon: LucideIcons.flame),
+      (val: 'first_name', icon: LucideIcons.list),
     ];
 
     showModalBottomSheet(
@@ -175,13 +179,13 @@ class _GlobalHabitsTabWidgetState extends State<GlobalHabitsTabWidget> {
               ),
             ),
             const SizedBox(height: 20),
-            const Padding(
-              padding: EdgeInsets.only(bottom: 12),
+            Padding(
+              padding: const EdgeInsets.only(bottom: 12),
               child: Align(
                 alignment: Alignment.center,
                 child: Text(
-                  'ORDINA PER',
-                  style: TextStyle(
+                  context.l10n.translate('order_by'),
+                  style: const TextStyle(
                     fontFamily: 'Inter',
                     fontSize: 10,
                     fontWeight: FontWeight.w800,
@@ -202,7 +206,7 @@ class _GlobalHabitsTabWidgetState extends State<GlobalHabitsTabWidget> {
                   color: isSel ? primaryColor : AppColors.mutedForeground.withValues(alpha: 0.6)
                 ),
                 title: Text(
-                  opt.val,
+                  context.l10n.translate(opt.val),
                   style: TextStyle(
                     fontFamily: 'Inter',
                     fontSize: 16,
@@ -228,11 +232,11 @@ class _GlobalHabitsTabWidgetState extends State<GlobalHabitsTabWidget> {
 
   IconData _getSortIcon(String sort) {
     switch (sort) {
-      case 'Rate': return LucideIcons.trendingUp;
-      case 'Best Streak': return LucideIcons.trophy;
-      case 'Worst Streak': return LucideIcons.trendingDown;
-      case 'Serie Attuale': return LucideIcons.flame;
-      case 'Nome': return LucideIcons.list;
+      case 'rate': return LucideIcons.trendingUp;
+      case 'best_streak_label': return LucideIcons.trophy;
+      case 'worst_streak_label': return LucideIcons.trendingDown;
+      case 'current_streak_label': return LucideIcons.flame;
+      case 'first_name': return LucideIcons.list;
       default: return LucideIcons.trendingUp;
     }
   }

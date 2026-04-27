@@ -4,6 +4,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:lucide_icons_flutter/lucide_icons.dart';
 import '../../core/theme.dart';
 import '../../providers/user_provider.dart';
+import '../../core/localization.dart';
 
 class PersonalInfoScreen extends ConsumerStatefulWidget {
   const PersonalInfoScreen({super.key});
@@ -68,7 +69,7 @@ class _PersonalInfoScreenState extends ConsumerState<PersonalInfoScreen> {
       HapticFeedback.mediumImpact();
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(
-          content: const Text('Informazioni salvate con successo'),
+          content: Text(context.l10n.translate('success_save')),
           backgroundColor: AppColors.success.withValues(alpha: 0.8),
           behavior: SnackBarBehavior.floating,
           shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
@@ -89,9 +90,9 @@ class _PersonalInfoScreenState extends ConsumerState<PersonalInfoScreen> {
           icon: const Icon(LucideIcons.chevronLeft, color: AppColors.foreground),
           onPressed: () => Navigator.pop(context),
         ),
-        title: const Text(
-          'Informazioni Personali',
-          style: TextStyle(
+        title: Text(
+          context.l10n.translate('personal_info'),
+          style: const TextStyle(
             color: AppColors.foreground,
             fontSize: 18,
             fontWeight: FontWeight.w700,
@@ -118,30 +119,30 @@ class _PersonalInfoScreenState extends ConsumerState<PersonalInfoScreen> {
               ),
               const SizedBox(height: 16),
               _buildTextField(
-                label: 'NOME',
+                label: context.l10n.translate('first_name').toUpperCase(),
                 controller: _firstNameController,
-                validator: (v) => v!.isEmpty ? 'Il nome è obbligatorio' : null,
+                validator: (v) => v!.isEmpty ? context.l10n.translate('error_required') : null,
               ),
               const SizedBox(height: 20),
               _buildTextField(
-                label: 'COGNOME',
+                label: context.l10n.translate('last_name').toUpperCase(),
                 controller: _lastNameController,
-                validator: (v) => v!.isEmpty ? 'Il cognome è obbligatorio' : null,
+                validator: (v) => v!.isEmpty ? context.l10n.translate('error_required') : null,
               ),
               const SizedBox(height: 20),
               _buildTextField(
-                label: 'EMAIL',
+                label: context.l10n.translate('email').toUpperCase(),
                 controller: _emailController,
                 keyboardType: TextInputType.emailAddress,
                 validator: (v) {
-                  if (v!.isEmpty) return 'L\'email è obbligatoria';
-                  if (!v.contains('@')) return 'Inserisci un\'email valida';
+                  if (v!.isEmpty) return context.l10n.translate('error_required');
+                  if (!v.contains('@')) return context.l10n.translate('error_email');
                   return null;
                 },
               ),
               const SizedBox(height: 20),
               _buildTextField(
-                label: 'TELEFONO (OPZIONALE)',
+                label: context.l10n.translate('phone_optional').toUpperCase(),
                 controller: _phoneController,
                 keyboardType: TextInputType.phone,
               ),
@@ -159,9 +160,9 @@ class _PersonalInfoScreenState extends ConsumerState<PersonalInfoScreen> {
                     ),
                     elevation: 0,
                   ),
-                  child: const Text(
-                    'Salva Modifiche',
-                    style: TextStyle(
+                  child: Text(
+                    context.l10n.translate('save'),
+                    style: const TextStyle(
                       fontSize: 16,
                       fontWeight: FontWeight.w800,
                       letterSpacing: -0.2,

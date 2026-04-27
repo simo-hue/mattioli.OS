@@ -176,6 +176,7 @@ class _MonthDensityWidget extends ConsumerWidget {
                 habits: habits,
                 logs: logs,
                 now: now,
+                accentColor: Theme.of(context).colorScheme.primary,
               ),
             ),
           ),
@@ -192,6 +193,7 @@ class _MonthBarsPainter extends CustomPainter {
   final List<dynamic> habits;
   final Map<String, dynamic> logs;
   final DateTime now;
+  final Color accentColor;
 
   _MonthBarsPainter({
     required this.year,
@@ -200,6 +202,7 @@ class _MonthBarsPainter extends CustomPainter {
     required this.habits,
     required this.logs,
     required this.now,
+    required this.accentColor,
   });
 
   @override
@@ -245,9 +248,8 @@ class _MonthBarsPainter extends CustomPainter {
       }
 
       if (completionPct > 0) {
-        final hue = completionPct * 140.0; // Greenish
         final Paint barPaint = Paint()
-          ..color = HSLColor.fromAHSL(1.0, hue, 0.7, 0.5).toColor();
+          ..color = HSLColor.fromAHSL(1.0, 142.0, 0.7, 0.5).toColor();
         canvas.drawRRect(rect, barPaint);
       } else {
         canvas.drawRRect(rect, emptyPaint);

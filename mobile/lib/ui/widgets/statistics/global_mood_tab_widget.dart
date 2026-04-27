@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:lucide_icons_flutter/lucide_icons.dart';
 import 'package:fl_chart/fl_chart.dart';
 import '../../../core/theme.dart';
+import '../../../core/localization.dart';
 
 class GlobalMoodTabWidget extends StatefulWidget {
   const GlobalMoodTabWidget({super.key});
@@ -11,7 +12,7 @@ class GlobalMoodTabWidget extends StatefulWidget {
 }
 
 class _GlobalMoodTabWidgetState extends State<GlobalMoodTabWidget> {
-  String _timeRange = '14gg';
+  String _timeRange = 'time_range_14d';
 
   @override
   Widget build(BuildContext context) {
@@ -41,20 +42,20 @@ class _GlobalMoodTabWidgetState extends State<GlobalMoodTabWidget> {
             Container(
               padding: const EdgeInsets.all(10),
               decoration: BoxDecoration(
-                color: const Color(0xFF8B5CF6).withValues(alpha: 0.15),
+                color: Theme.of(context).colorScheme.primary.withValues(alpha: 0.15),
                 borderRadius: BorderRadius.circular(12),
-                border: Border.all(color: const Color(0xFF8B5CF6).withValues(alpha: 0.2), width: 0.5),
+                border: Border.all(color: Theme.of(context).colorScheme.primary.withValues(alpha: 0.2), width: 0.5),
               ),
-              child: const Icon(LucideIcons.chartLine, size: 20, color: Color(0xFF8B5CF6)),
+              child: Icon(LucideIcons.chartLine, size: 20, color: Theme.of(context).colorScheme.primary),
             ),
             const SizedBox(width: 14),
             Expanded(
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  const Text(
-                    'Mood & Energy vs Productivity',
-                    style: TextStyle(
+                  Text(
+                    context.l10n.translate('mood_energy_productivity'),
+                    style: const TextStyle(
                       fontFamily: 'Inter',
                       fontSize: 19,
                       fontWeight: FontWeight.w800,
@@ -62,9 +63,9 @@ class _GlobalMoodTabWidgetState extends State<GlobalMoodTabWidget> {
                       letterSpacing: -0.5,
                     ),
                   ),
-                  const Text(
-                    'Correlazione tra benessere e abitudini',
-                    style: TextStyle(
+                  Text(
+                    context.l10n.translate('wellbeing_habit_correlation'),
+                    style: const TextStyle(
                       fontFamily: 'Inter',
                       fontSize: 13,
                       color: AppColors.mutedForeground,
@@ -82,7 +83,7 @@ class _GlobalMoodTabWidgetState extends State<GlobalMoodTabWidget> {
   }
 
   Widget _buildTimeSelector() {
-    final ranges = ['7gg', '14gg', '30gg', 'Tutto'];
+    final ranges = ['time_range_7d', 'time_range_14d', 'time_range_30d', 'timeframe_all'];
     return Container(
       width: double.infinity,
       padding: const EdgeInsets.all(4),
@@ -114,7 +115,7 @@ class _GlobalMoodTabWidgetState extends State<GlobalMoodTabWidget> {
                       : null,
                 ),
                 child: Text(
-                  range,
+                  context.l10n.translate(range),
                   textAlign: TextAlign.center,
                   style: TextStyle(
                     fontSize: 13,
@@ -167,7 +168,7 @@ class _GlobalMoodTabWidgetState extends State<GlobalMoodTabWidget> {
                       reservedSize: 32,
                       getTitlesWidget: (value, meta) {
                         if (value == 0 || value == 50 || value == 100) {
-                          return Text('${value.toInt()}%', style: const TextStyle(color: Color(0xFF8B5CF6), fontSize: 9, fontWeight: FontWeight.w600));
+                          return Text('${value.toInt()}%', style: TextStyle(color: Theme.of(context).colorScheme.primary, fontSize: 9, fontWeight: FontWeight.w600));
                         }
                         return const SizedBox();
                       },
@@ -218,14 +219,14 @@ class _GlobalMoodTabWidgetState extends State<GlobalMoodTabWidget> {
                     ],
                     isCurved: true,
 
-                    color: const Color(0xFF8B5CF6),
+                    color: Theme.of(context).colorScheme.primary,
                     barWidth: 4,
                     isStrokeCapRound: true,
                     dotData: FlDotData(show: false),
                     belowBarData: BarAreaData(
                       show: true,
                       gradient: LinearGradient(
-                        colors: [const Color(0xFF8B5CF6).withValues(alpha: 0.15), Colors.transparent],
+                        colors: [Theme.of(context).colorScheme.primary.withValues(alpha: 0.15), Colors.transparent],
                         begin: Alignment.topCenter,
                         end: Alignment.bottomCenter,
                       ),
@@ -239,7 +240,7 @@ class _GlobalMoodTabWidgetState extends State<GlobalMoodTabWidget> {
                       FlSpot(10, 9), FlSpot(11, 6), FlSpot(12, 9), FlSpot(13, 8),
                     ],
                     isCurved: true,
-                    color: const Color(0xFF10B981),
+                    color: Theme.of(context).colorScheme.primary,
                     barWidth: 2,
                     dotData: FlDotData(
                       show: true,
@@ -247,7 +248,7 @@ class _GlobalMoodTabWidgetState extends State<GlobalMoodTabWidget> {
                         radius: 3,
                         color: Colors.white,
                         strokeWidth: 2,
-                        strokeColor: const Color(0xFF10B981),
+                        strokeColor: Theme.of(context).colorScheme.primary,
                       ),
                     ),
                   ),
@@ -280,9 +281,9 @@ class _GlobalMoodTabWidgetState extends State<GlobalMoodTabWidget> {
           Row(
             mainAxisAlignment: MainAxisAlignment.spaceEvenly,
             children: [
-              _buildLegendItem('Productivity', const Color(0xFF8B5CF6)),
-              _buildLegendItem('Mood', const Color(0xFF10B981)),
-              _buildLegendItem('Energy', const Color(0xFFF59E0B)),
+              _buildLegendItem(context.l10n.translate('productivity'), Theme.of(context).colorScheme.primary),
+              _buildLegendItem(context.l10n.translate('mood'), Theme.of(context).colorScheme.primary),
+              _buildLegendItem(context.l10n.translate('energy'), const Color(0xFFF59E0B)),
             ],
           ),
         ],
@@ -313,19 +314,19 @@ class _GlobalMoodTabWidgetState extends State<GlobalMoodTabWidget> {
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
         Row(
-          children: const [
-            Icon(LucideIcons.sparkles, size: 16, color: Color(0xFFF59E0B)),
-            SizedBox(width: 8),
+          children: [
+            const Icon(LucideIcons.sparkles, size: 16, color: Color(0xFFF59E0B)),
+            const SizedBox(width: 8),
             Text(
-              'Mood',
-              style: TextStyle(fontFamily: 'Outfit', fontSize: 16, fontWeight: FontWeight.bold, color: AppColors.foreground),
+              context.l10n.translate('mood_sensitive'),
+              style: const TextStyle(fontFamily: 'Outfit', fontSize: 16, fontWeight: FontWeight.bold, color: AppColors.foreground),
             ),
           ],
         ),
         const SizedBox(height: 4),
-        const Text(
-          'Queste abitudini hanno bisogno di un buon mood per essere completate',
-          style: TextStyle(fontSize: 12, color: AppColors.mutedForeground),
+        Text(
+          context.l10n.translate('mood_sensitive_desc'),
+          style: const TextStyle(fontSize: 12, color: AppColors.mutedForeground),
         ),
         const SizedBox(height: 16),
         _buildMoodSensitiveCard('Sveglia', const Color(0xFFF97316), 25, 82, 57),
@@ -373,11 +374,11 @@ class _GlobalMoodTabWidgetState extends State<GlobalMoodTabWidget> {
                   children: [
                     Icon(LucideIcons.frown, size: 12, color: AppColors.mutedForeground),
                     const SizedBox(width: 4),
-                    Text('$lowMoodRate% con mood basso', style: const TextStyle(fontSize: 11, color: AppColors.mutedForeground)),
+                    Text('$lowMoodRate% ${context.l10n.translate('with_low_mood')}', style: const TextStyle(fontSize: 11, color: AppColors.mutedForeground)),
                     const SizedBox(width: 12),
                     Icon(LucideIcons.smile, size: 12, color: AppColors.mutedForeground),
                     const SizedBox(width: 4),
-                    Text('$highMoodRate% con mood alto', style: const TextStyle(fontSize: 11, color: AppColors.mutedForeground)),
+                    Text('$highMoodRate% ${context.l10n.translate('with_high_mood')}', style: const TextStyle(fontSize: 11, color: AppColors.mutedForeground)),
                   ],
                 ),
               ],
@@ -400,19 +401,19 @@ class _GlobalMoodTabWidgetState extends State<GlobalMoodTabWidget> {
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
         Row(
-          children: const [
-            Icon(LucideIcons.shield, size: 16, color: Color(0xFF10B981)),
-            SizedBox(width: 8),
+          children: [
+            Icon(LucideIcons.shield, size: 16, color: Theme.of(context).colorScheme.primary),
+            const SizedBox(width: 8),
             Text(
-              'Resilienti',
-              style: TextStyle(fontFamily: 'Outfit', fontSize: 16, fontWeight: FontWeight.bold, color: AppColors.foreground),
+              context.l10n.translate('resilient'),
+              style: const TextStyle(fontFamily: 'Outfit', fontSize: 16, fontWeight: FontWeight.bold, color: AppColors.foreground),
             ),
           ],
         ),
         const SizedBox(height: 4),
-        const Text(
-          'Queste abitudini vengono mantenute anche quando mood ed energia sono bassi',
-          style: TextStyle(fontSize: 12, color: AppColors.mutedForeground),
+        Text(
+          context.l10n.translate('resilient_desc'),
+          style: const TextStyle(fontSize: 12, color: AppColors.mutedForeground),
         ),
         const SizedBox(height: 16),
         _buildResilientCard('Caviglie', const Color(0xFF64748B), 100, 100),
@@ -464,23 +465,23 @@ class _GlobalMoodTabWidgetState extends State<GlobalMoodTabWidget> {
                   children: [
                     Icon(LucideIcons.smile, size: 11, color: AppColors.mutedForeground),
                     const SizedBox(width: 4),
-                    Text('Mood: $moodStability%', style: const TextStyle(fontSize: 10, color: AppColors.mutedForeground)),
+                    Text('${context.l10n.translate('mood_label')}: $moodStability%', style: const TextStyle(fontSize: 10, color: AppColors.mutedForeground)),
                     const SizedBox(width: 10),
                     Icon(LucideIcons.zap, size: 11, color: AppColors.mutedForeground),
                     const SizedBox(width: 4),
-                    Text('Energia: $energyStability%', style: const TextStyle(fontSize: 10, color: AppColors.mutedForeground)),
+                    Text('${context.l10n.translate('energy_label')}: $energyStability%', style: const TextStyle(fontSize: 10, color: AppColors.mutedForeground)),
                   ],
                 ),
               ],
             ),
           ),
           Row(
-            children: const [
-              Icon(LucideIcons.trendingUp, size: 14, color: Color(0xFF10B981)),
-              SizedBox(width: 4),
+            children: [
+              Icon(LucideIcons.trendingUp, size: 14, color: Theme.of(context).colorScheme.primary),
+              const SizedBox(width: 4),
               Text(
-                'Stabile',
-                style: TextStyle(fontSize: 12, fontWeight: FontWeight.w700, color: Color(0xFF10B981)),
+                context.l10n.translate('stable'),
+                style: TextStyle(fontSize: 12, fontWeight: FontWeight.w700, color: Theme.of(context).colorScheme.primary),
               ),
             ],
           ),
@@ -501,19 +502,19 @@ class _GlobalMoodTabWidgetState extends State<GlobalMoodTabWidget> {
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           Row(
-            children: const [
-              Icon(LucideIcons.lightbulb, size: 18, color: Color(0xFFFBBF24)),
-              SizedBox(width: 8),
+            children: [
+              const Icon(LucideIcons.lightbulb, size: 18, color: Color(0xFFFBBF24)),
+              const SizedBox(width: 8),
               Text(
-                'Suggerimenti',
-                style: TextStyle(fontFamily: 'Outfit', fontSize: 16, fontWeight: FontWeight.bold, color: AppColors.foreground),
+                context.l10n.translate('suggestions'),
+                style: const TextStyle(fontFamily: 'Outfit', fontSize: 16, fontWeight: FontWeight.bold, color: AppColors.foreground),
               ),
             ],
           ),
           const SizedBox(height: 16),
-          _buildSuggerimentoItem('Pianifica le abitudini sensibili al mood nei momenti della giornata in cui ti senti meglio'),
-          _buildSuggerimentoItem('Le abitudini resilienti sono ottime da mantenere anche nei giorni difficili'),
-          _buildSuggerimentoItem('Monitora il tuo mood ed energia quotidianamente per ottenere insights più accurati'),
+          _buildSuggerimentoItem(context.l10n.translate('mood_tip_1')),
+          _buildSuggerimentoItem(context.l10n.translate('mood_tip_2')),
+          _buildSuggerimentoItem(context.l10n.translate('mood_tip_3')),
         ],
       ),
     );

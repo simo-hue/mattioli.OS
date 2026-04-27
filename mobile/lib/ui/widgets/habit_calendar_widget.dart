@@ -6,11 +6,13 @@ import '../../models/goal.dart';
 import '../../providers/goal_provider.dart';
 import 'day_details_modal.dart';
 import '../../core/haptics.dart';
+import '../../core/localization.dart';
 
-const _kDays = ['Lun', 'Mar', 'Mer', 'Gio', 'Ven', 'Sab', 'Dom'];
-const _kMonths = [
-  'Gennaio', 'Febbraio', 'Marzo', 'Aprile', 'Maggio', 'Giugno',
-  'Luglio', 'Agosto', 'Settembre', 'Ottobre', 'Novembre', 'Dicembre',
+// Keys for localization
+const _kDayKeys = ['mon', 'tue', 'wed', 'thu', 'fri', 'sat', 'sun'];
+const _kMonthKeys = [
+  'january', 'february', 'march', 'april', 'may', 'june',
+  'july', 'august', 'september', 'october', 'november', 'december',
 ];
 
 class HabitCalendarWidget extends ConsumerStatefulWidget {
@@ -142,7 +144,7 @@ class _HabitCalendarWidgetState extends ConsumerState<HabitCalendarWidget> {
                         crossAxisAlignment: CrossAxisAlignment.start,
                         children: [
                           Text(
-                            _kMonths[month - 1],
+                            context.l10n.translate(_kMonthKeys[month - 1]),
                             style: const TextStyle(
                               fontFamily: 'Inter',
                               fontSize: 22,
@@ -187,11 +189,11 @@ class _HabitCalendarWidgetState extends ConsumerState<HabitCalendarWidget> {
               Padding(
                 padding: const EdgeInsets.symmetric(horizontal: 8),
                 child: Row(
-                  children: _kDays.map((d) {
+                  children: _kDayKeys.map((key) {
                     return Expanded(
                       child: Center(
                         child: Text(
-                          d,
+                          context.l10n.translate(key),
                           style: const TextStyle(
                             fontFamily: 'Inter',
                             fontSize: 9,
@@ -357,12 +359,15 @@ class _DayCell extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    // Compute dynamic color from completion % (0=red hue 0°, 1=green hue 142°)
+    final primaryColor = Theme.of(context).colorScheme.primary;
+    final primaryHsl = HSLColor.fromColor(primaryColor);
+    final primaryHue = primaryHsl.hue;
+
     Color? bgColor;
-    Color borderColor = AppColors.borderSubtle;
+    Color borderColor = Colors.transparent;
 
     if (hasActivity) {
-      final hue = completionPct * 142.0; // 0..142
+      final hue = completionPct * 142.0; // 142 is green
       bgColor = HSLColor.fromAHSL(1.0, hue, 0.7, 0.1)
           .toColor()
           .withValues(alpha: 0.3);

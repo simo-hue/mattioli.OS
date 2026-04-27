@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:lucide_icons_flutter/lucide_icons.dart';
 import 'package:fl_chart/fl_chart.dart';
 import '../../../core/theme.dart';
+import '../../../core/localization.dart';
 
 class GlobalAlertsTabWidget extends StatelessWidget {
   const GlobalAlertsTabWidget({super.key});
@@ -10,7 +11,7 @@ class GlobalAlertsTabWidget extends StatelessWidget {
   Widget build(BuildContext context) {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
-      children: const [
+      children: [
         _AreeMiglioramentoSection(),
         SizedBox(height: 24),
         _AnalisiWorstStreaksSection(),
@@ -38,9 +39,9 @@ class _AreeMiglioramentoSection extends StatelessWidget {
           children: [
             const Icon(LucideIcons.target, size: 20, color: AppColors.foreground),
             const SizedBox(width: 10),
-            const Text(
-              'Aree di Miglioramento',
-              style: TextStyle(
+            Text(
+              context.l10n.translate('improvement_areas'),
+              style: const TextStyle(
                 fontFamily: 'Inter',
                 fontSize: 18,
                 fontWeight: FontWeight.w700,
@@ -50,9 +51,9 @@ class _AreeMiglioramentoSection extends StatelessWidget {
           ],
         ),
         const SizedBox(height: 4),
-        const Text(
-          'Abitudini che richiedono più attenzione e i loro giorni critici.',
-          style: TextStyle(
+        Text(
+          context.l10n.translate('improvement_areas_desc'),
+          style: const TextStyle(
             fontFamily: 'Inter',
             fontSize: 13,
             color: AppColors.mutedForeground,
@@ -63,29 +64,29 @@ class _AreeMiglioramentoSection extends StatelessWidget {
           scrollDirection: Axis.horizontal,
           clipBehavior: Clip.none,
           child: Row(
-            children: const [
+            children: [
               _MiglioramentoCard(
                 title: 'Lettura',
                 successRate: '10%',
-                day: 'mercoledì',
+                day: context.l10n.translate('wednesday'),
                 dayCompletion: '15%',
-                color: Color(0xFF10B981),
+                color: const Color(0xFF10B981),
               ),
-              SizedBox(width: 12),
+              const SizedBox(width: 12),
               _MiglioramentoCard(
                 title: '20 Flessioni 4',
                 successRate: '13%',
-                day: 'domenica',
+                day: context.l10n.translate('sunday'),
                 dayCompletion: '15%',
-                color: Color(0xFFEF4444),
+                color: const Color(0xFFEF4444),
               ),
-              SizedBox(width: 12),
+              const SizedBox(width: 12),
               _MiglioramentoCard(
                 title: '20 Flessioni 2',
                 successRate: '20%',
-                day: 'domenica',
+                day: context.l10n.translate('sunday'),
                 dayCompletion: '31%',
-                color: Color(0xFFEF4444),
+                color: const Color(0xFFEF4444),
               ),
             ],
           ),
@@ -153,7 +154,7 @@ class _MiglioramentoCard extends StatelessWidget {
               ),
 
               Text(
-                '$successRate succ.',
+                '$successRate ${context.l10n.translate('succ')}',
                 style: const TextStyle(
                   fontFamily: 'Inter',
                   fontSize: 11,
@@ -173,9 +174,9 @@ class _MiglioramentoCard extends StatelessWidget {
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
-                    const Text(
-                      'GIORNO NERO',
-                      style: TextStyle(
+                    Text(
+                      context.l10n.translate('black_day'),
+                      style: const TextStyle(
                         fontFamily: 'Inter',
                         fontSize: 10,
                         fontWeight: FontWeight.w800,
@@ -197,9 +198,9 @@ class _MiglioramentoCard extends StatelessWidget {
                       text: TextSpan(
                         style: const TextStyle(fontFamily: 'Inter', fontSize: 11, color: AppColors.mutedForeground),
                         children: [
-                          const TextSpan(text: 'Solo il '),
+                          TextSpan(text: '${context.l10n.translate('only')} '),
                           TextSpan(text: dayCompletion, style: const TextStyle(color: Color(0xFFEF4444), fontWeight: FontWeight.w700)),
-                          const TextSpan(text: ' di completamento'),
+                          TextSpan(text: ' ${context.l10n.translate('of_completion')}'),
                         ],
                       ),
                     ),
@@ -243,10 +244,10 @@ class _AnalisiWorstStreaksSection extends StatelessWidget {
               Expanded(
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
-                  children: const [
+                  children: [
                     Text(
-                      'Analisi Worst Streaks',
-                      style: TextStyle(
+                      context.l10n.translate('worst_streaks_analysis'),
+                      style: const TextStyle(
                         fontFamily: 'Inter',
                         fontSize: 16,
                         fontWeight: FontWeight.w700,
@@ -254,8 +255,8 @@ class _AnalisiWorstStreaksSection extends StatelessWidget {
                       ),
                     ),
                     Text(
-                      'Analisi dettagliata delle serie negative per identificare pattern e migliorare.',
-                      style: TextStyle(
+                      context.l10n.translate('worst_streaks_desc'),
+                      style: const TextStyle(
                         fontFamily: 'Inter',
                         fontSize: 12,
                         color: AppColors.mutedForeground,
@@ -280,10 +281,10 @@ class _AnalisiWorstStreaksSection extends StatelessWidget {
             children: [
               Row(
                 mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                children: const [
+                children: [
                   Text(
-                    '🎯 Abitudini Critiche',
-                    style: TextStyle(
+                    '🎯 ${context.l10n.translate('critical_habits')}',
+                    style: const TextStyle(
                       fontFamily: 'Inter',
                       fontSize: 15,
                       fontWeight: FontWeight.w700,
@@ -291,8 +292,8 @@ class _AnalisiWorstStreaksSection extends StatelessWidget {
                     ),
                   ),
                   Text(
-                    'Top 3 Worst Streaks',
-                    style: TextStyle(
+                    context.l10n.translate('top_3_worst_streaks'),
+                    style: const TextStyle(
                       fontFamily: 'Inter',
                       fontSize: 12,
                       color: AppColors.mutedForeground,
@@ -302,24 +303,24 @@ class _AnalisiWorstStreaksSection extends StatelessWidget {
               ),
               const SizedBox(height: 20),
               Row(
-                children: const [
-                  Expanded(
+                children: [
+                  const Expanded(
                     child: _WorstStreakCard(
                       title: '20 Flessioni 4',
                       streak: '30',
                       rank: '1',
                     ),
                   ),
-                  SizedBox(width: 10),
-                  Expanded(
+                  const SizedBox(width: 10),
+                  const Expanded(
                     child: _WorstStreakCard(
                       title: '20 Flessioni 3',
                       streak: '17',
                       rank: '2',
                     ),
                   ),
-                  SizedBox(width: 10),
-                  Expanded(
+                  const SizedBox(width: 10),
+                  const Expanded(
                     child: _WorstStreakCard(
                       title: '20 Flessioni 1',
                       streak: '11',
@@ -411,9 +412,9 @@ class _WorstStreakCard extends StatelessWidget {
               color: Color(0xFFEF4444),
             ),
           ),
-          const Text(
-            'giorni consecutivi',
-            style: TextStyle(
+          Text(
+            context.l10n.translate('consecutive_days'),
+            style: const TextStyle(
               fontFamily: 'Inter',
               fontSize: 10,
               color: AppColors.mutedForeground,
@@ -446,12 +447,12 @@ class _AnalisiFallimentiSection extends StatelessWidget {
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
                 Row(
-                  children: const [
-                    Icon(LucideIcons.chartBar, size: 16, color: Color(0xFFF97316)),
-                    SizedBox(width: 8),
+                  children: [
+                    const Icon(LucideIcons.chartBar, size: 16, color: Color(0xFFF97316)),
+                    const SizedBox(width: 8),
                     Text(
-                      'Analisi Fallimenti',
-                      style: TextStyle(
+                      context.l10n.translate('failure_analysis'),
+                      style: const TextStyle(
                         fontFamily: 'Inter',
                         fontSize: 14,
                         fontWeight: FontWeight.w700,
@@ -484,12 +485,12 @@ class _AnalisiFallimentiSection extends StatelessWidget {
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
                 Row(
-                  children: const [
-                    Icon(LucideIcons.calendar, size: 16, color: AppColors.foreground),
-                    SizedBox(width: 8),
+                  children: [
+                    const Icon(LucideIcons.calendar, size: 16, color: AppColors.foreground),
+                    const SizedBox(width: 8),
                     Text(
-                      'Pattern di Recupero',
-                      style: TextStyle(
+                      context.l10n.translate('recovery_patterns'),
+                      style: const TextStyle(
                         fontFamily: 'Inter',
                         fontSize: 14,
                         fontWeight: FontWeight.w700,
@@ -501,9 +502,9 @@ class _AnalisiFallimentiSection extends StatelessWidget {
                 const SizedBox(height: 16),
                 Row(
                   mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                  children: const [
-                    Text('Tempo Medio Recupero', style: TextStyle(fontSize: 11, color: AppColors.mutedForeground)),
-                    Text('6 giorni', style: TextStyle(fontSize: 12, fontWeight: FontWeight.bold, color: AppColors.foreground)),
+                  children: [
+                    Text(context.l10n.translate('avg_recovery_time'), style: const TextStyle(fontSize: 11, color: AppColors.mutedForeground)),
+                    Text('6 ${context.l10n.translate('days')}', style: const TextStyle(fontSize: 12, fontWeight: FontWeight.bold, color: AppColors.foreground)),
                   ],
                 ),
                 const SizedBox(height: 8),
@@ -513,18 +514,18 @@ class _AnalisiFallimentiSection extends StatelessWidget {
                     value: 0.7,
                     minHeight: 6,
                     backgroundColor: AppColors.muted,
-                    valueColor: const AlwaysStoppedAnimation<Color>(Color(0xFF10B981)),
+                    valueColor: AlwaysStoppedAnimation<Color>(Theme.of(context).colorScheme.primary),
                   ),
                 ),
                 const SizedBox(height: 8),
-                const Text('👍 Buono', style: TextStyle(fontSize: 11, color: AppColors.mutedForeground)),
+                Text('👍 ${context.l10n.translate('good')}', style: const TextStyle(fontSize: 11, color: AppColors.mutedForeground)),
                 const SizedBox(height: 16),
-                const Text(
-                  '🔥 RECUPERATORI VELOCI',
-                  style: TextStyle(fontSize: 10, fontWeight: FontWeight.w800, color: AppColors.mutedForeground),
+                Text(
+                  '🔥 ${context.l10n.translate('fast_recoverers')}',
+                  style: const TextStyle(fontSize: 10, fontWeight: FontWeight.w800, color: AppColors.mutedForeground),
                 ),
                 const SizedBox(height: 12),
-                _buildRecoveryRow('Fitness', '1 gg', Color(0xFF10B981)),
+                _buildRecoveryRow('Fitness', '1 gg', Theme.of(context).colorScheme.primary),
                 const SizedBox(height: 8),
                 _buildRecoveryRow('Journaling', '1 gg', Color(0xFFEAB308)),
                 const SizedBox(height: 8),
@@ -605,12 +606,12 @@ class _ConfrontoPerformanceSection extends StatelessWidget {
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           Row(
-            children: const [
-              Icon(LucideIcons.trendingUp, size: 18, color: AppColors.foreground),
-              SizedBox(width: 10),
+            children: [
+              const Icon(LucideIcons.trendingUp, size: 18, color: AppColors.foreground),
+              const SizedBox(width: 10),
               Text(
-                'Confronto Performance',
-                style: TextStyle(
+                context.l10n.translate('performance_comparison'),
+                style: const TextStyle(
                   fontFamily: 'Inter',
                   fontSize: 16,
                   fontWeight: FontWeight.w700,
@@ -620,17 +621,17 @@ class _ConfrontoPerformanceSection extends StatelessWidget {
             ],
           ),
           const SizedBox(height: 20),
-          _buildPerformanceItem('20 Flessioni 4', 0.13, 4, 30),
+          _buildPerformanceItem(context, '20 Flessioni 4', 0.13, 4, 30),
           const SizedBox(height: 20),
-          _buildPerformanceItem('Alimentazione', 0.36, 4, 11),
+          _buildPerformanceItem(context, 'Alimentazione', 0.36, 4, 11),
           const SizedBox(height: 20),
-          _buildPerformanceItem('Lettura', 0.60, 6, 10),
+          _buildPerformanceItem(context, 'Lettura', 0.60, 6, 10),
         ],
       ),
     );
   }
 
-  Widget _buildPerformanceItem(String title, double gap, int best, int worst) {
+  Widget _buildPerformanceItem(BuildContext context, String title, double gap, int best, int worst) {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
@@ -647,7 +648,7 @@ class _ConfrontoPerformanceSection extends StatelessWidget {
             Container(
               padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 2),
               decoration: BoxDecoration(color: const Color(0xFFF97316).withValues(alpha: 0.1), borderRadius: BorderRadius.circular(4)),
-              child: const Text('Attenzione', style: TextStyle(fontSize: 10, fontWeight: FontWeight.w700, color: Color(0xFFF97316))),
+              child: Text(context.l10n.translate('attention'), style: const TextStyle(fontSize: 10, fontWeight: FontWeight.w700, color: Color(0xFFF97316))),
             ),
           ],
         ),
@@ -656,7 +657,7 @@ class _ConfrontoPerformanceSection extends StatelessWidget {
           mainAxisAlignment: MainAxisAlignment.spaceBetween,
           children: [
             const Text('Best', style: TextStyle(fontSize: 11, color: AppColors.mutedForeground)),
-            Text('$best gg', style: const TextStyle(fontSize: 11, fontWeight: FontWeight.bold, color: Color(0xFF10B981))),
+            Text('$best gg', style: TextStyle(fontSize: 11, fontWeight: FontWeight.bold, color: Theme.of(context).colorScheme.primary)),
           ],
         ),
         const SizedBox(height: 4),
@@ -666,7 +667,7 @@ class _ConfrontoPerformanceSection extends StatelessWidget {
             value: 0.3,
             minHeight: 4,
             backgroundColor: AppColors.muted,
-            valueColor: const AlwaysStoppedAnimation<Color>(Color(0xFF10B981)),
+            valueColor: AlwaysStoppedAnimation<Color>(Theme.of(context).colorScheme.primary),
           ),
         ),
         const SizedBox(height: 8),
@@ -718,12 +719,12 @@ class _SuggerimentiPraticiSection extends StatelessWidget {
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           Row(
-            children: const [
-              Icon(LucideIcons.lightbulb, size: 18, color: Color(0xFFEAB308)),
+            children: [
+              const Icon(LucideIcons.lightbulb, size: 18, color: Color(0xFFEAB308)),
               const SizedBox(width: 10),
               Text(
-                'Suggerimenti Pratici',
-                style: TextStyle(
+                context.l10n.translate('practical_suggestions'),
+                style: const TextStyle(
                   fontFamily: 'Inter',
                   fontSize: 16,
                   fontWeight: FontWeight.w700,

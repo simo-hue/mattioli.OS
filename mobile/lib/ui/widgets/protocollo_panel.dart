@@ -77,7 +77,7 @@ class ProtocolloPanel extends ConsumerWidget {
                 icon: LucideIcons.listTodo,
                 label: 'Gestione',
                 subtitle: 'Abitudini',
-                color: const Color(0xFF8B5CF6),
+                color: Theme.of(context).colorScheme.primary,
                 onTap: () => HabitManagementModal.show(context),
               ),
             ),

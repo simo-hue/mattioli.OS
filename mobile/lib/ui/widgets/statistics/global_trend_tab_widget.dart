@@ -3,6 +3,7 @@ import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:lucide_icons_flutter/lucide_icons.dart';
 import '../../../core/theme.dart';
+import '../../../core/localization.dart';
 import '../../../models/goal.dart';
 import '../../../providers/goal_provider.dart';
 
@@ -14,8 +15,8 @@ class GlobalTrendTabWidget extends ConsumerStatefulWidget {
 }
 
 class _GlobalTrendTabWidgetState extends ConsumerState<GlobalTrendTabWidget> {
-  String _chartTimeframe = 'Sett';
-  String _comparisonTimeframe = 'Mese';
+  String _chartTimeframe = 'timeframe_week_short';
+  String _comparisonTimeframe = 'timeframe_week_short';
 
   @override
   Widget build(BuildContext context) {
@@ -48,9 +49,9 @@ class _GlobalTrendTabWidgetState extends ConsumerState<GlobalTrendTabWidget> {
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
-                    const Text(
-                      'Trend Completamento',
-                      style: TextStyle(
+                    Text(
+                      context.l10n.translate('completion_trend'),
+                      style: const TextStyle(
                         fontFamily: 'Inter',
                         fontSize: 13,
                         fontWeight: FontWeight.w600,
@@ -87,16 +88,16 @@ class _GlobalTrendTabWidgetState extends ConsumerState<GlobalTrendTabWidget> {
                             ),
                             child: Row(
                               mainAxisSize: MainAxisSize.min,
-                              children: const [
-                                Icon(LucideIcons.trendingUp, size: 12, color: Color(0xFF10B981)),
-                                SizedBox(width: 2),
+                              children: [
+                                Icon(LucideIcons.trendingUp, size: 12, color: const Color(0xFF10B981)),
+                                const SizedBox(width: 2),
                                 Text(
                                   '+5.4%',
                                   style: TextStyle(
                                     fontFamily: 'Inter',
                                     fontSize: 12,
                                     fontWeight: FontWeight.w800,
-                                    color: Color(0xFF10B981),
+                                    color: const Color(0xFF10B981),
                                   ),
                                 ),
                               ],
@@ -111,7 +112,7 @@ class _GlobalTrendTabWidgetState extends ConsumerState<GlobalTrendTabWidget> {
               const SizedBox(width: 8),
               _buildSmallTimeframeSelector(
                 selected: _chartTimeframe,
-                options: ['Sett', 'Mese', 'Anno', 'Tutto'],
+                options: ['timeframe_week_short', 'timeframe_month_short', 'timeframe_year_short', 'timeframe_all'],
                 onSelect: (val) => setState(() => _chartTimeframe = val),
               ),
             ],
@@ -131,9 +132,9 @@ class _GlobalTrendTabWidgetState extends ConsumerState<GlobalTrendTabWidget> {
           // Day labels
           Row(
             mainAxisAlignment: MainAxisAlignment.spaceBetween,
-            children: ['gio', 'ven', 'sab', 'dom', 'lun', 'mar', 'mer'].map((d) {
+            children: ['thu', 'fri', 'sat', 'sun', 'mon', 'tue', 'wed'].map((key) {
               return Text(
-                d,
+                context.l10n.translate(key).toLowerCase(),
                 style: const TextStyle(
                   fontFamily: 'Inter',
                   fontSize: 11,
@@ -160,14 +161,14 @@ class _GlobalTrendTabWidgetState extends ConsumerState<GlobalTrendTabWidget> {
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
                   Row(
-                    children: const [
-                      Icon(LucideIcons.trendingUp, size: 18, color: AppColors.foreground),
-                      SizedBox(width: 8),
+                    children: [
+                      const Icon(LucideIcons.trendingUp, size: 18, color: AppColors.foreground),
+                      const SizedBox(width: 8),
                       Flexible(
                         child: Text(
-                          'Confronto Temporale',
+                          context.l10n.translate('temporal_comparison'),
                           overflow: TextOverflow.ellipsis,
-                          style: TextStyle(
+                          style: const TextStyle(
                             fontFamily: 'Inter',
                             fontSize: 18,
                             fontWeight: FontWeight.w700,
@@ -178,9 +179,9 @@ class _GlobalTrendTabWidgetState extends ConsumerState<GlobalTrendTabWidget> {
                     ],
                   ),
                   const SizedBox(height: 4),
-                  const Text(
-                    'Analizza come stai andando rispetto al passato.',
-                    style: TextStyle(
+                  Text(
+                    context.l10n.translate('comparison_desc'),
+                    style: const TextStyle(
                       fontFamily: 'Inter',
                       fontSize: 12,
                       color: AppColors.mutedForeground,
@@ -192,7 +193,7 @@ class _GlobalTrendTabWidgetState extends ConsumerState<GlobalTrendTabWidget> {
             const SizedBox(width: 8),
             _buildSmallTimeframeSelector(
               selected: _comparisonTimeframe,
-              options: ['Settimana', 'Mese', 'Anno'],
+              options: ['timeframe_week_short', 'timeframe_month_short', 'timeframe_year_short'],
               onSelect: (val) => setState(() => _comparisonTimeframe = val),
               padding: 4,
             ),
@@ -304,7 +305,7 @@ class _GlobalTrendTabWidgetState extends ConsumerState<GlobalTrendTabWidget> {
                   ),
                   const SizedBox(height: 2),
                   Text(
-                    'vs $previous%',
+                    '${context.l10n.translate('vs')} $previous%',
                     style: const TextStyle(
                       fontFamily: 'Inter',
                       fontSize: 10,
@@ -390,7 +391,7 @@ class _GlobalTrendTabWidgetState extends ConsumerState<GlobalTrendTabWidget> {
                     : null,
               ),
               child: Text(
-                opt,
+                context.l10n.translate(opt),
                 textAlign: TextAlign.center,
                 style: TextStyle(
                   fontSize: 13,

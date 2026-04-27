@@ -5,6 +5,7 @@ import 'package:local_auth/local_auth.dart';
 import '../../core/theme.dart';
 import '../../providers/settings_provider.dart';
 import '../../core/haptics.dart';
+import '../../core/localization.dart';
 
 class PrivacySettingsScreen extends ConsumerWidget {
   const PrivacySettingsScreen({super.key});
@@ -40,9 +41,9 @@ class PrivacySettingsScreen extends ConsumerWidget {
           icon: const Icon(LucideIcons.chevronLeft, color: AppColors.foreground),
           onPressed: () => Navigator.pop(context),
         ),
-        title: const Text(
-          'Privacy e Sicurezza',
-          style: TextStyle(
+        title: Text(
+          context.l10n.translate('privacy_title'),
+          style: const TextStyle(
             color: AppColors.foreground,
             fontSize: 18,
             fontWeight: FontWeight.w700,
@@ -62,8 +63,8 @@ class PrivacySettingsScreen extends ConsumerWidget {
                 context: context,
                 ref: ref,
                 icon: LucideIcons.shield,
-                title: 'Accesso Biometrico',
-                subtitle: 'FaceID / TouchID all\'avvio',
+                title: context.l10n.translate('biometric_lock'),
+                subtitle: 'FaceID / TouchID',
                 value: settings.biometricLock,
                 isLocked: !settings.isPro,
                 onChanged: (val) async {
@@ -113,8 +114,8 @@ class PrivacySettingsScreen extends ConsumerWidget {
                 context: context,
                 ref: ref,
                 icon: LucideIcons.activity,
-                title: 'Analitiche Anonime',
-                subtitle: 'Aiutaci a migliorare l\'app',
+                title: context.l10n.translate('analytics'),
+                subtitle: context.l10n.translate('analytics'),
                 value: settings.anonymousAnalytics,
                 onChanged: (val) {
                   final currentSettings = ref.read(settingsProvider);
@@ -174,10 +175,10 @@ class PrivacySettingsScreen extends ConsumerWidget {
 
   void _showProSnackbar(BuildContext context) {
     ScaffoldMessenger.of(context).showSnackBar(
-      const SnackBar(
-        content: Text('Questa funzione è disponibile solo per utenti PRO'),
+      SnackBar(
+        content: Text(context.l10n.translate('pro_only')),
         backgroundColor: Colors.amber,
-        duration: Duration(seconds: 2),
+        duration: const Duration(seconds: 2),
       ),
     );
   }

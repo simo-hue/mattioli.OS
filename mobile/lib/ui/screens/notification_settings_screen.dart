@@ -5,6 +5,7 @@ import '../../core/theme.dart';
 import '../../providers/settings_provider.dart';
 import '../../core/haptics.dart';
 import '../../core/notifications.dart';
+import '../../core/localization.dart';
 
 class NotificationSettingsScreen extends ConsumerWidget {
   const NotificationSettingsScreen({super.key});
@@ -40,9 +41,9 @@ class NotificationSettingsScreen extends ConsumerWidget {
           icon: const Icon(LucideIcons.chevronLeft, color: AppColors.foreground),
           onPressed: () => Navigator.pop(context),
         ),
-        title: const Text(
-          'Notifiche',
-          style: TextStyle(
+        title: Text(
+          context.l10n.translate('notifications_title'),
+          style: const TextStyle(
             color: AppColors.foreground,
             fontSize: 18,
             fontWeight: FontWeight.w700,
@@ -62,8 +63,8 @@ class NotificationSettingsScreen extends ConsumerWidget {
                 context: context,
                 ref: ref,
                 icon: LucideIcons.calendarCheck,
-                title: 'Check-in Abitudini',
-                subtitle: 'Ricorda di segnare le tue attività',
+                title: context.l10n.translate('habit_reminders'),
+                subtitle: context.l10n.translate('morning_brief'),
                 value: settings.habitReminders,
                 onChanged: (val) {
                   if (val) NotificationService().requestPermissions();
@@ -77,8 +78,8 @@ class NotificationSettingsScreen extends ConsumerWidget {
                 context: context,
                 ref: ref,
                 icon: LucideIcons.bellRing,
-                title: 'Review Serale',
-                subtitle: 'Riepilogo giornaliero alle 21:00',
+                title: context.l10n.translate('evening_review'),
+                subtitle: context.l10n.translate('evening_review'),
                 value: settings.eveningReview,
                 onChanged: (val) {
                   if (val) NotificationService().requestPermissions();
@@ -95,8 +96,8 @@ class NotificationSettingsScreen extends ConsumerWidget {
                 context: context,
                 ref: ref,
                 icon: LucideIcons.timer,
-                title: 'Scadenze Obiettivi',
-                subtitle: 'Avvisi per macro-obiettivi in scadenza',
+                title: context.l10n.translate('goal_deadlines'),
+                subtitle: context.l10n.translate('goal_deadlines'),
                 value: settings.goalDeadlines,
                 onChanged: (val) {
                   final currentSettings = ref.read(settingsProvider);
@@ -109,8 +110,8 @@ class NotificationSettingsScreen extends ConsumerWidget {
                 context: context,
                 ref: ref,
                 icon: LucideIcons.trophy,
-                title: 'Milestones',
-                subtitle: 'Celebra i tuoi traguardi',
+                title: context.l10n.translate('milestones'),
+                subtitle: context.l10n.translate('milestones'),
                 value: settings.milestones,
                 onChanged: (val) {
                   final currentSettings = ref.read(settingsProvider);
@@ -126,8 +127,8 @@ class NotificationSettingsScreen extends ConsumerWidget {
                 context: context,
                 ref: ref,
                 icon: LucideIcons.brainCircuit,
-                title: 'Suggerimenti Predittivi AI',
-                subtitle: 'Analisi proattiva delle abitudini',
+                title: context.l10n.translate('ai_insights'),
+                subtitle: context.l10n.translate('ai_subtitle'),
                 value: settings.aiInsights,
                 isLocked: !settings.isPro,
                 onChanged: (val) {
@@ -146,8 +147,8 @@ class NotificationSettingsScreen extends ConsumerWidget {
                 context: context,
                 ref: ref,
                 icon: LucideIcons.zap,
-                title: 'Deep Work Insights',
-                subtitle: 'Notifiche sui picchi di produttività',
+                title: context.l10n.translate('deep_work'),
+                subtitle: context.l10n.translate('deep_work'),
                 value: settings.deepWorkInsights,
                 isLocked: !settings.isPro,
                 onChanged: (val) {
@@ -169,8 +170,8 @@ class NotificationSettingsScreen extends ConsumerWidget {
                 context: context,
                 ref: ref,
                 icon: LucideIcons.chartBar,
-                title: 'Resoconto Settimanale',
-                subtitle: 'Ogni lunedì mattina alle 08:00',
+                title: context.l10n.translate('weekly_reports'),
+                subtitle: context.l10n.translate('weekly_reports'),
                 value: settings.weeklyReports,
                 isLocked: !settings.isPro,
                 onChanged: (val) {
@@ -189,8 +190,8 @@ class NotificationSettingsScreen extends ConsumerWidget {
                 context: context,
                 ref: ref,
                 icon: LucideIcons.moonStar,
-                title: 'Modalità Focus (Muto)',
-                subtitle: 'Sospendi notifiche in fasce orarie',
+                title: context.l10n.translate('focus_mode'),
+                subtitle: context.l10n.translate('focus_mode'),
                 value: settings.focusMode,
                 isLocked: !settings.isPro,
                 onChanged: (val) {
@@ -214,10 +215,10 @@ class NotificationSettingsScreen extends ConsumerWidget {
 
   void _showProSnackbar(BuildContext context) {
     ScaffoldMessenger.of(context).showSnackBar(
-      const SnackBar(
-        content: Text('Questa funzione è disponibile solo per utenti PRO'),
+      SnackBar(
+        content: Text(context.l10n.translate('pro_only')),
         backgroundColor: Colors.amber,
-        duration: Duration(seconds: 2),
+        duration: const Duration(seconds: 2),
       ),
     );
   }

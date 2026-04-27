@@ -5,6 +5,7 @@ import 'package:google_fonts/google_fonts.dart';
 import 'package:lucide_icons_flutter/lucide_icons.dart';
 import '../../core/theme.dart';
 import '../../core/haptics.dart';
+import '../../core/localization.dart';
 
 class AppBottomNavBar extends ConsumerWidget {
   final int currentIndex;
@@ -20,9 +21,9 @@ class AppBottomNavBar extends ConsumerWidget {
   Widget build(BuildContext context, WidgetRef ref) {
     final bottomPadding = MediaQuery.of(context).padding.bottom;
     final items = [
-      _NavItem(icon: LucideIcons.house, label: 'Home'),
-      _NavItem(icon: LucideIcons.activity, label: 'Statistiche'),
-      _NavItem(icon: LucideIcons.chartPie, label: 'Obiettivi'),
+      _NavItem(icon: LucideIcons.house, label: context.l10n.translate('home')),
+      _NavItem(icon: LucideIcons.activity, label: context.l10n.translate('statistics')),
+      _NavItem(icon: LucideIcons.chartPie, label: context.l10n.translate('goals')),
     ];
 
     return ClipRRect(

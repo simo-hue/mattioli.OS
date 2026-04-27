@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:lucide_icons_flutter/lucide_icons.dart';
 import '../../../core/theme.dart';
+import '../../../core/localization.dart';
 
 class HabitPerformanceTabWidget extends StatelessWidget {
   final String goalId;
@@ -11,13 +12,13 @@ class HabitPerformanceTabWidget extends StatelessWidget {
   Widget build(BuildContext context) {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
-      children: const [
-        _PerformanceChartCard(),
-        SizedBox(height: 12),
-        _GiornoForteCard(),
-        SizedBox(height: 12),
-        _GiornoDeboleCard(),
-        SizedBox(height: 16),
+      children: [
+        const _PerformanceChartCard(),
+        const SizedBox(height: 12),
+        const _GiornoForteCard(),
+        const SizedBox(height: 12),
+        const _GiornoDeboleCard(),
+        const SizedBox(height: 16),
       ],
     );
   }
@@ -29,13 +30,13 @@ class _PerformanceChartCard extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final data = [
-      {'day': 'Lun', 'pct': 56},
-      {'day': 'Mar', 'pct': 67},
-      {'day': 'Mer', 'pct': 56},
-      {'day': 'Gio', 'pct': 53},
-      {'day': 'Ven', 'pct': 53},
-      {'day': 'Sab', 'pct': 53},
-      {'day': 'Dom', 'pct': 47},
+      {'day': 'mon', 'pct': 56},
+      {'day': 'tue', 'pct': 67},
+      {'day': 'wed', 'pct': 56},
+      {'day': 'thu', 'pct': 53},
+      {'day': 'fri', 'pct': 53},
+      {'day': 'sat', 'pct': 53},
+      {'day': 'sun', 'pct': 47},
     ];
 
     return Container(
@@ -48,9 +49,9 @@ class _PerformanceChartCard extends StatelessWidget {
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          const Text(
-            'Performance per Giorno',
-            style: TextStyle(
+          Text(
+            context.l10n.translate('performance_per_day'),
+            style: const TextStyle(
               fontFamily: 'Inter',
               fontSize: 18,
               fontWeight: FontWeight.w700,
@@ -83,7 +84,7 @@ class _PerformanceChartCard extends StatelessWidget {
         child: Column(
           children: [
             Text(
-              day,
+              context.l10n.translate(day),
               style: const TextStyle(
                 fontFamily: 'Inter',
                 fontSize: 12,
@@ -129,25 +130,26 @@ class _GiornoForteCard extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final primaryColor = Theme.of(context).colorScheme.primary;
     return Container(
       padding: const EdgeInsets.all(14),
       decoration: BoxDecoration(
-        color: const Color(0xFF10B981).withValues(alpha: 0.05),
+        color: primaryColor.withValues(alpha: 0.05),
         borderRadius: BorderRadius.circular(14),
-        border: Border.all(color: const Color(0xFF10B981).withValues(alpha: 0.2), width: 1),
+        border: Border.all(color: primaryColor.withValues(alpha: 0.2), width: 1),
       ),
       child: Row(
         crossAxisAlignment: CrossAxisAlignment.center,
         children: [
-          const Icon(LucideIcons.trophy, size: 22, color: Color(0xFF10B981)),
+          Icon(LucideIcons.trophy, size: 22, color: primaryColor),
           const SizedBox(width: 14),
           Expanded(
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
-              children: const [
+              children: [
                 Text(
-                  'Giorno più forte: Mar',
-                  style: TextStyle(
+                  '${context.l10n.translate('strongest_day_label')}: ${context.l10n.translate('tue')}',
+                  style: const TextStyle(
                     fontFamily: 'Inter',
                     fontSize: 15,
                     fontWeight: FontWeight.w700,
@@ -156,8 +158,8 @@ class _GiornoForteCard extends StatelessWidget {
                 ),
                 SizedBox(height: 2),
                 Text(
-                  'Ben 67% di completamento (12/18)',
-                  style: TextStyle(
+                  '${context.l10n.translate('well_done_completion').replaceFirst('done', '67')} (12/18)',
+                  style: const TextStyle(
                     fontFamily: 'Inter',
                     fontSize: 13,
                     color: AppColors.mutedForeground,
@@ -192,10 +194,10 @@ class _GiornoDeboleCard extends StatelessWidget {
           Expanded(
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
-              children: const [
+              children: [
                 Text(
-                  'Giorno più debole: Dom',
-                  style: TextStyle(
+                  '${context.l10n.translate('weakest_day_label')}: ${context.l10n.translate('sun')}',
+                  style: const TextStyle(
                     fontFamily: 'Inter',
                     fontSize: 15,
                     fontWeight: FontWeight.w700,
@@ -204,8 +206,8 @@ class _GiornoDeboleCard extends StatelessWidget {
                 ),
                 SizedBox(height: 2),
                 Text(
-                  'Solo 47% di completamento (8/17)',
-                  style: TextStyle(
+                  '${context.l10n.translate('only_completion').replaceFirst('done', '47')} (8/17)',
+                  style: const TextStyle(
                     fontFamily: 'Inter',
                     fontSize: 13,
                     color: AppColors.mutedForeground,

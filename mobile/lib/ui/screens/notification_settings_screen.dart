@@ -6,6 +6,7 @@ import '../../providers/settings_provider.dart';
 import '../../core/haptics.dart';
 import '../../core/notifications.dart';
 import '../../core/localization.dart';
+import '../widgets/pro_features_modal.dart';
 
 class NotificationSettingsScreen extends ConsumerWidget {
   const NotificationSettingsScreen({super.key});
@@ -138,7 +139,7 @@ class NotificationSettingsScreen extends ConsumerWidget {
                     ref.hapticLight();
                   } else {
                     ref.hapticHeavy();
-                    _showProSnackbar(context);
+                    ProFeaturesModal.show(context);
                   }
                 },
               ),
@@ -158,7 +159,7 @@ class NotificationSettingsScreen extends ConsumerWidget {
                     ref.hapticLight();
                   } else {
                     ref.hapticHeavy();
-                    _showProSnackbar(context);
+                    ProFeaturesModal.show(context);
                   }
                 },
               ),
@@ -181,7 +182,7 @@ class NotificationSettingsScreen extends ConsumerWidget {
                     ref.hapticLight();
                   } else {
                     ref.hapticHeavy();
-                    _showProSnackbar(context);
+                    ProFeaturesModal.show(context);
                   }
                 },
               ),
@@ -201,7 +202,7 @@ class NotificationSettingsScreen extends ConsumerWidget {
                     ref.hapticLight();
                   } else {
                     ref.hapticHeavy();
-                    _showProSnackbar(context);
+                    ProFeaturesModal.show(context);
                   }
                 },
               ),
@@ -209,16 +210,6 @@ class NotificationSettingsScreen extends ConsumerWidget {
             const SizedBox(height: 48),
           ],
         ),
-      ),
-    );
-  }
-
-  void _showProSnackbar(BuildContext context) {
-    ScaffoldMessenger.of(context).showSnackBar(
-      SnackBar(
-        content: Text(context.l10n.translate('pro_only')),
-        backgroundColor: Colors.amber,
-        duration: const Duration(seconds: 2),
       ),
     );
   }

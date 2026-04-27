@@ -6,6 +6,7 @@ import '../../core/theme.dart';
 import '../../providers/settings_provider.dart';
 import '../../core/haptics.dart';
 import '../../core/localization.dart';
+import '../widgets/pro_features_modal.dart';
 
 class PrivacySettingsScreen extends ConsumerWidget {
   const PrivacySettingsScreen({super.key});
@@ -83,7 +84,7 @@ class PrivacySettingsScreen extends ConsumerWidget {
                     }
                   } else {
                     ref.hapticHeavy();
-                    _showProSnackbar(context);
+                    ProFeaturesModal.show(context);
                   }
                 },
               ),
@@ -171,16 +172,6 @@ class PrivacySettingsScreen extends ConsumerWidget {
       debugPrint('Biometric authentication error: $e');
       return false;
     }
-  }
-
-  void _showProSnackbar(BuildContext context) {
-    ScaffoldMessenger.of(context).showSnackBar(
-      SnackBar(
-        content: Text(context.l10n.translate('pro_only')),
-        backgroundColor: Colors.amber,
-        duration: const Duration(seconds: 2),
-      ),
-    );
   }
 
   Widget _buildSectionHeader(String title) {

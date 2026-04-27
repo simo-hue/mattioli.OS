@@ -8,6 +8,7 @@ import '../../core/theme.dart';
 import '../../providers/settings_provider.dart';
 import '../../core/haptics.dart';
 import '../../core/localization.dart';
+import '../widgets/pro_features_modal.dart';
 
 class AppSettingsScreen extends ConsumerWidget {
   const AppSettingsScreen({super.key});
@@ -246,12 +247,7 @@ class AppSettingsScreen extends ConsumerWidget {
                     ref.hapticLight();
                   } else {
                     ref.hapticHeavy();
-                    ScaffoldMessenger.of(context).showSnackBar(
-                      SnackBar(
-                        content: Text(context.l10n.translate('pro_only')),
-                        backgroundColor: Colors.amber,
-                      ),
-                    );
+                    ProFeaturesModal.show(context);
                   }
                 },
               ),

@@ -8,3 +8,7 @@
 - Fixed `lib/ui/widgets/statistics/habit_miglioramento_tab_widget.dart` and `habit_mood_tab_widget.dart`: Passed `BuildContext` to helper methods to allow access to `context.l10n` and `Theme.of(context)`.
 - Fixed `lib/core/localization.dart`: Removed duplicate keys `mood`, `energy`, `positive_correlations`, and `negative_correlations`.
 - Verified fix with `flutter build ios --simulator --debug`.
+
+## [2026-04-27 15:30]: Premium Tab Animations
+- *Details*: Replaced static IndexedStack with a custom-animated PageView. Added a depth transition effect (scale + fade) for elegant tab switching.
+- *Tech Notes*: Implemented PageController, custom transition logic via AnimatedBuilder, and state persistence using AutomaticKeepAliveClientMixin for all main screens (Home, Stats, Goals).

@@ -26,10 +26,20 @@ class StatisticsScreen extends ConsumerStatefulWidget {
   ConsumerState<StatisticsScreen> createState() => _StatisticsScreenState();
 }
 
-class _StatisticsScreenState extends ConsumerState<StatisticsScreen> {
+class _StatisticsScreenState extends ConsumerState<StatisticsScreen>
+    with AutomaticKeepAliveClientMixin {
   String _selectedTab = 'tab_info';
-  List<String> _tabs = ['tab_info', 'tab_trend', 'tab_alert', 'tab_habits', 'tab_mood'];
+  List<String> _tabs = [
+    'tab_info',
+    'tab_trend',
+    'tab_alert',
+    'tab_habits',
+    'tab_mood'
+  ];
   String? _selectedGoalId;
+
+  @override
+  bool get wantKeepAlive => true;
 
   void _selectGoal(String? goalId) {
     setState(() {
@@ -46,6 +56,7 @@ class _StatisticsScreenState extends ConsumerState<StatisticsScreen> {
 
   @override
   Widget build(BuildContext context) {
+    super.build(context);
     final goals = ref.watch(goalsProvider);
 
     return Scaffold(

@@ -26,3 +26,9 @@
 - [ ] Verificare che l'animazione di transizione sia fluida.
 - [ ] Controllare che TUTTE le scritte nella pagina Statistiche (Grafici, Legende, Insight) cambino correttamente.
 - [ ] Verificare che i nomi dei giorni nei grafici e nelle heatmap siano tradotti.
+
+## Verifica Animazioni Premium (Post-Implementazione)
+- [ ] Verificare che lo switch tra le schede (Home, Statistiche, Obiettivi) sia fluido.
+- [ ] Testare lo swipe orizzontale tra le schede principali.
+- [ ] Verificare che lo stato (es. scroll o filtri selezionati) venga mantenuto quando si cambia tab e si torna indietro.
+- [ ] Confermare che il feedback aptico (vibrazione leggera) sia piacevole al cambio tab.

@@ -19,12 +19,17 @@ class MacroGoalsScreen extends ConsumerStatefulWidget {
   ConsumerState<MacroGoalsScreen> createState() => _MacroGoalsScreenState();
 }
 
-class _MacroGoalsScreenState extends ConsumerState<MacroGoalsScreen> {
+class _MacroGoalsScreenState extends ConsumerState<MacroGoalsScreen>
+    with AutomaticKeepAliveClientMixin {
   bool _isForward = true;
   bool _showStats = false;
 
   @override
+  bool get wantKeepAlive => true;
+
+  @override
   Widget build(BuildContext context) {
+    super.build(context);
     final viewState = ref.watch(macroGoalsViewProvider);
     final primaryColor = Theme.of(context).colorScheme.primary;
     

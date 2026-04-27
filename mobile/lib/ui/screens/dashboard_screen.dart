@@ -26,12 +26,14 @@ class HomeScreen extends ConsumerStatefulWidget {
 class _HomeScreenState extends ConsumerState<HomeScreen>
     with TickerProviderStateMixin {
   int _selectedNavIndex = 0;
+  late PageController _pageController;
   late AnimationController _fadeController;
   late Animation<double> _fadeAnimation;
 
   @override
   void initState() {
     super.initState();
+    _pageController = PageController(initialPage: _selectedNavIndex);
     _fadeController = AnimationController(
       vsync: this,
       duration: const Duration(milliseconds: 400),
@@ -51,6 +53,7 @@ class _HomeScreenState extends ConsumerState<HomeScreen>
 
   @override
   void dispose() {
+    _pageController.dispose();
     _fadeController.dispose();
     super.dispose();
   }
@@ -66,19 +69,53 @@ class _HomeScreenState extends ConsumerState<HomeScreen>
         preferredSize: const Size.fromHeight(72),
         child: _AppBar(),
       ),
-      body: IndexedStack(
-        index: _selectedNavIndex,
-        children: [
-          _buildHomeBody(currentView),
-          const StatisticsScreen(), // Tab 1: Stats
-          const MacroGoalsScreen(), // Tab 2: Obiettivi
-        ],
+      body: PageView.builder(
+        controller: _pageController,
+        itemCount: 3,
+        onPageChanged: (index) {
+          setState(() => _selectedNavIndex = index);
+        },
+        physics: const BouncingScrollPhysics(),
+        itemBuilder: (context, index) {
+          return AnimatedBuilder(
+            animation: _pageController,
+            builder: (context, child) {
+              double value = 1.0;
+              if (_pageController.position.haveDimensions) {
+                value = (_pageController.page! - index).abs();
+                // Custom curve for premium feel: scale from 1.0 to 0.95 and fade
+                value = (1 - (value * 0.05)).clamp(0.9, 1.0);
+              } else {
+                // Initial state
+                value = index == _selectedNavIndex ? 1.0 : 0.95;
+              }
+              
+              return Opacity(
+                opacity: ((value - 0.9) / 0.1).clamp(0.0, 1.0),
+                child: Transform.scale(
+                  scale: value,
+                  child: child,
+                ),
+              );
+            },
+            child: _getPage(index, currentView),
+          );
+        },
       ),
       bottomNavigationBar: AppBottomNavBar(
         currentIndex: _selectedNavIndex,
         onTap: (index) {
+          if ((index - _selectedNavIndex).abs() > 1) {
+             _pageController.jumpToPage(index);
+          } else {
+            _pageController.animateToPage(
+              index,
+              duration: const Duration(milliseconds: 500),
+              curve: Curves.easeOutQuart,
+            );
+          }
           setState(() => _selectedNavIndex = index);
-          ref.hapticLight();
+          ref.hapticSelection();
         },
       ),
     );
@@ -157,6 +194,39 @@ class _HomeScreenState extends ConsumerState<HomeScreen>
         return const LifeViewWidget(key: ValueKey('vita'));
     }
   }
+
+  Widget _getPage(int index, CalendarView currentView) {
+    switch (index) {
+      case 0:
+        return _HomeTabWrapper(child: _buildHomeBody(currentView));
+      case 1:
+        return const StatisticsScreen();
+      case 2:
+        return const MacroGoalsScreen();
+      default:
+        return const SizedBox();
+    }
+  }
+}
+
+class _HomeTabWrapper extends StatefulWidget {
+  final Widget child;
+  const _HomeTabWrapper({required this.child});
+
+  @override
+  State<_HomeTabWrapper> createState() => _HomeTabWrapperState();
+}
+
+class _HomeTabWrapperState extends State<_HomeTabWrapper>
+    with AutomaticKeepAliveClientMixin {
+  @override
+  Widget build(BuildContext context) {
+    super.build(context);
+    return widget.child;
+  }
+
+  @override
+  bool get wantKeepAlive => true;
 }
 
 class _AppBar extends ConsumerWidget {

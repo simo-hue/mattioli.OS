@@ -21,6 +21,8 @@ class AppSettings {
   final bool? _aiInsights;
   final bool? _weeklyReports;
   final bool? _focusMode;
+  final bool? _milestones;
+  final bool? _deepWorkInsights;
 
   final bool? _biometricLock;
   final bool? _anonymousAnalytics;
@@ -43,6 +45,8 @@ class AppSettings {
     bool? aiInsights,
     bool? weeklyReports,
     bool? focusMode,
+    bool? milestones,
+    bool? deepWorkInsights,
     bool? biometricLock,
     bool? anonymousAnalytics,
     bool? eveningReview,
@@ -62,6 +66,8 @@ class AppSettings {
         _aiInsights = aiInsights,
         _weeklyReports = weeklyReports,
         _focusMode = focusMode,
+        _milestones = milestones,
+        _deepWorkInsights = deepWorkInsights,
         _biometricLock = biometricLock,
         _anonymousAnalytics = anonymousAnalytics,
         _eveningReview = eveningReview;
@@ -83,6 +89,8 @@ class AppSettings {
   bool get aiInsights => _aiInsights ?? false;
   bool get weeklyReports => _weeklyReports ?? false;
   bool get focusMode => _focusMode ?? false;
+  bool get milestones => _milestones ?? true;
+  bool get deepWorkInsights => _deepWorkInsights ?? false;
 
   bool get biometricLock => _biometricLock ?? false;
   bool get anonymousAnalytics => _anonymousAnalytics ?? true;
@@ -105,6 +113,8 @@ class AppSettings {
     bool? aiInsights,
     bool? weeklyReports,
     bool? focusMode,
+    bool? milestones,
+    bool? deepWorkInsights,
     bool? biometricLock,
     bool? anonymousAnalytics,
     bool? eveningReview,
@@ -126,6 +136,8 @@ class AppSettings {
       aiInsights: aiInsights ?? _aiInsights,
       weeklyReports: weeklyReports ?? _weeklyReports,
       focusMode: focusMode ?? _focusMode,
+      milestones: milestones ?? _milestones,
+      deepWorkInsights: deepWorkInsights ?? _deepWorkInsights,
       biometricLock: biometricLock ?? _biometricLock,
       anonymousAnalytics: anonymousAnalytics ?? _anonymousAnalytics,
       eveningReview: eveningReview ?? _eveningReview,
@@ -166,6 +178,8 @@ class AppSettingsNotifier extends Notifier<AppSettings> {
       aiInsights: false,
       weeklyReports: false,
       focusMode: false,
+      milestones: true,
+      deepWorkInsights: false,
       biometricLock: false,
       anonymousAnalytics: true,
     );
@@ -207,7 +221,7 @@ class AppSettingsNotifier extends Notifier<AppSettings> {
         // Placeholder for AI scheduling
       }
       
-      if (state.weeklyReports) {
+      if (state.weeklyReports && state.isPro) {
         // Placeholder for weekly scheduling
       }
     });

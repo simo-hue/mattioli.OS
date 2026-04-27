@@ -145,3 +145,6 @@
     - Serale (21:00): "mattioli.OS • Review Serale".
     - Corretto l'uso di `ref.read` nelle callback dei toggle in `NotificationSettingsScreen` per evitare stati obsoleti e garantire la reattività dello switch.
     - Inizializzati esplicitamente tutti i campi in `AppSettings.build()` per prevenire inconsistenze di stato.
+    - Riservato il **Resoconto Settimanale AI** agli utenti **PRO**, preparando l'infrastruttura per i suggerimenti basati sull'AI.
+    - Collegati tutti i toggle rimanenti (`Milestones`, `Deep Work Insights`, `Predictive AI`) allo stato dell'applicazione, superando definitivamente tutti i placeholder.
+    - **Global Switch Audit**: Revisionati e corretti tutti gli switch dell'applicazione (`AppSettingsScreen`, `PrivacySettingsScreen`, `NotificationSettingsScreen`). Ora utilizzano il pattern `ref.read` per garantire reattività e coerenza dello stato, eliminando il problema degli switch "bloccati" o lenti.

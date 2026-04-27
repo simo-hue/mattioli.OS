@@ -65,7 +65,8 @@ class AppSettingsScreen extends ConsumerWidget {
                 title: 'Modalità Scura',
                 value: settings.themeMode == 'dark',
                 onChanged: (val) {
-                  notifier.updateSettings(settings.copyWith(themeMode: val ? 'dark' : 'light'));
+                  final currentSettings = ref.read(settingsProvider);
+                  notifier.updateSettings(currentSettings.copyWith(themeMode: val ? 'dark' : 'light'));
                   ref.hapticLight();
                 },
               ),
@@ -76,7 +77,8 @@ class AppSettingsScreen extends ConsumerWidget {
                 title: 'Effetti Trasparenza',
                 value: settings.glassEffects,
                 onChanged: (val) {
-                  notifier.updateSettings(settings.copyWith(glassEffects: val));
+                  final currentSettings = ref.read(settingsProvider);
+                  notifier.updateSettings(currentSettings.copyWith(glassEffects: val));
                   ref.hapticLight();
                 },
               ),
@@ -166,7 +168,8 @@ class AppSettingsScreen extends ConsumerWidget {
                 title: 'Inizia di Lunedì',
                 value: settings.startWeekOnMonday,
                 onChanged: (val) {
-                  notifier.updateSettings(settings.copyWith(startWeekOnMonday: val));
+                  final currentSettings = ref.read(settingsProvider);
+                  notifier.updateSettings(currentSettings.copyWith(startWeekOnMonday: val));
                   ref.hapticLight();
                 },
               ),
@@ -177,7 +180,8 @@ class AppSettingsScreen extends ConsumerWidget {
                 title: 'Mostra Weekend',
                 value: settings.showWeekend,
                 onChanged: (val) {
-                  notifier.updateSettings(settings.copyWith(showWeekend: val));
+                  final currentSettings = ref.read(settingsProvider);
+                  notifier.updateSettings(currentSettings.copyWith(showWeekend: val));
                   ref.hapticLight();
                 },
               ),
@@ -191,7 +195,8 @@ class AppSettingsScreen extends ConsumerWidget {
                 title: 'Feedback Aptico',
                 value: settings.hapticFeedback,
                 onChanged: (val) {
-                  notifier.updateSettings(settings.copyWith(hapticFeedback: val));
+                  final currentSettings = ref.read(settingsProvider);
+                  notifier.updateSettings(currentSettings.copyWith(hapticFeedback: val));
                   if (val) ref.hapticMedium();
                 },
               ),
@@ -215,7 +220,8 @@ class AppSettingsScreen extends ConsumerWidget {
                 title: 'Formato 24h',
                 value: settings.timeFormat24h,
                 onChanged: (val) {
-                  notifier.updateSettings(settings.copyWith(timeFormat24h: val));
+                  final currentSettings = ref.read(settingsProvider);
+                  notifier.updateSettings(currentSettings.copyWith(timeFormat24h: val));
                   ref.hapticLight();
                 },
               ),
@@ -232,11 +238,11 @@ class AppSettingsScreen extends ConsumerWidget {
                 isLocked: !settings.isPro,
                 onChanged: (val) {
                   if (settings.isPro) {
-                    notifier.updateSettings(settings.copyWith(aiSuggestions: val));
+                    final currentSettings = ref.read(settingsProvider);
+                    notifier.updateSettings(currentSettings.copyWith(aiSuggestions: val));
                     ref.hapticLight();
                   } else {
                     ref.hapticHeavy();
-                    // Show PRO promo or similar
                     ScaffoldMessenger.of(context).showSnackBar(
                       const SnackBar(
                         content: Text('Questa funzione è disponibile solo per utenti PRO'),
@@ -356,7 +362,7 @@ class AppSettingsScreen extends ConsumerWidget {
             scale: 0.8,
             child: Switch(
               value: value,
-              onChanged: onChanged,
+              onChanged: (val) => onChanged(val),
               activeTrackColor: primaryColor.withValues(alpha: 0.5),
               activeThumbColor: primaryColor,
               inactiveThumbColor: AppColors.mutedForeground,

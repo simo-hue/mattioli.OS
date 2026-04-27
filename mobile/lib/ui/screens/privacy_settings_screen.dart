@@ -71,11 +71,13 @@ class PrivacySettingsScreen extends ConsumerWidget {
                     if (val) {
                       final authenticated = await _authenticate(context);
                       if (authenticated) {
-                        notifier.updateSettings(settings.copyWith(biometricLock: true));
+                        final currentSettings = ref.read(settingsProvider);
+                        notifier.updateSettings(currentSettings.copyWith(biometricLock: true));
                         ref.hapticLight();
                       }
                     } else {
-                      notifier.updateSettings(settings.copyWith(biometricLock: false));
+                      final currentSettings = ref.read(settingsProvider);
+                      notifier.updateSettings(currentSettings.copyWith(biometricLock: false));
                       ref.hapticLight();
                     }
                   } else {
@@ -115,7 +117,8 @@ class PrivacySettingsScreen extends ConsumerWidget {
                 subtitle: 'Aiutaci a migliorare l\'app',
                 value: settings.anonymousAnalytics,
                 onChanged: (val) {
-                  notifier.updateSettings(settings.copyWith(anonymousAnalytics: val));
+                  final currentSettings = ref.read(settingsProvider);
+                  notifier.updateSettings(currentSettings.copyWith(anonymousAnalytics: val));
                   ref.hapticLight();
                 },
               ),
@@ -358,8 +361,8 @@ class PrivacySettingsScreen extends ConsumerWidget {
           ),
           Switch.adaptive(
             value: value,
-            onChanged: isLocked ? (val) => onChanged(val) : onChanged,
-            activeColor: primaryColor,
+            onChanged: (val) => onChanged(val),
+            activeThumbColor: primaryColor,
             activeTrackColor: primaryColor.withValues(alpha: 0.3),
           ),
         ],

@@ -111,8 +111,10 @@ class NotificationSettingsScreen extends ConsumerWidget {
                 icon: LucideIcons.trophy,
                 title: 'Milestones',
                 subtitle: 'Celebra i tuoi traguardi',
-                value: true,
+                value: settings.milestones,
                 onChanged: (val) {
+                  final currentSettings = ref.read(settingsProvider);
+                  notifier.updateSettings(currentSettings.copyWith(milestones: val));
                   ref.hapticLight();
                 },
               ),
@@ -130,7 +132,8 @@ class NotificationSettingsScreen extends ConsumerWidget {
                 isLocked: !settings.isPro,
                 onChanged: (val) {
                   if (settings.isPro) {
-                    notifier.updateSettings(settings.copyWith(aiInsights: val));
+                    final currentSettings = ref.read(settingsProvider);
+                    notifier.updateSettings(currentSettings.copyWith(aiInsights: val));
                     ref.hapticLight();
                   } else {
                     ref.hapticHeavy();
@@ -145,10 +148,14 @@ class NotificationSettingsScreen extends ConsumerWidget {
                 icon: LucideIcons.zap,
                 title: 'Deep Work Insights',
                 subtitle: 'Notifiche sui picchi di produttività',
-                value: false,
+                value: settings.deepWorkInsights,
                 isLocked: !settings.isPro,
                 onChanged: (val) {
-                  if (!settings.isPro) {
+                  if (settings.isPro) {
+                    final currentSettings = ref.read(settingsProvider);
+                    notifier.updateSettings(currentSettings.copyWith(deepWorkInsights: val));
+                    ref.hapticLight();
+                  } else {
                     ref.hapticHeavy();
                     _showProSnackbar(context);
                   }
@@ -165,10 +172,16 @@ class NotificationSettingsScreen extends ConsumerWidget {
                 title: 'Resoconto Settimanale',
                 subtitle: 'Ogni lunedì mattina alle 08:00',
                 value: settings.weeklyReports,
+                isLocked: !settings.isPro,
                 onChanged: (val) {
-                  final currentSettings = ref.read(settingsProvider);
-                  notifier.updateSettings(currentSettings.copyWith(weeklyReports: val));
-                  ref.hapticLight();
+                  if (settings.isPro) {
+                    final currentSettings = ref.read(settingsProvider);
+                    notifier.updateSettings(currentSettings.copyWith(weeklyReports: val));
+                    ref.hapticLight();
+                  } else {
+                    ref.hapticHeavy();
+                    _showProSnackbar(context);
+                  }
                 },
               ),
               _buildDivider(),
@@ -182,7 +195,8 @@ class NotificationSettingsScreen extends ConsumerWidget {
                 isLocked: !settings.isPro,
                 onChanged: (val) {
                   if (settings.isPro) {
-                    notifier.updateSettings(settings.copyWith(focusMode: val));
+                    final currentSettings = ref.read(settingsProvider);
+                    notifier.updateSettings(currentSettings.copyWith(focusMode: val));
                     ref.hapticLight();
                   } else {
                     ref.hapticHeavy();

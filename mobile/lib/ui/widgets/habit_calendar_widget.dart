@@ -1,3 +1,4 @@
+import 'dart:math' as math;
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:lucide_icons_flutter/lucide_icons.dart';
@@ -118,32 +119,24 @@ class _HabitCalendarWidgetState extends ConsumerState<HabitCalendarWidget> {
             return AnimatedBuilder(
               animation: animation,
               builder: (context, child) {
-                // Parallax logic: 
-                // Incoming child moves from 1.0 to 0.0
-                // Outgoing child moves from 0.0 to -0.3
-                Offset position;
-                if (isIncoming) {
-                  position = Offset(1.0 * _slideDirection * (1.0 - animation.value), 0);
-                } else {
-                  position = Offset(-0.3 * _slideDirection * animation.value, 0);
-                }
+                // Perspective Fold Logic (3D Flip)
+                // Forward (+1): Outgoing flips Left, Incoming flips from Right
+                final double rotation = isIncoming 
+                    ? (1.0 - animation.value) * (math.pi / 2) * _slideDirection
+                    : animation.value * -(math.pi / 2) * _slideDirection;
+                
+                final alignment = isIncoming 
+                    ? (_slideDirection > 0 ? Alignment.centerRight : Alignment.centerLeft)
+                    : (_slideDirection > 0 ? Alignment.centerLeft : Alignment.centerRight);
 
-                return FractionalTranslation(
-                  translation: position,
+                return Transform(
+                  transform: Matrix4.identity()
+                    ..setEntry(3, 2, 0.0015) // Perspective depth
+                    ..rotateY(rotation),
+                  alignment: alignment,
                   child: Opacity(
-                    opacity: isIncoming ? animation.value : (1.0 - animation.value).clamp(0.0, 1.0),
-                    child: Container(
-                      decoration: isIncoming && animation.value < 1.0 ? BoxDecoration(
-                        boxShadow: [
-                          BoxShadow(
-                            color: Colors.black.withValues(alpha: 0.2 * (1.0 - animation.value)),
-                            blurRadius: 15,
-                            offset: Offset(-5.0 * _slideDirection, 0.0),
-                          )
-                        ],
-                      ) : null,
-                      child: child,
-                    ),
+                    opacity: animation.value.clamp(0.0, 1.0),
+                    child: child,
                   ),
                 );
               },

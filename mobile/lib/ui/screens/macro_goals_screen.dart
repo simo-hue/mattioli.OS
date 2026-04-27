@@ -1,3 +1,4 @@
+import 'dart:math' as math;
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
@@ -95,29 +96,23 @@ class _MacroGoalsScreenState extends ConsumerState<MacroGoalsScreen>
                     return AnimatedBuilder(
                       animation: animation,
                       builder: (context, child) {
-                        Offset position;
-                        if (isIncoming) {
-                          position = Offset(1.0 * dir * (1.0 - animation.value), 0);
-                        } else {
-                          position = Offset(-0.3 * dir * animation.value, 0);
-                        }
+                        // Perspective Fold Logic (3D Flip)
+                        final double rotation = isIncoming 
+                            ? (1.0 - animation.value) * (math.pi / 2) * dir
+                            : animation.value * -(math.pi / 2) * dir;
+                        
+                        final alignment = isIncoming 
+                            ? (dir > 0 ? Alignment.centerRight : Alignment.centerLeft)
+                            : (dir > 0 ? Alignment.centerLeft : Alignment.centerRight);
 
-                        return FractionalTranslation(
-                          translation: position,
+                        return Transform(
+                          transform: Matrix4.identity()
+                            ..setEntry(3, 2, 0.0015) 
+                            ..rotateY(rotation),
+                          alignment: alignment,
                           child: Opacity(
-                            opacity: isIncoming ? animation.value : (1.0 - animation.value).clamp(0.0, 1.0),
-                            child: Container(
-                              decoration: isIncoming && animation.value < 1.0 ? BoxDecoration(
-                                boxShadow: [
-                                  BoxShadow(
-                                    color: Colors.black.withValues(alpha: 0.2 * (1.0 - animation.value)),
-                                    blurRadius: 15,
-                                    offset: Offset(-5.0 * dir, 0.0),
-                                  )
-                                ],
-                              ) : null,
-                              child: child,
-                            ),
+                            opacity: animation.value.clamp(0.0, 1.0),
+                            child: child,
                           ),
                         );
                       },

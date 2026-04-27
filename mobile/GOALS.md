@@ -31,7 +31,7 @@
         
 [ ] Animazioni più professionali e fluide
     [ ] Animazione della selezione del colore
-    [ ] Animazione della navigazione tra le schede
+    [x] Animazione della navigazione tra le schede
     [ ] Animazione di swipe tra mesi/anni/settimane
 
 [x] Impostazioni reali per applicazione

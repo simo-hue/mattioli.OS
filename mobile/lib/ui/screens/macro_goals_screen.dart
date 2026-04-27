@@ -85,19 +85,43 @@ class _MacroGoalsScreenState extends ConsumerState<MacroGoalsScreen>
                   }
                 },
                 child: AnimatedSwitcher(
-                  duration: const Duration(milliseconds: 250),
-                  switchInCurve: Curves.easeOutCubic,
-                  switchOutCurve: Curves.easeOutCubic,
+                  duration: const Duration(milliseconds: 450),
+                  switchInCurve: Curves.easeOutQuart,
+                  switchOutCurve: Curves.easeOutQuart,
                   transitionBuilder: (child, animation) {
-                    return SlideTransition(
-                      position: Tween<Offset>(
-                        begin: Offset(_isForward ? 0.05 : -0.05, 0.0),
-                        end: Offset.zero,
-                      ).animate(animation),
-                      child: FadeTransition(
-                        opacity: animation,
-                        child: child,
-                      ),
+                    final isIncoming = child.key == ValueKey('${viewState.selectedType}-${viewState.selectedYear}-${viewState.selectedMonth}-${viewState.selectedWeek}-${viewState.selectedQuarter}');
+                    final dir = _isForward ? 1 : -1;
+
+                    return AnimatedBuilder(
+                      animation: animation,
+                      builder: (context, child) {
+                        Offset position;
+                        if (isIncoming) {
+                          position = Offset(1.0 * dir * (1.0 - animation.value), 0);
+                        } else {
+                          position = Offset(-0.3 * dir * animation.value, 0);
+                        }
+
+                        return FractionalTranslation(
+                          translation: position,
+                          child: Opacity(
+                            opacity: isIncoming ? animation.value : (1.0 - animation.value).clamp(0.0, 1.0),
+                            child: Container(
+                              decoration: isIncoming && animation.value < 1.0 ? BoxDecoration(
+                                boxShadow: [
+                                  BoxShadow(
+                                    color: Colors.black.withValues(alpha: 0.2 * (1.0 - animation.value)),
+                                    blurRadius: 15,
+                                    offset: Offset(-5.0 * dir, 0.0),
+                                  )
+                                ],
+                              ) : null,
+                              child: child,
+                            ),
+                          ),
+                        );
+                      },
+                      child: child,
                     );
                   },
                   child: _GoalsList(

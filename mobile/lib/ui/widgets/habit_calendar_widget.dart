@@ -109,23 +109,45 @@ class _HabitCalendarWidgetState extends ConsumerState<HabitCalendarWidget> {
       child: Container(
         decoration: AppTheme.glassPanelDecoration(radius: 14),
         child: AnimatedSwitcher(
-          duration: const Duration(milliseconds: 300),
-          switchInCurve: Curves.easeOut,
-          switchOutCurve: Curves.easeIn,
+          duration: const Duration(milliseconds: 450),
+          switchInCurve: Curves.easeOutQuart,
+          switchOutCurve: Curves.easeOutQuart,
           transitionBuilder: (child, animation) {
-            final offset = animation.status == AnimationStatus.completed
-                ? Offset.zero
-                : Offset(0.1 * _slideDirection, 0);
+            final isIncoming = child.key == ValueKey('${_currentDate.year}-${_currentDate.month}');
             
-            return FadeTransition(
-              opacity: animation,
-              child: SlideTransition(
-                position: Tween<Offset>(
-                  begin: Offset(0.1 * _slideDirection, 0),
-                  end: Offset.zero,
-                ).animate(animation),
-                child: child,
-              ),
+            return AnimatedBuilder(
+              animation: animation,
+              builder: (context, child) {
+                // Parallax logic: 
+                // Incoming child moves from 1.0 to 0.0
+                // Outgoing child moves from 0.0 to -0.3
+                Offset position;
+                if (isIncoming) {
+                  position = Offset(1.0 * _slideDirection * (1.0 - animation.value), 0);
+                } else {
+                  position = Offset(-0.3 * _slideDirection * animation.value, 0);
+                }
+
+                return FractionalTranslation(
+                  translation: position,
+                  child: Opacity(
+                    opacity: isIncoming ? animation.value : (1.0 - animation.value).clamp(0.0, 1.0),
+                    child: Container(
+                      decoration: isIncoming && animation.value < 1.0 ? BoxDecoration(
+                        boxShadow: [
+                          BoxShadow(
+                            color: Colors.black.withValues(alpha: 0.2 * (1.0 - animation.value)),
+                            blurRadius: 15,
+                            offset: Offset(-5.0 * _slideDirection, 0.0),
+                          )
+                        ],
+                      ) : null,
+                      child: child,
+                    ),
+                  ),
+                );
+              },
+              child: child,
             );
           },
           child: Column(

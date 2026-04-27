@@ -52,19 +52,42 @@ class _YearlyViewWidgetState extends ConsumerState<YearlyViewWidget> {
         padding: const EdgeInsets.symmetric(vertical: 16, horizontal: 12),
         decoration: AppTheme.glassPanelDecoration(radius: 14),
         child: AnimatedSwitcher(
-          duration: const Duration(milliseconds: 300),
-          switchInCurve: Curves.easeOut,
-          switchOutCurve: Curves.easeIn,
+          duration: const Duration(milliseconds: 450),
+          switchInCurve: Curves.easeOutQuart,
+          switchOutCurve: Curves.easeOutQuart,
           transitionBuilder: (child, animation) {
-            return FadeTransition(
-              opacity: animation,
-              child: SlideTransition(
-                position: Tween<Offset>(
-                  begin: Offset(0.1 * _slideDirection, 0),
-                  end: Offset.zero,
-                ).animate(animation),
-                child: child,
-              ),
+            final isIncoming = child.key == ValueKey('$_currentYear');
+            
+            return AnimatedBuilder(
+              animation: animation,
+              builder: (context, child) {
+                Offset position;
+                if (isIncoming) {
+                  position = Offset(1.0 * _slideDirection * (1.0 - animation.value), 0);
+                } else {
+                  position = Offset(-0.3 * _slideDirection * animation.value, 0);
+                }
+
+                return FractionalTranslation(
+                  translation: position,
+                  child: Opacity(
+                    opacity: isIncoming ? animation.value : (1.0 - animation.value).clamp(0.0, 1.0),
+                    child: Container(
+                      decoration: isIncoming && animation.value < 1.0 ? BoxDecoration(
+                        boxShadow: [
+                          BoxShadow(
+                            color: Colors.black.withValues(alpha: 0.2 * (1.0 - animation.value)),
+                            blurRadius: 15,
+                            offset: Offset(-5.0 * _slideDirection, 0.0),
+                          )
+                        ],
+                      ) : null,
+                      child: child,
+                    ),
+                  ),
+                );
+              },
+              child: child,
             );
           },
           child: Column(

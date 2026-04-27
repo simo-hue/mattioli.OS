@@ -125,3 +125,14 @@
     - Inserimento modelli: Subscription, Lifetime, AI Tokens, B2B/Corporate.
     - Definizione metriche KPI (LTV, CAC, Churn Rate).
     - Strategia di mitigazione rischi per costi AI e scalabilità DB.
+
+- [2026-04-27 10:35]: [Flutter] Allineamento Style Selettori (Home vs Obiettivi vs Stats)
+  *Details*: Modificato lo stile grafico del selettore del calendario nella Home e del selettore di modalità nella schermata Obiettivi per corrispondere a quello utilizzato nel pannello Statistiche.
+  *Tech Notes*:
+    - Aggiornato `ViewTabBar` in `lib/ui/widgets/view_tab_bar.dart`.
+    - Aggiornato `MacroGoalsScreen` in `lib/ui/screens/macro_goals_screen.dart` (selettore "I miei obiettivi" / "Analisi Performance").
+    - Ridotta l'altezza a 44px e raggio bordi a 14px.
+    - Rimossi i selettori a icone in entrambi i componenti per una pulizia visiva identica alle statistiche.
+    - Allineati i colori: `AppColors.foreground` per il tab attivo e `AppColors.background` per il testo attivo.
+    - Regolata la tipografia (Inter, 11px, Bold per attivo) e le ombre.
+    - Aggiunto `HitTestBehavior.opaque` per migliorare la reattività del tocco.

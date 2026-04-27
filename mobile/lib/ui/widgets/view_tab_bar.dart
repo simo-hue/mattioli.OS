@@ -12,17 +12,16 @@ class ViewTabBar extends ConsumerWidget {
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final currentView = ref.watch(calendarViewProvider);
-    final primaryColor = Theme.of(context).colorScheme.primary;
 
     final tabs = [
-      _TabItem(view: CalendarView.month, icon: LucideIcons.calendar, label: 'Mese'),
-      _TabItem(view: CalendarView.week, icon: LucideIcons.layoutGrid, label: 'Settimana'),
-      _TabItem(view: CalendarView.year, icon: LucideIcons.listTodo, label: 'Anno'),
-      _TabItem(view: CalendarView.vita, icon: LucideIcons.hourglass, label: 'Vita'),
+      _TabItem(view: CalendarView.month, label: 'Mese'),
+      _TabItem(view: CalendarView.week, label: 'Settimana'),
+      _TabItem(view: CalendarView.year, label: 'Anno'),
+      _TabItem(view: CalendarView.vita, label: 'Vita'),
     ];
 
     return Container(
-      height: 52,
+      height: 44,
       margin: const EdgeInsets.symmetric(vertical: 4),
       decoration: BoxDecoration(
         color: AppColors.card.withValues(alpha: 0.3),
@@ -39,52 +38,33 @@ class ViewTabBar extends ConsumerWidget {
                 ref.hapticSelection();
                 ref.read(calendarViewProvider.notifier).setView(tab.view);
               },
+              behavior: HitTestBehavior.opaque,
               child: AnimatedContainer(
-                duration: const Duration(milliseconds: 300),
-                curve: Curves.easeOutCubic,
+                duration: const Duration(milliseconds: 250),
+                curve: Curves.easeInOut,
                 decoration: BoxDecoration(
-                  color: isActive
-                      ? primaryColor.withValues(alpha: 0.9)
-                      : Colors.transparent,
+                  color: isActive ? AppColors.foreground : Colors.transparent,
                   borderRadius: BorderRadius.circular(10),
                   boxShadow: isActive
                       ? [
                           BoxShadow(
-                            color: primaryColor.withValues(alpha: 0.2),
-                            blurRadius: 10,
-                            offset: const Offset(0, 4),
-                          ),
+                            color: Colors.black.withValues(alpha: 0.3),
+                            blurRadius: 8,
+                            offset: const Offset(0, 2),
+                          )
                         ]
-                      : [],
+                      : null,
                 ),
-                child: Row(
-                  mainAxisAlignment: MainAxisAlignment.center,
-                  children: [
-                    Icon(
-                      tab.icon,
-                      size: 14,
-                      color: isActive
-                          ? AppColors.background
-                          : AppColors.mutedForeground,
-                    ),
-                    const SizedBox(width: 6),
-                    Flexible(
-                      child: Text(
-                        tab.label,
-                        overflow: TextOverflow.ellipsis,
-                        style: TextStyle(
-                          fontFamily: 'Inter',
-                          fontSize: 12,
-                          fontWeight:
-                              isActive ? FontWeight.w700 : FontWeight.w500,
-                          color: isActive
-                              ? AppColors.background
-                              : AppColors.mutedForeground,
-                          letterSpacing: -0.2,
-                        ),
-                      ),
-                    ),
-                  ],
+                alignment: Alignment.center,
+                child: Text(
+                  tab.label,
+                  style: TextStyle(
+                    fontFamily: 'Inter',
+                    fontSize: 11,
+                    fontWeight: isActive ? FontWeight.w800 : FontWeight.w600,
+                    color: isActive ? AppColors.background : AppColors.mutedForeground,
+                    letterSpacing: -0.2,
+                  ),
                 ),
               ),
             ),
@@ -97,7 +77,6 @@ class ViewTabBar extends ConsumerWidget {
 
 class _TabItem {
   final CalendarView view;
-  final IconData icon;
   final String label;
-  const _TabItem({required this.view, required this.icon, required this.label});
+  const _TabItem({required this.view, required this.label});
 }

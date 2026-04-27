@@ -132,7 +132,7 @@ class _MacroGoalsScreenState extends ConsumerState<MacroGoalsScreen> {
             ],
           ),
           const SizedBox(height: 16),
-          _buildModeToggle(primaryColor),
+          _buildModeToggle(),
         ],
       ),
     );
@@ -181,25 +181,25 @@ class _MacroGoalsScreenState extends ConsumerState<MacroGoalsScreen> {
     );
   }
 
-  Widget _buildModeToggle(Color primaryColor) {
+  Widget _buildModeToggle() {
     return Container(
-      height: 42,
+      height: 44,
       padding: const EdgeInsets.all(4),
       decoration: BoxDecoration(
         color: AppColors.card.withValues(alpha: 0.3),
-        borderRadius: BorderRadius.circular(12),
-        border: Border.all(color: AppColors.borderHover),
+        borderRadius: BorderRadius.circular(14),
+        border: Border.all(color: AppColors.border.withValues(alpha: 0.5), width: 1),
       ),
       child: Row(
         children: [
-          _buildToggleItem(primaryColor, false, LucideIcons.listTodo, 'I miei obiettivi'),
-          _buildToggleItem(primaryColor, true, LucideIcons.chartBar, 'Analisi Performance'),
+          _buildToggleItem(false, 'I miei obiettivi'),
+          _buildToggleItem(true, 'Analisi Performance'),
         ],
       ),
     );
   }
 
-  Widget _buildToggleItem(Color primaryColor, bool stats, IconData icon, String label) {
+  Widget _buildToggleItem(bool stats, String label) {
     final active = _showStats == stats;
     return Expanded(
       child: GestureDetector(
@@ -209,30 +209,33 @@ class _MacroGoalsScreenState extends ConsumerState<MacroGoalsScreen> {
             ref.hapticSelection();
           }
         },
+        behavior: HitTestBehavior.opaque,
         child: AnimatedContainer(
-          duration: const Duration(milliseconds: 200),
+          duration: const Duration(milliseconds: 250),
+          curve: Curves.easeInOut,
           decoration: BoxDecoration(
-            color: active ? primaryColor.withValues(alpha: 0.1) : Colors.transparent,
-            borderRadius: BorderRadius.circular(8),
+            color: active ? AppColors.foreground : Colors.transparent,
+            borderRadius: BorderRadius.circular(10),
+            boxShadow: active
+                ? [
+                    BoxShadow(
+                      color: Colors.black.withValues(alpha: 0.3),
+                      blurRadius: 8,
+                      offset: const Offset(0, 2),
+                    )
+                  ]
+                : null,
           ),
-          child: Row(
-            mainAxisAlignment: MainAxisAlignment.center,
-            children: [
-              Icon(
-                icon,
-                size: 16,
-                color: active ? primaryColor : AppColors.mutedForeground,
-              ),
-              const SizedBox(width: 8),
-              Text(
-                label,
-                style: GoogleFonts.inter(
-                  fontSize: 13,
-                  fontWeight: active ? FontWeight.w600 : FontWeight.w500,
-                  color: active ? primaryColor : AppColors.mutedForeground,
-                ),
-              ),
-            ],
+          alignment: Alignment.center,
+          child: Text(
+            label,
+            style: TextStyle(
+              fontFamily: 'Inter',
+              fontSize: 11,
+              fontWeight: active ? FontWeight.w800 : FontWeight.w600,
+              color: active ? AppColors.background : AppColors.mutedForeground,
+              letterSpacing: -0.2,
+            ),
           ),
         ),
       ),

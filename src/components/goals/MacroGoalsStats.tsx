@@ -312,7 +312,7 @@ export function MacroGoalsStats({ year }: MacroGoalsStatsProps) {
                         </CardHeader>
                         <CardContent>
                             <div className="text-3xl font-bold text-white">{totalGoals}</div>
-                            <p className="text-xs text-muted-foreground mt-1">Obiettivi tracciati dal {minYear}</p>
+                            <p className="text-xs text-muted-foreground mt-1">dal {minYear}</p>
                         </CardContent>
                     </Card>
 

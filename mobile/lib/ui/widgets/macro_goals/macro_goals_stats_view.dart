@@ -216,8 +216,8 @@ class _MacroGoalsStatsViewState extends ConsumerState<MacroGoalsStatsView> {
     return [
       Row(
         children: [
-          Expanded(child: _buildHighlightCard(title: 'Totale Storico', value: '$total', subtitle: 'Obiettivi tracciati dal ${sortedYears.isNotEmpty ? sortedYears.first : '-'}', icon: LucideIcons.target, color: const Color(0xFF6366F1))),
-          const SizedBox(width: 12),
+          Expanded(child: _buildHighlightCard(title: 'Totale Storico', value: '$total', subtitle: ' dal ${sortedYears.isNotEmpty ? sortedYears.first : '-'}', icon: LucideIcons.target, color: const Color(0xFF6366F1))),
+          const SizedBox(width: 12),Obiettivi tracciati
           Expanded(child: _buildHighlightCard(title: 'Successo Globale', value: '$succ%', subtitle: '$comp obiettivi completati', icon: LucideIcons.trophy, color: const Color(0xFF10B981))),
         ],
       ),

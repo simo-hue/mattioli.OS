@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:google_fonts/google_fonts.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:lucide_icons_flutter/lucide_icons.dart';
 import 'package:local_auth/local_auth.dart';
@@ -178,8 +179,8 @@ class PrivacySettingsScreen extends ConsumerWidget {
     return Padding(
       padding: const EdgeInsets.only(left: 4, bottom: 12),
       child: Text(
-        title,
-        style: const TextStyle(
+        title.toUpperCase(),
+        style: GoogleFonts.inter(
           color: AppColors.mutedForeground,
           fontSize: 12,
           fontWeight: FontWeight.w700,
@@ -226,16 +227,14 @@ class PrivacySettingsScreen extends ConsumerWidget {
         child: Row(
           children: [
             Container(
-              padding: const EdgeInsets.all(10),
+              width: 38,
+              height: 38,
               decoration: BoxDecoration(
-                color: (titleColor ?? primaryColor).withValues(alpha: 0.1),
-                borderRadius: BorderRadius.circular(12),
+                color: AppColors.card,
+                borderRadius: BorderRadius.circular(10),
+                border: Border.all(color: AppColors.border),
               ),
-              child: Icon(
-                icon,
-                color: titleColor ?? primaryColor,
-                size: 20,
-              ),
+              child: Icon(icon, size: 18, color: titleColor ?? primaryColor),
             ),
             const SizedBox(width: 16),
             Expanded(
@@ -244,7 +243,7 @@ class PrivacySettingsScreen extends ConsumerWidget {
                 children: [
                   Text(
                     title,
-                    style: TextStyle(
+                    style: GoogleFonts.inter(
                       color: titleColor ?? AppColors.foreground,
                       fontSize: 15,
                       fontWeight: FontWeight.w600,
@@ -254,7 +253,7 @@ class PrivacySettingsScreen extends ConsumerWidget {
                     const SizedBox(height: 2),
                     Text(
                       subtitle,
-                      style: TextStyle(
+                      style: GoogleFonts.inter(
                         color: AppColors.mutedForeground.withValues(alpha: 0.6),
                         fontSize: 12,
                       ),
@@ -285,23 +284,21 @@ class PrivacySettingsScreen extends ConsumerWidget {
     bool isLocked = false,
   }) {
     final primaryColor = Theme.of(context).colorScheme.primary;
+    final isDisabled = isLocked;
+    
     return Padding(
       padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
       child: Row(
         children: [
           Container(
-            padding: const EdgeInsets.all(10),
+            width: 38,
+            height: 38,
             decoration: BoxDecoration(
-              color: isLocked 
-                ? AppColors.mutedForeground.withValues(alpha: 0.05)
-                : primaryColor.withValues(alpha: 0.1),
-              borderRadius: BorderRadius.circular(12),
+              color: AppColors.card,
+              borderRadius: BorderRadius.circular(10),
+              border: Border.all(color: AppColors.border),
             ),
-            child: Icon(
-              icon,
-              color: isLocked ? AppColors.mutedForeground : primaryColor,
-              size: 20,
-            ),
+            child: Icon(icon, size: 18, color: isDisabled ? AppColors.mutedForeground : primaryColor),
           ),
           const SizedBox(width: 16),
           Expanded(
@@ -310,12 +307,15 @@ class PrivacySettingsScreen extends ConsumerWidget {
               children: [
                 Row(
                   children: [
-                    Text(
-                      title,
-                      style: TextStyle(
-                        color: isLocked ? AppColors.mutedForeground : AppColors.foreground,
-                        fontSize: 15,
-                        fontWeight: FontWeight.w600,
+                    Flexible(
+                      child: Text(
+                        title,
+                        style: GoogleFonts.inter(
+                          color: isDisabled ? AppColors.mutedForeground : AppColors.foreground,
+                          fontSize: 15,
+                          fontWeight: FontWeight.w600,
+                        ),
+                        overflow: TextOverflow.ellipsis,
                       ),
                     ),
                     if (isLocked) ...[
@@ -325,13 +325,14 @@ class PrivacySettingsScreen extends ConsumerWidget {
                         decoration: BoxDecoration(
                           color: Colors.amber.withValues(alpha: 0.2),
                           borderRadius: BorderRadius.circular(4),
+                          border: Border.all(color: Colors.amber.withValues(alpha: 0.4)),
                         ),
-                        child: const Text(
+                        child: Text(
                           'PRO',
-                          style: TextStyle(
-                            color: Colors.amber,
-                            fontSize: 9,
-                            fontWeight: FontWeight.w800,
+                          style: GoogleFonts.inter(
+                            color: Colors.amber, 
+                            fontSize: 9, 
+                            fontWeight: FontWeight.w900,
                           ),
                         ),
                       ),
@@ -342,7 +343,7 @@ class PrivacySettingsScreen extends ConsumerWidget {
                   const SizedBox(height: 2),
                   Text(
                     subtitle,
-                    style: TextStyle(
+                    style: GoogleFonts.inter(
                       color: AppColors.mutedForeground.withValues(alpha: 0.6),
                       fontSize: 12,
                     ),
@@ -351,11 +352,16 @@ class PrivacySettingsScreen extends ConsumerWidget {
               ],
             ),
           ),
-          Switch.adaptive(
-            value: value,
-            onChanged: (val) => onChanged(val),
-            activeThumbColor: primaryColor,
-            activeTrackColor: primaryColor.withValues(alpha: 0.3),
+          Transform.scale(
+            scale: 0.8,
+            child: Switch(
+              value: value,
+              onChanged: (val) => onChanged(val), // Always interactive to allow modal trigger
+              activeTrackColor: primaryColor.withValues(alpha: 0.5),
+              activeThumbColor: primaryColor,
+              inactiveThumbColor: AppColors.mutedForeground,
+              inactiveTrackColor: AppColors.border,
+            ),
           ),
         ],
       ),

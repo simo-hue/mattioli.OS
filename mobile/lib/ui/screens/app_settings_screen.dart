@@ -392,7 +392,7 @@ class AppSettingsScreen extends ConsumerWidget {
             scale: 0.8,
             child: Switch(
               value: value,
-              onChanged: isDisabled ? null : (val) => onChanged(val),
+              onChanged: (val) => onChanged(val), // Always interactive to allow modal trigger
               activeTrackColor: primaryColor.withValues(alpha: 0.5),
               activeThumbColor: primaryColor,
               inactiveThumbColor: AppColors.mutedForeground,

@@ -172,7 +172,7 @@ class AppSettingsNotifier extends Notifier<AppSettings> {
       timeFormat24h: true,
       aiSuggestions: false,
       eveningReview: true,
-      isPro: false,
+      isPro: true,
       habitReminders: true,
       goalDeadlines: true,
       aiInsights: false,

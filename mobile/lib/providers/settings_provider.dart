@@ -22,9 +22,9 @@ class AppSettings {
   final bool? _weeklyReports;
   final bool? _focusMode;
 
-  // New Privacy Settings
   final bool? _biometricLock;
   final bool? _anonymousAnalytics;
+  final bool? _eveningReview;
 
   AppSettings({
     String? themeMode,
@@ -45,6 +45,7 @@ class AppSettings {
     bool? focusMode,
     bool? biometricLock,
     bool? anonymousAnalytics,
+    bool? eveningReview,
   })  : _themeMode = themeMode,
         _glassEffects = glassEffects,
         _accentColor = accentColor,
@@ -62,7 +63,8 @@ class AppSettings {
         _weeklyReports = weeklyReports,
         _focusMode = focusMode,
         _biometricLock = biometricLock,
-        _anonymousAnalytics = anonymousAnalytics;
+        _anonymousAnalytics = anonymousAnalytics,
+        _eveningReview = eveningReview;
 
   String get themeMode => _themeMode ?? 'dark';
   bool get glassEffects => _glassEffects ?? true;
@@ -84,6 +86,7 @@ class AppSettings {
 
   bool get biometricLock => _biometricLock ?? false;
   bool get anonymousAnalytics => _anonymousAnalytics ?? true;
+  bool get eveningReview => _eveningReview ?? true;
 
   AppSettings copyWith({
     String? themeMode,
@@ -104,6 +107,7 @@ class AppSettings {
     bool? focusMode,
     bool? biometricLock,
     bool? anonymousAnalytics,
+    bool? eveningReview,
   }) {
     return AppSettings(
       themeMode: themeMode ?? _themeMode,
@@ -124,6 +128,7 @@ class AppSettings {
       focusMode: focusMode ?? _focusMode,
       biometricLock: biometricLock ?? _biometricLock,
       anonymousAnalytics: anonymousAnalytics ?? _anonymousAnalytics,
+      eveningReview: eveningReview ?? _eveningReview,
     );
   }
 }
@@ -154,6 +159,15 @@ class AppSettingsNotifier extends Notifier<AppSettings> {
       language: 'Italiano',
       timeFormat24h: true,
       aiSuggestions: false,
+      eveningReview: true,
+      isPro: false,
+      habitReminders: true,
+      goalDeadlines: true,
+      aiInsights: false,
+      weeklyReports: false,
+      focusMode: false,
+      biometricLock: false,
+      anonymousAnalytics: true,
     );
   }
 
@@ -182,6 +196,10 @@ class AppSettingsNotifier extends Notifier<AppSettings> {
 
       if (state.habitReminders) {
         _notificationService.scheduleDailyHabitReminder();
+      }
+
+      if (state.eveningReview) {
+        _notificationService.scheduleEveningReview();
       }
       
       // Goal deadlines, AI insights etc could be added here

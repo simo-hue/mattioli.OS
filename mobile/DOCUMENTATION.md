@@ -136,8 +136,12 @@
     - Allineati i colori: `AppColors.foreground` per il tab attivo e `AppColors.background` per il testo attivo.
     - Regolata la tipografia (Inter, 11px, Bold per attivo) e le ombre.
     - Aggiunto `HitTestBehavior.opaque` per migliorare la reattività del tocco.
-- [2026-04-27 10:31]: [Flutter] Ottimizzazione Analisi Performance Obiettivi
-  *Details*: Migliorata la pulizia visiva della dashboard delle performance.
-  *Tech Notes*:
-    - Accorciato il sottotitolo del box "Totale Storico" in `dal {anno}` per uniformare l'altezza dei box di highlight.
-    - Nascoste le etichette numeriche (0.0, 33.3, 66.7) dal grafico radar delle categorie per un look più minimal e pulito.
+- [2026-04-27 10:45]: [Flutter] Sistema Notifiche Mattutine e Serale (21:00)
+  *Details*: Integrato il sistema di notifiche programmato con una notifica mattutina per il focus e una serale per il tracciamento e il diario di bordo. Risolto un bug che rendeva lo switch poco reattivo.
+  *Tech Notes*: 
+    - Aggiunto campo `eveningReview` in `AppSettings` (con persistenza tramite `NotifierProvider`).
+    - Aggiornato `NotificationService` con messaggi professionali in stile "mattioli.OS".
+    - Mattutina (09:00): "mattioli.OS • Morning Brief".
+    - Serale (21:00): "mattioli.OS • Review Serale".
+    - Corretto l'uso di `ref.read` nelle callback dei toggle in `NotificationSettingsScreen` per evitare stati obsoleti e garantire la reattività dello switch.
+    - Inizializzati esplicitamente tutti i campi in `AppSettings.build()` per prevenire inconsistenze di stato.

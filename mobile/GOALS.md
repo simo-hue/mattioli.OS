@@ -35,7 +35,7 @@
     [ ] Animazione di swipe tra mesi/anni/settimane
 
 [ ] Impostazioni reali per applicazione
-    [ ] Notifiche
+    [x] Notifiche
     [ ] Feedback Aptico da implementare veramente
 
 

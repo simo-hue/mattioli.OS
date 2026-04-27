@@ -67,7 +67,8 @@ class NotificationSettingsScreen extends ConsumerWidget {
                 value: settings.habitReminders,
                 onChanged: (val) {
                   if (val) NotificationService().requestPermissions();
-                  notifier.updateSettings(settings.copyWith(habitReminders: val));
+                  final currentSettings = ref.read(settingsProvider);
+                  notifier.updateSettings(currentSettings.copyWith(habitReminders: val));
                   ref.hapticLight();
                 },
               ),
@@ -78,8 +79,11 @@ class NotificationSettingsScreen extends ConsumerWidget {
                 icon: LucideIcons.bellRing,
                 title: 'Review Serale',
                 subtitle: 'Riepilogo giornaliero alle 21:00',
-                value: true, // Placeholder for now
+                value: settings.eveningReview,
                 onChanged: (val) {
+                  if (val) NotificationService().requestPermissions();
+                  final currentSettings = ref.read(settingsProvider);
+                  notifier.updateSettings(currentSettings.copyWith(eveningReview: val));
                   ref.hapticLight();
                 },
               ),
@@ -95,7 +99,8 @@ class NotificationSettingsScreen extends ConsumerWidget {
                 subtitle: 'Avvisi per macro-obiettivi in scadenza',
                 value: settings.goalDeadlines,
                 onChanged: (val) {
-                  notifier.updateSettings(settings.copyWith(goalDeadlines: val));
+                  final currentSettings = ref.read(settingsProvider);
+                  notifier.updateSettings(currentSettings.copyWith(goalDeadlines: val));
                   ref.hapticLight();
                 },
               ),
@@ -161,7 +166,8 @@ class NotificationSettingsScreen extends ConsumerWidget {
                 subtitle: 'Ogni lunedì mattina alle 08:00',
                 value: settings.weeklyReports,
                 onChanged: (val) {
-                  notifier.updateSettings(settings.copyWith(weeklyReports: val));
+                  final currentSettings = ref.read(settingsProvider);
+                  notifier.updateSettings(currentSettings.copyWith(weeklyReports: val));
                   ref.hapticLight();
                 },
               ),
@@ -319,8 +325,14 @@ class NotificationSettingsScreen extends ConsumerWidget {
           ),
           Switch.adaptive(
             value: value,
-            onChanged: isLocked ? (val) => onChanged(val) : onChanged,
-            activeColor: primaryColor,
+            onChanged: (val) {
+              if (isLocked) {
+                onChanged(val); // This will trigger the snackbar logic in the caller
+              } else {
+                onChanged(val);
+              }
+            },
+            activeThumbColor: primaryColor,
             activeTrackColor: primaryColor.withValues(alpha: 0.3),
           ),
         ],

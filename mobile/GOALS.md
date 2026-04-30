@@ -53,3 +53,7 @@
     [ ] goals
     [ ] daily habits
     [ ] 
+
+[ ] Pop Up
+    [ ] Conferma del salvataggio con successo
+    [ ] Errori + spiegazione semplice

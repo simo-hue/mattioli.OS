@@ -45,7 +45,7 @@ class AppSettingsScreen extends ConsumerWidget {
           onPressed: () => Navigator.pop(context),
         ),
         title: Text(
-          context.l10n.translate('settings_title'),
+          context.l10n.translate('Impostazioni App'),
           style: const TextStyle(
             color: AppColors.foreground,
             fontSize: 18,
@@ -60,12 +60,12 @@ class AppSettingsScreen extends ConsumerWidget {
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            _buildSectionHeader(context.l10n.translate('appearance_section')),
+            _buildSectionHeader(context.l10n.translate('ASPETTO & VISUAL')),
             _buildSettingsCard([
               _buildSwitchRow(
                 context: context,
                 icon: LucideIcons.moon,
-                title: context.l10n.translate('dark_mode'),
+                title: context.l10n.translate('Modalità Scura'),
                 value: settings.themeMode == 'dark',
                 onChanged: (val) {
                   final currentSettings = ref.read(settingsProvider);
@@ -77,7 +77,7 @@ class AppSettingsScreen extends ConsumerWidget {
               _buildSwitchRow(
                 context: context,
                 icon: LucideIcons.sparkles,
-                title: context.l10n.translate('glass_effects'),
+                title: context.l10n.translate('Effetti Trasparenza'),
                 value: settings.glassEffects,
                 onChanged: (val) {
                   final currentSettings = ref.read(settingsProvider);
@@ -89,7 +89,7 @@ class AppSettingsScreen extends ConsumerWidget {
               _buildActionRow(
                 context: context,
                 icon: LucideIcons.palette,
-                title: context.l10n.translate('accent_color'),
+                title: context.l10n.translate('Colore Accento'),
                 trailing: Container(
                   width: 24,
                   height: 24,
@@ -113,12 +113,12 @@ class AppSettingsScreen extends ConsumerWidget {
               ),
             ]),
             const SizedBox(height: 32),
-            _buildSectionHeader(context.l10n.translate('calendar_section')),
+            _buildSectionHeader(context.l10n.translate('CALENDARIO & DASHBOARD')),
             _buildSettingsCard([
               _buildActionRow(
                 context: context,
                 icon: LucideIcons.calendar,
-                title: context.l10n.translate('default_view'),
+                title: context.l10n.translate('Vista Predefinita'),
                 trailingText: settings.defaultCalendarView.toUpperCase(),
                 onTap: () {
                   ref.hapticLight();
@@ -144,8 +144,8 @@ class AppSettingsScreen extends ConsumerWidget {
                             ),
                           ),
                           const SizedBox(height: 24),
-                          const Text(
-                            'Scegli Vista Predefinita',
+                          Text(
+                            context.l10n.translate('Vista Predefinita'),
                             style: TextStyle(
                               color: AppColors.foreground,
                               fontSize: 18,
@@ -153,10 +153,10 @@ class AppSettingsScreen extends ConsumerWidget {
                             ),
                           ),
                           const SizedBox(height: 24),
-                          _buildViewOption(context, ref, 'Giorno', 'giorno', settings.defaultCalendarView),
-                          _buildViewOption(context, ref, 'Settimana', 'settimana', settings.defaultCalendarView),
-                          _buildViewOption(context, ref, 'Anno', 'anno', settings.defaultCalendarView),
-                          _buildViewOption(context, ref, 'Vita', 'vita', settings.defaultCalendarView),
+                          _buildViewOption(context, ref, context.l10n.translate('Giorno'), 'giorno', settings.defaultCalendarView),
+                          _buildViewOption(context, ref, context.l10n.translate('Settimana'), 'settimana', settings.defaultCalendarView),
+                          _buildViewOption(context, ref, context.l10n.translate('Anno'), 'anno', settings.defaultCalendarView),
+                          _buildViewOption(context, ref, context.l10n.translate('Vita'), 'vita', settings.defaultCalendarView),
                           const SizedBox(height: 40),
                         ],
                       ),
@@ -168,7 +168,7 @@ class AppSettingsScreen extends ConsumerWidget {
               _buildSwitchRow(
                 context: context,
                 icon: LucideIcons.calendarDays,
-                title: context.l10n.translate('start_monday'),
+                title: context.l10n.translate('Inizia di Lunedì'),
                 value: settings.startWeekOnMonday,
                 onChanged: (val) {
                   final currentSettings = ref.read(settingsProvider);
@@ -180,7 +180,7 @@ class AppSettingsScreen extends ConsumerWidget {
               _buildSwitchRow(
                 context: context,
                 icon: LucideIcons.calendarRange,
-                title: context.l10n.translate('show_weekend'),
+                title: context.l10n.translate('Mostra Weekend'),
                 value: settings.showWeekend,
                 onChanged: (val) {
                   final currentSettings = ref.read(settingsProvider);
@@ -190,12 +190,12 @@ class AppSettingsScreen extends ConsumerWidget {
               ),
             ]),
             const SizedBox(height: 32),
-            _buildSectionHeader(context.l10n.translate('user_exp_section')),
+            _buildSectionHeader(context.l10n.translate('ESPERIENZA UTENTE')),
             _buildSettingsCard([
               _buildSwitchRow(
                 context: context,
                 icon: LucideIcons.vibrate,
-                title: context.l10n.translate('haptic_feedback'),
+                title: context.l10n.translate('Feedback Aptico'),
                 value: settings.hapticFeedback,
                 onChanged: (val) {
                   final currentSettings = ref.read(settingsProvider);
@@ -205,12 +205,12 @@ class AppSettingsScreen extends ConsumerWidget {
               ),
             ]),
             const SizedBox(height: 32),
-            _buildSectionHeader(context.l10n.translate('units_lang_section')),
+            _buildSectionHeader(context.l10n.translate('UNITÀ E LINGUA')),
             _buildSettingsCard([
               _buildActionRow(
                 context: context,
                 icon: LucideIcons.languages,
-                title: context.l10n.translate('language'),
+                title: context.l10n.translate('Lingua'),
                 trailingText: settings.language,
                 onTap: () {
                   ref.hapticLight();
@@ -221,7 +221,7 @@ class AppSettingsScreen extends ConsumerWidget {
               _buildSwitchRow(
                 context: context,
                 icon: LucideIcons.clock,
-                title: context.l10n.translate('format_24h'),
+                title: context.l10n.translate('Formato 24h'),
                 value: settings.timeFormat24h,
                 onChanged: (val) {
                   final currentSettings = ref.read(settingsProvider);
@@ -231,13 +231,13 @@ class AppSettingsScreen extends ConsumerWidget {
               ),
             ]),
             const SizedBox(height: 32),
-            _buildSectionHeader(context.l10n.translate('ai_system_section')),
+            _buildSectionHeader(context.l10n.translate('AI & SISTEMA')),
             _buildSettingsCard([
               _buildSwitchRow(
                 context: context,
                 icon: LucideIcons.brainCircuit,
-                title: context.l10n.translate('ai_suggestions'),
-                subtitle: context.l10n.translate('ai_subtitle'),
+                title: context.l10n.translate('Suggerimenti AI'),
+                subtitle: context.l10n.translate('Analisi intelligente delle abitudini'),
                 value: settings.aiSuggestions,
                 isLocked: !settings.isPro,
                 onChanged: (val) {
@@ -253,13 +253,13 @@ class AppSettingsScreen extends ConsumerWidget {
               ),
             ]),
             const SizedBox(height: 32),
-            _buildSectionHeader(context.l10n.translate('CLOUD & SYNC')),
+            _buildSectionHeader(context.l10n.translate('SINCRO & CLOUD')),
             _buildSettingsCard([
               _buildSwitchRow(
                 context: context,
                 icon: LucideIcons.cloud,
-                title: context.l10n.translate('ICLOUD'),
-                subtitle: context.l10n.translate('icloud_subtitle'),
+                title: context.l10n.translate('Sincronizzazione iCloud'),
+                subtitle: context.l10n.translate('Backup automatico e sincronizzazione tra dispositivi Apple'),
                 value: false,
                 isComingSoon: true,
                 onChanged: (val) {},
@@ -492,8 +492,8 @@ class AppSettingsScreen extends ConsumerWidget {
               ),
             ),
             const SizedBox(height: 24),
-            const Text(
-              'Colore Accento',
+            Text(
+              context.l10n.translate('Colore Accento'),
               style: TextStyle(
                 color: AppColors.foreground,
                 fontSize: 20,
@@ -502,8 +502,8 @@ class AppSettingsScreen extends ConsumerWidget {
               ),
             ),
             const SizedBox(height: 8),
-            const Text(
-              'Scegli una tonalità premium o creane una tua',
+            Text(
+              context.l10n.translate('Scegli una tonalità premium o creane una tua'),
               style: TextStyle(
                 color: AppColors.mutedForeground,
                 fontSize: 14,

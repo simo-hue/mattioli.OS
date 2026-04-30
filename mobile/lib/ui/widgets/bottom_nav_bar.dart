@@ -21,9 +21,9 @@ class AppBottomNavBar extends ConsumerWidget {
   Widget build(BuildContext context, WidgetRef ref) {
     final bottomPadding = MediaQuery.of(context).padding.bottom;
     final items = [
-      _NavItem(icon: LucideIcons.house, label: context.l10n.translate('home')),
-      _NavItem(icon: LucideIcons.activity, label: context.l10n.translate('statistics')),
-      _NavItem(icon: LucideIcons.chartPie, label: context.l10n.translate('goals')),
+      _NavItem(icon: LucideIcons.house, label: context.l10n.translate('Home')),
+      _NavItem(icon: LucideIcons.activity, label: context.l10n.translate('Statistiche')),
+      _NavItem(icon: LucideIcons.chartPie, label: context.l10n.translate('Obiettivi')),
     ];
 
     return ClipRRect(

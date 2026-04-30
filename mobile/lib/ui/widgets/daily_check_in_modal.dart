@@ -65,7 +65,7 @@ class _DailyCheckInModalState extends ConsumerState<DailyCheckInModal> {
 
           // Header
           Text(
-            context.l10n.translate('daily_check_in'),
+            context.l10n.translate('Check-in Giornaliero'),
             style: const TextStyle(
               fontFamily: 'Inter',
               fontSize: 22,
@@ -76,7 +76,7 @@ class _DailyCheckInModalState extends ConsumerState<DailyCheckInModal> {
           ),
           const SizedBox(height: 4),
           Text(
-            context.l10n.translate('track_mood_energy'),
+            context.l10n.translate('Traccia il tuo umore ed energia.'),
             style: const TextStyle(
               fontFamily: 'Inter',
               fontSize: 14,
@@ -97,7 +97,7 @@ class _DailyCheckInModalState extends ConsumerState<DailyCheckInModal> {
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
                 Text(
-                  context.l10n.translate('daily_check_in'),
+                  context.l10n.translate('Check-in Giornaliero'),
                   style: const TextStyle(
                     fontFamily: 'Inter',
                     fontSize: 18,
@@ -109,7 +109,7 @@ class _DailyCheckInModalState extends ConsumerState<DailyCheckInModal> {
 
                 // Mood Section
                 _buildSliderSection(
-                  label: context.l10n.translate('mood'),
+                  label: context.l10n.translate('Umore'),
                   icon: LucideIcons.heart,
                   value: _mood,
                   emoji: _getMoodEmoji(_mood.round()),
@@ -120,7 +120,7 @@ class _DailyCheckInModalState extends ConsumerState<DailyCheckInModal> {
 
                 // Energy Section
                 _buildSliderSection(
-                  label: context.l10n.translate('energy'),
+                  label: context.l10n.translate('Energia'),
                   icon: LucideIcons.zap,
                   value: _energy,
                   emoji: _getEnergyEmoji(_energy.round()),
@@ -152,7 +152,7 @@ class _DailyCheckInModalState extends ConsumerState<DailyCheckInModal> {
                         const Icon(LucideIcons.save, size: 18),
                         const SizedBox(width: 10),
                         Text(
-                          context.l10n.translate('update_status'),
+                          context.l10n.translate('Aggiorna Stato Giornaliero'),
                           style: TextStyle(
                             fontSize: 15,
                             fontWeight: FontWeight.w600,

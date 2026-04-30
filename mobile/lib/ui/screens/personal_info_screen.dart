@@ -83,7 +83,7 @@ class _PersonalInfoScreenState extends ConsumerState<PersonalInfoScreen> {
           HapticFeedback.mediumImpact();
           ScaffoldMessenger.of(context).showSnackBar(
             SnackBar(
-              content: Text(context.l10n.translate('success_save')),
+              content: Text(context.l10n.translate('Informazioni salvate con successo')),
               backgroundColor: AppColors.success.withValues(alpha: 0.8),
               behavior: SnackBarBehavior.floating,
               shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
@@ -116,7 +116,7 @@ class _PersonalInfoScreenState extends ConsumerState<PersonalInfoScreen> {
           onPressed: () => Navigator.pop(context),
         ),
         title: Text(
-          context.l10n.translate('personal_info'),
+          context.l10n.translate('Informazioni Personali'),
           style: const TextStyle(
             color: AppColors.foreground,
             fontSize: 18,
@@ -144,30 +144,30 @@ class _PersonalInfoScreenState extends ConsumerState<PersonalInfoScreen> {
               ),
               const SizedBox(height: 16),
               _buildTextField(
-                label: context.l10n.translate('first_name').toUpperCase(),
+                label: context.l10n.translate('Nome').toUpperCase(),
                 controller: _firstNameController,
-                validator: (v) => v!.isEmpty ? context.l10n.translate('error_required') : null,
+                validator: (v) => v!.isEmpty ? context.l10n.translate('Campo obbligatorio') : null,
               ),
               const SizedBox(height: 20),
               _buildTextField(
-                label: context.l10n.translate('last_name').toUpperCase(),
+                label: context.l10n.translate('Cognome').toUpperCase(),
                 controller: _lastNameController,
-                validator: (v) => v!.isEmpty ? context.l10n.translate('error_required') : null,
+                validator: (v) => v!.isEmpty ? context.l10n.translate('Campo obbligatorio') : null,
               ),
               const SizedBox(height: 20),
               _buildTextField(
-                label: context.l10n.translate('email').toUpperCase(),
+                label: context.l10n.translate('Email').toUpperCase(),
                 controller: _emailController,
                 keyboardType: TextInputType.emailAddress,
                 validator: (v) {
-                  if (v!.isEmpty) return context.l10n.translate('error_required');
-                  if (!v.contains('@')) return context.l10n.translate('error_email');
+                  if (v!.isEmpty) return context.l10n.translate('Campo obbligatorio');
+                  if (!v.contains('@')) return context.l10n.translate('Inserisci un\'email valida');
                   return null;
                 },
               ),
               const SizedBox(height: 20),
               _buildTextField(
-                label: context.l10n.translate('phone_optional').toUpperCase(),
+                label: context.l10n.translate('Telefono (Opzionale)').toUpperCase(),
                 controller: _phoneController,
                 keyboardType: TextInputType.phone,
               ),
@@ -186,7 +186,7 @@ class _PersonalInfoScreenState extends ConsumerState<PersonalInfoScreen> {
                     elevation: 0,
                   ),
                   child: Text(
-                    context.l10n.translate('save'),
+                    context.l10n.translate('Salva'),
                     style: const TextStyle(
                       fontSize: 16,
                       fontWeight: FontWeight.w800,

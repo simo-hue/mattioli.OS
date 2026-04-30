@@ -54,7 +54,7 @@ class _GlobalMoodTabWidgetState extends State<GlobalMoodTabWidget> {
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
                   Text(
-                    context.l10n.translate('mood_energy_productivity'),
+                    context.l10n.translate('Mood & Energy vs Produttività'),
                     style: const TextStyle(
                       fontFamily: 'Inter',
                       fontSize: 19,
@@ -64,7 +64,7 @@ class _GlobalMoodTabWidgetState extends State<GlobalMoodTabWidget> {
                     ),
                   ),
                   Text(
-                    context.l10n.translate('wellbeing_habit_correlation'),
+                    context.l10n.translate('Correlazione tra benessere e abitudini'),
                     style: const TextStyle(
                       fontFamily: 'Inter',
                       fontSize: 13,
@@ -115,7 +115,7 @@ class _GlobalMoodTabWidgetState extends State<GlobalMoodTabWidget> {
                       : null,
                 ),
                 child: Text(
-                  context.l10n.translate(range),
+                  context.l10n.translate(range == 'time_range_7d' ? '7gg' : range == 'time_range_14d' ? '14gg' : range == 'time_range_30d' ? '30gg' : 'Tutto'),
                   textAlign: TextAlign.center,
                   style: TextStyle(
                     fontSize: 13,
@@ -281,9 +281,9 @@ class _GlobalMoodTabWidgetState extends State<GlobalMoodTabWidget> {
           Row(
             mainAxisAlignment: MainAxisAlignment.spaceEvenly,
             children: [
-              _buildLegendItem(context.l10n.translate('productivity'), Theme.of(context).colorScheme.primary),
-              _buildLegendItem(context.l10n.translate('mood'), Theme.of(context).colorScheme.primary),
-              _buildLegendItem(context.l10n.translate('energy'), const Color(0xFFF59E0B)),
+              _buildLegendItem(context.l10n.translate('Produttività'), Theme.of(context).colorScheme.primary),
+              _buildLegendItem(context.l10n.translate('Umore'), Theme.of(context).colorScheme.primary),
+              _buildLegendItem(context.l10n.translate('Energia'), const Color(0xFFF59E0B)),
             ],
           ),
         ],
@@ -318,14 +318,14 @@ class _GlobalMoodTabWidgetState extends State<GlobalMoodTabWidget> {
             const Icon(LucideIcons.sparkles, size: 16, color: Color(0xFFF59E0B)),
             const SizedBox(width: 8),
             Text(
-              context.l10n.translate('mood_sensitive'),
+              context.l10n.translate('Sensibili al Mood'),
               style: const TextStyle(fontFamily: 'Outfit', fontSize: 16, fontWeight: FontWeight.bold, color: AppColors.foreground),
             ),
           ],
         ),
         const SizedBox(height: 4),
         Text(
-          context.l10n.translate('mood_sensitive_desc'),
+          context.l10n.translate('Richiedono un buon mood per essere completate.'),
           style: const TextStyle(fontSize: 12, color: AppColors.mutedForeground),
         ),
         const SizedBox(height: 16),
@@ -374,11 +374,11 @@ class _GlobalMoodTabWidgetState extends State<GlobalMoodTabWidget> {
                   children: [
                     Icon(LucideIcons.frown, size: 12, color: AppColors.mutedForeground),
                     const SizedBox(width: 4),
-                    Text('$lowMoodRate% ${context.l10n.translate('with_low_mood')}', style: const TextStyle(fontSize: 11, color: AppColors.mutedForeground)),
+                    Text('$lowMoodRate% ${context.l10n.translate('con mood basso')}', style: const TextStyle(fontSize: 11, color: AppColors.mutedForeground)),
                     const SizedBox(width: 12),
                     Icon(LucideIcons.smile, size: 12, color: AppColors.mutedForeground),
                     const SizedBox(width: 4),
-                    Text('$highMoodRate% ${context.l10n.translate('with_high_mood')}', style: const TextStyle(fontSize: 11, color: AppColors.mutedForeground)),
+                    Text('$highMoodRate% ${context.l10n.translate('con mood alto')}', style: const TextStyle(fontSize: 11, color: AppColors.mutedForeground)),
                   ],
                 ),
               ],
@@ -405,14 +405,14 @@ class _GlobalMoodTabWidgetState extends State<GlobalMoodTabWidget> {
             Icon(LucideIcons.shield, size: 16, color: Theme.of(context).colorScheme.primary),
             const SizedBox(width: 8),
             Text(
-              context.l10n.translate('resilient'),
+              context.l10n.translate('Resilienti'),
               style: const TextStyle(fontFamily: 'Outfit', fontSize: 16, fontWeight: FontWeight.bold, color: AppColors.foreground),
             ),
           ],
         ),
         const SizedBox(height: 4),
         Text(
-          context.l10n.translate('resilient_desc'),
+          context.l10n.translate('Mantenute anche con mood ed energia bassi.'),
           style: const TextStyle(fontSize: 12, color: AppColors.mutedForeground),
         ),
         const SizedBox(height: 16),
@@ -465,11 +465,11 @@ class _GlobalMoodTabWidgetState extends State<GlobalMoodTabWidget> {
                   children: [
                     Icon(LucideIcons.smile, size: 11, color: AppColors.mutedForeground),
                     const SizedBox(width: 4),
-                    Text('${context.l10n.translate('mood_label')}: $moodStability%', style: const TextStyle(fontSize: 10, color: AppColors.mutedForeground)),
+                    Text('${context.l10n.translate('Mood')}: $moodStability%', style: const TextStyle(fontSize: 10, color: AppColors.mutedForeground)),
                     const SizedBox(width: 10),
                     Icon(LucideIcons.zap, size: 11, color: AppColors.mutedForeground),
                     const SizedBox(width: 4),
-                    Text('${context.l10n.translate('energy_label')}: $energyStability%', style: const TextStyle(fontSize: 10, color: AppColors.mutedForeground)),
+                    Text('${context.l10n.translate('Energia')}: $energyStability%', style: const TextStyle(fontSize: 10, color: AppColors.mutedForeground)),
                   ],
                 ),
               ],
@@ -480,7 +480,7 @@ class _GlobalMoodTabWidgetState extends State<GlobalMoodTabWidget> {
               Icon(LucideIcons.trendingUp, size: 14, color: Theme.of(context).colorScheme.primary),
               const SizedBox(width: 4),
               Text(
-                context.l10n.translate('stable'),
+                context.l10n.translate('Stabile'),
                 style: TextStyle(fontSize: 12, fontWeight: FontWeight.w700, color: Theme.of(context).colorScheme.primary),
               ),
             ],
@@ -506,15 +506,15 @@ class _GlobalMoodTabWidgetState extends State<GlobalMoodTabWidget> {
               const Icon(LucideIcons.lightbulb, size: 18, color: Color(0xFFFBBF24)),
               const SizedBox(width: 8),
               Text(
-                context.l10n.translate('suggestions'),
+                context.l10n.translate('Suggerimenti'),
                 style: const TextStyle(fontFamily: 'Outfit', fontSize: 16, fontWeight: FontWeight.bold, color: AppColors.foreground),
               ),
             ],
           ),
           const SizedBox(height: 16),
-          _buildSuggerimentoItem(context.l10n.translate('mood_tip_1')),
-          _buildSuggerimentoItem(context.l10n.translate('mood_tip_2')),
-          _buildSuggerimentoItem(context.l10n.translate('mood_tip_3')),
+          _buildSuggerimentoItem(context.l10n.translate('Pianifica le abitudini sensibili al mood quando ti senti meglio.')),
+          _buildSuggerimentoItem(context.l10n.translate('Le abitudini resilienti sono ottime nei giorni difficili.')),
+          _buildSuggerimentoItem(context.l10n.translate('Monitora mood ed energia per insights più accurati.')),
         ],
       ),
     );

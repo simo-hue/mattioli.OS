@@ -75,6 +75,17 @@
 - **Habit Visibility Fix**: Corretto bug che impediva alle nuove abitudini di apparire nel giorno corrente. Ora la `startDate` viene settata all'inizio della giornata locale e il filtraggio utilizza una comparazione robusta tra oggetti `DateTime` (metodo `isActiveOn`).
 
 ---
+---
+## [2026-05-01 00:15]: Human-Readable Localization & UI Refactoring
+
+*Details*: Refactoring completo del sistema di localizzazione per rimuovere i nomi tecnici in stile variabile (con underscore) dall'interfaccia utente. Tutte le etichette ora utilizzano stringhe umane leggibili in Italiano come chiavi primarie, garantendo una presentazione professionale anche in caso di fallback.
+*Tech Notes*:
+- **Localization Map**: Riscritto `AppLocalizations._localizedValues` in `lib/core/localization.dart`. Le chiavi ora sono stringhe umane (es. "Aggiungi Abitudine" invece di "add_habit").
+- **UI Alignment**: Aggiornati tutti i widget principali (`HabitManagementModal`, `AppSettingsScreen`, `DailyCheckInModal`, `PersonalInfoScreen`, `NotificationSettingsScreen`, `BottomNavBar`, `InfoTabWidget`) per utilizzare i nuovi identificatori.
+- **Fallbacks**: Eliminati tutti i "nomi da variabile" visibili all'utente in caso di traduzione mancante.
+- **Consistenza**: Standardizzata la terminologia tra Dashboard, Impostazioni e Modali.
+
+---
 ## Current Status
 - Authentication UI: **COMPLETED**
 - Database Schema Design: **COMPLETED v2**
@@ -83,8 +94,9 @@
 - Macro Goals Sync: **COMPLETED**
 - Daily Habits Sync: **COMPLETED**
 - iOS Build Stability: **COMPLETED**
+- Professional Interface Labels: **COMPLETED**
 
 **Immediate Next Step**:
 1. Eseguire uno smoke test completo: Registrazione -> Creazione Macro Goal -> Creazione Abitudine -> Check-in quotidiano.
-2. Procedere con le Statistiche (Statistics) se necessario, o l'integrazione AI.
+2. Procedere con le Statistiche (Statistics) avanzate o l'integrazione AI.
 

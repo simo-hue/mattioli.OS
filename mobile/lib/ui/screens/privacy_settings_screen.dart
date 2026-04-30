@@ -44,7 +44,7 @@ class PrivacySettingsScreen extends ConsumerWidget {
           onPressed: () => Navigator.pop(context),
         ),
         title: Text(
-          context.l10n.translate('privacy_title'),
+          context.l10n.translate('Privacy e Sicurezza'),
           style: const TextStyle(
             color: AppColors.foreground,
             fontSize: 18,
@@ -65,7 +65,7 @@ class PrivacySettingsScreen extends ConsumerWidget {
                 context: context,
                 ref: ref,
                 icon: LucideIcons.shield,
-                title: context.l10n.translate('biometric_lock'),
+                title: context.l10n.translate('Blocco Biometrico'),
                 subtitle: 'FaceID / TouchID',
                 value: settings.biometricLock,
                 isLocked: !settings.isPro,
@@ -116,8 +116,8 @@ class PrivacySettingsScreen extends ConsumerWidget {
                 context: context,
                 ref: ref,
                 icon: LucideIcons.activity,
-                title: context.l10n.translate('analytics'),
-                subtitle: context.l10n.translate('analytics'),
+                title: context.l10n.translate('Analytics Anonimi'),
+                subtitle: context.l10n.translate('Analytics Anonimi'),
                 value: settings.anonymousAnalytics,
                 onChanged: (val) {
                   final currentSettings = ref.read(settingsProvider);

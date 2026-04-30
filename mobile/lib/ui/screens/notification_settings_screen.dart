@@ -44,7 +44,7 @@ class NotificationSettingsScreen extends ConsumerWidget {
           onPressed: () => Navigator.pop(context),
         ),
         title: Text(
-          context.l10n.translate('notifications_title'),
+          context.l10n.translate('Notifiche'),
           style: const TextStyle(
             color: AppColors.foreground,
             fontSize: 18,
@@ -65,8 +65,8 @@ class NotificationSettingsScreen extends ConsumerWidget {
                 context: context,
                 ref: ref,
                 icon: LucideIcons.calendarCheck,
-                title: context.l10n.translate('habit_reminders'),
-                subtitle: context.l10n.translate('morning_brief'),
+                title: context.l10n.translate('Promemoria Abitudini'),
+                subtitle: context.l10n.translate('Morning Brief'),
                 value: settings.habitReminders,
                 onChanged: (val) {
                   if (val) NotificationService().requestPermissions();
@@ -80,8 +80,8 @@ class NotificationSettingsScreen extends ConsumerWidget {
                 context: context,
                 ref: ref,
                 icon: LucideIcons.bellRing,
-                title: context.l10n.translate('evening_review'),
-                subtitle: context.l10n.translate('evening_review'),
+                title: context.l10n.translate('Review Serale'),
+                subtitle: context.l10n.translate('Review Serale'),
                 value: settings.eveningReview,
                 onChanged: (val) {
                   if (val) NotificationService().requestPermissions();
@@ -98,8 +98,8 @@ class NotificationSettingsScreen extends ConsumerWidget {
                 context: context,
                 ref: ref,
                 icon: LucideIcons.timer,
-                title: context.l10n.translate('goal_deadlines'),
-                subtitle: context.l10n.translate('goal_deadlines'),
+                title: context.l10n.translate('Scadenze Obiettivi'),
+                subtitle: context.l10n.translate('Scadenze Obiettivi'),
                 value: settings.goalDeadlines,
                 onChanged: (val) {
                   final currentSettings = ref.read(settingsProvider);
@@ -112,8 +112,8 @@ class NotificationSettingsScreen extends ConsumerWidget {
                 context: context,
                 ref: ref,
                 icon: LucideIcons.trophy,
-                title: context.l10n.translate('milestones'),
-                subtitle: context.l10n.translate('milestones'),
+                title: context.l10n.translate('Milestones'),
+                subtitle: context.l10n.translate('Milestones'),
                 value: settings.milestones,
                 onChanged: (val) {
                   final currentSettings = ref.read(settingsProvider);
@@ -129,8 +129,8 @@ class NotificationSettingsScreen extends ConsumerWidget {
                 context: context,
                 ref: ref,
                 icon: LucideIcons.brainCircuit,
-                title: context.l10n.translate('ai_insights'),
-                subtitle: context.l10n.translate('ai_subtitle'),
+                title: context.l10n.translate('Insight AI'),
+                subtitle: context.l10n.translate('Analisi intelligente delle abitudini'),
                 value: settings.aiInsights,
                 isLocked: !settings.isPro,
                 onChanged: (val) {
@@ -149,8 +149,8 @@ class NotificationSettingsScreen extends ConsumerWidget {
                 context: context,
                 ref: ref,
                 icon: LucideIcons.zap,
-                title: context.l10n.translate('deep_work'),
-                subtitle: context.l10n.translate('deep_work'),
+                title: context.l10n.translate('Deep Work Insights'),
+                subtitle: context.l10n.translate('Deep Work Insights'),
                 value: settings.deepWorkInsights,
                 isLocked: !settings.isPro,
                 onChanged: (val) {
@@ -172,8 +172,8 @@ class NotificationSettingsScreen extends ConsumerWidget {
                 context: context,
                 ref: ref,
                 icon: LucideIcons.chartBar,
-                title: context.l10n.translate('weekly_reports'),
-                subtitle: context.l10n.translate('weekly_reports'),
+                title: context.l10n.translate('Resoconti Settimanali'),
+                subtitle: context.l10n.translate('Resoconti Settimanali'),
                 value: settings.weeklyReports,
                 isLocked: !settings.isPro,
                 onChanged: (val) {
@@ -192,8 +192,8 @@ class NotificationSettingsScreen extends ConsumerWidget {
                 context: context,
                 ref: ref,
                 icon: LucideIcons.moonStar,
-                title: context.l10n.translate('focus_mode'),
-                subtitle: context.l10n.translate('focus_mode'),
+                title: context.l10n.translate('Modalità Focus'),
+                subtitle: context.l10n.translate('Modalità Focus'),
                 value: settings.focusMode,
                 isLocked: !settings.isPro,
                 onChanged: (val) {

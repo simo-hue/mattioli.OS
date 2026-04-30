@@ -1,58 +1,191 @@
+import 'dart:convert';
+import 'package:flutter/foundation.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:supabase_flutter/supabase_flutter.dart';
 import '../models/macro_goal.dart';
+import 'shared_prefs_provider.dart';
+import 'auth_provider.dart';
 
 // ─── State ────────────────────────────────────────────────────────────────────
 
 class MacroGoalsState {
   final List<MacroGoal> goals;
+  final bool isLoading;
+  final String? error;
 
-  const MacroGoalsState({required this.goals});
+  const MacroGoalsState({
+    required this.goals,
+    this.isLoading = false,
+    this.error,
+  });
 
-  MacroGoalsState copyWith({List<MacroGoal>? goals}) =>
-      MacroGoalsState(goals: goals ?? this.goals);
+  MacroGoalsState copyWith({
+    List<MacroGoal>? goals,
+    bool? isLoading,
+    String? error,
+  }) =>
+      MacroGoalsState(
+        goals: goals ?? this.goals,
+        isLoading: isLoading ?? this.isLoading,
+        error: error,
+      );
 }
 
 // ─── Notifier ─────────────────────────────────────────────────────────────────
 
 class MacroGoalsNotifier extends Notifier<MacroGoalsState> {
+  static const String _cacheKey = 'macro_goals_cache';
+
   @override
   MacroGoalsState build() {
-    return MacroGoalsState(goals: _buildMockData());
+    // 1. Caricamento sincrono iniziale dalla cache (Offline-First)
+    final initialState = _loadFromCache();
+
+    // 2. Ascolta i cambi di autenticazione per scaricare i dati dal cloud
+    ref.listen(authProvider, (previous, next) {
+      if (next.isLoggedIn && next.user != null) {
+        _syncFromSupabase();
+      } else if (!next.isLoggedIn) {
+        // Clear state on logout
+        state = const MacroGoalsState(goals: []);
+        _saveToCache([]);
+      }
+    });
+
+    // 3. Sincronizzazione iniziale se l'utente è già loggato
+    final authState = ref.read(authProvider);
+    if (authState.isLoggedIn && authState.user != null) {
+      _syncFromSupabase();
+    }
+
+    return initialState;
   }
 
-  // ── CRUD ──────────────────────────────────────────────────────────────────
+  // ── Cache Locale ──────────────────────────────────────────────────────────
 
-  void addGoal(MacroGoal goal) {
-    state = state.copyWith(goals: [...state.goals, goal]);
+  MacroGoalsState _loadFromCache() {
+    final prefs = ref.read(sharedPrefsProvider);
+    final cache = prefs.getString(_cacheKey);
+    if (cache == null) return const MacroGoalsState(goals: []);
+
+    try {
+      final List<dynamic> jsonList = jsonDecode(cache);
+      final goals = jsonList.map((j) => MacroGoal.fromJson(j)).toList();
+      return MacroGoalsState(goals: goals);
+    } catch (e) {
+      debugPrint('[MacroGoals] Cache parsing error: $e');
+      return const MacroGoalsState(goals: []);
+    }
   }
 
-  void updateStatus(String id, GoalStatus status) {
-    state = state.copyWith(
-      goals: state.goals.map((g) => g.id == id ? g.copyWith(status: status) : g).toList(),
-    );
+  void _saveToCache(List<MacroGoal> goals) {
+    final prefs = ref.read(sharedPrefsProvider);
+    final jsonList = goals.map((g) => g.toJson()).toList();
+    prefs.setString(_cacheKey, jsonEncode(jsonList));
   }
 
-  void updateTitle(String id, String title) {
-    state = state.copyWith(
-      goals: state.goals.map((g) => g.id == id ? g.copyWith(title: title) : g).toList(),
-    );
+  // ── Sync da Supabase ──────────────────────────────────────────────────────
+
+  Future<void> _syncFromSupabase() async {
+    final user = supabase.auth.currentUser;
+    if (user == null) return;
+
+    try {
+      final response = await supabase
+          .from('long_term_goals')
+          .select()
+          .eq('user_id', user.id)
+          .order('created_at', ascending: true);
+
+      final goals = (response as List).map((j) => MacroGoal.fromJson(j)).toList();
+      
+      state = state.copyWith(goals: goals);
+      _saveToCache(goals);
+    } catch (e) {
+      debugPrint('[MacroGoals] Sync error: $e');
+      // In caso di errore manteniamo la cache locale
+    }
   }
 
-  void updateCategory(String id, String? categoryKey) {
-    state = state.copyWith(
-      goals: state.goals.map((g) {
-        if (g.id != id) return g;
-        return categoryKey == null
-            ? g.copyWith(clearCategory: true)
-            : g.copyWith(categoryKey: categoryKey);
-      }).toList(),
-    );
+  // ── CRUD (Optimistic Updates) ─────────────────────────────────────────────
+
+  Future<void> addGoal(MacroGoal goal) async {
+    // 1. Aggiornamento ottimistico
+    final newGoals = [...state.goals, goal];
+    state = state.copyWith(goals: newGoals);
+    _saveToCache(newGoals);
+
+    // 2. Invio al server
+    final user = supabase.auth.currentUser;
+    if (user == null) return;
+
+    try {
+      final payload = goal.toJson();
+      payload['user_id'] = user.id; // forza l'id utente
+      payload.remove('id'); // Lasciamo generare l'UUID a Supabase se vuoto
+      
+      final result = await supabase.from('long_term_goals').insert(payload).select().single();
+      
+      // 3. Sostituisci l'ID locale (che potrebbe essere fittizio) con quello reale
+      final realGoal = MacroGoal.fromJson(result);
+      final updatedGoals = state.goals.map((g) => g.id == goal.id ? realGoal : g).toList();
+      state = state.copyWith(goals: updatedGoals);
+      _saveToCache(updatedGoals);
+    } catch (e) {
+      debugPrint('[MacroGoals] Insert error: $e');
+      // In produzione potremmo mostrare un banner di errore e fare un revert
+    }
   }
 
-  void deleteGoal(String id) {
-    state = state.copyWith(
-      goals: state.goals.where((g) => g.id != id).toList(),
-    );
+  Future<void> updateStatus(String id, GoalStatus status) async {
+    final newGoals = state.goals.map((g) => g.id == id ? g.copyWith(status: status) : g).toList();
+    state = state.copyWith(goals: newGoals);
+    _saveToCache(newGoals);
+
+    try {
+      await supabase.from('long_term_goals').update({'status': status.name}).eq('id', id);
+    } catch (e) {
+      debugPrint('[MacroGoals] Update status error: $e');
+    }
+  }
+
+  Future<void> updateTitle(String id, String title) async {
+    final newGoals = state.goals.map((g) => g.id == id ? g.copyWith(title: title) : g).toList();
+    state = state.copyWith(goals: newGoals);
+    _saveToCache(newGoals);
+
+    try {
+      await supabase.from('long_term_goals').update({'title': title}).eq('id', id);
+    } catch (e) {
+      debugPrint('[MacroGoals] Update title error: $e');
+    }
+  }
+
+  Future<void> updateCategory(String id, String? categoryKey) async {
+    final newGoals = state.goals.map((g) {
+      if (g.id != id) return g;
+      return categoryKey == null ? g.copyWith(clearCategory: true) : g.copyWith(categoryKey: categoryKey);
+    }).toList();
+    state = state.copyWith(goals: newGoals);
+    _saveToCache(newGoals);
+
+    try {
+      await supabase.from('long_term_goals').update({'category_key': categoryKey}).eq('id', id);
+    } catch (e) {
+      debugPrint('[MacroGoals] Update category error: $e');
+    }
+  }
+
+  Future<void> deleteGoal(String id) async {
+    final newGoals = state.goals.where((g) => g.id != id).toList();
+    state = state.copyWith(goals: newGoals);
+    _saveToCache(newGoals);
+
+    try {
+      await supabase.from('long_term_goals').delete().eq('id', id);
+    } catch (e) {
+      debugPrint('[MacroGoals] Delete error: $e');
+    }
   }
 
   // ── Filtering ─────────────────────────────────────────────────────────────
@@ -77,7 +210,6 @@ class MacroGoalsNotifier extends Notifier<MacroGoalsState> {
       ..sort(_sortGoals);
   }
 
-  // active first, then completed, then failed; within group sort by createdAt
   int _sortGoals(MacroGoal a, MacroGoal b) {
     int statusOrder(GoalStatus s) {
       switch (s) {
@@ -91,211 +223,6 @@ class MacroGoalsNotifier extends Notifier<MacroGoalsState> {
     final bOrder = statusOrder(b.status);
     if (aOrder != bOrder) return aOrder.compareTo(bOrder);
     return a.createdAt.compareTo(b.createdAt);
-  }
-
-  // ── Mock data ─────────────────────────────────────────────────────────────
-
-  List<MacroGoal> _buildMockData() {
-    final now = DateTime.now();
-    final y = now.year;
-    final m = now.month;
-
-    return [
-      // ── Lifetime ──────────────────────────────────────────────────────────
-      MacroGoal(
-        id: 'lt-1',
-        title: 'Costruire una base finanziaria solida',
-        status: GoalStatus.active,
-        type: GoalType.lifetime,
-        categoryKey: 'finanza',
-        createdAt: DateTime(y, 1, 1),
-      ),
-      MacroGoal(
-        id: 'lt-2',
-        title: 'Imparare 3 lingue straniere',
-        status: GoalStatus.active,
-        type: GoalType.lifetime,
-        categoryKey: 'formazione',
-        createdAt: DateTime(y, 1, 2),
-      ),
-      MacroGoal(
-        id: 'lt-3',
-        title: 'Correre una maratona',
-        status: GoalStatus.completed,
-        type: GoalType.lifetime,
-        categoryKey: 'salute',
-        createdAt: DateTime(y, 1, 3),
-      ),
-
-      // ── Annual ────────────────────────────────────────────────────────────
-      MacroGoal(
-        id: 'an-1',
-        title: 'Lanciare la prima app mobile',
-        status: GoalStatus.active,
-        type: GoalType.annual,
-        year: y,
-        categoryKey: 'lavoro',
-        createdAt: DateTime(y, 1, 1),
-      ),
-      MacroGoal(
-        id: 'an-2',
-        title: 'Leggere 24 libri',
-        status: GoalStatus.active,
-        type: GoalType.annual,
-        year: y,
-        categoryKey: 'formazione',
-        createdAt: DateTime(y, 1, 2),
-      ),
-      MacroGoal(
-        id: 'an-3',
-        title: 'Raggiungere i 10.000 iscritti',
-        status: GoalStatus.failed,
-        type: GoalType.annual,
-        year: y,
-        categoryKey: 'lavoro',
-        createdAt: DateTime(y, 1, 3),
-      ),
-      MacroGoal(
-        id: 'an-4',
-        title: 'Risparmiare il 30% dello stipendio',
-        status: GoalStatus.completed,
-        type: GoalType.annual,
-        year: y,
-        categoryKey: 'finanza',
-        createdAt: DateTime(y, 1, 4),
-      ),
-
-      // ── Quarterly (Q2 of current year) ────────────────────────────────────
-      MacroGoal(
-        id: 'q-1',
-        title: 'Completare il corso Flutter avanzato',
-        status: GoalStatus.active,
-        type: GoalType.quarterly,
-        year: y,
-        quarter: 2,
-        categoryKey: 'formazione',
-        createdAt: DateTime(y, 4, 1),
-      ),
-      MacroGoal(
-        id: 'q-2',
-        title: 'Perdere 3 kg',
-        status: GoalStatus.active,
-        type: GoalType.quarterly,
-        year: y,
-        quarter: 2,
-        categoryKey: 'salute',
-        createdAt: DateTime(y, 4, 2),
-      ),
-      MacroGoal(
-        id: 'q-3',
-        title: 'Trovare 3 nuovi clienti',
-        status: GoalStatus.completed,
-        type: GoalType.quarterly,
-        year: y,
-        quarter: 2,
-        categoryKey: 'lavoro',
-        createdAt: DateTime(y, 4, 3),
-      ),
-
-      // ── Monthly (current month) ────────────────────────────────────────────
-      MacroGoal(
-        id: 'mo-1',
-        title: 'Pubblicare 4 articoli sul blog',
-        status: GoalStatus.active,
-        type: GoalType.monthly,
-        year: y,
-        month: m,
-        categoryKey: 'lavoro',
-        createdAt: DateTime(y, m, 1),
-      ),
-      MacroGoal(
-        id: 'mo-2',
-        title: 'Meditazione quotidiana per 30 giorni',
-        status: GoalStatus.active,
-        type: GoalType.monthly,
-        year: y,
-        month: m,
-        categoryKey: 'spirituale',
-        createdAt: DateTime(y, m, 2),
-      ),
-      MacroGoal(
-        id: 'mo-3',
-        title: 'Organizzare la libreria digitale',
-        status: GoalStatus.completed,
-        type: GoalType.monthly,
-        year: y,
-        month: m,
-        categoryKey: 'altro',
-        createdAt: DateTime(y, m, 3),
-      ),
-      MacroGoal(
-        id: 'mo-4',
-        title: 'Iscriversi in palestra',
-        status: GoalStatus.failed,
-        type: GoalType.monthly,
-        year: y,
-        month: m,
-        categoryKey: 'salute',
-        createdAt: DateTime(y, m, 4),
-      ),
-
-      // ── Weekly (week 4 of current month) ──────────────────────────────────
-      MacroGoal(
-        id: 'wk-1',
-        title: 'Medico per vaccini e analisi del sangue',
-        status: GoalStatus.active,
-        type: GoalType.weekly,
-        year: y,
-        month: m,
-        weekNumber: 4,
-        categoryKey: 'salute',
-        createdAt: DateTime(y, m, 22),
-      ),
-      MacroGoal(
-        id: 'wk-2',
-        title: 'Imparare new vocabulary in Arabic',
-        status: GoalStatus.active,
-        type: GoalType.weekly,
-        year: y,
-        month: m,
-        weekNumber: 4,
-        categoryKey: 'formazione',
-        createdAt: DateTime(y, m, 22),
-      ),
-      MacroGoal(
-        id: 'wk-3',
-        title: 'Fare felpe sul sito Printful',
-        status: GoalStatus.failed,
-        type: GoalType.weekly,
-        year: y,
-        month: m,
-        weekNumber: 4,
-        categoryKey: 'lavoro',
-        createdAt: DateTime(y, m, 22),
-      ),
-      MacroGoal(
-        id: 'wk-4',
-        title: 'Aver parlato con mia della scelta universitaria',
-        status: GoalStatus.completed,
-        type: GoalType.weekly,
-        year: y,
-        month: m,
-        weekNumber: 4,
-        categoryKey: 'relazioni',
-        createdAt: DateTime(y, m, 22),
-      ),
-      MacroGoal(
-        id: 'wk-5',
-        title: 'Essere up to date con AI',
-        status: GoalStatus.completed,
-        type: GoalType.weekly,
-        year: y,
-        month: m,
-        weekNumber: 4,
-        categoryKey: 'formazione',
-        createdAt: DateTime(y, m, 22),
-      ),
-    ];
   }
 }
 
@@ -372,7 +299,7 @@ class MacroGoalsViewNotifier extends Notifier<MacroGoalsViewState> {
 
     switch (s.selectedType) {
       case GoalType.lifetime:
-        break; // No period to step
+        break;
       case GoalType.annual:
         setYear(y + 1);
         break;
@@ -414,7 +341,7 @@ class MacroGoalsViewNotifier extends Notifier<MacroGoalsViewState> {
 
     switch (s.selectedType) {
       case GoalType.lifetime:
-        break; // No period to step
+        break;
       case GoalType.annual:
         setYear(y - 1);
         break;
@@ -456,7 +383,6 @@ final macroGoalsViewProvider =
 
 // ─── Helpers ─────────────────────────────────────────────────────────────────
 
-/// Returns the number of logical weeks (Mon-Sun) in a given month
 int weeksInMonth(int year, int month) {
   final firstOfMonth = DateTime(year, month, 1);
   final daysInMonth = DateTime(year, month + 1, 0).day;

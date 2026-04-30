@@ -47,6 +47,9 @@ dependencies:
   flutter_timezone: ^5.0.2
   local_auth: ^3.0.1
   supabase_flutter: ^2.8.3
+  google_sign_in: ^6.2.1
+  sign_in_with_apple: ^7.0.1
+  crypto: ^3.0.7
 
 dev_dependencies:
   flutter_test:

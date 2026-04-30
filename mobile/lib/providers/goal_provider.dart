@@ -1,157 +1,291 @@
+import 'dart:convert';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:supabase_flutter/supabase_flutter.dart';
 import '../models/goal.dart';
+import 'shared_prefs_provider.dart';
+import 'auth_provider.dart';
 
-// ─── Goals provider (mock data, future: Supabase) ───────────────────────────
+// ─── Goals Provider (Offline-First) ─────────────────────────────────────────
 
 class GoalsNotifier extends Notifier<List<Goal>> {
+  static const String _cacheKey = 'goals_cache';
+
   @override
   List<Goal> build() {
-    final now = DateTime.now();
-    final startDate = '${now.year}-${now.month.toString().padLeft(2, '0')}-01';
+    final initialState = _loadFromCache();
 
-    return [
-      Goal(
-        id: '1',
-        title: 'Meditazione',
-        description: '10 minuti',
-        icon: 'heart',
-        color: const Color(0xFF7C3AED),
-        isCompleted: true,
-        startDate: startDate,
-      ),
-      Goal(
-        id: '2',
-        title: 'Lettura',
-        description: '20 pagine',
-        icon: 'book',
-        color: const Color(0xFF3B82F6),
-        isCompleted: false,
-        startDate: startDate,
-      ),
-      Goal(
-        id: '3',
-        title: 'Allenamento',
-        description: '45 minuti',
-        icon: 'dumbbell',
-        color: const Color(0xFF10B981),
-        isCompleted: false,
-        startDate: startDate,
-      ),
-      Goal(
-        id: '4',
-        title: 'Diario',
-        description: 'Riflessione quotidiana',
-        icon: 'pencil',
-        color: const Color(0xFFF59E0B),
-        isCompleted: true,
-        startDate: startDate,
-      ),
-      Goal(
-        id: '5',
-        title: 'Camminata',
-        description: '30 minuti',
-        icon: 'footprints',
-        color: const Color(0xFFEC4899),
-        isCompleted: false,
-        startDate: startDate,
-      ),
-    ];
+    ref.listen(authProvider, (previous, next) {
+      if (next.isLoggedIn && next.user != null) {
+        _syncFromSupabase();
+      } else if (!next.isLoggedIn) {
+        state = [];
+        _saveToCache([]);
+      }
+    });
+
+    final authState = ref.read(authProvider);
+    if (authState.isLoggedIn && authState.user != null) {
+      _syncFromSupabase();
+    }
+
+    return initialState;
   }
 
-  void addHabit(Goal habit) {
-    state = [...state, habit];
+  List<Goal> _loadFromCache() {
+    final prefs = ref.read(sharedPrefsProvider);
+    final cache = prefs.getString(_cacheKey);
+    if (cache == null) return [];
+
+    try {
+      final List<dynamic> jsonList = jsonDecode(cache);
+      return jsonList.map((j) => Goal.fromJson(j)).toList();
+    } catch (e) {
+      debugPrint('[Goals] Cache parsing error: $e');
+      return [];
+    }
   }
 
-  void updateHabit(Goal updatedHabit) {
-    state = state.map((h) => h.id == updatedHabit.id ? updatedHabit : h).toList();
+  void _saveToCache(List<Goal> goals) {
+    final prefs = ref.read(sharedPrefsProvider);
+    final jsonList = goals.map((g) => g.toJson()).toList();
+    prefs.setString(_cacheKey, jsonEncode(jsonList));
   }
 
-  void deleteHabit(String id) {
-    state = state.where((h) => h.id != id).toList();
+  Future<void> _syncFromSupabase() async {
+    final user = supabase.auth.currentUser;
+    if (user == null) return;
+
+    try {
+      final response = await supabase
+          .from('goals')
+          .select()
+          .eq('user_id', user.id)
+          .order('display_order', ascending: true)
+          .order('created_at', ascending: true);
+
+      final goals = (response as List).map((j) => Goal.fromJson(j)).toList();
+      state = goals;
+      _saveToCache(goals);
+    } catch (e) {
+      debugPrint('[Goals] Sync error: $e');
+    }
   }
 
-  void reorder(int oldIndex, int newIndex) {
+  Future<void> addHabit(Goal habit) async {
+    final newGoals = [...state, habit];
+    state = newGoals;
+    _saveToCache(newGoals);
+
+    final user = supabase.auth.currentUser;
+    if (user == null) return;
+
+    try {
+      final payload = habit.toJson();
+      payload['user_id'] = user.id;
+      payload.remove('id'); 
+      
+      final result = await supabase.from('goals').insert(payload).select().single();
+      final realGoal = Goal.fromJson(result);
+      
+      final updatedGoals = state.map((g) => g.id == habit.id ? realGoal : g).toList();
+      state = updatedGoals;
+      _saveToCache(updatedGoals);
+    } catch (e) {
+      debugPrint('[Goals] Insert error: $e');
+    }
+  }
+
+  Future<void> updateHabit(Goal updatedHabit) async {
+    final newGoals = state.map((h) => h.id == updatedHabit.id ? updatedHabit : h).toList();
+    state = newGoals;
+    _saveToCache(newGoals);
+
+    try {
+      final payload = updatedHabit.toJson();
+      payload.remove('id');
+      await supabase.from('goals').update(payload).eq('id', updatedHabit.id);
+    } catch (e) {
+      debugPrint('[Goals] Update error: $e');
+    }
+  }
+
+  Future<void> deleteHabit(String id) async {
+    final newGoals = state.where((h) => h.id != id).toList();
+    state = newGoals;
+    _saveToCache(newGoals);
+
+    try {
+      await supabase.from('goals').delete().eq('id', id);
+    } catch (e) {
+      debugPrint('[Goals] Delete error: $e');
+    }
+  }
+
+  Future<void> reorder(int oldIndex, int newIndex) async {
     final list = List<Goal>.from(state);
     if (newIndex > oldIndex) newIndex -= 1;
     final item = list.removeAt(oldIndex);
     list.insert(newIndex, item);
+
+    // Aggiorna gli order localmente
+    for (int i = 0; i < list.length; i++) {
+      list[i] = list[i].copyWith(displayOrder: i);
+    }
+    
     state = list;
+    _saveToCache(list);
+
+    // Sync massivo degli order su Supabase
+    try {
+      final updates = list.map((g) => {'id': g.id, 'display_order': g.displayOrder}).toList();
+      await supabase.from('goals').upsert(updates);
+    } catch (e) {
+      debugPrint('[Goals] Reorder error: $e');
+    }
   }
 }
 
-final goalsProvider =
-    NotifierProvider<GoalsNotifier, List<Goal>>(GoalsNotifier.new);
+final goalsProvider = NotifierProvider<GoalsNotifier, List<Goal>>(GoalsNotifier.new);
 
-// ─── Habit logs: Map<dateKey, Map<habitId, status>> ─────────────────────────
+// ─── Habit Logs Provider (Offline-First) ────────────────────────────────────
 
 typedef HabitLogsMap = Map<String, Map<String, String>>;
 
 class HabitLogsNotifier extends Notifier<HabitLogsMap> {
+  static const String _cacheKey = 'goal_logs_cache';
+
   @override
   HabitLogsMap build() {
-    final now = DateTime.now();
-    final year = now.year;
-    final month = now.month;
+    final initialState = _loadFromCache();
 
-    String dateKey(int day) =>
-        '$year-${month.toString().padLeft(2, '0')}-${day.toString().padLeft(2, '0')}';
-
-    final mockData = <int, Map<String, String>>{
-      1: {'1': 'done', '2': 'done', '3': 'missed', '4': 'done'},
-      2: {'1': 'done', '2': 'missed', '4': 'done', '5': 'done'},
-      3: {'1': 'done', '3': 'done'},
-      4: {'2': 'done', '4': 'done', '5': 'missed'},
-      5: {'1': 'done', '2': 'done', '3': 'done', '4': 'done', '5': 'done'},
-      6: {'1': 'missed', '3': 'done', '4': 'done'},
-      7: {'1': 'done', '2': 'done', '3': 'done', '4': 'missed', '5': 'done'},
-      8: {'1': 'done', '2': 'done', '3': 'done', '4': 'done', '5': 'done'},
-      9: {'1': 'done', '2': 'missed', '3': 'done', '5': 'done'},
-      10: {'2': 'done', '3': 'done', '4': 'done'},
-      11: {'1': 'done', '3': 'done', '4': 'done', '5': 'done'},
-      12: {'1': 'done', '2': 'done', '3': 'done', '4': 'done'},
-      13: {'1': 'done', '2': 'done', '3': 'done', '4': 'done', '5': 'done'},
-      14: {'1': 'done', '2': 'done', '3': 'done', '4': 'missed', '5': 'done'},
-      15: {'1': 'done', '2': 'done', '3': 'done', '4': 'done', '5': 'done'},
-      16: {'1': 'done', '2': 'done', '3': 'done', '4': 'done', '5': 'done'},
-      17: {'1': 'done', '2': 'missed', '3': 'done', '4': 'done'},
-      18: {'1': 'done', '3': 'done', '4': 'done', '5': 'done'},
-      19: {'1': 'done', '2': 'done', '3': 'missed', '4': 'done', '5': 'done'},
-      20: {'1': 'done', '2': 'done', '3': 'done', '4': 'done', '5': 'done'},
-      21: {'1': 'done', '2': 'done', '3': 'done', '4': 'done'},
-    };
-
-    final logs = <String, Map<String, String>>{};
-    mockData.forEach((day, habits) {
-      if (day <= now.day) {
-        logs[dateKey(day)] = habits;
+    ref.listen(authProvider, (previous, next) {
+      if (next.isLoggedIn && next.user != null) {
+        _syncFromSupabase();
+      } else if (!next.isLoggedIn) {
+        state = {};
+        _saveToCache({});
       }
     });
-    return logs;
+
+    final authState = ref.read(authProvider);
+    if (authState.isLoggedIn && authState.user != null) {
+      _syncFromSupabase();
+    }
+
+    return initialState;
   }
 
-  void cycleStatus(DateTime date, String habitId) {
-    final dateKey =
-        '${date.year}-${date.month.toString().padLeft(2, '0')}-${date.day.toString().padLeft(2, '0')}';
+  HabitLogsMap _loadFromCache() {
+    final prefs = ref.read(sharedPrefsProvider);
+    final cache = prefs.getString(_cacheKey);
+    if (cache == null) return {};
+
+    try {
+      final Map<String, dynamic> jsonMap = jsonDecode(cache);
+      final HabitLogsMap result = {};
+      jsonMap.forEach((dateKey, habitsData) {
+        result[dateKey] = Map<String, String>.from(habitsData as Map);
+      });
+      return result;
+    } catch (e) {
+      debugPrint('[HabitLogs] Cache parsing error: $e');
+      return {};
+    }
+  }
+
+  void _saveToCache(HabitLogsMap logs) {
+    final prefs = ref.read(sharedPrefsProvider);
+    prefs.setString(_cacheKey, jsonEncode(logs));
+  }
+
+  Future<void> _syncFromSupabase() async {
+    final user = supabase.auth.currentUser;
+    if (user == null) return;
+
+    try {
+      // Per ottimizzare, potremmo scaricare solo gli ultimi X giorni, 
+      // ma per ora sincronizziamo tutto per la heatmap.
+      final response = await supabase
+          .from('goal_logs')
+          .select('id, goal_id, date, status')
+          .eq('user_id', user.id);
+
+      final HabitLogsMap newLogs = {};
+      
+      for (final row in response) {
+        final date = row['date'] as String; // YYYY-MM-DD
+        final goalId = row['goal_id'] as String;
+        final status = row['status'] as String;
+        
+        if (!newLogs.containsKey(date)) {
+          newLogs[date] = {};
+        }
+        newLogs[date]![goalId] = status;
+      }
+
+      state = newLogs;
+      _saveToCache(newLogs);
+    } catch (e) {
+      debugPrint('[HabitLogs] Sync error: $e');
+    }
+  }
+
+  Future<void> cycleStatus(DateTime date, String habitId) async {
+    final user = supabase.auth.currentUser;
+    if (user == null) return; // Solo se loggato, o potremmo forzare il login
+
+    final dateKey = '${date.year}-${date.month.toString().padLeft(2, '0')}-${date.day.toString().padLeft(2, '0')}';
+    
     final newState = Map<String, Map<String, String>>.from(state);
     final dayLogs = Map<String, String>.from(newState[dateKey] ?? {});
 
     final currentStatus = dayLogs[habitId];
+    String? nextStatus;
+    
     if (currentStatus == null) {
-      dayLogs[habitId] = 'done';
+      nextStatus = 'done';
     } else if (currentStatus == 'done') {
-      dayLogs[habitId] = 'missed';
+      nextStatus = 'missed';
+    } else {
+      nextStatus = null; // rimosso
+    }
+
+    if (nextStatus != null) {
+      dayLogs[habitId] = nextStatus;
     } else {
       dayLogs.remove(habitId);
     }
 
     newState[dateKey] = dayLogs;
     state = newState;
+    _saveToCache(newState);
+
+    // Sync con Supabase
+    try {
+      if (nextStatus != null) {
+        // Upsert log
+        await supabase.from('goal_logs').upsert({
+          'user_id': user.id,
+          'goal_id': habitId,
+          'date': dateKey,
+          'status': nextStatus,
+        }, onConflict: 'goal_id, date'); // Richiede il vincolo UNIQUE nel db
+      } else {
+        // Elimina log
+        await supabase
+            .from('goal_logs')
+            .delete()
+            .eq('goal_id', habitId)
+            .eq('date', dateKey);
+      }
+    } catch (e) {
+      debugPrint('[HabitLogs] cycleStatus error: $e');
+    }
   }
 }
 
-final habitLogsProvider =
-    NotifierProvider<HabitLogsNotifier, HabitLogsMap>(HabitLogsNotifier.new);
+final habitLogsProvider = NotifierProvider<HabitLogsNotifier, HabitLogsMap>(HabitLogsNotifier.new);
 
 // ─── Calendar view enum & provider ───────────────────────────────────────────
 
@@ -159,13 +293,11 @@ enum CalendarView { month, week, year, vita }
 
 class CalendarViewNotifier extends Notifier<CalendarView> {
   @override
-  CalendarView build() => CalendarView.month;
+  CalendarView build() => CalendarView.week; // Cambiato a week come default
   void setView(CalendarView v) => state = v;
 }
 
-final calendarViewProvider =
-    NotifierProvider<CalendarViewNotifier, CalendarView>(
-        CalendarViewNotifier.new);
+final calendarViewProvider = NotifierProvider<CalendarViewNotifier, CalendarView>(CalendarViewNotifier.new);
 
 // ─── Privacy mode provider ────────────────────────────────────────────────────
 
@@ -176,5 +308,4 @@ class PrivacyModeNotifier extends Notifier<bool> {
   void set(bool v) => state = v;
 }
 
-final privacyModeProvider =
-    NotifierProvider<PrivacyModeNotifier, bool>(PrivacyModeNotifier.new);
+final privacyModeProvider = NotifierProvider<PrivacyModeNotifier, bool>(PrivacyModeNotifier.new);

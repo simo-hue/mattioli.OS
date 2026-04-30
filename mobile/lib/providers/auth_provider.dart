@@ -1,98 +1,298 @@
+import 'dart:convert';
+import 'package:flutter/foundation.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import 'package:shared_preferences/shared_preferences.dart';
+import 'package:supabase_flutter/supabase_flutter.dart';
+import 'package:google_sign_in/google_sign_in.dart' as google_auth;
+import 'package:sign_in_with_apple/sign_in_with_apple.dart';
+import 'package:crypto/crypto.dart';
+
+// Accesso globale al client Supabase
+final supabase = Supabase.instance.client;
+
+// ── Auth State ────────────────────────────────────────────────────────────────
 
 class AuthState {
   final bool isLoggedIn;
-  final String? email;
+  final User? user;        // oggetto utente Supabase completo
   final bool isLoading;
   final String? error;
 
-  AuthState({
+  const AuthState({
     required this.isLoggedIn,
-    this.email,
+    this.user,
     this.isLoading = false,
     this.error,
   });
 
+  String? get email => user?.email;
+  String? get userId => user?.id;
+
   AuthState copyWith({
     bool? isLoggedIn,
-    String? email,
+    User? user,
+    bool clearUser = false,
     bool? isLoading,
     String? error,
+    bool clearError = false,
   }) {
     return AuthState(
       isLoggedIn: isLoggedIn ?? this.isLoggedIn,
-      email: email ?? this.email,
+      user: clearUser ? null : (user ?? this.user),
       isLoading: isLoading ?? this.isLoading,
-      error: error ?? this.error,
+      error: clearError ? null : (error ?? this.error),
     );
   }
 }
 
-class AuthNotifier extends Notifier<AuthState> {
+// ── Auth Notifier ─────────────────────────────────────────────────────────────
+// Implementa ChangeNotifier per essere usato come refreshListenable
+// da GoRouter → la navigazione reagisce istantaneamente ai cambi di sessione.
+
+class AuthNotifier extends Notifier<AuthState> with ChangeNotifier {
   @override
   AuthState build() {
-    _init();
-    return AuthState(isLoggedIn: false, isLoading: true);
+    // Legge la sessione corrente (già in memoria grazie a Supabase.initialize)
+    final session = supabase.auth.currentSession;
+    final initialState = AuthState(
+      isLoggedIn: session != null,
+      user: session?.user,
+    );
+
+    // Ascolta i cambi di sessione in real-time (login/logout/token refresh)
+    supabase.auth.onAuthStateChange.listen((data) {
+      final event = data.event;
+      final session = data.session;
+
+      debugPrint('[Auth] Event: $event');
+
+      final isLoggedIn = session != null &&
+          (event == AuthChangeEvent.signedIn ||
+              event == AuthChangeEvent.tokenRefreshed ||
+              event == AuthChangeEvent.userUpdated);
+
+      final isLoggedOut = event == AuthChangeEvent.signedOut ||
+          event == AuthChangeEvent.userDeleted;
+
+      if (isLoggedIn) {
+        state = AuthState(isLoggedIn: true, user: session.user);
+        notifyListeners(); // aggiorna GoRouter
+      } else if (isLoggedOut) {
+        state = const AuthState(isLoggedIn: false);
+        notifyListeners();
+      }
+    });
+
+    return initialState;
   }
 
-  Future<void> _init() async {
-    final prefs = await SharedPreferences.getInstance();
-    final isLoggedIn = prefs.getBool('isLoggedIn') ?? false;
-    final email = prefs.getString('userEmail');
-    
-    state = state.copyWith(isLoggedIn: isLoggedIn, email: email, isLoading: false);
-  }
+  // ── Email + Password Login ────────────────────────────────────────────────
 
   Future<bool> login(String email, String password) async {
-    state = state.copyWith(isLoading: true, error: null);
-    
-    // Simulating API call
-    await Future.delayed(const Duration(seconds: 2));
-    
-    // For now, accept anything
-    final prefs = await SharedPreferences.getInstance();
-    await prefs.setBool('isLoggedIn', true);
-    await prefs.setString('userEmail', email);
-    
-    state = state.copyWith(isLoggedIn: true, email: email, isLoading: false);
-    return true;
+    state = state.copyWith(isLoading: true, clearError: true);
+    try {
+      final response = await supabase.auth.signInWithPassword(
+        email: email.trim(),
+        password: password,
+      );
+      if (response.session == null) {
+        state = state.copyWith(
+          isLoading: false,
+          error: 'Accesso non riuscito. Controlla email e password.',
+        );
+        return false;
+      }
+      // onAuthStateChange gestirà il cambio di state
+      state = state.copyWith(isLoading: false, clearError: true);
+      return true;
+    } on AuthException catch (e) {
+      state = state.copyWith(isLoading: false, error: _mapAuthError(e.message));
+      return false;
+    } catch (e) {
+      state = state.copyWith(isLoading: false, error: 'Errore di rete. Riprova.');
+      return false;
+    }
   }
+
+  // ── Email + Password Sign Up ──────────────────────────────────────────────
 
   Future<bool> signUp(String email, String password) async {
-    state = state.copyWith(isLoading: true, error: null);
-    
-    // Simulating API call
-    await Future.delayed(const Duration(seconds: 2));
-    
-    final prefs = await SharedPreferences.getInstance();
-    await prefs.setBool('isLoggedIn', true);
-    await prefs.setString('userEmail', email);
-    
-    state = state.copyWith(isLoggedIn: true, email: email, isLoading: false);
-    return true;
+    state = state.copyWith(isLoading: true, clearError: true);
+    try {
+      final response = await supabase.auth.signUp(
+        email: email.trim(),
+        password: password,
+      );
+      state = state.copyWith(isLoading: false, clearError: true);
+
+      // Se Supabase ha la email confirmation abilitata, la sessione è null
+      // e l'utente riceve un'email. Restituiamo true comunque.
+      if (response.user == null) {
+        state = state.copyWith(
+          error: 'Controlla la tua email per confermare la registrazione.',
+        );
+      }
+      return true;
+    } on AuthException catch (e) {
+      state = state.copyWith(isLoading: false, error: _mapAuthError(e.message));
+      return false;
+    } catch (e) {
+      state = state.copyWith(isLoading: false, error: 'Errore di rete. Riprova.');
+      return false;
+    }
   }
+
+  // ── Password Reset ────────────────────────────────────────────────────────
+
+  Future<bool> resetPassword(String email) async {
+    state = state.copyWith(isLoading: true, clearError: true);
+    try {
+      await supabase.auth.resetPasswordForEmail(email.trim());
+      state = state.copyWith(isLoading: false, clearError: true);
+      return true;
+    } on AuthException catch (e) {
+      state = state.copyWith(isLoading: false, error: _mapAuthError(e.message));
+      return false;
+    } catch (e) {
+      state = state.copyWith(isLoading: false, error: 'Errore di rete. Riprova.');
+      return false;
+    }
+  }
+
+  // ── Logout ────────────────────────────────────────────────────────────────
 
   Future<void> logout() async {
-    final prefs = await SharedPreferences.getInstance();
-    await prefs.setBool('isLoggedIn', false);
-    await prefs.remove('userEmail');
-    
-    state = AuthState(isLoggedIn: false);
+    try {
+      await supabase.auth.signOut();
+      // onAuthStateChange emette signedOut → state si aggiorna automaticamente
+    } catch (e) {
+      debugPrint('[Auth] Logout error: $e');
+      // Forziamo il logout locale anche in caso di errore di rete
+      state = const AuthState(isLoggedIn: false);
+      notifyListeners();
+    }
   }
 
-  Future<void> socialLogin(String provider) async {
-    state = state.copyWith(isLoading: true, error: null);
-    
-    // Simulating Social Login
-    await Future.delayed(const Duration(seconds: 2));
-    
-    final prefs = await SharedPreferences.getInstance();
-    await prefs.setBool('isLoggedIn', true);
-    await prefs.setString('userEmail', '$provider@example.com');
-    
-    state = state.copyWith(isLoggedIn: true, email: '$provider@example.com', isLoading: false);
+  // ── Native Google Sign In ────────────────────────────────────────────────
+
+  Future<bool> signInWithGoogle() async {
+    state = state.copyWith(isLoading: true, clearError: true);
+    try {
+      /// TODO: Sostituisci con i tuoi Client ID reali creati su Google Cloud Console.
+      /// Il Web Client ID serve sempre (anche per Android).
+      /// L'iOS Client ID serve solo per l'app iOS.
+      const webClientId = 'INSERISCI_WEB_CLIENT_ID_QUI';
+      const iosClientId = 'INSERISCI_IOS_CLIENT_ID_QUI';
+
+      final googleSignIn = google_auth.GoogleSignIn(
+        clientId: iosClientId,
+        serverClientId: webClientId,
+      );
+
+      final googleUser = await googleSignIn.signIn();
+      if (googleUser == null) {
+        state = state.copyWith(isLoading: false, clearError: true);
+        return false; // L'utente ha annullato
+      }
+
+      final googleAuth = await googleUser.authentication;
+      final accessToken = googleAuth.accessToken;
+      final idToken = googleAuth.idToken;
+
+      if (idToken == null || accessToken == null) {
+        state = state.copyWith(isLoading: false, error: 'Errore nel recupero dei token di Google.');
+        return false;
+      }
+
+      await supabase.auth.signInWithIdToken(
+        provider: OAuthProvider.google,
+        idToken: idToken,
+        accessToken: accessToken,
+      );
+      
+      // onAuthStateChange gestirà il nuovo state
+      state = state.copyWith(isLoading: false, clearError: true);
+      return true;
+    } on AuthException catch (e) {
+      state = state.copyWith(isLoading: false, error: _mapAuthError(e.message));
+      return false;
+    } catch (e) {
+      debugPrint('[Google Auth] Error: $e');
+      state = state.copyWith(isLoading: false, error: 'Errore di autenticazione con Google.');
+      return false;
+    }
+  }
+
+  // ── Native Apple Sign In ──────────────────────────────────────────────────
+
+  Future<bool> signInWithApple() async {
+    state = state.copyWith(isLoading: true, clearError: true);
+    try {
+      final rawNonce = supabase.auth.generateRawNonce();
+      final hashedNonce = sha256.convert(utf8.encode(rawNonce)).toString();
+
+      final credential = await SignInWithApple.getAppleIDCredential(
+        scopes: [
+          AppleIDAuthorizationScopes.email,
+          AppleIDAuthorizationScopes.fullName,
+        ],
+        nonce: hashedNonce,
+      );
+
+      final idToken = credential.identityToken;
+      if (idToken == null) {
+        state = state.copyWith(isLoading: false, error: 'Errore nel recupero del token di Apple.');
+        return false;
+      }
+
+      await supabase.auth.signInWithIdToken(
+        provider: OAuthProvider.apple,
+        idToken: idToken,
+        nonce: rawNonce,
+      );
+
+      // onAuthStateChange gestirà il nuovo state
+      state = state.copyWith(isLoading: false, clearError: true);
+      return true;
+    } on SignInWithAppleAuthorizationException catch (e) {
+      if (e.code == AuthorizationErrorCode.canceled) {
+        state = state.copyWith(isLoading: false, clearError: true);
+        return false;
+      }
+      state = state.copyWith(isLoading: false, error: 'Errore di autenticazione con Apple.');
+      return false;
+    } on AuthException catch (e) {
+      state = state.copyWith(isLoading: false, error: _mapAuthError(e.message));
+      return false;
+    } catch (e) {
+      debugPrint('[Apple Auth] Error: $e');
+      state = state.copyWith(isLoading: false, error: 'Errore di autenticazione con Apple.');
+      return false;
+    }
+  }
+
+  // ── Helper: error message localization ───────────────────────────────────
+
+  String _mapAuthError(String supabaseMessage) {
+    final msg = supabaseMessage.toLowerCase();
+    if (msg.contains('invalid login credentials') || msg.contains('invalid_credentials')) {
+      return 'Email o password errata.';
+    }
+    if (msg.contains('email not confirmed')) {
+      return 'Controlla la tua email e clicca il link di conferma.';
+    }
+    if (msg.contains('user already registered') || msg.contains('already registered')) {
+      return 'Esiste già un account con questa email. Prova ad accedere.';
+    }
+    if (msg.contains('password should be at least')) {
+      return 'La password deve essere di almeno 6 caratteri.';
+    }
+    if (msg.contains('rate limit')) {
+      return 'Troppi tentativi. Attendi qualche minuto e riprova.';
+    }
+    return 'Si è verificato un errore. Riprova.';
   }
 }
+
+// ── Provider ─────────────────────────────────────────────────────────────────
 
 final authProvider = NotifierProvider<AuthNotifier, AuthState>(AuthNotifier.new);

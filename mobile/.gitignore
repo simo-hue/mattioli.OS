@@ -43,3 +43,6 @@ app.*.map.json
 /android/app/debug
 /android/app/profile
 /android/app/release
+
+# Mattioli.OS Secrets (Supabase Credentials)
+lib/core/supabase_config.dart

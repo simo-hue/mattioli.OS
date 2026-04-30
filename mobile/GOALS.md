@@ -48,5 +48,8 @@
 
 
 [ ] Database
-    [ ] Stiamo lavorando nella cartella "mobile". Agisci come un esperto database dev.
-Voglio consideri il database e la sua struttura che abbiamo utilizzato per la web app per creare la nuova versione ( quella ufficiale che verrà pubblicata sugli stores ).
+    [ ] log in
+    [ ] user preferences
+    [ ] goals
+    [ ] daily habits
+    [ ] 

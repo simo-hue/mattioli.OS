@@ -193,7 +193,7 @@ class _ProfileScreenState extends ConsumerState<ProfileScreen> {
                   context: context,
                   icon: LucideIcons.user,
                   title: 'Informazioni Personali',
-                  subtitle: userProfile.email,
+                  subtitle: userProfile.email ?? '',
                   onTap: () {
                     Navigator.push(context, PersonalInfoScreen.route());
                   },

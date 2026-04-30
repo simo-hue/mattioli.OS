@@ -1,18 +1,27 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
+import 'package:supabase_flutter/supabase_flutter.dart';
+import 'package:shared_preferences/shared_preferences.dart';
 import 'core/theme.dart';
+import 'core/supabase_config.dart';
+import 'providers/shared_prefs_provider.dart';
 import 'providers/settings_provider.dart';
 import 'providers/auth_provider.dart';
 import 'ui/screens/dashboard_screen.dart';
 import 'ui/screens/auth_screen.dart';
-
 import 'core/notifications.dart';
 
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
-  
-  // Initialize notifications
+
+  // ── Supabase init ─────────────────────────────────────────────────────────
+  await Supabase.initialize(
+    url: SupabaseConfig.url,
+    anonKey: SupabaseConfig.anonKey,
+  );
+
+  // ── Notifications init ───────────────────────────────────────────────────
   try {
     final notificationService = NotificationService();
     await notificationService.init().timeout(const Duration(seconds: 3));
@@ -20,7 +29,7 @@ void main() async {
     debugPrint('Notification initialization failed or timed out: $e');
   }
 
-  // Handle Flutter errors globally
+  // ── Global error handler ─────────────────────────────────────────────────
   ErrorWidget.builder = (FlutterErrorDetails details) {
     return Scaffold(
       body: Center(
@@ -31,21 +40,30 @@ void main() async {
       ),
     );
   };
-  
+
+  // ── SharedPreferences init ───────────────────────────────────────────────
+  final prefs = await SharedPreferences.getInstance();
+
   runApp(
-    const ProviderScope(
-      child: MattioliOSApp(),
+    ProviderScope(
+      overrides: [
+        sharedPrefsProvider.overrideWithValue(prefs),
+      ],
+      child: const MattioliOSApp(),
     ),
   );
 }
 
-// Global provider for GoRouter
+// ── Router ───────────────────────────────────────────────────────────────────
+// Usa un listenable che reagisce ai cambiamenti di sessione Supabase,
+// così GoRouter redireziona automaticamente senza polling.
 final routerProvider = Provider<GoRouter>((ref) {
-  final authState = ref.watch(authProvider);
+  final authNotifier = ref.watch(authProvider.notifier);
 
   return GoRouter(
     initialLocation: '/',
-    debugLogDiagnostics: true, // Enable diagnostic logs
+    debugLogDiagnostics: false,
+    refreshListenable: authNotifier,
     routes: [
       GoRoute(
         path: '/',
@@ -57,24 +75,17 @@ final routerProvider = Provider<GoRouter>((ref) {
       ),
     ],
     redirect: (context, state) {
-      final isLoggedIn = authState.isLoggedIn;
+      final isLoggedIn = ref.read(authProvider).isLoggedIn;
       final isLoggingIn = state.matchedLocation == '/login';
 
-      debugPrint('Auth Redirect: isLoggedIn=$isLoggedIn, currentPath=${state.matchedLocation}');
-
-      if (!isLoggedIn && !isLoggingIn) {
-        debugPrint('Redirecting to /login');
-        return '/login';
-      }
-      if (isLoggedIn && isLoggingIn) {
-        debugPrint('Redirecting to /');
-        return '/';
-      }
+      if (!isLoggedIn && !isLoggingIn) return '/login';
+      if (isLoggedIn && isLoggingIn) return '/';
       return null;
     },
   );
 });
 
+// ── App ──────────────────────────────────────────────────────────────────────
 class MattioliOSApp extends ConsumerWidget {
   const MattioliOSApp({super.key});
 
@@ -83,12 +94,9 @@ class MattioliOSApp extends ConsumerWidget {
     final settings = ref.watch(settingsProvider);
     final router = ref.watch(routerProvider);
 
-    // Safety fallback for accentColor
-    final Color effectiveAccentColor = settings.accentColor;
-
     return MaterialApp.router(
       title: 'Mattioli.OS',
-      theme: AppTheme.darkTheme(effectiveAccentColor),
+      theme: AppTheme.darkTheme(settings.accentColor),
       themeMode: settings.themeMode == 'dark' ? ThemeMode.dark : ThemeMode.light,
       routerConfig: router,
       debugShowCheckedModeBanner: false,

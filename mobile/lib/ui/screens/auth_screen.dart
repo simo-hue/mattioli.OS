@@ -76,13 +76,56 @@ class _AuthScreenState extends ConsumerState<AuthScreen> with SingleTickerProvid
               _emailController.text,
               _passwordController.text,
             );
+        // signup potrebbe richiedere conferma email
+        if (success && mounted) {
+          final error = ref.read(authProvider).error;
+          if (error != null && error.contains('email')) {
+            ScaffoldMessenger.of(context).showSnackBar(
+              SnackBar(
+                content: Text(error),
+                backgroundColor: const Color(0xFF10B981),
+                behavior: SnackBarBehavior.floating,
+                shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+              ),
+            );
+          }
+        }
       }
 
-      if (success) {
-        ref.hapticMedium();
-      }
+      if (success) ref.hapticMedium();
     } else {
       ref.hapticHeavy();
+    }
+  }
+
+  Future<void> _handleForgotPassword() async {
+    final email = _emailController.text.trim();
+    if (email.isEmpty || !email.contains('@')) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: const Text('Inserisci la tua email per reimpostare la password.'),
+          backgroundColor: AppColors.card,
+          behavior: SnackBarBehavior.floating,
+          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+        ),
+      );
+      return;
+    }
+    ref.hapticLight();
+    final success = await ref.read(authProvider.notifier).resetPassword(email);
+    if (mounted) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text(
+            success
+                ? 'Email inviata! Controlla la tua casella di posta.'
+                : ref.read(authProvider).error ?? 'Errore. Riprova.',
+          ),
+          backgroundColor: success ? const Color(0xFF10B981) : AppColors.destructive,
+          behavior: SnackBarBehavior.floating,
+          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+        ),
+      );
     }
   }
 
@@ -202,7 +245,12 @@ class _AuthScreenState extends ConsumerState<AuthScreen> with SingleTickerProvid
                                 icon: LucideIcons.mail,
                                 keyboardType: TextInputType.emailAddress,
                                 validator: (value) {
-                                  // For test phase, accept anything
+                                  if (value == null || value.trim().isEmpty) {
+                                    return 'Inserisci la tua email.';
+                                  }
+                                  if (!value.contains('@') || !value.contains('.')) {
+                                    return 'Email non valida.';
+                                  }
                                   return null;
                                 },
                               ),
@@ -213,7 +261,12 @@ class _AuthScreenState extends ConsumerState<AuthScreen> with SingleTickerProvid
                                 icon: LucideIcons.lock,
                                 isPassword: true,
                                 validator: (value) {
-                                  // For test phase, accept anything
+                                  if (value == null || value.isEmpty) {
+                                    return 'Inserisci la password.';
+                                  }
+                                  if (value.length < 6) {
+                                    return 'Minimo 6 caratteri.';
+                                  }
                                   return null;
                                 },
                               ),
@@ -221,7 +274,7 @@ class _AuthScreenState extends ConsumerState<AuthScreen> with SingleTickerProvid
                                 Align(
                                   alignment: Alignment.centerRight,
                                   child: TextButton(
-                                    onPressed: () {},
+                                    onPressed: _handleForgotPassword,
                                     child: Text(
                                       'Password dimenticata?',
                                       style: TextStyle(
@@ -232,6 +285,40 @@ class _AuthScreenState extends ConsumerState<AuthScreen> with SingleTickerProvid
                                     ),
                                   ),
                                 ),
+                              // Error banner da Supabase
+                              Builder(builder: (context) {
+                                final error = ref.watch(authProvider).error;
+                                if (error == null || error.contains('email')) return const SizedBox.shrink();
+                                return Padding(
+                                  padding: const EdgeInsets.only(top: 8),
+                                  child: Container(
+                                    padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 10),
+                                    decoration: BoxDecoration(
+                                      color: AppColors.destructive.withValues(alpha: 0.1),
+                                      borderRadius: BorderRadius.circular(12),
+                                      border: Border.all(
+                                        color: AppColors.destructive.withValues(alpha: 0.3),
+                                      ),
+                                    ),
+                                    child: Row(
+                                      children: [
+                                        const Icon(LucideIcons.circleAlert, size: 16, color: AppColors.destructive),
+                                        const SizedBox(width: 8),
+                                        Expanded(
+                                          child: Text(
+                                            error,
+                                            style: const TextStyle(
+                                              color: AppColors.destructive,
+                                              fontSize: 12,
+                                              fontWeight: FontWeight.w500,
+                                            ),
+                                          ),
+                                        ),
+                                      ],
+                                    ),
+                                  ),
+                                );
+                              }),
                               const SizedBox(height: 24),
                               _buildSubmitButton(authState.isLoading),
                             ],
@@ -266,14 +353,20 @@ class _AuthScreenState extends ConsumerState<AuthScreen> with SingleTickerProvid
                         _buildSocialButton(
                           label: 'Continua con Apple',
                           icon: LucideIcons.apple,
-                          onPressed: () => ref.read(authProvider.notifier).socialLogin('Apple'),
+                          onPressed: () async {
+                            final success = await ref.read(authProvider.notifier).signInWithApple();
+                            if (success) ref.hapticMedium();
+                          },
                         ),
                         const SizedBox(height: 10),
                         _buildSocialButton(
                           label: 'Continua con Google',
                           icon: LucideIcons.mail, 
                           isGoogle: true,
-                          onPressed: () => ref.read(authProvider.notifier).socialLogin('Google'),
+                          onPressed: () async {
+                            final success = await ref.read(authProvider.notifier).signInWithGoogle();
+                            if (success) ref.hapticMedium();
+                          },
                         ),
 
                         const SizedBox(height: 24), // Reduced from 48

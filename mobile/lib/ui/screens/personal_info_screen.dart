@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:lucide_icons_flutter/lucide_icons.dart';
+import 'package:supabase_flutter/supabase_flutter.dart';
 import '../../core/theme.dart';
 import '../../providers/user_provider.dart';
 import '../../core/localization.dart';
@@ -56,26 +57,50 @@ class _PersonalInfoScreenState extends ConsumerState<PersonalInfoScreen> {
     super.dispose();
   }
 
-  void _save() {
+  Future<void> _save() async {
     if (_formKey.currentState!.validate()) {
-      ref.read(userProfileProvider.notifier).updateProfile(
-            UserProfile(
-              firstName: _firstNameController.text.trim(),
-              lastName: _lastNameController.text.trim(),
-              email: _emailController.text.trim(),
-              phone: _phoneController.text.trim().isEmpty ? null : _phoneController.text.trim(),
+      final firstName = _firstNameController.text.trim();
+      final lastName = _lastNameController.text.trim();
+      final fullName = '$firstName $lastName'.trim();
+      final phone = _phoneController.text.trim().isEmpty ? null : _phoneController.text.trim();
+
+      try {
+        // Update Supabase Auth metadata
+        final supabase = Supabase.instance.client;
+        await supabase.auth.updateUser(UserAttributes(
+          data: {'full_name': fullName},
+        ));
+
+        // Update profiles table
+        final user = supabase.auth.currentUser;
+        if (user != null) {
+          await supabase.from('profiles').update({
+            'full_name': fullName,
+          }).eq('id', user.id);
+        }
+
+        if (mounted) {
+          HapticFeedback.mediumImpact();
+          ScaffoldMessenger.of(context).showSnackBar(
+            SnackBar(
+              content: Text(context.l10n.translate('success_save')),
+              backgroundColor: AppColors.success.withValues(alpha: 0.8),
+              behavior: SnackBarBehavior.floating,
+              shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
             ),
           );
-      HapticFeedback.mediumImpact();
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(
-          content: Text(context.l10n.translate('success_save')),
-          backgroundColor: AppColors.success.withValues(alpha: 0.8),
-          behavior: SnackBarBehavior.floating,
-          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
-        ),
-      );
-      Navigator.pop(context);
+          Navigator.pop(context);
+        }
+      } catch (e) {
+        if (mounted) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            SnackBar(
+              content: const Text('Errore durante il salvataggio.'),
+              backgroundColor: AppColors.destructive,
+            ),
+          );
+        }
+      }
     }
   }
 

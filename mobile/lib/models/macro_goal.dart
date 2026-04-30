@@ -56,6 +56,42 @@ class MacroGoal {
       createdAt: createdAt ?? this.createdAt,
     );
   }
+
+  factory MacroGoal.fromJson(Map<String, dynamic> json) {
+    return MacroGoal(
+      id: json['id'] as String,
+      title: json['title'] as String,
+      status: GoalStatus.values.firstWhere(
+        (e) => e.name == json['status'],
+        orElse: () => GoalStatus.active,
+      ),
+      type: GoalType.values.firstWhere(
+        (e) => e.name == json['type'],
+        orElse: () => GoalType.lifetime,
+      ),
+      year: json['year'] as int?,
+      quarter: json['quarter'] as int?,
+      month: json['month'] as int?,
+      weekNumber: json['week_number'] as int?,
+      categoryKey: json['category_key'] as String?,
+      createdAt: DateTime.parse(json['created_at'] as String),
+    );
+  }
+
+  Map<String, dynamic> toJson() {
+    return {
+      if (id.isNotEmpty) 'id': id,
+      'title': title,
+      'status': status.name,
+      'type': type.name,
+      'year': year,
+      'quarter': quarter,
+      'month': month,
+      'week_number': weekNumber,
+      'category_key': categoryKey,
+      'created_at': createdAt.toIso8601String(),
+    };
+  }
 }
 
 /// A goal category with a display label and color

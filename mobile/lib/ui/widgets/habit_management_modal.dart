@@ -76,7 +76,7 @@ class _HabitManagementModalState extends ConsumerState<HabitManagementModal> {
         description: '',
         icon: 'circle',
         color: _selectedColor,
-        startDate: DateTime.now(),
+        startDate: DateTime(DateTime.now().year, DateTime.now().month, DateTime.now().day),
       );
       ref.read(goalsProvider.notifier).addHabit(newHabit);
     }

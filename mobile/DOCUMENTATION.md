@@ -72,6 +72,7 @@
 - **HabitLogsNotifier**: Gestisce i log quotidiani (completato/fallito) nella tabella `goal_logs`. Utilizza una mappa locale per una risposta istantanea della UI.
 - **Fixed Type Errors**: Corretti gli errori di compilazione in `day_details_modal.dart` e `habit_calendar_widget.dart` dovuti al cambio di tipo del campo `startDate` da `String` a `DateTime`.
 - **Google Sign-In API Fix**: Corretto `auth_provider.dart` per essere compatibile con la versione `6.3.0` di `google_sign_in` risolta in `pubspec.lock`.
+- **Habit Visibility Fix**: Corretto bug che impediva alle nuove abitudini di apparire nel giorno corrente. Ora la `startDate` viene settata all'inizio della giornata locale e il filtraggio utilizza una comparazione robusta tra oggetti `DateTime` (metodo `isActiveOn`).
 
 ---
 ## Current Status

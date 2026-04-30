@@ -26,12 +26,7 @@ class DayDetailsModal extends ConsumerWidget {
     final dayRecord = logs[dateKey] ?? {};
 
     // Filter habits active on this date
-    final activeHabits = habits.where((h) {
-      final hStartDateStr = h.startDate.toIso8601String().split('T')[0];
-      final hEndDateStr = h.endDate?.toIso8601String().split('T')[0];
-      return hStartDateStr.compareTo(dateKey) <= 0 &&
-          (hEndDateStr == null || hEndDateStr.compareTo(dateKey) >= 0);
-    }).toList();
+    final activeHabits = habits.where((h) => h.isActiveOn(date)).toList();
 
     return Container(
       decoration: BoxDecoration(

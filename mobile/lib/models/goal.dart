@@ -23,6 +23,22 @@ class Goal {
     this.displayOrder,
   });
 
+  /// Checks if the habit should be visible on a specific date.
+  bool isActiveOn(DateTime date) {
+    // Normalize both to date-only at midnight local time for comparison
+    final viewingDate = DateTime(date.year, date.month, date.day);
+    final start = DateTime(startDate.year, startDate.month, startDate.day);
+    
+    if (start.isAfter(viewingDate)) return false;
+    
+    if (endDate != null) {
+      final end = DateTime(endDate!.year, endDate!.month, endDate!.day);
+      if (end.isBefore(viewingDate)) return false;
+    }
+    
+    return true;
+  }
+
   Goal copyWith({
     String? id,
     String? title,

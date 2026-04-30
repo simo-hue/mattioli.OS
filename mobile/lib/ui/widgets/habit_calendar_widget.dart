@@ -248,12 +248,8 @@ class _HabitCalendarWidgetState extends ConsumerState<HabitCalendarWidget> {
                           final editableDay = _isYesterdayOrToday(year, month, day);
     
                           // Valid habits for this date
-                          final validHabits = habits.where((h) {
-                            final hStartDateStr = h.startDate.toIso8601String().split('T')[0];
-                            final hEndDateStr = h.endDate?.toIso8601String().split('T')[0];
-                            return hStartDateStr.compareTo(dateKey) <= 0 &&
-                                (hEndDateStr == null || hEndDateStr.compareTo(dateKey) >= 0);
-                          }).toList();
+                          final dayDate = DateTime(year, month, day);
+                          final validHabits = habits.where((h) => h.isActiveOn(dayDate)).toList();
     
                           final totalHabits = validHabits.length;
                           final completedCount = validHabits

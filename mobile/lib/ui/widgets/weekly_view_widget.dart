@@ -212,24 +212,28 @@ class _WeeklyViewWidgetState extends ConsumerState<WeeklyViewWidget> {
                                 final dayKey = _dateKey(dayDate);
                                 final status = logs[dayKey]?[habit.id];
                                 final isFuture = dayDate.isAfter(DateTime.now());
-    
+                                final isActive = habit.isActiveOn(dayDate);
+
                                 return Expanded(
                                   child: Padding(
                                     padding: const EdgeInsets.symmetric(horizontal: 4, vertical: 4),
-                                    child: _HabitCapsule(
-                                      color: habit.color,
-                                      status: status,
-                                      isFuture: isFuture,
-                                      isPrivacy: isPrivacy,
-                                      onTap: isFuture ? null : () {
-                                        showModalBottomSheet(
-                                          context: context,
-                                          backgroundColor: Colors.transparent,
-                                          isScrollControlled: true,
-                                          builder: (context) => DayDetailsModal(date: dayDate),
-                                        );
-                                        ref.hapticAction();
-                                      },
+                                    child: Opacity(
+                                      opacity: isActive ? 1.0 : 0.0,
+                                      child: _HabitCapsule(
+                                        color: habit.color,
+                                        status: status,
+                                        isFuture: isFuture,
+                                        isPrivacy: isPrivacy,
+                                        onTap: (isFuture || !isActive) ? null : () {
+                                          showModalBottomSheet(
+                                            context: context,
+                                            backgroundColor: Colors.transparent,
+                                            isScrollControlled: true,
+                                            builder: (context) => DayDetailsModal(date: dayDate),
+                                          );
+                                          ref.hapticAction();
+                                        },
+                                      ),
                                     ),
                                   ),
                                 );

@@ -92,43 +92,33 @@ class _GlobalTrendTabWidgetState extends ConsumerState<GlobalTrendTabWidget> {
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          Row(
-            mainAxisAlignment: MainAxisAlignment.spaceBetween,
+          Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              Expanded(
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Text(
-                      context.l10n.translate('Performance Evolution'),
-                      style: const TextStyle(
-                        fontFamily: 'Inter',
-                        fontSize: 20,
-                        fontWeight: FontWeight.w900,
-                        color: AppColors.foreground,
-                        letterSpacing: -0.8,
-                      ),
-                    ),
-                    Text(
-                      '${context.l10n.translate('Trend')} $title',
-                      style: const TextStyle(
-                        fontFamily: 'Inter',
-                        fontSize: 12,
-                        color: AppColors.mutedForeground,
-                        fontWeight: FontWeight.w500,
-                      ),
-                    ),
-                  ],
+              Text(
+                context.l10n.translate('Performance Evolution'),
+                style: const TextStyle(
+                  fontFamily: 'Inter',
+                  fontSize: 20,
+                  fontWeight: FontWeight.w900,
+                  color: AppColors.foreground,
+                  letterSpacing: -0.8,
                 ),
               ),
-              _buildSmallTimeframeSelector(
-                selected: _chartTimeframe,
-                options: ['timeframe_week_short', 'timeframe_month_short', 'timeframe_year_short', 'timeframe_all'],
-                onSelect: (val) => setState(() => _chartTimeframe = val),
+              Text(
+                '${context.l10n.translate('Trend')} $title',
+                style: const TextStyle(
+                  fontFamily: 'Inter',
+                  fontSize: 12,
+                  color: AppColors.mutedForeground,
+                  fontWeight: FontWeight.w500,
+                ),
               ),
             ],
           ),
-          const SizedBox(height: 24),
+          const SizedBox(height: 20),
+          _buildPremiumSelector(),
+          const SizedBox(height: 32),
           Row(
             crossAxisAlignment: CrossAxisAlignment.end,
             children: [
@@ -304,54 +294,54 @@ class _GlobalTrendTabWidgetState extends ConsumerState<GlobalTrendTabWidget> {
     return _ComparisonCarouselSection(goals: goals, timeframe: _comparisonTimeframe);
   }
 
-  Widget _buildSmallTimeframeSelector({
-    required String selected,
-    required List<String> options,
-    required Function(String) onSelect,
-    double padding = 2,
-  }) {
+  Widget _buildPremiumSelector() {
+    final options = ['week', 'month', 'year', 'all'];
+    final selectedKey = _chartTimeframe == 'timeframe_week_short' ? 'week' : _chartTimeframe == 'timeframe_month_short' ? 'month' : _chartTimeframe == 'timeframe_year_short' ? 'year' : 'all';
+
     return Container(
-      padding: EdgeInsets.all(padding),
+      width: double.infinity,
+      padding: const EdgeInsets.all(4),
       decoration: BoxDecoration(
-        color: AppColors.muted.withValues(alpha: 0.3),
-        borderRadius: BorderRadius.circular(12),
-        border: Border.all(color: AppColors.border.withValues(alpha: 0.2), width: 0.5),
+        color: AppColors.card.withValues(alpha: 0.3),
+        borderRadius: BorderRadius.circular(16),
+        border: Border.all(color: AppColors.border, width: 1),
       ),
       child: Row(
-        mainAxisSize: MainAxisSize.min,
         children: options.map((opt) {
-          final isSel = selected == opt;
-          return GestureDetector(
-            onTap: () {
-              if (!isSel) {
-                HapticFeedback.mediumImpact();
-                onSelect(opt);
-              }
-            },
-            child: AnimatedContainer(
-              duration: const Duration(milliseconds: 250),
-              curve: Curves.easeInOut,
-              padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 7),
-              decoration: BoxDecoration(
-                color: isSel ? Theme.of(context).colorScheme.primary : Colors.transparent,
-                borderRadius: BorderRadius.circular(10),
-                boxShadow: isSel
-                    ? [
-                        BoxShadow(
-                          color: Colors.black.withValues(alpha: 0.1),
-                          blurRadius: 4,
-                          offset: const Offset(0, 2),
-                        )
-                      ]
-                    : null,
-              ),
-              child: Text(
-                context.l10n.translate(opt),
-                textAlign: TextAlign.center,
-                style: TextStyle(
-                  fontSize: 13,
-                  fontWeight: isSel ? FontWeight.w700 : FontWeight.w500,
-                  color: isSel ? AppColors.background : AppColors.mutedForeground,
+          final isSelected = selectedKey == opt;
+          return Expanded(
+            child: GestureDetector(
+              onTap: () {
+                if (!isSelected) {
+                  HapticFeedback.mediumImpact();
+                  setState(() {
+                    if (opt == 'week') _chartTimeframe = 'timeframe_week_short';
+                    else if (opt == 'month') _chartTimeframe = 'timeframe_month_short';
+                    else if (opt == 'year') _chartTimeframe = 'timeframe_year_short';
+                    else _chartTimeframe = 'timeframe_all';
+                  });
+                }
+              },
+              child: AnimatedContainer(
+                duration: const Duration(milliseconds: 300),
+                curve: Curves.easeOutCubic,
+                padding: const EdgeInsets.symmetric(vertical: 10),
+                decoration: BoxDecoration(
+                  color: isSelected ? Theme.of(context).colorScheme.primary : Colors.transparent,
+                  borderRadius: BorderRadius.circular(12),
+                  boxShadow: isSelected 
+                      ? [BoxShadow(color: Theme.of(context).colorScheme.primary.withValues(alpha: 0.2), blurRadius: 8, offset: const Offset(0, 4))] 
+                      : null,
+                ),
+                child: Text(
+                  context.l10n.translate(opt),
+                  textAlign: TextAlign.center,
+                  style: TextStyle(
+                    fontFamily: 'Inter',
+                    fontSize: 12,
+                    fontWeight: isSelected ? FontWeight.w800 : FontWeight.w600,
+                    color: isSelected ? AppColors.background : AppColors.mutedForeground,
+                  ),
                 ),
               ),
             ),

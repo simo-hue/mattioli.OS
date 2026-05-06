@@ -114,7 +114,7 @@ class _GlobalMoodTabWidgetState extends State<GlobalMoodTabWidget> {
                     fontFamily: 'Inter',
                     fontSize: 12,
                     fontWeight: isSelected ? FontWeight.w800 : FontWeight.w600,
-                    color: isSelected ? Colors.white : AppColors.mutedForeground,
+                    color: isSelected ? AppColors.background : AppColors.mutedForeground,
                   ),
                 ),
               ),

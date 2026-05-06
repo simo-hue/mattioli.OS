@@ -160,7 +160,11 @@ class _MacroGoalsStatsViewState extends ConsumerState<MacroGoalsStatsView> {
           Expanded(child: _buildKpiCard('Totale', '$totalGoals', LucideIcons.target)),
           const SizedBox(width: 8),
           Expanded(child: _buildKpiCard('Completati', '$completedGoals', LucideIcons.circleCheck, color: Theme.of(context).colorScheme.primary)),
-          const SizedBox(width: 8),
+        ],
+      ),
+      const SizedBox(height: 12),
+      Row(
+        children: [
           Expanded(child: _buildKpiCard('Successo', '$successRate%', LucideIcons.trophy, color: const Color(0xFFFBBF24))),
           const SizedBox(width: 8),
           Expanded(child: _buildKpiCard('Trend', trendPositive ? 'Crescita' : 'Calo', trendPositive ? LucideIcons.trendingUp : LucideIcons.trendingDown, color: const Color(0xFF60A5FA))),

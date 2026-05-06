@@ -107,3 +107,9 @@
 - **Interactivity**: Added `BarTouchData` to show a detailed breakdown of categories per year in a tooltip.
 - **Visuals**: Implemented `backDrawRodData` (tracks) and refined bar width/radius for better aesthetic alignment.
 - **Styling**: Improved axis labels and grid lines for clarity and professional appearance.
+
+## [2026-05-06 18:48]: Goals - Single Year KPI Layout Optimization
+*Details*: Reorganized the KPI cards in the single year stats view into two rows for better readability.
+*Tech Notes*:
+- Split the single `Row` containing four cards into two `Row` widgets with two cards each.
+- Added vertical spacing (`SizedBox`) between the rows.

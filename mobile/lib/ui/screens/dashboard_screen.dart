@@ -319,21 +319,6 @@ class _AppBar extends ConsumerWidget {
                   // Profile & Action Hub
                   Row(
                     children: [
-                      // Subtle Activity/Search Icon
-                      Container(
-                        width: 36,
-                        height: 36,
-                        decoration: BoxDecoration(
-                          shape: BoxShape.circle,
-                          color: AppColors.card.withValues(alpha: 0.5),
-                        ),
-                        child: const Icon(
-                          Icons.search_rounded,
-                          size: 18,
-                          color: AppColors.mutedForeground,
-                        ),
-                      ),
-                      const SizedBox(width: 12),
                       GestureDetector(
                         onTap: () {
                           ref.hapticMedium();

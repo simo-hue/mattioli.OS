@@ -15,6 +15,27 @@ class GlobalHabitsTabWidget extends StatefulWidget {
 class _GlobalHabitsTabWidgetState extends State<GlobalHabitsTabWidget> {
   String _sortBy = 'rate';
 
+  List<Map<String, dynamic>> get _sortedHabits {
+    final habits = List<Map<String, dynamic>>.from(_habits);
+    habits.sort((a, b) {
+      switch (_sortBy) {
+        case 'rate':
+          return (b['rate'] as int).compareTo(a['rate'] as int);
+        case 'best_streak_label':
+          return (b['best'] as int).compareTo(a['best'] as int);
+        case 'worst_streak_label':
+          return (b['worst'] as int).compareTo(a['worst'] as int);
+        case 'current_streak_label':
+          return (b['serie'] as int).compareTo(a['serie'] as int);
+        case 'first_name':
+          return (a['name'] as String).compareTo(b['name'] as String);
+        default:
+          return 0;
+      }
+    });
+    return habits;
+  }
+
   final List<Map<String, dynamic>> _habits = [
     {
       'name': 'Caviglie',
@@ -90,10 +111,10 @@ class _GlobalHabitsTabWidgetState extends State<GlobalHabitsTabWidget> {
         ListView.separated(
           shrinkWrap: true,
           physics: const NeverScrollableScrollPhysics(),
-          itemCount: _habits.length,
+          itemCount: _sortedHabits.length,
           separatorBuilder: (context, index) => const SizedBox(height: 12),
           itemBuilder: (context, index) {
-            return _HabitDetailCard(habit: _habits[index]);
+            return _HabitDetailCard(habit: _sortedHabits[index]);
           },
         ),
         const SizedBox(height: 32),
@@ -131,10 +152,7 @@ class _GlobalHabitsTabWidgetState extends State<GlobalHabitsTabWidget> {
             Icon(_getSortIcon(_sortBy), size: 14, color: Theme.of(context).colorScheme.primary),
             const SizedBox(width: 8),
             Text(
-              context.l10n.translate(_sortBy == 'rate' ? 'rate' : 
-                                     _sortBy == 'best_streak_label' ? 'best_streak_label' :
-                                     _sortBy == 'worst_streak_label' ? 'worst_streak_label' :
-                                     _sortBy == 'current_streak_label' ? 'current_streak_label' : 'first_name'),
+              context.l10n.translate(_sortBy).replaceAll('_', ' '),
               style: const TextStyle(
                 fontFamily: 'Inter',
                 fontSize: 12,
@@ -206,7 +224,7 @@ class _GlobalHabitsTabWidgetState extends State<GlobalHabitsTabWidget> {
                   color: isSel ? primaryColor : AppColors.mutedForeground.withValues(alpha: 0.6)
                 ),
                 title: Text(
-                  context.l10n.translate(opt.val),
+                  context.l10n.translate(opt.val).replaceAll('_', ' '),
                   style: TextStyle(
                     fontFamily: 'Inter',
                     fontSize: 16,

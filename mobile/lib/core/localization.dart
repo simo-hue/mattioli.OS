@@ -231,6 +231,11 @@ class AppLocalizations {
       'fri': 'Ven',
       'sat': 'Sab',
       'sun': 'Dom',
+      'rate': 'Tasso di Successo',
+      'best_streak_label': 'Miglior Serie',
+      'worst_streak_label': 'Peggior Serie',
+      'current_streak_label': 'Serie Attuale',
+      'first_name': 'Nome',
     },
     'English': {
       'app_title': 'mattioli.OS',
@@ -455,6 +460,11 @@ class AppLocalizations {
       'fri': 'Fri',
       'sat': 'Sat',
       'sun': 'Sun',
+      'rate': 'Success Rate',
+      'best_streak_label': 'Best Streak',
+      'worst_streak_label': 'Worst Streak',
+      'current_streak_label': 'Current Streak',
+      'first_name': 'Name',
     },
   };
 

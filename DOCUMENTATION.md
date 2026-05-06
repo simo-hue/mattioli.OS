@@ -19,5 +19,9 @@
 - [2026-04-27 11:00]: **Global Accent Color Implementation**
   - *Details*: Fixed the issue where the accent color was not applied globally. Standardized the use of `Theme.of(context).colorScheme.primary` across settings, personal info, and navigation.
 
+- [2026-05-06 17:31]: **AppBar Search Icon Removal**
+  - *Details*: Removed the magnifying glass (search) icon from the dashboard AppBar to simplify the interface as requested.
+  - *Tech Notes*: Modified `dashboard_screen.dart` to remove the `Icons.search_rounded` container and associated spacing.
+
 ## Current Status
-- **Next Step**: The visual refactor for color coherence is complete and verified. The application now feels premium and uniform.
+- **Next Step**: Work completed. The AppBar now only shows the user greeting/date and the profile logo.

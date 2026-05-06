@@ -27,6 +27,8 @@ class _GlobalTrendTabWidgetState extends ConsumerState<GlobalTrendTabWidget> {
       children: [
         _buildTrendChartSection(),
         const SizedBox(height: 24),
+        const _AbitudiniCriticheSection(),
+        const SizedBox(height: 24),
         _buildComparisonSection(goals),
         const SizedBox(height: 32),
       ],
@@ -511,4 +513,249 @@ class _SmoothAreaChartPainter extends CustomPainter {
 
   @override
   bool shouldRepaint(CustomPainter oldDelegate) => false;
+}
+
+class _AbitudiniCriticheSection extends StatefulWidget {
+  const _AbitudiniCriticheSection();
+
+  @override
+  State<_AbitudiniCriticheSection> createState() => _AbitudiniCriticheSectionState();
+}
+
+class _AbitudiniCriticheSectionState extends State<_AbitudiniCriticheSection> {
+  late PageController _pageController;
+  int _currentPage = 0;
+
+  @override
+  void initState() {
+    super.initState();
+    _pageController = PageController(viewportFraction: 0.9);
+  }
+
+  @override
+  void dispose() {
+    _pageController.dispose();
+    super.dispose();
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final List<Widget> cards = [
+      const _CriticaCard(
+        title: '20 Flessioni 4',
+        drop: '-45%',
+        trend: 'trending_down',
+        color: Color(0xFFEF4444),
+        streak: '30 giorni',
+        desc: 'Questa abitudine ha perso il 45% di costanza nell\'ultima settimana. La tua serie negativa più lunga mai registrata.',
+      ),
+      const _CriticaCard(
+        title: '20 Flessioni 3',
+        drop: '-28%',
+        trend: 'trending_down',
+        color: Color(0xFFF97316),
+        streak: '17 giorni',
+        desc: 'Il trend è in calo costante. Hai saltato 5 delle ultime 7 sessioni programmate.',
+      ),
+      const _CriticaCard(
+        title: 'Journaling',
+        drop: '-15%',
+        trend: 'trending_down',
+        color: Color(0xFFEAB308),
+        streak: '8 giorni',
+        desc: 'Attenzione al calo di motivazione. Stai perdendo la costanza che avevi costruito nel mese scorso.',
+      ),
+    ];
+
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Row(
+          children: [
+            const Icon(LucideIcons.flame, size: 16, color: Color(0xFFEF4444)),
+            const SizedBox(width: 8),
+            Text(
+              context.l10n.translate('Abitudini Critiche'),
+              style: const TextStyle(
+                fontFamily: 'Inter',
+                fontSize: 14,
+                fontWeight: FontWeight.w700,
+                color: AppColors.foreground,
+              ),
+            ),
+          ],
+        ),
+        const SizedBox(height: 4),
+        Text(
+          context.l10n.translate('Habit che stanno perdendo slancio e richiedono attenzione.'),
+          style: const TextStyle(
+            fontFamily: 'Inter',
+            fontSize: 11,
+            color: AppColors.mutedForeground,
+          ),
+        ),
+        const SizedBox(height: 16),
+        
+        // Carousel
+        SizedBox(
+          height: 180,
+          child: PageView.builder(
+            controller: _pageController,
+            itemCount: cards.length,
+            onPageChanged: (index) => setState(() => _currentPage = index),
+            itemBuilder: (context, index) {
+              return Padding(
+                padding: const EdgeInsets.symmetric(horizontal: 8),
+                child: cards[index],
+              );
+            },
+          ),
+        ),
+        
+        const SizedBox(height: 12),
+        
+        // Pagination Dots
+        Center(
+          child: Row(
+            mainAxisAlignment: MainAxisAlignment.center,
+            children: List.generate(cards.length, (index) {
+              final isActive = _currentPage == index;
+              return AnimatedContainer(
+                duration: const Duration(milliseconds: 300),
+                margin: const EdgeInsets.symmetric(horizontal: 4),
+                width: isActive ? 16 : 6,
+                height: 6,
+                decoration: BoxDecoration(
+                  color: isActive 
+                      ? const Color(0xFFEF4444)
+                      : AppColors.mutedForeground.withValues(alpha: 0.3),
+                  borderRadius: BorderRadius.circular(3),
+                ),
+              );
+            }),
+          ),
+        ),
+      ],
+    );
+  }
+}
+
+class _CriticaCard extends StatelessWidget {
+  final String title;
+  final String drop;
+  final String trend;
+  final Color color;
+  final String streak;
+  final String desc;
+
+  const _CriticaCard({
+    required this.title,
+    required this.drop,
+    required this.trend,
+    required this.color,
+    required this.streak,
+    required this.desc,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      padding: const EdgeInsets.all(20),
+      decoration: BoxDecoration(
+        color: AppColors.card,
+        borderRadius: BorderRadius.circular(20),
+        border: Border.all(color: AppColors.border, width: 1),
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Row(
+            mainAxisAlignment: MainAxisAlignment.spaceBetween,
+            children: [
+              Row(
+                children: [
+                  Container(
+                    width: 8,
+                    height: 8,
+                    decoration: BoxDecoration(color: color, shape: BoxShape.circle),
+                  ),
+                  const SizedBox(width: 8),
+                  Text(
+                    title,
+                    style: const TextStyle(
+                      fontFamily: 'Inter',
+                      fontSize: 15,
+                      fontWeight: FontWeight.w700,
+                      color: AppColors.foreground,
+                    ),
+                  ),
+                ],
+              ),
+              Container(
+                padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+                decoration: BoxDecoration(
+                  color: color.withValues(alpha: 0.1),
+                  borderRadius: BorderRadius.circular(6),
+                ),
+                child: Row(
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    Icon(LucideIcons.trendingDown, size: 12, color: color),
+                    const SizedBox(width: 4),
+                    Text(
+                      drop,
+                      style: TextStyle(
+                        fontFamily: 'Inter',
+                        fontSize: 11,
+                        fontWeight: FontWeight.w800,
+                        color: color,
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+            ],
+          ),
+          const SizedBox(height: 16),
+          Expanded(
+            child: Text(
+              desc,
+              style: const TextStyle(
+                fontFamily: 'Inter',
+                fontSize: 12,
+                color: AppColors.mutedForeground,
+                height: 1.4,
+              ),
+              maxLines: 3,
+              overflow: TextOverflow.ellipsis,
+            ),
+          ),
+          const SizedBox(height: 12),
+          Row(
+            children: [
+              const Icon(LucideIcons.calendarX, size: 14, color: AppColors.mutedForeground),
+              const SizedBox(width: 6),
+              Text(
+                '${context.l10n.translate('Streak Negativa')}: ',
+                style: const TextStyle(
+                  fontFamily: 'Inter',
+                  fontSize: 12,
+                  color: AppColors.mutedForeground,
+                ),
+              ),
+              Text(
+                streak,
+                style: TextStyle(
+                  fontFamily: 'Inter',
+                  fontSize: 12,
+                  fontWeight: FontWeight.w700,
+                  color: color,
+                ),
+              ),
+            ],
+          ),
+        ],
+      ),
+    );
+  }
 }

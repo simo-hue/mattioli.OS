@@ -23,11 +23,11 @@ class _GlobalMoodTabWidgetState extends State<GlobalMoodTabWidget> {
         const SizedBox(height: 20),
         _buildMainChart(),
         const SizedBox(height: 24),
-        _buildMoodSensitiveSection(),
+        const _MoodSensitiveSection(),
         const SizedBox(height: 24),
-        _buildResilientSection(),
+        const _ResilientHabitsSection(),
         const SizedBox(height: 24),
-        _buildSuggerimentiSection(),
+        const _MoodSuggestionsSection(),
         const SizedBox(height: 40),
       ],
     );
@@ -308,8 +308,39 @@ class _GlobalMoodTabWidgetState extends State<GlobalMoodTabWidget> {
       ],
     );
   }
+}
 
-  Widget _buildMoodSensitiveSection() {
+class _MoodSensitiveSection extends StatefulWidget {
+  const _MoodSensitiveSection();
+
+  @override
+  State<_MoodSensitiveSection> createState() => _MoodSensitiveSectionState();
+}
+
+class _MoodSensitiveSectionState extends State<_MoodSensitiveSection> {
+  late PageController _pageController;
+  int _currentPage = 0;
+
+  @override
+  void initState() {
+    super.initState();
+    _pageController = PageController(viewportFraction: 0.9);
+  }
+
+  @override
+  void dispose() {
+    _pageController.dispose();
+    super.dispose();
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final List<Widget> cards = [
+      _MoodSensitiveCard(title: 'Sveglia', low: 25, high: 82, drop: 57, color: const Color(0xFFF97316)),
+      _MoodSensitiveCard(title: 'Palestra', low: 30, high: 90, drop: 60, color: Theme.of(context).colorScheme.primary),
+      _MoodSensitiveCard(title: 'Studio', low: 45, high: 85, drop: 40, color: const Color(0xFFEAB308)),
+    ];
+
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
@@ -319,183 +350,423 @@ class _GlobalMoodTabWidgetState extends State<GlobalMoodTabWidget> {
             const SizedBox(width: 8),
             Text(
               context.l10n.translate('Sensibili al Mood'),
-              style: const TextStyle(fontFamily: 'Outfit', fontSize: 16, fontWeight: FontWeight.bold, color: AppColors.foreground),
+              style: const TextStyle(
+                fontFamily: 'Inter',
+                fontSize: 14,
+                fontWeight: FontWeight.w700,
+                color: AppColors.foreground,
+              ),
             ),
           ],
         ),
         const SizedBox(height: 4),
         Text(
           context.l10n.translate('Richiedono un buon mood per essere completate.'),
-          style: const TextStyle(fontSize: 12, color: AppColors.mutedForeground),
+          style: const TextStyle(
+            fontFamily: 'Inter',
+            fontSize: 11,
+            color: AppColors.mutedForeground,
+          ),
         ),
         const SizedBox(height: 16),
-        _buildMoodSensitiveCard('Sveglia', const Color(0xFFF97316), 25, 82, 57),
+        
+        SizedBox(
+          height: 160,
+          child: PageView.builder(
+            controller: _pageController,
+            itemCount: cards.length,
+            onPageChanged: (index) => setState(() => _currentPage = index),
+            itemBuilder: (context, index) {
+              return Padding(
+                padding: const EdgeInsets.symmetric(horizontal: 8),
+                child: cards[index],
+              );
+            },
+          ),
+        ),
+        
+        const SizedBox(height: 12),
+        Center(
+          child: Row(
+            mainAxisAlignment: MainAxisAlignment.center,
+            children: List.generate(cards.length, (index) {
+              final isActive = _currentPage == index;
+              return AnimatedContainer(
+                duration: const Duration(milliseconds: 300),
+                margin: const EdgeInsets.symmetric(horizontal: 4),
+                width: isActive ? 16 : 6,
+                height: 6,
+                decoration: BoxDecoration(
+                  color: isActive 
+                      ? const Color(0xFFF59E0B)
+                      : AppColors.mutedForeground.withValues(alpha: 0.3),
+                  borderRadius: BorderRadius.circular(3),
+                ),
+              );
+            }),
+          ),
+        ),
       ],
     );
   }
+}
 
-  Widget _buildMoodSensitiveCard(String title, Color color, int lowMoodRate, int highMoodRate, int drop) {
+class _MoodSensitiveCard extends StatelessWidget {
+  final String title;
+  final int low;
+  final int high;
+  final int drop;
+  final Color color;
+
+  const _MoodSensitiveCard({
+    required this.title,
+    required this.low,
+    required this.high,
+    required this.drop,
+    required this.color,
+  });
+
+  @override
+  Widget build(BuildContext context) {
     return Container(
-      padding: const EdgeInsets.all(16),
+      padding: const EdgeInsets.all(20),
       decoration: BoxDecoration(
         color: AppColors.card,
-        borderRadius: BorderRadius.circular(16),
+        borderRadius: BorderRadius.circular(20),
         border: Border.all(color: AppColors.border, width: 1),
       ),
-      child: Row(
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          Container(
-            width: 40,
-            height: 40,
-            decoration: BoxDecoration(
-              color: AppColors.background,
-              borderRadius: BorderRadius.circular(10),
-              border: Border.all(color: AppColors.border, width: 1),
-            ),
-            child: Center(
-              child: Container(
-                width: 10,
-                height: 10,
-                decoration: BoxDecoration(color: color, shape: BoxShape.circle),
-              ),
-            ),
-          ),
-          const SizedBox(width: 16),
-          Expanded(
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Text(
-                  title,
-                  style: const TextStyle(fontSize: 15, fontWeight: FontWeight.w700, color: AppColors.foreground),
-                ),
-                const SizedBox(height: 4),
-                Row(
-                  children: [
-                    Icon(LucideIcons.frown, size: 12, color: AppColors.mutedForeground),
-                    const SizedBox(width: 4),
-                    Text('$lowMoodRate% ${context.l10n.translate('con mood basso')}', style: const TextStyle(fontSize: 11, color: AppColors.mutedForeground)),
-                    const SizedBox(width: 12),
-                    Icon(LucideIcons.smile, size: 12, color: AppColors.mutedForeground),
-                    const SizedBox(width: 4),
-                    Text('$highMoodRate% ${context.l10n.translate('con mood alto')}', style: const TextStyle(fontSize: 11, color: AppColors.mutedForeground)),
-                  ],
-                ),
-              ],
-            ),
-          ),
-          Column(
-            crossAxisAlignment: CrossAxisAlignment.end,
+          Row(
+            mainAxisAlignment: MainAxisAlignment.spaceBetween,
             children: [
-              const Text('Drop', style: TextStyle(fontSize: 9, fontWeight: FontWeight.w600, color: AppColors.mutedForeground)),
-              Text('$drop%', style: const TextStyle(fontSize: 18, fontWeight: FontWeight.w800, color: Color(0xFFF97316))),
+              Row(
+                children: [
+                  Container(width: 8, height: 8, decoration: BoxDecoration(color: color, shape: BoxShape.circle)),
+                  const SizedBox(width: 8),
+                  Text(title, style: const TextStyle(fontFamily: 'Inter', fontSize: 15, fontWeight: FontWeight.w700, color: AppColors.foreground)),
+                ],
+              ),
+              Column(
+                crossAxisAlignment: CrossAxisAlignment.end,
+                children: [
+                  const Text('DROP', style: TextStyle(fontFamily: 'Inter', fontSize: 8, fontWeight: FontWeight.w800, color: AppColors.mutedForeground, letterSpacing: 0.5)),
+                  Text('$drop%', style: const TextStyle(fontFamily: 'Inter', fontSize: 18, fontWeight: FontWeight.w900, color: Color(0xFFF97316))),
+                ],
+              ),
+            ],
+          ),
+          const Spacer(),
+          Row(
+            mainAxisAlignment: MainAxisAlignment.spaceBetween,
+            children: [
+              _MoodStatMini(label: 'MOOD BASSO', value: '$low%', icon: LucideIcons.frown),
+              _MoodStatMini(label: 'MOOD ALTO', value: '$high%', icon: LucideIcons.smile),
             ],
           ),
         ],
       ),
     );
   }
+}
 
-  Widget _buildResilientSection() {
+class _ResilientHabitsSection extends StatefulWidget {
+  const _ResilientHabitsSection();
+
+  @override
+  State<_ResilientHabitsSection> createState() => _ResilientHabitsSectionState();
+}
+
+class _ResilientHabitsSectionState extends State<_ResilientHabitsSection> {
+  late PageController _pageController;
+  int _currentPage = 0;
+
+  @override
+  void initState() {
+    super.initState();
+    _pageController = PageController(viewportFraction: 0.9);
+  }
+
+  @override
+  void dispose() {
+    _pageController.dispose();
+    super.dispose();
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final List<Widget> cards = [
+      _ResilientCard(title: 'Caviglie', mood: 100, energy: 100, color: const Color(0xFF64748B)),
+      const _ResilientCard(title: 'No Phone in bagno', mood: 90, energy: 93, color: Color(0xFF06B6D4)),
+      const _ResilientCard(title: 'Apparecchio', mood: 94, energy: 80, color: Color(0xFFEC4899)),
+    ];
+
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
         Row(
           children: [
-            Icon(LucideIcons.shield, size: 16, color: Theme.of(context).colorScheme.primary),
+            Icon(LucideIcons.shieldCheck, size: 16, color: Theme.of(context).colorScheme.primary),
             const SizedBox(width: 8),
             Text(
               context.l10n.translate('Resilienti'),
-              style: const TextStyle(fontFamily: 'Outfit', fontSize: 16, fontWeight: FontWeight.bold, color: AppColors.foreground),
+              style: const TextStyle(
+                fontFamily: 'Inter',
+                fontSize: 14,
+                fontWeight: FontWeight.w700,
+                color: AppColors.foreground,
+              ),
             ),
           ],
         ),
         const SizedBox(height: 4),
         Text(
           context.l10n.translate('Mantenute anche con mood ed energia bassi.'),
-          style: const TextStyle(fontSize: 12, color: AppColors.mutedForeground),
+          style: const TextStyle(
+            fontFamily: 'Inter',
+            fontSize: 11,
+            color: AppColors.mutedForeground,
+          ),
         ),
         const SizedBox(height: 16),
-        _buildResilientCard('Caviglie', const Color(0xFF64748B), 100, 100),
+        
+        SizedBox(
+          height: 140,
+          child: PageView.builder(
+            controller: _pageController,
+            itemCount: cards.length,
+            onPageChanged: (index) => setState(() => _currentPage = index),
+            itemBuilder: (context, index) {
+              return Padding(
+                padding: const EdgeInsets.symmetric(horizontal: 8),
+                child: cards[index],
+              );
+            },
+          ),
+        ),
+        
         const SizedBox(height: 12),
-        _buildResilientCard('No Phone in bagno', const Color(0xFF06B6D4), 90, 93),
-        const SizedBox(height: 12),
-        _buildResilientCard('Apparecchio', const Color(0xFFEC4899), 94, 80),
+        Center(
+          child: Row(
+            mainAxisAlignment: MainAxisAlignment.center,
+            children: List.generate(cards.length, (index) {
+              final isActive = _currentPage == index;
+              return AnimatedContainer(
+                duration: const Duration(milliseconds: 300),
+                margin: const EdgeInsets.symmetric(horizontal: 4),
+                width: isActive ? 16 : 6,
+                height: 6,
+                decoration: BoxDecoration(
+                  color: isActive 
+                      ? Theme.of(context).colorScheme.primary 
+                      : AppColors.mutedForeground.withValues(alpha: 0.3),
+                  borderRadius: BorderRadius.circular(3),
+                ),
+              );
+            }),
+          ),
+        ),
       ],
     );
   }
+}
 
-  Widget _buildResilientCard(String title, Color color, int moodStability, int energyStability) {
+class _ResilientCard extends StatelessWidget {
+  final String title;
+  final int mood;
+  final int energy;
+  final Color color;
+
+  const _ResilientCard({
+    required this.title,
+    required this.mood,
+    required this.energy,
+    required this.color,
+  });
+
+  @override
+  Widget build(BuildContext context) {
     return Container(
-      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+      padding: const EdgeInsets.all(16),
       decoration: BoxDecoration(
         color: AppColors.card,
-        borderRadius: BorderRadius.circular(16),
+        borderRadius: BorderRadius.circular(20),
         border: Border.all(color: AppColors.border, width: 1),
       ),
-      child: Row(
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        mainAxisAlignment: MainAxisAlignment.center,
         children: [
-          Container(
-            width: 32,
-            height: 32,
-            decoration: BoxDecoration(
-              color: AppColors.background,
-              borderRadius: BorderRadius.circular(8),
-              border: Border.all(color: AppColors.border, width: 1),
-            ),
-            child: Center(
-              child: Container(
-                width: 8,
-                height: 8,
-                decoration: BoxDecoration(color: color, shape: BoxShape.circle),
-              ),
-            ),
-          ),
-          const SizedBox(width: 12),
-          Expanded(
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Text(
-                  title,
-                  style: const TextStyle(fontSize: 14, fontWeight: FontWeight.w600, color: AppColors.foreground),
-                ),
-                const SizedBox(height: 2),
-                Row(
-                  children: [
-                    Icon(LucideIcons.smile, size: 11, color: AppColors.mutedForeground),
-                    const SizedBox(width: 4),
-                    Text('${context.l10n.translate('Mood')}: $moodStability%', style: const TextStyle(fontSize: 10, color: AppColors.mutedForeground)),
-                    const SizedBox(width: 10),
-                    Icon(LucideIcons.zap, size: 11, color: AppColors.mutedForeground),
-                    const SizedBox(width: 4),
-                    Text('${context.l10n.translate('Energia')}: $energyStability%', style: const TextStyle(fontSize: 10, color: AppColors.mutedForeground)),
-                  ],
-                ),
-              ],
-            ),
-          ),
           Row(
+            mainAxisAlignment: MainAxisAlignment.spaceBetween,
             children: [
-              Icon(LucideIcons.trendingUp, size: 14, color: Theme.of(context).colorScheme.primary),
-              const SizedBox(width: 4),
-              Text(
-                context.l10n.translate('Stabile'),
-                style: TextStyle(fontSize: 12, fontWeight: FontWeight.w700, color: Theme.of(context).colorScheme.primary),
+              Row(
+                children: [
+                  Container(width: 6, height: 6, decoration: BoxDecoration(color: color, shape: BoxShape.circle)),
+                  const SizedBox(width: 8),
+                  Text(title, style: const TextStyle(fontFamily: 'Inter', fontSize: 14, fontWeight: FontWeight.w700, color: AppColors.foreground)),
+                ],
               ),
+              Row(
+                children: [
+                  Icon(LucideIcons.trendingUp, size: 12, color: Theme.of(context).colorScheme.primary),
+                  const SizedBox(width: 4),
+                  Text(context.l10n.translate('STABILE'), style: TextStyle(fontFamily: 'Inter', fontSize: 9, fontWeight: FontWeight.w900, color: Theme.of(context).colorScheme.primary)),
+                ],
+              ),
+            ],
+          ),
+          const SizedBox(height: 16),
+          Row(
+            mainAxisAlignment: MainAxisAlignment.spaceAround,
+            children: [
+              _MoodStatMini(label: 'MOOD', value: '$mood%', icon: LucideIcons.smile, small: true),
+              _MoodStatMini(label: 'ENERGIA', value: '$energy%', icon: LucideIcons.zap, small: true),
             ],
           ),
         ],
       ),
     );
   }
+}
 
-  Widget _buildSuggerimentiSection() {
+class _MoodSuggestionsSection extends StatefulWidget {
+  const _MoodSuggestionsSection();
+
+  @override
+  State<_MoodSuggestionsSection> createState() => _MoodSuggestionsSectionState();
+}
+
+class _MoodSuggestionsSectionState extends State<_MoodSuggestionsSection> {
+  late PageController _pageController;
+  int _currentPage = 0;
+
+  @override
+  void initState() {
+    super.initState();
+    _pageController = PageController(viewportFraction: 0.9);
+  }
+
+  @override
+  void dispose() {
+    _pageController.dispose();
+    super.dispose();
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final List<Widget> cards = [
+      _MoodSuggestionCard(
+        icon: LucideIcons.calendarHeart,
+        color: const Color(0xFFF97316),
+        title: 'Pianificazione Strategica',
+        desc: 'Pianifica le abitudini sensibili al mood nei momenti in cui solitamente ti senti meglio.',
+      ),
+      _MoodSuggestionCard(
+        icon: LucideIcons.shieldCheck,
+        color: Theme.of(context).colorScheme.primary,
+        title: 'Ancore di Stabilità',
+        desc: 'Usa le abitudini resilienti come ancore nei giorni in cui mood ed energia sono bassi.',
+      ),
+      _MoodSuggestionCard(
+        icon: LucideIcons.activity,
+        color: const Color(0xFF06B6D4),
+        title: 'Monitoraggio Attivo',
+        desc: 'Continua a monitorare mood ed energia per ottenere insight sempre più accurati.',
+      ),
+    ];
+
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Row(
+          children: [
+            const Icon(LucideIcons.lightbulb, size: 16, color: Color(0xFFFBBF24)),
+            const SizedBox(width: 8),
+            Text(
+              context.l10n.translate('Suggerimenti'),
+              style: const TextStyle(
+                fontFamily: 'Inter',
+                fontSize: 14,
+                fontWeight: FontWeight.w700,
+                color: AppColors.foreground,
+              ),
+            ),
+          ],
+        ),
+        const SizedBox(height: 4),
+        Text(
+          context.l10n.translate('Consigli basati sul tuo benessere.'),
+          style: const TextStyle(
+            fontFamily: 'Inter',
+            fontSize: 11,
+            color: AppColors.mutedForeground,
+          ),
+        ),
+        const SizedBox(height: 16),
+        
+        SizedBox(
+          height: 150,
+          child: PageView.builder(
+            controller: _pageController,
+            itemCount: cards.length,
+            onPageChanged: (index) => setState(() => _currentPage = index),
+            itemBuilder: (context, index) {
+              return Padding(
+                padding: const EdgeInsets.symmetric(horizontal: 8),
+                child: cards[index],
+              );
+            },
+          ),
+        ),
+        
+        const SizedBox(height: 12),
+        Center(
+          child: Row(
+            mainAxisAlignment: MainAxisAlignment.center,
+            children: List.generate(cards.length, (index) {
+              final isActive = _currentPage == index;
+              return AnimatedContainer(
+                duration: const Duration(milliseconds: 300),
+                margin: const EdgeInsets.symmetric(horizontal: 4),
+                width: isActive ? 16 : 6,
+                height: 6,
+                decoration: BoxDecoration(
+                  color: isActive 
+                      ? const Color(0xFFFBBF24)
+                      : AppColors.mutedForeground.withValues(alpha: 0.3),
+                  borderRadius: BorderRadius.circular(3),
+                ),
+              );
+            }),
+          ),
+        ),
+      ],
+    );
+  }
+}
+
+class _MoodSuggestionCard extends StatelessWidget {
+  final IconData icon;
+  final Color color;
+  final String title;
+  final String desc;
+
+  const _MoodSuggestionCard({
+    required this.icon,
+    required this.color,
+    required this.title,
+    required this.desc,
+  });
+
+  @override
+  Widget build(BuildContext context) {
     return Container(
-      padding: const EdgeInsets.all(16),
+      padding: const EdgeInsets.all(20),
       decoration: BoxDecoration(
         color: AppColors.card,
-        borderRadius: BorderRadius.circular(16),
+        borderRadius: BorderRadius.circular(20),
         border: Border.all(color: AppColors.border, width: 1),
       ),
       child: Column(
@@ -503,44 +774,55 @@ class _GlobalMoodTabWidgetState extends State<GlobalMoodTabWidget> {
         children: [
           Row(
             children: [
-              const Icon(LucideIcons.lightbulb, size: 18, color: Color(0xFFFBBF24)),
-              const SizedBox(width: 8),
-              Text(
-                context.l10n.translate('Suggerimenti'),
-                style: const TextStyle(fontFamily: 'Outfit', fontSize: 16, fontWeight: FontWeight.bold, color: AppColors.foreground),
+              Container(
+                padding: const EdgeInsets.all(8),
+                decoration: BoxDecoration(color: color.withValues(alpha: 0.1), borderRadius: BorderRadius.circular(10)),
+                child: Icon(icon, size: 18, color: color),
+              ),
+              const SizedBox(width: 12),
+              Expanded(
+                child: Text(title, style: const TextStyle(fontFamily: 'Inter', fontSize: 14, fontWeight: FontWeight.w700, color: AppColors.foreground), maxLines: 1, overflow: TextOverflow.ellipsis),
               ),
             ],
           ),
-          const SizedBox(height: 16),
-          _buildSuggerimentoItem(context.l10n.translate('Pianifica le abitudini sensibili al mood quando ti senti meglio.')),
-          _buildSuggerimentoItem(context.l10n.translate('Le abitudini resilienti sono ottime nei giorni difficili.')),
-          _buildSuggerimentoItem(context.l10n.translate('Monitora mood ed energia per insights più accurati.')),
-        ],
-      ),
-    );
-  }
-
-  Widget _buildSuggerimentoItem(String text) {
-    return Padding(
-      padding: const EdgeInsets.only(bottom: 10),
-      child: Row(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Container(
-            margin: const EdgeInsets.only(top: 6),
-            width: 4,
-            height: 4,
-            decoration: const BoxDecoration(color: Color(0xFFF97316), shape: BoxShape.circle),
-          ),
-          const SizedBox(width: 12),
+          const SizedBox(height: 12),
           Expanded(
             child: Text(
-              text,
-              style: const TextStyle(fontSize: 13, color: AppColors.mutedForeground, height: 1.4),
+              desc,
+              style: const TextStyle(fontFamily: 'Inter', fontSize: 12, color: AppColors.mutedForeground, height: 1.4),
+              maxLines: 2,
+              overflow: TextOverflow.ellipsis,
             ),
           ),
         ],
       ),
+    );
+  }
+}
+
+class _MoodStatMini extends StatelessWidget {
+  final String label;
+  final String value;
+  final IconData icon;
+  final bool small;
+
+  const _MoodStatMini({required this.label, required this.value, required this.icon, this.small = false});
+
+  @override
+  Widget build(BuildContext context) {
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Text(label, style: TextStyle(fontFamily: 'Inter', fontSize: small ? 7 : 8, fontWeight: FontWeight.w800, color: AppColors.mutedForeground, letterSpacing: 0.5)),
+        const SizedBox(height: 2),
+        Row(
+          children: [
+            Icon(icon, size: small ? 10 : 12, color: AppColors.mutedForeground),
+            const SizedBox(width: 4),
+            Text(value, style: TextStyle(fontFamily: 'Inter', fontSize: small ? 12 : 14, fontWeight: FontWeight.w900, color: AppColors.foreground)),
+          ],
+        ),
+      ],
     );
   }
 }

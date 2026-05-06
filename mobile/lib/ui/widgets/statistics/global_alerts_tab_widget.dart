@@ -14,9 +14,9 @@ class GlobalAlertsTabWidget extends StatelessWidget {
       children: [
         _AreeMiglioramentoSection(),
         SizedBox(height: 24),
-        _AnalisiWorstStreaksSection(),
-        SizedBox(height: 24),
         _AnalisiFallimentiSection(),
+        SizedBox(height: 24),
+        _PatternRecuperoSection(),
         SizedBox(height: 24),
         _ConfrontoPerformanceSection(),
         SizedBox(height: 24),
@@ -27,23 +27,67 @@ class GlobalAlertsTabWidget extends StatelessWidget {
   }
 }
 
-class _AreeMiglioramentoSection extends StatelessWidget {
+class _AreeMiglioramentoSection extends StatefulWidget {
   const _AreeMiglioramentoSection();
 
   @override
+  State<_AreeMiglioramentoSection> createState() => _AreeMiglioramentoSectionState();
+}
+
+class _AreeMiglioramentoSectionState extends State<_AreeMiglioramentoSection> {
+  late PageController _pageController;
+  int _currentPage = 0;
+
+  @override
+  void initState() {
+    super.initState();
+    _pageController = PageController(viewportFraction: 0.9);
+  }
+
+  @override
+  void dispose() {
+    _pageController.dispose();
+    super.dispose();
+  }
+
+  @override
   Widget build(BuildContext context) {
+    final List<Widget> cards = [
+      _MiglioramentoCard(
+        title: 'Lettura',
+        successRate: '10%',
+        day: context.l10n.translate('Mercoledì'),
+        dayCompletion: '15%',
+        color: const Color(0xFF10B981),
+      ),
+      _MiglioramentoCard(
+        title: '20 Flessioni 4',
+        successRate: '13%',
+        day: context.l10n.translate('Domenica'),
+        dayCompletion: '15%',
+        color: const Color(0xFFEF4444),
+      ),
+      _MiglioramentoCard(
+        title: '20 Flessioni 2',
+        successRate: '20%',
+        day: context.l10n.translate('Domenica'),
+        dayCompletion: '31%',
+        color: const Color(0xFFEF4444),
+      ),
+    ];
+
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
         Row(
           children: [
-            const Icon(LucideIcons.target, size: 20, color: AppColors.foreground),
-            const SizedBox(width: 10),
+            const Icon(LucideIcons.target, size: 16, color: AppColors.foreground),
+            const SizedBox(width: 8),
             Text(
               context.l10n.translate('Aree di Miglioramento'),
               style: const TextStyle(
                 fontFamily: 'Inter',
-                fontSize: 18,
+                fontSize: 14,
                 fontWeight: FontWeight.w700,
                 color: AppColors.foreground,
               ),
@@ -55,40 +99,49 @@ class _AreeMiglioramentoSection extends StatelessWidget {
           context.l10n.translate('Abitudini che richiedono più attenzione.'),
           style: const TextStyle(
             fontFamily: 'Inter',
-            fontSize: 13,
+            fontSize: 11,
             color: AppColors.mutedForeground,
           ),
         ),
         const SizedBox(height: 16),
-        SingleChildScrollView(
-          scrollDirection: Axis.horizontal,
-          clipBehavior: Clip.none,
+        
+        // Carousel
+        SizedBox(
+          height: 160,
+          child: PageView.builder(
+            controller: _pageController,
+            itemCount: cards.length,
+            onPageChanged: (index) => setState(() => _currentPage = index),
+            itemBuilder: (context, index) {
+              return Padding(
+                padding: const EdgeInsets.symmetric(horizontal: 8),
+                child: cards[index],
+              );
+            },
+          ),
+        ),
+        
+        const SizedBox(height: 12),
+        
+        // Pagination Dots
+        Center(
           child: Row(
-            children: [
-              _MiglioramentoCard(
-                title: 'Lettura',
-                successRate: '10%',
-                day: context.l10n.translate('Mercoledì'),
-                dayCompletion: '15%',
-                color: const Color(0xFF10B981),
-              ),
-              const SizedBox(width: 12),
-              _MiglioramentoCard(
-                title: '20 Flessioni 4',
-                successRate: '13%',
-                day: context.l10n.translate('Domenica'),
-                dayCompletion: '15%',
-                color: const Color(0xFFEF4444),
-              ),
-              const SizedBox(width: 12),
-              _MiglioramentoCard(
-                title: '20 Flessioni 2',
-                successRate: '20%',
-                day: context.l10n.translate('Domenica'),
-                dayCompletion: '31%',
-                color: const Color(0xFFEF4444),
-              ),
-            ],
+            mainAxisAlignment: MainAxisAlignment.center,
+            children: List.generate(cards.length, (index) {
+              final isActive = _currentPage == index;
+              return AnimatedContainer(
+                duration: const Duration(milliseconds: 300),
+                margin: const EdgeInsets.symmetric(horizontal: 4),
+                width: isActive ? 16 : 6,
+                height: 6,
+                decoration: BoxDecoration(
+                  color: isActive 
+                      ? Theme.of(context).colorScheme.primary 
+                      : AppColors.mutedForeground.withValues(alpha: 0.3),
+                  borderRadius: BorderRadius.circular(3),
+                ),
+              );
+            }),
           ),
         ),
       ],
@@ -215,121 +268,116 @@ class _MiglioramentoCard extends StatelessWidget {
   }
 }
 
-class _AnalisiWorstStreaksSection extends StatelessWidget {
-  const _AnalisiWorstStreaksSection();
+
+class _AnalisiFallimentiSection extends StatefulWidget {
+  const _AnalisiFallimentiSection();
+
+  @override
+  State<_AnalisiFallimentiSection> createState() => _AnalisiFallimentiSectionState();
+}
+
+class _AnalisiFallimentiSectionState extends State<_AnalisiFallimentiSection> {
+  late PageController _pageController;
+  int _currentPage = 0;
+
+  @override
+  void initState() {
+    super.initState();
+    _pageController = PageController(viewportFraction: 0.9);
+  }
+
+  @override
+  void dispose() {
+    _pageController.dispose();
+    super.dispose();
+  }
 
   @override
   Widget build(BuildContext context) {
+    final List<Widget> cards = [
+      _FailureDetailCard(
+        title: '20 Flessioni 4',
+        worstStreak: '30 giorni',
+        frequency: '~26/mese',
+        color: const Color(0xFFEF4444),
+      ),
+      _FailureDetailCard(
+        title: '20 Flessioni 3',
+        worstStreak: '17 giorni',
+        frequency: '~24/mese',
+        color: const Color(0xFFF97316),
+      ),
+      _FailureDetailCard(
+        title: '20 Flessioni 1',
+        worstStreak: '11 giorni',
+        frequency: '~22/mese',
+        color: const Color(0xFFEAB308),
+      ),
+    ];
+
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        Container(
-          padding: const EdgeInsets.all(16),
-          decoration: BoxDecoration(
-            color: AppColors.card,
-            borderRadius: BorderRadius.circular(16),
-            border: Border.all(color: AppColors.border, width: 1),
-          ),
-          child: Row(
-            children: [
-              Container(
-                padding: const EdgeInsets.all(8),
-                decoration: BoxDecoration(
-                  color: const Color(0xFFEF4444).withValues(alpha: 0.1),
-                  borderRadius: BorderRadius.circular(8),
-                ),
-                child: const Icon(LucideIcons.trendingDown, size: 18, color: Color(0xFFEF4444)),
+        Row(
+          children: [
+            const Icon(LucideIcons.chartBar, size: 16, color: Color(0xFFF97316)),
+            const SizedBox(width: 8),
+            Text(
+              context.l10n.translate('Analisi Fallimenti'),
+              style: const TextStyle(
+                fontFamily: 'Inter',
+                fontSize: 14,
+                fontWeight: FontWeight.w700,
+                color: AppColors.foreground,
               ),
-              const SizedBox(width: 12),
-              Expanded(
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Text(
-                      context.l10n.translate('Analisi Worst Streaks'),
-                      style: const TextStyle(
-                        fontFamily: 'Inter',
-                        fontSize: 16,
-                        fontWeight: FontWeight.w700,
-                        color: AppColors.foreground,
-                      ),
-                    ),
-                    Text(
-                      context.l10n.translate('Analisi serie negative per identificare pattern.'),
-                      style: const TextStyle(
-                        fontFamily: 'Inter',
-                        fontSize: 12,
-                        color: AppColors.mutedForeground,
-                      ),
-                    ),
-                  ],
-                ),
-              ),
-            ],
+            ),
+          ],
+        ),
+        const SizedBox(height: 4),
+        Text(
+          context.l10n.translate('Frequenza e pattern dei tuoi giorni mancati.'),
+          style: const TextStyle(
+            fontFamily: 'Inter',
+            fontSize: 11,
+            color: AppColors.mutedForeground,
           ),
         ),
         const SizedBox(height: 16),
-        Container(
-          padding: const EdgeInsets.all(20),
-          decoration: BoxDecoration(
-            color: AppColors.card,
-            borderRadius: BorderRadius.circular(16),
-            border: Border.all(color: AppColors.border, width: 1),
+        
+        SizedBox(
+          height: 150,
+          child: PageView.builder(
+            controller: _pageController,
+            itemCount: cards.length,
+            onPageChanged: (index) => setState(() => _currentPage = index),
+            itemBuilder: (context, index) {
+              return Padding(
+                padding: const EdgeInsets.symmetric(horizontal: 8),
+                child: cards[index],
+              );
+            },
           ),
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              Row(
-                mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                children: [
-                  Text(
-                    '🎯 ${context.l10n.translate('Abitudini Critiche')}',
-                    style: const TextStyle(
-                      fontFamily: 'Inter',
-                      fontSize: 15,
-                      fontWeight: FontWeight.w700,
-                      color: AppColors.foreground,
-                    ),
-                  ),
-                  Text(
-                    context.l10n.translate('Top 3 Worst Streaks'),
-                    style: const TextStyle(
-                      fontFamily: 'Inter',
-                      fontSize: 12,
-                      color: AppColors.mutedForeground,
-                    ),
-                  ),
-                ],
-              ),
-              const SizedBox(height: 20),
-              Row(
-                children: [
-                  const Expanded(
-                    child: _WorstStreakCard(
-                      title: '20 Flessioni 4',
-                      streak: '30',
-                      rank: '1',
-                    ),
-                  ),
-                  const SizedBox(width: 10),
-                  const Expanded(
-                    child: _WorstStreakCard(
-                      title: '20 Flessioni 3',
-                      streak: '17',
-                      rank: '2',
-                    ),
-                  ),
-                  const SizedBox(width: 10),
-                  const Expanded(
-                    child: _WorstStreakCard(
-                      title: '20 Flessioni 1',
-                      streak: '11',
-                      rank: '3',
-                    ),
-                  ),
-                ],
-              ),
-            ],
+        ),
+        
+        const SizedBox(height: 12),
+        Center(
+          child: Row(
+            mainAxisAlignment: MainAxisAlignment.center,
+            children: List.generate(cards.length, (index) {
+              final isActive = _currentPage == index;
+              return AnimatedContainer(
+                duration: const Duration(milliseconds: 300),
+                margin: const EdgeInsets.symmetric(horizontal: 4),
+                width: isActive ? 16 : 6,
+                height: 6,
+                decoration: BoxDecoration(
+                  color: isActive 
+                      ? const Color(0xFFF97316)
+                      : AppColors.mutedForeground.withValues(alpha: 0.3),
+                  borderRadius: BorderRadius.circular(3),
+                ),
+              );
+            }),
           ),
         ),
       ],
@@ -337,87 +385,219 @@ class _AnalisiWorstStreaksSection extends StatelessWidget {
   }
 }
 
-class _WorstStreakCard extends StatelessWidget {
+class _FailureDetailCard extends StatelessWidget {
   final String title;
-  final String streak;
-  final String rank;
+  final String worstStreak;
+  final String frequency;
+  final Color color;
 
-  const _WorstStreakCard({
+  const _FailureDetailCard({
     required this.title,
-    required this.streak,
-    required this.rank,
+    required this.worstStreak,
+    required this.frequency,
+    required this.color,
   });
 
   @override
   Widget build(BuildContext context) {
     return Container(
-      padding: const EdgeInsets.all(12),
+      padding: const EdgeInsets.all(20),
       decoration: BoxDecoration(
-        color: AppColors.background,
-        borderRadius: BorderRadius.circular(12),
-        border: Border.all(color: AppColors.borderHover, width: 1),
+        color: AppColors.card,
+        borderRadius: BorderRadius.circular(20),
+        border: Border.all(color: AppColors.border, width: 1),
       ),
       child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Row(
+            children: [
+              Container(width: 8, height: 8, decoration: BoxDecoration(color: color, shape: BoxShape.circle)),
+              const SizedBox(width: 8),
+              Text(title, style: const TextStyle(fontFamily: 'Inter', fontSize: 15, fontWeight: FontWeight.w700, color: AppColors.foreground)),
+            ],
+          ),
+          const Spacer(),
+          Row(
+            mainAxisAlignment: MainAxisAlignment.spaceBetween,
+            children: [
+              _StatMiniItem(label: 'WORST STREAK', value: worstStreak, color: const Color(0xFFEF4444)),
+              _StatMiniItem(label: 'FREQUENZA', value: frequency, color: const Color(0xFFF97316)),
+            ],
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+class _PatternRecuperoSection extends StatefulWidget {
+  const _PatternRecuperoSection();
+
+  @override
+  State<_PatternRecuperoSection> createState() => _PatternRecuperoSectionState();
+}
+
+class _PatternRecuperoSectionState extends State<_PatternRecuperoSection> {
+  late PageController _pageController;
+  int _currentPage = 0;
+
+  @override
+  void initState() {
+    super.initState();
+    _pageController = PageController(viewportFraction: 0.9);
+  }
+
+  @override
+  void dispose() {
+    _pageController.dispose();
+    super.dispose();
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final List<Widget> cards = [
+      _RecoveryDetailCard(title: 'Fitness', time: '1 gg', color: Theme.of(context).colorScheme.primary, progress: 0.9),
+      const _RecoveryDetailCard(title: 'Journaling', time: '1 gg', color: Color(0xFFEAB308), progress: 0.85),
+      const _RecoveryDetailCard(title: 'No Fap', time: '1 gg', color: Color(0xFF06B6D4), progress: 0.8),
+    ];
+
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Row(
+          children: [
+            const Icon(LucideIcons.calendarClock, size: 16, color: AppColors.foreground),
+            const SizedBox(width: 8),
+            Text(
+              context.l10n.translate('Pattern di Recupero'),
+              style: const TextStyle(
+                fontFamily: 'Inter',
+                fontSize: 14,
+                fontWeight: FontWeight.w700,
+                color: AppColors.foreground,
+              ),
+            ),
+          ],
+        ),
+        const SizedBox(height: 4),
+        Text(
+          context.l10n.translate('Quanto velocemente torni in carreggiata dopo un errore.'),
+          style: const TextStyle(
+            fontFamily: 'Inter',
+            fontSize: 11,
+            color: AppColors.mutedForeground,
+          ),
+        ),
+        const SizedBox(height: 16),
+
+        // Global recovery stat
+        Container(
+          padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+          decoration: BoxDecoration(
+            color: AppColors.card,
+            borderRadius: BorderRadius.circular(12),
+            border: Border.all(color: AppColors.border, width: 1),
+          ),
+          child: Row(
+            mainAxisAlignment: MainAxisAlignment.spaceBetween,
+            children: [
+              Text(context.l10n.translate('Tempo Medio Recupero'), style: const TextStyle(fontFamily: 'Inter', fontSize: 12, color: AppColors.mutedForeground)),
+              Text('6 ${context.l10n.translate('giorni')}', style: const TextStyle(fontFamily: 'Inter', fontSize: 14, fontWeight: FontWeight.w800, color: AppColors.foreground)),
+            ],
+          ),
+        ),
+        
+        const SizedBox(height: 16),
+
+        SizedBox(
+          height: 130,
+          child: PageView.builder(
+            controller: _pageController,
+            itemCount: cards.length,
+            onPageChanged: (index) => setState(() => _currentPage = index),
+            itemBuilder: (context, index) {
+              return Padding(
+                padding: const EdgeInsets.symmetric(horizontal: 8),
+                child: cards[index],
+              );
+            },
+          ),
+        ),
+        
+        const SizedBox(height: 12),
+        Center(
+          child: Row(
+            mainAxisAlignment: MainAxisAlignment.center,
+            children: List.generate(cards.length, (index) {
+              final isActive = _currentPage == index;
+              return AnimatedContainer(
+                duration: const Duration(milliseconds: 300),
+                margin: const EdgeInsets.symmetric(horizontal: 4),
+                width: isActive ? 16 : 6,
+                height: 6,
+                decoration: BoxDecoration(
+                  color: isActive 
+                      ? Theme.of(context).colorScheme.primary
+                      : AppColors.mutedForeground.withValues(alpha: 0.3),
+                  borderRadius: BorderRadius.circular(3),
+                ),
+              );
+            }),
+          ),
+        ),
+      ],
+    );
+  }
+}
+
+class _RecoveryDetailCard extends StatelessWidget {
+  final String title;
+  final String time;
+  final Color color;
+  final double progress;
+
+  const _RecoveryDetailCard({
+    required this.title,
+    required this.time,
+    required this.color,
+    required this.progress,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      padding: const EdgeInsets.all(16),
+      decoration: BoxDecoration(
+        color: AppColors.card,
+        borderRadius: BorderRadius.circular(20),
+        border: Border.all(color: AppColors.border, width: 1),
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        mainAxisAlignment: MainAxisAlignment.center,
         children: [
           Row(
             mainAxisAlignment: MainAxisAlignment.spaceBetween,
             children: [
               Row(
                 children: [
-                  Container(
-                    width: 6,
-                    height: 6,
-                    decoration: const BoxDecoration(color: Color(0xFFEF4444), shape: BoxShape.circle),
-                  ),
-                  const SizedBox(width: 6),
-                  Text(
-                    title.length > 12 ? '${title.substring(0, 10)}...' : title,
-                    style: const TextStyle(
-                      fontFamily: 'Inter',
-                      fontSize: 11,
-                      fontWeight: FontWeight.w600,
-                      color: AppColors.foreground,
-                    ),
-                  ),
+                  Container(width: 6, height: 6, decoration: BoxDecoration(color: color, shape: BoxShape.circle)),
+                  const SizedBox(width: 8),
+                  Text(title, style: const TextStyle(fontFamily: 'Inter', fontSize: 14, fontWeight: FontWeight.w700, color: AppColors.foreground)),
                 ],
               ),
-              Container(
-                padding: const EdgeInsets.all(2),
-                decoration: BoxDecoration(color: AppColors.muted, shape: BoxShape.circle),
-                child: Text(
-                  rank,
-                  style: const TextStyle(fontSize: 8, fontWeight: FontWeight.bold, color: AppColors.mutedForeground),
-                ),
-              ),
+              Text(time, style: TextStyle(fontFamily: 'Inter', fontSize: 14, fontWeight: FontWeight.w900, color: color)),
             ],
           ),
           const SizedBox(height: 12),
-          const Text(
-            'WORST STREAK',
-            style: TextStyle(
-              fontFamily: 'Inter',
-              fontSize: 9,
-              fontWeight: FontWeight.w700,
-              color: AppColors.mutedForeground,
-              letterSpacing: 0.5,
-            ),
-          ),
-          const SizedBox(height: 4),
-          Text(
-            streak,
-            style: const TextStyle(
-              fontFamily: 'Inter',
-              fontSize: 24,
-              fontWeight: FontWeight.w800,
-              color: Color(0xFFEF4444),
-            ),
-          ),
-          Text(
-            context.l10n.translate('giorni consecutivi'),
-            style: const TextStyle(
-              fontFamily: 'Inter',
-              fontSize: 10,
-              color: AppColors.mutedForeground,
+          ClipRRect(
+            borderRadius: BorderRadius.circular(4),
+            child: LinearProgressIndicator(
+              value: progress,
+              minHeight: 6,
+              backgroundColor: AppColors.muted,
+              valueColor: AlwaysStoppedAnimation<Color>(color),
             ),
           ),
         ],
@@ -426,276 +606,120 @@ class _WorstStreakCard extends StatelessWidget {
   }
 }
 
-class _AnalisiFallimentiSection extends StatelessWidget {
-  const _AnalisiFallimentiSection();
+class _StatMiniItem extends StatelessWidget {
+  final String label;
+  final String value;
+  final Color color;
+
+  const _StatMiniItem({required this.label, required this.value, required this.color});
 
   @override
   Widget build(BuildContext context) {
-    return Row(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: [
-        Expanded(
-          flex: 1,
-          child: Container(
-            padding: const EdgeInsets.all(16),
-            decoration: BoxDecoration(
-              color: AppColors.card,
-              borderRadius: BorderRadius.circular(16),
-              border: Border.all(color: AppColors.border, width: 1),
-            ),
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Row(
-                  children: [
-                    const Icon(LucideIcons.chartBar, size: 16, color: Color(0xFFF97316)),
-                    const SizedBox(width: 8),
-                    Text(
-                      context.l10n.translate('Analisi Fallimenti'),
-                      style: const TextStyle(
-                        fontFamily: 'Inter',
-                        fontSize: 14,
-                        fontWeight: FontWeight.w700,
-                        color: AppColors.foreground,
-                      ),
-                    ),
-                  ],
-                ),
-                const SizedBox(height: 16),
-                _buildFailureRow('20 Flessioni 4', '30 giorni', '~26/mese'),
-                const SizedBox(height: 12),
-                _buildFailureRow('20 Flessioni 3', '17 giorni', '~24/mese'),
-                const SizedBox(height: 12),
-                _buildFailureRow('20 Flessioni 1', '11 giorni', '~22/mese'),
-              ],
-            ),
-          ),
-        ),
-        const SizedBox(width: 12),
-        Expanded(
-          flex: 1,
-          child: Container(
-            padding: const EdgeInsets.all(16),
-            decoration: BoxDecoration(
-              color: AppColors.card,
-              borderRadius: BorderRadius.circular(16),
-              border: Border.all(color: AppColors.border, width: 1),
-            ),
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Row(
-                  children: [
-                    const Icon(LucideIcons.calendar, size: 16, color: AppColors.foreground),
-                    const SizedBox(width: 8),
-                    Text(
-                      context.l10n.translate('Pattern di Recupero'),
-                      style: const TextStyle(
-                        fontFamily: 'Inter',
-                        fontSize: 14,
-                        fontWeight: FontWeight.w700,
-                        color: AppColors.foreground,
-                      ),
-                    ),
-                  ],
-                ),
-                const SizedBox(height: 16),
-                Row(
-                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                  children: [
-                    Text(context.l10n.translate('Tempo Medio Recupero'), style: const TextStyle(fontSize: 11, color: AppColors.mutedForeground)),
-                    Text('6 ${context.l10n.translate('giorni')}', style: const TextStyle(fontSize: 12, fontWeight: FontWeight.bold, color: AppColors.foreground)),
-                  ],
-                ),
-                const SizedBox(height: 8),
-                ClipRRect(
-                  borderRadius: BorderRadius.circular(4),
-                  child: LinearProgressIndicator(
-                    value: 0.7,
-                    minHeight: 6,
-                    backgroundColor: AppColors.muted,
-                    valueColor: AlwaysStoppedAnimation<Color>(Theme.of(context).colorScheme.primary),
-                  ),
-                ),
-                const SizedBox(height: 8),
-                Text('👍 ${context.l10n.translate('Buono')}', style: const TextStyle(fontSize: 11, color: AppColors.mutedForeground)),
-                const SizedBox(height: 16),
-                Text(
-                  '🔥 ${context.l10n.translate('RECUPERATORI VELOCI')}',
-                  style: const TextStyle(fontSize: 10, fontWeight: FontWeight.w800, color: AppColors.mutedForeground),
-                ),
-                const SizedBox(height: 12),
-                _buildRecoveryRow('Fitness', '1 gg', Theme.of(context).colorScheme.primary),
-                const SizedBox(height: 8),
-                _buildRecoveryRow('Journaling', '1 gg', Color(0xFFEAB308)),
-                const SizedBox(height: 8),
-                _buildRecoveryRow('No Fap', '1 gg', Color(0xFF06B6D4)),
-              ],
-            ),
-          ),
-        ),
-      ],
-    );
-  }
-
-  Widget _buildFailureRow(String title, String worst, String freq) {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        Row(
-          children: [
-            Container(width: 6, height: 6, decoration: const BoxDecoration(color: Color(0xFFEF4444), shape: BoxShape.circle)),
-            const SizedBox(width: 8),
-            Text(title, style: const TextStyle(fontSize: 12, fontWeight: FontWeight.w600, color: AppColors.foreground)),
-          ],
-        ),
-        const SizedBox(height: 4),
-        Row(
-          mainAxisAlignment: MainAxisAlignment.spaceBetween,
-          children: [
-            Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                const Text('Worst Streak', style: TextStyle(fontSize: 9, color: AppColors.mutedForeground)),
-                Text(worst, style: const TextStyle(fontSize: 11, color: Color(0xFFEF4444), fontWeight: FontWeight.w600)),
-              ],
-            ),
-            Column(
-              crossAxisAlignment: CrossAxisAlignment.end,
-              children: [
-                const Text('Freq. Fallimenti', style: TextStyle(fontSize: 9, color: AppColors.mutedForeground)),
-                Text(freq, style: const TextStyle(fontSize: 11, color: Color(0xFFF97316), fontWeight: FontWeight.w600)),
-              ],
-            ),
-          ],
-        ),
-      ],
-    );
-  }
-
-  Widget _buildRecoveryRow(String title, String time, Color dotColor) {
-    return Row(
-      mainAxisAlignment: MainAxisAlignment.spaceBetween,
-      children: [
-        Row(
-          children: [
-            Container(width: 6, height: 6, decoration: BoxDecoration(color: dotColor, shape: BoxShape.circle)),
-            const SizedBox(width: 8),
-            Text(title, style: const TextStyle(fontSize: 12, color: AppColors.mutedForeground)),
-          ],
-        ),
-        Text(time, style: TextStyle(fontSize: 12, fontWeight: FontWeight.bold, color: dotColor)),
+        Text(label, style: const TextStyle(fontFamily: 'Inter', fontSize: 8, fontWeight: FontWeight.w800, color: AppColors.mutedForeground, letterSpacing: 0.5)),
+        const SizedBox(height: 2),
+        Text(value, style: TextStyle(fontFamily: 'Inter', fontSize: 14, fontWeight: FontWeight.w900, color: color)),
       ],
     );
   }
 }
 
-class _ConfrontoPerformanceSection extends StatelessWidget {
+class _ConfrontoPerformanceSection extends StatefulWidget {
   const _ConfrontoPerformanceSection();
 
   @override
-  Widget build(BuildContext context) {
-    return Container(
-      padding: const EdgeInsets.all(20),
-      decoration: BoxDecoration(
-        color: AppColors.card,
-        borderRadius: BorderRadius.circular(16),
-        border: Border.all(color: AppColors.border, width: 1),
-      ),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Row(
-            children: [
-              const Icon(LucideIcons.trendingUp, size: 18, color: AppColors.foreground),
-              const SizedBox(width: 10),
-              Text(
-                context.l10n.translate('Confronto Performance'),
-                style: const TextStyle(
-                  fontFamily: 'Inter',
-                  fontSize: 16,
-                  fontWeight: FontWeight.w700,
-                  color: AppColors.foreground,
-                ),
-              ),
-            ],
-          ),
-          const SizedBox(height: 20),
-          _buildPerformanceItem(context, '20 Flessioni 4', 0.13, 4, 30),
-          const SizedBox(height: 20),
-          _buildPerformanceItem(context, 'Alimentazione', 0.36, 4, 11),
-          const SizedBox(height: 20),
-          _buildPerformanceItem(context, 'Lettura', 0.60, 6, 10),
-        ],
-      ),
-    );
+  State<_ConfrontoPerformanceSection> createState() => _ConfrontoPerformanceSectionState();
+}
+
+class _ConfrontoPerformanceSectionState extends State<_ConfrontoPerformanceSection> {
+  late PageController _pageController;
+  int _currentPage = 0;
+
+  @override
+  void initState() {
+    super.initState();
+    _pageController = PageController(viewportFraction: 0.9);
   }
 
-  Widget _buildPerformanceItem(BuildContext context, String title, double gap, int best, int worst) {
+  @override
+  void dispose() {
+    _pageController.dispose();
+    super.dispose();
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final List<Widget> cards = [
+      _PerformanceComparisonCard(title: '20 Flessioni 4', gap: 0.13, best: 4, worst: 30),
+      _PerformanceComparisonCard(title: 'Alimentazione', gap: 0.36, best: 4, worst: 11),
+      _PerformanceComparisonCard(title: 'Lettura', gap: 0.60, best: 6, worst: 10),
+    ];
+
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
         Row(
-          mainAxisAlignment: MainAxisAlignment.spaceBetween,
           children: [
-            Row(
-              children: [
-                Container(width: 6, height: 6, decoration: const BoxDecoration(color: Color(0xFFEF4444), shape: BoxShape.circle)),
-                const SizedBox(width: 8),
-                Text(title, style: const TextStyle(fontSize: 14, fontWeight: FontWeight.w600, color: AppColors.foreground)),
-              ],
-            ),
-            Container(
-              padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 2),
-              decoration: BoxDecoration(color: const Color(0xFFF97316).withValues(alpha: 0.1), borderRadius: BorderRadius.circular(4)),
-              child: Text(context.l10n.translate('Attenzione'), style: const TextStyle(fontSize: 10, fontWeight: FontWeight.w700, color: Color(0xFFF97316))),
+            const Icon(LucideIcons.trendingUp, size: 16, color: AppColors.foreground),
+            const SizedBox(width: 8),
+            Text(
+              context.l10n.translate('Confronto Performance'),
+              style: const TextStyle(
+                fontFamily: 'Inter',
+                fontSize: 14,
+                fontWeight: FontWeight.w700,
+                color: AppColors.foreground,
+              ),
             ),
           ],
         ),
-        const SizedBox(height: 8),
-        Row(
-          mainAxisAlignment: MainAxisAlignment.spaceBetween,
-          children: [
-            const Text('Best', style: TextStyle(fontSize: 11, color: AppColors.mutedForeground)),
-            Text('$best gg', style: TextStyle(fontSize: 11, fontWeight: FontWeight.bold, color: Theme.of(context).colorScheme.primary)),
-          ],
-        ),
         const SizedBox(height: 4),
-        ClipRRect(
-          borderRadius: BorderRadius.circular(2),
-          child: LinearProgressIndicator(
-            value: 0.3,
-            minHeight: 4,
-            backgroundColor: AppColors.muted,
-            valueColor: AlwaysStoppedAnimation<Color>(Theme.of(context).colorScheme.primary),
+        Text(
+          context.l10n.translate('Compara le tue migliori performance con le peggiori.'),
+          style: const TextStyle(
+            fontFamily: 'Inter',
+            fontSize: 11,
+            color: AppColors.mutedForeground,
           ),
         ),
-        const SizedBox(height: 8),
-        Row(
-          mainAxisAlignment: MainAxisAlignment.spaceBetween,
-          children: [
-            const Text('Worst', style: TextStyle(fontSize: 11, color: AppColors.mutedForeground)),
-            Text('$worst gg', style: const TextStyle(fontSize: 11, fontWeight: FontWeight.bold, color: Color(0xFFEF4444))),
-          ],
-        ),
-        const SizedBox(height: 4),
-        ClipRRect(
-          borderRadius: BorderRadius.circular(2),
-          child: LinearProgressIndicator(
-            value: 0.9,
-            minHeight: 4,
-            backgroundColor: AppColors.muted,
-            valueColor: const AlwaysStoppedAnimation<Color>(Color(0xFFEF4444)),
+        const SizedBox(height: 16),
+        
+        SizedBox(
+          height: 220,
+          child: PageView.builder(
+            controller: _pageController,
+            itemCount: cards.length,
+            onPageChanged: (index) => setState(() => _currentPage = index),
+            itemBuilder: (context, index) {
+              return Padding(
+                padding: const EdgeInsets.symmetric(horizontal: 8),
+                child: cards[index],
+              );
+            },
           ),
         ),
-        const SizedBox(height: 8),
-        RichText(
-          text: TextSpan(
-            style: const TextStyle(fontSize: 11, color: AppColors.mutedForeground),
-            children: [
-              const TextSpan(text: 'Gap: '),
-              TextSpan(text: '${(gap * 100).toInt()}%', style: const TextStyle(color: AppColors.foreground, fontWeight: FontWeight.bold)),
-            ],
+        
+        const SizedBox(height: 12),
+        Center(
+          child: Row(
+            mainAxisAlignment: MainAxisAlignment.center,
+            children: List.generate(cards.length, (index) {
+              final isActive = _currentPage == index;
+              return AnimatedContainer(
+                duration: const Duration(milliseconds: 300),
+                margin: const EdgeInsets.symmetric(horizontal: 4),
+                width: isActive ? 16 : 6,
+                height: 6,
+                decoration: BoxDecoration(
+                  color: isActive 
+                      ? Theme.of(context).colorScheme.primary 
+                      : AppColors.mutedForeground.withValues(alpha: 0.3),
+                  borderRadius: BorderRadius.circular(3),
+                ),
+              );
+            }),
           ),
         ),
       ],
@@ -703,8 +727,18 @@ class _ConfrontoPerformanceSection extends StatelessWidget {
   }
 }
 
-class _SuggerimentiPraticiSection extends StatelessWidget {
-  const _SuggerimentiPraticiSection();
+class _PerformanceComparisonCard extends StatelessWidget {
+  final String title;
+  final double gap;
+  final int best;
+  final int worst;
+
+  const _PerformanceComparisonCard({
+    required this.title,
+    required this.gap,
+    required this.best,
+    required this.worst,
+  });
 
   @override
   Widget build(BuildContext context) {
@@ -712,105 +746,40 @@ class _SuggerimentiPraticiSection extends StatelessWidget {
       padding: const EdgeInsets.all(20),
       decoration: BoxDecoration(
         color: AppColors.card,
-        borderRadius: BorderRadius.circular(16),
+        borderRadius: BorderRadius.circular(20),
         border: Border.all(color: AppColors.border, width: 1),
       ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           Row(
+            mainAxisAlignment: MainAxisAlignment.spaceBetween,
             children: [
-              const Icon(LucideIcons.lightbulb, size: 18, color: Color(0xFFEAB308)),
-              const SizedBox(width: 10),
-              Text(
-                context.l10n.translate('Suggerimenti Pratici'),
-                style: const TextStyle(
-                  fontFamily: 'Inter',
-                  fontSize: 16,
-                  fontWeight: FontWeight.w700,
-                  color: AppColors.foreground,
-                ),
+              Row(
+                children: [
+                  Container(width: 6, height: 6, decoration: const BoxDecoration(color: Color(0xFFEF4444), shape: BoxShape.circle)),
+                  const SizedBox(width: 8),
+                  Text(title, style: const TextStyle(fontFamily: 'Inter', fontSize: 15, fontWeight: FontWeight.w700, color: AppColors.foreground)),
+                ],
+              ),
+              Container(
+                padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+                decoration: BoxDecoration(color: const Color(0xFFF97316).withValues(alpha: 0.1), borderRadius: BorderRadius.circular(6)),
+                child: Text(context.l10n.translate('Attenzione'), style: const TextStyle(fontFamily: 'Inter', fontSize: 10, fontWeight: FontWeight.w800, color: Color(0xFFF97316))),
               ),
             ],
           ),
-          const SizedBox(height: 20),
-          _buildSuggerimento(
-            icon: LucideIcons.target,
-            color: Color(0xFFEF4444),
-            title: 'Focus su "20 Flessioni 4"',
-            desc: 'Hai passato 30 giorni consecutivi senza completare questa abitudine',
-            action: 'Considera di ridurre la difficoltà o impostare promemoria extra',
-          ),
-          const SizedBox(height: 12),
-          _buildSuggerimento(
-            icon: LucideIcons.chartBar,
-            color: Color(0xFF3B82F6),
-            title: 'Tasso di Completamento Basso',
-            desc: '"20 Flessioni 4" ha solo 13% di successo',
-            action: 'Prova a semplificare l\'abitudine o renderla più piccola',
-          ),
-          const SizedBox(height: 12),
-          _buildSuggerimento(
-            icon: LucideIcons.armchair, // Using similar icon as LucideIcons.armchair for recovery if armchair not available
-            color: Color(0xFFF97316),
-            title: 'Ottima Capacità di Recupero',
-            desc: 'Recuperi velocemente dopo i fallimenti (media 6 giorni)',
-            action: 'Continua così - usa la stessa strategia per altre abitudini!',
-          ),
-          const SizedBox(height: 12),
-          _buildSuggerimento(
-            icon: LucideIcons.calendar,
-            color: Color(0xFF6B7280),
-            title: 'Pattern Generale',
-            desc: 'In media fallisci ~24 volte al mese',
-            action: 'Identifica i trigger comuni e crea strategie preventive',
-          ),
-        ],
-      ),
-    );
-  }
-
-  Widget _buildSuggerimento({
-    required IconData icon,
-    required Color color,
-    required String title,
-    required String desc,
-    required String action,
-  }) {
-    return Container(
-      padding: const EdgeInsets.all(12),
-      decoration: BoxDecoration(
-        color: AppColors.background,
-        borderRadius: BorderRadius.circular(12),
-        border: Border.all(color: AppColors.border, width: 1),
-      ),
-      child: Row(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Container(
-            padding: const EdgeInsets.all(8),
-            decoration: BoxDecoration(
-              color: color.withValues(alpha: 0.1),
-              borderRadius: BorderRadius.circular(8),
-            ),
-            child: Icon(icon, size: 18, color: color),
-          ),
-          const SizedBox(width: 12),
-          Expanded(
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
+          const Spacer(),
+          _PerformanceBar(label: 'BEST', value: '$best gg', progress: 0.3, color: Theme.of(context).colorScheme.primary),
+          const SizedBox(height: 16),
+          _PerformanceBar(label: 'WORST', value: '$worst gg', progress: 0.9, color: const Color(0xFFEF4444)),
+          const Spacer(),
+          RichText(
+            text: TextSpan(
+              style: const TextStyle(fontFamily: 'Inter', fontSize: 11, color: AppColors.mutedForeground),
               children: [
-                Text(title, style: const TextStyle(fontSize: 13, fontWeight: FontWeight.w700, color: AppColors.foreground)),
-                const SizedBox(height: 2),
-                Text(desc, style: const TextStyle(fontSize: 11, color: AppColors.mutedForeground)),
-                const SizedBox(height: 4),
-                Row(
-                  children: [
-                    const Icon(LucideIcons.arrowRight, size: 10, color: AppColors.mutedForeground),
-                    const SizedBox(width: 4),
-                    Expanded(child: Text(action, style: const TextStyle(fontSize: 11, fontWeight: FontWeight.w600, color: AppColors.foreground))),
-                  ],
-                ),
+                const TextSpan(text: 'Gap: '),
+                TextSpan(text: '${(gap * 100).toInt()}%', style: const TextStyle(color: AppColors.foreground, fontWeight: FontWeight.w800)),
               ],
             ),
           ),
@@ -820,4 +789,219 @@ class _SuggerimentiPraticiSection extends StatelessWidget {
   }
 }
 
+class _PerformanceBar extends StatelessWidget {
+  final String label;
+  final String value;
+  final double progress;
+  final Color color;
 
+  const _PerformanceBar({required this.label, required this.value, required this.progress, required this.color});
+
+  @override
+  Widget build(BuildContext context) {
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Row(
+          mainAxisAlignment: MainAxisAlignment.spaceBetween,
+          children: [
+            Text(label, style: const TextStyle(fontFamily: 'Inter', fontSize: 9, fontWeight: FontWeight.w800, color: AppColors.mutedForeground, letterSpacing: 0.5)),
+            Text(value, style: TextStyle(fontFamily: 'Inter', fontSize: 12, fontWeight: FontWeight.w800, color: color)),
+          ],
+        ),
+        const SizedBox(height: 6),
+        ClipRRect(
+          borderRadius: BorderRadius.circular(3),
+          child: LinearProgressIndicator(
+            value: progress,
+            minHeight: 5,
+            backgroundColor: AppColors.muted,
+            valueColor: AlwaysStoppedAnimation<Color>(color),
+          ),
+        ),
+      ],
+    );
+  }
+}class _SuggerimentiPraticiSection extends StatefulWidget {
+  const _SuggerimentiPraticiSection();
+
+  @override
+  State<_SuggerimentiPraticiSection> createState() => _SuggerimentiPraticiSectionState();
+}
+
+class _SuggerimentiPraticiSectionState extends State<_SuggerimentiPraticiSection> {
+  late PageController _pageController;
+  int _currentPage = 0;
+
+  @override
+  void initState() {
+    super.initState();
+    _pageController = PageController(viewportFraction: 0.9);
+  }
+
+  @override
+  void dispose() {
+    _pageController.dispose();
+    super.dispose();
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final List<Widget> cards = [
+      _SuggerimentoCard(
+        icon: LucideIcons.target,
+        color: const Color(0xFFEF4444),
+        title: 'Focus su "20 Flessioni 4"',
+        desc: 'Hai passato 30 giorni consecutivi senza completare questa abitudine. Considera di ridurre la difficoltà.',
+        action: 'Riduci la difficoltà',
+      ),
+      _SuggerimentoCard(
+        icon: LucideIcons.chartBar,
+        color: const Color(0xFF3B82F6),
+        title: 'Tasso di Completamento Basso',
+        desc: '"20 Flessioni 4" ha solo il 13% di successo. Prova a impostare promemoria extra.',
+        action: 'Imposta promemoria',
+      ),
+      _SuggerimentoCard(
+        icon: LucideIcons.armchair,
+        color: const Color(0xFFF97316),
+        title: 'Ottima Capacità di Recupero',
+        desc: 'Recuperi velocemente dopo i fallimenti (media 6 giorni). Continua così!',
+        action: 'Mantieni il ritmo',
+      ),
+    ];
+
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Row(
+          children: [
+            const Icon(LucideIcons.lightbulb, size: 16, color: Color(0xFFEAB308)),
+            const SizedBox(width: 8),
+            Text(
+              context.l10n.translate('Suggerimenti Pratici'),
+              style: const TextStyle(
+                fontFamily: 'Inter',
+                fontSize: 14,
+                fontWeight: FontWeight.w700,
+                color: AppColors.foreground,
+              ),
+            ),
+          ],
+        ),
+        const SizedBox(height: 4),
+        Text(
+          context.l10n.translate('Consigli basati sui tuoi dati per migliorare la costanza.'),
+          style: const TextStyle(
+            fontFamily: 'Inter',
+            fontSize: 11,
+            color: AppColors.mutedForeground,
+          ),
+        ),
+        const SizedBox(height: 16),
+        
+        SizedBox(
+          height: 170,
+          child: PageView.builder(
+            controller: _pageController,
+            itemCount: cards.length,
+            onPageChanged: (index) => setState(() => _currentPage = index),
+            itemBuilder: (context, index) {
+              return Padding(
+                padding: const EdgeInsets.symmetric(horizontal: 8),
+                child: cards[index],
+              );
+            },
+          ),
+        ),
+        
+        const SizedBox(height: 12),
+        Center(
+          child: Row(
+            mainAxisAlignment: MainAxisAlignment.center,
+            children: List.generate(cards.length, (index) {
+              final isActive = _currentPage == index;
+              return AnimatedContainer(
+                duration: const Duration(milliseconds: 300),
+                margin: const EdgeInsets.symmetric(horizontal: 4),
+                width: isActive ? 16 : 6,
+                height: 6,
+                decoration: BoxDecoration(
+                  color: isActive 
+                      ? const Color(0xFFEAB308)
+                      : AppColors.mutedForeground.withValues(alpha: 0.3),
+                  borderRadius: BorderRadius.circular(3),
+                ),
+              );
+            }),
+          ),
+        ),
+      ],
+    );
+  }
+}
+
+class _SuggerimentoCard extends StatelessWidget {
+  final IconData icon;
+  final Color color;
+  final String title;
+  final String desc;
+  final String action;
+
+  const _SuggerimentoCard({
+    required this.icon,
+    required this.color,
+    required this.title,
+    required this.desc,
+    required this.action,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      padding: const EdgeInsets.all(20),
+      decoration: BoxDecoration(
+        color: AppColors.card,
+        borderRadius: BorderRadius.circular(20),
+        border: Border.all(color: AppColors.border, width: 1),
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Row(
+            children: [
+              Container(
+                padding: const EdgeInsets.all(8),
+                decoration: BoxDecoration(color: color.withValues(alpha: 0.1), borderRadius: BorderRadius.circular(10)),
+                child: Icon(icon, size: 18, color: color),
+              ),
+              const SizedBox(width: 12),
+              Expanded(
+                child: Text(
+                  title,
+                  style: const TextStyle(fontFamily: 'Inter', fontSize: 14, fontWeight: FontWeight.w700, color: AppColors.foreground),
+                  maxLines: 1,
+                  overflow: TextOverflow.ellipsis,
+                ),
+              ),
+            ],
+          ),
+          const SizedBox(height: 16),
+          Expanded(
+            child: Text(
+              desc,
+              style: const TextStyle(fontFamily: 'Inter', fontSize: 12, color: AppColors.mutedForeground, height: 1.4),
+              maxLines: 2,
+              overflow: TextOverflow.ellipsis,
+            ),
+          ),
+          const SizedBox(height: 12),
+          Text(
+            action,
+            style: TextStyle(fontFamily: 'Inter', fontSize: 11, fontWeight: FontWeight.w800, color: color, letterSpacing: 0.2),
+          ),
+        ],
+      ),
+    );
+  }
+}

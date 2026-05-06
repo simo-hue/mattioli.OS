@@ -17,8 +17,6 @@ class InfoTabWidget extends StatelessWidget {
         const SizedBox(height: 16),
         const _AbitudiniChiaveSection(),
         const SizedBox(height: 16),
-        const _AnalisiCorrelazioniSection(),
-        const SizedBox(height: 16),
         const _CorrelazioniPositiveSection(),
         const SizedBox(height: 16),
         const _CorrelazioniNegativeSection(),
@@ -97,28 +95,33 @@ class _StatCard extends StatelessWidget {
     return Container(
       decoration: BoxDecoration(
         color: AppColors.card,
-        borderRadius: BorderRadius.circular(20), // More rounded
+        borderRadius: BorderRadius.circular(24),
         border: Border.all(color: AppColors.border, width: 1),
         boxShadow: [
           BoxShadow(
             color: Colors.black.withValues(alpha: 0.05),
-            blurRadius: 10,
-            offset: const Offset(0, 4),
+            blurRadius: 15,
+            offset: const Offset(0, 8),
           ),
         ],
       ),
       clipBehavior: Clip.hardEdge,
       child: Stack(
         children: [
-          // Background Glow
+          // Subtler Gradient Glow
           Positioned(
-            right: -15,
-            top: -15,
+            right: -20,
+            bottom: -20,
             child: Container(
-              width: 60,
-              height: 60,
+              width: 100,
+              height: 100,
               decoration: BoxDecoration(
-                color: accentColor.withValues(alpha: 0.1),
+                gradient: RadialGradient(
+                  colors: [
+                    accentColor.withValues(alpha: 0.15),
+                    accentColor.withValues(alpha: 0),
+                  ],
+                ),
                 shape: BoxShape.circle,
               ),
             ),
@@ -131,16 +134,27 @@ class _StatCard extends StatelessWidget {
               children: [
                 Row(
                   children: [
-                    Icon(icon, size: 14, color: accentColor),
+                    Container(
+                      padding: const EdgeInsets.all(6),
+                      decoration: BoxDecoration(
+                        color: accentColor.withValues(alpha: 0.15),
+                        borderRadius: BorderRadius.circular(8),
+                      ),
+                      child: Icon(icon, size: 14, color: accentColor),
+                    ),
                     const SizedBox(width: 8),
-                    Text(
-                      title,
-                      style: const TextStyle(
-                        fontFamily: 'Inter',
-                        fontSize: 11,
-                        fontWeight: FontWeight.w600,
-                        color: AppColors.mutedForeground,
-                        letterSpacing: 0.2,
+                    Expanded(
+                      child: Text(
+                        title,
+                        style: const TextStyle(
+                          fontFamily: 'Inter',
+                          fontSize: 10,
+                          fontWeight: FontWeight.w600,
+                          color: AppColors.mutedForeground,
+                          letterSpacing: 0.5,
+                        ),
+                        maxLines: 1,
+                        overflow: TextOverflow.ellipsis,
                       ),
                     ),
                   ],
@@ -152,24 +166,22 @@ class _StatCard extends StatelessWidget {
                       value,
                       style: const TextStyle(
                         fontFamily: 'Inter',
-                        fontSize: 24,
-                        fontWeight: FontWeight.w900,
+                        fontSize: 22,
+                        fontWeight: FontWeight.w800,
                         color: AppColors.foreground,
-                        letterSpacing: -1,
-                        height: 1,
+                        letterSpacing: -0.5,
                       ),
                     ),
-                    const SizedBox(height: 4),
+                    const SizedBox(height: 2),
                     Text(
-                      subtitle,
-                      style: const TextStyle(
+                      subtitle.toUpperCase(),
+                      style: TextStyle(
                         fontFamily: 'Inter',
-                        fontSize: 10,
-                        fontWeight: FontWeight.w500,
-                        color: AppColors.mutedForeground,
+                        fontSize: 8,
+                        fontWeight: FontWeight.w700,
+                        color: accentColor.withValues(alpha: 0.8),
+                        letterSpacing: 1.0,
                       ),
-                      maxLines: 1,
-                      overflow: TextOverflow.ellipsis,
                     ),
                   ],
                 ),
@@ -480,110 +492,6 @@ class _AbitudineChiaveCard extends StatelessWidget {
 }
 
 
-class _AnalisiCorrelazioniSection extends StatelessWidget {
-  const _AnalisiCorrelazioniSection();
-
-  @override
-  Widget build(BuildContext context) {
-    return Container(
-      decoration: BoxDecoration(
-        color: AppColors.card,
-        borderRadius: BorderRadius.circular(16),
-        border: Border.all(color: AppColors.border, width: 1),
-      ),
-      padding: const EdgeInsets.all(16),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Row(
-            children: [
-              Container(
-                padding: const EdgeInsets.all(8),
-                decoration: BoxDecoration(
-                  color: const Color(0xFF3B82F6).withValues(alpha: 0.15),
-                  borderRadius: BorderRadius.circular(8),
-                ),
-                child: const Icon(LucideIcons.gitCommitVertical, size: 18, color: Color(0xFF3B82F6)),
-              ),
-              const SizedBox(width: 12),
-              Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Text(context.l10n.translate('Analisi Correlazioni'), style: const TextStyle(fontFamily: 'Inter', fontSize: 16, fontWeight: FontWeight.w700, color: AppColors.foreground)),
-                  Text(context.l10n.translate('Pattern tra le tue abitudini'), style: const TextStyle(fontFamily: 'Inter', fontSize: 11, color: AppColors.mutedForeground)),
-                ],
-              ),
-            ],
-          ),
-          const SizedBox(height: 16),
-          Row(
-            children: [
-              Expanded(child: _CorrelazioneStatBox(title: context.l10n.translate('Coppie Analizzate'), value: '16')),
-              const SizedBox(width: 8),
-              Expanded(child: _CorrelazioneStatBox(title: context.l10n.translate('Correlazione Media'), value: '+0.52')),
-              const SizedBox(width: 8),
-              Expanded(child: _CorrelazioneStatBox(title: context.l10n.translate('Positive'), value: '5', valueColor: Theme.of(context).colorScheme.primary)),
-              const SizedBox(width: 8),
-              Expanded(child: _CorrelazioneStatBox(title: context.l10n.translate('Negative'), value: '3', valueColor: const Color(0xFFEF4444))),
-            ],
-          ),
-          const SizedBox(height: 16),
-          Container(
-            padding: const EdgeInsets.all(12),
-            decoration: BoxDecoration(
-              color: const Color(0xFFEAB308).withValues(alpha: 0.05),
-              borderRadius: BorderRadius.circular(8),
-              border: Border.all(color: const Color(0xFFEAB308).withValues(alpha: 0.3), width: 1),
-            ),
-            child: Row(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                const Icon(LucideIcons.triangleAlert, size: 14, color: Color(0xFFEAB308)),
-                const SizedBox(width: 8),
-                Expanded(
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      Text(context.l10n.translate('Abitudini Isolate'), style: const TextStyle(fontFamily: 'Inter', fontSize: 11, fontWeight: FontWeight.w700, color: Color(0xFFEAB308))),
-                      const SizedBox(height: 2),
-                      Text(context.l10n.translate('Non hanno correlazioni significative.'), style: const TextStyle(fontFamily: 'Inter', fontSize: 10, color: AppColors.mutedForeground, height: 1.4)),
-                    ],
-                  ),
-                ),
-              ],
-            ),
-          ),
-        ],
-      ),
-    );
-  }
-}
-
-class _CorrelazioneStatBox extends StatelessWidget {
-  final String title;
-  final String value;
-  final Color? valueColor;
-
-  const _CorrelazioneStatBox({required this.title, required this.value, this.valueColor});
-
-  @override
-  Widget build(BuildContext context) {
-    return Container(
-      padding: const EdgeInsets.symmetric(vertical: 12, horizontal: 8),
-      decoration: BoxDecoration(
-        color: AppColors.background,
-        borderRadius: BorderRadius.circular(8),
-      ),
-      child: Column(
-        children: [
-          Text(title, style: const TextStyle(fontFamily: 'Inter', fontSize: 9, color: AppColors.mutedForeground), textAlign: TextAlign.center, maxLines: 1, overflow: TextOverflow.ellipsis),
-          const SizedBox(height: 4),
-          Text(value, style: TextStyle(fontFamily: 'Inter', fontSize: 16, fontWeight: FontWeight.w700, color: valueColor ?? AppColors.foreground)),
-        ],
-      ),
-    );
-  }
-}
 
 class _CorrelazioniPositiveSection extends StatefulWidget {
   const _CorrelazioniPositiveSection();

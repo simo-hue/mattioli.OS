@@ -58,29 +58,6 @@ class AppBottomNavBar extends ConsumerWidget {
                 
                 return Stack(
                   children: [
-                    // The "Selection Background" confined inside the bar
-                    AnimatedPositioned(
-                      duration: const Duration(milliseconds: 400),
-                      curve: Curves.easeOutCubic,
-                      left: itemWidth * currentIndex,
-                      top: 0,
-                      bottom: 0,
-                      child: Container(
-                        width: itemWidth,
-                        decoration: BoxDecoration(
-                          gradient: LinearGradient(
-                            begin: Alignment.bottomCenter,
-                            end: Alignment.topCenter,
-                            colors: [
-                              primaryColor.withValues(alpha: 0.25),
-                              primaryColor.withValues(alpha: 0.05),
-                              Colors.transparent,
-                            ],
-                            stops: const [0.0, 0.4, 1.0],
-                          ),
-                        ),
-                      ),
-                    ),
 
                     // Bottom "Accent" Bar
                     AnimatedPositioned(

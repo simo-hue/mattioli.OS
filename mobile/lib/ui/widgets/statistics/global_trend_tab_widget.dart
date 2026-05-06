@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:lucide_icons_flutter/lucide_icons.dart';
+import 'package:fl_chart/fl_chart.dart';
 import '../../../core/theme.dart';
 import '../../../core/localization.dart';
 import '../../../models/goal.dart';
@@ -36,82 +37,90 @@ class _GlobalTrendTabWidgetState extends ConsumerState<GlobalTrendTabWidget> {
   }
 
   Widget _buildTrendChartSection() {
+    final List<FlSpot> spots;
+    final List<String> dates;
+    final double maxX;
+    final String title;
+    final String percentage;
+    final String delta;
+    final bool isPositive;
+
+    switch (_chartTimeframe) {
+      case 'timeframe_month_short':
+        spots = List.generate(30, (i) => FlSpot(i.toDouble(), 60 + (i % 7).toDouble() * 5));
+        dates = List.generate(30, (i) => '${(i + 1).toString().padLeft(2, '0')}/04');
+        maxX = 29;
+        title = 'Mensile';
+        percentage = '68.5%';
+        delta = '+2.1%';
+        isPositive = true;
+        break;
+      case 'timeframe_year_short':
+        spots = List.generate(12, (i) => FlSpot(i.toDouble(), 50 + (i % 4).toDouble() * 10));
+        dates = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
+        maxX = 11;
+        title = 'Annuale';
+        percentage = '71.2%';
+        delta = '+8.4%';
+        isPositive = true;
+        break;
+      case 'timeframe_all':
+        spots = List.generate(24, (i) => FlSpot(i.toDouble(), 40 + (i % 6).toDouble() * 8));
+        dates = List.generate(24, (i) => 'M$i');
+        maxX = 23;
+        title = 'Totale';
+        percentage = '74.2%';
+        delta = '+5.4%';
+        isPositive = true;
+        break;
+      case 'timeframe_week_short':
+      default:
+        spots = const [FlSpot(0, 40), FlSpot(1, 65), FlSpot(2, 50), FlSpot(3, 85), FlSpot(4, 75), FlSpot(5, 80), FlSpot(6, 95)];
+        dates = ['gio', 'ven', 'sab', 'dom', 'lun', 'mar', 'mer'];
+        maxX = 6;
+        title = 'Settimanale';
+        percentage = '74.2%';
+        delta = '+5.4%';
+        isPositive = true;
+        break;
+    }
+
     return Container(
       width: double.infinity,
-      padding: const EdgeInsets.all(20),
-      decoration: AppTheme.glassPanelDecoration(radius: 20),
+      padding: const EdgeInsets.all(24),
+      decoration: AppTheme.glassPanelDecoration(radius: 24),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           Row(
             mainAxisAlignment: MainAxisAlignment.spaceBetween,
-            crossAxisAlignment: CrossAxisAlignment.start,
             children: [
               Expanded(
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
                     Text(
-                      context.l10n.translate('Trend Completamento'),
+                      context.l10n.translate('Performance Evolution'),
                       style: const TextStyle(
                         fontFamily: 'Inter',
-                        fontSize: 13,
-                        fontWeight: FontWeight.w600,
-                        color: AppColors.mutedForeground,
-                        letterSpacing: 0.1,
+                        fontSize: 20,
+                        fontWeight: FontWeight.w900,
+                        color: AppColors.foreground,
+                        letterSpacing: -0.8,
                       ),
                     ),
-                    const SizedBox(height: 4),
-                    Row(
-                      crossAxisAlignment: CrossAxisAlignment.end,
-                      children: [
-                        const FittedBox(
-                          fit: BoxFit.scaleDown,
-                          child: Text(
-                            '74.2%',
-                            style: TextStyle(
-                              fontFamily: 'Inter',
-                              fontSize: 32,
-                              fontWeight: FontWeight.w900,
-                              color: AppColors.foreground,
-                              letterSpacing: -0.8,
-                              height: 1,
-                            ),
-                          ),
-                        ),
-                        const SizedBox(width: 8),
-                        Padding(
-                          padding: const EdgeInsets.only(bottom: 4),
-                          child: Container(
-                            padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 3),
-                            decoration: BoxDecoration(
-                              color: const Color(0xFF10B981).withValues(alpha: 0.1),
-                              borderRadius: BorderRadius.circular(6),
-                            ),
-                            child: Row(
-                              mainAxisSize: MainAxisSize.min,
-                              children: [
-                                Icon(LucideIcons.trendingUp, size: 12, color: const Color(0xFF10B981)),
-                                const SizedBox(width: 2),
-                                Text(
-                                  '+5.4%',
-                                  style: TextStyle(
-                                    fontFamily: 'Inter',
-                                    fontSize: 12,
-                                    fontWeight: FontWeight.w800,
-                                    color: const Color(0xFF10B981),
-                                  ),
-                                ),
-                              ],
-                            ),
-                          ),
-                        ),
-                      ],
+                    Text(
+                      '${context.l10n.translate('Trend')} $title',
+                      style: const TextStyle(
+                        fontFamily: 'Inter',
+                        fontSize: 12,
+                        color: AppColors.mutedForeground,
+                        fontWeight: FontWeight.w500,
+                      ),
                     ),
                   ],
                 ),
               ),
-              const SizedBox(width: 8),
               _buildSmallTimeframeSelector(
                 selected: _chartTimeframe,
                 options: ['timeframe_week_short', 'timeframe_month_short', 'timeframe_year_short', 'timeframe_all'],
@@ -120,31 +129,171 @@ class _GlobalTrendTabWidgetState extends ConsumerState<GlobalTrendTabWidget> {
             ],
           ),
           const SizedBox(height: 24),
-          // Smooth Area Chart
-          SizedBox(
-            height: 160,
-            width: double.infinity,
-            child: CustomPaint(
-              painter: _SmoothAreaChartPainter(
-                accentColor: Theme.of(context).colorScheme.primary,
-              ),
-            ),
-          ),
-          const SizedBox(height: 16),
-          // Day labels
           Row(
-            mainAxisAlignment: MainAxisAlignment.spaceBetween,
-            children: ['thu', 'fri', 'sat', 'sun', 'mon', 'tue', 'wed'].map((key) {
-              return Text(
-                context.l10n.translate(key).toLowerCase(),
+            crossAxisAlignment: CrossAxisAlignment.end,
+            children: [
+              Text(
+                percentage,
                 style: const TextStyle(
                   fontFamily: 'Inter',
-                  fontSize: 11,
-                  color: AppColors.mutedForeground,
-                  fontWeight: FontWeight.w500,
+                  fontSize: 32,
+                  fontWeight: FontWeight.w900,
+                  color: AppColors.foreground,
+                  letterSpacing: -1,
+                  height: 1,
                 ),
-              );
-            }).toList(),
+              ),
+              const SizedBox(width: 12),
+              Padding(
+                padding: const EdgeInsets.only(bottom: 4),
+                child: Container(
+                  padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+                  decoration: BoxDecoration(
+                    color: (isPositive ? const Color(0xFF10B981) : const Color(0xFFEF4444)).withValues(alpha: 0.1),
+                    borderRadius: BorderRadius.circular(8),
+                  ),
+                  child: Row(
+                    mainAxisSize: MainAxisSize.min,
+                    children: [
+                      Icon(
+                        isPositive ? LucideIcons.trendingUp : LucideIcons.trendingDown,
+                        size: 14,
+                        color: isPositive ? const Color(0xFF10B981) : const Color(0xFFEF4444),
+                      ),
+                      const SizedBox(width: 4),
+                      Text(
+                        delta,
+                        style: TextStyle(
+                          fontFamily: 'Inter',
+                          fontSize: 12,
+                          fontWeight: FontWeight.w800,
+                          color: isPositive ? const Color(0xFF10B981) : const Color(0xFFEF4444),
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+              ),
+            ],
+          ),
+          const SizedBox(height: 32),
+          SizedBox(
+            height: 180,
+            child: LineChart(
+              LineChartData(
+                gridData: FlGridData(
+                  show: true,
+                  drawVerticalLine: false,
+                  horizontalInterval: 20,
+                  getDrawingHorizontalLine: (value) => FlLine(
+                    color: AppColors.border.withValues(alpha: 0.1),
+                    strokeWidth: 1,
+                  ),
+                ),
+                titlesData: FlTitlesData(
+                  show: true,
+                  rightTitles: const AxisTitles(sideTitles: SideTitles(showTitles: false)),
+                  topTitles: const AxisTitles(sideTitles: SideTitles(showTitles: false)),
+                  leftTitles: AxisTitles(
+                    sideTitles: SideTitles(
+                      showTitles: true,
+                      reservedSize: 40,
+                      interval: 25,
+                      getTitlesWidget: (value, meta) {
+                        return SideTitleWidget(
+                          axisSide: meta.axisSide,
+                          child: Text(
+                            '${value.toInt()}%',
+                            style: const TextStyle(
+                              color: AppColors.mutedForeground,
+                              fontSize: 10,
+                              fontWeight: FontWeight.w700,
+                            ),
+                          ),
+                        );
+                      },
+                    ),
+                  ),
+                  bottomTitles: AxisTitles(
+                    sideTitles: SideTitles(
+                      showTitles: true,
+                      reservedSize: 32,
+                      interval: _chartTimeframe == 'timeframe_week_short' ? 1 : _chartTimeframe == 'timeframe_month_short' ? 6 : 3,
+                      getTitlesWidget: (value, meta) {
+                        if (value.toInt() < dates.length && value.toInt() >= 0) {
+                          final String label = _chartTimeframe == 'timeframe_week_short' 
+                              ? context.l10n.translate(dates[value.toInt()]).toLowerCase()
+                              : dates[value.toInt()];
+                          return SideTitleWidget(
+                            axisSide: meta.axisSide,
+                            space: 8,
+                            child: Text(
+                              label,
+                              style: const TextStyle(
+                                color: AppColors.mutedForeground,
+                                fontSize: 10,
+                                fontWeight: FontWeight.w600,
+                              ),
+                            ),
+                          );
+                        }
+                        return const SizedBox();
+                      },
+                    ),
+                  ),
+                ),
+                borderData: FlBorderData(show: false),
+                minX: 0,
+                maxX: maxX,
+                minY: 0,
+                maxY: 100,
+                lineBarsData: [
+                  LineChartBarData(
+                    spots: spots,
+                    isCurved: true,
+                    curveSmoothness: 0.35,
+                    color: Theme.of(context).colorScheme.primary,
+                    barWidth: 4,
+                    isStrokeCapRound: true,
+                    dotData: FlDotData(
+                      show: _chartTimeframe == 'timeframe_week_short',
+                      getDotPainter: (spot, percent, barData, index) => FlDotCirclePainter(
+                        radius: 3,
+                        color: Colors.white,
+                        strokeWidth: 2,
+                        strokeColor: Theme.of(context).colorScheme.primary,
+                      ),
+                    ),
+                    belowBarData: BarAreaData(
+                      show: true,
+                      gradient: LinearGradient(
+                        colors: [
+                          Theme.of(context).colorScheme.primary.withValues(alpha: 0.2),
+                          Theme.of(context).colorScheme.primary.withValues(alpha: 0.0),
+                        ],
+                        begin: Alignment.topCenter,
+                        end: Alignment.bottomCenter,
+                      ),
+                    ),
+                  ),
+                ],
+                lineTouchData: LineTouchData(
+                  touchTooltipData: LineTouchTooltipData(
+                    getTooltipColor: (touchedSpot) => AppColors.card.withValues(alpha: 0.9),
+                    tooltipRoundedRadius: 8,
+                    getTooltipItems: (List<LineBarSpot> touchedBarSpots) {
+                      return touchedBarSpots.map((barSpot) {
+                        return LineTooltipItem(
+                          '${barSpot.y.toStringAsFixed(1)}%',
+                          const TextStyle(color: AppColors.foreground, fontWeight: FontWeight.bold, fontSize: 12),
+                        );
+                      }).toList();
+                    },
+                  ),
+                ),
+              ),
+              duration: const Duration(milliseconds: 350),
+            ),
           ),
         ],
       ),
@@ -152,203 +301,7 @@ class _GlobalTrendTabWidgetState extends ConsumerState<GlobalTrendTabWidget> {
   }
 
   Widget _buildComparisonSection(List<Goal> goals) {
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: [
-        Row(
-          mainAxisAlignment: MainAxisAlignment.spaceBetween,
-          children: [
-            Expanded(
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Row(
-                    children: [
-                      const Icon(LucideIcons.trendingUp, size: 18, color: AppColors.foreground),
-                      const SizedBox(width: 8),
-                      Flexible(
-                        child: Text(
-                          context.l10n.translate('Confronto Temporale'),
-                          overflow: TextOverflow.ellipsis,
-                          style: const TextStyle(
-                            fontFamily: 'Inter',
-                            fontSize: 18,
-                            fontWeight: FontWeight.w700,
-                            color: AppColors.foreground,
-                          ),
-                        ),
-                      ),
-                    ],
-                  ),
-                  const SizedBox(height: 4),
-                  Text(
-                    context.l10n.translate('Analizza come stai andando rispetto al passato.'),
-                    style: const TextStyle(
-                      fontFamily: 'Inter',
-                      fontSize: 12,
-                      color: AppColors.mutedForeground,
-                    ),
-                  ),
-                ],
-              ),
-            ),
-            const SizedBox(width: 8),
-            _buildSmallTimeframeSelector(
-              selected: _comparisonTimeframe,
-              options: ['timeframe_week_short', 'timeframe_month_short', 'timeframe_year_short'],
-              onSelect: (val) => setState(() => _comparisonTimeframe = val),
-              padding: 4,
-            ),
-          ],
-        ),
-        const SizedBox(height: 20),
-        // Grid of comparisons
-        GridView.builder(
-          shrinkWrap: true,
-          physics: const NeverScrollableScrollPhysics(),
-          gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
-            crossAxisCount: 2,
-            childAspectRatio: 1.6, // Increased to fix bottom overflow
-            crossAxisSpacing: 12,
-            mainAxisSpacing: 12,
-          ),
-          itemCount: goals.length,
-          itemBuilder: (context, index) {
-            final goal = goals[index];
-            // Mock data based on goal ID
-            final int current = 50 + (goal.id.hashCode % 45);
-            final int previous = 40 + (goal.id.hashCode % 35);
-            final int delta = current - previous;
-
-            return _buildComparisonCard(goal, current, previous, delta);
-          },
-        ),
-      ],
-    );
-  }
-
-  Widget _buildComparisonCard(Goal goal, int current, int previous, int delta) {
-    final bool isPositive = delta >= 0;
-
-    return Container(
-      padding: const EdgeInsets.all(14),
-      decoration: BoxDecoration(
-        color: AppColors.card,
-        borderRadius: BorderRadius.circular(20),
-        border: Border.all(
-          color: isPositive 
-            ? const Color(0xFF10B981).withValues(alpha: 0.1) 
-            : const Color(0xFFEF4444).withValues(alpha: 0.1), 
-          width: 1,
-        ),
-        boxShadow: [
-          BoxShadow(
-            color: goal.color.withValues(alpha: 0.03),
-            blurRadius: 10,
-            spreadRadius: 2,
-          )
-        ],
-      ),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        mainAxisAlignment: MainAxisAlignment.spaceBetween,
-        children: [
-          Row(
-            children: [
-              Container(
-                width: 6,
-                height: 6,
-                decoration: BoxDecoration(
-                  color: goal.color,
-                  shape: BoxShape.circle,
-                  boxShadow: [
-                    BoxShadow(
-                      color: goal.color.withValues(alpha: 0.4),
-                      blurRadius: 4,
-                      spreadRadius: 1,
-                    )
-                  ],
-                ),
-              ),
-              const SizedBox(width: 8),
-              Expanded(
-                child: Text(
-                  goal.title,
-                  maxLines: 1,
-                  overflow: TextOverflow.ellipsis,
-                  style: const TextStyle(
-                    fontFamily: 'Inter',
-                    fontSize: 13,
-                    fontWeight: FontWeight.w700,
-                    color: AppColors.foreground,
-                    letterSpacing: -0.2,
-                  ),
-                ),
-              ),
-            ],
-          ),
-          const SizedBox(height: 10),
-          Row(
-            mainAxisAlignment: MainAxisAlignment.spaceBetween,
-            crossAxisAlignment: CrossAxisAlignment.end,
-            children: [
-              Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Text(
-                    '$current%',
-                    style: const TextStyle(
-                      fontFamily: 'Inter',
-                      fontSize: 20,
-                      fontWeight: FontWeight.w900,
-                      color: AppColors.foreground,
-                      height: 1,
-                    ),
-                  ),
-                  const SizedBox(height: 2),
-                  Text(
-                    '${context.l10n.translate('vs')} $previous%',
-                    style: const TextStyle(
-                      fontFamily: 'Inter',
-                      fontSize: 10,
-                      fontWeight: FontWeight.w500,
-                      color: AppColors.mutedForeground,
-                    ),
-                  ),
-                ],
-              ),
-              Container(
-                padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 3),
-                decoration: BoxDecoration(
-                  color: (isPositive ? const Color(0xFF10B981) : const Color(0xFFEF4444)).withValues(alpha: 0.1),
-                  borderRadius: BorderRadius.circular(6),
-                ),
-                child: Row(
-                  mainAxisSize: MainAxisSize.min,
-                  children: [
-                    Icon(
-                      isPositive ? LucideIcons.trendingUp : LucideIcons.trendingDown,
-                      size: 10,
-                      color: isPositive ? const Color(0xFF10B981) : const Color(0xFFEF4444),
-                    ),
-                    const SizedBox(width: 2),
-                    Text(
-                      '${isPositive ? '+' : ''}$delta%',
-                      style: TextStyle(
-                        fontFamily: 'Inter',
-                        fontSize: 10,
-                        fontWeight: FontWeight.w700,
-                        color: isPositive ? const Color(0xFF10B981) : const Color(0xFFEF4444),
-                      ),
-                    ),
-                  ],
-                ),
-              ),
-            ],
-          ),
-        ],
-      ),
-    );
+    return _ComparisonCarouselSection(goals: goals, timeframe: _comparisonTimeframe);
   }
 
   Widget _buildSmallTimeframeSelector({
@@ -409,110 +362,202 @@ class _GlobalTrendTabWidgetState extends ConsumerState<GlobalTrendTabWidget> {
   }
 }
 
-class _SmoothAreaChartPainter extends CustomPainter {
-  final Color accentColor;
-  _SmoothAreaChartPainter({required this.accentColor});
+class _ComparisonCarouselSection extends StatefulWidget {
+  final List<Goal> goals;
+  final String timeframe;
+
+  const _ComparisonCarouselSection({required this.goals, required this.timeframe});
 
   @override
-  void paint(Canvas canvas, Size size) {
-    // 1. Draw Grid Lines
-    final gridPaint = Paint()
-      ..color = AppColors.border.withValues(alpha: 0.15)
-      ..strokeWidth = 1;
-    
-    const double gridRows = 4;
-    for (int i = 0; i <= gridRows; i++) {
-      final y = (size.height / gridRows) * i;
-      canvas.drawLine(Offset(0, y), Offset(size.width, y), gridPaint);
-    }
+  State<_ComparisonCarouselSection> createState() => _ComparisonCarouselSectionState();
+}
 
-    final paint = Paint()
-      ..color = accentColor
-      ..style = PaintingStyle.stroke
-      ..strokeWidth = 3.5
-      ..strokeCap = StrokeCap.round;
+class _ComparisonCarouselSectionState extends State<_ComparisonCarouselSection> {
+  late PageController _pageController;
+  int _currentPage = 0;
 
-    final areaPaint = Paint()
-      ..shader = LinearGradient(
-        begin: Alignment.topCenter,
-        end: Alignment.bottomCenter,
-        colors: [
-          accentColor.withValues(alpha: 0.15),
-          accentColor.withValues(alpha: 0.0),
-        ],
-      ).createShader(Rect.fromLTWH(0, 0, size.width, size.height))
-      ..style = PaintingStyle.fill;
-
-    final path = Path();
-    
-    // Professional data points
-    final points = [
-      Offset(0, size.height * 0.75),
-      Offset(size.width * 0.16, size.height * 0.65),
-      Offset(size.width * 0.33, size.height * 0.85),
-      Offset(size.width * 0.5, size.height * 0.4),
-      Offset(size.width * 0.66, size.height * 0.3),
-      Offset(size.width * 0.83, size.height * 0.45),
-      Offset(size.width, size.height * 0.25),
-    ];
-
-    path.moveTo(points[0].dx, points[0].dy);
-
-    for (var i = 0; i < points.length - 1; i++) {
-      final p0 = points[i];
-      final p1 = points[i + 1];
-      final controlPoint1 = Offset(p0.dx + (p1.dx - p0.dx) / 2.5, p0.dy);
-      final controlPoint2 = Offset(p0.dx + (p1.dx - p0.dx) / 2, p1.dy);
-      path.cubicTo(controlPoint1.dx, controlPoint1.dy, controlPoint2.dx, controlPoint2.dy, p1.dx, p1.dy);
-    }
-
-    // 2. Draw Area
-    final areaPath = Path.from(path);
-    areaPath.lineTo(size.width, size.height);
-    areaPath.lineTo(0, size.height);
-    areaPath.close();
-    canvas.drawPath(areaPath, areaPaint);
-
-    // 3. Draw Main Line
-    canvas.drawPath(path, paint);
-    
-    // 4. Add subtle bloom glow
-    final glowPaint = Paint()
-      ..color = accentColor.withValues(alpha: 0.15)
-      ..style = PaintingStyle.stroke
-      ..strokeWidth = 10
-      ..maskFilter = const MaskFilter.blur(BlurStyle.normal, 8);
-    canvas.drawPath(path, glowPaint);
-
-    // 5. Draw Data Points (Dots)
-    final dotPaint = Paint()
-      ..color = AppColors.background
-      ..style = PaintingStyle.fill;
-    
-    final dotOutlinePaint = Paint()
-      ..color = accentColor
-      ..style = PaintingStyle.stroke
-      ..strokeWidth = 2.5;
-
-    for (int i = 0; i < points.length; i++) {
-      // Don't draw dots for all to keep it clean, maybe just peaks or start/end
-      if (i == 0 || i == points.length - 1 || i == 3 || i == 4) {
-        canvas.drawCircle(points[i], 4.5, dotPaint);
-        canvas.drawCircle(points[i], 4.5, dotOutlinePaint);
-        
-        // Final point specific highlight
-        if (i == points.length - 1) {
-          final pulsePaint = Paint()
-            ..color = accentColor.withValues(alpha: 0.2)
-            ..style = PaintingStyle.fill;
-          canvas.drawCircle(points[i], 12, pulsePaint);
-        }
-      }
-    }
+  @override
+  void initState() {
+    super.initState();
+    _pageController = PageController(viewportFraction: 0.9);
   }
 
   @override
-  bool shouldRepaint(CustomPainter oldDelegate) => false;
+  void dispose() {
+    _pageController.dispose();
+    super.dispose();
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Row(
+          children: [
+            const Icon(LucideIcons.trendingUp, size: 16, color: AppColors.foreground),
+            const SizedBox(width: 8),
+            Text(
+              context.l10n.translate('Confronto Temporale'),
+              style: const TextStyle(
+                fontFamily: 'Inter',
+                fontSize: 14,
+                fontWeight: FontWeight.w700,
+                color: AppColors.foreground,
+              ),
+            ),
+          ],
+        ),
+        const SizedBox(height: 4),
+        Text(
+          context.l10n.translate('Analizza come stai andando rispetto al passato.'),
+          style: const TextStyle(
+            fontFamily: 'Inter',
+            fontSize: 11,
+            color: AppColors.mutedForeground,
+          ),
+        ),
+        const SizedBox(height: 16),
+        
+        SizedBox(
+          height: 130,
+          child: PageView.builder(
+            controller: _pageController,
+            itemCount: widget.goals.length,
+            onPageChanged: (index) => setState(() => _currentPage = index),
+            itemBuilder: (context, index) {
+              final goal = widget.goals[index];
+              // Mock data based on goal ID
+              final int current = 50 + (goal.id.hashCode % 45);
+              final int previous = 40 + (goal.id.hashCode % 35);
+              final int delta = current - previous;
+
+              return Padding(
+                padding: const EdgeInsets.symmetric(horizontal: 8),
+                child: _ComparisonCard(goal: goal, current: current, previous: previous, delta: delta),
+              );
+            },
+          ),
+        ),
+        
+        const SizedBox(height: 12),
+        Center(
+          child: Row(
+            mainAxisAlignment: MainAxisAlignment.center,
+            children: List.generate(widget.goals.length, (index) {
+              final isActive = _currentPage == index;
+              return AnimatedContainer(
+                duration: const Duration(milliseconds: 300),
+                margin: const EdgeInsets.symmetric(horizontal: 4),
+                width: isActive ? 16 : 6,
+                height: 6,
+                decoration: BoxDecoration(
+                  color: isActive 
+                      ? Theme.of(context).colorScheme.primary
+                      : AppColors.mutedForeground.withValues(alpha: 0.3),
+                  borderRadius: BorderRadius.circular(3),
+                ),
+              );
+            }),
+          ),
+        ),
+      ],
+    );
+  }
+}
+
+class _ComparisonCard extends StatelessWidget {
+  final Goal goal;
+  final int current;
+  final int previous;
+  final int delta;
+
+  const _ComparisonCard({
+    required this.goal,
+    required this.current,
+    required this.previous,
+    required this.delta,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    final bool isPositive = delta >= 0;
+
+    return Container(
+      padding: const EdgeInsets.all(20),
+      decoration: BoxDecoration(
+        color: AppColors.card,
+        borderRadius: BorderRadius.circular(20),
+        border: Border.all(color: AppColors.border, width: 1),
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        mainAxisAlignment: MainAxisAlignment.center,
+        children: [
+          Row(
+            mainAxisAlignment: MainAxisAlignment.spaceBetween,
+            children: [
+              Row(
+                children: [
+                  Container(width: 8, height: 8, decoration: BoxDecoration(color: goal.color, shape: BoxShape.circle)),
+                  const SizedBox(width: 8),
+                  Text(goal.title, style: const TextStyle(fontFamily: 'Inter', fontSize: 14, fontWeight: FontWeight.w700, color: AppColors.foreground)),
+                ],
+              ),
+              Container(
+                padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+                decoration: BoxDecoration(
+                  color: (isPositive ? const Color(0xFF10B981) : const Color(0xFFEF4444)).withValues(alpha: 0.1),
+                  borderRadius: BorderRadius.circular(8),
+                ),
+                child: Row(
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    Icon(
+                      isPositive ? LucideIcons.trendingUp : LucideIcons.trendingDown,
+                      size: 12,
+                      color: isPositive ? const Color(0xFF10B981) : const Color(0xFFEF4444),
+                    ),
+                    const SizedBox(width: 4),
+                    Text(
+                      '${isPositive ? '+' : ''}$delta%',
+                      style: TextStyle(
+                        fontFamily: 'Inter',
+                        fontSize: 10,
+                        fontWeight: FontWeight.w900,
+                        color: isPositive ? const Color(0xFF10B981) : const Color(0xFFEF4444),
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+            ],
+          ),
+          const SizedBox(height: 12),
+          Row(
+            mainAxisAlignment: MainAxisAlignment.spaceBetween,
+            crossAxisAlignment: CrossAxisAlignment.end,
+            children: [
+              Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  const Text('ATTUALE', style: TextStyle(fontFamily: 'Inter', fontSize: 8, fontWeight: FontWeight.w800, color: AppColors.mutedForeground, letterSpacing: 0.5)),
+                  Text('$current%', style: const TextStyle(fontFamily: 'Inter', fontSize: 20, fontWeight: FontWeight.w900, color: AppColors.foreground)),
+                ],
+              ),
+              Column(
+                crossAxisAlignment: CrossAxisAlignment.end,
+                children: [
+                  const Text('PRECEDENTE', style: TextStyle(fontFamily: 'Inter', fontSize: 8, fontWeight: FontWeight.w800, color: AppColors.mutedForeground, letterSpacing: 0.5)),
+                  Text('$previous%', style: const TextStyle(fontFamily: 'Inter', fontSize: 16, fontWeight: FontWeight.w700, color: AppColors.mutedForeground)),
+                ],
+              ),
+            ],
+          ),
+        ],
+      ),
+    );
+  }
 }
 
 class _AbitudiniCriticheSection extends StatefulWidget {
@@ -596,7 +641,6 @@ class _AbitudiniCriticheSectionState extends State<_AbitudiniCriticheSection> {
         ),
         const SizedBox(height: 16),
         
-        // Carousel
         SizedBox(
           height: 180,
           child: PageView.builder(
@@ -613,8 +657,6 @@ class _AbitudiniCriticheSectionState extends State<_AbitudiniCriticheSection> {
         ),
         
         const SizedBox(height: 12),
-        
-        // Pagination Dots
         Center(
           child: Row(
             mainAxisAlignment: MainAxisAlignment.center,
@@ -674,21 +716,9 @@ class _CriticaCard extends StatelessWidget {
             children: [
               Row(
                 children: [
-                  Container(
-                    width: 8,
-                    height: 8,
-                    decoration: BoxDecoration(color: color, shape: BoxShape.circle),
-                  ),
+                  Container(width: 8, height: 8, decoration: BoxDecoration(color: color, shape: BoxShape.circle)),
                   const SizedBox(width: 8),
-                  Text(
-                    title,
-                    style: const TextStyle(
-                      fontFamily: 'Inter',
-                      fontSize: 15,
-                      fontWeight: FontWeight.w700,
-                      color: AppColors.foreground,
-                    ),
-                  ),
+                  Text(title, style: const TextStyle(fontFamily: 'Inter', fontSize: 15, fontWeight: FontWeight.w700, color: AppColors.foreground)),
                 ],
               ),
               Container(
@@ -702,15 +732,7 @@ class _CriticaCard extends StatelessWidget {
                   children: [
                     Icon(LucideIcons.trendingDown, size: 12, color: color),
                     const SizedBox(width: 4),
-                    Text(
-                      drop,
-                      style: TextStyle(
-                        fontFamily: 'Inter',
-                        fontSize: 11,
-                        fontWeight: FontWeight.w800,
-                        color: color,
-                      ),
-                    ),
+                    Text(drop, style: TextStyle(fontFamily: 'Inter', fontSize: 11, fontWeight: FontWeight.w800, color: color)),
                   ],
                 ),
               ),
@@ -720,12 +742,7 @@ class _CriticaCard extends StatelessWidget {
           Expanded(
             child: Text(
               desc,
-              style: const TextStyle(
-                fontFamily: 'Inter',
-                fontSize: 12,
-                color: AppColors.mutedForeground,
-                height: 1.4,
-              ),
+              style: const TextStyle(fontFamily: 'Inter', fontSize: 12, color: AppColors.mutedForeground, height: 1.4),
               maxLines: 3,
               overflow: TextOverflow.ellipsis,
             ),
@@ -735,23 +752,8 @@ class _CriticaCard extends StatelessWidget {
             children: [
               const Icon(LucideIcons.calendarX, size: 14, color: AppColors.mutedForeground),
               const SizedBox(width: 6),
-              Text(
-                '${context.l10n.translate('Streak Negativa')}: ',
-                style: const TextStyle(
-                  fontFamily: 'Inter',
-                  fontSize: 12,
-                  color: AppColors.mutedForeground,
-                ),
-              ),
-              Text(
-                streak,
-                style: TextStyle(
-                  fontFamily: 'Inter',
-                  fontSize: 12,
-                  fontWeight: FontWeight.w700,
-                  color: color,
-                ),
-              ),
+              Text('${context.l10n.translate('Streak Negativa')}: ', style: const TextStyle(fontFamily: 'Inter', fontSize: 12, color: AppColors.mutedForeground)),
+              Text(streak, style: TextStyle(fontFamily: 'Inter', fontSize: 12, fontWeight: FontWeight.w700, color: color)),
             ],
           ),
         ],

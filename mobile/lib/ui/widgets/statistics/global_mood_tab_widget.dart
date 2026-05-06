@@ -46,7 +46,7 @@ class _GlobalMoodTabWidgetState extends State<GlobalMoodTabWidget> {
                 borderRadius: BorderRadius.circular(12),
                 border: Border.all(color: Theme.of(context).colorScheme.primary.withValues(alpha: 0.2), width: 0.5),
               ),
-              child: Icon(LucideIcons.chartLine, size: 20, color: Theme.of(context).colorScheme.primary),
+              child: Icon(LucideIcons.activity, size: 20, color: Theme.of(context).colorScheme.primary),
             ),
             const SizedBox(width: 14),
             Expanded(
@@ -54,21 +54,22 @@ class _GlobalMoodTabWidgetState extends State<GlobalMoodTabWidget> {
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
                   Text(
-                    context.l10n.translate('Mood & Energy vs Produttività'),
+                    context.l10n.translate('Wellness vs Output'),
                     style: const TextStyle(
                       fontFamily: 'Inter',
-                      fontSize: 19,
-                      fontWeight: FontWeight.w800,
+                      fontSize: 20,
+                      fontWeight: FontWeight.w900,
                       color: AppColors.foreground,
-                      letterSpacing: -0.5,
+                      letterSpacing: -0.8,
                     ),
                   ),
                   Text(
                     context.l10n.translate('Correlazione tra benessere e abitudini'),
                     style: const TextStyle(
                       fontFamily: 'Inter',
-                      fontSize: 13,
+                      fontSize: 12,
                       color: AppColors.mutedForeground,
+                      fontWeight: FontWeight.w500,
                     ),
                   ),
                 ],
@@ -88,7 +89,7 @@ class _GlobalMoodTabWidgetState extends State<GlobalMoodTabWidget> {
       width: double.infinity,
       padding: const EdgeInsets.all(4),
       decoration: BoxDecoration(
-        color: AppColors.card.withValues(alpha: 0.5),
+        color: AppColors.card.withValues(alpha: 0.3),
         borderRadius: BorderRadius.circular(14),
         border: Border.all(color: AppColors.border, width: 1),
       ),
@@ -99,28 +100,21 @@ class _GlobalMoodTabWidgetState extends State<GlobalMoodTabWidget> {
             child: GestureDetector(
               onTap: () => setState(() => _timeRange = range),
               child: AnimatedContainer(
-                duration: const Duration(milliseconds: 200),
+                duration: const Duration(milliseconds: 250),
+                curve: Curves.easeOutCubic,
                 padding: const EdgeInsets.symmetric(vertical: 10),
                 decoration: BoxDecoration(
                   color: isSelected ? Theme.of(context).colorScheme.primary : Colors.transparent,
                   borderRadius: BorderRadius.circular(10),
-                  boxShadow: isSelected
-                      ? [
-                          BoxShadow(
-                            color: Colors.black.withValues(alpha: 0.1),
-                            blurRadius: 4,
-                            offset: const Offset(0, 2),
-                          )
-                        ]
-                      : null,
                 ),
                 child: Text(
                   context.l10n.translate(range == 'time_range_7d' ? '7gg' : range == 'time_range_14d' ? '14gg' : range == 'time_range_30d' ? '30gg' : 'Tutto'),
                   textAlign: TextAlign.center,
                   style: TextStyle(
-                    fontSize: 13,
-                    fontWeight: isSelected ? FontWeight.w700 : FontWeight.w500,
-                    color: isSelected ? AppColors.background : AppColors.mutedForeground,
+                    fontFamily: 'Inter',
+                    fontSize: 12,
+                    fontWeight: isSelected ? FontWeight.w800 : FontWeight.w600,
+                    color: isSelected ? Colors.white : AppColors.mutedForeground,
                   ),
                 ),
               ),
@@ -132,21 +126,60 @@ class _GlobalMoodTabWidgetState extends State<GlobalMoodTabWidget> {
   }
 
   Widget _buildMainChart() {
+    final List<FlSpot> outputSpots;
+    final List<FlSpot> moodSpots;
+    final List<FlSpot> energySpots;
+    final List<String> dates;
+    final double maxX;
+
+    switch (_timeRange) {
+      case 'time_range_7d':
+        outputSpots = const [FlSpot(0, 4), FlSpot(1, 7), FlSpot(2, 6.5), FlSpot(3, 4), FlSpot(4, 7), FlSpot(5, 7.5), FlSpot(6, 9)];
+        moodSpots = const [FlSpot(0, 6), FlSpot(1, 8), FlSpot(2, 8), FlSpot(3, 9), FlSpot(4, 9), FlSpot(5, 6), FlSpot(6, 9)];
+        energySpots = const [FlSpot(0, 4), FlSpot(1, 9), FlSpot(2, 7), FlSpot(3, 9), FlSpot(4, 7), FlSpot(5, 8), FlSpot(6, 9)];
+        dates = ['17/04', '18/04', '19/04', '20/04', '21/04', '22/04', '23/04'];
+        maxX = 6;
+        break;
+      case 'time_range_30d':
+        outputSpots = List.generate(30, (i) => FlSpot(i.toDouble(), (i % 7 + 3).toDouble()));
+        moodSpots = List.generate(30, (i) => FlSpot(i.toDouble(), (i % 5 + 5).toDouble()));
+        energySpots = List.generate(30, (i) => FlSpot(i.toDouble(), (i % 4 + 6).toDouble()));
+        dates = List.generate(30, (i) => '${(i + 1).toString().padLeft(2, '0')}/04');
+        maxX = 29;
+        break;
+      case 'timeframe_all':
+        outputSpots = List.generate(60, (i) => FlSpot(i.toDouble(), (i % 10 + 1).toDouble()));
+        moodSpots = List.generate(60, (i) => FlSpot(i.toDouble(), (i % 8 + 3).toDouble()));
+        energySpots = List.generate(60, (i) => FlSpot(i.toDouble(), (i % 6 + 4).toDouble()));
+        dates = List.generate(60, (i) => '${(i % 30 + 1).toString().padLeft(2, '0')}/0${i < 30 ? 3 : 4}');
+        maxX = 59;
+        break;
+      case 'time_range_14d':
+      default:
+        outputSpots = const [
+          FlSpot(0, 0), FlSpot(1, 4), FlSpot(2, 5), FlSpot(3, 3), FlSpot(4, 7),
+          FlSpot(5, 8), FlSpot(6, 7), FlSpot(7, 6.5), FlSpot(8, 6.3), FlSpot(9, 4),
+          FlSpot(10, 7), FlSpot(11, 7.5), FlSpot(12, 9), FlSpot(13, 0),
+        ];
+        moodSpots = const [
+          FlSpot(0, 7), FlSpot(1, 8), FlSpot(2, 3), FlSpot(3, 8), FlSpot(4, 8),
+          FlSpot(5, 9), FlSpot(6, 6), FlSpot(7, 8), FlSpot(8, 8), FlSpot(9, 9),
+          FlSpot(10, 9), FlSpot(11, 6), FlSpot(12, 9), FlSpot(13, 8),
+        ];
+        energySpots = const [
+          FlSpot(0, 8), FlSpot(1, 8), FlSpot(2, 5), FlSpot(3, 5), FlSpot(4, 7),
+          FlSpot(5, 9), FlSpot(6, 4), FlSpot(7, 4), FlSpot(8, 9), FlSpot(9, 7),
+          FlSpot(10, 9), FlSpot(11, 7), FlSpot(12, 8), FlSpot(13, 9),
+        ];
+        dates = ['08/04', '09/04', '11/04', '12/04', '13/04', '14/04', '15/04', '16/04', '17/04', '19/04', '20/04', '21/04', '22/04', '23/04'];
+        maxX = 13;
+        break;
+    }
+
     return Container(
-      height: 280,
-      padding: const EdgeInsets.fromLTRB(10, 24, 16, 16),
-      decoration: BoxDecoration(
-        color: AppColors.card,
-        borderRadius: BorderRadius.circular(20),
-        border: Border.all(color: AppColors.border, width: 1),
-        boxShadow: [
-          BoxShadow(
-            color: Colors.black.withValues(alpha: 0.1),
-            blurRadius: 20,
-            offset: const Offset(0, 10),
-          ),
-        ],
-      ),
+      height: 300,
+      padding: const EdgeInsets.fromLTRB(16, 24, 20, 16),
+      decoration: AppTheme.glassPanelDecoration(radius: 24),
       child: Column(
         children: [
           Expanded(
@@ -155,48 +188,54 @@ class _GlobalMoodTabWidgetState extends State<GlobalMoodTabWidget> {
                 gridData: FlGridData(
                   show: true,
                   drawVerticalLine: false,
+                  horizontalInterval: 2,
                   getDrawingHorizontalLine: (value) => FlLine(
-                    color: AppColors.border.withValues(alpha: 0.3),
+                    color: AppColors.border.withValues(alpha: 0.1),
                     strokeWidth: 1,
                   ),
                 ),
                 titlesData: FlTitlesData(
                   show: true,
-                  rightTitles: AxisTitles(
-                    sideTitles: SideTitles(
-                      showTitles: true,
-                      reservedSize: 32,
-                      getTitlesWidget: (value, meta) {
-                        if (value == 0 || value == 50 || value == 100) {
-                          return Text('${value.toInt()}%', style: TextStyle(color: Theme.of(context).colorScheme.primary, fontSize: 9, fontWeight: FontWeight.w600));
-                        }
-                        return const SizedBox();
-                      },
-                    ),
-                  ),
-                  topTitles: AxisTitles(sideTitles: SideTitles(showTitles: false)),
+                  rightTitles: const AxisTitles(sideTitles: SideTitles(showTitles: false)),
+                  topTitles: const AxisTitles(sideTitles: SideTitles(showTitles: false)),
                   leftTitles: AxisTitles(
                     sideTitles: SideTitles(
                       showTitles: true,
-                      reservedSize: 24,
+                      reservedSize: 32,
+                      interval: 5,
                       getTitlesWidget: (value, meta) {
-                        if (value == 0 || value == 5 || value == 10) {
-                          return Text('${value.toInt()}', style: const TextStyle(color: AppColors.mutedForeground, fontSize: 10, fontWeight: FontWeight.w500));
-                        }
-                        return const SizedBox();
+                        return SideTitleWidget(
+                          axisSide: meta.axisSide,
+                          child: Text(
+                            value.toInt().toString(),
+                            style: const TextStyle(
+                              color: AppColors.mutedForeground,
+                              fontSize: 10,
+                              fontWeight: FontWeight.w700,
+                            ),
+                          ),
+                        );
                       },
                     ),
                   ),
                   bottomTitles: AxisTitles(
                     sideTitles: SideTitles(
                       showTitles: true,
-                      interval: 2, // Show every 2nd date to avoid overlap on mobile
+                      reservedSize: 32,
+                      interval: _timeRange == 'time_range_7d' ? 1 : _timeRange == 'timeframe_all' ? 10 : 3,
                       getTitlesWidget: (value, meta) {
-                        final dates = ['08/04', '09/04', '11/04', '12/04', '13/04', '14/04', '15/04', '16/04', '17/04', '19/04', '20/04', '21/04', '22/04', '23/04'];
-                        if (value.toInt() < dates.length) {
-                          return Padding(
-                            padding: const EdgeInsets.only(top: 10.0),
-                            child: Text(dates[value.toInt()], style: const TextStyle(color: AppColors.mutedForeground, fontSize: 9)),
+                        if (value.toInt() < dates.length && value.toInt() >= 0) {
+                          return SideTitleWidget(
+                            axisSide: meta.axisSide,
+                            space: 8,
+                            child: Text(
+                              dates[value.toInt()],
+                              style: const TextStyle(
+                                color: AppColors.mutedForeground,
+                                fontSize: 9,
+                                fontWeight: FontWeight.w600,
+                              ),
+                            ),
                           );
                         }
                         return const SizedBox();
@@ -206,83 +245,94 @@ class _GlobalMoodTabWidgetState extends State<GlobalMoodTabWidget> {
                 ),
                 borderData: FlBorderData(show: false),
                 minX: 0,
-                maxX: 13,
+                maxX: maxX,
                 minY: 0,
                 maxY: 10,
                 lineBarsData: [
-                  // Habit Completion (Purple)
+                  // Habit Completion (Output)
                   LineChartBarData(
-                    spots: const [
-                      FlSpot(0, 0), FlSpot(1, 4), FlSpot(2, 5), FlSpot(3, 3), FlSpot(4, 7),
-                      FlSpot(5, 8), FlSpot(6, 7), FlSpot(7, 6.5), FlSpot(8, 6.3), FlSpot(9, 4),
-                      FlSpot(10, 7), FlSpot(11, 7.5), FlSpot(12, 9), FlSpot(13, 0),
-                    ],
+                    spots: outputSpots,
                     isCurved: true,
-
+                    curveSmoothness: 0.35,
                     color: Theme.of(context).colorScheme.primary,
-                    barWidth: 4,
+                    barWidth: 3.5,
                     isStrokeCapRound: true,
-                    dotData: FlDotData(show: false),
+                    dotData: const FlDotData(show: false),
                     belowBarData: BarAreaData(
                       show: true,
                       gradient: LinearGradient(
-                        colors: [Theme.of(context).colorScheme.primary.withValues(alpha: 0.15), Colors.transparent],
+                        colors: [
+                          Theme.of(context).colorScheme.primary.withValues(alpha: 0.15),
+                          Theme.of(context).colorScheme.primary.withValues(alpha: 0.0),
+                        ],
                         begin: Alignment.topCenter,
                         end: Alignment.bottomCenter,
                       ),
                     ),
                   ),
-                  // Mood (Green)
+                  // Mood
                   LineChartBarData(
-                    spots: const [
-                      FlSpot(0, 7), FlSpot(1, 8), FlSpot(2, 3), FlSpot(3, 8), FlSpot(4, 8),
-                      FlSpot(5, 9), FlSpot(6, 6), FlSpot(7, 8), FlSpot(8, 8), FlSpot(9, 9),
-                      FlSpot(10, 9), FlSpot(11, 6), FlSpot(12, 9), FlSpot(13, 8),
-                    ],
+                    spots: moodSpots,
                     isCurved: true,
-                    color: Theme.of(context).colorScheme.primary,
+                    curveSmoothness: 0.35,
+                    color: const Color(0xFF10B981), // Emerald for Mood
                     barWidth: 2,
                     dotData: FlDotData(
-                      show: true,
+                      show: _timeRange == 'time_range_7d' || _timeRange == 'time_range_14d',
                       getDotPainter: (spot, percent, barData, index) => FlDotCirclePainter(
-                        radius: 3,
+                        radius: 2,
                         color: Colors.white,
-                        strokeWidth: 2,
-                        strokeColor: Theme.of(context).colorScheme.primary,
+                        strokeWidth: 1.5,
+                        strokeColor: const Color(0xFF10B981),
                       ),
                     ),
                   ),
-                  // Energy (Orange/Yellow)
+                  // Energy
                   LineChartBarData(
-                    spots: const [
-                      FlSpot(0, 8), FlSpot(1, 8), FlSpot(2, 5), FlSpot(3, 5), FlSpot(4, 7),
-                      FlSpot(5, 9), FlSpot(6, 4), FlSpot(7, 4), FlSpot(8, 9), FlSpot(9, 7),
-                      FlSpot(10, 9), FlSpot(11, 7), FlSpot(12, 8), FlSpot(13, 9),
-                    ],
+                    spots: energySpots,
                     isCurved: true,
+                    curveSmoothness: 0.35,
                     color: const Color(0xFFF59E0B),
                     barWidth: 2,
-                    dashArray: [5, 5],
+                    dashArray: [6, 4],
                     dotData: FlDotData(
-                      show: true,
+                      show: _timeRange == 'time_range_7d' || _timeRange == 'time_range_14d',
                       getDotPainter: (spot, percent, barData, index) => FlDotCirclePainter(
-                        radius: 3,
+                        radius: 2,
                         color: Colors.white,
-                        strokeWidth: 2,
+                        strokeWidth: 1.5,
                         strokeColor: const Color(0xFFF59E0B),
                       ),
                     ),
                   ),
                 ],
+                lineTouchData: LineTouchData(
+                  touchTooltipData: LineTouchTooltipData(
+                    getTooltipColor: (touchedSpot) => AppColors.card.withValues(alpha: 0.9),
+                    tooltipRoundedRadius: 8,
+                    getTooltipItems: (List<LineBarSpot> touchedBarSpots) {
+                      return touchedBarSpots.map((barSpot) {
+                        final flSpot = barSpot;
+                        return LineTooltipItem(
+                          '${flSpot.y.toStringAsFixed(1)}',
+                          const TextStyle(color: AppColors.foreground, fontWeight: FontWeight.bold, fontSize: 12),
+                        );
+                      }).toList();
+                    },
+                  ),
+                ),
               ),
+              duration: const Duration(milliseconds: 350),
             ),
           ),
           const SizedBox(height: 24),
           Row(
-            mainAxisAlignment: MainAxisAlignment.spaceEvenly,
+            mainAxisAlignment: MainAxisAlignment.center,
             children: [
-              _buildLegendItem(context.l10n.translate('Produttività'), Theme.of(context).colorScheme.primary),
-              _buildLegendItem(context.l10n.translate('Umore'), Theme.of(context).colorScheme.primary),
+              _buildLegendItem(context.l10n.translate('Output'), Theme.of(context).colorScheme.primary),
+              const SizedBox(width: 20),
+              _buildLegendItem(context.l10n.translate('Umore'), const Color(0xFF10B981)),
+              const SizedBox(width: 20),
               _buildLegendItem(context.l10n.translate('Energia'), const Color(0xFFF59E0B)),
             ],
           ),
@@ -291,19 +341,18 @@ class _GlobalMoodTabWidgetState extends State<GlobalMoodTabWidget> {
     );
   }
 
-
   Widget _buildLegendItem(String label, Color color) {
     return Row(
       children: [
         Container(
           width: 8,
           height: 8,
-          decoration: BoxDecoration(color: color, shape: BoxShape.circle),
+          decoration: BoxDecoration(color: color, borderRadius: BorderRadius.circular(2)),
         ),
-        const SizedBox(width: 6),
+        const SizedBox(width: 8),
         Text(
           label,
-          style: const TextStyle(color: AppColors.mutedForeground, fontSize: 11, fontWeight: FontWeight.w500),
+          style: const TextStyle(color: AppColors.mutedForeground, fontSize: 10, fontWeight: FontWeight.w700, letterSpacing: 0.3),
         ),
       ],
     );

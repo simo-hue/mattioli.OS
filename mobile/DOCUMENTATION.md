@@ -138,12 +138,12 @@
 
 ---
 ---
-## [2026-05-06 18:20]: Expandable Vertical List for Key Habits
-*Details*: Replaced the horizontal scroll in the Statistics "Key Habits" section with a vertical list of expandable cards. This improves discoverability and mobile usability.
+## [2026-05-06 18:20]: Statistics - Snapping Carousel for Key Habits
+*Details*: Replaced the basic horizontal scroll in the "Abitudini Chiave" section with a premium snapping carousel.
 *Tech Notes*:
-- **Expansion Logic**: Transformed `_AbitudineChiaveCard` into a `StatefulWidget` using `AnimatedAlign` and `heightFactor` for smooth expansion/collapse.
-- **Compact Summary**: When collapsed, cards show essential metrics (Impact Badge and Media Impact) to keep the list readable.
-- **Modern UI**: Added `AnimatedRotation` for the chevron icon and subtle border highlighting when a card is expanded.
+- **PageView Integration**: Switched to `PageView.builder` with a `viewportFraction` of 0.9 to enable snapping and visual "peeking" of adjacent cards.
+- **Micro-Animations**: Added `AnimatedScale` and `AnimatedOpacity` to highlight the active card and fade out background ones.
+- **Pagination UI**: Implemented dynamic pagination dots that animate their width and color based on the current page.
 
 ---
 ## Current Status

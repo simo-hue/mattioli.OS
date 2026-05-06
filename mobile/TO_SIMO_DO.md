@@ -1,5 +1,16 @@
 # TO DO (Simo)
 
+# PROSSIME AZIONI MANUALI (SIMO)
+
+- [ ] **Eseguire Migrazione Database**: Eseguire il seguente script SQL nel SQL Editor di Supabase per rimuovere le colonne 'notes' e la tabella 'user_memos':
+  ```sql
+  -- Migration to remove notes and user_memos
+  ALTER TABLE public.goal_logs DROP COLUMN IF EXISTS notes;
+  ALTER TABLE public.daily_moods DROP COLUMN IF EXISTS note;
+  DROP TABLE IF EXISTS public.user_memos;
+  ```
+
+
 ## Configurazione Backend & Store
 - [ ] Creare account **Apple Developer Program** ($99/anno).
 - [ ] Creare account **Google Play Console** ($25 una tantum).

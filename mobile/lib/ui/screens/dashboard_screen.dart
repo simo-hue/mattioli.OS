@@ -25,7 +25,7 @@ class HomeScreen extends ConsumerStatefulWidget {
 
 class _HomeScreenState extends ConsumerState<HomeScreen>
     with TickerProviderStateMixin {
-  int _selectedNavIndex = 0;
+  int _selectedNavIndex = 1; // Starts on Home (now at index 1)
   late PageController _pageController;
   late AnimationController _fadeController;
   late Animation<double> _fadeAnimation;
@@ -198,9 +198,9 @@ class _HomeScreenState extends ConsumerState<HomeScreen>
   Widget _getPage(int index, CalendarView currentView) {
     switch (index) {
       case 0:
-        return _HomeTabWrapper(child: _buildHomeBody(currentView));
-      case 1:
         return const StatisticsScreen();
+      case 1:
+        return _HomeTabWrapper(child: _buildHomeBody(currentView));
       case 2:
         return const MacroGoalsScreen();
       default:

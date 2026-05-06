@@ -166,7 +166,6 @@ CREATE TABLE IF NOT EXISTS public.goal_logs (
     goal_id uuid REFERENCES public.goals(id) ON DELETE CASCADE NOT NULL,
     date    date NOT NULL,
     status  text NOT NULL CHECK (status IN ('done', 'missed', 'skipped')),
-    notes   text,
     value   numeric,  -- per abitudini misurabili (es. km corsi, pagine lette)
     created_at  timestamp with time zone DEFAULT now() NOT NULL,
     updated_at  timestamp with time zone DEFAULT now() NOT NULL,
@@ -251,7 +250,6 @@ CREATE TABLE IF NOT EXISTS public.daily_moods (
     date         date NOT NULL,
     mood_score   integer NOT NULL CHECK (mood_score   >= 1 AND mood_score   <= 5),
     energy_score integer NOT NULL CHECK (energy_score >= 1 AND energy_score <= 5),
-    note         text,
     created_at   timestamp with time zone DEFAULT now() NOT NULL,
     updated_at   timestamp with time zone DEFAULT now() NOT NULL,
     -- Un solo record mood per utente per giorno
@@ -274,35 +272,7 @@ CREATE TRIGGER update_daily_moods_updated_at
     FOR EACH ROW EXECUTE FUNCTION public.update_updated_at_column();
 
 
--- ============================================================
--- TABLE: user_memos
--- Nota rapida dell'utente (una sola per utente).
--- Sostituisce il SharedPreferences locale di Flutter.
--- ============================================================
-CREATE TABLE IF NOT EXISTS public.user_memos (
-    id      uuid DEFAULT gen_random_uuid() NOT NULL PRIMARY KEY,
-    user_id uuid REFERENCES auth.users(id) ON DELETE CASCADE NOT NULL,
-    content text,
-    created_at  timestamp with time zone DEFAULT now() NOT NULL,
-    updated_at  timestamp with time zone DEFAULT now() NOT NULL,
-    -- Un solo memo per utente
-    CONSTRAINT user_memos_user_unique UNIQUE (user_id)
-);
-
-ALTER TABLE public.user_memos ENABLE ROW LEVEL SECURITY;
-
-CREATE POLICY "user_memos: select own"
-    ON public.user_memos FOR SELECT    USING (auth.uid() = user_id);
-CREATE POLICY "user_memos: insert own"
-    ON public.user_memos FOR INSERT    WITH CHECK (auth.uid() = user_id);
-CREATE POLICY "user_memos: update own"
-    ON public.user_memos FOR UPDATE    USING (auth.uid() = user_id);
-CREATE POLICY "user_memos: delete own"
-    ON public.user_memos FOR DELETE    USING (auth.uid() = user_id);
-
-CREATE TRIGGER update_user_memos_updated_at
-    BEFORE UPDATE ON public.user_memos
-    FOR EACH ROW EXECUTE FUNCTION public.update_updated_at_column();
+-- (user_memos table removed)
 
 
 -- ============================================================
@@ -418,5 +388,4 @@ CREATE INDEX IF NOT EXISTS idx_ai_insights_lookup
 --   goals
 --   long_term_goals
 --   profiles
---   user_memos
 -- ============================================================

@@ -53,6 +53,22 @@
 - **Integrazione Modello**: Creati `fromJson` e `toJson` nel modello `MacroGoal` compatibili con la tabella `long_term_goals` di Supabase.
 
 ---
+## [2026-05-06 16:30]: Riorganizzazione Navigazione Inferiore
+*Details*: Cambiato l'ordine delle voci nella Bottom Navigation Bar per migliorare l'accesso alle statistiche.
+*Tech Notes*:
+- Modificato `lib/ui/widgets/bottom_nav_bar.dart` per l'ordine visivo (Statistiche, Home, Obiettivi).
+- Modificato `lib/ui/screens/dashboard_screen.dart` per allineare il mapping delle pagine (`_getPage`) e impostare l'indice iniziale a 1 (Home).
+
+---
+## [2026-05-06 16:20]: Rimozione Note & Introduzione AI Chat Placeholder
+*Details*: Sostituito il sistema di "Note Veloci" con un pulsante "AI Chat" nel pannello Protocollo. Rimosse le colonne 'notes' e 'note' dal database per ottimizzare lo spazio.
+*Tech Notes*:
+- Modificato `lib/ui/widgets/protocollo_panel.dart` per puntare a `ProFeaturesModal`.
+- Aggiornato `lib/core/localization.dart` rimuovendo le chiavi 'Note' e aggiungendo 'AI Chat'.
+- Aggiornato `mobile_schema.sql` rimuovendo la tabella `user_memos` e le colonne note.
+- Aggiunta azione manuale in `TO_SIMO_DO.md` per la migrazione del DB.
+
+---
 ## [2026-04-30 23:55]: iOS Build Fixes & Dependency Alignment
 
 *Details*: Risolti molteplici errori di compilazione iOS relativi a incompatibilità di versioni dei plugin e errori di tipizzazione Dart.

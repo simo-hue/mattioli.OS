@@ -3,9 +3,10 @@ import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:lucide_icons_flutter/lucide_icons.dart';
 import '../../core/theme.dart';
+import '../../core/localization.dart';
 import 'daily_check_in_modal.dart';
 import 'habit_management_modal.dart';
-import 'quick_notes_modal.dart';
+import 'pro_features_modal.dart';
 
 /// "Protocollo" command panel matching the PWA sidebar card
 class ProtocolloPanel extends ConsumerWidget {
@@ -58,15 +59,15 @@ class ProtocolloPanel extends ConsumerWidget {
               ),
             ),
             const SizedBox(width: 12),
-            // Quick Notes Tile
+            // AI Chat Tile
             Expanded(
               flex: 2,
               child: _ActionTile(
-                icon: LucideIcons.fileText,
-                label: 'Note',
-                subtitle: 'Rapide',
-                color: const Color(0xFF3B82F6),
-                onTap: () => QuickNotesModal.show(context),
+                icon: LucideIcons.sparkles,
+                label: context.l10n.translate('AI Chat'),
+                subtitle: context.l10n.translate('Obiettivi'),
+                color: const Color(0xFF8B5CF6),
+                onTap: () => ProFeaturesModal.show(context),
               ),
             ),
             const SizedBox(width: 12),

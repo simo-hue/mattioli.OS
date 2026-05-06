@@ -139,12 +139,12 @@
 ---
 ---
 ---
-## [2026-05-06 18:35]: Statistics - Accent Color Integration
-*Details*: Enhanced the "Attività Recente" section by replacing greyscale intensity dots with dynamic opacities of the user's selected accent color.
+## [2026-05-06 18:50]: Statistics - Design Language Unification
+*Details*: Harmonized the "Abitudini Chiave" section by removing its heavy outer container and adopting the minimalist icon-header pattern used in the correlation carousels.
 *Tech Notes*:
-- **Themed Intensity Map**: Modified the `_getColor` helper to generate a monochromatic scale of the primary color (`alpha: 0.2` to `1.0`).
-- **Visual Branding**: Updated the section icon and grid dots to match the app's global accent color, improving design consistency.
-- **Dynamic Glow**: Added a subtle glow effect to the section's header indicator using the primary color's shadow.
+- **Structural Alignment**: Replaced the boxed `Container` layout with a clean `Column` structure for all carousel-based sections.
+- **Visual Consistency**: Unified the header typography and icon sizing (16px) across the entire statistics dashboard.
+- **Improved Hierarchy**: Removing the outer border reduces visual clutter, allowing the cards themselves to stand out as the primary information layer.
 
 ---
 ## Current Status

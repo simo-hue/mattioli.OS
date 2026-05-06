@@ -13,6 +13,8 @@ class InfoTabWidget extends StatelessWidget {
       children: [
         const _TopStatsGrid(),
         const SizedBox(height: 16),
+        const _AttivitaRecenteSection(),
+        const SizedBox(height: 16),
         const _AbitudiniChiaveSection(),
         const SizedBox(height: 16),
         const _AnalisiCorrelazioniSection(),
@@ -20,8 +22,6 @@ class InfoTabWidget extends StatelessWidget {
         const _CorrelazioniPositiveSection(),
         const SizedBox(height: 16),
         const _CorrelazioniNegativeSection(),
-        const SizedBox(height: 16),
-        const _AttivitaRecenteSection(),
         const SizedBox(height: 32),
       ],
 
@@ -208,183 +208,99 @@ class _AbitudiniChiaveSectionState extends State<_AbitudiniChiaveSection> {
 
   @override
   Widget build(BuildContext context) {
-    final habitsData = [
-      {
-        'title': '1 YT-Video',
-        'dotColor': const Color(0xFFEF4444),
-        'media': '-0.13',
-        'extra': 2,
-        'correlations': [
-          const MapEntry('Caviglia', '-0.43'),
-          const MapEntry('20 Flessioni 4', '-0.42'),
-          const MapEntry('20 Flessioni 3', '-0.38'),
-          const MapEntry('20 Flessioni 2', '-0.35'),
-        ]
-      },
-      {
-        'title': '20 Flessioni 1',
-        'dotColor': const Color(0xFFEF4444),
-        'media': '+0.47',
-        'extra': 1,
-        'correlations': [
-          const MapEntry('20 Flessioni 2', '+0.92'),
-          const MapEntry('20 Flessioni 3', '+0.77'),
-          const MapEntry('20 Flessioni 4', '+0.62'),
-          const MapEntry('Journaling', '+0.55'),
-        ]
-      },
-      {
-        'title': '20 Flessioni 2',
-        'dotColor': const Color(0xFFEF4444),
-        'media': '+0.48',
-        'extra': 1,
-        'correlations': [
-          const MapEntry('20 Flessioni 1', '+0.92'),
-          const MapEntry('20 Flessioni 3', '+0.84'),
-          const MapEntry('20 Flessioni 4', '+0.70'),
-          const MapEntry('1 YT-Video', '-0.35'),
-        ]
-      },
+    final List<Widget> cards = [
+      const _AbitudineChiaveCard(
+        title: '1 YT-Video',
+        dotColor: Color(0xFFEF4444),
+        correlations: [
+          MapEntry('Caviglia', '-0.43'),
+          MapEntry('20 Flessioni 4', '-0.42'),
+          MapEntry('20 Flessioni 3', '-0.38'),
+          MapEntry('20 Flessioni 2', '-0.35'),
+        ],
+        extraConnections: 2,
+        media: '-0.13',
+      ),
+      const _AbitudineChiaveCard(
+        title: '20 Flessioni 1',
+        dotColor: Color(0xFFEF4444),
+        correlations: [
+          MapEntry('20 Flessioni 2', '+0.92'),
+          MapEntry('20 Flessioni 3', '+0.77'),
+          MapEntry('20 Flessioni 4', '+0.62'),
+          MapEntry('Journaling', '+0.55'),
+        ],
+        extraConnections: 1,
+        media: '+0.47',
+      ),
+      const _AbitudineChiaveCard(
+        title: '20 Flessioni 2',
+        dotColor: Color(0xFFEF4444),
+        correlations: [
+          MapEntry('20 Flessioni 1', '+0.92'),
+          MapEntry('20 Flessioni 3', '+0.84'),
+          MapEntry('20 Flessioni 4', '+0.70'),
+          MapEntry('1 YT-Video', '-0.35'),
+        ],
+        extraConnections: 1,
+        media: '+0.48',
+      ),
     ];
 
-    return Container(
-      decoration: BoxDecoration(
-        color: AppColors.card,
-        borderRadius: BorderRadius.circular(16),
-        border: Border.all(color: AppColors.border, width: 1),
-      ),
-      clipBehavior: Clip.hardEdge,
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Padding(
-            padding: const EdgeInsets.fromLTRB(16, 16, 16, 0),
-            child: Row(
-              children: [
-                Container(
-                  padding: const EdgeInsets.all(8),
-                  decoration: BoxDecoration(
-                    color: const Color(0xFFEAB308).withValues(alpha: 0.15),
-                    borderRadius: BorderRadius.circular(8),
-                  ),
-                  child: const Icon(LucideIcons.crown, size: 18, color: Color(0xFFEAB308)),
-                ),
-                const SizedBox(width: 12),
-                Expanded(
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      Text(
-                        context.l10n.translate('Abitudini Chiave'),
-                        style: const TextStyle(
-                          fontFamily: 'Inter',
-                          fontSize: 16,
-                          fontWeight: FontWeight.w700,
-                          color: AppColors.foreground,
-                        ),
-                      ),
-                      Text(
-                        context.l10n.translate('Abitudini che influenzano positivamente molte altre'),
-                        style: const TextStyle(
-                          fontFamily: 'Inter',
-                          fontSize: 11,
-                          color: AppColors.mutedForeground,
-                        ),
-                      ),
-                    ],
-                  ),
-                ),
-              ],
-            ),
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Row(
+          children: [
+            const Icon(LucideIcons.crown, size: 16, color: Color(0xFFEAB308)),
+            const SizedBox(width: 8),
+            Text(context.l10n.translate('Abitudini Chiave'), style: const TextStyle(fontFamily: 'Inter', fontSize: 14, fontWeight: FontWeight.w700, color: AppColors.foreground)),
+          ],
+        ),
+        const SizedBox(height: 4),
+        Text(context.l10n.translate('Abitudini che influenzano positivamente molte altre'), style: const TextStyle(fontFamily: 'Inter', fontSize: 11, color: AppColors.mutedForeground)),
+        const SizedBox(height: 16),
+        
+        // Carousel
+        SizedBox(
+          height: 280, // Height for habit cards
+          child: PageView.builder(
+            controller: _pageController,
+            itemCount: cards.length,
+            onPageChanged: (index) => setState(() => _currentPage = index),
+            itemBuilder: (context, index) {
+              return Padding(
+                padding: const EdgeInsets.symmetric(horizontal: 8),
+                child: cards[index],
+              );
+            },
           ),
-          const SizedBox(height: 20),
-          
-          // Snapping Carousel
-          SizedBox(
-            height: 310,
-            child: PageView.builder(
-              controller: _pageController,
-              onPageChanged: (index) => setState(() => _currentPage = index),
-              itemCount: habitsData.length,
-              itemBuilder: (context, index) {
-                final data = habitsData[index];
-                final isSelected = _currentPage == index;
-                
-                return AnimatedScale(
-                  scale: isSelected ? 1.0 : 0.95,
-                  duration: const Duration(milliseconds: 300),
-                  curve: Curves.easeOutQuart,
-                  child: AnimatedOpacity(
-                    duration: const Duration(milliseconds: 300),
-                    opacity: isSelected ? 1.0 : 0.6,
-                    child: Padding(
-                      padding: const EdgeInsets.symmetric(horizontal: 4),
-                      child: _AbitudineChiaveCard(
-                        title: data['title'] as String,
-                        dotColor: data['dotColor'] as Color,
-                        media: data['media'] as String,
-                        extraConnections: data['extra'] as int,
-                        correlations: data['correlations'] as List<MapEntry<String, String>>,
-                      ),
-                    ),
-                  ),
-                );
-              },
-            ),
-          ),
-          
-          const SizedBox(height: 12),
-          
-          // Pagination Indicators
-          Row(
+        ),
+        
+        const SizedBox(height: 12),
+        
+        // Pagination Dots
+        Center(
+          child: Row(
             mainAxisAlignment: MainAxisAlignment.center,
-            children: List.generate(habitsData.length, (index) {
-              final isSelected = _currentPage == index;
+            children: List.generate(cards.length, (index) {
+              final isActive = _currentPage == index;
               return AnimatedContainer(
                 duration: const Duration(milliseconds: 300),
-                margin: const EdgeInsets.symmetric(horizontal: 3),
+                margin: const EdgeInsets.symmetric(horizontal: 4),
+                width: isActive ? 16 : 6,
                 height: 6,
-                width: isSelected ? 20 : 6,
                 decoration: BoxDecoration(
-                  color: isSelected 
-                      ? const Color(0xFFEAB308) 
+                  color: isActive 
+                      ? const Color(0xFFEAB308)
                       : AppColors.mutedForeground.withValues(alpha: 0.3),
                   borderRadius: BorderRadius.circular(3),
                 ),
               );
             }),
           ),
-          
-          const SizedBox(height: 20),
-          Padding(
-            padding: const EdgeInsets.fromLTRB(16, 0, 16, 16),
-            child: Container(
-              padding: const EdgeInsets.all(12),
-              decoration: BoxDecoration(
-                color: AppColors.muted,
-                borderRadius: BorderRadius.circular(8),
-              ),
-              child: Row(
-                children: [
-                  const Icon(LucideIcons.lightbulb, size: 14, color: AppColors.mutedForeground),
-                  const SizedBox(width: 8),
-                  Expanded(
-                    child: RichText(
-                      text: TextSpan(
-                        style: const TextStyle(fontFamily: 'Inter', fontSize: 10, color: AppColors.mutedForeground, height: 1.4),
-                        children: [
-                          TextSpan(text: '${context.l10n.translate('Suggerimento')}: ', style: const TextStyle(fontWeight: FontWeight.w700, color: AppColors.foreground)),
-                          TextSpan(text: context.l10n.translate('Le abitudini chiave hanno un effetto "domino".')),
-                        ],
-                      ),
-                    ),
-                  ),
-                ],
-              ),
-            ),
-          ),
-        ],
-      ),
+        ),
+      ],
     );
   }
 }
@@ -1052,86 +968,99 @@ class _AttivitaRecenteSection extends StatelessWidget {
     final accentColor = Theme.of(context).colorScheme.primary;
     
     return Container(
-      padding: const EdgeInsets.all(16),
+      padding: const EdgeInsets.all(20),
       decoration: BoxDecoration(
         color: AppColors.card,
-        borderRadius: BorderRadius.circular(16),
+        borderRadius: BorderRadius.circular(20),
         border: Border.all(color: AppColors.border, width: 1),
       ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           Row(
+            mainAxisAlignment: MainAxisAlignment.spaceBetween,
             children: [
-              Container(
-                width: 10,
-                height: 10,
-                decoration: BoxDecoration(
-                  color: accentColor,
-                  shape: BoxShape.circle,
-                  boxShadow: [
-                    BoxShadow(
-                      color: accentColor.withValues(alpha: 0.4),
-                      blurRadius: 6,
+              Row(
+                children: [
+                  Container(
+                    padding: const EdgeInsets.all(8),
+                    decoration: BoxDecoration(
+                      color: accentColor.withValues(alpha: 0.15),
+                      borderRadius: BorderRadius.circular(8),
                     ),
-                  ],
-                ),
-              ),
-              const SizedBox(width: 8),
-              const Text(
-                'Attività Recente',
-                style: TextStyle(
-                  fontFamily: 'Inter',
-                  fontSize: 16,
-                  fontWeight: FontWeight.w700,
-                  color: AppColors.foreground,
-                ),
+                    child: Icon(LucideIcons.calendarRange, size: 18, color: accentColor),
+                  ),
+                  const SizedBox(width: 12),
+                  Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Text(
+                        context.l10n.translate('Attività Recente'),
+                        style: const TextStyle(
+                          fontFamily: 'Inter',
+                          fontSize: 16,
+                          fontWeight: FontWeight.w700,
+                          color: AppColors.foreground,
+                          letterSpacing: -0.5,
+                        ),
+                      ),
+                      Text(
+                        context.l10n.translate('La tua costanza negli ultimi mesi'),
+                        style: const TextStyle(
+                          fontFamily: 'Inter',
+                          fontSize: 11,
+                          color: AppColors.mutedForeground,
+                        ),
+                      ),
+                    ],
+                  ),
+                ],
               ),
             ],
           ),
-          const SizedBox(height: 16),
-          Container(
-            padding: const EdgeInsets.all(16),
-            decoration: BoxDecoration(
-              color: AppColors.background,
-              borderRadius: BorderRadius.circular(16),
-              border: Border.all(color: AppColors.border, width: 1),
-            ),
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                const Text(
-                  'Costanza',
-                  style: TextStyle(
-                    fontFamily: 'Inter',
-                    fontSize: 18,
-                    fontWeight: FontWeight.w700,
-                    color: AppColors.foreground,
-                  ),
+          const SizedBox(height: 24),
+          
+          // Activity Grid
+          Center(
+            child: _buildActivityGrid(accentColor),
+          ),
+          
+          const SizedBox(height: 20),
+          
+          // Legend
+          Row(
+            mainAxisAlignment: MainAxisAlignment.end,
+            children: [
+              Text(
+                context.l10n.translate('Meno'),
+                style: const TextStyle(
+                  fontFamily: 'Inter',
+                  fontSize: 10,
+                  fontWeight: FontWeight.w500,
+                  color: AppColors.mutedForeground,
                 ),
-                const SizedBox(height: 24),
-                _buildActivityGrid(accentColor),
-                const SizedBox(height: 16),
-                Row(
-                  mainAxisAlignment: MainAxisAlignment.end,
-                  children: [
-                    const Text('Meno', style: TextStyle(fontFamily: 'Inter', fontSize: 12, color: AppColors.mutedForeground)),
-                    const SizedBox(width: 8),
-                    _buildDot(0, accentColor),
-                    const SizedBox(width: 4),
-                    _buildDot(1, accentColor),
-                    const SizedBox(width: 4),
-                    _buildDot(2, accentColor),
-                    const SizedBox(width: 4),
-                    _buildDot(3, accentColor),
-                    const SizedBox(width: 4),
-                    _buildDot(4, accentColor),
-                    const SizedBox(width: 8),
-                    const Text('Più', style: TextStyle(fontFamily: 'Inter', fontSize: 12, color: AppColors.mutedForeground)),
-                  ],
+              ),
+              const SizedBox(width: 8),
+              _buildDot(0, accentColor),
+              const SizedBox(width: 4),
+              _buildDot(1, accentColor),
+              const SizedBox(width: 4),
+              _buildDot(2, accentColor),
+              const SizedBox(width: 4),
+              _buildDot(3, accentColor),
+              const SizedBox(width: 4),
+              _buildDot(4, accentColor),
+              const SizedBox(width: 8),
+              Text(
+                context.l10n.translate('Più'),
+                style: const TextStyle(
+                  fontFamily: 'Inter',
+                  fontSize: 10,
+                  fontWeight: FontWeight.w500,
+                  color: AppColors.mutedForeground,
                 ),
-              ],
-            ),
+              ),
+            ],
           ),
         ],
       ),

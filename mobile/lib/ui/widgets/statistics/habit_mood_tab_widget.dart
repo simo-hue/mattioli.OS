@@ -42,10 +42,10 @@ class _TopMetricsGrid extends StatelessWidget {
       physics: const NeverScrollableScrollPhysics(),
       childAspectRatio: 1.8,
       children: [
-        _MetricCard(title: context.l10n.translate('mood_correlation'), value: '-20%', subtitle: context.l10n.translate('none')),
-        _MetricCard(title: context.l10n.translate('energy_correlation'), value: '-6%', subtitle: context.l10n.translate('none')),
-        _MetricCard(title: context.l10n.translate('avg_mood_checked'), value: '6.1', subtitle: context.l10n.translate('on_10'), isRed: true),
-        _MetricCard(title: context.l10n.translate('avg_energy_checked'), value: '6.7', subtitle: context.l10n.translate('on_10'), isRed: true),
+        _MetricCard(title: context.l10n.translate('Correlazione Mood'), value: '-20%', subtitle: context.l10n.translate('none')),
+        _MetricCard(title: context.l10n.translate('Correlazione Energia'), value: '-6%', subtitle: context.l10n.translate('none')),
+        _MetricCard(title: context.l10n.translate('Mood Medio (✓)'), value: '6.1', subtitle: context.l10n.translate('su 10'), isRed: true),
+        _MetricCard(title: context.l10n.translate('Energia Media (✓)'), value: '6.7', subtitle: context.l10n.translate('su 10'), isRed: true),
       ],
     );
   }
@@ -132,7 +132,7 @@ class _ResilienteBadge extends StatelessWidget {
           Icon(LucideIcons.activity, size: 14, color: Theme.of(context).colorScheme.primary),
           const SizedBox(width: 6),
           Text(
-            context.l10n.translate('resilient_label'),
+            context.l10n.translate('Resiliente'),
             style: TextStyle(
               fontFamily: 'Inter',
               fontSize: 12,
@@ -162,7 +162,7 @@ class _CompletatoVsMancatoCard extends StatelessWidget {
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           Text(
-            context.l10n.translate('completed_vs_missed'),
+            context.l10n.translate('Completato vs Mancato'),
             style: const TextStyle(
               fontFamily: 'Inter',
               fontSize: 16,
@@ -199,9 +199,9 @@ class _CompletatoVsMancatoCard extends StatelessWidget {
                       Row(
                         crossAxisAlignment: CrossAxisAlignment.end,
                         children: [
-                          Expanded(child: _buildBarGroup(context, context.l10n.translate('completed'), 6.0, 6.7)),
+                          Expanded(child: _buildBarGroup(context, context.l10n.translate('Completato'), 6.0, 6.7)),
                           const SizedBox(width: 16),
-                          Expanded(child: _buildBarGroup(context, context.l10n.translate('missed'), 7.0, 7.0)),
+                          Expanded(child: _buildBarGroup(context, context.l10n.translate('Mancato'), 7.0, 7.0)),
                         ],
                       ),
                     ],
@@ -215,9 +215,9 @@ class _CompletatoVsMancatoCard extends StatelessWidget {
           Row(
             mainAxisAlignment: MainAxisAlignment.center,
             children: [
-              _buildLegendItem(context, const Color(0xFF10B981), context.l10n.translate('mood')),
+              _buildLegendItem(context, const Color(0xFF10B981), context.l10n.translate('Umore')),
               const SizedBox(width: 16),
-              _buildLegendItem(context, const Color(0xFFF59E0B), context.l10n.translate('energy')),
+              _buildLegendItem(context, const Color(0xFFF59E0B), context.l10n.translate('Energia')),
             ],
           ),
         ],
@@ -322,7 +322,7 @@ class _PerformancePerLivelloCard extends StatelessWidget {
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           Text(
-            context.l10n.translate('performance_per_level'),
+            context.l10n.translate('Performance per Livello'),
             style: const TextStyle(
               fontFamily: 'Inter',
               fontSize: 16,
@@ -332,7 +332,7 @@ class _PerformancePerLivelloCard extends StatelessWidget {
           ),
           const SizedBox(height: 4),
           Text(
-            context.l10n.translate('low_med_high_desc'),
+            context.l10n.translate('Basso (1-4) • Medio (5-7) • Alto (8-10)'),
             style: const TextStyle(
               fontFamily: 'Inter',
               fontSize: 12,
@@ -379,9 +379,9 @@ class _PerformancePerLivelloCard extends StatelessWidget {
                         child: Row(
                           mainAxisAlignment: MainAxisAlignment.spaceBetween,
                           children: [
-                            Text(context.l10n.translate('low'), style: const TextStyle(fontSize: 10, color: AppColors.mutedForeground)),
-                            Text(context.l10n.translate('medium'), style: const TextStyle(fontSize: 10, color: AppColors.mutedForeground)),
-                            Text(context.l10n.translate('high'), style: const TextStyle(fontSize: 10, color: AppColors.mutedForeground)),
+                            Text(context.l10n.translate('Basso'), style: const TextStyle(fontSize: 10, color: AppColors.mutedForeground)),
+                            Text(context.l10n.translate('Medio'), style: const TextStyle(fontSize: 10, color: AppColors.mutedForeground)),
+                            Text(context.l10n.translate('Alto'), style: const TextStyle(fontSize: 10, color: AppColors.mutedForeground)),
                           ],
                         ),
                       ),
@@ -396,9 +396,9 @@ class _PerformancePerLivelloCard extends StatelessWidget {
           Row(
             mainAxisAlignment: MainAxisAlignment.center,
             children: [
-              _buildLineLegendItem(const Color(0xFF10B981), context.l10n.translate('with_mood'), false),
+              _buildLineLegendItem(const Color(0xFF10B981), context.l10n.translate('Con Mood'), false),
               const SizedBox(width: 16),
-              _buildLineLegendItem(const Color(0xFFF59E0B), context.l10n.translate('with_energy'), true),
+              _buildLineLegendItem(const Color(0xFFF59E0B), context.l10n.translate('Con Energia'), true),
             ],
           ),
         ],
@@ -554,7 +554,7 @@ class _FooterInfo extends StatelessWidget {
       ),
       padding: const EdgeInsets.symmetric(vertical: 16, horizontal: 16),
       child: Text(
-        context.l10n.translate('analysis_based_on')
+        context.l10n.translate('Analisi basata su count giorni con dati mood/energia (done completati, missed mancati)')
             .replaceFirst('count', '76')
             .replaceFirst('done', '46')
             .replaceFirst('missed', '30'),

@@ -28,13 +28,13 @@ class StatisticsScreen extends ConsumerStatefulWidget {
 
 class _StatisticsScreenState extends ConsumerState<StatisticsScreen>
     with AutomaticKeepAliveClientMixin {
-  String _selectedTab = 'tab_info';
+  String _selectedTab = 'Info';
   List<String> _tabs = [
-    'tab_info',
-    'tab_trend',
-    'tab_alert',
-    'tab_habits',
-    'tab_mood'
+    'Info',
+    'Trend',
+    'Alert',
+    'Abitudini',
+    'Mood'
   ];
   String? _selectedGoalId;
 
@@ -45,11 +45,11 @@ class _StatisticsScreenState extends ConsumerState<StatisticsScreen>
     setState(() {
       _selectedGoalId = goalId;
       if (_selectedGoalId == null) {
-        _tabs = ['tab_info', 'tab_trend', 'tab_alert', 'tab_habits', 'tab_mood'];
-        _selectedTab = 'tab_info';
+        _tabs = ['Info', 'Trend', 'Alert', 'Abitudini', 'Mood'];
+        _selectedTab = 'Info';
       } else {
-        _tabs = ['tab_info', 'tab_trend', 'tab_stats', 'tab_alert', 'tab_mood'];
-        _selectedTab = 'tab_info';
+        _tabs = ['Info', 'Trend', 'Stats', 'Alert', 'Mood'];
+        _selectedTab = 'Info';
       }
     });
   }
@@ -74,7 +74,7 @@ class _StatisticsScreenState extends ConsumerState<StatisticsScreen>
                   children: [
                     const SizedBox(height: 12),
                     Text(
-                      context.l10n.translate('statistics_title'),
+                      context.l10n.translate('Statistiche'),
                       style: const TextStyle(
                         fontFamily: 'Inter',
                         fontSize: 32,
@@ -86,7 +86,7 @@ class _StatisticsScreenState extends ConsumerState<StatisticsScreen>
                     ),
                     const SizedBox(height: 6),
                     Text(
-                      context.l10n.translate('statistics_subtitle'),
+                      context.l10n.translate('Panoramica Statistiche'),
                       style: TextStyle(
                         fontFamily: 'Inter',
                         fontSize: 14,
@@ -122,7 +122,7 @@ class _StatisticsScreenState extends ConsumerState<StatisticsScreen>
   }
 
   Widget _buildGoalDropdown(List<Goal> goals) {
-    String displayTitle = context.l10n.translate('all_habits');
+    String displayTitle = context.l10n.translate('Tutti gli Habits');
     Color displayColor = AppColors.foreground;
     
     if (_selectedGoalId != null) {
@@ -241,15 +241,15 @@ class _StatisticsScreenState extends ConsumerState<StatisticsScreen>
   Widget _buildTabContent() {
     if (_selectedGoalId == null) {
       switch (_selectedTab) {
-        case 'tab_info':
+        case 'Info':
           return const InfoTabWidget(key: ValueKey('Info'));
-        case 'tab_trend':
+        case 'Trend':
           return const GlobalTrendTabWidget(key: ValueKey('GlobalTrend'));
-        case 'tab_alert':
+        case 'Alert':
           return const GlobalAlertsTabWidget(key: ValueKey('GlobalAlert'));
-        case 'tab_habits':
+        case 'Abitudini':
           return const GlobalHabitsTabWidget(key: ValueKey('GlobalHabits'));
-        case 'tab_mood':
+        case 'Mood':
           return const GlobalMoodTabWidget(key: ValueKey('GlobalMood'));
         default:
           return Center(
@@ -259,27 +259,27 @@ class _StatisticsScreenState extends ConsumerState<StatisticsScreen>
       }
     } else {
       switch (_selectedTab) {
-        case 'tab_info':
+        case 'Info':
           return HabitOverviewTabWidget(
             key: ValueKey('Info_$_selectedGoalId'),
             goalId: _selectedGoalId!,
           );
-        case 'tab_trend':
+        case 'Trend':
           return HabitCalendarioTabWidget(
             key: ValueKey('Trend_$_selectedGoalId'),
             goalId: _selectedGoalId!,
           );
-        case 'tab_stats':
+        case 'Stats':
           return HabitPerformanceTabWidget(
             key: ValueKey('Stats_$_selectedGoalId'),
             goalId: _selectedGoalId!,
           );
-        case 'tab_alert':
+        case 'Alert':
           return HabitMiglioramentoTabWidget(
             key: ValueKey('Alert_$_selectedGoalId'),
             goalId: _selectedGoalId!,
           );
-        case 'tab_mood':
+        case 'Mood':
           return HabitMoodTabWidget(
             key: ValueKey('Mood_$_selectedGoalId'),
             goalId: _selectedGoalId!,
@@ -309,7 +309,7 @@ class _StatisticsScreenState extends ConsumerState<StatisticsScreen>
               mainAxisSize: MainAxisSize.min,
               children: [
                 Text(
-                  context.l10n.translate('select_habit'),
+                  context.l10n.translate('SELEZIONA HABIT'),
                   style: const TextStyle(
                     fontFamily: 'Inter',
                     fontSize: 10,
@@ -330,7 +330,7 @@ class _StatisticsScreenState extends ConsumerState<StatisticsScreen>
                     ),
                     child: const Icon(LucideIcons.list, size: 14, color: AppColors.foreground),
                   ),
-                  title: Text(context.l10n.translate('all_habits'), style: const TextStyle(fontFamily: 'Inter', fontSize: 16, fontWeight: FontWeight.w600, color: AppColors.foreground)),
+                  title: Text(context.l10n.translate('Tutti gli Habits'), style: const TextStyle(fontFamily: 'Inter', fontSize: 16, fontWeight: FontWeight.w600, color: AppColors.foreground)),
                   trailing: _selectedGoalId == null ? const Icon(LucideIcons.check, color: AppColors.foreground) : null,
                   onTap: () {
                     _selectGoal(null);

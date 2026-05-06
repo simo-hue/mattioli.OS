@@ -75,7 +75,7 @@ class _GlobalHabitsTabWidgetState extends State<GlobalHabitsTabWidget> {
           mainAxisAlignment: MainAxisAlignment.spaceBetween,
           children: [
             Text(
-              context.l10n.translate('habit_details'),
+              context.l10n.translate('Dettagli Abitudini'),
               style: const TextStyle(
                 fontFamily: 'Inter',
                 fontSize: 18,
@@ -184,7 +184,7 @@ class _GlobalHabitsTabWidgetState extends State<GlobalHabitsTabWidget> {
               child: Align(
                 alignment: Alignment.center,
                 child: Text(
-                  context.l10n.translate('order_by'),
+                  context.l10n.translate('Ordina per'),
                   style: const TextStyle(
                     fontFamily: 'Inter',
                     fontSize: 10,

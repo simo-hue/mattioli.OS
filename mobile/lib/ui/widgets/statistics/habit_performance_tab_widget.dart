@@ -50,7 +50,7 @@ class _PerformanceChartCard extends StatelessWidget {
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           Text(
-            context.l10n.translate('performance_per_day'),
+            context.l10n.translate('Performance per Giorno'),
             style: const TextStyle(
               fontFamily: 'Inter',
               fontSize: 18,
@@ -148,7 +148,7 @@ class _GiornoForteCard extends StatelessWidget {
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
                 Text(
-                  '${context.l10n.translate('strongest_day_label')}: ${context.l10n.translate('tue')}',
+                  '${context.l10n.translate('Giorno più forte')}: ${context.l10n.translate('Mar')}',
                   style: const TextStyle(
                     fontFamily: 'Inter',
                     fontSize: 15,
@@ -158,7 +158,7 @@ class _GiornoForteCard extends StatelessWidget {
                 ),
                 SizedBox(height: 2),
                 Text(
-                  '${context.l10n.translate('well_done_completion').replaceFirst('done', '67')} (12/18)',
+                  '${context.l10n.translate('Ben fatto! % di completamento').replaceFirst('done', '67')} (12/18)',
                   style: const TextStyle(
                     fontFamily: 'Inter',
                     fontSize: 13,
@@ -196,7 +196,7 @@ class _GiornoDeboleCard extends StatelessWidget {
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
                 Text(
-                  '${context.l10n.translate('weakest_day_label')}: ${context.l10n.translate('sun')}',
+                  '${context.l10n.translate('Giorno più debole')}: ${context.l10n.translate('Dom')}',
                   style: const TextStyle(
                     fontFamily: 'Inter',
                     fontSize: 15,
@@ -206,7 +206,7 @@ class _GiornoDeboleCard extends StatelessWidget {
                 ),
                 SizedBox(height: 2),
                 Text(
-                  '${context.l10n.translate('only_completion').replaceFirst('done', '47')} (8/17)',
+                  '${context.l10n.translate('Solo % di completamento').replaceFirst('done', '47')} (8/17)',
                   style: const TextStyle(
                     fontFamily: 'Inter',
                     fontSize: 13,

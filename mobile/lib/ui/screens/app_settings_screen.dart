@@ -370,7 +370,7 @@ class AppSettingsScreen extends ConsumerWidget {
                           border: Border.all(color: primaryColor.withValues(alpha: 0.3)),
                         ),
                         child: Text(
-                          context.l10n.translate('coming_soon'),
+                          context.l10n.translate('PROSSIMAMENTE'),
                           style: GoogleFonts.inter(color: primaryColor, fontSize: 9, fontWeight: FontWeight.w900),
                         ),
                       ),

@@ -44,7 +44,7 @@ class _SerieNegativaCard extends StatelessWidget {
               const Icon(LucideIcons.trendingDown, size: 20, color: Color(0xFFEF4444)),
               const SizedBox(width: 8),
               Text(
-                context.l10n.translate('worst_negative_streak'),
+                context.l10n.translate('Serie Negativa Peggiore'),
                 style: const TextStyle(
                   fontFamily: 'Inter',
                   fontSize: 16,
@@ -74,7 +74,7 @@ class _SerieNegativaCard extends StatelessWidget {
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
                     Text(
-                      context.l10n.translate('missed_consecutive_days'),
+                      context.l10n.translate('giorni consecutivi mancati'),
                       style: const TextStyle(
                         fontFamily: 'Inter',
                         fontSize: 15,
@@ -83,7 +83,7 @@ class _SerieNegativaCard extends StatelessWidget {
                     ),
                     const SizedBox(height: 2),
                     Text(
-                      '${context.l10n.translate('started_on')} 1 ${context.l10n.translate('april')} 2026',
+                      '${context.l10n.translate('Iniziata il')} 1 ${context.l10n.translate('Aprile')} 2026',
                       style: const TextStyle(
                         fontFamily: 'Inter',
                         fontSize: 13,
@@ -124,7 +124,7 @@ class _StreakInterrottiCard extends StatelessWidget {
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           Text(
-            context.l10n.translate('broken_streaks'),
+            context.l10n.translate('Streak Interrotti'),
             style: const TextStyle(
               fontFamily: 'Inter',
               fontSize: 16,
@@ -176,7 +176,7 @@ class _StreakInterrottiCard extends StatelessWidget {
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
                 Text(
-                  context.l10n.translate('streak_of_days_broken').replaceFirst('count', days.toString()),
+                  context.l10n.translate('Streak di count giorni interrotto').replaceFirst('count', days.toString()),
                   style: const TextStyle(
                     fontFamily: 'Inter',
                     fontSize: 15,
@@ -218,7 +218,7 @@ class _SuggerimentiCard extends StatelessWidget {
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           Text(
-            '💡 ${context.l10n.translate('suggestions')}',
+            '💡 ${context.l10n.translate('Suggerimenti')}',
             style: const TextStyle(
               fontFamily: 'Inter',
               fontSize: 16,
@@ -227,9 +227,9 @@ class _SuggerimentiCard extends StatelessWidget {
             ),
           ),
           const SizedBox(height: 16),
-          _buildBulletPoint(context.l10n.translate('improvement_tip_1')),
-          _buildBulletPoint(context.l10n.translate('improvement_tip_2')),
-          _buildBulletPoint(context.l10n.translate('improvement_tip_3')),
+          _buildBulletPoint(context.l10n.translate('Concentrati sul Dom - è il tuo giorno più debole')),
+          _buildBulletPoint(context.l10n.translate('Evita pause prolungate - la tua serie negativa più lunga è stata di 12 giorni')),
+          _buildBulletPoint(context.l10n.translate('Obiettivo: raggiungi almeno il 70% di completamento per consolidare l\'abitudine')),
         ],
       ),
     );

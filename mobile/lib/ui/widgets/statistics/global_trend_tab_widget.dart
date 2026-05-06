@@ -50,7 +50,7 @@ class _GlobalTrendTabWidgetState extends ConsumerState<GlobalTrendTabWidget> {
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
                     Text(
-                      context.l10n.translate('completion_trend'),
+                      context.l10n.translate('Trend Completamento'),
                       style: const TextStyle(
                         fontFamily: 'Inter',
                         fontSize: 13,
@@ -166,7 +166,7 @@ class _GlobalTrendTabWidgetState extends ConsumerState<GlobalTrendTabWidget> {
                       const SizedBox(width: 8),
                       Flexible(
                         child: Text(
-                          context.l10n.translate('temporal_comparison'),
+                          context.l10n.translate('Confronto Temporale'),
                           overflow: TextOverflow.ellipsis,
                           style: const TextStyle(
                             fontFamily: 'Inter',
@@ -180,7 +180,7 @@ class _GlobalTrendTabWidgetState extends ConsumerState<GlobalTrendTabWidget> {
                   ),
                   const SizedBox(height: 4),
                   Text(
-                    context.l10n.translate('comparison_desc'),
+                    context.l10n.translate('Analizza come stai andando rispetto al passato.'),
                     style: const TextStyle(
                       fontFamily: 'Inter',
                       fontSize: 12,

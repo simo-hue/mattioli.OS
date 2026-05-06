@@ -56,7 +56,7 @@ class _CalendarioAnnualeCard extends StatelessWidget {
               Icon(LucideIcons.calendar, size: 20, color: AppColors.foreground),
               SizedBox(width: 10),
             Text(
-              context.l10n.translate('annual_calendar'),
+              context.l10n.translate('Calendario Annuale'),
               style: const TextStyle(
                 fontFamily: 'Inter',
                 fontSize: 16,
@@ -98,11 +98,11 @@ class _CalendarioAnnualeCard extends StatelessWidget {
           // Legend
           Row(
             children: [
-              _buildLegendItem(Theme.of(context).colorScheme.primary, context.l10n.translate('completed')),
+              _buildLegendItem(Theme.of(context).colorScheme.primary, context.l10n.translate('Completato')),
               const SizedBox(width: 16),
-              _buildLegendItem(const Color(0xFFEF4444), context.l10n.translate('missed')),
+              _buildLegendItem(const Color(0xFFEF4444), context.l10n.translate('Mancato')),
               const SizedBox(width: 16),
-              _buildLegendItem(const Color(0xFF18181B), context.l10n.translate('not_tracked')),
+              _buildLegendItem(const Color(0xFF18181B), context.l10n.translate('Non tracciato')),
             ],
           ),
         ],

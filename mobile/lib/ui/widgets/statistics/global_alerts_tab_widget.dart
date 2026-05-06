@@ -40,7 +40,7 @@ class _AreeMiglioramentoSection extends StatelessWidget {
             const Icon(LucideIcons.target, size: 20, color: AppColors.foreground),
             const SizedBox(width: 10),
             Text(
-              context.l10n.translate('improvement_areas'),
+              context.l10n.translate('Aree di Miglioramento'),
               style: const TextStyle(
                 fontFamily: 'Inter',
                 fontSize: 18,
@@ -52,7 +52,7 @@ class _AreeMiglioramentoSection extends StatelessWidget {
         ),
         const SizedBox(height: 4),
         Text(
-          context.l10n.translate('improvement_areas_desc'),
+          context.l10n.translate('Abitudini che richiedono più attenzione.'),
           style: const TextStyle(
             fontFamily: 'Inter',
             fontSize: 13,
@@ -68,7 +68,7 @@ class _AreeMiglioramentoSection extends StatelessWidget {
               _MiglioramentoCard(
                 title: 'Lettura',
                 successRate: '10%',
-                day: context.l10n.translate('wednesday'),
+                day: context.l10n.translate('Mercoledì'),
                 dayCompletion: '15%',
                 color: const Color(0xFF10B981),
               ),
@@ -76,7 +76,7 @@ class _AreeMiglioramentoSection extends StatelessWidget {
               _MiglioramentoCard(
                 title: '20 Flessioni 4',
                 successRate: '13%',
-                day: context.l10n.translate('sunday'),
+                day: context.l10n.translate('Domenica'),
                 dayCompletion: '15%',
                 color: const Color(0xFFEF4444),
               ),
@@ -84,7 +84,7 @@ class _AreeMiglioramentoSection extends StatelessWidget {
               _MiglioramentoCard(
                 title: '20 Flessioni 2',
                 successRate: '20%',
-                day: context.l10n.translate('sunday'),
+                day: context.l10n.translate('Domenica'),
                 dayCompletion: '31%',
                 color: const Color(0xFFEF4444),
               ),
@@ -154,7 +154,7 @@ class _MiglioramentoCard extends StatelessWidget {
               ),
 
               Text(
-                '$successRate ${context.l10n.translate('succ')}',
+                '$successRate ${context.l10n.translate('succ.')}',
                 style: const TextStyle(
                   fontFamily: 'Inter',
                   fontSize: 11,
@@ -175,7 +175,7 @@ class _MiglioramentoCard extends StatelessWidget {
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
                     Text(
-                      context.l10n.translate('black_day'),
+                      context.l10n.translate('GIORNO NERO'),
                       style: const TextStyle(
                         fontFamily: 'Inter',
                         fontSize: 10,
@@ -198,9 +198,9 @@ class _MiglioramentoCard extends StatelessWidget {
                       text: TextSpan(
                         style: const TextStyle(fontFamily: 'Inter', fontSize: 11, color: AppColors.mutedForeground),
                         children: [
-                          TextSpan(text: '${context.l10n.translate('only')} '),
+                          TextSpan(text: '${context.l10n.translate('Solo')} '),
                           TextSpan(text: dayCompletion, style: const TextStyle(color: Color(0xFFEF4444), fontWeight: FontWeight.w700)),
-                          TextSpan(text: ' ${context.l10n.translate('of_completion')}'),
+                          TextSpan(text: ' ${context.l10n.translate('di completamento')}'),
                         ],
                       ),
                     ),
@@ -246,7 +246,7 @@ class _AnalisiWorstStreaksSection extends StatelessWidget {
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
                     Text(
-                      context.l10n.translate('worst_streaks_analysis'),
+                      context.l10n.translate('Analisi Worst Streaks'),
                       style: const TextStyle(
                         fontFamily: 'Inter',
                         fontSize: 16,
@@ -255,7 +255,7 @@ class _AnalisiWorstStreaksSection extends StatelessWidget {
                       ),
                     ),
                     Text(
-                      context.l10n.translate('worst_streaks_desc'),
+                      context.l10n.translate('Analisi serie negative per identificare pattern.'),
                       style: const TextStyle(
                         fontFamily: 'Inter',
                         fontSize: 12,
@@ -283,7 +283,7 @@ class _AnalisiWorstStreaksSection extends StatelessWidget {
                 mainAxisAlignment: MainAxisAlignment.spaceBetween,
                 children: [
                   Text(
-                    '🎯 ${context.l10n.translate('critical_habits')}',
+                    '🎯 ${context.l10n.translate('Abitudini Critiche')}',
                     style: const TextStyle(
                       fontFamily: 'Inter',
                       fontSize: 15,
@@ -292,7 +292,7 @@ class _AnalisiWorstStreaksSection extends StatelessWidget {
                     ),
                   ),
                   Text(
-                    context.l10n.translate('top_3_worst_streaks'),
+                    context.l10n.translate('Top 3 Worst Streaks'),
                     style: const TextStyle(
                       fontFamily: 'Inter',
                       fontSize: 12,
@@ -413,7 +413,7 @@ class _WorstStreakCard extends StatelessWidget {
             ),
           ),
           Text(
-            context.l10n.translate('consecutive_days'),
+            context.l10n.translate('giorni consecutivi'),
             style: const TextStyle(
               fontFamily: 'Inter',
               fontSize: 10,
@@ -451,7 +451,7 @@ class _AnalisiFallimentiSection extends StatelessWidget {
                     const Icon(LucideIcons.chartBar, size: 16, color: Color(0xFFF97316)),
                     const SizedBox(width: 8),
                     Text(
-                      context.l10n.translate('failure_analysis'),
+                      context.l10n.translate('Analisi Fallimenti'),
                       style: const TextStyle(
                         fontFamily: 'Inter',
                         fontSize: 14,
@@ -489,7 +489,7 @@ class _AnalisiFallimentiSection extends StatelessWidget {
                     const Icon(LucideIcons.calendar, size: 16, color: AppColors.foreground),
                     const SizedBox(width: 8),
                     Text(
-                      context.l10n.translate('recovery_patterns'),
+                      context.l10n.translate('Pattern di Recupero'),
                       style: const TextStyle(
                         fontFamily: 'Inter',
                         fontSize: 14,
@@ -503,8 +503,8 @@ class _AnalisiFallimentiSection extends StatelessWidget {
                 Row(
                   mainAxisAlignment: MainAxisAlignment.spaceBetween,
                   children: [
-                    Text(context.l10n.translate('avg_recovery_time'), style: const TextStyle(fontSize: 11, color: AppColors.mutedForeground)),
-                    Text('6 ${context.l10n.translate('days')}', style: const TextStyle(fontSize: 12, fontWeight: FontWeight.bold, color: AppColors.foreground)),
+                    Text(context.l10n.translate('Tempo Medio Recupero'), style: const TextStyle(fontSize: 11, color: AppColors.mutedForeground)),
+                    Text('6 ${context.l10n.translate('giorni')}', style: const TextStyle(fontSize: 12, fontWeight: FontWeight.bold, color: AppColors.foreground)),
                   ],
                 ),
                 const SizedBox(height: 8),
@@ -518,10 +518,10 @@ class _AnalisiFallimentiSection extends StatelessWidget {
                   ),
                 ),
                 const SizedBox(height: 8),
-                Text('👍 ${context.l10n.translate('good')}', style: const TextStyle(fontSize: 11, color: AppColors.mutedForeground)),
+                Text('👍 ${context.l10n.translate('Buono')}', style: const TextStyle(fontSize: 11, color: AppColors.mutedForeground)),
                 const SizedBox(height: 16),
                 Text(
-                  '🔥 ${context.l10n.translate('fast_recoverers')}',
+                  '🔥 ${context.l10n.translate('RECUPERATORI VELOCI')}',
                   style: const TextStyle(fontSize: 10, fontWeight: FontWeight.w800, color: AppColors.mutedForeground),
                 ),
                 const SizedBox(height: 12),
@@ -610,7 +610,7 @@ class _ConfrontoPerformanceSection extends StatelessWidget {
               const Icon(LucideIcons.trendingUp, size: 18, color: AppColors.foreground),
               const SizedBox(width: 10),
               Text(
-                context.l10n.translate('performance_comparison'),
+                context.l10n.translate('Confronto Performance'),
                 style: const TextStyle(
                   fontFamily: 'Inter',
                   fontSize: 16,
@@ -648,7 +648,7 @@ class _ConfrontoPerformanceSection extends StatelessWidget {
             Container(
               padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 2),
               decoration: BoxDecoration(color: const Color(0xFFF97316).withValues(alpha: 0.1), borderRadius: BorderRadius.circular(4)),
-              child: Text(context.l10n.translate('attention'), style: const TextStyle(fontSize: 10, fontWeight: FontWeight.w700, color: Color(0xFFF97316))),
+              child: Text(context.l10n.translate('Attenzione'), style: const TextStyle(fontSize: 10, fontWeight: FontWeight.w700, color: Color(0xFFF97316))),
             ),
           ],
         ),
@@ -723,7 +723,7 @@ class _SuggerimentiPraticiSection extends StatelessWidget {
               const Icon(LucideIcons.lightbulb, size: 18, color: Color(0xFFEAB308)),
               const SizedBox(width: 10),
               Text(
-                context.l10n.translate('practical_suggestions'),
+                context.l10n.translate('Suggerimenti Pratici'),
                 style: const TextStyle(
                   fontFamily: 'Inter',
                   fontSize: 16,

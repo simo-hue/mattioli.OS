@@ -53,6 +53,23 @@
 - **Integrazione Modello**: Creati `fromJson` e `toJson` nel modello `MacroGoal` compatibili con la tabella `long_term_goals` di Supabase.
 
 ---
+## [2026-05-06 16:55]: Build Fix & Refinement Localizzazione
+*Details*: Risolti errori di sintassi Dart (unescaped single quotes) introdotti durante il refactoring delle chiavi. Professionalizzate ulteriormente le label residue (giorni della settimana, helper labels).
+*Tech Notes*:
+- Corretto `lib/ui/widgets/statistics/habit_miglioramento_tab_widget.dart` aggiungendo l'escape per `'`.
+- Aggiunte traduzioni per giorni completi e brevi in `lib/core/localization.dart`.
+- Sostituite chiavi tecniche residue (`wednesday`, `succ`, `only`, `attention`) in `global_alerts_tab_widget.dart`.
+- Ripristinata una card accidentalmente rimossa in `global_alerts_tab_widget.dart`.
+
+---
+## [2026-05-06 16:45]: Pulizia Chiavi Localizzazione (Professionalizzazione)
+*Details*: Rimosse tutte le chiavi basate su underscore (es. `statistics_title`) e sostituite con label professionali in linguaggio naturale (es. `Statistiche`).
+*Tech Notes*:
+- Aggiornato `lib/core/localization.dart` con le nuove chiavi.
+- Eseguito script di refactoring su tutti i widget in `lib/ui` per aggiornare le chiamate a `translate()`.
+- Riorganizzate le tab della pagina statistiche per usare le nuove chiavi.
+
+---
 ## [2026-05-06 16:30]: Riorganizzazione Navigazione Inferiore
 *Details*: Cambiato l'ordine delle voci nella Bottom Navigation Bar per migliorare l'accesso alle statistiche.
 *Tech Notes*:
@@ -67,6 +84,14 @@
 - Aggiornato `lib/core/localization.dart` rimuovendo le chiavi 'Note' e aggiungendo 'AI Chat'.
 - Aggiornato `mobile_schema.sql` rimuovendo la tabella `user_memos` e le colonne note.
 - Aggiunta azione manuale in `TO_SIMO_DO.md` per la migrazione del DB.
+
+---
+## [2026-04-30 22:10]: Professionalizzazione Localization Keys
+*Details*: Sostituite tutte le chiavi di localizzazione basate su underscore (es. `app_settings`) con label leggibili in linguaggio naturale (es. `Impostazioni App`).
+*Tech Notes*: Refactoring globale dei widget UI e del file `localization.dart`. alla versione `^6.2.1` per risolvere errori di costruttore e metodi mancanti riscontrati con la versione 7.2.0. Allineato il `Podfile` con `pod update GoogleSignIn`.
+- **Lucide Icons**: Corretto l'utilizzo dell'icona `alertCircle` in `circleAlert` nel `auth_screen.dart`, allineandola con la versione corrente di `lucide_icons_flutter`.
+- **Null Safety Fix**: Corretto errore di tipizzazione nel `profile_screen.dart` aggi_fallback per campi opzionali.
+- **Ambiente**: Eseguito `flutter clean` e rigenerati i CocoaPods per garantire la pulizia dell'ambiente di build.
 
 ---
 ## [2026-04-30 23:55]: iOS Build Fixes & Dependency Alignment

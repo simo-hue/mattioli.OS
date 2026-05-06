@@ -28,53 +28,78 @@ class AppBottomNavBar extends ConsumerWidget {
       _NavItem(icon: LucideIcons.chartPie, label: context.l10n.translate('Obiettivi')),
     ];
 
-    return ClipRect(
-      child: BackdropFilter(
-        filter: ImageFilter.blur(sigmaX: 30, sigmaY: 30),
-        child: Container(
-          width: double.infinity,
-          height: 68 + bottomPadding,
-          decoration: BoxDecoration(
-            color: const Color(0xCC050505),
-            border: Border(
-              top: BorderSide(
-                color: Colors.white.withValues(alpha: 0.08),
-                width: 0.5,
+    return Container(
+      margin: EdgeInsets.fromLTRB(24, 0, 24, (bottomPadding > 0 ? 6 : 8)), // Minimal bottom margin
+      child: ClipRRect(
+        borderRadius: BorderRadius.circular(28),
+        child: BackdropFilter(
+          filter: ImageFilter.blur(sigmaX: 30, sigmaY: 30),
+          child: Container(
+            width: double.infinity,
+            height: 68,
+            decoration: BoxDecoration(
+              color: const Color(0xCC050505),
+              borderRadius: BorderRadius.circular(28),
+              border: Border.all(
+                color: Colors.white.withValues(alpha: 0.1),
+                width: 1,
               ),
+              boxShadow: [
+                BoxShadow(
+                  color: Colors.black.withValues(alpha: 0.3),
+                  blurRadius: 20,
+                  offset: const Offset(0, 10),
+                ),
+              ],
             ),
-          ),
-          child: SafeArea(
-            top: false,
             child: LayoutBuilder(
               builder: (context, constraints) {
                 final itemWidth = constraints.maxWidth / items.length;
                 
                 return Stack(
                   children: [
-                    // The "Drop" Indicator
+                    // The "Selection Background" confined inside the bar
+                    AnimatedPositioned(
+                      duration: const Duration(milliseconds: 400),
+                      curve: Curves.easeOutCubic,
+                      left: itemWidth * currentIndex,
+                      top: 0,
+                      bottom: 0,
+                      child: Container(
+                        width: itemWidth,
+                        decoration: BoxDecoration(
+                          gradient: LinearGradient(
+                            begin: Alignment.bottomCenter,
+                            end: Alignment.topCenter,
+                            colors: [
+                              primaryColor.withValues(alpha: 0.25),
+                              primaryColor.withValues(alpha: 0.05),
+                              Colors.transparent,
+                            ],
+                            stops: const [0.0, 0.4, 1.0],
+                          ),
+                        ),
+                      ),
+                    ),
+
+                    // Bottom "Accent" Bar
                     AnimatedPositioned(
                       duration: const Duration(milliseconds: 500),
                       curve: Curves.easeOutQuart,
-                      left: itemWidth * currentIndex + (itemWidth / 2) - 20,
+                      left: itemWidth * currentIndex + (itemWidth * 0.15),
                       bottom: 0,
                       child: Container(
-                        width: 40,
-                        height: 4,
+                        width: itemWidth * 0.7,
+                        height: 3,
                         decoration: BoxDecoration(
                           color: primaryColor,
                           borderRadius: const BorderRadius.vertical(top: Radius.circular(100)),
                           boxShadow: [
                             BoxShadow(
-                              color: primaryColor.withValues(alpha: 0.5),
-                              blurRadius: 15,
-                              spreadRadius: 2,
-                              offset: const Offset(0, -2),
-                            ),
-                            BoxShadow(
-                              color: primaryColor.withValues(alpha: 0.2),
-                              blurRadius: 30,
-                              spreadRadius: 8,
-                              offset: const Offset(0, -4),
+                              color: primaryColor.withValues(alpha: 0.8),
+                              blurRadius: 10,
+                              spreadRadius: 1,
+                              offset: const Offset(0, -1),
                             ),
                           ],
                         ),
@@ -82,21 +107,24 @@ class AppBottomNavBar extends ConsumerWidget {
                     ),
                     
                     // Nav Items
-                    Row(
-                      mainAxisAlignment: MainAxisAlignment.spaceAround,
-                      children: List.generate(items.length, (index) {
-                        final item = items[index];
-                        final isActive = currentIndex == index;
-                        return _NavBarItem(
-                          icon: item.icon,
-                          label: item.label,
-                          isActive: isActive,
-                          onTap: () {
-                            ref.hapticSelection();
-                            onTap(index);
-                          },
-                        );
-                      }),
+                    SizedBox(
+                      height: 68,
+                      child: Row(
+                        mainAxisAlignment: MainAxisAlignment.spaceAround,
+                        children: List.generate(items.length, (index) {
+                          final item = items[index];
+                          final isActive = currentIndex == index;
+                          return _NavBarItem(
+                            icon: item.icon,
+                            label: item.label,
+                            isActive: isActive,
+                            onTap: () {
+                              ref.hapticSelection();
+                              onTap(index);
+                            },
+                          );
+                        }),
+                      ),
                     ),
                   ],
                 );

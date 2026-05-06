@@ -669,12 +669,94 @@ class _CorrelazioneStatBox extends StatelessWidget {
   }
 }
 
-class _CorrelazioniPositiveSection extends StatelessWidget {
+class _CorrelazioniPositiveSection extends StatefulWidget {
   const _CorrelazioniPositiveSection();
 
   @override
+  State<_CorrelazioniPositiveSection> createState() => _CorrelazioniPositiveSectionState();
+}
+
+class _CorrelazioniPositiveSectionState extends State<_CorrelazioniPositiveSection> {
+  late PageController _pageController;
+  int _currentPage = 0;
+
+  @override
+  void initState() {
+    super.initState();
+    _pageController = PageController(viewportFraction: 0.9);
+  }
+
+  @override
+  void dispose() {
+    _pageController.dispose();
+    super.dispose();
+  }
+
+  @override
   Widget build(BuildContext context) {
-    final primaryColor = Theme.of(context).colorScheme.primary;
+    final List<Widget> cards = [
+      _CorrelazioneDetailCard(
+        tag: 'Correlazione Positiva - Forte',
+        tagColor: const Color(0xFF10B981),
+        habit1: '20 Flessioni 1',
+        habit1Color: const Color(0xFFEF4444),
+        habit2: '20 Flessioni 2',
+        habit2Color: const Color(0xFFEF4444),
+        coef: '+0.92',
+        cooccorrenza: '94%',
+        giorni: '102',
+        desc: 'Quando completi "20 Flessioni 1", hai una probabilità del 94% di completare anche "20 Flessioni 2". Considera di farle insieme come routine consolidata.',
+      ),
+      _CorrelazioneDetailCard(
+        tag: 'Correlazione Positiva - Forte',
+        tagColor: const Color(0xFF10B981),
+        habit1: '20 Flessioni 2',
+        habit1Color: const Color(0xFFEF4444),
+        habit2: '20 Flessioni 3',
+        habit2Color: const Color(0xFFEF4444),
+        coef: '+0.84',
+        cooccorrenza: '87%',
+        giorni: '99',
+        desc: 'Quando completi "20 Flessioni 2", hai una probabilità del 87% di completare anche "20 Flessioni 3". Considera di farle insieme come routine consolidata.',
+      ),
+      _CorrelazioneDetailCard(
+        tag: 'Correlazione Positiva - Forte',
+        tagColor: const Color(0xFF10B981),
+        habit1: '20 Flessioni 3',
+        habit1Color: const Color(0xFFEF4444),
+        habit2: '20 Flessioni 4',
+        habit2Color: const Color(0xFFEF4444),
+        coef: '+0.79',
+        cooccorrenza: '71%',
+        giorni: '71',
+        desc: 'Quando completi "20 Flessioni 3", hai una probabilità del 71% di completare anche "20 Flessioni 4". Considera di farle insieme come routine consolidata.',
+      ),
+      _CorrelazioneDetailCard(
+        tag: 'Correlazione Positiva - Forte',
+        tagColor: const Color(0xFF10B981),
+        habit1: '20 Flessioni 1',
+        habit1Color: const Color(0xFFEF4444),
+        habit2: '20 Flessioni 3',
+        habit2Color: const Color(0xFFEF4444),
+        coef: '+0.77',
+        cooccorrenza: '81%',
+        giorni: '99',
+        desc: 'Quando completi "20 Flessioni 1", hai una probabilità del 81% di completare anche "20 Flessioni 3". Considera di farle insieme come routine consolidata.',
+      ),
+      _CorrelazioneDetailCard(
+        tag: 'Correlazione Positiva - Forte',
+        tagColor: const Color(0xFF10B981),
+        habit1: '20 Flessioni 2',
+        habit1Color: const Color(0xFFEF4444),
+        habit2: '20 Flessioni 4',
+        habit2Color: const Color(0xFFEF4444),
+        coef: '+0.70',
+        cooccorrenza: '61%',
+        giorni: '71',
+        desc: 'Quando completi "20 Flessioni 2", hai una probabilità del 61% di completare anche "20 Flessioni 4". Considera di farle insieme come routine consolidata.',
+      ),
+    ];
+
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
@@ -685,70 +767,46 @@ class _CorrelazioniPositiveSection extends StatelessWidget {
             Text(context.l10n.translate('Correlazioni Positive'), style: const TextStyle(fontFamily: 'Inter', fontSize: 14, fontWeight: FontWeight.w700, color: AppColors.foreground)),
           ],
         ),
+        const SizedBox(height: 16),
+        
+        // Carousel
+        SizedBox(
+          height: 190, // Adjusted for correlation cards
+          child: PageView.builder(
+            controller: _pageController,
+            itemCount: cards.length,
+            onPageChanged: (index) => setState(() => _currentPage = index),
+            itemBuilder: (context, index) {
+              return Padding(
+                padding: const EdgeInsets.symmetric(horizontal: 8),
+                child: cards[index],
+              );
+            },
+          ),
+        ),
+        
         const SizedBox(height: 12),
-        _CorrelazioneDetailCard(
-          tag: 'Correlazione Positiva - Forte',
-          tagColor: const Color(0xFF10B981),
-          habit1: '20 Flessioni 1',
-          habit1Color: Color(0xFFEF4444),
-          habit2: '20 Flessioni 2',
-          habit2Color: Color(0xFFEF4444),
-          coef: '+0.92',
-          cooccorrenza: '94%',
-          giorni: '102',
-          desc: 'Quando completi "20 Flessioni 1", hai una probabilità del 94% di completare anche "20 Flessioni 2". Considera di farle insieme come routine consolidata.',
-        ),
-        SizedBox(height: 8),
-        _CorrelazioneDetailCard(
-          tag: 'Correlazione Positiva - Forte',
-          tagColor: const Color(0xFF10B981),
-          habit1: '20 Flessioni 2',
-          habit1Color: Color(0xFFEF4444),
-          habit2: '20 Flessioni 3',
-          habit2Color: Color(0xFFEF4444),
-          coef: '+0.84',
-          cooccorrenza: '87%',
-          giorni: '99',
-          desc: 'Quando completi "20 Flessioni 2", hai una probabilità del 87% di completare anche "20 Flessioni 3". Considera di farle insieme come routine consolidata.',
-        ),
-        SizedBox(height: 8),
-        _CorrelazioneDetailCard(
-          tag: 'Correlazione Positiva - Forte',
-          tagColor: const Color(0xFF10B981),
-          habit1: '20 Flessioni 3',
-          habit1Color: Color(0xFFEF4444),
-          habit2: '20 Flessioni 4',
-          habit2Color: Color(0xFFEF4444),
-          coef: '+0.79',
-          cooccorrenza: '71%',
-          giorni: '71',
-          desc: 'Quando completi "20 Flessioni 3", hai una probabilità del 71% di completare anche "20 Flessioni 4". Considera di farle insieme come routine consolidata.',
-        ),
-        SizedBox(height: 8),
-        _CorrelazioneDetailCard(
-          tag: 'Correlazione Positiva - Forte',
-          tagColor: const Color(0xFF10B981),
-          habit1: '20 Flessioni 1',
-          habit1Color: Color(0xFFEF4444),
-          habit2: '20 Flessioni 3',
-          habit2Color: Color(0xFFEF4444),
-          coef: '+0.77',
-          cooccorrenza: '81%',
-          giorni: '99',
-          desc: 'Quando completi "20 Flessioni 1", hai una probabilità del 81% di completare anche "20 Flessioni 3". Considera di farle insieme come routine consolidata.',
-        ),
-        SizedBox(height: 8),
-        _CorrelazioneDetailCard(
-          tag: 'Correlazione Positiva - Forte',
-          tagColor: const Color(0xFF10B981),
-          habit1: '20 Flessioni 2',
-          habit1Color: Color(0xFFEF4444),
-          habit2: '20 Flessioni 4',
-          habit2Color: Color(0xFFEF4444),
-          coef: '+0.70',
-          cooccorrenza: '61%',
-          giorni: '71',
-          desc: 'Quando completi "20 Flessioni 2", hai una probabilità del 61% di completare anche "20 Flessioni 4". Considera di farle insieme come routine consolidata.',
+        
+        // Pagination Dots
+        Center(
+          child: Row(
+            mainAxisAlignment: MainAxisAlignment.center,
+            children: List.generate(cards.length, (index) {
+              final isActive = _currentPage == index;
+              return AnimatedContainer(
+                duration: const Duration(milliseconds: 300),
+                margin: const EdgeInsets.symmetric(horizontal: 4),
+                width: isActive ? 16 : 6,
+                height: 6,
+                decoration: BoxDecoration(
+                  color: isActive 
+                      ? const Color(0xFF10B981)
+                      : AppColors.mutedForeground.withValues(alpha: 0.3),
+                  borderRadius: BorderRadius.circular(3),
+                ),
+              );
+            }),
+          ),
         ),
       ],
     );
@@ -885,36 +943,102 @@ class _DetailBox extends StatelessWidget {
   }
 }
 
-class _CorrelazioniNegativeSection extends StatelessWidget {
+class _CorrelazioniNegativeSection extends StatefulWidget {
   const _CorrelazioniNegativeSection();
 
   @override
+  State<_CorrelazioniNegativeSection> createState() => _CorrelazioniNegativeSectionState();
+}
+
+class _CorrelazioniNegativeSectionState extends State<_CorrelazioniNegativeSection> {
+  late PageController _pageController;
+  int _currentPage = 0;
+
+  @override
+  void initState() {
+    super.initState();
+    _pageController = PageController(viewportFraction: 0.9);
+  }
+
+  @override
+  void dispose() {
+    _pageController.dispose();
+    super.dispose();
+  }
+
+  @override
   Widget build(BuildContext context) {
+    final List<Widget> cards = [
+      const _CorrelazioneDetailCard(
+        tag: 'Correlazione Negativa - Moderata',
+        tagColor: Color(0xFFEF4444),
+        habit1: '1 YT-Video',
+        habit1Color: Color(0xFFEF4444),
+        habit2: 'Caviglia',
+        habit2Color: Color(0xFFF59E0B),
+        coef: '-0.43',
+        cooccorrenza: '15%',
+        giorni: '80',
+        desc: 'Quando completi "1 YT-Video", è raro che completi anche "Caviglia".',
+      ),
+      // Adding a dummy card for demonstration if there's only one, 
+      // but normally it would be a dynamic list.
+    ];
+
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
-      children: const [
+      children: [
         Row(
           children: [
             const Icon(LucideIcons.triangleAlert, size: 16, color: Color(0xFFEAB308)),
             const SizedBox(width: 8),
-            const Text('Correlazioni Negative', style: TextStyle(fontFamily: 'Inter', fontSize: 14, fontWeight: FontWeight.w700, color: AppColors.foreground)),
+            Text(context.l10n.translate('Correlazioni Negative'), style: const TextStyle(fontFamily: 'Inter', fontSize: 14, fontWeight: FontWeight.w700, color: AppColors.foreground)),
           ],
         ),
-        SizedBox(height: 4),
-        Text('Queste abitudini tendono a non essere completate insieme.', style: TextStyle(fontFamily: 'Inter', fontSize: 11, color: AppColors.mutedForeground)),
-        SizedBox(height: 12),
-        _CorrelazioneDetailCard(
-          tag: 'Correlazione Negativa - Moderata',
-          tagColor: Color(0xFFEF4444),
-          habit1: '1 YT-Video',
-          habit1Color: Color(0xFFEF4444),
-          habit2: 'Caviglia',
-          habit2Color: Color(0xFFF59E0B),
-          coef: '-0.43',
-          cooccorrenza: '15%',
-          giorni: '80',
-          desc: 'Quando completi "1 YT-Video", è raro che completi anche "Caviglia".',
+        const SizedBox(height: 4),
+        Text(context.l10n.translate('Queste abitudini tendono a non essere completate insieme.'), style: const TextStyle(fontFamily: 'Inter', fontSize: 11, color: AppColors.mutedForeground)),
+        const SizedBox(height: 16),
+        
+        // Carousel
+        SizedBox(
+          height: 190,
+          child: PageView.builder(
+            controller: _pageController,
+            itemCount: cards.length,
+            onPageChanged: (index) => setState(() => _currentPage = index),
+            itemBuilder: (context, index) {
+              return Padding(
+                padding: const EdgeInsets.symmetric(horizontal: 8),
+                child: cards[index],
+              );
+            },
+          ),
         ),
+        
+        const SizedBox(height: 12),
+        
+        // Pagination Dots (only show if more than 1 card)
+        if (cards.length > 1)
+          Center(
+            child: Row(
+              mainAxisAlignment: MainAxisAlignment.center,
+              children: List.generate(cards.length, (index) {
+                final isActive = _currentPage == index;
+                return AnimatedContainer(
+                  duration: const Duration(milliseconds: 300),
+                  margin: const EdgeInsets.symmetric(horizontal: 4),
+                  width: isActive ? 16 : 6,
+                  height: 6,
+                  decoration: BoxDecoration(
+                    color: isActive 
+                        ? const Color(0xFFEF4444)
+                        : AppColors.mutedForeground.withValues(alpha: 0.3),
+                    borderRadius: BorderRadius.circular(3),
+                  ),
+                );
+              }),
+            ),
+          ),
       ],
     );
   }
@@ -925,6 +1049,8 @@ class _AttivitaRecenteSection extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final accentColor = Theme.of(context).colorScheme.primary;
+    
     return Container(
       padding: const EdgeInsets.all(16),
       decoration: BoxDecoration(
@@ -940,9 +1066,15 @@ class _AttivitaRecenteSection extends StatelessWidget {
               Container(
                 width: 10,
                 height: 10,
-                decoration: const BoxDecoration(
-                  color: AppColors.mutedForeground,
+                decoration: BoxDecoration(
+                  color: accentColor,
                   shape: BoxShape.circle,
+                  boxShadow: [
+                    BoxShadow(
+                      color: accentColor.withValues(alpha: 0.4),
+                      blurRadius: 6,
+                    ),
+                  ],
                 ),
               ),
               const SizedBox(width: 8),
@@ -978,22 +1110,22 @@ class _AttivitaRecenteSection extends StatelessWidget {
                   ),
                 ),
                 const SizedBox(height: 24),
-                _buildActivityGrid(),
+                _buildActivityGrid(accentColor),
                 const SizedBox(height: 16),
                 Row(
                   mainAxisAlignment: MainAxisAlignment.end,
                   children: [
                     const Text('Meno', style: TextStyle(fontFamily: 'Inter', fontSize: 12, color: AppColors.mutedForeground)),
                     const SizedBox(width: 8),
-                    _buildDot(0),
+                    _buildDot(0, accentColor),
                     const SizedBox(width: 4),
-                    _buildDot(1),
+                    _buildDot(1, accentColor),
                     const SizedBox(width: 4),
-                    _buildDot(2),
+                    _buildDot(2, accentColor),
                     const SizedBox(width: 4),
-                    _buildDot(3),
+                    _buildDot(3, accentColor),
                     const SizedBox(width: 4),
-                    _buildDot(4),
+                    _buildDot(4, accentColor),
                     const SizedBox(width: 8),
                     const Text('Più', style: TextStyle(fontFamily: 'Inter', fontSize: 12, color: AppColors.mutedForeground)),
                   ],
@@ -1006,29 +1138,29 @@ class _AttivitaRecenteSection extends StatelessWidget {
     );
   }
 
-  Widget _buildDot(int intensity) {
+  Widget _buildDot(int intensity, Color accentColor) {
     return Container(
       width: 12,
       height: 12,
       decoration: BoxDecoration(
-        color: _getColor(intensity),
+        color: _getColor(intensity, accentColor),
         shape: BoxShape.circle,
       ),
     );
   }
 
-  Color _getColor(int intensity) {
+  Color _getColor(int intensity, Color accentColor) {
     switch (intensity) {
-      case 0: return const Color(0xFF18181B);
-      case 1: return const Color(0xFF3F3F46);
-      case 2: return const Color(0xFF71717A);
-      case 3: return const Color(0xFFA1A1AA);
-      case 4: return const Color(0xFFFFFFFF);
-      default: return const Color(0xFF18181B);
+      case 0: return AppColors.border.withValues(alpha: 0.3);
+      case 1: return accentColor.withValues(alpha: 0.2);
+      case 2: return accentColor.withValues(alpha: 0.4);
+      case 3: return accentColor.withValues(alpha: 0.7);
+      case 4: return accentColor;
+      default: return AppColors.border.withValues(alpha: 0.3);
     }
   }
 
-  Widget _buildActivityGrid() {
+  Widget _buildActivityGrid(Color accentColor) {
     final pattern = [
       [2,3,4,4,3,3,3,4,4,4,3,3,3,4,3,3,3,4],
       [3,3,3,3,2,3,3,3,2,3,2,3,3,2,3,2,4,4],
@@ -1057,7 +1189,7 @@ class _AttivitaRecenteSection extends StatelessWidget {
                     width: 14,
                     height: 14,
                     decoration: BoxDecoration(
-                      color: _getColor(intensity),
+                      color: _getColor(intensity, accentColor),
                       shape: BoxShape.circle,
                     ),
                   ),

@@ -138,12 +138,13 @@
 
 ---
 ---
-## [2026-05-06 18:20]: Statistics - Snapping Carousel for Key Habits
-*Details*: Replaced the basic horizontal scroll in the "Abitudini Chiave" section with a premium snapping carousel.
+---
+## [2026-05-06 18:35]: Statistics - Accent Color Integration
+*Details*: Enhanced the "Attività Recente" section by replacing greyscale intensity dots with dynamic opacities of the user's selected accent color.
 *Tech Notes*:
-- **PageView Integration**: Switched to `PageView.builder` with a `viewportFraction` of 0.9 to enable snapping and visual "peeking" of adjacent cards.
-- **Micro-Animations**: Added `AnimatedScale` and `AnimatedOpacity` to highlight the active card and fade out background ones.
-- **Pagination UI**: Implemented dynamic pagination dots that animate their width and color based on the current page.
+- **Themed Intensity Map**: Modified the `_getColor` helper to generate a monochromatic scale of the primary color (`alpha: 0.2` to `1.0`).
+- **Visual Branding**: Updated the section icon and grid dots to match the app's global accent color, improving design consistency.
+- **Dynamic Glow**: Added a subtle glow effect to the section's header indicator using the primary color's shadow.
 
 ---
 ## Current Status

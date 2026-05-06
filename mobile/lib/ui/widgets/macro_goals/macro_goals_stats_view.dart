@@ -39,7 +39,7 @@ class _MacroGoalsStatsViewState extends ConsumerState<MacroGoalsStatsView> {
 
     final displayGoals = _selectedYear == 'all'
         ? allGoals
-        : allGoals.where((g) => g.year == null || g.year.toString() == _selectedYear).toList();
+        : allGoals.where((g) => g.year?.toString() == _selectedYear).toList();
 
     return SingleChildScrollView(
       physics: const BouncingScrollPhysics(),
@@ -647,10 +647,10 @@ class _MacroGoalsStatsViewState extends ConsumerState<MacroGoalsStatsView> {
       catRates[cat] = comp / catGoals.length * 100;
     }
 
-    if (catRates.isEmpty) {
+    if (catRates.length < 3) {
       return _buildCardBase(
-        title: '🎯 Performance', subtitle: 'Tasso di successo',
-        child: const SizedBox(height: 200, child: Center(child: Text('Dati non sufficienti', style: TextStyle(color: Colors.white54)))),
+        title: '🎯 Performance Categorie', subtitle: 'Tasso di successo',
+        child: const SizedBox(height: 200, child: Center(child: Text('Dati insufficienti (servono almeno 3 categorie)', style: TextStyle(color: Colors.white54)))),
       );
     }
 
@@ -788,7 +788,11 @@ class _MacroGoalsStatsViewState extends ConsumerState<MacroGoalsStatsView> {
               bottomTitles: AxisTitles(
                 sideTitles: SideTitles(
                   showTitles: true,
-                  getTitlesWidget: (val, meta) => Text(mLabel[val.toInt()], style: GoogleFonts.inter(fontSize: 10, color: AppColors.mutedForeground)),
+                  getTitlesWidget: (val, meta) {
+                    final index = val.toInt();
+                    if (index < 0 || index >= mLabel.length) return const SizedBox.shrink();
+                    return Text(mLabel[index], style: GoogleFonts.inter(fontSize: 10, color: AppColors.mutedForeground));
+                  },
                 ),
               ),
             ),
@@ -909,9 +913,9 @@ class _MacroGoalsStatsViewState extends ConsumerState<MacroGoalsStatsView> {
             width: 16,
             borderRadius: BorderRadius.circular(4),
             rodStackItems: [
-              BarChartRodStackItem(0, act, const Color(0xFF3B82F6)), // Attivi - Blue
-              BarChartRodStackItem(act, act + fail, const Color(0xFFEF4444)), // Falliti - Red
-              BarChartRodStackItem(act + fail, tot, Theme.of(context).colorScheme.primary), // Completati - Dynamic Accent
+              if (act > 0) BarChartRodStackItem(0, act, const Color(0xFF3B82F6)), // Attivi - Blue
+              if (fail > 0) BarChartRodStackItem(act, act + fail, const Color(0xFFEF4444)), // Falliti - Red
+              if (tot > (act + fail)) BarChartRodStackItem(act + fail, tot, Theme.of(context).colorScheme.primary), // Completati - Dynamic Accent
             ],
           )
         ],
@@ -931,7 +935,11 @@ class _MacroGoalsStatsViewState extends ConsumerState<MacroGoalsStatsView> {
                 rightTitles: AxisTitles(sideTitles: SideTitles(showTitles: false)),
                 topTitles: AxisTitles(sideTitles: SideTitles(showTitles: false)),
                 leftTitles: AxisTitles(sideTitles: SideTitles(showTitles: true, reservedSize: 30, getTitlesWidget: (v, _) => Text(v.toInt().toString(), style: GoogleFonts.inter(fontSize: 10, color: AppColors.mutedForeground)))),
-                bottomTitles: AxisTitles(sideTitles: SideTitles(showTitles: true, getTitlesWidget: (val, _) => Text(sortedYears.length > val.toInt() ? sortedYears[val.toInt()].toString() : '', style: GoogleFonts.inter(fontSize: 10, color: AppColors.mutedForeground)))),
+                bottomTitles: AxisTitles(sideTitles: SideTitles(showTitles: true, getTitlesWidget: (val, _) {
+                  final index = val.toInt();
+                  if (index < 0 || index >= sortedYears.length) return const SizedBox.shrink();
+                  return Text(sortedYears[index].toString(), style: GoogleFonts.inter(fontSize: 10, color: AppColors.mutedForeground));
+                })),
               ),
               borderData: FlBorderData(show: false),
               maxY: math.max(10.0, maxTot * 1.2),
@@ -1030,9 +1038,9 @@ class _MacroGoalsStatsViewState extends ConsumerState<MacroGoalsStatsView> {
           color: Colors.transparent, 
           width: 12,
           rodStackItems: [
-            BarChartRodStackItem(0, act, const Color(0xFF3B82F6)),
-            BarChartRodStackItem(act, act+fail, const Color(0xFFD97706)),
-            BarChartRodStackItem(act+fail, tot, Theme.of(context).colorScheme.primary),
+            if (act > 0) BarChartRodStackItem(0, act, const Color(0xFF3B82F6)),
+            if (fail > 0) BarChartRodStackItem(act, act+fail, const Color(0xFFD97706)),
+            if (tot > (act + fail)) BarChartRodStackItem(act+fail, tot, Theme.of(context).colorScheme.primary),
           ]
         )
       ]));
@@ -1047,7 +1055,11 @@ class _MacroGoalsStatsViewState extends ConsumerState<MacroGoalsStatsView> {
             gridData: FlGridData(show: false), borderData: FlBorderData(show: false),
             titlesData: FlTitlesData(
               rightTitles: AxisTitles(), topTitles: AxisTitles(), leftTitles: AxisTitles(),
-              bottomTitles: AxisTitles(sideTitles: SideTitles(showTitles: true, getTitlesWidget: (v,_) => Text('Q${v.toInt()}', style: TextStyle(fontSize: 10, color: AppColors.mutedForeground)))),
+              bottomTitles: AxisTitles(sideTitles: SideTitles(showTitles: true, getTitlesWidget: (v,_) {
+                final index = v.toInt();
+                if (index < 1 || index > 4) return const SizedBox.shrink();
+                return Text('Q$index', style: TextStyle(fontSize: 10, color: AppColors.mutedForeground));
+              })),
             ),
             barGroups: groups, maxY: math.max(5.0, maxX*1.2),
           ))),
@@ -1132,7 +1144,11 @@ class _MacroGoalsStatsViewState extends ConsumerState<MacroGoalsStatsView> {
             titlesData: FlTitlesData(
               rightTitles: AxisTitles(), topTitles: AxisTitles(), 
               leftTitles: AxisTitles(sideTitles: SideTitles(showTitles: true, reservedSize: 30, getTitlesWidget: (v, _) => Text(v.toInt().toString(), style: const TextStyle(fontSize: 10, color: AppColors.mutedForeground)))),
-              bottomTitles: AxisTitles(sideTitles: SideTitles(showTitles: true, getTitlesWidget: (v,_) => Text(sortedYears.length > v.toInt() ? sortedYears[v.toInt()].toString() : '', style: TextStyle(fontSize: 10, color: AppColors.mutedForeground)))),
+              bottomTitles: AxisTitles(sideTitles: SideTitles(showTitles: true, getTitlesWidget: (v,_) {
+                final index = v.toInt();
+                if (index < 0 || index >= sortedYears.length) return const SizedBox.shrink();
+                return Text(sortedYears[index].toString(), style: TextStyle(fontSize: 10, color: AppColors.mutedForeground));
+              })),
             ),
             barGroups: groups, maxY: math.max(5.0, maxY*1.2),
           ))),

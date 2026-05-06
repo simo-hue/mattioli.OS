@@ -137,6 +137,16 @@
 - **Consistenza**: Standardizzata la terminologia tra Dashboard, Impostazioni e Modali.
 
 ---
+---
+## [2026-05-06 17:30]: Green Color for Completed Habits
+*Details*: Implemented a consistent green color for all habits marked as completed ('done'). This ensures that whenever a habit is finished, it is visually highlighted in green across the calendar, weekly view, and detail modals, regardless of its assigned category color.
+*Tech Notes*:
+- **DayDetailsModal**: Replaced `primaryColor` with `AppColors.success` for completed habit cards and streak badges.
+- **HabitCalendarWidget**: Updated habit dots to use `AppColors.success` when status is 'done'.
+- **WeeklyViewWidget**: Updated habit capsules to use `AppColors.success` when status is 'done'.
+- **Theme Alignment**: Leveraging `AppColors.success` (#26C252) for UI consistency with the application's design system.
+
+---
 ## Current Status
 - Authentication UI: **COMPLETED**
 - Database Schema Design: **COMPLETED v2**
@@ -146,8 +156,8 @@
 - Daily Habits Sync: **COMPLETED**
 - iOS Build Stability: **COMPLETED**
 - Professional Interface Labels: **COMPLETED**
+- Consistent Green for Completed Habits: **COMPLETED**
 
 **Immediate Next Step**:
-1. Eseguire uno smoke test completo: Registrazione -> Creazione Macro Goal -> Creazione Abitudine -> Check-in quotidiano.
-2. Procedere con le Statistiche (Statistics) avanzate o l'integrazione AI.
+1. Implement any further UI refinements as requested.
 

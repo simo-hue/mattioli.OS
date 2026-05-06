@@ -474,7 +474,7 @@ class _DayCell extends StatelessWidget {
                             width: 4,
                             height: 4,
                             decoration: BoxDecoration(
-                              color: h.color,
+                              color: AppColors.success,
                               borderRadius: BorderRadius.circular(1),
                             ),
                           ),

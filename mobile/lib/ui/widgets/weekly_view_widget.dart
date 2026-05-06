@@ -220,7 +220,6 @@ class _WeeklyViewWidgetState extends ConsumerState<WeeklyViewWidget> {
                                     child: Opacity(
                                       opacity: isActive ? 1.0 : 0.0,
                                       child: _HabitCapsule(
-                                        color: habit.color,
                                         status: status,
                                         isFuture: isFuture,
                                         isPrivacy: isPrivacy,
@@ -280,14 +279,12 @@ class _NavButton extends StatelessWidget {
 }
 
 class _HabitCapsule extends StatelessWidget {
-  final Color color;
   final String? status;
   final bool isFuture;
   final bool isPrivacy;
   final VoidCallback? onTap;
 
   const _HabitCapsule({
-    required this.color,
     this.status,
     required this.isFuture,
     required this.isPrivacy,
@@ -304,12 +301,12 @@ class _HabitCapsule extends StatelessWidget {
     List<BoxShadow>? shadows;
 
     if (isDone) {
-      capsuleColor = isPrivacy ? AppColors.muted : color;
-      borderColor = isPrivacy ? AppColors.border : color.withValues(alpha: 0.5);
+      capsuleColor = isPrivacy ? AppColors.muted : AppColors.success;
+      borderColor = isPrivacy ? AppColors.border : AppColors.success.withValues(alpha: 0.5);
       if (!isPrivacy) {
         shadows = [
           BoxShadow(
-            color: color.withValues(alpha: 0.4),
+            color: AppColors.success.withValues(alpha: 0.4),
             blurRadius: 8,
             spreadRadius: -1,
           )

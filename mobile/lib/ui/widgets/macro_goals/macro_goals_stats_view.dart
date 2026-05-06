@@ -171,14 +171,9 @@ class _MacroGoalsStatsViewState extends ConsumerState<MacroGoalsStatsView> {
       const SizedBox(height: 16),
       _buildCategoryRadarCard(displayGoals),
       const SizedBox(height: 16),
-      Row(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Expanded(child: _buildQuarterlyBarCard(displayGoals)),
-          const SizedBox(width: 12),
-          Expanded(child: _buildMonthlyComposedCard(displayGoals)),
-        ],
-      ),
+      _buildQuarterSeasonalityCard(displayGoals),
+      const SizedBox(height: 16),
+      _buildMonthlyComposedCard(displayGoals),
       const SizedBox(height: 16),
       _buildCategoryPieCard(displayGoals),
       const SizedBox(height: 48),
@@ -237,14 +232,9 @@ class _MacroGoalsStatsViewState extends ConsumerState<MacroGoalsStatsView> {
       const SizedBox(height: 16),
       _buildGlobalTypeDistCard(goals),
       const SizedBox(height: 16),
-      Row(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-           Expanded(child: _buildQuarterSeasonalityCard(goals)),
-           const SizedBox(width: 12),
-           Expanded(child: _buildGlobalMonthlyHistCard(goals)),
-        ],
-      ),
+      _buildQuarterSeasonalityCard(goals),
+      const SizedBox(height: 16),
+      _buildGlobalMonthlyHistCard(goals),
       const SizedBox(height: 16),
       _buildGlobalInterestEvolutionCard(goals, sortedYears),
       const SizedBox(height: 48),
@@ -764,8 +754,21 @@ class _MacroGoalsStatsViewState extends ConsumerState<MacroGoalsStatsView> {
         BarChartGroupData(
           x: m,
           barRods: [
-            BarChartRodData(toY: tot, color: const Color(0xFF6366F1), width: 6, borderRadius: BorderRadius.circular(1)),
-            BarChartRodData(toY: comp, color: const Color(0xFFF97316), width: 6, borderRadius: BorderRadius.circular(1)), // Fake composed
+            BarChartRodData(
+              toY: tot, 
+              color: Colors.transparent, 
+              width: 10, 
+              borderRadius: const BorderRadius.vertical(top: Radius.circular(2)),
+              backDrawRodData: BackgroundBarChartRodData(
+                show: true,
+                toY: math.max(5.0, maxY * 1.2),
+                color: AppColors.borderHover.withValues(alpha: 0.1),
+              ),
+              rodStackItems: [
+                if (comp > 0) BarChartRodStackItem(0, comp, Theme.of(context).colorScheme.primary),
+                if (tot > comp) BarChartRodStackItem(comp, tot, const Color(0xFF6366F1).withValues(alpha: 0.6)),
+              ],
+            ),
           ],
         )
       );
@@ -777,21 +780,56 @@ class _MacroGoalsStatsViewState extends ConsumerState<MacroGoalsStatsView> {
       title: 'Mensile',
       subtitle: 'Completamenti',
       child: SizedBox(
-        height: 150,
+        height: 180,
         child: BarChart(
           BarChartData(
-            gridData: FlGridData(show: false),
+            barTouchData: BarTouchData(
+              touchTooltipData: BarTouchTooltipData(
+                getTooltipColor: (_) => AppColors.cardElevated,
+                tooltipRoundedRadius: 12,
+                getTooltipItem: (group, groupIndex, rod, rodIndex) {
+                  final m = group.x.toInt();
+                  final mg = goals.where((g) => g.month == m).toList();
+                  final tot = mg.length;
+                  final comp = mg.where((g) => g.status == GoalStatus.completed).length;
+                  const months = ['', 'gennaio', 'febbraio', 'marzo', 'aprile', 'maggio', 'giugno', 'luglio', 'agosto', 'settembre', 'ottobre', 'novembre', 'dicembre'];
+                  return BarTooltipItem(
+                    '${months[m]}\n',
+                    GoogleFonts.inter(color: AppColors.foreground, fontWeight: FontWeight.bold, fontSize: 13),
+                    children: [
+                      TextSpan(text: 'Totali: $tot\n', style: GoogleFonts.inter(color: const Color(0xFF6366F1), fontSize: 10)),
+                      TextSpan(text: 'Completati: $comp', style: GoogleFonts.inter(color: Theme.of(context).colorScheme.primary, fontSize: 10)),
+                    ],
+                  );
+                },
+              ),
+            ),
+            gridData: FlGridData(
+              show: true, 
+              drawVerticalLine: false, 
+              horizontalInterval: math.max(1.0, maxY / 4), 
+              getDrawingHorizontalLine: (v) => FlLine(color: AppColors.borderActive.withValues(alpha: 0.2), strokeWidth: 1, dashArray: [4, 4]),
+            ),
             titlesData: FlTitlesData(
-              rightTitles: AxisTitles(sideTitles: SideTitles(showTitles: false)),
-              topTitles: AxisTitles(sideTitles: SideTitles(showTitles: false)),
-              leftTitles: AxisTitles(sideTitles: SideTitles(showTitles: false)),
+              rightTitles: const AxisTitles(sideTitles: SideTitles(showTitles: false)),
+              topTitles: const AxisTitles(sideTitles: SideTitles(showTitles: false)),
+              leftTitles: AxisTitles(
+                sideTitles: SideTitles(
+                  showTitles: true, 
+                  reservedSize: 30, 
+                  getTitlesWidget: (v, _) => Text(v.toInt().toString(), style: GoogleFonts.inter(fontSize: 10, color: AppColors.mutedForeground)),
+                ),
+              ),
               bottomTitles: AxisTitles(
                 sideTitles: SideTitles(
                   showTitles: true,
                   getTitlesWidget: (val, meta) {
                     final index = val.toInt();
-                    if (index < 0 || index >= mLabel.length) return const SizedBox.shrink();
-                    return Text(mLabel[index], style: GoogleFonts.inter(fontSize: 10, color: AppColors.mutedForeground));
+                    if (index < 1 || index >= mLabel.length) return const SizedBox.shrink();
+                    return Padding(
+                      padding: const EdgeInsets.only(top: 8),
+                      child: Text(mLabel[index], style: GoogleFonts.inter(fontSize: 10, color: AppColors.mutedForeground, fontWeight: FontWeight.w600)),
+                    );
                   },
                 ),
               ),
@@ -910,8 +948,13 @@ class _MacroGoalsStatsViewState extends ConsumerState<MacroGoalsStatsView> {
           BarChartRodData(
             toY: tot,
             color: Colors.transparent,
-            width: 16,
-            borderRadius: BorderRadius.circular(4),
+            width: 18,
+            borderRadius: const BorderRadius.vertical(top: Radius.circular(6)),
+            backDrawRodData: BackgroundBarChartRodData(
+              show: true,
+              toY: math.max(10, maxTot * 1.2),
+              color: AppColors.borderHover.withValues(alpha: 0.1),
+            ),
             rodStackItems: [
               if (act > 0) BarChartRodStackItem(0, act, const Color(0xFF3B82F6)), // Attivi - Blue
               if (fail > 0) BarChartRodStackItem(act, act + fail, const Color(0xFFEF4444)), // Falliti - Red
@@ -930,16 +973,63 @@ class _MacroGoalsStatsViewState extends ConsumerState<MacroGoalsStatsView> {
           SizedBox(
             height: 200,
             child: BarChart(BarChartData(
-              gridData: FlGridData(show: true, drawVerticalLine: false, horizontalInterval: maxTot / 4, getDrawingHorizontalLine: (v) => FlLine(color: AppColors.borderActive, strokeWidth: 1, dashArray: [4, 4])),
+              barTouchData: BarTouchData(
+                touchTooltipData: BarTouchTooltipData(
+                  getTooltipColor: (_) => AppColors.cardElevated,
+                  tooltipRoundedRadius: 12,
+                  tooltipPadding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+                  tooltipMargin: 8,
+                  getTooltipItem: (group, groupIndex, rod, rodIndex) {
+                    final year = sortedYears[group.x.toInt()];
+                    final yg = goals.where((g) => g.year == year).toList();
+                    final act = yg.where((g) => g.status == GoalStatus.active).length;
+                    final fail = yg.where((g) => g.status == GoalStatus.failed).length;
+                    final comp = yg.where((g) => g.status == GoalStatus.completed).length;
+                    
+                    return BarTooltipItem(
+                      '$year\n',
+                      GoogleFonts.inter(color: AppColors.foreground, fontWeight: FontWeight.bold, fontSize: 14),
+                      children: [
+                        TextSpan(text: 'Attivi: $act\n', style: GoogleFonts.inter(color: const Color(0xFF3B82F6), fontSize: 11, fontWeight: FontWeight.w500)),
+                        TextSpan(text: 'Falliti: $fail\n', style: GoogleFonts.inter(color: const Color(0xFFEF4444), fontSize: 11, fontWeight: FontWeight.w500)),
+                        TextSpan(text: 'Completati: $comp', style: GoogleFonts.inter(color: Theme.of(context).colorScheme.primary, fontSize: 11, fontWeight: FontWeight.w500)),
+                      ],
+                    );
+                  },
+                ),
+              ),
+              gridData: FlGridData(
+                show: true, 
+                drawVerticalLine: false, 
+                horizontalInterval: math.max(1.0, maxTot / 4), 
+                getDrawingHorizontalLine: (v) => FlLine(color: AppColors.borderActive.withValues(alpha: 0.3), strokeWidth: 1, dashArray: [4, 4]),
+              ),
               titlesData: FlTitlesData(
-                rightTitles: AxisTitles(sideTitles: SideTitles(showTitles: false)),
-                topTitles: AxisTitles(sideTitles: SideTitles(showTitles: false)),
-                leftTitles: AxisTitles(sideTitles: SideTitles(showTitles: true, reservedSize: 30, getTitlesWidget: (v, _) => Text(v.toInt().toString(), style: GoogleFonts.inter(fontSize: 10, color: AppColors.mutedForeground)))),
-                bottomTitles: AxisTitles(sideTitles: SideTitles(showTitles: true, getTitlesWidget: (val, _) {
-                  final index = val.toInt();
-                  if (index < 0 || index >= sortedYears.length) return const SizedBox.shrink();
-                  return Text(sortedYears[index].toString(), style: GoogleFonts.inter(fontSize: 10, color: AppColors.mutedForeground));
-                })),
+                rightTitles: const AxisTitles(sideTitles: SideTitles(showTitles: false)),
+                topTitles: const AxisTitles(sideTitles: SideTitles(showTitles: false)),
+                leftTitles: AxisTitles(
+                  sideTitles: SideTitles(
+                    showTitles: true, 
+                    reservedSize: 32, 
+                    getTitlesWidget: (v, _) => Padding(
+                      padding: const EdgeInsets.only(right: 8),
+                      child: Text(v.toInt().toString(), style: GoogleFonts.inter(fontSize: 10, color: AppColors.mutedForeground)),
+                    ),
+                  ),
+                ),
+                bottomTitles: AxisTitles(
+                  sideTitles: SideTitles(
+                    showTitles: true, 
+                    getTitlesWidget: (val, _) {
+                      final index = val.toInt();
+                      if (index < 0 || index >= sortedYears.length) return const SizedBox.shrink();
+                      return Padding(
+                        padding: const EdgeInsets.only(top: 10),
+                        child: Text(sortedYears[index].toString(), style: GoogleFonts.inter(fontSize: 10, color: AppColors.mutedForeground, fontWeight: FontWeight.w600)),
+                      );
+                    },
+                  ),
+                ),
               ),
               borderData: FlBorderData(show: false),
               maxY: math.max(10.0, maxTot * 1.2),
@@ -1036,7 +1126,13 @@ class _MacroGoalsStatsViewState extends ConsumerState<MacroGoalsStatsView> {
         BarChartRodData(
           toY: tot,
           color: Colors.transparent, 
-          width: 12,
+          width: 14,
+          borderRadius: const BorderRadius.vertical(top: Radius.circular(4)),
+          backDrawRodData: BackgroundBarChartRodData(
+            show: true,
+            toY: math.max(5.0, maxX * 1.2),
+            color: AppColors.borderHover.withValues(alpha: 0.1),
+          ),
           rodStackItems: [
             if (act > 0) BarChartRodStackItem(0, act, const Color(0xFF3B82F6)),
             if (fail > 0) BarChartRodStackItem(act, act+fail, const Color(0xFFD97706)),
@@ -1052,16 +1148,50 @@ class _MacroGoalsStatsViewState extends ConsumerState<MacroGoalsStatsView> {
       child: Column(
         children: [
           SizedBox(height: 150, child: BarChart(BarChartData(
-            gridData: FlGridData(show: false), borderData: FlBorderData(show: false),
+            barTouchData: BarTouchData(
+              touchTooltipData: BarTouchTooltipData(
+                getTooltipColor: (_) => AppColors.cardElevated,
+                tooltipRoundedRadius: 12,
+                getTooltipItem: (group, groupIndex, rod, rodIndex) {
+                  final q = group.x.toInt();
+                  final qg = goals.where((g) => g.quarter == q).toList();
+                  final act = qg.where((g) => g.status == GoalStatus.active).length;
+                  final fail = qg.where((g) => g.status == GoalStatus.failed).length;
+                  final comp = qg.where((g) => g.status == GoalStatus.completed).length;
+                  return BarTooltipItem(
+                    'Trimestre $q\n',
+                    GoogleFonts.inter(color: AppColors.foreground, fontWeight: FontWeight.bold, fontSize: 13),
+                    children: [
+                      TextSpan(text: 'Attivi: $act\n', style: GoogleFonts.inter(color: const Color(0xFF3B82F6), fontSize: 10)),
+                      TextSpan(text: 'Falliti: $fail\n', style: GoogleFonts.inter(color: const Color(0xFFD97706), fontSize: 10)),
+                      TextSpan(text: 'Completati: $comp', style: GoogleFonts.inter(color: Theme.of(context).colorScheme.primary, fontSize: 10)),
+                    ],
+                  );
+                },
+              ),
+            ),
+            gridData: FlGridData(
+              show: true, 
+              drawVerticalLine: false, 
+              horizontalInterval: math.max(1.0, maxX / 4), 
+              getDrawingHorizontalLine: (v) => FlLine(color: AppColors.borderActive.withValues(alpha: 0.2), strokeWidth: 1, dashArray: [4, 4]),
+            ),
+            borderData: FlBorderData(show: false),
             titlesData: FlTitlesData(
-              rightTitles: AxisTitles(), topTitles: AxisTitles(), leftTitles: AxisTitles(),
+              rightTitles: const AxisTitles(), 
+              topTitles: const AxisTitles(), 
+              leftTitles: const AxisTitles(),
               bottomTitles: AxisTitles(sideTitles: SideTitles(showTitles: true, getTitlesWidget: (v,_) {
                 final index = v.toInt();
                 if (index < 1 || index > 4) return const SizedBox.shrink();
-                return Text('Q$index', style: TextStyle(fontSize: 10, color: AppColors.mutedForeground));
+                return Padding(
+                  padding: const EdgeInsets.only(top: 8),
+                  child: Text('Q$index', style: GoogleFonts.inter(fontSize: 10, color: AppColors.mutedForeground, fontWeight: FontWeight.w600)),
+                );
               })),
             ),
-            barGroups: groups, maxY: math.max(5.0, maxX*1.2),
+            barGroups: groups, 
+            maxY: math.max(5.0, maxX*1.2),
           ))),
           const SizedBox(height: 12),
           _buildLegend([
@@ -1088,23 +1218,81 @@ class _MacroGoalsStatsViewState extends ConsumerState<MacroGoalsStatsView> {
       title: '📈 Mensile (Storico)',
       subtitle: 'Successo medio per mese',
       child: SizedBox(height: 180, child: LineChart(LineChartData(
-        gridData: FlGridData(show: true, drawVerticalLine: false, getDrawingHorizontalLine: (v) => FlLine(color: AppColors.borderActive, strokeWidth: 0.5, dashArray: [4, 4])),
+        lineTouchData: LineTouchData(
+          touchTooltipData: LineTouchTooltipData(
+            getTooltipColor: (_) => AppColors.cardElevated,
+            tooltipRoundedRadius: 10,
+            getTooltipItems: (touchedSpots) {
+              return touchedSpots.map((s) {
+                const months = ['', 'gennaio', 'febbraio', 'marzo', 'aprile', 'maggio', 'giugno', 'luglio', 'agosto', 'settembre', 'ottobre', 'novembre', 'dicembre'];
+                return LineTooltipItem(
+                  '${months[s.x.toInt()]}\n',
+                  GoogleFonts.inter(color: AppColors.mutedForeground, fontSize: 10),
+                  children: [
+                    TextSpan(
+                      text: '${s.y.round()}% successo',
+                      style: GoogleFonts.inter(color: Theme.of(context).colorScheme.primary, fontWeight: FontWeight.bold, fontSize: 13),
+                    ),
+                  ],
+                );
+              }).toList();
+            },
+          ),
+        ),
+        gridData: FlGridData(
+          show: true, 
+          drawVerticalLine: false, 
+          getDrawingHorizontalLine: (v) => FlLine(color: AppColors.borderActive.withValues(alpha: 0.2), strokeWidth: 1, dashArray: [4, 4]),
+        ),
         borderData: FlBorderData(show: false),
         titlesData: FlTitlesData(
-          topTitles: AxisTitles(), rightTitles: AxisTitles(),
-          leftTitles: AxisTitles(sideTitles: SideTitles(showTitles: true, reservedSize: 30, getTitlesWidget: (v, _) => Text('${v.toInt()}%', style: const TextStyle(fontSize: 9, color: AppColors.mutedForeground)))),
+          topTitles: const AxisTitles(), 
+          rightTitles: const AxisTitles(),
+          leftTitles: AxisTitles(
+            sideTitles: SideTitles(
+              showTitles: true, 
+              reservedSize: 34, 
+              getTitlesWidget: (v, _) => Text('${v.toInt()}%', style: GoogleFonts.inter(fontSize: 9, color: AppColors.mutedForeground)),
+            ),
+          ),
           bottomTitles: AxisTitles(sideTitles: SideTitles(showTitles: true, interval: 3, getTitlesWidget: (v, _) {
             const mLabel = ['', 'gen', 'feb', 'mar', 'apr', 'mag', 'giu', 'lug', 'ago', 'set', 'ott', 'nov', 'dic'];
-            if (v < 1 || v > 12) return const SizedBox();
-            return Text(mLabel[v.toInt()], style: const TextStyle(fontSize: 9, color: AppColors.mutedForeground));
+            final idx = v.toInt();
+            if (idx < 1 || idx > 12) return const SizedBox();
+            return Padding(
+              padding: const EdgeInsets.only(top: 8),
+              child: Text(mLabel[idx], style: GoogleFonts.inter(fontSize: 9, color: AppColors.mutedForeground, fontWeight: FontWeight.w600)),
+            );
           })),
         ),
         minY: 0, maxY: 100, minX: 1, maxX: 12,
         lineBarsData: [LineChartBarData(
-          spots: spots, color: Theme.of(context).colorScheme.primary,
-          barWidth: 3, isCurved: true, 
-          dotData: FlDotData(show: true, getDotPainter: (spot, percent, barData, index) => FlDotCirclePainter(radius: 3, color: Theme.of(context).colorScheme.primary, strokeWidth: 1, strokeColor: Colors.white)),
-          belowBarData: BarAreaData(show: true, color: Theme.of(context).colorScheme.primary.withValues(alpha: 0.1)),
+          spots: spots, 
+          color: Theme.of(context).colorScheme.primary,
+          barWidth: 3, 
+          isCurved: true, 
+          curveSmoothness: 0.35,
+          preventCurveOverShooting: true,
+          dotData: FlDotData(
+            show: true, 
+            getDotPainter: (spot, percent, barData, index) => FlDotCirclePainter(
+              radius: 4, 
+              color: Theme.of(context).colorScheme.primary, 
+              strokeWidth: 2, 
+              strokeColor: AppColors.cardElevated,
+            ),
+          ),
+          belowBarData: BarAreaData(
+            show: true, 
+            gradient: LinearGradient(
+              begin: Alignment.topCenter,
+              end: Alignment.bottomCenter,
+              colors: [
+                Theme.of(context).colorScheme.primary.withValues(alpha: 0.15),
+                Theme.of(context).colorScheme.primary.withValues(alpha: 0.0),
+              ],
+            ),
+          ),
         )],
       ))),
     );
@@ -1131,26 +1319,91 @@ class _MacroGoalsStatsViewState extends ConsumerState<MacroGoalsStatsView> {
              curr += amt;
            }
         }
-        groups.add(BarChartGroupData(x: i, barRods: [BarChartRodData(toY: yg.length.toDouble(), color: Colors.transparent, width: 24, borderRadius: BorderRadius.circular(2), rodStackItems: stacks)]));
+        groups.add(BarChartGroupData(
+          x: i, 
+          barRods: [
+            BarChartRodData(
+              toY: yg.length.toDouble(), 
+              color: Colors.transparent, 
+              width: 20, 
+              borderRadius: const BorderRadius.vertical(top: Radius.circular(4)),
+              backDrawRodData: BackgroundBarChartRodData(
+                show: true,
+                toY: math.max(5.0, maxY * 1.2),
+                color: AppColors.borderHover.withValues(alpha: 0.1),
+              ),
+              rodStackItems: stacks,
+            )
+          ],
+        ));
     }
     return _buildCardBase(
       title: '📈 Evoluzione Interessi',
       subtitle: 'Composizione delle aree di focus negli anni',
       child: Column(
         children: [
-          SizedBox(height: 220, child: BarChart(BarChartData(
-            gridData: FlGridData(show: true, drawVerticalLine: false, horizontalInterval: math.max(1.0, maxY/4), getDrawingHorizontalLine: (v) => FlLine(color: AppColors.borderActive, strokeWidth: 0.5, dashArray: [4, 4])),
+          SizedBox(height: 240, child: BarChart(BarChartData(
+            barTouchData: BarTouchData(
+              touchTooltipData: BarTouchTooltipData(
+                getTooltipColor: (_) => AppColors.cardElevated,
+                tooltipRoundedRadius: 12,
+                tooltipPadding: const EdgeInsets.all(12),
+                getTooltipItem: (group, groupIndex, rod, rodIndex) {
+                  final year = sortedYears[group.x.toInt()];
+                  final yg = goals.where((g) => g.year == year).toList();
+                  
+                  List<TextSpan> categorySpans = [];
+                  for (var c in categories) {
+                    final count = yg.where((g) => g.categoryKey == c.key).length;
+                    if (count > 0) {
+                      categorySpans.add(TextSpan(
+                        text: '${c.label}: $count\n',
+                        style: GoogleFonts.inter(color: c.color, fontSize: 10, fontWeight: FontWeight.w500),
+                      ));
+                    }
+                  }
+
+                  return BarTooltipItem(
+                    '$year\n',
+                    GoogleFonts.inter(color: AppColors.foreground, fontWeight: FontWeight.bold, fontSize: 14),
+                    children: categorySpans,
+                  );
+                },
+              ),
+            ),
+            gridData: FlGridData(
+              show: true, 
+              drawVerticalLine: false, 
+              horizontalInterval: math.max(1.0, maxY / 4), 
+              getDrawingHorizontalLine: (v) => FlLine(color: AppColors.borderActive.withValues(alpha: 0.2), strokeWidth: 1, dashArray: [4, 4]),
+            ),
             borderData: FlBorderData(show: false),
             titlesData: FlTitlesData(
-              rightTitles: AxisTitles(), topTitles: AxisTitles(), 
-              leftTitles: AxisTitles(sideTitles: SideTitles(showTitles: true, reservedSize: 30, getTitlesWidget: (v, _) => Text(v.toInt().toString(), style: const TextStyle(fontSize: 10, color: AppColors.mutedForeground)))),
-              bottomTitles: AxisTitles(sideTitles: SideTitles(showTitles: true, getTitlesWidget: (v,_) {
-                final index = v.toInt();
-                if (index < 0 || index >= sortedYears.length) return const SizedBox.shrink();
-                return Text(sortedYears[index].toString(), style: TextStyle(fontSize: 10, color: AppColors.mutedForeground));
-              })),
+              rightTitles: const AxisTitles(), 
+              topTitles: const AxisTitles(), 
+              leftTitles: AxisTitles(
+                sideTitles: SideTitles(
+                  showTitles: true, 
+                  reservedSize: 30, 
+                  getTitlesWidget: (v, _) => Text(v.toInt().toString(), style: GoogleFonts.inter(fontSize: 10, color: AppColors.mutedForeground)),
+                ),
+              ),
+              bottomTitles: AxisTitles(
+                sideTitles: SideTitles(
+                  showTitles: true, 
+                  getTitlesWidget: (v,_) {
+                    final index = v.toInt();
+                    if (index < 0 || index >= sortedYears.length) return const SizedBox.shrink();
+                    return Padding(
+                      padding: const EdgeInsets.only(top: 8),
+                      child: Text(sortedYears[index].toString(), style: GoogleFonts.inter(fontSize: 10, color: AppColors.mutedForeground, fontWeight: FontWeight.w600)),
+                    );
+                  },
+                ),
+              ),
             ),
-            barGroups: groups, maxY: math.max(5.0, maxY*1.2),
+            barGroups: groups, 
+            maxY: math.max(5.0, maxY * 1.2),
           ))),
           const SizedBox(height: 16),
           _buildLegend(categories.map((c) => _LegendItem(c.label, c.color)).toList()),

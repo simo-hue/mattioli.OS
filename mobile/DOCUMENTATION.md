@@ -67,3 +67,43 @@
 *Details*: Fixed a specific assertion error in `fl_chart`'s `RadarChart` that required at least 3 data entries.
 *Tech Notes*:
 - Added a check in `_buildCategoryRadarCard` to return a placeholder message if the number of unique categories with goals is less than 3, preventing the assertion failure.
+
+## [2026-05-06 18:40]: Goals - Annual Progression Chart Optimization
+*Details*: Upgraded the "Progressione Annuale" bar chart with interactive tooltips and a modern "track" background for a more premium look.
+*Tech Notes*:
+- **Interactivity**: Added `BarTouchData` with custom `BarTouchTooltipData` to display detailed breakdown of Active, Failed, and Completed goals on tap.
+- **Visual Improvements**: 
+  - Implemented `backDrawRodData` (track background) to enhance depth.
+  - Refined grid styling with dashed lines and reduced opacity.
+  - Improved axis labels with better padding and font weights.
+  - Adjusted bar width and corner radius for a more balanced aesthetic.
+
+## [2026-05-06 18:43]: Goals - Seasonality & Monthly History Optimization
+*Details*: Upgraded the Seasonality (bar) and Monthly History (line) charts with interactive tooltips and premium aesthetics.
+*Tech Notes*:
+- **Seasonality Chart**: 
+    - Added `BarTouchData` for detailed quarterly tooltips.
+    - Implemented `backDrawRodData` (tracks) for visual consistency.
+    - Improved axis labels and grid styling.
+- **Monthly History Chart**:
+    - Added `LineTouchData` with localized month names in tooltips.
+    - Enhanced line visuals with a soft gradient fill (`BarAreaData`) and smoother curves.
+    - Upgraded dot painters (markers) with contrasting strokes for better visibility.
+    - Refined grid lines and bolded axis labels.
+
+## [2026-05-06 18:45]: Goals - Layout & Chart Refinement
+*Details*: Separated Seasonality and Monthly charts into sequential rows for better visibility and optimized the "Mensile" bar chart for single-year views.
+*Tech Notes*:
+- **Layout Change**: Removed `Row` containers that paired charts horizontally, placing them vertically in the `Column` for better readability on mobile screens.
+- **Monthly Bar Chart (Single Year)**:
+    - Added `BarTouchData` for interactive tooltips.
+    - Implemented `backDrawRodData` (tracks) for visual depth.
+    - Switched to `rodStackItems` for a cleaner "composed" look (Completed vs Total).
+    - Improved grid and axis labels.
+
+## [2026-05-06 18:46]: Goals - Interest Evolution Optimization
+*Details*: Upgraded the "Evoluzione Interessi" chart with interactive tooltips, tracks, and consistent premium styling.
+*Tech Notes*:
+- **Interactivity**: Added `BarTouchData` to show a detailed breakdown of categories per year in a tooltip.
+- **Visuals**: Implemented `backDrawRodData` (tracks) and refined bar width/radius for better aesthetic alignment.
+- **Styling**: Improved axis labels and grid lines for clarity and professional appearance.

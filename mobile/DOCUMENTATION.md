@@ -53,6 +53,16 @@
 - **Integrazione Modello**: Creati `fromJson` e `toJson` nel modello `MacroGoal` compatibili con la tabella `long_term_goals` di Supabase.
 
 ---
+## [2026-05-06 17:10]: Ristrutturazione AppBar (Executive Dashboard)
+*Details*: Sostituita la vecchia AppBar con un design "Executive Dashboard". Rimosso il logo ⌘ a favore di un'intestazione tipografica personalizzata con saluto dinamico e data. Introdotto effetto Glassmorphism.
+*Tech Notes*:
+- Implementato `BackdropFilter` con `ImageFilter.blur` in `_AppBar`.
+- Aggiunta dipendenza `intl` per la formattazione dinamica della data.
+- Aggiunte nuove chiavi di localizzazione per i saluti (`Buongiorno`, `Buon pomeriggio`, ecc.).
+- Inserita icona di ricerca rapida accanto al profilo.
+- Centralizzati verticalmente tutti gli elementi della AppBar per un look più bilanciato.
+
+---
 ## [2026-05-06 16:55]: Build Fix & Refinement Localizzazione
 *Details*: Risolti errori di sintassi Dart (unescaped single quotes) introdotti durante il refactoring delle chiavi. Professionalizzate ulteriormente le label residue (giorni della settimana, helper labels).
 *Tech Notes*:

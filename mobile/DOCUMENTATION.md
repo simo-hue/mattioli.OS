@@ -138,12 +138,12 @@
 
 ---
 ---
-## [2026-05-06 18:15]: Ultra-Low Floating NavBar
-*Details*: Optimized the floating bar's position by translating it downwards to the absolute minimum margin while keeping the selection highlight confined within the glassy island.
+## [2026-05-06 18:20]: Expandable Vertical List for Key Habits
+*Details*: Replaced the horizontal scroll in the Statistics "Key Habits" section with a vertical list of expandable cards. This improves discoverability and mobile usability.
 *Tech Notes*:
-- **Minimalist Margin**: Reduced bottom margin to 6px, ignoring standard large safe area paddings for a tighter look.
-- **Internal Clip**: Restored `ClipRRect` containment to ensure all gradients and highlights stay within the bar's rounded boundaries.
-- **Visual Consistency**: Maintained the floating "island" aesthetic but with a much lower profile.
+- **Expansion Logic**: Transformed `_AbitudineChiaveCard` into a `StatefulWidget` using `AnimatedAlign` and `heightFactor` for smooth expansion/collapse.
+- **Compact Summary**: When collapsed, cards show essential metrics (Impact Badge and Media Impact) to keep the list readable.
+- **Modern UI**: Added `AnimatedRotation` for the chevron icon and subtle border highlighting when a card is expanded.
 
 ---
 ## Current Status

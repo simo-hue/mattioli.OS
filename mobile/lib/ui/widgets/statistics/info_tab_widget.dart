@@ -239,11 +239,9 @@ class _AbitudiniChiaveSection extends StatelessWidget {
             ),
           ),
           const SizedBox(height: 16),
-          SingleChildScrollView(
-            scrollDirection: Axis.horizontal,
-            clipBehavior: Clip.none,
+          Padding(
             padding: const EdgeInsets.symmetric(horizontal: 16),
-            child: Row(
+            child: Column(
               children: const [
                 _AbitudineChiaveCard(
                   title: '1 YT-Video',
@@ -257,7 +255,7 @@ class _AbitudiniChiaveSection extends StatelessWidget {
                   extraConnections: 2,
                   media: '-0.13',
                 ),
-                SizedBox(width: 12),
+                SizedBox(height: 12),
                 _AbitudineChiaveCard(
                   title: '20 Flessioni 1',
                   dotColor: Color(0xFFEF4444),
@@ -270,7 +268,7 @@ class _AbitudiniChiaveSection extends StatelessWidget {
                   extraConnections: 1,
                   media: '+0.47',
                 ),
-                SizedBox(width: 12),
+                SizedBox(height: 12),
                 _AbitudineChiaveCard(
                   title: '20 Flessioni 2',
                   dotColor: Color(0xFFEF4444),
@@ -320,7 +318,7 @@ class _AbitudiniChiaveSection extends StatelessWidget {
   }
 }
 
-class _AbitudineChiaveCard extends StatelessWidget {
+class _AbitudineChiaveCard extends StatefulWidget {
   final String title;
   final Color dotColor;
   final List<MapEntry<String, String>> correlations;
@@ -336,159 +334,178 @@ class _AbitudineChiaveCard extends StatelessWidget {
   });
 
   @override
+  State<_AbitudineChiaveCard> createState() => _AbitudineChiaveCardState();
+}
+
+class _AbitudineChiaveCardState extends State<_AbitudineChiaveCard> {
+  bool _isExpanded = false;
+
+  @override
   Widget build(BuildContext context) {
-    return Container(
-      width: 280,
-      padding: const EdgeInsets.all(16),
-      decoration: BoxDecoration(
-        color: AppColors.background,
-        borderRadius: BorderRadius.circular(20),
-        border: Border.all(color: AppColors.border, width: 1),
-        boxShadow: [
-          BoxShadow(
-            color: Colors.black.withValues(alpha: 0.1),
-            blurRadius: 15,
-            offset: const Offset(0, 8),
+    return GestureDetector(
+      onTap: () => setState(() => _isExpanded = !_isExpanded),
+      child: AnimatedContainer(
+        duration: const Duration(milliseconds: 300),
+        curve: Curves.easeInOut,
+        width: double.infinity,
+        padding: const EdgeInsets.all(16),
+        decoration: BoxDecoration(
+          color: AppColors.background,
+          borderRadius: BorderRadius.circular(20),
+          border: Border.all(
+            color: _isExpanded ? Theme.of(context).colorScheme.primary.withValues(alpha: 0.3) : AppColors.border,
+            width: 1,
           ),
-        ],
-      ),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Row(
-            children: [
-              Container(
-                width: 10,
-                height: 10,
-                decoration: BoxDecoration(
-                  color: dotColor,
-                  shape: BoxShape.circle,
-                  boxShadow: [
-                    BoxShadow(color: dotColor.withValues(alpha: 0.4), blurRadius: 4, spreadRadius: 1),
+          boxShadow: [
+            BoxShadow(
+              color: Colors.black.withValues(alpha: 0.05),
+              blurRadius: 15,
+              offset: const Offset(0, 8),
+            ),
+          ],
+        ),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Row(
+              children: [
+                Container(
+                  width: 10,
+                  height: 10,
+                  decoration: BoxDecoration(
+                    color: widget.dotColor,
+                    shape: BoxShape.circle,
+                    boxShadow: [
+                      BoxShadow(color: widget.dotColor.withValues(alpha: 0.4), blurRadius: 4, spreadRadius: 1),
+                    ],
+                  ),
+                ),
+                const SizedBox(width: 10),
+                Expanded(
+                  child: Text(
+                    widget.title,
+                    style: const TextStyle(
+                      fontFamily: 'Inter',
+                      fontSize: 16,
+                      fontWeight: FontWeight.w700,
+                      color: AppColors.foreground,
+                      letterSpacing: -0.3,
+                    ),
+                  ),
+                ),
+                AnimatedRotation(
+                  turns: _isExpanded ? 0.5 : 0,
+                  duration: const Duration(milliseconds: 300),
+                  child: const Icon(LucideIcons.chevronDown, size: 18, color: AppColors.mutedForeground),
+                ),
+              ],
+            ),
+            const SizedBox(height: 14),
+            Row(
+              mainAxisAlignment: MainAxisAlignment.spaceBetween,
+              children: [
+                Row(
+                  children: [
+                    Container(
+                      padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+                      decoration: BoxDecoration(
+                        color: Theme.of(context).colorScheme.primary.withValues(alpha: 0.15),
+                        borderRadius: BorderRadius.circular(8),
+                      ),
+                      child: Text(
+                        context.l10n.translate('Alto Impatto'),
+                        style: TextStyle(
+                          fontFamily: 'Inter',
+                          fontSize: 10,
+                          fontWeight: FontWeight.w700,
+                          color: Theme.of(context).colorScheme.primary,
+                        ),
+                      ),
+                    ),
+                    const SizedBox(width: 10),
+                    Text(
+                      '${widget.correlations.length + widget.extraConnections} ${context.l10n.translate('connessioni')}',
+                      style: const TextStyle(
+                        fontFamily: 'Inter',
+                        fontSize: 11,
+                        fontWeight: FontWeight.w500,
+                        color: AppColors.mutedForeground,
+                      ),
+                    ),
                   ],
                 ),
-              ),
-              const SizedBox(width: 10),
-              Expanded(
-                child: Text(
-                  title,
-                  style: const TextStyle(
-                    fontFamily: 'Inter',
-                    fontSize: 16,
-                    fontWeight: FontWeight.w700,
-                    color: AppColors.foreground,
-                    letterSpacing: -0.3,
-                  ),
-                ),
-              ),
-              Icon(LucideIcons.crown, size: 18, color: Theme.of(context).colorScheme.primary),
-            ],
-          ),
-          const SizedBox(height: 14),
-          Row(
-            children: [
-              Container(
-                padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
-                decoration: BoxDecoration(
-                  color: Theme.of(context).colorScheme.primary.withValues(alpha: 0.15),
-                  borderRadius: BorderRadius.circular(8),
-                ),
-                child: Text(
-                  context.l10n.translate('Alto Impatto'),
+                Text(
+                  widget.media,
                   style: TextStyle(
                     fontFamily: 'Inter',
-                    fontSize: 10,
-                    fontWeight: FontWeight.w700,
-                    color: Theme.of(context).colorScheme.primary,
+                    fontSize: 14,
+                    fontWeight: FontWeight.w800,
+                    color: widget.media.startsWith('+') ? const Color(0xFF10B981) : const Color(0xFFEF4444),
                   ),
                 ),
-              ),
-              const SizedBox(width: 10),
-              Text(
-                '${correlations.length + extraConnections} ${context.l10n.translate('connessioni')}',
-                style: const TextStyle(
-                  fontFamily: 'Inter',
-                  fontSize: 11,
-                  fontWeight: FontWeight.w500,
-                  color: AppColors.mutedForeground,
+              ],
+            ),
+            
+            ClipRect(
+              child: AnimatedAlign(
+                duration: const Duration(milliseconds: 300),
+                curve: Curves.easeInOut,
+                alignment: Alignment.topCenter,
+                heightFactor: _isExpanded ? 1.0 : 0.0,
+                child: Padding(
+                  padding: const EdgeInsets.only(top: 16),
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Divider(color: AppColors.border, height: 1),
+                      const SizedBox(height: 16),
+                      ...widget.correlations.map((c) {
+                        final isPositive = c.value.startsWith('+');
+                        return Padding(
+                          padding: const EdgeInsets.only(bottom: 8),
+                          child: Row(
+                            mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                            children: [
+                              Text(
+                                c.key,
+                                style: const TextStyle(
+                                  fontFamily: 'Inter',
+                                  fontSize: 12,
+                                  color: AppColors.mutedForeground,
+                                ),
+                              ),
+                              Text(
+                                c.value,
+                                style: TextStyle(
+                                  fontFamily: 'Inter',
+                                  fontSize: 12,
+                                  fontWeight: FontWeight.w700,
+                                  color: isPositive ? const Color(0xFF10B981) : const Color(0xFFEF4444),
+                                ),
+                              ),
+                            ],
+                          ),
+                        );
+                      }),
+                      const SizedBox(height: 8),
+                      Center(
+                        child: Text(
+                          '+${widget.extraConnections} altre connessioni',
+                          style: const TextStyle(
+                            fontFamily: 'Inter',
+                            fontSize: 10,
+                            color: AppColors.mutedForeground,
+                            fontStyle: FontStyle.italic,
+                          ),
+                        ),
+                      ),
+                    ],
+                  ),
                 ),
-              ),
-            ],
-          ),
-          const SizedBox(height: 16),
-          ...correlations.map((c) {
-            final isPositive = c.value.startsWith('+');
-            return Padding(
-              padding: const EdgeInsets.only(bottom: 8),
-              child: Row(
-                mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                children: [
-                  Text(
-                    c.key,
-                    style: const TextStyle(
-                      fontFamily: 'Inter',
-                      fontSize: 12,
-                      color: AppColors.mutedForeground,
-                    ),
-                  ),
-                  Text(
-                    c.value,
-                    style: TextStyle(
-                      fontFamily: 'Inter',
-                      fontSize: 12,
-                      fontWeight: FontWeight.w700,
-                      color: isPositive ? const Color(0xFF10B981) : const Color(0xFFEF4444),
-                    ),
-                  ),
-                ],
-              ),
-            );
-          }),
-          const SizedBox(height: 8),
-          Center(
-            child: Text(
-              '+$extraConnections altre connessioni',
-              style: const TextStyle(
-                fontFamily: 'Inter',
-                fontSize: 10,
-                color: AppColors.mutedForeground,
-                fontStyle: FontStyle.italic,
               ),
             ),
-          ),
-          const SizedBox(height: 16),
-          Divider(color: AppColors.border, height: 1),
-          const SizedBox(height: 14),
-          Row(
-            mainAxisAlignment: MainAxisAlignment.spaceBetween,
-            children: [
-              Row(
-                children: [
-                  const Icon(LucideIcons.chartSpline, size: 14, color: AppColors.mutedForeground),
-                  const SizedBox(width: 6),
-                  Text(
-                    context.l10n.translate('Media Impatto'),
-                    style: const TextStyle(
-                      fontFamily: 'Inter',
-                      fontSize: 12,
-                      fontWeight: FontWeight.w500,
-                      color: AppColors.mutedForeground,
-                    ),
-                  ),
-                ],
-              ),
-              Text(
-                media,
-                style: const TextStyle(
-                  fontFamily: 'Inter',
-                  fontSize: 14,
-                  fontWeight: FontWeight.w800,
-                  color: AppColors.foreground,
-                ),
-              ),
-            ],
-          ),
-        ],
+          ],
+        ),
       ),
     );
   }

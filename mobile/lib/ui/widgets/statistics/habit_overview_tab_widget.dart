@@ -13,9 +13,9 @@ class HabitOverviewTabWidget extends StatelessWidget {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        _TopStatsGrid(),
+        const _TopStatsGrid(),
         const SizedBox(height: 16),
-        _TrendUltimi30Giorni(),
+        const _TrendUltimi30Giorni(),
         const SizedBox(height: 16),
         _CorrelazioniSection(goalId: goalId),
         const SizedBox(height: 32),
@@ -53,7 +53,7 @@ class _TopStatsGrid extends StatelessWidget {
           title: context.l10n.translate('COMPLETAMENTO'),
           value: '55%',
           subtitle: '67/122 ${context.l10n.translate('gg')}',
-          valueColor: AppColors.foreground,
+          valueColor: context.appColors.foreground,
         ),
         _StatCard(
           title: context.l10n.translate('MANCATI'),
@@ -131,9 +131,6 @@ class _TrendUltimi30Giorni extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    // Mocking the 30 days grid as seen in the screenshot
-    // 3 rows, 10 columns
-    // Red: Missed, Green: Completed, Dark: Empty/Future
     final List<int> statuses = [
       0, 0, 1, 0, 2, 0, 1, 1, 0, 0,
       0, 0, 0, 0, 0, 0, 0, 0, 0, 2,
@@ -206,147 +203,192 @@ class _TrendUltimi30Giorni extends StatelessWidget {
   }
 }
 
-class _CorrelazioniSection extends StatelessWidget {
+class _CorrelazioniSection extends StatefulWidget {
   final String goalId;
   const _CorrelazioniSection({required this.goalId});
 
   @override
-  Widget build(BuildContext context) {
-    final primaryColor = Theme.of(context).colorScheme.primary;
-    return Container(
-      decoration: BoxDecoration(
-        color: context.appColors.card,
-        borderRadius: BorderRadius.circular(16),
-        border: Border.all(color: context.appColors.border, width: 1),
-      ),
-      padding: const EdgeInsets.all(16),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Text(
-            '${context.l10n.translate('Correlazioni con')} "20 Flessioni 1"', // Mock title for now
-            style: TextStyle(
-              fontFamily: 'Inter',
-              fontSize: 16,
-              fontWeight: FontWeight.w700,
-              color: context.appColors.foreground,
-            ),
-          ),
-          const SizedBox(height: 4),
-          Text(
-            context.l10n.translate('Come questa abitudine si relaziona con le altre'),
-            style: TextStyle(
-              fontFamily: 'Inter',
-              fontSize: 12,
-              color: context.appColors.mutedForeground,
-            ),
-          ),
-          const SizedBox(height: 24),
-          
-          // Positive Correlations
-          Row(
-            children: [
-              const Icon(LucideIcons.trendingUp, size: 14, color: Color(0xFF10B981)),
-              const SizedBox(width: 8),
-              Text(
-                context.l10n.translate('Correlazioni Positive'),
-                style: const TextStyle(
-                  fontFamily: 'Inter',
-                  fontSize: 12,
-                  fontWeight: FontWeight.w600,
-                  color: Color(0xFF10B981),
-                ),
-              ),
-            ],
-          ),
-          const SizedBox(height: 12),
-          _CorrelazioneCard(
-            habitName: '20 Flessioni 2',
-            habitColor: const Color(0xFFEF4444),
-            strengthText: 'Forte (+0.92)',
-            strengthColor: const Color(0xFF10B981),
-            subtitle: '94% ${context.l10n.translate('together')}',
-            description: 'Quando completi "20 Flessioni 1", hai una probabilità del 94% di completare anche "20 Flessioni 2". Considera di farle insieme come routine consolidata.',
-            borderColor: const Color(0xFF10B981),
-          ),
-          const SizedBox(height: 8),
-          _CorrelazioneCard(
-            habitName: '20 Flessioni 3',
-            habitColor: const Color(0xFFEF4444),
-            strengthText: 'Forte (+0.77)',
-            strengthColor: const Color(0xFF10B981),
-            subtitle: '81% insieme',
-            description: 'Quando completi "20 Flessioni 1", hai una probabilità del 81% di completare anche "20 Flessioni 3". Considera di farle insieme come routine consolidata.',
-            borderColor: const Color(0xFF10B981),
-          ),
-          const SizedBox(height: 8),
-          _CorrelazioneCard(
-            habitName: '20 Flessioni 4',
-            habitColor: const Color(0xFFEF4444),
-            strengthText: 'Forte (+0.62)',
-            strengthColor: const Color(0xFF10B981),
-            subtitle: '53% insieme',
-            description: 'Quando completi "20 Flessioni 1", hai una probabilità del 53% di completare anche "20 Flessioni 4". Considera di farle insieme come routine consolidata.',
-            borderColor: const Color(0xFF10B981),
-          ),
-          
-          const SizedBox(height: 24),
-          
-          // Negative Correlations
-          Row(
-            children: [
-              const Icon(LucideIcons.trendingDown, size: 14, color: Color(0xFFEF4444)),
-              const SizedBox(width: 8),
-              Text(
-                context.l10n.translate('Correlazioni Negative'),
-                style: const TextStyle(
-                  fontFamily: 'Inter',
-                  fontSize: 12,
-                  fontWeight: FontWeight.w600,
-                  color: Color(0xFFEF4444),
-                ),
-              ),
-            ],
-          ),
-          const SizedBox(height: 12),
-          _CorrelazioneCard(
-            habitName: '1 YT-Video',
-            habitColor: const Color(0xFFEF4444),
-            strengthText: 'Moderata (-0.30)',
-            strengthColor: const Color(0xFFEF4444),
-            subtitle: '93 giorni',
-            description: '"20 Flessioni 1" e "1 YT-Video" raramente vengono completate lo stesso giorno. Potrebbero competere per tempo/energia - considera di pianificarle in giorni diversi.',
-            borderColor: const Color(0xFFEF4444),
-          ),
+  State<_CorrelazioniSection> createState() => _CorrelazioniSectionState();
+}
 
-          const SizedBox(height: 24),
-          Container(
-            padding: const EdgeInsets.all(12),
-            decoration: BoxDecoration(
-              color: const Color(0xFF3B82F6).withValues(alpha: 0.05),
-              borderRadius: BorderRadius.circular(8),
-              border: Border.all(color: const Color(0xFF3B82F6).withValues(alpha: 0.2), width: 1),
+class _CorrelazioniSectionState extends State<_CorrelazioniSection> {
+  late PageController _positiveController;
+  late PageController _negativeController;
+  int _positiveIndex = 0;
+  int _negativeIndex = 0;
+
+  @override
+  void initState() {
+    super.initState();
+    _positiveController = PageController(viewportFraction: 0.9);
+    _negativeController = PageController(viewportFraction: 0.9);
+  }
+
+  @override
+  void dispose() {
+    _positiveController.dispose();
+    _negativeController.dispose();
+    super.dispose();
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Text(
+          '${context.l10n.translate('Correlazioni con')} "20 Flessioni 1"',
+          style: TextStyle(
+            fontFamily: 'Inter',
+            fontSize: 18,
+            fontWeight: FontWeight.w700,
+            color: context.appColors.foreground,
+          ),
+        ),
+        const SizedBox(height: 4),
+        Text(
+          context.l10n.translate('Come questa abitudine si relaziona con le altre'),
+          style: TextStyle(
+            fontFamily: 'Inter',
+            fontSize: 12,
+            color: context.appColors.mutedForeground,
+          ),
+        ),
+        const SizedBox(height: 24),
+
+        // POSITIVE CORRELATIONS
+        Row(
+          children: [
+            const Icon(LucideIcons.trendingUp, size: 16, color: Color(0xFF10B981)),
+            const SizedBox(width: 8),
+            Text(
+              context.l10n.translate('Correlazioni Positive'),
+              style: const TextStyle(
+                fontFamily: 'Inter',
+                fontSize: 14,
+                fontWeight: FontWeight.w700,
+                color: Color(0xFF10B981),
+              ),
             ),
-            child: Row(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                const Icon(LucideIcons.info, size: 16, color: Color(0xFF3B82F6)),
-                const SizedBox(width: 12),
-                Expanded(
-                  child: Text(
-                    context.l10n.translate('Info Correlazioni'),
-                    style: TextStyle(
-                      fontFamily: 'Inter',
-                      fontSize: 11,
-                      color: context.appColors.mutedForeground,
-                      height: 1.4,
-                    ),
-                  ),
+          ],
+        ),
+        const SizedBox(height: 16),
+        SizedBox(
+          height: 210,
+          child: PageView(
+            controller: _positiveController,
+            onPageChanged: (i) => setState(() => _positiveIndex = i),
+            children: [
+              _buildPaddedCard(
+                _CorrelazioneCard(
+                  habitName: '20 Flessioni 2',
+                  habitColor: const Color(0xFFEF4444),
+                  strengthText: 'Forte (+0.92)',
+                  strengthColor: const Color(0xFF10B981),
+                  subtitle: '94% insieme',
+                  description: 'Quando completi "20 Flessioni 1", hai una probabilità del 94% di completare anche "20 Flessioni 2".',
+                  borderColor: const Color(0xFF10B981),
                 ),
-              ],
+              ),
+              _buildPaddedCard(
+                _CorrelazioneCard(
+                  habitName: '20 Flessioni 3',
+                  habitColor: const Color(0xFFEF4444),
+                  strengthText: 'Forte (+0.77)',
+                  strengthColor: const Color(0xFF10B981),
+                  subtitle: '81% insieme',
+                  description: 'Quando completi "20 Flessioni 1", hai una probabilità del 81% di completare anche "20 Flessioni 3".',
+                  borderColor: const Color(0xFF10B981),
+                ),
+              ),
+            ],
+          ),
+        ),
+        const SizedBox(height: 12),
+        _buildDots(2, _positiveIndex, const Color(0xFF10B981)),
+
+        const SizedBox(height: 32),
+
+        // NEGATIVE CORRELATIONS
+        Row(
+          children: [
+            const Icon(LucideIcons.trendingDown, size: 16, color: Color(0xFFEF4444)),
+            const SizedBox(width: 8),
+            Text(
+              context.l10n.translate('Correlazioni Negative'),
+              style: const TextStyle(
+                fontFamily: 'Inter',
+                fontSize: 14,
+                fontWeight: FontWeight.w700,
+                color: Color(0xFFEF4444),
+              ),
             ),
-          )
-        ],
+          ],
+        ),
+        const SizedBox(height: 16),
+        SizedBox(
+          height: 210,
+          child: PageView(
+            controller: _negativeController,
+            onPageChanged: (i) => setState(() => _negativeIndex = i),
+            children: [
+              _buildPaddedCard(
+                _CorrelazioneCard(
+                  habitName: '1 YT-Video',
+                  habitColor: const Color(0xFFEF4444),
+                  strengthText: 'Moderata (-0.30)',
+                  strengthColor: const Color(0xFFEF4444),
+                  subtitle: '93 giorni',
+                  description: '"20 Flessioni 1" e "1 YT-Video" raramente vengono completate lo stesso giorno.',
+                  borderColor: const Color(0xFFEF4444),
+                ),
+              ),
+              _buildPaddedCard(
+                _CorrelazioneCard(
+                  habitName: 'Caviglia',
+                  habitColor: const Color(0xFF64748B),
+                  strengthText: 'Moderata (-0.25)',
+                  strengthColor: const Color(0xFFEF4444),
+                  subtitle: '102 giorni',
+                  description: 'Queste due abitudini sembrano competere per la tua attenzione serale.',
+                  borderColor: const Color(0xFFEF4444),
+                ),
+              ),
+            ],
+          ),
+        ),
+        const SizedBox(height: 12),
+        _buildDots(2, _negativeIndex, const Color(0xFFEF4444)),
+
+        const SizedBox(height: 32),
+      ],
+    );
+  }
+
+  Widget _buildPaddedCard(Widget card) {
+    return Padding(
+      padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 10),
+      child: card,
+    );
+  }
+
+  Widget _buildDots(int count, int current, Color color) {
+    return Center(
+      child: Row(
+        mainAxisAlignment: MainAxisAlignment.center,
+        children: List.generate(count, (index) {
+          final isActive = current == index;
+          return AnimatedContainer(
+            duration: const Duration(milliseconds: 300),
+            margin: const EdgeInsets.symmetric(horizontal: 4),
+            width: isActive ? 16 : 6,
+            height: 6,
+            decoration: BoxDecoration(
+              color: isActive ? color : context.appColors.mutedForeground.withValues(alpha: 0.3),
+              borderRadius: BorderRadius.circular(3),
+            ),
+          );
+        }),
       ),
     );
   }
@@ -374,51 +416,60 @@ class _CorrelazioneCard extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Container(
-      padding: const EdgeInsets.all(14),
+      padding: const EdgeInsets.all(20),
       decoration: BoxDecoration(
-        color: context.appColors.background,
-        borderRadius: BorderRadius.circular(12),
-        border: Border.all(color: borderColor.withValues(alpha: 0.3), width: 1),
+        color: context.appColors.card,
+        borderRadius: BorderRadius.circular(20),
+        border: Border.all(color: context.appColors.border, width: 1),
+        boxShadow: [
+          BoxShadow(
+            color: Colors.black.withValues(alpha: 0.1),
+            blurRadius: 15,
+            offset: const Offset(0, 8),
+          ),
+        ],
       ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
+        mainAxisAlignment: MainAxisAlignment.center,
         children: [
           Row(
             children: [
-              Container(width: 8, height: 8, decoration: BoxDecoration(color: habitColor, shape: BoxShape.circle)),
+              Container(width: 10, height: 10, decoration: BoxDecoration(color: habitColor, shape: BoxShape.circle)),
               const SizedBox(width: 10),
-              Text(
-                habitName,
-                style: TextStyle(
-                  fontFamily: 'Inter',
-                  fontSize: 14,
-                  fontWeight: FontWeight.w700,
-                  color: context.appColors.foreground,
+              Expanded(
+                child: Text(
+                  habitName,
+                  style: TextStyle(
+                    fontFamily: 'Inter',
+                    fontSize: 16,
+                    fontWeight: FontWeight.w700,
+                    color: context.appColors.foreground,
+                  ),
                 ),
               ),
             ],
           ),
-          const SizedBox(height: 6),
+          const SizedBox(height: 8),
           Row(
             children: [
-              const SizedBox(width: 18),
               Text(
                 strengthText,
                 style: TextStyle(
                   fontFamily: 'Inter',
-                  fontSize: 11,
-                  fontWeight: FontWeight.w600,
+                  fontSize: 12,
+                  fontWeight: FontWeight.w700,
                   color: strengthColor,
                 ),
               ),
               const SizedBox(width: 6),
-              const Text('•', style: TextStyle(color: Colors.grey, fontSize: 11)),
+              Text('•', style: TextStyle(color: context.appColors.mutedForeground, fontSize: 12)),
               const SizedBox(width: 6),
               Text(
                 subtitle,
                 style: TextStyle(
                   fontFamily: 'Inter',
-                  fontSize: 11,
+                  fontSize: 12,
                   color: context.appColors.mutedForeground,
                 ),
               ),
@@ -429,10 +480,12 @@ class _CorrelazioneCard extends StatelessWidget {
             description,
             style: TextStyle(
               fontFamily: 'Inter',
-              fontSize: 11,
+              fontSize: 12,
               color: context.appColors.mutedForeground,
               height: 1.5,
             ),
+            maxLines: 2,
+            overflow: TextOverflow.ellipsis,
           ),
         ],
       ),

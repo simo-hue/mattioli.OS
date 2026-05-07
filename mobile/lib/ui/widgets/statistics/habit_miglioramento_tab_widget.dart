@@ -17,7 +17,6 @@ class HabitMiglioramentoTabWidget extends StatelessWidget {
         const SizedBox(height: 16),
         _StreakInterrottiCard(),
         const SizedBox(height: 16),
-        _SuggerimentiCard(),
         const SizedBox(height: 32),
       ],
     );
@@ -202,76 +201,5 @@ class _StreakInterrottiCard extends StatelessWidget {
   }
 }
 
-class _SuggerimentiCard extends StatelessWidget {
-  const _SuggerimentiCard();
 
-  @override
-  Widget build(BuildContext context) {
-    return Container(
-      decoration: BoxDecoration(
-        color: context.appColors.card,
-        borderRadius: BorderRadius.circular(16),
-        border: Border.all(color: context.appColors.border, width: 1),
-      ),
-      padding: const EdgeInsets.all(20),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Text(
-            '💡 ${context.l10n.translate('Suggerimenti')}',
-            style: TextStyle(
-              fontFamily: 'Inter',
-              fontSize: 16,
-              fontWeight: FontWeight.w700,
-              color: context.appColors.foreground,
-            ),
-          ),
-          const SizedBox(height: 16),
-          _buildBulletPoint(context, context.l10n.translate('Concentrati sul Dom - è il tuo giorno più debole')),
-          _buildBulletPoint(context, context.l10n.translate('Evita pause prolungate - la tua serie negativa più lunga è stata di 12 giorni')),
-          _buildBulletPoint(context, context.l10n.translate('Obiettivo: raggiungi almeno il 70% di completamento per consolidare l\'abitudine')),
-        ],
-      ),
-    );
-  }
 
-  Widget _buildBulletPoint(BuildContext context, String text) {
-    return Padding(
-      padding: const EdgeInsets.only(bottom: 12.0),
-      child: Row(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          const Text(
-            '• ',
-            style: TextStyle(
-              color: Colors.grey,
-              fontSize: 14,
-            ),
-          ),
-          Expanded(
-            child: RichText(
-              text: TextSpan(
-                style: TextStyle(
-                  fontFamily: 'Inter',
-                  fontSize: 14,
-                  color: context.appColors.mutedForeground,
-                  height: 1.4,
-                ),
-                children: _parseBoldText(context, text),
-              ),
-            ),
-          ),
-        ],
-      ),
-    );
-  }
-
-  // Simple parser to make Dom, 12 giorni, and 70% bold slightly if wanted,
-  // but let's just make the text standard or we can just hardcode the styling if really needed.
-  // Using rich text explicitly based on the snapshot
-  List<TextSpan> _parseBoldText(BuildContext context, String text) {
-    // Actually the user screenshot doesn't show strong bold, it's just regular text.
-    // I'll return a single text span.
-    return [TextSpan(text: text, style: TextStyle(color: context.appColors.mutedForeground))];
-  }
-}

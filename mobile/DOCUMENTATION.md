@@ -121,6 +121,9 @@
 - **Single Habit Info & Activity Grid**: Migrated `info_tab_widget.dart` to use `context.appColors`. Fixed the "black boxes" in the top stats (Completamento, Miglior Serie, etc.) and the "Attività Recente" section.
 - **Global Stats Cleanup**: Migrated `global_habits_tab_widget.dart` and `global_trend_tab_widget.dart` to ensure consistent Light Mode aesthetics across all analytics views.
 - **Premium Carousel Alignment**: Standardized the design of "Correlazioni Positive" and "Correlazioni Negative" cards to match the "Abitudini Chiave" section. Increased card radius to 20px, added elevation shadows, and optimized horizontal scroll snapping for a more fluid experience.
+- **Specific Habit Stats Refinement**: Migrated the correlation sections in `habit_overview_tab_widget.dart` from vertical lists to horizontal carousels with pagination dots, ensuring a consistent premium look and feel across both global and specific analytics views.
+- **Unified Analytics Selectors**: Replaced the standard dropdown timeframe selector in the "Mood & Energia" chart with the premium pill-style animated selector used in the Trend tab, improving visual consistency and UX across all analytics tabs.
+
 
 
 

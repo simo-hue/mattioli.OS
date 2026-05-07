@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:lucide_icons_flutter/lucide_icons.dart';
 import 'package:fl_chart/fl_chart.dart';
 import '../../../core/theme.dart';
@@ -20,15 +21,15 @@ class _GlobalMoodTabWidgetState extends State<GlobalMoodTabWidget> {
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
         _buildHeader(),
-        const SizedBox(height: 20),
+        const SizedBox(height: 24),
         _buildMainChart(),
         const SizedBox(height: 24),
         const _MoodSensitiveSection(),
         const SizedBox(height: 24),
         const _ResilientHabitsSection(),
         const SizedBox(height: 24),
-        const _MoodSuggestionsSection(),
-        const SizedBox(height: 40),
+        const _CorrelazioneMoodSection(),
+        const SizedBox(height: 32),
       ],
     );
   }
@@ -37,78 +38,68 @@ class _GlobalMoodTabWidgetState extends State<GlobalMoodTabWidget> {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        Row(
-          children: [
-            Container(
-              padding: const EdgeInsets.all(10),
-              decoration: BoxDecoration(
-                color: Theme.of(context).colorScheme.primary.withValues(alpha: 0.15),
-                borderRadius: BorderRadius.circular(12),
-                border: Border.all(color: Theme.of(context).colorScheme.primary.withValues(alpha: 0.2), width: 0.5),
-              ),
-              child: Icon(LucideIcons.activity, size: 20, color: Theme.of(context).colorScheme.primary),
-            ),
-            const SizedBox(width: 14),
-            Expanded(
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Text(
-                    context.l10n.translate('Wellness vs Output'),
-                    style: TextStyle(
-                      fontFamily: 'Inter',
-                      fontSize: 20,
-                      fontWeight: FontWeight.w900,
-                      color: context.appColors.foreground,
-                      letterSpacing: -0.8,
-                    ),
-                  ),
-                  Text(
-                    context.l10n.translate('Correlazione tra benessere e abitudini'),
-                    style: TextStyle(
-                      fontFamily: 'Inter',
-                      fontSize: 12,
-                      color: context.appColors.mutedForeground,
-                      fontWeight: FontWeight.w500,
-                    ),
-                  ),
-                ],
-              ),
-            ),
-          ],
+        Text(
+          context.l10n.translate('Mood & Energia'),
+          style: TextStyle(
+            fontFamily: 'Inter',
+            fontSize: 20,
+            fontWeight: FontWeight.w800,
+            color: context.appColors.foreground,
+          ),
         ),
-        const SizedBox(height: 20),
-        _buildTimeSelector(),
+        Text(
+          context.l10n.translate('Analisi del benessere psicofisico.'),
+          style: TextStyle(
+            fontFamily: 'Inter',
+            fontSize: 12,
+            color: context.appColors.mutedForeground,
+          ),
+        ),
       ],
     );
   }
 
-  Widget _buildTimeSelector() {
-    final ranges = ['time_range_7d', 'time_range_14d', 'time_range_30d', 'timeframe_all'];
+  Widget _buildTimeRangeSelector() {
+    final options = [
+      {'key': 'time_range_14d', 'label': '14D'},
+      {'key': 'time_range_30d', 'label': '30D'},
+      {'key': 'time_range_90d', 'label': '90D'},
+    ];
+    
     return Container(
       width: double.infinity,
       padding: const EdgeInsets.all(4),
       decoration: BoxDecoration(
         color: context.appColors.card.withValues(alpha: 0.3),
-        borderRadius: BorderRadius.circular(14),
+        borderRadius: BorderRadius.circular(16),
         border: Border.all(color: context.appColors.border, width: 1),
       ),
       child: Row(
-        children: ranges.map((range) {
-          final isSelected = _timeRange == range;
+        children: options.map((opt) {
+          final isSelected = _timeRange == opt['key'];
           return Expanded(
             child: GestureDetector(
-              onTap: () => setState(() => _timeRange = range),
+              onTap: () {
+                if (!isSelected) {
+                  HapticFeedback.mediumImpact();
+                  setState(() {
+                    _timeRange = opt['key']!;
+                  });
+                }
+              },
               child: AnimatedContainer(
-                duration: const Duration(milliseconds: 250),
+                duration: const Duration(milliseconds: 300),
                 curve: Curves.easeOutCubic,
                 padding: const EdgeInsets.symmetric(vertical: 10),
                 decoration: BoxDecoration(
                   color: isSelected ? Theme.of(context).colorScheme.primary : Colors.transparent,
-                  borderRadius: BorderRadius.circular(10),
+                  borderRadius: BorderRadius.circular(12),
+                  boxShadow: isSelected 
+                      ? [BoxShadow(color: Theme.of(context).colorScheme.primary.withValues(alpha: 0.2), blurRadius: 8, offset: const Offset(0, 4))] 
+                      : null,
                 ),
                 child: Text(
-                  context.l10n.translate(range == 'time_range_7d' ? '7gg' : range == 'time_range_14d' ? '14gg' : range == 'time_range_30d' ? '30gg' : 'Tutto'),
+                  opt['label']!,
                   textAlign: TextAlign.center,
                   style: TextStyle(
                     fontFamily: 'Inter',
@@ -126,71 +117,69 @@ class _GlobalMoodTabWidgetState extends State<GlobalMoodTabWidget> {
   }
 
   Widget _buildMainChart() {
-    final List<FlSpot> outputSpots;
     final List<FlSpot> moodSpots;
     final List<FlSpot> energySpots;
-    final List<String> dates;
     final double maxX;
+    final double interval;
 
     switch (_timeRange) {
-      case 'time_range_7d':
-        outputSpots = const [FlSpot(0, 4), FlSpot(1, 7), FlSpot(2, 6.5), FlSpot(3, 4), FlSpot(4, 7), FlSpot(5, 7.5), FlSpot(6, 9)];
-        moodSpots = const [FlSpot(0, 6), FlSpot(1, 8), FlSpot(2, 8), FlSpot(3, 9), FlSpot(4, 9), FlSpot(5, 6), FlSpot(6, 9)];
-        energySpots = const [FlSpot(0, 4), FlSpot(1, 9), FlSpot(2, 7), FlSpot(3, 9), FlSpot(4, 7), FlSpot(5, 8), FlSpot(6, 9)];
-        dates = ['17/04', '18/04', '19/04', '20/04', '21/04', '22/04', '23/04'];
-        maxX = 6;
-        break;
       case 'time_range_30d':
-        outputSpots = List.generate(30, (i) => FlSpot(i.toDouble(), (i % 7 + 3).toDouble()));
-        moodSpots = List.generate(30, (i) => FlSpot(i.toDouble(), (i % 5 + 5).toDouble()));
-        energySpots = List.generate(30, (i) => FlSpot(i.toDouble(), (i % 4 + 6).toDouble()));
-        dates = List.generate(30, (i) => '${(i + 1).toString().padLeft(2, '0')}/04');
+        moodSpots = List.generate(30, (i) => FlSpot(i.toDouble(), 60 + (i % 7) * 4.0 + (i % 3) * 2.0));
+        energySpots = List.generate(30, (i) => FlSpot(i.toDouble(), 50 + (i % 5) * 6.0 + (i % 4) * 3.0));
         maxX = 29;
+        interval = 5;
         break;
-      case 'timeframe_all':
-        outputSpots = List.generate(60, (i) => FlSpot(i.toDouble(), (i % 10 + 1).toDouble()));
-        moodSpots = List.generate(60, (i) => FlSpot(i.toDouble(), (i % 8 + 3).toDouble()));
-        energySpots = List.generate(60, (i) => FlSpot(i.toDouble(), (i % 6 + 4).toDouble()));
-        dates = List.generate(60, (i) => '${(i % 30 + 1).toString().padLeft(2, '0')}/0${i < 30 ? 3 : 4}');
-        maxX = 59;
+      case 'time_range_90d':
+        moodSpots = List.generate(90, (i) => FlSpot(i.toDouble(), 65 + (i % 10) * 2.0 + (i % 4) * 1.0));
+        energySpots = List.generate(90, (i) => FlSpot(i.toDouble(), 55 + (i % 12) * 2.5 + (i % 3) * 1.5));
+        maxX = 89;
+        interval = 15;
         break;
       case 'time_range_14d':
       default:
-        outputSpots = const [
-          FlSpot(0, 0), FlSpot(1, 4), FlSpot(2, 5), FlSpot(3, 3), FlSpot(4, 7),
-          FlSpot(5, 8), FlSpot(6, 7), FlSpot(7, 6.5), FlSpot(8, 6.3), FlSpot(9, 4),
-          FlSpot(10, 7), FlSpot(11, 7.5), FlSpot(12, 9), FlSpot(13, 0),
+        moodSpots = [
+          const FlSpot(0, 65), const FlSpot(1, 45), const FlSpot(2, 75), const FlSpot(3, 85),
+          const FlSpot(4, 70), const FlSpot(5, 90), const FlSpot(6, 80), const FlSpot(7, 85),
+          const FlSpot(8, 60), const FlSpot(9, 70), const FlSpot(10, 80), const FlSpot(11, 75),
+          const FlSpot(12, 90), const FlSpot(13, 85),
         ];
-        moodSpots = const [
-          FlSpot(0, 7), FlSpot(1, 8), FlSpot(2, 3), FlSpot(3, 8), FlSpot(4, 8),
-          FlSpot(5, 9), FlSpot(6, 6), FlSpot(7, 8), FlSpot(8, 8), FlSpot(9, 9),
-          FlSpot(10, 9), FlSpot(11, 6), FlSpot(12, 9), FlSpot(13, 8),
+        energySpots = [
+          const FlSpot(0, 70), const FlSpot(1, 60), const FlSpot(2, 55), const FlSpot(3, 65),
+          const FlSpot(4, 80), const FlSpot(5, 75), const FlSpot(6, 85), const FlSpot(7, 70),
+          const FlSpot(8, 75), const FlSpot(9, 65), const FlSpot(10, 60), const FlSpot(11, 80),
+          const FlSpot(12, 85), const FlSpot(13, 75),
         ];
-        energySpots = const [
-          FlSpot(0, 8), FlSpot(1, 8), FlSpot(2, 5), FlSpot(3, 5), FlSpot(4, 7),
-          FlSpot(5, 9), FlSpot(6, 4), FlSpot(7, 4), FlSpot(8, 9), FlSpot(9, 7),
-          FlSpot(10, 9), FlSpot(11, 7), FlSpot(12, 8), FlSpot(13, 9),
-        ];
-        dates = ['08/04', '09/04', '11/04', '12/04', '13/04', '14/04', '15/04', '16/04', '17/04', '19/04', '20/04', '21/04', '22/04', '23/04'];
         maxX = 13;
+        interval = 2;
         break;
     }
 
     return Container(
-      height: 300,
-      padding: const EdgeInsets.fromLTRB(16, 24, 20, 16),
+      width: double.infinity,
+      padding: const EdgeInsets.all(24),
       decoration: AppTheme.glassPanelDecoration(context, radius: 24),
       child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          Expanded(
+          _buildTimeRangeSelector(),
+          const SizedBox(height: 32),
+          Row(
+            mainAxisAlignment: MainAxisAlignment.spaceBetween,
+            children: [
+              _buildChartLegendItem(context.l10n.translate('Mood'), const Color(0xFFFBBF24)),
+              _buildChartLegendItem(context.l10n.translate('Energia'), const Color(0xFF06B6D4)),
+            ],
+          ),
+          const SizedBox(height: 24),
+          SizedBox(
+            height: 200,
             child: LineChart(
               LineChartData(
                 gridData: FlGridData(
                   show: true,
                   drawVerticalLine: false,
-                  horizontalInterval: 2,
                   getDrawingHorizontalLine: (value) => FlLine(
-                    color: context.appColors.border.withValues(alpha: 0.1),
+                    color: context.appColors.border.withValues(alpha: 0.5),
                     strokeWidth: 1,
                   ),
                 ),
@@ -198,48 +187,43 @@ class _GlobalMoodTabWidgetState extends State<GlobalMoodTabWidget> {
                   show: true,
                   rightTitles: const AxisTitles(sideTitles: SideTitles(showTitles: false)),
                   topTitles: const AxisTitles(sideTitles: SideTitles(showTitles: false)),
-                  leftTitles: AxisTitles(
+                  bottomTitles: AxisTitles(
                     sideTitles: SideTitles(
                       showTitles: true,
-                      reservedSize: 32,
-                      interval: 5,
+                      reservedSize: 30,
+                      interval: interval,
                       getTitlesWidget: (value, meta) {
-                        return SideTitleWidget(
-                          axisSide: meta.axisSide,
+                        return Padding(
+                          padding: const EdgeInsets.only(top: 8.0),
                           child: Text(
-                            value.toInt().toString(),
+                            _timeRange == 'time_range_14d' 
+                                ? '${value.toInt() + 1} set'
+                                : '${value.toInt() + 1} mag',
                             style: TextStyle(
                               color: context.appColors.mutedForeground,
+                              fontWeight: FontWeight.w600,
                               fontSize: 10,
-                              fontWeight: FontWeight.w700,
                             ),
                           ),
                         );
                       },
                     ),
                   ),
-                  bottomTitles: AxisTitles(
+                  leftTitles: AxisTitles(
                     sideTitles: SideTitles(
                       showTitles: true,
-                      reservedSize: 32,
-                      interval: _timeRange == 'time_range_7d' ? 1 : _timeRange == 'timeframe_all' ? 10 : 3,
+                      interval: 20,
                       getTitlesWidget: (value, meta) {
-                        if (value.toInt() < dates.length && value.toInt() >= 0) {
-                          return SideTitleWidget(
-                            axisSide: meta.axisSide,
-                            space: 8,
-                            child: Text(
-                              dates[value.toInt()],
-                              style: TextStyle(
-                                color: context.appColors.mutedForeground,
-                                fontSize: 9,
-                                fontWeight: FontWeight.w600,
-                              ),
-                            ),
-                          );
-                        }
-                        return const SizedBox();
+                        return Text(
+                          '${value.toInt()}%',
+                          style: TextStyle(
+                            color: context.appColors.mutedForeground,
+                            fontWeight: FontWeight.w600,
+                            fontSize: 10,
+                          ),
+                        );
                       },
+                      reservedSize: 42,
                     ),
                   ),
                 ),
@@ -247,62 +231,30 @@ class _GlobalMoodTabWidgetState extends State<GlobalMoodTabWidget> {
                 minX: 0,
                 maxX: maxX,
                 minY: 0,
-                maxY: 10,
+                maxY: 100,
                 lineBarsData: [
-                  // Habit Completion (Output)
                   LineChartBarData(
-                    spots: outputSpots,
+                    spots: moodSpots,
                     isCurved: true,
-                    curveSmoothness: 0.35,
-                    color: Theme.of(context).colorScheme.primary,
-                    barWidth: 3.5,
+                    color: const Color(0xFFFBBF24),
+                    barWidth: 3,
                     isStrokeCapRound: true,
                     dotData: const FlDotData(show: false),
                     belowBarData: BarAreaData(
                       show: true,
-                      gradient: LinearGradient(
-                        colors: [
-                          Theme.of(context).colorScheme.primary.withValues(alpha: 0.15),
-                          Theme.of(context).colorScheme.primary.withValues(alpha: 0.0),
-                        ],
-                        begin: Alignment.topCenter,
-                        end: Alignment.bottomCenter,
-                      ),
+                      color: const Color(0xFFFBBF24).withValues(alpha: 0.05),
                     ),
                   ),
-                  // Mood
-                  LineChartBarData(
-                    spots: moodSpots,
-                    isCurved: true,
-                    curveSmoothness: 0.35,
-                    color: const Color(0xFF10B981), // Emerald for Mood
-                    barWidth: 2,
-                    dotData: FlDotData(
-                      show: _timeRange == 'time_range_7d' || _timeRange == 'time_range_14d',
-                      getDotPainter: (spot, percent, barData, index) => FlDotCirclePainter(
-                        radius: 2,
-                        color: Colors.white,
-                        strokeWidth: 1.5,
-                        strokeColor: const Color(0xFF10B981),
-                      ),
-                    ),
-                  ),
-                  // Energy
                   LineChartBarData(
                     spots: energySpots,
                     isCurved: true,
-                    curveSmoothness: 0.35,
-                    color: const Color(0xFFF59E0B),
-                    barWidth: 2,
-                    dashArray: [6, 4],
-                    dotData: FlDotData(
-                      show: _timeRange == 'time_range_7d' || _timeRange == 'time_range_14d',
-                      getDotPainter: (spot, percent, barData, index) => FlDotCirclePainter(
-                        radius: 2,
-                        color: Colors.white,
-                        strokeWidth: 1.5,
-                        strokeColor: const Color(0xFFF59E0B),
-                      ),
+                    color: const Color(0xFF06B6D4),
+                    barWidth: 3,
+                    isStrokeCapRound: true,
+                    dotData: const FlDotData(show: false),
+                    belowBarData: BarAreaData(
+                      show: true,
+                      color: const Color(0xFF06B6D4).withValues(alpha: 0.05),
                     ),
                   ),
                 ],
@@ -312,10 +264,14 @@ class _GlobalMoodTabWidgetState extends State<GlobalMoodTabWidget> {
                     tooltipRoundedRadius: 8,
                     getTooltipItems: (List<LineBarSpot> touchedBarSpots) {
                       return touchedBarSpots.map((barSpot) {
-                        final flSpot = barSpot;
+                        final isMood = barSpot.barIndex == 0;
                         return LineTooltipItem(
-                          '${flSpot.y.toStringAsFixed(1)}',
-                          TextStyle(color: context.appColors.foreground, fontWeight: FontWeight.bold, fontSize: 12),
+                          '${isMood ? 'Mood' : 'Energia'}: ${barSpot.y.toInt()}%',
+                          TextStyle(
+                            color: isMood ? const Color(0xFFFBBF24) : const Color(0xFF06B6D4),
+                            fontWeight: FontWeight.bold,
+                            fontSize: 12,
+                          ),
                         );
                       }).toList();
                     },
@@ -325,253 +281,116 @@ class _GlobalMoodTabWidgetState extends State<GlobalMoodTabWidget> {
               duration: const Duration(milliseconds: 350),
             ),
           ),
-          const SizedBox(height: 24),
-          Row(
-            mainAxisAlignment: MainAxisAlignment.center,
-            children: [
-              _buildLegendItem(context.l10n.translate('Output'), Theme.of(context).colorScheme.primary),
-              const SizedBox(width: 20),
-              _buildLegendItem(context.l10n.translate('Umore'), const Color(0xFF10B981)),
-              const SizedBox(width: 20),
-              _buildLegendItem(context.l10n.translate('Energia'), const Color(0xFFF59E0B)),
-            ],
-          ),
         ],
       ),
     );
   }
 
-  Widget _buildLegendItem(String label, Color color) {
+  Widget _buildChartLegendItem(String label, Color color) {
     return Row(
       children: [
         Container(
-          width: 8,
-          height: 8,
-          decoration: BoxDecoration(color: color, borderRadius: BorderRadius.circular(2)),
+          width: 12,
+          height: 12,
+          decoration: BoxDecoration(color: color, borderRadius: BorderRadius.circular(3)),
         ),
         const SizedBox(width: 8),
         Text(
           label,
-          style: TextStyle(color: context.appColors.mutedForeground, fontSize: 10, fontWeight: FontWeight.w700, letterSpacing: 0.3),
+          style: TextStyle(
+            fontFamily: 'Inter',
+            fontSize: 12,
+            fontWeight: FontWeight.w600,
+            color: context.appColors.foreground,
+          ),
         ),
       ],
     );
   }
 }
 
-class _MoodSensitiveSection extends StatefulWidget {
+class _MoodSensitiveSection extends StatelessWidget {
   const _MoodSensitiveSection();
 
   @override
-  State<_MoodSensitiveSection> createState() => _MoodSensitiveSectionState();
-}
-
-class _MoodSensitiveSectionState extends State<_MoodSensitiveSection> {
-  late PageController _pageController;
-  int _currentPage = 0;
-
-  @override
-  void initState() {
-    super.initState();
-    _pageController = PageController(viewportFraction: 0.9);
-  }
-
-  @override
-  void dispose() {
-    _pageController.dispose();
-    super.dispose();
-  }
-
-  @override
   Widget build(BuildContext context) {
-    final List<Widget> cards = [
-      _MoodSensitiveCard(title: 'Sveglia', low: 25, high: 82, drop: 57, color: const Color(0xFFF97316)),
-      _MoodSensitiveCard(title: 'Palestra', low: 30, high: 90, drop: 60, color: Theme.of(context).colorScheme.primary),
-      _MoodSensitiveCard(title: 'Studio', low: 45, high: 85, drop: 40, color: const Color(0xFFEAB308)),
-    ];
-
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        Row(
-          children: [
-            const Icon(LucideIcons.sparkles, size: 16, color: Color(0xFFF59E0B)),
-            const SizedBox(width: 8),
-            Text(
-              context.l10n.translate('Sensibili al Mood'),
-              style: TextStyle(
-                fontFamily: 'Inter',
-                fontSize: 14,
-                fontWeight: FontWeight.w700,
-                color: context.appColors.foreground,
-              ),
-            ),
-          ],
-        ),
-        const SizedBox(height: 4),
         Text(
-          context.l10n.translate('Richiedono un buon mood per essere completate.'),
+          context.l10n.translate('Abitudini Sensibili al Mood'),
           style: TextStyle(
             fontFamily: 'Inter',
-            fontSize: 11,
-            color: context.appColors.mutedForeground,
+            fontSize: 16,
+            fontWeight: FontWeight.w700,
+            color: context.appColors.foreground,
           ),
         ),
-        const SizedBox(height: 16),
-        
-        SizedBox(
-          height: 160,
-          child: PageView.builder(
-            controller: _pageController,
-            itemCount: cards.length,
-            onPageChanged: (index) => setState(() => _currentPage = index),
-            itemBuilder: (context, index) {
-              return Padding(
-                padding: const EdgeInsets.symmetric(horizontal: 8),
-                child: cards[index],
-              );
-            },
-          ),
-        ),
-        
         const SizedBox(height: 12),
-        Center(
-          child: Row(
-            mainAxisAlignment: MainAxisAlignment.center,
-            children: List.generate(cards.length, (index) {
-              final isActive = _currentPage == index;
-              return AnimatedContainer(
-                duration: const Duration(milliseconds: 300),
-                margin: const EdgeInsets.symmetric(horizontal: 4),
-                width: isActive ? 16 : 6,
-                height: 6,
-                decoration: BoxDecoration(
-                  color: isActive 
-                      ? const Color(0xFFF59E0B)
-                      : context.appColors.mutedForeground.withValues(alpha: 0.3),
-                  borderRadius: BorderRadius.circular(3),
-                ),
-              );
-            }),
-          ),
-        ),
+        _buildSensitiveItem(context, 'Meditazione', 82, const Color(0xFF8B5CF6)),
+        _buildSensitiveItem(context, 'Journaling', 75, const Color(0xFFEC4899)),
+        _buildSensitiveItem(context, 'Studio', 68, const Color(0xFF3B82F6)),
       ],
     );
   }
-}
 
-class _MoodSensitiveCard extends StatelessWidget {
-  final String title;
-  final int low;
-  final int high;
-  final int drop;
-  final Color color;
-
-  const _MoodSensitiveCard({
-    required this.title,
-    required this.low,
-    required this.high,
-    required this.drop,
-    required this.color,
-  });
-
-  @override
-  Widget build(BuildContext context) {
-    return Container(
-      padding: const EdgeInsets.all(20),
-      decoration: BoxDecoration(
-        color: context.appColors.card,
-        borderRadius: BorderRadius.circular(20),
-        border: Border.all(color: context.appColors.border, width: 1),
-      ),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Row(
-            mainAxisAlignment: MainAxisAlignment.spaceBetween,
-            children: [
-              Row(
+  Widget _buildSensitiveItem(BuildContext context, String name, int sensitivity, Color color) {
+    return Padding(
+      padding: const EdgeInsets.only(bottom: 12),
+      child: Container(
+        padding: const EdgeInsets.all(16),
+        decoration: BoxDecoration(
+          color: context.appColors.card,
+          borderRadius: BorderRadius.circular(16),
+          border: Border.all(color: context.appColors.border),
+        ),
+        child: Row(
+          children: [
+            Container(width: 4, height: 24, decoration: BoxDecoration(color: color, borderRadius: BorderRadius.circular(2))),
+            const SizedBox(width: 12),
+            Expanded(
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  Container(width: 8, height: 8, decoration: BoxDecoration(color: color, shape: BoxShape.circle)),
-                  const SizedBox(width: 8),
-                  Text(title, style: TextStyle(fontFamily: 'Inter', fontSize: 15, fontWeight: FontWeight.w700, color: context.appColors.foreground)),
+                  Text(name, style: TextStyle(fontFamily: 'Inter', fontSize: 14, fontWeight: FontWeight.w700, color: context.appColors.foreground)),
+                  const SizedBox(height: 4),
+                  Row(
+                    children: [
+                      Text('${context.l10n.translate('Sensibilità')}: ', style: TextStyle(fontFamily: 'Inter', fontSize: 11, color: context.appColors.mutedForeground)),
+                      Text('$sensitivity%', style: TextStyle(fontFamily: 'Inter', fontSize: 11, fontWeight: FontWeight.w700, color: color)),
+                    ],
+                  ),
                 ],
               ),
-              Column(
-                crossAxisAlignment: CrossAxisAlignment.end,
-                children: [
-                  Text('DROP', style: TextStyle(fontFamily: 'Inter', fontSize: 8, fontWeight: FontWeight.w800, color: context.appColors.mutedForeground, letterSpacing: 0.5)),
-                  Text('$drop%', style: const TextStyle(fontFamily: 'Inter', fontSize: 18, fontWeight: FontWeight.w900, color: Color(0xFFF97316))),
-                ],
-              ),
-            ],
-          ),
-          const Spacer(),
-          Row(
-            mainAxisAlignment: MainAxisAlignment.spaceBetween,
-            children: [
-              _MoodStatMini(label: 'MOOD BASSO', value: '$low%', icon: LucideIcons.frown),
-              _MoodStatMini(label: 'MOOD ALTO', value: '$high%', icon: LucideIcons.smile),
-            ],
-          ),
-        ],
+            ),
+            Icon(LucideIcons.chevronRight, size: 16, color: context.appColors.mutedForeground),
+          ],
+        ),
       ),
     );
   }
 }
 
-class _ResilientHabitsSection extends StatefulWidget {
+class _ResilientHabitsSection extends StatelessWidget {
   const _ResilientHabitsSection();
 
   @override
-  State<_ResilientHabitsSection> createState() => _ResilientHabitsSectionState();
-}
-
-class _ResilientHabitsSectionState extends State<_ResilientHabitsSection> {
-  late PageController _pageController;
-  int _currentPage = 0;
-
-  @override
-  void initState() {
-    super.initState();
-    _pageController = PageController(viewportFraction: 0.9);
-  }
-
-  @override
-  void dispose() {
-    _pageController.dispose();
-    super.dispose();
-  }
-
-  @override
   Widget build(BuildContext context) {
-    final List<Widget> cards = [
-      _ResilientCard(title: 'Caviglie', mood: 100, energy: 100, color: const Color(0xFF64748B)),
-      const _ResilientCard(title: 'No Phone in bagno', mood: 90, energy: 93, color: Color(0xFF06B6D4)),
-      const _ResilientCard(title: 'Apparecchio', mood: 94, energy: 80, color: Color(0xFFEC4899)),
-    ];
-
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        Row(
-          children: [
-            Icon(LucideIcons.shieldCheck, size: 16, color: Theme.of(context).colorScheme.primary),
-            const SizedBox(width: 8),
-            Text(
-              context.l10n.translate('Resilienti'),
-              style: TextStyle(
-                fontFamily: 'Inter',
-                fontSize: 14,
-                fontWeight: FontWeight.w700,
-                color: context.appColors.foreground,
-              ),
-            ),
-          ],
+        Text(
+          context.l10n.translate('Abitudini Resilienti'),
+          style: TextStyle(
+            fontFamily: 'Inter',
+            fontSize: 16,
+            fontWeight: FontWeight.w700,
+            color: context.appColors.foreground,
+          ),
         ),
         const SizedBox(height: 4),
         Text(
-          context.l10n.translate('Mantenute anche con mood ed energia bassi.'),
+          context.l10n.translate('Abitudini che mantieni anche quando il mood è basso.'),
           style: TextStyle(
             fontFamily: 'Inter',
             fontSize: 11,
@@ -579,269 +398,119 @@ class _ResilientHabitsSectionState extends State<_ResilientHabitsSection> {
           ),
         ),
         const SizedBox(height: 16),
-        
-        SizedBox(
-          height: 140,
-          child: PageView.builder(
-            controller: _pageController,
-            itemCount: cards.length,
-            onPageChanged: (index) => setState(() => _currentPage = index),
-            itemBuilder: (context, index) {
-              return Padding(
-                padding: const EdgeInsets.symmetric(horizontal: 8),
-                child: cards[index],
-              );
-            },
-          ),
-        ),
-        
-        const SizedBox(height: 12),
-        Center(
-          child: Row(
-            mainAxisAlignment: MainAxisAlignment.center,
-            children: List.generate(cards.length, (index) {
-              final isActive = _currentPage == index;
-              return AnimatedContainer(
-                duration: const Duration(milliseconds: 300),
-                margin: const EdgeInsets.symmetric(horizontal: 4),
-                width: isActive ? 16 : 6,
-                height: 6,
-                decoration: BoxDecoration(
-                  color: isActive 
-                      ? Theme.of(context).colorScheme.primary 
-                      : context.appColors.mutedForeground.withValues(alpha: 0.3),
-                  borderRadius: BorderRadius.circular(3),
-                ),
-              );
-            }),
-          ),
-        ),
-      ],
-    );
-  }
-}
-
-class _ResilientCard extends StatelessWidget {
-  final String title;
-  final int mood;
-  final int energy;
-  final Color color;
-
-  const _ResilientCard({
-    required this.title,
-    required this.mood,
-    required this.energy,
-    required this.color,
-  });
-
-  @override
-  Widget build(BuildContext context) {
-    return Container(
-      padding: const EdgeInsets.all(16),
-      decoration: BoxDecoration(
-        color: context.appColors.card,
-        borderRadius: BorderRadius.circular(20),
-        border: Border.all(color: context.appColors.border, width: 1),
-      ),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        mainAxisAlignment: MainAxisAlignment.center,
-        children: [
-          Row(
-            mainAxisAlignment: MainAxisAlignment.spaceBetween,
-            children: [
-              Row(
-                children: [
-                  Container(width: 6, height: 6, decoration: BoxDecoration(color: color, shape: BoxShape.circle)),
-                  const SizedBox(width: 8),
-                  Text(title, style: TextStyle(fontFamily: 'Inter', fontSize: 14, fontWeight: FontWeight.w700, color: context.appColors.foreground)),
-                ],
-              ),
-              Row(
-                children: [
-                  Icon(LucideIcons.trendingUp, size: 12, color: Theme.of(context).colorScheme.primary),
-                  const SizedBox(width: 4),
-                  Text(context.l10n.translate('STABILE'), style: TextStyle(fontFamily: 'Inter', fontSize: 9, fontWeight: FontWeight.w900, color: Theme.of(context).colorScheme.primary)),
-                ],
-              ),
-            ],
-          ),
-          const SizedBox(height: 16),
-          Row(
-            mainAxisAlignment: MainAxisAlignment.spaceAround,
-            children: [
-              _MoodStatMini(label: 'MOOD', value: '$mood%', icon: LucideIcons.smile, small: true),
-              _MoodStatMini(label: 'ENERGIA', value: '$energy%', icon: LucideIcons.zap, small: true),
-            ],
-          ),
-        ],
-      ),
-    );
-  }
-}
-
-class _MoodSuggestionsSection extends StatefulWidget {
-  const _MoodSuggestionsSection();
-
-  @override
-  State<_MoodSuggestionsSection> createState() => _MoodSuggestionsSectionState();
-}
-
-class _MoodSuggestionsSectionState extends State<_MoodSuggestionsSection> {
-  late PageController _pageController;
-  int _currentPage = 0;
-
-  @override
-  void initState() {
-    super.initState();
-    _pageController = PageController(viewportFraction: 0.9);
-  }
-
-  @override
-  void dispose() {
-    _pageController.dispose();
-    super.dispose();
-  }
-
-  @override
-  Widget build(BuildContext context) {
-    final List<Widget> cards = [
-      _MoodSuggestionCard(
-        icon: LucideIcons.calendarHeart,
-        color: const Color(0xFFF97316),
-        title: 'Pianificazione Strategica',
-        desc: 'Pianifica le abitudini sensibili al mood nei momenti in cui solitamente ti senti meglio.',
-      ),
-      _MoodSuggestionCard(
-        icon: LucideIcons.shieldCheck,
-        color: Theme.of(context).colorScheme.primary,
-        title: 'Ancore di Stabilità',
-        desc: 'Usa le abitudini resilienti come ancore nei giorni in cui mood ed energia sono bassi.',
-      ),
-      _MoodSuggestionCard(
-        icon: LucideIcons.activity,
-        color: const Color(0xFF06B6D4),
-        title: 'Monitoraggio Attivo',
-        desc: 'Continua a monitorare mood ed energia per ottenere insight sempre più accurati.',
-      ),
-    ];
-
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: [
         Row(
           children: [
-            const Icon(LucideIcons.lightbulb, size: 16, color: Color(0xFFFBBF24)),
-            const SizedBox(width: 8),
-            Text(
-              context.l10n.translate('Suggerimenti'),
-              style: TextStyle(
-                fontFamily: 'Inter',
-                fontSize: 14,
-                fontWeight: FontWeight.w700,
-                color: context.appColors.foreground,
-              ),
-            ),
+            _buildResilientCard(context, 'Fitness', 94, const Color(0xFF10B981)),
+            const SizedBox(width: 12),
+            _buildResilientCard(context, 'Alimentazione', 88, const Color(0xFFF59E0B)),
           ],
-        ),
-        const SizedBox(height: 4),
-        Text(
-          context.l10n.translate('Consigli basati sul tuo benessere.'),
-          style: TextStyle(
-            fontFamily: 'Inter',
-            fontSize: 11,
-            color: context.appColors.mutedForeground,
-          ),
-        ),
-        const SizedBox(height: 16),
-        
-        SizedBox(
-          height: 150,
-          child: PageView.builder(
-            controller: _pageController,
-            itemCount: cards.length,
-            onPageChanged: (index) => setState(() => _currentPage = index),
-            itemBuilder: (context, index) {
-              return Padding(
-                padding: const EdgeInsets.symmetric(horizontal: 8),
-                child: cards[index],
-              );
-            },
-          ),
-        ),
-        
-        const SizedBox(height: 12),
-        Center(
-          child: Row(
-            mainAxisAlignment: MainAxisAlignment.center,
-            children: List.generate(cards.length, (index) {
-              final isActive = _currentPage == index;
-              return AnimatedContainer(
-                duration: const Duration(milliseconds: 300),
-                margin: const EdgeInsets.symmetric(horizontal: 4),
-                width: isActive ? 16 : 6,
-                height: 6,
-                decoration: BoxDecoration(
-                  color: isActive 
-                      ? const Color(0xFFFBBF24)
-                      : context.appColors.mutedForeground.withValues(alpha: 0.3),
-                  borderRadius: BorderRadius.circular(3),
-                ),
-              );
-            }),
-          ),
         ),
       ],
     );
   }
+
+  Widget _buildResilientCard(BuildContext context, String name, int resilience, Color color) {
+    return Expanded(
+      child: Container(
+        padding: const EdgeInsets.all(16),
+        decoration: BoxDecoration(
+          color: context.appColors.card,
+          borderRadius: BorderRadius.circular(16),
+          border: Border.all(color: context.appColors.border),
+        ),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Row(
+              children: [
+                Container(width: 8, height: 8, decoration: BoxDecoration(color: color, shape: BoxShape.circle)),
+                const SizedBox(width: 8),
+                Expanded(child: Text(name, style: TextStyle(fontFamily: 'Inter', fontSize: 13, fontWeight: FontWeight.w700, color: context.appColors.foreground), maxLines: 1, overflow: TextOverflow.ellipsis)),
+              ],
+            ),
+            const SizedBox(height: 12),
+            Text('$resilience%', style: TextStyle(fontFamily: 'Inter', fontSize: 24, fontWeight: FontWeight.w900, color: color)),
+            Text(context.l10n.translate('Resilienza'), style: TextStyle(fontFamily: 'Inter', fontSize: 10, color: context.appColors.mutedForeground)),
+          ],
+        ),
+      ),
+    );
+  }
 }
 
-class _MoodSuggestionCard extends StatelessWidget {
-  final IconData icon;
-  final Color color;
-  final String title;
-  final String desc;
-
-  const _MoodSuggestionCard({
-    required this.icon,
-    required this.color,
-    required this.title,
-    required this.desc,
-  });
+class _CorrelazioneMoodSection extends StatelessWidget {
+  const _CorrelazioneMoodSection();
 
   @override
   Widget build(BuildContext context) {
+    // Mocking some data for the cards
+    final low = 15;
+    final high = 85;
+
     return Container(
       padding: const EdgeInsets.all(20),
       decoration: BoxDecoration(
         color: context.appColors.card,
-        borderRadius: BorderRadius.circular(20),
-        border: Border.all(color: context.appColors.border, width: 1),
+        borderRadius: BorderRadius.circular(24),
+        border: Border.all(color: context.appColors.border),
       ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
+          Text(
+            context.l10n.translate('Analisi di Correlazione'),
+            style: TextStyle(
+              fontFamily: 'Inter',
+              fontSize: 16,
+              fontWeight: FontWeight.w700,
+              color: context.appColors.foreground,
+            ),
+          ),
+          const SizedBox(height: 20),
           Row(
             children: [
-              Container(
-                padding: const EdgeInsets.all(8),
-                decoration: BoxDecoration(color: color.withValues(alpha: 0.1), borderRadius: BorderRadius.circular(10)),
-                child: Icon(icon, size: 18, color: color),
-              ),
-              const SizedBox(width: 12),
-              Expanded(
-                child: Text(title, style: TextStyle(fontFamily: 'Inter', fontSize: 14, fontWeight: FontWeight.w700, color: context.appColors.foreground), maxLines: 1, overflow: TextOverflow.ellipsis),
+              _MoodStatMini(label: 'MOOD BASSO', value: '$low%', icon: LucideIcons.frown),
+              const SizedBox(width: 24),
+              _MoodStatMini(label: 'MOOD ALTO', value: '$high%', icon: LucideIcons.smile),
+            ],
+          ),
+          const SizedBox(height: 24),
+          _buildCorrelationRow(context, 'Fitness', 42, 78),
+          _buildCorrelationRow(context, 'Meditazione', 35, 82),
+          _buildCorrelationRow(context, 'Journaling', 40, 75),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildCorrelationRow(BuildContext context, String name, int lowVal, int highVal) {
+    final mood = 80;
+    final energy = 75;
+    
+    return Padding(
+      padding: const EdgeInsets.only(bottom: 16),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Row(
+            mainAxisAlignment: MainAxisAlignment.spaceBetween,
+            children: [
+              Text(name, style: TextStyle(fontFamily: 'Inter', fontSize: 14, fontWeight: FontWeight.w700, color: context.appColors.foreground)),
+              Row(
+                children: [
+                  _MoodStatMini(label: 'MOOD', value: '$mood%', icon: LucideIcons.smile, small: true),
+                  const SizedBox(width: 12),
+                  _MoodStatMini(label: 'ENERGIA', value: '$energy%', icon: LucideIcons.zap, small: true),
+                ],
               ),
             ],
           ),
-          const SizedBox(height: 12),
-          Expanded(
-            child: Text(
-              desc,
-              style: TextStyle(fontFamily: 'Inter', fontSize: 12, color: context.appColors.mutedForeground, height: 1.4),
-              maxLines: 2,
-              overflow: TextOverflow.ellipsis,
-            ),
+          const SizedBox(height: 8),
+          Stack(
+            children: [
+              Container(height: 6, decoration: BoxDecoration(color: context.appColors.border.withValues(alpha: 0.3), borderRadius: BorderRadius.circular(3))),
+              FractionallySizedBox(widthFactor: highVal / 100, child: Container(height: 6, decoration: BoxDecoration(color: Theme.of(context).colorScheme.primary, borderRadius: BorderRadius.circular(3)))),
+            ],
           ),
         ],
       ),

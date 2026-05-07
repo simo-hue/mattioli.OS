@@ -499,7 +499,8 @@ class _GoalsList extends ConsumerWidget {
         if (item is _SectionHeader) {
           return _buildSectionHeader(context, item.status);
         }
-        return GoalItemWidget(goal: item as MacroGoal);
+        final goal = item as MacroGoal;
+        return GoalItemWidget(key: ValueKey(goal.id), goal: goal);
       },
     );
   }

@@ -20,6 +20,9 @@ class GoalItemWidget extends ConsumerStatefulWidget {
 
 class _GoalItemWidgetState extends ConsumerState<GoalItemWidget>
     with SingleTickerProviderStateMixin {
+  bool _isTransitioning = false;
+  bool _isPressed = false;
+  GoalStatus? _visualStatusOverride;
 
   // ── Status cycle: active → completed → failed → active ──────────────────
   GoalStatus get _nextStatus {
@@ -33,11 +36,41 @@ class _GoalItemWidgetState extends ConsumerState<GoalItemWidget>
     }
   }
 
-  void _cycleStatus() {
+  Future<void> _cycleStatus() async {
+    if (_isTransitioning) return;
+    
+    // Start by giving haptic feedback
+    ref.hapticAction();
+    
+    // Step 1: Immediate visual feedback (Optimistic Update)
+    setState(() {
+      _visualStatusOverride = _nextStatus;
+    });
+
+    // Step 2: Wait a bit so the user sees the checkbox change state
+    await Future.delayed(const Duration(milliseconds: 400));
+    
+    if (!mounted) return;
+
+    // Step 3: Start the "collapse" animation
+    setState(() => _isTransitioning = true);
+    
+    // Step 4: Wait for the collapse animation to finish
+    await Future.delayed(const Duration(milliseconds: 300));
+
+    if (!mounted) return;
+
+    // Step 5: Actually update the status in the provider (triggers reorder in the list)
     ref
         .read(macroGoalsProvider.notifier)
-        .updateStatus(widget.goal.id, _nextStatus);
-    ref.hapticAction();
+        .updateStatus(widget.goal.id, _visualStatusOverride!);
+    
+    // Step 6: Immediately start the "expand" animation in the new position
+    // Since we use ValueKey(id), this state is preserved.
+    setState(() {
+      _isTransitioning = false;
+      _visualStatusOverride = null;
+    });
   }
 
   void _delete() {
@@ -252,7 +285,7 @@ class _GoalItemWidgetState extends ConsumerState<GoalItemWidget>
   @override
   Widget build(BuildContext context) {
     final goal = widget.goal;
-    final status = goal.status;
+    final status = _visualStatusOverride ?? goal.status;
     final catColor = categoryColor(goal.categoryKey);
 
     final isCompleted = status == GoalStatus.completed;
@@ -315,71 +348,87 @@ class _GoalItemWidgetState extends ConsumerState<GoalItemWidget>
       );
     }
 
-    return Padding(
-      padding: const EdgeInsets.only(bottom: 6),
-      child: GestureDetector(
-        child: AnimatedContainer(
-          duration: const Duration(milliseconds: 250),
-          padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
-          decoration: BoxDecoration(
-            color: bgColor,
-            borderRadius: BorderRadius.circular(14),
-            border: Border.all(color: borderColor, width: 1),
-          ),
-          child: Row(
-            children: [
-              // Checkbox
-              checkbox(),
-              const SizedBox(width: 12),
-
-              // Category dot (if set)
-              if (catColor != null && isActive) ...[
-                Container(
-                  width: 6,
-                  height: 6,
-                  decoration: BoxDecoration(
-                    color: catColor,
-                    shape: BoxShape.circle,
-                  ),
+    return AnimatedOpacity(
+      duration: const Duration(milliseconds: 300),
+      opacity: _isTransitioning ? 0.0 : 1.0,
+      curve: Curves.easeInOut,
+      child: AnimatedScale(
+        duration: const Duration(milliseconds: 300),
+        scale: _isTransitioning ? 0.9 : (_isPressed ? 0.98 : 1.0),
+        curve: Curves.easeOutBack,
+        child: AnimatedSize(
+          duration: const Duration(milliseconds: 300),
+          curve: Curves.easeInOut,
+          alignment: Alignment.topCenter,
+          child: _isTransitioning ? const SizedBox(width: double.infinity, height: 0) : Padding(
+            padding: const EdgeInsets.only(bottom: 6),
+            child: GestureDetector(
+              onTapDown: (_) => setState(() => _isPressed = true),
+              onTapUp: (_) => setState(() => _isPressed = false),
+              onTapCancel: () => setState(() => _isPressed = false),
+              onTap: _cycleStatus,
+              child: AnimatedContainer(
+                duration: const Duration(milliseconds: 250),
+                padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
+                decoration: BoxDecoration(
+                  color: bgColor,
+                  borderRadius: BorderRadius.circular(14),
+                  border: Border.all(color: borderColor, width: 1),
                 ),
-                const SizedBox(width: 8),
-              ],
+                child: Row(
+                  children: [
+                    // Checkbox
+                    checkbox(),
+                    const SizedBox(width: 12),
 
-              // Title
-              Expanded(
-                child: GestureDetector(
-                  onTap: _cycleStatus,
-                  child: Text(
-                    goal.title,
-                    style: GoogleFonts.inter(
-                      fontSize: 14,
-                      fontWeight: FontWeight.w500,
-                      color: isCompleted
-                          ? Theme.of(context).colorScheme.primary.withValues(alpha: 0.7)
-                          : isFailed
-                              ? context.appColors.destructive.withValues(alpha: 0.7)
-                              : context.appColors.foreground,
-                      decoration: (isCompleted || isFailed)
-                          ? TextDecoration.lineThrough
-                          : TextDecoration.none,
-                      decorationColor: isCompleted
-                          ? Theme.of(context).colorScheme.primary.withValues(alpha: 0.5)
-                          : context.appColors.destructive.withValues(alpha: 0.5),
+                    // Category dot (if set)
+                    if (catColor != null && isActive) ...[
+                      Container(
+                        width: 6,
+                        height: 6,
+                        decoration: BoxDecoration(
+                          color: catColor,
+                          shape: BoxShape.circle,
+                        ),
+                      ),
+                      const SizedBox(width: 8),
+                    ],
+
+                    // Title
+                    Expanded(
+                      child: Text(
+                        goal.title,
+                        style: GoogleFonts.inter(
+                          fontSize: 14,
+                          fontWeight: FontWeight.w500,
+                          color: isCompleted
+                              ? Theme.of(context).colorScheme.primary.withValues(alpha: 0.7)
+                              : isFailed
+                                  ? context.appColors.destructive.withValues(alpha: 0.7)
+                                  : context.appColors.foreground,
+                          decoration: (isCompleted || isFailed)
+                              ? TextDecoration.lineThrough
+                              : TextDecoration.none,
+                          decorationColor: isCompleted
+                              ? Theme.of(context).colorScheme.primary.withValues(alpha: 0.5)
+                              : context.appColors.destructive.withValues(alpha: 0.5),
+                        ),
+                      ),
                     ),
-                  ),
+
+                    const SizedBox(width: 8),
+
+                    // ── Action buttons (swipe-reveal via long-press or always shown) ─
+                    _ActionButtons(
+                      catColor: catColor,
+                      onCategory: _showCategorySheet,
+                      onEdit: _showEditDialog,
+                      onDelete: _showDeleteConfirm,
+                    ),
+                  ],
                 ),
               ),
-
-              const SizedBox(width: 8),
-
-              // ── Action buttons (swipe-reveal via long-press or always shown) ─
-              _ActionButtons(
-                catColor: catColor,
-                onCategory: _showCategorySheet,
-                onEdit: _showEditDialog,
-                onDelete: _showDeleteConfirm,
-              ),
-            ],
+            ),
           ),
         ),
       ),

@@ -74,6 +74,11 @@ class _GoalItemWidgetState extends ConsumerState<GoalItemWidget>
     ref.hapticMedium();
   }
 
+  void _reschedule() {
+    ref.read(macroGoalsProvider.notifier).rescheduleGoal(widget.goal);
+    ref.hapticSuccess();
+  }
+
   void _showEditDialog() {
     final ctrl = TextEditingController(text: widget.goal.title);
     showDialog(
@@ -407,6 +412,7 @@ class _GoalItemWidgetState extends ConsumerState<GoalItemWidget>
                 _ActionButtons(
                   catColor: catColor,
                   onCategory: _showCategorySheet,
+                  onReschedule: _reschedule,
                   onEdit: _showEditDialog,
                   onDelete: _showDeleteConfirm,
                 ),
@@ -424,12 +430,14 @@ class _GoalItemWidgetState extends ConsumerState<GoalItemWidget>
 class _ActionButtons extends StatelessWidget {
   final Color? catColor;
   final VoidCallback onCategory;
+  final VoidCallback onReschedule;
   final VoidCallback onEdit;
   final VoidCallback onDelete;
 
   const _ActionButtons({
     required this.catColor,
     required this.onCategory,
+    required this.onReschedule,
     required this.onEdit,
     required this.onDelete,
   });
@@ -456,6 +464,12 @@ class _ActionButtons extends StatelessWidget {
               ),
             ),
           ),
+        ),
+        const SizedBox(width: 2),
+        _IconBtn(
+          onTap: onReschedule,
+          child: Icon(LucideIcons.calendarClock,
+              size: 14, color: context.appColors.mutedForeground),
         ),
         const SizedBox(width: 2),
         _IconBtn(

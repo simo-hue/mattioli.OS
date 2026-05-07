@@ -188,6 +188,76 @@ class MacroGoalsNotifier extends Notifier<MacroGoalsState> {
     }
   }
 
+  Future<void> rescheduleGoal(MacroGoal goal) async {
+    // 1. Mark current as failed
+    await updateStatus(goal.id, GoalStatus.failed);
+
+    // 2. Calculate next period
+    int nextY = goal.year ?? DateTime.now().year;
+    int nextM = goal.month ?? 1;
+    int nextW = goal.weekNumber ?? 1;
+    int nextQ = goal.quarter ?? 1;
+
+    switch (goal.type) {
+      case GoalType.lifetime:
+        return;
+      case GoalType.annual:
+        nextY++;
+        break;
+      case GoalType.quarterly:
+        if (nextQ < 4) {
+          nextQ++;
+        } else {
+          nextY++;
+          nextQ = 1;
+        }
+        // Sync month to the start of the new quarter for consistency
+        nextM = ((nextQ - 1) * 3) + 1;
+        break;
+      case GoalType.monthly:
+        if (nextM < 12) {
+          nextM++;
+        } else {
+          nextY++;
+          nextM = 1;
+        }
+        nextQ = ((nextM - 1) ~/ 3) + 1;
+        break;
+      case GoalType.weekly:
+        final maxW = weeksInMonth(nextY, nextM);
+        if (nextW < maxW) {
+          nextW++;
+        } else {
+          if (nextM < 12) {
+            nextM++;
+            nextW = 1;
+          } else {
+            nextY++;
+            nextM = 1;
+            nextW = 1;
+          }
+        }
+        nextQ = ((nextM - 1) ~/ 3) + 1;
+        break;
+    }
+
+    // 3. Create the new goal
+    final newGoal = MacroGoal(
+      id: DateTime.now().millisecondsSinceEpoch.toString(),
+      title: goal.title,
+      status: GoalStatus.active,
+      type: goal.type,
+      year: nextY,
+      quarter: nextQ,
+      month: nextM,
+      weekNumber: nextW,
+      categoryKey: goal.categoryKey,
+      createdAt: DateTime.now(),
+    );
+
+    await addGoal(newGoal);
+  }
+
   // ── Filtering ─────────────────────────────────────────────────────────────
 
   List<MacroGoal> getFilteredGoals({

@@ -489,15 +489,21 @@ class _GoalsList extends ConsumerWidget {
       );
     }
 
-    return ListView.builder(
-      padding: const EdgeInsets.fromLTRB(16, 0, 16, 20),
+    final items = _buildItems(goals);
 
+    return ReorderableListView.builder(
+      padding: const EdgeInsets.fromLTRB(16, 0, 16, 20),
       physics: const BouncingScrollPhysics(),
-      itemCount: _buildItems(goals).length,
+      proxyDecorator: (child, index, animation) => child,
+      buildDefaultDragHandles: false,
+      itemCount: items.length,
+      onReorder: (oldIndex, newIndex) {
+        // Programmatic reordering is handled by the provider state change
+      },
       itemBuilder: (context, index) {
-        final item = _buildItems(goals)[index];
+        final item = items[index];
         if (item is _SectionHeader) {
-          return _buildSectionHeader(context, item.status);
+          return _buildSectionHeader(context, item.status, ValueKey('header-${item.status.name}'));
         }
         final goal = item as MacroGoal;
         return GoalItemWidget(key: ValueKey(goal.id), goal: goal);
@@ -505,13 +511,14 @@ class _GoalsList extends ConsumerWidget {
     );
   }
 
-  Widget _buildSectionHeader(BuildContext context, GoalStatus status) {
+  Widget _buildSectionHeader(BuildContext context, GoalStatus status, Key key) {
     final label = status == GoalStatus.completed ? 'COMPLETATI' : 'FALLITI';
     final color = status == GoalStatus.completed
         ? const Color(0xFF10B981).withValues(alpha: 0.7)
         : context.appColors.destructive.withValues(alpha: 0.7);
 
     return Padding(
+      key: key,
       padding: const EdgeInsets.only(top: 24, bottom: 12),
       child: Row(
         children: [

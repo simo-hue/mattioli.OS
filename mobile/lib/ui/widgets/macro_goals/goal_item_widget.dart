@@ -1,3 +1,4 @@
+import 'dart:async';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
@@ -20,13 +21,14 @@ class GoalItemWidget extends ConsumerStatefulWidget {
 
 class _GoalItemWidgetState extends ConsumerState<GoalItemWidget>
     with SingleTickerProviderStateMixin {
-  bool _isTransitioning = false;
   bool _isPressed = false;
   GoalStatus? _visualStatusOverride;
+  Timer? _debounceTimer;
 
   // ── Status cycle: active → completed → failed → active ──────────────────
   GoalStatus get _nextStatus {
-    switch (widget.goal.status) {
+    final currentStatus = _visualStatusOverride ?? widget.goal.status;
+    switch (currentStatus) {
       case GoalStatus.active:
         return GoalStatus.completed;
       case GoalStatus.completed:
@@ -36,41 +38,35 @@ class _GoalItemWidgetState extends ConsumerState<GoalItemWidget>
     }
   }
 
-  Future<void> _cycleStatus() async {
-    if (_isTransitioning) return;
-    
+  void _cycleStatus() {
     // Start by giving haptic feedback
     ref.hapticAction();
     
-    // Step 1: Immediate visual feedback (Optimistic Update)
+    // Immediate visual feedback (Optimistic Update)
     setState(() {
       _visualStatusOverride = _nextStatus;
     });
 
-    // Step 2: Wait a bit so the user sees the checkbox change state
-    await Future.delayed(const Duration(milliseconds: 400));
-    
-    if (!mounted) return;
+    // Debounce the actual provider update and reorder animation
+    _debounceTimer?.cancel();
+    _debounceTimer = Timer(const Duration(milliseconds: 800), () {
+      if (!mounted) return;
 
-    // Step 3: Start the "collapse" animation
-    setState(() => _isTransitioning = true);
-    
-    // Step 4: Wait for the collapse animation to finish
-    await Future.delayed(const Duration(milliseconds: 300));
-
-    if (!mounted) return;
-
-    // Step 5: Actually update the status in the provider (triggers reorder in the list)
-    ref
-        .read(macroGoalsProvider.notifier)
-        .updateStatus(widget.goal.id, _visualStatusOverride!);
-    
-    // Step 6: Immediately start the "expand" animation in the new position
-    // Since we use ValueKey(id), this state is preserved.
-    setState(() {
-      _isTransitioning = false;
-      _visualStatusOverride = null;
+      // Actually update the status in the provider (triggers reorder)
+      ref
+          .read(macroGoalsProvider.notifier)
+          .updateStatus(widget.goal.id, _visualStatusOverride!);
+      
+      setState(() {
+        _visualStatusOverride = null;
+      });
     });
+  }
+
+  @override
+  void dispose() {
+    _debounceTimer?.cancel();
+    super.dispose();
   }
 
   void _delete() {
@@ -332,102 +328,89 @@ class _GoalItemWidgetState extends ConsumerState<GoalItemWidget>
         icon = null;
       }
 
-      return GestureDetector(
-        onTap: _cycleStatus,
-        child: AnimatedContainer(
-          duration: const Duration(milliseconds: 200),
-          width: 20,
-          height: 20,
-          decoration: BoxDecoration(
-            color: checkBg,
-            borderRadius: BorderRadius.circular(5),
-            border: Border.all(color: checkBorder, width: 1.5),
-          ),
-          child: icon != null ? Center(child: icon) : null,
+      return AnimatedContainer(
+        duration: const Duration(milliseconds: 200),
+        width: 20,
+        height: 20,
+        decoration: BoxDecoration(
+          color: checkBg,
+          borderRadius: BorderRadius.circular(5),
+          border: Border.all(color: checkBorder, width: 1.5),
         ),
+        child: icon != null ? Center(child: icon) : null,
       );
     }
 
-    return AnimatedOpacity(
+    return AnimatedScale(
       duration: const Duration(milliseconds: 300),
-      opacity: _isTransitioning ? 0.0 : 1.0,
-      curve: Curves.easeInOut,
-      child: AnimatedScale(
-        duration: const Duration(milliseconds: 300),
-        scale: _isTransitioning ? 0.9 : (_isPressed ? 0.98 : 1.0),
-        curve: Curves.easeOutBack,
-        child: AnimatedSize(
-          duration: const Duration(milliseconds: 300),
-          curve: Curves.easeInOut,
-          alignment: Alignment.topCenter,
-          child: _isTransitioning ? const SizedBox(width: double.infinity, height: 0) : Padding(
-            padding: const EdgeInsets.only(bottom: 6),
-            child: GestureDetector(
-              onTapDown: (_) => setState(() => _isPressed = true),
-              onTapUp: (_) => setState(() => _isPressed = false),
-              onTapCancel: () => setState(() => _isPressed = false),
-              onTap: _cycleStatus,
-              child: AnimatedContainer(
-                duration: const Duration(milliseconds: 250),
-                padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
-                decoration: BoxDecoration(
-                  color: bgColor,
-                  borderRadius: BorderRadius.circular(14),
-                  border: Border.all(color: borderColor, width: 1),
-                ),
-                child: Row(
-                  children: [
-                    // Checkbox
-                    checkbox(),
-                    const SizedBox(width: 12),
+      scale: _isPressed ? 0.98 : 1.0,
+      curve: Curves.easeOutBack,
+      child: Padding(
+        padding: const EdgeInsets.only(bottom: 6),
+        child: GestureDetector(
+          onTapDown: (_) => setState(() => _isPressed = true),
+          onTapUp: (_) => setState(() => _isPressed = false),
+          onTapCancel: () => setState(() => _isPressed = false),
+          onTap: _cycleStatus,
+          child: AnimatedContainer(
+            duration: const Duration(milliseconds: 250),
+            padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
+            decoration: BoxDecoration(
+              color: bgColor,
+              borderRadius: BorderRadius.circular(14),
+              border: Border.all(color: borderColor, width: 1),
+            ),
+            child: Row(
+              children: [
+                // Checkbox
+                checkbox(),
+                const SizedBox(width: 12),
 
-                    // Category dot (if set)
-                    if (catColor != null && isActive) ...[
-                      Container(
-                        width: 6,
-                        height: 6,
-                        decoration: BoxDecoration(
-                          color: catColor,
-                          shape: BoxShape.circle,
-                        ),
-                      ),
-                      const SizedBox(width: 8),
-                    ],
-
-                    // Title
-                    Expanded(
-                      child: Text(
-                        goal.title,
-                        style: GoogleFonts.inter(
-                          fontSize: 14,
-                          fontWeight: FontWeight.w500,
-                          color: isCompleted
-                              ? Theme.of(context).colorScheme.primary.withValues(alpha: 0.7)
-                              : isFailed
-                                  ? context.appColors.destructive.withValues(alpha: 0.7)
-                                  : context.appColors.foreground,
-                          decoration: (isCompleted || isFailed)
-                              ? TextDecoration.lineThrough
-                              : TextDecoration.none,
-                          decorationColor: isCompleted
-                              ? Theme.of(context).colorScheme.primary.withValues(alpha: 0.5)
-                              : context.appColors.destructive.withValues(alpha: 0.5),
-                        ),
-                      ),
+                // Category dot (if set)
+                if (catColor != null && isActive) ...[
+                  Container(
+                    width: 6,
+                    height: 6,
+                    decoration: BoxDecoration(
+                      color: catColor,
+                      shape: BoxShape.circle,
                     ),
+                  ),
+                  const SizedBox(width: 8),
+                ],
 
-                    const SizedBox(width: 8),
-
-                    // ── Action buttons (swipe-reveal via long-press or always shown) ─
-                    _ActionButtons(
-                      catColor: catColor,
-                      onCategory: _showCategorySheet,
-                      onEdit: _showEditDialog,
-                      onDelete: _showDeleteConfirm,
+                // Title
+                Expanded(
+                  child: Text(
+                    goal.title,
+                    style: GoogleFonts.inter(
+                      fontSize: 14,
+                      fontWeight: FontWeight.w500,
+                      color: isCompleted
+                          ? Theme.of(context).colorScheme.primary.withValues(alpha: 0.7)
+                          : isFailed
+                              ? context.appColors.destructive.withValues(alpha: 0.7)
+                              : context.appColors.foreground,
+                      decoration: (isCompleted || isFailed)
+                          ? TextDecoration.lineThrough
+                          : TextDecoration.none,
+                      decorationColor: isCompleted
+                          ? Theme.of(context).colorScheme.primary.withValues(alpha: 0.5)
+                          : context.appColors.destructive.withValues(alpha: 0.5),
                     ),
-                  ],
+                  ),
                 ),
-              ),
+
+                const SizedBox(width: 8),
+
+                // ── Action buttons (swipe-reveal via long-press or always shown) ─
+                _ActionButtons(
+                  catColor: catColor,
+                  onCategory: _showCategorySheet,
+                  onEdit: _showEditDialog,
+                  onDelete: _showDeleteConfirm,
+                ),
+              ],
             ),
           ),
         ),

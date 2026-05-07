@@ -185,99 +185,111 @@ class _GoalItemWidgetState extends ConsumerState<GoalItemWidget>
   void _showCategorySheet() {
     showModalBottomSheet(
       context: context,
+      isScrollControlled: true,
       backgroundColor: context.appColors.card,
       shape: const RoundedRectangleBorder(
         borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
       ),
       builder: (_) {
-        return SafeArea(
-          child: Column(
-            mainAxisSize: MainAxisSize.min,
-            children: [
-              const SizedBox(height: 8),
-              Container(
-                width: 36,
-                height: 4,
-                decoration: BoxDecoration(
-                  color: context.appColors.border,
-                  borderRadius: BorderRadius.circular(2),
-                ),
-              ),
-              const SizedBox(height: 8),
-              Padding(
-                padding:
-                    const EdgeInsets.symmetric(horizontal: 16, vertical: 4),
-                child: Text(
-                  'Cambia categoria',
-                  style: GoogleFonts.inter(
-                    fontSize: 14,
-                    fontWeight: FontWeight.w600,
-                    color: context.appColors.foreground,
-                  ),
-                ),
-              ),
-              ListTile(
-                leading: Container(
-                  width: 20,
-                  height: 20,
-                  decoration: BoxDecoration(
-                    shape: BoxShape.circle,
-                    border:
-                        Border.all(color: context.appColors.border, width: 1.5),
-                  ),
-                ),
-                title: Text('Nessuna',
-                    style:
-                        GoogleFonts.inter(color: context.appColors.mutedForeground)),
-                trailing: widget.goal.categoryKey == null
-                    ? Icon(Icons.check,
-                        color: Theme.of(context).colorScheme.primary, size: 18)
-                    : null,
-                onTap: () {
-                  ref
-                      .read(macroGoalsProvider.notifier)
-                      .updateCategory(widget.goal.id, null);
-                  Navigator.pop(context);
-                },
-              ),
-              ...kDefaultCategories.map(
-                (cat) => ListTile(
-                  leading: Container(
-                    width: 20,
-                    height: 20,
-                    decoration: BoxDecoration(
-                      color: cat.color.withValues(alpha: 0.3),
-                      shape: BoxShape.circle,
-                      border: Border.all(
-                          color: cat.color.withValues(alpha: 0.6), width: 1.5),
+        return DraggableScrollableSheet(
+          initialChildSize: 0.6,
+          minChildSize: 0.4,
+          maxChildSize: 0.9,
+          expand: false,
+          builder: (context, scrollController) {
+            return SafeArea(
+              child: SingleChildScrollView(
+                controller: scrollController,
+                child: Column(
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    const SizedBox(height: 8),
+                    Container(
+                      width: 36,
+                      height: 4,
+                      decoration: BoxDecoration(
+                        color: context.appColors.border,
+                        borderRadius: BorderRadius.circular(2),
+                      ),
                     ),
-                  ),
-                  title: Text(
-                    cat.label,
-                    style: GoogleFonts.inter(
-                      fontSize: 13,
-                      color: context.appColors.foreground,
-                      fontWeight: widget.goal.categoryKey == cat.key
-                          ? FontWeight.w600
-                          : FontWeight.w400,
+                    const SizedBox(height: 8),
+                    Padding(
+                      padding:
+                          const EdgeInsets.symmetric(horizontal: 16, vertical: 4),
+                      child: Text(
+                        'Cambia categoria',
+                        style: GoogleFonts.inter(
+                          fontSize: 14,
+                          fontWeight: FontWeight.w600,
+                          color: context.appColors.foreground,
+                        ),
+                      ),
                     ),
-                  ),
-                  trailing: widget.goal.categoryKey == cat.key
-                      ? Icon(Icons.check,
-                          color: Theme.of(context).colorScheme.primary, size: 18)
-                      : null,
-                  onTap: () {
-                    ref
-                        .read(macroGoalsProvider.notifier)
-                        .updateCategory(widget.goal.id, cat.key);
-                    Navigator.pop(context);
-                    ref.hapticSelection();
-                  },
+                    ListTile(
+                      leading: Container(
+                        width: 20,
+                        height: 20,
+                        decoration: BoxDecoration(
+                          shape: BoxShape.circle,
+                          border:
+                              Border.all(color: context.appColors.border, width: 1.5),
+                        ),
+                      ),
+                      title: Text('Nessuna',
+                          style:
+                              GoogleFonts.inter(color: context.appColors.mutedForeground)),
+                      trailing: widget.goal.categoryKey == null
+                          ? Icon(Icons.check,
+                              color: Theme.of(context).colorScheme.primary, size: 18)
+                          : null,
+                      onTap: () {
+                        ref
+                            .read(macroGoalsProvider.notifier)
+                            .updateCategory(widget.goal.id, null);
+                        Navigator.pop(context);
+                      },
+                    ),
+                    ...kDefaultCategories.map(
+                      (cat) => ListTile(
+                        leading: Container(
+                          width: 20,
+                          height: 20,
+                          decoration: BoxDecoration(
+                            color: cat.color.withValues(alpha: 0.3),
+                            shape: BoxShape.circle,
+                            border: Border.all(
+                                color: cat.color.withValues(alpha: 0.6), width: 1.5),
+                          ),
+                        ),
+                        title: Text(
+                          cat.label,
+                          style: GoogleFonts.inter(
+                            fontSize: 13,
+                            color: context.appColors.foreground,
+                            fontWeight: widget.goal.categoryKey == cat.key
+                                ? FontWeight.w600
+                                : FontWeight.w400,
+                          ),
+                        ),
+                        trailing: widget.goal.categoryKey == cat.key
+                            ? Icon(Icons.check,
+                                color: Theme.of(context).colorScheme.primary, size: 18)
+                            : null,
+                        onTap: () {
+                          ref
+                              .read(macroGoalsProvider.notifier)
+                              .updateCategory(widget.goal.id, cat.key);
+                          Navigator.pop(context);
+                          ref.hapticSelection();
+                        },
+                      ),
+                    ),
+                    const SizedBox(height: 16),
+                  ],
                 ),
               ),
-              const SizedBox(height: 8),
-            ],
-          ),
+            );
+          },
         );
       },
     );

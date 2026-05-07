@@ -108,7 +108,7 @@ class _HabitCalendarWidgetState extends ConsumerState<HabitCalendarWidget> {
         }
       },
       child: Container(
-        decoration: AppTheme.glassPanelDecoration(radius: 14),
+        decoration: AppTheme.glassPanelDecoration(context, radius: 14),
         child: AnimatedSwitcher(
           duration: const Duration(milliseconds: 450),
           switchInCurve: Curves.easeOutQuart,
@@ -160,21 +160,21 @@ class _HabitCalendarWidgetState extends ConsumerState<HabitCalendarWidget> {
                         children: [
                           Text(
                             context.l10n.translate(_kMonthKeys[month - 1]),
-                            style: const TextStyle(
+                            style: TextStyle(
                               fontFamily: 'Inter',
                               fontSize: 22,
                               fontWeight: FontWeight.w800,
-                              color: AppColors.foreground,
+                              color: context.appColors.foreground,
                               letterSpacing: -0.8,
                             ),
                           ),
                           Text(
                             '$year',
-                            style: const TextStyle(
+                            style: TextStyle(
                               fontFamily: 'Inter',
                               fontSize: 14,
                               fontWeight: FontWeight.w500,
-                              color: AppColors.mutedForeground,
+                              color: context.appColors.mutedForeground,
                               letterSpacing: 0.5,
                             ),
                           ),
@@ -209,11 +209,11 @@ class _HabitCalendarWidgetState extends ConsumerState<HabitCalendarWidget> {
                       child: Center(
                         child: Text(
                           context.l10n.translate(key),
-                          style: const TextStyle(
+                          style: TextStyle(
                             fontFamily: 'Inter',
                             fontSize: 9,
                             fontWeight: FontWeight.w600,
-                            color: AppColors.mutedForeground,
+                            color: context.appColors.mutedForeground,
                             letterSpacing: 0.5,
                           ),
                         ),
@@ -325,11 +325,11 @@ class _NavButton extends StatelessWidget {
         width: 36,
         height: 36,
         decoration: BoxDecoration(
-          color: AppColors.card,
+          color: context.appColors.card,
           borderRadius: BorderRadius.circular(10),
-          border: Border.all(color: AppColors.border, width: 1),
+          border: Border.all(color: context.appColors.border, width: 1),
         ),
-        child: Icon(icon, size: 18, color: AppColors.foreground),
+        child: Icon(icon, size: 18, color: context.appColors.foreground),
       ),
     );
   }
@@ -394,7 +394,7 @@ class _DayCell extends StatelessWidget {
     }
 
     if (isToday && !hasActivity) {
-      bgColor = Colors.white.withValues(alpha: 0.04);
+      bgColor = context.appColors.foreground.withValues(alpha: 0.04);
       borderColor = Theme.of(context).colorScheme.primary.withValues(alpha: 0.4);
     }
 
@@ -446,8 +446,8 @@ class _DayCell extends StatelessWidget {
                     color: isToday
                         ? Theme.of(context).colorScheme.primary
                         : hasActivity
-                            ? AppColors.foreground
-                            : AppColors.mutedForeground,
+                            ? context.appColors.foreground
+                            : context.appColors.mutedForeground,
                   ),
                   child: Text(
                     '$day',
@@ -474,7 +474,7 @@ class _DayCell extends StatelessWidget {
                             width: 4,
                             height: 4,
                             decoration: BoxDecoration(
-                              color: AppColors.success,
+                              color: context.appColors.success,
                               borderRadius: BorderRadius.circular(1),
                             ),
                           ),

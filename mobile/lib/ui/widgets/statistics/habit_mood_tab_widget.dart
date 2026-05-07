@@ -68,9 +68,9 @@ class _MetricCard extends StatelessWidget {
   Widget build(BuildContext context) {
     return Container(
       decoration: BoxDecoration(
-        color: AppColors.card,
+        color: context.appColors.card,
         borderRadius: BorderRadius.circular(12),
-        border: Border.all(color: AppColors.border, width: 1),
+        border: Border.all(color: context.appColors.border, width: 1),
       ),
       padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 12),
       child: Column(
@@ -79,10 +79,10 @@ class _MetricCard extends StatelessWidget {
         children: [
           Text(
             title,
-            style: const TextStyle(
+            style: TextStyle(
               fontFamily: 'Inter',
               fontSize: 11,
-              color: AppColors.mutedForeground,
+              color: context.appColors.mutedForeground,
             ),
             textAlign: TextAlign.center,
             maxLines: 1,
@@ -95,17 +95,17 @@ class _MetricCard extends StatelessWidget {
               fontFamily: 'Inter',
               fontSize: 22,
               fontWeight: FontWeight.w700,
-              color: isRed ? const Color(0xFFEF4444) : AppColors.foreground,
+              color: isRed ? const Color(0xFFEF4444) : context.appColors.foreground,
               height: 1,
             ),
           ),
           const SizedBox(height: 4),
           Text(
             subtitle,
-            style: const TextStyle(
+            style: TextStyle(
               fontFamily: 'Inter',
               fontSize: 11,
-              color: AppColors.mutedForeground,
+              color: context.appColors.mutedForeground,
             ),
           ),
         ],
@@ -122,7 +122,7 @@ class _ResilienteBadge extends StatelessWidget {
     return Container(
       padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
       decoration: BoxDecoration(
-        color: AppColors.card,
+        color: context.appColors.card,
         borderRadius: BorderRadius.circular(20),
         border: Border.all(color: Theme.of(context).colorScheme.primary.withValues(alpha: 0.3), width: 1),
       ),
@@ -153,9 +153,9 @@ class _CompletatoVsMancatoCard extends StatelessWidget {
   Widget build(BuildContext context) {
     return Container(
       decoration: BoxDecoration(
-        color: AppColors.card,
+        color: context.appColors.card,
         borderRadius: BorderRadius.circular(16),
-        border: Border.all(color: AppColors.border, width: 1),
+        border: Border.all(color: context.appColors.border, width: 1),
       ),
       padding: const EdgeInsets.all(20),
       child: Column(
@@ -163,11 +163,11 @@ class _CompletatoVsMancatoCard extends StatelessWidget {
         children: [
           Text(
             context.l10n.translate('Completato vs Mancato'),
-            style: const TextStyle(
+            style: TextStyle(
               fontFamily: 'Inter',
               fontSize: 16,
               fontWeight: FontWeight.w700,
-              color: AppColors.foreground,
+              color: context.appColors.foreground,
             ),
           ),
           const SizedBox(height: 24),
@@ -179,10 +179,10 @@ class _CompletatoVsMancatoCard extends StatelessWidget {
                 Column(
                   mainAxisAlignment: MainAxisAlignment.spaceBetween,
                   children: [
-                    const Text('10', style: TextStyle(fontSize: 10, color: AppColors.mutedForeground)),
-                    const Text('6', style: TextStyle(fontSize: 10, color: AppColors.mutedForeground)),
-                    const Text('3', style: TextStyle(fontSize: 10, color: AppColors.mutedForeground)),
-                    const Text('0', style: TextStyle(fontSize: 10, color: AppColors.mutedForeground)),
+                    Text('10', style: TextStyle(fontSize: 10, color: context.appColors.mutedForeground)),
+                    Text('6', style: TextStyle(fontSize: 10, color: context.appColors.mutedForeground)),
+                    Text('3', style: TextStyle(fontSize: 10, color: context.appColors.mutedForeground)),
+                    Text('0', style: TextStyle(fontSize: 10, color: context.appColors.mutedForeground)),
                   ],
                 ),
                 const SizedBox(width: 12),
@@ -193,7 +193,7 @@ class _CompletatoVsMancatoCard extends StatelessWidget {
                       // Grid lines
                       Column(
                         mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                        children: List.generate(4, (index) => _buildGridLine()),
+                        children: List.generate(4, (index) => _buildGridLine(context)),
                       ),
                       // Bars
                       Row(
@@ -225,11 +225,11 @@ class _CompletatoVsMancatoCard extends StatelessWidget {
     );
   }
 
-  Widget _buildGridLine() {
+  Widget _buildGridLine(BuildContext context) {
     return Container(
       height: 1,
       width: double.infinity,
-      color: AppColors.border.withValues(alpha: 0.5),
+      color: context.appColors.border.withValues(alpha: 0.5),
     );
   }
 
@@ -277,10 +277,10 @@ class _CompletatoVsMancatoCard extends StatelessWidget {
         const SizedBox(height: 8),
         Text(
           label,
-          style: const TextStyle(
+          style: TextStyle(
             fontFamily: 'Inter',
             fontSize: 11,
-            color: AppColors.mutedForeground,
+            color: context.appColors.mutedForeground,
           ),
         ),
       ],
@@ -313,9 +313,9 @@ class _PerformancePerLivelloCard extends StatelessWidget {
   Widget build(BuildContext context) {
     return Container(
       decoration: BoxDecoration(
-        color: AppColors.card,
+        color: context.appColors.card,
         borderRadius: BorderRadius.circular(16),
-        border: Border.all(color: AppColors.border, width: 1),
+        border: Border.all(color: context.appColors.border, width: 1),
       ),
       padding: const EdgeInsets.all(20),
       child: Column(
@@ -323,20 +323,20 @@ class _PerformancePerLivelloCard extends StatelessWidget {
         children: [
           Text(
             context.l10n.translate('Performance per Livello'),
-            style: const TextStyle(
+            style: TextStyle(
               fontFamily: 'Inter',
               fontSize: 16,
               fontWeight: FontWeight.w700,
-              color: AppColors.foreground,
+              color: context.appColors.foreground,
             ),
           ),
           const SizedBox(height: 4),
           Text(
             context.l10n.translate('Basso (1-4) • Medio (5-7) • Alto (8-10)'),
-            style: const TextStyle(
+            style: TextStyle(
               fontFamily: 'Inter',
               fontSize: 12,
-              color: AppColors.mutedForeground,
+              color: context.appColors.mutedForeground,
             ),
           ),
           const SizedBox(height: 32),
@@ -348,11 +348,11 @@ class _PerformancePerLivelloCard extends StatelessWidget {
                 Column(
                   mainAxisAlignment: MainAxisAlignment.spaceBetween,
                   children: [
-                    const Text('100%', style: TextStyle(fontSize: 10, color: AppColors.mutedForeground)),
-                    const Text('75%', style: TextStyle(fontSize: 10, color: AppColors.mutedForeground)),
-                    const Text('50%', style: TextStyle(fontSize: 10, color: AppColors.mutedForeground)),
-                    const Text('25%', style: TextStyle(fontSize: 10, color: AppColors.mutedForeground)),
-                    const Text('0%', style: TextStyle(fontSize: 10, color: AppColors.mutedForeground)),
+                    Text('100%', style: TextStyle(fontSize: 10, color: context.appColors.mutedForeground)),
+                    Text('75%', style: TextStyle(fontSize: 10, color: context.appColors.mutedForeground)),
+                    Text('50%', style: TextStyle(fontSize: 10, color: context.appColors.mutedForeground)),
+                    Text('25%', style: TextStyle(fontSize: 10, color: context.appColors.mutedForeground)),
+                    Text('0%', style: TextStyle(fontSize: 10, color: context.appColors.mutedForeground)),
                   ],
                 ),
                 const SizedBox(width: 12),
@@ -363,12 +363,15 @@ class _PerformancePerLivelloCard extends StatelessWidget {
                       // Grid lines
                       Column(
                         mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                        children: List.generate(5, (index) => _buildGridLine()),
+                        children: List.generate(5, (index) => _buildGridLine(context)),
                       ),
                       // Line Chart Custom Paint
                       Positioned.fill(
                         child: CustomPaint(
-                          painter: _LineChartPainter(moodColor: const Color(0xFF10B981)),
+                          painter: _LineChartPainter(
+                            moodColor: const Color(0xFF10B981),
+                            backgroundColor: context.appColors.background,
+                          ),
                         ),
                       ),
                       // X Axis Labels
@@ -379,9 +382,9 @@ class _PerformancePerLivelloCard extends StatelessWidget {
                         child: Row(
                           mainAxisAlignment: MainAxisAlignment.spaceBetween,
                           children: [
-                            Text(context.l10n.translate('Basso'), style: const TextStyle(fontSize: 10, color: AppColors.mutedForeground)),
-                            Text(context.l10n.translate('Medio'), style: const TextStyle(fontSize: 10, color: AppColors.mutedForeground)),
-                            Text(context.l10n.translate('Alto'), style: const TextStyle(fontSize: 10, color: AppColors.mutedForeground)),
+                            Text(context.l10n.translate('Basso'), style: TextStyle(fontSize: 10, color: context.appColors.mutedForeground)),
+                            Text(context.l10n.translate('Medio'), style: TextStyle(fontSize: 10, color: context.appColors.mutedForeground)),
+                            Text(context.l10n.translate('Alto'), style: TextStyle(fontSize: 10, color: context.appColors.mutedForeground)),
                           ],
                         ),
                       ),
@@ -406,11 +409,11 @@ class _PerformancePerLivelloCard extends StatelessWidget {
     );
   }
 
-  Widget _buildGridLine() {
+  Widget _buildGridLine(BuildContext context) {
     return Container(
       height: 1,
       width: double.infinity,
-      color: AppColors.border.withValues(alpha: 0.5),
+      color: context.appColors.border.withValues(alpha: 0.5),
     );
   }
 
@@ -439,7 +442,8 @@ class _PerformancePerLivelloCard extends StatelessWidget {
 
 class _LineChartPainter extends CustomPainter {
   final Color moodColor;
-  _LineChartPainter({required this.moodColor});
+  final Color backgroundColor;
+  _LineChartPainter({required this.moodColor, required this.backgroundColor});
 
   @override
   void paint(Canvas canvas, Size size) {
@@ -490,7 +494,7 @@ class _LineChartPainter extends CustomPainter {
 
     // Draw points
     final dotPaintFill = Paint()
-      ..color = Colors.white
+      ..color = backgroundColor
       ..style = PaintingStyle.fill;
     
     for (int i = 0; i < 3; i++) {
@@ -548,9 +552,9 @@ class _FooterInfo extends StatelessWidget {
     return Container(
       width: double.infinity,
       decoration: BoxDecoration(
-        color: AppColors.card.withValues(alpha: 0.5),
+        color: context.appColors.card.withValues(alpha: 0.5),
         borderRadius: BorderRadius.circular(12),
-        border: Border.all(color: AppColors.border, width: 1),
+        border: Border.all(color: context.appColors.border, width: 1),
       ),
       padding: const EdgeInsets.symmetric(vertical: 16, horizontal: 16),
       child: Text(
@@ -558,10 +562,10 @@ class _FooterInfo extends StatelessWidget {
             .replaceFirst('count', '76')
             .replaceFirst('done', '46')
             .replaceFirst('missed', '30'),
-        style: const TextStyle(
+        style: TextStyle(
           fontFamily: 'Inter',
           fontSize: 11,
-          color: AppColors.mutedForeground,
+          color: context.appColors.mutedForeground,
         ),
         textAlign: TextAlign.center,
       ),

@@ -6,11 +6,8 @@ import 'auth_provider.dart';
 
 class AppSettings {
   final String themeMode;
-  final bool glassEffects;
   final Color accentColor;
   final String defaultCalendarView;
-  final bool startWeekOnMonday;
-  final bool showWeekend;
   final bool hapticFeedback;
   final String language;
   final bool timeFormat24h;
@@ -35,11 +32,8 @@ class AppSettings {
 
   const AppSettings({
     required this.themeMode,
-    required this.glassEffects,
     required this.accentColor,
     required this.defaultCalendarView,
-    required this.startWeekOnMonday,
-    required this.showWeekend,
     required this.hapticFeedback,
     required this.language,
     required this.timeFormat24h,
@@ -59,11 +53,8 @@ class AppSettings {
 
   AppSettings copyWith({
     String? themeMode,
-    bool? glassEffects,
     Color? accentColor,
     String? defaultCalendarView,
-    bool? startWeekOnMonday,
-    bool? showWeekend,
     bool? hapticFeedback,
     String? language,
     bool? timeFormat24h,
@@ -82,11 +73,8 @@ class AppSettings {
   }) {
     return AppSettings(
       themeMode: themeMode ?? this.themeMode,
-      glassEffects: glassEffects ?? this.glassEffects,
       accentColor: accentColor ?? this.accentColor,
       defaultCalendarView: defaultCalendarView ?? this.defaultCalendarView,
-      startWeekOnMonday: startWeekOnMonday ?? this.startWeekOnMonday,
-      showWeekend: showWeekend ?? this.showWeekend,
       hapticFeedback: hapticFeedback ?? this.hapticFeedback,
       language: language ?? this.language,
       timeFormat24h: timeFormat24h ?? this.timeFormat24h,
@@ -143,16 +131,45 @@ class AppSettingsNotifier extends Notifier<AppSettings> {
   // ── Modificatori ──────────────────────────────────────────────────────────
 
   void updateSettings(AppSettings newSettings) {
-    state = newSettings;
+    AppSettings finalSettings = newSettings;
+
+    // Smart visibility check: adjust accent color if theme mode changes
+    if (newSettings.themeMode != state.themeMode) {
+      final safeAccent = _ensureSafeAccentColor(newSettings.accentColor, newSettings.themeMode);
+      finalSettings = newSettings.copyWith(accentColor: safeAccent);
+    }
+
+    state = finalSettings;
     _saveToPrefs(state);
     _syncToSupabase(state);
     _syncNotifications();
   }
 
   void setAccentColor(Color color) {
-    state = state.copyWith(accentColor: color);
+    final safeColor = _ensureSafeAccentColor(color, state.themeMode);
+    state = state.copyWith(accentColor: safeColor);
     _saveToPrefs(state);
     _syncToSupabase(state);
+  }
+
+  /// Robust check to prevent "invisible" UI elements (e.g. white accent on white background)
+  Color _ensureSafeAccentColor(Color color, String mode) {
+    final double luminance = color.computeLuminance();
+    
+    if (mode == 'light') {
+      // If switching to Light Mode, ensure the accent color is dark enough
+      // luminance > 0.9 is basically white or very pale yellow
+      if (luminance > 0.9) {
+        return const Color(0xFF09090B); // Zinc 950 (Rich Black)
+      }
+    } else {
+      // If switching to Dark Mode, ensure the accent color is light enough
+      // luminance < 0.1 is very dark grey or black
+      if (luminance < 0.1) {
+        return const Color(0xFFFAFAFA); // Zinc 50 (Off White)
+      }
+    }
+    return color;
   }
 
   void toggleAi(bool value) {
@@ -185,10 +202,7 @@ class AppSettingsNotifier extends Notifier<AppSettings> {
     return AppSettings(
       themeMode: prefs.getString('pref_theme_mode') ?? 'dark',
       accentColor: parseColor(prefs.getString('pref_accent_color')),
-      glassEffects: prefs.getBool('pref_glass_effects') ?? true,
       defaultCalendarView: prefs.getString('pref_default_calendar_view') ?? 'settimana',
-      startWeekOnMonday: prefs.getBool('pref_start_week_on_monday') ?? true,
-      showWeekend: prefs.getBool('pref_show_weekend') ?? true,
       hapticFeedback: prefs.getBool('pref_haptic_feedback') ?? true,
       language: prefs.getString('pref_language') ?? 'Italiano',
       timeFormat24h: prefs.getBool('pref_time_format_24h') ?? true,
@@ -217,10 +231,7 @@ class AppSettingsNotifier extends Notifier<AppSettings> {
 
     prefs.setString('pref_theme_mode', s.themeMode);
     prefs.setString('pref_accent_color', toHex(s.accentColor));
-    prefs.setBool('pref_glass_effects', s.glassEffects);
     prefs.setString('pref_default_calendar_view', s.defaultCalendarView);
-    prefs.setBool('pref_start_week_on_monday', s.startWeekOnMonday);
-    prefs.setBool('pref_show_weekend', s.showWeekend);
     prefs.setBool('pref_haptic_feedback', s.hapticFeedback);
     prefs.setString('pref_language', s.language);
     prefs.setBool('pref_time_format_24h', s.timeFormat24h);
@@ -265,10 +276,7 @@ class AppSettingsNotifier extends Notifier<AppSettings> {
         final serverSettings = state.copyWith(
           themeMode: data['theme_mode'] ?? state.themeMode,
           accentColor: data['accent_color'] != null ? parseColor(data['accent_color']) : state.accentColor,
-          glassEffects: data['pref_glass_effects'] ?? state.glassEffects,
           defaultCalendarView: data['pref_default_calendar_view'] ?? state.defaultCalendarView,
-          startWeekOnMonday: data['pref_start_week_on_monday'] ?? state.startWeekOnMonday,
-          showWeekend: data['pref_show_weekend'] ?? state.showWeekend,
           hapticFeedback: data['pref_haptic_feedback'] ?? state.hapticFeedback,
           language: data['language'] ?? state.language,
           timeFormat24h: data['pref_time_format_24h'] ?? state.timeFormat24h,
@@ -300,10 +308,7 @@ class AppSettingsNotifier extends Notifier<AppSettings> {
       await supabase.from('profiles').update({
         'theme_mode': s.themeMode,
         'accent_color': toHex(s.accentColor),
-        'pref_glass_effects': s.glassEffects,
         'pref_default_calendar_view': s.defaultCalendarView,
-        'pref_start_week_on_monday': s.startWeekOnMonday,
-        'pref_show_weekend': s.showWeekend,
         'pref_haptic_feedback': s.hapticFeedback,
         'language': s.language,
         'pref_time_format_24h': s.timeFormat24h,

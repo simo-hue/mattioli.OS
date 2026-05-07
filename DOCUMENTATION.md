@@ -23,5 +23,24 @@
   - *Details*: Removed the magnifying glass (search) icon from the dashboard AppBar to simplify the interface as requested.
   - *Tech Notes*: Modified `dashboard_screen.dart` to remove the `Icons.search_rounded` container and associated spacing.
 
+- [2026-05-07 10:45]: **Dynamic User Greeting and Profile Avatar**
+  - *Details*: Updated the dashboard AppBar to dynamically display the user's first name and profile picture from their Supabase profile. Previously, these were hardcoded to "Simone" and a static GitHub URL.
+  - *Tech Notes*: Integrated `userProfileProvider` into `dashboard_screen.dart`. Replaced hardcoded strings and URLs with dynamic values from the watched provider.
+
+- [2026-05-07 11:30]: **Professional Light Mode (White Mode) Implementation**
+  - *Details*: Implemented a comprehensive and professional White Mode (Light Mode) across the entire application. Designed a premium light palette (Slate/Zinc) and migrated all UI components to a theme-aware architecture using `ThemeExtension`.
+  - *Tech Notes*:
+    - Created `AppColorsExtension` in `theme.dart` to provide semantic color access (e.g., `context.appColors.background`).
+    - Implemented `AppTheme.lightTheme` with refined typography (Google Fonts Inter) and a soft Slate palette.
+    - Updated `main.dart` to support dynamic switching between `theme` and `darkTheme` based on `settingsProvider`.
+    - Refactored high-visibility screens and widgets including `AppSettingsScreen`, `HomeScreen`, `ProfileScreen`, `StatisticsScreen`, `MacroGoalsScreen`, `BottomNavBar`, and `HabitCalendarWidget`.
+    - Ensured no "white-on-white" text bugs by auditing and replacing hardcoded `AppColors` with theme-aware values.
+
+- [2026-05-07 11:50]: **Cleanup: Removal of SINCRO & CLOUD Section**
+  - *Details*: Completely removed the "SINCRO & CLOUD" category and its sub-elements from the settings menu and localization files to streamline the interface and code.
+  - *Tech Notes*:
+    - Deleted the section in `app_settings_screen.dart`.
+    - Removed related translation keys in `localization.dart`.
+
 ## Current Status
-- **Next Step**: Work completed. The AppBar now only shows the user greeting/date and the profile logo.
+- **Next Step**: Audit secondary widgets and modals to ensure 100% theme coverage.

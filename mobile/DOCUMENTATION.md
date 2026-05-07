@@ -108,8 +108,26 @@
 - **Visuals**: Implemented `backDrawRodData` (tracks) and refined bar width/radius for better aesthetic alignment.
 - **Styling**: Improved axis labels and grid lines for clarity and professional appearance.
 
-## [2026-05-06 18:48]: Goals - Single Year KPI Layout Optimization
-*Details*: Reorganized the KPI cards in the single year stats view into two rows for better readability.
+## [2026-05-07 10:15]: Core - Full White Mode Transition & Professional Theme Migration
+*Details*: Implemented a comprehensive, professional White Mode and migrated all main screens/widgets from hardcoded dark colors to a dynamic, theme-aware system.
 *Tech Notes*:
-- Split the single `Row` containing four cards into two `Row` widgets with two cards each.
-- Added vertical spacing (`SizedBox`) between the rows.
+- **Dynamic Color System**: Updated `AppTheme` and `AppColors` to support both Light and Dark modes using `ThemeExtension` (`AppColorsExtension`).
+- **Screen Migration**: Fully migrated `AppSettingsScreen`, `PersonalInfoScreen`, `PrivacySettingsScreen`, `NotificationSettingsScreen`, and `AuthScreen` to use `context.appColors`.
+- **Contrast-Aware UI**: 
+  - Implemented dynamic luminance-based text/icon colors for primary buttons and habit pickers.
+  - Resolved "Black-on-Black" and "White-on-White" visibility issues in modals and charts.
+- **Statistics Overhaul**: Migrated all statistics tabs (Trend, Mood, Performance, Calendario, Miglioramento, etc.) to use theme-aware backgrounds, cards, and borders.
+- **Cleanup**: Removed deprecated settings items ("Sincro & Cloud", "Effetti Trasparenza", "Inizia di Lunedì", "Mostra Weekend") to streamline the UI.
+- **Single Habit Info & Activity Grid**: Migrated `info_tab_widget.dart` to use `context.appColors`. Fixed the "black boxes" in the top stats (Completamento, Miglior Serie, etc.) and the "Attività Recente" section.
+- **Global Stats Cleanup**: Migrated `global_habits_tab_widget.dart` and `global_trend_tab_widget.dart` to ensure consistent Light Mode aesthetics across all analytics views.
+- **Premium Carousel Alignment**: Standardized the design of "Correlazioni Positive" and "Correlazioni Negative" cards to match the "Abitudini Chiave" section. Increased card radius to 20px, added elevation shadows, and optimized horizontal scroll snapping for a more fluid experience.
+
+
+
+**Current Status**:
+- Full theme migration complete.
+- Contrast issues resolved.
+- "Black screen" bugs fixed.
+
+**Next Step**:
+- Final verification of all sub-screens and user feedback on the new White Mode aesthetics.

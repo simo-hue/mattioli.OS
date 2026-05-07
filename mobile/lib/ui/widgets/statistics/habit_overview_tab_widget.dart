@@ -83,9 +83,9 @@ class _StatCard extends StatelessWidget {
   Widget build(BuildContext context) {
     return Container(
       decoration: BoxDecoration(
-        color: AppColors.card,
+        color: context.appColors.card,
         borderRadius: BorderRadius.circular(12),
-        border: Border.all(color: AppColors.border, width: 1),
+        border: Border.all(color: context.appColors.border, width: 1),
       ),
       padding: const EdgeInsets.all(12),
       child: Column(
@@ -93,11 +93,11 @@ class _StatCard extends StatelessWidget {
         children: [
           Text(
             title,
-            style: const TextStyle(
+            style: TextStyle(
               fontFamily: 'Inter',
               fontSize: 10,
               fontWeight: FontWeight.w600,
-              color: AppColors.mutedForeground,
+              color: context.appColors.mutedForeground,
               letterSpacing: 0.5,
             ),
           ),
@@ -114,10 +114,10 @@ class _StatCard extends StatelessWidget {
           ),
           Text(
             subtitle,
-            style: const TextStyle(
+            style: TextStyle(
               fontFamily: 'Inter',
               fontSize: 10,
-              color: AppColors.mutedForeground,
+              color: context.appColors.mutedForeground,
             ),
           ),
         ],
@@ -142,9 +142,9 @@ class _TrendUltimi30Giorni extends StatelessWidget {
 
     return Container(
       decoration: BoxDecoration(
-        color: AppColors.card,
+        color: context.appColors.card,
         borderRadius: BorderRadius.circular(16),
-        border: Border.all(color: AppColors.border, width: 1),
+        border: Border.all(color: context.appColors.border, width: 1),
       ),
       padding: const EdgeInsets.all(16),
       child: Column(
@@ -152,11 +152,11 @@ class _TrendUltimi30Giorni extends StatelessWidget {
         children: [
           Text(
             context.l10n.translate('Trend Ultimi 30 Giorni'),
-            style: const TextStyle(
+            style: TextStyle(
               fontFamily: 'Inter',
               fontSize: 16,
               fontWeight: FontWeight.w700,
-              color: AppColors.foreground,
+              color: context.appColors.foreground,
             ),
           ),
           const SizedBox(height: 16),
@@ -177,7 +177,7 @@ class _TrendUltimi30Giorni extends StatelessWidget {
               } else if (status == 0) {
                 color = const Color(0xFFFF0000); // Red
               } else {
-                color = const Color(0xFF18181B); // Dark Grey
+                color = context.appColors.muted.withValues(alpha: 0.3); // Dynamic Grey
               }
 
               return Container(
@@ -193,11 +193,11 @@ class _TrendUltimi30Giorni extends StatelessWidget {
             children: [
               Container(width: 10, height: 10, decoration: BoxDecoration(color: Theme.of(context).colorScheme.primary, shape: BoxShape.circle)),
               const SizedBox(width: 6),
-              Text(context.l10n.translate('Completato'), style: const TextStyle(fontFamily: 'Inter', fontSize: 11, color: AppColors.mutedForeground)),
+              Text(context.l10n.translate('Completato'), style: TextStyle(fontFamily: 'Inter', fontSize: 11, color: context.appColors.mutedForeground)),
               const SizedBox(width: 16),
-              Container(width: 10, height: 10, decoration: const BoxDecoration(color: Color(0xFF18181B), shape: BoxShape.circle)),
+              Container(width: 10, height: 10, decoration: BoxDecoration(color: context.appColors.muted.withValues(alpha: 0.3), shape: BoxShape.circle)),
               const SizedBox(width: 6),
-              Text(context.l10n.translate('Non completato'), style: const TextStyle(fontFamily: 'Inter', fontSize: 11, color: AppColors.mutedForeground)),
+              Text(context.l10n.translate('Non completato'), style: TextStyle(fontFamily: 'Inter', fontSize: 11, color: context.appColors.mutedForeground)),
             ],
           )
         ],
@@ -215,9 +215,9 @@ class _CorrelazioniSection extends StatelessWidget {
     final primaryColor = Theme.of(context).colorScheme.primary;
     return Container(
       decoration: BoxDecoration(
-        color: AppColors.card,
+        color: context.appColors.card,
         borderRadius: BorderRadius.circular(16),
-        border: Border.all(color: AppColors.border, width: 1),
+        border: Border.all(color: context.appColors.border, width: 1),
       ),
       padding: const EdgeInsets.all(16),
       child: Column(
@@ -225,20 +225,20 @@ class _CorrelazioniSection extends StatelessWidget {
         children: [
           Text(
             '${context.l10n.translate('Correlazioni con')} "20 Flessioni 1"', // Mock title for now
-            style: const TextStyle(
+            style: TextStyle(
               fontFamily: 'Inter',
               fontSize: 16,
               fontWeight: FontWeight.w700,
-              color: AppColors.foreground,
+              color: context.appColors.foreground,
             ),
           ),
           const SizedBox(height: 4),
           Text(
             context.l10n.translate('Come questa abitudine si relaziona con le altre'),
-            style: const TextStyle(
+            style: TextStyle(
               fontFamily: 'Inter',
               fontSize: 12,
-              color: AppColors.mutedForeground,
+              color: context.appColors.mutedForeground,
             ),
           ),
           const SizedBox(height: 24),
@@ -335,10 +335,10 @@ class _CorrelazioniSection extends StatelessWidget {
                 Expanded(
                   child: Text(
                     context.l10n.translate('Info Correlazioni'),
-                    style: const TextStyle(
+                    style: TextStyle(
                       fontFamily: 'Inter',
                       fontSize: 11,
-                      color: AppColors.mutedForeground,
+                      color: context.appColors.mutedForeground,
                       height: 1.4,
                     ),
                   ),
@@ -376,7 +376,7 @@ class _CorrelazioneCard extends StatelessWidget {
     return Container(
       padding: const EdgeInsets.all(14),
       decoration: BoxDecoration(
-        color: AppColors.background,
+        color: context.appColors.background,
         borderRadius: BorderRadius.circular(12),
         border: Border.all(color: borderColor.withValues(alpha: 0.3), width: 1),
       ),
@@ -389,11 +389,11 @@ class _CorrelazioneCard extends StatelessWidget {
               const SizedBox(width: 10),
               Text(
                 habitName,
-                style: const TextStyle(
+                style: TextStyle(
                   fontFamily: 'Inter',
                   fontSize: 14,
                   fontWeight: FontWeight.w700,
-                  color: AppColors.foreground,
+                  color: context.appColors.foreground,
                 ),
               ),
             ],
@@ -412,14 +412,14 @@ class _CorrelazioneCard extends StatelessWidget {
                 ),
               ),
               const SizedBox(width: 6),
-              const Text('•', style: TextStyle(color: AppColors.mutedForeground, fontSize: 11)),
+              const Text('•', style: TextStyle(color: Colors.grey, fontSize: 11)),
               const SizedBox(width: 6),
               Text(
                 subtitle,
-                style: const TextStyle(
+                style: TextStyle(
                   fontFamily: 'Inter',
                   fontSize: 11,
-                  color: AppColors.mutedForeground,
+                  color: context.appColors.mutedForeground,
                 ),
               ),
             ],
@@ -427,10 +427,10 @@ class _CorrelazioneCard extends StatelessWidget {
           const SizedBox(height: 12),
           Text(
             description,
-            style: const TextStyle(
+            style: TextStyle(
               fontFamily: 'Inter',
               fontSize: 11,
-              color: AppColors.mutedForeground,
+              color: context.appColors.mutedForeground,
               height: 1.5,
             ),
           ),

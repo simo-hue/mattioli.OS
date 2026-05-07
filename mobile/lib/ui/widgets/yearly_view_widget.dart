@@ -51,7 +51,7 @@ class _YearlyViewWidgetState extends ConsumerState<YearlyViewWidget> {
       },
       child: Container(
         padding: const EdgeInsets.symmetric(vertical: 16, horizontal: 12),
-        decoration: AppTheme.glassPanelDecoration(radius: 14),
+        decoration: AppTheme.glassPanelDecoration(context, radius: 14),
         child: AnimatedSwitcher(
           duration: const Duration(milliseconds: 450),
           switchInCurve: Curves.easeOutQuart,
@@ -95,11 +95,11 @@ class _YearlyViewWidgetState extends ConsumerState<YearlyViewWidget> {
                   _NavButton(icon: Icons.chevron_left, onTap: _goToPrev),
                   Text(
                     '$_currentYear',
-                    style: const TextStyle(
+                    style: TextStyle(
                       fontFamily: 'Inter',
                       fontSize: 18,
                       fontWeight: FontWeight.w700,
-                      color: AppColors.foreground,
+                      color: context.appColors.foreground,
                       letterSpacing: -0.5,
                     ),
                   ),
@@ -173,11 +173,11 @@ class _MonthDensityWidget extends ConsumerWidget {
           width: 34,
           child: Text(
             label,
-            style: const TextStyle(
+            style: TextStyle(
               fontFamily: 'Inter',
               fontSize: 10,
               fontWeight: FontWeight.w700,
-              color: AppColors.mutedForeground,
+              color: context.appColors.mutedForeground,
               letterSpacing: 0.5,
             ),
           ),
@@ -195,6 +195,8 @@ class _MonthDensityWidget extends ConsumerWidget {
                 logs: logs,
                 now: now,
                 accentColor: Theme.of(context).colorScheme.primary,
+                foregroundColor: context.appColors.foreground,
+                borderColor: context.appColors.border,
               ),
             ),
           ),
@@ -212,6 +214,8 @@ class _MonthBarsPainter extends CustomPainter {
   final Map<String, dynamic> logs;
   final DateTime now;
   final Color accentColor;
+  final Color foregroundColor;
+  final Color borderColor;
 
   _MonthBarsPainter({
     required this.year,
@@ -221,6 +225,8 @@ class _MonthBarsPainter extends CustomPainter {
     required this.logs,
     required this.now,
     required this.accentColor,
+    required this.foregroundColor,
+    required this.borderColor,
   });
 
   @override
@@ -229,8 +235,8 @@ class _MonthBarsPainter extends CustomPainter {
     final double totalSpacing = barSpacing * 30;
     final double barWidth = (size.width - totalSpacing) / 31;
     
-    final Paint futurePaint = Paint()..color = Colors.white.withValues(alpha: 0.05);
-    final Paint emptyPaint = Paint()..color = AppColors.border.withValues(alpha: 0.2);
+    final Paint futurePaint = Paint()..color = foregroundColor.withValues(alpha: 0.05);
+    final Paint emptyPaint = Paint()..color = borderColor.withValues(alpha: 0.2);
 
     for (int dayIdx = 0; dayIdx < 31; dayIdx++) {
       final day = dayIdx + 1;
@@ -267,7 +273,7 @@ class _MonthBarsPainter extends CustomPainter {
 
       if (completionPct > 0) {
         final Paint barPaint = Paint()
-          ..color = HSLColor.fromAHSL(1.0, 142.0, 0.7, 0.5).toColor();
+          ..color = accentColor;
         canvas.drawRRect(rect, barPaint);
       } else {
         canvas.drawRRect(rect, emptyPaint);
@@ -300,7 +306,7 @@ class _NavButton extends StatelessWidget {
           color: Colors.transparent,
           borderRadius: BorderRadius.circular(6),
         ),
-        child: Icon(icon, size: 20, color: AppColors.foreground),
+        child: Icon(icon, size: 20, color: context.appColors.foreground),
       ),
     );
   }

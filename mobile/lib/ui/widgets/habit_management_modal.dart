@@ -101,8 +101,8 @@ class _HabitManagementModalState extends ConsumerState<HabitManagementModal> {
     showDialog(
       context: context,
       builder: (context) => AlertDialog(
-        backgroundColor: AppColors.card,
-        title: Text(context.l10n.translate('Scegli un colore'), style: const TextStyle(color: AppColors.foreground)),
+        backgroundColor: context.appColors.card,
+        title: Text(context.l10n.translate('Scegli un colore'), style: TextStyle(color: context.appColors.foreground)),
         content: SingleChildScrollView(
           child: ColorPicker(
             pickerColor: _selectedColor,
@@ -113,7 +113,7 @@ class _HabitManagementModalState extends ConsumerState<HabitManagementModal> {
         actions: [
           TextButton(
             onPressed: () => Navigator.pop(context),
-            child: Text(context.l10n.translate('confirm'), style: const TextStyle(color: AppColors.foreground)),
+            child: Text(context.l10n.translate('confirm'), style: TextStyle(color: context.appColors.foreground)),
           ),
         ],
       ),
@@ -127,9 +127,9 @@ class _HabitManagementModalState extends ConsumerState<HabitManagementModal> {
 
     return Container(
       height: MediaQuery.of(context).size.height * 0.85,
-      decoration: const BoxDecoration(
-        color: AppColors.card,
-        borderRadius: BorderRadius.vertical(top: Radius.circular(24)),
+      decoration: BoxDecoration(
+        color: context.appColors.card,
+        borderRadius: const BorderRadius.vertical(top: Radius.circular(24)),
       ),
       padding: EdgeInsets.fromLTRB(20, 12, 20, bottomPadding + 20),
       child: CustomScrollView(
@@ -145,27 +145,27 @@ class _HabitManagementModalState extends ConsumerState<HabitManagementModal> {
                     const SizedBox(width: 40),
                     Text(
                       context.l10n.translate('Gestione Abitudini'),
-                      style: const TextStyle(
+                      style: TextStyle(
                         fontFamily: 'Inter',
                         fontSize: 20,
                         fontWeight: FontWeight.w700,
-                        color: AppColors.foreground,
+                        color: context.appColors.foreground,
                         letterSpacing: -0.5,
                       ),
                     ),
                     IconButton(
                       onPressed: () => Navigator.pop(context),
-                      icon: const Icon(LucideIcons.x, color: AppColors.mutedForeground, size: 20),
+                      icon: Icon(LucideIcons.x, color: context.appColors.mutedForeground, size: 20),
                     ),
                   ],
                 ),
                 Text(
                   context.l10n.translate('Trascina per riordinare'),
                   textAlign: TextAlign.center,
-                  style: const TextStyle(
+                  style: TextStyle(
                     fontFamily: 'Inter',
                     fontSize: 13,
-                    color: AppColors.mutedForeground,
+                    color: context.appColors.mutedForeground,
                   ),
                 ),
                 const SizedBox(height: 24),
@@ -174,9 +174,9 @@ class _HabitManagementModalState extends ConsumerState<HabitManagementModal> {
                 Container(
                   padding: const EdgeInsets.all(16),
                   decoration: BoxDecoration(
-                    color: AppColors.cardElevated,
+                    color: context.appColors.card.withValues(alpha: 0.5),
                     borderRadius: BorderRadius.circular(16),
-                    border: Border.all(color: AppColors.border, width: 1),
+                    border: Border.all(color: context.appColors.border, width: 1),
                   ),
                   child: Column(
                     crossAxisAlignment: CrossAxisAlignment.start,
@@ -186,21 +186,21 @@ class _HabitManagementModalState extends ConsumerState<HabitManagementModal> {
                           Container(
                             width: 28,
                             height: 28,
-                            decoration: const BoxDecoration(
-                              color: AppColors.muted,
+                            decoration: BoxDecoration(
+                              color: context.appColors.border.withValues(alpha: 0.3),
                               shape: BoxShape.circle,
                             ),
-                            child: const Icon(LucideIcons.plus, size: 14, color: AppColors.foreground),
+                            child: Icon(LucideIcons.plus, size: 14, color: context.appColors.foreground),
                           ),
                           const SizedBox(width: 10),
                           Text(
                             _editingHabit != null 
                               ? context.l10n.translate('Modifica Abitudine') 
                               : context.l10n.translate('Aggiungi Abitudine'),
-                            style: const TextStyle(
+                            style: TextStyle(
                               fontWeight: FontWeight.w600,
                               fontSize: 15,
-                              color: AppColors.foreground,
+                              color: context.appColors.foreground,
                             ),
                           ),
                         ],
@@ -208,21 +208,21 @@ class _HabitManagementModalState extends ConsumerState<HabitManagementModal> {
                       const SizedBox(height: 16),
                       Text(
                         context.l10n.translate('Nome Abitudine').toUpperCase(),
-                        style: const TextStyle(fontSize: 10, fontWeight: FontWeight.w600, color: AppColors.mutedForeground, letterSpacing: 0.5),
+                        style: TextStyle(fontSize: 10, fontWeight: FontWeight.w600, color: context.appColors.mutedForeground, letterSpacing: 0.5),
                       ),
                       const SizedBox(height: 8),
                       TextField(
                         controller: _nameController,
-                        style: const TextStyle(color: AppColors.foreground, fontSize: 15),
+                        style: TextStyle(color: context.appColors.foreground, fontSize: 15),
                         decoration: InputDecoration(
                           hintText: context.l10n.translate('Es. Bere acqua, Leggere...'),
-                          hintStyle: TextStyle(color: AppColors.mutedForeground.withValues(alpha: 0.5)),
+                          hintStyle: TextStyle(color: context.appColors.mutedForeground.withValues(alpha: 0.5)),
                           filled: true,
-                          fillColor: Colors.black.withValues(alpha: 0.2),
+                          fillColor: context.appColors.background.withValues(alpha: 0.5),
                           contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
                           enabledBorder: OutlineInputBorder(
                             borderRadius: BorderRadius.circular(12),
-                            borderSide: const BorderSide(color: AppColors.border),
+                            borderSide: BorderSide(color: context.appColors.border),
                           ),
                           focusedBorder: OutlineInputBorder(
                             borderRadius: BorderRadius.circular(12),
@@ -233,7 +233,7 @@ class _HabitManagementModalState extends ConsumerState<HabitManagementModal> {
                       const SizedBox(height: 16),
                       Text(
                         context.l10n.translate('Colore').toUpperCase(),
-                        style: const TextStyle(fontSize: 10, fontWeight: FontWeight.w600, color: AppColors.mutedForeground, letterSpacing: 0.5),
+                        style: TextStyle(fontSize: 10, fontWeight: FontWeight.w600, color: context.appColors.mutedForeground, letterSpacing: 0.5),
                       ),
                       const SizedBox(height: 10),
                       Wrap(
@@ -251,7 +251,9 @@ class _HabitManagementModalState extends ConsumerState<HabitManagementModal> {
                                   color: color,
                                   shape: BoxShape.circle,
                                   border: Border.all(
-                                    color: isSelected ? Colors.white : Colors.transparent,
+                                    color: isSelected 
+                                      ? (color.computeLuminance() > 0.7 ? Colors.black.withValues(alpha: 0.2) : Colors.white) 
+                                      : Colors.transparent,
                                     width: 2,
                                   ),
                                   boxShadow: isSelected ? [
@@ -268,14 +270,16 @@ class _HabitManagementModalState extends ConsumerState<HabitManagementModal> {
                               width: 28,
                               height: 28,
                               decoration: BoxDecoration(
-                                color: AppColors.muted,
+                                color: context.appColors.border.withValues(alpha: 0.3),
                                 shape: BoxShape.circle,
                                 border: Border.all(
-                                  color: !_presetColors.contains(_selectedColor) ? Colors.white : Colors.transparent,
+                                  color: !_presetColors.contains(_selectedColor) 
+                                    ? (_selectedColor.computeLuminance() > 0.7 ? Colors.black.withValues(alpha: 0.2) : Colors.white) 
+                                    : Colors.transparent,
                                   width: 2,
                                 ),
                               ),
-                              child: const Icon(LucideIcons.plus, size: 14, color: AppColors.foreground),
+                              child: Icon(LucideIcons.plus, size: 14, color: context.appColors.foreground),
                             ),
                           ),
                         ],
@@ -288,7 +292,7 @@ class _HabitManagementModalState extends ConsumerState<HabitManagementModal> {
                           onPressed: _onSave,
                           style: ElevatedButton.styleFrom(
                             backgroundColor: Theme.of(context).colorScheme.primary,
-                            foregroundColor: AppColors.background,
+                            foregroundColor: _selectedColor.computeLuminance() > 0.5 ? Colors.black : Colors.white,
                             shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
                             elevation: 0,
                           ),
@@ -296,7 +300,10 @@ class _HabitManagementModalState extends ConsumerState<HabitManagementModal> {
                             _editingHabit != null 
                               ? context.l10n.translate('Salva') 
                               : context.l10n.translate('Aggiungi Abitudine'),
-                            style: const TextStyle(fontWeight: FontWeight.w600),
+                            style: TextStyle(
+                              fontWeight: FontWeight.w600,
+                              color: Theme.of(context).colorScheme.primary.computeLuminance() > 0.5 ? Colors.black : Colors.white,
+                            ),
                           ),
                         ),
                       ),
@@ -308,7 +315,7 @@ class _HabitManagementModalState extends ConsumerState<HabitManagementModal> {
                                _editingHabit = null;
                                _nameController.clear();
                              }),
-                             child: Text(context.l10n.translate('Annulla'), style: const TextStyle(color: AppColors.mutedForeground)),
+                             child: Text(context.l10n.translate('Annulla'), style: TextStyle(color: context.appColors.mutedForeground)),
                            ),
                          )
                     ],
@@ -382,17 +389,17 @@ class _HabitListItem extends StatelessWidget {
       margin: const EdgeInsets.only(bottom: 8),
       padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 14),
       decoration: BoxDecoration(
-        color: AppColors.cardElevated,
+        color: context.appColors.card.withValues(alpha: 0.5),
         borderRadius: BorderRadius.circular(12),
-        border: Border.all(color: AppColors.border, width: 1),
+        border: Border.all(color: context.appColors.border, width: 1),
       ),
       child: Row(
         children: [
           ReorderableDragStartListener(
             index: index,
-            child: const Padding(
-              padding: EdgeInsets.symmetric(vertical: 4, horizontal: 8),
-              child: Icon(LucideIcons.gripVertical, size: 16, color: AppColors.mutedForeground),
+            child: Padding(
+              padding: const EdgeInsets.symmetric(vertical: 4, horizontal: 8),
+              child: Icon(LucideIcons.gripVertical, size: 16, color: context.appColors.mutedForeground),
             ),
           ),
 
@@ -412,8 +419,8 @@ class _HabitListItem extends StatelessWidget {
           Expanded(
             child: Text(
               habit.title,
-              style: const TextStyle(
-                color: AppColors.foreground,
+              style: TextStyle(
+                color: context.appColors.foreground,
                 fontSize: 15,
                 fontWeight: FontWeight.w500,
               ),
@@ -421,7 +428,7 @@ class _HabitListItem extends StatelessWidget {
           ),
           IconButton(
             onPressed: onEdit,
-            icon: const Icon(LucideIcons.pencil, size: 16, color: AppColors.mutedForeground),
+            icon: Icon(LucideIcons.pencil, size: 16, color: context.appColors.mutedForeground),
           ),
           IconButton(
             onPressed: onDelete,

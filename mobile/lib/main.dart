@@ -96,7 +96,8 @@ class MattioliOSApp extends ConsumerWidget {
 
     return MaterialApp.router(
       title: 'Mattioli.OS',
-      theme: AppTheme.darkTheme(settings.accentColor),
+      theme: AppTheme.lightTheme(settings.accentColor),
+      darkTheme: AppTheme.darkTheme(settings.accentColor),
       themeMode: settings.themeMode == 'dark' ? ThemeMode.dark : ThemeMode.light,
       routerConfig: router,
       debugShowCheckedModeBanner: false,

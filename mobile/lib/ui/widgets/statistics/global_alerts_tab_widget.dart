@@ -81,15 +81,15 @@ class _AreeMiglioramentoSectionState extends State<_AreeMiglioramentoSection> {
       children: [
         Row(
           children: [
-            const Icon(LucideIcons.target, size: 16, color: AppColors.foreground),
+            Icon(LucideIcons.target, size: 16, color: context.appColors.foreground),
             const SizedBox(width: 8),
             Text(
               context.l10n.translate('Aree di Miglioramento'),
-              style: const TextStyle(
+              style: TextStyle(
                 fontFamily: 'Inter',
                 fontSize: 14,
                 fontWeight: FontWeight.w700,
-                color: AppColors.foreground,
+                color: context.appColors.foreground,
               ),
             ),
           ],
@@ -97,10 +97,10 @@ class _AreeMiglioramentoSectionState extends State<_AreeMiglioramentoSection> {
         const SizedBox(height: 4),
         Text(
           context.l10n.translate('Abitudini che richiedono più attenzione.'),
-          style: const TextStyle(
+          style: TextStyle(
             fontFamily: 'Inter',
             fontSize: 11,
-            color: AppColors.mutedForeground,
+            color: context.appColors.mutedForeground,
           ),
         ),
         const SizedBox(height: 16),
@@ -137,7 +137,7 @@ class _AreeMiglioramentoSectionState extends State<_AreeMiglioramentoSection> {
                 decoration: BoxDecoration(
                   color: isActive 
                       ? Theme.of(context).colorScheme.primary 
-                      : AppColors.mutedForeground.withValues(alpha: 0.3),
+                      : context.appColors.mutedForeground.withValues(alpha: 0.3),
                   borderRadius: BorderRadius.circular(3),
                 ),
               );
@@ -170,9 +170,9 @@ class _MiglioramentoCard extends StatelessWidget {
       width: 200,
       padding: const EdgeInsets.all(16),
       decoration: BoxDecoration(
-        color: AppColors.card,
+        color: context.appColors.card,
         borderRadius: BorderRadius.circular(16),
-        border: Border.all(color: AppColors.border, width: 1),
+        border: Border.all(color: context.appColors.border, width: 1),
       ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
@@ -192,11 +192,11 @@ class _MiglioramentoCard extends StatelessWidget {
                     Expanded(
                       child: Text(
                         title,
-                        style: const TextStyle(
+                        style: TextStyle(
                           fontFamily: 'Inter',
                           fontSize: 14,
                           fontWeight: FontWeight.w600,
-                          color: AppColors.foreground,
+                          color: context.appColors.foreground,
                         ),
                         maxLines: 1,
                         overflow: TextOverflow.ellipsis,
@@ -208,7 +208,7 @@ class _MiglioramentoCard extends StatelessWidget {
 
               Text(
                 '$successRate ${context.l10n.translate('succ.')}',
-                style: const TextStyle(
+                style: TextStyle(
                   fontFamily: 'Inter',
                   fontSize: 11,
                   fontWeight: FontWeight.w600,
@@ -221,7 +221,7 @@ class _MiglioramentoCard extends StatelessWidget {
           Row(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              const Icon(LucideIcons.circleAlert, size: 14, color: Color(0xFFEF4444)),
+              Icon(LucideIcons.circleAlert, size: 14, color: Color(0xFFEF4444)),
               const SizedBox(width: 8),
               Expanded(
                 child: Column(
@@ -229,7 +229,7 @@ class _MiglioramentoCard extends StatelessWidget {
                   children: [
                     Text(
                       context.l10n.translate('GIORNO NERO'),
-                      style: const TextStyle(
+                      style: TextStyle(
                         fontFamily: 'Inter',
                         fontSize: 10,
                         fontWeight: FontWeight.w800,
@@ -239,20 +239,20 @@ class _MiglioramentoCard extends StatelessWidget {
                     ),
                     Text(
                       day,
-                      style: const TextStyle(
+                      style: TextStyle(
                         fontFamily: 'Inter',
                         fontSize: 13,
                         fontWeight: FontWeight.w700,
-                        color: AppColors.foreground,
+                        color: context.appColors.foreground,
                       ),
                     ),
                     const SizedBox(height: 4),
                     RichText(
                       text: TextSpan(
-                        style: const TextStyle(fontFamily: 'Inter', fontSize: 11, color: AppColors.mutedForeground),
+                        style: TextStyle(fontFamily: 'Inter', fontSize: 11, color: context.appColors.mutedForeground),
                         children: [
                           TextSpan(text: '${context.l10n.translate('Solo')} '),
-                          TextSpan(text: dayCompletion, style: const TextStyle(color: Color(0xFFEF4444), fontWeight: FontWeight.w700)),
+                          TextSpan(text: dayCompletion, style: TextStyle(color: Color(0xFFEF4444), fontWeight: FontWeight.w700)),
                           TextSpan(text: ' ${context.l10n.translate('di completamento')}'),
                         ],
                       ),
@@ -320,15 +320,15 @@ class _AnalisiFallimentiSectionState extends State<_AnalisiFallimentiSection> {
       children: [
         Row(
           children: [
-            const Icon(LucideIcons.chartBar, size: 16, color: Color(0xFFF97316)),
+            Icon(LucideIcons.chartBar, size: 16, color: Color(0xFFF97316)),
             const SizedBox(width: 8),
             Text(
               context.l10n.translate('Analisi Fallimenti'),
-              style: const TextStyle(
+              style: TextStyle(
                 fontFamily: 'Inter',
                 fontSize: 14,
                 fontWeight: FontWeight.w700,
-                color: AppColors.foreground,
+                color: context.appColors.foreground,
               ),
             ),
           ],
@@ -336,10 +336,10 @@ class _AnalisiFallimentiSectionState extends State<_AnalisiFallimentiSection> {
         const SizedBox(height: 4),
         Text(
           context.l10n.translate('Frequenza e pattern dei tuoi giorni mancati.'),
-          style: const TextStyle(
+          style: TextStyle(
             fontFamily: 'Inter',
             fontSize: 11,
-            color: AppColors.mutedForeground,
+            color: context.appColors.mutedForeground,
           ),
         ),
         const SizedBox(height: 16),
@@ -373,7 +373,7 @@ class _AnalisiFallimentiSectionState extends State<_AnalisiFallimentiSection> {
                 decoration: BoxDecoration(
                   color: isActive 
                       ? const Color(0xFFF97316)
-                      : AppColors.mutedForeground.withValues(alpha: 0.3),
+                      : context.appColors.mutedForeground.withValues(alpha: 0.3),
                   borderRadius: BorderRadius.circular(3),
                 ),
               );
@@ -403,9 +403,9 @@ class _FailureDetailCard extends StatelessWidget {
     return Container(
       padding: const EdgeInsets.all(20),
       decoration: BoxDecoration(
-        color: AppColors.card,
+        color: context.appColors.card,
         borderRadius: BorderRadius.circular(20),
-        border: Border.all(color: AppColors.border, width: 1),
+        border: Border.all(color: context.appColors.border, width: 1),
       ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
@@ -414,7 +414,7 @@ class _FailureDetailCard extends StatelessWidget {
             children: [
               Container(width: 8, height: 8, decoration: BoxDecoration(color: color, shape: BoxShape.circle)),
               const SizedBox(width: 8),
-              Text(title, style: const TextStyle(fontFamily: 'Inter', fontSize: 15, fontWeight: FontWeight.w700, color: AppColors.foreground)),
+              Text(title, style: TextStyle(fontFamily: 'Inter', fontSize: 15, fontWeight: FontWeight.w700, color: context.appColors.foreground)),
             ],
           ),
           const Spacer(),
@@ -467,15 +467,15 @@ class _PatternRecuperoSectionState extends State<_PatternRecuperoSection> {
       children: [
         Row(
           children: [
-            const Icon(LucideIcons.calendarClock, size: 16, color: AppColors.foreground),
+            Icon(LucideIcons.calendarClock, size: 16, color: context.appColors.foreground),
             const SizedBox(width: 8),
             Text(
               context.l10n.translate('Pattern di Recupero'),
-              style: const TextStyle(
+              style: TextStyle(
                 fontFamily: 'Inter',
                 fontSize: 14,
                 fontWeight: FontWeight.w700,
-                color: AppColors.foreground,
+                color: context.appColors.foreground,
               ),
             ),
           ],
@@ -483,10 +483,10 @@ class _PatternRecuperoSectionState extends State<_PatternRecuperoSection> {
         const SizedBox(height: 4),
         Text(
           context.l10n.translate('Quanto velocemente torni in carreggiata dopo un errore.'),
-          style: const TextStyle(
+          style: TextStyle(
             fontFamily: 'Inter',
             fontSize: 11,
-            color: AppColors.mutedForeground,
+            color: context.appColors.mutedForeground,
           ),
         ),
         const SizedBox(height: 16),
@@ -495,15 +495,15 @@ class _PatternRecuperoSectionState extends State<_PatternRecuperoSection> {
         Container(
           padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
           decoration: BoxDecoration(
-            color: AppColors.card,
+            color: context.appColors.card,
             borderRadius: BorderRadius.circular(12),
-            border: Border.all(color: AppColors.border, width: 1),
+            border: Border.all(color: context.appColors.border, width: 1),
           ),
           child: Row(
             mainAxisAlignment: MainAxisAlignment.spaceBetween,
             children: [
-              Text(context.l10n.translate('Tempo Medio Recupero'), style: const TextStyle(fontFamily: 'Inter', fontSize: 12, color: AppColors.mutedForeground)),
-              Text('6 ${context.l10n.translate('giorni')}', style: const TextStyle(fontFamily: 'Inter', fontSize: 14, fontWeight: FontWeight.w800, color: AppColors.foreground)),
+              Text(context.l10n.translate('Tempo Medio Recupero'), style: TextStyle(fontFamily: 'Inter', fontSize: 12, color: context.appColors.mutedForeground)),
+              Text('6 ${context.l10n.translate('giorni')}', style: TextStyle(fontFamily: 'Inter', fontSize: 14, fontWeight: FontWeight.w800, color: context.appColors.foreground)),
             ],
           ),
         ),
@@ -539,7 +539,7 @@ class _PatternRecuperoSectionState extends State<_PatternRecuperoSection> {
                 decoration: BoxDecoration(
                   color: isActive 
                       ? Theme.of(context).colorScheme.primary
-                      : AppColors.mutedForeground.withValues(alpha: 0.3),
+                      : context.appColors.mutedForeground.withValues(alpha: 0.3),
                   borderRadius: BorderRadius.circular(3),
                 ),
               );
@@ -569,9 +569,9 @@ class _RecoveryDetailCard extends StatelessWidget {
     return Container(
       padding: const EdgeInsets.all(16),
       decoration: BoxDecoration(
-        color: AppColors.card,
+        color: context.appColors.card,
         borderRadius: BorderRadius.circular(20),
-        border: Border.all(color: AppColors.border, width: 1),
+        border: Border.all(color: context.appColors.border, width: 1),
       ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
@@ -584,7 +584,7 @@ class _RecoveryDetailCard extends StatelessWidget {
                 children: [
                   Container(width: 6, height: 6, decoration: BoxDecoration(color: color, shape: BoxShape.circle)),
                   const SizedBox(width: 8),
-                  Text(title, style: const TextStyle(fontFamily: 'Inter', fontSize: 14, fontWeight: FontWeight.w700, color: AppColors.foreground)),
+                  Text(title, style: TextStyle(fontFamily: 'Inter', fontSize: 14, fontWeight: FontWeight.w700, color: context.appColors.foreground)),
                 ],
               ),
               Text(time, style: TextStyle(fontFamily: 'Inter', fontSize: 14, fontWeight: FontWeight.w900, color: color)),
@@ -618,7 +618,7 @@ class _StatMiniItem extends StatelessWidget {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        Text(label, style: const TextStyle(fontFamily: 'Inter', fontSize: 8, fontWeight: FontWeight.w800, color: AppColors.mutedForeground, letterSpacing: 0.5)),
+        Text(label, style: TextStyle(fontFamily: 'Inter', fontSize: 8, fontWeight: FontWeight.w800, color: context.appColors.mutedForeground, letterSpacing: 0.5)),
         const SizedBox(height: 2),
         Text(value, style: TextStyle(fontFamily: 'Inter', fontSize: 14, fontWeight: FontWeight.w900, color: color)),
       ],
@@ -662,15 +662,15 @@ class _ConfrontoPerformanceSectionState extends State<_ConfrontoPerformanceSecti
       children: [
         Row(
           children: [
-            const Icon(LucideIcons.trendingUp, size: 16, color: AppColors.foreground),
+            Icon(LucideIcons.trendingUp, size: 16, color: context.appColors.foreground),
             const SizedBox(width: 8),
             Text(
               context.l10n.translate('Confronto Performance'),
-              style: const TextStyle(
+              style: TextStyle(
                 fontFamily: 'Inter',
                 fontSize: 14,
                 fontWeight: FontWeight.w700,
-                color: AppColors.foreground,
+                color: context.appColors.foreground,
               ),
             ),
           ],
@@ -678,10 +678,10 @@ class _ConfrontoPerformanceSectionState extends State<_ConfrontoPerformanceSecti
         const SizedBox(height: 4),
         Text(
           context.l10n.translate('Compara le tue migliori performance con le peggiori.'),
-          style: const TextStyle(
+          style: TextStyle(
             fontFamily: 'Inter',
             fontSize: 11,
-            color: AppColors.mutedForeground,
+            color: context.appColors.mutedForeground,
           ),
         ),
         const SizedBox(height: 16),
@@ -715,7 +715,7 @@ class _ConfrontoPerformanceSectionState extends State<_ConfrontoPerformanceSecti
                 decoration: BoxDecoration(
                   color: isActive 
                       ? Theme.of(context).colorScheme.primary 
-                      : AppColors.mutedForeground.withValues(alpha: 0.3),
+                      : context.appColors.mutedForeground.withValues(alpha: 0.3),
                   borderRadius: BorderRadius.circular(3),
                 ),
               );
@@ -745,9 +745,9 @@ class _PerformanceComparisonCard extends StatelessWidget {
     return Container(
       padding: const EdgeInsets.all(20),
       decoration: BoxDecoration(
-        color: AppColors.card,
+        color: context.appColors.card,
         borderRadius: BorderRadius.circular(20),
-        border: Border.all(color: AppColors.border, width: 1),
+        border: Border.all(color: context.appColors.border, width: 1),
       ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
@@ -759,13 +759,13 @@ class _PerformanceComparisonCard extends StatelessWidget {
                 children: [
                   Container(width: 6, height: 6, decoration: const BoxDecoration(color: Color(0xFFEF4444), shape: BoxShape.circle)),
                   const SizedBox(width: 8),
-                  Text(title, style: const TextStyle(fontFamily: 'Inter', fontSize: 15, fontWeight: FontWeight.w700, color: AppColors.foreground)),
+                  Text(title, style: TextStyle(fontFamily: 'Inter', fontSize: 15, fontWeight: FontWeight.w700, color: context.appColors.foreground)),
                 ],
               ),
               Container(
                 padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
                 decoration: BoxDecoration(color: const Color(0xFFF97316).withValues(alpha: 0.1), borderRadius: BorderRadius.circular(6)),
-                child: Text(context.l10n.translate('Attenzione'), style: const TextStyle(fontFamily: 'Inter', fontSize: 10, fontWeight: FontWeight.w800, color: Color(0xFFF97316))),
+                child: Text(context.l10n.translate('Attenzione'), style: TextStyle(fontFamily: 'Inter', fontSize: 10, fontWeight: FontWeight.w800, color: Color(0xFFF97316))),
               ),
             ],
           ),
@@ -776,10 +776,10 @@ class _PerformanceComparisonCard extends StatelessWidget {
           const Spacer(),
           RichText(
             text: TextSpan(
-              style: const TextStyle(fontFamily: 'Inter', fontSize: 11, color: AppColors.mutedForeground),
+              style: TextStyle(fontFamily: 'Inter', fontSize: 11, color: context.appColors.mutedForeground),
               children: [
                 const TextSpan(text: 'Gap: '),
-                TextSpan(text: '${(gap * 100).toInt()}%', style: const TextStyle(color: AppColors.foreground, fontWeight: FontWeight.w800)),
+                TextSpan(text: '${(gap * 100).toInt()}%', style: TextStyle(color: context.appColors.foreground, fontWeight: FontWeight.w800)),
               ],
             ),
           ),
@@ -805,7 +805,7 @@ class _PerformanceBar extends StatelessWidget {
         Row(
           mainAxisAlignment: MainAxisAlignment.spaceBetween,
           children: [
-            Text(label, style: const TextStyle(fontFamily: 'Inter', fontSize: 9, fontWeight: FontWeight.w800, color: AppColors.mutedForeground, letterSpacing: 0.5)),
+            Text(label, style: TextStyle(fontFamily: 'Inter', fontSize: 9, fontWeight: FontWeight.w800, color: context.appColors.mutedForeground, letterSpacing: 0.5)),
             Text(value, style: TextStyle(fontFamily: 'Inter', fontSize: 12, fontWeight: FontWeight.w800, color: color)),
           ],
         ),
@@ -876,15 +876,15 @@ class _SuggerimentiPraticiSectionState extends State<_SuggerimentiPraticiSection
       children: [
         Row(
           children: [
-            const Icon(LucideIcons.lightbulb, size: 16, color: Color(0xFFEAB308)),
+            Icon(LucideIcons.lightbulb, size: 16, color: Color(0xFFEAB308)),
             const SizedBox(width: 8),
             Text(
               context.l10n.translate('Suggerimenti Pratici'),
-              style: const TextStyle(
+              style: TextStyle(
                 fontFamily: 'Inter',
                 fontSize: 14,
                 fontWeight: FontWeight.w700,
-                color: AppColors.foreground,
+                color: context.appColors.foreground,
               ),
             ),
           ],
@@ -892,10 +892,10 @@ class _SuggerimentiPraticiSectionState extends State<_SuggerimentiPraticiSection
         const SizedBox(height: 4),
         Text(
           context.l10n.translate('Consigli basati sui tuoi dati per migliorare la costanza.'),
-          style: const TextStyle(
+          style: TextStyle(
             fontFamily: 'Inter',
             fontSize: 11,
-            color: AppColors.mutedForeground,
+            color: context.appColors.mutedForeground,
           ),
         ),
         const SizedBox(height: 16),
@@ -929,7 +929,7 @@ class _SuggerimentiPraticiSectionState extends State<_SuggerimentiPraticiSection
                 decoration: BoxDecoration(
                   color: isActive 
                       ? const Color(0xFFEAB308)
-                      : AppColors.mutedForeground.withValues(alpha: 0.3),
+                      : context.appColors.mutedForeground.withValues(alpha: 0.3),
                   borderRadius: BorderRadius.circular(3),
                 ),
               );
@@ -961,9 +961,9 @@ class _SuggerimentoCard extends StatelessWidget {
     return Container(
       padding: const EdgeInsets.all(20),
       decoration: BoxDecoration(
-        color: AppColors.card,
+        color: context.appColors.card,
         borderRadius: BorderRadius.circular(20),
-        border: Border.all(color: AppColors.border, width: 1),
+        border: Border.all(color: context.appColors.border, width: 1),
       ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
@@ -979,7 +979,7 @@ class _SuggerimentoCard extends StatelessWidget {
               Expanded(
                 child: Text(
                   title,
-                  style: const TextStyle(fontFamily: 'Inter', fontSize: 14, fontWeight: FontWeight.w700, color: AppColors.foreground),
+                  style: TextStyle(fontFamily: 'Inter', fontSize: 14, fontWeight: FontWeight.w700, color: context.appColors.foreground),
                   maxLines: 1,
                   overflow: TextOverflow.ellipsis,
                 ),
@@ -990,7 +990,7 @@ class _SuggerimentoCard extends StatelessWidget {
           Expanded(
             child: Text(
               desc,
-              style: const TextStyle(fontFamily: 'Inter', fontSize: 12, color: AppColors.mutedForeground, height: 1.4),
+              style: TextStyle(fontFamily: 'Inter', fontSize: 12, color: context.appColors.mutedForeground, height: 1.4),
               maxLines: 2,
               overflow: TextOverflow.ellipsis,
             ),

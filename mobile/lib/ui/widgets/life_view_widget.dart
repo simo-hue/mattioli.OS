@@ -23,27 +23,27 @@ class LifeViewWidget extends ConsumerWidget {
 
     return Container(
       padding: const EdgeInsets.symmetric(vertical: 24, horizontal: 16),
-      decoration: AppTheme.glassPanelDecoration(radius: 14),
+      decoration: AppTheme.glassPanelDecoration(context, radius: 14),
       child: Column(
         children: [
           // Title
-          const Text(
+          Text(
             'La Mia Vita Produttiva',
             style: TextStyle(
               fontFamily: 'Inter',
               fontSize: 20,
               fontWeight: FontWeight.w700,
-              color: AppColors.foreground,
+              color: context.appColors.foreground,
               letterSpacing: -0.5,
             ),
           ),
           const SizedBox(height: 4),
           Text(
             '$birthYear - $endYear • ${totalMonths.toString().replaceAllMapped(RegExp(r'(\d{1,3})(?=(\d{3})+(?!\d))'), (Match m) => '${m[1]}.')} mesi',
-            style: const TextStyle(
+            style: TextStyle(
               fontFamily: 'Inter',
               fontSize: 12,
-              color: AppColors.mutedForeground,
+              color: context.appColors.mutedForeground,
             ),
           ),
           const SizedBox(height: 16),
@@ -63,9 +63,9 @@ class LifeViewWidget extends ConsumerWidget {
           Container(
             padding: const EdgeInsets.symmetric(vertical: 20, horizontal: 16),
             decoration: BoxDecoration(
-              color: AppColors.card.withValues(alpha: 0.3),
+              color: context.appColors.card.withValues(alpha: 0.3),
               borderRadius: BorderRadius.circular(20),
-              border: Border.all(color: AppColors.border.withValues(alpha: 0.5), width: 1),
+              border: Border.all(color: context.appColors.border.withValues(alpha: 0.5), width: 1),
             ),
             child: Row(
               mainAxisAlignment: MainAxisAlignment.spaceAround,
@@ -90,6 +90,8 @@ class LifeViewWidget extends ConsumerWidget {
                       livedMonths: livedMonths,
                       currentMonth: livedMonths,
                       accentColor: Theme.of(context).colorScheme.primary,
+                      borderColor: context.appColors.border,
+                      foregroundColor: context.appColors.foreground,
                     ),
                   );
                 },
@@ -101,8 +103,8 @@ class LifeViewWidget extends ConsumerWidget {
           Row(
             mainAxisAlignment: MainAxisAlignment.spaceBetween,
             children: [
-              Text('nascita', style: TextStyle(fontSize: 10, fontWeight: FontWeight.w600, color: AppColors.mutedForeground.withValues(alpha: 0.4), letterSpacing: 0.5)),
-              Text('orizzonte (85 anni)', style: TextStyle(fontSize: 10, fontWeight: FontWeight.w600, color: AppColors.mutedForeground.withValues(alpha: 0.4), letterSpacing: 0.5)),
+              Text('nascita', style: TextStyle(fontSize: 10, fontWeight: FontWeight.w600, color: context.appColors.mutedForeground.withValues(alpha: 0.4), letterSpacing: 0.5)),
+              Text('orizzonte (85 anni)', style: TextStyle(fontSize: 10, fontWeight: FontWeight.w600, color: context.appColors.mutedForeground.withValues(alpha: 0.4), letterSpacing: 0.5)),
             ],
           )
 
@@ -130,7 +132,7 @@ class _LegendItem extends StatelessWidget {
         const SizedBox(width: 6),
         Text(
           label,
-          style: const TextStyle(fontSize: 11, color: AppColors.mutedForeground),
+          style: TextStyle(fontSize: 11, color: context.appColors.mutedForeground),
         ),
       ],
     );
@@ -149,20 +151,20 @@ class _StatItem extends StatelessWidget {
       children: [
         Text(
           value,
-          style: const TextStyle(
+          style: TextStyle(
             fontSize: 22,
             fontWeight: FontWeight.w700,
-            color: AppColors.foreground,
+            color: context.appColors.foreground,
             letterSpacing: -0.5,
           ),
         ),
         const SizedBox(height: 4),
         Text(
           label,
-          style: const TextStyle(
+          style: TextStyle(
             fontSize: 9,
             fontWeight: FontWeight.w600,
-            color: AppColors.mutedForeground,
+            color: context.appColors.mutedForeground,
             letterSpacing: 0.5,
           ),
         ),
@@ -176,12 +178,16 @@ class _LifeGridPainter extends CustomPainter {
   final int livedMonths;
   final int currentMonth;
   final Color accentColor;
+  final Color borderColor;
+  final Color foregroundColor;
 
   _LifeGridPainter({
     required this.totalMonths,
     required this.livedMonths,
     required this.currentMonth,
     required this.accentColor,
+    required this.borderColor,
+    required this.foregroundColor,
   });
 
   @override
@@ -196,10 +202,10 @@ class _LifeGridPainter extends CustomPainter {
       ..color = const Color(0xFF10B981)
       ..style = PaintingStyle.fill;
     final Paint currentStrokePaint = Paint()
-      ..color = Colors.white
+      ..color = foregroundColor
       ..style = PaintingStyle.stroke
       ..strokeWidth = 1.5;
-    final Paint remainingPaint = Paint()..color = AppColors.border.withValues(alpha: 0.2);
+    final Paint remainingPaint = Paint()..color = borderColor.withValues(alpha: 0.2);
 
     for (int i = 0; i < totalMonths; i++) {
       final int row = i ~/ dotsPerRow;

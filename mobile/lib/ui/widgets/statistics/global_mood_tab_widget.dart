@@ -55,20 +55,20 @@ class _GlobalMoodTabWidgetState extends State<GlobalMoodTabWidget> {
                 children: [
                   Text(
                     context.l10n.translate('Wellness vs Output'),
-                    style: const TextStyle(
+                    style: TextStyle(
                       fontFamily: 'Inter',
                       fontSize: 20,
                       fontWeight: FontWeight.w900,
-                      color: AppColors.foreground,
+                      color: context.appColors.foreground,
                       letterSpacing: -0.8,
                     ),
                   ),
                   Text(
                     context.l10n.translate('Correlazione tra benessere e abitudini'),
-                    style: const TextStyle(
+                    style: TextStyle(
                       fontFamily: 'Inter',
                       fontSize: 12,
-                      color: AppColors.mutedForeground,
+                      color: context.appColors.mutedForeground,
                       fontWeight: FontWeight.w500,
                     ),
                   ),
@@ -89,9 +89,9 @@ class _GlobalMoodTabWidgetState extends State<GlobalMoodTabWidget> {
       width: double.infinity,
       padding: const EdgeInsets.all(4),
       decoration: BoxDecoration(
-        color: AppColors.card.withValues(alpha: 0.3),
+        color: context.appColors.card.withValues(alpha: 0.3),
         borderRadius: BorderRadius.circular(14),
-        border: Border.all(color: AppColors.border, width: 1),
+        border: Border.all(color: context.appColors.border, width: 1),
       ),
       child: Row(
         children: ranges.map((range) {
@@ -114,7 +114,7 @@ class _GlobalMoodTabWidgetState extends State<GlobalMoodTabWidget> {
                     fontFamily: 'Inter',
                     fontSize: 12,
                     fontWeight: isSelected ? FontWeight.w800 : FontWeight.w600,
-                    color: isSelected ? AppColors.background : AppColors.mutedForeground,
+                    color: isSelected ? context.appColors.background : context.appColors.mutedForeground,
                   ),
                 ),
               ),
@@ -179,7 +179,7 @@ class _GlobalMoodTabWidgetState extends State<GlobalMoodTabWidget> {
     return Container(
       height: 300,
       padding: const EdgeInsets.fromLTRB(16, 24, 20, 16),
-      decoration: AppTheme.glassPanelDecoration(radius: 24),
+      decoration: AppTheme.glassPanelDecoration(context, radius: 24),
       child: Column(
         children: [
           Expanded(
@@ -190,7 +190,7 @@ class _GlobalMoodTabWidgetState extends State<GlobalMoodTabWidget> {
                   drawVerticalLine: false,
                   horizontalInterval: 2,
                   getDrawingHorizontalLine: (value) => FlLine(
-                    color: AppColors.border.withValues(alpha: 0.1),
+                    color: context.appColors.border.withValues(alpha: 0.1),
                     strokeWidth: 1,
                   ),
                 ),
@@ -208,8 +208,8 @@ class _GlobalMoodTabWidgetState extends State<GlobalMoodTabWidget> {
                           axisSide: meta.axisSide,
                           child: Text(
                             value.toInt().toString(),
-                            style: const TextStyle(
-                              color: AppColors.mutedForeground,
+                            style: TextStyle(
+                              color: context.appColors.mutedForeground,
                               fontSize: 10,
                               fontWeight: FontWeight.w700,
                             ),
@@ -230,8 +230,8 @@ class _GlobalMoodTabWidgetState extends State<GlobalMoodTabWidget> {
                             space: 8,
                             child: Text(
                               dates[value.toInt()],
-                              style: const TextStyle(
-                                color: AppColors.mutedForeground,
+                              style: TextStyle(
+                                color: context.appColors.mutedForeground,
                                 fontSize: 9,
                                 fontWeight: FontWeight.w600,
                               ),
@@ -308,14 +308,14 @@ class _GlobalMoodTabWidgetState extends State<GlobalMoodTabWidget> {
                 ],
                 lineTouchData: LineTouchData(
                   touchTooltipData: LineTouchTooltipData(
-                    getTooltipColor: (touchedSpot) => AppColors.card.withValues(alpha: 0.9),
+                    getTooltipColor: (touchedSpot) => context.appColors.card.withValues(alpha: 0.9),
                     tooltipRoundedRadius: 8,
                     getTooltipItems: (List<LineBarSpot> touchedBarSpots) {
                       return touchedBarSpots.map((barSpot) {
                         final flSpot = barSpot;
                         return LineTooltipItem(
                           '${flSpot.y.toStringAsFixed(1)}',
-                          const TextStyle(color: AppColors.foreground, fontWeight: FontWeight.bold, fontSize: 12),
+                          TextStyle(color: context.appColors.foreground, fontWeight: FontWeight.bold, fontSize: 12),
                         );
                       }).toList();
                     },
@@ -352,7 +352,7 @@ class _GlobalMoodTabWidgetState extends State<GlobalMoodTabWidget> {
         const SizedBox(width: 8),
         Text(
           label,
-          style: const TextStyle(color: AppColors.mutedForeground, fontSize: 10, fontWeight: FontWeight.w700, letterSpacing: 0.3),
+          style: TextStyle(color: context.appColors.mutedForeground, fontSize: 10, fontWeight: FontWeight.w700, letterSpacing: 0.3),
         ),
       ],
     );
@@ -399,11 +399,11 @@ class _MoodSensitiveSectionState extends State<_MoodSensitiveSection> {
             const SizedBox(width: 8),
             Text(
               context.l10n.translate('Sensibili al Mood'),
-              style: const TextStyle(
+              style: TextStyle(
                 fontFamily: 'Inter',
                 fontSize: 14,
                 fontWeight: FontWeight.w700,
-                color: AppColors.foreground,
+                color: context.appColors.foreground,
               ),
             ),
           ],
@@ -411,10 +411,10 @@ class _MoodSensitiveSectionState extends State<_MoodSensitiveSection> {
         const SizedBox(height: 4),
         Text(
           context.l10n.translate('Richiedono un buon mood per essere completate.'),
-          style: const TextStyle(
+          style: TextStyle(
             fontFamily: 'Inter',
             fontSize: 11,
-            color: AppColors.mutedForeground,
+            color: context.appColors.mutedForeground,
           ),
         ),
         const SizedBox(height: 16),
@@ -448,7 +448,7 @@ class _MoodSensitiveSectionState extends State<_MoodSensitiveSection> {
                 decoration: BoxDecoration(
                   color: isActive 
                       ? const Color(0xFFF59E0B)
-                      : AppColors.mutedForeground.withValues(alpha: 0.3),
+                      : context.appColors.mutedForeground.withValues(alpha: 0.3),
                   borderRadius: BorderRadius.circular(3),
                 ),
               );
@@ -480,9 +480,9 @@ class _MoodSensitiveCard extends StatelessWidget {
     return Container(
       padding: const EdgeInsets.all(20),
       decoration: BoxDecoration(
-        color: AppColors.card,
+        color: context.appColors.card,
         borderRadius: BorderRadius.circular(20),
-        border: Border.all(color: AppColors.border, width: 1),
+        border: Border.all(color: context.appColors.border, width: 1),
       ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
@@ -494,13 +494,13 @@ class _MoodSensitiveCard extends StatelessWidget {
                 children: [
                   Container(width: 8, height: 8, decoration: BoxDecoration(color: color, shape: BoxShape.circle)),
                   const SizedBox(width: 8),
-                  Text(title, style: const TextStyle(fontFamily: 'Inter', fontSize: 15, fontWeight: FontWeight.w700, color: AppColors.foreground)),
+                  Text(title, style: TextStyle(fontFamily: 'Inter', fontSize: 15, fontWeight: FontWeight.w700, color: context.appColors.foreground)),
                 ],
               ),
               Column(
                 crossAxisAlignment: CrossAxisAlignment.end,
                 children: [
-                  const Text('DROP', style: TextStyle(fontFamily: 'Inter', fontSize: 8, fontWeight: FontWeight.w800, color: AppColors.mutedForeground, letterSpacing: 0.5)),
+                  Text('DROP', style: TextStyle(fontFamily: 'Inter', fontSize: 8, fontWeight: FontWeight.w800, color: context.appColors.mutedForeground, letterSpacing: 0.5)),
                   Text('$drop%', style: const TextStyle(fontFamily: 'Inter', fontSize: 18, fontWeight: FontWeight.w900, color: Color(0xFFF97316))),
                 ],
               ),
@@ -560,11 +560,11 @@ class _ResilientHabitsSectionState extends State<_ResilientHabitsSection> {
             const SizedBox(width: 8),
             Text(
               context.l10n.translate('Resilienti'),
-              style: const TextStyle(
+              style: TextStyle(
                 fontFamily: 'Inter',
                 fontSize: 14,
                 fontWeight: FontWeight.w700,
-                color: AppColors.foreground,
+                color: context.appColors.foreground,
               ),
             ),
           ],
@@ -572,10 +572,10 @@ class _ResilientHabitsSectionState extends State<_ResilientHabitsSection> {
         const SizedBox(height: 4),
         Text(
           context.l10n.translate('Mantenute anche con mood ed energia bassi.'),
-          style: const TextStyle(
+          style: TextStyle(
             fontFamily: 'Inter',
             fontSize: 11,
-            color: AppColors.mutedForeground,
+            color: context.appColors.mutedForeground,
           ),
         ),
         const SizedBox(height: 16),
@@ -609,7 +609,7 @@ class _ResilientHabitsSectionState extends State<_ResilientHabitsSection> {
                 decoration: BoxDecoration(
                   color: isActive 
                       ? Theme.of(context).colorScheme.primary 
-                      : AppColors.mutedForeground.withValues(alpha: 0.3),
+                      : context.appColors.mutedForeground.withValues(alpha: 0.3),
                   borderRadius: BorderRadius.circular(3),
                 ),
               );
@@ -639,9 +639,9 @@ class _ResilientCard extends StatelessWidget {
     return Container(
       padding: const EdgeInsets.all(16),
       decoration: BoxDecoration(
-        color: AppColors.card,
+        color: context.appColors.card,
         borderRadius: BorderRadius.circular(20),
-        border: Border.all(color: AppColors.border, width: 1),
+        border: Border.all(color: context.appColors.border, width: 1),
       ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
@@ -654,7 +654,7 @@ class _ResilientCard extends StatelessWidget {
                 children: [
                   Container(width: 6, height: 6, decoration: BoxDecoration(color: color, shape: BoxShape.circle)),
                   const SizedBox(width: 8),
-                  Text(title, style: const TextStyle(fontFamily: 'Inter', fontSize: 14, fontWeight: FontWeight.w700, color: AppColors.foreground)),
+                  Text(title, style: TextStyle(fontFamily: 'Inter', fontSize: 14, fontWeight: FontWeight.w700, color: context.appColors.foreground)),
                 ],
               ),
               Row(
@@ -735,11 +735,11 @@ class _MoodSuggestionsSectionState extends State<_MoodSuggestionsSection> {
             const SizedBox(width: 8),
             Text(
               context.l10n.translate('Suggerimenti'),
-              style: const TextStyle(
+              style: TextStyle(
                 fontFamily: 'Inter',
                 fontSize: 14,
                 fontWeight: FontWeight.w700,
-                color: AppColors.foreground,
+                color: context.appColors.foreground,
               ),
             ),
           ],
@@ -747,10 +747,10 @@ class _MoodSuggestionsSectionState extends State<_MoodSuggestionsSection> {
         const SizedBox(height: 4),
         Text(
           context.l10n.translate('Consigli basati sul tuo benessere.'),
-          style: const TextStyle(
+          style: TextStyle(
             fontFamily: 'Inter',
             fontSize: 11,
-            color: AppColors.mutedForeground,
+            color: context.appColors.mutedForeground,
           ),
         ),
         const SizedBox(height: 16),
@@ -784,7 +784,7 @@ class _MoodSuggestionsSectionState extends State<_MoodSuggestionsSection> {
                 decoration: BoxDecoration(
                   color: isActive 
                       ? const Color(0xFFFBBF24)
-                      : AppColors.mutedForeground.withValues(alpha: 0.3),
+                      : context.appColors.mutedForeground.withValues(alpha: 0.3),
                   borderRadius: BorderRadius.circular(3),
                 ),
               );
@@ -814,9 +814,9 @@ class _MoodSuggestionCard extends StatelessWidget {
     return Container(
       padding: const EdgeInsets.all(20),
       decoration: BoxDecoration(
-        color: AppColors.card,
+        color: context.appColors.card,
         borderRadius: BorderRadius.circular(20),
-        border: Border.all(color: AppColors.border, width: 1),
+        border: Border.all(color: context.appColors.border, width: 1),
       ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
@@ -830,7 +830,7 @@ class _MoodSuggestionCard extends StatelessWidget {
               ),
               const SizedBox(width: 12),
               Expanded(
-                child: Text(title, style: const TextStyle(fontFamily: 'Inter', fontSize: 14, fontWeight: FontWeight.w700, color: AppColors.foreground), maxLines: 1, overflow: TextOverflow.ellipsis),
+                child: Text(title, style: TextStyle(fontFamily: 'Inter', fontSize: 14, fontWeight: FontWeight.w700, color: context.appColors.foreground), maxLines: 1, overflow: TextOverflow.ellipsis),
               ),
             ],
           ),
@@ -838,7 +838,7 @@ class _MoodSuggestionCard extends StatelessWidget {
           Expanded(
             child: Text(
               desc,
-              style: const TextStyle(fontFamily: 'Inter', fontSize: 12, color: AppColors.mutedForeground, height: 1.4),
+              style: TextStyle(fontFamily: 'Inter', fontSize: 12, color: context.appColors.mutedForeground, height: 1.4),
               maxLines: 2,
               overflow: TextOverflow.ellipsis,
             ),
@@ -862,13 +862,13 @@ class _MoodStatMini extends StatelessWidget {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        Text(label, style: TextStyle(fontFamily: 'Inter', fontSize: small ? 7 : 8, fontWeight: FontWeight.w800, color: AppColors.mutedForeground, letterSpacing: 0.5)),
+        Text(label, style: TextStyle(fontFamily: 'Inter', fontSize: small ? 7 : 8, fontWeight: FontWeight.w800, color: context.appColors.mutedForeground, letterSpacing: 0.5)),
         const SizedBox(height: 2),
         Row(
           children: [
-            Icon(icon, size: small ? 10 : 12, color: AppColors.mutedForeground),
+            Icon(icon, size: small ? 10 : 12, color: context.appColors.mutedForeground),
             const SizedBox(width: 4),
-            Text(value, style: TextStyle(fontFamily: 'Inter', fontSize: small ? 12 : 14, fontWeight: FontWeight.w900, color: AppColors.foreground)),
+            Text(value, style: TextStyle(fontFamily: 'Inter', fontSize: small ? 12 : 14, fontWeight: FontWeight.w900, color: context.appColors.foreground)),
           ],
         ),
       ],

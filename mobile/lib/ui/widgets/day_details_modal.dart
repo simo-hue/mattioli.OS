@@ -30,7 +30,7 @@ class DayDetailsModal extends ConsumerWidget {
 
     return Container(
       decoration: BoxDecoration(
-        color: AppColors.background,
+        color: context.appColors.background,
         borderRadius: const BorderRadius.vertical(top: Radius.circular(28)),
         border: Border.all(color: AppColors.border, width: 1),
       ),

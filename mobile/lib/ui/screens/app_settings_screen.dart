@@ -35,19 +35,21 @@ class AppSettingsScreen extends ConsumerWidget {
     final settings = ref.watch(settingsProvider);
     final notifier = ref.read(settingsProvider.notifier);
 
+    final colors = context.appColors;
+
     return Scaffold(
-      backgroundColor: AppColors.background,
+      backgroundColor: colors.background,
       appBar: AppBar(
-        backgroundColor: AppColors.background,
+        backgroundColor: colors.background,
         elevation: 0,
         leading: IconButton(
-          icon: const Icon(LucideIcons.chevronLeft, color: AppColors.foreground),
+          icon: Icon(LucideIcons.chevronLeft, color: colors.foreground),
           onPressed: () => Navigator.pop(context),
         ),
         title: Text(
           context.l10n.translate('Impostazioni App'),
-          style: const TextStyle(
-            color: AppColors.foreground,
+          style: TextStyle(
+            color: colors.foreground,
             fontSize: 18,
             fontWeight: FontWeight.w700,
             letterSpacing: -0.5,
@@ -60,8 +62,8 @@ class AppSettingsScreen extends ConsumerWidget {
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            _buildSectionHeader(context.l10n.translate('ASPETTO & VISUAL')),
-            _buildSettingsCard([
+            _buildSectionHeader(context, context.l10n.translate('ASPETTO & VISUAL')),
+            _buildSettingsCard(context, [
               _buildSwitchRow(
                 context: context,
                 icon: LucideIcons.moon,
@@ -73,19 +75,7 @@ class AppSettingsScreen extends ConsumerWidget {
                   ref.hapticLight();
                 },
               ),
-              _buildDivider(),
-              _buildSwitchRow(
-                context: context,
-                icon: LucideIcons.sparkles,
-                title: context.l10n.translate('Effetti Trasparenza'),
-                value: settings.glassEffects,
-                onChanged: (val) {
-                  final currentSettings = ref.read(settingsProvider);
-                  notifier.updateSettings(currentSettings.copyWith(glassEffects: val));
-                  ref.hapticLight();
-                },
-              ),
-              _buildDivider(),
+              _buildDivider(context),
               _buildActionRow(
                 context: context,
                 icon: LucideIcons.palette,
@@ -113,8 +103,8 @@ class AppSettingsScreen extends ConsumerWidget {
               ),
             ]),
             const SizedBox(height: 32),
-            _buildSectionHeader(context.l10n.translate('CALENDARIO & DASHBOARD')),
-            _buildSettingsCard([
+            _buildSectionHeader(context, context.l10n.translate('CALENDARIO & DASHBOARD')),
+            _buildSettingsCard(context, [
               _buildActionRow(
                 context: context,
                 icon: LucideIcons.calendar,
@@ -127,9 +117,9 @@ class AppSettingsScreen extends ConsumerWidget {
                     backgroundColor: Colors.transparent,
                     builder: (context) => Container(
                       decoration: BoxDecoration(
-                        color: AppColors.card,
+                        color: context.appColors.card,
                         borderRadius: const BorderRadius.vertical(top: Radius.circular(24)),
-                        border: Border.all(color: AppColors.border),
+                        border: Border.all(color: context.appColors.border),
                       ),
                       child: Column(
                         mainAxisSize: MainAxisSize.min,
@@ -139,7 +129,7 @@ class AppSettingsScreen extends ConsumerWidget {
                             width: 40,
                             height: 4,
                             decoration: BoxDecoration(
-                              color: AppColors.border,
+                              color: context.appColors.border,
                               borderRadius: BorderRadius.circular(2),
                             ),
                           ),
@@ -147,7 +137,7 @@ class AppSettingsScreen extends ConsumerWidget {
                           Text(
                             context.l10n.translate('Vista Predefinita'),
                             style: TextStyle(
-                              color: AppColors.foreground,
+                              color: context.appColors.foreground,
                               fontSize: 18,
                               fontWeight: FontWeight.w700,
                             ),
@@ -164,34 +154,10 @@ class AppSettingsScreen extends ConsumerWidget {
                   );
                 },
               ),
-              _buildDivider(),
-              _buildSwitchRow(
-                context: context,
-                icon: LucideIcons.calendarDays,
-                title: context.l10n.translate('Inizia di Lunedì'),
-                value: settings.startWeekOnMonday,
-                onChanged: (val) {
-                  final currentSettings = ref.read(settingsProvider);
-                  notifier.updateSettings(currentSettings.copyWith(startWeekOnMonday: val));
-                  ref.hapticLight();
-                },
-              ),
-              _buildDivider(),
-              _buildSwitchRow(
-                context: context,
-                icon: LucideIcons.calendarRange,
-                title: context.l10n.translate('Mostra Weekend'),
-                value: settings.showWeekend,
-                onChanged: (val) {
-                  final currentSettings = ref.read(settingsProvider);
-                  notifier.updateSettings(currentSettings.copyWith(showWeekend: val));
-                  ref.hapticLight();
-                },
-              ),
             ]),
             const SizedBox(height: 32),
-            _buildSectionHeader(context.l10n.translate('ESPERIENZA UTENTE')),
-            _buildSettingsCard([
+            _buildSectionHeader(context, context.l10n.translate('ESPERIENZA UTENTE')),
+            _buildSettingsCard(context, [
               _buildSwitchRow(
                 context: context,
                 icon: LucideIcons.vibrate,
@@ -205,8 +171,8 @@ class AppSettingsScreen extends ConsumerWidget {
               ),
             ]),
             const SizedBox(height: 32),
-            _buildSectionHeader(context.l10n.translate('UNITÀ E LINGUA')),
-            _buildSettingsCard([
+            _buildSectionHeader(context, context.l10n.translate('UNITÀ E LINGUA')),
+            _buildSettingsCard(context, [
               _buildActionRow(
                 context: context,
                 icon: LucideIcons.languages,
@@ -217,7 +183,7 @@ class AppSettingsScreen extends ConsumerWidget {
                   _showLanguageSelector(context, ref, settings.language);
                 },
               ),
-              _buildDivider(),
+              _buildDivider(context),
               _buildSwitchRow(
                 context: context,
                 icon: LucideIcons.clock,
@@ -231,8 +197,8 @@ class AppSettingsScreen extends ConsumerWidget {
               ),
             ]),
             const SizedBox(height: 32),
-            _buildSectionHeader(context.l10n.translate('AI & SISTEMA')),
-            _buildSettingsCard([
+            _buildSectionHeader(context, context.l10n.translate('AI & SISTEMA')),
+            _buildSettingsCard(context, [
               _buildSwitchRow(
                 context: context,
                 icon: LucideIcons.brainCircuit,
@@ -252,19 +218,6 @@ class AppSettingsScreen extends ConsumerWidget {
                 },
               ),
             ]),
-            const SizedBox(height: 32),
-            _buildSectionHeader(context.l10n.translate('SINCRO & CLOUD')),
-            _buildSettingsCard([
-              _buildSwitchRow(
-                context: context,
-                icon: LucideIcons.cloud,
-                title: context.l10n.translate('Sincronizzazione iCloud'),
-                subtitle: context.l10n.translate('Backup automatico e sincronizzazione tra dispositivi Apple'),
-                value: false,
-                isComingSoon: true,
-                onChanged: (val) {},
-              ),
-            ]),
             const SizedBox(height: 40),
           ],
         ),
@@ -272,28 +225,29 @@ class AppSettingsScreen extends ConsumerWidget {
     );
   }
 
-  Widget _buildSectionHeader(String title) {
+  Widget _buildSectionHeader(BuildContext context, String title) {
     return Padding(
       padding: const EdgeInsets.only(left: 4, bottom: 12),
       child: Text(
         title,
-        style: const TextStyle(
+        style: TextStyle(
           fontSize: 11,
           fontWeight: FontWeight.w800,
-          color: AppColors.mutedForeground,
+          color: context.appColors.mutedForeground,
           letterSpacing: 1.5,
         ),
       ),
     );
   }
 
-  Widget _buildSettingsCard(List<Widget> children) {
+  Widget _buildSettingsCard(BuildContext context, List<Widget> children) {
+    final colors = context.appColors;
     return Container(
       decoration: BoxDecoration(
-        color: AppColors.card.withValues(alpha: 0.4),
+        color: colors.card.withValues(alpha: 0.4),
         borderRadius: BorderRadius.circular(20),
         border: Border.all(
-          color: AppColors.border.withValues(alpha: 0.5),
+          color: colors.border.withValues(alpha: 0.5),
           width: 1,
         ),
       ),
@@ -324,11 +278,11 @@ class AppSettingsScreen extends ConsumerWidget {
             width: 38,
             height: 38,
             decoration: BoxDecoration(
-              color: AppColors.card,
+              color: context.appColors.card,
               borderRadius: BorderRadius.circular(10),
-              border: Border.all(color: AppColors.border),
+              border: Border.all(color: context.appColors.border),
             ),
-            child: Icon(icon, size: 18, color: isDisabled ? AppColors.mutedForeground : primaryColor),
+            child: Icon(icon, size: 18, color: isDisabled ? context.appColors.mutedForeground : primaryColor),
           ),
           const SizedBox(width: 16),
           Expanded(
@@ -340,7 +294,7 @@ class AppSettingsScreen extends ConsumerWidget {
                     Text(
                       title,
                       style: GoogleFonts.inter(
-                        color: isDisabled ? AppColors.mutedForeground : AppColors.foreground,
+                        color: isDisabled ? context.appColors.mutedForeground : context.appColors.foreground,
                         fontSize: 15,
                         fontWeight: FontWeight.w600,
                       ),
@@ -381,7 +335,7 @@ class AppSettingsScreen extends ConsumerWidget {
                   Text(
                     subtitle,
                     style: GoogleFonts.inter(
-                      color: AppColors.mutedForeground.withValues(alpha: 0.7),
+                      color: context.appColors.mutedForeground.withValues(alpha: 0.7),
                       fontSize: 12,
                     ),
                   ),
@@ -395,8 +349,8 @@ class AppSettingsScreen extends ConsumerWidget {
               onChanged: (val) => onChanged(val), // Always interactive to allow modal trigger
               activeTrackColor: primaryColor.withValues(alpha: 0.5),
               activeThumbColor: primaryColor,
-              inactiveThumbColor: AppColors.mutedForeground,
-              inactiveTrackColor: AppColors.border,
+              inactiveThumbColor: context.appColors.mutedForeground,
+              inactiveTrackColor: context.appColors.border,
             ),
           ),
         ],
@@ -424,9 +378,9 @@ class AppSettingsScreen extends ConsumerWidget {
               width: 38,
               height: 38,
               decoration: BoxDecoration(
-                color: AppColors.card,
+                color: context.appColors.card,
                 borderRadius: BorderRadius.circular(10),
-                border: Border.all(color: AppColors.border),
+                border: Border.all(color: context.appColors.border),
               ),
               child: Icon(icon, size: 18, color: primaryColor),
             ),
@@ -435,7 +389,7 @@ class AppSettingsScreen extends ConsumerWidget {
               child: Text(
                 title,
                 style: GoogleFonts.inter(
-                  color: AppColors.foreground,
+                  color: context.appColors.foreground,
                   fontSize: 15,
                   fontWeight: FontWeight.w600,
                 ),
@@ -445,26 +399,26 @@ class AppSettingsScreen extends ConsumerWidget {
               Text(
                 trailingText,
                 style: GoogleFonts.inter(
-                  color: AppColors.mutedForeground,
+                  color: context.appColors.mutedForeground,
                   fontSize: 13,
                   fontWeight: FontWeight.w500,
                 ),
               ),
             trailing ?? const SizedBox.shrink(),
             const SizedBox(width: 4),
-            const Icon(LucideIcons.chevronRight, size: 16, color: AppColors.mutedForeground),
+            Icon(LucideIcons.chevronRight, size: 16, color: context.appColors.mutedForeground),
           ],
         ),
       ),
     );
   }
 
-  Widget _buildDivider() {
+  Widget _buildDivider(BuildContext context) {
     return Divider(
       height: 1,
       indent: 60,
       endIndent: 16,
-      color: AppColors.border.withValues(alpha: 0.5),
+      color: context.appColors.border.withValues(alpha: 0.5),
     );
   }
 
@@ -476,9 +430,9 @@ class AppSettingsScreen extends ConsumerWidget {
       builder: (context) => Container(
         padding: const EdgeInsets.all(24),
         decoration: BoxDecoration(
-          color: AppColors.card,
+          color: context.appColors.card,
           borderRadius: const BorderRadius.vertical(top: Radius.circular(32)),
-          border: Border.all(color: AppColors.border),
+          border: Border.all(color: context.appColors.border),
         ),
         child: Column(
           mainAxisSize: MainAxisSize.min,
@@ -487,7 +441,7 @@ class AppSettingsScreen extends ConsumerWidget {
               width: 40,
               height: 4,
               decoration: BoxDecoration(
-                color: AppColors.border,
+                color: context.appColors.border,
                 borderRadius: BorderRadius.circular(2),
               ),
             ),
@@ -495,7 +449,7 @@ class AppSettingsScreen extends ConsumerWidget {
             Text(
               context.l10n.translate('Colore Accento'),
               style: TextStyle(
-                color: AppColors.foreground,
+                color: context.appColors.foreground,
                 fontSize: 20,
                 fontWeight: FontWeight.w800,
                 letterSpacing: -0.5,
@@ -505,7 +459,7 @@ class AppSettingsScreen extends ConsumerWidget {
             Text(
               context.l10n.translate('Scegli una tonalità premium o creane una tua'),
               style: TextStyle(
-                color: AppColors.mutedForeground,
+                color: context.appColors.mutedForeground,
                 fontSize: 14,
               ),
             ),
@@ -514,8 +468,13 @@ class AppSettingsScreen extends ConsumerWidget {
               mainAxisAlignment: MainAxisAlignment.spaceEvenly,
               children: [
                 // 3 Presets
-                ...AppSettingsNotifier.premiumAccentColors.take(3).map((color) {
-                  final isSelected = currentColor == color;
+                ...AppSettingsNotifier.premiumAccentColors.take(3).map((c) {
+                  final settings = ref.read(settingsProvider);
+                  var color = c;
+                  if (settings.themeMode == 'light' && color.value == 0xFFFAFAFA) {
+                    color = const Color(0xFF09090B);
+                  }
+                  final isSelected = currentColor.value == color.value;
                   return _buildColorOption(context, ref, color, isSelected);
                 }),
                 // Custom Color Picker Button
@@ -528,11 +487,11 @@ class AppSettingsScreen extends ConsumerWidget {
                     width: 54,
                     height: 54,
                     decoration: BoxDecoration(
-                      color: AppColors.card,
+                      color: context.appColors.card,
                       shape: BoxShape.circle,
-                      border: Border.all(color: AppColors.border, width: 2),
+                      border: Border.all(color: context.appColors.border, width: 2),
                     ),
-                    child: const Icon(LucideIcons.plus, color: AppColors.foreground),
+                    child: Icon(LucideIcons.plus, color: context.appColors.foreground),
                   ),
                 ),
               ],
@@ -558,7 +517,9 @@ class AppSettingsScreen extends ConsumerWidget {
           color: color,
           shape: BoxShape.circle,
           border: Border.all(
-            color: isSelected ? Colors.white : Colors.transparent,
+            color: isSelected 
+              ? (color.computeLuminance() > 0.7 ? Colors.black.withValues(alpha: 0.2) : Colors.white) 
+              : Colors.transparent,
             width: 3,
           ),
           boxShadow: isSelected
@@ -572,7 +533,7 @@ class AppSettingsScreen extends ConsumerWidget {
               : null,
         ),
         child: isSelected
-            ? const Icon(LucideIcons.check, size: 24, color: Colors.black)
+            ? Icon(LucideIcons.check, size: 24, color: color.computeLuminance() > 0.5 ? Colors.black : Colors.white)
             : null,
       ),
     );
@@ -591,11 +552,11 @@ class AppSettingsScreen extends ConsumerWidget {
             final bool isTooDark = themeMode == 'dark' && luminance < 0.15;
 
             return AlertDialog(
-              backgroundColor: AppColors.card,
+              backgroundColor: context.appColors.card,
               shape: RoundedRectangleBorder(
                 borderRadius: BorderRadius.circular(24),
                 side: BorderSide(
-                  color: isTooDark ? AppColors.destructive.withValues(alpha: 0.5) : AppColors.border,
+                  color: isTooDark ? context.appColors.destructive.withValues(alpha: 0.5) : context.appColors.border,
                   width: isTooDark ? 2 : 1,
                 ),
               ),
@@ -604,7 +565,7 @@ class AppSettingsScreen extends ConsumerWidget {
                   const Text('Colore Personalizzato'),
                   const Spacer(),
                   if (isTooDark)
-                    const Icon(LucideIcons.triangleAlert, color: AppColors.destructive, size: 20),
+                    Icon(LucideIcons.triangleAlert, color: context.appColors.destructive, size: 20),
                 ],
               ),
               content: SingleChildScrollView(
@@ -627,17 +588,17 @@ class AppSettingsScreen extends ConsumerWidget {
                       Container(
                         padding: const EdgeInsets.all(12),
                         decoration: BoxDecoration(
-                          color: AppColors.destructive.withValues(alpha: 0.1),
+                          color: context.appColors.destructive.withValues(alpha: 0.1),
                           borderRadius: BorderRadius.circular(12),
                         ),
-                        child: const Row(
+                        child: Row(
                           children: [
-                            Icon(LucideIcons.info, size: 16, color: AppColors.destructive),
-                            SizedBox(width: 8),
+                            Icon(LucideIcons.info, size: 16, color: context.appColors.destructive),
+                            const SizedBox(width: 8),
                             Expanded(
                               child: Text(
                                 'Colore troppo scuro per la visibilità in Dark Mode.',
-                                style: TextStyle(color: AppColors.destructive, fontSize: 11, fontWeight: FontWeight.w600),
+                                style: TextStyle(color: context.appColors.destructive, fontSize: 11, fontWeight: FontWeight.w600),
                               ),
                             ),
                           ],
@@ -650,7 +611,7 @@ class AppSettingsScreen extends ConsumerWidget {
               actions: [
                 TextButton(
                   onPressed: () => Navigator.pop(dialogContext),
-                  child: const Text('Annulla', style: TextStyle(color: AppColors.mutedForeground)),
+                  child: Text('Annulla', style: TextStyle(color: context.appColors.mutedForeground)),
                 ),
                 ElevatedButton(
                   onPressed: isTooDark
@@ -661,8 +622,8 @@ class AppSettingsScreen extends ConsumerWidget {
                           _showValidationDialog(parentContext, ref, pickedColor);
                         },
                   style: ElevatedButton.styleFrom(
-                    backgroundColor: isTooDark ? AppColors.border : Theme.of(dialogContext).colorScheme.primary,
-                    foregroundColor: AppColors.background,
+                    backgroundColor: isTooDark ? context.appColors.border : Theme.of(dialogContext).colorScheme.primary,
+                    foregroundColor: context.appColors.background,
                     shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
                   ),
                   child: const Text('Verifica'),
@@ -729,7 +690,7 @@ class AppSettingsScreen extends ConsumerWidget {
       title: Text(
         label,
         style: TextStyle(
-          color: isSelected ? primaryColor : AppColors.foreground,
+          color: isSelected ? primaryColor : context.appColors.foreground,
           fontSize: 16,
           fontWeight: isSelected ? FontWeight.w700 : FontWeight.w500,
         ),
@@ -746,9 +707,9 @@ class AppSettingsScreen extends ConsumerWidget {
       backgroundColor: Colors.transparent,
       builder: (context) => Container(
         decoration: BoxDecoration(
-          color: AppColors.card,
+          color: context.appColors.card,
           borderRadius: const BorderRadius.vertical(top: Radius.circular(24)),
-          border: Border.all(color: AppColors.border),
+          border: Border.all(color: context.appColors.border),
         ),
         child: Column(
           mainAxisSize: MainAxisSize.min,
@@ -758,15 +719,15 @@ class AppSettingsScreen extends ConsumerWidget {
               width: 40,
               height: 4,
               decoration: BoxDecoration(
-                color: AppColors.border,
+                color: context.appColors.border,
                 borderRadius: BorderRadius.circular(2),
               ),
             ),
             const SizedBox(height: 24),
             Text(
               context.l10n.translate('language'),
-              style: const TextStyle(
-                color: AppColors.foreground,
+              style: TextStyle(
+                color: context.appColors.foreground,
                 fontSize: 18,
                 fontWeight: FontWeight.w700,
               ),
@@ -797,7 +758,7 @@ class AppSettingsScreen extends ConsumerWidget {
       title: Text(
         language,
         style: TextStyle(
-          color: isSelected ? primaryColor : AppColors.foreground,
+          color: isSelected ? primaryColor : context.appColors.foreground,
           fontSize: 16,
           fontWeight: isSelected ? FontWeight.w700 : FontWeight.w500,
         ),
@@ -838,7 +799,7 @@ class _ValidationDialog extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return AlertDialog(
-      backgroundColor: AppColors.card,
+      backgroundColor: context.appColors.card,
       shape: RoundedRectangleBorder(
         borderRadius: BorderRadius.circular(28),
         side: BorderSide(color: testColor.withValues(alpha: 0.3), width: 2),
@@ -855,10 +816,10 @@ class _ValidationDialog extends StatelessWidget {
             child: Icon(LucideIcons.eye, color: testColor, size: 40),
           ),
           const SizedBox(height: 24),
-          const Text(
+          Text(
             'Verifica Visibilità',
             style: TextStyle(
-              color: AppColors.foreground,
+              color: context.appColors.foreground,
               fontSize: 22,
               fontWeight: FontWeight.w800,
             ),
@@ -868,7 +829,7 @@ class _ValidationDialog extends StatelessWidget {
             'Riesci a leggere chiaramente questo testo e a vedere il pulsante qui sotto?',
             textAlign: TextAlign.center,
             style: TextStyle(
-              color: AppColors.mutedForeground.withValues(alpha: 0.8),
+              color: context.appColors.mutedForeground.withValues(alpha: 0.8),
               fontSize: 14,
               height: 1.5,
             ),
@@ -893,11 +854,11 @@ class _ValidationDialog extends StatelessWidget {
                   )
                 ],
               ),
-              child: const Center(
+              child: Center(
                 child: Text(
                   'SI, CONFERMA',
                   style: TextStyle(
-                    color: Colors.black,
+                    color: testColor.computeLuminance() > 0.5 ? Colors.black : Colors.white,
                     fontWeight: FontWeight.w900,
                     letterSpacing: 1,
                   ),
@@ -1035,12 +996,12 @@ class _LanguageTransitionState extends State<_LanguageTransition> with SingleTic
               child: Column(
                 mainAxisSize: MainAxisSize.min,
                 children: [
-                  const Icon(LucideIcons.languages, color: Colors.black, size: 60),
+                  Icon(LucideIcons.languages, color: context.appColors.foreground, size: 60),
                   const SizedBox(height: 16),
                   Text(
                     widget.language.toUpperCase(),
-                    style: const TextStyle(
-                      color: Colors.black,
+                    style: TextStyle(
+                      color: widget.color.computeLuminance() > 0.5 ? Colors.black : Colors.white,
                       fontSize: 24,
                       fontWeight: FontWeight.w900,
                       letterSpacing: 2,

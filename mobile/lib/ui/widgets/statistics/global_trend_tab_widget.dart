@@ -88,7 +88,7 @@ class _GlobalTrendTabWidgetState extends ConsumerState<GlobalTrendTabWidget> {
     return Container(
       width: double.infinity,
       padding: const EdgeInsets.all(24),
-      decoration: AppTheme.glassPanelDecoration(radius: 24),
+      decoration: AppTheme.glassPanelDecoration(context, radius: 24),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
@@ -97,20 +97,20 @@ class _GlobalTrendTabWidgetState extends ConsumerState<GlobalTrendTabWidget> {
             children: [
               Text(
                 context.l10n.translate('Performance Evolution'),
-                style: const TextStyle(
+                style: TextStyle(
                   fontFamily: 'Inter',
                   fontSize: 20,
                   fontWeight: FontWeight.w900,
-                  color: AppColors.foreground,
+                  color: context.appColors.foreground,
                   letterSpacing: -0.8,
                 ),
               ),
               Text(
                 '${context.l10n.translate('Trend')} $title',
-                style: const TextStyle(
+                style: TextStyle(
                   fontFamily: 'Inter',
                   fontSize: 12,
-                  color: AppColors.mutedForeground,
+                  color: context.appColors.mutedForeground,
                   fontWeight: FontWeight.w500,
                 ),
               ),
@@ -124,11 +124,11 @@ class _GlobalTrendTabWidgetState extends ConsumerState<GlobalTrendTabWidget> {
             children: [
               Text(
                 percentage,
-                style: const TextStyle(
+                style: TextStyle(
                   fontFamily: 'Inter',
                   fontSize: 32,
                   fontWeight: FontWeight.w900,
-                  color: AppColors.foreground,
+                  color: context.appColors.foreground,
                   letterSpacing: -1,
                   height: 1,
                 ),
@@ -176,7 +176,7 @@ class _GlobalTrendTabWidgetState extends ConsumerState<GlobalTrendTabWidget> {
                   drawVerticalLine: false,
                   horizontalInterval: 20,
                   getDrawingHorizontalLine: (value) => FlLine(
-                    color: AppColors.border.withValues(alpha: 0.1),
+                    color: context.appColors.border.withValues(alpha: 0.1),
                     strokeWidth: 1,
                   ),
                 ),
@@ -194,8 +194,8 @@ class _GlobalTrendTabWidgetState extends ConsumerState<GlobalTrendTabWidget> {
                           axisSide: meta.axisSide,
                           child: Text(
                             '${value.toInt()}%',
-                            style: const TextStyle(
-                              color: AppColors.mutedForeground,
+                            style: TextStyle(
+                              color: context.appColors.mutedForeground,
                               fontSize: 10,
                               fontWeight: FontWeight.w700,
                             ),
@@ -219,8 +219,8 @@ class _GlobalTrendTabWidgetState extends ConsumerState<GlobalTrendTabWidget> {
                             space: 8,
                             child: Text(
                               label,
-                              style: const TextStyle(
-                                color: AppColors.mutedForeground,
+                              style: TextStyle(
+                                color: context.appColors.mutedForeground,
                                 fontSize: 10,
                                 fontWeight: FontWeight.w600,
                               ),
@@ -269,13 +269,13 @@ class _GlobalTrendTabWidgetState extends ConsumerState<GlobalTrendTabWidget> {
                 ],
                 lineTouchData: LineTouchData(
                   touchTooltipData: LineTouchTooltipData(
-                    getTooltipColor: (touchedSpot) => AppColors.card.withValues(alpha: 0.9),
+                    getTooltipColor: (touchedSpot) => context.appColors.card.withValues(alpha: 0.9),
                     tooltipRoundedRadius: 8,
                     getTooltipItems: (List<LineBarSpot> touchedBarSpots) {
                       return touchedBarSpots.map((barSpot) {
                         return LineTooltipItem(
                           '${barSpot.y.toStringAsFixed(1)}%',
-                          const TextStyle(color: AppColors.foreground, fontWeight: FontWeight.bold, fontSize: 12),
+                          TextStyle(color: context.appColors.foreground, fontWeight: FontWeight.bold, fontSize: 12),
                         );
                       }).toList();
                     },
@@ -302,9 +302,9 @@ class _GlobalTrendTabWidgetState extends ConsumerState<GlobalTrendTabWidget> {
       width: double.infinity,
       padding: const EdgeInsets.all(4),
       decoration: BoxDecoration(
-        color: AppColors.card.withValues(alpha: 0.3),
+        color: context.appColors.card.withValues(alpha: 0.3),
         borderRadius: BorderRadius.circular(16),
-        border: Border.all(color: AppColors.border, width: 1),
+        border: Border.all(color: context.appColors.border, width: 1),
       ),
       child: Row(
         children: options.map((opt) {
@@ -340,7 +340,7 @@ class _GlobalTrendTabWidgetState extends ConsumerState<GlobalTrendTabWidget> {
                     fontFamily: 'Inter',
                     fontSize: 12,
                     fontWeight: isSelected ? FontWeight.w800 : FontWeight.w600,
-                    color: isSelected ? AppColors.background : AppColors.mutedForeground,
+                    color: isSelected ? context.appColors.background : context.appColors.mutedForeground,
                   ),
                 ),
               ),
@@ -385,15 +385,15 @@ class _ComparisonCarouselSectionState extends State<_ComparisonCarouselSection> 
       children: [
         Row(
           children: [
-            const Icon(LucideIcons.trendingUp, size: 16, color: AppColors.foreground),
+            const Icon(LucideIcons.trendingUp, size: 16, color: Colors.grey),
             const SizedBox(width: 8),
             Text(
               context.l10n.translate('Confronto Temporale'),
-              style: const TextStyle(
+              style: TextStyle(
                 fontFamily: 'Inter',
                 fontSize: 14,
                 fontWeight: FontWeight.w700,
-                color: AppColors.foreground,
+                color: context.appColors.foreground,
               ),
             ),
           ],
@@ -401,10 +401,10 @@ class _ComparisonCarouselSectionState extends State<_ComparisonCarouselSection> 
         const SizedBox(height: 4),
         Text(
           context.l10n.translate('Analizza come stai andando rispetto al passato.'),
-          style: const TextStyle(
+          style: TextStyle(
             fontFamily: 'Inter',
             fontSize: 11,
-            color: AppColors.mutedForeground,
+            color: context.appColors.mutedForeground,
           ),
         ),
         const SizedBox(height: 16),
@@ -444,7 +444,7 @@ class _ComparisonCarouselSectionState extends State<_ComparisonCarouselSection> 
                 decoration: BoxDecoration(
                   color: isActive 
                       ? Theme.of(context).colorScheme.primary
-                      : AppColors.mutedForeground.withValues(alpha: 0.3),
+                      : context.appColors.mutedForeground.withValues(alpha: 0.3),
                   borderRadius: BorderRadius.circular(3),
                 ),
               );
@@ -476,9 +476,9 @@ class _ComparisonCard extends StatelessWidget {
     return Container(
       padding: const EdgeInsets.all(20),
       decoration: BoxDecoration(
-        color: AppColors.card,
+        color: context.appColors.card,
         borderRadius: BorderRadius.circular(20),
-        border: Border.all(color: AppColors.border, width: 1),
+        border: Border.all(color: context.appColors.border, width: 1),
       ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
@@ -491,7 +491,7 @@ class _ComparisonCard extends StatelessWidget {
                 children: [
                   Container(width: 8, height: 8, decoration: BoxDecoration(color: goal.color, shape: BoxShape.circle)),
                   const SizedBox(width: 8),
-                  Text(goal.title, style: const TextStyle(fontFamily: 'Inter', fontSize: 14, fontWeight: FontWeight.w700, color: AppColors.foreground)),
+                  Text(goal.title, style: TextStyle(fontFamily: 'Inter', fontSize: 14, fontWeight: FontWeight.w700, color: context.appColors.foreground)),
                 ],
               ),
               Container(
@@ -531,15 +531,15 @@ class _ComparisonCard extends StatelessWidget {
               Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  const Text('ATTUALE', style: TextStyle(fontFamily: 'Inter', fontSize: 8, fontWeight: FontWeight.w800, color: AppColors.mutedForeground, letterSpacing: 0.5)),
-                  Text('$current%', style: const TextStyle(fontFamily: 'Inter', fontSize: 20, fontWeight: FontWeight.w900, color: AppColors.foreground)),
+                  Text('ATTUALE', style: TextStyle(fontFamily: 'Inter', fontSize: 8, fontWeight: FontWeight.w800, color: context.appColors.mutedForeground, letterSpacing: 0.5)),
+                  Text('$current%', style: TextStyle(fontFamily: 'Inter', fontSize: 20, fontWeight: FontWeight.w900, color: context.appColors.foreground)),
                 ],
               ),
               Column(
                 crossAxisAlignment: CrossAxisAlignment.end,
                 children: [
-                  const Text('PRECEDENTE', style: TextStyle(fontFamily: 'Inter', fontSize: 8, fontWeight: FontWeight.w800, color: AppColors.mutedForeground, letterSpacing: 0.5)),
-                  Text('$previous%', style: const TextStyle(fontFamily: 'Inter', fontSize: 16, fontWeight: FontWeight.w700, color: AppColors.mutedForeground)),
+                  Text('PRECEDENTE', style: TextStyle(fontFamily: 'Inter', fontSize: 8, fontWeight: FontWeight.w800, color: context.appColors.mutedForeground, letterSpacing: 0.5)),
+                  Text('$previous%', style: TextStyle(fontFamily: 'Inter', fontSize: 16, fontWeight: FontWeight.w700, color: context.appColors.mutedForeground)),
                 ],
               ),
             ],
@@ -611,11 +611,11 @@ class _AbitudiniCriticheSectionState extends State<_AbitudiniCriticheSection> {
             const SizedBox(width: 8),
             Text(
               context.l10n.translate('Abitudini Critiche'),
-              style: const TextStyle(
+              style: TextStyle(
                 fontFamily: 'Inter',
                 fontSize: 14,
                 fontWeight: FontWeight.w700,
-                color: AppColors.foreground,
+                color: context.appColors.foreground,
               ),
             ),
           ],
@@ -623,10 +623,10 @@ class _AbitudiniCriticheSectionState extends State<_AbitudiniCriticheSection> {
         const SizedBox(height: 4),
         Text(
           context.l10n.translate('Habit che stanno perdendo slancio e richiedono attenzione.'),
-          style: const TextStyle(
+          style: TextStyle(
             fontFamily: 'Inter',
             fontSize: 11,
-            color: AppColors.mutedForeground,
+            color: context.appColors.mutedForeground,
           ),
         ),
         const SizedBox(height: 16),
@@ -660,7 +660,7 @@ class _AbitudiniCriticheSectionState extends State<_AbitudiniCriticheSection> {
                 decoration: BoxDecoration(
                   color: isActive 
                       ? const Color(0xFFEF4444)
-                      : AppColors.mutedForeground.withValues(alpha: 0.3),
+                      : context.appColors.mutedForeground.withValues(alpha: 0.3),
                   borderRadius: BorderRadius.circular(3),
                 ),
               );
@@ -694,9 +694,9 @@ class _CriticaCard extends StatelessWidget {
     return Container(
       padding: const EdgeInsets.all(20),
       decoration: BoxDecoration(
-        color: AppColors.card,
+        color: context.appColors.card,
         borderRadius: BorderRadius.circular(20),
-        border: Border.all(color: AppColors.border, width: 1),
+        border: Border.all(color: context.appColors.border, width: 1),
       ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
@@ -708,7 +708,7 @@ class _CriticaCard extends StatelessWidget {
                 children: [
                   Container(width: 8, height: 8, decoration: BoxDecoration(color: color, shape: BoxShape.circle)),
                   const SizedBox(width: 8),
-                  Text(title, style: const TextStyle(fontFamily: 'Inter', fontSize: 15, fontWeight: FontWeight.w700, color: AppColors.foreground)),
+                  Text(title, style: TextStyle(fontFamily: 'Inter', fontSize: 15, fontWeight: FontWeight.w700, color: context.appColors.foreground)),
                 ],
               ),
               Container(
@@ -732,7 +732,7 @@ class _CriticaCard extends StatelessWidget {
           Expanded(
             child: Text(
               desc,
-              style: const TextStyle(fontFamily: 'Inter', fontSize: 12, color: AppColors.mutedForeground, height: 1.4),
+              style: TextStyle(fontFamily: 'Inter', fontSize: 12, color: context.appColors.mutedForeground, height: 1.4),
               maxLines: 3,
               overflow: TextOverflow.ellipsis,
             ),
@@ -740,9 +740,9 @@ class _CriticaCard extends StatelessWidget {
           const SizedBox(height: 12),
           Row(
             children: [
-              const Icon(LucideIcons.calendarX, size: 14, color: AppColors.mutedForeground),
+              const Icon(LucideIcons.calendarX, size: 14, color: Colors.grey),
               const SizedBox(width: 6),
-              Text('${context.l10n.translate('Streak Negativa')}: ', style: const TextStyle(fontFamily: 'Inter', fontSize: 12, color: AppColors.mutedForeground)),
+              Text('${context.l10n.translate('Streak Negativa')}: ', style: TextStyle(fontFamily: 'Inter', fontSize: 12, color: context.appColors.mutedForeground)),
               Text(streak, style: TextStyle(fontFamily: 'Inter', fontSize: 12, fontWeight: FontWeight.w700, color: color)),
             ],
           ),

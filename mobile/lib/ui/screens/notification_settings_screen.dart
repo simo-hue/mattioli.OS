@@ -35,18 +35,18 @@ class NotificationSettingsScreen extends ConsumerWidget {
     final notifier = ref.read(settingsProvider.notifier);
 
     return Scaffold(
-      backgroundColor: AppColors.background,
+      backgroundColor: context.appColors.background,
       appBar: AppBar(
-        backgroundColor: AppColors.background,
+        backgroundColor: context.appColors.background,
         elevation: 0,
         leading: IconButton(
-          icon: const Icon(LucideIcons.chevronLeft, color: AppColors.foreground),
+          icon: Icon(LucideIcons.chevronLeft, color: context.appColors.foreground),
           onPressed: () => Navigator.pop(context),
         ),
         title: Text(
           context.l10n.translate('Notifiche'),
-          style: const TextStyle(
-            color: AppColors.foreground,
+          style: TextStyle(
+            color: context.appColors.foreground,
             fontSize: 18,
             fontWeight: FontWeight.w700,
             letterSpacing: -0.5,
@@ -59,8 +59,8 @@ class NotificationSettingsScreen extends ConsumerWidget {
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            _buildSectionHeader('PROMEMORIA OPERATIVI'),
-            _buildSettingsCard([
+            _buildSectionHeader(context, 'PROMEMORIA OPERATIVI'),
+            _buildSettingsCard(context, [
               _buildSwitchRow(
                 context: context,
                 ref: ref,
@@ -75,7 +75,7 @@ class NotificationSettingsScreen extends ConsumerWidget {
                   ref.hapticLight();
                 },
               ),
-              _buildDivider(),
+              _buildDivider(context),
               _buildSwitchRow(
                 context: context,
                 ref: ref,
@@ -92,8 +92,8 @@ class NotificationSettingsScreen extends ConsumerWidget {
               ),
             ]),
             const SizedBox(height: 32),
-            _buildSectionHeader('OBIETTIVI & PERFORMANCE'),
-            _buildSettingsCard([
+            _buildSectionHeader(context, 'OBIETTIVI & PERFORMANCE'),
+            _buildSettingsCard(context, [
               _buildSwitchRow(
                 context: context,
                 ref: ref,
@@ -107,7 +107,7 @@ class NotificationSettingsScreen extends ConsumerWidget {
                   ref.hapticLight();
                 },
               ),
-              _buildDivider(),
+              _buildDivider(context),
               _buildSwitchRow(
                 context: context,
                 ref: ref,
@@ -123,8 +123,8 @@ class NotificationSettingsScreen extends ConsumerWidget {
               ),
             ]),
             const SizedBox(height: 32),
-            _buildSectionHeader('INTELLIGENZA ARTIFICIALE'),
-            _buildSettingsCard([
+            _buildSectionHeader(context, 'INTELLIGENZA ARTIFICIALE'),
+            _buildSettingsCard(context, [
               _buildSwitchRow(
                 context: context,
                 ref: ref,
@@ -144,7 +144,7 @@ class NotificationSettingsScreen extends ConsumerWidget {
                   }
                 },
               ),
-              _buildDivider(),
+              _buildDivider(context),
               _buildSwitchRow(
                 context: context,
                 ref: ref,
@@ -166,8 +166,8 @@ class NotificationSettingsScreen extends ConsumerWidget {
               ),
             ]),
             const SizedBox(height: 32),
-            _buildSectionHeader('GESTIONE SISTEMA'),
-            _buildSettingsCard([
+            _buildSectionHeader(context, 'GESTIONE SISTEMA'),
+            _buildSettingsCard(context, [
               _buildSwitchRow(
                 context: context,
                 ref: ref,
@@ -187,7 +187,7 @@ class NotificationSettingsScreen extends ConsumerWidget {
                   }
                 },
               ),
-              _buildDivider(),
+              _buildDivider(context),
               _buildSwitchRow(
                 context: context,
                 ref: ref,
@@ -215,13 +215,13 @@ class NotificationSettingsScreen extends ConsumerWidget {
     );
   }
 
-  Widget _buildSectionHeader(String title) {
+  Widget _buildSectionHeader(BuildContext context, String title) {
     return Padding(
       padding: const EdgeInsets.only(left: 4, bottom: 12),
       child: Text(
         title.toUpperCase(),
         style: GoogleFonts.inter(
-          color: AppColors.mutedForeground,
+          color: context.appColors.mutedForeground,
           fontSize: 12,
           fontWeight: FontWeight.w700,
           letterSpacing: 1.2,
@@ -230,22 +230,22 @@ class NotificationSettingsScreen extends ConsumerWidget {
     );
   }
 
-  Widget _buildSettingsCard(List<Widget> children) {
+  Widget _buildSettingsCard(BuildContext context, List<Widget> children) {
     return Container(
       decoration: BoxDecoration(
-        color: AppColors.card,
+        color: context.appColors.card,
         borderRadius: BorderRadius.circular(20),
-        border: Border.all(color: AppColors.border),
+        border: Border.all(color: context.appColors.border),
       ),
       child: Column(children: children),
     );
   }
 
-  Widget _buildDivider() {
-    return const Divider(
+  Widget _buildDivider(BuildContext context) {
+    return Divider(
       height: 1,
       thickness: 1,
-      color: AppColors.border,
+      color: context.appColors.border,
       indent: 56,
     );
   }
@@ -271,11 +271,11 @@ class NotificationSettingsScreen extends ConsumerWidget {
             width: 38,
             height: 38,
             decoration: BoxDecoration(
-              color: AppColors.card,
+              color: context.appColors.card,
               borderRadius: BorderRadius.circular(10),
-              border: Border.all(color: AppColors.border),
+              border: Border.all(color: context.appColors.border),
             ),
-            child: Icon(icon, size: 18, color: isDisabled ? AppColors.mutedForeground : primaryColor),
+            child: Icon(icon, size: 18, color: isDisabled ? context.appColors.mutedForeground : primaryColor),
           ),
           const SizedBox(width: 16),
           Expanded(
@@ -288,7 +288,7 @@ class NotificationSettingsScreen extends ConsumerWidget {
                       child: Text(
                         title,
                         style: GoogleFonts.inter(
-                          color: isDisabled ? AppColors.mutedForeground : AppColors.foreground,
+                          color: isDisabled ? context.appColors.mutedForeground : context.appColors.foreground,
                           fontSize: 15,
                           fontWeight: FontWeight.w600,
                         ),
@@ -336,8 +336,8 @@ class NotificationSettingsScreen extends ConsumerWidget {
               onChanged: (val) => onChanged(val), // Always interactive to allow modal trigger
               activeTrackColor: primaryColor.withValues(alpha: 0.5),
               activeThumbColor: primaryColor,
-              inactiveThumbColor: AppColors.mutedForeground,
-              inactiveTrackColor: AppColors.border,
+              inactiveThumbColor: context.appColors.mutedForeground,
+              inactiveTrackColor: context.appColors.border,
             ),
           ),
         ],

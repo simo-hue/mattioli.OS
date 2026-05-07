@@ -97,11 +97,11 @@ class _GlobalHabitsTabWidgetState extends State<GlobalHabitsTabWidget> {
           children: [
             Text(
               context.l10n.translate('Dettagli Abitudini'),
-              style: const TextStyle(
+              style: TextStyle(
                 fontFamily: 'Inter',
                 fontSize: 18,
                 fontWeight: FontWeight.w700,
-                color: AppColors.foreground,
+                color: context.appColors.foreground,
               ),
             ),
             _buildSortDropdown(),
@@ -132,15 +132,15 @@ class _GlobalHabitsTabWidgetState extends State<GlobalHabitsTabWidget> {
         duration: const Duration(milliseconds: 200),
         padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 8),
         decoration: BoxDecoration(
-          color: AppColors.card,
+          color: context.appColors.card,
           borderRadius: BorderRadius.circular(20),
           border: Border.all(
-            color: Colors.white.withValues(alpha: 0.08),
+            color: context.appColors.foreground.withValues(alpha: 0.08),
             width: 1,
           ),
           boxShadow: [
             BoxShadow(
-              color: Colors.black.withValues(alpha: 0.2),
+              color: Colors.black.withValues(alpha: 0.1),
               blurRadius: 10,
               offset: const Offset(0, 4),
             ),
@@ -153,15 +153,15 @@ class _GlobalHabitsTabWidgetState extends State<GlobalHabitsTabWidget> {
             const SizedBox(width: 8),
             Text(
               context.l10n.translate(_sortBy).replaceAll('_', ' '),
-              style: const TextStyle(
+              style: TextStyle(
                 fontFamily: 'Inter',
                 fontSize: 12,
                 fontWeight: FontWeight.w600,
-                color: AppColors.foreground,
+                color: context.appColors.foreground,
               ),
             ),
             const SizedBox(width: 6),
-            Icon(LucideIcons.chevronDown, size: 12, color: AppColors.mutedForeground.withValues(alpha: 0.5)),
+            Icon(LucideIcons.chevronDown, size: 12, color: context.appColors.mutedForeground.withValues(alpha: 0.5)),
           ],
         ),
       ),
@@ -179,7 +179,7 @@ class _GlobalHabitsTabWidgetState extends State<GlobalHabitsTabWidget> {
 
     showModalBottomSheet(
       context: context,
-      backgroundColor: AppColors.card,
+      backgroundColor: context.appColors.card,
       shape: const RoundedRectangleBorder(
         borderRadius: BorderRadius.vertical(top: Radius.circular(24)),
       ),
@@ -192,7 +192,7 @@ class _GlobalHabitsTabWidgetState extends State<GlobalHabitsTabWidget> {
               width: 40,
               height: 4,
               decoration: BoxDecoration(
-                color: AppColors.border,
+                color: context.appColors.border,
                 borderRadius: BorderRadius.circular(2),
               ),
             ),
@@ -203,11 +203,11 @@ class _GlobalHabitsTabWidgetState extends State<GlobalHabitsTabWidget> {
                 alignment: Alignment.center,
                 child: Text(
                   context.l10n.translate('Ordina per'),
-                  style: const TextStyle(
+                  style: TextStyle(
                     fontFamily: 'Inter',
                     fontSize: 10,
                     fontWeight: FontWeight.w800,
-                    color: AppColors.mutedForeground,
+                    color: context.appColors.mutedForeground,
                     letterSpacing: 1.2,
                   ),
                 ),
@@ -221,7 +221,7 @@ class _GlobalHabitsTabWidgetState extends State<GlobalHabitsTabWidget> {
                 leading: Icon(
                   opt.icon, 
                   size: 20, 
-                  color: isSel ? primaryColor : AppColors.mutedForeground.withValues(alpha: 0.6)
+                  color: isSel ? primaryColor : context.appColors.mutedForeground.withValues(alpha: 0.6)
                 ),
                 title: Text(
                   context.l10n.translate(opt.val).replaceAll('_', ' '),
@@ -229,7 +229,7 @@ class _GlobalHabitsTabWidgetState extends State<GlobalHabitsTabWidget> {
                     fontFamily: 'Inter',
                     fontSize: 16,
                     fontWeight: isSel ? FontWeight.w700 : FontWeight.w500,
-                    color: isSel ? AppColors.foreground : AppColors.mutedForeground,
+                    color: isSel ? context.appColors.foreground : context.appColors.mutedForeground,
                   ),
                 ),
                 trailing: isSel ? Icon(LucideIcons.check, color: primaryColor, size: 20) : null,
@@ -273,9 +273,9 @@ class _HabitDetailCard extends StatelessWidget {
     return Container(
       padding: const EdgeInsets.all(16),
       decoration: BoxDecoration(
-        color: AppColors.card,
+        color: context.appColors.card,
         borderRadius: BorderRadius.circular(16),
-        border: Border.all(color: AppColors.border, width: 1),
+        border: Border.all(color: context.appColors.border, width: 1),
       ),
       child: Row(
         children: [
@@ -284,9 +284,9 @@ class _HabitDetailCard extends StatelessWidget {
             width: 40,
             height: 40,
             decoration: BoxDecoration(
-              color: AppColors.background,
+              color: context.appColors.background,
               borderRadius: BorderRadius.circular(10),
-              border: Border.all(color: AppColors.border, width: 1),
+              border: Border.all(color: context.appColors.border, width: 1),
             ),
             child: Center(
               child: Container(
@@ -315,11 +315,11 @@ class _HabitDetailCard extends StatelessWidget {
               children: [
                 Text(
                   habit['name'] as String,
-                  style: const TextStyle(
+                  style: TextStyle(
                     fontFamily: 'Inter',
                     fontSize: 15,
                     fontWeight: FontWeight.w700,
-                    color: AppColors.foreground,
+                    color: context.appColors.foreground,
                   ),
                 ),
 
@@ -328,7 +328,7 @@ class _HabitDetailCard extends StatelessWidget {
                   width: 60,
                   height: 3,
                   decoration: BoxDecoration(
-                    color: AppColors.muted,
+                    color: context.appColors.border.withValues(alpha: 0.3),
                     borderRadius: BorderRadius.circular(2),
                   ),
                   child: FractionallySizedBox(
@@ -351,10 +351,10 @@ class _HabitDetailCard extends StatelessWidget {
             child: Row(
               mainAxisAlignment: MainAxisAlignment.spaceBetween,
               children: [
-                _buildStatColumn('BEST', '${habit['best']}gg', icon: LucideIcons.trophy, iconColor: const Color(0xFFEAB308)),
-                _buildStatColumn('WORST', '${habit['worst']}gg', icon: LucideIcons.trendingDown, iconColor: const Color(0xFFEF4444)),
-                _buildStatColumn('SERIE', '${habit['serie']}gg'),
-                _buildStatColumn('RATE', '${habit['rate']}%', isBold: true),
+                _buildStatColumn(context, 'BEST', '${habit['best']}gg', icon: LucideIcons.trophy, iconColor: const Color(0xFFEAB308)),
+                _buildStatColumn(context, 'WORST', '${habit['worst']}gg', icon: LucideIcons.trendingDown, iconColor: const Color(0xFFEF4444)),
+                _buildStatColumn(context, 'SERIE', '${habit['serie']}gg'),
+                _buildStatColumn(context, 'RATE', '${habit['rate']}%', isBold: true),
               ],
             ),
           ),
@@ -363,23 +363,23 @@ class _HabitDetailCard extends StatelessWidget {
     );
   }
 
-  Widget _buildStatColumn(String label, String value, {IconData? icon, Color? iconColor, bool isBold = false}) {
+  Widget _buildStatColumn(BuildContext context, String label, String value, {IconData? icon, Color? iconColor, bool isBold = false}) {
     return Column(
       children: [
         Row(
           mainAxisSize: MainAxisSize.min,
           children: [
             if (icon != null) ...[
-              Icon(icon, size: 10, color: iconColor ?? AppColors.mutedForeground),
+              Icon(icon, size: 10, color: iconColor ?? context.appColors.mutedForeground),
               const SizedBox(width: 4),
             ],
             Text(
               label,
-              style: const TextStyle(
+              style: TextStyle(
                 fontFamily: 'Inter',
                 fontSize: 9,
                 fontWeight: FontWeight.w600,
-                color: AppColors.mutedForeground,
+                color: context.appColors.mutedForeground,
                 letterSpacing: 0.5,
               ),
             ),
@@ -392,7 +392,7 @@ class _HabitDetailCard extends StatelessWidget {
             fontFamily: 'Inter',
             fontSize: 14,
             fontWeight: isBold ? FontWeight.w800 : FontWeight.w700,
-            color: label == 'WORST' ? const Color(0xFFEF4444) : AppColors.foreground,
+            color: label == 'WORST' ? const Color(0xFFEF4444) : context.appColors.foreground,
           ),
         ),
       ],

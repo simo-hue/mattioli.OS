@@ -107,18 +107,18 @@ class _PersonalInfoScreenState extends ConsumerState<PersonalInfoScreen> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      backgroundColor: AppColors.background,
+      backgroundColor: context.appColors.background,
       appBar: AppBar(
-        backgroundColor: AppColors.background,
+        backgroundColor: context.appColors.background,
         elevation: 0,
         leading: IconButton(
-          icon: const Icon(LucideIcons.chevronLeft, color: AppColors.foreground),
+          icon: Icon(LucideIcons.chevronLeft, color: context.appColors.foreground),
           onPressed: () => Navigator.pop(context),
         ),
         title: Text(
           context.l10n.translate('Informazioni Personali'),
-          style: const TextStyle(
-            color: AppColors.foreground,
+          style: TextStyle(
+            color: context.appColors.foreground,
             fontSize: 18,
             fontWeight: FontWeight.w700,
             letterSpacing: -0.5,
@@ -133,12 +133,12 @@ class _PersonalInfoScreenState extends ConsumerState<PersonalInfoScreen> {
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              const Text(
+              Text(
                 'I TUOI DATI',
                 style: TextStyle(
                   fontSize: 11,
                   fontWeight: FontWeight.w800,
-                  color: AppColors.mutedForeground,
+                  color: context.appColors.mutedForeground,
                   letterSpacing: 1.5,
                 ),
               ),
@@ -179,7 +179,7 @@ class _PersonalInfoScreenState extends ConsumerState<PersonalInfoScreen> {
                   onPressed: _save,
                   style: ElevatedButton.styleFrom(
                     backgroundColor: Theme.of(context).colorScheme.primary,
-                    foregroundColor: AppColors.background,
+                    foregroundColor: Theme.of(context).colorScheme.primary.computeLuminance() > 0.5 ? Colors.black : Colors.white,
                     shape: RoundedRectangleBorder(
                       borderRadius: BorderRadius.circular(16),
                     ),
@@ -213,10 +213,10 @@ class _PersonalInfoScreenState extends ConsumerState<PersonalInfoScreen> {
       children: [
         Text(
           label,
-          style: const TextStyle(
+          style: TextStyle(
             fontSize: 10,
             fontWeight: FontWeight.w600,
-            color: AppColors.mutedForeground,
+            color: context.appColors.mutedForeground,
             letterSpacing: 0.5,
           ),
         ),
@@ -225,19 +225,19 @@ class _PersonalInfoScreenState extends ConsumerState<PersonalInfoScreen> {
           controller: controller,
           validator: validator,
           keyboardType: keyboardType,
-          style: const TextStyle(
-            color: AppColors.foreground,
+          style: TextStyle(
+            color: context.appColors.foreground,
             fontSize: 16,
             fontWeight: FontWeight.w500,
           ),
           decoration: InputDecoration(
             filled: true,
-            fillColor: AppColors.card.withValues(alpha: 0.4),
+            fillColor: context.appColors.card.withValues(alpha: 0.4),
             contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 16),
             enabledBorder: OutlineInputBorder(
               borderRadius: BorderRadius.circular(14),
               borderSide: BorderSide(
-                color: AppColors.border.withValues(alpha: 0.5),
+                color: context.appColors.border.withValues(alpha: 0.5),
               ),
             ),
             focusedBorder: OutlineInputBorder(

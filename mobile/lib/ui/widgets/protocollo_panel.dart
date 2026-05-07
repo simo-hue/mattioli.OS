@@ -24,7 +24,7 @@ class ProtocolloPanel extends ConsumerWidget {
               style: TextStyle(
                 fontSize: 10,
                 fontWeight: FontWeight.w800,
-                color: AppColors.mutedForeground.withValues(alpha: 0.8),
+                color: context.appColors.mutedForeground.withValues(alpha: 0.8),
                 letterSpacing: 1.5,
               ),
             ),
@@ -35,7 +35,7 @@ class ProtocolloPanel extends ConsumerWidget {
                 decoration: BoxDecoration(
                   gradient: LinearGradient(
                     colors: [
-                      AppColors.border.withValues(alpha: 0.5),
+                      context.appColors.border.withValues(alpha: 0.5),
                       Colors.transparent,
                     ],
                   ),
@@ -115,10 +115,10 @@ class _ActionTile extends StatelessWidget {
       child: Container(
         height: 100,
         decoration: BoxDecoration(
-          color: AppColors.card.withValues(alpha: 0.4),
+          color: context.appColors.card.withValues(alpha: 0.4),
           borderRadius: BorderRadius.circular(20),
           border: Border.all(
-            color: AppColors.border.withValues(alpha: 0.5),
+            color: context.appColors.border.withValues(alpha: 0.5),
             width: 1,
           ),
           boxShadow: [
@@ -173,10 +173,10 @@ class _ActionTile extends StatelessWidget {
                     children: [
                       Text(
                         label,
-                        style: const TextStyle(
+                        style: TextStyle(
                           fontSize: 13,
                           fontWeight: FontWeight.w700,
-                          color: AppColors.foreground,
+                          color: context.appColors.foreground,
                           letterSpacing: -0.2,
                         ),
                       ),
@@ -185,7 +185,7 @@ class _ActionTile extends StatelessWidget {
                         style: TextStyle(
                           fontSize: 10,
                           fontWeight: FontWeight.w500,
-                          color: AppColors.mutedForeground.withValues(alpha: 0.8),
+                          color: context.appColors.mutedForeground.withValues(alpha: 0.8),
                         ),
                       ),
                     ],

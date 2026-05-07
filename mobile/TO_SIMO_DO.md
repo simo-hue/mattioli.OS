@@ -27,13 +27,15 @@
 - [ ] Definire i limiti di utilizzo AI per i vari piani (Basic, Premium, Elite).
 - [ ] Valutare l'implementazione di **RevenueCat** o **Glassfy** per gestire gli abbonamenti in modo semplice.
 
-## Verifica UI (Post-Fix Colore Accento)
-- [ ] Effettuare un **Hot Reload / Restart** dell'applicazione per forzare il refresh del tema globale in tutti i componenti.
-- [ ] Verificare che il colore selezionato nelle Impostazioni sia ora visibile in:
-  - Bottone "Salva Modifiche" in Informazioni Personali.
-  - Indicatori del calendario nel dashboard.
-  - Selettori delle schede (Tabs) in Statistiche e Obiettivi.
-  - Bottoni principali nei vari Modal (es. Check-in Giornaliero).
+## Verifica White Mode (Post-Implementazione)
+- [ ] Verificare che tutte le pagine siano correttamente in modalità chiara quando lo switch è attivo.
+- [ ] Controllare la leggibilità del testo (evitare testo bianco su sfondo bianco) in:
+  - Schermata di Login/Registrazione (AuthScreen).
+  - Impostazioni > Informazioni Personali / Privacy / Notifiche.
+  - Modali di gestione abitudini e check-in.
+  - Tutte le schede delle Statistiche (Trend, Mood, Performance, etc.).
+- [ ] Verificare che i grafici (fl_chart) abbiano legende e assi leggibili sia in Light che in Dark Mode.
+- [ ] Confermare che il colore accento cambi automaticamente se quello selezionato è troppo chiaro per lo sfondo bianco (gestito da `SettingsProvider`).
 
 ## Verifica Localizzazione (Post-Implementazione)
 - [ ] Cambiare la lingua da Italiano a Inglese nelle Impostazioni.

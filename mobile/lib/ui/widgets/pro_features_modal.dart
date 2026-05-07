@@ -23,9 +23,9 @@ class ProFeaturesModal extends ConsumerWidget {
     return Container(
       padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 32),
       decoration: BoxDecoration(
-        color: AppColors.background.withValues(alpha: 0.95),
+        color: context.appColors.card.withValues(alpha: 0.98),
         borderRadius: const BorderRadius.vertical(top: Radius.circular(32)),
-        border: Border.all(color: AppColors.border, width: 1.5),
+        border: Border.all(color: context.appColors.border, width: 1.5),
       ),
       child: Column(
         mainAxisSize: MainAxisSize.min,
@@ -35,7 +35,7 @@ class ProFeaturesModal extends ConsumerWidget {
             width: 40,
             height: 4,
             decoration: BoxDecoration(
-              color: AppColors.border,
+              color: context.appColors.border,
               borderRadius: BorderRadius.circular(2),
             ),
           ),
@@ -74,7 +74,7 @@ class ProFeaturesModal extends ConsumerWidget {
           Text(
             'Sblocca Mattioli.OS Pro',
             style: GoogleFonts.inter(
-              color: AppColors.foreground,
+              color: context.appColors.foreground,
               fontSize: 24,
               fontWeight: FontWeight.w800,
               letterSpacing: -1.0,
@@ -85,7 +85,7 @@ class ProFeaturesModal extends ConsumerWidget {
             'Porta il tuo sistema di abitudini al livello successivo',
             textAlign: TextAlign.center,
             style: GoogleFonts.inter(
-              color: AppColors.mutedForeground,
+              color: context.appColors.mutedForeground,
               fontSize: 14,
               fontWeight: FontWeight.w500,
             ),
@@ -94,24 +94,28 @@ class ProFeaturesModal extends ConsumerWidget {
           
           // Features List
           _buildFeatureItem(
+            context: context,
             icon: LucideIcons.brainCircuit,
             title: 'AI Coach Personalizzato',
             description: 'Analisi avanzata dei trend e suggerimenti intelligenti generati dall\'AI.',
           ),
           const SizedBox(height: 20),
           _buildFeatureItem(
+            context: context,
             icon: LucideIcons.cloud,
             title: 'Sincronizzazione Cloud illimitata',
             description: 'Accedi ai tuoi dati da qualsiasi dispositivo in tempo reale.',
           ),
           const SizedBox(height: 20),
           _buildFeatureItem(
+            context: context,
             icon: LucideIcons.trendingUp,
             title: 'Metriche Avanzate',
             description: 'Visualizza grafici dettagliati e statistiche di performance profonde.',
           ),
           const SizedBox(height: 20),
           _buildFeatureItem(
+            context: context,
             icon: LucideIcons.shieldCheck,
             title: 'Sicurezza Biometrica Avanzata',
             description: 'Proteggi i tuoi dati più sensibili con FaceID o TouchID.',
@@ -166,7 +170,7 @@ class ProFeaturesModal extends ConsumerWidget {
             child: Text(
               'Forse più tardi',
               style: GoogleFonts.inter(
-                color: AppColors.mutedForeground,
+                color: context.appColors.mutedForeground,
                 fontSize: 13,
                 fontWeight: FontWeight.w600,
               ),
@@ -179,6 +183,7 @@ class ProFeaturesModal extends ConsumerWidget {
   }
 
   Widget _buildFeatureItem({
+    required BuildContext context,
     required IconData icon,
     required String title,
     required String description,
@@ -189,9 +194,9 @@ class ProFeaturesModal extends ConsumerWidget {
         Container(
           padding: const EdgeInsets.all(10),
           decoration: BoxDecoration(
-            color: AppColors.card,
+            color: context.appColors.card,
             borderRadius: BorderRadius.circular(12),
-            border: Border.all(color: AppColors.border),
+            border: Border.all(color: context.appColors.border),
           ),
           child: Icon(icon, size: 20, color: Colors.amber),
         ),
@@ -203,7 +208,7 @@ class ProFeaturesModal extends ConsumerWidget {
               Text(
                 title,
                 style: GoogleFonts.inter(
-                  color: AppColors.foreground,
+                  color: context.appColors.foreground,
                   fontSize: 15,
                   fontWeight: FontWeight.w700,
                 ),
@@ -212,7 +217,7 @@ class ProFeaturesModal extends ConsumerWidget {
               Text(
                 description,
                 style: GoogleFonts.inter(
-                  color: AppColors.mutedForeground,
+                  color: context.appColors.mutedForeground,
                   fontSize: 12,
                   height: 1.4,
                 ),

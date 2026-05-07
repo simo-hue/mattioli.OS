@@ -41,9 +41,9 @@ class _PerformanceChartCard extends StatelessWidget {
 
     return Container(
       decoration: BoxDecoration(
-        color: AppColors.card,
+        color: context.appColors.card,
         borderRadius: BorderRadius.circular(16),
-        border: Border.all(color: AppColors.border, width: 1),
+        border: Border.all(color: context.appColors.border, width: 1),
       ),
       padding: const EdgeInsets.symmetric(vertical: 20, horizontal: 16),
       child: Column(
@@ -51,11 +51,11 @@ class _PerformanceChartCard extends StatelessWidget {
         children: [
           Text(
             context.l10n.translate('Performance per Giorno'),
-            style: const TextStyle(
+            style: TextStyle(
               fontFamily: 'Inter',
               fontSize: 18,
               fontWeight: FontWeight.w700,
-              color: AppColors.foreground,
+              color: context.appColors.foreground,
             ),
           ),
           const SizedBox(height: 24),
@@ -85,17 +85,17 @@ class _PerformanceChartCard extends StatelessWidget {
           children: [
             Text(
               context.l10n.translate(day),
-              style: const TextStyle(
+              style: TextStyle(
                 fontFamily: 'Inter',
                 fontSize: 12,
-                color: AppColors.mutedForeground,
+                color: context.appColors.mutedForeground,
               ),
             ),
             const SizedBox(height: 10),
             Container(
               height: height,
               decoration: BoxDecoration(
-                color: const Color(0xFF18181B), // Dark background for the uncompleted part
+                color: context.appColors.muted.withValues(alpha: 0.3), // Dynamic Grey
                 borderRadius: BorderRadius.circular(6),
               ),
               alignment: Alignment.bottomCenter,
@@ -111,11 +111,11 @@ class _PerformanceChartCard extends StatelessWidget {
             const SizedBox(height: 10),
             Text(
               '$pct%',
-              style: const TextStyle(
+              style: TextStyle(
                 fontFamily: 'Inter',
                 fontSize: 12,
                 fontWeight: FontWeight.w700,
-                color: AppColors.foreground,
+                color: context.appColors.foreground,
               ),
             ),
           ],
@@ -149,20 +149,20 @@ class _GiornoForteCard extends StatelessWidget {
               children: [
                 Text(
                   '${context.l10n.translate('Giorno più forte')}: ${context.l10n.translate('Mar')}',
-                  style: const TextStyle(
+                  style: TextStyle(
                     fontFamily: 'Inter',
                     fontSize: 15,
                     fontWeight: FontWeight.w700,
-                    color: AppColors.foreground,
+                    color: context.appColors.foreground,
                   ),
                 ),
                 SizedBox(height: 2),
                 Text(
                   '${context.l10n.translate('Ben fatto! % di completamento').replaceFirst('done', '67')} (12/18)',
-                  style: const TextStyle(
+                  style: TextStyle(
                     fontFamily: 'Inter',
                     fontSize: 13,
-                    color: AppColors.mutedForeground,
+                    color: context.appColors.mutedForeground,
                   ),
                 ),
               ],
@@ -197,20 +197,20 @@ class _GiornoDeboleCard extends StatelessWidget {
               children: [
                 Text(
                   '${context.l10n.translate('Giorno più debole')}: ${context.l10n.translate('Dom')}',
-                  style: const TextStyle(
+                  style: TextStyle(
                     fontFamily: 'Inter',
                     fontSize: 15,
                     fontWeight: FontWeight.w700,
-                    color: AppColors.foreground,
+                    color: context.appColors.foreground,
                   ),
                 ),
                 SizedBox(height: 2),
                 Text(
                   '${context.l10n.translate('Solo % di completamento').replaceFirst('done', '47')} (8/17)',
-                  style: const TextStyle(
+                  style: TextStyle(
                     fontFamily: 'Inter',
                     fontSize: 13,
-                    color: AppColors.mutedForeground,
+                    color: context.appColors.mutedForeground,
                   ),
                 ),
               ],

@@ -46,7 +46,7 @@ class _MacroGoalsScreenState extends ConsumerState<MacroGoalsScreen>
         );
 
     return Scaffold(
-      backgroundColor: AppColors.background,
+      backgroundColor: context.appColors.background,
       body: SafeArea(
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
@@ -148,7 +148,7 @@ class _MacroGoalsScreenState extends ConsumerState<MacroGoalsScreen>
                 style: GoogleFonts.inter(
                   fontSize: 28,
                   fontWeight: FontWeight.w700,
-                  color: AppColors.foreground,
+                  color: context.appColors.foreground,
                   letterSpacing: -1,
                 ),
               ),
@@ -180,9 +180,9 @@ class _MacroGoalsScreenState extends ConsumerState<MacroGoalsScreen>
       child: Container(
         padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
         decoration: BoxDecoration(
-          color: AppColors.card.withValues(alpha: 0.5),
+          color: context.appColors.card.withValues(alpha: 0.5),
           borderRadius: BorderRadius.circular(12),
-          border: Border.all(color: AppColors.borderHover),
+          border: Border.all(color: context.appColors.border),
         ),
         child: Row(
           mainAxisSize: MainAxisSize.min,
@@ -194,11 +194,11 @@ class _MacroGoalsScreenState extends ConsumerState<MacroGoalsScreen>
               style: GoogleFonts.inter(
                 fontSize: 13,
                 fontWeight: FontWeight.w600,
-                color: AppColors.foreground,
+                color: context.appColors.foreground,
               ),
             ),
             const SizedBox(width: 4),
-            const Icon(LucideIcons.chevronDown, size: 12, color: AppColors.mutedForeground),
+            Icon(LucideIcons.chevronDown, size: 12, color: context.appColors.mutedForeground),
           ],
         ),
       ),
@@ -210,9 +210,9 @@ class _MacroGoalsScreenState extends ConsumerState<MacroGoalsScreen>
       height: 44,
       padding: const EdgeInsets.all(4),
       decoration: BoxDecoration(
-        color: AppColors.card.withValues(alpha: 0.3),
+        color: context.appColors.card.withValues(alpha: 0.3),
         borderRadius: BorderRadius.circular(14),
-        border: Border.all(color: AppColors.border.withValues(alpha: 0.5), width: 1),
+        border: Border.all(color: context.appColors.border.withValues(alpha: 0.5), width: 1),
       ),
       child: Row(
         children: [
@@ -257,7 +257,7 @@ class _MacroGoalsScreenState extends ConsumerState<MacroGoalsScreen>
               fontFamily: 'Inter',
               fontSize: 11,
               fontWeight: active ? FontWeight.w800 : FontWeight.w600,
-              color: active ? AppColors.background : AppColors.mutedForeground,
+              color: active ? context.appColors.background : context.appColors.mutedForeground,
               letterSpacing: -0.2,
             ),
           ),
@@ -277,7 +277,7 @@ class _MacroGoalsScreenState extends ConsumerState<MacroGoalsScreen>
 
     showModalBottomSheet(
       context: context,
-      backgroundColor: AppColors.card,
+      backgroundColor: context.appColors.card,
       shape: const RoundedRectangleBorder(
         borderRadius: BorderRadius.vertical(top: Radius.circular(24)),
       ),
@@ -290,13 +290,13 @@ class _MacroGoalsScreenState extends ConsumerState<MacroGoalsScreen>
               width: 40,
               height: 4,
               decoration: BoxDecoration(
-                color: AppColors.border,
+                color: context.appColors.border,
                 borderRadius: BorderRadius.circular(2),
               ),
             ),
             const SizedBox(height: 20),
-            const Padding(
-              padding: EdgeInsets.only(bottom: 12),
+            Padding(
+              padding: const EdgeInsets.only(bottom: 12),
               child: Align(
                 alignment: Alignment.center,
                 child: Text(
@@ -304,7 +304,7 @@ class _MacroGoalsScreenState extends ConsumerState<MacroGoalsScreen>
                   style: TextStyle(
                     fontFamily: 'Inter', 
                     fontWeight: FontWeight.w800, 
-                    color: AppColors.mutedForeground, 
+                    color: context.appColors.mutedForeground, 
                     fontSize: 10,
                     letterSpacing: 1.2,
                   )
@@ -317,14 +317,14 @@ class _MacroGoalsScreenState extends ConsumerState<MacroGoalsScreen>
                 leading: Icon(
                   type.i,
                   size: 20,
-                  color: isSel ? primaryColor : AppColors.mutedForeground.withValues(alpha: 0.6),
+                  color: isSel ? primaryColor : context.appColors.mutedForeground.withValues(alpha: 0.6),
                 ),
                 title: Text(
                   type.l,
                   style: TextStyle(
                     fontFamily: 'Inter',
                     fontSize: 16,
-                    color: isSel ? AppColors.foreground : AppColors.mutedForeground,
+                    color: isSel ? context.appColors.foreground : context.appColors.mutedForeground,
                     fontWeight: isSel ? FontWeight.w700 : FontWeight.w500,
                   ),
                 ),
@@ -350,7 +350,7 @@ class _MacroGoalsScreenState extends ConsumerState<MacroGoalsScreen>
         padding: const EdgeInsets.fromLTRB(16, 6, 16, 8),
         child: Text(
           'Visione a lungo termine della tua vita.',
-          style: GoogleFonts.inter(fontSize: 14, color: AppColors.mutedForeground),
+          style: GoogleFonts.inter(fontSize: 14, color: context.appColors.mutedForeground),
         ),
       );
     }
@@ -361,7 +361,7 @@ class _MacroGoalsScreenState extends ConsumerState<MacroGoalsScreen>
     ];
 
     String periodTitle = '';
-    Color highlightColor = AppColors.foreground;
+    Color highlightColor = context.appColors.foreground;
 
     switch (vs.selectedType) {
       case GoalType.annual:
@@ -399,9 +399,9 @@ class _MacroGoalsScreenState extends ConsumerState<MacroGoalsScreen>
               padding: const EdgeInsets.all(8),
               decoration: BoxDecoration(
                 shape: BoxShape.circle,
-                color: AppColors.card.withValues(alpha: 0.8),
+                color: context.appColors.card.withValues(alpha: 0.8),
               ),
-              child: Icon(LucideIcons.chevronLeft, size: 20, color: AppColors.foreground),
+              child: Icon(LucideIcons.chevronLeft, size: 20, color: context.appColors.foreground),
             ),
           ),
 
@@ -430,9 +430,9 @@ class _MacroGoalsScreenState extends ConsumerState<MacroGoalsScreen>
               padding: const EdgeInsets.all(8),
               decoration: BoxDecoration(
                 shape: BoxShape.circle,
-                color: AppColors.card.withValues(alpha: 0.8),
+                color: context.appColors.card.withValues(alpha: 0.8),
               ),
-              child: Icon(LucideIcons.chevronRight, size: 20, color: AppColors.foreground),
+              child: Icon(LucideIcons.chevronRight, size: 20, color: context.appColors.foreground),
             ),
           ),
         ],
@@ -460,7 +460,7 @@ class _GoalsList extends ConsumerWidget {
             children: [
               Icon(
                 LucideIcons.target,
-                color: AppColors.borderActive,
+                color: context.appColors.border,
                 size: 40,
               ),
               const SizedBox(height: 16),
@@ -470,7 +470,7 @@ class _GoalsList extends ConsumerWidget {
                 style: GoogleFonts.inter(
                   fontSize: 15,
                   fontWeight: FontWeight.w500,
-                  color: AppColors.foreground,
+                  color: context.appColors.foreground,
                 ),
               ),
               const SizedBox(height: 4),
@@ -479,7 +479,7 @@ class _GoalsList extends ConsumerWidget {
                 textAlign: TextAlign.center,
                 style: GoogleFonts.inter(
                   fontSize: 13,
-                  color: AppColors.mutedForeground,
+                  color: context.appColors.mutedForeground,
                   height: 1.4,
                 ),
               ),
@@ -508,7 +508,7 @@ class _GoalsList extends ConsumerWidget {
     final label = status == GoalStatus.completed ? 'COMPLETATI' : 'FALLITI';
     final color = status == GoalStatus.completed
         ? const Color(0xFF10B981).withValues(alpha: 0.7)
-        : AppColors.destructive.withValues(alpha: 0.7);
+        : context.appColors.destructive.withValues(alpha: 0.7);
 
     return Padding(
       padding: const EdgeInsets.only(top: 24, bottom: 12),

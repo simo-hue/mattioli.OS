@@ -44,9 +44,9 @@ class _DailyCheckInModalState extends ConsumerState<DailyCheckInModal> {
   @override
   Widget build(BuildContext context) {
     return Container(
-      decoration: const BoxDecoration(
-        color: AppColors.card,
-        borderRadius: BorderRadius.vertical(top: Radius.circular(24)),
+      decoration: BoxDecoration(
+        color: context.appColors.card,
+        borderRadius: const BorderRadius.vertical(top: Radius.circular(24)),
       ),
       padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 12),
       child: Column(
@@ -57,7 +57,7 @@ class _DailyCheckInModalState extends ConsumerState<DailyCheckInModal> {
             width: 40,
             height: 4,
             decoration: BoxDecoration(
-              color: AppColors.border,
+              color: context.appColors.border,
               borderRadius: BorderRadius.circular(2),
             ),
           ),
@@ -66,21 +66,21 @@ class _DailyCheckInModalState extends ConsumerState<DailyCheckInModal> {
           // Header
           Text(
             context.l10n.translate('Check-in Giornaliero'),
-            style: const TextStyle(
+            style: TextStyle(
               fontFamily: 'Inter',
               fontSize: 22,
               fontWeight: FontWeight.w700,
-              color: AppColors.foreground,
+              color: context.appColors.foreground,
               letterSpacing: -0.5,
             ),
           ),
           const SizedBox(height: 4),
           Text(
             context.l10n.translate('Traccia il tuo umore ed energia.'),
-            style: const TextStyle(
+            style: TextStyle(
               fontFamily: 'Inter',
               fontSize: 14,
-              color: AppColors.mutedForeground,
+              color: context.appColors.mutedForeground,
             ),
           ),
           const SizedBox(height: 32),
@@ -89,20 +89,20 @@ class _DailyCheckInModalState extends ConsumerState<DailyCheckInModal> {
           Container(
             padding: const EdgeInsets.all(20),
             decoration: BoxDecoration(
-              color: AppColors.cardElevated,
+              color: context.appColors.cardElevated,
               borderRadius: BorderRadius.circular(16),
-              border: Border.all(color: AppColors.border, width: 1),
+              border: Border.all(color: context.appColors.border, width: 1),
             ),
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
                 Text(
                   context.l10n.translate('Check-in Giornaliero'),
-                  style: const TextStyle(
+                  style: TextStyle(
                     fontFamily: 'Inter',
                     fontSize: 18,
                     fontWeight: FontWeight.w600,
-                    color: AppColors.foreground,
+                    color: context.appColors.foreground,
                   ),
                 ),
                 const SizedBox(height: 24),
@@ -140,7 +140,7 @@ class _DailyCheckInModalState extends ConsumerState<DailyCheckInModal> {
                     },
                     style: ElevatedButton.styleFrom(
                       backgroundColor: Theme.of(context).colorScheme.primary,
-                      foregroundColor: AppColors.background,
+                      foregroundColor: Theme.of(context).colorScheme.primary.computeLuminance() > 0.5 ? Colors.black : Colors.white,
                       shape: RoundedRectangleBorder(
                         borderRadius: BorderRadius.circular(12),
                       ),
@@ -182,23 +182,23 @@ class _DailyCheckInModalState extends ConsumerState<DailyCheckInModal> {
       children: [
         Row(
           children: [
-            Icon(icon, size: 18, color: AppColors.mutedForeground),
+            Icon(icon, size: 18, color: context.appColors.mutedForeground),
             const SizedBox(width: 8),
             Text(
               label,
-              style: const TextStyle(
+              style: TextStyle(
                 fontSize: 15,
-                color: AppColors.mutedForeground,
+                color: context.appColors.mutedForeground,
                 fontWeight: FontWeight.w500,
               ),
             ),
             const Spacer(),
             Text(
               '$emoji ${value.round()}/10',
-              style: const TextStyle(
+              style: TextStyle(
                 fontSize: 18,
                 fontWeight: FontWeight.w700,
-                color: AppColors.foreground,
+                color: context.appColors.foreground,
               ),
             ),
           ],
@@ -207,7 +207,7 @@ class _DailyCheckInModalState extends ConsumerState<DailyCheckInModal> {
         SliderTheme(
           data: SliderTheme.of(context).copyWith(
             activeTrackColor: Theme.of(context).colorScheme.primary,
-            inactiveTrackColor: AppColors.border,
+            inactiveTrackColor: context.appColors.border,
             thumbColor: Theme.of(context).colorScheme.primary,
             overlayColor: Theme.of(context).colorScheme.primary.withValues(alpha: 0.1),
             trackHeight: 4,

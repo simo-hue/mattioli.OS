@@ -77,7 +77,7 @@ class _WeeklyViewWidgetState extends ConsumerState<WeeklyViewWidget> {
       },
       child: Container(
         padding: const EdgeInsets.symmetric(vertical: 16, horizontal: 8),
-        decoration: AppTheme.glassPanelDecoration(radius: 14),
+        decoration: AppTheme.glassPanelDecoration(context, radius: 14),
         child: AnimatedSwitcher(
           duration: const Duration(milliseconds: 450),
           switchInCurve: Curves.easeOutQuart,
@@ -122,11 +122,11 @@ class _WeeklyViewWidgetState extends ConsumerState<WeeklyViewWidget> {
                   children: [
                     Text(
                       _formatDateRange(),
-                      style: const TextStyle(
+                      style: TextStyle(
                         fontFamily: 'Inter',
                         fontSize: 18,
                         fontWeight: FontWeight.w700,
-                        color: AppColors.foreground,
+                        color: context.appColors.foreground,
                         letterSpacing: -0.5,
                       ),
                     ),
@@ -157,7 +157,7 @@ class _WeeklyViewWidgetState extends ConsumerState<WeeklyViewWidget> {
                             fontFamily: 'Inter',
                             fontSize: 10,
                             fontWeight: FontWeight.w600,
-                            color: isToday ? AppColors.mutedForeground : AppColors.mutedForeground.withValues(alpha: 0.5),
+                            color: isToday ? context.appColors.mutedForeground : context.appColors.mutedForeground.withValues(alpha: 0.5),
                             letterSpacing: 0.5,
                           ),
                         ),
@@ -166,9 +166,9 @@ class _WeeklyViewWidgetState extends ConsumerState<WeeklyViewWidget> {
                           padding: const EdgeInsets.symmetric(vertical: 4, horizontal: 8),
                           decoration: isToday
                               ? BoxDecoration(
-                                  color: AppColors.cardElevated,
+                                  color: context.appColors.card,
                                   borderRadius: BorderRadius.circular(8),
-                                  border: Border.all(color: AppColors.border, width: 1),
+                                  border: Border.all(color: context.appColors.border, width: 1),
                                   boxShadow: [
                                     BoxShadow(
                                       color: Colors.black.withValues(alpha: 0.3),
@@ -184,7 +184,7 @@ class _WeeklyViewWidgetState extends ConsumerState<WeeklyViewWidget> {
                               fontFamily: 'Inter',
                               fontSize: 16,
                               fontWeight: isToday ? FontWeight.w700 : FontWeight.w600,
-                              color: isToday ? AppColors.foreground : AppColors.mutedForeground,
+                              color: isToday ? context.appColors.foreground : context.appColors.mutedForeground,
                             ),
                           ),
                         ),
@@ -272,7 +272,7 @@ class _NavButton extends StatelessWidget {
           color: Colors.transparent,
           borderRadius: BorderRadius.circular(6),
         ),
-        child: Icon(icon, size: 20, color: AppColors.foreground),
+        child: Icon(icon, size: 20, color: context.appColors.foreground),
       ),
     );
   }
@@ -297,24 +297,24 @@ class _HabitCapsule extends StatelessWidget {
     final bool isMissed = status == 'missed';
 
     Color capsuleColor = Colors.transparent;
-    Color borderColor = AppColors.border.withValues(alpha: 0.5);
+    Color borderColor = context.appColors.border.withValues(alpha: 0.5);
     List<BoxShadow>? shadows;
 
     if (isDone) {
-      capsuleColor = isPrivacy ? AppColors.muted : AppColors.success;
-      borderColor = isPrivacy ? AppColors.border : AppColors.success.withValues(alpha: 0.5);
+      capsuleColor = isPrivacy ? context.appColors.mutedForeground.withValues(alpha: 0.2) : context.appColors.primary;
+      borderColor = isPrivacy ? context.appColors.border : context.appColors.primary.withValues(alpha: 0.5);
       if (!isPrivacy) {
         shadows = [
           BoxShadow(
-            color: AppColors.success.withValues(alpha: 0.4),
+            color: context.appColors.primary.withValues(alpha: 0.4),
             blurRadius: 8,
             spreadRadius: -1,
           )
         ];
       }
     } else if (isMissed) {
-      capsuleColor = const Color(0xFFEF4444).withValues(alpha: 0.2);
-      borderColor = const Color(0xFFEF4444).withValues(alpha: 0.5);
+      capsuleColor = context.appColors.destructive.withValues(alpha: 0.2);
+      borderColor = context.appColors.destructive.withValues(alpha: 0.5);
     }
 
     return GestureDetector(

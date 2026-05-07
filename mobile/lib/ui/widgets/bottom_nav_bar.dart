@@ -38,15 +38,15 @@ class AppBottomNavBar extends ConsumerWidget {
             width: double.infinity,
             height: 68,
             decoration: BoxDecoration(
-              color: const Color(0xCC050505),
+              color: context.appColors.card.withValues(alpha: 0.8),
               borderRadius: BorderRadius.circular(28),
               border: Border.all(
-                color: Colors.white.withValues(alpha: 0.1),
+                color: context.appColors.border.withValues(alpha: 0.5),
                 width: 1,
               ),
               boxShadow: [
                 BoxShadow(
-                  color: Colors.black.withValues(alpha: 0.3),
+                  color: Colors.black.withValues(alpha: context.appColors.background.computeLuminance() > 0.5 ? 0.1 : 0.3),
                   blurRadius: 20,
                   offset: const Offset(0, 10),
                 ),
@@ -156,7 +156,7 @@ class _NavBarItem extends StatelessWidget {
                 child: Icon(
                   icon,
                   size: 22,
-                  color: isActive ? primaryColor : AppColors.mutedForeground,
+                  color: isActive ? primaryColor : context.appColors.mutedForeground,
                 ),
               ),
               const SizedBox(height: 6),
@@ -165,7 +165,7 @@ class _NavBarItem extends StatelessWidget {
                 style: GoogleFonts.inter(
                   fontSize: 10,
                   fontWeight: isActive ? FontWeight.w700 : FontWeight.w600,
-                  color: isActive ? primaryColor : AppColors.mutedForeground,
+                  color: isActive ? primaryColor : context.appColors.mutedForeground,
                   letterSpacing: -0.2,
                 ),
               ),

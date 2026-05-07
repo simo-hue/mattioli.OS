@@ -94,9 +94,9 @@ class _StatCard extends StatelessWidget {
   Widget build(BuildContext context) {
     return Container(
       decoration: BoxDecoration(
-        color: AppColors.card,
+        color: context.appColors.card,
         borderRadius: BorderRadius.circular(24),
-        border: Border.all(color: AppColors.border, width: 1),
+        border: Border.all(color: context.appColors.border, width: 1),
         boxShadow: [
           BoxShadow(
             color: Colors.black.withValues(alpha: 0.05),
@@ -146,11 +146,11 @@ class _StatCard extends StatelessWidget {
                     Expanded(
                       child: Text(
                         title,
-                        style: const TextStyle(
+                        style: TextStyle(
                           fontFamily: 'Inter',
                           fontSize: 10,
                           fontWeight: FontWeight.w600,
-                          color: AppColors.mutedForeground,
+                          color: context.appColors.mutedForeground,
                           letterSpacing: 0.5,
                         ),
                         maxLines: 1,
@@ -164,11 +164,11 @@ class _StatCard extends StatelessWidget {
                   children: [
                     Text(
                       value,
-                      style: const TextStyle(
+                      style: TextStyle(
                         fontFamily: 'Inter',
                         fontSize: 22,
                         fontWeight: FontWeight.w800,
-                        color: AppColors.foreground,
+                        color: context.appColors.foreground,
                         letterSpacing: -0.5,
                       ),
                     ),
@@ -266,11 +266,11 @@ class _AbitudiniChiaveSectionState extends State<_AbitudiniChiaveSection> {
           children: [
             const Icon(LucideIcons.crown, size: 16, color: Color(0xFFEAB308)),
             const SizedBox(width: 8),
-            Text(context.l10n.translate('Abitudini Chiave'), style: const TextStyle(fontFamily: 'Inter', fontSize: 14, fontWeight: FontWeight.w700, color: AppColors.foreground)),
+            Text(context.l10n.translate('Abitudini Chiave'), style: TextStyle(fontFamily: 'Inter', fontSize: 14, fontWeight: FontWeight.w700, color: context.appColors.foreground)),
           ],
         ),
         const SizedBox(height: 4),
-        Text(context.l10n.translate('Abitudini che influenzano positivamente molte altre'), style: const TextStyle(fontFamily: 'Inter', fontSize: 11, color: AppColors.mutedForeground)),
+        Text(context.l10n.translate('Abitudini che influenzano positivamente molte altre'), style: TextStyle(fontFamily: 'Inter', fontSize: 11, color: context.appColors.mutedForeground)),
         const SizedBox(height: 16),
         
         // Carousel
@@ -305,7 +305,7 @@ class _AbitudiniChiaveSectionState extends State<_AbitudiniChiaveSection> {
                 decoration: BoxDecoration(
                   color: isActive 
                       ? const Color(0xFFEAB308)
-                      : AppColors.mutedForeground.withValues(alpha: 0.3),
+                      : context.appColors.mutedForeground.withValues(alpha: 0.3),
                   borderRadius: BorderRadius.circular(3),
                 ),
               );
@@ -338,9 +338,9 @@ class _AbitudineChiaveCard extends StatelessWidget {
       // width: 280, // Removed fixed width for PageView compatibility
       padding: const EdgeInsets.all(16),
       decoration: BoxDecoration(
-        color: AppColors.background,
+        color: context.appColors.background,
         borderRadius: BorderRadius.circular(20),
-        border: Border.all(color: AppColors.border, width: 1),
+        border: Border.all(color: context.appColors.border, width: 1),
         boxShadow: [
           BoxShadow(
             color: Colors.black.withValues(alpha: 0.1),
@@ -369,11 +369,11 @@ class _AbitudineChiaveCard extends StatelessWidget {
               Expanded(
                 child: Text(
                   title,
-                  style: const TextStyle(
+                  style: TextStyle(
                     fontFamily: 'Inter',
                     fontSize: 16,
                     fontWeight: FontWeight.w700,
-                    color: AppColors.foreground,
+                    color: context.appColors.foreground,
                     letterSpacing: -0.3,
                   ),
                 ),
@@ -403,11 +403,11 @@ class _AbitudineChiaveCard extends StatelessWidget {
               const SizedBox(width: 10),
               Text(
                 '${correlations.length + extraConnections} ${context.l10n.translate('connessioni')}',
-                style: const TextStyle(
+                style: TextStyle(
                   fontFamily: 'Inter',
                   fontSize: 11,
                   fontWeight: FontWeight.w500,
-                  color: AppColors.mutedForeground,
+                  color: context.appColors.mutedForeground,
                 ),
               ),
             ],
@@ -422,10 +422,10 @@ class _AbitudineChiaveCard extends StatelessWidget {
                 children: [
                   Text(
                     c.key,
-                    style: const TextStyle(
+                    style: TextStyle(
                       fontFamily: 'Inter',
                       fontSize: 12,
-                      color: AppColors.mutedForeground,
+                      color: context.appColors.mutedForeground,
                     ),
                   ),
                   Text(
@@ -445,42 +445,42 @@ class _AbitudineChiaveCard extends StatelessWidget {
           Center(
             child: Text(
               '+$extraConnections altre connessioni',
-              style: const TextStyle(
+              style: TextStyle(
                 fontFamily: 'Inter',
                 fontSize: 10,
-                color: AppColors.mutedForeground,
+                color: context.appColors.mutedForeground,
                 fontStyle: FontStyle.italic,
               ),
             ),
           ),
           const SizedBox(height: 16),
-          Divider(color: AppColors.border, height: 1),
+          Divider(color: context.appColors.border, height: 1),
           const SizedBox(height: 14),
           Row(
             mainAxisAlignment: MainAxisAlignment.spaceBetween,
             children: [
               Row(
                 children: [
-                  const Icon(LucideIcons.chartSpline, size: 14, color: AppColors.mutedForeground),
+                  Icon(LucideIcons.chartSpline, size: 14, color: context.appColors.mutedForeground),
                   const SizedBox(width: 6),
                   Text(
                     context.l10n.translate('Media Impatto'),
-                    style: const TextStyle(
+                    style: TextStyle(
                       fontFamily: 'Inter',
                       fontSize: 12,
                       fontWeight: FontWeight.w500,
-                      color: AppColors.mutedForeground,
+                      color: context.appColors.mutedForeground,
                     ),
                   ),
                 ],
               ),
               Text(
                 media,
-                style: const TextStyle(
+                style: TextStyle(
                   fontFamily: 'Inter',
                   fontSize: 14,
                   fontWeight: FontWeight.w800,
-                  color: AppColors.foreground,
+                  color: context.appColors.foreground,
                 ),
               ),
             ],
@@ -588,21 +588,21 @@ class _CorrelazioniPositiveSectionState extends State<_CorrelazioniPositiveSecti
           children: [
             const Icon(LucideIcons.heart, size: 16, color: Color(0xFF10B981)),
             const SizedBox(width: 8),
-            Text(context.l10n.translate('Correlazioni Positive'), style: const TextStyle(fontFamily: 'Inter', fontSize: 14, fontWeight: FontWeight.w700, color: AppColors.foreground)),
+            Text(context.l10n.translate('Correlazioni Positive'), style: TextStyle(fontFamily: 'Inter', fontSize: 14, fontWeight: FontWeight.w700, color: context.appColors.foreground)),
           ],
         ),
         const SizedBox(height: 16),
         
         // Carousel
         SizedBox(
-          height: 190, // Adjusted for correlation cards
+          height: 240, // Increased height for premium cards and shadows
           child: PageView.builder(
             controller: _pageController,
             itemCount: cards.length,
             onPageChanged: (index) => setState(() => _currentPage = index),
             itemBuilder: (context, index) {
               return Padding(
-                padding: const EdgeInsets.symmetric(horizontal: 8),
+                padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 10), // Added vertical padding for shadows
                 child: cards[index],
               );
             },
@@ -625,7 +625,7 @@ class _CorrelazioniPositiveSectionState extends State<_CorrelazioniPositiveSecti
                 decoration: BoxDecoration(
                   color: isActive 
                       ? const Color(0xFF10B981)
-                      : AppColors.mutedForeground.withValues(alpha: 0.3),
+                      : context.appColors.mutedForeground.withValues(alpha: 0.3),
                   borderRadius: BorderRadius.circular(3),
                 ),
               );
@@ -665,11 +665,18 @@ class _CorrelazioneDetailCard extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Container(
-      padding: const EdgeInsets.all(16),
+      padding: const EdgeInsets.all(20), // Increased padding for a more "airy" feel
       decoration: BoxDecoration(
-        color: AppColors.card,
-        borderRadius: BorderRadius.circular(12),
-        border: Border.all(color: AppColors.borderHover, width: 1),
+        color: context.appColors.card,
+        borderRadius: BorderRadius.circular(20), // Matched Key Habits
+        border: Border.all(color: context.appColors.border, width: 1),
+        boxShadow: [
+          BoxShadow(
+            color: Colors.black.withValues(alpha: 0.1),
+            blurRadius: 15,
+            offset: const Offset(0, 8),
+          ),
+        ],
       ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
@@ -699,7 +706,7 @@ class _CorrelazioneDetailCard extends StatelessWidget {
                   children: [
                     Container(width: 8, height: 8, decoration: BoxDecoration(color: habit1Color, shape: BoxShape.circle)),
                     const SizedBox(width: 8),
-                    Expanded(child: Text(habit1, style: const TextStyle(fontFamily: 'Inter', fontSize: 13, fontWeight: FontWeight.w600, color: AppColors.foreground), overflow: TextOverflow.ellipsis)),
+                    Expanded(child: Text(habit1, style: TextStyle(fontFamily: 'Inter', fontSize: 13, fontWeight: FontWeight.w600, color: context.appColors.foreground), overflow: TextOverflow.ellipsis)),
                   ],
                 ),
               ),
@@ -710,7 +717,7 @@ class _CorrelazioneDetailCard extends StatelessWidget {
                   children: [
                     Container(width: 8, height: 8, decoration: BoxDecoration(color: habit2Color, shape: BoxShape.circle)),
                     const SizedBox(width: 8),
-                    Expanded(child: Text(habit2, style: const TextStyle(fontFamily: 'Inter', fontSize: 13, fontWeight: FontWeight.w600, color: AppColors.foreground), overflow: TextOverflow.ellipsis)),
+                    Expanded(child: Text(habit2, style: TextStyle(fontFamily: 'Inter', fontSize: 13, fontWeight: FontWeight.w600, color: context.appColors.foreground), overflow: TextOverflow.ellipsis)),
                   ],
                 ),
               ),
@@ -730,9 +737,9 @@ class _CorrelazioneDetailCard extends StatelessWidget {
           Row(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              const Icon(LucideIcons.chevronRight, size: 14, color: AppColors.mutedForeground),
+              const Icon(LucideIcons.chevronRight, size: 14, color: Colors.grey),
               const SizedBox(width: 6),
-              Expanded(child: Text(desc, style: const TextStyle(fontFamily: 'Inter', fontSize: 10, color: AppColors.mutedForeground, height: 1.4))),
+              Expanded(child: Text(desc, style: TextStyle(fontFamily: 'Inter', fontSize: 10, color: context.appColors.mutedForeground, height: 1.4))),
             ],
           ),
         ],
@@ -753,14 +760,14 @@ class _DetailBox extends StatelessWidget {
     return Container(
       padding: const EdgeInsets.symmetric(vertical: 8),
       decoration: BoxDecoration(
-        color: AppColors.background,
+        color: context.appColors.background,
         borderRadius: BorderRadius.circular(8),
       ),
       child: Column(
         children: [
-          Text(title, style: const TextStyle(fontFamily: 'Inter', fontSize: 9, color: AppColors.mutedForeground)),
+          Text(title, style: TextStyle(fontFamily: 'Inter', fontSize: 9, color: context.appColors.mutedForeground)),
           const SizedBox(height: 4),
-          Text(value, style: TextStyle(fontFamily: 'Inter', fontSize: 14, fontWeight: FontWeight.w700, color: valueColor ?? AppColors.foreground)),
+          Text(value, style: TextStyle(fontFamily: 'Inter', fontSize: 14, fontWeight: FontWeight.w700, color: valueColor ?? context.appColors.foreground)),
         ],
       ),
     );
@@ -793,13 +800,13 @@ class _CorrelazioniNegativeSectionState extends State<_CorrelazioniNegativeSecti
   @override
   Widget build(BuildContext context) {
     final List<Widget> cards = [
-      const _CorrelazioneDetailCard(
+      _CorrelazioneDetailCard(
         tag: 'Correlazione Negativa - Moderata',
-        tagColor: Color(0xFFEF4444),
+        tagColor: const Color(0xFFEF4444),
         habit1: '1 YT-Video',
-        habit1Color: Color(0xFFEF4444),
+        habit1Color: const Color(0xFFEF4444),
         habit2: 'Caviglia',
-        habit2Color: Color(0xFFF59E0B),
+        habit2Color: const Color(0xFFF59E0B),
         coef: '-0.43',
         cooccorrenza: '15%',
         giorni: '80',
@@ -816,23 +823,23 @@ class _CorrelazioniNegativeSectionState extends State<_CorrelazioniNegativeSecti
           children: [
             const Icon(LucideIcons.triangleAlert, size: 16, color: Color(0xFFEAB308)),
             const SizedBox(width: 8),
-            Text(context.l10n.translate('Correlazioni Negative'), style: const TextStyle(fontFamily: 'Inter', fontSize: 14, fontWeight: FontWeight.w700, color: AppColors.foreground)),
+            Text(context.l10n.translate('Correlazioni Negative'), style: TextStyle(fontFamily: 'Inter', fontSize: 14, fontWeight: FontWeight.w700, color: context.appColors.foreground)),
           ],
         ),
         const SizedBox(height: 4),
-        Text(context.l10n.translate('Queste abitudini tendono a non essere completate insieme.'), style: const TextStyle(fontFamily: 'Inter', fontSize: 11, color: AppColors.mutedForeground)),
+        Text(context.l10n.translate('Queste abitudini tendono a non essere completate insieme.'), style: TextStyle(fontFamily: 'Inter', fontSize: 11, color: context.appColors.mutedForeground)),
         const SizedBox(height: 16),
         
         // Carousel
         SizedBox(
-          height: 190,
+          height: 240, // Increased height
           child: PageView.builder(
             controller: _pageController,
             itemCount: cards.length,
             onPageChanged: (index) => setState(() => _currentPage = index),
             itemBuilder: (context, index) {
               return Padding(
-                padding: const EdgeInsets.symmetric(horizontal: 8),
+                padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 10), // Added vertical padding for shadows
                 child: cards[index],
               );
             },
@@ -856,7 +863,7 @@ class _CorrelazioniNegativeSectionState extends State<_CorrelazioniNegativeSecti
                   decoration: BoxDecoration(
                     color: isActive 
                         ? const Color(0xFFEF4444)
-                        : AppColors.mutedForeground.withValues(alpha: 0.3),
+                        : context.appColors.mutedForeground.withValues(alpha: 0.3),
                     borderRadius: BorderRadius.circular(3),
                   ),
                 );
@@ -878,9 +885,9 @@ class _AttivitaRecenteSection extends StatelessWidget {
     return Container(
       padding: const EdgeInsets.all(20),
       decoration: BoxDecoration(
-        color: AppColors.card,
+        color: context.appColors.card,
         borderRadius: BorderRadius.circular(20),
-        border: Border.all(color: AppColors.border, width: 1),
+        border: Border.all(color: context.appColors.border, width: 1),
       ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
@@ -904,20 +911,20 @@ class _AttivitaRecenteSection extends StatelessWidget {
                     children: [
                       Text(
                         context.l10n.translate('Attività Recente'),
-                        style: const TextStyle(
+                        style: TextStyle(
                           fontFamily: 'Inter',
                           fontSize: 16,
                           fontWeight: FontWeight.w700,
-                          color: AppColors.foreground,
+                          color: context.appColors.foreground,
                           letterSpacing: -0.5,
                         ),
                       ),
                       Text(
                         context.l10n.translate('La tua costanza negli ultimi mesi'),
-                        style: const TextStyle(
+                        style: TextStyle(
                           fontFamily: 'Inter',
                           fontSize: 11,
-                          color: AppColors.mutedForeground,
+                          color: context.appColors.mutedForeground,
                         ),
                       ),
                     ],
@@ -930,7 +937,7 @@ class _AttivitaRecenteSection extends StatelessWidget {
           
           // Activity Grid
           Center(
-            child: _buildActivityGrid(accentColor),
+            child: _buildActivityGrid(context, accentColor),
           ),
           
           const SizedBox(height: 20),
@@ -941,31 +948,31 @@ class _AttivitaRecenteSection extends StatelessWidget {
             children: [
               Text(
                 context.l10n.translate('Meno'),
-                style: const TextStyle(
+                style: TextStyle(
                   fontFamily: 'Inter',
                   fontSize: 10,
                   fontWeight: FontWeight.w500,
-                  color: AppColors.mutedForeground,
+                  color: context.appColors.mutedForeground,
                 ),
               ),
               const SizedBox(width: 8),
-              _buildDot(0, accentColor),
+              _buildDot(context, 0, accentColor),
               const SizedBox(width: 4),
-              _buildDot(1, accentColor),
+              _buildDot(context, 1, accentColor),
               const SizedBox(width: 4),
-              _buildDot(2, accentColor),
+              _buildDot(context, 2, accentColor),
               const SizedBox(width: 4),
-              _buildDot(3, accentColor),
+              _buildDot(context, 3, accentColor),
               const SizedBox(width: 4),
-              _buildDot(4, accentColor),
+              _buildDot(context, 4, accentColor),
               const SizedBox(width: 8),
               Text(
                 context.l10n.translate('Più'),
-                style: const TextStyle(
+                style: TextStyle(
                   fontFamily: 'Inter',
                   fontSize: 10,
                   fontWeight: FontWeight.w500,
-                  color: AppColors.mutedForeground,
+                  color: context.appColors.mutedForeground,
                 ),
               ),
             ],
@@ -975,29 +982,29 @@ class _AttivitaRecenteSection extends StatelessWidget {
     );
   }
 
-  Widget _buildDot(int intensity, Color accentColor) {
+  Widget _buildDot(BuildContext context, int intensity, Color accentColor) {
     return Container(
       width: 12,
       height: 12,
       decoration: BoxDecoration(
-        color: _getColor(intensity, accentColor),
+        color: _getColor(context, intensity, accentColor),
         shape: BoxShape.circle,
       ),
     );
   }
 
-  Color _getColor(int intensity, Color accentColor) {
+  Color _getColor(BuildContext context, int intensity, Color accentColor) {
     switch (intensity) {
-      case 0: return AppColors.border.withValues(alpha: 0.3);
+      case 0: return context.appColors.border.withValues(alpha: 0.3);
       case 1: return accentColor.withValues(alpha: 0.2);
       case 2: return accentColor.withValues(alpha: 0.4);
       case 3: return accentColor.withValues(alpha: 0.7);
       case 4: return accentColor;
-      default: return AppColors.border.withValues(alpha: 0.3);
+      default: return context.appColors.border.withValues(alpha: 0.3);
     }
   }
 
-  Widget _buildActivityGrid(Color accentColor) {
+  Widget _buildActivityGrid(BuildContext context, Color accentColor) {
     final pattern = [
       [2,3,4,4,3,3,3,4,4,4,3,3,3,4,3,3,3,4],
       [3,3,3,3,2,3,3,3,2,3,2,3,3,2,3,2,4,4],
@@ -1026,7 +1033,7 @@ class _AttivitaRecenteSection extends StatelessWidget {
                     width: 14,
                     height: 14,
                     decoration: BoxDecoration(
-                      color: _getColor(intensity, accentColor),
+                      color: _getColor(context, intensity, accentColor),
                       shape: BoxShape.circle,
                     ),
                   ),

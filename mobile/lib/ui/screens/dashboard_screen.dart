@@ -8,6 +8,7 @@ import '../../core/localization.dart';
 
 import '../../core/theme.dart';
 import '../../providers/goal_provider.dart';
+import '../../providers/user_provider.dart';
 import '../widgets/bottom_nav_bar.dart';
 import '../widgets/protocollo_panel.dart';
 import '../widgets/view_tab_bar.dart';
@@ -67,7 +68,7 @@ class _HomeScreenState extends ConsumerState<HomeScreen>
     final currentView = ref.watch(calendarViewProvider);
 
     return Scaffold(
-      backgroundColor: AppColors.background,
+      backgroundColor: context.appColors.background,
       // Custom app bar
       appBar: PreferredSize(
         preferredSize: Size.fromHeight(64 + MediaQuery.of(context).padding.top),
@@ -254,15 +255,18 @@ class _AppBar extends ConsumerWidget {
         ? formattedDate[0].toUpperCase() + formattedDate.substring(1)
         : formattedDate;
 
+    final userProfile = ref.watch(userProfileProvider);
+    final displayName = userProfile.firstName ?? 'Simone';
+
     return ClipRect(
       child: BackdropFilter(
         filter: ImageFilter.blur(sigmaX: 12, sigmaY: 12),
         child: Container(
           decoration: BoxDecoration(
-            color: AppColors.background.withValues(alpha: 0.7),
+            color: context.appColors.background.withValues(alpha: 0.7),
             border: Border(
               bottom: BorderSide(
-                color: AppColors.border.withValues(alpha: 0.3),
+                color: context.appColors.border.withValues(alpha: 0.3),
                 width: 0.5,
               ),
             ),
@@ -281,12 +285,12 @@ class _AppBar extends ConsumerWidget {
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
                         Text(
-                          '$greeting, Simone',
-                          style: const TextStyle(
+                          '$greeting, $displayName',
+                          style: TextStyle(
                             fontFamily: 'Inter',
                             fontSize: 20,
                             fontWeight: FontWeight.w700,
-                            color: AppColors.foreground,
+                            color: context.appColors.foreground,
                             letterSpacing: -0.5,
                           ),
                         ),
@@ -296,18 +300,18 @@ class _AppBar extends ConsumerWidget {
                             Container(
                               width: 6,
                               height: 6,
-                              decoration: const BoxDecoration(
-                                color: AppColors.success,
+                              decoration: BoxDecoration(
+                                color: context.appColors.success,
                                 shape: BoxShape.circle,
                               ),
                             ),
                             const SizedBox(width: 6),
                             Text(
                               displayDate,
-                              style: const TextStyle(
+                              style: TextStyle(
                                 fontSize: 11,
                                 fontWeight: FontWeight.w500,
-                                color: AppColors.mutedForeground,
+                                color: context.appColors.mutedForeground,
                                 letterSpacing: 0.1,
                               ),
                             ),
@@ -342,10 +346,10 @@ class _AppBar extends ConsumerWidget {
                           ),
                           child: Container(
                             decoration: BoxDecoration(
-                              color: AppColors.card,
+                              color: context.appColors.card,
                               shape: BoxShape.circle,
-                              image: const DecorationImage(
-                                image: NetworkImage('https://github.com/simonemattioli.png'),
+                              image: DecorationImage(
+                                image: NetworkImage(userProfile.avatarUrl ?? 'https://github.com/simonemattioli.png'),
                                 fit: BoxFit.cover,
                               ),
                             ),

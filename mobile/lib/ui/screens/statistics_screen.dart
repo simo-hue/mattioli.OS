@@ -75,11 +75,11 @@ class _StatisticsScreenState extends ConsumerState<StatisticsScreen>
                     const SizedBox(height: 12),
                     Text(
                       context.l10n.translate('Statistiche'),
-                      style: const TextStyle(
+                      style: TextStyle(
                         fontFamily: 'Inter',
                         fontSize: 32,
                         fontWeight: FontWeight.w900,
-                        color: AppColors.foreground,
+                        color: context.appColors.foreground,
                         letterSpacing: -1.2,
                         height: 1.1,
                       ),
@@ -91,7 +91,7 @@ class _StatisticsScreenState extends ConsumerState<StatisticsScreen>
                         fontFamily: 'Inter',
                         fontSize: 14,
                         fontWeight: FontWeight.w500,
-                        color: AppColors.mutedForeground.withValues(alpha: 0.7),
+                        color: context.appColors.mutedForeground.withValues(alpha: 0.7),
                       ),
                     ),
                     const SizedBox(height: 24),
@@ -123,7 +123,7 @@ class _StatisticsScreenState extends ConsumerState<StatisticsScreen>
 
   Widget _buildGoalDropdown(List<Goal> goals) {
     String displayTitle = context.l10n.translate('Tutti gli Habits');
-    Color displayColor = AppColors.foreground;
+    Color displayColor = context.appColors.foreground;
     
     if (_selectedGoalId != null) {
       final match = goals.where((g) => g.id == _selectedGoalId).toList();
@@ -141,9 +141,9 @@ class _StatisticsScreenState extends ConsumerState<StatisticsScreen>
       child: Container(
         padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
         decoration: BoxDecoration(
-          color: AppColors.card.withValues(alpha: 0.5),
+          color: context.appColors.card.withValues(alpha: 0.5),
           borderRadius: BorderRadius.circular(16),
-          border: Border.all(color: AppColors.border.withValues(alpha: 0.5), width: 1),
+          border: Border.all(color: context.appColors.border.withValues(alpha: 0.5), width: 1),
           boxShadow: [
             BoxShadow(
               color: Colors.black.withValues(alpha: 0.05),
@@ -165,16 +165,16 @@ class _StatisticsScreenState extends ConsumerState<StatisticsScreen>
             const SizedBox(width: 12),
             Text(
               displayTitle,
-              style: const TextStyle(
+              style: TextStyle(
                 fontFamily: 'Inter',
                 fontSize: 15,
                 fontWeight: FontWeight.w700,
-                color: AppColors.foreground,
+                color: context.appColors.foreground,
                 letterSpacing: -0.2,
               ),
             ),
             const Spacer(),
-            const Icon(LucideIcons.chevronDown, size: 16, color: AppColors.mutedForeground),
+            Icon(LucideIcons.chevronDown, size: 16, color: context.appColors.mutedForeground),
           ],
         ),
       ),
@@ -187,9 +187,9 @@ class _StatisticsScreenState extends ConsumerState<StatisticsScreen>
       height: 44,
       padding: const EdgeInsets.all(4),
       decoration: BoxDecoration(
-        color: AppColors.card.withValues(alpha: 0.3),
+        color: context.appColors.card.withValues(alpha: 0.3),
         borderRadius: BorderRadius.circular(14),
-        border: Border.all(color: AppColors.border.withValues(alpha: 0.5), width: 1),
+        border: Border.all(color: context.appColors.border.withValues(alpha: 0.5), width: 1),
       ),
       child: Row(
         children: _tabs.map((tab) {
@@ -226,7 +226,7 @@ class _StatisticsScreenState extends ConsumerState<StatisticsScreen>
                     fontFamily: 'Inter',
                     fontSize: 11,
                     fontWeight: isSelected ? FontWeight.w800 : FontWeight.w600,
-                    color: isSelected ? AppColors.background : AppColors.mutedForeground,
+                    color: isSelected ? context.appColors.background : context.appColors.mutedForeground,
                   ),
                 ),
               ),
@@ -254,7 +254,7 @@ class _StatisticsScreenState extends ConsumerState<StatisticsScreen>
         default:
           return Center(
             key: ValueKey(_selectedTab),
-            child: Text('${context.l10n.translate(_selectedTab)} - Coming Soon', style: const TextStyle(color: AppColors.mutedForeground)),
+            child: Text('${context.l10n.translate(_selectedTab)} - Coming Soon', style: TextStyle(color: context.appColors.mutedForeground)),
           );
       }
     } else {
@@ -287,7 +287,7 @@ class _StatisticsScreenState extends ConsumerState<StatisticsScreen>
         default:
           return Center(
             key: ValueKey('$_selectedTab$_selectedGoalId'),
-            child: Text('${context.l10n.translate(_selectedTab)} - Coming Soon', style: const TextStyle(color: AppColors.mutedForeground)),
+            child: Text('${context.l10n.translate(_selectedTab)} - Coming Soon', style: TextStyle(color: context.appColors.mutedForeground)),
           );
       }
     }
@@ -296,7 +296,7 @@ class _StatisticsScreenState extends ConsumerState<StatisticsScreen>
   void _showGoalSelector(List<Goal> goals) {
     showModalBottomSheet(
       context: context,
-      backgroundColor: AppColors.background,
+      backgroundColor: context.appColors.background,
       isScrollControlled: true,
       shape: const RoundedRectangleBorder(
         borderRadius: BorderRadius.vertical(top: Radius.circular(24)),
@@ -310,11 +310,11 @@ class _StatisticsScreenState extends ConsumerState<StatisticsScreen>
               children: [
                 Text(
                   context.l10n.translate('SELEZIONA HABIT'),
-                  style: const TextStyle(
+                  style: TextStyle(
                     fontFamily: 'Inter',
                     fontSize: 10,
                     fontWeight: FontWeight.w800,
-                    color: AppColors.mutedForeground,
+                    color: context.appColors.mutedForeground,
                     letterSpacing: 1.2,
                   ),
                 ),
@@ -325,13 +325,13 @@ class _StatisticsScreenState extends ConsumerState<StatisticsScreen>
                     width: 24,
                     height: 24,
                     decoration: BoxDecoration(
-                      color: AppColors.muted,
+                      color: context.appColors.muted,
                       borderRadius: BorderRadius.circular(6),
                     ),
-                    child: const Icon(LucideIcons.list, size: 14, color: AppColors.foreground),
+                    child: Icon(LucideIcons.list, size: 14, color: context.appColors.foreground),
                   ),
-                  title: Text(context.l10n.translate('Tutti gli Habits'), style: const TextStyle(fontFamily: 'Inter', fontSize: 16, fontWeight: FontWeight.w600, color: AppColors.foreground)),
-                  trailing: _selectedGoalId == null ? const Icon(LucideIcons.check, color: AppColors.foreground) : null,
+                  title: Text(context.l10n.translate('Tutti gli Habits'), style: TextStyle(fontFamily: 'Inter', fontSize: 16, fontWeight: FontWeight.w600, color: context.appColors.foreground)),
+                  trailing: _selectedGoalId == null ? Icon(LucideIcons.check, color: context.appColors.foreground) : null,
                   onTap: () {
                     _selectGoal(null);
                     Navigator.pop(context);
@@ -357,8 +357,8 @@ class _StatisticsScreenState extends ConsumerState<StatisticsScreen>
                         ),
                       ),
                     ),
-                    title: Text(goal.title, style: const TextStyle(fontFamily: 'Inter', fontSize: 16, fontWeight: FontWeight.w500, color: AppColors.foreground)),
-                    trailing: _selectedGoalId == goal.id ? const Icon(LucideIcons.check, color: AppColors.foreground) : null,
+                    title: Text(goal.title, style: TextStyle(fontFamily: 'Inter', fontSize: 16, fontWeight: FontWeight.w500, color: context.appColors.foreground)),
+                    trailing: _selectedGoalId == goal.id ? Icon(LucideIcons.check, color: context.appColors.foreground) : null,
                     onTap: () {
                       _selectGoal(goal.id);
                       Navigator.pop(context);

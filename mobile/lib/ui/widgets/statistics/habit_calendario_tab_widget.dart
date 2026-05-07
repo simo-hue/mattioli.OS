@@ -43,9 +43,9 @@ class _CalendarioAnnualeCard extends StatelessWidget {
 
     return Container(
       decoration: BoxDecoration(
-        color: AppColors.card,
+        color: context.appColors.card,
         borderRadius: BorderRadius.circular(16),
-        border: Border.all(color: AppColors.border, width: 1),
+        border: Border.all(color: context.appColors.border, width: 1),
       ),
       padding: const EdgeInsets.all(16),
       child: Column(
@@ -53,15 +53,15 @@ class _CalendarioAnnualeCard extends StatelessWidget {
         children: [
           Row(
             children: [
-              Icon(LucideIcons.calendar, size: 20, color: AppColors.foreground),
+              Icon(LucideIcons.calendar, size: 20, color: context.appColors.foreground),
               SizedBox(width: 10),
             Text(
               context.l10n.translate('Calendario Annuale'),
-              style: const TextStyle(
+              style: TextStyle(
                 fontFamily: 'Inter',
                 fontSize: 16,
                 fontWeight: FontWeight.w700,
-                color: AppColors.foreground,
+                color: context.appColors.foreground,
               ),
             ),
             ],
@@ -79,7 +79,7 @@ class _CalendarioAnnualeCard extends StatelessWidget {
               } else if (status == 2) {
                 color = const Color(0xFFEF4444); // Mancato (Red)
               } else {
-                color = const Color(0xFF18181B); // Non tracciato (Dark Grey)
+                color = context.appColors.muted.withValues(alpha: 0.5); // Dynamic Grey
               }
 
               return Container(
@@ -98,11 +98,11 @@ class _CalendarioAnnualeCard extends StatelessWidget {
           // Legend
           Row(
             children: [
-              _buildLegendItem(Theme.of(context).colorScheme.primary, context.l10n.translate('Completato')),
+              _buildLegendItem(context, Theme.of(context).colorScheme.primary, context.l10n.translate('Completato')),
               const SizedBox(width: 16),
-              _buildLegendItem(const Color(0xFFEF4444), context.l10n.translate('Mancato')),
+              _buildLegendItem(context, const Color(0xFFEF4444), context.l10n.translate('Mancato')),
               const SizedBox(width: 16),
-              _buildLegendItem(const Color(0xFF18181B), context.l10n.translate('Non tracciato')),
+              _buildLegendItem(context, context.appColors.muted.withValues(alpha: 0.5), context.l10n.translate('Non tracciato')),
             ],
           ),
         ],
@@ -110,7 +110,7 @@ class _CalendarioAnnualeCard extends StatelessWidget {
     );
   }
 
-  Widget _buildLegendItem(Color color, String label) {
+  Widget _buildLegendItem(BuildContext context, Color color, String label) {
     return Row(
       mainAxisSize: MainAxisSize.min,
       children: [
@@ -125,10 +125,10 @@ class _CalendarioAnnualeCard extends StatelessWidget {
         const SizedBox(width: 6),
         Text(
           label,
-          style: const TextStyle(
+          style: TextStyle(
             fontFamily: 'Inter',
             fontSize: 12,
-            color: AppColors.mutedForeground,
+            color: context.appColors.mutedForeground,
           ),
         ),
       ],

@@ -31,9 +31,9 @@ class _SerieNegativaCard extends StatelessWidget {
   Widget build(BuildContext context) {
     return Container(
       decoration: BoxDecoration(
-        color: AppColors.card,
+        color: context.appColors.card,
         borderRadius: BorderRadius.circular(16),
-        border: Border.all(color: AppColors.border, width: 1),
+        border: Border.all(color: context.appColors.border, width: 1),
       ),
       padding: const EdgeInsets.all(20),
       child: Column(
@@ -45,11 +45,11 @@ class _SerieNegativaCard extends StatelessWidget {
               const SizedBox(width: 8),
               Text(
                 context.l10n.translate('Serie Negativa Peggiore'),
-                style: const TextStyle(
+                style: TextStyle(
                   fontFamily: 'Inter',
                   fontSize: 16,
                   fontWeight: FontWeight.w700,
-                  color: AppColors.foreground,
+                  color: context.appColors.foreground,
                 ),
               ),
             ],
@@ -75,19 +75,19 @@ class _SerieNegativaCard extends StatelessWidget {
                   children: [
                     Text(
                       context.l10n.translate('giorni consecutivi mancati'),
-                      style: const TextStyle(
+                      style: TextStyle(
                         fontFamily: 'Inter',
                         fontSize: 15,
-                        color: AppColors.foreground,
+                        color: context.appColors.foreground,
                       ),
                     ),
                     const SizedBox(height: 2),
                     Text(
                       '${context.l10n.translate('Iniziata il')} 1 ${context.l10n.translate('Aprile')} 2026',
-                      style: const TextStyle(
+                      style: TextStyle(
                         fontFamily: 'Inter',
                         fontSize: 13,
-                        color: AppColors.mutedForeground,
+                        color: context.appColors.mutedForeground,
                       ),
                     ),
                   ],
@@ -115,9 +115,9 @@ class _StreakInterrottiCard extends StatelessWidget {
 
     return Container(
       decoration: BoxDecoration(
-        color: AppColors.card,
+        color: context.appColors.card,
         borderRadius: BorderRadius.circular(16),
-        border: Border.all(color: AppColors.border, width: 1),
+        border: Border.all(color: context.appColors.border, width: 1),
       ),
       padding: const EdgeInsets.all(20),
       child: Column(
@@ -125,11 +125,11 @@ class _StreakInterrottiCard extends StatelessWidget {
         children: [
           Text(
             context.l10n.translate('Streak Interrotti'),
-            style: const TextStyle(
+            style: TextStyle(
               fontFamily: 'Inter',
               fontSize: 16,
               fontWeight: FontWeight.w700,
-              color: AppColors.foreground,
+              color: context.appColors.foreground,
             ),
           ),
           const SizedBox(height: 16),
@@ -145,9 +145,9 @@ class _StreakInterrottiCard extends StatelessWidget {
   Widget _buildStreakItem(BuildContext context, int days, String date) {
     return Container(
       decoration: BoxDecoration(
-        color: const Color(0xFF18181B), // Inner card background
+        color: context.appColors.cardElevated,
         borderRadius: BorderRadius.circular(12),
-        border: Border.all(color: AppColors.border.withValues(alpha: 0.5), width: 1),
+        border: Border.all(color: context.appColors.border.withValues(alpha: 0.5), width: 1),
       ),
       padding: const EdgeInsets.all(12),
       child: Row(
@@ -177,20 +177,20 @@ class _StreakInterrottiCard extends StatelessWidget {
               children: [
                 Text(
                   context.l10n.translate('Streak di count giorni interrotto').replaceFirst('count', days.toString()),
-                  style: const TextStyle(
+                  style: TextStyle(
                     fontFamily: 'Inter',
                     fontSize: 15,
                     fontWeight: FontWeight.w600,
-                    color: AppColors.foreground,
+                    color: context.appColors.foreground,
                   ),
                 ),
                 const SizedBox(height: 4),
                 Text(
                   date,
-                  style: const TextStyle(
+                  style: TextStyle(
                     fontFamily: 'Inter',
                     fontSize: 13,
-                    color: AppColors.mutedForeground,
+                    color: context.appColors.mutedForeground,
                   ),
                 ),
               ],
@@ -209,9 +209,9 @@ class _SuggerimentiCard extends StatelessWidget {
   Widget build(BuildContext context) {
     return Container(
       decoration: BoxDecoration(
-        color: AppColors.card,
+        color: context.appColors.card,
         borderRadius: BorderRadius.circular(16),
-        border: Border.all(color: AppColors.border, width: 1),
+        border: Border.all(color: context.appColors.border, width: 1),
       ),
       padding: const EdgeInsets.all(20),
       child: Column(
@@ -219,23 +219,23 @@ class _SuggerimentiCard extends StatelessWidget {
         children: [
           Text(
             '💡 ${context.l10n.translate('Suggerimenti')}',
-            style: const TextStyle(
+            style: TextStyle(
               fontFamily: 'Inter',
               fontSize: 16,
               fontWeight: FontWeight.w700,
-              color: AppColors.foreground,
+              color: context.appColors.foreground,
             ),
           ),
           const SizedBox(height: 16),
-          _buildBulletPoint(context.l10n.translate('Concentrati sul Dom - è il tuo giorno più debole')),
-          _buildBulletPoint(context.l10n.translate('Evita pause prolungate - la tua serie negativa più lunga è stata di 12 giorni')),
-          _buildBulletPoint(context.l10n.translate('Obiettivo: raggiungi almeno il 70% di completamento per consolidare l\'abitudine')),
+          _buildBulletPoint(context, context.l10n.translate('Concentrati sul Dom - è il tuo giorno più debole')),
+          _buildBulletPoint(context, context.l10n.translate('Evita pause prolungate - la tua serie negativa più lunga è stata di 12 giorni')),
+          _buildBulletPoint(context, context.l10n.translate('Obiettivo: raggiungi almeno il 70% di completamento per consolidare l\'abitudine')),
         ],
       ),
     );
   }
 
-  Widget _buildBulletPoint(String text) {
+  Widget _buildBulletPoint(BuildContext context, String text) {
     return Padding(
       padding: const EdgeInsets.only(bottom: 12.0),
       child: Row(
@@ -244,20 +244,20 @@ class _SuggerimentiCard extends StatelessWidget {
           const Text(
             '• ',
             style: TextStyle(
-              color: AppColors.mutedForeground,
+              color: Colors.grey,
               fontSize: 14,
             ),
           ),
           Expanded(
             child: RichText(
               text: TextSpan(
-                style: const TextStyle(
+                style: TextStyle(
                   fontFamily: 'Inter',
                   fontSize: 14,
-                  color: AppColors.mutedForeground,
+                  color: context.appColors.mutedForeground,
                   height: 1.4,
                 ),
-                children: _parseBoldText(text),
+                children: _parseBoldText(context, text),
               ),
             ),
           ),
@@ -269,9 +269,9 @@ class _SuggerimentiCard extends StatelessWidget {
   // Simple parser to make Dom, 12 giorni, and 70% bold slightly if wanted,
   // but let's just make the text standard or we can just hardcode the styling if really needed.
   // Using rich text explicitly based on the snapshot
-  List<TextSpan> _parseBoldText(String text) {
+  List<TextSpan> _parseBoldText(BuildContext context, String text) {
     // Actually the user screenshot doesn't show strong bold, it's just regular text.
     // I'll return a single text span.
-    return [TextSpan(text: text, style: const TextStyle(color: AppColors.mutedForeground))];
+    return [TextSpan(text: text, style: TextStyle(color: context.appColors.mutedForeground))];
   }
 }

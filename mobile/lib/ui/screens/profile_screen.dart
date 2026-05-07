@@ -50,7 +50,7 @@ class _ProfileScreenState extends ConsumerState<ProfileScreen> {
     final primaryColor = Theme.of(context).colorScheme.primary;
 
     return Scaffold(
-      backgroundColor: AppColors.background,
+      backgroundColor: context.appColors.background,
       body: CustomScrollView(
         physics: const AlwaysScrollableScrollPhysics(),
         slivers: [
@@ -58,10 +58,10 @@ class _ProfileScreenState extends ConsumerState<ProfileScreen> {
             expandedHeight: 200,
             pinned: true,
             stretch: true,
-            backgroundColor: AppColors.background,
+            backgroundColor: context.appColors.background,
             elevation: 0,
             leading: IconButton(
-              icon: const Icon(LucideIcons.chevronLeft, color: AppColors.foreground),
+              icon: Icon(LucideIcons.chevronLeft, color: context.appColors.foreground),
               onPressed: () => Navigator.pop(context),
             ),
             flexibleSpace: FlexibleSpaceBar(
@@ -104,11 +104,11 @@ class _ProfileScreenState extends ConsumerState<ProfileScreen> {
                                       fit: BoxFit.cover,
                                     )
                                   : Container(
-                                      color: AppColors.card,
-                                      child: const Icon(
+                                      color: context.appColors.card,
+                                      child: Icon(
                                         LucideIcons.user,
                                         size: 50,
-                                        color: AppColors.mutedForeground,
+                                        color: context.appColors.mutedForeground,
                                       ),
                                     ),
                             ),
@@ -121,12 +121,12 @@ class _ProfileScreenState extends ConsumerState<ProfileScreen> {
                               decoration: BoxDecoration(
                                 color: primaryColor,
                                 shape: BoxShape.circle,
-                                border: Border.all(color: AppColors.background, width: 2),
+                                border: Border.all(color: context.appColors.background, width: 2),
                               ),
-                              child: const Icon(
+                              child: Icon(
                                 LucideIcons.camera,
                                 size: 14,
-                                color: AppColors.background,
+                                color: context.appColors.background,
                               ),
                             ),
                           ),
@@ -136,8 +136,8 @@ class _ProfileScreenState extends ConsumerState<ProfileScreen> {
                     const SizedBox(height: 16),
                     Text(
                       '${userProfile.firstName} ${userProfile.lastName}',
-                      style: const TextStyle(
-                        color: AppColors.foreground,
+                      style: TextStyle(
+                        color: context.appColors.foreground,
                         fontSize: 20,
                         fontWeight: FontWeight.w800,
                         letterSpacing: -0.8,
@@ -179,12 +179,12 @@ class _ProfileScreenState extends ConsumerState<ProfileScreen> {
 
             sliver: SliverList(
               delegate: SliverChildListDelegate([
-                const Text(
+                Text(
                   'IMPOSTAZIONI ACCOUNT',
                   style: TextStyle(
                     fontSize: 10,
                     fontWeight: FontWeight.w800,
-                    color: AppColors.mutedForeground,
+                    color: context.appColors.mutedForeground,
                     letterSpacing: 1.2,
                   ),
                 ),
@@ -226,12 +226,12 @@ class _ProfileScreenState extends ConsumerState<ProfileScreen> {
                   },
                 ),
                 const SizedBox(height: 24),
-                const Text(
+                Text(
                   'SISTEMA',
                   style: TextStyle(
                     fontSize: 10,
                     fontWeight: FontWeight.w800,
-                    color: AppColors.mutedForeground,
+                    color: context.appColors.mutedForeground,
                     letterSpacing: 1.2,
                   ),
                 ),
@@ -249,18 +249,18 @@ class _ProfileScreenState extends ConsumerState<ProfileScreen> {
                     width: double.infinity,
                     height: 58,
                     decoration: BoxDecoration(
-                      color: AppColors.destructive.withValues(alpha: 0.1),
+                      color: context.appColors.destructive.withValues(alpha: 0.1),
                       borderRadius: BorderRadius.circular(18),
                       border: Border.all(
-                        color: AppColors.destructive.withValues(alpha: 0.2),
+                        color: context.appColors.destructive.withValues(alpha: 0.2),
                         width: 1,
                       ),
                     ),
-                    child: const Center(
+                    child: Center(
                       child: Text(
                         'Disconnetti Sessione',
                         style: TextStyle(
-                          color: AppColors.destructive,
+                          color: context.appColors.destructive,
                           fontSize: 15,
                           fontWeight: FontWeight.w700,
                           letterSpacing: -0.2,
@@ -274,7 +274,7 @@ class _ProfileScreenState extends ConsumerState<ProfileScreen> {
                   child: Text(
                     'Versione 1.0.0 (Build 20260422)',
                     style: TextStyle(
-                      color: AppColors.mutedForeground.withValues(alpha: 0.5),
+                      color: context.appColors.mutedForeground.withValues(alpha: 0.5),
                       fontSize: 10,
                       fontWeight: FontWeight.w500,
                     ),
@@ -299,10 +299,10 @@ class _ProfileScreenState extends ConsumerState<ProfileScreen> {
     return Container(
       margin: const EdgeInsets.only(bottom: 12),
       decoration: BoxDecoration(
-        color: AppColors.card.withValues(alpha: 0.4),
+        color: context.appColors.card.withValues(alpha: 0.4),
         borderRadius: BorderRadius.circular(18),
         border: Border.all(
-          color: AppColors.border.withValues(alpha: 0.5),
+          color: context.appColors.border.withValues(alpha: 0.5),
           width: 1,
         ),
       ),
@@ -312,16 +312,16 @@ class _ProfileScreenState extends ConsumerState<ProfileScreen> {
           width: 44,
           height: 44,
           decoration: BoxDecoration(
-            color: AppColors.card,
+            color: context.appColors.card,
             borderRadius: BorderRadius.circular(12),
-            border: Border.all(color: AppColors.border),
+            border: Border.all(color: context.appColors.border),
           ),
           child: Icon(icon, size: 20, color: primaryColor),
         ),
         title: Text(
           title,
-          style: const TextStyle(
-            color: AppColors.foreground,
+          style: TextStyle(
+            color: context.appColors.foreground,
             fontSize: 15,
             fontWeight: FontWeight.w700,
             letterSpacing: -0.2,
@@ -330,15 +330,15 @@ class _ProfileScreenState extends ConsumerState<ProfileScreen> {
         subtitle: Text(
           subtitle,
           style: TextStyle(
-            color: AppColors.mutedForeground.withValues(alpha: 0.8),
+            color: context.appColors.mutedForeground.withValues(alpha: 0.8),
             fontSize: 12,
             fontWeight: FontWeight.w500,
           ),
         ),
-        trailing: const Icon(
+        trailing: Icon(
           LucideIcons.chevronRight,
           size: 18,
-          color: AppColors.mutedForeground,
+          color: context.appColors.mutedForeground,
         ),
         onTap: () {
           ref.hapticLight();

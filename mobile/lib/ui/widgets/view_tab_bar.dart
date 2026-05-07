@@ -25,9 +25,9 @@ class ViewTabBar extends ConsumerWidget {
       height: 44,
       margin: const EdgeInsets.symmetric(vertical: 4),
       decoration: BoxDecoration(
-        color: AppColors.card.withValues(alpha: 0.3),
+        color: context.appColors.card.withValues(alpha: 0.3),
         borderRadius: BorderRadius.circular(14),
-        border: Border.all(color: AppColors.border.withValues(alpha: 0.5), width: 1),
+        border: Border.all(color: context.appColors.border.withValues(alpha: 0.5), width: 1),
       ),
       padding: const EdgeInsets.all(4),
       child: Row(
@@ -63,7 +63,7 @@ class ViewTabBar extends ConsumerWidget {
                     fontFamily: 'Inter',
                     fontSize: 11,
                     fontWeight: isActive ? FontWeight.w800 : FontWeight.w600,
-                    color: isActive ? AppColors.background : AppColors.mutedForeground,
+                    color: isActive ? context.appColors.background : context.appColors.mutedForeground,
                     letterSpacing: -0.2,
                   ),
                 ),

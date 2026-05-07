@@ -135,7 +135,7 @@ class _AuthScreenState extends ConsumerState<AuthScreen> with SingleTickerProvid
     final primaryColor = Theme.of(context).colorScheme.primary;
 
     return Scaffold(
-      backgroundColor: AppColors.background,
+      backgroundColor: context.appColors.background,
       body: Stack(
         children: [
           // Background Gradient Orbs
@@ -191,9 +191,9 @@ class _AuthScreenState extends ConsumerState<AuthScreen> with SingleTickerProvid
                             Container(
                               padding: const EdgeInsets.all(16),
                               decoration: BoxDecoration(
-                                color: AppColors.card,
+                                color: context.appColors.card,
                                 borderRadius: BorderRadius.circular(24),
-                                border: Border.all(color: AppColors.border, width: 1),
+                                border: Border.all(color: context.appColors.border, width: 1),
                                 boxShadow: [
                                   BoxShadow(
                                     color: primaryColor.withValues(alpha: 0.1),
@@ -212,7 +212,7 @@ class _AuthScreenState extends ConsumerState<AuthScreen> with SingleTickerProvid
                             Text(
                               'Mattioli.OS',
                               style: GoogleFonts.inter(
-                                color: AppColors.foreground,
+                                color: context.appColors.foreground,
                                 fontSize: 28, // Smaller title
                                 fontWeight: FontWeight.w800,
                                 letterSpacing: -1.5,
@@ -225,7 +225,7 @@ class _AuthScreenState extends ConsumerState<AuthScreen> with SingleTickerProvid
                                   : 'Crea il tuo ecosistema personale.',
                               textAlign: TextAlign.center,
                               style: GoogleFonts.inter(
-                                color: AppColors.mutedForeground,
+                                color: context.appColors.mutedForeground,
                                 fontSize: 14,
                                 fontWeight: FontWeight.w500,
                               ),
@@ -278,7 +278,7 @@ class _AuthScreenState extends ConsumerState<AuthScreen> with SingleTickerProvid
                                     child: Text(
                                       'Password dimenticata?',
                                       style: TextStyle(
-                                        color: AppColors.mutedForeground,
+                                        color: context.appColors.mutedForeground,
                                         fontSize: 12,
                                         fontWeight: FontWeight.w600,
                                       ),
@@ -330,20 +330,20 @@ class _AuthScreenState extends ConsumerState<AuthScreen> with SingleTickerProvid
                         // OR Divider
                         Row(
                           children: [
-                            Expanded(child: Divider(color: AppColors.border, thickness: 1)),
+                            Expanded(child: Divider(color: context.appColors.border, thickness: 1)),
                             Padding(
                               padding: const EdgeInsets.symmetric(horizontal: 16),
                               child: Text(
                                 'OPPURE',
                                 style: GoogleFonts.inter(
-                                  color: AppColors.mutedForeground.withValues(alpha: 0.5),
+                                  color: context.appColors.mutedForeground.withValues(alpha: 0.5),
                                   fontSize: 10,
                                   fontWeight: FontWeight.w800,
                                   letterSpacing: 1.5,
                                 ),
                               ),
                             ),
-                            Expanded(child: Divider(color: AppColors.border, thickness: 1)),
+                            Expanded(child: Divider(color: context.appColors.border, thickness: 1)),
                           ],
                         ),
 
@@ -379,7 +379,7 @@ class _AuthScreenState extends ConsumerState<AuthScreen> with SingleTickerProvid
                               _mode == AuthMode.login
                                   ? 'Non hai un account?'
                                   : 'Hai già un account?',
-                              style: TextStyle(color: AppColors.mutedForeground, fontSize: 14),
+                              style: TextStyle(color: context.appColors.mutedForeground, fontSize: 14),
                             ),
                             TextButton(
                               onPressed: _toggleMode,
@@ -406,8 +406,8 @@ class _AuthScreenState extends ConsumerState<AuthScreen> with SingleTickerProvid
             Positioned.fill(
               child: Container(
                 color: Colors.black.withValues(alpha: 0.5),
-                child: const Center(
-                  child: CircularProgressIndicator(color: AppColors.foreground),
+                child: Center(
+                  child: CircularProgressIndicator(color: context.appColors.foreground),
                 ),
               ),
             ),
@@ -426,20 +426,20 @@ class _AuthScreenState extends ConsumerState<AuthScreen> with SingleTickerProvid
   }) {
     return Container(
       decoration: BoxDecoration(
-        color: AppColors.card.withValues(alpha: 0.4),
+        color: context.appColors.card.withValues(alpha: 0.4),
         borderRadius: BorderRadius.circular(16),
-        border: Border.all(color: AppColors.border.withValues(alpha: 0.5)),
+        border: Border.all(color: context.appColors.border.withValues(alpha: 0.5)),
       ),
       child: TextFormField(
         controller: controller,
         obscureText: isPassword,
         keyboardType: keyboardType,
         validator: validator,
-        style: const TextStyle(color: AppColors.foreground, fontSize: 15),
+        style: TextStyle(color: context.appColors.foreground, fontSize: 15),
         decoration: InputDecoration(
           labelText: label,
-          labelStyle: const TextStyle(color: AppColors.mutedForeground, fontSize: 14),
-          prefixIcon: Icon(icon, size: 18, color: AppColors.mutedForeground),
+          labelStyle: TextStyle(color: context.appColors.mutedForeground, fontSize: 14),
+          prefixIcon: Icon(icon, size: 18, color: context.appColors.mutedForeground),
           border: InputBorder.none,
           isDense: true,
           contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 10), // Reduced from 12
@@ -476,18 +476,18 @@ class _AuthScreenState extends ConsumerState<AuthScreen> with SingleTickerProvid
         ),
         child: Center(
           child: isLoading
-              ? const SizedBox(
+              ? SizedBox(
                   width: 24,
                   height: 24,
                   child: CircularProgressIndicator(
-                    color: AppColors.background,
+                    color: primaryColor.computeLuminance() > 0.5 ? Colors.black : Colors.white,
                     strokeWidth: 2,
                   ),
                 )
               : Text(
                   _mode == AuthMode.login ? 'Accedi' : 'Crea Account',
-                  style: const TextStyle(
-                    color: AppColors.background,
+                  style: TextStyle(
+                    color: primaryColor.computeLuminance() > 0.5 ? Colors.black : Colors.white,
                     fontSize: 16,
                     fontWeight: FontWeight.w700,
                     letterSpacing: -0.2,
@@ -511,19 +511,19 @@ class _AuthScreenState extends ConsumerState<AuthScreen> with SingleTickerProvid
         width: double.infinity,
         height: 52, // Reduced from 56
         decoration: BoxDecoration(
-          color: AppColors.card,
+          color: context.appColors.card,
           borderRadius: BorderRadius.circular(18),
-          border: Border.all(color: AppColors.border),
+          border: Border.all(color: context.appColors.border),
         ),
         child: Row(
           mainAxisAlignment: MainAxisAlignment.center,
           children: [
-            Icon(icon, size: 20, color: AppColors.foreground),
+            Icon(icon, size: 20, color: context.appColors.foreground),
             const SizedBox(width: 12),
             Text(
               label,
               style: GoogleFonts.inter(
-                color: AppColors.foreground,
+                color: context.appColors.foreground,
                 fontSize: 15,
                 fontWeight: FontWeight.w600,
               ),

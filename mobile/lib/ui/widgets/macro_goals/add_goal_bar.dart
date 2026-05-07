@@ -69,7 +69,7 @@ class _AddGoalBarState extends ConsumerState<AddGoalBar> {
   void _showCategoryPicker() {
     showModalBottomSheet(
       context: context,
-      backgroundColor: AppColors.card,
+      backgroundColor: context.appColors.card,
       shape: const RoundedRectangleBorder(
         borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
       ),
@@ -83,7 +83,7 @@ class _AddGoalBarState extends ConsumerState<AddGoalBar> {
                 width: 36,
                 height: 4,
                 decoration: BoxDecoration(
-                  color: AppColors.borderActive,
+                  color: context.appColors.border,
                   borderRadius: BorderRadius.circular(2),
                 ),
               ),
@@ -96,7 +96,7 @@ class _AddGoalBarState extends ConsumerState<AddGoalBar> {
                   style: GoogleFonts.inter(
                     fontSize: 14,
                     fontWeight: FontWeight.w600,
-                    color: AppColors.foreground,
+                    color: context.appColors.foreground,
                   ),
                 ),
               ),
@@ -108,14 +108,14 @@ class _AddGoalBarState extends ConsumerState<AddGoalBar> {
                   decoration: BoxDecoration(
                     shape: BoxShape.circle,
                     border: Border.all(
-                        color: AppColors.borderActive, width: 1.5),
+                        color: context.appColors.border, width: 1.5),
                   ),
                 ),
                 title: Text(
                   'Nessuna categoria',
                   style: GoogleFonts.inter(
                     fontSize: 13,
-                    color: AppColors.mutedForeground,
+                    color: context.appColors.mutedForeground,
                   ),
                 ),
                 trailing: _selectedCategory == null
@@ -143,7 +143,7 @@ class _AddGoalBarState extends ConsumerState<AddGoalBar> {
                       cat.label,
                       style: GoogleFonts.inter(
                         fontSize: 13,
-                        color: AppColors.foreground,
+                        color: context.appColors.foreground,
                         fontWeight: _selectedCategory == cat.key
                             ? FontWeight.w600
                             : FontWeight.w400,
@@ -185,15 +185,15 @@ class _AddGoalBarState extends ConsumerState<AddGoalBar> {
             child: Container(
               height: 44,
               decoration: BoxDecoration(
-                color: AppColors.card.withValues(alpha: 0.5),
+                color: context.appColors.card.withValues(alpha: 0.5),
                 borderRadius: BorderRadius.circular(12),
-                border: Border.all(color: AppColors.borderHover, width: 1),
+                border: Border.all(color: context.appColors.border, width: 1),
               ),
               child: TextField(
                 controller: _controller,
                 style: GoogleFonts.inter(
                   fontSize: 13,
-                  color: AppColors.foreground,
+                  color: context.appColors.foreground,
                 ),
                 decoration: InputDecoration(
                   contentPadding:
@@ -202,7 +202,7 @@ class _AddGoalBarState extends ConsumerState<AddGoalBar> {
                   hintText: _placeholder,
                   hintStyle: GoogleFonts.inter(
                     fontSize: 13,
-                    color: AppColors.mutedForeground,
+                    color: context.appColors.mutedForeground,
                   ),
                 ),
                 onSubmitted: (_) => _submit(),
@@ -218,9 +218,9 @@ class _AddGoalBarState extends ConsumerState<AddGoalBar> {
               width: 44,
               height: 44,
               decoration: BoxDecoration(
-                color: AppColors.card.withValues(alpha: 0.5),
+                color: context.appColors.card.withValues(alpha: 0.5),
                 borderRadius: BorderRadius.circular(12),
-                border: Border.all(color: AppColors.borderHover, width: 1),
+                border: Border.all(color: context.appColors.border, width: 1),
               ),
               child: Center(
                 child: Container(
@@ -232,7 +232,7 @@ class _AddGoalBarState extends ConsumerState<AddGoalBar> {
                     shape: BoxShape.circle,
                     border: Border.all(
                       color: catColor?.withValues(alpha: 0.9) ??
-                          AppColors.borderActive,
+                          context.appColors.border,
                       width: 1.5,
                     ),
                   ),
@@ -254,7 +254,7 @@ class _AddGoalBarState extends ConsumerState<AddGoalBar> {
               ),
               child: Icon(
                 LucideIcons.plus,
-                color: AppColors.background,
+                color: context.appColors.background,
                 size: 20,
               ),
             ),

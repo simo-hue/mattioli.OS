@@ -62,10 +62,6 @@ class _MacroGoalsScreenState extends ConsumerState<MacroGoalsScreen>
 
               const SizedBox(height: 16),
 
-            // ── Add goal input ────────────────────────────────────────────
-            AddGoalBar(viewState: viewState),
-
-            const SizedBox(height: 12),
 
             // ── Goals list ────────────────────────────────────────────────
             Expanded(
@@ -127,6 +123,9 @@ class _MacroGoalsScreenState extends ConsumerState<MacroGoalsScreen>
                 ),
               ),
             ),
+            const SizedBox(height: 12),
+            AddGoalBar(viewState: viewState),
+            const SizedBox(height: 12),
           ],
         ],
       ),
@@ -475,7 +474,7 @@ class _GoalsList extends ConsumerWidget {
               ),
               const SizedBox(height: 4),
               Text(
-                'Aggiungi un obiettivo per questo periodo usando la barra qui sopra.',
+                'Aggiungi un obiettivo per questo periodo usando la barra qui sotto.',
                 textAlign: TextAlign.center,
                 style: GoogleFonts.inter(
                   fontSize: 13,

@@ -15,10 +15,10 @@ class ViewTabBar extends ConsumerWidget {
     final currentView = ref.watch(calendarViewProvider);
 
     final tabs = [
-      _TabItem(view: CalendarView.month, label: context.l10n.translate('month')),
-      _TabItem(view: CalendarView.week, label: context.l10n.translate('week')),
-      _TabItem(view: CalendarView.year, label: context.l10n.translate('year')),
-      _TabItem(view: CalendarView.vita, label: context.l10n.translate('life')),
+      _TabItem(view: CalendarView.month, label: context.l10n.translate('Mese')),
+      _TabItem(view: CalendarView.week, label: context.l10n.translate('Settimana')),
+      _TabItem(view: CalendarView.year, label: context.l10n.translate('Anno')),
+      _TabItem(view: CalendarView.vita, label: context.l10n.translate('Vita')),
     ];
 
     return Container(

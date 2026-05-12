@@ -244,3 +244,18 @@
 - **UI**: Removed `_phoneController` and the phone text field from `personal_info_screen.dart`.
 - **Database**: Added `date_of_birth` to the `profiles` table update in `personal_info_screen.dart`.
 - **Docs**: Added the SQL script to `TO_SIMO_DO.md`.
+
+---
+
+## [2026-05-12 17:50]: Feature - Implemented Default View Setting
+*Details*: Fixed the issue where the application ignored the default view setting on startup. Now it correctly opens the view selected in the preferences.
+*Tech Notes*:
+- **State Management**: Updated `CalendarViewNotifier` in `goal_provider.dart` to watch `settingsProvider` and initialize the state based on `defaultCalendarView`.
+- **UI Mapping**: Changed the 'giorno' option to 'mese' in `app_settings_screen.dart` to match the actual view (Month view) and added fallback handling in the parser.
+
+---
+
+## [2026-05-12 17:55]: UI - Capitalized Tab Labels in Home Screen
+*Details*: Capitalized the tab labels in the home screen (Mese, Settimana, Anno, Vita) to match the user's request and ensure language correctness.
+*Tech Notes*:
+- **UI**: Updated `ViewTabBar` to use capitalized keys ('Mese', 'Settimana', 'Anno', 'Vita') for translation, which map to capitalized strings in both Italian and English.

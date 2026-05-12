@@ -75,6 +75,25 @@ class NotificationSettingsScreen extends ConsumerWidget {
                   ref.hapticLight();
                 },
               ),
+              if (settings.habitReminders)
+                _buildTimePickerRow(
+                  context: context,
+                  title: 'Orario Morning Brief',
+                  time: settings.morningBriefTime,
+                  onTap: () async {
+                    final parts = settings.morningBriefTime.split(':');
+                    final initialTime = TimeOfDay(hour: int.parse(parts[0]), minute: int.parse(parts[1]));
+                    final pickedTime = await showTimePicker(
+                      context: context,
+                      initialTime: initialTime,
+                    );
+                    if (pickedTime != null) {
+                      final timeStr = '${pickedTime.hour.toString().padLeft(2, '0')}:${pickedTime.minute.toString().padLeft(2, '0')}';
+                      notifier.updateSettings(settings.copyWith(morningBriefTime: timeStr));
+                      ref.hapticLight();
+                    }
+                  },
+                ),
               _buildDivider(context),
               _buildSwitchRow(
                 context: context,
@@ -90,6 +109,25 @@ class NotificationSettingsScreen extends ConsumerWidget {
                   ref.hapticLight();
                 },
               ),
+              if (settings.eveningReview)
+                _buildTimePickerRow(
+                  context: context,
+                  title: 'Orario Review Serale',
+                  time: settings.eveningReviewTime,
+                  onTap: () async {
+                    final parts = settings.eveningReviewTime.split(':');
+                    final initialTime = TimeOfDay(hour: int.parse(parts[0]), minute: int.parse(parts[1]));
+                    final pickedTime = await showTimePicker(
+                      context: context,
+                      initialTime: initialTime,
+                    );
+                    if (pickedTime != null) {
+                      final timeStr = '${pickedTime.hour.toString().padLeft(2, '0')}:${pickedTime.minute.toString().padLeft(2, '0')}';
+                      notifier.updateSettings(settings.copyWith(eveningReviewTime: timeStr));
+                      ref.hapticLight();
+                    }
+                  },
+                ),
             ]),
             const SizedBox(height: 32),
             _buildSectionHeader(context, 'OBIETTIVI & PERFORMANCE'),
@@ -247,6 +285,52 @@ class NotificationSettingsScreen extends ConsumerWidget {
       thickness: 1,
       color: context.appColors.border,
       indent: 56,
+    );
+  }
+
+  Widget _buildTimePickerRow({
+    required BuildContext context,
+    required String title,
+    required String time,
+    required VoidCallback onTap,
+  }) {
+    return Padding(
+      padding: const EdgeInsets.only(left: 16, right: 16, bottom: 12, top: 4),
+      child: Row(
+        children: [
+          const SizedBox(width: 54), // Allinea con il testo dello switch row
+          Expanded(
+            child: Text(
+              title,
+              style: GoogleFonts.inter(
+                color: context.appColors.mutedForeground,
+                fontSize: 13,
+                fontWeight: FontWeight.w500,
+              ),
+            ),
+          ),
+          InkWell(
+            onTap: onTap,
+            borderRadius: BorderRadius.circular(8),
+            child: Container(
+              padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
+              decoration: BoxDecoration(
+                color: context.appColors.background,
+                borderRadius: BorderRadius.circular(8),
+                border: Border.all(color: context.appColors.border),
+              ),
+              child: Text(
+                time,
+                style: GoogleFonts.inter(
+                  color: Theme.of(context).colorScheme.primary,
+                  fontSize: 13,
+                  fontWeight: FontWeight.w600,
+                ),
+              ),
+            ),
+          ),
+        ],
+      ),
     );
   }
 

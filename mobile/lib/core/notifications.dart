@@ -60,7 +60,11 @@ class NotificationService {
         );
   }
 
-  Future<void> scheduleDailyHabitReminder() async {
+  Future<void> scheduleDailyHabitReminder({String timeStr = '09:00'}) async {
+    final parts = timeStr.split(':');
+    final hour = int.parse(parts[0]);
+    final minute = int.parse(parts[1]);
+
     const AndroidNotificationDetails androidDetails = AndroidNotificationDetails(
       'habit_reminders',
       'Habit Reminders',
@@ -74,19 +78,22 @@ class NotificationService {
       iOS: DarwinNotificationDetails(),
     );
 
-    // Schedule for 09:00 AM every day
     await _notifications.zonedSchedule(
       id: 0,
       title: 'Growth • Morning Brief',
       body: 'È il momento di plasmare la tua giornata. Controlla i tuoi obiettivi.',
-      scheduledDate: _nextInstanceOfTime(9, 0),
+      scheduledDate: _nextInstanceOfTime(hour, minute),
       notificationDetails: platformDetails,
       androidScheduleMode: AndroidScheduleMode.exactAllowWhileIdle,
       matchDateTimeComponents: DateTimeComponents.time,
     );
   }
 
-  Future<void> scheduleEveningReview() async {
+  Future<void> scheduleEveningReview({String timeStr = '21:00'}) async {
+    final parts = timeStr.split(':');
+    final hour = int.parse(parts[0]);
+    final minute = int.parse(parts[1]);
+
     const NotificationDetails platformDetails = NotificationDetails(
       android: AndroidNotificationDetails(
         'system_reviews',
@@ -96,12 +103,11 @@ class NotificationService {
       iOS: DarwinNotificationDetails(),
     );
 
-    // Schedule for 09:00 PM every day
     await _notifications.zonedSchedule(
       id: 1,
       title: 'Growth • Review Serale',
       body: 'Com\'è andata oggi? Traccia i tuoi progressi e aggiorna il Diario di Bordo.',
-      scheduledDate: _nextInstanceOfTime(21, 0),
+      scheduledDate: _nextInstanceOfTime(hour, minute),
       notificationDetails: platformDetails,
       androidScheduleMode: AndroidScheduleMode.exactAllowWhileIdle,
       matchDateTimeComponents: DateTimeComponents.time,

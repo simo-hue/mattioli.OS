@@ -30,6 +30,10 @@ class AppSettings {
   final bool biometricLock;
   final bool anonymousAnalytics;
 
+  // Notification Times
+  final String morningBriefTime;
+  final String eveningReviewTime;
+
   const AppSettings({
     required this.themeMode,
     required this.accentColor,
@@ -49,6 +53,8 @@ class AppSettings {
     required this.biometricLock,
     required this.anonymousAnalytics,
     required this.eveningReview,
+    required this.morningBriefTime,
+    required this.eveningReviewTime,
   });
 
   AppSettings copyWith({
@@ -70,6 +76,8 @@ class AppSettings {
     bool? biometricLock,
     bool? anonymousAnalytics,
     bool? eveningReview,
+    String? morningBriefTime,
+    String? eveningReviewTime,
   }) {
     return AppSettings(
       themeMode: themeMode ?? this.themeMode,
@@ -90,6 +98,8 @@ class AppSettings {
       biometricLock: biometricLock ?? this.biometricLock,
       anonymousAnalytics: anonymousAnalytics ?? this.anonymousAnalytics,
       eveningReview: eveningReview ?? this.eveningReview,
+      morningBriefTime: morningBriefTime ?? this.morningBriefTime,
+      eveningReviewTime: eveningReviewTime ?? this.eveningReviewTime,
     );
   }
 }
@@ -221,6 +231,9 @@ class AppSettingsNotifier extends Notifier<AppSettings> {
       
       biometricLock: prefs.getBool('pref_biometric_lock') ?? false,
       anonymousAnalytics: prefs.getBool('pref_anonymous_analytics') ?? true,
+      
+      morningBriefTime: prefs.getString('notif_morning_brief_time') ?? '09:00',
+      eveningReviewTime: prefs.getString('notif_evening_review_time') ?? '21:00',
     );
   }
 
@@ -251,6 +264,9 @@ class AppSettingsNotifier extends Notifier<AppSettings> {
     
     prefs.setBool('pref_biometric_lock', s.biometricLock);
     prefs.setBool('pref_anonymous_analytics', s.anonymousAnalytics);
+    
+    prefs.setString('notif_morning_brief_time', s.morningBriefTime);
+    prefs.setString('notif_evening_review_time', s.eveningReviewTime);
   }
 
   // ── Sincronizzazione Supabase (Profiles) ──────────────────────────────────
@@ -288,6 +304,8 @@ class AppSettingsNotifier extends Notifier<AppSettings> {
           eveningReview: data['notif_evening_review'] ?? state.eveningReview,
           biometricLock: data['biometric_lock'] ?? state.biometricLock,
           anonymousAnalytics: data['anonymous_analytics'] ?? state.anonymousAnalytics,
+          morningBriefTime: data['morning_brief_time'] ?? state.morningBriefTime,
+          eveningReviewTime: data['evening_review_time'] ?? state.eveningReviewTime,
         );
 
         state = serverSettings;
@@ -320,6 +338,8 @@ class AppSettingsNotifier extends Notifier<AppSettings> {
         'notif_evening_review': s.eveningReview,
         'biometric_lock': s.biometricLock,
         'anonymous_analytics': s.anonymousAnalytics,
+        'morning_brief_time': s.morningBriefTime,
+        'evening_review_time': s.eveningReviewTime,
       }).eq('id', user.id);
     } catch (e) {
       debugPrint('[Settings] Errore nell\'upload impostazioni su Supabase: $e');
@@ -335,11 +355,11 @@ class AppSettingsNotifier extends Notifier<AppSettings> {
       if (state.focusMode) return;
 
       if (state.habitReminders) {
-        _notificationService.scheduleDailyHabitReminder();
+        _notificationService.scheduleDailyHabitReminder(timeStr: state.morningBriefTime);
       }
 
       if (state.eveningReview) {
-        _notificationService.scheduleEveningReview();
+        _notificationService.scheduleEveningReview(timeStr: state.eveningReviewTime);
       }
       
       if (state.aiInsights && state.isPro) {

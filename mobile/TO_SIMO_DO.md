@@ -8,6 +8,13 @@
   DROP TABLE IF EXISTS public.user_memos;
   ```
 
+- [ ] **Eseguire Migrazione Database (Step 1 Notifiche)**: Eseguire il seguente script SQL nel SQL Editor di Supabase per aggiungere i campi per gli orari delle notifiche:
+  ```sql
+  -- Migration to add custom notification times to profiles
+  ALTER TABLE public.profiles ADD COLUMN IF NOT EXISTS morning_brief_time text DEFAULT '09:00';
+  ALTER TABLE public.profiles ADD COLUMN IF NOT EXISTS evening_review_time text DEFAULT '21:00';
+  ```
+
 ## Configurazione Backend & Store
 - [ ] Creare account **Apple Developer Program** ($99/anno).
 - [ ] Creare account **Google Play Console** ($25 una tantum).

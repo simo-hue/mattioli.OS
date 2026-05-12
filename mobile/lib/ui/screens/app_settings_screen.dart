@@ -143,7 +143,7 @@ class AppSettingsScreen extends ConsumerWidget {
                             ),
                           ),
                           const SizedBox(height: 24),
-                          _buildViewOption(context, ref, context.l10n.translate('Giorno'), 'giorno', settings.defaultCalendarView),
+                          _buildViewOption(context, ref, context.l10n.translate('Mese'), 'mese', settings.defaultCalendarView),
                           _buildViewOption(context, ref, context.l10n.translate('Settimana'), 'settimana', settings.defaultCalendarView),
                           _buildViewOption(context, ref, context.l10n.translate('Anno'), 'anno', settings.defaultCalendarView),
                           _buildViewOption(context, ref, context.l10n.translate('Vita'), 'vita', settings.defaultCalendarView),

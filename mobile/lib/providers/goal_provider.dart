@@ -5,6 +5,7 @@ import 'package:supabase_flutter/supabase_flutter.dart';
 import '../models/goal.dart';
 import 'shared_prefs_provider.dart';
 import 'auth_provider.dart';
+import 'settings_provider.dart';
 
 // ─── Goals Provider (Offline-First) ─────────────────────────────────────────
 
@@ -293,7 +294,27 @@ enum CalendarView { month, week, year, vita }
 
 class CalendarViewNotifier extends Notifier<CalendarView> {
   @override
-  CalendarView build() => CalendarView.week; // Cambiato a week come default
+  CalendarView build() {
+    final defaultViewStr = ref.watch(settingsProvider.select((s) => s.defaultCalendarView));
+    return _parseView(defaultViewStr);
+  }
+
+  CalendarView _parseView(String viewStr) {
+    switch (viewStr) {
+      case 'mese':
+      case 'giorno': // Fallback for old values
+        return CalendarView.month;
+      case 'settimana':
+        return CalendarView.week;
+      case 'anno':
+        return CalendarView.year;
+      case 'vita':
+        return CalendarView.vita;
+      default:
+        return CalendarView.week;
+    }
+  }
+
   void setView(CalendarView v) => state = v;
 }
 

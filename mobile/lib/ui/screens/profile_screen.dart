@@ -258,7 +258,7 @@ class _ProfileScreenState extends ConsumerState<ProfileScreen> {
                     ),
                     child: Center(
                       child: Text(
-                        'Disconnetti Sessione',
+                        'Esci',
                         style: TextStyle(
                           color: context.appColors.destructive,
                           fontSize: 15,

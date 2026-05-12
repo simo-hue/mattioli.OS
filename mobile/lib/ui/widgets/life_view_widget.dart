@@ -1,19 +1,33 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../core/theme.dart';
+import '../../providers/user_provider.dart';
 
 class LifeViewWidget extends ConsumerWidget {
   const LifeViewWidget({super.key});
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
-    // Mock data based on screenshot
-    const int birthYear = 2003;
-    const int endYear = 2088;
+    final userProfile = ref.watch(userProfileProvider);
+    final dobStr = userProfile.dateOfBirth;
+    
+    int birthYear = 2003; // Fallback
+    int endYear = 2088; // Fallback
+    DateTime birthDate = DateTime(birthYear, 1, 1);
+    
+    if (dobStr != null) {
+      final parsedDate = DateTime.tryParse(dobStr);
+      if (parsedDate != null) {
+        birthDate = parsedDate;
+        birthYear = birthDate.year;
+        endYear = birthYear + 85;
+      }
+    }
+
     final now = DateTime.now();
     
     final int totalMonths = (endYear - birthYear + 1) * 12;
-    final int livedMonths = (now.year - birthYear) * 12 + now.month;
+    final int livedMonths = (now.year - birthDate.year) * 12 + now.month - birthDate.month;
     final int remainingMonths = totalMonths - livedMonths;
     final int age = (livedMonths / 12).floor();
 
@@ -96,7 +110,7 @@ class LifeViewWidget extends ConsumerWidget {
             mainAxisAlignment: MainAxisAlignment.spaceBetween,
             children: [
               Text('nascita', style: TextStyle(fontSize: 10, fontWeight: FontWeight.w600, color: context.appColors.mutedForeground.withValues(alpha: 0.4), letterSpacing: 0.5)),
-              Text('orizzonte (85 anni)', style: TextStyle(fontSize: 10, fontWeight: FontWeight.w600, color: context.appColors.mutedForeground.withValues(alpha: 0.4), letterSpacing: 0.5)),
+              Text('85 anni', style: TextStyle(fontSize: 10, fontWeight: FontWeight.w600, color: context.appColors.mutedForeground.withValues(alpha: 0.4), letterSpacing: 0.5)),
             ],
           )
 

@@ -226,3 +226,21 @@
 *Tech Notes*:
 - **UI**: Removed the text showing birth year, end year, and total months in `life_view_widget.dart`.
 - **Layout**: Reduced vertical padding in the stats block from 20 to 12 and decreased spacing above and below it.
+
+---
+
+## [2026-05-12 17:40]: Feature - Dynamic Date of Birth in Profile & Life View
+*Details*: Added a date of birth field in the personal information settings with a Cupertino date picker (Apple style). The "Life" panel now calculates stats dynamically based on the user's actual date of birth instead of hardcoded values.
+*Tech Notes*:
+- **Model**: Added `dateOfBirth` field to `UserProfile` in `user_provider.dart`, reading from `date_of_birth` in Supabase user metadata.
+- **UI**: Added `_buildDateField` and `_showDatePicker` (using `CupertinoDatePicker`) in `personal_info_screen.dart`.
+- **Logic**: Updated `LifeViewWidget` to parse `dateOfBirth` and calculate `livedMonths` and `age` based on it, with a default fallback to 2003 if not set.
+
+---
+
+## [2026-05-12 17:45]: Cleanup - Removed Phone Number Field & Added SQL Migration
+*Details*: Removed the phone number field from personal information settings as requested. Added an SQL migration script to add `date_of_birth` to the `profiles` table and updated the code to save it there as well.
+*Tech Notes*:
+- **UI**: Removed `_phoneController` and the phone text field from `personal_info_screen.dart`.
+- **Database**: Added `date_of_birth` to the `profiles` table update in `personal_info_screen.dart`.
+- **Docs**: Added the SQL script to `TO_SIMO_DO.md`.

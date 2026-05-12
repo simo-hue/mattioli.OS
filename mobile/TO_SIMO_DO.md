@@ -8,7 +8,6 @@
   DROP TABLE IF EXISTS public.user_memos;
   ```
 
-
 ## Configurazione Backend & Store
 - [ ] Creare account **Apple Developer Program** ($99/anno).
 - [ ] Creare account **Google Play Console** ($25 una tantum).

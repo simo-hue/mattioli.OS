@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:flutter/cupertino.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:lucide_icons_flutter/lucide_icons.dart';
@@ -36,7 +37,8 @@ class _PersonalInfoScreenState extends ConsumerState<PersonalInfoScreen> {
   late TextEditingController _firstNameController;
   late TextEditingController _lastNameController;
   late TextEditingController _emailController;
-  late TextEditingController _phoneController;
+  late TextEditingController _dobController;
+  DateTime? _selectedDate;
 
   @override
   void initState() {
@@ -45,7 +47,10 @@ class _PersonalInfoScreenState extends ConsumerState<PersonalInfoScreen> {
     _firstNameController = TextEditingController(text: profile.firstName);
     _lastNameController = TextEditingController(text: profile.lastName);
     _emailController = TextEditingController(text: profile.email);
-    _phoneController = TextEditingController(text: profile.phone ?? '');
+    _dobController = TextEditingController(text: profile.dateOfBirth ?? '');
+    if (profile.dateOfBirth != null) {
+      _selectedDate = DateTime.tryParse(profile.dateOfBirth!);
+    }
   }
 
   @override
@@ -53,7 +58,7 @@ class _PersonalInfoScreenState extends ConsumerState<PersonalInfoScreen> {
     _firstNameController.dispose();
     _lastNameController.dispose();
     _emailController.dispose();
-    _phoneController.dispose();
+    _dobController.dispose();
     super.dispose();
   }
 
@@ -62,13 +67,15 @@ class _PersonalInfoScreenState extends ConsumerState<PersonalInfoScreen> {
       final firstName = _firstNameController.text.trim();
       final lastName = _lastNameController.text.trim();
       final fullName = '$firstName $lastName'.trim();
-      final phone = _phoneController.text.trim().isEmpty ? null : _phoneController.text.trim();
 
       try {
         // Update Supabase Auth metadata
         final supabase = Supabase.instance.client;
         await supabase.auth.updateUser(UserAttributes(
-          data: {'full_name': fullName},
+          data: {
+            'full_name': fullName,
+            'date_of_birth': _dobController.text.trim().isEmpty ? null : _dobController.text.trim(),
+          },
         ));
 
         // Update profiles table
@@ -76,6 +83,7 @@ class _PersonalInfoScreenState extends ConsumerState<PersonalInfoScreen> {
         if (user != null) {
           await supabase.from('profiles').update({
             'full_name': fullName,
+            'date_of_birth': _dobController.text.trim().isEmpty ? null : _dobController.text.trim(),
           }).eq('id', user.id);
         }
 
@@ -166,10 +174,10 @@ class _PersonalInfoScreenState extends ConsumerState<PersonalInfoScreen> {
                 },
               ),
               const SizedBox(height: 20),
-              _buildTextField(
-                label: context.l10n.translate('Telefono (Opzionale)').toUpperCase(),
-                controller: _phoneController,
-                keyboardType: TextInputType.phone,
+              _buildDateField(
+                label: 'DATA DI NASCITA',
+                controller: _dobController,
+                onTap: _showDatePicker,
               ),
               const SizedBox(height: 40),
               SizedBox(
@@ -197,6 +205,104 @@ class _PersonalInfoScreenState extends ConsumerState<PersonalInfoScreen> {
               ),
             ],
           ),
+        ),
+      ),
+    );
+  }
+
+  Widget _buildDateField({
+    required String label,
+    required TextEditingController controller,
+    required VoidCallback onTap,
+  }) {
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Text(
+          label,
+          style: TextStyle(
+            fontSize: 10,
+            fontWeight: FontWeight.w600,
+            color: context.appColors.mutedForeground,
+            letterSpacing: 0.5,
+          ),
+        ),
+        const SizedBox(height: 8),
+        TextFormField(
+          controller: controller,
+          readOnly: true,
+          onTap: onTap,
+          style: TextStyle(
+            color: context.appColors.foreground,
+            fontSize: 16,
+            fontWeight: FontWeight.w500,
+          ),
+          decoration: InputDecoration(
+            filled: true,
+            fillColor: context.appColors.card.withValues(alpha: 0.4),
+            contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 16),
+            enabledBorder: OutlineInputBorder(
+              borderRadius: BorderRadius.circular(14),
+              borderSide: BorderSide(
+                color: context.appColors.border.withValues(alpha: 0.5),
+              ),
+            ),
+            focusedBorder: OutlineInputBorder(
+              borderRadius: BorderRadius.circular(14),
+              borderSide: BorderSide(
+                color: Theme.of(context).colorScheme.primary,
+                width: 1.5,
+              ),
+            ),
+            suffixIcon: Icon(LucideIcons.calendar, color: context.appColors.mutedForeground, size: 18),
+          ),
+        ),
+      ],
+    );
+  }
+
+  void _showDatePicker() {
+    showCupertinoModalPopup(
+      context: context,
+      builder: (_) => Container(
+        height: 300,
+        color: context.appColors.card,
+        child: Column(
+          children: [
+            Container(
+              height: 50,
+              color: context.appColors.background,
+              child: Row(
+                mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                children: [
+                  CupertinoButton(
+                    child: const Text('Annulla'),
+                    onPressed: () => Navigator.of(context).pop(),
+                  ),
+                  CupertinoButton(
+                    child: const Text('Fatto'),
+                    onPressed: () {
+                      if (_selectedDate == null) {
+                        _selectedDate = DateTime(2000, 1, 1);
+                      }
+                      _dobController.text = _selectedDate!.toIso8601String().substring(0, 10);
+                      Navigator.of(context).pop();
+                    },
+                  ),
+                ],
+              ),
+            ),
+            Expanded(
+              child: CupertinoDatePicker(
+                mode: CupertinoDatePickerMode.date,
+                initialDateTime: _selectedDate ?? DateTime(2000, 1, 1),
+                maximumDate: DateTime.now(),
+                onDateTimeChanged: (DateTime newDateTime) {
+                  _selectedDate = newDateTime;
+                },
+              ),
+            ),
+          ],
         ),
       ),
     );

@@ -12,6 +12,7 @@ class UserProfile {
   final String? email;
   final String? phone;
   final String? avatarUrl;
+  final String? dateOfBirth;
 
   const UserProfile({
     this.firstName,
@@ -19,6 +20,7 @@ class UserProfile {
     this.email,
     this.phone,
     this.avatarUrl,
+    this.dateOfBirth,
   });
 
   /// Costruisce un profilo dall'oggetto User di Supabase.
@@ -36,6 +38,7 @@ class UserProfile {
       email: user.email,
       phone: user.phone,
       avatarUrl: meta?['avatar_url'] as String?,
+      dateOfBirth: meta?['date_of_birth'] as String?,
     );
   }
 
@@ -45,7 +48,8 @@ class UserProfile {
         lastName = null,
         email = null,
         phone = null,
-        avatarUrl = null;
+        avatarUrl = null,
+        dateOfBirth = null;
 
   /// Display name con fallback
   String get displayName {
@@ -61,6 +65,7 @@ class UserProfile {
     String? email,
     String? phone,
     String? avatarUrl,
+    String? dateOfBirth,
   }) {
     return UserProfile(
       firstName: firstName ?? this.firstName,
@@ -68,6 +73,7 @@ class UserProfile {
       email: email ?? this.email,
       phone: phone ?? this.phone,
       avatarUrl: avatarUrl ?? this.avatarUrl,
+      dateOfBirth: dateOfBirth ?? this.dateOfBirth,
     );
   }
 }

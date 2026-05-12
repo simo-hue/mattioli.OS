@@ -296,3 +296,24 @@
 *Tech Notes*:
 - **UI**: Replaced `showTimePicker` with `showCupertinoModalPopup` and `CupertinoDatePicker` in `habit_management_modal.dart`.
 - **Format**: Forced 24h format in the Cupertino picker.
+
+---
+
+## [2026-05-12 18:20]: Feature - Apple-style Color Picker
+*Details*: Changed the custom color picker in `HabitManagementModal` to open in a Cupertino modal sheet for a more integrated feel.
+*Tech Notes*:
+- **UI**: Replaced `showDialog` with `showCupertinoModalPopup` in `_showColorPicker` method in `habit_management_modal.dart`. Wrapped `ColorPicker` in `Material` to support its widgets.
+
+---
+
+## [2026-05-12 18:25]: Feature - Time Picker respects 24h Setting
+*Details*: Updated the Cupertino time picker to respect the "Formato 24h" setting from the app settings.
+*Tech Notes*:
+- **UI**: Read `timeFormat24h` from `settingsProvider` and passed it to `use24hFormat` in `CupertinoDatePicker`.
+
+---
+
+## [2026-05-12 18:30]: Fix - Resolved Missing Import in HabitManagementModal
+*Details*: Fixed a build error where `settingsProvider` was not defined.
+*Tech Notes*:
+- **Import**: Added `import '../../providers/settings_provider.dart';` in `habit_management_modal.dart`.

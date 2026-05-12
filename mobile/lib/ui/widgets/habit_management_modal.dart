@@ -8,6 +8,7 @@ import '../../core/theme.dart';
 import '../../core/localization.dart';
 import '../../models/goal.dart';
 import '../../providers/goal_provider.dart';
+import '../../providers/settings_provider.dart';
 
 class HabitManagementModal extends ConsumerStatefulWidget {
   const HabitManagementModal({super.key});
@@ -100,29 +101,55 @@ class _HabitManagementModalState extends ConsumerState<HabitManagementModal> {
   }
 
   void _showColorPicker() {
-    showDialog(
+    showCupertinoModalPopup(
       context: context,
-      builder: (context) => AlertDialog(
-        backgroundColor: context.appColors.card,
-        title: Text(context.l10n.translate('Scegli un colore'), style: TextStyle(color: context.appColors.foreground)),
-        content: SingleChildScrollView(
-          child: ColorPicker(
-            pickerColor: _selectedColor,
-            onColorChanged: (color) => setState(() => _selectedColor = color),
-            pickerAreaHeightPercent: 0.8,
-          ),
+      builder: (BuildContext context) => Container(
+        height: 450,
+        color: context.appColors.card,
+        child: Column(
+          children: [
+            Container(
+              color: context.appColors.border.withValues(alpha: 0.3),
+              child: Row(
+                mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                children: [
+                  CupertinoButton(
+                    child: Text(context.l10n.translate('Annulla'), style: TextStyle(color: context.appColors.mutedForeground)),
+                    onPressed: () => Navigator.pop(context),
+                  ),
+                  CupertinoButton(
+                    child: Text(context.l10n.translate('Conferma'), style: TextStyle(color: Theme.of(context).colorScheme.primary)),
+                    onPressed: () => Navigator.pop(context),
+                  ),
+                ],
+              ),
+            ),
+            Expanded(
+              child: SingleChildScrollView(
+                padding: const EdgeInsets.all(16.0),
+                child: Material(
+                  color: Colors.transparent,
+                  child: ColorPicker(
+                    pickerColor: _selectedColor,
+                    onColorChanged: (color) => setState(() => _selectedColor = color),
+                    pickerAreaHeightPercent: 0.7,
+                    enableAlpha: false,
+                    displayThumbColor: true,
+                    labelTypes: const [],
+                  ),
+                ),
+              ),
+            ),
+          ],
         ),
-        actions: [
-          TextButton(
-            onPressed: () => Navigator.pop(context),
-            child: Text(context.l10n.translate('confirm'), style: TextStyle(color: context.appColors.foreground)),
-          ),
-        ],
       ),
     );
   }
 
   void _showCupertinoTimePicker() {
+    final settings = ref.read(settingsProvider);
+    final use24hFormat = settings.timeFormat24h;
+
     TimeOfDay initialTime = const TimeOfDay(hour: 9, minute: 0);
     if (_reminderTime != null) {
       final parts = _reminderTime!.split(':');
@@ -163,7 +190,7 @@ class _HabitManagementModalState extends ConsumerState<HabitManagementModal> {
               child: CupertinoDatePicker(
                 mode: CupertinoDatePickerMode.time,
                 initialDateTime: initialDateTime,
-                use24hFormat: true,
+                use24hFormat: use24hFormat,
                 onDateTimeChanged: (DateTime newDateTime) {
                   initialDateTime = newDateTime;
                 },

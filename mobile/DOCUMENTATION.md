@@ -359,3 +359,14 @@
 - **Provider**: Created `mood_provider.dart` with `dailyMoodsProvider` to sync with `daily_moods` table in Supabase.
 - **UI**: Updated `DailyCheckInModal` to use the provider. It now loads existing values for today if they exist and changes the button text accordingly.
 - **DB**: Noted that `daily_moods` table has constraints for scores 1-5, while UI uses 0-10. Provided SQL to update constraints.
+---
+
+## [2026-05-12 23:45]: Feature - Real Data for Weekly Trend
+*Details*: Implemented real data calculation for the weekly trend in the statistics tab.
+*Tech Notes*:
+- **UI**: Updated `GlobalTrendTabWidget` to accept `goals` and `logs` as parameters.
+- **Logic**: Calculates the completion percentage for the last 7 days by checking active habits and logs.
+- **Comparison**: Compares the current week's average with the previous week's average to calculate the delta and trend direction.
+- **Critical Habits**: Calculates the drop in completion rate for each habit (current week vs previous week) and displays them sorted by the biggest drop.
+- **Comparison Carousel**: Calculates the real completion rate for the current and previous week for each habit.
+- **Timeframes**: Added real data calculations for Month, Year, and All timeframes. Month shows last 30 days. Year shows last 12 months with Italian names. All shows up to 10 points spanning the entire history.

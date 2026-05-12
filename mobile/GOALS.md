@@ -4,7 +4,7 @@
         - cosa posso fare per migliorare la performance? 
         - su cosa devo porre più attenzione?
 
-[ ] Feature Premium
+# Feature Premium
     [ ] Analytics as a PRO Plan per quelle avanzate
     [ ] App per Mac ( non solo tramite webApp salvata )
     [ ] Per Apple watch ( servono in swift, comming soon )

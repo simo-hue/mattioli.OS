@@ -22,21 +22,22 @@ class _GlobalTrendTabWidgetState extends ConsumerState<GlobalTrendTabWidget> {
   @override
   Widget build(BuildContext context) {
     final goals = ref.watch(goalsProvider);
+    final logs = ref.watch(habitLogsProvider);
 
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        _buildTrendChartSection(),
+        _buildTrendChartSection(goals, logs),
         const SizedBox(height: 24),
-        const _AbitudiniCriticheSection(),
+        _AbitudiniCriticheSection(goals: goals, logs: logs),
         const SizedBox(height: 24),
-        _buildComparisonSection(goals),
+        _buildComparisonSection(goals, logs),
         const SizedBox(height: 32),
       ],
     );
   }
 
-  Widget _buildTrendChartSection() {
+  Widget _buildTrendChartSection(List<Goal> goals, Map<String, Map<String, String>> logs) {
     final List<FlSpot> spots;
     final List<String> dates;
     final double maxX;
@@ -47,41 +48,272 @@ class _GlobalTrendTabWidgetState extends ConsumerState<GlobalTrendTabWidget> {
 
     switch (_chartTimeframe) {
       case 'timeframe_month_short':
-        spots = List.generate(30, (i) => FlSpot(i.toDouble(), 60 + (i % 7).toDouble() * 5));
-        dates = List.generate(30, (i) => '${(i + 1).toString().padLeft(2, '0')}/04');
+        spots = [];
+        dates = [];
+        final today = DateTime.now();
+        double totalPercentage = 0;
+        
+        for (int i = 29; i >= 0; i--) {
+          final date = today.subtract(Duration(days: i));
+          final dateKey = '${date.year}-${date.month.toString().padLeft(2, '0')}-${date.day.toString().padLeft(2, '0')}';
+          final dayLogs = logs[dateKey] ?? {};
+          
+          int activeCount = 0;
+          int doneCount = 0;
+          
+          for (final habit in goals) {
+            if (habit.isActiveOn(date)) {
+              activeCount++;
+              if (dayLogs[habit.id] == 'done') {
+                doneCount++;
+              }
+            }
+          }
+          
+          final dayPercentage = activeCount > 0 ? (doneCount / activeCount) * 100 : 100.0;
+          spots.add(FlSpot((29 - i).toDouble(), dayPercentage));
+          dates.add('${date.day.toString().padLeft(2, '0')}/${date.month.toString().padLeft(2, '0')}');
+          totalPercentage += dayPercentage;
+        }
+        
         maxX = 29;
         title = 'Mensile';
-        percentage = '68.5%';
-        delta = '+2.1%';
-        isPositive = true;
+        percentage = '${(totalPercentage / 30).toStringAsFixed(1)}%';
+        
+        // Calcola il delta con i 30 giorni precedenti
+        double prevTotalPercentage = 0;
+        for (int i = 59; i >= 30; i--) {
+          final date = today.subtract(Duration(days: i));
+          final dateKey = '${date.year}-${date.month.toString().padLeft(2, '0')}-${date.day.toString().padLeft(2, '0')}';
+          final dayLogs = logs[dateKey] ?? {};
+          
+          int activeCount = 0;
+          int doneCount = 0;
+          
+          for (final habit in goals) {
+            if (habit.isActiveOn(date)) {
+              activeCount++;
+              if (dayLogs[habit.id] == 'done') {
+                doneCount++;
+              }
+            }
+          }
+          prevTotalPercentage += activeCount > 0 ? (doneCount / activeCount) * 100 : 100.0;
+        }
+        
+        final currentAvg = totalPercentage / 30;
+        final prevAvg = prevTotalPercentage / 30;
+        final deltaValue = currentAvg - prevAvg;
+        
+        delta = '${deltaValue >= 0 ? '+' : ''}${deltaValue.toStringAsFixed(1)}%';
+        isPositive = deltaValue >= 0;
         break;
       case 'timeframe_year_short':
-        spots = List.generate(12, (i) => FlSpot(i.toDouble(), 50 + (i % 4).toDouble() * 10));
-        dates = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
+        spots = [];
+        dates = [];
+        final today = DateTime.now();
+        final monthsIT = ['Gen', 'Feb', 'Mar', 'Apr', 'Mag', 'Giu', 'Lug', 'Ago', 'Set', 'Ott', 'Nov', 'Dic'];
+        double totalPercentage = 0;
+        
+        for (int i = 11; i >= 0; i--) {
+          final date = DateTime(today.year, today.month - i, 1);
+          final monthIndex = (date.month - 1) % 12;
+          
+          final daysInMonth = DateTime(date.year, date.month + 1, 0).day;
+          double monthSum = 0;
+          int daysCount = 0;
+          
+          for (int d = 1; d <= daysInMonth; d++) {
+            final checkDate = DateTime(date.year, date.month, d);
+            if (checkDate.isAfter(today)) break;
+            
+            final dateKey = '${checkDate.year}-${checkDate.month.toString().padLeft(2, '0')}-${checkDate.day.toString().padLeft(2, '0')}';
+            final dayLogs = logs[dateKey] ?? {};
+            
+            int activeCount = 0;
+            int doneCount = 0;
+            
+            for (final habit in goals) {
+              if (habit.isActiveOn(checkDate)) {
+                activeCount++;
+                if (dayLogs[habit.id] == 'done') {
+                  doneCount++;
+                }
+              }
+            }
+            monthSum += activeCount > 0 ? (doneCount / activeCount) * 100 : 100.0;
+            daysCount++;
+          }
+          
+          final monthAvg = daysCount > 0 ? monthSum / daysCount : 100.0;
+          spots.add(FlSpot((11 - i).toDouble(), monthAvg));
+          dates.add(monthsIT[monthIndex]);
+          totalPercentage += monthAvg;
+        }
+        
         maxX = 11;
         title = 'Annuale';
-        percentage = '71.2%';
-        delta = '+8.4%';
-        isPositive = true;
+        percentage = '${(totalPercentage / 12).toStringAsFixed(1)}%';
+        
+        // Calcola il delta con i 12 mesi precedenti
+        double prevTotalPercentage = 0;
+        for (int i = 23; i >= 12; i--) {
+          final date = DateTime(today.year, today.month - i, 1);
+          final daysInMonth = DateTime(date.year, date.month + 1, 0).day;
+          double monthSum = 0;
+          int daysCount = 0;
+          
+          for (int d = 1; d <= daysInMonth; d++) {
+            final checkDate = DateTime(date.year, date.month, d);
+            final dateKey = '${checkDate.year}-${checkDate.month.toString().padLeft(2, '0')}-${checkDate.day.toString().padLeft(2, '0')}';
+            final dayLogs = logs[dateKey] ?? {};
+            
+            int activeCount = 0;
+            int doneCount = 0;
+            
+            for (final habit in goals) {
+              if (habit.isActiveOn(checkDate)) {
+                activeCount++;
+                if (dayLogs[habit.id] == 'done') {
+                  doneCount++;
+                }
+              }
+            }
+            monthSum += activeCount > 0 ? (doneCount / activeCount) * 100 : 100.0;
+            daysCount++;
+          }
+          prevTotalPercentage += daysCount > 0 ? monthSum / daysCount : 100.0;
+        }
+        
+        final currentAvg = totalPercentage / 12;
+        final prevAvg = prevTotalPercentage / 12;
+        final deltaValue = currentAvg - prevAvg;
+        
+        delta = '${deltaValue >= 0 ? '+' : ''}${deltaValue.toStringAsFixed(1)}%';
+        isPositive = deltaValue >= 0;
         break;
       case 'timeframe_all':
-        spots = List.generate(24, (i) => FlSpot(i.toDouble(), 40 + (i % 6).toDouble() * 8));
-        dates = List.generate(24, (i) => 'M$i');
-        maxX = 23;
+        spots = [];
+        dates = [];
+        final today = DateTime.now();
+        
+        DateTime earliest = today;
+        for (final habit in goals) {
+          if (habit.startDate.isBefore(earliest)) {
+            earliest = habit.startDate;
+          }
+        }
+        
+        final totalDays = today.difference(earliest).inDays;
+        final interval = totalDays > 10 ? (totalDays / 10).ceil() : 1;
+        final pointsCount = totalDays > 10 ? 10 : totalDays + 1;
+        
+        double totalPercentage = 0;
+        
+        for (int i = 0; i < pointsCount; i++) {
+          final date = earliest.add(Duration(days: i * interval));
+          if (date.isAfter(today)) break;
+          
+          double sum = 0;
+          int count = 0;
+          
+          for (int d = 0; d < interval; d++) {
+            final checkDate = date.add(Duration(days: d));
+            if (checkDate.isAfter(today)) break;
+            
+            final dateKey = '${checkDate.year}-${checkDate.month.toString().padLeft(2, '0')}-${checkDate.day.toString().padLeft(2, '0')}';
+            final dayLogs = logs[dateKey] ?? {};
+            
+            int activeCount = 0;
+            int doneCount = 0;
+            
+            for (final habit in goals) {
+              if (habit.isActiveOn(checkDate)) {
+                activeCount++;
+                if (dayLogs[habit.id] == 'done') {
+                  doneCount++;
+                }
+              }
+            }
+            sum += activeCount > 0 ? (doneCount / activeCount) * 100 : 100.0;
+            count++;
+          }
+          
+          final avg = count > 0 ? sum / count : 100.0;
+          spots.add(FlSpot(i.toDouble(), avg));
+          dates.add('${date.day.toString().padLeft(2, '0')}/${date.month.toString().padLeft(2, '0')}');
+          totalPercentage += avg;
+        }
+        
+        maxX = spots.isNotEmpty ? (spots.length - 1).toDouble() : 0;
         title = 'Totale';
-        percentage = '74.2%';
-        delta = '+5.4%';
+        percentage = spots.isNotEmpty ? '${(totalPercentage / spots.length).toStringAsFixed(1)}%' : '100%';
+        delta = 'N/A';
         isPositive = true;
         break;
       case 'timeframe_week_short':
       default:
-        spots = const [FlSpot(0, 40), FlSpot(1, 65), FlSpot(2, 50), FlSpot(3, 85), FlSpot(4, 75), FlSpot(5, 80), FlSpot(6, 95)];
-        dates = ['gio', 'ven', 'sab', 'dom', 'lun', 'mar', 'mer'];
+        spots = [];
+        dates = [];
+        final today = DateTime.now();
+        final weekDays = ['mon', 'tue', 'wed', 'thu', 'fri', 'sat', 'sun'];
+        double totalPercentage = 0;
+        
+        // Calcola i dati per gli ultimi 7 giorni
+        for (int i = 6; i >= 0; i--) {
+          final date = today.subtract(Duration(days: i));
+          final dateKey = '${date.year}-${date.month.toString().padLeft(2, '0')}-${date.day.toString().padLeft(2, '0')}';
+          final dayLogs = logs[dateKey] ?? {};
+          
+          int activeCount = 0;
+          int doneCount = 0;
+          
+          for (final habit in goals) {
+            if (habit.isActiveOn(date)) {
+              activeCount++;
+              if (dayLogs[habit.id] == 'done') {
+                doneCount++;
+              }
+            }
+          }
+          
+          final dayPercentage = activeCount > 0 ? (doneCount / activeCount) * 100 : 100.0;
+          spots.add(FlSpot((6 - i).toDouble(), dayPercentage));
+          dates.add(weekDays[date.weekday - 1]);
+          totalPercentage += dayPercentage;
+        }
+        
         maxX = 6;
         title = 'Settimanale';
-        percentage = '74.2%';
-        delta = '+5.4%';
-        isPositive = true;
+        percentage = '${(totalPercentage / 7).toStringAsFixed(1)}%';
+        
+        // Calcola il delta con la settimana precedente (giorni da -13 a -7)
+        double prevTotalPercentage = 0;
+        for (int i = 13; i >= 7; i--) {
+          final date = today.subtract(Duration(days: i));
+          final dateKey = '${date.year}-${date.month.toString().padLeft(2, '0')}-${date.day.toString().padLeft(2, '0')}';
+          final dayLogs = logs[dateKey] ?? {};
+          
+          int activeCount = 0;
+          int doneCount = 0;
+          
+          for (final habit in goals) {
+            if (habit.isActiveOn(date)) {
+              activeCount++;
+              if (dayLogs[habit.id] == 'done') {
+                doneCount++;
+              }
+            }
+          }
+          prevTotalPercentage += activeCount > 0 ? (doneCount / activeCount) * 100 : 100.0;
+        }
+        
+        final currentAvg = totalPercentage / 7;
+        final prevAvg = prevTotalPercentage / 7;
+        final deltaValue = currentAvg - prevAvg;
+        
+        delta = '${deltaValue >= 0 ? '+' : ''}${deltaValue.toStringAsFixed(1)}%';
+        isPositive = deltaValue >= 0;
         break;
     }
 
@@ -290,13 +522,20 @@ class _GlobalTrendTabWidgetState extends ConsumerState<GlobalTrendTabWidget> {
     );
   }
 
-  Widget _buildComparisonSection(List<Goal> goals) {
-    return _ComparisonCarouselSection(goals: goals, timeframe: _comparisonTimeframe);
+  Widget _buildComparisonSection(List<Goal> goals, Map<String, Map<String, String>> logs) {
+    return _ComparisonCarouselSection(goals: goals, timeframe: _comparisonTimeframe, logs: logs);
   }
 
   Widget _buildPremiumSelector() {
     final options = ['week', 'month', 'year', 'all'];
     final selectedKey = _chartTimeframe == 'timeframe_week_short' ? 'week' : _chartTimeframe == 'timeframe_month_short' ? 'month' : _chartTimeframe == 'timeframe_year_short' ? 'year' : 'all';
+
+    final Map<String, String> italianLabels = {
+      'week': 'Settimana',
+      'month': 'Mese',
+      'year': 'Anno',
+      'all': 'Tutto',
+    };
 
     return Container(
       width: double.infinity,
@@ -334,7 +573,7 @@ class _GlobalTrendTabWidgetState extends ConsumerState<GlobalTrendTabWidget> {
                       : null,
                 ),
                 child: Text(
-                  context.l10n.translate(opt),
+                  italianLabels[opt] ?? opt,
                   textAlign: TextAlign.center,
                   style: TextStyle(
                     fontFamily: 'Inter',
@@ -355,8 +594,9 @@ class _GlobalTrendTabWidgetState extends ConsumerState<GlobalTrendTabWidget> {
 class _ComparisonCarouselSection extends StatefulWidget {
   final List<Goal> goals;
   final String timeframe;
+  final Map<String, Map<String, String>> logs;
 
-  const _ComparisonCarouselSection({required this.goals, required this.timeframe});
+  const _ComparisonCarouselSection({required this.goals, required this.timeframe, required this.logs});
 
   @override
   State<_ComparisonCarouselSection> createState() => _ComparisonCarouselSectionState();
@@ -417,9 +657,37 @@ class _ComparisonCarouselSectionState extends State<_ComparisonCarouselSection> 
             onPageChanged: (index) => setState(() => _currentPage = index),
             itemBuilder: (context, index) {
               final goal = widget.goals[index];
-              // Mock data based on goal ID
-              final int current = 50 + (goal.id.hashCode % 45);
-              final int previous = 40 + (goal.id.hashCode % 35);
+              final today = DateTime.now();
+              
+              // Calcola completamento settimana corrente
+              int currentActive = 0;
+              int currentDone = 0;
+              for (int i = 6; i >= 0; i--) {
+                final date = today.subtract(Duration(days: i));
+                if (goal.isActiveOn(date)) {
+                  currentActive++;
+                  final dateKey = '${date.year}-${date.month.toString().padLeft(2, '0')}-${date.day.toString().padLeft(2, '0')}';
+                  if (widget.logs[dateKey]?[goal.id] == 'done') {
+                    currentDone++;
+                  }
+                }
+              }
+              final int current = currentActive > 0 ? ((currentDone / currentActive) * 100).round() : 100;
+              
+              // Calcola completamento settimana precedente
+              int prevActive = 0;
+              int prevDone = 0;
+              for (int i = 13; i >= 7; i--) {
+                final date = today.subtract(Duration(days: i));
+                if (goal.isActiveOn(date)) {
+                  prevActive++;
+                  final dateKey = '${date.year}-${date.month.toString().padLeft(2, '0')}-${date.day.toString().padLeft(2, '0')}';
+                  if (widget.logs[dateKey]?[goal.id] == 'done') {
+                    prevDone++;
+                  }
+                }
+              }
+              final int previous = prevActive > 0 ? ((prevDone / prevActive) * 100).round() : 100;
               final int delta = current - previous;
 
               return Padding(
@@ -551,7 +819,9 @@ class _ComparisonCard extends StatelessWidget {
 }
 
 class _AbitudiniCriticheSection extends StatefulWidget {
-  const _AbitudiniCriticheSection();
+  final List<Goal> goals;
+  final Map<String, Map<String, String>> logs;
+  const _AbitudiniCriticheSection({required this.goals, required this.logs});
 
   @override
   State<_AbitudiniCriticheSection> createState() => _AbitudiniCriticheSectionState();
@@ -575,32 +845,91 @@ class _AbitudiniCriticheSectionState extends State<_AbitudiniCriticheSection> {
 
   @override
   Widget build(BuildContext context) {
-    final List<Widget> cards = [
-      const _CriticaCard(
-        title: '20 Flessioni 4',
-        drop: '-45%',
-        trend: 'trending_down',
-        color: Color(0xFFEF4444),
-        streak: '30 giorni',
-        desc: 'Questa abitudine ha perso il 45% di costanza nell\'ultima settimana. La tua serie negativa più lunga mai registrata.',
-      ),
-      const _CriticaCard(
-        title: '20 Flessioni 3',
-        drop: '-28%',
-        trend: 'trending_down',
-        color: Color(0xFFF97316),
-        streak: '17 giorni',
-        desc: 'Il trend è in calo costante. Hai saltato 5 delle ultime 7 sessioni programmate.',
-      ),
-      const _CriticaCard(
-        title: 'Journaling',
-        drop: '-15%',
-        trend: 'trending_down',
-        color: Color(0xFFEAB308),
-        streak: '8 giorni',
-        desc: 'Attenzione al calo di motivazione. Stai perdendo la costanza che avevi costruito nel mese scorso.',
-      ),
-    ];
+    final List<Map<String, dynamic>> criticalHabits = [];
+    final today = DateTime.now();
+    
+    for (final habit in widget.goals) {
+      int currentActive = 0;
+      int currentDone = 0;
+      for (int i = 6; i >= 0; i--) {
+        final date = today.subtract(Duration(days: i));
+        if (habit.isActiveOn(date)) {
+          currentActive++;
+          final dateKey = '${date.year}-${date.month.toString().padLeft(2, '0')}-${date.day.toString().padLeft(2, '0')}';
+          if (widget.logs[dateKey]?[habit.id] == 'done') {
+            currentDone++;
+          }
+        }
+      }
+      final currentRate = currentActive > 0 ? currentDone / currentActive : 1.0;
+      
+      int prevActive = 0;
+      int prevDone = 0;
+      for (int i = 13; i >= 7; i--) {
+        final date = today.subtract(Duration(days: i));
+        if (habit.isActiveOn(date)) {
+          prevActive++;
+          final dateKey = '${date.year}-${date.month.toString().padLeft(2, '0')}-${date.day.toString().padLeft(2, '0')}';
+          if (widget.logs[dateKey]?[habit.id] == 'done') {
+            prevDone++;
+          }
+        }
+      }
+      final prevRate = prevActive > 0 ? prevDone / prevActive : 1.0;
+      
+      final drop = currentRate - prevRate;
+      
+      if (drop < 0) {
+        final dropPercentage = (drop * 100).abs();
+        
+        int negStreak = 0;
+        DateTime checkDate = today;
+        while (true) {
+          final dk = '${checkDate.year}-${checkDate.month.toString().padLeft(2, '0')}-${checkDate.day.toString().padLeft(2, '0')}';
+          if (widget.logs[dk]?[habit.id] == 'missed') {
+            negStreak++;
+          } else if (widget.logs[dk]?[habit.id] == 'done') {
+            break;
+          }
+          checkDate = checkDate.subtract(const Duration(days: 1));
+          if (checkDate.isBefore(habit.startDate)) break;
+        }
+        
+        criticalHabits.add({
+          'habit': habit,
+          'drop': dropPercentage,
+          'negStreak': negStreak,
+        });
+      }
+    }
+    
+    criticalHabits.sort((a, b) => b['drop'].compareTo(a['drop']));
+    
+    final List<Widget> cards = criticalHabits.isEmpty
+        ? [
+            const _CriticaCard(
+              title: 'Tutto alla grande!',
+              drop: '0%',
+              trend: 'trending_up',
+              color: Color(0xFF10B981),
+              streak: '0 giorni',
+              desc: 'Tutte le tue abitudini stanno mantenendo o migliorando il loro trend! Continua così!',
+            )
+          ]
+        : criticalHabits.take(3).map((item) {
+            final habit = item['habit'] as Goal;
+            final drop = item['drop'] as double;
+            final negStreak = item['negStreak'] as int;
+            
+            return _CriticaCard(
+              title: habit.title,
+              drop: '-${drop.toStringAsFixed(0)}%',
+              trend: 'trending_down',
+              color: drop > 30 ? const Color(0xFFEF4444) : const Color(0xFFF97316),
+              streak: '$negStreak giorni',
+              desc: 'Questa abitudine ha perso il ${drop.toStringAsFixed(0)}% di costanza nell\'ultima settimana rispetto alla precedente.',
+            );
+          }).toList();
 
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,

@@ -31,7 +31,7 @@ class _GlobalTrendTabWidgetState extends ConsumerState<GlobalTrendTabWidget> {
         const SizedBox(height: 24),
         _AbitudiniCriticheSection(goals: goals, logs: logs),
         const SizedBox(height: 24),
-        _buildComparisonSection(goals, logs),
+        _MiglioriAbitudiniSection(goals: goals, logs: logs),
         const SizedBox(height: 32),
       ],
     );
@@ -522,9 +522,7 @@ class _GlobalTrendTabWidgetState extends ConsumerState<GlobalTrendTabWidget> {
     );
   }
 
-  Widget _buildComparisonSection(List<Goal> goals, Map<String, Map<String, String>> logs) {
-    return _ComparisonCarouselSection(goals: goals, timeframe: _comparisonTimeframe, logs: logs);
-  }
+
 
   Widget _buildPremiumSelector() {
     final options = ['week', 'month', 'year', 'all'];
@@ -591,18 +589,16 @@ class _GlobalTrendTabWidgetState extends ConsumerState<GlobalTrendTabWidget> {
   }
 }
 
-class _ComparisonCarouselSection extends StatefulWidget {
+class _MiglioriAbitudiniSection extends StatefulWidget {
   final List<Goal> goals;
-  final String timeframe;
   final Map<String, Map<String, String>> logs;
-
-  const _ComparisonCarouselSection({required this.goals, required this.timeframe, required this.logs});
+  const _MiglioriAbitudiniSection({required this.goals, required this.logs});
 
   @override
-  State<_ComparisonCarouselSection> createState() => _ComparisonCarouselSectionState();
+  State<_MiglioriAbitudiniSection> createState() => _MiglioriAbitudiniSectionState();
 }
 
-class _ComparisonCarouselSectionState extends State<_ComparisonCarouselSection> {
+class _MiglioriAbitudiniSectionState extends State<_MiglioriAbitudiniSection> {
   late PageController _pageController;
   int _currentPage = 0;
 
@@ -620,15 +616,83 @@ class _ComparisonCarouselSectionState extends State<_ComparisonCarouselSection> 
 
   @override
   Widget build(BuildContext context) {
+    final List<Map<String, dynamic>> bestHabits = [];
+    final today = DateTime.now();
+    
+    for (final habit in widget.goals) {
+      int activeCount = 0;
+      int doneCount = 0;
+      for (int i = 6; i >= 0; i--) {
+        final date = today.subtract(Duration(days: i));
+        if (habit.isActiveOn(date)) {
+          activeCount++;
+          final dateKey = '${date.year}-${date.month.toString().padLeft(2, '0')}-${date.day.toString().padLeft(2, '0')}';
+          if (widget.logs[dateKey]?[habit.id] == 'done') {
+            doneCount++;
+          }
+        }
+      }
+      final rate = activeCount > 0 ? doneCount / activeCount : 0.0;
+      
+      int currentStreak = 0;
+      DateTime checkDate = today;
+      while (true) {
+        final dateKey = '${checkDate.year}-${checkDate.month.toString().padLeft(2, '0')}-${checkDate.day.toString().padLeft(2, '0')}';
+        if (widget.logs[dateKey]?[habit.id] == 'done') {
+          currentStreak++;
+          checkDate = checkDate.subtract(const Duration(days: 1));
+        } else {
+          if (checkDate == today) {
+            checkDate = checkDate.subtract(const Duration(days: 1));
+            continue;
+          }
+          break;
+        }
+      }
+
+      if (rate > 0) {
+        bestHabits.add({
+          'habit': habit,
+          'rate': rate,
+          'streak': currentStreak,
+        });
+      }
+    }
+    
+    bestHabits.sort((a, b) => b['rate'].compareTo(a['rate']));
+    
+    final List<Widget> cards = bestHabits.isEmpty
+        ? [
+            const _MiglioreCard(
+              title: 'Tutto alla grande!',
+              rate: '100%',
+              color: Color(0xFF10B981),
+              streak: '0 giorni',
+              desc: 'Tutte le tue abitudini stanno mantenendo o migliorando il loro trend! Continua così!',
+            )
+          ]
+        : bestHabits.take(3).map((item) {
+            final habit = item['habit'] as Goal;
+            final rate = item['rate'] as double;
+            
+            return _MiglioreCard(
+              title: habit.title,
+              rate: '${(rate * 100).toStringAsFixed(0)}%',
+              color: const Color(0xFF10B981),
+              streak: '${item['streak']} giorni',
+              desc: 'Hai completato questa abitudine il ${(rate * 100).toStringAsFixed(0)}% delle volte nell\'ultima settimana.',
+            );
+          }).toList();
+
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
         Row(
           children: [
-            const Icon(LucideIcons.trendingUp, size: 16, color: Colors.grey),
+            const Icon(LucideIcons.trophy, size: 16, color: Color(0xFF10B981)),
             const SizedBox(width: 8),
             Text(
-              context.l10n.translate('Confronto Temporale'),
+              'Abitudini Migliori',
               style: TextStyle(
                 fontFamily: 'Inter',
                 fontSize: 14,
@@ -640,7 +704,7 @@ class _ComparisonCarouselSectionState extends State<_ComparisonCarouselSection> 
         ),
         const SizedBox(height: 4),
         Text(
-          context.l10n.translate('Analizza come stai andando rispetto al passato.'),
+          'Le abitudini in cui sei più costante.',
           style: TextStyle(
             fontFamily: 'Inter',
             fontSize: 11,
@@ -650,49 +714,15 @@ class _ComparisonCarouselSectionState extends State<_ComparisonCarouselSection> 
         const SizedBox(height: 16),
         
         SizedBox(
-          height: 130,
+          height: 180,
           child: PageView.builder(
             controller: _pageController,
-            itemCount: widget.goals.length,
+            itemCount: cards.length,
             onPageChanged: (index) => setState(() => _currentPage = index),
             itemBuilder: (context, index) {
-              final goal = widget.goals[index];
-              final today = DateTime.now();
-              
-              // Calcola completamento settimana corrente
-              int currentActive = 0;
-              int currentDone = 0;
-              for (int i = 6; i >= 0; i--) {
-                final date = today.subtract(Duration(days: i));
-                if (goal.isActiveOn(date)) {
-                  currentActive++;
-                  final dateKey = '${date.year}-${date.month.toString().padLeft(2, '0')}-${date.day.toString().padLeft(2, '0')}';
-                  if (widget.logs[dateKey]?[goal.id] == 'done') {
-                    currentDone++;
-                  }
-                }
-              }
-              final int current = currentActive > 0 ? ((currentDone / currentActive) * 100).round() : 100;
-              
-              // Calcola completamento settimana precedente
-              int prevActive = 0;
-              int prevDone = 0;
-              for (int i = 13; i >= 7; i--) {
-                final date = today.subtract(Duration(days: i));
-                if (goal.isActiveOn(date)) {
-                  prevActive++;
-                  final dateKey = '${date.year}-${date.month.toString().padLeft(2, '0')}-${date.day.toString().padLeft(2, '0')}';
-                  if (widget.logs[dateKey]?[goal.id] == 'done') {
-                    prevDone++;
-                  }
-                }
-              }
-              final int previous = prevActive > 0 ? ((prevDone / prevActive) * 100).round() : 100;
-              final int delta = current - previous;
-
               return Padding(
                 padding: const EdgeInsets.symmetric(horizontal: 8),
-                child: _ComparisonCard(goal: goal, current: current, previous: previous, delta: delta),
+                child: cards[index],
               );
             },
           ),
@@ -702,7 +732,7 @@ class _ComparisonCarouselSectionState extends State<_ComparisonCarouselSection> 
         Center(
           child: Row(
             mainAxisAlignment: MainAxisAlignment.center,
-            children: List.generate(widget.goals.length, (index) {
+            children: List.generate(cards.length, (index) {
               final isActive = _currentPage == index;
               return AnimatedContainer(
                 duration: const Duration(milliseconds: 300),
@@ -711,7 +741,7 @@ class _ComparisonCarouselSectionState extends State<_ComparisonCarouselSection> 
                 height: 6,
                 decoration: BoxDecoration(
                   color: isActive 
-                      ? Theme.of(context).colorScheme.primary
+                      ? const Color(0xFF10B981)
                       : context.appColors.mutedForeground.withValues(alpha: 0.3),
                   borderRadius: BorderRadius.circular(3),
                 ),
@@ -724,23 +754,23 @@ class _ComparisonCarouselSectionState extends State<_ComparisonCarouselSection> 
   }
 }
 
-class _ComparisonCard extends StatelessWidget {
-  final Goal goal;
-  final int current;
-  final int previous;
-  final int delta;
+class _MiglioreCard extends StatelessWidget {
+  final String title;
+  final String rate;
+  final Color color;
+  final String streak;
+  final String desc;
 
-  const _ComparisonCard({
-    required this.goal,
-    required this.current,
-    required this.previous,
-    required this.delta,
+  const _MiglioreCard({
+    required this.title,
+    required this.rate,
+    required this.color,
+    required this.streak,
+    required this.desc,
   });
 
   @override
   Widget build(BuildContext context) {
-    final bool isPositive = delta >= 0;
-
     return Container(
       padding: const EdgeInsets.all(20),
       decoration: BoxDecoration(
@@ -750,66 +780,50 @@ class _ComparisonCard extends StatelessWidget {
       ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
-        mainAxisAlignment: MainAxisAlignment.center,
         children: [
           Row(
             mainAxisAlignment: MainAxisAlignment.spaceBetween,
             children: [
               Row(
                 children: [
-                  Container(width: 8, height: 8, decoration: BoxDecoration(color: goal.color, shape: BoxShape.circle)),
+                  Container(width: 8, height: 8, decoration: BoxDecoration(color: color, shape: BoxShape.circle)),
                   const SizedBox(width: 8),
-                  Text(goal.title, style: TextStyle(fontFamily: 'Inter', fontSize: 14, fontWeight: FontWeight.w700, color: context.appColors.foreground)),
+                  Text(title, style: TextStyle(fontFamily: 'Inter', fontSize: 15, fontWeight: FontWeight.w700, color: context.appColors.foreground)),
                 ],
               ),
               Container(
                 padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
                 decoration: BoxDecoration(
-                  color: (isPositive ? const Color(0xFF10B981) : const Color(0xFFEF4444)).withValues(alpha: 0.1),
-                  borderRadius: BorderRadius.circular(8),
+                  color: color.withValues(alpha: 0.1),
+                  borderRadius: BorderRadius.circular(6),
                 ),
                 child: Row(
                   mainAxisSize: MainAxisSize.min,
                   children: [
-                    Icon(
-                      isPositive ? LucideIcons.trendingUp : LucideIcons.trendingDown,
-                      size: 12,
-                      color: isPositive ? const Color(0xFF10B981) : const Color(0xFFEF4444),
-                    ),
+                    Icon(LucideIcons.trendingUp, size: 12, color: color),
                     const SizedBox(width: 4),
-                    Text(
-                      '${isPositive ? '+' : ''}$delta%',
-                      style: TextStyle(
-                        fontFamily: 'Inter',
-                        fontSize: 10,
-                        fontWeight: FontWeight.w900,
-                        color: isPositive ? const Color(0xFF10B981) : const Color(0xFFEF4444),
-                      ),
-                    ),
+                    Text(rate, style: TextStyle(fontFamily: 'Inter', fontSize: 11, fontWeight: FontWeight.w800, color: color)),
                   ],
                 ),
               ),
             ],
           ),
+          const SizedBox(height: 16),
+          Expanded(
+            child: Text(
+              desc,
+              style: TextStyle(fontFamily: 'Inter', fontSize: 12, color: context.appColors.mutedForeground, height: 1.4),
+              maxLines: 3,
+              overflow: TextOverflow.ellipsis,
+            ),
+          ),
           const SizedBox(height: 12),
           Row(
-            mainAxisAlignment: MainAxisAlignment.spaceBetween,
-            crossAxisAlignment: CrossAxisAlignment.end,
             children: [
-              Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Text('ATTUALE', style: TextStyle(fontFamily: 'Inter', fontSize: 8, fontWeight: FontWeight.w800, color: context.appColors.mutedForeground, letterSpacing: 0.5)),
-                  Text('$current%', style: TextStyle(fontFamily: 'Inter', fontSize: 20, fontWeight: FontWeight.w900, color: context.appColors.foreground)),
-                ],
-              ),
-              Column(
-                crossAxisAlignment: CrossAxisAlignment.end,
-                children: [
-                  Text('PRECEDENTE', style: TextStyle(fontFamily: 'Inter', fontSize: 8, fontWeight: FontWeight.w800, color: context.appColors.mutedForeground, letterSpacing: 0.5)),
-                  Text('$previous%', style: TextStyle(fontFamily: 'Inter', fontSize: 16, fontWeight: FontWeight.w700, color: context.appColors.mutedForeground)),
-                ],
-              ),
+              const Icon(LucideIcons.flame, size: 14, color: Colors.grey),
+              const SizedBox(width: 6),
+              Text('${context.l10n.translate('Serie Attuale')}: ', style: TextStyle(fontFamily: 'Inter', fontSize: 12, color: context.appColors.mutedForeground)),
+              Text(streak, style: TextStyle(fontFamily: 'Inter', fontSize: 12, fontWeight: FontWeight.w700, color: color)),
             ],
           ),
         ],

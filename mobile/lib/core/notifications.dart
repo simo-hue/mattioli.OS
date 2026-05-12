@@ -77,7 +77,7 @@ class NotificationService {
     // Schedule for 09:00 AM every day
     await _notifications.zonedSchedule(
       id: 0,
-      title: 'mattioli.OS • Morning Brief',
+      title: 'Growth • Morning Brief',
       body: 'È il momento di plasmare la tua giornata. Controlla i tuoi obiettivi.',
       scheduledDate: _nextInstanceOfTime(9, 0),
       notificationDetails: platformDetails,
@@ -99,7 +99,7 @@ class NotificationService {
     // Schedule for 09:00 PM every day
     await _notifications.zonedSchedule(
       id: 1,
-      title: 'mattioli.OS • Review Serale',
+      title: 'Growth • Review Serale',
       body: 'Com\'è andata oggi? Traccia i tuoi progressi e aggiorna il Diario di Bordo.',
       scheduledDate: _nextInstanceOfTime(21, 0),
       notificationDetails: platformDetails,

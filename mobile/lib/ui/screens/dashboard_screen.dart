@@ -9,6 +9,7 @@ import '../../core/localization.dart';
 import '../../core/theme.dart';
 import '../../providers/goal_provider.dart';
 import '../../providers/user_provider.dart';
+import '../../providers/auth_provider.dart';
 import '../widgets/bottom_nav_bar.dart';
 import '../widgets/protocollo_panel.dart';
 import '../widgets/view_tab_bar.dart';
@@ -54,6 +55,11 @@ class _HomeScreenState extends ConsumerState<HomeScreen>
       statusBarColor: Colors.transparent,
       statusBarIconBrightness: Brightness.light,
     ));
+
+    // Check profile name after first frame
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      _checkProfileName();
+    });
   }
 
   @override
@@ -61,6 +67,153 @@ class _HomeScreenState extends ConsumerState<HomeScreen>
     _pageController.dispose();
     _fadeController.dispose();
     super.dispose();
+  }
+
+  void _checkProfileName() {
+    final userProfile = ref.read(userProfileProvider);
+    if (userProfile.firstName == null || userProfile.firstName!.isEmpty) {
+      _showNameDialog();
+    }
+  }
+
+  void _showNameDialog() {
+    final controller = TextEditingController();
+    showDialog(
+      context: context,
+      barrierDismissible: false, // User must enter a name
+      builder: (context) {
+        return BackdropFilter(
+          filter: ImageFilter.blur(sigmaX: 10, sigmaY: 10),
+          child: Dialog(
+            backgroundColor: Colors.transparent,
+            elevation: 0,
+            child: Container(
+              padding: const EdgeInsets.all(28),
+              decoration: BoxDecoration(
+                color: context.appColors.card.withValues(alpha: 0.95),
+                borderRadius: BorderRadius.circular(24),
+                border: Border.all(color: context.appColors.border.withValues(alpha: 0.5), width: 1.5),
+                boxShadow: [
+                  BoxShadow(
+                    color: Colors.black.withValues(alpha: 0.1),
+                    blurRadius: 20,
+                    spreadRadius: 5,
+                  )
+                ],
+              ),
+              child: Column(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  // Icon
+                  Container(
+                    padding: const EdgeInsets.all(16),
+                    decoration: BoxDecoration(
+                      color: Theme.of(context).colorScheme.primary.withValues(alpha: 0.1),
+                      shape: BoxShape.circle,
+                    ),
+                    child: Icon(
+                      Icons.person_outline,
+                      size: 32,
+                      color: Theme.of(context).colorScheme.primary,
+                    ),
+                  ),
+                  const SizedBox(height: 24),
+                  
+                  Text(
+                    'Benvenuto in Growth!',
+                    style: TextStyle(
+                      fontFamily: 'Inter',
+                      fontSize: 22,
+                      fontWeight: FontWeight.w800,
+                      color: context.appColors.foreground,
+                      letterSpacing: -0.5,
+                    ),
+                  ),
+                  const SizedBox(height: 8),
+                  Text(
+                    'Per iniziare, come possiamo chiamarti?',
+                    textAlign: TextAlign.center,
+                    style: TextStyle(
+                      fontFamily: 'Inter',
+                      fontSize: 14,
+                      color: context.appColors.mutedForeground,
+                      fontWeight: FontWeight.w500,
+                    ),
+                  ),
+                  const SizedBox(height: 24),
+                  
+                  TextField(
+                    controller: controller,
+                    decoration: InputDecoration(
+                      labelText: 'Il tuo nome',
+                      labelStyle: TextStyle(color: context.appColors.mutedForeground, fontSize: 14),
+                      floatingLabelStyle: TextStyle(color: Theme.of(context).colorScheme.primary),
+                      filled: true,
+                      fillColor: context.appColors.background.withValues(alpha: 0.5),
+                      contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 16),
+                      enabledBorder: OutlineInputBorder(
+                        borderRadius: BorderRadius.circular(14),
+                        borderSide: BorderSide(color: context.appColors.border.withValues(alpha: 0.5)),
+                      ),
+                      focusedBorder: OutlineInputBorder(
+                        borderRadius: BorderRadius.circular(14),
+                        borderSide: BorderSide(color: Theme.of(context).colorScheme.primary, width: 1.5),
+                      ),
+                    ),
+                    style: TextStyle(color: context.appColors.foreground, fontFamily: 'Inter'),
+                  ),
+                  const SizedBox(height: 24),
+                  
+                  // Action Button
+                  GestureDetector(
+                    onTap: () async {
+                      final name = controller.text.trim();
+                      if (name.isNotEmpty) {
+                        ref.hapticMedium();
+                        final success = await ref.read(authProvider.notifier).updateProfileName(name);
+                        if (success && mounted) {
+                          Navigator.pop(context);
+                        } else if (mounted) {
+                          ScaffoldMessenger.of(context).showSnackBar(
+                            const SnackBar(content: Text('Errore durante il salvataggio. Riprova.')),
+                          );
+                        }
+                      }
+                    },
+                    child: Container(
+                      width: double.infinity,
+                      height: 54,
+                      decoration: BoxDecoration(
+                        color: Theme.of(context).colorScheme.primary,
+                        borderRadius: BorderRadius.circular(14),
+                        boxShadow: [
+                          BoxShadow(
+                            color: Theme.of(context).colorScheme.primary.withValues(alpha: 0.3),
+                            blurRadius: 10,
+                            offset: const Offset(0, 4),
+                          )
+                        ],
+                      ),
+                      child: Center(
+                        child: Text(
+                          'Inizia ora',
+                          style: TextStyle(
+                            color: Theme.of(context).colorScheme.primary.computeLuminance() > 0.5 ? Colors.black : Colors.white,
+                            fontSize: 16,
+                            fontWeight: FontWeight.w700,
+                            letterSpacing: -0.2,
+                          ),
+                        ),
+                      ),
+                    ),
+                  ),
+                ],
+              ),
+            ),
+          ),
+        );
+      },
+    );
   }
 
   @override
@@ -256,7 +409,7 @@ class _AppBar extends ConsumerWidget {
         : formattedDate;
 
     final userProfile = ref.watch(userProfileProvider);
-    final displayName = userProfile.firstName ?? 'Simone';
+    final displayName = userProfile.firstName ?? userProfile.displayName;
 
     return ClipRect(
       child: BackdropFilter(

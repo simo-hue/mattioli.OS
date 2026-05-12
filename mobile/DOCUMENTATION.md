@@ -168,3 +168,53 @@
 *Tech Notes*:
 - **Assets**: Updated `pubspec.yaml` to include the whole `assets/images/` folder instead of specific files, allowing automatic inclusion of new assets.
 - **In-App Logo**: Updated `AuthScreen` to use `'assets/images/logo Background Removed.png'`.
+
+---
+
+## [2026-05-12 15:55]: Core - Total Rebranding to 'growth'
+*Details*: Performed a full rebranding of the application, changing the name from "Mattioli.OS" to "growth" and updating the motto to "root deep, rise strong".
+*Tech Notes*:
+- **iOS Config**: Updated `CFBundleDisplayName` and `CFBundleName` in `Info.plist` to "growth".
+- **App Title**: Updated `MaterialApp` title in `main.dart` and renamed the main app widget from `MattioliOSApp` to `GrowthApp`.
+- **Notifications**: Updated notification titles in `notifications.dart`.
+- **Localization**: Updated `app_title` in `localization.dart` for both Italian and English.
+- **UI**: Updated the title and motto in `AuthScreen` and the modal title in `pro_features_modal.dart`.
+
+---
+
+## [2026-05-12 16:00]: Core - Capitalized Brand Name to 'Growth' across all files
+*Details*: Ensured that the brand name is consistently written as "Growth" (capitalized) instead of "mattioli.OS" or lowercase "growth" across all files, including documentation.
+*Tech Notes*:
+- **UI & Code**: Capitalized "growth" to "Growth" in `AuthScreen`, `main.dart`, `notifications.dart`, `localization.dart`, and `pro_features_modal.dart`.
+- **Documentation**: Replaced "Mattioli.OS" with "Growth" in `FINANCIAL_PLAN.md`, `BACKEND_ARCHITECTURE.md`, and `FLUTTER_COMMANDS.md`.
+
+---
+
+## [2026-05-12 16:05]: UI - First-time Login Name Prompt & Fallback Removal
+*Details*: Implemented a popup prompt for users to enter their name on first login if it is missing. Removed the hardcoded fallback "Simone" to ensure a professional user experience.
+*Tech Notes*:
+- **Auth Notifier**: Added `updateProfileName` method to `AuthNotifier` in `auth_provider.dart` to update user metadata in Supabase.
+- **UI**: Added `_checkProfileName` and `_showNameDialog` in `dashboard_screen.dart` to check and prompt for name after the first frame.
+- **Cleanup**: Replaced `userProfile.firstName ?? 'Simone'` with `userProfile.displayName` in `_AppBar` to use the model's professional fallback system.
+
+---
+
+## [2026-05-12 16:10]: UI - Styled Name Prompt Dialog with Blur
+*Details*: Redesigned the name prompt dialog to match the app's premium aesthetic. Added a background blur effect when the dialog is shown.
+*Tech Notes*:
+- **UI**: Replaced `AlertDialog` with a custom `Dialog` containing a styled `Container` in `dashboard_screen.dart`.
+- **Effects**: Added `BackdropFilter` with blur effect in the dialog's builder.
+
+---
+
+## [2026-05-12 16:15]: UI - Fixed Button Text Visibility in Name Prompt
+*Details*: Fixed an issue where the text in the "Inizia ora" button was not visible because both the button background and the text were white in certain themes.
+*Tech Notes*:
+- **UI**: Made the text color dynamic using `computeLuminance()` on the primary color in `dashboard_screen.dart`.
+
+---
+
+## [2026-05-12 16:20]: UI - Show Only First Name in Greeting
+*Details*: Updated the greeting in the AppBar to show only the user's first name instead of the full name, making it more personal.
+*Tech Notes*:
+- **UI**: Changed `userProfile.displayName` to `userProfile.firstName ?? userProfile.displayName` in `dashboard_screen.dart`.

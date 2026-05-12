@@ -72,7 +72,7 @@ class ProFeaturesModal extends ConsumerWidget {
           const SizedBox(height: 24),
           
           Text(
-            'Sblocca Mattioli.OS Pro',
+            'Sblocca Growth Pro',
             style: GoogleFonts.inter(
               color: context.appColors.foreground,
               fontSize: 24,

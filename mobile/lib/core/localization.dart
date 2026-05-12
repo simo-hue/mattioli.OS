@@ -9,7 +9,7 @@ class AppLocalizations {
 
   static final Map<String, Map<String, String>> _localizedValues = {
     'Italiano': {
-      'app_title': 'mattioli.OS',
+      'app_title': 'Growth',
       'Impostazioni App': 'Impostazioni App',
       'ASPETTO & VISUAL': 'ASPETTO & VISUAL',
       'Modalità Scura': 'Modalità Scura',
@@ -242,7 +242,7 @@ class AppLocalizations {
       'first_name': 'Nome',
     },
     'English': {
-      'app_title': 'mattioli.OS',
+      'app_title': 'Growth',
       'Impostazioni App': 'App Settings',
       'ASPETTO & VISUAL': 'APPEARANCE & VISUAL',
       'Modalità Scura': 'Dark Mode',

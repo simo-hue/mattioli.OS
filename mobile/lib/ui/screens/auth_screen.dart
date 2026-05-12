@@ -199,7 +199,7 @@ class _AuthScreenState extends ConsumerState<AuthScreen> with SingleTickerProvid
                             ),
                             const SizedBox(height: 16), // Reduced
                             Text(
-                              'Mattioli.OS',
+                              'Growth',
                               style: GoogleFonts.inter(
                                 color: context.appColors.foreground,
                                 fontSize: 28, // Smaller title
@@ -210,7 +210,7 @@ class _AuthScreenState extends ConsumerState<AuthScreen> with SingleTickerProvid
                             const SizedBox(height: 8),
                             Text(
                               _mode == AuthMode.login
-                                  ? 'Bentornato nel tuo sistema abitudini.'
+                                  ? 'root deep, rise strong'
                                   : 'Crea il tuo ecosistema personale.',
                               textAlign: TextAlign.center,
                               style: GoogleFonts.inter(

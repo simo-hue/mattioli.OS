@@ -49,7 +49,7 @@ void main() async {
       overrides: [
         sharedPrefsProvider.overrideWithValue(prefs),
       ],
-      child: const MattioliOSApp(),
+      child: const GrowthApp(),
     ),
   );
 }
@@ -86,8 +86,8 @@ final routerProvider = Provider<GoRouter>((ref) {
 });
 
 // ── App ──────────────────────────────────────────────────────────────────────
-class MattioliOSApp extends ConsumerWidget {
-  const MattioliOSApp({super.key});
+class GrowthApp extends ConsumerWidget {
+  const GrowthApp({super.key});
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
@@ -95,7 +95,7 @@ class MattioliOSApp extends ConsumerWidget {
     final router = ref.watch(routerProvider);
 
     return MaterialApp.router(
-      title: 'Mattioli.OS',
+      title: 'Growth',
       theme: AppTheme.lightTheme(settings.accentColor),
       darkTheme: AppTheme.darkTheme(settings.accentColor),
       themeMode: settings.themeMode == 'dark' ? ThemeMode.dark : ThemeMode.light,

@@ -1,4 +1,4 @@
-# 🚀 Comandi Flutter per Mattioli.OS
+# 🚀 Comandi Flutter per Growth
 
 Tutti i comandi Flutter devono essere lanciati dalla cartella `mobile/`. Se ti trovi nella root del progetto, entra prima nella cartella: `cd mobile`.
 

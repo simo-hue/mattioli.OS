@@ -1,6 +1,6 @@
-# 🏗️ Backend Architecture: Mattioli.OS (Enterprise Grade)
+# 🏗️ Backend Architecture: Growth (Enterprise Grade)
 
-Questa documentazione definisce l'infrastruttura backend necessaria per scalare **Mattioli.OS** da strumento personale ad applicazione multi-utente pronta per App Store e Google Play Store.
+Questa documentazione definisce l'infrastruttura backend necessaria per scalare **Growth** da strumento personale ad applicazione multi-utente pronta per App Store e Google Play Store.
 
 ---
 

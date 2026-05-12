@@ -270,6 +270,33 @@ class AuthNotifier extends Notifier<AuthState> with ChangeNotifier {
     }
   }
 
+  // ── Update Profile Name ──────────────────────────────────────────────────
+
+  Future<bool> updateProfileName(String fullName) async {
+    state = state.copyWith(isLoading: true, clearError: true);
+    try {
+      final response = await supabase.auth.updateUser(
+        UserAttributes(
+          data: {
+            'full_name': fullName.trim(),
+          },
+        ),
+      );
+      if (response.user != null) {
+        state = state.copyWith(isLoading: false, user: response.user, clearError: true);
+        return true;
+      }
+      state = state.copyWith(isLoading: false, error: 'Impossibile aggiornare il profilo.');
+      return false;
+    } on AuthException catch (e) {
+      state = state.copyWith(isLoading: false, error: _mapAuthError(e.message));
+      return false;
+    } catch (e) {
+      state = state.copyWith(isLoading: false, error: 'Errore di rete. Riprova.');
+      return false;
+    }
+  }
+
   // ── Helper: error message localization ───────────────────────────────────
 
   String _mapAuthError(String supabaseMessage) {

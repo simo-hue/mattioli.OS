@@ -37,6 +37,7 @@
 - [ ] Confermare che il colore accento cambi automaticamente se quello selezionato è troppo chiaro per lo sfondo bianco (gestito da `SettingsProvider`).
 
 ## Verifica Localizzazione (Post-Implementazione)
+- [ ] **Riavviare l'applicazione per vedere l'icona e il nuovo nome**: Per vedere la nuova icona dell'app e il nuovo nome ("growth") sulla home del simulatore o dispositivo iOS, è necessario interrompere l'app in esecuzione e avviarla nuovamente con `flutter run`. Il semplice hot reload non aggiorna le impostazioni di sistema come l'icona e il nome dell'app.
 - [ ] Cambiare la lingua da Italiano a Inglese nelle Impostazioni.
 - [ ] Verificare che l'animazione di transizione sia fluida.
 - [ ] Controllare che TUTTE le scritte nella pagina Statistiche (Grafici, Legende, Insight) cambino correttamente.

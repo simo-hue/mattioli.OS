@@ -1,20 +1,5 @@
 # PROSSIME AZIONI MANUALI (SIMO)
 
-- [ ] **Eseguire Migrazione Database**: Eseguire il seguente script SQL nel SQL Editor di Supabase per rimuovere le colonne 'notes' e la tabella 'user_memos':
-  ```sql
-  -- Migration to remove notes and user_memos
-  ALTER TABLE public.goal_logs DROP COLUMN IF EXISTS notes;
-  ALTER TABLE public.daily_moods DROP COLUMN IF EXISTS note;
-  DROP TABLE IF EXISTS public.user_memos;
-  ```
-
-- [ ] **Eseguire Migrazione Database (Step 1 Notifiche)**: Eseguire il seguente script SQL nel SQL Editor di Supabase per aggiungere i campi per gli orari delle notifiche:
-  ```sql
-  -- Migration to add custom notification times to profiles
-  ALTER TABLE public.profiles ADD COLUMN IF NOT EXISTS morning_brief_time text DEFAULT '09:00';
-  ALTER TABLE public.profiles ADD COLUMN IF NOT EXISTS evening_review_time text DEFAULT '21:00';
-  ```
-
 ## Configurazione Backend & Store
 - [ ] Creare account **Apple Developer Program** ($99/anno).
 - [ ] Creare account **Google Play Console** ($25 una tantum).
@@ -42,18 +27,8 @@
 - [ ] Verificare che i grafici (fl_chart) abbiano legende e assi leggibili sia in Light che in Dark Mode.
 - [ ] Confermare che il colore accento cambi automaticamente se quello selezionato è troppo chiaro per lo sfondo bianco (gestito da `SettingsProvider`).
 
-## Verifica Localizzazione (Post-Implementazione)
-- [ ] **Riavviare l'applicazione per vedere l'icona e il nuovo nome**: Per vedere la nuova icona dell'app e il nuovo nome ("growth") sulla home del simulatore o dispositivo iOS, è necessario interrompere l'app in esecuzione e avviarla nuovamente con `flutter run`. Il semplice hot reload non aggiorna le impostazioni di sistema come l'icona e il nome dell'app.
-- [ ] Cambiare la lingua da Italiano a Inglese nelle Impostazioni.
-- [ ] Verificare che l'animazione di transizione sia fluida.
-- [ ] Controllare che TUTTE le scritte nella pagina Statistiche (Grafici, Legende, Insight) cambino correttamente.
-- [ ] Verificare che i nomi dei giorni nei grafici e nelle heatmap siano tradotti.
-
 ## Verifica Animazioni Premium (Post-Implementazione)
 - [ ] Verificare che lo switch tra le schede (Home, Statistiche, Obiettivi) sia fluido.
 - [ ] Testare lo swipe orizzontale tra le schede principali.
 - [ ] Verificare che lo stato (es. scroll o filtri selezionati) venga mantenuto quando si cambia tab e si torna indietro.
 - [ ] Confermare che il feedback aptico (vibrazione leggera) sia piacevole al cambio tab.
-
-## Future Features
-- [ ] Implementare la sincronizzazione reale con **iCloud** (attualmente solo placeholder).

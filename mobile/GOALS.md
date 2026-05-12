@@ -14,7 +14,6 @@ Al posto delle "Note" vorrei che sostituissimo con il pulsante per chattare con 
 
 Voglio che eliminiamo anche dal database le note per ottimizzare lo spazio )
 
-
 [ ] Database
     [ ] log in
     [ ] user preferences
@@ -26,6 +25,9 @@ Voglio che eliminiamo anche dal database le note per ottimizzare lo spazio )
     [ ] Conferma del salvataggio con successo
     [ ] Errori + spiegazione semplice
 
+[ ] Grafica
+    [ ] icone profilo in base a #goals completati -> Gamification possibile
+    [ ] Cambiare icona dell'app
 
 # LONG TERM FEATURES ( da implementare in futuro )
 [ ] Goals non solamente come tick

@@ -10,6 +10,7 @@ class Goal {
   final DateTime startDate;
   final DateTime? endDate;
   final int? displayOrder;
+  final String? reminderTime; // "HH:mm" or null
 
   const Goal({
     required this.id,
@@ -21,6 +22,7 @@ class Goal {
     required this.startDate,
     this.endDate,
     this.displayOrder,
+    this.reminderTime,
   });
 
   /// Checks if the habit should be visible on a specific date.
@@ -53,6 +55,8 @@ class Goal {
     DateTime? endDate,
     bool clearEndDate = false,
     int? displayOrder,
+    String? reminderTime,
+    bool clearReminderTime = false,
   }) {
     return Goal(
       id: id ?? this.id,
@@ -64,6 +68,7 @@ class Goal {
       startDate: startDate ?? this.startDate,
       endDate: clearEndDate ? null : (endDate ?? this.endDate),
       displayOrder: displayOrder ?? this.displayOrder,
+      reminderTime: clearReminderTime ? null : (reminderTime ?? this.reminderTime),
     );
   }
 
@@ -86,6 +91,7 @@ class Goal {
       startDate: DateTime.parse(json['start_date'] as String),
       endDate: json['end_date'] != null ? DateTime.parse(json['end_date'] as String) : null,
       displayOrder: json['display_order'] as int?,
+      reminderTime: json['reminder_time'] as String?,
     );
   }
 
@@ -102,6 +108,7 @@ class Goal {
       'start_date': startDate.toIso8601String(),
       if (endDate != null) 'end_date': endDate!.toIso8601String(),
       if (displayOrder != null) 'display_order': displayOrder,
+      if (reminderTime != null) 'reminder_time': reminderTime,
     };
   }
 }

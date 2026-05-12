@@ -28,6 +28,7 @@ class _HabitManagementModalState extends ConsumerState<HabitManagementModal> {
   final TextEditingController _nameController = TextEditingController();
   late Color _selectedColor;
   Goal? _editingHabit;
+  String? _reminderTime;
 
   @override
   void initState() {
@@ -59,14 +60,11 @@ class _HabitManagementModalState extends ConsumerState<HabitManagementModal> {
     if (_nameController.text.trim().isEmpty) return;
 
     if (_editingHabit != null) {
-      final updated = Goal(
-        id: _editingHabit!.id,
+      final updated = _editingHabit!.copyWith(
         title: _nameController.text.trim(),
-        description: _editingHabit!.description,
-        icon: _editingHabit!.icon,
         color: _selectedColor,
-        startDate: _editingHabit!.startDate,
-        endDate: _editingHabit!.endDate,
+        reminderTime: _reminderTime,
+        clearReminderTime: _reminderTime == null,
       );
       ref.read(goalsProvider.notifier).updateHabit(updated);
     } else {
@@ -77,6 +75,7 @@ class _HabitManagementModalState extends ConsumerState<HabitManagementModal> {
         icon: 'circle',
         color: _selectedColor,
         startDate: DateTime(DateTime.now().year, DateTime.now().month, DateTime.now().day),
+        reminderTime: _reminderTime,
       );
       ref.read(goalsProvider.notifier).addHabit(newHabit);
     }
@@ -85,6 +84,7 @@ class _HabitManagementModalState extends ConsumerState<HabitManagementModal> {
     setState(() {
       _editingHabit = null;
       _selectedColor = _presetColors[0];
+      _reminderTime = null;
     });
     HapticFeedback.mediumImpact();
   }
@@ -94,6 +94,7 @@ class _HabitManagementModalState extends ConsumerState<HabitManagementModal> {
       _editingHabit = habit;
       _nameController.text = habit.title;
       _selectedColor = habit.color;
+      _reminderTime = habit.reminderTime;
     });
   }
 
@@ -283,6 +284,58 @@ class _HabitManagementModalState extends ConsumerState<HabitManagementModal> {
                             ),
                           ),
                         ],
+                      ),
+                      const SizedBox(height: 16),
+                      Text(
+                        context.l10n.translate('Promemoria').toUpperCase(),
+                        style: TextStyle(fontSize: 10, fontWeight: FontWeight.w600, color: context.appColors.mutedForeground, letterSpacing: 0.5),
+                      ),
+                      const SizedBox(height: 10),
+                      InkWell(
+                        onTap: () async {
+                          TimeOfDay initialTime = const TimeOfDay(hour: 9, minute: 0);
+                          if (_reminderTime != null) {
+                            final parts = _reminderTime!.split(':');
+                            initialTime = TimeOfDay(hour: int.parse(parts[0]), minute: int.parse(parts[1]));
+                          }
+                          final pickedTime = await showTimePicker(
+                            context: context,
+                            initialTime: initialTime,
+                          );
+                          if (pickedTime != null) {
+                            final timeStr = '${pickedTime.hour.toString().padLeft(2, '0')}:${pickedTime.minute.toString().padLeft(2, '0')}';
+                            setState(() => _reminderTime = timeStr);
+                          }
+                        },
+                        child: Container(
+                          padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+                          decoration: BoxDecoration(
+                            color: context.appColors.background.withValues(alpha: 0.5),
+                            borderRadius: BorderRadius.circular(12),
+                            border: Border.all(color: context.appColors.border),
+                          ),
+                          child: Row(
+                            mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                            children: [
+                              Text(
+                                _reminderTime ?? context.l10n.translate('Nessuno'),
+                                style: TextStyle(
+                                  color: _reminderTime != null ? context.appColors.foreground : context.appColors.mutedForeground,
+                                  fontSize: 15,
+                                ),
+                              ),
+                              if (_reminderTime != null)
+                                IconButton(
+                                  icon: Icon(LucideIcons.x, size: 16, color: context.appColors.mutedForeground),
+                                  onPressed: () => setState(() => _reminderTime = null),
+                                  constraints: const BoxConstraints(),
+                                  padding: EdgeInsets.zero,
+                                )
+                              else
+                                Icon(LucideIcons.bell, size: 16, color: context.appColors.mutedForeground),
+                            ],
+                          ),
+                        ),
                       ),
                       const SizedBox(height: 24),
                       SizedBox(

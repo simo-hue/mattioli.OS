@@ -6,6 +6,7 @@ import '../models/goal.dart';
 import 'shared_prefs_provider.dart';
 import 'auth_provider.dart';
 import 'settings_provider.dart';
+import '../core/notifications.dart';
 
 // ─── Goals Provider (Offline-First) ─────────────────────────────────────────
 
@@ -92,6 +93,11 @@ class GoalsNotifier extends Notifier<List<Goal>> {
       final updatedGoals = state.map((g) => g.id == habit.id ? realGoal : g).toList();
       state = updatedGoals;
       _saveToCache(updatedGoals);
+
+      // Schedula promemoria se presente
+      if (realGoal.reminderTime != null) {
+        NotificationService().scheduleHabitReminder(realGoal.id, realGoal.title, realGoal.reminderTime);
+      }
     } catch (e) {
       debugPrint('[Goals] Insert error: $e');
     }
@@ -106,6 +112,12 @@ class GoalsNotifier extends Notifier<List<Goal>> {
       final payload = updatedHabit.toJson();
       payload.remove('id');
       await supabase.from('goals').update(payload).eq('id', updatedHabit.id);
+
+      // Schedula promemoria
+      NotificationService().cancelHabitReminder(updatedHabit.id);
+      if (updatedHabit.reminderTime != null) {
+        NotificationService().scheduleHabitReminder(updatedHabit.id, updatedHabit.title, updatedHabit.reminderTime);
+      }
     } catch (e) {
       debugPrint('[Goals] Update error: $e');
     }
@@ -118,6 +130,8 @@ class GoalsNotifier extends Notifier<List<Goal>> {
 
     try {
       await supabase.from('goals').delete().eq('id', id);
+      // Cancella promemoria
+      NotificationService().cancelHabitReminder(id);
     } catch (e) {
       debugPrint('[Goals] Delete error: $e');
     }

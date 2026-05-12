@@ -259,3 +259,32 @@
 *Details*: Capitalized the tab labels in the home screen (Mese, Settimana, Anno, Vita) to match the user's request and ensure language correctness.
 *Tech Notes*:
 - **UI**: Updated `ViewTabBar` to use capitalized keys ('Mese', 'Settimana', 'Anno', 'Vita') for translation, which map to capitalized strings in both Italian and English.
+
+---
+
+## [2026-05-12 18:00]: Feature - Custom Notification Times (Step 1)
+*Details*: Implemented the ability for users to choose the time for "Morning Brief" and "Review Serale" notifications instead of having fixed times.
+*Tech Notes*:
+- **Model**: Added `morningBriefTime` and `eveningReviewTime` to `AppSettings` (defaulting to "09:00" and "21:00").
+- **UI**: Added time picker rows in `notification_settings_screen.dart` that appear when the corresponding switch is ON.
+- **Service**: Updated `NotificationService` to accept and parse time strings for scheduling.
+- **Database**: Added an SQL migration script to `TO_SIMO_DO.md` to add the columns to the `profiles` table.
+
+---
+
+## [2026-05-12 18:05]: Feature - Per-Habit Reminders (Step 2)
+*Details*: Implemented the ability to set a specific reminder time for each habit.
+*Tech Notes*:
+- **Model**: Added `reminderTime` field to `Goal` model.
+- **UI**: Added a time picker in `HabitManagementModal` to set the reminder time when creating or editing a habit.
+- **Service**: Added `scheduleHabitReminder` and `cancelHabitReminder` to `NotificationService`.
+- **Provider**: Updated `GoalNotifier` to trigger scheduling on add/update/delete. Updated `SettingsProvider` to reschedule habit reminders on sync.
+- **Database**: Added an SQL migration script to `TO_SIMO_DO.md` to add `reminder_time` column to `goals` table.
+
+---
+
+## [2026-05-12 18:10]: Fix - Resolved Build Errors in Step 2
+*Details*: Fixed build errors introduced during the implementation of Step 2.
+*Tech Notes*:
+- **Import**: Added missing import of `goal_provider.dart` in `settings_provider.dart` to resolve `goalsProvider` not defined.
+- **API**: Changed `_notifications.cancel(id.hashCode)` to `_notifications.cancel(id: id.hashCode)` in `notifications.dart` to match the `flutter_local_notifications` v21 API.

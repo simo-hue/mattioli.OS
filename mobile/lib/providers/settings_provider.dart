@@ -3,6 +3,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../core/notifications.dart';
 import 'shared_prefs_provider.dart';
 import 'auth_provider.dart';
+import 'goal_provider.dart';
 
 class AppSettings {
   final String themeMode;
@@ -360,6 +361,18 @@ class AppSettingsNotifier extends Notifier<AppSettings> {
 
       if (state.eveningReview) {
         _notificationService.scheduleEveningReview(timeStr: state.eveningReviewTime);
+      }
+      
+      // Schedule specific habit reminders
+      try {
+        final goals = ref.read(goalsProvider);
+        for (final goal in goals) {
+          if (goal.reminderTime != null) {
+            _notificationService.scheduleHabitReminder(goal.id, goal.title, goal.reminderTime);
+          }
+        }
+      } catch (e) {
+        debugPrint('[Settings] Errore nella schedulazione promemoria abitudini: $e');
       }
       
       if (state.aiInsights && state.isPro) {

@@ -114,6 +114,43 @@ class NotificationService {
     );
   }
 
+  Future<void> scheduleHabitReminder(String id, String title, String? reminderTime) async {
+    if (reminderTime == null) return;
+
+    final parts = reminderTime.split(':');
+    final hour = int.parse(parts[0]);
+    final minute = int.parse(parts[1]);
+
+    const AndroidNotificationDetails androidDetails = AndroidNotificationDetails(
+      'habit_reminders',
+      'Habit Reminders',
+      channelDescription: 'Reminders for specific habits',
+      importance: Importance.max,
+      priority: Priority.high,
+    );
+
+    const NotificationDetails platformDetails = NotificationDetails(
+      android: androidDetails,
+      iOS: DarwinNotificationDetails(),
+    );
+
+    final notificationId = id.hashCode;
+
+    await _notifications.zonedSchedule(
+      id: notificationId,
+      title: 'Growth • $title',
+      body: 'È il momento di completare la tua abitudine!',
+      scheduledDate: _nextInstanceOfTime(hour, minute),
+      notificationDetails: platformDetails,
+      androidScheduleMode: AndroidScheduleMode.exactAllowWhileIdle,
+      matchDateTimeComponents: DateTimeComponents.time,
+    );
+  }
+
+  Future<void> cancelHabitReminder(String id) async {
+    await _notifications.cancel(id: id.hashCode);
+  }
+
   Future<void> cancelAll() async {
     await _notifications.cancelAll();
   }

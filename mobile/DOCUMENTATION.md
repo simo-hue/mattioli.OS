@@ -160,3 +160,11 @@
 - **In-App Logo**: Updated `AuthScreen` to display the new logo instead of the placeholder `LucideIcons.layers` icon. Used `ClipRRect` for rounded corners.
 - **Launcher Icons**: Added `flutter_launcher_icons` package and configured it in `pubspec.yaml` to generate iOS launcher icons.
 - **Commands**: Ran `flutter pub get` and `dart run flutter_launcher_icons` to generate the icons.
+
+---
+
+## [2026-05-12 15:50]: UI - Updated AuthScreen Logo to Background Removed Version
+*Details*: Replaced the logo in the login/signup screen with a background-removed version provided by the user, to prevent the black square from being visible on non-pure-black backgrounds.
+*Tech Notes*:
+- **Assets**: Updated `pubspec.yaml` to include the whole `assets/images/` folder instead of specific files, allowing automatic inclusion of new assets.
+- **In-App Logo**: Updated `AuthScreen` to use `'assets/images/logo Background Removed.png'`.

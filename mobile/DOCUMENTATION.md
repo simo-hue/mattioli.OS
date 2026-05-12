@@ -218,3 +218,11 @@
 *Details*: Updated the greeting in the AppBar to show only the user's first name instead of the full name, making it more personal.
 *Tech Notes*:
 - **UI**: Changed `userProfile.displayName` to `userProfile.firstName ?? userProfile.displayName` in `dashboard_screen.dart`.
+
+---
+
+## [2026-05-12 16:30]: UI - LifeViewWidget Layout Adjustments
+*Details*: Modified the "Life" panel to remove unnecessary text and reduce the height of the stats box for a more compact layout.
+*Tech Notes*:
+- **UI**: Removed the text showing birth year, end year, and total months in `life_view_widget.dart`.
+- **Layout**: Reduced vertical padding in the stats block from 20 to 12 and decreased spacing above and below it.

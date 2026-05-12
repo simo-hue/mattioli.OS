@@ -37,15 +37,7 @@ class LifeViewWidget extends ConsumerWidget {
               letterSpacing: -0.5,
             ),
           ),
-          const SizedBox(height: 4),
-          Text(
-            '$birthYear - $endYear • ${totalMonths.toString().replaceAllMapped(RegExp(r'(\d{1,3})(?=(\d{3})+(?!\d))'), (Match m) => '${m[1]}.')} mesi',
-            style: TextStyle(
-              fontFamily: 'Inter',
-              fontSize: 12,
-              color: context.appColors.mutedForeground,
-            ),
-          ),
+
           const SizedBox(height: 16),
 
           // Legend
@@ -57,11 +49,11 @@ class LifeViewWidget extends ConsumerWidget {
               _LegendItem(color: const Color(0xFF10B981), label: 'Attuale'),
             ],
           ),
-          const SizedBox(height: 24),
+          const SizedBox(height: 16),
 
           // Stats Block
           Container(
-            padding: const EdgeInsets.symmetric(vertical: 20, horizontal: 16),
+            padding: const EdgeInsets.symmetric(vertical: 12, horizontal: 16),
             decoration: BoxDecoration(
               color: context.appColors.card.withValues(alpha: 0.3),
               borderRadius: BorderRadius.circular(20),
@@ -76,7 +68,7 @@ class LifeViewWidget extends ConsumerWidget {
               ],
             ),
           ),
-          const SizedBox(height: 32),
+          const SizedBox(height: 16),
 
           // Life Grid - Responsive and optimized
           Expanded(

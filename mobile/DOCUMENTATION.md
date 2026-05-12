@@ -288,3 +288,11 @@
 *Tech Notes*:
 - **Import**: Added missing import of `goal_provider.dart` in `settings_provider.dart` to resolve `goalsProvider` not defined.
 - **API**: Changed `_notifications.cancel(id.hashCode)` to `_notifications.cancel(id: id.hashCode)` in `notifications.dart` to match the `flutter_local_notifications` v21 API.
+
+---
+
+## [2026-05-12 18:15]: Feature - Apple-style Time Picker
+*Details*: Changed the time picker in `HabitManagementModal` to use `CupertinoDatePicker` for a more premium, Apple-like feel.
+*Tech Notes*:
+- **UI**: Replaced `showTimePicker` with `showCupertinoModalPopup` and `CupertinoDatePicker` in `habit_management_modal.dart`.
+- **Format**: Forced 24h format in the Cupertino picker.

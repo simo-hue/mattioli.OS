@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:flutter/cupertino.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:lucide_icons_flutter/lucide_icons.dart';
@@ -117,6 +118,59 @@ class _HabitManagementModalState extends ConsumerState<HabitManagementModal> {
             child: Text(context.l10n.translate('confirm'), style: TextStyle(color: context.appColors.foreground)),
           ),
         ],
+      ),
+    );
+  }
+
+  void _showCupertinoTimePicker() {
+    TimeOfDay initialTime = const TimeOfDay(hour: 9, minute: 0);
+    if (_reminderTime != null) {
+      final parts = _reminderTime!.split(':');
+      initialTime = TimeOfDay(hour: int.parse(parts[0]), minute: int.parse(parts[1]));
+    }
+
+    final now = DateTime.now();
+    DateTime initialDateTime = DateTime(now.year, now.month, now.day, initialTime.hour, initialTime.minute);
+
+    showCupertinoModalPopup(
+      context: context,
+      builder: (BuildContext context) => Container(
+        height: 250,
+        color: context.appColors.card,
+        child: Column(
+          children: [
+            Container(
+              color: context.appColors.border.withValues(alpha: 0.3),
+              child: Row(
+                mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                children: [
+                  CupertinoButton(
+                    child: Text(context.l10n.translate('Annulla'), style: TextStyle(color: context.appColors.mutedForeground)),
+                    onPressed: () => Navigator.pop(context),
+                  ),
+                  CupertinoButton(
+                    child: Text(context.l10n.translate('Conferma'), style: TextStyle(color: Theme.of(context).colorScheme.primary)),
+                    onPressed: () {
+                      final timeStr = '${initialDateTime.hour.toString().padLeft(2, '0')}:${initialDateTime.minute.toString().padLeft(2, '0')}';
+                      setState(() => _reminderTime = timeStr);
+                      Navigator.pop(context);
+                    },
+                  ),
+                ],
+              ),
+            ),
+            Expanded(
+              child: CupertinoDatePicker(
+                mode: CupertinoDatePickerMode.time,
+                initialDateTime: initialDateTime,
+                use24hFormat: true,
+                onDateTimeChanged: (DateTime newDateTime) {
+                  initialDateTime = newDateTime;
+                },
+              ),
+            ),
+          ],
+        ),
       ),
     );
   }
@@ -292,21 +346,7 @@ class _HabitManagementModalState extends ConsumerState<HabitManagementModal> {
                       ),
                       const SizedBox(height: 10),
                       InkWell(
-                        onTap: () async {
-                          TimeOfDay initialTime = const TimeOfDay(hour: 9, minute: 0);
-                          if (_reminderTime != null) {
-                            final parts = _reminderTime!.split(':');
-                            initialTime = TimeOfDay(hour: int.parse(parts[0]), minute: int.parse(parts[1]));
-                          }
-                          final pickedTime = await showTimePicker(
-                            context: context,
-                            initialTime: initialTime,
-                          );
-                          if (pickedTime != null) {
-                            final timeStr = '${pickedTime.hour.toString().padLeft(2, '0')}:${pickedTime.minute.toString().padLeft(2, '0')}';
-                            setState(() => _reminderTime = timeStr);
-                          }
-                        },
+                        onTap: _showCupertinoTimePicker,
                         child: Container(
                           padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
                           decoration: BoxDecoration(

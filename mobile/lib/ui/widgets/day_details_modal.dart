@@ -97,15 +97,19 @@ class DayDetailsModal extends ConsumerWidget {
                 DateTime checkDate = date;
                 final today = DateTime(DateTime.now().year, DateTime.now().month, DateTime.now().day);
                 
+                bool isNegative = false;
                 while (true) {
                   final dk = '${checkDate.year}-${checkDate.month.toString().padLeft(2, '0')}-${checkDate.day.toString().padLeft(2, '0')}';
                   final dl = logs[dk] ?? {};
                   final s = dl[habit.id];
                   
                   if (s == 'done') {
+                    if (isNegative) break;
                     streak++;
                   } else if (s == 'missed') {
-                    break;
+                    if (streak > 0) break;
+                    isNegative = true;
+                    streak--;
                   } else {
                     if (habit.isActiveOn(checkDate)) {
                       final checkDateMidnight = DateTime(checkDate.year, checkDate.month, checkDate.day);
@@ -114,6 +118,14 @@ class DayDetailsModal extends ConsumerWidget {
                       }
                     }
                   }
+                  
+                  // Condizione di uscita per evitare loop infiniti!
+                  final startMidnight = DateTime(habit.startDate.year, habit.startDate.month, habit.startDate.day);
+                  final checkDateMidnight = DateTime(checkDate.year, checkDate.month, checkDate.day);
+                  if (checkDateMidnight.isBefore(startMidnight)) {
+                    break;
+                  }
+                  
                   checkDate = checkDate.subtract(const Duration(days: 1));
                 }
 

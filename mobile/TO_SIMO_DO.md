@@ -1,5 +1,3 @@
-# TO DO (Simo)
-
 # PROSSIME AZIONI MANUALI (SIMO)
 
 - [ ] **Eseguire Migrazione Database**: Eseguire il seguente script SQL nel SQL Editor di Supabase per rimuovere le colonne 'notes' e la tabella 'user_memos':
@@ -19,7 +17,8 @@
 - [ ] Recuperare le API Key di **OpenAI** o **Anthropic** per l'AI Coach.
 - [ ] Configurare **Google Sign-In**: creare Web e iOS Client ID su Google Cloud Console e incollarli in `lib/providers/auth_provider.dart`.
 - [ ] Configurare **Sign in with Apple**: abilitare Apple Provider su Supabase e la Capability in Xcode.
-- [ ] Inserire `SUPABASE_URL` e `SUPABASE_ANON_KEY` nel file `lib/core/supabase_config.dart` per l'integrazione reale.
+- [x] Inserire `SUPABASE_URL` e `SUPABASE_ANON_KEY` nel file `lib/core/supabase_config.dart` per l'integrazione reale. (Configurato automaticamente dal file .env)
+- [ ] **Abilitare Registrazioni su Supabase**: Nella dashboard di Supabase, vai su **Authentication** -> **Providers** -> **Email** e assicurati che l'opzione **"Enable Signups"** sia ATTIVA. Attualmente le registrazioni sono disabilitate per questa istanza.
 
 ## Strategia Business & Revenue
 - [ ] Decidere se lanciare l'offerta **Lifetime Access** (€99) per i primi 500 utenti.

@@ -1,51 +1,14 @@
-[x] Implementare MACRO GOALS
-
-[x] Implementare stats per tutti i goals
-    [x] Trend
-    [x] Alert
-    [x] Abitudini
-    [x] Mood
-
-[x] Implementare stats per singoli goal
-    [x] Overview
-    [x] Calendario
-    [x] Performance
-    [x] Miglioramento
-    [x] Mood
-    [x] Rinominare i nomi lunghi ( miglioramento, performance, calendario ) con nomi che siano più brevi per aiutare la visualizzazione ( devono però rimanere chiari )
-
-[ ] Gestione degli utenti
-    [x] Menu privato
-    [x] Impostazioni e info Account 
-    [x] Gestione della lingua
-    [ ] Analytics as a PRO Plan per quelle avanzate
-    [x] Lingua 
-
-[ ] Integrazione dell' AI
-    [ ] Teoricamente dovrei avere API calls con FIREBASE
     [ ] Chat all'interno dell'app oppure solo suggerimenti e analisi dei trend?
     [ ] chat tramite bottoni del tiPO:
         - analisi trend
         - cosa posso fare per migliorare la performance? 
         - su cosa devo porre più attenzione?
-        
-[x] Animazioni più professionali e fluide
-    [x] Animazione della selezione del colore
-    [x] Animazione della navigazione tra le schede
-    [x] Animazione di swipe tra mesi/anni/settimane
-
-[x] Impostazioni reali per applicazione
-    [x] Notifiche
-    [x] Feedback Aptico da implementare veramente
-
 
 [ ] Feature Premium
-    [-] Icloud Sync ( Costo 99 / anno, da capire se è lo stesso costo per pubblicare app)
+    [ ] Analytics as a PRO Plan per quelle avanzate
     [ ] App per Mac ( non solo tramite webApp salvata )
     [ ] Per Apple watch ( servono in swift, comming soon )
     [ ] Widget per schermata Home ( servono in swift, comming soon )
-
-[ ] AI
     [ ] Al posto delle note posso iniziare una chat / parte AI ( Vorrei che cambiassimo un implementazione nella cartella mobile ( quindi applicazione flutter ).
 Al posto delle "Note" vorrei che sostituissimo con il pulsante per chattare con i propri obiettivi e comportamenti ( la parte di AI che però implementerò in futuro e quindi deve venire fuori il pop up che è solo per gli utenti pro ).
 
@@ -62,3 +25,13 @@ Voglio che eliminiamo anche dal database le note per ottimizzare lo spazio )
 [ ] Pop Up
     [ ] Conferma del salvataggio con successo
     [ ] Errori + spiegazione semplice
+
+
+# LONG TERM FEATURES ( da implementare in futuro )
+[ ] Goals non solamente come tick
+    [ ] come barre di progresso ( con % ) 
+    [ ] oppure altri tipi 
+
+[ ] Goals phone related
+    [ ] accedo ai dati del telefono ( screen time, apps used, ecc )
+    [ ] 

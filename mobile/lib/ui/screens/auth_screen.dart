@@ -188,24 +188,13 @@ class _AuthScreenState extends ConsumerState<AuthScreen> with SingleTickerProvid
                         // Logo/Header
                         Column(
                           children: [
-                            Container(
-                              padding: const EdgeInsets.all(16),
-                              decoration: BoxDecoration(
-                                color: context.appColors.card,
-                                borderRadius: BorderRadius.circular(24),
-                                border: Border.all(color: context.appColors.border, width: 1),
-                                boxShadow: [
-                                  BoxShadow(
-                                    color: primaryColor.withValues(alpha: 0.1),
-                                    blurRadius: 20,
-                                    spreadRadius: 1,
-                                  )
-                                ],
-                              ),
-                              child: Icon(
-                                LucideIcons.layers,
-                                size: 32, // Smaller logo
-                                color: primaryColor,
+                            ClipRRect(
+                              borderRadius: BorderRadius.circular(24),
+                              child: Image.asset(
+                                'assets/images/logo.png',
+                                height: 100,
+                                width: 100,
+                                fit: BoxFit.cover,
                               ),
                             ),
                             const SizedBox(height: 16), // Reduced

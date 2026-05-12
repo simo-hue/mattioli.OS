@@ -128,9 +128,35 @@
 
 
 **Current Status**:
-- Full theme migration complete.
-- Contrast issues resolved.
-- "Black screen" bugs fixed.
+- App launched successfully on simulator.
+- Supabase configuration restored.
 
 **Next Step**:
-- Final verification of all sub-screens and user feedback on the new White Mode aesthetics.
+- Hand over to user for feature testing.
+
+---
+
+## [2026-05-07 18:31]: Core - Fixed Missing Supabase Configuration & App Launch
+*Details*: Resolved a critical build error caused by the missing `lib/core/supabase_config.dart` file. Successfully launched the application on the iOS Simulator.
+*Tech Notes*:
+- **Configuration**: Created `lib/core/supabase_config.dart` using values found in the root `.env` file (`VITE_SUPABASE_URL` and `VITE_SUPABASE_ANON`).
+- **Verification**: Executed `flutter run`, which confirmed that Supabase initialization completes successfully with the provided credentials.
+- **Status**: The app is currently running on the iPhone 17 Simulator.
+
+---
+
+## [2026-05-12 14:23]: Auth - Diagnostic Error Message & Specific Mapping
+*Details*: Updated the error mapping in `AuthProvider` to display the raw Supabase error message when an unhandled error occurs, and added a specific mapping for "signups not allowed".
+*Tech Notes*:
+- Modified `_mapAuthError` in `lib/providers/auth_provider.dart` to return `Si è verificato un errore: $supabaseMessage` instead of the generic message.
+- Added specific mapping for `signups not allowed for this instance` to guide the user.
+
+---
+
+## [2026-05-12 15:45]: UI - Application Logo and Launcher Icon Implementation
+*Details*: Added the application logo provided by the user, setting it up both as the in-app logo for the login/signup screen and as the official app icon for iOS.
+*Tech Notes*:
+- **Assets**: Created `assets/images/` directory and added `logo.png` and `app_icon.png`.
+- **In-App Logo**: Updated `AuthScreen` to display the new logo instead of the placeholder `LucideIcons.layers` icon. Used `ClipRRect` for rounded corners.
+- **Launcher Icons**: Added `flutter_launcher_icons` package and configured it in `pubspec.yaml` to generate iOS launcher icons.
+- **Commands**: Ran `flutter pub get` and `dart run flutter_launcher_icons` to generate the icons.

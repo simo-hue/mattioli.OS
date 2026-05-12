@@ -289,7 +289,10 @@ class AuthNotifier extends Notifier<AuthState> with ChangeNotifier {
     if (msg.contains('rate limit')) {
       return 'Troppi tentativi. Attendi qualche minuto e riprova.';
     }
-    return 'Si è verificato un errore. Riprova.';
+    if (msg.contains('signups not allowed for this instance')) {
+      return 'Le registrazioni sono disabilitate per questa istanza. Abilita "Enable Signups" nella dashboard di Supabase.';
+    }
+    return 'Si è verificato un errore: $supabaseMessage';
   }
 }
 

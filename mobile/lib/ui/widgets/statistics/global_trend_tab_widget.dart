@@ -31,7 +31,7 @@ class _GlobalTrendTabWidgetState extends ConsumerState<GlobalTrendTabWidget> {
         const SizedBox(height: 24),
         _AbitudiniCriticheSection(goals: goals, logs: logs),
         const SizedBox(height: 24),
-        _MiglioriAbitudiniSection(goals: goals, logs: logs),
+        _MiglioriAbitudiniSection(goals: goals, logs: logs, timeframe: _chartTimeframe),
         const SizedBox(height: 32),
       ],
     );
@@ -592,7 +592,8 @@ class _GlobalTrendTabWidgetState extends ConsumerState<GlobalTrendTabWidget> {
 class _MiglioriAbitudiniSection extends StatefulWidget {
   final List<Goal> goals;
   final Map<String, Map<String, String>> logs;
-  const _MiglioriAbitudiniSection({required this.goals, required this.logs});
+  final String timeframe;
+  const _MiglioriAbitudiniSection({required this.goals, required this.logs, required this.timeframe});
 
   @override
   State<_MiglioriAbitudiniSection> createState() => _MiglioriAbitudiniSectionState();
@@ -619,10 +620,27 @@ class _MiglioriAbitudiniSectionState extends State<_MiglioriAbitudiniSection> {
     final List<Map<String, dynamic>> bestHabits = [];
     final today = DateTime.now();
     
+    int days = 7;
+    if (widget.timeframe == 'timeframe_month_short') {
+      days = 30;
+    } else if (widget.timeframe == 'timeframe_year_short') {
+      days = 365;
+    } else if (widget.timeframe == 'timeframe_all') {
+      final keys = widget.logs.keys.toList();
+      if (keys.isNotEmpty) {
+        keys.sort();
+        final oldestDateStr = keys.first;
+        final oldestDate = DateTime.parse(oldestDateStr);
+        days = today.difference(oldestDate).inDays + 1;
+      } else {
+        days = 7;
+      }
+    }
+    
     for (final habit in widget.goals) {
       int activeCount = 0;
       int doneCount = 0;
-      for (int i = 6; i >= 0; i--) {
+      for (int i = days - 1; i >= 0; i--) {
         final date = today.subtract(Duration(days: i));
         if (habit.isActiveOn(date)) {
           activeCount++;

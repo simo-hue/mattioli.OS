@@ -32,3 +32,18 @@
 - [ ] Testare lo swipe orizzontale tra le schede principali.
 - [ ] Verificare che lo stato (es. scroll o filtri selezionati) venga mantenuto quando si cambia tab e si torna indietro.
 - [ ] Confermare che il feedback aptico (vibrazione leggera) sia piacevole al cambio tab.
+
+## Database Migrations (Per Step 3 / Ottimizzazione Streak)
+- [ ] Eseguire la seguente query SQL nella dashboard di Supabase (SQL Editor) per aggiungere la colonna `streak` alla tabella `goal_logs`:
+  ```sql
+  ALTER TABLE goal_logs ADD COLUMN streak INTEGER DEFAULT 0;
+  ```
+
+## Database Migrations (Per Check-In Giornaliero)
+- [ ] Eseguire la seguente query SQL nella dashboard di Supabase (SQL Editor) per aggiornare i vincoli della tabella `daily_moods` (la UI usa scala 0-10, mentre il DB originale usa 1-5):
+  ```sql
+  ALTER TABLE daily_moods DROP CONSTRAINT IF EXISTS daily_moods_mood_score_check;
+  ALTER TABLE daily_moods DROP CONSTRAINT IF EXISTS daily_moods_energy_score_check;
+  ALTER TABLE daily_moods ADD CONSTRAINT daily_moods_mood_score_check CHECK (mood_score >= 0 AND mood_score <= 10);
+  ALTER TABLE daily_moods ADD CONSTRAINT daily_moods_energy_score_check CHECK (energy_score >= 0 AND energy_score <= 10);
+  ```

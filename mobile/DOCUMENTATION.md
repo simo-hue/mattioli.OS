@@ -350,3 +350,12 @@
 - **Security**: Added a check in `DayDetailsModal` to prevent editing habits for days before yesterday.
 - **DB Migration**: Appended instructions to `TO_SIMO_DO.md` to add `streak` column to `goal_logs`.
 - **Provider**: Updated `cycleStatus` in `GoalNotifier` to query the latest log's streak and calculate the new streak based on the user's logic (increment on done, decrement on missed).
+
+---
+
+## [2026-05-12 23:35]: Feature - Daily Check-In Persistence & Dynamic Text
+*Details*: Implemented persistence for the daily check-in (mood & energy) and made the button text dynamic ("Inserisci" vs "Aggiorna").
+*Tech Notes*:
+- **Provider**: Created `mood_provider.dart` with `dailyMoodsProvider` to sync with `daily_moods` table in Supabase.
+- **UI**: Updated `DailyCheckInModal` to use the provider. It now loads existing values for today if they exist and changes the button text accordingly.
+- **DB**: Noted that `daily_moods` table has constraints for scores 1-5, while UI uses 0-10. Provided SQL to update constraints.

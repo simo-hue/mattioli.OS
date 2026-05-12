@@ -4,6 +4,7 @@ import 'package:lucide_icons_flutter/lucide_icons.dart';
 import '../../core/theme.dart';
 import '../../core/haptics.dart';
 import '../../core/localization.dart';
+import '../../providers/mood_provider.dart';
 
 class DailyCheckInModal extends ConsumerStatefulWidget {
   const DailyCheckInModal({super.key});
@@ -22,8 +23,25 @@ class DailyCheckInModal extends ConsumerStatefulWidget {
 }
 
 class _DailyCheckInModalState extends ConsumerState<DailyCheckInModal> {
-  double _mood = 9.0;
-  double _energy = 8.0;
+  double _mood = 5.0;
+  double _energy = 5.0;
+
+  @override
+  void initState() {
+    super.initState();
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      final moods = ref.read(dailyMoodsProvider);
+      final today = DateTime.now();
+      final dateKey = '${today.year}-${today.month.toString().padLeft(2, '0')}-${today.day.toString().padLeft(2, '0')}';
+      final todayMood = moods[dateKey];
+      if (todayMood != null) {
+        setState(() {
+          _mood = todayMood.moodScore.toDouble();
+          _energy = todayMood.energyScore.toDouble();
+        });
+      }
+    });
+  }
 
   String _getMoodEmoji(int value) {
     if (value >= 9) return '🤩';
@@ -43,6 +61,10 @@ class _DailyCheckInModalState extends ConsumerState<DailyCheckInModal> {
 
   @override
   Widget build(BuildContext context) {
+    final moods = ref.watch(dailyMoodsProvider);
+    final today = DateTime.now();
+    final dateKey = '${today.year}-${today.month.toString().padLeft(2, '0')}-${today.day.toString().padLeft(2, '0')}';
+    final isFirstTime = !moods.containsKey(dateKey);
     return Container(
       decoration: BoxDecoration(
         color: context.appColors.card,
@@ -134,8 +156,13 @@ class _DailyCheckInModalState extends ConsumerState<DailyCheckInModal> {
                   width: double.infinity,
                   height: 52,
                   child: ElevatedButton(
-                    onPressed: () {
+                    onPressed: () async {
                       ref.hapticSuccess();
+                      await ref.read(dailyMoodsProvider.notifier).saveMood(
+                        DateTime.now(),
+                        _mood.round(),
+                        _energy.round(),
+                      );
                       Navigator.pop(context);
                     },
                     style: ElevatedButton.styleFrom(
@@ -152,8 +179,8 @@ class _DailyCheckInModalState extends ConsumerState<DailyCheckInModal> {
                         const Icon(LucideIcons.save, size: 18),
                         const SizedBox(width: 10),
                         Text(
-                          context.l10n.translate('Aggiorna Stato Giornaliero'),
-                          style: TextStyle(
+                          isFirstTime ? 'Inserisci' : 'Aggiorna',
+                          style: const TextStyle(
                             fontSize: 15,
                             fontWeight: FontWeight.w600,
                           ),

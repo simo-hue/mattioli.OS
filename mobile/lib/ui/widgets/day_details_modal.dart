@@ -92,10 +92,50 @@ class DayDetailsModal extends ConsumerWidget {
                 final habit = activeHabits[index];
                 final status = dayRecord[habit.id];
 
+                // Calculate streak
+                int streak = 0;
+                DateTime checkDate = date;
+                final today = DateTime(DateTime.now().year, DateTime.now().month, DateTime.now().day);
+                
+                while (true) {
+                  final dk = '${checkDate.year}-${checkDate.month.toString().padLeft(2, '0')}-${checkDate.day.toString().padLeft(2, '0')}';
+                  final dl = logs[dk] ?? {};
+                  final s = dl[habit.id];
+                  
+                  if (s == 'done') {
+                    streak++;
+                  } else if (s == 'missed') {
+                    break;
+                  } else {
+                    if (habit.isActiveOn(checkDate)) {
+                      final checkDateMidnight = DateTime(checkDate.year, checkDate.month, checkDate.day);
+                      if (checkDateMidnight.isBefore(today)) {
+                        break;
+                      }
+                    }
+                  }
+                  checkDate = checkDate.subtract(const Duration(days: 1));
+                }
+
                 return GoalLogCard(
                   habit: habit,
                   status: status,
+                  streak: streak,
                   onTap: () {
+                    final today = DateTime(DateTime.now().year, DateTime.now().month, DateTime.now().day);
+                    final yesterday = today.subtract(const Duration(days: 1));
+                    final dateMidnight = DateTime(date.year, date.month, date.day);
+                    
+                    if (dateMidnight.isBefore(yesterday)) {
+                      ScaffoldMessenger.of(context).showSnackBar(
+                        const SnackBar(
+                          content: Text('Puoi modificare solo oggi e ieri!'),
+                          backgroundColor: Colors.redAccent,
+                        ),
+                      );
+                      return;
+                    }
+                    
                     ref
                         .read(habitLogsProvider.notifier)
                         .cycleStatus(date, habit.id);
@@ -114,12 +154,14 @@ class DayDetailsModal extends ConsumerWidget {
 class GoalLogCard extends ConsumerWidget {
   final Goal habit;
   final String? status; // 'done', 'missed', or null
+  final int streak;
   final VoidCallback onTap;
 
   const GoalLogCard({
     super.key,
     required this.habit,
     required this.status,
+    required this.streak,
     required this.onTap,
   });
 
@@ -132,9 +174,6 @@ class GoalLogCard extends ConsumerWidget {
     IconData icon = LucideIcons.circle;
     Color iconColor = AppColors.mutedForeground;
     bool hasStrikethrough = false;
-
-    // Mock streak
-    final int mockStreak = 7 - (habit.id.hashCode % 5);
 
 
 
@@ -195,7 +234,7 @@ class GoalLogCard extends ConsumerWidget {
               ),
             ),
             StreakBadge(
-              streak: mockStreak,
+              streak: streak,
               isMissed: status == 'missed',
               isDone: status == 'done',
             ),

@@ -248,7 +248,7 @@ class HabitLogsNotifier extends Notifier<HabitLogsMap> {
 
   Future<void> cycleStatus(DateTime date, String habitId) async {
     final user = supabase.auth.currentUser;
-    if (user == null) return; // Solo se loggato, o potremmo forzare il login
+    if (user == null) return;
 
     final dateKey = '${date.year}-${date.month.toString().padLeft(2, '0')}-${date.day.toString().padLeft(2, '0')}';
     
@@ -266,6 +266,44 @@ class HabitLogsNotifier extends Notifier<HabitLogsMap> {
       nextStatus = null; // rimosso
     }
 
+    // Get previous streak
+    int prevStreak = 0;
+    try {
+      final lastLogResponse = await supabase
+          .from('goal_logs')
+          .select('streak, date')
+          .eq('goal_id', habitId)
+          .eq('user_id', user.id)
+          .order('date', ascending: false)
+          .limit(1)
+          .maybeSingle();
+
+      if (lastLogResponse != null) {
+        final lastDateStr = lastLogResponse['date'] as String;
+        final lastStreak = lastLogResponse['streak'] as int? ?? 0;
+        
+        final lastDate = DateTime.parse(lastDateStr);
+        final diffDays = date.difference(lastDate).inDays;
+
+        if (diffDays == 1) {
+          prevStreak = lastStreak;
+        } else {
+          // Non consecutivo. Per ora azzeriamo lo streak se non è il giorno dopo.
+          // Si potrebbe affinare controllando la frequenza dell'abitudine.
+          prevStreak = 0;
+        }
+      }
+    } catch (e) {
+      debugPrint('[HabitLogs] Error getting previous streak: $e');
+    }
+
+    int newStreak = 0;
+    if (nextStatus == 'done') {
+      newStreak = prevStreak >= 0 ? prevStreak + 1 : 1;
+    } else if (nextStatus == 'missed') {
+      newStreak = prevStreak > 0 ? -1 : prevStreak - 1;
+    }
+
     if (nextStatus != null) {
       dayLogs[habitId] = nextStatus;
     } else {
@@ -279,15 +317,14 @@ class HabitLogsNotifier extends Notifier<HabitLogsMap> {
     // Sync con Supabase
     try {
       if (nextStatus != null) {
-        // Upsert log
         await supabase.from('goal_logs').upsert({
           'user_id': user.id,
           'goal_id': habitId,
           'date': dateKey,
           'status': nextStatus,
-        }, onConflict: 'goal_id, date'); // Richiede il vincolo UNIQUE nel db
+          'streak': newStreak,
+        }, onConflict: 'goal_id, date');
       } else {
-        // Elimina log
         await supabase
             .from('goal_logs')
             .delete()

@@ -3,6 +3,7 @@ import 'package:flutter_local_notifications/flutter_local_notifications.dart';
 import 'package:timezone/timezone.dart' as tz;
 import 'package:timezone/data/latest.dart' as tz;
 import 'package:flutter_timezone/flutter_timezone.dart';
+import 'package:supabase_flutter/supabase_flutter.dart';
 
 class NotificationService {
   static final NotificationService _instance = NotificationService._internal();
@@ -28,26 +29,125 @@ class NotificationService {
       const AndroidInitializationSettings androidSettings =
           AndroidInitializationSettings('@mipmap/ic_launcher');
       
-      const DarwinInitializationSettings iosSettings = DarwinInitializationSettings(
+      // Define iOS category with actions
+      final List<DarwinNotificationCategory> darwinCategories = [
+        DarwinNotificationCategory(
+          'habit_actions',
+          actions: <DarwinNotificationAction>[
+            DarwinNotificationAction.plain('action_done', 'Fatto'),
+            DarwinNotificationAction.plain('action_snooze', 'Posticipa'),
+            DarwinNotificationAction.plain('action_skip', 'Salta'),
+          ],
+          options: <DarwinNotificationCategoryOption>{
+            DarwinNotificationCategoryOption.customDismissAction,
+          },
+        ),
+      ];
+
+      final DarwinInitializationSettings iosSettings = DarwinInitializationSettings(
         requestAlertPermission: true,
         requestBadgePermission: true,
         requestSoundPermission: true,
+        notificationCategories: darwinCategories,
       );
 
-      const InitializationSettings initSettings = InitializationSettings(
+      final InitializationSettings initSettings = InitializationSettings(
         android: androidSettings,
         iOS: iosSettings,
       );
 
       await _notifications.initialize(
         settings: initSettings,
-        onDidReceiveNotificationResponse: (NotificationResponse response) {
-          debugPrint('Notification tapped: ${response.payload}');
-        },
+        onDidReceiveNotificationResponse: _onNotificationResponse,
       );
     } catch (e) {
       debugPrint('Error initializing NotificationService: $e');
     }
+  }
+
+  void _onNotificationResponse(NotificationResponse response) async {
+    debugPrint('Notification response: ${response.payload}, action: ${response.actionId}');
+    
+    final payload = response.payload;
+    if (payload == null) return;
+
+    final parts = payload.split('|');
+    if (parts.length < 2) return;
+    
+    final type = parts[0];
+    final habitId = parts[1];
+
+    if (type != 'habit') return;
+
+    if (response.actionId == 'action_done') {
+      await _markHabitAsDone(habitId);
+    } else if (response.actionId == 'action_snooze') {
+      await _snoozeHabit(habitId, parts.length > 2 ? parts[2] : 'Abitudine');
+    } else if (response.actionId == 'action_skip') {
+      await _skipHabit(habitId);
+    }
+  }
+
+  Future<void> _markHabitAsDone(String habitId) async {
+    final user = Supabase.instance.client.auth.currentUser;
+    if (user == null) return;
+
+    final now = DateTime.now();
+    final dateKey = '${now.year}-${now.month.toString().padLeft(2, '0')}-${now.day.toString().padLeft(2, '0')}';
+
+    try {
+      await Supabase.instance.client.from('goal_logs').upsert({
+        'user_id': user.id,
+        'goal_id': habitId,
+        'date': dateKey,
+        'status': 'done',
+      }, onConflict: 'goal_id, date');
+      debugPrint('[Notifications] Habit $habitId marked as done');
+    } catch (e) {
+      debugPrint('[Notifications] Error marking habit as done: $e');
+    }
+  }
+
+  Future<void> _snoozeHabit(String habitId, String title) async {
+    final now = DateTime.now();
+    final scheduledDate = now.add(const Duration(hours: 1));
+    
+    const AndroidNotificationDetails androidDetails = AndroidNotificationDetails(
+      'habit_reminders',
+      'Habit Reminders',
+      channelDescription: 'Reminders for your habits',
+      importance: Importance.max,
+      priority: Priority.high,
+      actions: <AndroidNotificationAction>[
+        AndroidNotificationAction('action_done', 'Fatto'),
+        AndroidNotificationAction('action_snooze', 'Posticipa'),
+        AndroidNotificationAction('action_skip', 'Salta'),
+      ],
+    );
+
+    const NotificationDetails platformDetails = NotificationDetails(
+      android: androidDetails,
+      iOS: DarwinNotificationDetails(
+        categoryIdentifier: 'habit_actions',
+      ),
+    );
+
+    await _notifications.zonedSchedule(
+      id: habitId.hashCode + 1000,
+      title: 'Growth • $title',
+      body: 'È il momento di completare la tua abitudine!',
+      scheduledDate: tz.TZDateTime.from(scheduledDate, tz.local),
+      notificationDetails: platformDetails,
+      androidScheduleMode: AndroidScheduleMode.exactAllowWhileIdle,
+      matchDateTimeComponents: DateTimeComponents.time,
+      payload: 'habit|$habitId|$title',
+    );
+    debugPrint('[Notifications] Habit $habitId snoozed for 1 hour');
+  }
+
+  Future<void> _skipHabit(String habitId) async {
+    await _notifications.cancel(id: habitId.hashCode);
+    debugPrint('[Notifications] Habit $habitId skipped');
   }
 
   Future<void> requestPermissions() async {
@@ -127,11 +227,18 @@ class NotificationService {
       channelDescription: 'Reminders for specific habits',
       importance: Importance.max,
       priority: Priority.high,
+      actions: <AndroidNotificationAction>[
+        AndroidNotificationAction('action_done', 'Fatto'),
+        AndroidNotificationAction('action_snooze', 'Posticipa'),
+        AndroidNotificationAction('action_skip', 'Salta'),
+      ],
     );
 
     const NotificationDetails platformDetails = NotificationDetails(
       android: androidDetails,
-      iOS: DarwinNotificationDetails(),
+      iOS: DarwinNotificationDetails(
+        categoryIdentifier: 'habit_actions',
+      ),
     );
 
     final notificationId = id.hashCode;
@@ -144,6 +251,7 @@ class NotificationService {
       notificationDetails: platformDetails,
       androidScheduleMode: AndroidScheduleMode.exactAllowWhileIdle,
       matchDateTimeComponents: DateTimeComponents.time,
+      payload: 'habit|$id|$title',
     );
   }
 

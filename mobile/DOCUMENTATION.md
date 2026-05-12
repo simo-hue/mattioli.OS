@@ -317,3 +317,36 @@
 *Details*: Fixed a build error where `settingsProvider` was not defined.
 *Tech Notes*:
 - **Import**: Added `import '../../providers/settings_provider.dart';` in `habit_management_modal.dart`.
+
+---
+
+## [2026-05-12 18:35]: Feature - Actionable Notifications (Step 3)
+*Details*: Implemented 3 actions for habit reminders: Fatto (Done), Posticipa (Snooze), Salta (Skip).
+*Tech Notes*:
+- **Service**: Updated `NotificationService` to include actions in `AndroidNotificationDetails` and registered `DarwinNotificationCategory` for iOS.
+- **Handler**: Added `_onNotificationResponse` to handle actions. "Fatto" updates Supabase directly. "Posticipa" schedules a new notification in 1 hour. "Salta" cancels the notification.
+- **Payload**: Added structured payload `habit|id|title` to pass data to the handler.
+
+---
+
+## [2026-05-12 23:10]: Fix - Resolved Const Error in notifications.dart
+*Details*: Fixed a build error on iOS where `iosSettings` was used in a const constructor but was not a constant expression.
+*Tech Notes*:
+- **Code**: Changed `const InitializationSettings` to `final InitializationSettings` in `NotificationService.init()`.
+
+---
+
+## [2026-05-12 23:20]: Fix - Resolved Mock Streak in DayDetailsModal
+*Details*: Fixed a bug where the habit streak was hardcoded with a mock formula, causing incorrect values (3-5) for new habits.
+*Tech Notes*:
+- **UI**: Replaced `mockStreak` with a real calculation loop in `DayDetailsModal` that goes backwards from the selected date and counts consecutive 'done' statuses in `habitLogsProvider`.
+- **Logic**: It stops the streak if it finds 'missed' or if the habit was active but not completed on a past day.
+
+---
+
+## [2026-05-12 23:25]: Feature - Optimized Streak Calculation & Security (Option A)
+*Details*: Implemented the optimized streak logic requested by the user and added security restrictions.
+*Tech Notes*:
+- **Security**: Added a check in `DayDetailsModal` to prevent editing habits for days before yesterday.
+- **DB Migration**: Appended instructions to `TO_SIMO_DO.md` to add `streak` column to `goal_logs`.
+- **Provider**: Updated `cycleStatus` in `GoalNotifier` to query the latest log's streak and calculate the new streak based on the user's logic (increment on done, decrement on missed).

@@ -236,6 +236,18 @@ class AppLocalizations {
       'fri': 'Ven',
       'sat': 'Sab',
       'sun': 'Dom',
+      'january': 'Gennaio',
+      'february': 'Febbraio',
+      'march': 'Marzo',
+      'april': 'Aprile',
+      'may': 'Maggio',
+      'june': 'Giugno',
+      'july': 'Luglio',
+      'august': 'Agosto',
+      'september': 'Settembre',
+      'october': 'Ottobre',
+      'november': 'Novembre',
+      'december': 'Dicembre',
       'rate': 'Tasso di Successo',
       'best_streak_label': 'Miglior Serie',
       'worst_streak_label': 'Peggior Serie',
@@ -470,6 +482,18 @@ class AppLocalizations {
       'fri': 'Fri',
       'sat': 'Sat',
       'sun': 'Sun',
+      'january': 'January',
+      'february': 'February',
+      'march': 'March',
+      'april': 'April',
+      'may': 'May',
+      'june': 'June',
+      'july': 'July',
+      'august': 'August',
+      'september': 'September',
+      'october': 'October',
+      'november': 'November',
+      'december': 'December',
       'rate': 'Success Rate',
       'best_streak_label': 'Best Streak',
       'worst_streak_label': 'Worst Streak',
@@ -479,7 +503,8 @@ class AppLocalizations {
   };
 
   String translate(String key) {
-    return _localizedValues[language]?[key] ?? key;
+    final lang = language == 'it' ? 'Italiano' : language == 'en' ? 'English' : language;
+    return _localizedValues[lang]?[key] ?? key;
   }
 }
 

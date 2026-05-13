@@ -1,4 +1,3 @@
-import 'dart:math' as math;
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:lucide_icons_flutter/lucide_icons.dart';
@@ -25,13 +24,19 @@ class HabitCalendarWidget extends ConsumerStatefulWidget {
 }
 
 class _HabitCalendarWidgetState extends ConsumerState<HabitCalendarWidget> {
-  late DateTime _currentDate;
-  int _slideDirection = 1; // 1 for next, -1 for prev
+  late PageController _pageController;
+  static const int _basePage = 1200;
 
   @override
   void initState() {
     super.initState();
-    _currentDate = DateTime.now();
+    _pageController = PageController(initialPage: _basePage);
+  }
+
+  @override
+  void dispose() {
+    _pageController.dispose();
+    super.dispose();
   }
 
   String _dateKey(int year, int month, int day) =>
@@ -61,25 +66,27 @@ class _HabitCalendarWidgetState extends ConsumerState<HabitCalendarWidget> {
   }
 
   void _goToPrev() {
-    setState(() {
-      _slideDirection = -1;
-      _currentDate = DateTime(_currentDate.year, _currentDate.month - 1, 1);
-    });
+    _pageController.previousPage(
+      duration: const Duration(milliseconds: 400),
+      curve: Curves.easeOutCubic,
+    );
     ref.hapticAction();
   }
 
   void _goToNext() {
-    setState(() {
-      _slideDirection = 1;
-      _currentDate = DateTime(_currentDate.year, _currentDate.month + 1, 1);
-    });
+    _pageController.nextPage(
+      duration: const Duration(milliseconds: 400),
+      curve: Curves.easeOutCubic,
+    );
     ref.hapticAction();
   }
 
   void _goToToday() {
-    setState(() {
-      _currentDate = DateTime.now();
-    });
+    _pageController.animateToPage(
+      _basePage,
+      duration: const Duration(milliseconds: 500),
+      curve: Curves.easeOutQuart,
+    );
     ref.hapticAction();
   }
 
@@ -89,8 +96,55 @@ class _HabitCalendarWidgetState extends ConsumerState<HabitCalendarWidget> {
     final logs = ref.watch(habitLogsProvider);
     final isPrivacy = ref.watch(privacyModeProvider);
 
-    final year = _currentDate.year;
-    final month = _currentDate.month;
+    return Container(
+      decoration: AppTheme.glassPanelDecoration(context, radius: 14),
+      child: PageView.builder(
+        controller: _pageController,
+        itemBuilder: (context, index) {
+          final targetDate = DateTime(
+            DateTime.now().year,
+            DateTime.now().month + (index - _basePage),
+            1,
+          );
+          
+          return AnimatedBuilder(
+            animation: _pageController,
+            builder: (context, child) {
+              double pageOffset = 0.0;
+              if (_pageController.position.haveDimensions) {
+                pageOffset = _pageController.page! - index;
+              } else {
+                pageOffset = (_basePage - index).toDouble();
+              }
+              
+              final absOffset = pageOffset.abs();
+              
+              // Premium Parallax & Scale Effect
+              final double scale = 1.0 - (absOffset * 0.05).clamp(0.0, 0.05);
+              final double opacity = (1.0 - absOffset).clamp(0.0, 1.0);
+              final double translation = pageOffset * 60; 
+              
+              return Transform.scale(
+                scale: scale,
+                child: Transform.translate(
+                  offset: Offset(translation, 0),
+                  child: Opacity(
+                    opacity: opacity,
+                    child: child,
+                  ),
+                ),
+              );
+            },
+            child: _buildCalendarPage(targetDate, habits, logs, isPrivacy),
+          );
+        },
+      ),
+    );
+  }
+
+  Widget _buildCalendarPage(DateTime date, List<Goal> habits, Map logs, bool isPrivacy) {
+    final year = date.year;
+    final month = date.month;
 
     // First day of month, 0=Mon 6=Sun
     int startDayOfWeek = DateTime(year, month, 1).weekday - 1; // Mon=0
@@ -98,204 +152,154 @@ class _HabitCalendarWidgetState extends ConsumerState<HabitCalendarWidget> {
     final totalSlots = startDayOfWeek + daysInMonth;
     final numRows = (totalSlots / 7).ceil();
 
-    return GestureDetector(
-      onHorizontalDragEnd: (details) {
-        const threshold = 200;
-        if (details.primaryVelocity! > threshold) {
-          _goToPrev();
-        } else if (details.primaryVelocity! < -threshold) {
-          _goToNext();
-        }
-      },
-      child: Container(
-        decoration: AppTheme.glassPanelDecoration(context, radius: 14),
-        child: AnimatedSwitcher(
-          duration: const Duration(milliseconds: 450),
-          switchInCurve: Curves.easeOutQuart,
-          switchOutCurve: Curves.easeOutQuart,
-          transitionBuilder: (child, animation) {
-            final isIncoming = child.key == ValueKey('${_currentDate.year}-${_currentDate.month}');
-            
-            return AnimatedBuilder(
-              animation: animation,
-              builder: (context, child) {
-                // Perspective Fold Logic (3D Flip)
-                // Forward (+1): Outgoing flips Left, Incoming flips from Right
-                final double rotation = isIncoming 
-                    ? (1.0 - animation.value) * (math.pi / 2) * _slideDirection
-                    : animation.value * -(math.pi / 2) * _slideDirection;
-                
-                final alignment = isIncoming 
-                    ? (_slideDirection > 0 ? Alignment.centerRight : Alignment.centerLeft)
-                    : (_slideDirection > 0 ? Alignment.centerLeft : Alignment.centerRight);
-
-                return Transform(
-                  transform: Matrix4.identity()
-                    ..setEntry(3, 2, 0.0015) // Perspective depth
-                    ..rotateY(rotation),
-                  alignment: alignment,
-                  child: Opacity(
-                    opacity: animation.value.clamp(0.0, 1.0),
-                    child: child,
-                  ),
-                );
-              },
-              child: child,
-            );
-          },
-          child: Column(
-            key: ValueKey('${_currentDate.year}-${_currentDate.month}'),
+    return Column(
+      children: [
+        // Calendar header
+        Padding(
+          padding: const EdgeInsets.fromLTRB(16, 16, 16, 8),
+          child: Row(
+            mainAxisAlignment: MainAxisAlignment.spaceBetween,
             children: [
-              // Calendar header
-              Padding(
-                padding: const EdgeInsets.fromLTRB(16, 16, 16, 8),
-                child: Row(
-                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
+              // Month + Year
+              GestureDetector(
+                onTap: _goToToday,
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
-                    // Month + Year
-                    GestureDetector(
-                      onTap: _goToToday,
-                      child: Column(
-                        crossAxisAlignment: CrossAxisAlignment.start,
-                        children: [
-                          Text(
-                            context.l10n.translate(_kMonthKeys[month - 1]),
-                            style: TextStyle(
-                              fontFamily: 'Inter',
-                              fontSize: 22,
-                              fontWeight: FontWeight.w800,
-                              color: context.appColors.foreground,
-                              letterSpacing: -0.8,
-                            ),
-                          ),
-                          Text(
-                            '$year',
-                            style: TextStyle(
-                              fontFamily: 'Inter',
-                              fontSize: 14,
-                              fontWeight: FontWeight.w500,
-                              color: context.appColors.mutedForeground,
-                              letterSpacing: 0.5,
-                            ),
-                          ),
-                        ],
+                    Text(
+                      context.l10n.translate(_kMonthKeys[month - 1]),
+                      style: TextStyle(
+                        fontFamily: 'Inter',
+                        fontSize: 22,
+                        fontWeight: FontWeight.w800,
+                        color: context.appColors.foreground,
+                        letterSpacing: -0.8,
                       ),
                     ),
-                    // Navigation buttons
-                    Row(
-                      children: [
-                        _NavButton(
-                          icon: LucideIcons.chevronLeft,
-                          onTap: _goToPrev,
-                        ),
-                        const SizedBox(width: 4),
-                        _NavButton(
-                          icon: LucideIcons.chevronRight,
-                          onTap: _goToNext,
-                        ),
-                      ],
+                    Text(
+                      '$year',
+                      style: TextStyle(
+                        fontFamily: 'Inter',
+                        fontSize: 14,
+                        fontWeight: FontWeight.w500,
+                        color: context.appColors.mutedForeground,
+                        letterSpacing: 0.5,
+                      ),
                     ),
                   ],
                 ),
               ),
-              const SizedBox(height: 12),
-    
-              // Day labels row
-              Padding(
-                padding: const EdgeInsets.symmetric(horizontal: 8),
-                child: Row(
-                  children: _kDayKeys.map((key) {
-                    return Expanded(
-                      child: Center(
-                        child: Text(
-                          context.l10n.translate(key),
-                          style: TextStyle(
-                            fontFamily: 'Inter',
-                            fontSize: 9,
-                            fontWeight: FontWeight.w600,
-                            color: context.appColors.mutedForeground,
-                            letterSpacing: 0.5,
-                          ),
-                        ),
-                      ),
-                    );
-                  }).toList(),
-                ),
-              ),
-    
-              const SizedBox(height: 4),
-    
-              // Calendar grid - Now responsive
-              Expanded(
-                child: SingleChildScrollView(
-                  physics: const BouncingScrollPhysics(),
-                  padding: const EdgeInsets.fromLTRB(6, 0, 6, 8),
-                  child: Column(
-                    children: List.generate(numRows, (row) {
-                      return Row(
-                        children: List.generate(7, (col) {
-                          final slot = row * 7 + col;
-                          final day = slot - startDayOfWeek + 1;
-    
-                          if (day < 1 || day > daysInMonth) {
-                            return Expanded(child: _EmptyCell(hasContent: false));
-                          }
-    
-                          final dateKey = _dateKey(year, month, day);
-                          final dayRecord = logs[dateKey] ?? {};
-                          final future = _isFuture(year, month, day);
-                          final today = _isToday(year, month, day);
-                          final editableDay = _isYesterdayOrToday(year, month, day);
-    
-                          // Valid habits for this date
-                          final dayDate = DateTime(year, month, day);
-                          final validHabits = habits.where((h) => h.isActiveOn(dayDate)).toList();
-    
-                          final totalHabits = validHabits.length;
-                          final completedCount = validHabits
-                              .where((h) => dayRecord[h.id] == 'done')
-                              .length;
-                          final missedCount = validHabits
-                              .where((h) => dayRecord[h.id] == 'missed')
-                              .length;
-                          final hasActivity =
-                              (completedCount + missedCount) > 0;
-    
-                          double completionPct = totalHabits > 0
-                              ? completedCount / totalHabits
-                              : 0.0;
-    
-                          return Expanded(
-                            child: Padding(
-                              padding: const EdgeInsets.all(2),
-                              child: _DayCell(
-                                day: day,
-                                isToday: today,
-                                isFuture: future,
-                                isEditableDay: editableDay,
-                                hasActivity: hasActivity,
-                                completionPct: completionPct,
-                                validHabits: validHabits,
-                                dayRecord: dayRecord,
-                                isPrivacy: isPrivacy,
-                                  onTap: future
-                                      ? null
-                                      : () => _showDayDetails(DateTime(year, month, day)),
-                              ),
-                            ),
-                          );
-                        }),
-                      );
-                    }),
+              // Navigation buttons
+              Row(
+                children: [
+                  _NavButton(
+                    icon: LucideIcons.chevronLeft,
+                    onTap: _goToPrev,
                   ),
-                ),
+                  const SizedBox(width: 4),
+                  _NavButton(
+                    icon: LucideIcons.chevronRight,
+                    onTap: _goToNext,
+                  ),
+                ],
               ),
             ],
           ),
         ),
-      ),
-    );
+        const SizedBox(height: 12),
 
+        // Day labels row
+        Padding(
+          padding: const EdgeInsets.symmetric(horizontal: 8),
+          child: Row(
+            children: _kDayKeys.map((key) {
+              return Expanded(
+                child: Center(
+                  child: Text(
+                    context.l10n.translate(key),
+                    style: TextStyle(
+                      fontFamily: 'Inter',
+                      fontSize: 9,
+                      fontWeight: FontWeight.w600,
+                      color: context.appColors.mutedForeground,
+                      letterSpacing: 0.5,
+                    ),
+                  ),
+                ),
+              );
+            }).toList(),
+          ),
+        ),
+
+        const SizedBox(height: 4),
+
+        // Calendar grid - Now responsive
+        Expanded(
+          child: SingleChildScrollView(
+            physics: const BouncingScrollPhysics(),
+            padding: const EdgeInsets.fromLTRB(6, 0, 6, 8),
+            child: Column(
+              children: List.generate(numRows, (row) {
+                return Row(
+                  children: List.generate(7, (col) {
+                    final slot = row * 7 + col;
+                    final day = slot - startDayOfWeek + 1;
+
+                    if (day < 1 || day > daysInMonth) {
+                      return Expanded(child: _EmptyCell(hasContent: false));
+                    }
+
+                    final dateKey = _dateKey(year, month, day);
+                    final dayRecord = Map<String, String>.from(logs[dateKey] ?? {});
+                    final future = _isFuture(year, month, day);
+                    final today = _isToday(year, month, day);
+                    final editableDay = _isYesterdayOrToday(year, month, day);
+
+                    // Valid habits for this date
+                    final dayDate = DateTime(year, month, day);
+                    final validHabits = habits.where((h) => h.isActiveOn(dayDate)).toList();
+
+                    final totalHabits = validHabits.length;
+                    final completedCount = validHabits
+                        .where((h) => dayRecord[h.id] == 'done')
+                        .length;
+                    final missedCount = validHabits
+                        .where((h) => dayRecord[h.id] == 'missed')
+                        .length;
+                    final hasActivity =
+                        (completedCount + missedCount) > 0;
+
+                    double completionPct = totalHabits > 0
+                        ? completedCount / totalHabits
+                        : 0.0;
+
+                    return Expanded(
+                      child: Padding(
+                        padding: const EdgeInsets.all(2),
+                        child: _DayCell(
+                          day: day,
+                          isToday: today,
+                          isFuture: future,
+                          isEditableDay: editableDay,
+                          hasActivity: hasActivity,
+                          completionPct: completionPct,
+                          validHabits: validHabits,
+                          dayRecord: dayRecord,
+                          isPrivacy: isPrivacy,
+                          onTap: future
+                              ? null
+                              : () => _showDayDetails(DateTime(year, month, day)),
+                        ),
+                      ),
+                    );
+                  }),
+                );
+              }),
+            ),
+          ),
+        ),
+      ],
+    );
   }
 
   void _showDayDetails(DateTime date) {
@@ -373,8 +377,6 @@ class _DayCell extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final primaryColor = Theme.of(context).colorScheme.primary;
-    final primaryHsl = HSLColor.fromColor(primaryColor);
-    final primaryHue = primaryHsl.hue;
 
     Color? bgColor;
     Color borderColor = Colors.transparent;

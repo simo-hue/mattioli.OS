@@ -197,5 +197,17 @@
     - Added `resetToDefaults()` to `AppSettingsNotifier` in `settings_provider.dart`.
     - Called these methods in `_resetData` in `privacy_settings_screen.dart`.
 
+- [2026-05-13 22:06]: **Habit Calendar Swipe Animation Upgrade**
+  - *Details*: Replaced the amateurish 3D flip animation in the calendar with a premium finger-following PageView that supports parallax and scale effects.
+  - *Tech Notes*:
+    - Replaced `GestureDetector` and `AnimatedSwitcher` with `PageView.builder` in `HabitCalendarWidget`.
+    - Added `PageController` with an infinite-like mapping using a base page (1200).
+    - Implemented real-time transform effects (scale, opacity, translation) based on page offset in `AnimatedBuilder`.
+    - Maintained state synchronization and chevron navigation.
+
+- [2026-05-13 22:08]: **Fix Type Cast Error in Calendar**
+  - *Details*: Fixed a runtime type error where `_Map<dynamic, dynamic>` was passed to a widget expecting `Map<String, String>`.
+  - *Tech Notes*: Added `Map<String, String>.from` cast to `dayRecord` in `HabitCalendarWidget`.
+
 ## Current Status
-- **Next Step**: Waiting for user feedback on the full data reset feature.
+- **Next Step**: Waiting for user feedback on the new calendar animation.

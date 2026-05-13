@@ -159,6 +159,11 @@ class GoalsNotifier extends Notifier<List<Goal>> {
       debugPrint('[Goals] Reorder error: $e');
     }
   }
+
+  void clearAll() {
+    state = [];
+    _saveToCache([]);
+  }
 }
 
 final goalsProvider = NotifierProvider<GoalsNotifier, List<Goal>>(GoalsNotifier.new);
@@ -335,6 +340,11 @@ class HabitLogsNotifier extends Notifier<HabitLogsMap> {
     } catch (e) {
       debugPrint('[HabitLogs] cycleStatus error: $e');
     }
+  }
+
+  void clearAll() {
+    state = {};
+    _saveToCache({});
   }
 }
 

@@ -141,6 +141,17 @@ class AppSettingsNotifier extends Notifier<AppSettings> {
 
   // ── Modificatori ──────────────────────────────────────────────────────────
 
+  void resetToDefaults() {
+    final prefs = ref.read(sharedPrefsProvider);
+    final keys = prefs.getKeys();
+    for (final key in keys) {
+      if (key.startsWith('pref_')) {
+        prefs.remove(key);
+      }
+    }
+    state = _loadFromPrefs();
+  }
+
   void updateSettings(AppSettings newSettings) {
     AppSettings finalSettings = newSettings;
 

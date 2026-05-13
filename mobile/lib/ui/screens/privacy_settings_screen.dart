@@ -1,4 +1,10 @@
 import 'package:flutter/material.dart';
+import 'dart:ui';
+import 'package:supabase_flutter/supabase_flutter.dart';
+import 'package:share_plus/share_plus.dart';
+import 'dart:convert';
+import '../../providers/goal_provider.dart';
+import '../../providers/macro_goals_provider.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:lucide_icons_flutter/lucide_icons.dart';
@@ -96,6 +102,7 @@ class PrivacySettingsScreen extends ConsumerWidget {
                 title: 'Cambia Password',
                 onTap: () {
                   ref.hapticLight();
+                  _showChangePasswordModal(context);
                 },
               ),
             ]),
@@ -109,6 +116,7 @@ class PrivacySettingsScreen extends ConsumerWidget {
                 subtitle: 'Formato JSON / CSV',
                 onTap: () {
                   ref.hapticMedium();
+                  _exportData(context, ref);
                 },
               ),
               _buildDivider(context),
@@ -133,6 +141,7 @@ class PrivacySettingsScreen extends ConsumerWidget {
                 titleColor: AppColors.destructive,
                 onTap: () {
                   ref.hapticHeavy();
+                  _showDeleteOrResetModal(context, ref);
                 },
               ),
             ]),
@@ -366,5 +375,642 @@ class PrivacySettingsScreen extends ConsumerWidget {
         ],
       ),
     );
+  }
+
+  void _showChangePasswordModal(BuildContext context) {
+    final currentPasswordController = TextEditingController();
+    final newPasswordController = TextEditingController();
+    final confirmPasswordController = TextEditingController();
+    
+    bool isLoading = false;
+    String? errorMessage;
+    bool isVerified = false;
+
+    showDialog(
+      context: context,
+      builder: (context) {
+        return StatefulBuilder(
+          builder: (context, setState) {
+            return BackdropFilter(
+              filter: ImageFilter.blur(sigmaX: 12, sigmaY: 12),
+              child: Dialog(
+                backgroundColor: Colors.transparent,
+                elevation: 0,
+                child: Container(
+                  padding: const EdgeInsets.all(24),
+                  decoration: BoxDecoration(
+                    color: context.appColors.card.withValues(alpha: 0.95),
+                    borderRadius: BorderRadius.circular(24),
+                    border: Border.all(color: context.appColors.border.withValues(alpha: 0.5), width: 1.5),
+                    boxShadow: [
+                      BoxShadow(
+                        color: Colors.black.withValues(alpha: 0.2),
+                        blurRadius: 20,
+                        spreadRadius: 5,
+                      )
+                    ],
+                  ),
+                  child: Column(
+                    mainAxisSize: MainAxisSize.min,
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Text(
+                        'Cambia Password',
+                        style: GoogleFonts.inter(
+                          fontSize: 20,
+                          fontWeight: FontWeight.w700,
+                          color: context.appColors.foreground,
+                        ),
+                      ),
+                      const SizedBox(height: 4),
+                      Text(
+                        isVerified 
+                            ? 'Inserisci la tua nuova password.' 
+                            : 'Inserisci la tua password attuale per continuare.',
+                        style: GoogleFonts.inter(
+                          fontSize: 13,
+                          color: context.appColors.mutedForeground,
+                        ),
+                      ),
+                      const SizedBox(height: 20),
+                      
+                      if (!isVerified) ...[
+                        _buildPasswordField(
+                          controller: currentPasswordController,
+                          label: 'Password Attuale',
+                          context: context,
+                        ),
+                      ] else ...[
+                        _buildPasswordField(
+                          controller: newPasswordController,
+                          label: 'Nuova Password',
+                          context: context,
+                        ),
+                        const SizedBox(height: 16),
+                        
+                        _buildPasswordField(
+                          controller: confirmPasswordController,
+                          label: 'Conferma Nuova Password',
+                          context: context,
+                        ),
+                      ],
+                      
+                      if (errorMessage != null) ...[
+                        const SizedBox(height: 12),
+                        Text(
+                          errorMessage!,
+                          style: GoogleFonts.inter(
+                            fontSize: 12,
+                            color: AppColors.destructive,
+                            fontWeight: FontWeight.w500,
+                          ),
+                        ),
+                      ],
+                      
+                      const SizedBox(height: 24),
+                      
+                      Row(
+                        mainAxisAlignment: MainAxisAlignment.end,
+                        children: [
+                          TextButton(
+                            onPressed: isLoading ? null : () => Navigator.pop(context),
+                            child: Text(
+                              'Annulla',
+                              style: GoogleFonts.inter(
+                                color: context.appColors.mutedForeground,
+                                fontWeight: FontWeight.w600,
+                              ),
+                            ),
+                          ),
+                          const SizedBox(width: 12),
+                          GestureDetector(
+                            onTap: isLoading ? null : () async {
+                              if (!isVerified) {
+                                final currentPwd = currentPasswordController.text;
+                                if (currentPwd.isEmpty) {
+                                  setState(() => errorMessage = 'Inserisci la password attuale.');
+                                  return;
+                                }
+                                
+                                setState(() {
+                                  isLoading = true;
+                                  errorMessage = null;
+                                });
+                                
+                                try {
+                                  final supabase = Supabase.instance.client;
+                                  final email = supabase.auth.currentUser?.email;
+                                  
+                                  if (email == null) throw Exception('Utente non trovato.');
+                                  
+                                  await supabase.auth.signInWithPassword(email: email, password: currentPwd);
+                                  
+                                  setState(() {
+                                    isLoading = false;
+                                    isVerified = true;
+                                    errorMessage = null;
+                                  });
+                                } catch (e) {
+                                  setState(() {
+                                    isLoading = false;
+                                    errorMessage = 'La password attuale non è corretta.';
+                                  });
+                                }
+                              } else {
+                                final newPwd = newPasswordController.text;
+                                final confirmPwd = confirmPasswordController.text;
+                                
+                                if (newPwd.isEmpty || confirmPwd.isEmpty) {
+                                  setState(() => errorMessage = 'Tutti i campi sono obbligatori.');
+                                  return;
+                                }
+                                
+                                if (newPwd.length < 8) {
+                                  setState(() => errorMessage = 'La nuova password deve essere di almeno 8 caratteri.');
+                                  return;
+                                }
+                                
+                                if (newPwd != confirmPwd) {
+                                  setState(() => errorMessage = 'Le password non coincidono.');
+                                  return;
+                                }
+                                
+                                setState(() {
+                                  isLoading = true;
+                                  errorMessage = null;
+                                });
+                                
+                                try {
+                                  final supabase = Supabase.instance.client;
+                                  
+                                  await supabase.auth.updateUser(UserAttributes(password: newPwd));
+                                  
+                                  if (context.mounted) {
+                                    Navigator.pop(context);
+                                    ScaffoldMessenger.of(context).showSnackBar(
+                                      const SnackBar(content: Text('Password aggiornata con successo!')),
+                                    );
+                                  }
+                                } catch (e) {
+                                  setState(() {
+                                    isLoading = false;
+                                    errorMessage = e.toString().replaceAll('Exception: ', '');
+                                  });
+                                }
+                              }
+                            },
+                            child: Container(
+                              padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 10),
+                              decoration: BoxDecoration(
+                                color: Theme.of(context).colorScheme.primary,
+                                borderRadius: BorderRadius.circular(10),
+                                boxShadow: [
+                                  BoxShadow(
+                                    color: Theme.of(context).colorScheme.primary.withValues(alpha: 0.3),
+                                    blurRadius: 8,
+                                    offset: const Offset(0, 2),
+                                  )
+                                ],
+                              ),
+                              child: isLoading
+                                  ? const SizedBox(
+                                      width: 20,
+                                      height: 20,
+                                      child: CircularProgressIndicator(
+                                        strokeWidth: 2,
+                                        valueColor: AlwaysStoppedAnimation<Color>(Colors.white),
+                                      ),
+                                    )
+                                  : Text(
+                                      isVerified ? 'Salva' : 'Verifica',
+                                      style: GoogleFonts.inter(
+                                        color: Theme.of(context).colorScheme.primary.computeLuminance() > 0.5 ? Colors.black : Colors.white,
+                                        fontWeight: FontWeight.w600,
+                                      ),
+                                    ),
+                            ),
+                          ),
+                        ],
+                      ),
+                    ],
+                  ),
+                ),
+              ),
+            );
+          },
+        );
+      },
+    );
+  }
+
+  Widget _buildPasswordField({
+    required TextEditingController controller,
+    required String label,
+    required BuildContext context,
+  }) {
+    return TextField(
+      controller: controller,
+      obscureText: true,
+      decoration: InputDecoration(
+        labelText: label,
+        labelStyle: TextStyle(color: context.appColors.mutedForeground, fontSize: 14),
+        floatingLabelStyle: TextStyle(color: Theme.of(context).colorScheme.primary),
+        filled: true,
+        fillColor: context.appColors.background.withValues(alpha: 0.5),
+        contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
+        enabledBorder: OutlineInputBorder(
+          borderRadius: BorderRadius.circular(12),
+          borderSide: BorderSide(color: context.appColors.border.withValues(alpha: 0.5)),
+        ),
+        focusedBorder: OutlineInputBorder(
+          borderRadius: BorderRadius.circular(12),
+          borderSide: BorderSide(color: Theme.of(context).colorScheme.primary, width: 1.5),
+        ),
+      ),
+      style: TextStyle(color: context.appColors.foreground, fontFamily: 'Inter', fontSize: 14),
+    );
+  }
+
+  Future<void> _exportData(BuildContext context, WidgetRef ref) async {
+    try {
+      final settings = ref.read(settingsProvider);
+      final goals = ref.read(goalsProvider);
+      final macroGoals = ref.read(macroGoalsProvider).goals;
+
+      // Construct JSON
+      final data = {
+        'exportDate': DateTime.now().toIso8601String(),
+        'settings': {
+          'themeMode': settings.themeMode,
+          'accentColor': '#${settings.accentColor.toARGB32().toRadixString(16).substring(2)}',
+          'defaultCalendarView': settings.defaultCalendarView,
+          'hapticFeedback': settings.hapticFeedback,
+          'language': settings.language,
+          'timeFormat24h': settings.timeFormat24h,
+          'aiSuggestions': settings.aiSuggestions,
+          'isPro': settings.isPro,
+          'focusMode': settings.focusMode,
+          'milestones': settings.milestones,
+          'deepWorkInsights': settings.deepWorkInsights,
+          'habitReminders': settings.habitReminders,
+          'goalDeadlines': settings.goalDeadlines,
+          'aiInsights': settings.aiInsights,
+          'weeklyReports': settings.weeklyReports,
+          'eveningReview': settings.eveningReview,
+          'biometricLock': settings.biometricLock,
+          'anonymousAnalytics': settings.anonymousAnalytics,
+          'morningBriefTime': settings.morningBriefTime,
+          'eveningReviewTime': settings.eveningReviewTime,
+        },
+        'habits': goals.map((g) => g.toJson()).toList(),
+        'macroGoals': macroGoals.map((g) => g.toJson()).toList(),
+      };
+
+      final jsonString = const JsonEncoder.withIndent('  ').convert(data);
+
+      final bytes = utf8.encode(jsonString);
+      final file = XFile.fromData(
+        bytes,
+        mimeType: 'application/json',
+        name: 'mattioli_os_export.json',
+      );
+
+      await Share.shareXFiles([file], text: 'I miei dati esportati da mattioli.OS');
+    } catch (e) {
+      debugPrint('Error exporting data: $e');
+      if (context.mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text('Errore durante l\'esportazione: $e')),
+        );
+      }
+    }
+  }
+  void _showDeleteOrResetModal(BuildContext context, WidgetRef ref) {
+    showDialog(
+      context: context,
+      builder: (context) {
+        return BackdropFilter(
+          filter: ImageFilter.blur(sigmaX: 12, sigmaY: 12),
+          child: Dialog(
+            backgroundColor: Colors.transparent,
+            elevation: 0,
+            child: Container(
+              padding: const EdgeInsets.all(24),
+              decoration: BoxDecoration(
+                color: context.appColors.card.withValues(alpha: 0.95),
+                borderRadius: BorderRadius.circular(24),
+                border: Border.all(color: context.appColors.border.withValues(alpha: 0.5), width: 1.5),
+                boxShadow: [
+                  BoxShadow(
+                    color: Colors.black.withValues(alpha: 0.2),
+                    blurRadius: 20,
+                    spreadRadius: 5,
+                  )
+                ],
+              ),
+              child: Column(
+                mainAxisSize: MainAxisSize.min,
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text(
+                    'Gestione Account e Dati',
+                    style: GoogleFonts.inter(
+                      fontSize: 20,
+                      fontWeight: FontWeight.w700,
+                      color: context.appColors.foreground,
+                    ),
+                  ),
+                  const SizedBox(height: 4),
+                  Text(
+                    'Scegli l\'operazione che desideri effettuare. Entrambe le azioni richiedono conferma.',
+                    style: GoogleFonts.inter(
+                      fontSize: 13,
+                      color: context.appColors.mutedForeground,
+                    ),
+                  ),
+                  const SizedBox(height: 24),
+                  
+                  _buildOptionCard(
+                    context: context,
+                    icon: LucideIcons.refreshCw,
+                    title: 'Resetta i Dati',
+                    subtitle: 'Eliminerà abitudini, obiettivi e preferenze, ma manterrà il tuo account attivo.',
+                    onTap: () {
+                      Navigator.pop(context);
+                      _showConfirmationDialog(
+                        context: context,
+                        title: 'Conferma Reset Dati',
+                        message: 'Sei sicuro di voler eliminare tutti i tuoi dati? Questa azione non può essere annullata.',
+                        onConfirm: () async {
+                          await _resetData(context, ref);
+                        },
+                      );
+                    },
+                  ),
+                  const SizedBox(height: 16),
+                  
+                  _buildOptionCard(
+                    context: context,
+                    icon: LucideIcons.trash2,
+                    title: 'Elimina l\'Account',
+                    subtitle: 'Eliminerà definitivamente il tuo account e tutti i dati associati. Questa azione è irreversibile.',
+                    titleColor: AppColors.destructive,
+                    onTap: () {
+                      Navigator.pop(context);
+                      _showConfirmationDialog(
+                        context: context,
+                        title: 'Conferma Eliminazione Account',
+                        message: 'Sei sicuro di voler eliminare definitivamente il tuo account? Tutti i tuoi dati andranno persi per sempre.',
+                        isDestructive: true,
+                        onConfirm: () async {
+                          await _deleteAccount(context, ref);
+                        },
+                      );
+                    },
+                  ),
+                  
+                  const SizedBox(height: 24),
+                  
+                  Row(
+                    mainAxisAlignment: MainAxisAlignment.end,
+                    children: [
+                      TextButton(
+                        onPressed: () => Navigator.pop(context),
+                        child: Text(
+                          'Annulla',
+                          style: GoogleFonts.inter(
+                            color: context.appColors.mutedForeground,
+                            fontWeight: FontWeight.w600,
+                          ),
+                        ),
+                      ),
+                    ],
+                  ),
+                ],
+              ),
+            ),
+          ),
+        );
+      },
+    );
+  }
+
+  Widget _buildOptionCard({
+    required BuildContext context,
+    required IconData icon,
+    required String title,
+    required String subtitle,
+    required VoidCallback onTap,
+    Color? titleColor,
+  }) {
+    return GestureDetector(
+      onTap: onTap,
+      child: Container(
+        padding: const EdgeInsets.all(16),
+        decoration: BoxDecoration(
+          color: context.appColors.background.withValues(alpha: 0.5),
+          borderRadius: BorderRadius.circular(16),
+          border: Border.all(color: context.appColors.border.withValues(alpha: 0.5)),
+        ),
+        child: Row(
+          children: [
+            Container(
+              padding: const EdgeInsets.all(10),
+              decoration: BoxDecoration(
+                color: (titleColor ?? context.appColors.foreground).withValues(alpha: 0.1),
+                borderRadius: BorderRadius.circular(12),
+              ),
+              child: Icon(
+                icon,
+                color: titleColor ?? context.appColors.foreground,
+                size: 20,
+              ),
+            ),
+            const SizedBox(width: 16),
+            Expanded(
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text(
+                    title,
+                    style: GoogleFonts.inter(
+                      fontSize: 15,
+                      fontWeight: FontWeight.w600,
+                      color: titleColor ?? context.appColors.foreground,
+                    ),
+                  ),
+                  const SizedBox(height: 2),
+                  Text(
+                    subtitle,
+                    style: GoogleFonts.inter(
+                      fontSize: 12,
+                      color: context.appColors.mutedForeground,
+                    ),
+                  ),
+                ],
+              ),
+            ),
+            Icon(
+              LucideIcons.chevronRight,
+              color: context.appColors.mutedForeground,
+              size: 16,
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
+  void _showConfirmationDialog({
+    required BuildContext context,
+    required String title,
+    required String message,
+    required VoidCallback onConfirm,
+    bool isDestructive = false,
+  }) {
+    showDialog(
+      context: context,
+      builder: (context) {
+        return BackdropFilter(
+          filter: ImageFilter.blur(sigmaX: 12, sigmaY: 12),
+          child: Dialog(
+            backgroundColor: Colors.transparent,
+            elevation: 0,
+            child: Container(
+              padding: const EdgeInsets.all(24),
+              decoration: BoxDecoration(
+                color: context.appColors.card.withValues(alpha: 0.95),
+                borderRadius: BorderRadius.circular(24),
+                border: Border.all(color: context.appColors.border.withValues(alpha: 0.5), width: 1.5),
+                boxShadow: [
+                  BoxShadow(
+                    color: Colors.black.withValues(alpha: 0.2),
+                    blurRadius: 20,
+                    spreadRadius: 5,
+                  )
+                ],
+              ),
+              child: Column(
+                mainAxisSize: MainAxisSize.min,
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text(
+                    title,
+                    style: GoogleFonts.inter(
+                      fontSize: 18,
+                      fontWeight: FontWeight.w700,
+                      color: isDestructive ? AppColors.destructive : context.appColors.foreground,
+                    ),
+                  ),
+                  const SizedBox(height: 8),
+                  Text(
+                    message,
+                    style: GoogleFonts.inter(
+                      fontSize: 13,
+                      color: context.appColors.mutedForeground,
+                    ),
+                  ),
+                  const SizedBox(height: 24),
+                  Row(
+                    mainAxisAlignment: MainAxisAlignment.end,
+                    children: [
+                      TextButton(
+                        onPressed: () => Navigator.pop(context),
+                        child: Text(
+                          'Annulla',
+                          style: GoogleFonts.inter(
+                            color: context.appColors.mutedForeground,
+                            fontWeight: FontWeight.w600,
+                          ),
+                        ),
+                      ),
+                      const SizedBox(width: 12),
+                      GestureDetector(
+                        onTap: () {
+                          Navigator.pop(context);
+                          onConfirm();
+                        },
+                        child: Container(
+                          padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+                          decoration: BoxDecoration(
+                            color: isDestructive ? AppColors.destructive : Theme.of(context).colorScheme.primary,
+                            borderRadius: BorderRadius.circular(10),
+                          ),
+                          child: Text(
+                            'Conferma',
+                            style: GoogleFonts.inter(
+                              color: isDestructive 
+                                  ? Colors.white 
+                                  : (Theme.of(context).colorScheme.primary.computeLuminance() > 0.5 ? Colors.black : Colors.white),
+                              fontWeight: FontWeight.w600,
+                            ),
+                          ),
+                        ),
+                      ),
+                    ],
+                  ),
+                ],
+              ),
+            ),
+          ),
+        );
+      },
+    );
+  }
+
+  Future<void> _resetData(BuildContext context, WidgetRef ref) async {
+    try {
+      final supabase = Supabase.instance.client;
+      final user = supabase.auth.currentUser;
+      if (user == null) throw Exception('Utente non trovato.');
+
+      await supabase.from('goals').delete().eq('user_id', user.id);
+      await supabase.from('long_term_goals').delete().eq('user_id', user.id);
+      
+      // Clear local state and cache
+      ref.read(goalsProvider.notifier).clearAll();
+      ref.read(habitLogsProvider.notifier).clearAll();
+      ref.read(macroGoalsProvider.notifier).clearAll();
+      ref.read(settingsProvider.notifier).resetToDefaults();
+      
+      if (context.mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(content: Text('Dati resettati con successo!')),
+        );
+      }
+    } catch (e) {
+      if (context.mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text('Errore durante il reset: $e')),
+        );
+      }
+    }
+  }
+
+  Future<void> _deleteAccount(BuildContext context, WidgetRef ref) async {
+    try {
+      final supabase = Supabase.instance.client;
+      final user = supabase.auth.currentUser;
+      if (user == null) throw Exception('Utente non trovato.');
+
+      await supabase.from('goals').delete().eq('user_id', user.id);
+      await supabase.from('goal_logs').delete().eq('user_id', user.id);
+      await supabase.from('long_term_goals').delete().eq('user_id', user.id);
+      await supabase.from('profiles').delete().eq('id', user.id);
+      
+      await supabase.auth.signOut();
+      
+      if (context.mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(content: Text('Account eliminato con successo!')),
+        );
+      }
+    } catch (e) {
+      if (context.mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text('Errore durante l\'eliminazione: $e')),
+        );
+      }
+    }
   }
 }

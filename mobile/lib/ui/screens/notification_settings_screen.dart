@@ -125,37 +125,6 @@ class NotificationSettingsScreen extends ConsumerWidget {
                 ),
             ]),
             const SizedBox(height: 32),
-            _buildSectionHeader(context, 'OBIETTIVI & PERFORMANCE'),
-            _buildSettingsCard(context, [
-              _buildSwitchRow(
-                context: context,
-                ref: ref,
-                icon: LucideIcons.timer,
-                title: context.l10n.translate('Scadenze Obiettivi'),
-                subtitle: context.l10n.translate('Scadenze Obiettivi'),
-                value: settings.goalDeadlines,
-                onChanged: (val) {
-                  final currentSettings = ref.read(settingsProvider);
-                  notifier.updateSettings(currentSettings.copyWith(goalDeadlines: val));
-                  ref.hapticLight();
-                },
-              ),
-              _buildDivider(context),
-              _buildSwitchRow(
-                context: context,
-                ref: ref,
-                icon: LucideIcons.trophy,
-                title: context.l10n.translate('Milestones'),
-                subtitle: context.l10n.translate('Milestones'),
-                value: settings.milestones,
-                onChanged: (val) {
-                  final currentSettings = ref.read(settingsProvider);
-                  notifier.updateSettings(currentSettings.copyWith(milestones: val));
-                  ref.hapticLight();
-                },
-              ),
-            ]),
-            const SizedBox(height: 32),
             _buildSectionHeader(context, 'INTELLIGENZA ARTIFICIALE'),
             _buildSettingsCard(context, [
               _buildSwitchRow(

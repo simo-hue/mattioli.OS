@@ -159,5 +159,43 @@
     - Implemented `_showAppleStyleTimePicker` helper method using `showCupertinoModalPopup` and `CupertinoDatePicker`.
     - Updated `onTap` handlers for time selection rows to use the new method.
 
+- [2026-05-13 18:48]: **Removal of Unimplemented Notification Sections**
+  - *Details*: Removed the "Obiettivi & Performance" section from the notification settings screen because the features ("Scadenze Obiettivi" and "Milestones") were not actually implemented in the app.
+  - *Tech Notes*: Removed the section header and card containing the switches from `notification_settings_screen.dart`.
+
+- [2026-05-13 18:52]: **Implementation of Change Password Feature**
+  - *Details*: Implemented a professional "Cambia Password" modal in the Privacy and Security screen. It verifies the current password and updates to a new one using Supabase.
+  - *Tech Notes*:
+    - Added `dart:ui` and `supabase_flutter` imports to `privacy_settings_screen.dart`.
+    - Added `_showChangePasswordModal` and `_buildPasswordField` methods.
+    - Used `signInWithPassword` for current password verification and `updateUser` for setting the new password.
+    - Added UI validation for matching passwords and minimum length (8 chars).
+
+- [2026-05-13 19:01]: **Implementation of Data Export Feature**
+  - *Details*: Implemented the "Esporta Dati" feature in the Privacy and Security screen. It gathers settings, habits, and macro goals and shares them as a JSON file.
+  - *Tech Notes*:
+    - Added `share_plus: ^13.1.0` dependency.
+    - Added `_exportData` method in `privacy_settings_screen.dart`.
+    - Gathered data from `settingsProvider`, `goalsProvider`, and `macroGoalsProvider`.
+    - Used `XFile.fromData` and `Share.shareXFiles` to share the file.
+
+- [2026-05-13 19:12]: **Implementation of Granular Delete/Reset Flow**
+  - *Details*: Separated the "Elimina Account & Dati" action into two choices: "Resetta i Dati" and "Elimina l'Account". Each action has its own confirmation dialog.
+  - *Tech Notes*:
+    - Added `_showDeleteOrResetModal`, `_buildOptionCard`, `_showConfirmationDialog`, `_resetData`, and `_deleteAccount` methods.
+    - Fixed `use_build_context_synchronously` warnings by adding `context.mounted` checks.
+
+- [2026-05-13 19:25]: **Fix Button Text Contrast in Confirmation Dialog**
+  - *Details*: Fixed an issue where the text of the "Conferma" button was invisible (white on white) during the "Reset Dati" flow.
+  - *Tech Notes*: Added a check for the luminance of the primary color to determine whether to use black or white text for the non-destructive action button.
+
+- [2026-05-13 19:36]: **Implementation of Full Data Reset (Local & Cloud)**
+  - *Details*: Fixed an issue where "Resetta i Dati" only deleted data in Supabase but not in the local state. Now it clears local state and cache for goals, logs, macro goals, and resets settings to defaults.
+  - *Tech Notes*:
+    - Added `clearAll()` to `GoalsNotifier` and `HabitLogsNotifier` in `goal_provider.dart`.
+    - Added `clearAll()` to `MacroGoalsNotifier` in `macro_goals_provider.dart`.
+    - Added `resetToDefaults()` to `AppSettingsNotifier` in `settings_provider.dart`.
+    - Called these methods in `_resetData` in `privacy_settings_screen.dart`.
+
 ## Current Status
-- **Next Step**: Waiting for user feedback on the new time picker in notification settings.
+- **Next Step**: Waiting for user feedback on the full data reset feature.

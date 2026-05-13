@@ -294,6 +294,11 @@ class MacroGoalsNotifier extends Notifier<MacroGoalsState> {
     if (aOrder != bOrder) return aOrder.compareTo(bOrder);
     return a.createdAt.compareTo(b.createdAt);
   }
+
+  void clearAll() {
+    state = const MacroGoalsState(goals: []);
+    _saveToCache([]);
+  }
 }
 
 final macroGoalsProvider =

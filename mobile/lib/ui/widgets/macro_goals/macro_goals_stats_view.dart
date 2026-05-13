@@ -99,7 +99,12 @@ class _MacroGoalsStatsViewState extends ConsumerState<MacroGoalsStatsView> {
     final trendPositive = successRate > 50;
 
     final bestCategoryKey = stats['best_category'] as String?;
-    final bestCategory = categoryLabel(bestCategoryKey) ?? 'N/A';
+    String bestCategory = 'N/A';
+    try {
+      bestCategory = categories.firstWhere((c) => c.key == bestCategoryKey).label;
+    } catch (_) {
+      bestCategory = categoryLabel(bestCategoryKey) ?? 'N/A';
+    }
     final bestCatRate = stats['best_category_rate'] as int? ?? 0;
 
     final bestMonthIdx = stats['best_month'] as int?;
@@ -597,6 +602,7 @@ class _MacroGoalsStatsViewState extends ConsumerState<MacroGoalsStatsView> {
   }
 
   Widget _buildCategoryRadarCard(List<dynamic> stats) {
+    final categories = ref.watch(macroGoalCategoriesProvider).value ?? [];
     if (stats.isEmpty) {
       return _buildCardBase(
         title: '🎯 Performance Categorie', subtitle: 'Tasso di successo',
@@ -618,7 +624,12 @@ class _MacroGoalsStatsViewState extends ConsumerState<MacroGoalsStatsView> {
       if (item is Map<String, dynamic>) {
         final catKey = item['category'] as String?;
         final rate = (item['rate'] as num?)?.toDouble() ?? 0.0;
-        final label = categoryLabel(catKey) ?? 'N/A';
+        String label = 'N/A';
+        try {
+          label = categories.firstWhere((c) => c.key == catKey).label;
+        } catch (_) {
+          label = categoryLabel(catKey) ?? 'N/A';
+        }
         
         entries.add(RadarEntry(value: rate));
         labels.add(label);

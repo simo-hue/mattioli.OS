@@ -46,12 +46,12 @@ BEGIN
         ),
         category_stats AS (
             SELECT 
-                category_key,
+                COALESCE(category_id::text, category_key) as category,
                 count(*)::integer as total,
                 count(*) FILTER (WHERE status = 'completed')::integer as completed
             FROM all_goals
-            WHERE category_key IS NOT NULL
-            GROUP BY category_key
+            WHERE category_id IS NOT NULL OR category_key IS NOT NULL
+            GROUP BY COALESCE(category_id::text, category_key)
         ),
         type_stats AS (
             SELECT 
@@ -82,11 +82,11 @@ BEGIN
         interest_evolution AS (
             SELECT 
                 year,
-                category_key,
+                COALESCE(category_id::text, category_key) as category,
                 count(*)::integer as total
             FROM all_goals
-            WHERE year IS NOT NULL AND category_key IS NOT NULL
-            GROUP BY year, category_key
+            WHERE year IS NOT NULL AND (category_id IS NOT NULL OR category_key IS NOT NULL)
+            GROUP BY year, COALESCE(category_id::text, category_key)
         )
         SELECT jsonb_build_object(
             'total_goals', (SELECT total_goals FROM total_stats),
@@ -106,7 +106,7 @@ BEGIN
             ),
             'category_performance', (
                 SELECT jsonb_agg(jsonb_build_object(
-                    'category', category_key,
+                    'category', category,
                     'rate', CASE WHEN total > 0 THEN (completed::numeric / total * 100)::integer ELSE 0 END
                 )) FROM category_stats
             ),
@@ -131,7 +131,7 @@ BEGIN
                 SELECT jsonb_agg(jsonb_build_object(
                     'year', year,
                     'categories', (
-                        SELECT jsonb_object_agg(category_key, total) 
+                        SELECT jsonb_object_agg(category, total) 
                         FROM interest_evolution ie2 
                         WHERE ie2.year = ie.year
                     )
@@ -157,16 +157,16 @@ BEGIN
             ),
             category_stats AS (
                 SELECT 
-                    category_key,
+                    COALESCE(category_id::text, category_key) as category,
                     count(*)::integer as total,
                     count(*) FILTER (WHERE status = 'completed')::integer as completed
                 FROM year_goals
-                WHERE category_key IS NOT NULL
-                GROUP BY category_key
+                WHERE category_id IS NOT NULL OR category_key IS NOT NULL
+                GROUP BY COALESCE(category_id::text, category_key)
             ),
             best_cat_stat AS (
                 SELECT 
-                    category_key,
+                    category,
                     CASE WHEN total > 0 THEN (completed::numeric / total * 100)::integer ELSE 0 END as rate
                 FROM category_stats
                 ORDER BY rate DESC, total DESC
@@ -239,7 +239,7 @@ BEGIN
                 'total_goals', (SELECT total_goals FROM total_stats),
                 'completed_goals', (SELECT completed_goals FROM total_stats),
                 'success_rate', CASE WHEN (SELECT total_goals FROM total_stats) > 0 THEN ((SELECT completed_goals FROM total_stats)::numeric / (SELECT total_goals FROM total_stats) * 100)::integer ELSE 0 END,
-                'best_category', (SELECT category_key FROM best_cat_stat),
+                'best_category', (SELECT category FROM best_cat_stat),
                 'best_category_rate', (SELECT rate FROM best_cat_stat),
                 'best_month', (SELECT month FROM best_month_stat),
                 'best_month_rate', (SELECT rate FROM best_month_stat),
@@ -254,7 +254,7 @@ BEGIN
                 ),
                 'category_rates', (
                     SELECT jsonb_agg(jsonb_build_object(
-                        'category', category_key,
+                        'category', category,
                         'rate', CASE WHEN total > 0 THEN (completed::numeric / total * 100)::integer ELSE 0 END
                     )) FROM category_stats
                 ),
@@ -278,7 +278,7 @@ BEGIN
                 ),
                 'category_distribution', (
                     SELECT jsonb_agg(jsonb_build_object(
-                        'category', category_key,
+                        'category', category,
                         'count', total
                     )) FROM category_stats
                 )

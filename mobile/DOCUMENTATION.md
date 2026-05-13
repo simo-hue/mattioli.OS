@@ -542,5 +542,14 @@
   - Updated "Cambia categoria" sheet to use custom categories.
   - Updated color resolution to support both custom categories and legacy hardcoded ones.
 - **UI (`MacroGoalsStatsView`)**:
-  - Updated pie chart and legend to resolve colors and labels using custom categories.
+  - Updated pie chart, radar chart ("Performance Categorie"), and legend to resolve colors and labels using custom categories.
   - Updated evolution chart to use custom categories (limited to top 6).
+
+---
+
+## [2026-05-13 13:30]: Goals - Update RPC for Custom Categories
+*Details*: Updated the `get_macro_goals_stats` RPC to use `COALESCE(category_id::text, category_key)` so it counts custom categories correctly while maintaining backward compatibility with legacy hardcoded keys.
+*Tech Notes*:
+- **Database**: Updated `get_macro_goals_stats` function in Supabase.
+- **File**: `migrations/20260513_add_get_macro_goals_stats.sql`.
+- **Action**: Requested user to rerun the script.

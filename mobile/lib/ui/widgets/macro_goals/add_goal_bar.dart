@@ -117,7 +117,7 @@ class _AddGoalBarState extends ConsumerState<AddGoalBar> {
                   ),
                 ),
                 title: Text(
-                  'Nessuna categoria',
+                  'Default',
                   style: GoogleFonts.inter(
                     fontSize: 13,
                     color: context.appColors.mutedForeground,

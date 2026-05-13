@@ -10,7 +10,7 @@
 - [ ] Configurare **Sign in with Apple**: abilitare Apple Provider su Supabase e la Capability in Xcode.
 - [x] Inserire `SUPABASE_URL` e `SUPABASE_ANON_KEY` nel file `lib/core/supabase_config.dart` per l'integrazione reale. (Configurato automaticamente dal file .env)
 - [ ] **Abilitare Registrazioni su Supabase**: Nella dashboard di Supabase, vai su **Authentication** -> **Providers** -> **Email** e assicurati che l'opzione **"Enable Signups"** sia ATTIVA. Attualmente le registrazioni sono disabilitate per questa istanza.
-- [ ] **Eseguire Migrazione Statistiche (AGGIORNATO)**: Eseguire nuovamente il file `migrations/20260513_add_get_macro_goals_stats.sql` nel SQL Editor di Supabase per correggere l'errore di sintassi.
+- [ ] **Eseguire Migrazione Statistiche (Supporto Categorie)**: Eseguire nuovamente il file `migrations/20260513_add_get_macro_goals_stats.sql` nel SQL Editor di Supabase per supportare le categorie personalizzate.
 
 ## Strategia Business & Revenue
 - [ ] Decidere se lanciare l'offerta **Lifetime Access** (€99) per i primi 500 utenti.

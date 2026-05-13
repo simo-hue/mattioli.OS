@@ -8,6 +8,7 @@ import 'package:lucide_icons_flutter/lucide_icons.dart';
 import '../../../core/theme.dart';
 import '../../../models/macro_goal.dart';
 import '../../../providers/macro_goals_provider.dart';
+import '../../../providers/macro_goal_categories_provider.dart';
 import '../../../core/haptics.dart';
 
 class GoalItemWidget extends ConsumerStatefulWidget {
@@ -183,6 +184,8 @@ class _GoalItemWidgetState extends ConsumerState<GoalItemWidget>
   }
 
   void _showCategorySheet() {
+    final categories = ref.read(macroGoalCategoriesProvider).value ?? [];
+
     showModalBottomSheet(
       context: context,
       isScrollControlled: true,
@@ -238,7 +241,7 @@ class _GoalItemWidgetState extends ConsumerState<GoalItemWidget>
                       title: Text('Nessuna',
                           style:
                               GoogleFonts.inter(color: context.appColors.mutedForeground)),
-                      trailing: widget.goal.categoryKey == null
+                      trailing: (widget.goal.categoryId == null && widget.goal.categoryKey == null)
                           ? Icon(Icons.check,
                               color: Theme.of(context).colorScheme.primary, size: 18)
                           : null,
@@ -249,7 +252,7 @@ class _GoalItemWidgetState extends ConsumerState<GoalItemWidget>
                         Navigator.pop(context);
                       },
                     ),
-                    ...kDefaultCategories.map(
+                    ...categories.map(
                       (cat) => ListTile(
                         leading: Container(
                           width: 20,
@@ -266,12 +269,12 @@ class _GoalItemWidgetState extends ConsumerState<GoalItemWidget>
                           style: GoogleFonts.inter(
                             fontSize: 13,
                             color: context.appColors.foreground,
-                            fontWeight: widget.goal.categoryKey == cat.key
+                            fontWeight: widget.goal.categoryId == cat.key
                                 ? FontWeight.w600
                                 : FontWeight.w400,
                           ),
                         ),
-                        trailing: widget.goal.categoryKey == cat.key
+                        trailing: widget.goal.categoryId == cat.key
                             ? Icon(Icons.check,
                                 color: Theme.of(context).colorScheme.primary, size: 18)
                             : null,
@@ -299,7 +302,19 @@ class _GoalItemWidgetState extends ConsumerState<GoalItemWidget>
   Widget build(BuildContext context) {
     final goal = widget.goal;
     final status = _visualStatusOverride ?? goal.status;
-    final catColor = categoryColor(goal.categoryKey);
+    final categoriesAsync = ref.watch(macroGoalCategoriesProvider);
+    final categories = categoriesAsync.value ?? [];
+    
+    Color? catColor;
+    if (goal.categoryId != null) {
+      try {
+        catColor = categories.firstWhere((c) => c.key == goal.categoryId).color;
+      } catch (_) {
+        // Fallback
+      }
+    } else if (goal.categoryKey != null) {
+      catColor = categoryColor(goal.categoryKey);
+    }
 
     final isCompleted = status == GoalStatus.completed;
     final isFailed = status == GoalStatus.failed;

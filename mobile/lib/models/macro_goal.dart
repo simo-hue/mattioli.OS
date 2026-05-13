@@ -15,6 +15,7 @@ class MacroGoal {
   final int? month; // 1-12
   final int? weekNumber; // 1-5 (logical week of month)
   final String? categoryKey; // e.g. 'red', 'blue', 'lavoro', etc.
+  final String? categoryId; // UUID for custom categories
   final DateTime createdAt;
 
   const MacroGoal({
@@ -27,6 +28,7 @@ class MacroGoal {
     this.month,
     this.weekNumber,
     this.categoryKey,
+    this.categoryId,
     required this.createdAt,
   });
 
@@ -40,6 +42,7 @@ class MacroGoal {
     int? month,
     int? weekNumber,
     String? categoryKey,
+    String? categoryId,
     bool clearCategory = false,
     DateTime? createdAt,
   }) {
@@ -53,6 +56,7 @@ class MacroGoal {
       month: month ?? this.month,
       weekNumber: weekNumber ?? this.weekNumber,
       categoryKey: clearCategory ? null : (categoryKey ?? this.categoryKey),
+      categoryId: clearCategory ? null : (categoryId ?? this.categoryId),
       createdAt: createdAt ?? this.createdAt,
     );
   }
@@ -74,6 +78,7 @@ class MacroGoal {
       month: json['month'] as int?,
       weekNumber: json['week_number'] as int?,
       categoryKey: json['category_key'] as String?,
+      categoryId: json['category_id'] as String?,
       createdAt: DateTime.parse(json['created_at'] as String),
     );
   }
@@ -89,6 +94,7 @@ class MacroGoal {
       'month': month,
       'week_number': weekNumber,
       'category_key': categoryKey,
+      'category_id': categoryId,
       'created_at': createdAt.toIso8601String(),
     };
   }
@@ -105,6 +111,15 @@ class GoalCategory {
     required this.label,
     required this.color,
   });
+
+  factory GoalCategory.fromJson(Map<String, dynamic> json) {
+    final colorStr = json['color'] as String? ?? '#6B7280';
+    return GoalCategory(
+      key: json['id'] as String,
+      label: json['name'] as String,
+      color: Color(int.parse(colorStr.replaceAll('#', '0xFF'))),
+    );
+  }
 }
 
 /// Default categories (mock — same semantics as web app)

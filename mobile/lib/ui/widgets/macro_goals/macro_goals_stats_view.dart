@@ -11,6 +11,7 @@ import '../../../core/theme.dart';
 import '../../../models/macro_goal.dart';
 import '../../../providers/macro_goals_provider.dart';
 import '../../../providers/macro_goals_stats_provider.dart';
+import '../../../providers/macro_goal_categories_provider.dart';
 
 class MacroGoalsStatsView extends ConsumerStatefulWidget {
   const MacroGoalsStatsView({super.key});
@@ -91,6 +92,7 @@ class _MacroGoalsStatsViewState extends ConsumerState<MacroGoalsStatsView> {
   }
 
   List<Widget> _buildSingleYearContent(Map<String, dynamic> stats) {
+    final categories = ref.watch(macroGoalCategoriesProvider).value ?? [];
     final totalGoals = stats['total_goals'] as int? ?? 0;
     final completedGoals = stats['completed_goals'] as int? ?? 0;
     final successRate = stats['success_rate'] as int? ?? 0;
@@ -153,12 +155,13 @@ class _MacroGoalsStatsViewState extends ConsumerState<MacroGoalsStatsView> {
       const SizedBox(height: 16),
       _buildMonthlyComposedCard(stats['monthly_composed'] as List<dynamic>? ?? []),
       const SizedBox(height: 16),
-      _buildCategoryPieCard(stats['category_distribution'] as List<dynamic>? ?? []),
+      _buildCategoryPieCard(stats['category_distribution'] as List<dynamic>? ?? [], categories),
       const SizedBox(height: 48),
     ];
   }
 
   List<Widget> _buildGlobalContent(Map<String, dynamic> stats) {
+    final categories = ref.watch(macroGoalCategoriesProvider).value ?? [];
     final total = stats['total_goals'] as int? ?? 0;
     final comp = stats['completed_goals'] as int? ?? 0;
     final succ = total > 0 ? (comp / total * 100).round() : 0;
@@ -206,7 +209,7 @@ class _MacroGoalsStatsViewState extends ConsumerState<MacroGoalsStatsView> {
       const SizedBox(height: 16),
       _buildGlobalMonthlyHistCard(stats['monthly_history'] as List<dynamic>? ?? []),
       const SizedBox(height: 16),
-      _buildGlobalInterestEvolutionCard(stats['interest_evolution'] as List<dynamic>? ?? []),
+      _buildGlobalInterestEvolutionCard(stats['interest_evolution'] as List<dynamic>? ?? [], categories),
       const SizedBox(height: 48),
     ];
   }
@@ -845,7 +848,7 @@ class _MacroGoalsStatsViewState extends ConsumerState<MacroGoalsStatsView> {
     );
   }
 
-  Widget _buildCategoryPieCard(List<dynamic> stats) {
+  Widget _buildCategoryPieCard(List<dynamic> stats, List<GoalCategory> categories) {
     if (stats.isEmpty) {
        return _buildCardBase(title: 'Distribuzione', subtitle: '', child: SizedBox(height: 200, child: Center(child: Text('Nessun dato', style: TextStyle(color: context.appColors.mutedForeground)))));
     }
@@ -864,11 +867,17 @@ class _MacroGoalsStatsViewState extends ConsumerState<MacroGoalsStatsView> {
       if (item is Map<String, dynamic>) {
         final catKey = item['category'] as String?;
         final count = (item['count'] as num?)?.toDouble() ?? 0.0;
-        final cat = kDefaultCategories.firstWhere((c) => c.key == catKey, orElse: () => kDefaultCategories.first);
+        
+        Color? color;
+        try {
+          color = categories.firstWhere((c) => c.key == catKey).color;
+        } catch (_) {
+          color = categoryColor(catKey) ?? Colors.grey;
+        }
         
         sections.add(PieChartSectionData(
           value: count,
-          color: cat.color,
+          color: color,
           title: '',
           radius: 26,
           badgeWidget: null,
@@ -912,7 +921,16 @@ class _MacroGoalsStatsViewState extends ConsumerState<MacroGoalsStatsView> {
               if (item is! Map<String, dynamic>) return const SizedBox.shrink();
               final catKey = item['category'] as String?;
               final count = (item['count'] as num?)?.toInt() ?? 0;
-              final cat = kDefaultCategories.firstWhere((c) => c.key == catKey, orElse: () => kDefaultCategories.first);
+              Color? color;
+              String label = 'N/A';
+              try {
+                final c = categories.firstWhere((c) => c.key == catKey);
+                color = c.color;
+                label = c.label;
+              } catch (_) {
+                color = categoryColor(catKey) ?? Colors.grey;
+                label = categoryLabel(catKey) ?? 'N/A';
+              }
               final perc = totalCount > 0 ? (count / totalCount * 100).round() : 0;
               
               return Container(
@@ -925,9 +943,9 @@ class _MacroGoalsStatsViewState extends ConsumerState<MacroGoalsStatsView> {
                 ),
                 child: Row(
                   children: [
-                    Container(width: 8, height: 8, decoration: BoxDecoration(shape: BoxShape.circle, color: cat.color)),
+                    Container(width: 8, height: 8, decoration: BoxDecoration(shape: BoxShape.circle, color: color)),
                     const SizedBox(width: 8),
-                    Expanded(child: Text(cat.label, style: GoogleFonts.inter(fontSize: 12, color: context.appColors.foreground), maxLines: 1)),
+                    Expanded(child: Text(label, style: GoogleFonts.inter(fontSize: 12, color: context.appColors.foreground), maxLines: 1)),
                     Text('$perc%', style: GoogleFonts.inter(fontSize: 12, color: context.appColors.mutedForeground)),
                   ],
                 ),
@@ -1344,13 +1362,13 @@ class _MacroGoalsStatsViewState extends ConsumerState<MacroGoalsStatsView> {
     );
   }
 
-  Widget _buildGlobalInterestEvolutionCard(List<dynamic> stats) {
+  Widget _buildGlobalInterestEvolutionCard(List<dynamic> stats, List<GoalCategory> categories) {
     if (stats.isEmpty) return const SizedBox();
     List<BarChartGroupData> groups = [];
     double maxY = 0;
     
     // Categories to show in evolution
-    final categories = kDefaultCategories.take(6).toList();
+    final limitedCategories = categories.take(6).toList();
 
     for (int i = 0; i < stats.length; i++) {
         final item = stats[i];
@@ -1362,7 +1380,7 @@ class _MacroGoalsStatsViewState extends ConsumerState<MacroGoalsStatsView> {
         List<BarChartRodStackItem> stacks = [];
         double curr = 0;
         
-        for (var c in categories) {
+        for (var c in limitedCategories) {
            final count = (cats[c.key] as num?)?.toDouble() ?? 0.0;
            totalForYear += count;
            if (count > 0) {
@@ -1434,7 +1452,7 @@ class _MacroGoalsStatsViewState extends ConsumerState<MacroGoalsStatsView> {
                   final cats = item['categories'] as Map<String, dynamic>? ?? {};
                   
                   List<TextSpan> categorySpans = [];
-                  for (var c in categories) {
+                  for (var c in limitedCategories) {
                     final count = (cats[c.key] as num?)?.toInt() ?? 0;
                     if (count > 0) {
                       categorySpans.add(TextSpan(
@@ -1489,7 +1507,7 @@ class _MacroGoalsStatsViewState extends ConsumerState<MacroGoalsStatsView> {
             maxY: math.max(5.0, maxY * 1.2),
           ))),
           const SizedBox(height: 16),
-          _buildLegend(categories.map((c) => _LegendItem(c.label, c.color)).toList()),
+          _buildLegend(limitedCategories.map((c) => _LegendItem(c.label, c.color)).toList()),
         ],
       ),
     );

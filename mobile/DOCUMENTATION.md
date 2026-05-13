@@ -524,3 +524,23 @@
 - **Database**: Moved `ORDER BY` inside the `jsonb_agg` function (e.g., `jsonb_agg(... ORDER BY year)`) to comply with Postgres rules for aggregate functions.
 - **File**: Updated `/Users/simo/Downloads/DEV/mattioli.OS/migrations/20260513_add_get_macro_goals_stats.sql`.
 - **Action**: Requested user to rerun the script.
+
+---
+
+## [2026-05-13 13:20]: Goals - Custom Categories and UI Refactor
+*Details*: Implemented custom categories for long-term goals, removing hardcoded defaults and adding a premium color picker. Fixed category assignment issues.
+*Tech Notes*:
+- **Database**: The user executed the migration to add `macro_goal_categories` table and `category_id` to `long_term_goals`.
+- **Model**: Updated `MacroGoal` to support `categoryId`.
+- **Provider**: Created `macroGoalCategoriesProvider` to manage custom categories.
+- **UI (`AddGoalBar`)**:
+  - Updated to fetch categories from DB.
+  - Added "Crea nuova categoria" option.
+  - Implemented a premium dialog with a curated palette of 5 colors (reduced from 12 and then to 5 as requested) and a custom color picker (via `flutter_colorpicker`) for category creation.
+  - Fixed assignment bug (now sets `category_id` instead of `category_key`).
+- **UI (`GoalItemWidget`)**:
+  - Updated "Cambia categoria" sheet to use custom categories.
+  - Updated color resolution to support both custom categories and legacy hardcoded ones.
+- **UI (`MacroGoalsStatsView`)**:
+  - Updated pie chart and legend to resolve colors and labels using custom categories.
+  - Updated evolution chart to use custom categories (limited to top 6).

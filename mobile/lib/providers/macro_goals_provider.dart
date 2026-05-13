@@ -161,16 +161,16 @@ class MacroGoalsNotifier extends Notifier<MacroGoalsState> {
     }
   }
 
-  Future<void> updateCategory(String id, String? categoryKey) async {
+  Future<void> updateCategory(String id, String? categoryId) async {
     final newGoals = state.goals.map((g) {
       if (g.id != id) return g;
-      return categoryKey == null ? g.copyWith(clearCategory: true) : g.copyWith(categoryKey: categoryKey);
+      return categoryId == null ? g.copyWith(clearCategory: true) : g.copyWith(categoryId: categoryId);
     }).toList();
     state = state.copyWith(goals: newGoals);
     _saveToCache(newGoals);
 
     try {
-      await supabase.from('long_term_goals').update({'category_key': categoryKey}).eq('id', id);
+      await supabase.from('long_term_goals').update({'category_id': categoryId}).eq('id', id);
     } catch (e) {
       debugPrint('[MacroGoals] Update category error: $e');
     }

@@ -581,3 +581,37 @@
 - Updated `_snoozeHabit` to snooze for 10 minutes instead of 1 hour.
 - Updated `_skipHabit` to mark the habit as 'missed' in the database (Supabase) instead of just cancelling the notification.
 - Consistent with existing code, streaks are not updated in direct database writes from notifications (added TODO note in code).
+
+---
+
+## [2026-05-13 15:21]: UI - Delete Habit Confirmation Dialog
+*Details*: Added a confirmation dialog with a blur effect before deleting a habit in the management modal, to prevent accidental deletions.
+*Tech Notes*:
+- Implemented `_showDeleteConfirmation` in `HabitManagementModal` using `showDialog` and `BackdropFilter` with blur.
+- Used `AppColors.destructive` and styled the dialog to match the app's premium aesthetic.
+
+---
+
+## [2026-05-13 15:23]: UI - Habit Edit Scroll Animation
+*Details*: Added a smooth scroll-to-top animation when the user clicks the edit button for a habit, making it clearer that the app has reacted and is ready for editing.
+*Tech Notes*:
+- Added `ScrollController` to `HabitManagementModal`.
+- Implemented `animateTo` in `_onEdit` with a duration of 500ms and `Curves.easeInOut`.
+- Properly disposed of the controller and text controller in `dispose`.
+
+---
+
+## [2026-05-13 15:24]: UI - Habit Edit Button Text
+*Details*: Changed the button text in `HabitManagementModal` to "Aggiorna" when editing an existing habit, instead of "Salva", to make it clearer what action is being performed.
+*Tech Notes*:
+- Updated the ternary operator in the `ElevatedButton` child of `HabitManagementModal` to use `context.l10n.translate('Aggiorna')` when `_editingHabit != null`.
+
+---
+
+## [2026-05-13 15:26]: UI - Habit Edit Buttons Row Layout
+*Details*: Placed "Aggiorna" and "Annulla" buttons on the same row when editing a habit, using a balanced layout and style coherent with the app.
+*Tech Notes*:
+- Replaced the stacked button layout with a `Row` containing two `Expanded` widgets when `_editingHabit != null`.
+- Used `OutlinedButton` for "Annulla" with a border matching the app's theme.
+- Used `ElevatedButton` for "Aggiorna" with the primary color.
+- Ensured that "Annulla" also resets the reminder time in addition to clearing the text field.

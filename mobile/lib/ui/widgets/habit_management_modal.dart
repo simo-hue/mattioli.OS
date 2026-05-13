@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/cupertino.dart';
+import 'dart:ui';
 import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:lucide_icons_flutter/lucide_icons.dart';
@@ -28,6 +29,7 @@ class HabitManagementModal extends ConsumerStatefulWidget {
 
 class _HabitManagementModalState extends ConsumerState<HabitManagementModal> {
   final TextEditingController _nameController = TextEditingController();
+  final ScrollController _scrollController = ScrollController();
   late Color _selectedColor;
   Goal? _editingHabit;
   String? _reminderTime;
@@ -36,6 +38,13 @@ class _HabitManagementModalState extends ConsumerState<HabitManagementModal> {
   void initState() {
     super.initState();
     _selectedColor = _presetColors[0];
+  }
+
+  @override
+  void dispose() {
+    _scrollController.dispose();
+    _nameController.dispose();
+    super.dispose();
   }
 
   @override
@@ -98,6 +107,11 @@ class _HabitManagementModalState extends ConsumerState<HabitManagementModal> {
       _selectedColor = habit.color;
       _reminderTime = habit.reminderTime;
     });
+    _scrollController.animateTo(
+      0,
+      duration: const Duration(milliseconds: 500),
+      curve: Curves.easeInOut,
+    );
   }
 
   void _showColorPicker() {
@@ -202,6 +216,95 @@ class _HabitManagementModalState extends ConsumerState<HabitManagementModal> {
     );
   }
 
+  void _showDeleteConfirmation(Goal habit) {
+    showDialog(
+      context: context,
+      builder: (BuildContext context) {
+        return BackdropFilter(
+          filter: ImageFilter.blur(sigmaX: 5, sigmaY: 5),
+          child: Dialog(
+            backgroundColor: Colors.transparent,
+            elevation: 0,
+            child: Container(
+              padding: const EdgeInsets.all(24),
+              decoration: BoxDecoration(
+                color: context.appColors.card,
+                borderRadius: BorderRadius.circular(24),
+                border: Border.all(color: context.appColors.border, width: 1),
+              ),
+              child: Column(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  Container(
+                    width: 48,
+                    height: 48,
+                    decoration: BoxDecoration(
+                      color: AppColors.destructive.withValues(alpha: 0.1),
+                      shape: BoxShape.circle,
+                    ),
+                    child: const Icon(LucideIcons.trash2, color: AppColors.destructive, size: 24),
+                  ),
+                  const SizedBox(height: 16),
+                  Text(
+                    context.l10n.translate('Elimina Abitudine'),
+                    style: TextStyle(
+                      fontFamily: 'Inter',
+                      fontSize: 18,
+                      fontWeight: FontWeight.w700,
+                      color: context.appColors.foreground,
+                    ),
+                  ),
+                  const SizedBox(height: 8),
+                  Text(
+                    '${context.l10n.translate('Sei sicuro di voler eliminare')} "${habit.title}"?',
+                    textAlign: TextAlign.center,
+                    style: TextStyle(
+                      fontFamily: 'Inter',
+                      fontSize: 14,
+                      color: context.appColors.mutedForeground,
+                    ),
+                  ),
+                  const SizedBox(height: 24),
+                  Row(
+                    children: [
+                      Expanded(
+                        child: CupertinoButton(
+                          padding: EdgeInsets.zero,
+                          child: Text(context.l10n.translate('Annulla'), style: TextStyle(color: context.appColors.mutedForeground)),
+                          onPressed: () => Navigator.pop(context),
+                        ),
+                      ),
+                      const SizedBox(width: 12),
+                      Expanded(
+                        child: ElevatedButton(
+                          onPressed: () {
+                            ref.read(goalsProvider.notifier).deleteHabit(habit.id);
+                            HapticFeedback.mediumImpact();
+                            Navigator.pop(context);
+                          },
+                          style: ElevatedButton.styleFrom(
+                            backgroundColor: AppColors.destructive,
+                            foregroundColor: Colors.white,
+                            shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+                            elevation: 0,
+                          ),
+                          child: Text(
+                            context.l10n.translate('Elimina'),
+                            style: const TextStyle(fontWeight: FontWeight.w600),
+                          ),
+                        ),
+                      ),
+                    ],
+                  ),
+                ],
+              ),
+            ),
+          ),
+        );
+      },
+    );
+  }
+
   @override
   Widget build(BuildContext context) {
     final habits = ref.watch(goalsProvider);
@@ -215,6 +318,7 @@ class _HabitManagementModalState extends ConsumerState<HabitManagementModal> {
       ),
       padding: EdgeInsets.fromLTRB(20, 12, 20, bottomPadding + 20),
       child: CustomScrollView(
+        controller: _scrollController,
         physics: const BouncingScrollPhysics(),
         slivers: [
           SliverToBoxAdapter(
@@ -405,39 +509,70 @@ class _HabitManagementModalState extends ConsumerState<HabitManagementModal> {
                         ),
                       ),
                       const SizedBox(height: 24),
-                      SizedBox(
-                        width: double.infinity,
-                        height: 48,
-                        child: ElevatedButton(
-                          onPressed: _onSave,
-                          style: ElevatedButton.styleFrom(
-                            backgroundColor: Theme.of(context).colorScheme.primary,
-                            foregroundColor: _selectedColor.computeLuminance() > 0.5 ? Colors.black : Colors.white,
-                            shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
-                            elevation: 0,
-                          ),
-                          child: Text(
-                            _editingHabit != null 
-                              ? context.l10n.translate('Salva') 
-                              : context.l10n.translate('Aggiungi Abitudine'),
-                            style: TextStyle(
-                              fontWeight: FontWeight.w600,
-                              color: Theme.of(context).colorScheme.primary.computeLuminance() > 0.5 ? Colors.black : Colors.white,
+                      if (_editingHabit != null)
+                        Row(
+                          children: [
+                            Expanded(
+                              child: OutlinedButton(
+                                onPressed: () => setState(() {
+                                  _editingHabit = null;
+                                  _nameController.clear();
+                                  _reminderTime = null;
+                                }),
+                                style: OutlinedButton.styleFrom(
+                                  padding: const EdgeInsets.symmetric(vertical: 14),
+                                  shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+                                  side: BorderSide(color: context.appColors.border),
+                                ),
+                                child: Text(
+                                  context.l10n.translate('Annulla'),
+                                  style: TextStyle(color: context.appColors.mutedForeground, fontWeight: FontWeight.w600),
+                                ),
+                              ),
+                            ),
+                            const SizedBox(width: 12),
+                            Expanded(
+                              child: ElevatedButton(
+                                onPressed: _onSave,
+                                style: ElevatedButton.styleFrom(
+                                  backgroundColor: Theme.of(context).colorScheme.primary,
+                                  foregroundColor: _selectedColor.computeLuminance() > 0.5 ? Colors.black : Colors.white,
+                                  shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+                                  elevation: 0,
+                                  padding: const EdgeInsets.symmetric(vertical: 14),
+                                ),
+                                child: Text(
+                                  context.l10n.translate('Aggiorna'),
+                                  style: TextStyle(
+                                    fontWeight: FontWeight.w600,
+                                    color: Theme.of(context).colorScheme.primary.computeLuminance() > 0.5 ? Colors.black : Colors.white,
+                                  ),
+                                ),
+                              ),
+                            ),
+                          ],
+                        )
+                      else
+                        SizedBox(
+                          width: double.infinity,
+                          height: 48,
+                          child: ElevatedButton(
+                            onPressed: _onSave,
+                            style: ElevatedButton.styleFrom(
+                              backgroundColor: Theme.of(context).colorScheme.primary,
+                              foregroundColor: _selectedColor.computeLuminance() > 0.5 ? Colors.black : Colors.white,
+                              shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+                              elevation: 0,
+                            ),
+                            child: Text(
+                              context.l10n.translate('Aggiungi Abitudine'),
+                              style: TextStyle(
+                                fontWeight: FontWeight.w600,
+                                color: Theme.of(context).colorScheme.primary.computeLuminance() > 0.5 ? Colors.black : Colors.white,
+                              ),
                             ),
                           ),
                         ),
-                      ),
-                      if (_editingHabit != null)
-                         Padding(
-                           padding: const EdgeInsets.only(top: 8),
-                           child: TextButton(
-                             onPressed: () => setState(() {
-                               _editingHabit = null;
-                               _nameController.clear();
-                             }),
-                             child: Text(context.l10n.translate('Annulla'), style: TextStyle(color: context.appColors.mutedForeground)),
-                           ),
-                         )
                     ],
                   ),
                 ),
@@ -473,10 +608,7 @@ class _HabitManagementModalState extends ConsumerState<HabitManagementModal> {
                 index: index,
                 habit: habit,
                 onEdit: () => _onEdit(habit),
-                onDelete: () {
-                  ref.read(goalsProvider.notifier).deleteHabit(habit.id);
-                  HapticFeedback.mediumImpact();
-                },
+                onDelete: () => _showDeleteConfirmation(habit),
               );
             },
           ),

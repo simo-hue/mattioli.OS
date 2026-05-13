@@ -64,5 +64,12 @@
     - Implemented `_calculateHabits` and `_calculateHabitStats` to compute BEST, WORST, SERIE, and RATE for each habit.
     - Replaced hardcoded `_habits` list with dynamic calculation.
 
+- [2026-05-13 08:05]: **Database View Integration for Habit Statistics**
+  - *Details*: Optimized the habit statistics panel by using a Supabase view (`habit_stats`) to calculate metrics (streaks, rate) instead of doing it in memory.
+  - *Tech Notes*:
+    - Added `habitStatsProvider` (FutureProvider) in `goal_provider.dart`.
+    - Added invalidation of `habitStatsProvider` in `cycleStatus` to refresh data on changes.
+    - Updated `GlobalHabitsTabWidget` to use `habitStatsProvider` and handle async states.
+
 ## Current Status
-- **Next Step**: Verify the changes in the app and address other mock panels in statistics if needed.
+- **Next Step**: Verify the changes in the app. The "Abitudini" tab should now load instantly from the DB view.

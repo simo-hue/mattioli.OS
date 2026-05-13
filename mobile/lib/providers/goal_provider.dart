@@ -331,6 +331,7 @@ class HabitLogsNotifier extends Notifier<HabitLogsMap> {
             .eq('goal_id', habitId)
             .eq('date', dateKey);
       }
+      ref.invalidate(habitStatsProvider);
     } catch (e) {
       debugPrint('[HabitLogs] cycleStatus error: $e');
     }
@@ -338,6 +339,18 @@ class HabitLogsNotifier extends Notifier<HabitLogsMap> {
 }
 
 final habitLogsProvider = NotifierProvider<HabitLogsNotifier, HabitLogsMap>(HabitLogsNotifier.new);
+
+final habitStatsProvider = FutureProvider<List<Map<String, dynamic>>>((ref) async {
+  final user = Supabase.instance.client.auth.currentUser;
+  if (user == null) return [];
+  
+  final response = await Supabase.instance.client
+      .from('habit_stats')
+      .select('*')
+      .eq('user_id', user.id);
+      
+  return List<Map<String, dynamic>>.from(response);
+});
 
 // ─── Calendar view enum & provider ───────────────────────────────────────────
 

@@ -18,8 +18,20 @@ class GlobalHabitsTabWidget extends ConsumerStatefulWidget {
 class _GlobalHabitsTabWidgetState extends ConsumerState<GlobalHabitsTabWidget> {
   String _sortBy = 'rate';
 
-  List<Map<String, dynamic>> _calculateHabits(List<Goal> goals, HabitLogsMap logs) {
-    return goals.map((goal) => _calculateHabitStats(goal, logs)).toList();
+  List<Map<String, dynamic>> _mapStatsToHabits(List<Map<String, dynamic>> stats, List<Goal> goals) {
+    return stats.map((stat) {
+      final goalId = stat['goal_id'] as String;
+      final goal = goals.cast<Goal?>().firstWhere((g) => g?.id == goalId, orElse: () => null);
+      
+      return {
+        'name': stat['title'] ?? '',
+        'color': goal?.color ?? const Color(0xFF64748B),
+        'best': stat['best_streak'] ?? 0,
+        'worst': stat['worst_streak'] ?? 0,
+        'serie': stat['current_streak'] ?? 0,
+        'rate': (stat['rate'] as num?)?.round() ?? 0,
+      };
+    }).toList();
   }
 
   List<Map<String, dynamic>> _getSortedHabits(List<Map<String, dynamic>> habits) {
@@ -46,42 +58,49 @@ class _GlobalHabitsTabWidgetState extends ConsumerState<GlobalHabitsTabWidget> {
   @override
   Widget build(BuildContext context) {
     final goals = ref.watch(goalsProvider);
-    final logs = ref.watch(habitLogsProvider);
-    final habits = _calculateHabits(goals, logs);
-    final sortedHabits = _getSortedHabits(habits);
+    final statsAsync = ref.watch(habitStatsProvider);
 
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: [
-        Row(
-          mainAxisAlignment: MainAxisAlignment.spaceBetween,
+    return statsAsync.when(
+      data: (stats) {
+        final habits = _mapStatsToHabits(stats, goals);
+        final sortedHabits = _getSortedHabits(habits);
+        
+        return Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            Text(
-              context.l10n.translate('Dettagli Abitudini'),
-              style: TextStyle(
-                fontFamily: 'Inter',
-                fontSize: 18,
-                fontWeight: FontWeight.w700,
-                color: context.appColors.foreground,
-              ),
+            Row(
+              mainAxisAlignment: MainAxisAlignment.spaceBetween,
+              children: [
+                Text(
+                  context.l10n.translate('Dettagli Abitudini'),
+                  style: TextStyle(
+                    fontFamily: 'Inter',
+                    fontSize: 18,
+                    fontWeight: FontWeight.w700,
+                    color: context.appColors.foreground,
+                  ),
+                ),
+                _buildSortDropdown(),
+              ],
             ),
-            _buildSortDropdown(),
+            const SizedBox(height: 20),
+            sortedHabits.isEmpty
+              ? Center(child: Text(context.l10n.translate('Nessuna abitudine trovata'), style: TextStyle(color: context.appColors.mutedForeground)))
+              : ListView.separated(
+                  shrinkWrap: true,
+                  physics: const NeverScrollableScrollPhysics(),
+                  itemCount: sortedHabits.length,
+                  separatorBuilder: (context, index) => const SizedBox(height: 12),
+                  itemBuilder: (context, index) {
+                    return _HabitDetailCard(habit: sortedHabits[index]);
+                  },
+                ),
+            const SizedBox(height: 32),
           ],
-        ),
-        const SizedBox(height: 20),
-        sortedHabits.isEmpty
-          ? Center(child: Text(context.l10n.translate('Nessuna abitudine trovata'), style: TextStyle(color: context.appColors.mutedForeground)))
-          : ListView.separated(
-              shrinkWrap: true,
-              physics: const NeverScrollableScrollPhysics(),
-              itemCount: sortedHabits.length,
-              separatorBuilder: (context, index) => const SizedBox(height: 12),
-              itemBuilder: (context, index) {
-                return _HabitDetailCard(habit: sortedHabits[index]);
-              },
-            ),
-        const SizedBox(height: 32),
-      ],
+        );
+      },
+      loading: () => const Center(child: CircularProgressIndicator()),
+      error: (err, stack) => Center(child: Text('Error: $err', style: TextStyle(color: context.appColors.mutedForeground))),
     );
   }
 
@@ -363,150 +382,4 @@ class _HabitDetailCard extends StatelessWidget {
   }
 }
 
-Map<String, dynamic> _calculateHabitStats(Goal goal, HabitLogsMap logs) {
-  final goalLogs = <DateTime, String>{};
-  logs.forEach((dateStr, habits) {
-    if (habits.containsKey(goal.id)) {
-      final date = DateTime.parse(dateStr);
-      goalLogs[DateTime(date.year, date.month, date.day)] = habits[goal.id]!;
-    }
-  });
 
-  if (goalLogs.isEmpty) {
-    return {
-      'name': goal.title,
-      'color': goal.color,
-      'best': 0,
-      'worst': 0,
-      'serie': 0,
-      'rate': 0,
-    };
-  }
-
-  final sortedDates = goalLogs.keys.toList()..sort();
-  
-  int currentStreak = 0;
-  int bestStreak = 0;
-  int worstStreak = 0;
-  int tempStreak = 0;
-  int tempMissedStreak = 0;
-  int completedDays = 0;
-
-  final today = DateTime.now();
-  final todayNormalized = DateTime(today.year, today.month, today.day);
-  final startDate = goal.startDate;
-  final daysSinceStart = todayNormalized.difference(DateTime(startDate.year, startDate.month, startDate.day)).inDays + 1;
-
-  goalLogs.forEach((date, status) {
-    if (status == 'done') {
-      completedDays++;
-    }
-  });
-
-  final isDaily = goal.frequencyDays == null || goal.frequencyDays!.isEmpty;
-
-  DateTime? prevDate;
-  for (final date in sortedDates) {
-    final status = goalLogs[date];
-    if (status == 'done') {
-      if (prevDate == null) {
-        tempStreak = 1;
-      } else {
-        final diff = date.difference(prevDate).inDays;
-        if (isDaily) {
-          if (diff == 1) {
-            tempStreak++;
-          } else {
-            tempStreak = 1;
-          }
-        } else {
-          bool broken = false;
-          for (int i = 1; i < diff; i++) {
-            final checkDate = prevDate.add(Duration(days: i));
-            if (goal.frequencyDays!.contains(checkDate.weekday)) {
-              broken = true;
-              break;
-            }
-          }
-          if (broken) {
-            tempStreak = 1;
-          } else {
-            tempStreak++;
-          }
-        }
-      }
-      if (tempStreak > bestStreak) {
-        bestStreak = tempStreak;
-      }
-      tempMissedStreak = 0;
-      prevDate = date;
-    } else if (status == 'missed') {
-      tempStreak = 0;
-      if (prevDate == null) {
-        tempMissedStreak = 1;
-      } else {
-        final diff = date.difference(prevDate).inDays;
-        if (isDaily) {
-          if (diff == 1) {
-            tempMissedStreak++;
-          } else {
-            tempMissedStreak = 1;
-          }
-        } else {
-          if (goal.frequencyDays!.contains(date.weekday)) {
-            tempMissedStreak++;
-          }
-        }
-      }
-      if (tempMissedStreak > worstStreak) {
-        worstStreak = tempMissedStreak;
-      }
-      prevDate = date;
-    }
-  }
-
-  final yesterdayNormalized = todayNormalized.subtract(const Duration(days: 1));
-
-  int checkStreak(DateTime startCheckDate) {
-    int streak = 0;
-    DateTime checkDate = startCheckDate;
-    while (true) {
-      final status = goalLogs[checkDate];
-      if (status == 'done') {
-        streak++;
-        checkDate = checkDate.subtract(const Duration(days: 1));
-      } else if (status == 'missed') {
-        break;
-      } else {
-        if (!isDaily && !goal.frequencyDays!.contains(checkDate.weekday)) {
-          checkDate = checkDate.subtract(const Duration(days: 1));
-          continue;
-        }
-        break; 
-      }
-    }
-    return streak;
-  }
-
-  final todayStatus = goalLogs[todayNormalized];
-  if (todayStatus == 'done') {
-    currentStreak = checkStreak(todayNormalized);
-  } else {
-    final yesterdayStatus = goalLogs[yesterdayNormalized];
-    if (yesterdayStatus == 'done') {
-      currentStreak = checkStreak(yesterdayNormalized);
-    }
-  }
-
-  final int totalActiveDays = daysSinceStart > 0 ? daysSinceStart : 1;
-  final rate = (completedDays / totalActiveDays * 100).round();
-
-  return {
-    'name': goal.title,
-    'color': goal.color,
-    'best': bestStreak,
-    'worst': worstStreak,
-    'serie': currentStreak,
-    'rate': rate,
-  };
-}

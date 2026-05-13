@@ -223,6 +223,12 @@
     - Added `width: double.infinity` to `Container` in `_buildCardBase` to ensure all cards take full width.
     - Updated `_buildQuarterlyBarCard` to show "Nessun dato" when the stats list is empty.
 
+- [2026-05-13 23:08]: **Implement Permissions Management Action**
+  - *Details*: Implemented the "Gestione Permessi" button in the Privacy and Security screen to open the app's system settings.
+  - *Tech Notes*:
+    - Added `permission_handler` dependency.
+    - Updated `onTap` in `privacy_settings_screen.dart` to call `openAppSettings()`.
+
 ## Current Status
-- **Next Step**: Waiting for user verification of the fixes.
+- **Next Step**: Waiting for user verification of the permissions management feature (requires app restart).
 

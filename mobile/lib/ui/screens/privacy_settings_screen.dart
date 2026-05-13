@@ -9,6 +9,7 @@ import 'package:google_fonts/google_fonts.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:lucide_icons_flutter/lucide_icons.dart';
 import 'package:local_auth/local_auth.dart';
+import 'package:permission_handler/permission_handler.dart';
 import '../../core/theme.dart';
 import '../../providers/settings_provider.dart';
 import '../../core/haptics.dart';
@@ -139,8 +140,9 @@ class PrivacySettingsScreen extends ConsumerWidget {
                 icon: LucideIcons.settings2,
                 title: 'Gestione Permessi',
                 subtitle: 'Notifiche, Calendario, etc.',
-                onTap: () {
+                onTap: () async {
                   ref.hapticLight();
+                  await openAppSettings();
                 },
               ),
             ]),

@@ -35,22 +35,40 @@ class HabitOverviewTabWidget extends ConsumerWidget {
   Widget build(BuildContext context, WidgetRef ref) {
     final goals = ref.watch(goalsProvider);
     final logs = ref.watch(habitLogsProvider);
+    final statsAsync = ref.watch(habitStatsProvider);
     
     final goal = goals.firstWhere((g) => g.id == goalId, orElse: () => Goal(id: '', title: '', color: Colors.blue, startDate: DateTime.now()));
     
-    final stats = _calculateStats(goalId, logs, goal);
-    final correlations = _calculateCorrelations(goalId, logs, goals);
-
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: [
-        _TopStatsGrid(stats: stats),
-        const SizedBox(height: 16),
-        _TrendUltimi30Giorni(trend: stats.trend30Days),
-        const SizedBox(height: 16),
-        _CorrelazioniSection(goalId: goalId, correlations: correlations, currentGoalTitle: goal.title),
-        const SizedBox(height: 32),
-      ],
+    return statsAsync.when(
+      data: (statsList) {
+        final stat = statsList.firstWhere((s) => s['goal_id'] == goalId, orElse: () => {});
+        
+        final habitStats = HabitStats(
+          currentStreak: stat['current_streak'] ?? 0,
+          bestStreak: stat['best_streak'] ?? 0,
+          completionRate: (stat['rate'] as num?)?.round() ?? 0,
+          totalCompletions: stat['total_completions'] ?? 0,
+          totalActiveDays: stat['total_active_days'] ?? 1,
+          missedDays: stat['missed_days'] ?? 0,
+          trend30Days: _calculateTrend30Days(goalId, logs),
+        );
+        
+        final correlations = _calculateCorrelations(goalId, logs, goals);
+        
+        return Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            _TopStatsGrid(stats: habitStats),
+            const SizedBox(height: 16),
+            _TrendUltimi30Giorni(trend: habitStats.trend30Days),
+            const SizedBox(height: 16),
+            _CorrelazioniSection(goalId: goalId, correlations: correlations, currentGoalTitle: goal.title),
+            const SizedBox(height: 32),
+          ],
+        );
+      },
+      loading: () => const Center(child: CircularProgressIndicator()),
+      error: (err, stack) => Center(child: Text('Error: $err', style: TextStyle(color: context.appColors.mutedForeground))),
     );
   }
 }
@@ -518,7 +536,7 @@ class _CorrelazioneCard extends StatelessWidget {
   }
 }
 
-HabitStats _calculateStats(String goalId, HabitLogsMap logs, Goal goal) {
+List<int> _calculateTrend30Days(String goalId, HabitLogsMap logs) {
   final goalLogs = <DateTime, String>{};
   logs.forEach((dateStr, habits) {
     if (habits.containsKey(goalId)) {
@@ -542,129 +560,7 @@ HabitStats _calculateStats(String goalId, HabitLogsMap logs, Goal goal) {
       trend30Days.add(2);
     }
   }
-
-  if (goalLogs.isEmpty) {
-    return HabitStats(
-      currentStreak: 0,
-      bestStreak: 0,
-      completionRate: 0,
-      totalCompletions: 0,
-      totalActiveDays: 0,
-      missedDays: 0,
-      trend30Days: trend30Days,
-    );
-  }
-
-  final sortedDates = goalLogs.keys.toList()..sort();
-  
-  int currentStreak = 0;
-  int bestStreak = 0;
-  int tempStreak = 0;
-  int missedDays = 0;
-  int completedDays = 0;
-
-  final startDate = goal.startDate;
-  final daysSinceStart = todayNormalized.difference(DateTime(startDate.year, startDate.month, startDate.day)).inDays + 1;
-  
-  goalLogs.forEach((date, status) {
-    if (status == 'done') {
-      completedDays++;
-    } else if (status == 'missed') {
-      missedDays++;
-    }
-  });
-
-  final isDaily = goal.frequencyDays == null || goal.frequencyDays!.isEmpty;
-
-  DateTime? prevDate;
-  for (final date in sortedDates) {
-    final status = goalLogs[date];
-    if (status == 'done') {
-      if (prevDate == null) {
-        tempStreak = 1;
-      } else {
-        final diff = date.difference(prevDate).inDays;
-        if (isDaily) {
-          if (diff == 1) {
-            tempStreak++;
-          } else {
-            tempStreak = 1;
-          }
-        } else {
-          bool broken = false;
-          for (int i = 1; i < diff; i++) {
-            final checkDate = prevDate.add(Duration(days: i));
-            if (goal.frequencyDays!.contains(checkDate.weekday)) {
-              broken = true;
-              break;
-            }
-          }
-          if (broken) {
-            tempStreak = 1;
-          } else {
-            tempStreak++;
-          }
-        }
-      }
-      if (tempStreak > bestStreak) {
-        bestStreak = tempStreak;
-      }
-      prevDate = date;
-    } else if (status == 'missed') {
-      tempStreak = 0;
-      prevDate = null;
-    }
-  }
-
-  final yesterdayNormalized = todayNormalized.subtract(const Duration(days: 1));
-
-  int checkStreak(DateTime startCheckDate) {
-    int streak = 0;
-    DateTime checkDate = startCheckDate;
-    while (true) {
-      final status = goalLogs[checkDate];
-      if (status == 'done') {
-        streak++;
-        checkDate = checkDate.subtract(const Duration(days: 1));
-      } else if (status == 'missed') {
-        break;
-      } else {
-        if (!isDaily && !goal.frequencyDays!.contains(checkDate.weekday)) {
-          checkDate = checkDate.subtract(const Duration(days: 1));
-          continue;
-        }
-        break; 
-      }
-    }
-    return streak;
-  }
-
-  final todayStatus = goalLogs[todayNormalized];
-  if (todayStatus == 'done') {
-    currentStreak = checkStreak(todayNormalized);
-  } else {
-    final yesterdayStatus = goalLogs[yesterdayNormalized];
-    if (yesterdayStatus == 'done') {
-      currentStreak = checkStreak(yesterdayNormalized);
-    } else if (!isDaily && !goal.frequencyDays!.contains(todayNormalized.weekday)) {
-       if (yesterdayStatus == 'done') {
-         currentStreak = checkStreak(yesterdayNormalized);
-       }
-    }
-  }
-
-  final int totalActiveDays = daysSinceStart > 0 ? daysSinceStart : 1;
-  final completionRate = (completedDays / totalActiveDays * 100).round();
-
-  return HabitStats(
-    currentStreak: currentStreak,
-    bestStreak: bestStreak,
-    completionRate: completionRate,
-    totalCompletions: completedDays,
-    totalActiveDays: totalActiveDays,
-    missedDays: missedDays,
-    trend30Days: trend30Days,
-  );
+  return trend30Days;
 }
 
 List<Map<String, dynamic>> _calculateCorrelations(String targetGoalId, HabitLogsMap logs, List<Goal> allGoals) {

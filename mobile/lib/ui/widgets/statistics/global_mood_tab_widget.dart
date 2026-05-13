@@ -1,34 +1,42 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:lucide_icons_flutter/lucide_icons.dart';
 import 'package:fl_chart/fl_chart.dart';
 import '../../../core/theme.dart';
 import '../../../core/localization.dart';
+import '../../../providers/mood_provider.dart';
+import '../../../providers/goal_provider.dart';
+import '../../../models/goal.dart';
 
-class GlobalMoodTabWidget extends StatefulWidget {
+class GlobalMoodTabWidget extends ConsumerStatefulWidget {
   const GlobalMoodTabWidget({super.key});
 
   @override
-  State<GlobalMoodTabWidget> createState() => _GlobalMoodTabWidgetState();
+  ConsumerState<GlobalMoodTabWidget> createState() => _GlobalMoodTabWidgetState();
 }
 
-class _GlobalMoodTabWidgetState extends State<GlobalMoodTabWidget> {
+class _GlobalMoodTabWidgetState extends ConsumerState<GlobalMoodTabWidget> {
   String _timeRange = 'time_range_14d';
 
   @override
   Widget build(BuildContext context) {
+    final moods = ref.watch(dailyMoodsProvider);
+    final correlations = ref.watch(moodCorrelationProvider);
+    final goals = ref.watch(goalsProvider);
+
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
         _buildHeader(),
         const SizedBox(height: 24),
-        _buildMainChart(),
+        _buildMainChart(moods),
         const SizedBox(height: 24),
-        const _MoodSensitiveSection(),
+        _MoodSensitiveSection(correlations: correlations, goals: goals),
         const SizedBox(height: 24),
-        const _ResilientHabitsSection(),
+        _ResilientHabitsSection(correlations: correlations, goals: goals),
         const SizedBox(height: 24),
-        const _CorrelazioneMoodSection(),
+        _CorrelazioneMoodSection(correlations: correlations, goals: goals),
         const SizedBox(height: 32),
       ],
     );
@@ -116,43 +124,47 @@ class _GlobalMoodTabWidgetState extends State<GlobalMoodTabWidget> {
     );
   }
 
-  Widget _buildMainChart() {
-    final List<FlSpot> moodSpots;
-    final List<FlSpot> energySpots;
+  Widget _buildMainChart(DailyMoodsMap moods) {
+    final List<FlSpot> moodSpots = [];
+    final List<FlSpot> energySpots = [];
     final double maxX;
     final double interval;
 
+    final now = DateTime.now();
+    final int days;
     switch (_timeRange) {
       case 'time_range_30d':
-        moodSpots = List.generate(30, (i) => FlSpot(i.toDouble(), 60 + (i % 7) * 4.0 + (i % 3) * 2.0));
-        energySpots = List.generate(30, (i) => FlSpot(i.toDouble(), 50 + (i % 5) * 6.0 + (i % 4) * 3.0));
-        maxX = 29;
+        days = 30;
         interval = 5;
         break;
       case 'time_range_90d':
-        moodSpots = List.generate(90, (i) => FlSpot(i.toDouble(), 65 + (i % 10) * 2.0 + (i % 4) * 1.0));
-        energySpots = List.generate(90, (i) => FlSpot(i.toDouble(), 55 + (i % 12) * 2.5 + (i % 3) * 1.5));
-        maxX = 89;
+        days = 90;
         interval = 15;
         break;
       case 'time_range_14d':
       default:
-        moodSpots = [
-          const FlSpot(0, 65), const FlSpot(1, 45), const FlSpot(2, 75), const FlSpot(3, 85),
-          const FlSpot(4, 70), const FlSpot(5, 90), const FlSpot(6, 80), const FlSpot(7, 85),
-          const FlSpot(8, 60), const FlSpot(9, 70), const FlSpot(10, 80), const FlSpot(11, 75),
-          const FlSpot(12, 90), const FlSpot(13, 85),
-        ];
-        energySpots = [
-          const FlSpot(0, 70), const FlSpot(1, 60), const FlSpot(2, 55), const FlSpot(3, 65),
-          const FlSpot(4, 80), const FlSpot(5, 75), const FlSpot(6, 85), const FlSpot(7, 70),
-          const FlSpot(8, 75), const FlSpot(9, 65), const FlSpot(10, 60), const FlSpot(11, 80),
-          const FlSpot(12, 85), const FlSpot(13, 75),
-        ];
-        maxX = 13;
+        days = 14;
         interval = 2;
         break;
     }
+    maxX = (days - 1).toDouble();
+
+    final startDate = now.subtract(Duration(days: days - 1));
+
+    for (int i = 0; i < days; i++) {
+      final date = startDate.add(Duration(days: i));
+      final dateKey = '${date.year}-${date.month.toString().padLeft(2, '0')}-${date.day.toString().padLeft(2, '0')}';
+      
+      if (moods.containsKey(dateKey)) {
+        final mood = moods[dateKey]!;
+        moodSpots.add(FlSpot(i.toDouble(), mood.moodScore.toDouble()));
+        energySpots.add(FlSpot(i.toDouble(), mood.energyScore.toDouble()));
+      }
+    }
+
+    // If no data, add some empty spots to avoid crash
+    if (moodSpots.isEmpty) moodSpots.add(const FlSpot(0, 0));
+    if (energySpots.isEmpty) energySpots.add(const FlSpot(0, 0));
 
     return Container(
       width: double.infinity,
@@ -193,12 +205,11 @@ class _GlobalMoodTabWidgetState extends State<GlobalMoodTabWidget> {
                       reservedSize: 30,
                       interval: interval,
                       getTitlesWidget: (value, meta) {
+                        final date = startDate.add(Duration(days: value.toInt()));
                         return Padding(
                           padding: const EdgeInsets.only(top: 8.0),
                           child: Text(
-                            _timeRange == 'time_range_14d' 
-                                ? '${value.toInt() + 1} set'
-                                : '${value.toInt() + 1} mag',
+                            '${date.day}/${date.month}',
                             style: TextStyle(
                               color: context.appColors.mutedForeground,
                               fontWeight: FontWeight.w600,
@@ -215,7 +226,7 @@ class _GlobalMoodTabWidgetState extends State<GlobalMoodTabWidget> {
                       interval: 20,
                       getTitlesWidget: (value, meta) {
                         return Text(
-                          '${value.toInt()}%',
+                          '${value.toInt()}',
                           style: TextStyle(
                             color: context.appColors.mutedForeground,
                             fontWeight: FontWeight.w600,
@@ -223,7 +234,7 @@ class _GlobalMoodTabWidgetState extends State<GlobalMoodTabWidget> {
                           ),
                         );
                       },
-                      reservedSize: 42,
+                      reservedSize: 30,
                     ),
                   ),
                 ),
@@ -266,7 +277,7 @@ class _GlobalMoodTabWidgetState extends State<GlobalMoodTabWidget> {
                       return touchedBarSpots.map((barSpot) {
                         final isMood = barSpot.barIndex == 0;
                         return LineTooltipItem(
-                          '${isMood ? 'Mood' : 'Energia'}: ${barSpot.y.toInt()}%',
+                          '${isMood ? 'Mood' : 'Energia'}: ${barSpot.y.toInt()}',
                           TextStyle(
                             color: isMood ? const Color(0xFFFBBF24) : const Color(0xFF06B6D4),
                             fontWeight: FontWeight.bold,
@@ -310,10 +321,19 @@ class _GlobalMoodTabWidgetState extends State<GlobalMoodTabWidget> {
 }
 
 class _MoodSensitiveSection extends StatelessWidget {
-  const _MoodSensitiveSection();
+  final List<MoodCorrelation> correlations;
+  final List<Goal> goals;
+
+  const _MoodSensitiveSection({required this.correlations, required this.goals});
 
   @override
   Widget build(BuildContext context) {
+    final sensitiveHabits = correlations.where((c) => c.sensitivity > 10).toList()
+      ..sort((a, b) => b.sensitivity.compareTo(a.sensitivity));
+    
+    final topSensitive = sensitiveHabits.take(3).toList();
+    final colors = [const Color(0xFF8B5CF6), const Color(0xFFEC4899), const Color(0xFF3B82F6)];
+
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
@@ -327,9 +347,20 @@ class _MoodSensitiveSection extends StatelessWidget {
           ),
         ),
         const SizedBox(height: 12),
-        _buildSensitiveItem(context, 'Meditazione', 82, const Color(0xFF8B5CF6)),
-        _buildSensitiveItem(context, 'Journaling', 75, const Color(0xFFEC4899)),
-        _buildSensitiveItem(context, 'Studio', 68, const Color(0xFF3B82F6)),
+        if (topSensitive.isEmpty)
+          Text(
+            context.l10n.translate('Non ci sono abbastanza dati per calcolare la sensibilità.'),
+            style: TextStyle(fontFamily: 'Inter', fontSize: 12, color: context.appColors.mutedForeground),
+          )
+        else
+          ...List.generate(topSensitive.length, (i) {
+            final c = topSensitive[i];
+            final goal = goals.firstWhere(
+              (g) => g.id == c.goalId, 
+              orElse: () => Goal(id: c.goalId, title: 'Unknown', color: Colors.grey, startDate: DateTime.now())
+            );
+            return _buildSensitiveItem(context, goal.title, c.sensitivity, colors[i % colors.length]);
+          }),
       ],
     );
   }
@@ -372,10 +403,20 @@ class _MoodSensitiveSection extends StatelessWidget {
 }
 
 class _ResilientHabitsSection extends StatelessWidget {
-  const _ResilientHabitsSection();
+  final List<MoodCorrelation> correlations;
+  final List<Goal> goals;
+
+  const _ResilientHabitsSection({required this.correlations, required this.goals});
 
   @override
   Widget build(BuildContext context) {
+    // Resilient habits are those with high completion rate in low mood
+    final resilientHabits = correlations.where((c) => c.resilience > 50).toList()
+      ..sort((a, b) => b.resilience.compareTo(a.resilience));
+      
+    final topResilient = resilientHabits.take(2).toList();
+    final colors = [const Color(0xFF10B981), const Color(0xFFF59E0B)];
+
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
@@ -398,54 +439,67 @@ class _ResilientHabitsSection extends StatelessWidget {
           ),
         ),
         const SizedBox(height: 16),
-        Row(
-          children: [
-            _buildResilientCard(context, 'Fitness', 94, const Color(0xFF10B981)),
-            const SizedBox(width: 12),
-            _buildResilientCard(context, 'Alimentazione', 88, const Color(0xFFF59E0B)),
-          ],
-        ),
+        if (topResilient.isEmpty)
+          Text(
+            context.l10n.translate('Non ci sono abbastanza dati per calcolare la resilienza.'),
+            style: TextStyle(fontFamily: 'Inter', fontSize: 12, color: context.appColors.mutedForeground),
+          )
+        else
+          Row(
+            children: List.generate(topResilient.length, (i) {
+              final c = topResilient[i];
+              final goal = goals.firstWhere(
+                (g) => g.id == c.goalId, 
+                orElse: () => Goal(id: c.goalId, title: 'Unknown', color: Colors.grey, startDate: DateTime.now())
+              );
+              return Expanded(
+                child: Padding(
+                  padding: EdgeInsets.only(right: i < topResilient.length - 1 ? 12.0 : 0.0),
+                  child: _buildResilientCard(context, goal.title, c.resilience, colors[i % colors.length]),
+                ),
+              );
+            }),
+          ),
       ],
     );
   }
 
   Widget _buildResilientCard(BuildContext context, String name, int resilience, Color color) {
-    return Expanded(
-      child: Container(
-        padding: const EdgeInsets.all(16),
-        decoration: BoxDecoration(
-          color: context.appColors.card,
-          borderRadius: BorderRadius.circular(16),
-          border: Border.all(color: context.appColors.border),
-        ),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            Row(
-              children: [
-                Container(width: 8, height: 8, decoration: BoxDecoration(color: color, shape: BoxShape.circle)),
-                const SizedBox(width: 8),
-                Expanded(child: Text(name, style: TextStyle(fontFamily: 'Inter', fontSize: 13, fontWeight: FontWeight.w700, color: context.appColors.foreground), maxLines: 1, overflow: TextOverflow.ellipsis)),
-              ],
-            ),
-            const SizedBox(height: 12),
-            Text('$resilience%', style: TextStyle(fontFamily: 'Inter', fontSize: 24, fontWeight: FontWeight.w900, color: color)),
-            Text(context.l10n.translate('Resilienza'), style: TextStyle(fontFamily: 'Inter', fontSize: 10, color: context.appColors.mutedForeground)),
-          ],
-        ),
+    return Container(
+      padding: const EdgeInsets.all(16),
+      decoration: BoxDecoration(
+        color: context.appColors.card,
+        borderRadius: BorderRadius.circular(16),
+        border: Border.all(color: context.appColors.border),
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Row(
+            children: [
+              Container(width: 8, height: 8, decoration: BoxDecoration(color: color, shape: BoxShape.circle)),
+              const SizedBox(width: 8),
+              Expanded(child: Text(name, style: TextStyle(fontFamily: 'Inter', fontSize: 13, fontWeight: FontWeight.w700, color: context.appColors.foreground), maxLines: 1, overflow: TextOverflow.ellipsis)),
+            ],
+          ),
+          const SizedBox(height: 12),
+          Text('$resilience%', style: TextStyle(fontFamily: 'Inter', fontSize: 24, fontWeight: FontWeight.w900, color: color)),
+          Text(context.l10n.translate('Resilienza'), style: TextStyle(fontFamily: 'Inter', fontSize: 10, color: context.appColors.mutedForeground)),
+        ],
       ),
     );
   }
 }
 
 class _CorrelazioneMoodSection extends StatelessWidget {
-  const _CorrelazioneMoodSection();
+  final List<MoodCorrelation> correlations;
+  final List<Goal> goals;
+
+  const _CorrelazioneMoodSection({required this.correlations, required this.goals});
 
   @override
   Widget build(BuildContext context) {
-    // Mocking some data for the cards
-    final low = 15;
-    final high = 85;
+    final topCorrelations = correlations.take(3).toList();
 
     return Container(
       padding: const EdgeInsets.all(20),
@@ -467,26 +521,25 @@ class _CorrelazioneMoodSection extends StatelessWidget {
             ),
           ),
           const SizedBox(height: 20),
-          Row(
-            children: [
-              _MoodStatMini(label: 'MOOD BASSO', value: '$low%', icon: LucideIcons.frown),
-              const SizedBox(width: 24),
-              _MoodStatMini(label: 'MOOD ALTO', value: '$high%', icon: LucideIcons.smile),
-            ],
-          ),
-          const SizedBox(height: 24),
-          _buildCorrelationRow(context, 'Fitness', 42, 78),
-          _buildCorrelationRow(context, 'Meditazione', 35, 82),
-          _buildCorrelationRow(context, 'Journaling', 40, 75),
+          if (topCorrelations.isEmpty)
+            Text(
+              context.l10n.translate('Non ci sono abbastanza dati per l\'analisi di correlazione.'),
+              style: TextStyle(fontFamily: 'Inter', fontSize: 12, color: context.appColors.mutedForeground),
+            )
+          else
+            ...topCorrelations.map((c) {
+              final goal = goals.firstWhere(
+                (g) => g.id == c.goalId, 
+                orElse: () => Goal(id: c.goalId, title: 'Unknown', color: Colors.grey, startDate: DateTime.now())
+              );
+              return _buildCorrelationRow(context, goal.title, c.lowMoodPct, c.highMoodPct);
+            }),
         ],
       ),
     );
   }
 
   Widget _buildCorrelationRow(BuildContext context, String name, int lowVal, int highVal) {
-    final mood = 80;
-    final energy = 75;
-    
     return Padding(
       padding: const EdgeInsets.only(bottom: 16),
       child: Column(
@@ -498,9 +551,9 @@ class _CorrelazioneMoodSection extends StatelessWidget {
               Text(name, style: TextStyle(fontFamily: 'Inter', fontSize: 14, fontWeight: FontWeight.w700, color: context.appColors.foreground)),
               Row(
                 children: [
-                  _MoodStatMini(label: 'MOOD', value: '$mood%', icon: LucideIcons.smile, small: true),
+                  _MoodStatMini(label: 'MOOD BASSO', value: '$lowVal%', icon: LucideIcons.frown, small: true),
                   const SizedBox(width: 12),
-                  _MoodStatMini(label: 'ENERGIA', value: '$energy%', icon: LucideIcons.zap, small: true),
+                  _MoodStatMini(label: 'MOOD ALTO', value: '$highVal%', icon: LucideIcons.smile, small: true),
                 ],
               ),
             ],

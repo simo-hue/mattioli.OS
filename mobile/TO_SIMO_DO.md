@@ -28,6 +28,7 @@
 - [ ] Confermare che il colore accento cambi automaticamente se quello selezionato è troppo chiaro per lo sfondo bianco (gestito da `SettingsProvider`).
 
 ## Verifica Animazioni Premium (Post-Implementazione)
+
 - [ ] Verificare che lo switch tra le schede (Home, Statistiche, Obiettivi) sia fluido.
 - [ ] Testare lo swipe orizzontale tra le schede principali.
 - [ ] Verificare che lo stato (es. scroll o filtri selezionati) venga mantenuto quando si cambia tab e si torna indietro.

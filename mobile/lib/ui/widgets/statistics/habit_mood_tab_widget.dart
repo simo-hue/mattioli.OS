@@ -1,28 +1,45 @@
 import 'package:flutter/material.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:lucide_icons_flutter/lucide_icons.dart';
 import '../../../core/theme.dart';
 import '../../../core/localization.dart';
-import 'dart:ui' as ui;
+import '../../../providers/mood_provider.dart';
 
-class HabitMoodTabWidget extends StatelessWidget {
+class HabitMoodTabWidget extends ConsumerWidget {
   final String goalId;
 
   const HabitMoodTabWidget({super.key, required this.goalId});
 
   @override
-  Widget build(BuildContext context) {
+  Widget build(BuildContext context, WidgetRef ref) {
+    final correlations = ref.watch(moodCorrelationProvider);
+    final correlation = correlations.firstWhere(
+      (c) => c.goalId == goalId,
+      orElse: () => MoodCorrelation(
+        goalId: goalId,
+        lowMoodPct: 0,
+        highMoodPct: 0,
+        sensitivity: 0,
+        resilience: 0,
+        avgMoodDone: 0.0,
+        avgEnergyDone: 0.0,
+        avgMoodMissed: 0.0,
+        avgEnergyMissed: 0.0,
+      ),
+    );
+
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        _TopMetricsGrid(),
+        _TopMetricsGrid(correlation: correlation),
         const SizedBox(height: 12),
-        _ResilienteBadge(),
+        if (correlation.resilience > 50) _ResilienteBadge(),
         const SizedBox(height: 24),
-        _CompletatoVsMancatoCard(),
+        _CompletatoVsMancatoCard(correlation: correlation),
         const SizedBox(height: 16),
-        _PerformancePerLivelloCard(),
+        _PerformancePerLivelloCard(correlation: correlation),
         const SizedBox(height: 16),
-        _FooterInfo(),
+        const _FooterInfo(),
         const SizedBox(height: 32),
       ],
     );
@@ -30,7 +47,9 @@ class HabitMoodTabWidget extends StatelessWidget {
 }
 
 class _TopMetricsGrid extends StatelessWidget {
-  const _TopMetricsGrid();
+  final MoodCorrelation correlation;
+
+  const _TopMetricsGrid({required this.correlation});
 
   @override
   Widget build(BuildContext context) {
@@ -42,10 +61,28 @@ class _TopMetricsGrid extends StatelessWidget {
       physics: const NeverScrollableScrollPhysics(),
       childAspectRatio: 1.8,
       children: [
-        _MetricCard(title: context.l10n.translate('Correlazione Mood'), value: '-20%', subtitle: context.l10n.translate('none')),
-        _MetricCard(title: context.l10n.translate('Correlazione Energia'), value: '-6%', subtitle: context.l10n.translate('none')),
-        _MetricCard(title: context.l10n.translate('Mood Medio (✓)'), value: '6.1', subtitle: context.l10n.translate('su 10'), isRed: true),
-        _MetricCard(title: context.l10n.translate('Energia Media (✓)'), value: '6.7', subtitle: context.l10n.translate('su 10'), isRed: true),
+        _MetricCard(
+          title: context.l10n.translate('Correlazione Mood'),
+          value: '${correlation.sensitivity}%',
+          subtitle: correlation.sensitivity > 10 ? context.l10n.translate('positiva') : context.l10n.translate('neutra'),
+        ),
+        _MetricCard(
+          title: context.l10n.translate('Resilienza'),
+          value: '${correlation.resilience}%',
+          subtitle: correlation.resilience > 50 ? context.l10n.translate('alta') : context.l10n.translate('bassa'),
+        ),
+        _MetricCard(
+          title: context.l10n.translate('Mood Medio (✓)'),
+          value: correlation.avgMoodDone.toStringAsFixed(1),
+          subtitle: context.l10n.translate('nei giorni completati'),
+          isRed: correlation.avgMoodDone < 40,
+        ),
+        _MetricCard(
+          title: context.l10n.translate('Energia Media (✓)'),
+          value: correlation.avgEnergyDone.toStringAsFixed(1),
+          subtitle: context.l10n.translate('nei giorni completati'),
+          isRed: correlation.avgEnergyDone < 40,
+        ),
       ],
     );
   }
@@ -107,6 +144,9 @@ class _MetricCard extends StatelessWidget {
               fontSize: 11,
               color: context.appColors.mutedForeground,
             ),
+            textAlign: TextAlign.center,
+            maxLines: 1,
+            overflow: TextOverflow.ellipsis,
           ),
         ],
       ),
@@ -147,7 +187,9 @@ class _ResilienteBadge extends StatelessWidget {
 }
 
 class _CompletatoVsMancatoCard extends StatelessWidget {
-  const _CompletatoVsMancatoCard();
+  final MoodCorrelation correlation;
+
+  const _CompletatoVsMancatoCard({required this.correlation});
 
   @override
   Widget build(BuildContext context) {
@@ -179,9 +221,8 @@ class _CompletatoVsMancatoCard extends StatelessWidget {
                 Column(
                   mainAxisAlignment: MainAxisAlignment.spaceBetween,
                   children: [
-                    Text('10', style: TextStyle(fontSize: 10, color: context.appColors.mutedForeground)),
-                    Text('6', style: TextStyle(fontSize: 10, color: context.appColors.mutedForeground)),
-                    Text('3', style: TextStyle(fontSize: 10, color: context.appColors.mutedForeground)),
+                    Text('100', style: TextStyle(fontSize: 10, color: context.appColors.mutedForeground)),
+                    Text('50', style: TextStyle(fontSize: 10, color: context.appColors.mutedForeground)),
                     Text('0', style: TextStyle(fontSize: 10, color: context.appColors.mutedForeground)),
                   ],
                 ),
@@ -193,15 +234,15 @@ class _CompletatoVsMancatoCard extends StatelessWidget {
                       // Grid lines
                       Column(
                         mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                        children: List.generate(4, (index) => _buildGridLine(context)),
+                        children: List.generate(3, (index) => _buildGridLine(context)),
                       ),
                       // Bars
                       Row(
                         crossAxisAlignment: CrossAxisAlignment.end,
                         children: [
-                          Expanded(child: _buildBarGroup(context, context.l10n.translate('Completato'), 6.0, 6.7)),
+                          Expanded(child: _buildBarGroup(context, context.l10n.translate('Completato'), correlation.avgMoodDone, correlation.avgEnergyDone)),
                           const SizedBox(width: 16),
-                          Expanded(child: _buildBarGroup(context, context.l10n.translate('Mancato'), 7.0, 7.0)),
+                          Expanded(child: _buildBarGroup(context, context.l10n.translate('Mancato'), correlation.avgMoodMissed, correlation.avgEnergyMissed)),
                         ],
                       ),
                     ],
@@ -234,9 +275,9 @@ class _CompletatoVsMancatoCard extends StatelessWidget {
   }
 
   Widget _buildBarGroup(BuildContext context, String label, double moodValue, double energiaValue) {
-    // max is 10
-    final double moodPct = moodValue / 10.0;
-    final double energiaPct = energiaValue / 10.0;
+    // max is 100
+    final double moodPct = moodValue / 100.0;
+    final double energiaPct = energiaValue / 100.0;
 
     return Column(
       mainAxisAlignment: MainAxisAlignment.end,
@@ -248,12 +289,12 @@ class _CompletatoVsMancatoCard extends StatelessWidget {
             children: [
               Expanded(
                 child: FractionallySizedBox(
-                  heightFactor: moodPct,
+                  heightFactor: moodPct.clamp(0.0, 1.0),
                   alignment: Alignment.bottomCenter,
                   child: Container(
-                    decoration: BoxDecoration(
-                      color: const Color(0xFF10B981),
-                      borderRadius: const BorderRadius.vertical(top: Radius.circular(4)),
+                    decoration: const BoxDecoration(
+                      color: Color(0xFF10B981),
+                      borderRadius: BorderRadius.vertical(top: Radius.circular(4)),
                     ),
                   ),
                 ),
@@ -261,7 +302,7 @@ class _CompletatoVsMancatoCard extends StatelessWidget {
               const SizedBox(width: 4),
               Expanded(
                 child: FractionallySizedBox(
-                  heightFactor: energiaPct,
+                  heightFactor: energiaPct.clamp(0.0, 1.0),
                   alignment: Alignment.bottomCenter,
                   child: Container(
                     decoration: const BoxDecoration(
@@ -297,8 +338,7 @@ class _CompletatoVsMancatoCard extends StatelessWidget {
           style: TextStyle(
             fontFamily: 'Inter',
             fontSize: 13,
-            color: color, // In the screenshot the text color matches the legend square
-            fontWeight: FontWeight.w500,
+            color: color,
           ),
         ),
       ],
@@ -307,7 +347,9 @@ class _CompletatoVsMancatoCard extends StatelessWidget {
 }
 
 class _PerformancePerLivelloCard extends StatelessWidget {
-  const _PerformancePerLivelloCard();
+  final MoodCorrelation correlation;
+
+  const _PerformancePerLivelloCard({required this.correlation});
 
   @override
   Widget build(BuildContext context) {
@@ -330,218 +372,36 @@ class _PerformancePerLivelloCard extends StatelessWidget {
               color: context.appColors.foreground,
             ),
           ),
-          const SizedBox(height: 4),
-          Text(
-            context.l10n.translate('Basso (1-4) • Medio (5-7) • Alto (8-10)'),
-            style: TextStyle(
-              fontFamily: 'Inter',
-              fontSize: 12,
-              color: context.appColors.mutedForeground,
-            ),
-          ),
-          const SizedBox(height: 32),
-          SizedBox(
-            height: 180,
-            child: Row(
-              children: [
-                // Y Axis
-                Column(
-                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                  children: [
-                    Text('100%', style: TextStyle(fontSize: 10, color: context.appColors.mutedForeground)),
-                    Text('75%', style: TextStyle(fontSize: 10, color: context.appColors.mutedForeground)),
-                    Text('50%', style: TextStyle(fontSize: 10, color: context.appColors.mutedForeground)),
-                    Text('25%', style: TextStyle(fontSize: 10, color: context.appColors.mutedForeground)),
-                    Text('0%', style: TextStyle(fontSize: 10, color: context.appColors.mutedForeground)),
-                  ],
-                ),
-                const SizedBox(width: 12),
-                // Chart Area
-                Expanded(
-                  child: Stack(
-                    children: [
-                      // Grid lines
-                      Column(
-                        mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                        children: List.generate(5, (index) => _buildGridLine(context)),
-                      ),
-                      // Line Chart Custom Paint
-                      Positioned.fill(
-                        child: CustomPaint(
-                          painter: _LineChartPainter(
-                            moodColor: const Color(0xFF10B981),
-                            backgroundColor: context.appColors.background,
-                          ),
-                        ),
-                      ),
-                      // X Axis Labels
-                      Positioned(
-                        bottom: -16, // Move below the chart
-                        left: 0,
-                        right: 0,
-                        child: Row(
-                          mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                          children: [
-                            Text(context.l10n.translate('Basso'), style: TextStyle(fontSize: 10, color: context.appColors.mutedForeground)),
-                            Text(context.l10n.translate('Medio'), style: TextStyle(fontSize: 10, color: context.appColors.mutedForeground)),
-                            Text(context.l10n.translate('Alto'), style: TextStyle(fontSize: 10, color: context.appColors.mutedForeground)),
-                          ],
-                        ),
-                      ),
-                    ],
-                  ),
-                ),
-              ],
-            ),
-          ),
-          const SizedBox(height: 36),
-          // Legend
-          Row(
-            mainAxisAlignment: MainAxisAlignment.center,
-            children: [
-              _buildLineLegendItem(const Color(0xFF10B981), context.l10n.translate('Con Mood'), false),
-              const SizedBox(width: 16),
-              _buildLineLegendItem(const Color(0xFFF59E0B), context.l10n.translate('Con Energia'), true),
-            ],
-          ),
+          const SizedBox(height: 20),
+          _buildLevelRow(context, context.l10n.translate('Con Mood Alto'), correlation.highMoodPct, const Color(0xFF10B981)),
+          const SizedBox(height: 16),
+          _buildLevelRow(context, context.l10n.translate('Con Mood Basso'), correlation.lowMoodPct, const Color(0xFFEF4444)),
         ],
       ),
     );
   }
 
-  Widget _buildGridLine(BuildContext context) {
-    return Container(
-      height: 1,
-      width: double.infinity,
-      color: context.appColors.border.withValues(alpha: 0.5),
-    );
-  }
-
-  Widget _buildLineLegendItem(Color color, String label, bool isDashed) {
-    return Row(
+  Widget _buildLevelRow(BuildContext context, String label, int percentage, Color color) {
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        Icon(
-          isDashed ? LucideIcons.unfoldHorizontal : LucideIcons.moveHorizontal, 
-          size: 14, 
-          color: color
+        Row(
+          mainAxisAlignment: MainAxisAlignment.spaceBetween,
+          children: [
+            Text(label, style: TextStyle(fontFamily: 'Inter', fontSize: 13, color: context.appColors.foreground)),
+            Text('$percentage%', style: TextStyle(fontFamily: 'Inter', fontSize: 13, fontWeight: FontWeight.w700, color: color)),
+          ],
         ),
-        const SizedBox(width: 6),
-        Text(
-          label,
-          style: TextStyle(
-            fontFamily: 'Inter',
-            fontSize: 13,
-            color: color,
-            fontWeight: FontWeight.w500,
-          ),
+        const SizedBox(height: 8),
+        Stack(
+          children: [
+            Container(height: 6, decoration: BoxDecoration(color: context.appColors.border.withValues(alpha: 0.3), borderRadius: BorderRadius.circular(3))),
+            FractionallySizedBox(widthFactor: percentage / 100, child: Container(height: 6, decoration: BoxDecoration(color: color, borderRadius: BorderRadius.circular(3)))),
+          ],
         ),
       ],
     );
   }
-}
-
-class _LineChartPainter extends CustomPainter {
-  final Color moodColor;
-  final Color backgroundColor;
-  _LineChartPainter({required this.moodColor, required this.backgroundColor});
-
-  @override
-  void paint(Canvas canvas, Size size) {
-    // Values from 0.0 to 1.0 representing percentage
-    // Mood (Teal): 75%, 62%, 48%
-    // Energia (Orange): 68%, 64%, 54%
-    final List<double> moodPts = [0.75, 0.62, 0.48];
-    final List<double> energiaPts = [0.68, 0.64, 0.54];
-
-    final double width = size.width;
-    final double height = size.height;
-
-    // Draw Mood Line
-    final moodPaint = Paint()
-      ..color = moodColor
-      ..strokeWidth = 2.5
-      ..style = PaintingStyle.stroke;
-
-    final moodPath = Path();
-    for (int i = 0; i < moodPts.length; i++) {
-      double x = (width / 2) * i;
-      double y = height - (height * moodPts[i]);
-      if (i == 0) {
-        moodPath.moveTo(x, y);
-      } else {
-        moodPath.lineTo(x, y);
-      }
-    }
-    canvas.drawPath(moodPath, moodPaint);
-
-    // Draw Energia Dashed Line
-    final energiaPaint = Paint()
-      ..color = const Color(0xFFF59E0B)
-      ..strokeWidth = 2.5
-      ..style = PaintingStyle.stroke;
-
-    final energiaPath = Path();
-    for (int i = 0; i < energiaPts.length; i++) {
-      double x = (width / 2) * i;
-      double y = height - (height * energiaPts[i]);
-      if (i == 0) {
-        energiaPath.moveTo(x, y);
-      } else {
-        energiaPath.lineTo(x, y);
-      }
-    }
-    _drawDashedPath(canvas, energiaPath, energiaPaint);
-
-    // Draw points
-    final dotPaintFill = Paint()
-      ..color = backgroundColor
-      ..style = PaintingStyle.fill;
-    
-    for (int i = 0; i < 3; i++) {
-      double x = (width / 2) * i;
-      double my = height - (height * moodPts[i]);
-      double ey = height - (height * energiaPts[i]);
-
-      final moodDotStroke = Paint()
-        ..color = moodColor
-        ..strokeWidth = 2
-        ..style = PaintingStyle.stroke;
-      canvas.drawCircle(Offset(x, my), 4, dotPaintFill);
-      canvas.drawCircle(Offset(x, my), 4, moodDotStroke);
-
-      final energiaDotStroke = Paint()
-        ..color = const Color(0xFFF59E0B)
-        ..strokeWidth = 2
-        ..style = PaintingStyle.stroke;
-      canvas.drawCircle(Offset(x, ey), 4, dotPaintFill);
-      canvas.drawCircle(Offset(x, ey), 4, energiaDotStroke);
-    }
-  }
-
-  void _drawDashedPath(Canvas canvas, Path path, Paint paint) {
-    const double dashWidth = 5.0;
-    const double dashSpace = 4.0;
-    double distance = 0.0;
-    bool draw = true;
-
-    for (ui.PathMetric pathMetric in path.computeMetrics()) {
-      while (distance < pathMetric.length) {
-        final double length = draw ? dashWidth : dashSpace;
-        if (draw) {
-          canvas.drawPath(
-            pathMetric.extractPath(distance, distance + length),
-            paint,
-          );
-        }
-        distance += length;
-        draw = !draw;
-      }
-      distance = 0.0;
-    }
-  }
-
-  @override
-  bool shouldRepaint(covariant CustomPainter oldDelegate) => false;
 }
 
 class _FooterInfo extends StatelessWidget {
@@ -549,26 +409,14 @@ class _FooterInfo extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return Container(
-      width: double.infinity,
-      decoration: BoxDecoration(
-        color: context.appColors.card.withValues(alpha: 0.5),
-        borderRadius: BorderRadius.circular(12),
-        border: Border.all(color: context.appColors.border, width: 1),
+    return Text(
+      context.l10n.translate('L\'analisi mostra come la tua costanza è influenzata dal tuo stato d\'animo ed energia.'),
+      style: TextStyle(
+        fontFamily: 'Inter',
+        fontSize: 11,
+        color: context.appColors.mutedForeground,
       ),
-      padding: const EdgeInsets.symmetric(vertical: 16, horizontal: 16),
-      child: Text(
-        context.l10n.translate('Analisi basata su count giorni con dati mood/energia (done completati, missed mancati)')
-            .replaceFirst('count', '76')
-            .replaceFirst('done', '46')
-            .replaceFirst('missed', '30'),
-        style: TextStyle(
-          fontFamily: 'Inter',
-          fontSize: 11,
-          color: context.appColors.mutedForeground,
-        ),
-        textAlign: TextAlign.center,
-      ),
+      textAlign: TextAlign.center,
     );
   }
 }

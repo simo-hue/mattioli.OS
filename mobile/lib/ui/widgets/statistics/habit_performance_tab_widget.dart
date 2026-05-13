@@ -1,44 +1,92 @@
 import 'package:flutter/material.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:lucide_icons_flutter/lucide_icons.dart';
 import '../../../core/theme.dart';
 import '../../../core/localization.dart';
+import '../../../providers/goal_provider.dart';
 
-class HabitPerformanceTabWidget extends StatelessWidget {
+class HabitPerformanceTabWidget extends ConsumerWidget {
   final String goalId;
 
   const HabitPerformanceTabWidget({super.key, required this.goalId});
 
   @override
-  Widget build(BuildContext context) {
+  Widget build(BuildContext context, WidgetRef ref) {
+    final logs = ref.watch(habitLogsProvider);
+    
+    final performance = _calculatePerformance(goalId, logs);
+    
+    Map<String, dynamic>? strongest;
+    Map<String, dynamic>? weakest;
+    
+    final activeDays = performance.where((p) => p['total'] > 0).toList();
+    
+    if (activeDays.isNotEmpty) {
+      strongest = activeDays.reduce((a, b) => a['pct'] > b['pct'] ? a : b);
+      weakest = activeDays.reduce((a, b) => a['pct'] < b['pct'] ? a : b);
+      
+      // If all days have the same percentage and it's not 0, weakest might be equal to strongest.
+      // Let's ensure they are different or handle it visually.
+      if (strongest['pct'] == weakest['pct']) {
+        weakest = null; // Don't show weakest if it's the same as strongest
+      }
+    }
+
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        const _PerformanceChartCard(),
+        _PerformanceChartCard(data: performance),
         const SizedBox(height: 12),
-        const _GiornoForteCard(),
+        if (strongest != null) _GiornoForteCard(data: strongest),
         const SizedBox(height: 12),
-        const _GiornoDeboleCard(),
+        if (weakest != null) _GiornoDeboleCard(data: weakest),
         const SizedBox(height: 16),
       ],
     );
   }
+  
+  List<Map<String, dynamic>> _calculatePerformance(String goalId, HabitLogsMap logs) {
+    final daysOfWeek = ['mon', 'tue', 'wed', 'thu', 'fri', 'sat', 'sun'];
+    final doneCounts = {1: 0, 2: 0, 3: 0, 4: 0, 5: 0, 6: 0, 7: 0};
+    final totalCounts = {1: 0, 2: 0, 3: 0, 4: 0, 5: 0, 6: 0, 7: 0};
+    
+    logs.forEach((dateStr, habits) {
+      if (habits.containsKey(goalId)) {
+        final date = DateTime.parse(dateStr);
+        final weekday = date.weekday; // 1 = Monday, 7 = Sunday
+        
+        totalCounts[weekday] = totalCounts[weekday]! + 1;
+        if (habits[goalId] == 'done') {
+          doneCounts[weekday] = doneCounts[weekday]! + 1;
+        }
+      }
+    });
+    
+    final List<Map<String, dynamic>> result = [];
+    
+    for (int i = 1; i <= 7; i++) {
+      final total = totalCounts[i]!;
+      final done = doneCounts[i]!;
+      final pct = total > 0 ? (done / total * 100).round() : 0;
+      
+      result.add({
+        'day': daysOfWeek[i - 1],
+        'pct': pct,
+        'done': done,
+        'total': total,
+      });
+    }
+    
+    return result;
+  }
 }
 
 class _PerformanceChartCard extends StatelessWidget {
-  const _PerformanceChartCard();
+  final List<Map<String, dynamic>> data;
+  const _PerformanceChartCard({required this.data});
 
   @override
   Widget build(BuildContext context) {
-    final data = [
-      {'day': 'mon', 'pct': 56},
-      {'day': 'tue', 'pct': 67},
-      {'day': 'wed', 'pct': 56},
-      {'day': 'thu', 'pct': 53},
-      {'day': 'fri', 'pct': 53},
-      {'day': 'sat', 'pct': 53},
-      {'day': 'sun', 'pct': 47},
-    ];
-
     return Container(
       decoration: BoxDecoration(
         color: context.appColors.card,
@@ -70,7 +118,6 @@ class _PerformanceChartCard extends StatelessWidget {
   }
 
   Widget _buildBar(BuildContext context, String day, int pct) {
-    // Dynamic height based on screen size, clamped for safety
     final screenHeight = MediaQuery.of(context).size.height;
     double height = screenHeight * 0.14; 
     if (height > 120) height = 120;
@@ -95,7 +142,7 @@ class _PerformanceChartCard extends StatelessWidget {
             Container(
               height: height,
               decoration: BoxDecoration(
-                color: context.appColors.muted.withValues(alpha: 0.3), // Dynamic Grey
+                color: context.appColors.muted.withValues(alpha: 0.3),
                 borderRadius: BorderRadius.circular(6),
               ),
               alignment: Alignment.bottomCenter,
@@ -103,7 +150,7 @@ class _PerformanceChartCard extends StatelessWidget {
                 width: double.infinity,
                 height: fillHeight,
                 decoration: BoxDecoration(
-                  color: Theme.of(context).colorScheme.primary, // Dynamic accent color
+                  color: Theme.of(context).colorScheme.primary,
                   borderRadius: BorderRadius.circular(6),
                 ),
               ),
@@ -126,7 +173,8 @@ class _PerformanceChartCard extends StatelessWidget {
 }
 
 class _GiornoForteCard extends StatelessWidget {
-  const _GiornoForteCard();
+  final Map<String, dynamic> data;
+  const _GiornoForteCard({required this.data});
 
   @override
   Widget build(BuildContext context) {
@@ -148,7 +196,7 @@ class _GiornoForteCard extends StatelessWidget {
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
                 Text(
-                  '${context.l10n.translate('Giorno più forte')}: ${context.l10n.translate('Mar')}',
+                  '${context.l10n.translate('Giorno più forte')}: ${context.l10n.translate(data['day'])}',
                   style: TextStyle(
                     fontFamily: 'Inter',
                     fontSize: 15,
@@ -156,9 +204,9 @@ class _GiornoForteCard extends StatelessWidget {
                     color: context.appColors.foreground,
                   ),
                 ),
-                SizedBox(height: 2),
+                const SizedBox(height: 2),
                 Text(
-                  '${context.l10n.translate('Ben fatto! % di completamento').replaceFirst('done', '67')} (12/18)',
+                  '${context.l10n.translate('Ben fatto! % di completamento').replaceFirst('done', data['pct'].toString())} (${data['done']}/${data['total']})',
                   style: TextStyle(
                     fontFamily: 'Inter',
                     fontSize: 13,
@@ -175,7 +223,8 @@ class _GiornoForteCard extends StatelessWidget {
 }
 
 class _GiornoDeboleCard extends StatelessWidget {
-  const _GiornoDeboleCard();
+  final Map<String, dynamic> data;
+  const _GiornoDeboleCard({required this.data});
 
   @override
   Widget build(BuildContext context) {
@@ -196,7 +245,7 @@ class _GiornoDeboleCard extends StatelessWidget {
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
                 Text(
-                  '${context.l10n.translate('Giorno più debole')}: ${context.l10n.translate('Dom')}',
+                  '${context.l10n.translate('Giorno più debole')}: ${context.l10n.translate(data['day'])}',
                   style: TextStyle(
                     fontFamily: 'Inter',
                     fontSize: 15,
@@ -204,9 +253,9 @@ class _GiornoDeboleCard extends StatelessWidget {
                     color: context.appColors.foreground,
                   ),
                 ),
-                SizedBox(height: 2),
+                const SizedBox(height: 2),
                 Text(
-                  '${context.l10n.translate('Solo % di completamento').replaceFirst('done', '47')} (8/17)',
+                  '${context.l10n.translate('Solo % di completamento').replaceFirst('done', data['pct'].toString())} (${data['done']}/${data['total']})',
                   style: TextStyle(
                     fontFamily: 'Inter',
                     fontSize: 13,

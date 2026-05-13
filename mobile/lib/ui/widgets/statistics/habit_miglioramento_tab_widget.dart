@@ -1,33 +1,120 @@
 import 'package:flutter/material.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:lucide_icons_flutter/lucide_icons.dart';
 import '../../../core/theme.dart';
 import '../../../core/localization.dart';
+import '../../../providers/goal_provider.dart';
 
-class HabitMiglioramentoTabWidget extends StatelessWidget {
+class AlertData {
+  final Map<String, dynamic> worstNegative;
+  final List<Map<String, dynamic>> brokenStreaks;
+  
+  AlertData({required this.worstNegative, required this.brokenStreaks});
+}
+
+class HabitMiglioramentoTabWidget extends ConsumerWidget {
   final String goalId;
 
   const HabitMiglioramentoTabWidget({super.key, required this.goalId});
 
   @override
-  Widget build(BuildContext context) {
+  Widget build(BuildContext context, WidgetRef ref) {
+    final logs = ref.watch(habitLogsProvider);
+    
+    final alertData = _calculateAlerts(goalId, logs);
+
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        _SerieNegativaCard(),
+        _SerieNegativaCard(data: alertData.worstNegative),
         const SizedBox(height: 16),
-        _StreakInterrottiCard(),
+        _StreakInterrottiCard(streaks: alertData.brokenStreaks),
         const SizedBox(height: 16),
         const SizedBox(height: 32),
       ],
     );
   }
+  
+  AlertData _calculateAlerts(String goalId, HabitLogsMap logs) {
+    final goalLogs = <DateTime, String>{};
+    logs.forEach((dateStr, habits) {
+      if (habits.containsKey(goalId)) {
+        final date = DateTime.parse(dateStr);
+        goalLogs[DateTime(date.year, date.month, date.day)] = habits[goalId]!;
+      }
+    });
+
+    final sortedDates = goalLogs.keys.toList()..sort();
+    
+    // Variables for Worst Negative Streak
+    int maxMissedStreak = 0;
+    DateTime? worstStreakStartDate;
+    int currentMissedStreak = 0;
+    DateTime? currentMissedStreakStartDate;
+    
+    // Variables for Broken Streaks
+    final brokenStreaks = <Map<String, dynamic>>[];
+    int currentStreak = 0;
+    
+    for (final date in sortedDates) {
+      final status = goalLogs[date];
+      
+      // 1. Worst Negative Streak Logic
+      if (status == 'missed') {
+        if (currentMissedStreak == 0) {
+          currentMissedStreakStartDate = date;
+        }
+        currentMissedStreak++;
+        if (currentMissedStreak > maxMissedStreak) {
+          maxMissedStreak = currentMissedStreak;
+          worstStreakStartDate = currentMissedStreakStartDate;
+        }
+      } else if (status == 'done') {
+        currentMissedStreak = 0;
+        currentMissedStreakStartDate = null;
+      }
+      
+      // 2. Broken Streaks Logic
+      if (status == 'done') {
+        currentStreak++;
+      } else if (status == 'missed') {
+        if (currentStreak > 0) {
+          brokenStreaks.add({
+            'days': currentStreak,
+            'date': date,
+          });
+          currentStreak = 0;
+        }
+      }
+    }
+    
+    // Sort broken streaks by date descending
+    brokenStreaks.sort((a, b) => (b['date'] as DateTime).compareTo(a['date'] as DateTime));
+    
+    return AlertData(
+      worstNegative: {
+        'days': maxMissedStreak,
+        'startDate': worstStreakStartDate,
+      },
+      brokenStreaks: brokenStreaks.take(5).toList(),
+    );
+  }
 }
 
 class _SerieNegativaCard extends StatelessWidget {
-  const _SerieNegativaCard();
+  final Map<String, dynamic> data;
+  const _SerieNegativaCard({required this.data});
 
   @override
   Widget build(BuildContext context) {
+    final days = data['days'] as int;
+    final startDate = data['startDate'] as DateTime?;
+    
+    String dateStr = '';
+    if (startDate != null) {
+      dateStr = '${context.l10n.translate('Iniziata il')} ${startDate.day} ${startDate.month} ${startDate.year}';
+    }
+
     return Container(
       decoration: BoxDecoration(
         color: context.appColors.card,
@@ -57,9 +144,9 @@ class _SerieNegativaCard extends StatelessWidget {
           Row(
             crossAxisAlignment: CrossAxisAlignment.center,
             children: [
-              const Text(
-                '12',
-                style: TextStyle(
+              Text(
+                '$days',
+                style: const TextStyle(
                   fontFamily: 'Inter',
                   fontSize: 48,
                   fontWeight: FontWeight.w700,
@@ -80,15 +167,17 @@ class _SerieNegativaCard extends StatelessWidget {
                         color: context.appColors.foreground,
                       ),
                     ),
-                    const SizedBox(height: 2),
-                    Text(
-                      '${context.l10n.translate('Iniziata il')} 1 ${context.l10n.translate('Aprile')} 2026',
-                      style: TextStyle(
-                        fontFamily: 'Inter',
-                        fontSize: 13,
-                        color: context.appColors.mutedForeground,
+                    if (startDate != null) ...[
+                      const SizedBox(height: 2),
+                      Text(
+                        dateStr,
+                        style: TextStyle(
+                          fontFamily: 'Inter',
+                          fontSize: 13,
+                          color: context.appColors.mutedForeground,
+                        ),
                       ),
-                    ),
+                    ],
                   ],
                 ),
               ),
@@ -101,17 +190,11 @@ class _SerieNegativaCard extends StatelessWidget {
 }
 
 class _StreakInterrottiCard extends StatelessWidget {
-  const _StreakInterrottiCard();
+  final List<Map<String, dynamic>> streaks;
+  const _StreakInterrottiCard({required this.streaks});
 
   @override
   Widget build(BuildContext context) {
-    final streaks = [
-      {'days': 4, 'date': '17 aprile 2026'},
-      {'days': 6, 'date': '6 marzo 2026'},
-      {'days': 7, 'date': '8 febbraio 2026'},
-      {'days': 34, 'date': '31 gennaio 2026'},
-    ];
-
     return Container(
       decoration: BoxDecoration(
         color: context.appColors.card,
@@ -132,16 +215,28 @@ class _StreakInterrottiCard extends StatelessWidget {
             ),
           ),
           const SizedBox(height: 16),
-          ...streaks.map((s) => Padding(
-                padding: const EdgeInsets.only(bottom: 12.0),
-                child: _buildStreakItem(context, s['days'] as int, s['date'] as String),
-              )),
+          if (streaks.isEmpty)
+            Text(
+              context.l10n.translate('Nessun streak interrotto registrato'),
+              style: TextStyle(
+                fontFamily: 'Inter',
+                fontSize: 14,
+                color: context.appColors.mutedForeground,
+              ),
+            )
+          else
+            ...streaks.map((s) => Padding(
+                  padding: const EdgeInsets.only(bottom: 12.0),
+                  child: _buildStreakItem(context, s['days'] as int, s['date'] as DateTime),
+                )),
         ],
       ),
     );
   }
 
-  Widget _buildStreakItem(BuildContext context, int days, String date) {
+  Widget _buildStreakItem(BuildContext context, int days, DateTime date) {
+    final dateStr = '${date.day} ${date.month} ${date.year}';
+    
     return Container(
       decoration: BoxDecoration(
         color: context.appColors.cardElevated,
@@ -185,7 +280,7 @@ class _StreakInterrottiCard extends StatelessWidget {
                 ),
                 const SizedBox(height: 4),
                 Text(
-                  date,
+                  dateStr,
                   style: TextStyle(
                     fontFamily: 'Inter',
                     fontSize: 13,
@@ -200,6 +295,3 @@ class _StreakInterrottiCard extends StatelessWidget {
     );
   }
 }
-
-
-

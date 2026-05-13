@@ -71,5 +71,48 @@
     - Added invalidation of `habitStatsProvider` in `cycleStatus` to refresh data on changes.
     - Updated `GlobalHabitsTabWidget` to use `habitStatsProvider` and handle async states.
 
+- [2026-05-13 08:50]: **Single Habit Statistics Optimization & Security Fix**
+  - *Details*: Optimized the single habit details view (`HabitOverviewTabWidget`) to use the database view for main stats. Also fixed a security issue in the database view by adding `security_invoker = true`.
+  - *Tech Notes*:
+    - Updated `habit_stats` view to include `security_invoker = true` and additional fields (`total_completions`, `missed_days`, `total_active_days`).
+    - Updated `HabitOverviewTabWidget` to use `habitStatsProvider` and mapped the data.
+    - Extracted `_calculateTrend30Days` and removed the heavy `_calculateStats` function.
+
+- [2026-05-13 08:52]: **Habit Calendar Real Data Integration**
+  - *Details*: Removed mock data from the "Trend" tab of single habits (`HabitCalendarioTabWidget`) and connected it to real data from `habitLogsProvider`.
+  - *Tech Notes*:
+    - Converted `HabitCalendarioTabWidget` to `ConsumerWidget`.
+    - Implemented `_calculateYearlyData` to generate 365 days of status based on real logs.
+    - Updated `_CalendarioAnnualeCard` to accept and display the calculated data.
+
+- [2026-05-13 08:53]: **Habit Calendar Color Fix**
+  - *Details*: Changed the completion color in `HabitCalendarioTabWidget` from the dynamic accent color (which appeared white) to a fixed solid green.
+  - *Tech Notes*: Updated `habit_calendario_tab_widget.dart` to use `0xFF10B981` (Emerald Green) for `status == 1`.
+
+- [2026-05-13 08:55]: **Habit Performance Real Data Integration**
+  - *Details*: Removed mock data from the "Stats" tab of single habits (`HabitPerformanceTabWidget`) and connected it to real data from `habitLogsProvider`.
+  - *Tech Notes*:
+    - Converted `HabitPerformanceTabWidget` to `ConsumerWidget`.
+    - Implemented `_calculatePerformance` to compute completion rates for each day of the week.
+    - Added dynamic calculation of strongest and weakest days.
+
+- [2026-05-13 08:57]: **Habit Alerts Real Data Integration**
+  - *Details*: Removed mock data from the "Alert" tab of single habits (`HabitMiglioramentoTabWidget`) and connected it to real data from `habitLogsProvider`.
+  - *Tech Notes*:
+    - Converted `HabitMiglioramentoTabWidget` to `ConsumerWidget`.
+    - Implemented `_calculateWorstNegativeStreak` to find the longest sequence of missed days.
+    - Implemented `_calculateBrokenStreaks` to find the last 5 broken streaks.
+
+- [2026-05-13 08:59]: **Habit Alerts Optimization**
+  - *Details*: Further optimized `HabitMiglioramentoTabWidget` by combining calculations and sorting dates only once.
+  - *Tech Notes*: Created `_calculateAlerts` to perform both analyses in a single loop over sorted dates.
+
+- [2026-05-13 09:04]: **Mood Panel Real Data Integration**
+  - *Details*: Removed mock data from both Global and Habit specific Mood tabs and connected them to Supabase via `moodCorrelationProvider`.
+  - *Tech Notes*:
+    - Expanded `MoodCorrelation` model and `moodCorrelationProvider` in `mood_provider.dart` to calculate averages and sensitivity.
+    - Converted `GlobalMoodTabWidget` to `ConsumerStatefulWidget` and `HabitMoodTabWidget` to `ConsumerWidget`.
+    - Implemented real-time correlation analysis between habits and mood/energy.
+
 ## Current Status
-- **Next Step**: Verify the changes in the app. The "Abitudini" tab should now load instantly from the DB view.
+- **Next Step**: The optimization of the Mood panel is complete. All mock data has been removed. We can proceed with other sections or optimizations as requested by the user.

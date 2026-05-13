@@ -366,3 +366,8 @@ BEGIN
 END;
 $$;
 ```
+
+## Notifiche in Background (iOS)
+- [ ] Per far funzionare le azioni delle notifiche quando l'app è terminata o in background su iOS, assicurarsi di aver abilitato le seguenti capabilities in Xcode:
+  - **Background Modes**: Remote notifications (se si usano notifiche push, ma anche per local notifications con azioni a volte è necessario).
+  - Assicurarsi che il file `ios/Runner/AppDelegate.swift` sia configurato correttamente se necessario.

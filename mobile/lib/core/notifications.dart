@@ -4,6 +4,7 @@ import 'package:timezone/timezone.dart' as tz;
 import 'package:timezone/data/latest.dart' as tz;
 import 'package:flutter_timezone/flutter_timezone.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
+import 'supabase_config.dart';
 
 class NotificationService {
   static final NotificationService _instance = NotificationService._internal();
@@ -59,6 +60,7 @@ class NotificationService {
       await _notifications.initialize(
         settings: initSettings,
         onDidReceiveNotificationResponse: _onNotificationResponse,
+        onDidReceiveBackgroundNotificationResponse: notificationTapBackground,
       );
     } catch (e) {
       debugPrint('Error initializing NotificationService: $e');
@@ -110,7 +112,7 @@ class NotificationService {
 
   Future<void> _snoozeHabit(String habitId, String title) async {
     final now = DateTime.now();
-    final scheduledDate = now.add(const Duration(hours: 1));
+    final scheduledDate = now.add(const Duration(minutes: 10));
     
     const AndroidNotificationDetails androidDetails = AndroidNotificationDetails(
       'habit_reminders',
@@ -147,7 +149,24 @@ class NotificationService {
 
   Future<void> _skipHabit(String habitId) async {
     await _notifications.cancel(id: habitId.hashCode);
-    debugPrint('[Notifications] Habit $habitId skipped');
+    
+    final user = Supabase.instance.client.auth.currentUser;
+    if (user == null) return;
+
+    final now = DateTime.now();
+    final dateKey = '${now.year}-${now.month.toString().padLeft(2, '0')}-${now.day.toString().padLeft(2, '0')}';
+
+    try {
+      await Supabase.instance.client.from('goal_logs').upsert({
+        'user_id': user.id,
+        'goal_id': habitId,
+        'date': dateKey,
+        'status': 'missed',
+      }, onConflict: 'goal_id, date');
+      debugPrint('[Notifications] Habit $habitId marked as missed/skipped');
+    } catch (e) {
+      debugPrint('[Notifications] Error marking habit as missed: $e');
+    }
   }
 
   Future<void> requestPermissions() async {
@@ -272,4 +291,31 @@ class NotificationService {
     }
     return scheduledDate;
   }
+}
+
+@pragma('vm:entry-point')
+void notificationTapBackground(NotificationResponse response) async {
+  WidgetsFlutterBinding.ensureInitialized();
+  
+  // Initialize timezones for this isolate
+  tz.initializeTimeZones();
+  try {
+    final dynamic timeZoneInfo = await FlutterTimezone.getLocalTimezone();
+    final String timeZoneName = timeZoneInfo is String ? timeZoneInfo : timeZoneInfo.identifier;
+    tz.setLocalLocation(tz.getLocation(timeZoneName));
+  } catch (e) {
+    tz.setLocalLocation(tz.getLocation('UTC'));
+  }
+
+  // Initialize Supabase if needed
+  try {
+    Supabase.instance.client;
+  } catch (e) {
+    await Supabase.initialize(
+      url: SupabaseConfig.url,
+      anonKey: SupabaseConfig.anonKey,
+    );
+  }
+
+  NotificationService()._onNotificationResponse(response);
 }

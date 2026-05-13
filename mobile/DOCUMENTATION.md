@@ -571,3 +571,13 @@
 *Tech Notes*:
 - Modified `lib/ui/widgets/bottom_nav_bar.dart`.
 - Changed the bottom margin from a minimal fixed value to `bottomPadding + 16`, ensuring it floats 16 pixels above the safe area.
+
+---
+
+## [2026-05-13 15:15]: Core - Notification Actions & Background Handling
+*Details*: Fixed the issue where clicking notification actions (Fatto, Salta, Posticipa) did nothing. Implemented background handling for notifications and database integration for actions.
+*Tech Notes*:
+- Added `@pragma('vm:entry-point')` top-level function `notificationTapBackground` in `notifications.dart` to handle actions when the app is in background or terminated.
+- Updated `_snoozeHabit` to snooze for 10 minutes instead of 1 hour.
+- Updated `_skipHabit` to mark the habit as 'missed' in the database (Supabase) instead of just cancelling the notification.
+- Consistent with existing code, streaks are not updated in direct database writes from notifications (added TODO note in code).

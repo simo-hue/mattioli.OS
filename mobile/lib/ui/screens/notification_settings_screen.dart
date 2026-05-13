@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:flutter/cupertino.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:lucide_icons_flutter/lucide_icons.dart';
@@ -80,18 +81,15 @@ class NotificationSettingsScreen extends ConsumerWidget {
                   context: context,
                   title: 'Orario Morning Brief',
                   time: settings.morningBriefTime,
-                  onTap: () async {
-                    final parts = settings.morningBriefTime.split(':');
-                    final initialTime = TimeOfDay(hour: int.parse(parts[0]), minute: int.parse(parts[1]));
-                    final pickedTime = await showTimePicker(
+                  onTap: () {
+                    _showAppleStyleTimePicker(
                       context: context,
-                      initialTime: initialTime,
+                      initialTime: settings.morningBriefTime,
+                      onTimeSelected: (timeStr) {
+                        notifier.updateSettings(settings.copyWith(morningBriefTime: timeStr));
+                        ref.hapticLight();
+                      },
                     );
-                    if (pickedTime != null) {
-                      final timeStr = '${pickedTime.hour.toString().padLeft(2, '0')}:${pickedTime.minute.toString().padLeft(2, '0')}';
-                      notifier.updateSettings(settings.copyWith(morningBriefTime: timeStr));
-                      ref.hapticLight();
-                    }
                   },
                 ),
               _buildDivider(context),
@@ -114,18 +112,15 @@ class NotificationSettingsScreen extends ConsumerWidget {
                   context: context,
                   title: 'Orario Review Serale',
                   time: settings.eveningReviewTime,
-                  onTap: () async {
-                    final parts = settings.eveningReviewTime.split(':');
-                    final initialTime = TimeOfDay(hour: int.parse(parts[0]), minute: int.parse(parts[1]));
-                    final pickedTime = await showTimePicker(
+                  onTap: () {
+                    _showAppleStyleTimePicker(
                       context: context,
-                      initialTime: initialTime,
+                      initialTime: settings.eveningReviewTime,
+                      onTimeSelected: (timeStr) {
+                        notifier.updateSettings(settings.copyWith(eveningReviewTime: timeStr));
+                        ref.hapticLight();
+                      },
                     );
-                    if (pickedTime != null) {
-                      final timeStr = '${pickedTime.hour.toString().padLeft(2, '0')}:${pickedTime.minute.toString().padLeft(2, '0')}';
-                      notifier.updateSettings(settings.copyWith(eveningReviewTime: timeStr));
-                      ref.hapticLight();
-                    }
                   },
                 ),
             ]),
@@ -426,6 +421,104 @@ class NotificationSettingsScreen extends ConsumerWidget {
           ),
         ],
       ),
+    );
+  }
+
+  void _showAppleStyleTimePicker({
+    required BuildContext context,
+    required String initialTime,
+    required Function(String) onTimeSelected,
+  }) {
+    final parts = initialTime.split(':');
+    final initialHour = int.parse(parts[0]);
+    final initialMinute = int.parse(parts[1]);
+    final now = DateTime.now();
+    final initialDateTime = DateTime(now.year, now.month, now.day, initialHour, initialMinute);
+    
+    String selectedTime = initialTime;
+
+    showCupertinoModalPopup(
+      context: context,
+      builder: (BuildContext modalContext) {
+        return Container(
+          height: 300,
+          decoration: BoxDecoration(
+            color: context.appColors.card,
+            borderRadius: const BorderRadius.vertical(top: Radius.circular(24)),
+            border: Border.all(color: context.appColors.border.withValues(alpha: 0.5)),
+          ),
+          child: SafeArea(
+            top: false,
+            child: Column(
+              children: [
+                Padding(
+                  padding: const EdgeInsets.symmetric(horizontal: 20.0, vertical: 12.0),
+                  child: Row(
+                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                    children: [
+                      GestureDetector(
+                        onTap: () => Navigator.pop(modalContext),
+                        child: Text(
+                          'Annulla',
+                          style: GoogleFonts.inter(
+                            color: context.appColors.mutedForeground,
+                            fontSize: 16,
+                            fontWeight: FontWeight.w500,
+                          ),
+                        ),
+                      ),
+                      Text(
+                        'Seleziona Orario',
+                        style: GoogleFonts.inter(
+                          color: context.appColors.foreground,
+                          fontSize: 16,
+                          fontWeight: FontWeight.w700,
+                        ),
+                      ),
+                      GestureDetector(
+                        onTap: () {
+                          onTimeSelected(selectedTime);
+                          Navigator.pop(modalContext);
+                        },
+                        child: Text(
+                          'Fatto',
+                          style: GoogleFonts.inter(
+                            color: Theme.of(context).colorScheme.primary,
+                            fontSize: 16,
+                            fontWeight: FontWeight.w700,
+                          ),
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+                Divider(height: 1, color: context.appColors.border),
+                Expanded(
+                  child: CupertinoTheme(
+                    data: CupertinoThemeData(
+                      brightness: Theme.of(context).brightness,
+                      textTheme: CupertinoTextThemeData(
+                        dateTimePickerTextStyle: GoogleFonts.inter(
+                          color: context.appColors.foreground,
+                          fontSize: 20,
+                        ),
+                      ),
+                    ),
+                    child: CupertinoDatePicker(
+                      mode: CupertinoDatePickerMode.time,
+                      use24hFormat: true,
+                      initialDateTime: initialDateTime,
+                      onDateTimeChanged: (DateTime newDateTime) {
+                        selectedTime = '${newDateTime.hour.toString().padLeft(2, '0')}:${newDateTime.minute.toString().padLeft(2, '0')}';
+                      },
+                    ),
+                  ),
+                ),
+              ],
+            ),
+          ),
+        );
+      },
     );
   }
 }

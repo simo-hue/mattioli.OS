@@ -152,5 +152,12 @@
   - *Details*: Modified the bottom floating island (navigation bar) to be as wide as the upper parts (like the calendar box) in the home screen.
   - *Tech Notes*: Changed the horizontal margin of `AppBottomNavBar` in `bottom_nav_bar.dart` from `24` to `16` to match the padding used in `dashboard_screen.dart`.
 
+- [2026-05-13 18:45]: **Apple-Style Time Picker in Notification Settings**
+  - *Details*: Replaced the default Material time picker with a custom Apple-style Cupertino time picker for "Promemoria Abitudini" and "Review Serale" in the notification settings screen.
+  - *Tech Notes*:
+    - Added `flutter/cupertino.dart` import.
+    - Implemented `_showAppleStyleTimePicker` helper method using `showCupertinoModalPopup` and `CupertinoDatePicker`.
+    - Updated `onTap` handlers for time selection rows to use the new method.
+
 ## Current Status
-- **Next Step**: Waiting for user feedback on the bottom bar width change.
+- **Next Step**: Waiting for user feedback on the new time picker in notification settings.

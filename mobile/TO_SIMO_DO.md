@@ -28,6 +28,12 @@
 - [ ] Verificare che i grafici (fl_chart) abbiano legende e assi leggibili sia in Light che in Dark Mode.
 - [ ] Confermare che il colore accento cambi automaticamente se quello selezionato è troppo chiaro per lo sfondo bianco (gestito da `SettingsProvider`).
 
+## Icona Notifiche (iOS)
+- [ ] Risolvere problema icona di default su dispositivo fisico:
+  1. Disinstallare l'app dall'iPhone.
+  2. Riavviare l'iPhone (pulisce la cache delle icone).
+  3. Eseguire `flutter clean` e poi `flutter run` sul dispositivo.
+
 ## Verifica Animazioni Premium (Post-Implementazione)
 
 - [ ] Verificare che lo switch tra le schede (Home, Statistiche, Obiettivi) sia fluido.

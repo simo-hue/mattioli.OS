@@ -29,7 +29,7 @@ class AppBottomNavBar extends ConsumerWidget {
     ];
 
     return Container(
-      margin: EdgeInsets.fromLTRB(24, 0, 24, (bottomPadding > 0 ? 6 : 8)), // Minimal bottom margin
+      margin: EdgeInsets.fromLTRB(24, 0, 24, bottomPadding + 6),
       child: ClipRRect(
         borderRadius: BorderRadius.circular(28),
         child: BackdropFilter(

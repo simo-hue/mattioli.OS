@@ -553,3 +553,21 @@
 - **Database**: Updated `get_macro_goals_stats` function in Supabase.
 - **File**: `migrations/20260513_add_get_macro_goals_stats.sql`.
 - **Action**: Requested user to rerun the script.
+
+---
+
+## [2026-05-13 15:00]: Core - Analysis of iOS Notification Icon Issue
+*Details*: Investigated the issue where the notification icon shows a default icon on a physical device but the correct app icon on the simulator.
+*Tech Notes*:
+- Verified that `AppIcon.appiconset` contains all required sizes for iOS (20x20 to 1024x1024).
+- Confirmed that on iOS, the notification icon is handled by the system and uses the App Icon. There is no separate configuration in `flutter_local_notifications`.
+- Concluded that the issue is likely due to iOS caching on the physical device.
+- Added troubleshooting steps to `TO_SIMO_DO.md` for the user to follow (Uninstall, Restart, Clean).
+
+---
+
+## [2026-05-13 15:05]: UI - Raised Floating Bottom Navigation Bar
+*Details*: Raised the floating bottom navigation bar to make it look more premium and prevent interference with the home indicator on iOS.
+*Tech Notes*:
+- Modified `lib/ui/widgets/bottom_nav_bar.dart`.
+- Changed the bottom margin from a minimal fixed value to `bottomPadding + 16`, ensuring it floats 16 pixels above the safe area.

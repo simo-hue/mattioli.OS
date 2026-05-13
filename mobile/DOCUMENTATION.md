@@ -642,3 +642,21 @@
 - Replaced `AlertDialog` with a custom `Dialog` wrapped in `BackdropFilter` (blur 10).
 - Styled the content with an alert icon, bold title, and custom row buttons.
 - Added `import 'dart:ui';` in `subscription_screen.dart`.
+
+---
+
+## [2026-05-13 22:50]: Feature - AI Chat for Pro Users with Goals Integration
+*Details*: Implemented a premium chat interface for Pro users to interact with their goals and statistics. Non-Pro users continue to see the promotional modal.
+*Tech Notes*:
+- Created `AIChatScreen` in `lib/ui/screens/ai_chat_screen.dart` with glassmorphic design and quick action pills.
+- Updated `ProtocolloPanel` in `lib/ui/widgets/protocollo_panel.dart` to check `isPro` status and navigate accordingly.
+- Integrated `macroGoalsProvider` and `userProfileProvider` for context in the chat.
+- Verified with `flutter analyze` and fixed unused imports.
+
+---
+
+## [2026-05-13 22:53]: UI - Moved Suggested Prompts to Bottom in AI Chat
+*Details*: Moved the suggested prompts from the top of the chat to the bottom, just above the input field, to improve ergonomics and make them more easily clickable on mobile devices.
+*Tech Notes*:
+- Rearranged widgets in `lib/ui/screens/ai_chat_screen.dart` to place the `Suggested Prompts` block after the `Chat Area` and before the `Input Area`.
+

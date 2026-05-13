@@ -4,6 +4,8 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:lucide_icons_flutter/lucide_icons.dart';
 import '../../core/theme.dart';
 import '../../core/localization.dart';
+import '../../providers/settings_provider.dart';
+import '../screens/ai_chat_screen.dart';
 import 'daily_check_in_modal.dart';
 import 'habit_management_modal.dart';
 import 'pro_features_modal.dart';
@@ -67,7 +69,14 @@ class ProtocolloPanel extends ConsumerWidget {
                 label: context.l10n.translate('AI Chat'),
                 subtitle: context.l10n.translate('Obiettivi'),
                 color: const Color(0xFF8B5CF6),
-                onTap: () => ProFeaturesModal.show(context),
+                onTap: () {
+                  final settings = ref.read(settingsProvider);
+                  if (settings.isPro) {
+                    Navigator.push(context, AIChatScreen.route());
+                  } else {
+                    ProFeaturesModal.show(context);
+                  }
+                },
               ),
             ),
             const SizedBox(width: 12),

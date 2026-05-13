@@ -318,7 +318,7 @@ class _ProfileScreenState extends ConsumerState<ProfileScreen> {
                 const SizedBox(height: 16),
                 Center(
                   child: Text(
-                    'Versione 1.0.0 (Build 20260422)',
+                    'Versione 1.0.0',
                     style: TextStyle(
                       color: context.appColors.mutedForeground.withValues(alpha: 0.5),
                       fontSize: 10,

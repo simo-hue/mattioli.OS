@@ -6,6 +6,7 @@ import '../../core/theme.dart';
 import '../../core/haptics.dart';
 import '../../providers/settings_provider.dart';
 import 'package:intl/intl.dart';
+import 'dart:ui';
 
 class SubscriptionScreen extends ConsumerWidget {
   const SubscriptionScreen({super.key});
@@ -519,27 +520,133 @@ class SubscriptionScreen extends ConsumerWidget {
   void _showCancelDialog(BuildContext context, WidgetRef ref) {
     showDialog(
       context: context,
-      builder: (context) => AlertDialog(
-        title: const Text('Disdici Abbonamento'),
-        content: const Text('Sei sicuro di voler disdire il tuo abbonamento Pro? Perderai l\'accesso alle funzionalità avanzate al termine del periodo di fatturazione.'),
-        actions: [
-          TextButton(
-            onPressed: () => Navigator.pop(context),
-            child: const Text('Annulla'),
+      builder: (context) => BackdropFilter(
+        filter: ImageFilter.blur(sigmaX: 10, sigmaY: 10),
+        child: Dialog(
+          backgroundColor: Colors.transparent,
+          elevation: 0,
+          child: Container(
+            padding: const EdgeInsets.all(28),
+            decoration: BoxDecoration(
+              color: context.appColors.card.withValues(alpha: 0.95),
+              borderRadius: BorderRadius.circular(24),
+              border: Border.all(color: context.appColors.border.withValues(alpha: 0.5), width: 1.5),
+              boxShadow: [
+                BoxShadow(
+                  color: Colors.black.withValues(alpha: 0.1),
+                  blurRadius: 20,
+                  spreadRadius: 5,
+                )
+              ],
+            ),
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                Container(
+                  padding: const EdgeInsets.all(16),
+                  decoration: BoxDecoration(
+                    color: AppColors.destructive.withValues(alpha: 0.1),
+                    shape: BoxShape.circle,
+                  ),
+                  child: const Icon(
+                    Icons.warning_amber_rounded,
+                    size: 32,
+                    color: AppColors.destructive,
+                  ),
+                ),
+                const SizedBox(height: 24),
+                Text(
+                  'Disdici Abbonamento',
+                  style: TextStyle(
+                    fontFamily: 'Inter',
+                    fontSize: 20,
+                    fontWeight: FontWeight.w800,
+                    color: context.appColors.foreground,
+                    letterSpacing: -0.5,
+                  ),
+                ),
+                const SizedBox(height: 8),
+                Text(
+                  'Sei sicuro di voler disdire il tuo abbonamento Pro? Perderai l\'accesso alle funzionalità avanzate al termine del periodo di fatturazione.',
+                  textAlign: TextAlign.center,
+                  style: TextStyle(
+                    fontFamily: 'Inter',
+                    fontSize: 14,
+                    color: context.appColors.mutedForeground,
+                    fontWeight: FontWeight.w500,
+                  ),
+                ),
+                const SizedBox(height: 24),
+                Row(
+                  children: [
+                    Expanded(
+                      child: GestureDetector(
+                        onTap: () => Navigator.pop(context),
+                        child: Container(
+                          height: 50,
+                          decoration: BoxDecoration(
+                            color: context.appColors.background,
+                            borderRadius: BorderRadius.circular(14),
+                            border: Border.all(color: context.appColors.border),
+                          ),
+                          child: Center(
+                            child: Text(
+                              'Annulla',
+                              style: TextStyle(
+                                color: context.appColors.foreground,
+                                fontSize: 14,
+                                fontWeight: FontWeight.w600,
+                                fontFamily: 'Inter',
+                              ),
+                            ),
+                          ),
+                        ),
+                      ),
+                    ),
+                    const SizedBox(width: 12),
+                    Expanded(
+                      child: GestureDetector(
+                        onTap: () {
+                          Navigator.pop(context);
+                          final settings = ref.read(settingsProvider);
+                          ref.read(settingsProvider.notifier).updateSettings(settings.copyWith(isPro: false));
+                          ScaffoldMessenger.of(context).showSnackBar(
+                            const SnackBar(content: Text('Abbonamento disdetto con successo.')),
+                          );
+                        },
+                        child: Container(
+                          height: 50,
+                          decoration: BoxDecoration(
+                            color: AppColors.destructive,
+                            borderRadius: BorderRadius.circular(14),
+                            boxShadow: [
+                              BoxShadow(
+                                color: AppColors.destructive.withValues(alpha: 0.3),
+                                blurRadius: 10,
+                                offset: const Offset(0, 4),
+                              )
+                            ],
+                          ),
+                          child: const Center(
+                            child: Text(
+                              'Disdici',
+                              style: TextStyle(
+                                color: Colors.white,
+                                fontSize: 14,
+                                fontWeight: FontWeight.w700,
+                                fontFamily: 'Inter',
+                              ),
+                            ),
+                          ),
+                        ),
+                      ),
+                    ),
+                  ],
+                ),
+              ],
+            ),
           ),
-          TextButton(
-            onPressed: () {
-              Navigator.pop(context);
-              final settings = ref.read(settingsProvider);
-              ref.read(settingsProvider.notifier).updateSettings(settings.copyWith(isPro: false));
-              ScaffoldMessenger.of(context).showSnackBar(
-                const SnackBar(content: Text('Abbonamento disdetto con successo.')),
-              );
-            },
-            style: TextButton.styleFrom(foregroundColor: AppColors.destructive),
-            child: const Text('Disdici'),
-          ),
-        ],
+        ),
       ),
     );
   }

@@ -633,3 +633,12 @@
 *Details*: Fixed an error where locale data was not initialized for Italian date formatting.
 *Tech Notes*:
 - Added `initializeDateFormatting('it', null)` in `main.dart` and imported `package:intl/date_symbol_data_local.dart`.
+
+---
+
+## [2026-05-13 22:42]: UI - Subscription Cancel Dialog Redesign
+*Details*: Redesigned the "Disdici Abbonamento" dialog to match the app's premium aesthetic, using a blur effect and custom styled buttons.
+*Tech Notes*:
+- Replaced `AlertDialog` with a custom `Dialog` wrapped in `BackdropFilter` (blur 10).
+- Styled the content with an alert icon, bold title, and custom row buttons.
+- Added `import 'dart:ui';` in `subscription_screen.dart`.

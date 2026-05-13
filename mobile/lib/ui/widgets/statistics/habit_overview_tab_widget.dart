@@ -1,23 +1,54 @@
 import 'package:flutter/material.dart';
 import 'package:lucide_icons_flutter/lucide_icons.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../../core/theme.dart';
 import '../../../core/localization.dart';
+import '../../../providers/goal_provider.dart';
+import '../../../models/goal.dart';
 
-class HabitOverviewTabWidget extends StatelessWidget {
+class HabitStats {
+  final int currentStreak;
+  final int bestStreak;
+  final int completionRate;
+  final int totalCompletions;
+  final int totalActiveDays;
+  final int missedDays;
+  final List<int> trend30Days;
+
+  HabitStats({
+    required this.currentStreak,
+    required this.bestStreak,
+    required this.completionRate,
+    required this.totalCompletions,
+    required this.totalActiveDays,
+    required this.missedDays,
+    required this.trend30Days,
+  });
+}
+
+class HabitOverviewTabWidget extends ConsumerWidget {
   final String goalId;
 
   const HabitOverviewTabWidget({super.key, required this.goalId});
 
   @override
-  Widget build(BuildContext context) {
+  Widget build(BuildContext context, WidgetRef ref) {
+    final goals = ref.watch(goalsProvider);
+    final logs = ref.watch(habitLogsProvider);
+    
+    final goal = goals.firstWhere((g) => g.id == goalId, orElse: () => Goal(id: '', title: '', color: Colors.blue, startDate: DateTime.now()));
+    
+    final stats = _calculateStats(goalId, logs, goal);
+    final correlations = _calculateCorrelations(goalId, logs, goals);
+
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        const _TopStatsGrid(),
+        _TopStatsGrid(stats: stats),
         const SizedBox(height: 16),
-        const _TrendUltimi30Giorni(),
+        _TrendUltimi30Giorni(trend: stats.trend30Days),
         const SizedBox(height: 16),
-        _CorrelazioniSection(goalId: goalId),
+        _CorrelazioniSection(goalId: goalId, correlations: correlations, currentGoalTitle: goal.title),
         const SizedBox(height: 32),
       ],
     );
@@ -25,7 +56,8 @@ class HabitOverviewTabWidget extends StatelessWidget {
 }
 
 class _TopStatsGrid extends StatelessWidget {
-  const _TopStatsGrid();
+  final HabitStats stats;
+  const _TopStatsGrid({required this.stats});
 
   @override
   Widget build(BuildContext context) {
@@ -39,25 +71,25 @@ class _TopStatsGrid extends StatelessWidget {
       children: [
         _StatCard(
           title: context.l10n.translate('SERIE ATTUALE'),
-          value: '0',
+          value: '${stats.currentStreak}',
           subtitle: context.l10n.translate('giorni'),
           valueColor: const Color(0xFFEF4444), // Red
         ),
         _StatCard(
           title: context.l10n.translate('RECORD'),
-          value: '34',
+          value: '${stats.bestStreak}',
           subtitle: context.l10n.translate('giorni'),
           valueColor: const Color(0xFFEAB308), // Yellow
         ),
         _StatCard(
           title: context.l10n.translate('COMPLETAMENTO'),
-          value: '55%',
-          subtitle: '67/122 ${context.l10n.translate('gg')}',
+          value: '${stats.completionRate}%',
+          subtitle: '${stats.totalCompletions}/${stats.totalActiveDays} ${context.l10n.translate('gg')}',
           valueColor: context.appColors.foreground,
         ),
         _StatCard(
           title: context.l10n.translate('MANCATI'),
-          value: '40',
+          value: '${stats.missedDays}',
           subtitle: context.l10n.translate('giorni'),
           valueColor: const Color(0xFFEF4444), // Red
         ),
@@ -127,15 +159,12 @@ class _StatCard extends StatelessWidget {
 }
 
 class _TrendUltimi30Giorni extends StatelessWidget {
-  const _TrendUltimi30Giorni();
+  final List<int> trend;
+  const _TrendUltimi30Giorni({required this.trend});
 
   @override
   Widget build(BuildContext context) {
-    final List<int> statuses = [
-      0, 0, 1, 0, 2, 0, 1, 1, 0, 0,
-      0, 0, 0, 0, 0, 0, 0, 0, 0, 2,
-      1, 1, 1, 1, 2, 0, 0, 0, 0, 2,
-    ];
+    final List<int> statuses = trend;
 
     return Container(
       decoration: BoxDecoration(
@@ -205,7 +234,9 @@ class _TrendUltimi30Giorni extends StatelessWidget {
 
 class _CorrelazioniSection extends StatefulWidget {
   final String goalId;
-  const _CorrelazioniSection({required this.goalId});
+  final List<Map<String, dynamic>> correlations;
+  final String currentGoalTitle;
+  const _CorrelazioniSection({required this.goalId, required this.correlations, required this.currentGoalTitle});
 
   @override
   State<_CorrelazioniSection> createState() => _CorrelazioniSectionState();
@@ -233,11 +264,17 @@ class _CorrelazioniSectionState extends State<_CorrelazioniSection> {
 
   @override
   Widget build(BuildContext context) {
+    final positiveCorrelations = widget.correlations.where((c) => c['percentage'] >= 50).toList();
+    final negativeCorrelations = widget.correlations.where((c) => c['percentage'] < 50).toList();
+    
+    final displayPositives = positiveCorrelations.isNotEmpty ? positiveCorrelations.take(3).toList() : [];
+    final displayNegatives = negativeCorrelations.isNotEmpty ? negativeCorrelations.take(3).toList() : [];
+
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
         Text(
-          '${context.l10n.translate('Correlazioni con')} "20 Flessioni 1"',
+          '${context.l10n.translate('Correlazioni con')} "${widget.currentGoalTitle}"',
           style: TextStyle(
             fontFamily: 'Inter',
             fontSize: 18,
@@ -275,37 +312,31 @@ class _CorrelazioniSectionState extends State<_CorrelazioniSection> {
         const SizedBox(height: 16),
         SizedBox(
           height: 210,
-          child: PageView(
-            controller: _positiveController,
-            onPageChanged: (i) => setState(() => _positiveIndex = i),
-            children: [
-              _buildPaddedCard(
-                _CorrelazioneCard(
-                  habitName: '20 Flessioni 2',
-                  habitColor: const Color(0xFFEF4444),
-                  strengthText: 'Forte (+0.92)',
-                  strengthColor: const Color(0xFF10B981),
-                  subtitle: '94% insieme',
-                  description: 'Quando completi "20 Flessioni 1", hai una probabilità del 94% di completare anche "20 Flessioni 2".',
-                  borderColor: const Color(0xFF10B981),
-                ),
+          child: displayPositives.isEmpty 
+            ? Center(child: Text(context.l10n.translate('Nessuna correlazione positiva significativa'), style: TextStyle(color: context.appColors.mutedForeground)))
+            : PageView.builder(
+                controller: _positiveController,
+                itemCount: displayPositives.length,
+                onPageChanged: (i) => setState(() => _positiveIndex = i),
+                itemBuilder: (context, index) {
+                  final c = displayPositives[index];
+                  final goal = c['goal'] as Goal;
+                  return _buildPaddedCard(
+                    _CorrelazioneCard(
+                      habitName: goal.title,
+                      habitColor: goal.color,
+                      strengthText: 'Forte (+${(c['percentage']/100).toStringAsFixed(2)})',
+                      strengthColor: const Color(0xFF10B981),
+                      subtitle: '${c['percentage']}% insieme',
+                      description: 'Quando completi "${widget.currentGoalTitle}", hai una probabilità del ${c['percentage']}% di completare anche "${goal.title}".',
+                      borderColor: const Color(0xFF10B981),
+                    ),
+                  );
+                },
               ),
-              _buildPaddedCard(
-                _CorrelazioneCard(
-                  habitName: '20 Flessioni 3',
-                  habitColor: const Color(0xFFEF4444),
-                  strengthText: 'Forte (+0.77)',
-                  strengthColor: const Color(0xFF10B981),
-                  subtitle: '81% insieme',
-                  description: 'Quando completi "20 Flessioni 1", hai una probabilità del 81% di completare anche "20 Flessioni 3".',
-                  borderColor: const Color(0xFF10B981),
-                ),
-              ),
-            ],
-          ),
         ),
         const SizedBox(height: 12),
-        _buildDots(2, _positiveIndex, const Color(0xFF10B981)),
+        if (displayPositives.isNotEmpty) _buildDots(displayPositives.length, _positiveIndex, const Color(0xFF10B981)),
 
         const SizedBox(height: 32),
 
@@ -328,37 +359,31 @@ class _CorrelazioniSectionState extends State<_CorrelazioniSection> {
         const SizedBox(height: 16),
         SizedBox(
           height: 210,
-          child: PageView(
-            controller: _negativeController,
-            onPageChanged: (i) => setState(() => _negativeIndex = i),
-            children: [
-              _buildPaddedCard(
-                _CorrelazioneCard(
-                  habitName: '1 YT-Video',
-                  habitColor: const Color(0xFFEF4444),
-                  strengthText: 'Moderata (-0.30)',
-                  strengthColor: const Color(0xFFEF4444),
-                  subtitle: '93 giorni',
-                  description: '"20 Flessioni 1" e "1 YT-Video" raramente vengono completate lo stesso giorno.',
-                  borderColor: const Color(0xFFEF4444),
-                ),
+          child: displayNegatives.isEmpty 
+            ? Center(child: Text(context.l10n.translate('Nessuna correlazione negativa significativa'), style: TextStyle(color: context.appColors.mutedForeground)))
+            : PageView.builder(
+                controller: _negativeController,
+                itemCount: displayNegatives.length,
+                onPageChanged: (i) => setState(() => _negativeIndex = i),
+                itemBuilder: (context, index) {
+                  final c = displayNegatives[index];
+                  final goal = c['goal'] as Goal;
+                  return _buildPaddedCard(
+                    _CorrelazioneCard(
+                      habitName: goal.title,
+                      habitColor: goal.color,
+                      strengthText: 'Debole (+${(c['percentage']/100).toStringAsFixed(2)})',
+                      strengthColor: const Color(0xFFEF4444),
+                      subtitle: '${c['percentage']}% insieme',
+                      description: 'Quando completi "${widget.currentGoalTitle}", hai solo una probabilità del ${c['percentage']}% di completare anche "${goal.title}".',
+                      borderColor: const Color(0xFFEF4444),
+                    ),
+                  );
+                },
               ),
-              _buildPaddedCard(
-                _CorrelazioneCard(
-                  habitName: 'Caviglia',
-                  habitColor: const Color(0xFF64748B),
-                  strengthText: 'Moderata (-0.25)',
-                  strengthColor: const Color(0xFFEF4444),
-                  subtitle: '102 giorni',
-                  description: 'Queste due abitudini sembrano competere per la tua attenzione serale.',
-                  borderColor: const Color(0xFFEF4444),
-                ),
-              ),
-            ],
-          ),
         ),
         const SizedBox(height: 12),
-        _buildDots(2, _negativeIndex, const Color(0xFFEF4444)),
+        if (displayNegatives.isNotEmpty) _buildDots(displayNegatives.length, _negativeIndex, const Color(0xFFEF4444)),
 
         const SizedBox(height: 32),
       ],
@@ -491,4 +516,197 @@ class _CorrelazioneCard extends StatelessWidget {
       ),
     );
   }
+}
+
+HabitStats _calculateStats(String goalId, HabitLogsMap logs, Goal goal) {
+  final goalLogs = <DateTime, String>{};
+  logs.forEach((dateStr, habits) {
+    if (habits.containsKey(goalId)) {
+      final date = DateTime.parse(dateStr);
+      goalLogs[DateTime(date.year, date.month, date.day)] = habits[goalId]!;
+    }
+  });
+
+  final today = DateTime.now();
+  final todayNormalized = DateTime(today.year, today.month, today.day);
+
+  final trend30Days = <int>[];
+  for (int i = 29; i >= 0; i--) {
+    final date = todayNormalized.subtract(Duration(days: i));
+    final status = goalLogs[date];
+    if (status == 'done') {
+      trend30Days.add(1);
+    } else if (status == 'missed') {
+      trend30Days.add(0);
+    } else {
+      trend30Days.add(2);
+    }
+  }
+
+  if (goalLogs.isEmpty) {
+    return HabitStats(
+      currentStreak: 0,
+      bestStreak: 0,
+      completionRate: 0,
+      totalCompletions: 0,
+      totalActiveDays: 0,
+      missedDays: 0,
+      trend30Days: trend30Days,
+    );
+  }
+
+  final sortedDates = goalLogs.keys.toList()..sort();
+  
+  int currentStreak = 0;
+  int bestStreak = 0;
+  int tempStreak = 0;
+  int missedDays = 0;
+  int completedDays = 0;
+
+  final startDate = goal.startDate;
+  final daysSinceStart = todayNormalized.difference(DateTime(startDate.year, startDate.month, startDate.day)).inDays + 1;
+  
+  goalLogs.forEach((date, status) {
+    if (status == 'done') {
+      completedDays++;
+    } else if (status == 'missed') {
+      missedDays++;
+    }
+  });
+
+  final isDaily = goal.frequencyDays == null || goal.frequencyDays!.isEmpty;
+
+  DateTime? prevDate;
+  for (final date in sortedDates) {
+    final status = goalLogs[date];
+    if (status == 'done') {
+      if (prevDate == null) {
+        tempStreak = 1;
+      } else {
+        final diff = date.difference(prevDate).inDays;
+        if (isDaily) {
+          if (diff == 1) {
+            tempStreak++;
+          } else {
+            tempStreak = 1;
+          }
+        } else {
+          bool broken = false;
+          for (int i = 1; i < diff; i++) {
+            final checkDate = prevDate.add(Duration(days: i));
+            if (goal.frequencyDays!.contains(checkDate.weekday)) {
+              broken = true;
+              break;
+            }
+          }
+          if (broken) {
+            tempStreak = 1;
+          } else {
+            tempStreak++;
+          }
+        }
+      }
+      if (tempStreak > bestStreak) {
+        bestStreak = tempStreak;
+      }
+      prevDate = date;
+    } else if (status == 'missed') {
+      tempStreak = 0;
+      prevDate = null;
+    }
+  }
+
+  final yesterdayNormalized = todayNormalized.subtract(const Duration(days: 1));
+
+  int checkStreak(DateTime startCheckDate) {
+    int streak = 0;
+    DateTime checkDate = startCheckDate;
+    while (true) {
+      final status = goalLogs[checkDate];
+      if (status == 'done') {
+        streak++;
+        checkDate = checkDate.subtract(const Duration(days: 1));
+      } else if (status == 'missed') {
+        break;
+      } else {
+        if (!isDaily && !goal.frequencyDays!.contains(checkDate.weekday)) {
+          checkDate = checkDate.subtract(const Duration(days: 1));
+          continue;
+        }
+        break; 
+      }
+    }
+    return streak;
+  }
+
+  final todayStatus = goalLogs[todayNormalized];
+  if (todayStatus == 'done') {
+    currentStreak = checkStreak(todayNormalized);
+  } else {
+    final yesterdayStatus = goalLogs[yesterdayNormalized];
+    if (yesterdayStatus == 'done') {
+      currentStreak = checkStreak(yesterdayNormalized);
+    } else if (!isDaily && !goal.frequencyDays!.contains(todayNormalized.weekday)) {
+       if (yesterdayStatus == 'done') {
+         currentStreak = checkStreak(yesterdayNormalized);
+       }
+    }
+  }
+
+  final int totalActiveDays = daysSinceStart > 0 ? daysSinceStart : 1;
+  final completionRate = (completedDays / totalActiveDays * 100).round();
+
+  return HabitStats(
+    currentStreak: currentStreak,
+    bestStreak: bestStreak,
+    completionRate: completionRate,
+    totalCompletions: completedDays,
+    totalActiveDays: totalActiveDays,
+    missedDays: missedDays,
+    trend30Days: trend30Days,
+  );
+}
+
+List<Map<String, dynamic>> _calculateCorrelations(String targetGoalId, HabitLogsMap logs, List<Goal> allGoals) {
+  final targetLogs = <String, String>{};
+  logs.forEach((date, habits) {
+    if (habits.containsKey(targetGoalId)) {
+      targetLogs[date] = habits[targetGoalId]!;
+    }
+  });
+
+  final completedDates = targetLogs.entries
+      .where((e) => e.value == 'done')
+      .map((e) => e.key)
+      .toList();
+
+  if (completedDates.isEmpty) return [];
+
+  final correlations = <Map<String, dynamic>>[];
+
+  for (final otherGoal in allGoals) {
+    if (otherGoal.id == targetGoalId) continue;
+
+    int togetherCount = 0;
+    
+    for (final date in completedDates) {
+      final otherStatus = logs[date]?[otherGoal.id];
+      if (otherStatus == 'done') {
+        togetherCount++;
+      }
+    }
+
+    final percentage = (togetherCount / completedDates.length * 100).round();
+    
+    correlations.add({
+      'goal': otherGoal,
+      'percentage': percentage,
+      'strength': percentage / 100.0,
+      'togetherCount': togetherCount,
+    });
+  }
+
+  correlations.sort((a, b) => (b['percentage'] as int).compareTo(a['percentage'] as int));
+
+  return correlations;
 }

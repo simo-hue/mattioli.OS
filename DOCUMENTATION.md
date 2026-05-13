@@ -49,5 +49,20 @@
     - Successfully ran `vite build` followed by `node scripts/generate-static-routes.js`.
     - Generated 6 static routes (features, faq, tech, philosophy, get-started, creator).
 
+- [2026-05-13 07:45]: **Habit Statistics Real Data Integration**
+  - *Details*: Removed mock data from the "Abitudini" tab in the statistics screen and connected it to real data from the database. Calculated current streak, best streak, completion rate, missed days, and 30-day trend dynamically.
+  - *Tech Notes*:
+    - Converted `HabitOverviewTabWidget` to `ConsumerWidget` to access `goalsProvider` and `habitLogsProvider`.
+    - Implemented `_calculateStats` and `_calculateCorrelations` helper functions.
+    - Updated `_TopStatsGrid`, `_TrendUltimi30Giorni`, and `_CorrelazioniSection` to accept dynamic data.
+    - Handled frequency and active days for streak calculations.
+
+- [2026-05-13 07:55]: **Global Habits Statistics Real Data Integration**
+  - *Details*: Removed mock data from the global "Abitudini" tab (list of all habits) and connected it to real data from the database.
+  - *Tech Notes*:
+    - Converted `GlobalHabitsTabWidget` to `ConsumerStatefulWidget`.
+    - Implemented `_calculateHabits` and `_calculateHabitStats` to compute BEST, WORST, SERIE, and RATE for each habit.
+    - Replaced hardcoded `_habits` list with dynamic calculation.
+
 ## Current Status
-- **Next Step**: Ready for deployment or further development.
+- **Next Step**: Verify the changes in the app and address other mock panels in statistics if needed.

@@ -1,23 +1,30 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:lucide_icons_flutter/lucide_icons.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../../../core/theme.dart';
 import '../../../core/localization.dart';
+import '../../../providers/goal_provider.dart';
+import '../../../models/goal.dart';
 
-class GlobalHabitsTabWidget extends StatefulWidget {
+class GlobalHabitsTabWidget extends ConsumerStatefulWidget {
   const GlobalHabitsTabWidget({super.key});
 
   @override
-  State<GlobalHabitsTabWidget> createState() => _GlobalHabitsTabWidgetState();
+  ConsumerState<GlobalHabitsTabWidget> createState() => _GlobalHabitsTabWidgetState();
 }
 
-class _GlobalHabitsTabWidgetState extends State<GlobalHabitsTabWidget> {
+class _GlobalHabitsTabWidgetState extends ConsumerState<GlobalHabitsTabWidget> {
   String _sortBy = 'rate';
 
-  List<Map<String, dynamic>> get _sortedHabits {
-    final habits = List<Map<String, dynamic>>.from(_habits);
-    habits.sort((a, b) {
+  List<Map<String, dynamic>> _calculateHabits(List<Goal> goals, HabitLogsMap logs) {
+    return goals.map((goal) => _calculateHabitStats(goal, logs)).toList();
+  }
+
+  List<Map<String, dynamic>> _getSortedHabits(List<Map<String, dynamic>> habits) {
+    final sorted = List<Map<String, dynamic>>.from(habits);
+    sorted.sort((a, b) {
       switch (_sortBy) {
         case 'rate':
           return (b['rate'] as int).compareTo(a['rate'] as int);
@@ -33,62 +40,16 @@ class _GlobalHabitsTabWidgetState extends State<GlobalHabitsTabWidget> {
           return 0;
       }
     });
-    return habits;
+    return sorted;
   }
-
-  final List<Map<String, dynamic>> _habits = [
-    {
-      'name': 'Caviglie',
-      'color': const Color(0xFF64748B),
-      'best': 9,
-      'worst': 1,
-      'serie': 4,
-      'rate': 87,
-    },
-    {
-      'name': '1 YT-Video',
-      'color': const Color(0xFFEF4444),
-      'best': 28,
-      'worst': 8,
-      'serie': 3,
-      'rate': 77,
-    },
-    {
-      'name': 'Fitness',
-      'color': const Color(0xFF78350F),
-      'best': 12,
-      'worst': 3,
-      'serie': 8,
-      'rate': 73,
-    },
-    {
-      'name': 'No Fap',
-      'color': const Color(0xFF06B6D4),
-      'best': 12,
-      'worst': 5,
-      'serie': 6,
-      'rate': 73,
-    },
-    {
-      'name': 'Alimentazione',
-      'color': const Color(0xFF10B981),
-      'best': 15,
-      'worst': 4,
-      'serie': 2,
-      'rate': 68,
-    },
-    {
-      'name': 'Lettura',
-      'color': const Color(0xFF8B5CF6),
-      'best': 10,
-      'worst': 6,
-      'serie': 0,
-      'rate': 62,
-    },
-  ];
 
   @override
   Widget build(BuildContext context) {
+    final goals = ref.watch(goalsProvider);
+    final logs = ref.watch(habitLogsProvider);
+    final habits = _calculateHabits(goals, logs);
+    final sortedHabits = _getSortedHabits(habits);
+
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
@@ -108,15 +69,17 @@ class _GlobalHabitsTabWidgetState extends State<GlobalHabitsTabWidget> {
           ],
         ),
         const SizedBox(height: 20),
-        ListView.separated(
-          shrinkWrap: true,
-          physics: const NeverScrollableScrollPhysics(),
-          itemCount: _sortedHabits.length,
-          separatorBuilder: (context, index) => const SizedBox(height: 12),
-          itemBuilder: (context, index) {
-            return _HabitDetailCard(habit: _sortedHabits[index]);
-          },
-        ),
+        sortedHabits.isEmpty
+          ? Center(child: Text(context.l10n.translate('Nessuna abitudine trovata'), style: TextStyle(color: context.appColors.mutedForeground)))
+          : ListView.separated(
+              shrinkWrap: true,
+              physics: const NeverScrollableScrollPhysics(),
+              itemCount: sortedHabits.length,
+              separatorBuilder: (context, index) => const SizedBox(height: 12),
+              itemBuilder: (context, index) {
+                return _HabitDetailCard(habit: sortedHabits[index]);
+              },
+            ),
         const SizedBox(height: 32),
       ],
     );
@@ -398,4 +361,152 @@ class _HabitDetailCard extends StatelessWidget {
       ],
     );
   }
+}
+
+Map<String, dynamic> _calculateHabitStats(Goal goal, HabitLogsMap logs) {
+  final goalLogs = <DateTime, String>{};
+  logs.forEach((dateStr, habits) {
+    if (habits.containsKey(goal.id)) {
+      final date = DateTime.parse(dateStr);
+      goalLogs[DateTime(date.year, date.month, date.day)] = habits[goal.id]!;
+    }
+  });
+
+  if (goalLogs.isEmpty) {
+    return {
+      'name': goal.title,
+      'color': goal.color,
+      'best': 0,
+      'worst': 0,
+      'serie': 0,
+      'rate': 0,
+    };
+  }
+
+  final sortedDates = goalLogs.keys.toList()..sort();
+  
+  int currentStreak = 0;
+  int bestStreak = 0;
+  int worstStreak = 0;
+  int tempStreak = 0;
+  int tempMissedStreak = 0;
+  int completedDays = 0;
+
+  final today = DateTime.now();
+  final todayNormalized = DateTime(today.year, today.month, today.day);
+  final startDate = goal.startDate;
+  final daysSinceStart = todayNormalized.difference(DateTime(startDate.year, startDate.month, startDate.day)).inDays + 1;
+
+  goalLogs.forEach((date, status) {
+    if (status == 'done') {
+      completedDays++;
+    }
+  });
+
+  final isDaily = goal.frequencyDays == null || goal.frequencyDays!.isEmpty;
+
+  DateTime? prevDate;
+  for (final date in sortedDates) {
+    final status = goalLogs[date];
+    if (status == 'done') {
+      if (prevDate == null) {
+        tempStreak = 1;
+      } else {
+        final diff = date.difference(prevDate).inDays;
+        if (isDaily) {
+          if (diff == 1) {
+            tempStreak++;
+          } else {
+            tempStreak = 1;
+          }
+        } else {
+          bool broken = false;
+          for (int i = 1; i < diff; i++) {
+            final checkDate = prevDate.add(Duration(days: i));
+            if (goal.frequencyDays!.contains(checkDate.weekday)) {
+              broken = true;
+              break;
+            }
+          }
+          if (broken) {
+            tempStreak = 1;
+          } else {
+            tempStreak++;
+          }
+        }
+      }
+      if (tempStreak > bestStreak) {
+        bestStreak = tempStreak;
+      }
+      tempMissedStreak = 0;
+      prevDate = date;
+    } else if (status == 'missed') {
+      tempStreak = 0;
+      if (prevDate == null) {
+        tempMissedStreak = 1;
+      } else {
+        final diff = date.difference(prevDate).inDays;
+        if (isDaily) {
+          if (diff == 1) {
+            tempMissedStreak++;
+          } else {
+            tempMissedStreak = 1;
+          }
+        } else {
+          if (goal.frequencyDays!.contains(date.weekday)) {
+            tempMissedStreak++;
+          }
+        }
+      }
+      if (tempMissedStreak > worstStreak) {
+        worstStreak = tempMissedStreak;
+      }
+      prevDate = date;
+    }
+  }
+
+  final yesterdayNormalized = todayNormalized.subtract(const Duration(days: 1));
+
+  int checkStreak(DateTime startCheckDate) {
+    int streak = 0;
+    DateTime checkDate = startCheckDate;
+    while (true) {
+      final status = goalLogs[checkDate];
+      if (status == 'done') {
+        streak++;
+        checkDate = checkDate.subtract(const Duration(days: 1));
+      } else if (status == 'missed') {
+        break;
+      } else {
+        if (!isDaily && !goal.frequencyDays!.contains(checkDate.weekday)) {
+          checkDate = checkDate.subtract(const Duration(days: 1));
+          continue;
+        }
+        break; 
+      }
+    }
+    return streak;
+  }
+
+  final todayStatus = goalLogs[todayNormalized];
+  if (todayStatus == 'done') {
+    currentStreak = checkStreak(todayNormalized);
+  } else {
+    final yesterdayStatus = goalLogs[yesterdayNormalized];
+    if (yesterdayStatus == 'done') {
+      currentStreak = checkStreak(yesterdayNormalized);
+    }
+  }
+
+  final int totalActiveDays = daysSinceStart > 0 ? daysSinceStart : 1;
+  final rate = (completedDays / totalActiveDays * 100).round();
+
+  return {
+    'name': goal.title,
+    'color': goal.color,
+    'best': bestStreak,
+    'worst': worstStreak,
+    'serie': currentStreak,
+    'rate': rate,
+  };
 }

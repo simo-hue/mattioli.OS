@@ -10,6 +10,7 @@ import 'dart:math' as math;
 import '../../../core/theme.dart';
 import '../../../models/macro_goal.dart';
 import '../../../providers/macro_goals_provider.dart';
+import '../../../providers/macro_goals_stats_provider.dart';
 
 class MacroGoalsStatsView extends ConsumerStatefulWidget {
   const MacroGoalsStatsView({super.key});
@@ -37,119 +38,92 @@ class _MacroGoalsStatsViewState extends ConsumerState<MacroGoalsStatsView> {
       years.insert(0, DateTime.now().year);
     }
 
-    final displayGoals = _selectedYear == 'all'
-        ? allGoals
-        : allGoals.where((g) => g.year?.toString() == _selectedYear).toList();
+    final statsAsync = ref.watch(macroGoalsStatsProvider(_selectedYear));
 
-    return SingleChildScrollView(
-      physics: const BouncingScrollPhysics(),
-      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          // Header & Year Selector
-          Row(
-            mainAxisAlignment: MainAxisAlignment.spaceBetween,
+    return statsAsync.when(
+      data: (stats) {
+        return SingleChildScrollView(
+          physics: const BouncingScrollPhysics(),
+          padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              Text(
-                'Performance',
-                style: GoogleFonts.inter(
-                  fontSize: 22,
-                  fontWeight: FontWeight.bold,
-                  color: context.appColors.foreground,
-                  letterSpacing: -0.5,
-                ),
+              // Header & Year Selector
+              Row(
+                mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                children: [
+                  Text(
+                    'Performance',
+                    style: GoogleFonts.inter(
+                      fontSize: 22,
+                      fontWeight: FontWeight.bold,
+                      color: context.appColors.foreground,
+                      letterSpacing: -0.5,
+                    ),
+                  ),
+                  _buildYearSelector(years),
+                ],
               ),
-              _buildYearSelector(years),
+              const SizedBox(height: 20),
+
+              if (_selectedYear == 'all')
+                ..._buildGlobalContent(stats)
+              else
+                ..._buildSingleYearContent(stats)
             ],
           ),
-          const SizedBox(height: 20),
-
-          if (_selectedYear == 'all')
-            ..._buildGlobalContent(allGoals)
-          else
-            ..._buildSingleYearContent(displayGoals)
-        ],
+        );
+      },
+      loading: () => const SizedBox(
+        height: 300,
+        child: Center(child: CircularProgressIndicator()),
+      ),
+      error: (err, stack) => SizedBox(
+        height: 300,
+        child: Center(
+          child: Text(
+            'Errore: $err',
+            style: TextStyle(color: context.appColors.mutedForeground),
+          ),
+        ),
       ),
     );
   }
 
-  List<Widget> _buildSingleYearContent(List<MacroGoal> displayGoals) {
-    final totalGoals = displayGoals.length;
-    final completedGoals = displayGoals.where((g) => g.status == GoalStatus.completed).length;
-    final successRate = totalGoals > 0 ? (completedGoals / totalGoals * 100).round() : 0;
+  List<Widget> _buildSingleYearContent(Map<String, dynamic> stats) {
+    final totalGoals = stats['total_goals'] as int? ?? 0;
+    final completedGoals = stats['completed_goals'] as int? ?? 0;
+    final successRate = stats['success_rate'] as int? ?? 0;
     final trendPositive = successRate > 50;
 
-    final Map<String, List<MacroGoal>> catMap = {};
-    for (var g in displayGoals) {
-      final key = g.categoryKey ?? 'altro';
-      catMap.putIfAbsent(key, () => []).add(g);
-    }
-    String bestCategory = 'N/A';
-    int bestCatRate = 0;
-    catMap.forEach((key, list) {
-      if (list.length >= 2) {
-        final comp = list.where((g) => g.status == GoalStatus.completed).length;
-        final rate = (comp / list.length * 100).round();
-        if (rate > bestCatRate) {
-          bestCatRate = rate;
-          bestCategory = kDefaultCategories.firstWhere((c) => c.key == key, orElse: () => kDefaultCategories.first).label;
-        }
-      }
-    });
+    final bestCategoryKey = stats['best_category'] as String?;
+    final bestCategory = categoryLabel(bestCategoryKey) ?? 'N/A';
+    final bestCatRate = stats['best_category_rate'] as int? ?? 0;
 
-    final Map<int, List<MacroGoal>> monthMap = {};
-    for (var g in displayGoals.where((g) => g.month != null)) {
-      monthMap.putIfAbsent(g.month!, () => []).add(g);
-    }
-    int bestMonthIdx = 0;
-    int bestMonthRate = 0;
-    monthMap.forEach((m, list) {
-      if (list.isNotEmpty) {
-        final comp = list.where((g) => g.status == GoalStatus.completed).length;
-        final rate = (comp / list.length * 100).round();
-        if (rate > bestMonthRate || (rate == bestMonthRate && comp > 0)) {
-          bestMonthRate = rate;
-          bestMonthIdx = m;
-        }
-      }
-    });
+    final bestMonthIdx = stats['best_month'] as int?;
+    final bestMonthRate = stats['best_month_rate'] as int? ?? 0;
 
     final monthsLabel = ['', 'gen', 'feb', 'mar', 'apr', 'mag', 'giu', 'lug', 'ago', 'set', 'ott', 'nov', 'dic'];
 
-    final Map<GoalType, List<MacroGoal>> typeMap = {};
-    for (var g in displayGoals) {
-      typeMap.putIfAbsent(g.type, () => []).add(g);
-    }
-    GoalType? bestType;
-    int bestTypeRate = 0;
-    typeMap.forEach((t, list) {
-      if (list.length >= 2) {
-        final comp = list.where((g) => g.status == GoalStatus.completed).length;
-        final rate = (comp / list.length * 100).round();
-        if (rate > bestTypeRate) {
-          bestTypeRate = rate;
-          bestType = t;
-        }
-      }
-    });
+    final bestTypeStr = stats['best_type'] as String?;
     String bestTypeLabel = 'N/A';
-    if (bestType != null) {
-      switch (bestType!) {
-        case GoalType.lifetime: bestTypeLabel = 'Lifetime'; break;
-        case GoalType.annual: bestTypeLabel = 'Annuale'; break;
-        case GoalType.quarterly: bestTypeLabel = 'Trimestrale'; break;
-        case GoalType.monthly: bestTypeLabel = 'Mensile'; break;
-        case GoalType.weekly: bestTypeLabel = 'Settimanale'; break;
+    if (bestTypeStr != null) {
+      switch (bestTypeStr) {
+        case 'lifetime': bestTypeLabel = 'Lifetime'; break;
+        case 'annual': bestTypeLabel = 'Annuale'; break;
+        case 'quarterly': bestTypeLabel = 'Trimestrale'; break;
+        case 'monthly': bestTypeLabel = 'Mensile'; break;
+        case 'weekly': bestTypeLabel = 'Settimanale'; break;
       }
     }
+    final bestTypeRate = stats['best_type_rate'] as int? ?? 0;
 
     return [
       Row(
         children: [
           Expanded(child: _buildHighlightCard(title: 'Punto di Forza', value: bestCategory, subtitle: '$bestCatRate% di completamento', icon: LucideIcons.zap, color: const Color(0xFFA855F7))),
           const SizedBox(width: 12),
-          Expanded(child: _buildHighlightCard(title: 'Mese Migliore', value: bestMonthIdx > 0 ? monthsLabel[bestMonthIdx] : 'Nessuno', subtitle: '$bestMonthRate% di successo', icon: LucideIcons.trophy, color: const Color(0xFFF59E0B))),
+          Expanded(child: _buildHighlightCard(title: 'Mese Migliore', value: (bestMonthIdx != null && bestMonthIdx > 0) ? monthsLabel[bestMonthIdx] : 'Nessuno', subtitle: '$bestMonthRate% di successo', icon: LucideIcons.trophy, color: const Color(0xFFF59E0B))),
         ],
       ),
       const SizedBox(height: 12),
@@ -159,7 +133,7 @@ class _MacroGoalsStatsViewState extends ConsumerState<MacroGoalsStatsView> {
         children: [
           Expanded(child: _buildKpiCard('Totale', '$totalGoals', LucideIcons.target)),
           const SizedBox(width: 8),
-          Expanded(child: _buildKpiCard('Completati', '$completedGoals', LucideIcons.circleCheck, color: Theme.of(context).colorScheme.primary)),
+          Expanded(child: _buildKpiCard('Completati', '$completedGoals', LucideIcons.circleCheck, color: const Color(0xFF10B981))),
         ],
       ),
       const SizedBox(height: 12),
@@ -171,76 +145,68 @@ class _MacroGoalsStatsViewState extends ConsumerState<MacroGoalsStatsView> {
         ],
       ),
       const SizedBox(height: 24),
-      _buildAreaChartCard(displayGoals),
+      _buildAreaChartCard(stats['cumulative_monthly'] as List<dynamic>? ?? []),
       const SizedBox(height: 16),
-      _buildCategoryRadarCard(displayGoals),
+      _buildCategoryRadarCard(stats['category_rates'] as List<dynamic>? ?? []),
       const SizedBox(height: 16),
-      _buildQuarterSeasonalityCard(displayGoals),
+      _buildQuarterlyBarCard(stats['quarterly_activity'] as List<dynamic>? ?? []),
       const SizedBox(height: 16),
-      _buildMonthlyComposedCard(displayGoals),
+      _buildMonthlyComposedCard(stats['monthly_composed'] as List<dynamic>? ?? []),
       const SizedBox(height: 16),
-      _buildCategoryPieCard(displayGoals),
+      _buildCategoryPieCard(stats['category_distribution'] as List<dynamic>? ?? []),
       const SizedBox(height: 48),
     ];
   }
 
-  List<Widget> _buildGlobalContent(List<MacroGoal> goals) {
-    if (goals.isEmpty) return [const Center(child: Text('Nessun obiettivo'))];
-
-    final total = goals.length;
-    final comp = goals.where((g) => g.status == GoalStatus.completed).length;
+  List<Widget> _buildGlobalContent(Map<String, dynamic> stats) {
+    final total = stats['total_goals'] as int? ?? 0;
+    final comp = stats['completed_goals'] as int? ?? 0;
     final succ = total > 0 ? (comp / total * 100).round() : 0;
     
-    final Map<int, List<MacroGoal>> yearMap = {};
-    for (var g in goals.where((g) => g.year != null)) {
-      yearMap.putIfAbsent(g.year!, () => []).add(g);
-    }
-    
-    int bestYear = 0;
-    int bestYearRate = 0;
-    int mostProdYear = 0;
-    int mostProdCount = 0;
-    
-    yearMap.forEach((y, list) {
-      if (list.isNotEmpty) {
-        final c = list.where((g) => g.status == GoalStatus.completed).length;
-        final rate = (c / list.length * 100).round();
-        if (rate > bestYearRate) { bestYearRate = rate; bestYear = y; }
-        if (list.length > mostProdCount) { mostProdCount = list.length; mostProdYear = y; }
-      }
-    });
+    final bestYear = stats['best_year'] as int?;
+    final bestYearRate = stats['best_year_rate'] as int? ?? 0;
+    final mostProdYear = stats['most_productive_year'] as int?;
+    final mostProdCount = stats['most_productive_count'] as int? ?? 0;
 
-    final sortedYears = yearMap.keys.toList()..sort();
+    final yearProgression = stats['year_progression'] as List<dynamic>? ?? [];
+    List<int> sortedYears = [];
+    for (var item in yearProgression) {
+      if (item is Map<String, dynamic>) {
+        final y = item['year'] as int?;
+        if (y != null) sortedYears.add(y);
+      }
+    }
+    sortedYears.sort();
 
     return [
       Row(
         children: [
           Expanded(child: _buildHighlightCard(title: 'Totale Storico', value: '$total', subtitle: 'dal ${sortedYears.isNotEmpty ? sortedYears.first : '-'}', icon: LucideIcons.target, color: const Color(0xFF6366F1))),
           const SizedBox(width: 12),
-          Expanded(child: _buildHighlightCard(title: 'Successo Globale', value: '$succ%', subtitle: '$comp obiettivi completati', icon: LucideIcons.trophy, color: Theme.of(context).colorScheme.primary)),
+          Expanded(child: _buildHighlightCard(title: 'Successo Globale', value: '$succ%', subtitle: '$comp obiettivi completati', icon: LucideIcons.trophy, color: const Color(0xFF10B981))),
         ],
       ),
       const SizedBox(height: 12),
       Row(
         children: [
-          Expanded(child: _buildHighlightCard(title: 'Anno Migliore', value: bestYear > 0 ? '$bestYear' : 'N/A', subtitle: '$bestYearRate% completamento', icon: LucideIcons.calendar, color: const Color(0xFFD97706))),
+          Expanded(child: _buildHighlightCard(title: 'Anno Migliore', value: bestYear != null ? '$bestYear' : 'N/A', subtitle: '$bestYearRate% completamento', icon: LucideIcons.calendar, color: const Color(0xFFD97706))),
           const SizedBox(width: 12),
-          Expanded(child: _buildHighlightCard(title: 'Anno Più Produttivo', value: mostProdYear > 0 ? '$mostProdYear' : 'N/A', subtitle: '$mostProdCount obiettivi totali', icon: LucideIcons.activity, color: const Color(0xFF06B6D4))),
+          Expanded(child: _buildHighlightCard(title: 'Anno Più Produttivo', value: mostProdYear != null ? '$mostProdYear' : 'N/A', subtitle: '$mostProdCount obiettivi totali', icon: LucideIcons.activity, color: const Color(0xFF06B6D4))),
         ],
       ),
       const SizedBox(height: 24),
       
-      _buildGlobalYearProgressionCard(goals, sortedYears),
+      _buildGlobalYearProgressionCard(yearProgression),
       const SizedBox(height: 16),
-      _buildCategoryRadarCard(goals), // Reusing radar for category performance
+      _buildCategoryRadarCard(stats['category_performance'] as List<dynamic>? ?? []), 
       const SizedBox(height: 16),
-      _buildGlobalTypeDistCard(goals),
+      _buildGlobalTypeDistCard(stats['type_distribution'] as Map<String, dynamic>? ?? {}),
       const SizedBox(height: 16),
-      _buildQuarterSeasonalityCard(goals),
+      _buildQuarterSeasonalityCard(stats['seasonality'] as List<dynamic>? ?? []),
       const SizedBox(height: 16),
-      _buildGlobalMonthlyHistCard(goals),
+      _buildGlobalMonthlyHistCard(stats['monthly_history'] as List<dynamic>? ?? []),
       const SizedBox(height: 16),
-      _buildGlobalInterestEvolutionCard(goals, sortedYears),
+      _buildGlobalInterestEvolutionCard(stats['interest_evolution'] as List<dynamic>? ?? []),
       const SizedBox(height: 48),
     ];
   }
@@ -524,24 +490,27 @@ class _MacroGoalsStatsViewState extends ConsumerState<MacroGoalsStatsView> {
 
   // ─── Chart Widgets ────────────────────────────────────────────────────────
 
-  Widget _buildAreaChartCard(List<MacroGoal> goals) {
-    // Generate cumulative data per month (1-12)
+  Widget _buildAreaChartCard(List<dynamic> stats) {
     List<FlSpot> totalSpots = [];
     List<FlSpot> compSpots = [];
     
-    int accTotal = 0;
-    int accComp = 0;
-    
-    for (int m = 1; m <= 12; m++) {
-      final monthly = goals.where((g) => g.month == m).toList();
-      accTotal += monthly.length;
-      accComp += monthly.where((g) => g.status == GoalStatus.completed).length;
-      
-      totalSpots.add(FlSpot(m.toDouble(), accTotal.toDouble()));
-      compSpots.add(FlSpot(m.toDouble(), accComp.toDouble()));
+    double maxTotal = 0;
+
+    for (var item in stats) {
+      if (item is Map<String, dynamic>) {
+        final m = item['month'] as int?;
+        final tot = (item['total'] as num?)?.toDouble() ?? 0.0;
+        final comp = (item['completed'] as num?)?.toDouble() ?? 0.0;
+        
+        if (m != null) {
+          totalSpots.add(FlSpot(m.toDouble(), tot));
+          compSpots.add(FlSpot(m.toDouble(), comp));
+          if (tot > maxTotal) maxTotal = tot;
+        }
+      }
     }
 
-    final double maxY = math.max(10.0, accTotal.toDouble() * 1.2);
+    final double maxY = math.max(10.0, maxTotal * 1.2);
 
     return _buildCardBase(
       title: '🚀 Velocità di Esecuzione (Cumulativa)',
@@ -608,13 +577,13 @@ class _MacroGoalsStatsViewState extends ConsumerState<MacroGoalsStatsView> {
               LineChartBarData(
                 spots: compSpots,
                 isCurved: true,
-                color: Theme.of(context).colorScheme.primary,
+                color: const Color(0xFF10B981),
                 barWidth: 2,
                 isStrokeCapRound: true,
                 dotData: FlDotData(show: false),
                 belowBarData: BarAreaData(
                   show: true,
-                  color: Theme.of(context).colorScheme.primary.withValues(alpha: 0.15),
+                  color: const Color(0xFF10B981).withValues(alpha: 0.15),
                 ),
               ),
             ],
@@ -624,28 +593,33 @@ class _MacroGoalsStatsViewState extends ConsumerState<MacroGoalsStatsView> {
     );
   }
 
-  Widget _buildCategoryRadarCard(List<MacroGoal> goals) {
-    if (goals.isEmpty) {
+  Widget _buildCategoryRadarCard(List<dynamic> stats) {
+    if (stats.isEmpty) {
       return _buildCardBase(
         title: '🎯 Performance Categorie', subtitle: 'Tasso di successo',
         child: SizedBox(height: 200, child: Center(child: Text('Nessun dato', style: TextStyle(color: context.appColors.mutedForeground)))),
       );
     }
     
-    // Calculate rate per category
-    final Map<GoalCategory, double> catRates = {};
-    for (var cat in kDefaultCategories) {
-      final catGoals = goals.where((g) => g.categoryKey == cat.key).toList();
-      if (catGoals.isEmpty) continue;
-      final comp = catGoals.where((g) => g.status == GoalStatus.completed).length;
-      catRates[cat] = comp / catGoals.length * 100;
-    }
-
-    if (catRates.length < 3) {
+    if (stats.length < 3) {
       return _buildCardBase(
         title: '🎯 Performance Categorie', subtitle: 'Tasso di successo',
         child: SizedBox(height: 200, child: Center(child: Text('Dati insufficienti (servono almeno 3 categorie)', style: TextStyle(color: context.appColors.mutedForeground)))),
       );
+    }
+
+    List<RadarEntry> entries = [];
+    List<String> labels = [];
+    
+    for (var item in stats) {
+      if (item is Map<String, dynamic>) {
+        final catKey = item['category'] as String?;
+        final rate = (item['rate'] as num?)?.toDouble() ?? 0.0;
+        final label = categoryLabel(catKey) ?? 'N/A';
+        
+        entries.add(RadarEntry(value: rate));
+        labels.add(label);
+      }
     }
 
     return _buildCardBase(
@@ -661,10 +635,7 @@ class _MacroGoalsStatsViewState extends ConsumerState<MacroGoalsStatsView> {
                 fillColor: const Color(0xFF06B6D4).withValues(alpha: 0.2), // Cyan
                 borderColor: const Color(0xFF06B6D4),
                 entryRadius: 0,
-                dataEntries: [
-                  for (var cat in catRates.keys)
-                    RadarEntry(value: catRates[cat]!),
-                ],
+                dataEntries: entries,
               )
             ],
             radarBackgroundColor: Colors.transparent,
@@ -673,12 +644,14 @@ class _MacroGoalsStatsViewState extends ConsumerState<MacroGoalsStatsView> {
             tickBorderData: BorderSide(color: context.appColors.border, width: 0.5),
             ticksTextStyle: const TextStyle(color: Colors.transparent),
             getTitle: (index, angle) {
-              final cats = catRates.keys.toList();
-              return RadarChartTitle(
-                text: cats[index].label,
-                angle: 0,
-                positionPercentageOffset: 0.1,
-              );
+              if (index < labels.length) {
+                return RadarChartTitle(
+                  text: labels[index],
+                  angle: 0,
+                  positionPercentageOffset: 0.1,
+                );
+              }
+              return const RadarChartTitle(text: '');
             },
             titleTextStyle: GoogleFonts.inter(fontSize: 10, color: context.appColors.mutedForeground),
           ),
@@ -687,26 +660,39 @@ class _MacroGoalsStatsViewState extends ConsumerState<MacroGoalsStatsView> {
     );
   }
 
-  Widget _buildQuarterlyBarCard(List<MacroGoal> goals) {
-    if (goals.isEmpty) {
+  Widget _buildQuarterlyBarCard(List<dynamic> stats) {
+    if (stats.isEmpty) {
       return _buildCardBase(title: 'Attività Trim.', subtitle: 'Q1 - Q4', child: const SizedBox(height: 150));
     }
     
     // Extract totals and completed per quarter
     List<BarChartGroupData> groups = [];
     double maxY = 0;
+    
+    // Create a map for quick lookup
+    final Map<int, Map<String, dynamic>> dataMap = {};
+    for (var item in stats) {
+      if (item is Map<String, dynamic>) {
+        final q = item['quarter'] as int?;
+        if (q != null) {
+          dataMap[q] = item;
+          final tot = (item['total'] as num?)?.toDouble() ?? 0.0;
+          if (tot > maxY) maxY = tot;
+        }
+      }
+    }
+
     for (int q = 1; q <= 4; q++) {
-      final qGoals = goals.where((g) => g.quarter == q).toList();
-      final tot = qGoals.length.toDouble();
-      final comp = qGoals.where((g) => g.status == GoalStatus.completed).length.toDouble();
-      if (tot > maxY) maxY = tot;
+      final item = dataMap[q];
+      final tot = (item?['total'] as num?)?.toDouble() ?? 0.0;
+      final comp = (item?['completed'] as num?)?.toDouble() ?? 0.0;
       
       groups.add(
         BarChartGroupData(
           x: q,
           barRods: [
             BarChartRodData(toY: tot, color: const Color(0xFFD97706), width: 10, borderRadius: BorderRadius.circular(2)),
-            BarChartRodData(toY: comp, color: Theme.of(context).colorScheme.primary, width: 10, borderRadius: BorderRadius.circular(2)),
+            BarChartRodData(toY: comp, color: const Color(0xFF10B981), width: 10, borderRadius: BorderRadius.circular(2)),
           ],
         ),
       );
@@ -721,9 +707,9 @@ class _MacroGoalsStatsViewState extends ConsumerState<MacroGoalsStatsView> {
           BarChartData(
             gridData: FlGridData(show: false),
             titlesData: FlTitlesData(
-              rightTitles: AxisTitles(sideTitles: SideTitles(showTitles: false)),
-              topTitles: AxisTitles(sideTitles: SideTitles(showTitles: false)),
-              leftTitles: AxisTitles(sideTitles: SideTitles(showTitles: false)),
+              rightTitles: const AxisTitles(sideTitles: SideTitles(showTitles: false)),
+              topTitles: const AxisTitles(sideTitles: SideTitles(showTitles: false)),
+              leftTitles: const AxisTitles(sideTitles: SideTitles(showTitles: false)),
               bottomTitles: AxisTitles(
                 sideTitles: SideTitles(
                   showTitles: true,
@@ -740,19 +726,31 @@ class _MacroGoalsStatsViewState extends ConsumerState<MacroGoalsStatsView> {
     );
   }
 
-  Widget _buildMonthlyComposedCard(List<MacroGoal> goals) {
-    if (goals.isEmpty) {
+  Widget _buildMonthlyComposedCard(List<dynamic> stats) {
+    if (stats.isEmpty) {
       return _buildCardBase(title: 'Attività Mensile', subtitle: 'Totale/Completati', child: const SizedBox(height: 150));
     }
 
     List<BarChartGroupData> barGroups = [];
     double maxY = 0;
     
+    // Create a map for quick lookup
+    final Map<int, Map<String, dynamic>> dataMap = {};
+    for (var item in stats) {
+      if (item is Map<String, dynamic>) {
+        final m = item['month'] as int?;
+        if (m != null) {
+          dataMap[m] = item;
+          final tot = (item['total'] as num?)?.toDouble() ?? 0.0;
+          if (tot > maxY) maxY = tot;
+        }
+      }
+    }
+
     for (int m = 1; m <= 12; m+=2) { // Show fewer columns to fit mobile
-      final monthly = goals.where((g) => g.month == m).toList();
-      final tot = monthly.length.toDouble();
-      final comp = monthly.where((g) => g.status == GoalStatus.completed).length.toDouble();
-      if (tot > maxY) maxY = tot;
+      final item = dataMap[m];
+      final tot = (item?['total'] as num?)?.toDouble() ?? 0.0;
+      final comp = (item?['completed'] as num?)?.toDouble() ?? 0.0;
 
       barGroups.add(
         BarChartGroupData(
@@ -781,8 +779,8 @@ class _MacroGoalsStatsViewState extends ConsumerState<MacroGoalsStatsView> {
     const mLabel = ['', 'G', 'F', 'M', 'A', 'M', 'G', 'L', 'A', 'S', 'O', 'N', 'D'];
 
     return _buildCardBase(
-      title: 'Mensile',
-      subtitle: 'Completamenti',
+      title: 'Completamenti',
+      subtitle: 'Mensili',
       child: SizedBox(
         height: 180,
         child: BarChart(
@@ -793,9 +791,9 @@ class _MacroGoalsStatsViewState extends ConsumerState<MacroGoalsStatsView> {
                 tooltipRoundedRadius: 12,
                 getTooltipItem: (group, groupIndex, rod, rodIndex) {
                   final m = group.x.toInt();
-                  final mg = goals.where((g) => g.month == m).toList();
-                  final tot = mg.length;
-                  final comp = mg.where((g) => g.status == GoalStatus.completed).length;
+                  final item = dataMap[m];
+                  final tot = (item?['total'] as num?)?.toInt() ?? 0;
+                  final comp = (item?['completed'] as num?)?.toInt() ?? 0;
                   const months = ['', 'gennaio', 'febbraio', 'marzo', 'aprile', 'maggio', 'giugno', 'luglio', 'agosto', 'settembre', 'ottobre', 'novembre', 'dicembre'];
                   return BarTooltipItem(
                     '${months[m]}\n',
@@ -847,31 +845,35 @@ class _MacroGoalsStatsViewState extends ConsumerState<MacroGoalsStatsView> {
     );
   }
 
-  Widget _buildCategoryPieCard(List<MacroGoal> goals) {
-    if (goals.isEmpty) {
+  Widget _buildCategoryPieCard(List<dynamic> stats) {
+    if (stats.isEmpty) {
        return _buildCardBase(title: 'Distribuzione', subtitle: '', child: SizedBox(height: 200, child: Center(child: Text('Nessun dato', style: TextStyle(color: context.appColors.mutedForeground)))));
     }
 
-    final Map<GoalCategory, int> map = {};
-    for (var cat in kDefaultCategories) {
-      final count = goals.where((g) => g.categoryKey == cat.key).length;
-      if (count > 0) map[cat] = count;
+    List<PieChartSectionData> sections = [];
+    int totalCount = 0;
+    
+    for (var item in stats) {
+      if (item is Map<String, dynamic>) {
+        final count = (item['count'] as num?)?.toInt() ?? 0;
+        totalCount += count;
+      }
     }
 
-    if (map.isEmpty) return const SizedBox.shrink();
-
-    // Sort by count desc
-    final entries = map.entries.toList()..sort((a,b) => b.value.compareTo(a.value));
-
-    List<PieChartSectionData> sections = [];
-    for (var entry in entries) {
-      sections.add(PieChartSectionData(
-        value: entry.value.toDouble(),
-        color: entry.key.color,
-        title: '',
-        radius: 26,
-        badgeWidget: null,
-      ));
+    for (var item in stats) {
+      if (item is Map<String, dynamic>) {
+        final catKey = item['category'] as String?;
+        final count = (item['count'] as num?)?.toDouble() ?? 0.0;
+        final cat = kDefaultCategories.firstWhere((c) => c.key == catKey, orElse: () => kDefaultCategories.first);
+        
+        sections.add(PieChartSectionData(
+          value: count,
+          color: cat.color,
+          title: '',
+          radius: 26,
+          badgeWidget: null,
+        ));
+      }
     }
 
     return _buildCardBase(
@@ -894,7 +896,7 @@ class _MacroGoalsStatsViewState extends ConsumerState<MacroGoalsStatsView> {
                 Column(
                   mainAxisSize: MainAxisSize.min,
                   children: [
-                    Text('${goals.length}', style: GoogleFonts.inter(fontSize: 28, fontWeight: FontWeight.bold, color: context.appColors.foreground)),
+                    Text('$totalCount', style: GoogleFonts.inter(fontSize: 28, fontWeight: FontWeight.bold, color: context.appColors.foreground)),
                     Text('obiettivi', style: GoogleFonts.inter(fontSize: 12, color: context.appColors.mutedForeground)),
                   ],
                 ),
@@ -906,8 +908,13 @@ class _MacroGoalsStatsViewState extends ConsumerState<MacroGoalsStatsView> {
           Wrap(
             spacing: 8,
             runSpacing: 8,
-            children: entries.map((e) {
-              final perc = (e.value / goals.length * 100).round();
+            children: stats.map((item) {
+              if (item is! Map<String, dynamic>) return const SizedBox.shrink();
+              final catKey = item['category'] as String?;
+              final count = (item['count'] as num?)?.toInt() ?? 0;
+              final cat = kDefaultCategories.firstWhere((c) => c.key == catKey, orElse: () => kDefaultCategories.first);
+              final perc = totalCount > 0 ? (count / totalCount * 100).round() : 0;
+              
               return Container(
                 width: 150, // Fix width for grid likeness
                 padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
@@ -918,9 +925,9 @@ class _MacroGoalsStatsViewState extends ConsumerState<MacroGoalsStatsView> {
                 ),
                 child: Row(
                   children: [
-                    Container(width: 8, height: 8, decoration: BoxDecoration(shape: BoxShape.circle, color: e.key.color)),
+                    Container(width: 8, height: 8, decoration: BoxDecoration(shape: BoxShape.circle, color: cat.color)),
                     const SizedBox(width: 8),
-                    Expanded(child: Text(e.key.label, style: GoogleFonts.inter(fontSize: 12, color: context.appColors.foreground), maxLines: 1)),
+                    Expanded(child: Text(cat.label, style: GoogleFonts.inter(fontSize: 12, color: context.appColors.foreground), maxLines: 1)),
                     Text('$perc%', style: GoogleFonts.inter(fontSize: 12, color: context.appColors.mutedForeground)),
                   ],
                 ),
@@ -932,41 +939,49 @@ class _MacroGoalsStatsViewState extends ConsumerState<MacroGoalsStatsView> {
     );
   }
 
-  Widget _buildGlobalYearProgressionCard(List<MacroGoal> goals, List<int> sortedYears) {
-    if (sortedYears.isEmpty) return const SizedBox();
+  Widget _buildGlobalYearProgressionCard(List<dynamic> stats) {
+    if (stats.isEmpty) return const SizedBox();
 
     List<BarChartGroupData> groups = [];
     double maxTot = 0;
+    
+    for (var item in stats) {
+      if (item is Map<String, dynamic>) {
+        final tot = (item['total'] as num?)?.toDouble() ?? 0.0;
+        if (tot > maxTot) maxTot = tot;
+      }
+    }
 
-    for (int i = 0; i < sortedYears.length; i++) {
-      final y = sortedYears[i];
-      final yg = goals.where((g) => g.year == y).toList();
-      final act = yg.where((g) => g.status == GoalStatus.active).length.toDouble();
-      final fail = yg.where((g) => g.status == GoalStatus.failed).length.toDouble();
-      final tot = yg.length.toDouble();
-      if (tot > maxTot) maxTot = tot;
+    for (int i = 0; i < stats.length; i++) {
+      final item = stats[i];
+      if (item is Map<String, dynamic>) {
+        final tot = (item['total'] as num?)?.toDouble() ?? 0.0;
+        final act = (item['active'] as num?)?.toDouble() ?? 0.0;
+        final fail = (item['failed'] as num?)?.toDouble() ?? 0.0;
+        final comp = (item['completed'] as num?)?.toDouble() ?? 0.0;
 
-      groups.add(BarChartGroupData(
-        x: i,
-        barRods: [
-          BarChartRodData(
-            toY: tot,
-            color: Colors.transparent,
-            width: 18,
-            borderRadius: const BorderRadius.vertical(top: Radius.circular(6)),
-            backDrawRodData: BackgroundBarChartRodData(
-              show: true,
-              toY: math.max(10, maxTot * 1.2),
-              color: context.appColors.border.withValues(alpha: 0.1),
-            ),
-            rodStackItems: [
-              if (act > 0) BarChartRodStackItem(0, act, const Color(0xFF3B82F6)), // Attivi - Blue
-              if (fail > 0) BarChartRodStackItem(act, act + fail, const Color(0xFFEF4444)), // Falliti - Red
-              if (tot > (act + fail)) BarChartRodStackItem(act + fail, tot, Theme.of(context).colorScheme.primary), // Completati - Dynamic Accent
-            ],
-          )
-        ],
-      ));
+        groups.add(BarChartGroupData(
+          x: i,
+          barRods: [
+            BarChartRodData(
+              toY: tot,
+              color: Colors.transparent,
+              width: 18,
+              borderRadius: const BorderRadius.vertical(top: Radius.circular(6)),
+              backDrawRodData: BackgroundBarChartRodData(
+                show: true,
+                toY: math.max(10, maxTot * 1.2),
+                color: context.appColors.border.withValues(alpha: 0.1),
+              ),
+              rodStackItems: [
+                if (act > 0) BarChartRodStackItem(0, act, const Color(0xFF3B82F6)), // Attivi - Blue
+                if (fail > 0) BarChartRodStackItem(act, act + fail, const Color(0xFFEF4444)), // Falliti - Red
+                if (comp > 0) BarChartRodStackItem(act + fail, act + fail + comp, const Color(0xFF10B981)), // Completati - Dynamic Accent
+              ],
+            )
+          ],
+        ));
+      }
     }
 
     return _buildCardBase(
@@ -984,19 +999,20 @@ class _MacroGoalsStatsViewState extends ConsumerState<MacroGoalsStatsView> {
                   tooltipPadding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
                   tooltipMargin: 8,
                   getTooltipItem: (group, groupIndex, rod, rodIndex) {
-                    final year = sortedYears[group.x.toInt()];
-                    final yg = goals.where((g) => g.year == year).toList();
-                    final act = yg.where((g) => g.status == GoalStatus.active).length;
-                    final fail = yg.where((g) => g.status == GoalStatus.failed).length;
-                    final comp = yg.where((g) => g.status == GoalStatus.completed).length;
-                    
+                    final index = group.x.toInt();
+                    if (index >= stats.length) return null;
+                    final item = stats[index] as Map<String, dynamic>;
+                    final y = item['year'] as int?;
+                    final act = item['active'] as int? ?? 0;
+                    final fail = item['failed'] as int? ?? 0;
+                    final comp = item['completed'] as int? ?? 0;
                     return BarTooltipItem(
-                      '$year\n',
-                      GoogleFonts.inter(color: context.appColors.foreground, fontWeight: FontWeight.bold, fontSize: 14),
+                      '$y\n',
+                      GoogleFonts.inter(color: context.appColors.foreground, fontWeight: FontWeight.bold, fontSize: 13),
                       children: [
-                        TextSpan(text: 'Attivi: $act\n', style: GoogleFonts.inter(color: const Color(0xFF3B82F6), fontSize: 11, fontWeight: FontWeight.w500)),
-                        TextSpan(text: 'Falliti: $fail\n', style: GoogleFonts.inter(color: const Color(0xFFEF4444), fontSize: 11, fontWeight: FontWeight.w500)),
-                        TextSpan(text: 'Completati: $comp', style: GoogleFonts.inter(color: Theme.of(context).colorScheme.primary, fontSize: 11, fontWeight: FontWeight.w500)),
+                        TextSpan(text: 'Attivi: $act\n', style: GoogleFonts.inter(color: const Color(0xFF3B82F6), fontSize: 11)),
+                        TextSpan(text: 'Falliti: $fail\n', style: GoogleFonts.inter(color: const Color(0xFFEF4444), fontSize: 11)),
+                        TextSpan(text: 'Completati: $comp', style: GoogleFonts.inter(color: const Color(0xFF10B981), fontSize: 11)),
                       ],
                     );
                   },
@@ -1026,10 +1042,12 @@ class _MacroGoalsStatsViewState extends ConsumerState<MacroGoalsStatsView> {
                     showTitles: true, 
                     getTitlesWidget: (val, _) {
                       final index = val.toInt();
-                      if (index < 0 || index >= sortedYears.length) return const SizedBox.shrink();
+                      if (index < 0 || index >= stats.length) return const SizedBox.shrink();
+                      final item = stats[index] as Map<String, dynamic>;
+                      final y = item['year'] as int?;
                       return Padding(
                         padding: const EdgeInsets.only(top: 10),
-                        child: Text(sortedYears[index].toString(), style: GoogleFonts.inter(fontSize: 10, color: context.appColors.mutedForeground, fontWeight: FontWeight.w600)),
+                        child: Text(y?.toString() ?? '', style: GoogleFonts.inter(fontSize: 10, color: context.appColors.mutedForeground, fontWeight: FontWeight.w600)),
                       );
                     },
                   ),
@@ -1045,7 +1063,7 @@ class _MacroGoalsStatsViewState extends ConsumerState<MacroGoalsStatsView> {
           _buildLegend([
             _LegendItem('Attivi', const Color(0xFF3B82F6)),
             _LegendItem('Falliti', const Color(0xFFEF4444)),
-            _LegendItem('Completati', Theme.of(context).colorScheme.primary),
+            _LegendItem('Completati', const Color(0xFF10B981)),
           ]),
         ],
       ),
@@ -1067,13 +1085,13 @@ class _MacroGoalsStatsViewState extends ConsumerState<MacroGoalsStatsView> {
     );
   }
 
-  Widget _buildGlobalTypeDistCard(List<MacroGoal> goals) {
+  Widget _buildGlobalTypeDistCard(Map<String, dynamic> stats) {
     final Map<String, int> counts = {
-      'Settimanale': goals.where((g) => g.type == GoalType.weekly).length,
-      'Mensile': goals.where((g) => g.type == GoalType.monthly).length,
-      'Trimestrale': goals.where((g) => g.type == GoalType.quarterly).length,
-      'Annuale': goals.where((g) => g.type == GoalType.annual).length,
-      'Lifetime': goals.where((g) => g.type == GoalType.lifetime).length,
+      'Settimanale': (stats['weekly'] as num?)?.toInt() ?? 0,
+      'Mensile': (stats['monthly'] as num?)?.toInt() ?? 0,
+      'Trimestrale': (stats['quarterly'] as num?)?.toInt() ?? 0,
+      'Annuale': (stats['annual'] as num?)?.toInt() ?? 0,
+      'Lifetime': (stats['lifetime'] as num?)?.toInt() ?? 0,
     };
     int maxV = counts.values.fold(0, (p, c) => math.max(p, c));
     return _buildCardBase(
@@ -1117,14 +1135,29 @@ class _MacroGoalsStatsViewState extends ConsumerState<MacroGoalsStatsView> {
     );
   }
 
-  Widget _buildQuarterSeasonalityCard(List<MacroGoal> goals) {
+  Widget _buildQuarterSeasonalityCard(List<dynamic> stats) {
     List<BarChartGroupData> groups = [];
     double maxX = 0;
+    
+    // Create a map for quick lookup
+    final Map<int, Map<String, dynamic>> dataMap = {};
+    for (var item in stats) {
+      if (item is Map<String, dynamic>) {
+        final q = item['quarter'] as int?;
+        if (q != null) {
+          dataMap[q] = item;
+          final tot = (item['total'] as num?)?.toDouble() ?? 0.0;
+          if (tot > maxX) maxX = tot;
+        }
+      }
+    }
+
     for (int q = 1; q <= 4; q++) {
-      final qg = goals.where((g) => g.quarter == q).toList();
-      final act = qg.where((g)=>g.status==GoalStatus.active).length.toDouble();
-      final fail = qg.where((g)=>g.status==GoalStatus.failed).length.toDouble();
-      final tot = qg.length.toDouble();
+      final item = dataMap[q];
+      final tot = (item?['total'] as num?)?.toDouble() ?? 0.0;
+      final act = (item?['active'] as num?)?.toDouble() ?? 0.0;
+      final fail = (item?['failed'] as num?)?.toDouble() ?? 0.0;
+      final comp = (item?['completed'] as num?)?.toDouble() ?? 0.0;
       
       groups.add(BarChartGroupData(x: q, barRods: [
         BarChartRodData(
@@ -1139,12 +1172,11 @@ class _MacroGoalsStatsViewState extends ConsumerState<MacroGoalsStatsView> {
           ),
           rodStackItems: [
             if (act > 0) BarChartRodStackItem(0, act, const Color(0xFF3B82F6)),
-            if (fail > 0) BarChartRodStackItem(act, act+fail, const Color(0xFFD97706)),
-            if (tot > (act + fail)) BarChartRodStackItem(act+fail, tot, Theme.of(context).colorScheme.primary),
+            if (fail > 0) BarChartRodStackItem(act, act + fail, const Color(0xFFD97706)),
+            if (comp > 0) BarChartRodStackItem(act + fail, act + fail + comp, const Color(0xFF10B981)),
           ]
         )
       ]));
-      if (tot > maxX) maxX = tot;
     }
     return _buildCardBase(
       title: '🎂 Stagionalità',
@@ -1158,17 +1190,17 @@ class _MacroGoalsStatsViewState extends ConsumerState<MacroGoalsStatsView> {
                 tooltipRoundedRadius: 12,
                 getTooltipItem: (group, groupIndex, rod, rodIndex) {
                   final q = group.x.toInt();
-                  final qg = goals.where((g) => g.quarter == q).toList();
-                  final act = qg.where((g) => g.status == GoalStatus.active).length;
-                  final fail = qg.where((g) => g.status == GoalStatus.failed).length;
-                  final comp = qg.where((g) => g.status == GoalStatus.completed).length;
+                  final item = dataMap[q];
+                  final act = (item?['active'] as num?)?.toInt() ?? 0;
+                  final fail = (item?['failed'] as num?)?.toInt() ?? 0;
+                  final comp = (item?['completed'] as num?)?.toInt() ?? 0;
                   return BarTooltipItem(
                     'Trimestre $q\n',
                     GoogleFonts.inter(color: context.appColors.foreground, fontWeight: FontWeight.bold, fontSize: 13),
                     children: [
                       TextSpan(text: 'Attivi: $act\n', style: GoogleFonts.inter(color: const Color(0xFF3B82F6), fontSize: 10)),
                       TextSpan(text: 'Falliti: $fail\n', style: GoogleFonts.inter(color: const Color(0xFFD97706), fontSize: 10)),
-                      TextSpan(text: 'Completati: $comp', style: GoogleFonts.inter(color: Theme.of(context).colorScheme.primary, fontSize: 10)),
+                      TextSpan(text: 'Completati: $comp', style: GoogleFonts.inter(color: const Color(0xFF10B981), fontSize: 10)),
                     ],
                   );
                 },
@@ -1195,29 +1227,39 @@ class _MacroGoalsStatsViewState extends ConsumerState<MacroGoalsStatsView> {
               })),
             ),
             barGroups: groups, 
-            maxY: math.max(5.0, maxX*1.2),
+            maxY: math.max(5.0, maxX * 1.2),
           ))),
           const SizedBox(height: 12),
           _buildLegend([
             _LegendItem('Attivi', const Color(0xFF3B82F6)),
             _LegendItem('Falliti', const Color(0xFFD97706)),
-            _LegendItem('Compl.', Theme.of(context).colorScheme.primary),
+            _LegendItem('Compl.', const Color(0xFF10B981)),
           ]),
         ],
       ),
     );
   }
 
-  Widget _buildGlobalMonthlyHistCard(List<MacroGoal> goals) {
+  Widget _buildGlobalMonthlyHistCard(List<dynamic> stats) {
     List<FlSpot> spots = [];
-    for (int m = 1; m <= 12; m++) {
-      final mg = goals.where((g) => g.month == m);
-      if (mg.isNotEmpty) {
-        spots.add(FlSpot(m.toDouble(), mg.where((g)=>g.status==GoalStatus.completed).length / mg.length * 100));
-      } else {
-         spots.add(FlSpot(m.toDouble(), 0));
+    
+    // Create a map for quick lookup
+    final Map<int, double> dataMap = {};
+    for (var item in stats) {
+      if (item is Map<String, dynamic>) {
+        final m = item['month'] as int?;
+        final rate = (item['rate'] as num?)?.toDouble() ?? 0.0;
+        if (m != null) {
+          dataMap[m] = rate;
+        }
       }
     }
+
+    for (int m = 1; m <= 12; m++) {
+      final rate = dataMap[m] ?? 0.0;
+      spots.add(FlSpot(m.toDouble(), rate));
+    }
+
     return _buildCardBase(
       title: '📈 Mensile (Storico)',
       subtitle: 'Successo medio per mese',
@@ -1235,7 +1277,7 @@ class _MacroGoalsStatsViewState extends ConsumerState<MacroGoalsStatsView> {
                   children: [
                     TextSpan(
                       text: '${s.y.round()}% successo',
-                      style: GoogleFonts.inter(color: Theme.of(context).colorScheme.primary, fontWeight: FontWeight.bold, fontSize: 13),
+                      style: GoogleFonts.inter(color: const Color(0xFF10B981), fontWeight: FontWeight.bold, fontSize: 13),
                     ),
                   ],
                 );
@@ -1272,7 +1314,7 @@ class _MacroGoalsStatsViewState extends ConsumerState<MacroGoalsStatsView> {
         minY: 0, maxY: 100, minX: 1, maxX: 12,
         lineBarsData: [LineChartBarData(
           spots: spots, 
-          color: Theme.of(context).colorScheme.primary,
+          color: const Color(0xFF10B981),
           barWidth: 3, 
           isCurved: true, 
           curveSmoothness: 0.35,
@@ -1281,7 +1323,7 @@ class _MacroGoalsStatsViewState extends ConsumerState<MacroGoalsStatsView> {
             show: true, 
             getDotPainter: (spot, percent, barData, index) => FlDotCirclePainter(
               radius: 4, 
-              color: Theme.of(context).colorScheme.primary, 
+              color: const Color(0xFF10B981), 
               strokeWidth: 2, 
               strokeColor: context.appColors.card,
             ),
@@ -1302,32 +1344,40 @@ class _MacroGoalsStatsViewState extends ConsumerState<MacroGoalsStatsView> {
     );
   }
 
-  Widget _buildGlobalInterestEvolutionCard(List<MacroGoal> goals, List<int> sortedYears) {
-    if (sortedYears.isEmpty) return const SizedBox();
+  Widget _buildGlobalInterestEvolutionCard(List<dynamic> stats) {
+    if (stats.isEmpty) return const SizedBox();
     List<BarChartGroupData> groups = [];
     double maxY = 0;
     
     // Categories to show in evolution
     final categories = kDefaultCategories.take(6).toList();
 
-    for (int i = 0; i < sortedYears.length; i++) {
-        final yg = goals.where((g) => g.year == sortedYears[i]);
-        if(yg.length > maxY) maxY = yg.length.toDouble();
+    for (int i = 0; i < stats.length; i++) {
+        final item = stats[i];
+        if (item is! Map<String, dynamic>) continue;
         
+        final cats = item['categories'] as Map<String, dynamic>? ?? {};
+        
+        double totalForYear = 0;
         List<BarChartRodStackItem> stacks = [];
         double curr = 0;
+        
         for (var c in categories) {
-           double amt = yg.where((g)=>g.categoryKey==c.key).length.toDouble();
-           if (amt>0) {
-             stacks.add(BarChartRodStackItem(curr, curr+amt, c.color));
-             curr += amt;
+           final count = (cats[c.key] as num?)?.toDouble() ?? 0.0;
+           totalForYear += count;
+           if (count > 0) {
+             stacks.add(BarChartRodStackItem(curr, curr + count, c.color));
+             curr += count;
            }
         }
+        
+        if (totalForYear > maxY) maxY = totalForYear;
+        
         groups.add(BarChartGroupData(
           x: i, 
           barRods: [
             BarChartRodData(
-              toY: yg.length.toDouble(), 
+              toY: totalForYear, 
               color: Colors.transparent, 
               width: 20, 
               borderRadius: const BorderRadius.vertical(top: Radius.circular(4)),
@@ -1341,6 +1391,30 @@ class _MacroGoalsStatsViewState extends ConsumerState<MacroGoalsStatsView> {
           ],
         ));
     }
+    
+    // Update backDrawRodData with the final maxY
+    for (var i = 0; i < groups.length; i++) {
+      final g = groups[i];
+      final rod = g.barRods.first;
+      groups[i] = BarChartGroupData(
+        x: g.x,
+        barRods: [
+          BarChartRodData(
+            toY: rod.toY,
+            color: rod.color,
+            width: rod.width,
+            borderRadius: rod.borderRadius,
+            backDrawRodData: BackgroundBarChartRodData(
+              show: true,
+              toY: math.max(5.0, maxY * 1.2),
+              color: AppColors.borderHover.withValues(alpha: 0.1),
+            ),
+            rodStackItems: rod.rodStackItems,
+          )
+        ],
+      );
+    }
+
     return _buildCardBase(
       title: '📈 Evoluzione Interessi',
       subtitle: 'Composizione delle aree di focus negli anni',
@@ -1353,12 +1427,15 @@ class _MacroGoalsStatsViewState extends ConsumerState<MacroGoalsStatsView> {
                 tooltipRoundedRadius: 12,
                 tooltipPadding: const EdgeInsets.all(12),
                 getTooltipItem: (group, groupIndex, rod, rodIndex) {
-                  final year = sortedYears[group.x.toInt()];
-                  final yg = goals.where((g) => g.year == year).toList();
+                  final index = group.x.toInt();
+                  if (index >= stats.length) return null;
+                  final item = stats[index] as Map<String, dynamic>;
+                  final y = item['year'] as int?;
+                  final cats = item['categories'] as Map<String, dynamic>? ?? {};
                   
                   List<TextSpan> categorySpans = [];
                   for (var c in categories) {
-                    final count = yg.where((g) => g.categoryKey == c.key).length;
+                    final count = (cats[c.key] as num?)?.toInt() ?? 0;
                     if (count > 0) {
                       categorySpans.add(TextSpan(
                         text: '${c.label}: $count\n',
@@ -1368,7 +1445,7 @@ class _MacroGoalsStatsViewState extends ConsumerState<MacroGoalsStatsView> {
                   }
 
                   return BarTooltipItem(
-                    '$year\n',
+                    '$y\n',
                     GoogleFonts.inter(color: context.appColors.foreground, fontWeight: FontWeight.bold, fontSize: 14),
                     children: categorySpans,
                   );
@@ -1397,10 +1474,12 @@ class _MacroGoalsStatsViewState extends ConsumerState<MacroGoalsStatsView> {
                   showTitles: true, 
                   getTitlesWidget: (v,_) {
                     final index = v.toInt();
-                    if (index < 0 || index >= sortedYears.length) return const SizedBox.shrink();
+                    if (index < 0 || index >= stats.length) return const SizedBox.shrink();
+                    final item = stats[index] as Map<String, dynamic>;
+                    final y = item['year'] as int?;
                     return Padding(
                       padding: const EdgeInsets.only(top: 8),
-                      child: Text(sortedYears[index].toString(), style: GoogleFonts.inter(fontSize: 10, color: context.appColors.mutedForeground, fontWeight: FontWeight.w600)),
+                      child: Text(y?.toString() ?? '', style: GoogleFonts.inter(fontSize: 10, color: context.appColors.mutedForeground, fontWeight: FontWeight.w600)),
                     );
                   },
                 ),

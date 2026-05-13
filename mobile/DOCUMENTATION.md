@@ -294,7 +294,7 @@
 ## [2026-05-12 18:15]: Feature - Apple-style Time Picker
 *Details*: Changed the time picker in `HabitManagementModal` to use `CupertinoDatePicker` for a more premium, Apple-like feel.
 *Tech Notes*:
-- **UI**: Replaced `showTimePicker` with `showCupertinoModalPopup` and `CupertinoDatePicker` in `habit_management_modal.dart`.
+- **UI**: Replaced `showTimePicker` with `showCupertinoModalPopup` and `CupertinoDatePicker` in `habit_management_modal.dart`. Wrapped `ColorPicker` in `Material` to support its widgets.
 - **Format**: Forced 24h format in the Cupertino picker.
 
 ---
@@ -359,6 +359,7 @@
 - **Provider**: Created `mood_provider.dart` with `dailyMoodsProvider` to sync with `daily_moods` table in Supabase.
 - **UI**: Updated `DailyCheckInModal` to use the provider. It now loads existing values for today if they exist and changes the button text accordingly.
 - **DB**: Noted that `daily_moods` table has constraints for scores 1-5, while UI uses 0-10. Provided SQL to update constraints.
+
 ---
 
 ## [2026-05-12 23:45]: Feature - Real Data for Weekly Trend
@@ -501,3 +502,25 @@
 *Details*: Added `ref.keepAlive()` to all remaining statistics providers to prevent unnecessary re-fetching.
 *Tech Notes*:
 - **State Management**: Added `ref.keepAlive()` to `habitAnalyticsProvider`, `criticalHabitsProvider`, `bestHabitsProvider`, `habitPerformanceProvider`, `habitAlertsProvider`, `habitYearlyGridProvider`, and `habitCorrelationsProvider`.
+
+---
+
+## [2026-05-13 12:50]: Goals - Completion Color Standardized to Green
+*Details*: Replaced the primary/white color with green (`#10B981`) for completion and success metrics across all charts in the Goals Performance view to ensure consistency.
+*Tech Notes*:
+- Updated `_buildKpiCard`, `_buildHighlightCard`, `_buildAreaChartCard`, `_buildQuarterlyBarCard`, `_buildMonthlyComposedCard`, `_buildGlobalYearProgressionCard`, and `_buildQuarterSeasonalityCard` to use `const Color(0xFF10B981)` for completed states and success percentages instead of `Theme.of(context).colorScheme.primary`.
+
+## [2026-05-13 13:00]: Goals - Performance Analysis Database Integration (RPC & Caching)
+*Details*: Removed mock data from the "Analisi Performance" view for Macro Goals and connected it to real database data via a new Supabase RPC and Riverpod caching.
+*Tech Notes*:
+- **Database**: Created `get_macro_goals_stats` function in Supabase (to be executed by user).
+- **Provider**: Added `macroGoalsStatsProvider` in `macro_goals_stats_provider.dart` (FutureProvider.family) with `ref.keepAlive()` for caching.
+- **UI**: Updated `MacroGoalsStatsView` to use the new provider, refactoring all charts (Area, Radar, Pie, Bar, Line) to use the JSON data structure returned by the RPC instead of client-side calculations on `List<MacroGoal>`.
+- **UI**: Respected user's title change in `_buildMonthlyComposedCard` ("Completamenti" and "Mensili").
+
+## [2026-05-13 13:05]: Goals - Fix SQL Syntax Error in RPC
+*Details*: Fixed a syntax error in the `get_macro_goals_stats` SQL function where `ORDER BY` was used at the end of a subquery with `jsonb_agg`.
+*Tech Notes*:
+- **Database**: Moved `ORDER BY` inside the `jsonb_agg` function (e.g., `jsonb_agg(... ORDER BY year)`) to comply with Postgres rules for aggregate functions.
+- **File**: Updated `/Users/simo/Downloads/DEV/mattioli.OS/migrations/20260513_add_get_macro_goals_stats.sql`.
+- **Action**: Requested user to rerun the script.

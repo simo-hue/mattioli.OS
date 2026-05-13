@@ -1,34 +1,99 @@
 import 'package:flutter/material.dart';
 import 'package:lucide_icons_flutter/lucide_icons.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../../core/theme.dart';
 import '../../../core/localization.dart';
+import '../../../providers/goal_provider.dart';
+import '../../../models/goal.dart';
 
-class InfoTabWidget extends StatelessWidget {
+class InfoTabWidget extends ConsumerWidget {
   const InfoTabWidget({super.key});
 
   @override
-  Widget build(BuildContext context) {
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: [
-        const _TopStatsGrid(),
-        const SizedBox(height: 16),
-        const _AttivitaRecenteSection(),
-        const SizedBox(height: 16),
-        const _AbitudiniChiaveSection(),
-        const SizedBox(height: 16),
-        const _CorrelazioniPositiveSection(),
-        const SizedBox(height: 16),
-        const _CorrelazioniNegativeSection(),
-        const SizedBox(height: 32),
-      ],
+  Widget build(BuildContext context, WidgetRef ref) {
+    final statsAsync = ref.watch(habitStatsProvider);
+    final criticalDayAsync = ref.watch(globalCriticalDayProvider);
 
+    return statsAsync.when(
+      data: (statsList) {
+        return criticalDayAsync.when(
+          data: (criticalDayLabel) {
+            // Calculate Global Completion
+            int totalCompletions = 0;
+            int totalActiveDays = 0;
+            int maxBestStreak = 0;
+            Map<String, dynamic>? topPerformerStat;
+            
+            for (final stat in statsList) {
+              totalCompletions += (stat['total_completions'] as num?)?.toInt() ?? 0;
+              totalActiveDays += (stat['total_active_days'] as num?)?.toInt() ?? 1;
+              final bestStreak = (stat['best_streak'] as num?)?.toInt() ?? 0;
+              if (bestStreak > maxBestStreak) {
+                maxBestStreak = bestStreak;
+              }
+              if (topPerformerStat == null || ((stat['rate'] as num?)?.toDouble() ?? 0) > ((topPerformerStat['rate'] as num?)?.toDouble() ?? 0)) {
+                topPerformerStat = stat;
+              }
+            }
+            
+            final globalCompletionRate = totalActiveDays > 0 ? (totalCompletions / totalActiveDays * 100).round() : 0;
+            
+            final topPerformerName = topPerformerStat?['title'] ?? 'N/A';
+            final topPerformerRate = (topPerformerStat?['rate'] as num?)?.round() ?? 0;
+
+            final sortedStats = List<Map<String, dynamic>>.from(statsList);
+            sortedStats.sort((a, b) => ((b['rate'] as num?)?.toDouble() ?? 0).compareTo((a['rate'] as num?)?.toDouble() ?? 0));
+            final top3Ids = sortedStats.take(3).map((s) => s['goal_id'] as String).toList();
+
+            return Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                _TopStatsGrid(
+                  completion: '$globalCompletionRate%',
+                  bestStreak: '$maxBestStreak',
+                  topPerformer: topPerformerName,
+                  topPerformerRate: '$topPerformerRate%',
+                  criticalDay: criticalDayLabel,
+                ),
+                const SizedBox(height: 16),
+                const _AttivitaRecenteSection(),
+                const SizedBox(height: 16),
+                if (top3Ids.isNotEmpty)
+                  _TopHabitCorrelationsSection(goalIds: top3Ids),
+                const SizedBox(height: 16),
+                if (top3Ids.isNotEmpty)
+                  _CorrelationsSection(goalId: top3Ids.first, isPositive: true),
+                const SizedBox(height: 16),
+                if (top3Ids.isNotEmpty)
+                  _CorrelationsSection(goalId: top3Ids.first, isPositive: false),
+                const SizedBox(height: 32),
+              ],
+            );
+          },
+          loading: () => const Center(child: CircularProgressIndicator()),
+          error: (err, stack) => Center(child: Text('Error: $err', style: TextStyle(color: context.appColors.mutedForeground))),
+        );
+      },
+      loading: () => const Center(child: CircularProgressIndicator()),
+      error: (err, stack) => Center(child: Text('Error: $err', style: TextStyle(color: context.appColors.mutedForeground))),
     );
   }
 }
 
 class _TopStatsGrid extends StatelessWidget {
-  const _TopStatsGrid();
+  final String completion;
+  final String bestStreak;
+  final String topPerformer;
+  final String topPerformerRate;
+  final String criticalDay;
+
+  const _TopStatsGrid({
+    required this.completion,
+    required this.bestStreak,
+    required this.topPerformer,
+    required this.topPerformerRate,
+    required this.criticalDay,
+  });
 
   @override
   Widget build(BuildContext context) {
@@ -43,33 +108,32 @@ class _TopStatsGrid extends StatelessWidget {
         _StatCard(
           icon: LucideIcons.target,
           title: context.l10n.translate('Completamento'),
-          value: '44%',
-           subtitle: context.l10n.translate('Globale'),
+          value: completion,
+          subtitle: context.l10n.translate('Globale'),
           accentColor: Theme.of(context).colorScheme.primary,
         ),
         _StatCard(
           icon: LucideIcons.flame,
           title: context.l10n.translate('Miglior Serie'),
-          value: '48',
+          value: bestStreak,
           subtitle: context.l10n.translate('Giorni'),
           accentColor: Theme.of(context).colorScheme.primary,
         ),
         _StatCard(
           icon: LucideIcons.trophy,
           title: context.l10n.translate('Top Performer'),
-          value: 'Caviglie',
-          subtitle: '86% Rate',
+          value: topPerformer,
+          subtitle: '$topPerformerRate Rate',
           accentColor: Theme.of(context).colorScheme.primary,
         ),
         _StatCard(
           icon: LucideIcons.triangleAlert,
           title: context.l10n.translate('Giorno Critico'),
-          value: context.l10n.translate('sat'),
+          value: context.l10n.translate(criticalDay),
           subtitle: context.l10n.translate('Focus richiesto'),
           accentColor: const Color(0xFFEF4444),
         ),
       ],
-
     );
   }
 }
@@ -195,14 +259,15 @@ class _StatCard extends StatelessWidget {
 }
 
 
-class _AbitudiniChiaveSection extends StatefulWidget {
-  const _AbitudiniChiaveSection();
+class _TopHabitCorrelationsSection extends ConsumerStatefulWidget {
+  final List<String> goalIds;
+  const _TopHabitCorrelationsSection({required this.goalIds});
 
   @override
-  State<_AbitudiniChiaveSection> createState() => _AbitudiniChiaveSectionState();
+  ConsumerState<_TopHabitCorrelationsSection> createState() => _TopHabitCorrelationsSectionState();
 }
 
-class _AbitudiniChiaveSectionState extends State<_AbitudiniChiaveSection> {
+class _TopHabitCorrelationsSectionState extends ConsumerState<_TopHabitCorrelationsSection> {
   late PageController _pageController;
   int _currentPage = 0;
 
@@ -220,102 +285,114 @@ class _AbitudiniChiaveSectionState extends State<_AbitudiniChiaveSection> {
 
   @override
   Widget build(BuildContext context) {
-    final List<Widget> cards = [
-      const _AbitudineChiaveCard(
-        title: '1 YT-Video',
-        dotColor: Color(0xFFEF4444),
-        correlations: [
-          MapEntry('Caviglia', '-0.43'),
-          MapEntry('20 Flessioni 4', '-0.42'),
-          MapEntry('20 Flessioni 3', '-0.38'),
-          MapEntry('20 Flessioni 2', '-0.35'),
-        ],
-        extraConnections: 2,
-        media: '-0.13',
-      ),
-      const _AbitudineChiaveCard(
-        title: '20 Flessioni 1',
-        dotColor: Color(0xFFEF4444),
-        correlations: [
-          MapEntry('20 Flessioni 2', '+0.92'),
-          MapEntry('20 Flessioni 3', '+0.77'),
-          MapEntry('20 Flessioni 4', '+0.62'),
-          MapEntry('Journaling', '+0.55'),
-        ],
-        extraConnections: 1,
-        media: '+0.47',
-      ),
-      const _AbitudineChiaveCard(
-        title: '20 Flessioni 2',
-        dotColor: Color(0xFFEF4444),
-        correlations: [
-          MapEntry('20 Flessioni 1', '+0.92'),
-          MapEntry('20 Flessioni 3', '+0.84'),
-          MapEntry('20 Flessioni 4', '+0.70'),
-          MapEntry('1 YT-Video', '-0.35'),
-        ],
-        extraConnections: 1,
-        media: '+0.48',
-      ),
-    ];
-
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: [
-        Row(
+    final correlationsAsync = ref.watch(allHabitCorrelationsProvider);
+    
+    return correlationsAsync.when(
+      data: (allCorrelations) {
+        return Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            const Icon(LucideIcons.crown, size: 16, color: Color(0xFFEAB308)),
-            const SizedBox(width: 8),
-            Text(context.l10n.translate('Abitudini Chiave'), style: TextStyle(fontFamily: 'Inter', fontSize: 14, fontWeight: FontWeight.w700, color: context.appColors.foreground)),
+            Row(
+              children: [
+                const Icon(LucideIcons.crown, size: 16, color: Color(0xFFEAB308)),
+                const SizedBox(width: 8),
+                Text(context.l10n.translate('Abitudini Chiave'), style: TextStyle(fontFamily: 'Inter', fontSize: 14, fontWeight: FontWeight.w700, color: context.appColors.foreground)),
+              ],
+            ),
+            const SizedBox(height: 4),
+            Text(context.l10n.translate('Abitudini che influenzano positivamente molte altre'), style: TextStyle(fontFamily: 'Inter', fontSize: 11, color: context.appColors.mutedForeground)),
+            const SizedBox(height: 16),
+            
+            // Carousel
+            SizedBox(
+              height: 280, // Height for habit cards
+              child: PageView.builder(
+                controller: _pageController,
+                itemCount: widget.goalIds.length,
+                onPageChanged: (index) => setState(() => _currentPage = index),
+                itemBuilder: (context, index) {
+                  final goalId = widget.goalIds[index];
+                  final habitCorrelations = allCorrelations.where((c) => c['goal_id'] == goalId).toList();
+                  return Padding(
+                    padding: const EdgeInsets.symmetric(horizontal: 8),
+                    child: _TopHabitCorrelationCard(goalId: goalId, correlationsData: habitCorrelations),
+                  );
+                },
+              ),
+            ),
+            
+            const SizedBox(height: 12),
+            
+            // Pagination Dots
+            Center(
+              child: Row(
+                mainAxisAlignment: MainAxisAlignment.center,
+                children: List.generate(widget.goalIds.length, (index) {
+                  final isActive = _currentPage == index;
+                  return AnimatedContainer(
+                    duration: const Duration(milliseconds: 300),
+                    margin: const EdgeInsets.symmetric(horizontal: 4),
+                    width: isActive ? 16 : 6,
+                    height: 6,
+                    decoration: BoxDecoration(
+                      color: isActive 
+                          ? const Color(0xFFEAB308)
+                          : context.appColors.mutedForeground.withValues(alpha: 0.3),
+                      borderRadius: BorderRadius.circular(3),
+                    ),
+                  );
+                }),
+              ),
+            ),
           ],
-        ),
-        const SizedBox(height: 4),
-        Text(context.l10n.translate('Abitudini che influenzano positivamente molte altre'), style: TextStyle(fontFamily: 'Inter', fontSize: 11, color: context.appColors.mutedForeground)),
-        const SizedBox(height: 16),
-        
-        // Carousel
-        SizedBox(
-          height: 280, // Height for habit cards
-          child: PageView.builder(
-            controller: _pageController,
-            itemCount: cards.length,
-            onPageChanged: (index) => setState(() => _currentPage = index),
-            itemBuilder: (context, index) {
-              return Padding(
-                padding: const EdgeInsets.symmetric(horizontal: 8),
-                child: cards[index],
-              );
-            },
-          ),
-        ),
-        
-        const SizedBox(height: 12),
-        
-        // Pagination Dots
-        Center(
-          child: Row(
-            mainAxisAlignment: MainAxisAlignment.center,
-            children: List.generate(cards.length, (index) {
-              final isActive = _currentPage == index;
-              return AnimatedContainer(
-                duration: const Duration(milliseconds: 300),
-                margin: const EdgeInsets.symmetric(horizontal: 4),
-                width: isActive ? 16 : 6,
-                height: 6,
-                decoration: BoxDecoration(
-                  color: isActive 
-                      ? const Color(0xFFEAB308)
-                      : context.appColors.mutedForeground.withValues(alpha: 0.3),
-                  borderRadius: BorderRadius.circular(3),
-                ),
-              );
-            }),
-          ),
-        ),
-      ],
+        );
+      },
+      loading: () => const Center(child: CircularProgressIndicator()),
+      error: (err, stack) => Center(child: Text('Error: $err', style: TextStyle(color: context.appColors.mutedForeground))),
     );
   }
 }
+
+class _TopHabitCorrelationCard extends ConsumerWidget {
+  final String goalId;
+  final List<Map<String, dynamic>> correlationsData;
+  const _TopHabitCorrelationCard({required this.goalId, required this.correlationsData});
+
+  @override
+  Widget build(BuildContext context, WidgetRef ref) {
+    final goals = ref.watch(goalsProvider);
+    
+    final currentGoal = goals.firstWhere((g) => g.id == goalId, orElse: () => Goal(id: '', title: '', color: Colors.blue, startDate: DateTime.now()));
+    
+    if (currentGoal.id.isEmpty) {
+      return const SizedBox.shrink();
+    }
+
+    final List<MapEntry<String, String>> correlationEntries = [];
+    for (final item in correlationsData.take(4)) {
+      final otherGoalId = item['other_goal_id'] as String;
+      final otherGoal = goals.firstWhere((g) => g.id == otherGoalId, orElse: () => Goal(id: '', title: '', color: Colors.blue, startDate: DateTime.now()));
+      if (otherGoal.id.isNotEmpty) {
+        final percentage = (item['percentage'] as num?)?.toInt() ?? 0;
+        final strength = percentage / 100.0;
+        correlationEntries.add(MapEntry(otherGoal.title, '${strength >= 0 ? '+' : ''}${strength.toStringAsFixed(2)}'));
+      }
+    }
+
+    final media = correlationEntries.isNotEmpty 
+        ? (correlationEntries.map((e) => double.tryParse(e.value) ?? 0.0).reduce((a, b) => a + b) / correlationEntries.length).toStringAsFixed(2)
+        : '0.00';
+
+    return _AbitudineChiaveCard(
+      title: currentGoal.title,
+      dotColor: currentGoal.color,
+      correlations: correlationEntries,
+      extraConnections: correlationsData.length > 4 ? correlationsData.length - 4 : 0,
+      media: media,
+    );
+  }
+}
+
 
 class _AbitudineChiaveCard extends StatelessWidget {
   final String title;
@@ -493,14 +570,20 @@ class _AbitudineChiaveCard extends StatelessWidget {
 
 
 
-class _CorrelazioniPositiveSection extends StatefulWidget {
-  const _CorrelazioniPositiveSection();
+class _CorrelationsSection extends ConsumerStatefulWidget {
+  final String goalId;
+  final bool isPositive;
+
+  const _CorrelationsSection({
+    required this.goalId,
+    required this.isPositive,
+  });
 
   @override
-  State<_CorrelazioniPositiveSection> createState() => _CorrelazioniPositiveSectionState();
+  ConsumerState<_CorrelationsSection> createState() => _CorrelationsSectionState();
 }
 
-class _CorrelazioniPositiveSectionState extends State<_CorrelazioniPositiveSection> {
+class _CorrelationsSectionState extends ConsumerState<_CorrelationsSection> {
   late PageController _pageController;
   int _currentPage = 0;
 
@@ -518,121 +601,121 @@ class _CorrelazioniPositiveSectionState extends State<_CorrelazioniPositiveSecti
 
   @override
   Widget build(BuildContext context) {
-    final List<Widget> cards = [
-      _CorrelazioneDetailCard(
-        tag: 'Correlazione Positiva - Forte',
-        tagColor: const Color(0xFF10B981),
-        habit1: '20 Flessioni 1',
-        habit1Color: const Color(0xFFEF4444),
-        habit2: '20 Flessioni 2',
-        habit2Color: const Color(0xFFEF4444),
-        coef: '+0.92',
-        cooccorrenza: '94%',
-        giorni: '102',
-        desc: 'Quando completi "20 Flessioni 1", hai una probabilità del 94% di completare anche "20 Flessioni 2". Considera di farle insieme come routine consolidata.',
-      ),
-      _CorrelazioneDetailCard(
-        tag: 'Correlazione Positiva - Forte',
-        tagColor: const Color(0xFF10B981),
-        habit1: '20 Flessioni 2',
-        habit1Color: const Color(0xFFEF4444),
-        habit2: '20 Flessioni 3',
-        habit2Color: const Color(0xFFEF4444),
-        coef: '+0.84',
-        cooccorrenza: '87%',
-        giorni: '99',
-        desc: 'Quando completi "20 Flessioni 2", hai una probabilità del 87% di completare anche "20 Flessioni 3". Considera di farle insieme come routine consolidata.',
-      ),
-      _CorrelazioneDetailCard(
-        tag: 'Correlazione Positiva - Forte',
-        tagColor: const Color(0xFF10B981),
-        habit1: '20 Flessioni 3',
-        habit1Color: const Color(0xFFEF4444),
-        habit2: '20 Flessioni 4',
-        habit2Color: const Color(0xFFEF4444),
-        coef: '+0.79',
-        cooccorrenza: '71%',
-        giorni: '71',
-        desc: 'Quando completi "20 Flessioni 3", hai una probabilità del 71% di completare anche "20 Flessioni 4". Considera di farle insieme come routine consolidata.',
-      ),
-      _CorrelazioneDetailCard(
-        tag: 'Correlazione Positiva - Forte',
-        tagColor: const Color(0xFF10B981),
-        habit1: '20 Flessioni 1',
-        habit1Color: const Color(0xFFEF4444),
-        habit2: '20 Flessioni 3',
-        habit2Color: const Color(0xFFEF4444),
-        coef: '+0.77',
-        cooccorrenza: '81%',
-        giorni: '99',
-        desc: 'Quando completi "20 Flessioni 1", hai una probabilità del 81% di completare anche "20 Flessioni 3". Considera di farle insieme come routine consolidata.',
-      ),
-      _CorrelazioneDetailCard(
-        tag: 'Correlazione Positiva - Forte',
-        tagColor: const Color(0xFF10B981),
-        habit1: '20 Flessioni 2',
-        habit1Color: const Color(0xFFEF4444),
-        habit2: '20 Flessioni 4',
-        habit2Color: const Color(0xFFEF4444),
-        coef: '+0.70',
-        cooccorrenza: '61%',
-        giorni: '71',
-        desc: 'Quando completi "20 Flessioni 2", hai una probabilità del 61% di completare anche "20 Flessioni 4". Considera di farle insieme come routine consolidata.',
-      ),
-    ];
+    final correlationsAsync = ref.watch(habitCorrelationsProvider(widget.goalId));
+    final goals = ref.watch(goalsProvider);
 
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: [
-        Row(
+    return correlationsAsync.when(
+      data: (allCorrelations) {
+        final currentGoal = goals.firstWhere((g) => g.id == widget.goalId, orElse: () => Goal(id: '', title: '', color: Colors.blue, startDate: DateTime.now()));
+        
+        if (currentGoal.id.isEmpty) {
+          return const SizedBox.shrink();
+        }
+
+        final correlationsData = allCorrelations.where((c) => c['goal_id'] == widget.goalId).toList();
+
+        final filteredCorrelations = correlationsData.where((item) {
+          final percentage = (item['percentage'] as num?)?.toInt() ?? 0;
+          return widget.isPositive ? percentage >= 50 : percentage < 50;
+        }).toList();
+
+        if (filteredCorrelations.isEmpty) {
+          return const SizedBox.shrink();
+        }
+
+        final List<Widget> cards = filteredCorrelations.take(4).map((item) {
+          final otherGoalId = item['other_goal_id'] as String;
+          final otherGoal = goals.firstWhere((g) => g.id == otherGoalId, orElse: () => Goal(id: '', title: '', color: Colors.blue, startDate: DateTime.now()));
+          final percentage = (item['percentage'] as num?)?.toInt() ?? 0;
+          final strength = percentage / 100.0;
+          final togetherCount = (item['together_count'] as num?)?.toInt() ?? 0;
+
+          return _CorrelazioneDetailCard(
+            tag: widget.isPositive ? 'Correlazione Positiva' : 'Correlazione Negativa',
+            tagColor: widget.isPositive ? const Color(0xFF10B981) : const Color(0xFFEF4444),
+            habit1: currentGoal.title,
+            habit1Color: currentGoal.color,
+            habit2: otherGoal.title,
+            habit2Color: otherGoal.color,
+            coef: '${strength >= 0 ? '+' : ''}${strength.toStringAsFixed(2)}',
+            cooccorrenza: '$percentage%',
+            giorni: '$togetherCount',
+            desc: widget.isPositive
+                ? 'Quando completi "${currentGoal.title}", hai una probabilità del $percentage% di completare anche "${otherGoal.title}".'
+                : 'Quando completi "${currentGoal.title}", la probabilità di completare anche "${otherGoal.title}" è solo del $percentage%.',
+          );
+        }).toList();
+
+        return Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            const Icon(LucideIcons.heart, size: 16, color: Color(0xFF10B981)),
-            const SizedBox(width: 8),
-            Text(context.l10n.translate('Correlazioni Positive'), style: TextStyle(fontFamily: 'Inter', fontSize: 14, fontWeight: FontWeight.w700, color: context.appColors.foreground)),
-          ],
-        ),
-        const SizedBox(height: 16),
-        
-        // Carousel
-        SizedBox(
-          height: 240, // Increased height for premium cards and shadows
-          child: PageView.builder(
-            controller: _pageController,
-            itemCount: cards.length,
-            onPageChanged: (index) => setState(() => _currentPage = index),
-            itemBuilder: (context, index) {
-              return Padding(
-                padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 10), // Added vertical padding for shadows
-                child: cards[index],
-              );
-            },
-          ),
-        ),
-        
-        const SizedBox(height: 12),
-        
-        // Pagination Dots
-        Center(
-          child: Row(
-            mainAxisAlignment: MainAxisAlignment.center,
-            children: List.generate(cards.length, (index) {
-              final isActive = _currentPage == index;
-              return AnimatedContainer(
-                duration: const Duration(milliseconds: 300),
-                margin: const EdgeInsets.symmetric(horizontal: 4),
-                width: isActive ? 16 : 6,
-                height: 6,
-                decoration: BoxDecoration(
-                  color: isActive 
-                      ? const Color(0xFF10B981)
-                      : context.appColors.mutedForeground.withValues(alpha: 0.3),
-                  borderRadius: BorderRadius.circular(3),
+            Row(
+              children: [
+                Icon(
+                  widget.isPositive ? LucideIcons.trendingUp : LucideIcons.trendingDown,
+                  size: 16,
+                  color: widget.isPositive ? const Color(0xFF10B981) : const Color(0xFFEF4444),
                 ),
-              );
-            }),
-          ),
-        ),
-      ],
+                const SizedBox(width: 8),
+                Text(
+                  widget.isPositive ? context.l10n.translate('Correlazioni Positive') : context.l10n.translate('Correlazioni Negative'),
+                  style: TextStyle(fontFamily: 'Inter', fontSize: 14, fontWeight: FontWeight.w700, color: context.appColors.foreground),
+                ),
+              ],
+            ),
+            const SizedBox(height: 4),
+            Text(
+              widget.isPositive
+                  ? context.l10n.translate('Abitudini che tendi a fare insieme')
+                  : context.l10n.translate('Abitudini che tendi a non fare insieme'),
+              style: TextStyle(fontFamily: 'Inter', fontSize: 11, color: context.appColors.mutedForeground),
+            ),
+            const SizedBox(height: 16),
+            
+            // Carousel
+            SizedBox(
+              height: 240,
+              child: PageView.builder(
+                controller: _pageController,
+                itemCount: cards.length,
+                onPageChanged: (index) => setState(() => _currentPage = index),
+                itemBuilder: (context, index) {
+                  return Padding(
+                    padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 10),
+                    child: cards[index],
+                  );
+                },
+              ),
+            ),
+            
+            const SizedBox(height: 12),
+            
+            // Pagination Dots
+            Center(
+              child: Row(
+                mainAxisAlignment: MainAxisAlignment.center,
+                children: List.generate(cards.length, (index) {
+                  final isActive = _currentPage == index;
+                  return AnimatedContainer(
+                    duration: const Duration(milliseconds: 300),
+                    margin: const EdgeInsets.symmetric(horizontal: 4),
+                    width: isActive ? 16 : 6,
+                    height: 6,
+                    decoration: BoxDecoration(
+                      color: isActive 
+                          ? (widget.isPositive ? const Color(0xFF10B981) : const Color(0xFFEF4444))
+                          : context.appColors.mutedForeground.withValues(alpha: 0.3),
+                      borderRadius: BorderRadius.circular(3),
+                    ),
+                  );
+                }),
+              ),
+            ),
+          ],
+        );
+      },
+      loading: () => const Center(child: CircularProgressIndicator()),
+      error: (err, stack) => Center(child: Text('Error: $err', style: TextStyle(color: context.appColors.mutedForeground))),
     );
   }
 }
@@ -774,113 +857,15 @@ class _DetailBox extends StatelessWidget {
   }
 }
 
-class _CorrelazioniNegativeSection extends StatefulWidget {
-  const _CorrelazioniNegativeSection();
 
-  @override
-  State<_CorrelazioniNegativeSection> createState() => _CorrelazioniNegativeSectionState();
-}
 
-class _CorrelazioniNegativeSectionState extends State<_CorrelazioniNegativeSection> {
-  late PageController _pageController;
-  int _currentPage = 0;
-
-  @override
-  void initState() {
-    super.initState();
-    _pageController = PageController(viewportFraction: 0.9);
-  }
-
-  @override
-  void dispose() {
-    _pageController.dispose();
-    super.dispose();
-  }
-
-  @override
-  Widget build(BuildContext context) {
-    final List<Widget> cards = [
-      _CorrelazioneDetailCard(
-        tag: 'Correlazione Negativa - Moderata',
-        tagColor: const Color(0xFFEF4444),
-        habit1: '1 YT-Video',
-        habit1Color: const Color(0xFFEF4444),
-        habit2: 'Caviglia',
-        habit2Color: const Color(0xFFF59E0B),
-        coef: '-0.43',
-        cooccorrenza: '15%',
-        giorni: '80',
-        desc: 'Quando completi "1 YT-Video", è raro che completi anche "Caviglia".',
-      ),
-      // Adding a dummy card for demonstration if there's only one, 
-      // but normally it would be a dynamic list.
-    ];
-
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: [
-        Row(
-          children: [
-            const Icon(LucideIcons.triangleAlert, size: 16, color: Color(0xFFEAB308)),
-            const SizedBox(width: 8),
-            Text(context.l10n.translate('Correlazioni Negative'), style: TextStyle(fontFamily: 'Inter', fontSize: 14, fontWeight: FontWeight.w700, color: context.appColors.foreground)),
-          ],
-        ),
-        const SizedBox(height: 4),
-        Text(context.l10n.translate('Queste abitudini tendono a non essere completate insieme.'), style: TextStyle(fontFamily: 'Inter', fontSize: 11, color: context.appColors.mutedForeground)),
-        const SizedBox(height: 16),
-        
-        // Carousel
-        SizedBox(
-          height: 240, // Increased height
-          child: PageView.builder(
-            controller: _pageController,
-            itemCount: cards.length,
-            onPageChanged: (index) => setState(() => _currentPage = index),
-            itemBuilder: (context, index) {
-              return Padding(
-                padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 10), // Added vertical padding for shadows
-                child: cards[index],
-              );
-            },
-          ),
-        ),
-        
-        const SizedBox(height: 12),
-        
-        // Pagination Dots (only show if more than 1 card)
-        if (cards.length > 1)
-          Center(
-            child: Row(
-              mainAxisAlignment: MainAxisAlignment.center,
-              children: List.generate(cards.length, (index) {
-                final isActive = _currentPage == index;
-                return AnimatedContainer(
-                  duration: const Duration(milliseconds: 300),
-                  margin: const EdgeInsets.symmetric(horizontal: 4),
-                  width: isActive ? 16 : 6,
-                  height: 6,
-                  decoration: BoxDecoration(
-                    color: isActive 
-                        ? const Color(0xFFEF4444)
-                        : context.appColors.mutedForeground.withValues(alpha: 0.3),
-                    borderRadius: BorderRadius.circular(3),
-                  ),
-                );
-              }),
-            ),
-          ),
-      ],
-    );
-  }
-}
-
-class _AttivitaRecenteSection extends StatelessWidget {
+class _AttivitaRecenteSection extends ConsumerWidget {
   const _AttivitaRecenteSection();
 
   @override
-  Widget build(BuildContext context) {
+  Widget build(BuildContext context, WidgetRef ref) {
     final accentColor = Theme.of(context).colorScheme.primary;
+    final logs = ref.watch(habitLogsProvider);
     
     return Container(
       padding: const EdgeInsets.all(20),
@@ -937,7 +922,7 @@ class _AttivitaRecenteSection extends StatelessWidget {
           
           // Activity Grid
           Center(
-            child: _buildActivityGrid(context, accentColor),
+            child: _buildActivityGrid(context, accentColor, logs),
           ),
           
           const SizedBox(height: 20),
@@ -1004,45 +989,79 @@ class _AttivitaRecenteSection extends StatelessWidget {
     }
   }
 
-  Widget _buildActivityGrid(BuildContext context, Color accentColor) {
-    final pattern = [
-      [2,3,4,4,3,3,3,4,4,4,3,3,3,4,3,3,3,4],
-      [3,3,3,3,2,3,3,3,2,3,2,3,3,2,3,2,4,4],
-      [2,2,2,3,3,3,2,3,3,3,3,2,4,4,4,3,3,3],
-      [2,1,2,3,3,1,1,2,3,1,0,3,2,3,3,2,2,2],
-      [3,3,2,0,2,3,3,2,3,2,1,1,2,2,2,2,2,2],
-      [-1,-1,-1,3,3,3,3,2,3,2,3,3,3,-1,-1,-1,-1,-1],
-    ];
+  Widget _buildActivityGrid(BuildContext context, Color accentColor, HabitLogsMap logs) {
+    const numRows = 7;
+    const numCols = 18;
+    
+    final pattern = List.generate(numRows, (_) => List.generate(numCols, (_) => 0));
+    
+    final today = DateTime.now();
+    final currentDayOfWeek = today.weekday; // 1 = Mon, 7 = Sun
+    final currentMonday = today.subtract(Duration(days: currentDayOfWeek - 1));
+    
+    for (int col = 0; col < numCols; col++) {
+      for (int row = 0; row < numRows; row++) {
+        final weeksBack = numCols - 1 - col;
+        final date = currentMonday.subtract(Duration(days: weeksBack * 7)).add(Duration(days: row));
+        
+        if (date.isAfter(today)) {
+          pattern[row][col] = -1;
+          continue;
+        }
+        
+        final dateStr = "${date.year}-${date.month.toString().padLeft(2, '0')}-${date.day.toString().padLeft(2, '0')}";
+        
+        final habitMap = logs[dateStr];
+        if (habitMap != null) {
+          int doneCount = 0;
+          habitMap.forEach((habitId, status) {
+            if (status == 'done') {
+              doneCount++;
+            }
+          });
+          pattern[row][col] = doneCount.clamp(0, 4);
+        } else {
+          pattern[row][col] = 0;
+        }
+      }
+    }
 
-    return SingleChildScrollView(
-      scrollDirection: Axis.horizontal,
-      child: Row(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: List.generate(pattern[0].length, (colIndex) {
-          return Padding(
-            padding: EdgeInsets.only(right: colIndex == pattern[0].length - 1 ? 0 : 6.0),
-            child: Column(
-              children: List.generate(pattern.length, (rowIndex) {
-                final intensity = pattern[rowIndex][colIndex];
-                if (intensity == -1) {
-                  return const SizedBox(width: 14, height: 20); 
-                }
-                return Padding(
-                  padding: const EdgeInsets.only(bottom: 6.0),
-                  child: Container(
-                    width: 14,
-                    height: 14,
-                    decoration: BoxDecoration(
-                      color: _getColor(context, intensity, accentColor),
-                      shape: BoxShape.circle,
+    return LayoutBuilder(
+      builder: (context, constraints) {
+        final availableWidth = constraints.maxWidth;
+        const spacing = 4.0;
+        final totalSpacing = spacing * (numCols - 1);
+        final size = ((availableWidth - totalSpacing) / numCols).clamp(6.0, 14.0);
+
+        return Row(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          mainAxisAlignment: MainAxisAlignment.center,
+          children: List.generate(numCols, (colIndex) {
+            return Padding(
+              padding: EdgeInsets.only(right: colIndex == numCols - 1 ? 0 : spacing),
+              child: Column(
+                children: List.generate(numRows, (rowIndex) {
+                  final intensity = pattern[rowIndex][colIndex];
+                  if (intensity == -1) {
+                    return SizedBox(width: size, height: size + spacing); 
+                  }
+                  return Padding(
+                    padding: const EdgeInsets.only(bottom: spacing),
+                    child: Container(
+                      width: size,
+                      height: size,
+                      decoration: BoxDecoration(
+                        color: _getColor(context, intensity, accentColor),
+                        shape: BoxShape.circle,
+                      ),
                     ),
-                  ),
-                );
-              }),
-            ),
-          );
-        }),
-      ),
+                  );
+                }),
+              ),
+            );
+          }),
+        );
+      },
     );
   }
 }

@@ -4,7 +4,6 @@ import 'package:lucide_icons_flutter/lucide_icons.dart';
 import '../../../core/theme.dart';
 import '../../../core/localization.dart';
 import '../../../providers/goal_provider.dart';
-import '../../../models/goal.dart';
 
 class HabitCalendarioTabWidget extends ConsumerWidget {
   final String goalId;
@@ -13,46 +12,27 @@ class HabitCalendarioTabWidget extends ConsumerWidget {
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
-    final logs = ref.watch(habitLogsProvider);
-    final goals = ref.watch(goalsProvider);
-    final goal = goals.firstWhere((g) => g.id == goalId, orElse: () => Goal(id: '', title: '', color: Colors.blue, startDate: DateTime.now()));
+    final gridAsync = ref.watch(habitYearlyGridProvider(goalId));
     
-    final days = _calculateYearlyData(goalId, logs, goal);
-
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: [
-        _CalendarioAnnualeCard(days: days),
-        const SizedBox(height: 32),
-      ],
+    return gridAsync.when(
+      data: (days) {
+        return Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            _CalendarioAnnualeCard(days: days),
+            const SizedBox(height: 32),
+          ],
+        );
+      },
+      loading: () => const SizedBox(
+        height: 200,
+        child: Center(child: CircularProgressIndicator()),
+      ),
+      error: (err, stack) => SizedBox(
+        height: 200,
+        child: Center(child: Text('Error: $err', style: TextStyle(color: context.appColors.mutedForeground))),
+      ),
     );
-  }
-  
-  List<int> _calculateYearlyData(String goalId, HabitLogsMap logs, Goal goal) {
-    final today = DateTime.now();
-    final todayNormalized = DateTime(today.year, today.month, today.day);
-    
-    final List<int> days = [];
-    
-    for (int i = 364; i >= 0; i--) {
-      final date = todayNormalized.subtract(Duration(days: i));
-      final dateStr = "${date.year}-${date.month.toString().padLeft(2, '0')}-${date.day.toString().padLeft(2, '0')}";
-      
-      final dayLogs = logs[dateStr];
-      if (dayLogs != null && dayLogs.containsKey(goalId)) {
-        final status = dayLogs[goalId];
-        if (status == 'done') {
-          days.add(1);
-        } else if (status == 'missed') {
-          days.add(2);
-        } else {
-          days.add(0);
-        }
-      } else {
-        days.add(0); // Not tracked or before start date
-      }
-    }
-    return days;
   }
 }
 

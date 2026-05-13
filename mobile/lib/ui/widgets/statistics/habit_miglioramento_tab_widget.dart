@@ -19,84 +19,45 @@ class HabitMiglioramentoTabWidget extends ConsumerWidget {
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
-    final logs = ref.watch(habitLogsProvider);
+    final alertsAsync = ref.watch(habitAlertsProvider(goalId));
     
-    final alertData = _calculateAlerts(goalId, logs);
+    return alertsAsync.when(
+      data: (data) {
+        final worstNegative = {
+          'days': (data['worst_negative_days'] as num?)?.toInt() ?? 0,
+          'startDate': data['worst_negative_start'] != null ? DateTime.parse(data['worst_negative_start'] as String) : null,
+        };
 
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: [
-        _SerieNegativaCard(data: alertData.worstNegative),
-        const SizedBox(height: 16),
-        _StreakInterrottiCard(streaks: alertData.brokenStreaks),
-        const SizedBox(height: 16),
-        const SizedBox(height: 32),
-      ],
-    );
-  }
-  
-  AlertData _calculateAlerts(String goalId, HabitLogsMap logs) {
-    final goalLogs = <DateTime, String>{};
-    logs.forEach((dateStr, habits) {
-      if (habits.containsKey(goalId)) {
-        final date = DateTime.parse(dateStr);
-        goalLogs[DateTime(date.year, date.month, date.day)] = habits[goalId]!;
-      }
-    });
+        final brokenStreaks = <Map<String, dynamic>>[];
+        final brokenStreaksRaw = data['broken_streaks'] as List?;
+        if (brokenStreaksRaw != null) {
+          for (final item in brokenStreaksRaw) {
+            brokenStreaks.add({
+              'days': (item['days'] as num?)?.toInt() ?? 0,
+              'date': item['date'] != null ? DateTime.parse(item['date'] as String) : DateTime.now(),
+            });
+          }
+        }
 
-    final sortedDates = goalLogs.keys.toList()..sort();
-    
-    // Variables for Worst Negative Streak
-    int maxMissedStreak = 0;
-    DateTime? worstStreakStartDate;
-    int currentMissedStreak = 0;
-    DateTime? currentMissedStreakStartDate;
-    
-    // Variables for Broken Streaks
-    final brokenStreaks = <Map<String, dynamic>>[];
-    int currentStreak = 0;
-    
-    for (final date in sortedDates) {
-      final status = goalLogs[date];
-      
-      // 1. Worst Negative Streak Logic
-      if (status == 'missed') {
-        if (currentMissedStreak == 0) {
-          currentMissedStreakStartDate = date;
-        }
-        currentMissedStreak++;
-        if (currentMissedStreak > maxMissedStreak) {
-          maxMissedStreak = currentMissedStreak;
-          worstStreakStartDate = currentMissedStreakStartDate;
-        }
-      } else if (status == 'done') {
-        currentMissedStreak = 0;
-        currentMissedStreakStartDate = null;
-      }
-      
-      // 2. Broken Streaks Logic
-      if (status == 'done') {
-        currentStreak++;
-      } else if (status == 'missed') {
-        if (currentStreak > 0) {
-          brokenStreaks.add({
-            'days': currentStreak,
-            'date': date,
-          });
-          currentStreak = 0;
-        }
-      }
-    }
-    
-    // Sort broken streaks by date descending
-    brokenStreaks.sort((a, b) => (b['date'] as DateTime).compareTo(a['date'] as DateTime));
-    
-    return AlertData(
-      worstNegative: {
-        'days': maxMissedStreak,
-        'startDate': worstStreakStartDate,
+        return Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            _SerieNegativaCard(data: worstNegative),
+            const SizedBox(height: 16),
+            _StreakInterrottiCard(streaks: brokenStreaks),
+            const SizedBox(height: 16),
+            const SizedBox(height: 32),
+          ],
+        );
       },
-      brokenStreaks: brokenStreaks.take(5).toList(),
+      loading: () => const SizedBox(
+        height: 200,
+        child: Center(child: CircularProgressIndicator()),
+      ),
+      error: (err, stack) => SizedBox(
+        height: 200,
+        child: Center(child: Text('Error: $err', style: TextStyle(color: context.appColors.mutedForeground))),
+      ),
     );
   }
 }

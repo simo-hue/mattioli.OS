@@ -12,72 +12,70 @@ class HabitPerformanceTabWidget extends ConsumerWidget {
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
-    final logs = ref.watch(habitLogsProvider);
+    final performanceAsync = ref.watch(habitPerformanceProvider(goalId));
     
-    final performance = _calculatePerformance(goalId, logs);
-    
-    Map<String, dynamic>? strongest;
-    Map<String, dynamic>? weakest;
-    
-    final activeDays = performance.where((p) => p['total'] > 0).toList();
-    
-    if (activeDays.isNotEmpty) {
-      strongest = activeDays.reduce((a, b) => a['pct'] > b['pct'] ? a : b);
-      weakest = activeDays.reduce((a, b) => a['pct'] < b['pct'] ? a : b);
-      
-      // If all days have the same percentage and it's not 0, weakest might be equal to strongest.
-      // Let's ensure they are different or handle it visually.
-      if (strongest['pct'] == weakest['pct']) {
-        weakest = null; // Don't show weakest if it's the same as strongest
-      }
-    }
+    return performanceAsync.when(
+      data: (data) {
+        final daysOfWeek = ['mon', 'tue', 'wed', 'thu', 'fri', 'sat', 'sun'];
+        final List<Map<String, dynamic>> performance = List.generate(7, (i) => {
+          'day': daysOfWeek[i],
+          'pct': 0,
+          'done': 0,
+          'total': 0,
+        });
 
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: [
-        _PerformanceChartCard(data: performance),
-        const SizedBox(height: 12),
-        if (strongest != null) _GiornoForteCard(data: strongest),
-        const SizedBox(height: 12),
-        if (weakest != null) _GiornoDeboleCard(data: weakest),
-        const SizedBox(height: 16),
-      ],
-    );
-  }
-  
-  List<Map<String, dynamic>> _calculatePerformance(String goalId, HabitLogsMap logs) {
-    final daysOfWeek = ['mon', 'tue', 'wed', 'thu', 'fri', 'sat', 'sun'];
-    final doneCounts = {1: 0, 2: 0, 3: 0, 4: 0, 5: 0, 6: 0, 7: 0};
-    final totalCounts = {1: 0, 2: 0, 3: 0, 4: 0, 5: 0, 6: 0, 7: 0};
-    
-    logs.forEach((dateStr, habits) {
-      if (habits.containsKey(goalId)) {
-        final date = DateTime.parse(dateStr);
-        final weekday = date.weekday; // 1 = Monday, 7 = Sunday
-        
-        totalCounts[weekday] = totalCounts[weekday]! + 1;
-        if (habits[goalId] == 'done') {
-          doneCounts[weekday] = doneCounts[weekday]! + 1;
+        for (final item in data) {
+          final dayIndex = (item['day_index'] as num).toInt();
+          if (dayIndex >= 1 && dayIndex <= 7) {
+            final idx = dayIndex - 1;
+            final total = (item['total_count'] as num).toInt();
+            final done = (item['done_count'] as num).toInt();
+            final pct = total > 0 ? (done / total * 100).round() : 0;
+            
+            performance[idx] = {
+              'day': daysOfWeek[idx],
+              'pct': pct,
+              'done': done,
+              'total': total,
+            };
+          }
         }
-      }
-    });
-    
-    final List<Map<String, dynamic>> result = [];
-    
-    for (int i = 1; i <= 7; i++) {
-      final total = totalCounts[i]!;
-      final done = doneCounts[i]!;
-      final pct = total > 0 ? (done / total * 100).round() : 0;
-      
-      result.add({
-        'day': daysOfWeek[i - 1],
-        'pct': pct,
-        'done': done,
-        'total': total,
-      });
-    }
-    
-    return result;
+
+        Map<String, dynamic>? strongest;
+        Map<String, dynamic>? weakest;
+        
+        final activeDays = performance.where((p) => p['total'] > 0).toList();
+        
+        if (activeDays.isNotEmpty) {
+          strongest = activeDays.reduce((a, b) => a['pct'] > b['pct'] ? a : b);
+          weakest = activeDays.reduce((a, b) => a['pct'] < b['pct'] ? a : b);
+          
+          if (strongest['pct'] == weakest['pct']) {
+            weakest = null; 
+          }
+        }
+
+        return Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            _PerformanceChartCard(data: performance),
+            const SizedBox(height: 12),
+            if (strongest != null) _GiornoForteCard(data: strongest),
+            const SizedBox(height: 12),
+            if (weakest != null) _GiornoDeboleCard(data: weakest),
+            const SizedBox(height: 16),
+          ],
+        );
+      },
+      loading: () => const SizedBox(
+        height: 200,
+        child: Center(child: CircularProgressIndicator()),
+      ),
+      error: (err, stack) => SizedBox(
+        height: 200,
+        child: Center(child: Text('Error: $err', style: TextStyle(color: context.appColors.mutedForeground))),
+      ),
+    );
   }
 }
 

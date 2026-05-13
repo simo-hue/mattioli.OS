@@ -34,8 +34,9 @@ class HabitOverviewTabWidget extends ConsumerWidget {
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final goals = ref.watch(goalsProvider);
-    final logs = ref.watch(habitLogsProvider);
     final statsAsync = ref.watch(habitStatsProvider);
+    final gridAsync = ref.watch(habitYearlyGridProvider(goalId));
+    final correlationsAsync = ref.watch(habitCorrelationsProvider(goalId));
     
     final goal = goals.firstWhere((g) => g.id == goalId, orElse: () => Goal(id: '', title: '', color: Colors.blue, startDate: DateTime.now()));
     
@@ -50,21 +51,48 @@ class HabitOverviewTabWidget extends ConsumerWidget {
           totalCompletions: stat['total_completions'] ?? 0,
           totalActiveDays: stat['total_active_days'] ?? 1,
           missedDays: stat['missed_days'] ?? 0,
-          trend30Days: _calculateTrend30Days(goalId, logs),
+          trend30Days: [], // Will be filled below
         );
         
-        final correlations = _calculateCorrelations(goalId, logs, goals);
-        
-        return Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            _TopStatsGrid(stats: habitStats),
-            const SizedBox(height: 16),
-            _TrendUltimi30Giorni(trend: habitStats.trend30Days),
-            const SizedBox(height: 16),
-            _CorrelazioniSection(goalId: goalId, correlations: correlations, currentGoalTitle: goal.title),
-            const SizedBox(height: 32),
-          ],
+        return gridAsync.when(
+          data: (grid) {
+            // Take last 30 items
+            final trend30Days = grid.length >= 30 ? grid.sublist(grid.length - 30) : grid;
+            
+            return correlationsAsync.when(
+              data: (correlationsData) {
+                final correlations = <Map<String, dynamic>>[];
+                for (final item in correlationsData) {
+                  final otherGoalId = item['goal_id'] as String;
+                  final otherGoal = goals.firstWhere((g) => g.id == otherGoalId, orElse: () => Goal(id: '', title: '', color: Colors.blue, startDate: DateTime.now()));
+                  if (otherGoal.id.isNotEmpty) {
+                    correlations.add({
+                      'goal': otherGoal,
+                      'percentage': (item['percentage'] as num?)?.toInt() ?? 0,
+                      'strength': ((item['percentage'] as num?)?.toDouble() ?? 0.0) / 100.0,
+                      'togetherCount': (item['together_count'] as num?)?.toInt() ?? 0,
+                    });
+                  }
+                }
+
+                return Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    _TopStatsGrid(stats: habitStats),
+                    const SizedBox(height: 16),
+                    _TrendUltimi30Giorni(trend: trend30Days),
+                    const SizedBox(height: 16),
+                    _CorrelazioniSection(goalId: goalId, correlations: correlations, currentGoalTitle: goal.title),
+                    const SizedBox(height: 32),
+                  ],
+                );
+              },
+              loading: () => const Center(child: CircularProgressIndicator()),
+              error: (err, stack) => Center(child: Text('Error: $err', style: TextStyle(color: context.appColors.mutedForeground))),
+            );
+          },
+          loading: () => const Center(child: CircularProgressIndicator()),
+          error: (err, stack) => Center(child: Text('Error: $err', style: TextStyle(color: context.appColors.mutedForeground))),
         );
       },
       loading: () => const Center(child: CircularProgressIndicator()),
@@ -217,8 +245,8 @@ class _TrendUltimi30Giorni extends StatelessWidget {
               final status = statuses[index];
               Color color;
               if (status == 1) {
-                color = Theme.of(context).colorScheme.primary; 
-              } else if (status == 0) {
+                color = Colors.green; 
+              } else if (status == 2) {
                 color = const Color(0xFFFF0000); // Red
               } else {
                 color = context.appColors.muted.withValues(alpha: 0.3); // Dynamic Grey
@@ -233,15 +261,34 @@ class _TrendUltimi30Giorni extends StatelessWidget {
             },
           ),
           const SizedBox(height: 16),
-          Row(
+          Wrap(
+            spacing: 16,
+            runSpacing: 8,
             children: [
-              Container(width: 10, height: 10, decoration: BoxDecoration(color: Theme.of(context).colorScheme.primary, shape: BoxShape.circle)),
-              const SizedBox(width: 6),
-              Text(context.l10n.translate('Completato'), style: TextStyle(fontFamily: 'Inter', fontSize: 11, color: context.appColors.mutedForeground)),
-              const SizedBox(width: 16),
-              Container(width: 10, height: 10, decoration: BoxDecoration(color: context.appColors.muted.withValues(alpha: 0.3), shape: BoxShape.circle)),
-              const SizedBox(width: 6),
-              Text(context.l10n.translate('Non completato'), style: TextStyle(fontFamily: 'Inter', fontSize: 11, color: context.appColors.mutedForeground)),
+              Row(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  Container(width: 10, height: 10, decoration: const BoxDecoration(color: Colors.green, shape: BoxShape.circle)),
+                  const SizedBox(width: 6),
+                  Text(context.l10n.translate('Completato'), style: TextStyle(fontFamily: 'Inter', fontSize: 11, color: context.appColors.mutedForeground)),
+                ],
+              ),
+              Row(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  Container(width: 10, height: 10, decoration: const BoxDecoration(color: Color(0xFFFF0000), shape: BoxShape.circle)),
+                  const SizedBox(width: 6),
+                  Text(context.l10n.translate('Non completato'), style: TextStyle(fontFamily: 'Inter', fontSize: 11, color: context.appColors.mutedForeground)),
+                ],
+              ),
+              Row(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  Container(width: 10, height: 10, decoration: BoxDecoration(color: context.appColors.muted.withValues(alpha: 0.3), shape: BoxShape.circle)),
+                  const SizedBox(width: 6),
+                  Text(context.l10n.translate('Saltato'), style: TextStyle(fontFamily: 'Inter', fontSize: 11, color: context.appColors.mutedForeground)),
+                ],
+              ),
             ],
           )
         ],
@@ -534,75 +581,4 @@ class _CorrelazioneCard extends StatelessWidget {
       ),
     );
   }
-}
-
-List<int> _calculateTrend30Days(String goalId, HabitLogsMap logs) {
-  final goalLogs = <DateTime, String>{};
-  logs.forEach((dateStr, habits) {
-    if (habits.containsKey(goalId)) {
-      final date = DateTime.parse(dateStr);
-      goalLogs[DateTime(date.year, date.month, date.day)] = habits[goalId]!;
-    }
-  });
-
-  final today = DateTime.now();
-  final todayNormalized = DateTime(today.year, today.month, today.day);
-
-  final trend30Days = <int>[];
-  for (int i = 29; i >= 0; i--) {
-    final date = todayNormalized.subtract(Duration(days: i));
-    final status = goalLogs[date];
-    if (status == 'done') {
-      trend30Days.add(1);
-    } else if (status == 'missed') {
-      trend30Days.add(0);
-    } else {
-      trend30Days.add(2);
-    }
-  }
-  return trend30Days;
-}
-
-List<Map<String, dynamic>> _calculateCorrelations(String targetGoalId, HabitLogsMap logs, List<Goal> allGoals) {
-  final targetLogs = <String, String>{};
-  logs.forEach((date, habits) {
-    if (habits.containsKey(targetGoalId)) {
-      targetLogs[date] = habits[targetGoalId]!;
-    }
-  });
-
-  final completedDates = targetLogs.entries
-      .where((e) => e.value == 'done')
-      .map((e) => e.key)
-      .toList();
-
-  if (completedDates.isEmpty) return [];
-
-  final correlations = <Map<String, dynamic>>[];
-
-  for (final otherGoal in allGoals) {
-    if (otherGoal.id == targetGoalId) continue;
-
-    int togetherCount = 0;
-    
-    for (final date in completedDates) {
-      final otherStatus = logs[date]?[otherGoal.id];
-      if (otherStatus == 'done') {
-        togetherCount++;
-      }
-    }
-
-    final percentage = (togetherCount / completedDates.length * 100).round();
-    
-    correlations.add({
-      'goal': otherGoal,
-      'percentage': percentage,
-      'strength': percentage / 100.0,
-      'togetherCount': togetherCount,
-    });
-  }
-
-  correlations.sort((a, b) => (b['percentage'] as int).compareTo(a['percentage'] as int));
-
-  return correlations;
 }

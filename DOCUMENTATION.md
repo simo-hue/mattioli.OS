@@ -114,5 +114,35 @@
     - Converted `GlobalMoodTabWidget` to `ConsumerStatefulWidget` and `HabitMoodTabWidget` to `ConsumerWidget`.
     - Implemented real-time correlation analysis between habits and mood/energy.
 
+- [2026-05-13 09:10]: **Info Panel Real Data Integration**
+  - *Details*: Removed mock data from the "Info" tab of the statistics screen (when "Tutti gli Habits" is selected) and connected it to real data from database and providers.
+  - *Tech Notes*:
+    - Converted `InfoTabWidget` to `ConsumerWidget`.
+    - Calculated global completion rate, best streak, top performer, and critical day from `habitStatsProvider` and `habitLogsProvider`.
+    - Replaced hardcoded `_AbitudiniChiaveSection` with `_TopHabitCorrelationsSection` which shows correlations for the top habits.
+    - Replaced hardcoded `_CorrelazioniPositiveSection` and `_CorrelazioniNegativeSection` with a single dynamic `_CorrelationsSection` component that filters correlations for the top performer habit.
+
+- [2026-05-13 09:20]: **Info Panel Optimizations**
+  - *Details*: Implemented two optimizations for the Info panel:
+    1.  **Critical Day**: Moved calculation to database via `get_global_critical_day` RPC.
+    2.  **Correlations**: Moved calculation to database via `get_all_habit_correlations` RPC to avoid multiple network calls.
+  - *Tech Notes*:
+    - Added `globalCriticalDayProvider` and `allHabitCorrelationsProvider` in `goal_provider.dart`.
+    - Refactored `InfoTabWidget`, `_TopHabitCorrelationsSection`, and `_CorrelationsSection` to use the new providers.
+    - Created migration files in `migrations/` folder.
+
+- [2026-05-13 09:25]: **Activity Grid Responsive Optimization**
+  - *Details*: Made the activity grid in the "Attività Recente" section responsive to fit different screen widths without scrolling.
+  - *Tech Notes*:
+    - Replaced `SingleChildScrollView` with `LayoutBuilder`.
+    - Calculated dot size and spacing dynamically based on `constraints.maxWidth`.
+
+- [2026-05-13 09:30]: **Activity Grid Real Data Integration**
+  - *Details*: Connected the activity grid in the "Attività Recente" section to real data from `habitLogsProvider`.
+  - *Tech Notes*:
+    - Converted `_AttivitaRecenteSection` to `ConsumerWidget`.
+    - Generated a 7x18 grid representing the last 18 weeks.
+    - Calculated completion counts for each day and mapped them to intensity levels (0-4).
+
 ## Current Status
-- **Next Step**: The optimization of the Mood panel is complete. All mock data has been removed. We can proceed with other sections or optimizations as requested by the user.
+- **Next Step**: The "Info" panel is now fully connected to real data and optimized. Waiting for your feedback or next tasks.

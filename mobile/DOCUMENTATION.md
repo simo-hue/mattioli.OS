@@ -370,3 +370,134 @@
 - **Critical Habits**: Calculates the drop in completion rate for each habit (current week vs previous week) and displays them sorted by the biggest drop.
 - **Comparison Carousel**: Calculates the real completion rate for the current and previous week for each habit.
 - **Timeframes**: Added real data calculations for Month, Year, and All timeframes. Month shows last 30 days. Year shows last 12 months with Italian names. All shows up to 10 points spanning the entire history.
+
+---
+
+## [2026-05-13 09:15]: Statistics - Real Data for Alerts Tab
+*Details*: Removed mock data from the "Alert" tab in the "Tutti gli Habits" view and connected it to real database data via `habitStatsProvider` and `habitLogsProvider`.
+*Tech Notes*:
+- **Aree di Miglioramento**: Now displays the top 3 habits with the lowest success rates. It also dynamically calculates the "worst day of the week" for each habit based on historical logs.
+- **Analisi Fallimenti**: Shows habits with the highest "worst streak" and calculates a monthly frequency of missed days.
+- **Pattern di Recupero**: Calculates the average number of days it takes the user to return to a habit after a miss.
+- **Confronto Performance**: Compares best and worst streaks for each habit, highlighting the gap.
+- **State Management**: Migrated `GlobalAlertsTabWidget` to a `ConsumerWidget` to access Riverpod providers.
+
+---
+
+## [2026-05-13 09:25]: Statistics - Database Acceleration for Alerts Tab
+*Details*: Offloaded heavy calculations (worst day of week and recovery time) from the client to Supabase using a PL/pgSQL function.
+*Tech Notes*:
+- **Database**: Created `get_habit_analytics` function in Supabase (executed manually by user).
+- **Provider**: Added `habitAnalyticsProvider` in `goal_provider.dart` to call the RPC.
+- **UI**: Updated `GlobalAlertsTabWidget` to use the new provider, removing expensive in-memory loops over logs.
+
+---
+
+## [2026-05-13 09:35]: Statistics - Database Acceleration for Global Trends
+*Details*: Offloaded trend calculations (weekly, monthly, annual, all-time) from the client to Supabase using a PL/pgSQL function.
+*Tech Notes*:
+- **Database**: Created `get_global_trend` function in Supabase returning double the points for delta calculation.
+- **Provider**: Added `globalTrendProvider` in `goal_provider.dart` (FutureProvider.family).
+
+---
+
+## [2026-05-13 09:45]: Statistics - Database Acceleration for Best and Critical Habits
+*Details*: Offloaded calculations for best habits (by timeframe) and critical habits (by drop in performance) to Supabase using two new functions.
+*Tech Notes*:
+- **Database**: Created `get_critical_habits` and `get_best_habits` functions in Supabase.
+- **Provider**: Added `criticalHabitsProvider` and `bestHabitsProvider` in `goal_provider.dart`.
+- **UI**: Converted `_MiglioriAbitudiniSection` and `_AbitudiniCriticheSection` to `ConsumerStatefulWidget` and connected them to the new providers, removing all complex in-memory loops.
+
+---
+
+## [2026-05-13 09:55]: Statistics - Database Acceleration for Individual Habit Stats
+*Details*: Offloaded calculations for individual habit performance by day and habit alerts (worst negative streak and broken streaks) to Supabase.
+*Tech Notes*:
+- **Database**: Created `get_habit_performance_by_day` and `get_habit_alerts` functions in Supabase.
+- **Provider**: Added `habitPerformanceProvider` and `habitAlertsProvider` in `goal_provider.dart` (both are family providers taking `goalId`).
+- **UI**: Updated `HabitPerformanceTabWidget` and `HabitMiglioramentoTabWidget` to use the new providers, removing all heavy in-memory loops over logs.
+- **UI**: Updated `_buildTrendChartSection` in `GlobalTrendTabWidget` to use the RPC data, removing complex in-memory loops.
+
+---
+
+## [2026-05-13 10:05]: Statistics - Database Acceleration for Habit Calendar
+*Details*: Offloaded generation of the 365-day grid for the habit calendar to Supabase.
+*Tech Notes*:
+- **Database**: Created `get_habit_yearly_grid` function in Supabase.
+- **Provider**: Added `habitYearlyGridProvider` in `goal_provider.dart` (family provider taking `goalId`).
+- **UI**: Updated `HabitCalendarioTabWidget` to use the new provider, removing the in-memory loop over 365 days and dependencies on `habitLogsProvider` and `goalsProvider`.
+
+---
+
+## [2026-05-13 10:15]: Statistics - Database Acceleration for Habit Overview (Correlations)
+*Details*: Offloaded calculation of habit correlations and 30-day trend to Supabase.
+*Tech Notes*:
+- **Database**: Created `get_habit_correlations` function in Supabase. Reused `get_habit_yearly_grid` for the 30-day trend.
+- **Provider**: Added `habitCorrelationsProvider` in `goal_provider.dart` (family provider taking `goalId`).
+- **UI**: Updated `HabitOverviewTabWidget` to use `habitCorrelationsProvider` and `habitYearlyGridProvider` (taking last 30 items), removing all heavy in-memory loops over logs and dependency on `habitLogsProvider`.
+
+---
+
+## [2026-05-13 10:20]: Statistics - Fixes for get_global_trend
+*Details*: Fixed ambiguous column reference and operator not exists (interval > integer) errors in the `get_global_trend` SQL function.
+*Tech Notes*:
+- **Database**: Renamed temporary column `date` to `edate` in the `earliest_date` CTE to avoid collision with the return column `date`.
+- **Database**: Added explicit cast `::date` to `CURRENT_DATE - INTERVAL '30 days'` to avoid implicit conversion to timestamp and subsequent interval comparison error.
+
+---
+
+## [2026-05-13 10:25]: Statistics - Fixes for Trend Tab and 0% Issue
+*Details*: Fixed 0% issue in `get_global_trend` and ambiguous column reference in `get_critical_habits` and `get_best_habits`.
+*Tech Notes*:
+- **Database**: Added `::date` cast to `gl.date` in `get_global_trend` to match the generated dates and avoid 0% results due to time component.
+- **Database**: Reconstructed `get_critical_habits` and `get_best_habits` with explicit table aliases and qualified names to avoid `goal_id` ambiguity.
+
+---
+
+## [2026-05-13 10:30]: Statistics - Fix for Skipped Habits in Global Trend
+*Details*: Excluded 'skipped' logs from `active_count` in `get_global_trend` to avoid counting them as missed.
+*Tech Notes*:
+- **Database**: Added `FILTER (WHERE gl.status IS NULL OR gl.status != 'skipped')` to `COUNT(ag.goal_id)` in `day_stats` CTE.
+
+---
+
+## [2026-05-13 10:35]: Statistics - Fix for Year Timeframe in Global Trend
+*Details*: Fixed `relation "date_range" does not exist` error in the `year` branch of `get_global_trend`.
+*Tech Notes*:
+- **Database**: Ensured that the `year` branch uses `day_range` instead of `date_range` and that all references are consistent.
+
+---
+
+## [2026-05-13 10:40]: Statistics - Fix for Empty Days in Global Trend
+*Details*: Ensured that `get_global_trend` returns rows for all days even if no habits are active, to avoid short lists and single points in Flutter.
+*Tech Notes*:
+- **Database**: Used `LEFT JOIN` between `date_range` and `active_goals` in `day_stats` CTE for `week` and `month` branches.
+
+---
+
+## [2026-05-13 10:45]: Statistics - Fix for Ambiguous Column in Correlations
+*Details*: Fixed `column reference "goal_id" is ambiguous` error in `get_habit_correlations`.
+*Tech Notes*:
+- **Database**: Removed `goal_id` alias in the final select and ensured all references are qualified.
+
+---
+
+## [2026-05-13 10:50]: Statistics - UI Fix for Trend Box
+*Details*: Updated colors and legend in `_TrendUltimi30Giorni` in `habit_overview_tab_widget.dart`.
+*Tech Notes*:
+- **UI**: Set completed to green, missed to red, and unlogged/skipped to grey. Added third option to legend and used `Wrap` to avoid overflow.
+
+---
+
+## [2026-05-13 10:55]: Statistics - Smooth Transitions and Caching in Global Trend
+*Details*: Implemented in-memory caching and smooth transitions in `GlobalTrendTabWidget` to avoid loading spinners when switching timeframes.
+*Tech Notes*:
+- **State Management**: Added `ref.keepAlive()` to `globalTrendProvider`.
+- **UI**: Added `_lastValidData` state to `GlobalTrendTabWidget` to show the previous chart while loading.
+
+---
+
+## [2026-05-13 11:00]: Statistics - Caching Applied to All Stats Providers
+*Details*: Added `ref.keepAlive()` to all remaining statistics providers to prevent unnecessary re-fetching.
+*Tech Notes*:
+- **State Management**: Added `ref.keepAlive()` to `habitAnalyticsProvider`, `criticalHabitsProvider`, `bestHabitsProvider`, `habitPerformanceProvider`, `habitAlertsProvider`, `habitYearlyGridProvider`, and `habitCorrelationsProvider`.

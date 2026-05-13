@@ -352,6 +352,157 @@ final habitStatsProvider = FutureProvider<List<Map<String, dynamic>>>((ref) asyn
   return List<Map<String, dynamic>>.from(response);
 });
 
+final habitAnalyticsProvider = FutureProvider<Map<String, Map<String, dynamic>>>((ref) async {
+  ref.keepAlive();
+  final user = Supabase.instance.client.auth.currentUser;
+  if (user == null) return {};
+  
+  final response = await Supabase.instance.client
+      .rpc('get_habit_analytics', params: {'p_user_id': user.id});
+      
+  final list = List<Map<String, dynamic>>.from(response);
+  
+  final result = <String, Map<String, dynamic>>{};
+  for (final item in list) {
+    final goalId = item['goal_id'] as String;
+    result[goalId] = item;
+  }
+  return result;
+});
+
+final globalCriticalDayProvider = FutureProvider<String>((ref) async {
+  ref.keepAlive();
+  final user = Supabase.instance.client.auth.currentUser;
+  if (user == null) return 'N/A';
+  
+  try {
+    final response = await Supabase.instance.client
+        .rpc('get_global_critical_day', params: {'p_user_id': user.id});
+        
+    return response as String;
+  } catch (e) {
+    return 'N/A';
+  }
+});
+
+final globalTrendProvider = FutureProvider.family<List<Map<String, dynamic>>, String>((ref, timeframe) async {
+  ref.keepAlive();
+  final user = Supabase.instance.client.auth.currentUser;
+  if (user == null) return [];
+  
+  final response = await Supabase.instance.client
+      .rpc('get_global_trend', params: {
+        'p_user_id': user.id,
+        'p_timeframe': timeframe,
+      });
+      
+  return List<Map<String, dynamic>>.from(response);
+});
+
+final criticalHabitsProvider = FutureProvider<List<Map<String, dynamic>>>((ref) async {
+  ref.keepAlive();
+  final user = Supabase.instance.client.auth.currentUser;
+  if (user == null) return [];
+  
+  final response = await Supabase.instance.client
+      .rpc('get_critical_habits', params: {
+        'p_user_id': user.id,
+      });
+      
+  return List<Map<String, dynamic>>.from(response);
+});
+
+final bestHabitsProvider = FutureProvider.family<List<Map<String, dynamic>>, String>((ref, timeframe) async {
+  ref.keepAlive();
+  final user = Supabase.instance.client.auth.currentUser;
+  if (user == null) return [];
+  
+  final response = await Supabase.instance.client
+      .rpc('get_best_habits', params: {
+        'p_user_id': user.id,
+        'p_timeframe': timeframe,
+      });
+      
+  return List<Map<String, dynamic>>.from(response);
+});
+
+final habitPerformanceProvider = FutureProvider.family<List<Map<String, dynamic>>, String>((ref, goalId) async {
+  ref.keepAlive();
+  final user = Supabase.instance.client.auth.currentUser;
+  if (user == null) return [];
+  
+  final response = await Supabase.instance.client
+      .rpc('get_habit_performance_by_day', params: {
+        'p_user_id': user.id,
+        'p_goal_id': goalId,
+      });
+      
+  return List<Map<String, dynamic>>.from(response);
+});
+
+final habitAlertsProvider = FutureProvider.family<Map<String, dynamic>, String>((ref, goalId) async {
+  ref.keepAlive();
+  final user = Supabase.instance.client.auth.currentUser;
+  if (user == null) return {};
+  
+  final response = await Supabase.instance.client
+      .rpc('get_habit_alerts', params: {
+        'p_user_id': user.id,
+        'p_goal_id': goalId,
+      });
+      
+  if (response is List && response.isNotEmpty) {
+    return Map<String, dynamic>.from(response.first);
+  }
+  return {};
+});
+
+final habitYearlyGridProvider = FutureProvider.family<List<int>, String>((ref, goalId) async {
+  ref.keepAlive();
+  final user = Supabase.instance.client.auth.currentUser;
+  if (user == null) return [];
+  
+  final response = await Supabase.instance.client
+      .rpc('get_habit_yearly_grid', params: {
+        'p_user_id': user.id,
+        'p_goal_id': goalId,
+      });
+      
+  if (response is List) {
+    return response.map((r) => (r['status_code'] as num).toInt()).toList();
+  }
+  return [];
+});
+
+final habitCorrelationsProvider = FutureProvider.family<List<Map<String, dynamic>>, String>((ref, goalId) async {
+  ref.keepAlive();
+  final user = Supabase.instance.client.auth.currentUser;
+  if (user == null) return [];
+  
+  final response = await Supabase.instance.client
+      .rpc('get_habit_correlations', params: {
+        'p_user_id': user.id,
+        'p_target_goal_id': goalId,
+      });
+      
+  return List<Map<String, dynamic>>.from(response);
+});
+
+final allHabitCorrelationsProvider = FutureProvider<List<Map<String, dynamic>>>((ref) async {
+  ref.keepAlive();
+  final user = Supabase.instance.client.auth.currentUser;
+  if (user == null) return [];
+  
+  try {
+    final response = await Supabase.instance.client
+        .rpc('get_all_habit_correlations', params: {'p_user_id': user.id});
+        
+    return List<Map<String, dynamic>>.from(response);
+  } catch (e) {
+    return [];
+  }
+});
+
 // ─── Calendar view enum & provider ───────────────────────────────────────────
 
 enum CalendarView { month, week, year, vita }

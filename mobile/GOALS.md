@@ -15,11 +15,10 @@ Al posto delle "Note" vorrei che sostituissimo con il pulsante per chattare con 
 Voglio che eliminiamo anche dal database le note per ottimizzare lo spazio )
 
 [ ] Database
-    [ ] log in
     [ ] user preferences
     [ ] goals
     [ ] daily habits
-    [ ] 
+    [ ] Implementare caching della parte delle statistiche per evitare effetto refresh pagina per dati
 
 [ ] Pop Up
     [ ] Conferma del salvataggio con successo

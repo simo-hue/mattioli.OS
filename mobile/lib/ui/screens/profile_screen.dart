@@ -12,6 +12,7 @@ import 'personal_info_screen.dart';
 import 'app_settings_screen.dart';
 import 'notification_settings_screen.dart';
 import 'privacy_settings_screen.dart';
+import 'subscription_screen.dart';
 import '../../core/haptics.dart';
 
 class ProfileScreen extends ConsumerStatefulWidget {
@@ -236,6 +237,15 @@ class _ProfileScreenState extends ConsumerState<ProfileScreen> {
                 ),
                 _buildProfileOption(
                   context: context,
+                  icon: LucideIcons.creditCard,
+                  title: 'Abbonamento',
+                  subtitle: settings.isPro ? 'Gestisci il tuo piano Pro' : 'Passa a Pro',
+                  onTap: () {
+                    Navigator.push(context, SubscriptionScreen.route());
+                  },
+                ),
+                _buildProfileOption(
+                  context: context,
                   icon: LucideIcons.settings,
                   title: 'Impostazioni App',
                   subtitle: 'Lingua, Tema, Unità di misura',
@@ -283,10 +293,10 @@ class _ProfileScreenState extends ConsumerState<ProfileScreen> {
                   },
                   child: Container(
                     width: double.infinity,
-                    height: 58,
+                    height: 48,
                     decoration: BoxDecoration(
                       color: context.appColors.destructive.withValues(alpha: 0.1),
-                      borderRadius: BorderRadius.circular(18),
+                      borderRadius: BorderRadius.circular(14),
                       border: Border.all(
                         color: context.appColors.destructive.withValues(alpha: 0.2),
                         width: 1,
@@ -333,26 +343,26 @@ class _ProfileScreenState extends ConsumerState<ProfileScreen> {
   }) {
     final primaryColor = Theme.of(context).colorScheme.primary;
     return Container(
-      margin: const EdgeInsets.only(bottom: 12),
+      margin: const EdgeInsets.only(bottom: 8),
       decoration: BoxDecoration(
         color: context.appColors.card.withValues(alpha: 0.4),
-        borderRadius: BorderRadius.circular(18),
+        borderRadius: BorderRadius.circular(16),
         border: Border.all(
           color: context.appColors.border.withValues(alpha: 0.5),
           width: 1,
         ),
       ),
       child: ListTile(
-        contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 6),
+        contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 2),
         leading: Container(
-          width: 44,
-          height: 44,
+          width: 36,
+          height: 36,
           decoration: BoxDecoration(
             color: context.appColors.card,
-            borderRadius: BorderRadius.circular(12),
+            borderRadius: BorderRadius.circular(10),
             border: Border.all(color: context.appColors.border),
           ),
-          child: Icon(icon, size: 20, color: primaryColor),
+          child: Icon(icon, size: 18, color: primaryColor),
         ),
         title: Text(
           title,

@@ -75,7 +75,7 @@
 - **Visual Improvements**: 
   - Implemented `backDrawRodData` (track background) to enhance depth.
   - Refined grid styling with dashed lines and reduced opacity.
-  - Improved axis labels with better padding and font weights.
+  - Improved axis labels and grid lines for clarity and professional appearance.
   - Adjusted bar width and corner radius for a more balanced aesthetic.
 
 ## [2026-05-06 18:43]: Goals - Seasonality & Monthly History Optimization
@@ -595,33 +595,41 @@
 ## [2026-05-13 15:23]: UI - Habit Edit Scroll Animation
 *Details*: Added a smooth scroll-to-top animation when the user clicks the edit button for a habit, making it clearer that the app has reacted and is ready for editing.
 *Tech Notes*:
-- Added `ScrollController` to `HabitManagementModal`.
-- Implemented `animateTo` in `_onEdit` with a duration of 500ms and `Curves.easeInOut`.
-- Properly disposed of the controller and text controller in `dispose`.
+- **Animation**: Added `ScrollController` and used `animateTo` in `HabitManagementModal`.
 
 ---
 
-## [2026-05-13 15:24]: UI - Habit Edit Button Text
-*Details*: Changed the button text in `HabitManagementModal` to "Aggiorna" when editing an existing habit, instead of "Salva", to make it clearer what action is being performed.
-*Tech Notes*:
-- Updated the ternary operator in the `ElevatedButton` child of `HabitManagementModal` to use `context.l10n.translate('Aggiorna')` when `_editingHabit != null`.
+## [2026-05-12 15:24]: UI - Habit Edit Button Text
+*Details*: Changed the button text in `HabitManagementModal` to "Aggiorna" when editing an existing habit.
 
 ---
 
-## [2026-05-13 15:26]: UI - Habit Edit Buttons Row Layout
-*Details*: Placed "Aggiorna" and "Annulla" buttons on the same row when editing a habit, using a balanced layout and style coherent with the app.
-*Tech Notes*:
-- Replaced the stacked button layout with a `Row` containing two `Expanded` widgets when `_editingHabit != null`.
-- Used `OutlinedButton` for "Annulla" with a border matching the app's theme.
-- Used `ElevatedButton` for "Aggiorna" with the primary color.
-- Ensured that "Annulla" also resets the reminder time in addition to clearing the text field.
+## [2026-05-12 15:26]: UI - Habit Edit Buttons Row Layout
+*Details*: Placed "Aggiorna" and "Annulla" buttons on the same row when editing a habit.
 
 ---
 
 ## [2026-05-13 22:15]: Core - Biometric Lock & Pro Status UI
 *Details*: Implemented biometric lock on app startup and updated the UI to reflect Pro status with a gold border and badge.
+
+---
+
+## [2026-05-13 22:30]: Feature - Mock Subscription Management
+*Details*: Implemented a professional mock subscription management screen allowing users to "buy" and "cancel" the Pro plan.
+
+---
+
+## [2026-05-13 22:33]: Fix - Compilation Error in SubscriptionScreen
+*Details*: Fixed a compilation error caused by a missing icon in the `lucide_icons_flutter` package.
+
+---
+
+## [2026-05-13 22:38]: UI - Profile Screen Spacing Optimization
+*Details*: Reduced the height of settings items and the logout button in the Profile screen to ensure all content fits on the screen without scrolling.
+
+---
+
+## [2026-05-13 22:40]: Fix - LocaleDataException in SubscriptionScreen
+*Details*: Fixed an error where locale data was not initialized for Italian date formatting.
 *Tech Notes*:
-- **Biometric Lock**: Added `_isBiometricAuthenticated` state in `HomeScreen` (`dashboard_screen.dart`). If `settings.biometricLock` is true, it prompts for authentication on startup using `local_auth`. Shows a lock screen if not authenticated.
-- **Pro Status UI**: Added `isPro` check in `dashboard_screen.dart` and `profile_screen.dart`.
-- Made the avatar border gold (`#EAB308`) if the user is Pro.
-- Added a "PRO" badge next to "Account Verificato" in `profile_screen.dart` if the user is Pro.
+- Added `initializeDateFormatting('it', null)` in `main.dart` and imported `package:intl/date_symbol_data_local.dart`.

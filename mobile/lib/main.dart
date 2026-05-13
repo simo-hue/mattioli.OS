@@ -11,9 +11,12 @@ import 'providers/auth_provider.dart';
 import 'ui/screens/dashboard_screen.dart';
 import 'ui/screens/auth_screen.dart';
 import 'core/notifications.dart';
+import 'package:intl/date_symbol_data_local.dart';
 
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
+  
+  await initializeDateFormatting('it', null);
 
   // ── Supabase init ─────────────────────────────────────────────────────────
   await Supabase.initialize(

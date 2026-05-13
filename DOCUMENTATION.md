@@ -148,5 +148,9 @@
   - *Details*: Updated Italian translation for 'Tutti gli Habits' to 'Tutte le abitudini'.
   - *Tech Notes*: Modified `lib/core/localization.dart`.
 
+- [2026-05-13 18:40]: **Bottom Navigation Bar Width Adjustment**
+  - *Details*: Modified the bottom floating island (navigation bar) to be as wide as the upper parts (like the calendar box) in the home screen.
+  - *Tech Notes*: Changed the horizontal margin of `AppBottomNavBar` in `bottom_nav_bar.dart` from `24` to `16` to match the padding used in `dashboard_screen.dart`.
+
 ## Current Status
-- **Next Step**: The statistics page is complete. Waiting for your feedback or next tasks.
+- **Next Step**: Waiting for user feedback on the bottom bar width change.

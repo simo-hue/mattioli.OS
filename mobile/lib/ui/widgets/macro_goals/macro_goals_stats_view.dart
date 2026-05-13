@@ -382,15 +382,20 @@ class _MacroGoalsStatsViewState extends ConsumerState<MacroGoalsStatsView> {
           Row(
             mainAxisAlignment: MainAxisAlignment.spaceBetween,
             children: [
-              Text(
-                title.toUpperCase(),
-                style: GoogleFonts.inter(
-                  fontSize: 10,
-                  color: color.withValues(alpha: 0.8),
-                  fontWeight: FontWeight.w700,
-                  letterSpacing: 0.5,
+              Expanded(
+                child: Text(
+                  title.toUpperCase(),
+                  style: GoogleFonts.inter(
+                    fontSize: 10,
+                    color: color.withValues(alpha: 0.8),
+                    fontWeight: FontWeight.w700,
+                    letterSpacing: 0.5,
+                  ),
+                  maxLines: 1,
+                  overflow: TextOverflow.ellipsis,
                 ),
               ),
+              const SizedBox(width: 4),
               Container(
                 padding: const EdgeInsets.all(4),
                 decoration: BoxDecoration(

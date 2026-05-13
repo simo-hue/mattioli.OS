@@ -213,5 +213,9 @@
   - *Details*: Removed the "Analytics Anonimi" option from the Privacy and Security settings screen as requested by the user.
   - *Tech Notes*: Deleted the `_buildSwitchRow` for `anonymousAnalytics` in `privacy_settings_screen.dart`.
 
+- [2026-05-13 22:57]: **Fix Overflow in Macro Goals Stats View**
+  - *Details*: Fixed a "Right Overflowed" error in the "Anno Più Produttivo" card on the Macro Goals statistics view.
+  - *Tech Notes*: Wrapped the title text in an `Expanded` widget and added `overflow: TextOverflow.ellipsis` in `_buildHighlightCard` within `macro_goals_stats_view.dart`.
+
 ## Current Status
-- **Next Step**: Waiting for user feedback on the removal of the analytics setting.
+- **Next Step**: Waiting for user verification of the overflow fix.

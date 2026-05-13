@@ -68,7 +68,7 @@ class AppLocalizations {
       'Anno': 'Anno',
       'Vita': 'Vita',
       'Analisi dettagliata delle tue performance.': 'Analisi dettagliata delle tue performance.',
-      'Tutti gli Habits': 'Tutti gli Habits',
+      'Tutti gli Habits': 'Tutte le abitudini',
       'SELEZIONA HABIT': 'SELEZIONA HABIT',
       'Info': 'Info',
       'Trend': 'Trend',

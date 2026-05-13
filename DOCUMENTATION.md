@@ -144,5 +144,9 @@
     - Generated a 7x18 grid representing the last 18 weeks.
     - Calculated completion counts for each day and mapped them to intensity levels (0-4).
 
+- [2026-05-13 09:35]: **Translation Update**
+  - *Details*: Updated Italian translation for 'Tutti gli Habits' to 'Tutte le abitudini'.
+  - *Tech Notes*: Modified `lib/core/localization.dart`.
+
 ## Current Status
-- **Next Step**: The "Info" panel is now fully connected to real data and optimized. Waiting for your feedback or next tasks.
+- **Next Step**: The statistics page is complete. Waiting for your feedback or next tasks.

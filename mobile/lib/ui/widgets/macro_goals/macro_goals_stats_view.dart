@@ -459,6 +459,7 @@ class _MacroGoalsStatsViewState extends ConsumerState<MacroGoalsStatsView> {
 
   Widget _buildCardBase({required String title, required String subtitle, required Widget child}) {
     return Container(
+      width: double.infinity,
       padding: const EdgeInsets.all(20),
       decoration: BoxDecoration(
         color: context.appColors.card.withValues(alpha: 0.3),
@@ -681,7 +682,19 @@ class _MacroGoalsStatsViewState extends ConsumerState<MacroGoalsStatsView> {
 
   Widget _buildQuarterlyBarCard(List<dynamic> stats) {
     if (stats.isEmpty) {
-      return _buildCardBase(title: 'Attività Trim.', subtitle: 'Q1 - Q4', child: const SizedBox(height: 150));
+      return _buildCardBase(
+        title: 'Attività Trim.',
+        subtitle: 'Q1 - Q4',
+        child: SizedBox(
+          height: 150,
+          child: Center(
+            child: Text(
+              'Nessun dato',
+              style: TextStyle(color: context.appColors.mutedForeground),
+            ),
+          ),
+        ),
+      );
     }
     
     // Extract totals and completed per quarter

@@ -217,5 +217,12 @@
   - *Details*: Fixed a "Right Overflowed" error in the "Anno Più Produttivo" card on the Macro Goals statistics view.
   - *Tech Notes*: Wrapped the title text in an `Expanded` widget and added `overflow: TextOverflow.ellipsis` in `_buildHighlightCard` within `macro_goals_stats_view.dart`.
 
+- [2026-05-13 22:59]: **Fix Squeezed Chart Card in Macro Goals Stats View**
+  - *Details*: Fixed an issue where the "Attività Trim." card would shrink to the width of its title when there was no data (e.g., when a specific year with no data was selected).
+  - *Tech Notes*:
+    - Added `width: double.infinity` to `Container` in `_buildCardBase` to ensure all cards take full width.
+    - Updated `_buildQuarterlyBarCard` to show "Nessun dato" when the stats list is empty.
+
 ## Current Status
-- **Next Step**: Waiting for user verification of the overflow fix.
+- **Next Step**: Waiting for user verification of the fixes.
+

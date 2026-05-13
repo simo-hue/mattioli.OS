@@ -615,3 +615,13 @@
 - Used `OutlinedButton` for "Annulla" with a border matching the app's theme.
 - Used `ElevatedButton` for "Aggiorna" with the primary color.
 - Ensured that "Annulla" also resets the reminder time in addition to clearing the text field.
+
+---
+
+## [2026-05-13 22:15]: Core - Biometric Lock & Pro Status UI
+*Details*: Implemented biometric lock on app startup and updated the UI to reflect Pro status with a gold border and badge.
+*Tech Notes*:
+- **Biometric Lock**: Added `_isBiometricAuthenticated` state in `HomeScreen` (`dashboard_screen.dart`). If `settings.biometricLock` is true, it prompts for authentication on startup using `local_auth`. Shows a lock screen if not authenticated.
+- **Pro Status UI**: Added `isPro` check in `dashboard_screen.dart` and `profile_screen.dart`.
+- Made the avatar border gold (`#EAB308`) if the user is Pro.
+- Added a "PRO" badge next to "Account Verificato" in `profile_screen.dart` if the user is Pro.

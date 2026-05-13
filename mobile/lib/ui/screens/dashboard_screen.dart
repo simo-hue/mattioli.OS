@@ -3,6 +3,8 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:intl/intl.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:local_auth/local_auth.dart';
+import '../../providers/settings_provider.dart';
 
 import '../../core/localization.dart';
 
@@ -35,6 +37,7 @@ class _HomeScreenState extends ConsumerState<HomeScreen>
   late PageController _pageController;
   late AnimationController _fadeController;
   late Animation<double> _fadeAnimation;
+  bool _isBiometricAuthenticated = true;
 
   @override
   void initState() {
@@ -56,10 +59,44 @@ class _HomeScreenState extends ConsumerState<HomeScreen>
       statusBarIconBrightness: Brightness.light,
     ));
 
+    // Biometric lock check
+    final biometricLock = ref.read(settingsProvider).biometricLock;
+    if (biometricLock) {
+      _isBiometricAuthenticated = false;
+      WidgetsBinding.instance.addPostFrameCallback((_) {
+        _authenticate();
+      });
+    }
+
     // Check profile name after first frame
     WidgetsBinding.instance.addPostFrameCallback((_) {
       _checkProfileName();
     });
+  }
+
+  Future<void> _authenticate() async {
+    final LocalAuthentication auth = LocalAuthentication();
+    try {
+      final bool canAuthenticateWithBiometrics = await auth.canCheckBiometrics;
+      final bool canAuthenticate = canAuthenticateWithBiometrics || await auth.isDeviceSupported();
+
+      if (!canAuthenticate) {
+        setState(() => _isBiometricAuthenticated = true);
+        return;
+      }
+
+      final bool didAuthenticate = await auth.authenticate(
+        localizedReason: 'Sblocca l\'app per continuare',
+        biometricOnly: true,
+        persistAcrossBackgrounding: true,
+      );
+
+      if (didAuthenticate) {
+        setState(() => _isBiometricAuthenticated = true);
+      }
+    } catch (e) {
+      debugPrint('Biometric authentication error: $e');
+    }
   }
 
   @override
@@ -219,6 +256,61 @@ class _HomeScreenState extends ConsumerState<HomeScreen>
   @override
   Widget build(BuildContext context) {
     final currentView = ref.watch(calendarViewProvider);
+
+    if (!_isBiometricAuthenticated) {
+      return Scaffold(
+        backgroundColor: context.appColors.background,
+        body: Center(
+          child: Column(
+            mainAxisAlignment: MainAxisAlignment.center,
+            children: [
+              Icon(
+                Icons.lock_outline,
+                size: 64,
+                color: Theme.of(context).colorScheme.primary,
+              ),
+              const SizedBox(height: 24),
+              Text(
+                'App Bloccata',
+                style: TextStyle(
+                  fontFamily: 'Inter',
+                  fontSize: 22,
+                  fontWeight: FontWeight.w800,
+                  color: context.appColors.foreground,
+                ),
+              ),
+              const SizedBox(height: 8),
+              Text(
+                'Sblocca con i dati biometrici per continuare',
+                style: TextStyle(
+                  fontFamily: 'Inter',
+                  fontSize: 14,
+                  color: context.appColors.mutedForeground,
+                ),
+              ),
+              const SizedBox(height: 32),
+              GestureDetector(
+                onTap: _authenticate,
+                child: Container(
+                  padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 12),
+                  decoration: BoxDecoration(
+                    color: Theme.of(context).colorScheme.primary,
+                    borderRadius: BorderRadius.circular(12),
+                  ),
+                  child: Text(
+                    'Riprova',
+                    style: TextStyle(
+                      color: Theme.of(context).colorScheme.primary.computeLuminance() > 0.5 ? Colors.black : Colors.white,
+                      fontWeight: FontWeight.w700,
+                    ),
+                  ),
+                ),
+              ),
+            ],
+          ),
+        ),
+      );
+    }
 
     return Scaffold(
       backgroundColor: context.appColors.background,
@@ -410,6 +502,8 @@ class _AppBar extends ConsumerWidget {
 
     final userProfile = ref.watch(userProfileProvider);
     final displayName = userProfile.firstName ?? userProfile.displayName;
+    final settings = ref.watch(settingsProvider);
+    final isPro = settings.isPro;
 
     return ClipRect(
       child: BackdropFilter(
@@ -493,7 +587,7 @@ class _AppBar extends ConsumerWidget {
                           decoration: BoxDecoration(
                             shape: BoxShape.circle,
                             border: Border.all(
-                              color: primaryColor.withValues(alpha: 0.4),
+                              color: isPro ? const Color(0xFFEAB308) : primaryColor.withValues(alpha: 0.4),
                               width: 1.5,
                             ),
                           ),

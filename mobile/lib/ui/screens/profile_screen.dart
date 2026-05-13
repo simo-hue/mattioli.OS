@@ -7,6 +7,7 @@ import 'package:lucide_icons_flutter/lucide_icons.dart';
 import '../../core/theme.dart';
 import '../../providers/user_provider.dart';
 import '../../providers/auth_provider.dart';
+import '../../providers/settings_provider.dart';
 import 'personal_info_screen.dart';
 import 'app_settings_screen.dart';
 import 'notification_settings_screen.dart';
@@ -48,6 +49,8 @@ class _ProfileScreenState extends ConsumerState<ProfileScreen> {
   Widget build(BuildContext context) {
     final userProfile = ref.watch(userProfileProvider);
     final primaryColor = Theme.of(context).colorScheme.primary;
+    final settings = ref.watch(settingsProvider);
+    final isPro = settings.isPro;
 
     return Scaffold(
       backgroundColor: context.appColors.background,
@@ -92,7 +95,7 @@ class _ProfileScreenState extends ConsumerState<ProfileScreen> {
                                 end: Alignment.bottomRight,
                               ),
                               border: Border.all(
-                                color: primaryColor.withValues(alpha: 0.2),
+                                color: isPro ? const Color(0xFFEAB308) : primaryColor.withValues(alpha: 0.2),
                                 width: 2,
                               ),
                             ),
@@ -144,30 +147,63 @@ class _ProfileScreenState extends ConsumerState<ProfileScreen> {
                       ),
                     ),
                     const SizedBox(height: 6),
-                    Container(
-                      padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 3),
-                      decoration: BoxDecoration(
-                        color: primaryColor.withValues(alpha: 0.1),
-                        borderRadius: BorderRadius.circular(20),
-                        border: Border.all(
-                          color: const Color(0xFF10B981).withValues(alpha: 0.2),
+                    Row(
+                      mainAxisAlignment: MainAxisAlignment.center,
+                      children: [
+                        Container(
+                          padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 3),
+                          decoration: BoxDecoration(
+                            color: primaryColor.withValues(alpha: 0.1),
+                            borderRadius: BorderRadius.circular(20),
+                            border: Border.all(
+                              color: const Color(0xFF10B981).withValues(alpha: 0.2),
+                            ),
+                          ),
+                          child: Row(
+                            mainAxisSize: MainAxisSize.min,
+                            children: [
+                              const Icon(LucideIcons.shieldCheck, size: 10, color: Color(0xFF10B981)),
+                              const SizedBox(width: 4),
+                              const Text(
+                                'Account Verificato',
+                                style: TextStyle(
+                                  color: Color(0xFF10B981),
+                                  fontSize: 10,
+                                  fontWeight: FontWeight.w700,
+                                ),
+                              ),
+                            ],
+                          ),
                         ),
-                      ),
-                      child: Row(
-                        mainAxisSize: MainAxisSize.min,
-                        children: [
-                          const Icon(LucideIcons.shieldCheck, size: 10, color: Color(0xFF10B981)),
-                          const SizedBox(width: 4),
-                          const Text(
-                            'Account Verificato',
-                            style: TextStyle(
-                              color: Color(0xFF10B981),
-                              fontSize: 10,
-                              fontWeight: FontWeight.w700,
+                        if (isPro) ...[
+                          const SizedBox(width: 8),
+                          Container(
+                            padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 3),
+                            decoration: BoxDecoration(
+                              color: const Color(0xFFEAB308).withValues(alpha: 0.1),
+                              borderRadius: BorderRadius.circular(20),
+                              border: Border.all(
+                                color: const Color(0xFFEAB308).withValues(alpha: 0.2),
+                              ),
+                            ),
+                            child: const Row(
+                              mainAxisSize: MainAxisSize.min,
+                              children: [
+                                Icon(LucideIcons.crown, size: 10, color: Color(0xFFEAB308)),
+                                SizedBox(width: 4),
+                                Text(
+                                  'PRO',
+                                  style: TextStyle(
+                                    color: Color(0xFFEAB308),
+                                    fontSize: 10,
+                                    fontWeight: FontWeight.w700,
+                                  ),
+                                ),
+                              ],
                             ),
                           ),
                         ],
-                      ),
+                      ],
                     ),
                   ],
                 ),

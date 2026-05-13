@@ -209,5 +209,9 @@
   - *Details*: Fixed a runtime type error where `_Map<dynamic, dynamic>` was passed to a widget expecting `Map<String, String>`.
   - *Tech Notes*: Added `Map<String, String>.from` cast to `dayRecord` in `HabitCalendarWidget`.
 
+- [2026-05-13 22:10]: **Removal of Anonymous Analytics Setting**
+  - *Details*: Removed the "Analytics Anonimi" option from the Privacy and Security settings screen as requested by the user.
+  - *Tech Notes*: Deleted the `_buildSwitchRow` for `anonymousAnalytics` in `privacy_settings_screen.dart`.
+
 ## Current Status
-- **Next Step**: Waiting for user feedback on the new calendar animation.
+- **Next Step**: Waiting for user feedback on the removal of the analytics setting.

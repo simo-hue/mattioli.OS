@@ -120,20 +120,6 @@ class PrivacySettingsScreen extends ConsumerWidget {
                 },
               ),
               _buildDivider(context),
-              _buildSwitchRow(
-                context: context,
-                ref: ref,
-                icon: LucideIcons.activity,
-                title: context.l10n.translate('Analytics Anonimi'),
-                subtitle: context.l10n.translate('Analytics Anonimi'),
-                value: settings.anonymousAnalytics,
-                onChanged: (val) {
-                  final currentSettings = ref.read(settingsProvider);
-                  notifier.updateSettings(currentSettings.copyWith(anonymousAnalytics: val));
-                  ref.hapticLight();
-                },
-              ),
-              _buildDivider(context),
               _buildActionRow(
                 context: context,
                 icon: LucideIcons.trash2,

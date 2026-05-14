@@ -1,10 +1,12 @@
 import 'dart:convert';
 import 'package:flutter/foundation.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import 'package:supabase_flutter/supabase_flutter.dart';
+
 import '../models/macro_goal.dart';
 import 'shared_prefs_provider.dart';
 import 'auth_provider.dart';
+import '../core/navigator_key.dart';
+import '../ui/widgets/error_modal.dart';
 
 // ─── State ────────────────────────────────────────────────────────────────────
 
@@ -133,7 +135,15 @@ class MacroGoalsNotifier extends Notifier<MacroGoalsState> {
       _saveToCache(updatedGoals);
     } catch (e) {
       debugPrint('[MacroGoals] Insert error: $e');
-      // In produzione potremmo mostrare un banner di errore e fare un revert
+      final context = navigatorKey.currentContext;
+      if (context != null && context.mounted) {
+        ErrorModal.show(
+          context,
+          title: 'Errore durante il salvataggio',
+          message: 'Non siamo riusciti a salvare l\'obiettivo. Riprova.',
+          details: e.toString(),
+        );
+      }
     }
   }
 
@@ -146,6 +156,15 @@ class MacroGoalsNotifier extends Notifier<MacroGoalsState> {
       await supabase.from('long_term_goals').update({'status': status.name}).eq('id', id);
     } catch (e) {
       debugPrint('[MacroGoals] Update status error: $e');
+      final context = navigatorKey.currentContext;
+      if (context != null && context.mounted) {
+        ErrorModal.show(
+          context,
+          title: 'Errore durante l\'aggiornamento',
+          message: 'Non siamo riusciti a salvare lo stato dell\'obiettivo. Riprova.',
+          details: e.toString(),
+        );
+      }
     }
   }
 
@@ -158,6 +177,15 @@ class MacroGoalsNotifier extends Notifier<MacroGoalsState> {
       await supabase.from('long_term_goals').update({'title': title}).eq('id', id);
     } catch (e) {
       debugPrint('[MacroGoals] Update title error: $e');
+      final context = navigatorKey.currentContext;
+      if (context != null && context.mounted) {
+        ErrorModal.show(
+          context,
+          title: 'Errore durante l\'aggiornamento',
+          message: 'Non siamo riusciti a salvare il titolo dell\'obiettivo. Riprova.',
+          details: e.toString(),
+        );
+      }
     }
   }
 
@@ -173,6 +201,15 @@ class MacroGoalsNotifier extends Notifier<MacroGoalsState> {
       await supabase.from('long_term_goals').update({'category_id': categoryId}).eq('id', id);
     } catch (e) {
       debugPrint('[MacroGoals] Update category error: $e');
+      final context = navigatorKey.currentContext;
+      if (context != null && context.mounted) {
+        ErrorModal.show(
+          context,
+          title: 'Errore durante l\'aggiornamento',
+          message: 'Non siamo riusciti a salvare la categoria dell\'obiettivo. Riprova.',
+          details: e.toString(),
+        );
+      }
     }
   }
 
@@ -185,6 +222,15 @@ class MacroGoalsNotifier extends Notifier<MacroGoalsState> {
       await supabase.from('long_term_goals').delete().eq('id', id);
     } catch (e) {
       debugPrint('[MacroGoals] Delete error: $e');
+      final context = navigatorKey.currentContext;
+      if (context != null && context.mounted) {
+        ErrorModal.show(
+          context,
+          title: 'Errore durante l\'eliminazione',
+          message: 'Non siamo riusciti a eliminare l\'obiettivo. Riprova.',
+          details: e.toString(),
+        );
+      }
     }
   }
 
@@ -274,7 +320,9 @@ class MacroGoalsNotifier extends Notifier<MacroGoalsState> {
       if (type == GoalType.quarterly && g.quarter != quarter) return false;
       if (type == GoalType.monthly && g.month != month) return false;
       if (type == GoalType.weekly &&
-          (g.month != month || g.weekNumber != weekNumber)) return false;
+          (g.month != month || g.weekNumber != weekNumber)) {
+        return false;
+      }
       return true;
     }).toList()
       ..sort(_sortGoals);

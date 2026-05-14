@@ -1,7 +1,10 @@
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:flutter/foundation.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 import '../models/macro_goal.dart';
 import 'auth_provider.dart';
+import '../core/navigator_key.dart';
+import '../ui/widgets/error_modal.dart';
 
 class MacroGoalCategoriesNotifier extends AsyncNotifier<List<GoalCategory>> {
   @override
@@ -24,7 +27,7 @@ class MacroGoalCategoriesNotifier extends AsyncNotifier<List<GoalCategory>> {
           .map((json) => GoalCategory.fromJson(json))
           .toList();
     } catch (e) {
-      print('Error fetching categories: $e');
+      debugPrint('Error fetching categories: $e');
       return [];
     }
   }
@@ -45,7 +48,16 @@ class MacroGoalCategoriesNotifier extends AsyncNotifier<List<GoalCategory>> {
       // Invalidate to refetch
       ref.invalidateSelf();
     } catch (e) {
-      print('Error adding category: $e');
+      debugPrint('Error adding category: $e');
+      final context = navigatorKey.currentContext;
+      if (context != null && context.mounted) {
+        ErrorModal.show(
+          context,
+          title: 'Errore durante la creazione della categoria',
+          message: 'Non siamo riusciti a creare la categoria. Riprova.',
+          details: e.toString(),
+        );
+      }
     }
   }
 
@@ -58,7 +70,16 @@ class MacroGoalCategoriesNotifier extends AsyncNotifier<List<GoalCategory>> {
       // Invalidate to refetch
       ref.invalidateSelf();
     } catch (e) {
-      print('Error deleting category: $e');
+      debugPrint('Error deleting category: $e');
+      final context = navigatorKey.currentContext;
+      if (context != null && context.mounted) {
+        ErrorModal.show(
+          context,
+          title: 'Errore durante l\'eliminazione della categoria',
+          message: 'Non siamo riusciti a eliminare la categoria. Riprova.',
+          details: e.toString(),
+        );
+      }
     }
   }
 }

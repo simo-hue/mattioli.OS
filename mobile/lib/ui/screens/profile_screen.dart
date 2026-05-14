@@ -103,19 +103,20 @@ class _ProfileScreenState extends ConsumerState<ProfileScreen> {
                             ),
                             child: ClipRRect(
                               borderRadius: BorderRadius.circular(45),
-                              child: _profileImage != null
-                                  ? Image.file(
-                                      _profileImage!,
-                                      fit: BoxFit.cover,
-                                    )
-                                  : Container(
-                                      color: context.appColors.card,
-                                      child: Icon(
-                                        LucideIcons.user,
-                                        size: 50,
-                                        color: context.appColors.mutedForeground,
-                                      ),
-                                    ),
+                                child: _profileImage != null
+                                    ? Image.file(
+                                        _profileImage!,
+                                        fit: BoxFit.cover,
+                                      )
+                                    : userProfile.avatarUrl != null
+                                        ? Image.network(
+                                            userProfile.avatarUrl!,
+                                            fit: BoxFit.cover,
+                                          )
+                                        : Image.asset(
+                                            'assets/images/default_avatar.png',
+                                            fit: BoxFit.cover,
+                                          ),
                             ),
                           ),
                           Positioned(

@@ -7,6 +7,8 @@ import 'shared_prefs_provider.dart';
 import 'auth_provider.dart';
 import 'settings_provider.dart';
 import '../core/notifications.dart';
+import '../core/navigator_key.dart';
+import '../ui/widgets/error_modal.dart';
 
 // ─── Goals Provider (Offline-First) ─────────────────────────────────────────
 
@@ -100,6 +102,15 @@ class GoalsNotifier extends Notifier<List<Goal>> {
       }
     } catch (e) {
       debugPrint('[Goals] Insert error: $e');
+      final context = navigatorKey.currentContext;
+      if (context != null && context.mounted) {
+        ErrorModal.show(
+          context,
+          title: 'Errore durante il salvataggio',
+          message: 'Non siamo riusciti a salvare l\'abitudine. Riprova.',
+          details: e.toString(),
+        );
+      }
     }
   }
 
@@ -120,6 +131,15 @@ class GoalsNotifier extends Notifier<List<Goal>> {
       }
     } catch (e) {
       debugPrint('[Goals] Update error: $e');
+      final context = navigatorKey.currentContext;
+      if (context != null && context.mounted) {
+        ErrorModal.show(
+          context,
+          title: 'Errore durante l\'aggiornamento',
+          message: 'Non siamo riusciti a salvare le modifiche. Riprova.',
+          details: e.toString(),
+        );
+      }
     }
   }
 
@@ -134,6 +154,15 @@ class GoalsNotifier extends Notifier<List<Goal>> {
       NotificationService().cancelHabitReminder(id);
     } catch (e) {
       debugPrint('[Goals] Delete error: $e');
+      final context = navigatorKey.currentContext;
+      if (context != null && context.mounted) {
+        ErrorModal.show(
+          context,
+          title: 'Errore durante l\'eliminazione',
+          message: 'Non siamo riusciti a eliminare l\'abitudine. Riprova.',
+          details: e.toString(),
+        );
+      }
     }
   }
 
@@ -339,6 +368,15 @@ class HabitLogsNotifier extends Notifier<HabitLogsMap> {
       ref.invalidate(habitStatsProvider);
     } catch (e) {
       debugPrint('[HabitLogs] cycleStatus error: $e');
+      final context = navigatorKey.currentContext;
+      if (context != null && context.mounted) {
+        ErrorModal.show(
+          context,
+          title: 'Errore durante l\'aggiornamento dello stato',
+          message: 'Non siamo riusciti a salvare lo stato dell\'abitudine. Riprova.',
+          details: e.toString(),
+        );
+      }
     }
   }
 

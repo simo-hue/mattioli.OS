@@ -371,3 +371,6 @@ $$;
 - [ ] Per far funzionare le azioni delle notifiche quando l'app è terminata o in background su iOS, assicurarsi di aver abilitato le seguenti capabilities in Xcode:
   - **Background Modes**: Remote notifications (se si usano notifiche push, ma anche per local notifications con azioni a volte è necessario).
   - Assicurarsi che il file `ios/Runner/AppDelegate.swift` sia configurato correttamente se necessario.
+
+## Immagine Profilo Predefinita
+- [ ] Salvare l'immagine fornita dall'utente come `assets/images/default_avatar.png` per abilitare la foto profilo di default per i nuovi utenti.

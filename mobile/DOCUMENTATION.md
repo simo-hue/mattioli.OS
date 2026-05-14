@@ -819,5 +819,38 @@
 **Current Status**:
 - Tutti i box del tutorial ora hanno lo stesso stile premium e coerente.
 
+---
+
+## [2026-05-14 16:45]: Feature - Global Error Handling & Error Modal
+*Details*: Implemented global error handling to protect the user from crashes and bugs. Created a custom error modal with a consistent premium style.
+*Tech Notes*:
+- **Error Modal**: Created `ErrorModal` in `lib/ui/widgets/error_modal.dart` with custom styling (red theme, glassmorphic container, triangle alert icon).
+- **Global Handling**: Updated `lib/main.dart` to use `PlatformDispatcher.instance.onError` for catching unhandled async errors and showing the `ErrorModal`.
+- **Navigation**: Added a `GlobalKey<NavigatorState>` to `GoRouter` to allow showing dialogs without a `BuildContext` from the global error handler.
+- **Build Errors**: Refined `ErrorWidget.builder` to show a nicer fallback screen instead of a plain text error.
+
+## [2026-05-14 18:50]: Feature - Error Modal Integration in Crucial Providers
+*Details*: Integrated the `ErrorModal` into the most crucial database operations in `GoalProvider`, `MacroGoalsProvider`, `MoodProvider`, and `MacroGoalCategoriesProvider` to inform the user of failures during save/update/delete actions.
+*Tech Notes*:
+- **Navigator Key**: Moved `navigatorKey` to a separate file `lib/core/navigator_key.dart` to avoid circular imports between `main.dart` and providers.
+- **Goal Provider**: Added error modal to `addHabit`, `updateHabit`, `deleteHabit`, and `cycleStatus`.
+- **Macro Goals Provider**: Added error modal to `addGoal`, `updateStatus`, `updateTitle`, `updateCategory`, and `deleteGoal`.
+- **Mood Provider**: Added error modal to `saveMood`.
+- **Macro Goal Categories Provider**: Added error modal to `addCategory` and `deleteCategory`. Fixed `avoid_print` warnings.
+- **Linter Fixes**: Fixed `use_build_context_synchronously` warnings by adding `context.mounted` checks.
+
+**Current Status**:
+- Error handling integrated in `GoalProvider`, `MacroGoalsProvider`, `MoodProvider`, and `MacroGoalCategoriesProvider`.
+- All files clean of linter warnings.
+
 **Next Step**:
-- Attendere istruzioni dall'utente su quale feature del file GOALS.md affrontare.
+- Hand over to user for verification.
+
+---
+
+## [2026-05-14 19:00]: UI - Default Profile Picture Fallback
+*Details*: Impostata l'immagine fornita dall'utente come foto profilo di default per tutti gli utenti che si registrano o che non hanno un avatar impostato.
+*Tech Notes*:
+- **UI (Dashboard)**: Aggiornato `dashboard_screen.dart` per usare `AssetImage('assets/images/default_avatar.png')` come fallback se `avatarUrl` è null.
+- **UI (Profile)**: Aggiornato `profile_screen.dart` per supportare la visualizzazione dell'avatar da rete e usare lo stesso fallback locale.
+- **Manuale**: Aggiunta un'azione in `TO_SIMO_DO.md` per richiedere all'utente di salvare il file immagine nella cartella assets.

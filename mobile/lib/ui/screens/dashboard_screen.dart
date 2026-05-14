@@ -1155,7 +1155,9 @@ class _AppBar extends ConsumerWidget {
                               color: context.appColors.card,
                               shape: BoxShape.circle,
                               image: DecorationImage(
-                                image: NetworkImage(userProfile.avatarUrl ?? 'https://github.com/simonemattioli.png'),
+                                image: (userProfile.avatarUrl != null
+                                    ? NetworkImage(userProfile.avatarUrl!)
+                                    : const AssetImage('assets/images/default_avatar.png')) as ImageProvider,
                                 fit: BoxFit.cover,
                               ),
                             ),

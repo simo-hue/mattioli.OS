@@ -3,6 +3,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 import 'package:shared_preferences/shared_preferences.dart';
+import 'dart:ui';
 import 'core/theme.dart';
 import 'core/supabase_config.dart';
 import 'providers/shared_prefs_provider.dart';
@@ -11,6 +12,8 @@ import 'providers/auth_provider.dart';
 import 'ui/screens/dashboard_screen.dart';
 import 'ui/screens/auth_screen.dart';
 import 'core/notifications.dart';
+import 'ui/widgets/error_modal.dart';
+import 'core/navigator_key.dart';
 import 'package:intl/date_symbol_data_local.dart';
 
 void main() async {
@@ -36,12 +39,41 @@ void main() async {
   ErrorWidget.builder = (FlutterErrorDetails details) {
     return Scaffold(
       body: Center(
-        child: Text(
-          'Error: ${details.exception}',
-          style: const TextStyle(color: Colors.red),
+        child: Padding(
+          padding: const EdgeInsets.all(24.0),
+          child: Column(
+            mainAxisAlignment: MainAxisAlignment.center,
+            children: [
+              const Icon(Icons.error_outline, color: Colors.red, size: 48),
+              const SizedBox(height: 16),
+              const Text(
+                'Ops! Qualcosa è andato storto.',
+                style: TextStyle(fontSize: 20, fontWeight: FontWeight.bold),
+              ),
+              const SizedBox(height: 8),
+              Text(
+                details.exception.toString(),
+                textAlign: TextAlign.center,
+                style: const TextStyle(color: Colors.grey),
+              ),
+            ],
+          ),
         ),
       ),
     );
+  };
+
+  PlatformDispatcher.instance.onError = (error, stack) {
+    final context = navigatorKey.currentContext;
+    if (context != null) {
+      ErrorModal.show(
+        context,
+        title: 'Si è verificato un errore',
+        message: 'L\'applicazione ha riscontrato un problema imprevisto. Abbiamo registrato l\'errore e cercheremo di risolverlo.',
+        details: error.toString(),
+      );
+    }
+    return true;
   };
 
   // ── SharedPreferences init ───────────────────────────────────────────────
@@ -57,6 +89,8 @@ void main() async {
   );
 }
 
+
+
 // ── Router ───────────────────────────────────────────────────────────────────
 // Usa un listenable che reagisce ai cambiamenti di sessione Supabase,
 // così GoRouter redireziona automaticamente senza polling.
@@ -64,6 +98,7 @@ final routerProvider = Provider<GoRouter>((ref) {
   final authNotifier = ref.watch(authProvider.notifier);
 
   return GoRouter(
+    navigatorKey: navigatorKey,
     initialLocation: '/',
     debugLogDiagnostics: false,
     refreshListenable: authNotifier,

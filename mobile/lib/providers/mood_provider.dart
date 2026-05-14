@@ -2,6 +2,8 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 import 'goal_provider.dart';
+import '../core/navigator_key.dart';
+import '../ui/widgets/error_modal.dart';
 
 final supabase = Supabase.instance.client;
 
@@ -82,6 +84,15 @@ class DailyMoodsNotifier extends Notifier<DailyMoodsMap> {
       state = newState;
     } catch (e) {
       debugPrint('[DailyMoods] Save error: $e');
+      final context = navigatorKey.currentContext;
+      if (context != null && context.mounted) {
+        ErrorModal.show(
+          context,
+          title: 'Errore durante il salvataggio dell\'umore',
+          message: 'Non siamo riusciti a salvare il tuo stato d\'animo. Riprova.',
+          details: e.toString(),
+        );
+      }
     }
   }
 }

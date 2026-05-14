@@ -13,8 +13,21 @@ import '../../../core/haptics.dart';
 
 class GoalItemWidget extends ConsumerStatefulWidget {
   final MacroGoal goal;
+  final GlobalKey? checkboxKey;
+  final GlobalKey? categoryKey;
+  final GlobalKey? rescheduleKey;
+  final GlobalKey? editKey;
+  final GlobalKey? deleteKey;
 
-  const GoalItemWidget({super.key, required this.goal});
+  const GoalItemWidget({
+    super.key, 
+    required this.goal,
+    this.checkboxKey,
+    this.categoryKey,
+    this.rescheduleKey,
+    this.editKey,
+    this.deleteKey,
+  });
 
   @override
   ConsumerState<GoalItemWidget> createState() => _GoalItemWidgetState();
@@ -395,7 +408,10 @@ class _GoalItemWidgetState extends ConsumerState<GoalItemWidget>
             child: Row(
               children: [
                 // Checkbox
-                checkbox(),
+                Container(
+                  key: widget.checkboxKey,
+                  child: checkbox(),
+                ),
                 const SizedBox(width: 12),
 
                 // Category dot (if set)
@@ -442,6 +458,10 @@ class _GoalItemWidgetState extends ConsumerState<GoalItemWidget>
                   onReschedule: _reschedule,
                   onEdit: _showEditDialog,
                   onDelete: _showDeleteConfirm,
+                  categoryKey: widget.categoryKey,
+                  rescheduleKey: widget.rescheduleKey,
+                  editKey: widget.editKey,
+                  deleteKey: widget.deleteKey,
                 ),
               ],
             ),
@@ -460,6 +480,10 @@ class _ActionButtons extends StatelessWidget {
   final VoidCallback onReschedule;
   final VoidCallback onEdit;
   final VoidCallback onDelete;
+  final GlobalKey? categoryKey;
+  final GlobalKey? rescheduleKey;
+  final GlobalKey? editKey;
+  final GlobalKey? deleteKey;
 
   const _ActionButtons({
     required this.catColor,
@@ -467,6 +491,10 @@ class _ActionButtons extends StatelessWidget {
     required this.onReschedule,
     required this.onEdit,
     required this.onDelete,
+    this.categoryKey,
+    this.rescheduleKey,
+    this.editKey,
+    this.deleteKey,
   });
 
   @override
@@ -475,40 +503,52 @@ class _ActionButtons extends StatelessWidget {
       mainAxisSize: MainAxisSize.min,
       children: [
         // Category dot button
-        _IconBtn(
-          onTap: onCategory,
-          child: Container(
-            width: 14,
-            height: 14,
-            decoration: BoxDecoration(
-              color:
-                  catColor?.withValues(alpha: 0.7) ?? Colors.transparent,
-              shape: BoxShape.circle,
-              border: Border.all(
-                color: catColor?.withValues(alpha: 0.9) ??
-                    context.appColors.border,
-                width: 1.5,
+        Container(
+          key: categoryKey,
+          child: _IconBtn(
+            onTap: onCategory,
+            child: Container(
+              width: 14,
+              height: 14,
+              decoration: BoxDecoration(
+                color:
+                    catColor?.withValues(alpha: 0.7) ?? Colors.transparent,
+                shape: BoxShape.circle,
+                border: Border.all(
+                  color: catColor?.withValues(alpha: 0.9) ??
+                      context.appColors.border,
+                  width: 1.5,
+                ),
               ),
             ),
           ),
         ),
         const SizedBox(width: 2),
-        _IconBtn(
-          onTap: onReschedule,
-          child: Icon(LucideIcons.calendarClock,
-              size: 14, color: context.appColors.mutedForeground),
+        Container(
+          key: rescheduleKey,
+          child: _IconBtn(
+            onTap: onReschedule,
+            child: Icon(LucideIcons.calendarClock,
+                size: 14, color: context.appColors.mutedForeground),
+          ),
         ),
         const SizedBox(width: 2),
-        _IconBtn(
-          onTap: onEdit,
-          child: Icon(LucideIcons.pencil,
-              size: 14, color: context.appColors.mutedForeground),
+        Container(
+          key: editKey,
+          child: _IconBtn(
+            onTap: onEdit,
+            child: Icon(LucideIcons.pencil,
+                size: 14, color: context.appColors.mutedForeground),
+          ),
         ),
         const SizedBox(width: 2),
-        _IconBtn(
-          onTap: onDelete,
-          child: Icon(LucideIcons.trash2,
-              size: 14, color: context.appColors.destructive.withValues(alpha: 0.7)),
+        Container(
+          key: deleteKey,
+          child: _IconBtn(
+            onTap: onDelete,
+            child: Icon(LucideIcons.trash2,
+                size: 14, color: context.appColors.destructive.withValues(alpha: 0.7)),
+          ),
         ),
       ],
     );

@@ -31,6 +31,11 @@ class _MacroGoalsScreenState extends ConsumerState<MacroGoalsScreen>
   final GlobalKey _addGoalKey = GlobalKey();
   final GlobalKey _goalsListKey = GlobalKey();
   final GlobalKey _performanceToggleKey = GlobalKey();
+  final GlobalKey _tutorialCheckboxKey = GlobalKey();
+  final GlobalKey _tutorialCategoryKey = GlobalKey();
+  final GlobalKey _tutorialRescheduleKey = GlobalKey();
+  final GlobalKey _tutorialEditKey = GlobalKey();
+  final GlobalKey _tutorialDeleteKey = GlobalKey();
 
   @override
   void initState() {
@@ -187,20 +192,62 @@ class _MacroGoalsScreenState extends ConsumerState<MacroGoalsScreen>
         ],
       ),
       TargetFocus(
-        identify: "Azioni Obiettivo",
-        keyTarget: _goalsListKey,
+        identify: "Tutorial Completare",
+        keyTarget: _tutorialCheckboxKey,
         enableTargetTab: false,
         enableOverlayTab: false,
         contents: [
           TargetContent(
             align: ContentAlign.bottom,
-            builder: (context, controller) {
-              return _buildTutorialContent(
-                "Gestione Obiettivo",
-                "Toccando un obiettivo potrai segnarlo come completato, modificarne nome e categoria, oppure posticiparlo al mese/anno successivo se non hai fatto in tempo.",
-                controller,
-              );
-            },
+            builder: (context, controller) => _buildTutorialContent("Completare o Fallire", "Clicca qui per segnare l'obiettivo come completato. Cliccandolo di nuovo verrà segnato come fallito.", controller),
+          ),
+        ],
+      ),
+      TargetFocus(
+        identify: "Tutorial Categoria",
+        keyTarget: _tutorialCategoryKey,
+        enableTargetTab: false,
+        enableOverlayTab: false,
+        contents: [
+          TargetContent(
+            align: ContentAlign.bottom,
+            builder: (context, controller) => _buildTutorialContent("Categoria", "Usa questo pulsante per assegnare rapidamente una categoria all'obiettivo.", controller),
+          ),
+        ],
+      ),
+      TargetFocus(
+        identify: "Tutorial Posticipare",
+        keyTarget: _tutorialRescheduleKey,
+        enableTargetTab: false,
+        enableOverlayTab: false,
+        contents: [
+          TargetContent(
+            align: ContentAlign.bottom,
+            builder: (context, controller) => _buildTutorialContent("Posticipare", "Se non hai fatto in tempo o i piani sono cambiati, puoi spostare questo obiettivo alla settimana / mese o anno successivo ( in base a dove hai inserito l'obiettivo).", controller),
+          ),
+        ],
+      ),
+      TargetFocus(
+        identify: "Tutorial Modifica",
+        keyTarget: _tutorialEditKey,
+        enableTargetTab: false,
+        enableOverlayTab: false,
+        contents: [
+          TargetContent(
+            align: ContentAlign.bottom,
+            builder: (context, controller) => _buildTutorialContent("Modifica", "Se devi semplicemente rinominare l'obiettivo, usa la matita.", controller),
+          ),
+        ],
+      ),
+      TargetFocus(
+        identify: "Tutorial Elimina",
+        keyTarget: _tutorialDeleteKey,
+        enableTargetTab: false,
+        enableOverlayTab: false,
+        contents: [
+          TargetContent(
+            align: ContentAlign.bottom,
+            builder: (context, controller) => _buildTutorialContent("Elimina", "Infine, questo pulsante elimina definitivamente l'obiettivo.", controller),
           ),
         ],
       ),
@@ -270,6 +317,24 @@ class _MacroGoalsScreenState extends ConsumerState<MacroGoalsScreen>
           month: viewState.selectedMonth,
           weekNumber: viewState.selectedWeek,
         );
+
+    final mainTutorialSeen = ref.watch(tutorialProvider);
+    final goalsTutorialSeen = ref.watch(goalsTutorialProvider);
+    
+    List<MacroGoal> displayGoals = List.from(filteredGoals);
+    if (mainTutorialSeen && !goalsTutorialSeen) {
+      displayGoals.insert(0, MacroGoal(
+        id: 'tutorial_fake_goal',
+        title: 'Obiettivo Tutorial',
+        status: GoalStatus.active,
+        type: viewState.selectedType,
+        year: viewState.selectedYear,
+        quarter: viewState.selectedQuarter,
+        month: viewState.selectedMonth,
+        weekNumber: viewState.selectedWeek,
+        createdAt: DateTime.now(),
+      ));
+    }
 
     return Scaffold(
       backgroundColor: context.appColors.background,
@@ -343,9 +408,14 @@ class _MacroGoalsScreenState extends ConsumerState<MacroGoalsScreen>
                   },
                   child: _GoalsList(
                     key: ValueKey('${viewState.selectedType}-${viewState.selectedYear}-${viewState.selectedMonth}-${viewState.selectedWeek}-${viewState.selectedQuarter}'),
-                    goals: filteredGoals,
+                    goals: displayGoals,
                     viewState: viewState,
                     emptyStateKey: _goalsListKey,
+                    tutorialCheckboxKey: _tutorialCheckboxKey,
+                    tutorialCategoryKey: _tutorialCategoryKey,
+                    tutorialRescheduleKey: _tutorialRescheduleKey,
+                    tutorialEditKey: _tutorialEditKey,
+                    tutorialDeleteKey: _tutorialDeleteKey,
                   ),
                 ),
               ),
@@ -673,10 +743,24 @@ class _MacroGoalsScreenState extends ConsumerState<MacroGoalsScreen>
 class _GoalsList extends ConsumerWidget {
   final List<MacroGoal> goals;
   final MacroGoalsViewState viewState;
-
   final GlobalKey emptyStateKey;
+  final GlobalKey? tutorialCheckboxKey;
+  final GlobalKey? tutorialCategoryKey;
+  final GlobalKey? tutorialRescheduleKey;
+  final GlobalKey? tutorialEditKey;
+  final GlobalKey? tutorialDeleteKey;
 
-  const _GoalsList({super.key, required this.goals, required this.viewState, required this.emptyStateKey});
+  const _GoalsList({
+    super.key, 
+    required this.goals, 
+    required this.viewState, 
+    required this.emptyStateKey,
+    this.tutorialCheckboxKey,
+    this.tutorialCategoryKey,
+    this.tutorialRescheduleKey,
+    this.tutorialEditKey,
+    this.tutorialDeleteKey,
+  });
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
@@ -738,6 +822,17 @@ class _GoalsList extends ConsumerWidget {
           return _buildSectionHeader(context, item.status, ValueKey('header-${item.status.name}'));
         }
         final goal = item as MacroGoal;
+        if (goal.id == 'tutorial_fake_goal') {
+          return GoalItemWidget(
+            key: ValueKey(goal.id), 
+            goal: goal,
+            checkboxKey: tutorialCheckboxKey,
+            categoryKey: tutorialCategoryKey,
+            rescheduleKey: tutorialRescheduleKey,
+            editKey: tutorialEditKey,
+            deleteKey: tutorialDeleteKey,
+          );
+        }
         return GoalItemWidget(key: ValueKey(goal.id), goal: goal);
       },
     );

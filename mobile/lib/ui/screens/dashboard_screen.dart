@@ -895,11 +895,18 @@ class _HomeScreenState extends ConsumerState<HomeScreen>
   Widget _getPage(int index, CalendarView currentView) {
     switch (index) {
       case 0:
-        return const StatisticsScreen();
+        return StatisticsScreen(onFinishTutorial: () {
+          _onItemTapped(1); // Move to Home
+        });
       case 1:
         return _HomeTabWrapper(child: _buildHomeBody(currentView));
       case 2:
-        return const MacroGoalsScreen();
+        return MacroGoalsScreen(
+          statsNavKey: _statsNavKey,
+          onFinishTutorial: () {
+            _onItemTapped(0); // Move to Stats
+          },
+        );
       default:
         return const SizedBox();
     }

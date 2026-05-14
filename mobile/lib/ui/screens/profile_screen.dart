@@ -294,6 +294,7 @@ class _ProfileScreenState extends ConsumerState<ProfileScreen> {
                     await Future.delayed(const Duration(milliseconds: 300));
                     ref.read(tutorialProvider.notifier).setTutorialSeen(false);
                     ref.read(goalsTutorialProvider.notifier).setTutorialSeen(false);
+                    ref.read(statsTutorialProvider.notifier).setTutorialSeen(false);
                   },
                 ),
                 const SizedBox(height: 24),

@@ -16,7 +16,9 @@ import 'package:tutorial_coach_mark/tutorial_coach_mark.dart';
 import '../../providers/tutorial_provider.dart';
 
 class MacroGoalsScreen extends ConsumerStatefulWidget {
-  const MacroGoalsScreen({super.key});
+  final VoidCallback? onFinishTutorial;
+  final GlobalKey? statsNavKey;
+  const MacroGoalsScreen({super.key, this.onFinishTutorial, this.statsNavKey});
 
   @override
   ConsumerState<MacroGoalsScreen> createState() => _MacroGoalsScreenState();
@@ -64,6 +66,7 @@ class _MacroGoalsScreenState extends ConsumerState<MacroGoalsScreen>
     bool isFirst = false,
     bool isLast = false,
     VoidCallback? onNextPressed,
+    String? nextButtonLabel,
   }) {
     return Container(
       padding: const EdgeInsets.all(24),
@@ -143,7 +146,7 @@ class _MacroGoalsScreenState extends ConsumerState<MacroGoalsScreen>
                   shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
                   elevation: 0,
                 ),
-                child: Text(isLast ? "Fine" : "Avanti", style: const TextStyle(fontWeight: FontWeight.bold)),
+                child: Text(nextButtonLabel ?? (isLast ? "Fine" : "Avanti"), style: const TextStyle(fontWeight: FontWeight.bold)),
               ),
             ],
           ),
@@ -196,6 +199,7 @@ class _MacroGoalsScreenState extends ConsumerState<MacroGoalsScreen>
         keyTarget: _tutorialCheckboxKey,
         enableTargetTab: false,
         enableOverlayTab: false,
+        paddingFocus: 12,
         contents: [
           TargetContent(
             align: ContentAlign.bottom,
@@ -208,6 +212,7 @@ class _MacroGoalsScreenState extends ConsumerState<MacroGoalsScreen>
         keyTarget: _tutorialCategoryKey,
         enableTargetTab: false,
         enableOverlayTab: false,
+        paddingFocus: 12,
         contents: [
           TargetContent(
             align: ContentAlign.bottom,
@@ -220,6 +225,7 @@ class _MacroGoalsScreenState extends ConsumerState<MacroGoalsScreen>
         keyTarget: _tutorialRescheduleKey,
         enableTargetTab: false,
         enableOverlayTab: false,
+        paddingFocus: 12,
         contents: [
           TargetContent(
             align: ContentAlign.bottom,
@@ -232,6 +238,7 @@ class _MacroGoalsScreenState extends ConsumerState<MacroGoalsScreen>
         keyTarget: _tutorialEditKey,
         enableTargetTab: false,
         enableOverlayTab: false,
+        paddingFocus: 12,
         contents: [
           TargetContent(
             align: ContentAlign.bottom,
@@ -244,10 +251,18 @@ class _MacroGoalsScreenState extends ConsumerState<MacroGoalsScreen>
         keyTarget: _tutorialDeleteKey,
         enableTargetTab: false,
         enableOverlayTab: false,
+        paddingFocus: 12,
         contents: [
           TargetContent(
             align: ContentAlign.bottom,
-            builder: (context, controller) => _buildTutorialContent("Elimina", "Infine, questo pulsante elimina definitivamente l'obiettivo.", controller),
+            builder: (context, controller) {
+              WidgetsBinding.instance.addPostFrameCallback((_) {
+                if (mounted && _showStats) {
+                  setState(() => _showStats = false);
+                }
+              });
+              return _buildTutorialContent("Elimina", "Infine, questo pulsante elimina definitivamente l'obiettivo.", controller);
+            },
           ),
         ],
       ),
@@ -260,16 +275,49 @@ class _MacroGoalsScreenState extends ConsumerState<MacroGoalsScreen>
           TargetContent(
             align: ContentAlign.bottom,
             builder: (context, controller) {
+              WidgetsBinding.instance.addPostFrameCallback((_) {
+                if (mounted && !_showStats) {
+                  setState(() => _showStats = true);
+                }
+              });
               return _buildTutorialContent(
                 "Analisi e Statistiche",
                 "Passa a questa scheda per visualizzare grafici e performance dettagliate selezionando l'anno corrente o tutti gli anni.",
                 controller,
-                isLast: true,
+                isLast: false,
+                nextButtonLabel: "Continua",
               );
             },
           ),
         ],
       ),
+      if (widget.statsNavKey != null)
+        TargetFocus(
+          identify: "Tutorial Statistiche Tab",
+          keyTarget: widget.statsNavKey!,
+          enableTargetTab: false,
+          enableOverlayTab: false,
+          contents: [
+            TargetContent(
+              align: ContentAlign.top,
+              builder: (context, controller) {
+                return _buildTutorialContent(
+                  "Statistiche Abitudini",
+                  "Per vedere le statistiche delle tue abitudini giornaliere, puoi spostarti in questa sezione.",
+                  controller,
+                  isLast: true,
+                  onNextPressed: () {
+                    ref.read(goalsTutorialProvider.notifier).setTutorialSeen(true);
+                    if (widget.onFinishTutorial != null) {
+                      widget.onFinishTutorial!();
+                    }
+                    controller.skip();
+                  },
+                );
+              },
+            ),
+          ],
+        ),
     ];
 
     TutorialCoachMark(
@@ -283,6 +331,9 @@ class _MacroGoalsScreenState extends ConsumerState<MacroGoalsScreen>
       pulseEnable: false,
       onFinish: () {
         ref.read(goalsTutorialProvider.notifier).setTutorialSeen(true);
+        if (widget.onFinishTutorial != null) {
+          widget.onFinishTutorial!();
+        }
       },
     ).show(context: context);
   }

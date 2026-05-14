@@ -2,6 +2,8 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:lucide_icons_flutter/lucide_icons.dart';
+import 'package:tutorial_coach_mark/tutorial_coach_mark.dart';
+import '../../providers/tutorial_provider.dart';
 import '../../core/theme.dart';
 import '../../models/goal.dart';
 import '../../providers/goal_provider.dart';
@@ -20,7 +22,8 @@ import '../widgets/statistics/global_mood_tab_widget.dart';
 
 
 class StatisticsScreen extends ConsumerStatefulWidget {
-  const StatisticsScreen({super.key});
+  final VoidCallback? onFinishTutorial;
+  const StatisticsScreen({super.key, this.onFinishTutorial});
 
   @override
   ConsumerState<StatisticsScreen> createState() => _StatisticsScreenState();
@@ -38,8 +41,139 @@ class _StatisticsScreenState extends ConsumerState<StatisticsScreen>
   ];
   String? _selectedGoalId;
 
+  final GlobalKey _goalDropdownKey = GlobalKey();
+  final GlobalKey _tabsKey = GlobalKey();
+
   @override
   bool get wantKeepAlive => true;
+
+  bool _tutorialTriggered = false;
+
+  @override
+  void initState() {
+    super.initState();
+  }
+
+  void _showStatsTutorial() {
+    final targets = [
+      TargetFocus(
+        identify: "Filtro Goal",
+        keyTarget: _goalDropdownKey,
+        enableTargetTab: false,
+        enableOverlayTab: false,
+        contents: [
+          TargetContent(
+            align: ContentAlign.bottom,
+            builder: (context, controller) => _buildTutorialContent("Filtra per Habit", "Da qui puoi selezionare una specifica abitudine per vederne i dettagli, oppure 'Tutti gli Habits' per una panoramica globale.", controller),
+          ),
+        ],
+      ),
+      TargetFocus(
+        identify: "Tabs Statistiche",
+        keyTarget: _tabsKey,
+        enableTargetTab: false,
+        enableOverlayTab: false,
+        contents: [
+          TargetContent(
+            align: ContentAlign.bottom,
+            builder: (context, controller) => _buildTutorialContent("Sezioni Statistiche", "Naviga tra le varie schede per vedere i Trend, gli Alert sulle performance, l'andamento delle Abitudini e il tuo Mood.", controller, isLast: true),
+          ),
+        ],
+      ),
+    ];
+
+    TutorialCoachMark(
+      targets: targets,
+      colorShadow: Colors.black,
+      hideSkip: true,
+      paddingFocus: 10,
+      opacityShadow: 0.85,
+      focusAnimationDuration: const Duration(milliseconds: 400),
+      unFocusAnimationDuration: Duration.zero,
+      pulseEnable: false,
+      onFinish: () {
+        ref.read(statsTutorialProvider.notifier).setTutorialSeen(true);
+        if (widget.onFinishTutorial != null) {
+          widget.onFinishTutorial!();
+        }
+      },
+    ).show(context: context);
+  }
+
+  Widget _buildTutorialContent(String title, String desc, TutorialCoachMarkController controller, {bool isLast = false}) {
+    return Container(
+      padding: const EdgeInsets.all(20),
+      decoration: BoxDecoration(
+        color: context.appColors.card.withValues(alpha: 0.9),
+        borderRadius: BorderRadius.circular(20),
+        border: Border.all(color: context.appColors.border.withValues(alpha: 0.5), width: 1.5),
+        boxShadow: [
+          BoxShadow(
+            color: Colors.black.withValues(alpha: 0.3),
+            blurRadius: 15,
+            offset: const Offset(0, 8),
+          ),
+        ],
+      ),
+      child: Column(
+        mainAxisSize: MainAxisSize.min,
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Row(
+            children: [
+              Container(
+                width: 10,
+                height: 10,
+                decoration: BoxDecoration(
+                  color: Theme.of(context).colorScheme.primary,
+                  shape: BoxShape.circle,
+                ),
+              ),
+              const SizedBox(width: 8),
+              Text(
+                title,
+                style: TextStyle(
+                  fontSize: 16,
+                  fontWeight: FontWeight.w800,
+                  color: context.appColors.foreground,
+                  letterSpacing: -0.5,
+                ),
+              ),
+            ],
+          ),
+          const SizedBox(height: 12),
+          Text(
+            desc,
+            style: TextStyle(
+              fontSize: 13,
+              fontWeight: FontWeight.w500,
+              color: context.appColors.mutedForeground,
+              height: 1.4,
+            ),
+          ),
+          const SizedBox(height: 20),
+          Row(
+            mainAxisAlignment: MainAxisAlignment.end,
+            children: [
+              TextButton(
+                onPressed: () => controller.next(),
+                style: TextButton.styleFrom(
+                  backgroundColor: Theme.of(context).colorScheme.primary,
+                  foregroundColor: context.appColors.background,
+                  padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 10),
+                  shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+                ),
+                child: Text(
+                  isLast ? 'Fine' : 'Avanti',
+                  style: const TextStyle(fontSize: 13, fontWeight: FontWeight.w700),
+                ),
+              ),
+            ],
+          ),
+        ],
+      ),
+    );
+  }
 
   void _selectGoal(String? goalId) {
     setState(() {
@@ -58,6 +192,25 @@ class _StatisticsScreenState extends ConsumerState<StatisticsScreen>
   Widget build(BuildContext context) {
     super.build(context);
     final goals = ref.watch(goalsProvider);
+    final goalsTutorialSeen = ref.watch(goalsTutorialProvider);
+    final statsTutorialSeen = ref.watch(statsTutorialProvider);
+
+    ref.listen(statsTutorialProvider, (previous, next) {
+      if (next == false) {
+        _tutorialTriggered = false;
+      }
+    });
+
+    if (goalsTutorialSeen && !statsTutorialSeen && !_tutorialTriggered) {
+      _tutorialTriggered = true;
+      WidgetsBinding.instance.addPostFrameCallback((_) {
+        Future.delayed(const Duration(milliseconds: 600), () {
+          if (mounted) {
+            _showStatsTutorial();
+          }
+        });
+      });
+    }
 
     return Scaffold(
       backgroundColor: Colors.transparent,
@@ -97,10 +250,10 @@ class _StatisticsScreenState extends ConsumerState<StatisticsScreen>
                     const SizedBox(height: 24),
 
 
-                    _buildGoalDropdown(goals),
+                    Container(key: _goalDropdownKey, child: _buildGoalDropdown(goals)),
                     const SizedBox(height: 16),
 
-                    _buildTabs(),
+                    Container(key: _tabsKey, child: _buildTabs()),
                     const SizedBox(height: 16),
                   ],
                 ),

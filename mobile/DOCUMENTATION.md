@@ -796,5 +796,28 @@
 **Current Status**:
 - Il tutorial delle statistiche ora parte correttamente e spiega il selettore del pannello e il filtro per obiettivi singoli.
 
+---
+
+## [2026-05-14 12:49]: Onboarding - Fixed Button Label in Stats Transition Step
+*Details*: Modificata l'etichetta del pulsante nello step che punta alla tab delle statistiche. Invece di "Fine", ora mostra "Continua", rendendo chiaro che il tutorial non è finito ma prosegue su un'altra schermata.
+*Tech Notes*:
+- Impostato `isLast: false` e `nextButtonLabel: "Continua"` nel target "Tutorial Statistiche Tab" in `macro_goals_screen.dart`.
+
+**Current Status**:
+- Il flusso del tutorial è ora coerente anche nelle etichette dei pulsanti.
+
+---
+
+## [2026-05-14 12:50]: Onboarding - Consistent Tutorial Box Style in Statistics
+*Details*: Rallineato lo stile del box del tutorial nella pagina delle statistiche con quello delle pagine precedenti per garantire coerenza visiva.
+*Tech Notes*:
+- Aggiornato `_buildTutorialContent` in `statistics_screen.dart`.
+- Utilizzato `Theme.of(context).colorScheme.surface` per il background.
+- Sostituito il cerchio colorato con l'icona `LucideIcons.info`.
+- Utilizzati `ElevatedButton` e `TextButton` con lo stesso stile di `MacroGoalsScreen`.
+
+**Current Status**:
+- Tutti i box del tutorial ora hanno lo stesso stile premium e coerente.
+
 **Next Step**:
 - Attendere istruzioni dall'utente su quale feature del file GOALS.md affrontare.

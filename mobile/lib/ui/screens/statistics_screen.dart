@@ -100,19 +100,28 @@ class _StatisticsScreenState extends ConsumerState<StatisticsScreen>
     ).show(context: context);
   }
 
-  Widget _buildTutorialContent(String title, String desc, TutorialCoachMarkController controller, {bool isLast = false}) {
+  Widget _buildTutorialContent(
+    String title,
+    String description,
+    TutorialCoachMarkController controller, {
+    bool isFirst = false,
+    bool isLast = false,
+  }) {
     return Container(
-      padding: const EdgeInsets.all(20),
+      padding: const EdgeInsets.all(24),
       decoration: BoxDecoration(
-        color: context.appColors.card.withValues(alpha: 0.9),
+        color: Theme.of(context).colorScheme.surface,
         borderRadius: BorderRadius.circular(20),
-        border: Border.all(color: context.appColors.border.withValues(alpha: 0.5), width: 1.5),
+        border: Border.all(
+          color: Theme.of(context).colorScheme.primary.withValues(alpha: 0.5), 
+          width: 1.5
+        ),
         boxShadow: [
           BoxShadow(
-            color: Colors.black.withValues(alpha: 0.3),
-            blurRadius: 15,
-            offset: const Offset(0, 8),
-          ),
+            color: Colors.black.withValues(alpha: 0.2),
+            blurRadius: 20,
+            offset: const Offset(0, 10),
+          )
         ],
       ),
       child: Column(
@@ -121,52 +130,56 @@ class _StatisticsScreenState extends ConsumerState<StatisticsScreen>
         children: [
           Row(
             children: [
-              Container(
-                width: 10,
-                height: 10,
-                decoration: BoxDecoration(
-                  color: Theme.of(context).colorScheme.primary,
-                  shape: BoxShape.circle,
-                ),
-              ),
+              Icon(LucideIcons.info, color: Theme.of(context).colorScheme.primary, size: 20),
               const SizedBox(width: 8),
               Text(
                 title,
                 style: TextStyle(
-                  fontSize: 16,
                   fontWeight: FontWeight.w800,
-                  color: context.appColors.foreground,
+                  color: Theme.of(context).colorScheme.onSurface,
+                  fontSize: 18.0,
+                  fontFamily: 'Inter',
                   letterSpacing: -0.5,
                 ),
               ),
             ],
           ),
-          const SizedBox(height: 12),
+          const SizedBox(height: 12.0),
           Text(
-            desc,
+            description,
             style: TextStyle(
-              fontSize: 13,
-              fontWeight: FontWeight.w500,
-              color: context.appColors.mutedForeground,
-              height: 1.4,
+              color: Theme.of(context).colorScheme.onSurface.withValues(alpha: 0.7),
+              fontFamily: 'Inter',
+              fontSize: 14,
+              height: 1.5,
             ),
           ),
-          const SizedBox(height: 20),
+          const SizedBox(height: 20.0),
           Row(
-            mainAxisAlignment: MainAxisAlignment.end,
+            mainAxisAlignment: MainAxisAlignment.spaceBetween,
             children: [
-              TextButton(
-                onPressed: () => controller.next(),
-                style: TextButton.styleFrom(
+              if (!isFirst)
+                TextButton(
+                  onPressed: () {
+                    ref.hapticSelection();
+                    controller.previous();
+                  },
+                  child: Text("Indietro", style: TextStyle(color: Theme.of(context).colorScheme.onSurface.withValues(alpha: 0.5), fontWeight: FontWeight.bold)),
+                )
+              else
+                const SizedBox.shrink(),
+              ElevatedButton(
+                onPressed: () {
+                  ref.hapticSelection();
+                  controller.next();
+                },
+                style: ElevatedButton.styleFrom(
                   backgroundColor: Theme.of(context).colorScheme.primary,
-                  foregroundColor: context.appColors.background,
-                  padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 10),
-                  shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+                  foregroundColor: Theme.of(context).colorScheme.primary.computeLuminance() > 0.5 ? Colors.black : Colors.white,
+                  shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
+                  elevation: 0,
                 ),
-                child: Text(
-                  isLast ? 'Fine' : 'Avanti',
-                  style: const TextStyle(fontSize: 13, fontWeight: FontWeight.w700),
-                ),
+                child: Text(isLast ? "Fine" : "Avanti", style: const TextStyle(fontWeight: FontWeight.bold)),
               ),
             ],
           ),

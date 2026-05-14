@@ -305,7 +305,8 @@ class _MacroGoalsScreenState extends ConsumerState<MacroGoalsScreen>
                   "Statistiche Abitudini",
                   "Per vedere le statistiche delle tue abitudini giornaliere, puoi spostarti in questa sezione.",
                   controller,
-                  isLast: true,
+                  isLast: false,
+                  nextButtonLabel: "Passa alle Statistiche",
                   onNextPressed: () {
                     ref.read(goalsTutorialProvider.notifier).setTutorialSeen(true);
                     if (widget.onFinishTutorial != null) {

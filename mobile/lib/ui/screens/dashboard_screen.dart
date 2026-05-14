@@ -25,6 +25,8 @@ import 'statistics_screen.dart';
 import 'macro_goals_screen.dart';
 import 'profile_screen.dart';
 import '../../core/haptics.dart';
+import 'package:tutorial_coach_mark/tutorial_coach_mark.dart';
+import '../../providers/tutorial_provider.dart';
 
 class HomeScreen extends ConsumerStatefulWidget {
   const HomeScreen({super.key});
@@ -40,6 +42,16 @@ class _HomeScreenState extends ConsumerState<HomeScreen>
   late AnimationController _fadeController;
   late Animation<double> _fadeAnimation;
   bool _isBiometricAuthenticated = true;
+
+  final GlobalKey _checkInKey = GlobalKey();
+  final GlobalKey _aiChatKey = GlobalKey();
+  final GlobalKey _manageHabitsKey = GlobalKey();
+  final GlobalKey _viewTabKey = GlobalKey();
+  final GlobalKey _calendarBoxKey = GlobalKey();
+  final GlobalKey _addHabitKey = GlobalKey();
+  final GlobalKey _statsNavKey = GlobalKey();
+  final GlobalKey _homeNavKey = GlobalKey();
+  final GlobalKey _goalsNavKey = GlobalKey();
 
   @override
   void initState() {
@@ -73,7 +85,310 @@ class _HomeScreenState extends ConsumerState<HomeScreen>
     // Check profile name after first frame
     WidgetsBinding.instance.addPostFrameCallback((_) {
       _checkProfileName();
+      _checkTutorial();
     });
+  }
+
+  void _checkTutorial() {
+    final hasSeenTutorial = ref.read(tutorialProvider);
+    if (!hasSeenTutorial && mounted && _isBiometricAuthenticated) {
+      _showWelcomeScreen();
+    }
+  }
+
+  void _showWelcomeScreen() {
+    final userProfile = ref.read(userProfileProvider);
+    final displayName = userProfile.firstName ?? userProfile.displayName;
+
+    showGeneralDialog(
+      context: context,
+      barrierDismissible: false,
+      barrierColor: Colors.black,
+      transitionDuration: const Duration(milliseconds: 500),
+      pageBuilder: (context, animation, secondaryAnimation) {
+        return Scaffold(
+          backgroundColor: Colors.black,
+          body: FadeTransition(
+            opacity: animation,
+            child: SafeArea(
+              child: Padding(
+                padding: const EdgeInsets.all(32.0),
+                child: Column(
+                  mainAxisAlignment: MainAxisAlignment.center,
+                  crossAxisAlignment: CrossAxisAlignment.stretch,
+                  children: [
+                    const Spacer(),
+                    Container(
+                      padding: const EdgeInsets.all(20),
+                      decoration: BoxDecoration(
+                        color: Theme.of(context).colorScheme.primary.withValues(alpha: 0.1),
+                        shape: BoxShape.circle,
+                      ),
+                      child: Icon(
+                        LucideIcons.sparkles,
+                        size: 48,
+                        color: Theme.of(context).colorScheme.primary,
+                      ),
+                    ),
+                    const SizedBox(height: 40),
+                    Text(
+                      "Benvenuto in Growth",
+                      textAlign: TextAlign.center,
+                      style: const TextStyle(
+                        fontFamily: 'Inter',
+                        fontSize: 28,
+                        fontWeight: FontWeight.w800,
+                        color: Colors.white,
+                        letterSpacing: -0.5,
+                        height: 1.2,
+                      ),
+                    ),
+                    const SizedBox(height: 16),
+                    Text(
+                      "Siamo felici di averti qui. Prima di iniziare, facciamo un rapido tour per mostrarti come sfruttare al massimo l'applicazione.",
+                      textAlign: TextAlign.center,
+                      style: TextStyle(
+                        fontFamily: 'Inter',
+                        fontSize: 16,
+                        color: Colors.white70,
+                        height: 1.5,
+                      ),
+                    ),
+                    const Spacer(),
+                    GestureDetector(
+                      onTap: () {
+                        ref.hapticMedium();
+                        Navigator.pop(context);
+                        _showTutorial();
+                      },
+                      child: Container(
+                        width: double.infinity,
+                        height: 56,
+                        decoration: BoxDecoration(
+                          color: Theme.of(context).colorScheme.primary,
+                          borderRadius: BorderRadius.circular(16),
+                          boxShadow: [
+                            BoxShadow(
+                              color: Theme.of(context).colorScheme.primary.withValues(alpha: 0.3),
+                              blurRadius: 15,
+                              offset: const Offset(0, 5),
+                            )
+                          ],
+                        ),
+                        child: Center(
+                          child: Text(
+                            'Inizia il Tour',
+                            style: TextStyle(
+                              color: Theme.of(context).colorScheme.primary.computeLuminance() > 0.5 ? Colors.black : Colors.white,
+                              fontSize: 16,
+                              fontWeight: FontWeight.w700,
+                              letterSpacing: -0.2,
+                            ),
+                          ),
+                        ),
+                      ),
+                    ),
+                    const SizedBox(height: 20),
+                  ],
+                ),
+              ),
+            ),
+          ),
+        );
+      },
+    );
+  }
+
+  Widget _buildTutorialContent(
+    String title,
+    String description,
+    TutorialCoachMarkController controller, {
+    bool isFirst = false,
+    bool isLast = false,
+  }) {
+    return Container(
+      padding: const EdgeInsets.all(24),
+      decoration: BoxDecoration(
+        color: context.appColors.card,
+        borderRadius: BorderRadius.circular(20),
+        border: Border.all(
+          color: Theme.of(context).colorScheme.primary.withValues(alpha: 0.5), 
+          width: 1.5
+        ),
+        boxShadow: [
+          BoxShadow(
+            color: Colors.black.withValues(alpha: 0.2),
+            blurRadius: 20,
+            offset: const Offset(0, 10),
+          )
+        ],
+      ),
+      child: Column(
+        mainAxisSize: MainAxisSize.min,
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Row(
+            children: [
+              Icon(LucideIcons.info, color: Theme.of(context).colorScheme.primary, size: 20),
+              const SizedBox(width: 8),
+              Text(
+                title,
+                style: TextStyle(
+                  fontWeight: FontWeight.w800,
+                  color: context.appColors.foreground,
+                  fontSize: 18.0,
+                  fontFamily: 'Inter',
+                  letterSpacing: -0.5,
+                ),
+              ),
+            ],
+          ),
+          const SizedBox(height: 12.0),
+          Text(
+            description,
+            style: TextStyle(
+              color: context.appColors.mutedForeground,
+              fontFamily: 'Inter',
+              fontSize: 14,
+              height: 1.5,
+            ),
+          ),
+          const SizedBox(height: 20.0),
+          Row(
+            mainAxisAlignment: MainAxisAlignment.spaceBetween,
+            children: [
+              if (!isFirst)
+                TextButton(
+                  onPressed: () {
+                    ref.hapticSelection();
+                    controller.previous();
+                  },
+                  child: Text("Indietro", style: TextStyle(color: context.appColors.mutedForeground, fontWeight: FontWeight.bold)),
+                )
+              else
+                const SizedBox.shrink(),
+              ElevatedButton(
+                onPressed: () {
+                  ref.hapticSelection();
+                  if (isLast) {
+                    controller.skip();
+                  } else {
+                    controller.next();
+                  }
+                },
+                style: ElevatedButton.styleFrom(
+                  backgroundColor: Theme.of(context).colorScheme.primary,
+                  foregroundColor: Theme.of(context).colorScheme.primary.computeLuminance() > 0.5 ? Colors.black : Colors.white,
+                  shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
+                  elevation: 0,
+                ),
+                child: Text(isLast ? "Fine" : "Avanti", style: const TextStyle(fontWeight: FontWeight.bold)),
+              ),
+            ],
+          ),
+        ],
+      ),
+    );
+  }
+
+  void _showTutorial() {
+    TutorialCoachMark? tutorial;
+    List<TargetFocus> targets = [
+      TargetFocus(
+        identify: "Daily Check-in",
+        keyTarget: _checkInKey,
+        contents: [
+          TargetContent(
+            align: ContentAlign.bottom,
+            builder: (context, controller) {
+              return _buildTutorialContent(
+                "Daily Check-in",
+                "Qui puoi registrare il tuo stato d'animo quotidiano per tracciare il tuo benessere nel tempo e soprattutto correlarlo con il completamento dei tuoi obiettivi.",
+                controller,
+                isFirst: true,
+              );
+            },
+          ),
+        ],
+      ),
+      TargetFocus(
+        identify: "AI Chat",
+        keyTarget: _aiChatKey,
+        contents: [
+          TargetContent(
+            align: ContentAlign.bottom,
+            builder: (context, controller) {
+              return _buildTutorialContent(
+                "AI Chat",
+                "Il tuo assistente personale. Chiedi consigli sulle tue abitudini. Lui è il tuo coach.",
+                controller,
+              );
+            },
+          ),
+        ],
+      ),
+      TargetFocus(
+        identify: "Gestione Abitudini",
+        keyTarget: _manageHabitsKey,
+        contents: [
+          TargetContent(
+            align: ContentAlign.bottom,
+            builder: (context, controller) {
+              return _buildTutorialContent(
+                "Gestione Abitudini",
+                "Aggiungi, modifica o elimina le tue abitudini quotidiane che vuoi rispettare in modo semplice e veloce.",
+                controller,
+              );
+            },
+          ),
+        ],
+      ),
+      TargetFocus(
+        identify: "Viste Calendario",
+        keyTarget: _viewTabKey,
+        contents: [
+          TargetContent(
+            align: ContentAlign.bottom,
+            builder: (context, controller) {
+              return _buildTutorialContent(
+                "Viste Calendario",
+                "Naviga tra le diverse visualizzazioni per vedere i tuoi progressi con varie alternative.",
+                controller,
+              );
+            },
+          ),
+        ],
+      ),
+      TargetFocus(
+        identify: "Calendario Box",
+        keyTarget: _calendarBoxKey,
+        contents: [
+          TargetContent(
+            align: ContentAlign.top,
+            builder: (context, controller) {
+              return _buildTutorialContent(
+                "Calendario",
+                "Basta cliccare su un giorno per visualizzare le abitudini giornaliere e spuntarle.",
+                controller,
+                isLast: true,
+              );
+            },
+          ),
+        ],
+      ),
+    ];
+
+    tutorial = TutorialCoachMark(
+      targets: targets,
+      colorShadow: Colors.black,
+      hideSkip: true,
+      paddingFocus: 10,
+      opacityShadow: 0.85,
+      onFinish: () {
+        ref.read(tutorialProvider.notifier).setTutorialSeen(true);
+      },
+    );
+    tutorial.show(context: context);
   }
 
   Future<void> _authenticate() async {
@@ -356,6 +671,7 @@ class _HomeScreenState extends ConsumerState<HomeScreen>
       ),
       bottomNavigationBar: AppBottomNavBar(
         currentIndex: _selectedNavIndex,
+        navKeys: [_statsNavKey, _homeNavKey, _goalsNavKey],
         onTap: (index) {
           if ((index - _selectedNavIndex).abs() > 1) {
              _pageController.jumpToPage(index);
@@ -402,9 +718,13 @@ class _HomeScreenState extends ConsumerState<HomeScreen>
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                const ProtocolloPanel(),
+                ProtocolloPanel(
+                  checkInKey: _checkInKey,
+                  aiChatKey: _aiChatKey,
+                  manageHabitsKey: _manageHabitsKey,
+                ),
                 const SizedBox(height: 20),
-                const ViewTabBar(),
+                ViewTabBar(key: _viewTabKey),
                 const SizedBox(height: 12),
                 Expanded(
                   child: habits.isEmpty && currentView != CalendarView.vita
@@ -425,7 +745,10 @@ class _HomeScreenState extends ConsumerState<HomeScreen>
                               ),
                             );
                           },
-                          child: _buildViewContent(currentView),
+                          child: Container(
+                            key: _calendarBoxKey,
+                            child: _buildViewContent(currentView),
+                          ),
                         ),
                 ),
                 const SizedBox(height: 10),
@@ -483,6 +806,7 @@ class _HomeScreenState extends ConsumerState<HomeScreen>
           ),
           const SizedBox(height: 32),
           ElevatedButton.icon(
+            key: _addHabitKey,
             onPressed: () {
               ref.hapticMedium();
               HabitManagementModal.show(context);

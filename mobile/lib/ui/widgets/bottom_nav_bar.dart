@@ -10,11 +10,13 @@ import '../../core/localization.dart';
 class AppBottomNavBar extends ConsumerWidget {
   final int currentIndex;
   final Function(int) onTap;
+  final List<GlobalKey>? navKeys;
 
   const AppBottomNavBar({
     super.key,
     required this.currentIndex,
     required this.onTap,
+    this.navKeys,
   });
 
   @override
@@ -92,6 +94,7 @@ class AppBottomNavBar extends ConsumerWidget {
                           final item = items[index];
                           final isActive = currentIndex == index;
                           return _NavBarItem(
+                            key: navKeys?[index],
                             icon: item.icon,
                             label: item.label,
                             isActive: isActive,
@@ -127,6 +130,7 @@ class _NavBarItem extends StatelessWidget {
   final VoidCallback onTap;
 
   const _NavBarItem({
+    super.key,
     required this.icon,
     required this.label,
     required this.isActive,

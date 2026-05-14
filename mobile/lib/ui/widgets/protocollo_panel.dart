@@ -12,7 +12,16 @@ import 'pro_features_modal.dart';
 
 /// "Protocollo" command panel matching the PWA sidebar card
 class ProtocolloPanel extends ConsumerWidget {
-  const ProtocolloPanel({super.key});
+  final GlobalKey? checkInKey;
+  final GlobalKey? aiChatKey;
+  final GlobalKey? manageHabitsKey;
+
+  const ProtocolloPanel({
+    super.key,
+    this.checkInKey,
+    this.aiChatKey,
+    this.manageHabitsKey,
+  });
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
@@ -53,6 +62,7 @@ class ProtocolloPanel extends ConsumerWidget {
             Expanded(
               flex: 3,
               child: _ActionTile(
+                key: checkInKey,
                 icon: LucideIcons.heartPulse,
                 label: 'Daily Check-in',
                 subtitle: 'Stato d\'animo',
@@ -65,6 +75,7 @@ class ProtocolloPanel extends ConsumerWidget {
             Expanded(
               flex: 2,
               child: _ActionTile(
+                key: aiChatKey,
                 icon: LucideIcons.sparkles,
                 label: context.l10n.translate('AI Chat'),
                 subtitle: context.l10n.translate('Obiettivi'),
@@ -84,6 +95,7 @@ class ProtocolloPanel extends ConsumerWidget {
             Expanded(
               flex: 2,
               child: _ActionTile(
+                key: manageHabitsKey,
                 icon: LucideIcons.listTodo,
                 label: 'Gestione',
                 subtitle: 'Abitudini',
@@ -107,6 +119,7 @@ class _ActionTile extends StatelessWidget {
   final VoidCallback onTap;
 
   const _ActionTile({
+    super.key,
     required this.icon,
     required this.label,
     required this.subtitle,

@@ -669,3 +669,13 @@
 - Integrated `HabitManagementModal.show(context)` to open the habit creation modal directly from the empty state.
 - Fixed analyzer issues (unnecessary import and underscores).
 
+---
+
+## [2026-05-14 10:32]: UI - Global Empty State on Dashboard
+*Details*: Implemented a global empty state on the dashboard when the user has no habits created, to guide new users.
+*Tech Notes*:
+- Modified `lib/ui/screens/dashboard_screen.dart` to watch `goalsProvider`.
+- Added `_buildGlobalEmptyState()` method to show a beautiful message and an "Aggiungi Abitudine" button.
+- Conditioned the display on `habits.isEmpty && currentView != CalendarView.vita`.
+- Imported `lucide_icons_flutter` and `habit_management_modal.dart`.
+

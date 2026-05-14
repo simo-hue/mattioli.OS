@@ -15,7 +15,9 @@ import '../../providers/auth_provider.dart';
 import '../widgets/bottom_nav_bar.dart';
 import '../widgets/protocollo_panel.dart';
 import '../widgets/view_tab_bar.dart';
+import 'package:lucide_icons_flutter/lucide_icons.dart';
 import '../widgets/habit_calendar_widget.dart';
+import '../widgets/habit_management_modal.dart';
 import '../widgets/weekly_view_widget.dart';
 import '../widgets/yearly_view_widget.dart';
 import '../widgets/life_view_widget.dart';
@@ -372,6 +374,7 @@ class _HomeScreenState extends ConsumerState<HomeScreen>
   }
 
   Widget _buildHomeBody(CalendarView currentView) {
+    final habits = ref.watch(goalsProvider);
     final primaryColor = Theme.of(context).colorScheme.primary;
     return Stack(
       children: [
@@ -404,24 +407,26 @@ class _HomeScreenState extends ConsumerState<HomeScreen>
                 const ViewTabBar(),
                 const SizedBox(height: 12),
                 Expanded(
-                  child: AnimatedSwitcher(
-                    duration: const Duration(milliseconds: 250),
-                    switchInCurve: Curves.easeOut,
-                    switchOutCurve: Curves.easeIn,
-                    transitionBuilder: (child, animation) {
-                      return FadeTransition(
-                        opacity: animation,
-                        child: SlideTransition(
-                          position: Tween<Offset>(
-                            begin: const Offset(0, 0.02),
-                            end: Offset.zero,
-                          ).animate(animation),
-                          child: child,
+                  child: habits.isEmpty && currentView != CalendarView.vita
+                      ? _buildGlobalEmptyState()
+                      : AnimatedSwitcher(
+                          duration: const Duration(milliseconds: 250),
+                          switchInCurve: Curves.easeOut,
+                          switchOutCurve: Curves.easeIn,
+                          transitionBuilder: (child, animation) {
+                            return FadeTransition(
+                              opacity: animation,
+                              child: SlideTransition(
+                                position: Tween<Offset>(
+                                  begin: const Offset(0, 0.02),
+                                  end: Offset.zero,
+                                ).animate(animation),
+                                child: child,
+                              ),
+                            );
+                          },
+                          child: _buildViewContent(currentView),
                         ),
-                      );
-                    },
-                    child: _buildViewContent(currentView),
-                  ),
                 ),
                 const SizedBox(height: 10),
               ],
@@ -429,6 +434,74 @@ class _HomeScreenState extends ConsumerState<HomeScreen>
           ),
         ),
       ],
+    );
+  }
+
+  Widget _buildGlobalEmptyState() {
+    final primaryColor = Theme.of(context).colorScheme.primary;
+    
+    return Container(
+      decoration: AppTheme.glassPanelDecoration(context, radius: 14),
+      padding: const EdgeInsets.all(24),
+      child: Column(
+        mainAxisAlignment: MainAxisAlignment.center,
+        children: [
+          Container(
+            width: 80,
+            height: 80,
+            decoration: BoxDecoration(
+              color: primaryColor.withValues(alpha: 0.1),
+              shape: BoxShape.circle,
+            ),
+            child: Icon(
+              LucideIcons.sparkles,
+              size: 40,
+              color: primaryColor,
+            ),
+          ),
+          const SizedBox(height: 24),
+          Text(
+            'La tua tela è vuota',
+            style: TextStyle(
+              fontFamily: 'Inter',
+              fontSize: 22,
+              fontWeight: FontWeight.w800,
+              color: context.appColors.foreground,
+              letterSpacing: -0.5,
+            ),
+          ),
+          const SizedBox(height: 12),
+          Text(
+            'Crea la tua prima abitudine per iniziare a tracciare i tuoi progressi e costruire la tua routine.',
+            textAlign: TextAlign.center,
+            style: TextStyle(
+              fontFamily: 'Inter',
+              fontSize: 14,
+              color: context.appColors.mutedForeground,
+              height: 1.5,
+            ),
+          ),
+          const SizedBox(height: 32),
+          ElevatedButton.icon(
+            onPressed: () {
+              ref.hapticMedium();
+              HabitManagementModal.show(context);
+            },
+            icon: const Icon(LucideIcons.plus, size: 18),
+            label: const Text(
+              'Aggiungi Abitudine',
+              style: TextStyle(fontWeight: FontWeight.w700),
+            ),
+            style: ElevatedButton.styleFrom(
+              backgroundColor: primaryColor,
+              foregroundColor: primaryColor.computeLuminance() > 0.5 ? Colors.black : Colors.white,
+              shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+              padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 14),
+              elevation: 0,
+            ),
+          ),
+        ],
+      ),
     );
   }
 

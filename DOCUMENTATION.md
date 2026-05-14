@@ -229,6 +229,41 @@
     - Added `permission_handler` dependency.
     - Updated `onTap` in `privacy_settings_screen.dart` to call `openAppSettings()`.
 
+- [2026-05-14 10:50]: **Habit Calendar Size Optimization**
+  - *Details*: Reduced the size of the "Calendario Annuale" grid items and spacing to prevent vertical scrolling in the single habit trend tab.
+  - *Tech Notes*:
+    - Modified `habit_calendario_tab_widget.dart`.
+    - Reduced circle size from 11 to 7.
+    - Reduced spacing and runSpacing from 6 to 3 in `Wrap`.
+    - Reduced padding and font sizes in the card to make it more compact.
+    - Updated `_buildLegendItem` to use smaller dots and fonts.
+
+- [2026-05-14 11:05]: **Habit Calendar Full Width Optimization**
+  - *Details*: Replaced the `Wrap` with a `LayoutBuilder` and `GridView.count` to make the calendar dots fill the available width of the card, removing the empty space on the right.
+  - *Tech Notes*:
+    - Modified `habit_calendario_tab_widget.dart`.
+    - Calculated `columns` dynamically based on `maxWidth`.
+    - Used `GridView.count` with `shrinkWrap: true` and `physics: NeverScrollableScrollPhysics()`.
+
+- [2026-05-14 11:10]: **Habit Calendar Stats Card Addition**
+  - *Details*: Added a summary card with completed, missed, and rate stats below the calendar to fill the empty space on the screen.
+  - *Tech Notes*:
+    - Modified `habit_calendario_tab_widget.dart`.
+    - Created `_CalendarioStatsCard` widget.
+    - Updated `HabitCalendarioTabWidget` to include the new card.
+
+- [2026-05-14 11:15]: **Habit Calendar Height Increase**
+  - *Details*: Increased the size of the calendar dots by reducing the number of columns (changing divisor from 10 to 14), making the calendar taller to better utilize screen space.
+  - *Tech Notes*:
+    - Modified `habit_calendario_tab_widget.dart`.
+    - Changed divisor in `LayoutBuilder` from 10 to 14.
+
+- [2026-05-14 11:20]: **Habit Calendar Size Tuning (Goldilocks)**
+  - *Details*: Reduced the divisor from 14 to 12 in the calendar width calculation to make it slightly shorter, ensuring that both the calendar and the stats card fit on the screen without scrolling or being hidden under the bottom bar.
+  - *Tech Notes*:
+    - Modified `habit_calendario_tab_widget.dart`.
+    - Changed divisor in `LayoutBuilder` from 14 to 12.
+
 ## Current Status
-- **Next Step**: Waiting for user verification of the permissions management feature (requires app restart).
+- **Next Step**: Waiting for user verification of the tuned calendar size.
 

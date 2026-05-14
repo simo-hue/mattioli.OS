@@ -20,6 +20,8 @@ class HabitCalendarioTabWidget extends ConsumerWidget {
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
             _CalendarioAnnualeCard(days: days),
+            const SizedBox(height: 16),
+            _CalendarioStatsCard(days: days),
             const SizedBox(height: 32),
           ],
         );
@@ -48,59 +50,70 @@ class _CalendarioAnnualeCard extends StatelessWidget {
         borderRadius: BorderRadius.circular(16),
         border: Border.all(color: context.appColors.border, width: 1),
       ),
-      padding: const EdgeInsets.all(16),
+      padding: const EdgeInsets.all(12),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           Row(
             children: [
-              Icon(LucideIcons.calendar, size: 20, color: context.appColors.foreground),
-              const SizedBox(width: 10),
+              Icon(LucideIcons.calendar, size: 16, color: context.appColors.foreground),
+              const SizedBox(width: 8),
               Text(
                 context.l10n.translate('Calendario Annuale'),
                 style: TextStyle(
                   fontFamily: 'Inter',
-                  fontSize: 16,
+                  fontSize: 14,
                   fontWeight: FontWeight.w700,
                   color: context.appColors.foreground,
                 ),
               ),
             ],
           ),
-          const SizedBox(height: 24),
+          const SizedBox(height: 12),
           
-          Wrap(
-            spacing: 6,
-            runSpacing: 6,
-            children: days.map((status) {
-              Color color;
-              if (status == 1) {
-                color = const Color(0xFF10B981); // Verde per completato
-              } else if (status == 2) {
-                color = const Color(0xFFEF4444); // Mancato (Red)
-              } else {
-                color = context.appColors.muted.withValues(alpha: 0.5); // Dynamic Grey
-              }
+          LayoutBuilder(
+            builder: (context, constraints) {
+              final availableWidth = constraints.maxWidth;
+              // Calcola il numero di colonne in base alla larghezza disponibile
+              // per mantenere i pallini di dimensione circa 9-10px con 3px di spazio
+              final columns = (availableWidth / 12).floor().clamp(20, 50);
+              
+              return GridView.count(
+                shrinkWrap: true,
+                physics: const NeverScrollableScrollPhysics(),
+                crossAxisCount: columns,
+                crossAxisSpacing: 3,
+                mainAxisSpacing: 3,
+                childAspectRatio: 1.0,
+                children: days.map((status) {
+                  Color color;
+                  if (status == 1) {
+                    color = const Color(0xFF10B981); // Verde per completato
+                  } else if (status == 2) {
+                    color = const Color(0xFFEF4444); // Mancato (Red)
+                  } else {
+                    color = context.appColors.muted.withValues(alpha: 0.5); // Dynamic Grey
+                  }
 
-              return Container(
-                width: 11,
-                height: 11,
-                decoration: BoxDecoration(
-                  color: color,
-                  shape: BoxShape.circle,
-                ),
+                  return Container(
+                    decoration: BoxDecoration(
+                      color: color,
+                      shape: BoxShape.circle,
+                    ),
+                  );
+                }).toList(),
               );
-            }).toList(),
+            },
           ),
           
-          const SizedBox(height: 24),
+          const SizedBox(height: 12),
           
           Row(
             children: [
               _buildLegendItem(context, const Color(0xFF10B981), context.l10n.translate('Completato')),
-              const SizedBox(width: 16),
+              const SizedBox(width: 12),
               _buildLegendItem(context, const Color(0xFFEF4444), context.l10n.translate('Mancato')),
-              const SizedBox(width: 16),
+              const SizedBox(width: 12),
               _buildLegendItem(context, context.appColors.muted.withValues(alpha: 0.5), context.l10n.translate('Non tracciato')),
             ],
           ),
@@ -114,14 +127,69 @@ class _CalendarioAnnualeCard extends StatelessWidget {
       mainAxisSize: MainAxisSize.min,
       children: [
         Container(
-          width: 12,
-          height: 12,
+          width: 8,
+          height: 8,
           decoration: BoxDecoration(
             color: color,
             shape: BoxShape.circle,
           ),
         ),
-        const SizedBox(width: 6),
+        const SizedBox(width: 4),
+        Text(
+          label,
+          style: TextStyle(
+            fontFamily: 'Inter',
+            fontSize: 10,
+            color: context.appColors.mutedForeground,
+          ),
+        ),
+      ],
+    );
+  }
+}
+
+class _CalendarioStatsCard extends StatelessWidget {
+  final List<int> days;
+  const _CalendarioStatsCard({required this.days});
+
+  @override
+  Widget build(BuildContext context) {
+    final completed = days.where((status) => status == 1).length;
+    final missed = days.where((status) => status == 2).length;
+    final totalTracked = completed + missed;
+    final rate = totalTracked > 0 ? (completed / totalTracked * 100).round() : 0;
+
+    return Container(
+      padding: const EdgeInsets.all(16),
+      decoration: BoxDecoration(
+        color: context.appColors.card,
+        borderRadius: BorderRadius.circular(16),
+        border: Border.all(color: context.appColors.border, width: 1),
+      ),
+      child: Row(
+        mainAxisAlignment: MainAxisAlignment.spaceAround,
+        children: [
+          _buildStatItem(context, '$completed', context.l10n.translate('Completati'), const Color(0xFF10B981)),
+          _buildStatItem(context, '$missed', context.l10n.translate('Mancati'), const Color(0xFFEF4444)),
+          _buildStatItem(context, '$rate%', context.l10n.translate('Tasso'), Theme.of(context).colorScheme.primary),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildStatItem(BuildContext context, String value, String label, Color color) {
+    return Column(
+      children: [
+        Text(
+          value,
+          style: TextStyle(
+            fontFamily: 'Inter',
+            fontSize: 24,
+            fontWeight: FontWeight.w800,
+            color: color,
+          ),
+        ),
+        const SizedBox(height: 4),
         Text(
           label,
           style: TextStyle(
@@ -134,3 +202,4 @@ class _CalendarioAnnualeCard extends StatelessWidget {
     );
   }
 }
+

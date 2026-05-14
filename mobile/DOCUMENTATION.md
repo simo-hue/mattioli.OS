@@ -679,3 +679,11 @@
 - Conditioned the display on `habits.isEmpty && currentView != CalendarView.vita`.
 - Imported `lucide_icons_flutter` and `habit_management_modal.dart`.
 
+---
+
+## [2026-05-14 10:43]: UI - Empty State in InfoTabWidget (Stats)
+*Details*: Added an educational empty state in the "Info" tab of Statistics when there are no habits or logs yet.
+*Tech Notes*:
+- Modified `lib/ui/widgets/statistics/info_tab_widget.dart` to check if `statsList.isEmpty`.
+- Added `_buildEmptyState()` method returning a glassmorphic container with an explanation.
+

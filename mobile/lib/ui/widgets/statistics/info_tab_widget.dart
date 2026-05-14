@@ -18,6 +18,10 @@ class InfoTabWidget extends ConsumerWidget {
       data: (statsList) {
         return criticalDayAsync.when(
           data: (criticalDayLabel) {
+            if (statsList.isEmpty) {
+              return _buildEmptyState(context);
+            }
+            
             // Calculate Global Completion
             int totalCompletions = 0;
             int totalActiveDays = 0;
@@ -76,6 +80,56 @@ class InfoTabWidget extends ConsumerWidget {
       },
       loading: () => const Center(child: CircularProgressIndicator()),
       error: (err, stack) => Center(child: Text('Error: $err', style: TextStyle(color: context.appColors.mutedForeground))),
+    );
+  }
+
+  Widget _buildEmptyState(BuildContext context) {
+    final primaryColor = Theme.of(context).colorScheme.primary;
+    
+    return Container(
+      decoration: AppTheme.glassPanelDecoration(context, radius: 14),
+      padding: const EdgeInsets.all(24),
+      margin: const EdgeInsets.only(top: 16),
+      child: Column(
+        mainAxisAlignment: MainAxisAlignment.center,
+        children: [
+          Container(
+            width: 80,
+            height: 80,
+            decoration: BoxDecoration(
+              color: primaryColor.withValues(alpha: 0.1),
+              shape: BoxShape.circle,
+            ),
+            child: Icon(
+              LucideIcons.chartBar,
+              size: 40,
+              color: primaryColor,
+            ),
+          ),
+          const SizedBox(height: 24),
+          Text(
+            'Raccogliamo i primi dati',
+            style: TextStyle(
+              fontFamily: 'Inter',
+              fontSize: 20,
+              fontWeight: FontWeight.w800,
+              color: context.appColors.foreground,
+              letterSpacing: -0.5,
+            ),
+          ),
+          const SizedBox(height: 12),
+          Text(
+            'Le tue statistiche globali appariranno qui non appena inizierai a tracciare le tue abitudini. Completa i tuoi task per sbloccare questa panoramica.',
+            textAlign: TextAlign.center,
+            style: TextStyle(
+              fontFamily: 'Inter',
+              fontSize: 14,
+              color: context.appColors.mutedForeground,
+              height: 1.5,
+            ),
+          ),
+        ],
+      ),
     );
   }
 }

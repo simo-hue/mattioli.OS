@@ -715,8 +715,12 @@
 - Fixed Riverpod 2.0+ `Notifier` compatibility and `super.key` in custom widgets.
 - Added full-screen Welcome dialog before the tutorial (name removed for first-time launch).
 - Wrapped tutorial text in premium cards to prevent overlap and improve legibility over the app's UI.
-- Updated tutorial sequence: Daily Check-In -> AI Chat -> Gestione Abitudini -> Viste Calendario -> Calendario.
+- Updated tutorial sequence: Daily Check-In -> AI Chat -> Gestione Abitudini -> Viste Calendario -> Calendario -> Obiettivi Nav.
 - Added "Indietro" and "Avanti/Fine" buttons directly inside the tutorial cards for explicit navigation control.
+- Disabled taps on the target widgets and the overlay to strictly force the user to use the tutorial navigation buttons.
+- Implemented a two-stage tutorial logic: the dashboard tutorial now programmatically redirects to the `MacroGoalsScreen` where the second half of the tutorial seamlessly continues.
+- Implemented `GoalsTutorialNotifier` to persist the state of the goals tutorial independently.
+- Resetting the tutorial from the Profile screen resets both dashboard and goals tutorial states simultaneously.
 
 **Next Step**:
 - Wait for user feedback or proceed to next tasks.

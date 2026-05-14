@@ -145,7 +145,7 @@ class _HomeScreenState extends ConsumerState<HomeScreen>
                     ),
                     const SizedBox(height: 16),
                     Text(
-                      "Siamo felici di averti qui. Prima di iniziare, facciamo un rapido tour per mostrarti come sfruttare al massimo l'applicazione.",
+                      "Potrebbe essere uno STEP di NON RITORNO... Prima di iniziare però bisogna fare un tour per mostrarti come sfruttare al massimo l'applicazione.",
                       textAlign: TextAlign.center,
                       style: TextStyle(
                         fontFamily: 'Inter',
@@ -205,6 +205,8 @@ class _HomeScreenState extends ConsumerState<HomeScreen>
     TutorialCoachMarkController controller, {
     bool isFirst = false,
     bool isLast = false,
+    VoidCallback? onNextPressed,
+    String? nextButtonText,
   }) {
     return Container(
       padding: const EdgeInsets.all(24),
@@ -270,7 +272,9 @@ class _HomeScreenState extends ConsumerState<HomeScreen>
               ElevatedButton(
                 onPressed: () {
                   ref.hapticSelection();
-                  if (isLast) {
+                  if (onNextPressed != null) {
+                    onNextPressed();
+                  } else if (isLast) {
                     controller.skip();
                   } else {
                     controller.next();
@@ -282,7 +286,7 @@ class _HomeScreenState extends ConsumerState<HomeScreen>
                   shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
                   elevation: 0,
                 ),
-                child: Text(isLast ? "Fine" : "Avanti", style: const TextStyle(fontWeight: FontWeight.bold)),
+                child: Text(nextButtonText ?? (isLast ? "Fine" : "Avanti"), style: const TextStyle(fontWeight: FontWeight.bold)),
               ),
             ],
           ),
@@ -297,6 +301,8 @@ class _HomeScreenState extends ConsumerState<HomeScreen>
       TargetFocus(
         identify: "Daily Check-in",
         keyTarget: _checkInKey,
+        enableTargetTab: false,
+        enableOverlayTab: false,
         contents: [
           TargetContent(
             align: ContentAlign.bottom,
@@ -314,6 +320,8 @@ class _HomeScreenState extends ConsumerState<HomeScreen>
       TargetFocus(
         identify: "AI Chat",
         keyTarget: _aiChatKey,
+        enableTargetTab: false,
+        enableOverlayTab: false,
         contents: [
           TargetContent(
             align: ContentAlign.bottom,
@@ -330,6 +338,8 @@ class _HomeScreenState extends ConsumerState<HomeScreen>
       TargetFocus(
         identify: "Gestione Abitudini",
         keyTarget: _manageHabitsKey,
+        enableTargetTab: false,
+        enableOverlayTab: false,
         contents: [
           TargetContent(
             align: ContentAlign.bottom,
@@ -346,6 +356,8 @@ class _HomeScreenState extends ConsumerState<HomeScreen>
       TargetFocus(
         identify: "Viste Calendario",
         keyTarget: _viewTabKey,
+        enableTargetTab: false,
+        enableOverlayTab: false,
         contents: [
           TargetContent(
             align: ContentAlign.bottom,
@@ -362,6 +374,8 @@ class _HomeScreenState extends ConsumerState<HomeScreen>
       TargetFocus(
         identify: "Calendario Box",
         keyTarget: _calendarBoxKey,
+        enableTargetTab: false,
+        enableOverlayTab: false,
         contents: [
           TargetContent(
             align: ContentAlign.top,
@@ -370,7 +384,31 @@ class _HomeScreenState extends ConsumerState<HomeScreen>
                 "Calendario",
                 "Basta cliccare su un giorno per visualizzare le abitudini giornaliere e spuntarle.",
                 controller,
+              );
+            },
+          ),
+        ],
+      ),
+      TargetFocus(
+        identify: "Obiettivi Nav",
+        keyTarget: _goalsNavKey,
+        enableTargetTab: false,
+        enableOverlayTab: false,
+        contents: [
+          TargetContent(
+            align: ContentAlign.top,
+            builder: (context, controller) {
+              return _buildTutorialContent(
+                "Passiamo agli Obiettivi",
+                "La pagina dove puoi gestire i tuoi obiettivi a lungo termine e le relative performance.",
+                controller,
                 isLast: true,
+                nextButtonText: "Vai agli Obiettivi",
+                onNextPressed: () {
+                  controller.skip();
+                  ref.read(tutorialProvider.notifier).setTutorialSeen(true);
+                  _onItemTapped(2); // Change tab to MacroGoalsScreen
+                },
               );
             },
           ),
@@ -384,6 +422,9 @@ class _HomeScreenState extends ConsumerState<HomeScreen>
       hideSkip: true,
       paddingFocus: 10,
       opacityShadow: 0.85,
+      focusAnimationDuration: const Duration(milliseconds: 400),
+      unFocusAnimationDuration: Duration.zero,
+      pulseEnable: false,
       onFinish: () {
         ref.read(tutorialProvider.notifier).setTutorialSeen(true);
       },
@@ -570,9 +611,30 @@ class _HomeScreenState extends ConsumerState<HomeScreen>
     );
   }
 
+  void _onItemTapped(int index) {
+    if ((index - _selectedNavIndex).abs() > 1) {
+       _pageController.jumpToPage(index);
+    } else {
+      _pageController.animateToPage(
+        index,
+        duration: const Duration(milliseconds: 500),
+        curve: Curves.easeOutQuart,
+      );
+    }
+    setState(() => _selectedNavIndex = index);
+    ref.hapticSelection();
+  }
+
   @override
   Widget build(BuildContext context) {
     final currentView = ref.watch(calendarViewProvider);
+
+    // Listen for tutorial reset
+    ref.listen<bool>(tutorialProvider, (previous, next) {
+      if (next == false && mounted && _isBiometricAuthenticated) {
+        _showWelcomeScreen();
+      }
+    });
 
     if (!_isBiometricAuthenticated) {
       return Scaffold(
@@ -672,19 +734,7 @@ class _HomeScreenState extends ConsumerState<HomeScreen>
       bottomNavigationBar: AppBottomNavBar(
         currentIndex: _selectedNavIndex,
         navKeys: [_statsNavKey, _homeNavKey, _goalsNavKey],
-        onTap: (index) {
-          if ((index - _selectedNavIndex).abs() > 1) {
-             _pageController.jumpToPage(index);
-          } else {
-            _pageController.animateToPage(
-              index,
-              duration: const Duration(milliseconds: 500),
-              curve: Curves.easeOutQuart,
-            );
-          }
-          setState(() => _selectedNavIndex = index);
-          ref.hapticSelection();
-        },
+        onTap: _onItemTapped,
       ),
     );
   }

@@ -18,3 +18,21 @@ class TutorialNotifier extends Notifier<bool> {
 }
 
 final tutorialProvider = NotifierProvider<TutorialNotifier, bool>(TutorialNotifier.new);
+
+class GoalsTutorialNotifier extends Notifier<bool> {
+  static const _key = 'has_seen_goals_tutorial';
+
+  @override
+  bool build() {
+    final prefs = ref.read(sharedPrefsProvider);
+    return prefs.getBool(_key) ?? false;
+  }
+
+  Future<void> setTutorialSeen(bool seen) async {
+    final prefs = ref.read(sharedPrefsProvider);
+    await prefs.setBool(_key, seen);
+    state = seen;
+  }
+}
+
+final goalsTutorialProvider = NotifierProvider<GoalsTutorialNotifier, bool>(GoalsTutorialNotifier.new);

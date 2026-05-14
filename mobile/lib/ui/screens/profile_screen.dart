@@ -14,6 +14,7 @@ import 'notification_settings_screen.dart';
 import 'privacy_settings_screen.dart';
 import 'subscription_screen.dart';
 import '../../core/haptics.dart';
+import '../../providers/tutorial_provider.dart';
 
 class ProfileScreen extends ConsumerStatefulWidget {
   const ProfileScreen({super.key});
@@ -269,6 +270,30 @@ class _ProfileScreenState extends ConsumerState<ProfileScreen> {
                   subtitle: 'Gestione dati e biometrica',
                   onTap: () {
                     Navigator.push(context, PrivacySettingsScreen.route());
+                  },
+                ),
+                const SizedBox(height: 24),
+                Text(
+                  'AIUTO',
+                  style: TextStyle(
+                    fontSize: 10,
+                    fontWeight: FontWeight.w800,
+                    color: context.appColors.mutedForeground,
+                    letterSpacing: 1.2,
+                  ),
+                ),
+                const SizedBox(height: 8),
+                _buildProfileOption(
+                  context: context,
+                  icon: LucideIcons.info,
+                  title: 'Ripeti Tutorial',
+                  subtitle: 'Visualizza di nuovo la guida iniziale',
+                  onTap: () async {
+                    Navigator.pop(context); // Torna alla home
+                    // Piccola attesa per completare la transizione
+                    await Future.delayed(const Duration(milliseconds: 300));
+                    ref.read(tutorialProvider.notifier).setTutorialSeen(false);
+                    ref.read(goalsTutorialProvider.notifier).setTutorialSeen(false);
                   },
                 ),
                 const SizedBox(height: 24),

@@ -12,6 +12,8 @@ import '../widgets/macro_goals/goal_item_widget.dart';
 import '../widgets/macro_goals/add_goal_bar.dart';
 import '../widgets/macro_goals/macro_goals_stats_view.dart';
 import '../../core/haptics.dart';
+import 'package:tutorial_coach_mark/tutorial_coach_mark.dart';
+import '../../providers/tutorial_provider.dart';
 
 class MacroGoalsScreen extends ConsumerStatefulWidget {
   const MacroGoalsScreen({super.key});
@@ -25,6 +27,219 @@ class _MacroGoalsScreenState extends ConsumerState<MacroGoalsScreen>
   bool _isForward = true;
   bool _showStats = false;
 
+  final GlobalKey _planSelectorKey = GlobalKey();
+  final GlobalKey _addGoalKey = GlobalKey();
+  final GlobalKey _goalsListKey = GlobalKey();
+  final GlobalKey _performanceToggleKey = GlobalKey();
+
+  @override
+  void initState() {
+    super.initState();
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      _checkGoalsTutorial();
+    });
+  }
+
+  void _checkGoalsTutorial() {
+    final mainTutorialSeen = ref.read(tutorialProvider);
+    final goalsTutorialSeen = ref.read(goalsTutorialProvider);
+    
+    // Only show if main tutorial is finished but goals tutorial isn't
+    if (mainTutorialSeen && !goalsTutorialSeen) {
+      Future.delayed(const Duration(milliseconds: 400), () {
+        if (mounted) _showGoalsTutorial();
+      });
+    }
+  }
+
+  Widget _buildTutorialContent(
+    String title,
+    String description,
+    TutorialCoachMarkController controller, {
+    bool isFirst = false,
+    bool isLast = false,
+    VoidCallback? onNextPressed,
+  }) {
+    return Container(
+      padding: const EdgeInsets.all(24),
+      decoration: BoxDecoration(
+        color: Theme.of(context).colorScheme.surface,
+        borderRadius: BorderRadius.circular(20),
+        border: Border.all(
+          color: Theme.of(context).colorScheme.primary.withValues(alpha: 0.5), 
+          width: 1.5
+        ),
+        boxShadow: [
+          BoxShadow(
+            color: Colors.black.withValues(alpha: 0.2),
+            blurRadius: 20,
+            offset: const Offset(0, 10),
+          )
+        ],
+      ),
+      child: Column(
+        mainAxisSize: MainAxisSize.min,
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Row(
+            children: [
+              Icon(LucideIcons.info, color: Theme.of(context).colorScheme.primary, size: 20),
+              const SizedBox(width: 8),
+              Text(
+                title,
+                style: TextStyle(
+                  fontWeight: FontWeight.w800,
+                  color: Theme.of(context).colorScheme.onSurface,
+                  fontSize: 18.0,
+                  fontFamily: 'Inter',
+                  letterSpacing: -0.5,
+                ),
+              ),
+            ],
+          ),
+          const SizedBox(height: 12.0),
+          Text(
+            description,
+            style: TextStyle(
+              color: Theme.of(context).colorScheme.onSurface.withValues(alpha: 0.7),
+              fontFamily: 'Inter',
+              fontSize: 14,
+              height: 1.5,
+            ),
+          ),
+          const SizedBox(height: 20.0),
+          Row(
+            mainAxisAlignment: MainAxisAlignment.spaceBetween,
+            children: [
+              if (!isFirst)
+                TextButton(
+                  onPressed: () {
+                    ref.hapticSelection();
+                    controller.previous();
+                  },
+                  child: Text("Indietro", style: TextStyle(color: Theme.of(context).colorScheme.onSurface.withValues(alpha: 0.5), fontWeight: FontWeight.bold)),
+                )
+              else
+                const SizedBox.shrink(),
+              ElevatedButton(
+                onPressed: () {
+                  ref.hapticSelection();
+                  if (onNextPressed != null) {
+                    onNextPressed();
+                  } else if (isLast) {
+                    controller.skip();
+                  } else {
+                    controller.next();
+                  }
+                },
+                style: ElevatedButton.styleFrom(
+                  backgroundColor: Theme.of(context).colorScheme.primary,
+                  foregroundColor: Theme.of(context).colorScheme.primary.computeLuminance() > 0.5 ? Colors.black : Colors.white,
+                  shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
+                  elevation: 0,
+                ),
+                child: Text(isLast ? "Fine" : "Avanti", style: const TextStyle(fontWeight: FontWeight.bold)),
+              ),
+            ],
+          ),
+        ],
+      ),
+    );
+  }
+
+  void _showGoalsTutorial() {
+    List<TargetFocus> targets = [
+      TargetFocus(
+        identify: "Tipo Pianificazione",
+        keyTarget: _planSelectorKey,
+        enableTargetTab: false,
+        enableOverlayTab: false,
+        contents: [
+          TargetContent(
+            align: ContentAlign.bottom,
+            builder: (context, controller) {
+              return _buildTutorialContent(
+                "Tipo di Pianificazione",
+                "Qui puoi selezionare la visione temporale: Lifetime (per tutta la vita), Annuale, Trimestrale, Mensile o Settimanale.",
+                controller,
+                isFirst: true,
+              );
+            },
+          ),
+        ],
+      ),
+      TargetFocus(
+        identify: "Aggiungi Goal",
+        keyTarget: _addGoalKey,
+        enableTargetTab: false,
+        enableOverlayTab: false,
+        contents: [
+          TargetContent(
+            align: ContentAlign.top,
+            builder: (context, controller) {
+              return _buildTutorialContent(
+                "Nuovo Obiettivo",
+                "Da qui puoi inserire un nuovo obiettivo. Potrai anche personalizzare le Categorie a tuo piacimento per organizzare tutto al meglio.",
+                controller,
+              );
+            },
+          ),
+        ],
+      ),
+      TargetFocus(
+        identify: "Azioni Obiettivo",
+        keyTarget: _goalsListKey,
+        enableTargetTab: false,
+        enableOverlayTab: false,
+        contents: [
+          TargetContent(
+            align: ContentAlign.bottom,
+            builder: (context, controller) {
+              return _buildTutorialContent(
+                "Gestione Obiettivo",
+                "Toccando un obiettivo potrai segnarlo come completato, modificarne nome e categoria, oppure posticiparlo al mese/anno successivo se non hai fatto in tempo.",
+                controller,
+              );
+            },
+          ),
+        ],
+      ),
+      TargetFocus(
+        identify: "Analisi Performance",
+        keyTarget: _performanceToggleKey,
+        enableTargetTab: false,
+        enableOverlayTab: false,
+        contents: [
+          TargetContent(
+            align: ContentAlign.bottom,
+            builder: (context, controller) {
+              return _buildTutorialContent(
+                "Analisi e Statistiche",
+                "Passa a questa scheda per visualizzare grafici e performance dettagliate selezionando l'anno corrente o tutti gli anni.",
+                controller,
+                isLast: true,
+              );
+            },
+          ),
+        ],
+      ),
+    ];
+
+    TutorialCoachMark(
+      targets: targets,
+      colorShadow: Colors.black,
+      hideSkip: true,
+      paddingFocus: 10,
+      opacityShadow: 0.85,
+      focusAnimationDuration: const Duration(milliseconds: 400),
+      unFocusAnimationDuration: Duration.zero,
+      pulseEnable: false,
+      onFinish: () {
+        ref.read(goalsTutorialProvider.notifier).setTutorialSeen(true);
+      },
+    ).show(context: context);
+  }
+
   @override
   bool get wantKeepAlive => true;
 
@@ -36,6 +251,17 @@ class _MacroGoalsScreenState extends ConsumerState<MacroGoalsScreen>
     
     // Force re-compute on state change
     ref.watch(macroGoalsProvider);
+
+    // Ascolta anche i cambiamenti dello stato del main tutorial (es. se viene resettato)
+    ref.listen(tutorialProvider, (prev, next) {
+      if (next == true && !ref.read(goalsTutorialProvider)) {
+        // Se il tutorial main finisce, controlla se bisogna lanciare questo (es. navigazione dalla tab)
+        // Diamo tempo al cambio tab di terminare l'animazione
+        Future.delayed(const Duration(milliseconds: 600), () {
+          if (mounted) _checkGoalsTutorial();
+        });
+      }
+    });
 
     final filteredGoals = ref.read(macroGoalsProvider.notifier).getFilteredGoals(
           type: viewState.selectedType,
@@ -119,12 +345,13 @@ class _MacroGoalsScreenState extends ConsumerState<MacroGoalsScreen>
                     key: ValueKey('${viewState.selectedType}-${viewState.selectedYear}-${viewState.selectedMonth}-${viewState.selectedWeek}-${viewState.selectedQuarter}'),
                     goals: filteredGoals,
                     viewState: viewState,
+                    emptyStateKey: _goalsListKey,
                   ),
                 ),
               ),
             ),
             const SizedBox(height: 12),
-            AddGoalBar(viewState: viewState),
+            Container(key: _addGoalKey, child: AddGoalBar(viewState: viewState)),
             const SizedBox(height: 12),
           ],
         ],
@@ -155,7 +382,7 @@ class _MacroGoalsScreenState extends ConsumerState<MacroGoalsScreen>
             ],
           ),
           const SizedBox(height: 16),
-          _buildModeToggle(),
+          Container(key: _performanceToggleKey, child: _buildModeToggle()),
         ],
       ),
     );
@@ -177,6 +404,7 @@ class _MacroGoalsScreenState extends ConsumerState<MacroGoalsScreen>
         _showTypePicker(context, ref, vs, primaryColor);
       },
       child: Container(
+        key: _planSelectorKey,
         padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
         decoration: BoxDecoration(
           color: context.appColors.card.withValues(alpha: 0.5),
@@ -446,7 +674,9 @@ class _GoalsList extends ConsumerWidget {
   final List<MacroGoal> goals;
   final MacroGoalsViewState viewState;
 
-  const _GoalsList({super.key, required this.goals, required this.viewState});
+  final GlobalKey emptyStateKey;
+
+  const _GoalsList({super.key, required this.goals, required this.viewState, required this.emptyStateKey});
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
@@ -454,10 +684,12 @@ class _GoalsList extends ConsumerWidget {
       return Center(
         child: Padding(
           padding: const EdgeInsets.symmetric(horizontal: 40),
-          child: Column(
-            mainAxisSize: MainAxisSize.min,
-            children: [
-              Icon(
+          child: Container(
+            key: emptyStateKey,
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                Icon(
                 LucideIcons.target,
                 color: context.appColors.border,
                 size: 40,
@@ -485,8 +717,9 @@ class _GoalsList extends ConsumerWidget {
             ],
           ),
         ),
-      );
-    }
+      ),
+    );
+  }
 
     final items = _buildItems(goals);
 

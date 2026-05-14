@@ -1,11 +1,14 @@
+# DA FARE NEL BREVE TERMINE
+[ ] Controllo di sicurezza
+[ ] Implementare log in con google
+[ ] Implementare log in con apple
+[ ] pensare a come implementare la chat con LLM
+
 # Feature Premium
     [ ] Analytics as a PRO Plan per quelle avanzate
     [ ] App per Mac ( non solo tramite webApp salvata )
     [ ] Per Apple watch ( servono in swift, comming soon )
     [ ] Widget per schermata Home ( servono in swift, comming soon )
-    
-[ ] Grafica
-    [ ] icone profilo in base a #goals completati -> Gamification possibile
 
 # LONG TERM FEATURES ( da implementare in futuro )
 [ ] Goals non solamente come tick
@@ -16,3 +19,6 @@
     [ ] accedo ai dati del telefono ( screen time, apps used, ecc )
     [ ] Cambiare icona dell'app
     [ ] 
+
+[ ] Gamification
+    [ ] icone profilo in base a #goals completati

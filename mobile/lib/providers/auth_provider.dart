@@ -5,6 +5,8 @@ import 'package:supabase_flutter/supabase_flutter.dart';
 import 'package:google_sign_in/google_sign_in.dart' as google_auth;
 import 'package:sign_in_with_apple/sign_in_with_apple.dart';
 import 'package:crypto/crypto.dart';
+import '../core/supabase_config.dart';
+
 
 // Accesso globale al client Supabase
 final supabase = Supabase.instance.client;
@@ -177,15 +179,9 @@ class AuthNotifier extends Notifier<AuthState> with ChangeNotifier {
   Future<bool> signInWithGoogle() async {
     state = state.copyWith(isLoading: true, clearError: true);
     try {
-      /// TODO: Sostituisci con i tuoi Client ID reali creati su Google Cloud Console.
-      /// Il Web Client ID serve sempre (anche per Android).
-      /// L'iOS Client ID serve solo per l'app iOS.
-      const webClientId = 'INSERISCI_WEB_CLIENT_ID_QUI';
-      const iosClientId = 'INSERISCI_IOS_CLIENT_ID_QUI';
-
       final googleSignIn = google_auth.GoogleSignIn(
-        clientId: iosClientId,
-        serverClientId: webClientId,
+        clientId: SupabaseConfig.googleIosClientId,
+        serverClientId: SupabaseConfig.googleWebClientId,
       );
 
       final googleUser = await googleSignIn.signIn();

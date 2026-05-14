@@ -854,3 +854,20 @@
 - **UI (Dashboard)**: Aggiornato `dashboard_screen.dart` per usare `AssetImage('assets/images/default_avatar.png')` come fallback se `avatarUrl` è null.
 - **UI (Profile)**: Aggiornato `profile_screen.dart` per supportare la visualizzazione dell'avatar da rete e usare lo stesso fallback locale.
 - **Manuale**: Aggiunta un'azione in `TO_SIMO_DO.md` per richiedere all'utente di salvare il file immagine nella cartella assets.
+
+---
+
+## [2026-05-14 19:15]: Auth - Google Sign-In Refactoring & Setup Guide
+*Details*: Rifattorizzata l'implementazione di Google Sign-In per renderla più professionale e organizzata. Spostati i Client ID in un file di configurazione dedicato e aggiornate le istruzioni per l'utente.
+*Tech Notes*:
+- **Configurazione**: Spostati i placeholder per `googleWebClientId` e `googleIosClientId` da `auth_provider.dart` a `lib/core/supabase_config.dart`.
+- **Auth Provider**: Aggiornato `signInWithGoogle` per usare le costanti da `SupabaseConfig`.
+- **Manuale**: Aggiornato il file `TO_SIMO_DO.md` con i passaggi dettagliati per creare i Client ID su Google Cloud Console e configurarli.
+- **Esempio**: Creato `lib/core/supabase_config.dart.example` per permettere la compilazione del progetto clonando il repo pubblico senza esporre le chiavi reali.
+
+---
+
+## [2026-05-14 21:15]: Auth - iOS URL Scheme Configuration for Google Sign-In
+*Details*: Configurato lo schema URL in `Info.plist` con il Reversed Client ID fornito dall'utente per abilitare il login con Google su iOS.
+*Tech Notes*:
+- **iOS**: Aggiunto `CFBundleURLTypes` con lo schema `com.googleusercontent.apps.11071263331-qepubluq93tojdo3vti51ah3h09ss57m` in `ios/Runner/Info.plist`.

@@ -74,5 +74,16 @@
 	<string>Questa app richiede l'accesso al microfono (richiesto da image_picker anche se non usato direttamente per le foto).</string>
 	<key>NSFaceIDUsageDescription</key>
 	<string>Questa app richiede l'accesso al FaceID per proteggere i tuoi dati personali.</string>
+	<key>CFBundleURLTypes</key>
+	<array>
+		<dict>
+			<key>CFBundleTypeRole</key>
+			<string>Editor</string>
+			<key>CFBundleURLSchemes</key>
+			<array>
+				<string>com.googleusercontent.apps.11071263331-qepubluq93tojdo3vti51ah3h09ss57m</string>
+			</array>
+		</dict>
+	</array>
 </dict>
 </plist>

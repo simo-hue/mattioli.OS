@@ -660,3 +660,12 @@
 *Tech Notes*:
 - Rearranged widgets in `lib/ui/screens/ai_chat_screen.dart` to place the `Suggested Prompts` block after the `Chat Area` and before the `Input Area`.
 
+---
+
+## [2026-05-14 10:24]: UI - Empty State in DayDetailsModal
+*Details*: Added a professional empty state with a call to action when a user views a day with no active habits.
+*Tech Notes*:
+- Modified `lib/ui/widgets/day_details_modal.dart` to show a message and a "Crea Abitudine" button when `activeHabits.isEmpty`.
+- Integrated `HabitManagementModal.show(context)` to open the habit creation modal directly from the empty state.
+- Fixed analyzer issues (unnecessary import and underscores).
+

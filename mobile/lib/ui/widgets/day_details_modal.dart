@@ -1,11 +1,11 @@
 import 'package:flutter/material.dart';
-import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:lucide_icons_flutter/lucide_icons.dart';
 import '../../core/theme.dart';
 import '../../models/goal.dart';
 import '../../providers/goal_provider.dart';
 import '../../core/haptics.dart';
+import 'habit_management_modal.dart';
 
 const _kMonths = [
   'Gennaio', 'Febbraio', 'Marzo', 'Aprile', 'Maggio', 'Giugno',
@@ -84,77 +84,128 @@ class DayDetailsModal extends ConsumerWidget {
           ),
           const SizedBox(height: 24),
           Flexible(
-            child: ListView.separated(
-              shrinkWrap: true,
-              itemCount: activeHabits.length,
-              separatorBuilder: (_, __) => const SizedBox(height: 12),
-              itemBuilder: (context, index) {
-                final habit = activeHabits[index];
-                final status = dayRecord[habit.id];
-
-                // Calculate streak
-                int streak = 0;
-                DateTime checkDate = date;
-                final today = DateTime(DateTime.now().year, DateTime.now().month, DateTime.now().day);
-                
-                bool isNegative = false;
-                while (true) {
-                  final dk = '${checkDate.year}-${checkDate.month.toString().padLeft(2, '0')}-${checkDate.day.toString().padLeft(2, '0')}';
-                  final dl = logs[dk] ?? {};
-                  final s = dl[habit.id];
-                  
-                  if (s == 'done') {
-                    if (isNegative) break;
-                    streak++;
-                  } else if (s == 'missed') {
-                    if (streak > 0) break;
-                    isNegative = true;
-                    streak--;
-                  } else {
-                    if (habit.isActiveOn(checkDate)) {
-                      final checkDateMidnight = DateTime(checkDate.year, checkDate.month, checkDate.day);
-                      if (checkDateMidnight.isBefore(today)) {
-                        break;
-                      }
-                    }
-                  }
-                  
-                  // Condizione di uscita per evitare loop infiniti!
-                  final startMidnight = DateTime(habit.startDate.year, habit.startDate.month, habit.startDate.day);
-                  final checkDateMidnight = DateTime(checkDate.year, checkDate.month, checkDate.day);
-                  if (checkDateMidnight.isBefore(startMidnight)) {
-                    break;
-                  }
-                  
-                  checkDate = checkDate.subtract(const Duration(days: 1));
-                }
-
-                return GoalLogCard(
-                  habit: habit,
-                  status: status,
-                  streak: streak,
-                  onTap: () {
-                    final today = DateTime(DateTime.now().year, DateTime.now().month, DateTime.now().day);
-                    final yesterday = today.subtract(const Duration(days: 1));
-                    final dateMidnight = DateTime(date.year, date.month, date.day);
-                    
-                    if (dateMidnight.isBefore(yesterday)) {
-                      ScaffoldMessenger.of(context).showSnackBar(
-                        const SnackBar(
-                          content: Text('Puoi modificare solo oggi e ieri!'),
-                          backgroundColor: Colors.redAccent,
+            child: activeHabits.isEmpty
+                ? Center(
+                    child: Column(
+                      mainAxisAlignment: MainAxisAlignment.center,
+                      children: [
+                        const SizedBox(height: 20),
+                        Icon(
+                          LucideIcons.clipboardList,
+                          size: 64,
+                          color: AppColors.mutedForeground.withValues(alpha: 0.5),
                         ),
+                        const SizedBox(height: 16),
+                        const Text(
+                          'Nessuna abitudine',
+                          style: TextStyle(
+                            fontFamily: 'Inter',
+                            fontSize: 18,
+                            fontWeight: FontWeight.w700,
+                            color: AppColors.foreground,
+                          ),
+                        ),
+                        const SizedBox(height: 8),
+                        const Text(
+                          'Non ci sono abitudini per questo giorno.\nInizia a crearne una!',
+                          textAlign: TextAlign.center,
+                          style: TextStyle(
+                            fontFamily: 'Inter',
+                            fontSize: 14,
+                            color: AppColors.mutedForeground,
+                          ),
+                        ),
+                        const SizedBox(height: 24),
+                        ElevatedButton.icon(
+                          onPressed: () {
+                            Navigator.pop(context); // Close details modal
+                            HabitManagementModal.show(context);
+                          },
+                          icon: const Icon(LucideIcons.plus, size: 16),
+                          label: const Text('Crea Abitudine'),
+                          style: ElevatedButton.styleFrom(
+                            backgroundColor: Theme.of(context).colorScheme.primary,
+                            foregroundColor: Theme.of(context).colorScheme.primary.computeLuminance() > 0.5 ? Colors.black : Colors.white,
+                            shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+                            padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+                            elevation: 0,
+                          ),
+                        ),
+                        const SizedBox(height: 20),
+                      ],
+                    ),
+                  )
+                : ListView.separated(
+                    shrinkWrap: true,
+                    itemCount: activeHabits.length,
+                    separatorBuilder: (context, index) => const SizedBox(height: 12),
+                    itemBuilder: (context, index) {
+                      final habit = activeHabits[index];
+                      final status = dayRecord[habit.id];
+
+                      // Calculate streak
+                      int streak = 0;
+                      DateTime checkDate = date;
+                      final today = DateTime(DateTime.now().year, DateTime.now().month, DateTime.now().day);
+                      
+                      bool isNegative = false;
+                      while (true) {
+                        final dk = '${checkDate.year}-${checkDate.month.toString().padLeft(2, '0')}-${checkDate.day.toString().padLeft(2, '0')}';
+                        final dl = logs[dk] ?? {};
+                        final s = dl[habit.id];
+                        
+                        if (s == 'done') {
+                          if (isNegative) break;
+                          streak++;
+                        } else if (s == 'missed') {
+                          if (streak > 0) break;
+                          isNegative = true;
+                          streak--;
+                        } else {
+                          if (habit.isActiveOn(checkDate)) {
+                            final checkDateMidnight = DateTime(checkDate.year, checkDate.month, checkDate.day);
+                            if (checkDateMidnight.isBefore(today)) {
+                              break;
+                            }
+                          }
+                        }
+                        
+                        // Condizione di uscita per evitare loop infiniti!
+                        final startMidnight = DateTime(habit.startDate.year, habit.startDate.month, habit.startDate.day);
+                        final checkDateMidnight = DateTime(checkDate.year, checkDate.month, checkDate.day);
+                        if (checkDateMidnight.isBefore(startMidnight)) {
+                          break;
+                        }
+                        
+                        checkDate = checkDate.subtract(const Duration(days: 1));
+                      }
+
+                      return GoalLogCard(
+                        habit: habit,
+                        status: status,
+                        streak: streak,
+                        onTap: () {
+                          final today = DateTime(DateTime.now().year, DateTime.now().month, DateTime.now().day);
+                          final yesterday = today.subtract(const Duration(days: 1));
+                          final dateMidnight = DateTime(date.year, date.month, date.day);
+                          
+                          if (dateMidnight.isBefore(yesterday)) {
+                            ScaffoldMessenger.of(context).showSnackBar(
+                              const SnackBar(
+                                content: Text('Puoi modificare solo oggi e ieri!'),
+                                backgroundColor: Colors.redAccent,
+                              ),
+                            );
+                            return;
+                          }
+                          
+                          ref
+                              .read(habitLogsProvider.notifier)
+                              .cycleStatus(date, habit.id);
+                        },
                       );
-                      return;
-                    }
-                    
-                    ref
-                        .read(habitLogsProvider.notifier)
-                        .cycleStatus(date, habit.id);
-                  },
-                );
-              },
-            ),
+                    },
+                  ),
           ),
           const SizedBox(height: 32),
         ],

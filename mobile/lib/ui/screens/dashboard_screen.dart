@@ -199,6 +199,107 @@ class _HomeScreenState extends ConsumerState<HomeScreen>
     );
   }
 
+  void _showEndTutorialScreen() {
+    showGeneralDialog(
+      context: context,
+      barrierDismissible: false,
+      barrierColor: Colors.black,
+      transitionDuration: const Duration(milliseconds: 500),
+      pageBuilder: (context, animation, secondaryAnimation) {
+        return Scaffold(
+          backgroundColor: Colors.black,
+          body: FadeTransition(
+            opacity: animation,
+            child: SafeArea(
+              child: Padding(
+                padding: const EdgeInsets.all(32.0),
+                child: Column(
+                  mainAxisAlignment: MainAxisAlignment.center,
+                  crossAxisAlignment: CrossAxisAlignment.stretch,
+                  children: [
+                    const Spacer(),
+                    Container(
+                      padding: const EdgeInsets.all(20),
+                      decoration: BoxDecoration(
+                        color: Theme.of(context).colorScheme.primary.withValues(alpha: 0.1),
+                        shape: BoxShape.circle,
+                      ),
+                      child: Icon(
+                        LucideIcons.rocket,
+                        size: 48,
+                        color: Theme.of(context).colorScheme.primary,
+                      ),
+                    ),
+                    const SizedBox(height: 40),
+                    Text(
+                      "Sei pronto!",
+                      textAlign: TextAlign.center,
+                      style: const TextStyle(
+                        fontFamily: 'Inter',
+                        fontSize: 28,
+                        fontWeight: FontWeight.w800,
+                        color: Colors.white,
+                        letterSpacing: -0.5,
+                        height: 1.2,
+                      ),
+                    ),
+                    const SizedBox(height: 16),
+                    Text(
+                      "Il viaggio inizia ora. Dai il massimo!",
+                      textAlign: TextAlign.center,
+                      style: TextStyle(
+                        fontFamily: 'Inter',
+                        fontSize: 16,
+                        color: Colors.white70,
+                        height: 1.5,
+                      ),
+                    ),
+                    const Spacer(),
+                    GestureDetector(
+                      onTap: () {
+                        ref.hapticMedium();
+                        ref.read(tutorialProvider.notifier).setTutorialSeen(true);
+                        Navigator.pop(context);
+                        _onItemTapped(1); // Go to Home
+                      },
+                      child: Container(
+                        width: double.infinity,
+                        height: 56,
+                        decoration: BoxDecoration(
+                          color: Theme.of(context).colorScheme.primary,
+                          borderRadius: BorderRadius.circular(16),
+                          boxShadow: [
+                            BoxShadow(
+                              color: Theme.of(context).colorScheme.primary.withValues(alpha: 0.3),
+                              blurRadius: 15,
+                              offset: const Offset(0, 5),
+                            )
+                          ],
+                        ),
+                        child: Center(
+                          child: Text(
+                            'Inizia',
+                            style: TextStyle(
+                              color: Theme.of(context).colorScheme.primary.computeLuminance() > 0.5 ? Colors.black : Colors.white,
+                              fontSize: 16,
+                              fontWeight: FontWeight.w700,
+                              letterSpacing: -0.2,
+                            ),
+                          ),
+                        ),
+                      ),
+                    ),
+                    const SizedBox(height: 20),
+                  ],
+                ),
+              ),
+            ),
+          ),
+        );
+      },
+    );
+  }
+
   Widget _buildTutorialContent(
     String title,
     String description,
@@ -427,6 +528,10 @@ class _HomeScreenState extends ConsumerState<HomeScreen>
       pulseEnable: false,
       onFinish: () {
         ref.read(tutorialProvider.notifier).setTutorialSeen(true);
+      },
+      onSkip: () {
+        ref.read(tutorialProvider.notifier).setTutorialSeen(true);
+        return true;
       },
     );
     tutorial.show(context: context);
@@ -896,7 +1001,7 @@ class _HomeScreenState extends ConsumerState<HomeScreen>
     switch (index) {
       case 0:
         return StatisticsScreen(onFinishTutorial: () {
-          _onItemTapped(1); // Move to Home
+          _showEndTutorialScreen();
         });
       case 1:
         return _HomeTabWrapper(child: _buildHomeBody(currentView));

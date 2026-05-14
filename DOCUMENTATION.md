@@ -267,3 +267,11 @@
 ## Current Status
 - **Next Step**: Waiting for user verification of the tuned calendar size.
 
+
+- [2026-05-14 17:41]: **Tutorial Completion Flow Update**
+  - *Details*: Added a full-screen motivational dialog at the end of the tutorial before setting has_seen_tutorial to true and navigating to home.
+  - *Tech Notes*: Modified dashboard_screen.dart to include _showEndTutorialScreen(), updated onFinish and onSkip handlers of TutorialCoachMark.
+
+- [2026-05-14 17:45]: **Tutorial Flow Bugfix**
+  - *Details*: Fixed an issue where the final motivational screen was appearing prematurely after the first tutorial step (Home). It now correctly appears only after completing the entire flow (Home -> Goals -> Statistics).
+  - *Tech Notes*: Reverted dashboard_screen.dart's _showTutorial to navigate to MacroGoalsScreen. Updated StatisticsScreen's onFinishTutorial callback in _getPage to trigger the final _showEndTutorialScreen.

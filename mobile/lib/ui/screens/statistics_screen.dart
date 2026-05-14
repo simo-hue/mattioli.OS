@@ -64,7 +64,7 @@ class _StatisticsScreenState extends ConsumerState<StatisticsScreen>
         contents: [
           TargetContent(
             align: ContentAlign.bottom,
-            builder: (context, controller) => _buildTutorialContent("Filtra per Habit", "Da qui puoi selezionare una specifica abitudine per vederne i dettagli, oppure 'Tutti gli Habits' per una panoramica globale.", controller),
+            builder: (context, controller) => _buildTutorialContent("Filtra per Abitudine", "Da qui puoi selezionare una specifica abitudine per vederne i dettagli, oppure 'Tutti gli Habits' per una panoramica globale.", controller),
           ),
         ],
       ),

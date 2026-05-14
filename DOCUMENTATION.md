@@ -275,3 +275,24 @@
 - [2026-05-14 17:45]: **Tutorial Flow Bugfix**
   - *Details*: Fixed an issue where the final motivational screen was appearing prematurely after the first tutorial step (Home). It now correctly appears only after completing the entire flow (Home -> Goals -> Statistics).
   - *Tech Notes*: Reverted dashboard_screen.dart's _showTutorial to navigate to MacroGoalsScreen. Updated StatisticsScreen's onFinishTutorial callback in _getPage to trigger the final _showEndTutorialScreen.
+
+- [2026-05-14 18:25]: **AI Chat Premium Experience Upgrade**
+  - *Details*: Upgraded the AI chat implementation to make it a "killer feature" with professional UI/UX, context-aware responses, and animations.
+  - *Tech Notes*:
+    - Replaced static typing dots with a custom `_BouncingDot` widget with staggered bounce animations.
+    - Upgraded the fallback response engine to use real data from `macroGoalsProvider`, `goalsProvider`, and `habitLogsProvider` for context-aware answers.
+    - Added variable delays to message simulation to feel more natural.
+    - Added `_FadeInSlide` wrapper widget to animate message bubbles on entrance.
+    - Redesigned the "suggested prompts" as compact chips in a grid layout.
+    - Added a "Coach Card" in the empty state above suggested prompts.
+    - Upgraded the AppBar with an AI avatar, gradient ring, and online status indicator.
+    - Added a long-press action on message bubbles to copy text to the clipboard with haptic feedback and a toast message.
+    - Fixed missing imports and constructor issues in `ai_chat_screen.dart`.
+
+- [2026-05-14 18:32]: **AI Chat: Removal of Goals Pills**
+  - *Details*: Removed the horizontally scrollable list of goals pills below the AppBar as requested by the user.
+  - *Tech Notes*: Removed the `Container` containing the `ListView.builder` for goals chips and the unused `goalsState` variable in `ai_chat_screen.dart`.
+
+- [2026-05-14 18:35]: **AI Chat: Collapsible Suggested Prompts**
+  - *Details*: Made the suggested prompts always active (not just in empty state) and added a toggle to collapse/expand them like a dropdown.
+  - *Tech Notes*: Added `_showPrompts` state variable, separated Coach Card from prompts, and wrapped prompts in a collapsible `Column` with a `GestureDetector` header in `ai_chat_screen.dart`.

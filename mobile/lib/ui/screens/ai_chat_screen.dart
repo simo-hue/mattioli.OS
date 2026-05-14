@@ -1,7 +1,11 @@
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:lucide_icons_flutter/lucide_icons.dart';
 import '../../core/theme.dart';
+import '../../models/goal.dart';
+import '../../models/macro_goal.dart';
+import '../../providers/goal_provider.dart';
 import '../../providers/macro_goals_provider.dart';
 import '../../providers/user_provider.dart';
 
@@ -37,6 +41,7 @@ class _AIChatScreenState extends ConsumerState<AIChatScreen> {
   final ScrollController _scrollController = ScrollController();
   final List<ChatMessage> _messages = [];
   bool _isTyping = false;
+  bool _showPrompts = true;
 
   @override
   void initState() {
@@ -63,6 +68,7 @@ class _AIChatScreenState extends ConsumerState<AIChatScreen> {
 
   void _sendMessage(String text) {
     if (text.trim().isEmpty) return;
+    HapticFeedback.mediumImpact();
 
     setState(() {
       _messages.add(
@@ -78,9 +84,11 @@ class _AIChatScreenState extends ConsumerState<AIChatScreen> {
     _controller.clear();
     _scrollToBottom();
 
-    // Simula risposta dell'AI
-    Future.delayed(const Duration(seconds: 2), () {
+    // Variable delay for natural feel (1-3s)
+    final delay = 1000 + (text.length * 20).clamp(0, 2000);
+    Future.delayed(Duration(milliseconds: delay), () {
       if (!mounted) return;
+      HapticFeedback.lightImpact();
       setState(() {
         _isTyping = false;
         _messages.add(
@@ -97,14 +105,94 @@ class _AIChatScreenState extends ConsumerState<AIChatScreen> {
 
   String _generateResponse(String input) {
     final lower = input.toLowerCase();
-    if (lower.contains('obiettivo') || lower.contains('obiettivi')) {
-      return "Ho analizzato i tuoi obiettivi attivi. Quello su cui ti stai concentrando di più è la costanza. Vuoi vedere un report dettagliato?";
-    } else if (lower.contains('statistiche') || lower.contains('grafici')) {
-      return "Le tue statistiche mostrano un miglioramento del 12% nella disciplina mattutina rispetto alla scorsa settimana. Continua così!";
-    } else if (lower.contains('consiglio') || lower.contains('disciplina')) {
-      return "Il mio consiglio per oggi: affronta la tarefa più difficile per prima (Eat that frog!). Questo libererà la tua mente per il resto della giornata.";
+    final goals = ref.read(macroGoalsProvider).goals;
+    final habits = ref.read(goalsProvider);
+    final habitLogs = ref.read(habitLogsProvider);
+    final userName = ref.read(userProfileProvider).firstName ?? 'utente';
+
+    // Compute real stats
+    final activeGoals = goals.where((g) => g.status == GoalStatus.active).toList();
+    final completedGoals = goals.where((g) => g.status == GoalStatus.completed).length;
+    final todayKey = _todayKey();
+    final todayLogs = habitLogs[todayKey] ?? {};
+    final todayDone = todayLogs.values.where((s) => s == 'done').length;
+    final todayTotal = habits.where((h) => h.isActiveOn(DateTime.now())).length;
+
+    if (lower.contains('obiettivo') || lower.contains('obiettivi') || lower.contains('goal')) {
+      if (activeGoals.isEmpty) {
+        return "Non hai ancora obiettivi attivi, $userName. Vai alla sezione Macro Goals per crearne uno — avere una direzione chiara è il primo passo verso la disciplina.";
+      }
+      final titles = activeGoals.take(3).map((g) => '• ${g.title}').join('\n');
+      return "Ecco i tuoi obiettivi attivi ($userName):\n\n$titles\n\n${activeGoals.length > 3 ? '...e altri ${activeGoals.length - 3}\n\n' : ''}Hai completato $completedGoals obiettivi in totale. Continua così! 💪";
     }
-    return "Ricevuto. Sto elaborando i tuoi dati per darti la risposta migliore nel contesto della tua disciplina.";
+
+    if (lower.contains('oggi') || lower.contains('today') || lower.contains('giornata')) {
+      if (todayTotal == 0) return "Non hai abitudini programmate per oggi. Approfitta per riflettere sui tuoi obiettivi a lungo termine!";
+      final pct = todayTotal > 0 ? ((todayDone / todayTotal) * 100).round() : 0;
+      String motivation;
+      if (pct == 100) {
+        motivation = "Sei una macchina, $userName! Tutte le abitudini completate. 🔥";
+      } else if (pct >= 70) {
+        motivation = "Ottimo progresso! Mancano solo ${todayTotal - todayDone} abitudini. Finisci forte! 💪";
+      } else if (pct >= 30) {
+        motivation = "Sei a buon punto. Non mollare adesso, la costanza paga! ⚡";
+      } else {
+        motivation = "La giornata non è ancora finita. Ogni piccola azione conta! 🌱";
+      }
+      return "Oggi hai completato $todayDone su $todayTotal abitudini ($pct%).\n\n$motivation";
+    }
+
+    if (lower.contains('statistiche') || lower.contains('stats') || lower.contains('grafici') || lower.contains('andamento')) {
+      final last7 = _getLast7DaysRate(habitLogs, habits);
+      return "📊 Ultimi 7 giorni: tasso di completamento del $last7%.\n\nHai $completedGoals obiettivi macro completati e ${activeGoals.length} ancora attivi.\n\nVai nella sezione Statistiche per un'analisi dettagliata di ogni abitudine!";
+    }
+
+    if (lower.contains('consiglio') || lower.contains('disciplina') || lower.contains('motivazione') || lower.contains('aiut')) {
+      final tips = [
+        "🧠 Regola dei 2 minuti: se qualcosa richiede meno di 2 minuti, fallo subito.",
+        "🐸 Eat That Frog: affronta il compito più difficile per primo — il resto sembrerà facile.",
+        "📐 Atomic Habits: non concentrarti sul risultato, ma sul sistema. L'1% ogni giorno fa la differenza.",
+        "⏰ Tecnica del Pomodoro: 25 min di focus + 5 di pausa. La mente ha bisogno di ritmo.",
+        "🎯 Identità prima dell'obiettivo: non dire 'voglio correre', dì 'sono un runner'. Il cambiamento parte dall'identità.",
+        "🔄 Non rompere la catena: ogni giorno completato è un anello. Non spezzare la streak!",
+        "🌙 Routine serale: prepara domani stasera. La mattina sarai già in vantaggio.",
+      ];
+      tips.shuffle();
+      return "${tips.first}\n\n$userName, la disciplina non è talento — è una scelta quotidiana.";
+    }
+
+    if (lower.contains('abitudin') || lower.contains('habit')) {
+      if (habits.isEmpty) return "Non hai ancora abitudini configurate. Creane una dalla dashboard per iniziare il tuo percorso! 🚀";
+      final names = habits.take(5).map((h) => '• ${h.title}').join('\n');
+      return "Le tue abitudini attive:\n\n$names\n\n${habits.length > 5 ? '...e altre ${habits.length - 5}\n\n' : ''}Oggi ne hai completate $todayDone su $todayTotal. Continua a costruire la tua routine! ⚡";
+    }
+
+    // Fallback intelligente
+    final fallbacks = [
+      "Ricevuto, $userName. Prova a chiedermi:\n\n• Come sta andando la mia giornata?\n• Dammi un consiglio sulla disciplina\n• Analizza le mie statistiche\n• Come vanno i miei obiettivi?",
+      "Sono qui per aiutarti, $userName! Posso analizzare i tuoi obiettivi, darti consigli sulla disciplina, o fare il punto sulla tua giornata. Cosa preferisci?",
+    ];
+    fallbacks.shuffle();
+    return fallbacks.first;
+  }
+
+  String _todayKey() {
+    final now = DateTime.now();
+    return '${now.year}-${now.month.toString().padLeft(2, '0')}-${now.day.toString().padLeft(2, '0')}';
+  }
+
+  int _getLast7DaysRate(HabitLogsMap logs, List<Goal> habits) {
+    int totalDone = 0;
+    int totalExpected = 0;
+    for (int i = 0; i < 7; i++) {
+      final d = DateTime.now().subtract(Duration(days: i));
+      final key = '${d.year}-${d.month.toString().padLeft(2, '0')}-${d.day.toString().padLeft(2, '0')}';
+      final activeCount = habits.where((h) => h.isActiveOn(d)).length;
+      totalExpected += activeCount;
+      final dayLogs = logs[key] ?? {};
+      totalDone += dayLogs.values.where((s) => s == 'done').length;
+    }
+    return totalExpected > 0 ? ((totalDone / totalExpected) * 100).round() : 0;
   }
 
   void _scrollToBottom() {
@@ -122,68 +210,81 @@ class _AIChatScreenState extends ConsumerState<AIChatScreen> {
   @override
   Widget build(BuildContext context) {
     final colors = context.appColors;
-    final goalsState = ref.watch(macroGoalsProvider);
     final userProfile = ref.watch(userProfileProvider);
 
     return Scaffold(
       backgroundColor: colors.background,
       appBar: AppBar(
-        title: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
+        titleSpacing: 0,
+        title: Row(
           children: [
-            const Text("Smart AI Coach"),
-            Text(
-              "In linea per ${userProfile.displayName}",
-              style: TextStyle(
-                fontSize: 12,
-                fontWeight: FontWeight.w400,
-                color: colors.mutedForeground,
+            // AI Avatar with gradient ring
+            Container(
+              width: 36,
+              height: 36,
+              decoration: BoxDecoration(
+                shape: BoxShape.circle,
+                gradient: const LinearGradient(
+                  colors: [Color(0xFF8B5CF6), Color(0xFF6366F1), Color(0xFF3B82F6)],
+                ),
               ),
+              padding: const EdgeInsets.all(2),
+              child: Container(
+                decoration: BoxDecoration(
+                  shape: BoxShape.circle,
+                  color: colors.background,
+                ),
+                child: Icon(LucideIcons.sparkles, size: 16, color: colors.foreground),
+              ),
+            ),
+            const SizedBox(width: 12),
+            Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                const Text("AI Coach"),
+                Row(
+                  children: [
+                    Container(
+                      width: 6,
+                      height: 6,
+                      decoration: const BoxDecoration(
+                        color: Color(0xFF26C252),
+                        shape: BoxShape.circle,
+                      ),
+                    ),
+                    const SizedBox(width: 4),
+                    Text(
+                      "Online per ${userProfile.displayName}",
+                      style: TextStyle(
+                        fontSize: 11,
+                        fontWeight: FontWeight.w400,
+                        color: colors.mutedForeground,
+                      ),
+                    ),
+                  ],
+                ),
+              ],
             ),
           ],
         ),
         actions: [
-          IconButton(
-            icon: const Icon(LucideIcons.sparkles),
-            onPressed: () {
-              // Effetto visivo o info
-            },
-          ),
+          if (_messages.length > 1)
+            IconButton(
+              icon: Icon(LucideIcons.trash2, size: 18, color: colors.mutedForeground),
+              onPressed: () {
+                HapticFeedback.lightImpact();
+                setState(() {
+                  _messages.clear();
+                  _addInitialMessages();
+                });
+              },
+              tooltip: 'Nuova chat',
+            ),
         ],
       ),
       body: SafeArea(
         child: Column(
           children: [
-            // 1. Quick Actions (Goals Pills)
-            if (goalsState.goals.isNotEmpty)
-              Container(
-                height: 50,
-                padding: const EdgeInsets.symmetric(vertical: 8),
-                child: ListView.builder(
-                  scrollDirection: Axis.horizontal,
-                  itemCount: goalsState.goals.length,
-                  padding: const EdgeInsets.symmetric(horizontal: 16),
-                  itemBuilder: (context, index) {
-                    final goal = goalsState.goals[index];
-                    return Padding(
-                      padding: const EdgeInsets.only(right: 8),
-                      child: ActionChip(
-                        label: Text(goal.title),
-                        avatar: Icon(LucideIcons.target, size: 14, color: colors.foreground),
-                        onPressed: () {
-                          _sendMessage("Come sto andando con l'obiettivo: '${goal.title}'?");
-                        },
-                        backgroundColor: colors.card.withValues(alpha: 0.5),
-                        side: BorderSide(color: colors.borderSubtle),
-                        shape: RoundedRectangleBorder(
-                          borderRadius: BorderRadius.circular(20),
-                        ),
-                      ),
-                    );
-                  },
-                ),
-              ),
-
             // 2. Chat Area
             Expanded(
               child: ListView.builder(
@@ -195,29 +296,113 @@ class _AIChatScreenState extends ConsumerState<AIChatScreen> {
                     return _buildTypingIndicator(colors);
                   }
                   final message = _messages[index];
-                  return _buildMessageBubble(message, colors);
+                  return _FadeInSlide(
+                    key: ValueKey(message.timestamp.millisecondsSinceEpoch),
+                    child: _buildMessageBubble(message, colors),
+                  );
                 },
               ),
             ),
 
-            // Suggested Prompts
+            // Suggested Prompts & Coach Card
+            // 1. Coach Card (only when empty)
             if (_messages.length == 1)
               Padding(
                 padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
-                child: Column(
-                  children: [
-                    _buildSuggestedPrompt(
-                      "📊 Analizza le mie statistiche di questa settimana",
-                      colors,
-                    ),
-                    const SizedBox(height: 8),
-                    _buildSuggestedPrompt(
-                      "🔥 Dammi un consiglio per la disciplina",
-                      colors,
-                    ),
-                  ],
+                child: Container(
+                  padding: const EdgeInsets.all(16),
+                  decoration: AppTheme.glassCardDecoration(context, radius: 16),
+                  child: Row(
+                    children: [
+                      Container(
+                        width: 40,
+                        height: 40,
+                        decoration: BoxDecoration(
+                          shape: BoxShape.circle,
+                          gradient: const LinearGradient(
+                            colors: [Color(0xFF8B5CF6), Color(0xFF6366F1)],
+                          ),
+                        ),
+                        child: const Icon(LucideIcons.sparkles, size: 20, color: Colors.white),
+                      ),
+                      const SizedBox(width: 12),
+                      Expanded(
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            Text(
+                              "Coach Virtuale",
+                              style: TextStyle(
+                                color: colors.foreground,
+                                fontSize: 15,
+                                fontWeight: FontWeight.w600,
+                              ),
+                            ),
+                            const SizedBox(height: 2),
+                            Text(
+                              "Pronto ad aiutarti a mantenere la disciplina.",
+                              style: TextStyle(
+                                color: colors.mutedForeground,
+                                fontSize: 12,
+                              ),
+                            ),
+                          ],
+                        ),
+                      ),
+                    ],
+                  ),
                 ),
               ),
+
+            // 2. Suggested Prompts (Always active, collapsible)
+            Padding(
+              padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  GestureDetector(
+                    onTap: () {
+                      setState(() {
+                        _showPrompts = !_showPrompts;
+                      });
+                      HapticFeedback.lightImpact();
+                    },
+                    child: Row(
+                      children: [
+                        Text(
+                          "Suggerimenti",
+                          style: TextStyle(
+                            color: colors.mutedForeground,
+                            fontSize: 12,
+                            fontWeight: FontWeight.w600,
+                            letterSpacing: 0.5,
+                          ),
+                        ),
+                        const SizedBox(width: 4),
+                        Icon(
+                          _showPrompts ? LucideIcons.chevronDown : LucideIcons.chevronRight,
+                          size: 14,
+                          color: colors.mutedForeground,
+                        ),
+                      ],
+                    ),
+                  ),
+                  if (_showPrompts) ...[
+                    const SizedBox(height: 8),
+                    Wrap(
+                      spacing: 8,
+                      runSpacing: 8,
+                      children: [
+                        _buildSuggestedPrompt("📊 Come sta andando la mia giornata?", colors),
+                        _buildSuggestedPrompt("🎯 Analizza i miei obiettivi", colors),
+                        _buildSuggestedPrompt("🔥 Consiglio sulla disciplina", colors),
+                        _buildSuggestedPrompt("📈 Le mie statistiche settimanali", colors),
+                      ],
+                    ),
+                  ],
+                ],
+              ),
+            ),
 
             // 3. Input Area
             Container(
@@ -251,17 +436,23 @@ class _AIChatScreenState extends ConsumerState<AIChatScreen> {
                   ),
                   const SizedBox(width: 12),
                   GestureDetector(
-                    onTap: () => _sendMessage(_controller.text),
-                    child: Container(
+                    onTap: _isTyping ? null : () => _sendMessage(_controller.text),
+                    child: AnimatedContainer(
+                      duration: const Duration(milliseconds: 200),
                       padding: const EdgeInsets.all(12),
                       decoration: BoxDecoration(
-                        color: colors.foreground,
+                        gradient: _isTyping
+                            ? null
+                            : const LinearGradient(
+                                colors: [Color(0xFF8B5CF6), Color(0xFF6366F1)],
+                              ),
+                        color: _isTyping ? colors.muted : null,
                         shape: BoxShape.circle,
                       ),
                       child: Icon(
                         LucideIcons.arrowUp,
                         size: 20,
-                        color: colors.background,
+                        color: _isTyping ? colors.mutedForeground : Colors.white,
                       ),
                     ),
                   ),
@@ -276,25 +467,24 @@ class _AIChatScreenState extends ConsumerState<AIChatScreen> {
 
   Widget _buildSuggestedPrompt(String text, AppColorsExtension colors) {
     return GestureDetector(
-      onTap: () => _sendMessage(text),
+      onTap: () {
+        HapticFeedback.lightImpact();
+        _sendMessage(text);
+      },
       child: Container(
-        width: double.infinity,
-        padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
-        decoration: AppTheme.glassCardDecoration(context, radius: 12),
-        child: Row(
-          children: [
-            Expanded(
-              child: Text(
-                text,
-                style: TextStyle(
-                  color: colors.foreground,
-                  fontSize: 13,
-                  fontWeight: FontWeight.w500,
-                ),
-              ),
-            ),
-            Icon(LucideIcons.chevronRight, size: 16, color: colors.mutedForeground),
-          ],
+        padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 10),
+        decoration: BoxDecoration(
+          color: colors.card.withValues(alpha: 0.6),
+          borderRadius: BorderRadius.circular(20),
+          border: Border.all(color: colors.borderHover),
+        ),
+        child: Text(
+          text,
+          style: TextStyle(
+            color: colors.foreground,
+            fontSize: 13,
+            fontWeight: FontWeight.w500,
+          ),
         ),
       ),
     );
@@ -302,27 +492,40 @@ class _AIChatScreenState extends ConsumerState<AIChatScreen> {
 
   Widget _buildMessageBubble(ChatMessage message, AppColorsExtension colors) {
     final isUser = message.isUser;
-    return Align(
-      alignment: isUser ? Alignment.centerRight : Alignment.centerLeft,
+    final bubble = GestureDetector(
+      onLongPress: () {
+        Clipboard.setData(ClipboardData(text: message.text));
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text(
+              "Messaggio copiato",
+              style: TextStyle(color: colors.foreground),
+            ),
+            backgroundColor: colors.cardElevated,
+            behavior: SnackBarBehavior.floating,
+            duration: const Duration(seconds: 1),
+            shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+          ),
+        );
+        HapticFeedback.lightImpact();
+      },
       child: Container(
-        margin: const EdgeInsets.only(bottom: 16),
         padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
         constraints: BoxConstraints(
           maxWidth: MediaQuery.of(context).size.width * 0.75,
         ),
         decoration: BoxDecoration(
-          color: isUser
-              ? colors.foreground
-              : colors.card.withValues(alpha: 0.8),
+          color: isUser ? null : colors.card.withValues(alpha: 0.8),
+          gradient: isUser
+              ? const LinearGradient(colors: [Color(0xFF8B5CF6), Color(0xFF6366F1)])
+              : null,
           borderRadius: BorderRadius.only(
-            topLeft: const Radius.circular(16),
-            topRight: const Radius.circular(16),
-            bottomLeft: Radius.circular(isUser ? 16 : 4),
-            bottomRight: Radius.circular(isUser ? 4 : 16),
+            topLeft: const Radius.circular(18),
+            topRight: const Radius.circular(18),
+            bottomLeft: Radius.circular(isUser ? 18 : 4),
+            bottomRight: Radius.circular(isUser ? 4 : 18),
           ),
-          border: isUser
-              ? null
-              : Border.all(color: colors.borderSubtle),
+          border: isUser ? null : Border.all(color: colors.borderSubtle),
         ),
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
@@ -330,8 +533,9 @@ class _AIChatScreenState extends ConsumerState<AIChatScreen> {
             Text(
               message.text,
               style: TextStyle(
-                color: isUser ? colors.background : colors.foreground,
+                color: isUser ? Colors.white : colors.foreground,
                 fontSize: 14,
+                height: 1.4,
               ),
             ),
             const SizedBox(height: 4),
@@ -339,13 +543,46 @@ class _AIChatScreenState extends ConsumerState<AIChatScreen> {
               "${message.timestamp.hour}:${message.timestamp.minute.toString().padLeft(2, '0')}",
               style: TextStyle(
                 color: isUser
-                    ? colors.background.withValues(alpha: 0.7)
+                    ? Colors.white.withValues(alpha: 0.6)
                     : colors.mutedForeground,
                 fontSize: 10,
               ),
             ),
           ],
         ),
+      ),
+    );
+
+    if (isUser) {
+      return Align(
+        alignment: Alignment.centerRight,
+        child: Padding(
+          padding: const EdgeInsets.only(bottom: 12),
+          child: bubble,
+        ),
+      );
+    }
+
+    // AI message with avatar
+    return Padding(
+      padding: const EdgeInsets.only(bottom: 12),
+      child: Row(
+        crossAxisAlignment: CrossAxisAlignment.end,
+        children: [
+          Container(
+            width: 28,
+            height: 28,
+            margin: const EdgeInsets.only(right: 8),
+            decoration: const BoxDecoration(
+              shape: BoxShape.circle,
+              gradient: LinearGradient(
+                colors: [Color(0xFF8B5CF6), Color(0xFF3B82F6)],
+              ),
+            ),
+            child: const Icon(LucideIcons.sparkles, size: 13, color: Colors.white),
+          ),
+          Flexible(child: bubble),
+        ],
       ),
     );
   }
@@ -355,7 +592,7 @@ class _AIChatScreenState extends ConsumerState<AIChatScreen> {
       alignment: Alignment.centerLeft,
       child: Container(
         margin: const EdgeInsets.only(bottom: 16),
-        padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+        padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
         decoration: BoxDecoration(
           color: colors.card.withValues(alpha: 0.8),
           borderRadius: const BorderRadius.only(
@@ -368,26 +605,115 @@ class _AIChatScreenState extends ConsumerState<AIChatScreen> {
         ),
         child: Row(
           mainAxisSize: MainAxisSize.min,
-          children: [
-            _buildDot(colors),
-            const SizedBox(width: 4),
-            _buildDot(colors),
-            const SizedBox(width: 4),
-            _buildDot(colors),
-          ],
+          children: List.generate(3, (i) => _BouncingDot(delay: i * 200, color: colors.mutedForeground)),
         ),
       ),
     );
   }
+}
 
-  Widget _buildDot(AppColorsExtension colors) {
-    return Container(
-      width: 6,
-      height: 6,
-      decoration: BoxDecoration(
-        color: colors.mutedForeground,
-        shape: BoxShape.circle,
+/// Animated bouncing dot for the typing indicator
+class _BouncingDot extends StatefulWidget {
+  final int delay;
+  final Color color;
+  const _BouncingDot({required this.delay, required this.color});
+
+  @override
+  State<_BouncingDot> createState() => _BouncingDotState();
+}
+
+class _BouncingDotState extends State<_BouncingDot> with SingleTickerProviderStateMixin {
+  late final AnimationController _ctrl;
+  late final Animation<double> _anim;
+
+  @override
+  void initState() {
+    super.initState();
+    _ctrl = AnimationController(vsync: this, duration: const Duration(milliseconds: 600))
+      ..repeat(reverse: true);
+    _anim = Tween(begin: 0.0, end: -6.0).animate(
+      CurvedAnimation(parent: _ctrl, curve: Curves.easeInOut),
+    );
+    Future.delayed(Duration(milliseconds: widget.delay), () {
+      if (mounted) _ctrl.forward();
+    });
+  }
+
+  @override
+  void dispose() {
+    _ctrl.dispose();
+    super.dispose();
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return AnimatedBuilder(
+      animation: _anim,
+      builder: (_, child) => Transform.translate(
+        offset: Offset(0, _anim.value),
+        child: child,
+      ),
+      child: Container(
+        width: 7,
+        height: 7,
+        margin: const EdgeInsets.symmetric(horizontal: 2),
+        decoration: BoxDecoration(
+          color: widget.color,
+          shape: BoxShape.circle,
+        ),
       ),
     );
   }
 }
+
+/// Animated wrapper for message entrance
+class _FadeInSlide extends StatefulWidget {
+  final Widget child;
+  final Duration duration;
+
+  const _FadeInSlide({
+    super.key,
+    required this.child,
+    this.duration = const Duration(milliseconds: 300),
+  });
+
+  @override
+  State<_FadeInSlide> createState() => _FadeInSlideState();
+}
+
+class _FadeInSlideState extends State<_FadeInSlide> with SingleTickerProviderStateMixin {
+  late final AnimationController _controller;
+  late final Animation<double> _fadeAnimation;
+  late final Animation<Offset> _slideAnimation;
+
+  @override
+  void initState() {
+    super.initState();
+    _controller = AnimationController(vsync: this, duration: widget.duration);
+    _fadeAnimation = Tween<double>(begin: 0.0, end: 1.0).animate(
+      CurvedAnimation(parent: _controller, curve: Curves.easeIn),
+    );
+    _slideAnimation = Tween<Offset>(begin: const Offset(0, 0.1), end: Offset.zero).animate(
+      CurvedAnimation(parent: _controller, curve: Curves.easeOut),
+    );
+    _controller.forward();
+  }
+
+  @override
+  void dispose() {
+    _controller.dispose();
+    super.dispose();
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return FadeTransition(
+      opacity: _fadeAnimation,
+      child: SlideTransition(
+        position: _slideAnimation,
+        child: widget.child,
+      ),
+    );
+  }
+}
+

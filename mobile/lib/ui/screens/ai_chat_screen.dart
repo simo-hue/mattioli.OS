@@ -176,6 +176,83 @@ class _AIChatScreenState extends ConsumerState<AIChatScreen> {
     return fallbacks.first;
   }
 
+  List<String> _getDynamicSuggestions() {
+    final now = DateTime.now();
+    final hour = now.hour;
+    final List<String> pool = [];
+
+    // 1. Time-based pool
+    if (hour >= 5 && hour < 12) {
+      pool.addAll([
+        "🌅 Pianifica la mia giornata",
+        "🎯 Su cosa dovrei concentrarmi oggi?",
+        "🧘‍♂️ Esercizio di visualizzazione per oggi",
+        "🔥 Dammi la carica per iniziare!",
+      ]);
+    } else if (hour >= 12 && hour < 18) {
+      pool.addAll([
+        "📊 Come sta andando la mia giornata?",
+        "⚡ Ho un calo di energia, cosa faccio?",
+        "📉 Verifica abitudini pomeridiane",
+        "💪 Un consiglio per rimanere focalizzato",
+      ]);
+    } else {
+      pool.addAll([
+        "🌙 Facciamo la review della giornata",
+        "📝 Riflessione sulla disciplina di oggi",
+        "🛌 Come prepararsi per un domani produttivo?",
+        "🕯️ Analisi dei fallimenti di oggi",
+      ]);
+    }
+
+    // 2. Context-based pool
+    final goals = ref.read(macroGoalsProvider).goals;
+    final habits = ref.read(goalsProvider);
+    final habitLogs = ref.read(habitLogsProvider);
+
+    final activeGoals = goals.where((g) => g.status == GoalStatus.active).toList();
+    final todayKey = _todayKey();
+    final todayLogs = habitLogs[todayKey] ?? {};
+    final todayDone = todayLogs.values.where((s) => s == 'done').length;
+    final todayTotal = habits.where((h) => h.isActiveOn(DateTime.now())).length;
+
+    if (activeGoals.isNotEmpty) {
+      pool.add("🎯 Analizza i miei obiettivi attivi");
+    }
+    if (habits.isNotEmpty) {
+      pool.add("📈 Come sta andando la mia costanza?");
+      pool.add("📊 Le mie statistiche settimanali");
+    }
+    
+    if (todayTotal > 0) {
+      final pct = (todayDone / todayTotal) * 100;
+      if (pct == 100) {
+        pool.add("🚀 Come posso alzare l'asticella?");
+      } else if (pct < 30 && hour > 14) {
+        pool.add("🤕 Come recuperare se ho procrastinato?");
+      }
+    }
+
+    // Always add some generic high-value ones if pool is small
+    pool.addAll([
+      "🔥 Consiglio sulla disciplina",
+      "💡 Come creare una nuova abitudine?",
+      "🧠 Come evitare le distrazioni?",
+    ]);
+
+    // Remove duplicates
+    final uniquePool = pool.toSet().toList();
+
+    // Deterministic selection based on message count to be stable per state
+    final offset = _messages.length % uniquePool.length;
+    final List<String> selected = [];
+    for (int i = 0; i < 4; i++) {
+      selected.add(uniquePool[(offset + i) % uniquePool.length]);
+    }
+    
+    return selected;
+  }
+
   String _todayKey() {
     final now = DateTime.now();
     return '${now.year}-${now.month.toString().padLeft(2, '0')}-${now.day.toString().padLeft(2, '0')}';
@@ -392,12 +469,7 @@ class _AIChatScreenState extends ConsumerState<AIChatScreen> {
                     Wrap(
                       spacing: 8,
                       runSpacing: 8,
-                      children: [
-                        _buildSuggestedPrompt("📊 Come sta andando la mia giornata?", colors),
-                        _buildSuggestedPrompt("🎯 Analizza i miei obiettivi", colors),
-                        _buildSuggestedPrompt("🔥 Consiglio sulla disciplina", colors),
-                        _buildSuggestedPrompt("📈 Le mie statistiche settimanali", colors),
-                      ],
+                      children: _getDynamicSuggestions().map((text) => _buildSuggestedPrompt(text, colors)).toList(),
                     ),
                   ],
                 ],

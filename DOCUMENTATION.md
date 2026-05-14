@@ -296,3 +296,7 @@
 - [2026-05-14 18:35]: **AI Chat: Collapsible Suggested Prompts**
   - *Details*: Made the suggested prompts always active (not just in empty state) and added a toggle to collapse/expand them like a dropdown.
   - *Tech Notes*: Added `_showPrompts` state variable, separated Coach Card from prompts, and wrapped prompts in a collapsible `Column` with a `GestureDetector` header in `ai_chat_screen.dart`.
+
+- [2026-05-14 18:40]: **AI Chat: Dynamic and Contextual Suggestions**
+  - *Details*: Replaced hardcoded suggested prompts with dynamic ones based on the time of day and the user's current goals and habits status.
+  - *Tech Notes*: Implemented `_getDynamicSuggestions` method that reads from `macroGoalsProvider`, `goalsProvider`, and `habitLogsProvider` to generate a pool of relevant prompts, and picks 4 deterministically based on message count to ensure stability between rebuilds.

@@ -350,12 +350,17 @@ class _AddGoalBarState extends ConsumerState<AddGoalBar> {
                         ),
                         const SizedBox(width: 8),
                         ElevatedButton(
-                          onPressed: () {
+                          onPressed: () async {
                             final name = nameController.text.trim();
                             if (name.isNotEmpty) {
                               final hexColor = '#${selectedColor.toARGB32().toRadixString(16).substring(2).toUpperCase()}';
-                              ref.read(macroGoalCategoriesProvider.notifier).addCategory(name, hexColor);
-                              Navigator.pop(context);
+                              final categoryId = await ref.read(macroGoalCategoriesProvider.notifier).addCategory(name, hexColor);
+                              if (categoryId != null) {
+                                this.setState(() => _selectedCategory = categoryId);
+                              }
+                              if (context.mounted) {
+                                Navigator.pop(context);
+                              }
                             }
                           },
                           style: ElevatedButton.styleFrom(

@@ -32,21 +32,23 @@ class MacroGoalCategoriesNotifier extends AsyncNotifier<List<GoalCategory>> {
     }
   }
 
-  Future<void> addCategory(String name, String colorHex) async {
+  Future<String?> addCategory(String name, String colorHex) async {
     final authState = ref.read(authProvider);
-    if (!authState.isLoggedIn || authState.user == null) return;
+    if (!authState.isLoggedIn || authState.user == null) return null;
 
     final supabase = Supabase.instance.client;
     
     try {
-      await supabase.from('macro_goal_categories').insert({
+      final response = await supabase.from('macro_goal_categories').insert({
         'user_id': authState.user!.id,
         'name': name,
         'color': colorHex,
-      });
+      }).select('id').single();
       
       // Invalidate to refetch
       ref.invalidateSelf();
+      
+      return response['id'] as String;
     } catch (e, stack) {
       AppLogger.error('[Categories] Add error', e, stack);
       final context = navigatorKey.currentContext;
@@ -58,6 +60,7 @@ class MacroGoalCategoriesNotifier extends AsyncNotifier<List<GoalCategory>> {
           details: e.toString(),
         );
       }
+      return null;
     }
   }
 

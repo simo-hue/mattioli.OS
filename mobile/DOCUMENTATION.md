@@ -1113,6 +1113,16 @@
 - **File**: `lib/ui/screens/dashboard_screen.dart`.
 - **Modifiche**: Aggiunta la riga `ref.read(calendarViewProvider.notifier).setView(CalendarView.month);` nel callback `onTap` del pulsante "Inizia" nella fuzione `_showEndTutorialScreen`.
 
+---
+
+## [2026-05-15 15:40]: Goals - Selezione Automatica Nuova Categoria
+*Details*: Modificato il comportamento della creazione di una nuova categoria nella pagina degli obiettivi. Ora, quando l'utente crea una nuova categoria, questa viene selezionata automaticamente per l'obiettivo corrente.
+*Tech Notes*:
+- **File**: `lib/providers/macro_goal_categories_provider.dart`.
+- **Modifiche**: Aggiornato il metodo `addCategory` per restituire il `Future<String?>` contenente l'ID della categoria appena inserita su Supabase.
+- **File**: `lib/ui/widgets/macro_goals/add_goal_bar.dart`.
+- **Modifiche**: Aggiornato il callback `onPressed` del pulsante "Crea" per attendere l'ID della nuova categoria e impostarlo nello stato `_selectedCategory` tramite `this.setState`.
+
 
 
 

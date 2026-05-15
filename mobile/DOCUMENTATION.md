@@ -1199,3 +1199,26 @@
 *Details*: Fixed the `_BouncingDot` animation in the typing indicator to create a wave effect by starting the repeat after the specified delay.
 *Tech Notes*:
 - **File**: `lib/ui/screens/ai_chat_screen.dart` (modified): Moved `_ctrl.repeat` inside the `Future.delayed` block in `initState`.
+
+---
+
+## [2026-05-15 17:02]: Feature - AI Chat Streaming Responses
+*Details*: Implemented streaming responses for the AI Chat, allowing the user to see the response word-by-word in real-time.
+*Tech Notes*:
+- **File**: `lib/core/openrouter_service.dart` (modified): Added `generateStreamResponse` method using `http.Client().send` and parsing SSE chunks.
+- **File**: `lib/ui/screens/ai_chat_screen.dart` (modified): Updated `_sendMessage` to listen to the stream and update the message bubble dynamically.
+- Added test file `test/openrouter_stream_test.dart` to verify the stream functionality.
+
+---
+
+## [2026-05-15 17:04]: UI - Clear Chat Confirmation Dialog
+*Details*: Added a premium-styled confirmation dialog (with blur effect) before clearing the chat history, to prevent accidental deletions.
+*Tech Notes*:
+- **File**: `lib/ui/screens/ai_chat_screen.dart` (modified): Updated the `onPressed` handler of the trash icon to show a `Dialog` with `BackdropFilter`.
+
+---
+
+## [2026-05-15 17:08]: UI - Fixed Premature Hiding of Typing Indicator
+*Details*: Fixed a bug where the typing indicator would disappear immediately because the stream yielded empty chunks before the actual content. Now it only disappears when a non-empty chunk is received.
+*Tech Notes*:
+- **File**: `lib/ui/screens/ai_chat_screen.dart` (modified): Added `chunk.trim().isNotEmpty` check before setting `receivedFirstToken = true` and `_isTyping = false`.

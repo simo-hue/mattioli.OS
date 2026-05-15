@@ -65,4 +65,77 @@ class OpenRouterService {
       return "❌ Errore di connessione. Assicurati di essere online e riprova.";
     }
   }
+
+  static Stream<String> generateStreamResponse(List<ChatMessage> history, {String? systemPrompt}) async* {
+    if (OpenRouterConfig.apiKey == 'YOUR_OPENROUTER_API_KEY' || OpenRouterConfig.apiKey.isEmpty) {
+      yield "⚠️ Errore: Chiave API di Open Router non configurata.";
+      return;
+    }
+
+    final url = Uri.parse('${OpenRouterConfig.baseUrl}/chat/completions');
+    
+    final messages = history.map((msg) {
+      return {
+        'role': msg.isUser ? 'user' : 'assistant',
+        'content': msg.text,
+      };
+    }).toList();
+
+    final finalSystemPrompt = systemPrompt ?? 'Sei il "Coach di Disciplina", un assistente virtuale focalizzato sull\'aiutare l\'utente a mantenere la disciplina, raggiungere i propri obiettivi e costruire abitudini sane. Sii motivante ma concreto, diretto e pratico. Usa un tono professionale ma amichevole.';
+    
+    messages.insert(0, {
+      'role': 'system',
+      'content': finalSystemPrompt,
+    });
+
+    final body = jsonEncode({
+      'model': OpenRouterConfig.defaultModel,
+      'messages': messages,
+      'temperature': 0.7,
+      'stream': true,
+    });
+
+    final client = http.Client();
+    final request = http.Request('POST', url)
+      ..headers['Authorization'] = 'Bearer ${OpenRouterConfig.apiKey}'
+      ..headers['Content-Type'] = 'application/json'
+      ..headers['HTTP-Referer'] = 'https://github.com/simo/mattioli.OS'
+      ..headers['X-Title'] = 'Mattioli OS'
+      ..body = body;
+
+    try {
+      final response = await client.send(request);
+      
+      if (response.statusCode != 200) {
+        yield "❌ Errore API: ${response.statusCode}";
+        client.close();
+        return;
+      }
+
+      await for (final line in response.stream.transform(utf8.decoder).transform(const LineSplitter())) {
+        if (line.isEmpty) continue;
+        if (line.startsWith('data: ')) {
+          final dataStr = line.substring(6);
+          if (dataStr == '[DONE]') break;
+          
+          try {
+            final data = jsonDecode(dataStr);
+            final content = data['choices'][0]['delta']['content'];
+            if (content != null) {
+              yield content.toString();
+            }
+          } catch (e) {
+            // Ignora errori di parsing per chunk incompleti
+          }
+        }
+      }
+    } catch (e) {
+      yield "❌ Errore di connessione.";
+    } finally {
+      client.close();
+    }
+  }
 }
+
+
+

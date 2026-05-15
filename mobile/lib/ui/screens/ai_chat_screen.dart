@@ -202,38 +202,67 @@ class _AIChatScreenState extends ConsumerState<AIChatScreen> {
     _controller.clear();
     _scrollToBottom();
 
-    // Chiamata all'API di Open Router
-    OpenRouterService.generateResponse(
-      _messages,
-      systemPrompt: _getSystemPrompt(),
-    ).then((response) {
-      if (!mounted) return;
-      HapticFeedback.lightImpact();
-      setState(() {
-        _isTyping = false;
-        _messages.add(
-          ChatMessage(
-            text: response,
-            isUser: false,
-            timestamp: DateTime.now(),
-          ),
-        );
-      });
-      _scrollToBottom();
-    }).catchError((e) {
-      if (!mounted) return;
-      setState(() {
-        _isTyping = false;
-        _messages.add(
-          ChatMessage(
-            text: "❌ Si è verificato un errore imprevisto.",
-            isUser: false,
-            timestamp: DateTime.now(),
-          ),
-        );
-      });
-      _scrollToBottom();
+    // Chiamata all'API di Open Router in streaming
+    final assistantMessageIndex = _messages.length;
+    setState(() {
+      _messages.add(
+        ChatMessage(
+          text: "",
+          isUser: false,
+          timestamp: DateTime.now(),
+        ),
+      );
     });
+
+    final stream = OpenRouterService.generateStreamResponse(
+      _messages.sublist(0, assistantMessageIndex),
+      systemPrompt: _getSystemPrompt(),
+    );
+
+    bool receivedFirstToken = false;
+
+    stream.listen(
+      (chunk) {
+        if (!mounted) return;
+        if (!receivedFirstToken && chunk.trim().isNotEmpty) {
+          receivedFirstToken = true;
+          HapticFeedback.lightImpact();
+          setState(() {
+            _isTyping = false;
+          });
+        }
+
+        setState(() {
+          _messages[assistantMessageIndex] = ChatMessage(
+            text: '${_messages[assistantMessageIndex].text}$chunk',
+            isUser: false,
+            timestamp: _messages[assistantMessageIndex].timestamp,
+          );
+        });
+        _scrollToBottom();
+      },
+      onError: (e) {
+        if (!mounted) return;
+        setState(() {
+          _isTyping = false;
+          _messages[assistantMessageIndex] = ChatMessage(
+            text: '${_messages[assistantMessageIndex].text}\n\n❌ Errore durante lo streaming.',
+            isUser: false,
+            timestamp: _messages[assistantMessageIndex].timestamp,
+          );
+        });
+        _scrollToBottom();
+      },
+      onDone: () {
+        if (!mounted) return;
+        if (_isTyping) {
+          setState(() {
+            _isTyping = false;
+          });
+        }
+      },
+    );
+
   }
 
 
@@ -445,11 +474,81 @@ Se l'utente non chiede nulla di specifico, offri consigli sulla disciplina o chi
               icon: Icon(LucideIcons.trash2, size: 18, color: colors.mutedForeground),
               onPressed: () {
                 HapticFeedback.lightImpact();
-                setState(() {
-                  _messages.clear();
-                  _addInitialMessages();
-                });
+                showDialog(
+                  context: context,
+                  builder: (context) {
+                    final colors = context.appColors;
+                    return Dialog(
+                      backgroundColor: Colors.transparent,
+                      child: BackdropFilter(
+                        filter: ImageFilter.blur(sigmaX: 10, sigmaY: 10),
+                        child: Container(
+                          padding: const EdgeInsets.all(24),
+                          decoration: BoxDecoration(
+                            color: colors.card.withValues(alpha: 0.9),
+                            borderRadius: BorderRadius.circular(24),
+                            border: Border.all(color: colors.borderSubtle),
+                          ),
+                          child: Column(
+                            mainAxisSize: MainAxisSize.min,
+                            crossAxisAlignment: CrossAxisAlignment.start,
+                            children: [
+                              Text(
+                                "Elimina chat",
+                                style: TextStyle(
+                                  fontSize: 18,
+                                  fontWeight: FontWeight.w700,
+                                  color: colors.foreground,
+                                ),
+                              ),
+                              const SizedBox(height: 12),
+                              Text(
+                                "Sei sicuro di voler eliminare tutti i messaggi? Questa azione non può essere annullata.",
+                                style: TextStyle(
+                                  fontSize: 14,
+                                  color: colors.mutedForeground,
+                                ),
+                              ),
+                              const SizedBox(height: 24),
+                              Row(
+                                mainAxisAlignment: MainAxisAlignment.end,
+                                children: [
+                                  TextButton(
+                                    onPressed: () => Navigator.pop(context),
+                                    child: Text(
+                                      "Annulla",
+                                      style: TextStyle(color: colors.foreground),
+                                    ),
+                                  ),
+                                  const SizedBox(width: 12),
+                                  ElevatedButton(
+                                    onPressed: () {
+                                      Navigator.pop(context);
+                                      setState(() {
+                                        _messages.clear();
+                                        _addInitialMessages();
+                                      });
+                                    },
+                                    style: ElevatedButton.styleFrom(
+                                      backgroundColor: Colors.redAccent,
+                                      foregroundColor: Colors.white,
+                                      shape: RoundedRectangleBorder(
+                                        borderRadius: BorderRadius.circular(12),
+                                      ),
+                                    ),
+                                    child: const Text("Elimina"),
+                                  ),
+                                ],
+                              ),
+                            ],
+                          ),
+                        ),
+                      ),
+                    );
+                  },
+                );
               },
+
               tooltip: 'Nuova chat',
             ),
           IconButton(

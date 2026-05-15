@@ -307,5 +307,9 @@
     - Created a list of 15 varied messages (motivational, direct, identity-focused, etc.) all including the habit title.
     - Updated `scheduleHabitReminder` and `_snoozeHabit` to use this method for generating the notification body.
 
+- [2026-05-15 16:20]: **Fix Snooze Notification Bug**
+  - *Details*: Fixed a bug where snooze notifications would not appear. The issue was that `matchDateTimeComponents` was set to `DateTimeComponents.time`, making it a daily recurring notification instead of a one-off notification.
+  - *Tech Notes*: Removed `matchDateTimeComponents: DateTimeComponents.time` from `_notifications.zonedSchedule` in the `_snoozeHabit` method.
+
 ## Current Status
-- **Next Step**: Waiting for user to verify the new notification behavior or request further changes.
+- **Next Step**: Waiting for user to verify that the snooze notification now appears after 10 minutes.

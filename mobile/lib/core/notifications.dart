@@ -142,10 +142,9 @@ class NotificationService {
       scheduledDate: tz.TZDateTime.from(scheduledDate, tz.local),
       notificationDetails: platformDetails,
       androidScheduleMode: AndroidScheduleMode.exactAllowWhileIdle,
-      matchDateTimeComponents: DateTimeComponents.time,
       payload: 'habit|$habitId|$title',
     );
-    debugPrint('[Notifications] Habit $habitId snoozed for 1 hour');
+    debugPrint('[Notifications] Habit $habitId snoozed for 10 minutes');
   }
 
   Future<void> _skipHabit(String habitId) async {

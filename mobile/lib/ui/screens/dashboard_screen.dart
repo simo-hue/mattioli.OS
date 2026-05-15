@@ -27,6 +27,7 @@ import 'profile_screen.dart';
 import '../../core/haptics.dart';
 import 'package:tutorial_coach_mark/tutorial_coach_mark.dart';
 import '../../providers/tutorial_provider.dart';
+import '../../core/app_logger.dart';
 
 class HomeScreen extends ConsumerStatefulWidget {
   const HomeScreen({super.key});
@@ -557,8 +558,8 @@ class _HomeScreenState extends ConsumerState<HomeScreen>
       if (didAuthenticate) {
         setState(() => _isBiometricAuthenticated = true);
       }
-    } catch (e) {
-      debugPrint('Biometric authentication error: $e');
+    } catch (e, stack) {
+      AppLogger.error('Biometric authentication error', e, stack);
     }
   }
 

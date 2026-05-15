@@ -14,6 +14,7 @@ import 'notification_settings_screen.dart';
 import 'privacy_settings_screen.dart';
 import 'subscription_screen.dart';
 import '../../core/haptics.dart';
+import '../../core/app_logger.dart';
 import '../../providers/tutorial_provider.dart';
 
 class ProfileScreen extends ConsumerStatefulWidget {
@@ -42,8 +43,8 @@ class _ProfileScreenState extends ConsumerState<ProfileScreen> {
         });
         ref.hapticMedium();
       }
-    } catch (e) {
-      debugPrint('Error picking image: $e');
+    } catch (e, stack) {
+      AppLogger.error('Error picking image', e, stack);
     }
   }
 

@@ -7,6 +7,7 @@ import 'package:supabase_flutter/supabase_flutter.dart';
 import '../../core/theme.dart';
 import '../../providers/user_provider.dart';
 import '../../core/localization.dart';
+import '../../core/app_logger.dart';
 
 class PersonalInfoScreen extends ConsumerStatefulWidget {
   const PersonalInfoScreen({super.key});
@@ -99,7 +100,8 @@ class _PersonalInfoScreenState extends ConsumerState<PersonalInfoScreen> {
           );
           Navigator.pop(context);
         }
-      } catch (e) {
+      } catch (e, stack) {
+        AppLogger.error('Errore durante il salvataggio delle info personali', e, stack);
         if (mounted) {
           ScaffoldMessenger.of(context).showSnackBar(
             SnackBar(

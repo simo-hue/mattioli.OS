@@ -6,6 +6,7 @@ import '../models/macro_goal.dart';
 import 'shared_prefs_provider.dart';
 import 'auth_provider.dart';
 import '../core/navigator_key.dart';
+import '../core/app_logger.dart';
 import '../ui/widgets/error_modal.dart';
 
 // ─── State ────────────────────────────────────────────────────────────────────
@@ -74,8 +75,8 @@ class MacroGoalsNotifier extends Notifier<MacroGoalsState> {
       final List<dynamic> jsonList = jsonDecode(cache);
       final goals = jsonList.map((j) => MacroGoal.fromJson(j)).toList();
       return MacroGoalsState(goals: goals);
-    } catch (e) {
-      debugPrint('[MacroGoals] Cache parsing error: $e');
+    } catch (e, stack) {
+      AppLogger.error('[MacroGoals] Cache parsing error', e, stack);
       return const MacroGoalsState(goals: []);
     }
   }
@@ -103,8 +104,8 @@ class MacroGoalsNotifier extends Notifier<MacroGoalsState> {
       
       state = state.copyWith(goals: goals);
       _saveToCache(goals);
-    } catch (e) {
-      debugPrint('[MacroGoals] Sync error: $e');
+    } catch (e, stack) {
+      AppLogger.error('[MacroGoals] Sync error', e, stack);
       // In caso di errore manteniamo la cache locale
     }
   }
@@ -133,8 +134,8 @@ class MacroGoalsNotifier extends Notifier<MacroGoalsState> {
       final updatedGoals = state.goals.map((g) => g.id == goal.id ? realGoal : g).toList();
       state = state.copyWith(goals: updatedGoals);
       _saveToCache(updatedGoals);
-    } catch (e) {
-      debugPrint('[MacroGoals] Insert error: $e');
+    } catch (e, stack) {
+      AppLogger.error('[MacroGoals] Insert error', e, stack);
       final context = navigatorKey.currentContext;
       if (context != null && context.mounted) {
         ErrorModal.show(
@@ -154,8 +155,8 @@ class MacroGoalsNotifier extends Notifier<MacroGoalsState> {
 
     try {
       await supabase.from('long_term_goals').update({'status': status.name}).eq('id', id);
-    } catch (e) {
-      debugPrint('[MacroGoals] Update status error: $e');
+    } catch (e, stack) {
+      AppLogger.error('[MacroGoals] Update status error', e, stack);
       final context = navigatorKey.currentContext;
       if (context != null && context.mounted) {
         ErrorModal.show(
@@ -175,8 +176,8 @@ class MacroGoalsNotifier extends Notifier<MacroGoalsState> {
 
     try {
       await supabase.from('long_term_goals').update({'title': title}).eq('id', id);
-    } catch (e) {
-      debugPrint('[MacroGoals] Update title error: $e');
+    } catch (e, stack) {
+      AppLogger.error('[MacroGoals] Update title error', e, stack);
       final context = navigatorKey.currentContext;
       if (context != null && context.mounted) {
         ErrorModal.show(
@@ -199,8 +200,8 @@ class MacroGoalsNotifier extends Notifier<MacroGoalsState> {
 
     try {
       await supabase.from('long_term_goals').update({'category_id': categoryId}).eq('id', id);
-    } catch (e) {
-      debugPrint('[MacroGoals] Update category error: $e');
+    } catch (e, stack) {
+      AppLogger.error('[MacroGoals] Update category error', e, stack);
       final context = navigatorKey.currentContext;
       if (context != null && context.mounted) {
         ErrorModal.show(
@@ -220,8 +221,8 @@ class MacroGoalsNotifier extends Notifier<MacroGoalsState> {
 
     try {
       await supabase.from('long_term_goals').delete().eq('id', id);
-    } catch (e) {
-      debugPrint('[MacroGoals] Delete error: $e');
+    } catch (e, stack) {
+      AppLogger.error('[MacroGoals] Delete error', e, stack);
       final context = navigatorKey.currentContext;
       if (context != null && context.mounted) {
         ErrorModal.show(

@@ -3,9 +3,11 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 import 'package:shared_preferences/shared_preferences.dart';
+import 'package:sentry_flutter/sentry_flutter.dart';
 import 'dart:ui';
 import 'core/theme.dart';
 import 'core/supabase_config.dart';
+import 'core/sentry_config.dart';
 import 'providers/shared_prefs_provider.dart';
 import 'providers/settings_provider.dart';
 import 'providers/auth_provider.dart';
@@ -15,6 +17,7 @@ import 'core/notifications.dart';
 import 'ui/widgets/error_modal.dart';
 import 'core/navigator_key.dart';
 import 'package:intl/date_symbol_data_local.dart';
+import 'core/app_logger.dart';
 
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
@@ -31,61 +34,94 @@ void main() async {
   try {
     final notificationService = NotificationService();
     await notificationService.init().timeout(const Duration(seconds: 3));
-  } catch (e) {
-    debugPrint('Notification initialization failed or timed out: $e');
+  } catch (e, stack) {
+    AppLogger.error('Notification initialization failed or timed out', e, stack);
   }
-
-  // ── Global error handler ─────────────────────────────────────────────────
-  ErrorWidget.builder = (FlutterErrorDetails details) {
-    return Scaffold(
-      body: Center(
-        child: Padding(
-          padding: const EdgeInsets.all(24.0),
-          child: Column(
-            mainAxisAlignment: MainAxisAlignment.center,
-            children: [
-              const Icon(Icons.error_outline, color: Colors.red, size: 48),
-              const SizedBox(height: 16),
-              const Text(
-                'Ops! Qualcosa è andato storto.',
-                style: TextStyle(fontSize: 20, fontWeight: FontWeight.bold),
-              ),
-              const SizedBox(height: 8),
-              Text(
-                details.exception.toString(),
-                textAlign: TextAlign.center,
-                style: const TextStyle(color: Colors.grey),
-              ),
-            ],
-          ),
-        ),
-      ),
-    );
-  };
-
-  PlatformDispatcher.instance.onError = (error, stack) {
-    final context = navigatorKey.currentContext;
-    if (context != null) {
-      ErrorModal.show(
-        context,
-        title: 'Si è verificato un errore',
-        message: 'L\'applicazione ha riscontrato un problema imprevisto. Abbiamo registrato l\'errore e cercheremo di risolverlo.',
-        details: error.toString(),
-      );
-    }
-    return true;
-  };
 
   // ── SharedPreferences init ───────────────────────────────────────────────
   final prefs = await SharedPreferences.getInstance();
 
-  runApp(
-    ProviderScope(
-      overrides: [
-        sharedPrefsProvider.overrideWithValue(prefs),
-      ],
-      child: const GrowthApp(),
-    ),
+  // ── Sentry init ──────────────────────────────────────────────────────────
+  // SentryFlutter.init wrappa automaticamente l'app con un error handler
+  // che cattura sia gli errori Flutter che quelli Dart asincroni.
+  await SentryFlutter.init(
+    (options) {
+      options.dsn = SentryConfig.dsn;
+      options.environment = SentryConfig.environment;
+      options.tracesSampleRate = SentryConfig.tracesSampleRate;
+
+      // Cattura automaticamente gli errori di rendering/layout
+      options.reportPackages = true;
+
+      // Disabilita in debug mode per non inquinare i dati
+      options.debug = false;
+
+      // Associa l'user Supabase a ogni evento Sentry (se loggato)
+      options.beforeSend = (event, hint) {
+        final user = Supabase.instance.client.auth.currentUser;
+        if (user != null) {
+          event.user = SentryUser(
+            id: user.id,
+            email: user.email,
+          );
+        }
+        return event;
+      };
+    },
+    appRunner: () {
+      // ── Global error handler (UI modale per l'utente) ─────────────────
+      ErrorWidget.builder = (FlutterErrorDetails details) {
+        return Scaffold(
+          body: Center(
+            child: Padding(
+              padding: const EdgeInsets.all(24.0),
+              child: Column(
+                mainAxisAlignment: MainAxisAlignment.center,
+                children: [
+                  const Icon(Icons.error_outline, color: Colors.red, size: 48),
+                  const SizedBox(height: 16),
+                  const Text(
+                    'Ops! Qualcosa è andato storto.',
+                    style: TextStyle(fontSize: 20, fontWeight: FontWeight.bold),
+                  ),
+                  const SizedBox(height: 8),
+                  Text(
+                    details.exception.toString(),
+                    textAlign: TextAlign.center,
+                    style: const TextStyle(color: Colors.grey),
+                  ),
+                ],
+              ),
+            ),
+          ),
+        );
+      };
+
+      PlatformDispatcher.instance.onError = (error, stack) {
+        // Invia l'errore a Sentry
+        Sentry.captureException(error, stackTrace: stack);
+
+        final context = navigatorKey.currentContext;
+        if (context != null) {
+          ErrorModal.show(
+            context,
+            title: 'Si è verificato un errore',
+            message: 'L\'applicazione ha riscontrato un problema imprevisto. Abbiamo registrato l\'errore e cercheremo di risolverlo.',
+            details: error.toString(),
+          );
+        }
+        return true;
+      };
+
+      runApp(
+        ProviderScope(
+          overrides: [
+            sharedPrefsProvider.overrideWithValue(prefs),
+          ],
+          child: const GrowthApp(),
+        ),
+      );
+    },
   );
 }
 
@@ -102,6 +138,7 @@ final routerProvider = Provider<GoRouter>((ref) {
     initialLocation: '/',
     debugLogDiagnostics: false,
     refreshListenable: authNotifier,
+    observers: [SentryNavigatorObserver()],
     routes: [
       GoRoute(
         path: '/',

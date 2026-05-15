@@ -5,6 +5,7 @@ import 'package:timezone/data/latest.dart' as tz;
 import 'package:flutter_timezone/flutter_timezone.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 import 'supabase_config.dart';
+import 'app_logger.dart';
 
 class NotificationService {
   static final NotificationService _instance = NotificationService._internal();
@@ -22,8 +23,8 @@ class NotificationService {
       
       try {
         tz.setLocalLocation(tz.getLocation(timeZoneName));
-      } catch (e) {
-        debugPrint('Failed to set local location, falling back to UTC: $e');
+      } catch (e, stack) {
+        AppLogger.error('Failed to set local location, falling back to UTC', e, stack);
         tz.setLocalLocation(tz.getLocation('UTC'));
       }
 
@@ -62,8 +63,8 @@ class NotificationService {
         onDidReceiveNotificationResponse: _onNotificationResponse,
         onDidReceiveBackgroundNotificationResponse: notificationTapBackground,
       );
-    } catch (e) {
-      debugPrint('Error initializing NotificationService: $e');
+    } catch (e, stack) {
+      AppLogger.error('Error initializing NotificationService', e, stack);
     }
   }
 
@@ -105,8 +106,8 @@ class NotificationService {
         'status': 'done',
       }, onConflict: 'goal_id, date');
       debugPrint('[Notifications] Habit $habitId marked as done');
-    } catch (e) {
-      debugPrint('[Notifications] Error marking habit as done: $e');
+    } catch (e, stack) {
+      AppLogger.error('[Notifications] Error marking habit as done', e, stack);
     }
   }
 
@@ -164,8 +165,8 @@ class NotificationService {
         'status': 'missed',
       }, onConflict: 'goal_id, date');
       debugPrint('[Notifications] Habit $habitId marked as missed/skipped');
-    } catch (e) {
-      debugPrint('[Notifications] Error marking habit as missed: $e');
+    } catch (e, stack) {
+      AppLogger.error('[Notifications] Error marking habit as missed', e, stack);
     }
   }
 

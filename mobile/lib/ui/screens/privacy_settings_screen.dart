@@ -14,6 +14,7 @@ import '../../core/theme.dart';
 import '../../providers/settings_provider.dart';
 import '../../core/haptics.dart';
 import '../../core/localization.dart';
+import '../../core/app_logger.dart';
 import '../widgets/pro_features_modal.dart';
 
 class PrivacySettingsScreen extends ConsumerWidget {
@@ -166,8 +167,8 @@ class PrivacySettingsScreen extends ConsumerWidget {
         biometricOnly: true,
         persistAcrossBackgrounding: true,
       );
-    } catch (e) {
-      debugPrint('Biometric authentication error: $e');
+    } catch (e, stack) {
+      AppLogger.error('Biometric authentication error', e, stack);
       return false;
     }
   }
@@ -664,8 +665,8 @@ class PrivacySettingsScreen extends ConsumerWidget {
       );
 
       await Share.shareXFiles([file], text: 'I miei dati esportati da mattioli.OS');
-    } catch (e) {
-      debugPrint('Error exporting data: $e');
+    } catch (e, stack) {
+      AppLogger.error('Error exporting data', e, stack);
       if (context.mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(content: Text('Errore durante l\'esportazione: $e')),

@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../core/notifications.dart';
+import '../core/app_logger.dart';
 import 'shared_prefs_provider.dart';
 import 'auth_provider.dart';
 import 'goal_provider.dart';
@@ -323,8 +324,8 @@ class AppSettingsNotifier extends Notifier<AppSettings> {
         state = serverSettings;
         _saveToPrefs(state);
       }
-    } catch (e) {
-      debugPrint('[Settings] Errore nel download impostazioni da Supabase: $e');
+    } catch (e, stack) {
+      AppLogger.error('[Settings] Errore nel download impostazioni da Supabase', e, stack);
     }
   }
 
@@ -353,8 +354,8 @@ class AppSettingsNotifier extends Notifier<AppSettings> {
         'morning_brief_time': s.morningBriefTime,
         'evening_review_time': s.eveningReviewTime,
       }).eq('id', user.id);
-    } catch (e) {
-      debugPrint('[Settings] Errore nell\'upload impostazioni su Supabase: $e');
+    } catch (e, stack) {
+      AppLogger.error('[Settings] Errore nell\'upload impostazioni su Supabase', e, stack);
       // Silenzioso, l'utente continuerà a usare le SharedPreferences locali
       // al prossimo riavvio l'app riproverà a sincronizzare se necessario
     }
@@ -382,8 +383,8 @@ class AppSettingsNotifier extends Notifier<AppSettings> {
             _notificationService.scheduleHabitReminder(goal.id, goal.title, goal.reminderTime);
           }
         }
-      } catch (e) {
-        debugPrint('[Settings] Errore nella schedulazione promemoria abitudini: $e');
+      } catch (e, stack) {
+        AppLogger.error('[Settings] Errore nella schedulazione promemoria abitudini', e, stack);
       }
       
       if (state.aiInsights && state.isPro) {

@@ -871,3 +871,18 @@
 *Details*: Configurato lo schema URL in `Info.plist` con il Reversed Client ID fornito dall'utente per abilitare il login con Google su iOS.
 *Tech Notes*:
 - **iOS**: Aggiunto `CFBundleURLTypes` con lo schema `com.googleusercontent.apps.11071263331-qepubluq93tojdo3vti51ah3h09ss57m` in `ios/Runner/Info.plist`.
+
+---
+
+## [2026-05-15 09:52]: Core - Sentry Production Error Tracking Integration
+*Details*: Integrato Sentry SDK per il tracking automatico di crash, errori Dart asincroni e navigazione in produzione.
+*Tech Notes*:
+- **Dipendenza**: Aggiunto `sentry_flutter: ^9.20.0` al `pubspec.yaml`.
+- **Configurazione**: Creato `lib/core/sentry_config.dart` (DSN, environment, tracesSampleRate) seguendo il pattern di `supabase_config.dart`.
+- **Sicurezza**: Creato `sentry_config.dart.example` e aggiunto `lib/core/sentry_config.dart` al `.gitignore`.
+- **main.dart**:
+  - Wrappato l'intera app con `SentryFlutter.init()` usando il pattern `appRunner`.
+  - Integrato `Sentry.captureException()` nel `PlatformDispatcher.onError` esistente (gli errori sono sia inviati a Sentry che mostrati all'utente via ErrorModal).
+  - Aggiunto `beforeSend` per associare automaticamente l'utente Supabase (id + email) a ogni evento Sentry.
+- **Router**: Aggiunto `SentryNavigatorObserver()` a `GoRouter.observers` per il tracking della navigazione.
+- **Refactoring Errori Silenti**: Sostituiti tutti i `debugPrint` all'interno dei blocchi `catch` (provider e servizi) con chiamate a `AppLogger.error` che inoltra l'errore a Sentry in produzione. File modificati includono `settings_provider.dart`, `mood_provider.dart`, `macro_goal_categories_provider.dart`, `notifications.dart`, `main.dart`, e svariati componenti UI (es. `privacy_settings_screen.dart`, `profile_screen.dart`, `dashboard_screen.dart`, `personal_info_screen.dart`).

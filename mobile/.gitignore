@@ -44,5 +44,6 @@ app.*.map.json
 /android/app/profile
 /android/app/release
 
-# Mattioli.OS Secrets (Supabase Credentials)
+# Mattioli.OS Secrets (Supabase & Sentry Credentials)
 lib/core/supabase_config.dart
+lib/core/sentry_config.dart

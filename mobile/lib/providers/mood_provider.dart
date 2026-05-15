@@ -3,6 +3,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 import 'goal_provider.dart';
 import '../core/navigator_key.dart';
+import '../core/app_logger.dart';
 import '../ui/widgets/error_modal.dart';
 
 final supabase = Supabase.instance.client;
@@ -58,8 +59,8 @@ class DailyMoodsNotifier extends Notifier<DailyMoodsMap> {
         newMap[date] = DailyMood.fromJson(row);
       }
       state = newMap;
-    } catch (e) {
-      debugPrint('[DailyMoods] Sync error: $e');
+    } catch (e, stack) {
+      AppLogger.error('[DailyMoods] Sync error', e, stack);
     }
   }
 
@@ -82,8 +83,8 @@ class DailyMoodsNotifier extends Notifier<DailyMoodsMap> {
       final newState = Map<String, DailyMood>.from(state);
       newState[dateKey] = updatedMood;
       state = newState;
-    } catch (e) {
-      debugPrint('[DailyMoods] Save error: $e');
+    } catch (e, stack) {
+      AppLogger.error('[DailyMoods] Save error', e, stack);
       final context = navigatorKey.currentContext;
       if (context != null && context.mounted) {
         ErrorModal.show(

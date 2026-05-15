@@ -4,6 +4,7 @@ import 'package:supabase_flutter/supabase_flutter.dart';
 import '../models/macro_goal.dart';
 import 'auth_provider.dart';
 import '../core/navigator_key.dart';
+import '../core/app_logger.dart';
 import '../ui/widgets/error_modal.dart';
 
 class MacroGoalCategoriesNotifier extends AsyncNotifier<List<GoalCategory>> {
@@ -26,8 +27,8 @@ class MacroGoalCategoriesNotifier extends AsyncNotifier<List<GoalCategory>> {
       return (response as List)
           .map((json) => GoalCategory.fromJson(json))
           .toList();
-    } catch (e) {
-      debugPrint('Error fetching categories: $e');
+    } catch (e, stack) {
+      AppLogger.error('[Categories] Fetch error', e, stack);
       return [];
     }
   }
@@ -47,8 +48,8 @@ class MacroGoalCategoriesNotifier extends AsyncNotifier<List<GoalCategory>> {
       
       // Invalidate to refetch
       ref.invalidateSelf();
-    } catch (e) {
-      debugPrint('Error adding category: $e');
+    } catch (e, stack) {
+      AppLogger.error('[Categories] Add error', e, stack);
       final context = navigatorKey.currentContext;
       if (context != null && context.mounted) {
         ErrorModal.show(
@@ -69,8 +70,8 @@ class MacroGoalCategoriesNotifier extends AsyncNotifier<List<GoalCategory>> {
       
       // Invalidate to refetch
       ref.invalidateSelf();
-    } catch (e) {
-      debugPrint('Error deleting category: $e');
+    } catch (e, stack) {
+      AppLogger.error('[Categories] Delete error', e, stack);
       final context = navigatorKey.currentContext;
       if (context != null && context.mounted) {
         ErrorModal.show(

@@ -1,0 +1,20 @@
+/// Configurazione Sentry per il tracking degli errori in produzione.
+///
+/// Per ottenere il DSN:
+/// 1. Registrati su https://sentry.io
+/// 2. Crea un nuovo progetto Flutter
+/// 3. Copia il DSN dalla pagina "Client Keys (DSN)" nelle impostazioni del progetto
+/// 4. Incollalo qui sotto
+class SentryConfig {
+  /// Il DSN (Data Source Name) del tuo progetto Sentry.
+  /// Formato: https://<key>@<organization>.ingest.sentry.io/<project-id>
+  static const String dsn = 'YOUR_SENTRY_DSN_HERE';
+
+  /// Nome dell'ambiente (production, staging, development).
+  static const String environment = 'production';
+
+  /// Percentuale di transazioni da campionare per il performance monitoring.
+  /// 1.0 = 100% delle transazioni (consigliato in fase iniziale).
+  /// In produzione con traffico elevato, abbassare a 0.2-0.5.
+  static const double tracesSampleRate = 1.0;
+}

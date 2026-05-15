@@ -8,6 +8,7 @@ import 'auth_provider.dart';
 import 'settings_provider.dart';
 import '../core/notifications.dart';
 import '../core/navigator_key.dart';
+import '../core/app_logger.dart';
 import '../ui/widgets/error_modal.dart';
 
 // ─── Goals Provider (Offline-First) ─────────────────────────────────────────
@@ -44,8 +45,8 @@ class GoalsNotifier extends Notifier<List<Goal>> {
     try {
       final List<dynamic> jsonList = jsonDecode(cache);
       return jsonList.map((j) => Goal.fromJson(j)).toList();
-    } catch (e) {
-      debugPrint('[Goals] Cache parsing error: $e');
+    } catch (e, stack) {
+      AppLogger.error('[Goals] Cache parsing error', e, stack);
       return [];
     }
   }
@@ -71,8 +72,8 @@ class GoalsNotifier extends Notifier<List<Goal>> {
       final goals = (response as List).map((j) => Goal.fromJson(j)).toList();
       state = goals;
       _saveToCache(goals);
-    } catch (e) {
-      debugPrint('[Goals] Sync error: $e');
+    } catch (e, stack) {
+      AppLogger.error('[Goals] Sync error', e, stack);
     }
   }
 
@@ -100,8 +101,8 @@ class GoalsNotifier extends Notifier<List<Goal>> {
       if (realGoal.reminderTime != null) {
         NotificationService().scheduleHabitReminder(realGoal.id, realGoal.title, realGoal.reminderTime);
       }
-    } catch (e) {
-      debugPrint('[Goals] Insert error: $e');
+    } catch (e, stack) {
+      AppLogger.error('[Goals] Insert error', e, stack);
       final context = navigatorKey.currentContext;
       if (context != null && context.mounted) {
         ErrorModal.show(
@@ -129,8 +130,8 @@ class GoalsNotifier extends Notifier<List<Goal>> {
       if (updatedHabit.reminderTime != null) {
         NotificationService().scheduleHabitReminder(updatedHabit.id, updatedHabit.title, updatedHabit.reminderTime);
       }
-    } catch (e) {
-      debugPrint('[Goals] Update error: $e');
+    } catch (e, stack) {
+      AppLogger.error('[Goals] Update error', e, stack);
       final context = navigatorKey.currentContext;
       if (context != null && context.mounted) {
         ErrorModal.show(
@@ -152,8 +153,8 @@ class GoalsNotifier extends Notifier<List<Goal>> {
       await supabase.from('goals').delete().eq('id', id);
       // Cancella promemoria
       NotificationService().cancelHabitReminder(id);
-    } catch (e) {
-      debugPrint('[Goals] Delete error: $e');
+    } catch (e, stack) {
+      AppLogger.error('[Goals] Delete error', e, stack);
       final context = navigatorKey.currentContext;
       if (context != null && context.mounted) {
         ErrorModal.show(
@@ -184,8 +185,8 @@ class GoalsNotifier extends Notifier<List<Goal>> {
     try {
       final updates = list.map((g) => {'id': g.id, 'display_order': g.displayOrder}).toList();
       await supabase.from('goals').upsert(updates);
-    } catch (e) {
-      debugPrint('[Goals] Reorder error: $e');
+    } catch (e, stack) {
+      AppLogger.error('[Goals] Reorder error', e, stack);
     }
   }
 
@@ -237,8 +238,8 @@ class HabitLogsNotifier extends Notifier<HabitLogsMap> {
         result[dateKey] = Map<String, String>.from(habitsData as Map);
       });
       return result;
-    } catch (e) {
-      debugPrint('[HabitLogs] Cache parsing error: $e');
+    } catch (e, stack) {
+      AppLogger.error('[HabitLogs] Cache parsing error', e, stack);
       return {};
     }
   }
@@ -275,8 +276,8 @@ class HabitLogsNotifier extends Notifier<HabitLogsMap> {
 
       state = newLogs;
       _saveToCache(newLogs);
-    } catch (e) {
-      debugPrint('[HabitLogs] Sync error: $e');
+    } catch (e, stack) {
+      AppLogger.error('[HabitLogs] Sync error', e, stack);
     }
   }
 
@@ -327,8 +328,8 @@ class HabitLogsNotifier extends Notifier<HabitLogsMap> {
           prevStreak = 0;
         }
       }
-    } catch (e) {
-      debugPrint('[HabitLogs] Error getting previous streak: $e');
+    } catch (e, stack) {
+      AppLogger.error('[HabitLogs] Error getting previous streak', e, stack);
     }
 
     int newStreak = 0;
@@ -366,8 +367,8 @@ class HabitLogsNotifier extends Notifier<HabitLogsMap> {
             .eq('date', dateKey);
       }
       ref.invalidate(habitStatsProvider);
-    } catch (e) {
-      debugPrint('[HabitLogs] cycleStatus error: $e');
+    } catch (e, stack) {
+      AppLogger.error('[HabitLogs] cycleStatus error', e, stack);
       final context = navigatorKey.currentContext;
       if (context != null && context.mounted) {
         ErrorModal.show(

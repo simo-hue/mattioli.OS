@@ -6,6 +6,7 @@ import 'package:google_sign_in/google_sign_in.dart' as google_auth;
 import 'package:sign_in_with_apple/sign_in_with_apple.dart';
 import 'package:crypto/crypto.dart';
 import '../core/supabase_config.dart';
+import '../core/app_logger.dart';
 
 
 // Accesso globale al client Supabase
@@ -166,8 +167,8 @@ class AuthNotifier extends Notifier<AuthState> with ChangeNotifier {
     try {
       await supabase.auth.signOut();
       // onAuthStateChange emette signedOut → state si aggiorna automaticamente
-    } catch (e) {
-      debugPrint('[Auth] Logout error: $e');
+    } catch (e, stack) {
+      AppLogger.error('[Auth] Logout error', e, stack);
       // Forziamo il logout locale anche in caso di errore di rete
       state = const AuthState(isLoggedIn: false);
       notifyListeners();
@@ -211,8 +212,8 @@ class AuthNotifier extends Notifier<AuthState> with ChangeNotifier {
     } on AuthException catch (e) {
       state = state.copyWith(isLoading: false, error: _mapAuthError(e.message));
       return false;
-    } catch (e) {
-      debugPrint('[Google Auth] Error: $e');
+    } catch (e, stack) {
+      AppLogger.error('[Google Auth] Error', e, stack);
       state = state.copyWith(isLoading: false, error: 'Errore di autenticazione con Google.');
       return false;
     }
@@ -259,8 +260,8 @@ class AuthNotifier extends Notifier<AuthState> with ChangeNotifier {
     } on AuthException catch (e) {
       state = state.copyWith(isLoading: false, error: _mapAuthError(e.message));
       return false;
-    } catch (e) {
-      debugPrint('[Apple Auth] Error: $e');
+    } catch (e, stack) {
+      AppLogger.error('[Apple Auth] Error', e, stack);
       state = state.copyWith(isLoading: false, error: 'Errore di autenticazione con Apple.');
       return false;
     }

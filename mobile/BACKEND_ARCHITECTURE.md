@@ -72,14 +72,4 @@ L'app mobile deve essere "Offline-First" per una UX fluida.
 *   **Real-time:** Utilizzo dei **Postgres Changes** di Supabase per aggiornare la UI istantaneamente se l'utente modifica qualcosa da un altro dispositivo (es. iPad o Web).
 
 ---
-
-## 🚀 6. Roadmap di Implementazione
-
-1.  **Phase 1 (Settimana 1):** Configurazione progetto Supabase, tabelle e RLS.
-2.  **Phase 2 (Settimana 1):** Migrazione del sistema di Auth (Email/Google/Apple Sign-in).
-3.  **Phase 3 (Settimana 2):** Creazione del layer Repository in Flutter per sostituire i dati Mock.
-4.  **Phase 4 (Settimana 3):** Implementazione Edge Functions per l'AI Coach.
-5.  **Phase 5 (Settimana 4):** Test di carico, implementazione Sentry per i crash e sottomissione agli Store.
-
----
 *Documentazione tecnica aggiornata da Antigravity - Database & Mobile Architect*

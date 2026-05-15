@@ -3,15 +3,6 @@
 ## Configurazione Backend & Store
 - [ ] Creare account **Apple Developer Program** ($99/anno).
 - [ ] Creare account **Google Play Console** ($25 una tantum).
-- [ ] Creare progetto su **Supabase** e attivare il **Pro Plan** ($25/mese) per evitare ibernazione e avere backup.
-- [ ] Configurare le **Row Level Security (RLS)** su Supabase seguendo la guida in `BACKEND_ARCHITECTURE.md`.
-- [ ] Recuperare le API Key di **OpenAI** o **Anthropic** per l'AI Coach.
-- [ ] Configurare **Google Sign-In**:
-    - Creare un progetto su **Google Cloud Console**.
-    - Creare un Client ID OAuth 2.0 di tipo **Applicazione Web** (indispensabile per Supabase, anche per Android).
-    - Creare un Client ID OAuth 2.0 di tipo **iOS** (necessario per l'app iOS).
-    - Incollare i Client ID nel file `lib/core/supabase_config.dart`.
-    - Per iOS, aggiungere lo schema URL (reversed client ID) in `ios/Runner/Info.plist`.
 - [ ] Configurare **Sign in with Apple**: abilitare Apple Provider su Supabase e la Capability in Xcode.
 
 ## Strategia Business & Revenue
@@ -29,3 +20,8 @@
   - Tutte le schede delle Statistiche (Trend, Mood, Performance, etc.).
 - [ ] Verificare che i grafici (fl_chart) abbiano legende e assi leggibili sia in Light che in Dark Mode.
 - [ ] Confermare che il colore accento cambi automaticamente se quello selezionato è troppo chiaro per lo sfondo bianco (gestito da `SettingsProvider`).
+
+
+---
+
+comando sentry-cli durante il build di release, ma è un passaggio che va configurato quando sarai pronto per la submission all'App Store.

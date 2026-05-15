@@ -167,11 +167,43 @@ class _AIChatScreenState extends ConsumerState<AIChatScreen> {
             ],
           ),
         ),
-        Switch.adaptive(
-          value: value,
-          onChanged: onChanged,
-          activeTrackColor: colors.primary,
+        GestureDetector(
+          onTap: () => onChanged(!value),
+          child: AnimatedContainer(
+            duration: const Duration(milliseconds: 200),
+            width: 44,
+            height: 24,
+            decoration: BoxDecoration(
+              borderRadius: BorderRadius.circular(12),
+              color: value ? colors.primary : colors.muted.withValues(alpha: 0.2),
+              border: Border.all(
+                color: value ? colors.primary : colors.borderSubtle,
+                width: 1,
+              ),
+            ),
+            child: AnimatedAlign(
+              duration: const Duration(milliseconds: 200),
+              alignment: value ? Alignment.centerRight : Alignment.centerLeft,
+              child: Container(
+                width: 20,
+                height: 20,
+                margin: const EdgeInsets.symmetric(horizontal: 1),
+                decoration: BoxDecoration(
+                  shape: BoxShape.circle,
+                  color: value ? const Color(0xFF0F172A) : colors.foreground,
+                  boxShadow: [
+                    BoxShadow(
+                      color: Colors.black.withValues(alpha: 0.1),
+                      blurRadius: 4,
+                      offset: const Offset(0, 2),
+                    ),
+                  ],
+                ),
+              ),
+            ),
+          ),
         ),
+
       ],
     );
   }
@@ -318,31 +350,24 @@ Se l'utente non chiede nulla di specifico, offri consigli sulla disciplina o chi
     final hour = now.hour;
     final List<String> pool = [];
 
-    // 1. Time-based pool
+    // 1. Suggerimenti basati sull'orario (Generici)
     if (hour >= 5 && hour < 12) {
       pool.addAll([
-        "🌅 Pianifica la mia giornata",
-        "🎯 Su cosa dovrei concentrarmi oggi?",
-        "🧘‍♂️ Esercizio di visualizzazione per oggi",
         "🔥 Dammi la carica per iniziare!",
+        "🧠 Come evitare le distrazioni?",
       ]);
     } else if (hour >= 12 && hour < 18) {
       pool.addAll([
-        "📊 Come sta andando la mia giornata?",
         "⚡ Ho un calo di energia, cosa faccio?",
-        "📉 Verifica abitudini pomeridiane",
         "💪 Un consiglio per rimanere focalizzato",
       ]);
     } else {
       pool.addAll([
-        "🌙 Facciamo la review della giornata",
-        "📝 Riflessione sulla disciplina di oggi",
         "🛌 Come prepararsi per un domani produttivo?",
-        "🕯️ Analisi dei fallimenti di oggi",
+        "📝 Riflessione sulla disciplina di oggi",
       ]);
     }
 
-    // 2. Context-based pool
     final goals = ref.read(macroGoalsProvider).goals;
     final habits = ref.read(goalsProvider);
     final habitLogs = ref.read(habitLogsProvider);
@@ -353,29 +378,55 @@ Se l'utente non chiede nulla di specifico, offri consigli sulla disciplina o chi
     final todayDone = todayLogs.values.where((s) => s == 'done').length;
     final todayTotal = habits.where((h) => h.isActiveOn(DateTime.now())).length;
 
-    if (activeGoals.isNotEmpty) {
-      pool.add("🎯 Analizza i miei obiettivi attivi");
-    }
-    if (habits.isNotEmpty) {
-      pool.add("📈 Come sta andando la mia costanza?");
-      pool.add("📊 Le mie statistiche settimanali");
-    }
-    
-    if (todayTotal > 0) {
-      final pct = (todayDone / todayTotal) * 100;
-      if (pct == 100) {
-        pool.add("🚀 Come posso alzare l'asticella?");
-      } else if (pct < 30 && hour > 14) {
-        pool.add("🤕 Come recuperare se ho procrastinato?");
+    // 2. Suggerimenti specifici in base agli switch attivi
+    if (_shareGoals && !_shareHabits) {
+      // SOLO OBIETTIVI
+      if (activeGoals.isNotEmpty) {
+        pool.add("🎯 Analizza i miei obiettivi attivi");
       }
+      pool.addAll([
+        "🗺️ Come pianificare i miei macro obiettivi?",
+        "🛑 Quali ostacoli bloccano i miei obiettivi?",
+        "📈 Un consiglio per raggiungere i miei traguardi",
+      ]);
+    } else if (!_shareGoals && _shareHabits) {
+      // SOLO ABITUDINI
+      pool.addAll([
+        "📈 Come sta andando la mia costanza?",
+        "📊 Le mie statistiche settimanali",
+        "🌅 Pianifica la mia giornata",
+      ]);
+      
+      if (todayTotal > 0) {
+        final pct = (todayDone / todayTotal) * 100;
+        if (pct == 100) {
+          pool.add("🚀 Come posso alzare l'asticella?");
+        } else if (pct < 30 && hour > 14) {
+          pool.add("🤕 Come recuperare se ho procrastinato?");
+        }
+      }
+    } else if (_shareGoals && _shareHabits) {
+      // ENTRAMBI
+      if (activeGoals.isNotEmpty) {
+        pool.add("🎯 Analizza i miei obiettivi attivi");
+      }
+      pool.addAll([
+        "📈 Come sta andando la mia costanza?",
+        "🔗 Come legare le abitudini agli obiettivi?",
+        "📊 Review di obiettivi e abitudini",
+      ]);
+    } else {
+
+      // NESSUNO (Fallback - Anche se l'utente non può inviare messaggi in questo stato, i suggerimenti mostrano l'errore)
+      pool.addAll([
+        "🔥 Consiglio sulla disciplina",
+        "💡 Come creare una nuova abitudine?",
+        "🧠 Come evitare le distrazioni?",
+      ]);
     }
 
-    // Always add some generic high-value ones if pool is small
-    pool.addAll([
-      "🔥 Consiglio sulla disciplina",
-      "💡 Come creare una nuova abitudine?",
-      "🧠 Come evitare le distrazioni?",
-    ]);
+    // Rimuovi duplicati (se presenti)
+
 
     // Remove duplicates
     final uniquePool = pool.toSet().toList();

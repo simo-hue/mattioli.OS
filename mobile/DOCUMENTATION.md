@@ -1222,3 +1222,17 @@
 *Details*: Fixed a bug where the typing indicator would disappear immediately because the stream yielded empty chunks before the actual content. Now it only disappears when a non-empty chunk is received.
 *Tech Notes*:
 - **File**: `lib/ui/screens/ai_chat_screen.dart` (modified): Added `chunk.trim().isNotEmpty` check before setting `receivedFirstToken = true` and `_isTyping = false`.
+
+---
+
+## [2026-05-15 17:12]: UI - Context-Aware Dynamic Suggestions
+*Details*: Customized the dynamic suggestions in the chat based on the active context switches (Abitudini vs Obiettivi).
+*Tech Notes*:
+- **File**: `lib/ui/screens/ai_chat_screen.dart` (modified): Refactored `_getDynamicSuggestions` to check `_shareGoals` and `_shareHabits` and return specific pools of suggestions.
+
+---
+
+## [2026-05-15 17:13]: UI - Custom Premium Switches in Settings
+*Details*: Replaced the standard `Switch.adaptive` with a custom animated toggle to match the premium aesthetic of the app.
+*Tech Notes*:
+- **File**: `lib/ui/screens/ai_chat_screen.dart` (modified): Created a custom toggle using `GestureDetector`, `AnimatedContainer`, and `AnimatedAlign` in `_buildContextSwitch`.

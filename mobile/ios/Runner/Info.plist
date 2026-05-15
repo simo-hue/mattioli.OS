@@ -2,10 +2,6 @@
 <!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
 <plist version="1.0">
 <dict>
-	<key>LSApplicationQueriesSchemes</key>
-	<array>
-		<string>https</string>
-	</array>
 	<key>CADisableMinimumFrameDurationOnPhone</key>
 	<true/>
 	<key>CFBundleDevelopmentRegion</key>
@@ -26,10 +22,33 @@
 	<string>$(FLUTTER_BUILD_NAME)</string>
 	<key>CFBundleSignature</key>
 	<string>????</string>
+	<key>CFBundleURLTypes</key>
+	<array>
+		<dict>
+			<key>CFBundleTypeRole</key>
+			<string>Editor</string>
+			<key>CFBundleURLSchemes</key>
+			<array>
+				<string>com.googleusercontent.apps.11071263331-qepubluq93tojdo3vti51ah3h09ss57m</string>
+			</array>
+		</dict>
+	</array>
 	<key>CFBundleVersion</key>
 	<string>$(FLUTTER_BUILD_NUMBER)</string>
+	<key>LSApplicationQueriesSchemes</key>
+	<array>
+		<string>https</string>
+	</array>
 	<key>LSRequiresIPhoneOS</key>
 	<true/>
+	<key>NSCameraUsageDescription</key>
+	<string>Questa app richiede l'accesso alla fotocamera per permetterti di scattare una foto profilo.</string>
+	<key>NSFaceIDUsageDescription</key>
+	<string>Questa app richiede l'accesso al FaceID per proteggere i tuoi dati personali.</string>
+	<key>NSMicrophoneUsageDescription</key>
+	<string>Questa app richiede l'accesso al microfono (richiesto da image_picker anche se non usato direttamente per le foto).</string>
+	<key>NSPhotoLibraryUsageDescription</key>
+	<string>Questa app richiede l'accesso alla galleria per permetterti di caricare la tua foto profilo.</string>
 	<key>UIApplicationSceneManifest</key>
 	<dict>
 		<key>UIApplicationSupportsMultipleScenes</key>
@@ -69,25 +88,6 @@
 		<string>UIInterfaceOrientationPortraitUpsideDown</string>
 		<string>UIInterfaceOrientationLandscapeLeft</string>
 		<string>UIInterfaceOrientationLandscapeRight</string>
-	</array>
-	<key>NSPhotoLibraryUsageDescription</key>
-	<string>Questa app richiede l'accesso alla galleria per permetterti di caricare la tua foto profilo.</string>
-	<key>NSCameraUsageDescription</key>
-	<string>Questa app richiede l'accesso alla fotocamera per permetterti di scattare una foto profilo.</string>
-	<key>NSMicrophoneUsageDescription</key>
-	<string>Questa app richiede l'accesso al microfono (richiesto da image_picker anche se non usato direttamente per le foto).</string>
-	<key>NSFaceIDUsageDescription</key>
-	<string>Questa app richiede l'accesso al FaceID per proteggere i tuoi dati personali.</string>
-	<key>CFBundleURLTypes</key>
-	<array>
-		<dict>
-			<key>CFBundleTypeRole</key>
-			<string>Editor</string>
-			<key>CFBundleURLSchemes</key>
-			<array>
-				<string>com.googleusercontent.apps.11071263331-qepubluq93tojdo3vti51ah3h09ss57m</string>
-			</array>
-		</dict>
 	</array>
 </dict>
 </plist>

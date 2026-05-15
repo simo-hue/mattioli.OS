@@ -109,8 +109,9 @@ BEGIN
         NEW.raw_user_meta_data ->> 'full_name',
         NEW.raw_user_meta_data ->> 'avatar_url',
         (NEW.raw_user_meta_data ->> 'terms_accepted_at')::timestamp with time zone,
-        (NEW.raw_user_meta_data ->> 'sentry_consent')::boolean
+        COALESCE((NEW.raw_user_meta_data ->> 'sentry_consent')::boolean, false)
     )
+
     ON CONFLICT (id) DO NOTHING;
     RETURN NEW;
 END;

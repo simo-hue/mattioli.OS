@@ -1072,6 +1072,41 @@
 - Rimossi gli alias `as goal_id` e `as other_goal_id` nel SELECT finale per evitare conflitti con i nomi delle colonne di ritorno della tabella.
 - Aggiunta azione manuale in `TO_SIMO_DO.md` per aggiornare la funzione su Supabase.
 
+---
+
+## [2026-05-15 15:05]: Documentation - iOS Code Signing for Physical Device
+*Details*: Documentato il processo per risolvere l'errore di code signing quando si tenta di eseguire l'app su un iPhone fisico.
+*Tech Notes*:
+- Aggiunte istruzioni dettagliate in `TO_SIMO_DO.md` per la configurazione del Team e del Bundle Identifier in Xcode.
+- Spiegato che è possibile utilizzare un account gratuito per i test locali.
+
+---
+
+## [2026-05-15 15:10]: Project Configuration - Xcode Build Settings Cleanup
+*Details*: Consigliato all'utente di accettare le modifiche suggerite da Xcode per rimuovere le impostazioni legacy di embedding delle Swift Standard Libraries.
+*Tech Notes*:
+- Le impostazioni `EMBEDDED_CONTENT_CONTAINS_SWIFT` e `ALWAYS_EMBED_SWIFT_STANDARD_LIBRARIES` sono obsolete nei progetti moderni e vengono rimosse per evitare ridondanze e ridurre la dimensione della build.
+
+---
+
+## [2026-05-15 15:25]: Auth - Analisi Errore Nonce Google Sign-In
+*Details*: Analizzato l'errore "passed nonce in id_token should either both exist or not" durante il login con Google.
+*Tech Notes*:
+- L'errore è dovuto al fatto che il pacchetto `google_sign_in` genera automaticamente un nonce nel token ID su iOS/Android, ma non lo espone facilmente in Flutter per passarlo a Supabase.
+- La soluzione standard raccomandata da Supabase per questo scenario è abilitare l'opzione "Skip nonce checks" nella dashboard di Supabase per il provider Google.
+- Ho aggiunto un'azione manuale in `TO_SIMO_DO.md` per guidare l'utente nell'abilitazione di questa impostazione.
+
+---
+
+## [2026-05-15 15:30]: Database - Fix Trigger handle_new_user per Google Login
+*Details*: Risolto l'errore "Database error saving new user" che si verificava quando un utente si registrava con Google.
+*Tech Notes*:
+- **Causa**: La funzione trigger `handle_new_user` tentava di inserire `NULL` nella colonna `sentry_consent` della tabella `profiles`. Poiché la colonna è marcata come `NOT NULL`, l'operazione falliva. Google non fornisce `sentry_consent` nei metadati dell'utente.
+- **Soluzione**: Aggiornata la funzione in `mobile_schema.sql` per usare `COALESCE((NEW.raw_user_meta_data ->> 'sentry_consent')::boolean, false)`, garantendo che se il valore è nullo venga inserito `false`.
+- **Azione**: Aggiunta istruzione in `TO_SIMO_DO.md` per aggiornare la funzione direttamente su Supabase.
+
+
+
 
 
 

@@ -4,6 +4,10 @@
 [ ] Implementare log in con apple
 [ ] pensare a come implementare la chat con LLM
 
+[ ] Creare il design per la copertina
+    [ ] appLaunchPad
+    [ ] https://appscreens.com
+
 # Feature Premium
     [ ] Analytics as a PRO Plan per quelle avanzate
     [ ] App per Mac ( non solo tramite webApp salvata )

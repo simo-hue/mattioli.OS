@@ -74,7 +74,6 @@ CREATE TABLE IF NOT EXISTS public.profiles (
 
     -- Privacy
     biometric_lock      boolean NOT NULL DEFAULT false,
-    anonymous_analytics boolean NOT NULL DEFAULT true,
 
     -- Timestamps
     created_at  timestamp with time zone DEFAULT now() NOT NULL,

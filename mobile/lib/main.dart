@@ -15,6 +15,8 @@ import 'providers/settings_provider.dart';
 import 'providers/auth_provider.dart';
 import 'ui/screens/dashboard_screen.dart';
 import 'ui/screens/auth_screen.dart';
+import 'ui/screens/consent_screen.dart';
+import 'providers/consent_provider.dart';
 import 'core/notifications.dart';
 import 'ui/widgets/error_modal.dart';
 import 'core/navigator_key.dart';
@@ -82,82 +84,82 @@ void main() async {
   }
 
   // ── Sentry init ──────────────────────────────────────────────────────────
-  // SentryFlutter.init wrappa automaticamente l'app con un error handler
-  // che cattura sia gli errori Flutter che quelli Dart asincroni.
-  await SentryFlutter.init(
-    (options) {
-      options.dsn = SentryConfig.dsn;
-      options.environment = SentryConfig.environment;
-      options.tracesSampleRate = SentryConfig.tracesSampleRate;
+  final hasSentryConsent = prefs.getBool('has_sentry_consent') ?? false;
 
-      // Cattura automaticamente gli errori di rendering/layout
-      options.reportPackages = true;
-
-      // Disabilita in debug mode per non inquinare i dati
-      options.debug = false;
-
-      // Sanitizza l'evento per la privacy rimuovendo PII e dati sensibili
-      options.beforeSend = (event, hint) {
-        return SentryConfig.sanitizeEvent(event);
-      };
-    },
-    appRunner: () {
-      // ── Global error handler (UI modale per l'utente) ─────────────────
-      ErrorWidget.builder = (FlutterErrorDetails details) {
-        return Scaffold(
-          body: Center(
-            child: Padding(
-              padding: const EdgeInsets.all(24.0),
-              child: Column(
-                mainAxisAlignment: MainAxisAlignment.center,
-                children: [
-                  const Icon(Icons.error_outline, color: Colors.red, size: 48),
-                  const SizedBox(height: 16),
-                  const Text(
-                    'Ops! Qualcosa è andato storto.',
-                    style: TextStyle(fontSize: 20, fontWeight: FontWeight.bold),
-                  ),
-                  const SizedBox(height: 8),
-                  Text(
-                    details.exception.toString(),
-                    textAlign: TextAlign.center,
-                    style: const TextStyle(color: Colors.grey),
-                  ),
-                ],
-              ),
+  void startApp() {
+    // ── Global error handler (UI modale per l'utente) ─────────────────
+    ErrorWidget.builder = (FlutterErrorDetails details) {
+      return Scaffold(
+        body: Center(
+          child: Padding(
+            padding: const EdgeInsets.all(24.0),
+            child: Column(
+              mainAxisAlignment: MainAxisAlignment.center,
+              children: [
+                const Icon(Icons.error_outline, color: Colors.red, size: 48),
+                const SizedBox(height: 16),
+                const Text(
+                  'Ops! Qualcosa è andato storto.',
+                  style: TextStyle(fontSize: 20, fontWeight: FontWeight.bold),
+                ),
+                const SizedBox(height: 8),
+                Text(
+                  details.exception.toString(),
+                  textAlign: TextAlign.center,
+                  style: const TextStyle(color: Colors.grey),
+                ),
+              ],
             ),
           ),
-        );
-      };
-
-      PlatformDispatcher.instance.onError = (error, stack) {
-        // Invia l'errore a Sentry
-        Sentry.captureException(error, stackTrace: stack);
-
-        final context = navigatorKey.currentContext;
-        if (context != null) {
-          ErrorModal.show(
-            context,
-            title: 'Si è verificato un errore',
-            message: 'L\'applicazione ha riscontrato un problema imprevisto. Abbiamo registrato l\'errore e cercheremo di risolverlo.',
-            details: error.toString(),
-          );
-        }
-        return true;
-      };
-
-      runApp(
-        ProviderScope(
-          overrides: [
-            sharedPrefsProvider.overrideWithValue(prefs),
-            initialGoalsProvider.overrideWithValue(goalsJson!),
-            initialLogsProvider.overrideWithValue(logsJson!),
-          ],
-          child: const GrowthApp(),
         ),
       );
-    },
-  );
+    };
+
+    PlatformDispatcher.instance.onError = (error, stack) {
+      // Invia l'errore a Sentry (se inizializzato)
+      Sentry.captureException(error, stackTrace: stack);
+
+      final context = navigatorKey.currentContext;
+      if (context != null) {
+        ErrorModal.show(
+          context,
+          title: 'Si è verificato un errore',
+          message: 'L\'applicazione ha riscontrato un problema imprevisto. Abbiamo registrato l\'errore e cercheremo di risolverlo.',
+          details: error.toString(),
+        );
+      }
+      return true;
+    };
+
+    runApp(
+      ProviderScope(
+        overrides: [
+          sharedPrefsProvider.overrideWithValue(prefs),
+          initialGoalsProvider.overrideWithValue(goalsJson!),
+          initialLogsProvider.overrideWithValue(logsJson!),
+        ],
+        child: const GrowthApp(),
+      ),
+    );
+  }
+
+  if (hasSentryConsent) {
+    await SentryFlutter.init(
+      (options) {
+        options.dsn = SentryConfig.dsn;
+        options.environment = SentryConfig.environment;
+        options.tracesSampleRate = SentryConfig.tracesSampleRate;
+        options.reportPackages = true;
+        options.debug = false;
+        options.beforeSend = (event, hint) {
+          return SentryConfig.sanitizeEvent(event);
+        };
+      },
+      appRunner: startApp,
+    );
+  } else {
+    startApp();
+  }
 }
 
 
@@ -167,6 +169,7 @@ void main() async {
 // così GoRouter redireziona automaticamente senza polling.
 final routerProvider = Provider<GoRouter>((ref) {
   final authNotifier = ref.watch(authProvider.notifier);
+  final consentState = ref.watch(consentProvider);
 
   return GoRouter(
     navigatorKey: navigatorKey,
@@ -183,10 +186,22 @@ final routerProvider = Provider<GoRouter>((ref) {
         path: '/login',
         builder: (context, state) => const AuthScreen(),
       ),
+      GoRoute(
+        path: '/consent',
+        builder: (context, state) => const ConsentScreen(),
+      ),
     ],
     redirect: (context, state) {
       final isLoggedIn = ref.read(authProvider).isLoggedIn;
       final isLoggingIn = state.matchedLocation == '/login';
+      final isConsentPage = state.matchedLocation == '/consent';
+
+      if (!consentState.hasCompletedOnboarding && !isConsentPage) {
+        return '/consent';
+      }
+      if (consentState.hasCompletedOnboarding && isConsentPage) {
+        return isLoggedIn ? '/' : '/login';
+      }
 
       if (!isLoggedIn && !isLoggingIn) return '/login';
       if (isLoggedIn && isLoggingIn) return '/';

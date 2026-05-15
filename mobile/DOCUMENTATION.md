@@ -982,6 +982,26 @@
   - Inseriti i link "Privacy Policy" e "Termini di Servizio" in fondo alla colonna di autenticazione in `AuthScreen`.
   - Implementato metodo `_openUrl` per aprire il link fornito dall'utente (`https://simo-hue.github.io/mattioli.OS/`) nel browser esterno.
 
+---
+
+## [2026-05-15 12:00]: Privacy - Rimozione Campo anonymous_analytics
+*Details*: Rimozione del campo "fantasma" `anonymous_analytics` dal file di schema del database (`mobile_schema.sql`) in quanto non utilizzato nel codice dell'applicazione.
+*Tech Notes*:
+- **File Modificati**: `mobile_schema.sql`.
+- **Modifiche**: Rimossa la riga `anonymous_analytics boolean NOT NULL DEFAULT true,` dalla tabella `profiles`.
+
+---
+
+## [2026-05-15 12:10]: Privacy - Schermata di Consenso Iniziale (ConsentScreen)
+*Details*: Implementata una schermata di consenso obbligatoria al primo avvio dell'app per raccogliere l'accettazione dei Termini/Privacy, il consenso per Sentry e i permessi di notifica.
+*Tech Notes*:
+- **File Creati**: `consent_provider.dart`, `consent_screen.dart`.
+- **File Modificati**: `main.dart`.
+- **Modifiche**:
+  - Aggiunto `ConsentScreen` al router.
+  - Aggiornata la logica di redirect per forzare il passaggio da `/consent` se non completato.
+  - Condizionata l'inizializzazione di Sentry al consenso dell'utente letto da `SharedPreferences`.
+
 
 
 

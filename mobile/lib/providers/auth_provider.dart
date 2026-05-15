@@ -2,6 +2,7 @@ import 'dart:convert';
 import 'package:flutter/foundation.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
+import 'consent_provider.dart';
 import 'package:google_sign_in/google_sign_in.dart' as google_auth;
 import 'package:sign_in_with_apple/sign_in_with_apple.dart';
 import 'package:crypto/crypto.dart';
@@ -122,9 +123,15 @@ class AuthNotifier extends Notifier<AuthState> with ChangeNotifier {
   Future<bool> signUp(String email, String password) async {
     state = state.copyWith(isLoading: true, clearError: true);
     try {
+      final consentState = ref.read(consentProvider);
+      
       final response = await supabase.auth.signUp(
         email: email.trim(),
         password: password,
+        data: {
+          'terms_accepted_at': DateTime.now().toIso8601String(),
+          'sentry_consent': consentState.hasSentryConsent,
+        },
       );
       state = state.copyWith(isLoading: false, clearError: true);
 
@@ -293,6 +300,25 @@ class AuthNotifier extends Notifier<AuthState> with ChangeNotifier {
       return false;
     } catch (e, stack) {
       AppLogger.error('[Auth] Update profile name network error', e, stack);
+      state = state.copyWith(isLoading: false, error: 'Errore di rete. Riprova.');
+      return false;
+    }
+  }
+
+  // ── Update Consent in DB ──────────────────────────────────────────────────
+  
+  Future<bool> updateConsentInDb(bool acceptedTerms, bool sentryConsent) async {
+    state = state.copyWith(isLoading: true, clearError: true);
+    try {
+      await supabase.from('profiles').update({
+        'terms_accepted_at': acceptedTerms ? DateTime.now().toIso8601String() : null,
+        'sentry_consent': sentryConsent,
+      }).eq('id', state.userId!);
+      
+      state = state.copyWith(isLoading: false, clearError: true);
+      return true;
+    } catch (e, stack) {
+      AppLogger.error('[Auth] Update consent in DB error', e, stack);
       state = state.copyWith(isLoading: false, error: 'Errore di rete. Riprova.');
       return false;
     }

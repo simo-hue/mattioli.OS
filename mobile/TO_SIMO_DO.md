@@ -36,9 +36,3 @@ comando sentry-cli durante il build di release, ma è un passaggio che va config
       </intent>
   </queries>
   ```
-
-- [ ] **Migrazione Database (Rimozione `anonymous_analytics`)**:
-  Se hai già eseguito lo schema su Supabase, devi rimuovere la colonna `anonymous_analytics` dalla tabella `profiles` eseguendo questo comando nel SQL Editor di Supabase:
-  ```sql
-  ALTER TABLE public.profiles DROP COLUMN IF EXISTS anonymous_analytics;
-  ```

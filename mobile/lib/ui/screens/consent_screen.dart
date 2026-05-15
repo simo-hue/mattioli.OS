@@ -8,6 +8,7 @@ import 'package:permission_handler/permission_handler.dart';
 import 'package:sentry_flutter/sentry_flutter.dart';
 import '../../core/sentry_config.dart';
 import '../../providers/consent_provider.dart';
+import '../../providers/auth_provider.dart';
 import '../../core/theme.dart';
 import '../../core/haptics.dart';
 
@@ -75,6 +76,12 @@ class _ConsentScreenState extends ConsumerState<ConsentScreen> {
       completed: true,
     );
 
+    // Se l'utente è già loggato, salva il consenso anche nel DB
+    final isLoggedIn = ref.read(authProvider).isLoggedIn;
+    if (isLoggedIn) {
+      await ref.read(authProvider.notifier).updateConsentInDb(_acceptedTerms, _sentryConsent);
+    }
+
     // Inizializza Sentry immediatamente se l'utente ha dato il consenso
     if (_sentryConsent) {
       await SentryFlutter.init(
@@ -100,6 +107,12 @@ class _ConsentScreenState extends ConsumerState<ConsentScreen> {
   @override
   Widget build(BuildContext context) {
     final primaryColor = Theme.of(context).colorScheme.primary;
+    final isLightBg = primaryColor.computeLuminance() > 0.5;
+    final activeTextColor = isLightBg ? Colors.black : Colors.white;
+    final disabledTextColor = context.appColors.mutedForeground.computeLuminance() > 0.7
+        ? Colors.grey[600]!
+        : context.appColors.mutedForeground;
+    final buttonTextColor = _acceptedTerms ? activeTextColor : disabledTextColor;
 
     return Scaffold(
       backgroundColor: context.appColors.background,
@@ -275,7 +288,7 @@ class _ConsentScreenState extends ConsumerState<ConsentScreen> {
                               : Text(
                                   'Continua',
                                   style: TextStyle(
-                                    color: _acceptedTerms ? Colors.white : context.appColors.mutedForeground,
+                                    color: buttonTextColor,
                                     fontSize: 16,
                                     fontWeight: FontWeight.bold,
                                   ),

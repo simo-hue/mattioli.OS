@@ -196,13 +196,20 @@ final routerProvider = Provider<GoRouter>((ref) {
       final isLoggingIn = state.matchedLocation == '/login';
       final isConsentPage = state.matchedLocation == '/consent';
 
-      if (!consentState.hasCompletedOnboarding && !isConsentPage) {
-        return '/consent';
+      // 1. Se non ha completato il consenso, deve andare a /consent
+      if (!consentState.hasCompletedOnboarding) {
+        if (!isConsentPage) {
+          return '/consent';
+        }
+        return null; // Rimani su /consent
       }
-      if (consentState.hasCompletedOnboarding && isConsentPage) {
+
+      // 2. Se ha completato il consenso ed è su /consent, vai avanti
+      if (isConsentPage) {
         return isLoggedIn ? '/' : '/login';
       }
 
+      // 3. Logica normale di autenticazione
       if (!isLoggedIn && !isLoggingIn) return '/login';
       if (isLoggedIn && isLoggingIn) return '/';
       return null;

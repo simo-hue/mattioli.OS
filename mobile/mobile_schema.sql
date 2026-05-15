@@ -74,6 +74,8 @@ CREATE TABLE IF NOT EXISTS public.profiles (
 
     -- Privacy
     biometric_lock      boolean NOT NULL DEFAULT false,
+    terms_accepted_at   timestamp with time zone,
+    sentry_consent      boolean NOT NULL DEFAULT false,
 
     -- Timestamps
     created_at  timestamp with time zone DEFAULT now() NOT NULL,
@@ -101,11 +103,13 @@ SECURITY DEFINER
 SET search_path = public
 AS $$
 BEGIN
-    INSERT INTO public.profiles (id, full_name, avatar_url)
+    INSERT INTO public.profiles (id, full_name, avatar_url, terms_accepted_at, sentry_consent)
     VALUES (
         NEW.id,
         NEW.raw_user_meta_data ->> 'full_name',
-        NEW.raw_user_meta_data ->> 'avatar_url'
+        NEW.raw_user_meta_data ->> 'avatar_url',
+        (NEW.raw_user_meta_data ->> 'terms_accepted_at')::timestamp with time zone,
+        (NEW.raw_user_meta_data ->> 'sentry_consent')::boolean
     )
     ON CONFLICT (id) DO NOTHING;
     RETURN NEW;

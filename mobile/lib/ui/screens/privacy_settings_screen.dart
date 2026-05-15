@@ -12,6 +12,7 @@ import 'package:local_auth/local_auth.dart';
 import 'package:permission_handler/permission_handler.dart';
 import '../../core/theme.dart';
 import '../../providers/settings_provider.dart';
+import '../../providers/consent_provider.dart';
 import '../../core/haptics.dart';
 import '../../core/localization.dart';
 import '../../core/app_logger.dart';
@@ -41,6 +42,7 @@ class PrivacySettingsScreen extends ConsumerWidget {
   Widget build(BuildContext context, WidgetRef ref) {
     final settings = ref.watch(settingsProvider);
     final notifier = ref.read(settingsProvider.notifier);
+    final consentState = ref.watch(consentProvider);
 
     return Scaffold(
       backgroundColor: context.appColors.background,
@@ -111,6 +113,23 @@ class PrivacySettingsScreen extends ConsumerWidget {
             const SizedBox(height: 32),
             _buildSectionHeader(context, 'GESTIONE DATI'),
             _buildSettingsCard(context, [
+              _buildSwitchRow(
+                context: context,
+                ref: ref,
+                icon: LucideIcons.circleAlert,
+                title: 'Invia Segnalazioni Crash',
+                subtitle: 'Aiutaci a migliorare l\'app (Sentry)',
+                value: consentState.hasSentryConsent,
+                onChanged: (val) {
+                  ref.read(consentProvider.notifier).setConsent(
+                    acceptedTerms: consentState.hasAcceptedTerms,
+                    sentryConsent: val,
+                    completed: consentState.hasCompletedOnboarding,
+                  );
+                  ref.hapticLight();
+                },
+              ),
+              _buildDivider(context),
               _buildActionRow(
                 context: context,
                 icon: LucideIcons.download,

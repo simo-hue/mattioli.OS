@@ -537,7 +537,9 @@ class _HomeScreenState extends ConsumerState<HomeScreen>
       final bool canAuthenticate = canAuthenticateWithBiometrics || await auth.isDeviceSupported();
 
       if (!canAuthenticate) {
-        setState(() => _isBiometricAuthenticated = true);
+        if (mounted) {
+          setState(() => _isBiometricAuthenticated = true);
+        }
         return;
       }
 
@@ -548,7 +550,9 @@ class _HomeScreenState extends ConsumerState<HomeScreen>
       );
 
       if (didAuthenticate) {
-        setState(() => _isBiometricAuthenticated = true);
+        if (mounted) {
+          setState(() => _isBiometricAuthenticated = true);
+        }
       }
     } catch (e, stack) {
       AppLogger.error('Biometric authentication error', e, stack);
@@ -730,9 +734,11 @@ class _HomeScreenState extends ConsumerState<HomeScreen>
     
     // Auto-authenticate when lock is active
     ref.listen(biometricLockProvider, (prev, next) {
-      if (next.value == true && !_isBiometricAuthenticated) {
-        _authenticate();
-      }
+      next.whenData((isLocked) {
+        if (isLocked && !_isBiometricAuthenticated) {
+          _authenticate();
+        }
+      });
     });
 
     // Listen for tutorial reset

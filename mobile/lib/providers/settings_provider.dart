@@ -124,6 +124,9 @@ class AppSettingsNotifier extends Notifier<AppSettings> {
     // 1. Caricamento sincrono iniziale da SharedPreferences (Offline-First)
     final state = _loadFromPrefs();
 
+    // Carica le impostazioni sicure in modo asincrono per garantire coerenza UI
+    _loadSecureSettings();
+
     // 2. Ascolta i cambi di autenticazione: se l'utente fa login, sincronizziamo da Supabase
     ref.listen(authProvider, (previous, next) {
       if (next.isLoggedIn && next.user != null) {
@@ -138,6 +141,19 @@ class AppSettingsNotifier extends Notifier<AppSettings> {
     }
 
     return state;
+  }
+
+  Future<void> _loadSecureSettings() async {
+    try {
+      final secureStorage = ref.read(secureStorageProvider);
+      final val = await secureStorage.read(key: 'pref_biometric_lock');
+      if (val != null) {
+        final biometricLock = val == 'true';
+        state = state.copyWith(biometricLock: biometricLock);
+      }
+    } catch (e, stack) {
+      AppLogger.error('Errore nel caricamento delle impostazioni sicure in SettingsProvider', e, stack);
+    }
   }
 
   // ── Modificatori ──────────────────────────────────────────────────────────
@@ -277,7 +293,10 @@ class AppSettingsNotifier extends Notifier<AppSettings> {
     
     prefs.setBool('pref_biometric_lock', s.biometricLock);
     // Anche nello storage sicuro per evitare manipolazioni
-    ref.read(secureStorageProvider).write(key: 'pref_biometric_lock', value: s.biometricLock.toString());
+    ref.read(secureStorageProvider).write(key: 'pref_biometric_lock', value: s.biometricLock.toString())
+      .catchError((e, stack) {
+        AppLogger.error('Errore durante la scrittura di biometricLock su SecureStorage', e, stack);
+      });
     
     prefs.setBool('pref_anonymous_analytics', s.anonymousAnalytics);
     

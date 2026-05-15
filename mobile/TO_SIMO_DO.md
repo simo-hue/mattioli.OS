@@ -47,3 +47,8 @@ comando sentry-cli durante il build di release, ma è un passaggio che va config
     - **Sentry**: Specifica che è il servizio usato per monitorare i crash e migliorare l'app (indicando che l'invio è facoltativo e basato sul consenso).
   - **Diritti dell'Utente**: Elenca il diritto di accesso, rettifica, cancellazione (diritto all'oblio) e revoca del consenso (tutti esercitabili direttamente dalle impostazioni dell'app).
   - **Base Giuridica**: Specifica che il trattamento si basa sull'Esecuzione di un contratto (per l'uso dell'app) e sul Consenso (per i crash log di Sentry).
+
+## Bug Fixes
+- [x] **Aggiornare la funzione RPC `get_all_habit_correlations` su Supabase**:
+  - Ho corretto un errore di "ambiguous column reference" nel file `migrations/20260513_add_get_all_habit_correlations.sql`.
+  - Devi copiare il contenuto di quel file e eseguirlo nell'editor SQL di Supabase per aggiornare la funzione.

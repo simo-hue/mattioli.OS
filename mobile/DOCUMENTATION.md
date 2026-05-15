@@ -1062,6 +1062,16 @@
   - Removed unnecessary imports of `services.dart` in `macro_goals_screen.dart`, `statistics_screen.dart`, and `goal_item_widget.dart`.
   - Removed unused optional parameter `duration` in `ai_chat_screen.dart`.
 
+---
+
+## [2026-05-15 14:35]: Fix - Ambiguous Column in get_all_habit_correlations RPC
+*Details*: Risolto un errore di riferimento ambiguo alla colonna `goal_id` nella funzione database `get_all_habit_correlations`.
+*Tech Notes*:
+- Modificato il file `migrations/20260513_add_get_all_habit_correlations.sql`.
+- Qualificate le colonne con gli alias delle tabelle (`gl.goal_id`, `hd.goal_id`) nei CTE.
+- Rimossi gli alias `as goal_id` e `as other_goal_id` nel SELECT finale per evitare conflitti con i nomi delle colonne di ritorno della tabella.
+- Aggiunta azione manuale in `TO_SIMO_DO.md` per aggiornare la funzione su Supabase.
+
 
 
 

@@ -3,6 +3,8 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 import 'package:shared_preferences/shared_preferences.dart';
+import 'package:flutter_secure_storage/flutter_secure_storage.dart';
+import 'providers/goal_provider.dart';
 import 'package:sentry_flutter/sentry_flutter.dart';
 import 'dart:ui';
 import 'core/theme.dart';
@@ -44,6 +46,40 @@ void main() async {
 
   // ── SharedPreferences init ───────────────────────────────────────────────
   final prefs = await SharedPreferences.getInstance();
+
+  // ── Secure Cache Loading & Migration ─────────────────────────────────────
+  const storage = FlutterSecureStorage(
+    aOptions: AndroidOptions(encryptedSharedPreferences: true),
+    iOptions: IOSOptions(accessibility: KeychainAccessibility.first_unlock),
+  );
+
+  // Carica Goals Cache
+  String? goalsJson = await storage.read(key: 'goals_cache');
+  if (goalsJson == null) {
+    // Migrazione da SharedPreferences se esiste
+    final oldGoals = prefs.getString('goals_cache');
+    if (oldGoals != null) {
+      goalsJson = oldGoals;
+      await storage.write(key: 'goals_cache', value: goalsJson);
+      await prefs.remove('goals_cache');
+    } else {
+      goalsJson = '[]';
+    }
+  }
+
+  // Carica Logs Cache
+  String? logsJson = await storage.read(key: 'goal_logs_cache');
+  if (logsJson == null) {
+    // Migrazione da SharedPreferences se esiste
+    final oldLogs = prefs.getString('goal_logs_cache');
+    if (oldLogs != null) {
+      logsJson = oldLogs;
+      await storage.write(key: 'goal_logs_cache', value: logsJson);
+      await prefs.remove('goal_logs_cache');
+    } else {
+      logsJson = '{}';
+    }
+  }
 
   // ── Sentry init ──────────────────────────────────────────────────────────
   // SentryFlutter.init wrappa automaticamente l'app con un error handler
@@ -114,6 +150,8 @@ void main() async {
         ProviderScope(
           overrides: [
             sharedPrefsProvider.overrideWithValue(prefs),
+            initialGoalsProvider.overrideWithValue(goalsJson!),
+            initialLogsProvider.overrideWithValue(logsJson!),
           ],
           child: const GrowthApp(),
         ),

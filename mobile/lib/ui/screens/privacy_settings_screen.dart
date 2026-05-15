@@ -983,10 +983,8 @@ class PrivacySettingsScreen extends ConsumerWidget {
       final user = supabase.auth.currentUser;
       if (user == null) throw Exception('Utente non trovato.');
 
-      await supabase.from('goals').delete().eq('user_id', user.id);
-      await supabase.from('goal_logs').delete().eq('user_id', user.id);
-      await supabase.from('long_term_goals').delete().eq('user_id', user.id);
-      await supabase.from('profiles').delete().eq('id', user.id);
+      // Elimina l'utente e tutti i dati associati tramite RPC (security definer)
+      await supabase.rpc('delete_user_account');
       
       await supabase.auth.signOut();
       

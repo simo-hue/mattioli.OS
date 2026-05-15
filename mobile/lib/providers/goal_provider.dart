@@ -1,15 +1,17 @@
 import 'dart:convert';
-import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
+import 'package:flutter_secure_storage/flutter_secure_storage.dart';
 import '../models/goal.dart';
-import 'shared_prefs_provider.dart';
 import 'auth_provider.dart';
 import 'settings_provider.dart';
 import '../core/notifications.dart';
 import '../core/navigator_key.dart';
 import '../core/app_logger.dart';
 import '../ui/widgets/error_modal.dart';
+
+final initialGoalsProvider = Provider<String>((ref) => '[]');
+final initialLogsProvider = Provider<String>((ref) => '{}');
 
 // ─── Goals Provider (Offline-First) ─────────────────────────────────────────
 
@@ -38,9 +40,8 @@ class GoalsNotifier extends Notifier<List<Goal>> {
   }
 
   List<Goal> _loadFromCache() {
-    final prefs = ref.read(sharedPrefsProvider);
-    final cache = prefs.getString(_cacheKey);
-    if (cache == null) return [];
+    final cache = ref.read(initialGoalsProvider);
+    if (cache == '[]') return [];
 
     try {
       final List<dynamic> jsonList = jsonDecode(cache);
@@ -52,9 +53,10 @@ class GoalsNotifier extends Notifier<List<Goal>> {
   }
 
   void _saveToCache(List<Goal> goals) {
-    final prefs = ref.read(sharedPrefsProvider);
     final jsonList = goals.map((g) => g.toJson()).toList();
-    prefs.setString(_cacheKey, jsonEncode(jsonList));
+    const storage = FlutterSecureStorage();
+    // Salva in modo asincrono nel portachiavi sicuro
+    storage.write(key: _cacheKey, value: jsonEncode(jsonList));
   }
 
   Future<void> _syncFromSupabase() async {
@@ -227,9 +229,8 @@ class HabitLogsNotifier extends Notifier<HabitLogsMap> {
   }
 
   HabitLogsMap _loadFromCache() {
-    final prefs = ref.read(sharedPrefsProvider);
-    final cache = prefs.getString(_cacheKey);
-    if (cache == null) return {};
+    final cache = ref.read(initialLogsProvider);
+    if (cache == '{}') return {};
 
     try {
       final Map<String, dynamic> jsonMap = jsonDecode(cache);
@@ -245,8 +246,9 @@ class HabitLogsNotifier extends Notifier<HabitLogsMap> {
   }
 
   void _saveToCache(HabitLogsMap logs) {
-    final prefs = ref.read(sharedPrefsProvider);
-    prefs.setString(_cacheKey, jsonEncode(logs));
+    const storage = FlutterSecureStorage();
+    // Salva in modo asincrono nel portachiavi sicuro
+    storage.write(key: _cacheKey, value: jsonEncode(logs));
   }
 
   Future<void> _syncFromSupabase() async {

@@ -952,6 +952,36 @@
 - Aggiornato `lib/core/app_logger.dart` per sanitizzare i messaggi prima di `debugPrint` e `Sentry.addBreadcrumb`.
 - Aggiunto supporto per `extras` strutturati in `AppLogger.info` e `AppLogger.warning` con sanitizzazione automatica.
 
+---
+
+## [2026-05-15 11:40]: Privacy - Implementazione Cancellazione Completa Account via RPC
+*Details*: Sostituita la cancellazione parziale dei dati lato client con una chiamata RPC a una funzione database (`delete_user_account`) per garantire la rimozione dell'utente anche da `auth.users` di Supabase, in conformità con il GDPR.
+*Tech Notes*:
+- **File Modificati**: `privacy_settings_screen.dart`.
+- **Modifiche**: Rimosse le chiamate `delete().eq(...)` sulle tabelle pubbliche e sostituite con `await supabase.rpc('delete_user_account')`.
+- **Azioni Manuali**: Aggiunta istruzione in `TO_SIMO_DO.md` per creare la funzione RPC su Supabase.
+
+---
+
+## [2026-05-15 11:45]: Privacy - Cifratura Cache Locale Abitudini e Log
+*Details*: Spostata la memorizzazione della cache di abitudini e log da `SharedPreferences` (in chiaro) a `FlutterSecureStorage` (cifrato) per proteggere i dati sensibili dell'utente. Implementata anche la migrazione automatica al primo avvio.
+*Tech Notes*:
+- **File Modificati**: `main.dart`, `goal_provider.dart`.
+- **Modifiche**: 
+  - In `main.dart`, legge i dati da `FlutterSecureStorage` all'avvio e li passa tramite `initialGoalsProvider` e `initialLogsProvider`. Se non presenti, migra i vecchi dati da `SharedPreferences`.
+  - In `goal_provider.dart`, `GoalsNotifier` e `HabitLogsNotifier` ora leggono lo stato iniziale dai nuovi provider e salvano gli aggiornamenti direttamente su `FlutterSecureStorage` in modo asincrono.
+
+---
+
+## [2026-05-15 11:50]: Privacy - Link Legali nella Schermata di Login
+*Details*: Aggiunti i link a Privacy Policy e Termini di Servizio nella schermata di login per conformità con le linee guida degli store.
+*Tech Notes*:
+- **File Modificati**: `auth_screen.dart`, `pubspec.yaml`.
+- **Modifiche**: 
+  - Aggiunta dipendenza `url_launcher`.
+  - Inseriti i link "Privacy Policy" e "Termini di Servizio" in fondo alla colonna di autenticazione in `AuthScreen`.
+  - Implementato metodo `_openUrl` per aprire il link fornito dall'utente (`https://simo-hue.github.io/mattioli.OS/`) nel browser esterno.
+
 
 
 

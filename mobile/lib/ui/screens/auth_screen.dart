@@ -2,6 +2,7 @@ import 'dart:ui';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:lucide_icons_flutter/lucide_icons.dart';
+import 'package:url_launcher/url_launcher.dart';
 import 'package:google_fonts/google_fonts.dart';
 import '../../core/theme.dart';
 import '../../providers/auth_provider.dart';
@@ -126,6 +127,22 @@ class _AuthScreenState extends ConsumerState<AuthScreen> with SingleTickerProvid
           shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
         ),
       );
+    }
+  }
+
+  Future<void> _openUrl(String urlString) async {
+    final Uri url = Uri.parse(urlString);
+    if (!await launchUrl(url, mode: LaunchMode.externalApplication)) {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: const Text('Impossibile aprire il link.'),
+            backgroundColor: AppColors.destructive,
+            behavior: SnackBarBehavior.floating,
+            shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+          ),
+        );
+      }
     }
   }
 
@@ -378,6 +395,52 @@ class _AuthScreenState extends ConsumerState<AuthScreen> with SingleTickerProvid
                                   color: primaryColor,
                                   fontWeight: FontWeight.w700,
                                   fontSize: 14,
+                                ),
+                              ),
+                            ),
+                          ],
+                        ),
+                        const SizedBox(height: 8),
+                        // Legal Links
+                        Row(
+                          mainAxisAlignment: MainAxisAlignment.center,
+                          children: [
+                            TextButton(
+                              onPressed: () => _openUrl('https://simo-hue.github.io/mattioli.OS/'),
+                              style: TextButton.styleFrom(
+                                padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+                                minimumSize: Size.zero,
+                                tapTargetSize: MaterialTapTargetSize.shrinkWrap,
+                              ),
+                              child: Text(
+                                'Privacy Policy',
+                                style: TextStyle(
+                                  color: context.appColors.mutedForeground,
+                                  fontSize: 12,
+                                  decoration: TextDecoration.underline,
+                                ),
+                              ),
+                            ),
+                            Text(
+                              '•',
+                              style: TextStyle(
+                                color: context.appColors.mutedForeground,
+                                fontSize: 12,
+                              ),
+                            ),
+                            TextButton(
+                              onPressed: () => _openUrl('https://simo-hue.github.io/mattioli.OS/'),
+                              style: TextButton.styleFrom(
+                                padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+                                minimumSize: Size.zero,
+                                tapTargetSize: MaterialTapTargetSize.shrinkWrap,
+                              ),
+                              child: Text(
+                                'Termini di Servizio',
+                                style: TextStyle(
+                                  color: context.appColors.mutedForeground,
+                                  fontSize: 12,
+                                  decoration: TextDecoration.underline,
                                 ),
                               ),
                             ),

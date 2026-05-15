@@ -21,11 +21,18 @@
 - [ ] Verificare che i grafici (fl_chart) abbiano legende e assi leggibili sia in Light che in Dark Mode.
 - [ ] Confermare che il colore accento cambi automaticamente se quello selezionato è troppo chiaro per lo sfondo bianco (gestito da `SettingsProvider`).
 
-
 ---
 
 comando sentry-cli durante il build di release, ma è un passaggio che va configurato quando sarai pronto per la submission all'App Store.
 
-## Sicurezza & Storage
-- [ ] **Riavviare l'applicazione**: L'aggiunta di `flutter_secure_storage` richiede il riavvio completo dell'app (non basta l'hot reload) perché installa codice nativo.
-- [ ] **Nuovo Login Richiesto**: Avendo spostato la sessione di Supabase su `flutter_secure_storage`, la sessione precedente salvata in `shared_preferences` non verrà letta. Dovrai effettuare nuovamente il login.
+## Sicurezza & Privacy
+- [ ] **Configurazione `url_launcher` per Android (API 30+)**:
+  Se l'app punta ad Android 11+ (API 30+), devi aggiungere questo blocco nel tuo `android/app/src/main/AndroidManifest.xml` (fuori dal blocco `<application>`):
+  ```xml
+  <queries>
+      <intent>
+          <action android:name="android.intent.action.VIEW" />
+          <data android:scheme="https" />
+      </intent>
+  </queries>
+  ```

@@ -264,8 +264,7 @@
     - Modified `habit_calendario_tab_widget.dart`.
     - Changed divisor in `LayoutBuilder` from 14 to 12.
 
-## Current Status
-- **Next Step**: Waiting for user verification of the tuned calendar size.
+
 
 
 - [2026-05-14 17:41]: **Tutorial Completion Flow Update**
@@ -300,3 +299,13 @@
 - [2026-05-14 18:40]: **AI Chat: Dynamic and Contextual Suggestions**
   - *Details*: Replaced hardcoded suggested prompts with dynamic ones based on the time of day and the user's current goals and habits status.
   - *Tech Notes*: Implemented `_getDynamicSuggestions` method that reads from `macroGoalsProvider`, `goalsProvider`, and `habitLogsProvider` to generate a pool of relevant prompts, and picks 4 deterministically based on message count to ensure stability between rebuilds.
+
+- [2026-05-15 16:00]: **Dynamic Habit Notifications**
+  - *Details*: Implemented a dynamic message generator for habit notifications to avoid "notification fatigue" and make messages more engaging by including the habit name.
+  - *Tech Notes*:
+    - Added `_getHabitMessage(String title)` helper method in `NotificationService`.
+    - Created a list of 15 varied messages (motivational, direct, identity-focused, etc.) all including the habit title.
+    - Updated `scheduleHabitReminder` and `_snoozeHabit` to use this method for generating the notification body.
+
+## Current Status
+- **Next Step**: Waiting for user to verify the new notification behavior or request further changes.

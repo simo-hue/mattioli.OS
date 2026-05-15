@@ -138,7 +138,7 @@ class NotificationService {
     await _notifications.zonedSchedule(
       id: habitId.hashCode + 1000,
       title: 'Growth • $title',
-      body: 'È il momento di completare la tua abitudine!',
+      body: _getHabitMessage(title),
       scheduledDate: tz.TZDateTime.from(scheduledDate, tz.local),
       notificationDetails: platformDetails,
       androidScheduleMode: AndroidScheduleMode.exactAllowWhileIdle,
@@ -266,7 +266,7 @@ class NotificationService {
     await _notifications.zonedSchedule(
       id: notificationId,
       title: 'Growth • $title',
-      body: 'È il momento di completare la tua abitudine!',
+      body: _getHabitMessage(title),
       scheduledDate: _nextInstanceOfTime(hour, minute),
       notificationDetails: platformDetails,
       androidScheduleMode: AndroidScheduleMode.exactAllowWhileIdle,
@@ -281,6 +281,29 @@ class NotificationService {
 
   Future<void> cancelAll() async {
     await _notifications.cancelAll();
+  }
+
+  String _getHabitMessage(String title) {
+    final messages = [
+      'A che punto siamo con "$title"?',
+      'Tempo di agire! Dedichiamo qualche minuto a "$title".',
+      'È il momento perfetto per dedicarti a "$title".',
+      'Pronto a fare un passo avanti con "$title"?',
+      'Non dimenticarti di "$title" oggi!',
+      'Cosa ne dici di dedicare solo 5 minuti a "$title"?',
+      'Non spezzare la catena! È il momento di "$title".',
+      'Il tuo futuro sé ti ringrazierà per aver fatto "$title" oggi.',
+      'È ora di "$title". Sei pronto?',
+      'Piccole azioni portano a grandi risultati: tocca a "$title".',
+      'Fai spazio nella tua giornata per "$title".',
+      'Hai già spuntato "$title" dalla tua lista oggi?',
+      'Dai valore al tuo tempo: è l\'ora di "$title".',
+      'Mettiti alla prova anche oggi con "$title"!',
+      'Solo un piccolo sforzo per completare "$title".',
+    ];
+    
+    final index = (title.hashCode + DateTime.now().minute + DateTime.now().hour) % messages.length;
+    return messages[index.abs()];
   }
 
   tz.TZDateTime _nextInstanceOfTime(int hour, int minute) {

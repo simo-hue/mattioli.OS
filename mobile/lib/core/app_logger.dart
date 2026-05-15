@@ -1,5 +1,6 @@
 import 'package:flutter/foundation.dart';
 import 'package:sentry_flutter/sentry_flutter.dart';
+import 'privacy_utils.dart';
 
 /// Helper centralizzato per il reporting degli errori.
 ///
@@ -27,7 +28,7 @@ class AppLogger {
     Map<String, dynamic>? extras,
   ]) {
     // Sempre stampa in console durante lo sviluppo
-    debugPrint('$message: $error');
+    debugPrint('${PrivacyUtils.sanitizeString(message)}: $error');
 
     // In release, invia a Sentry
     if (kReleaseMode) {
@@ -47,30 +48,35 @@ class AppLogger {
 
   /// Logga un messaggio informativo (breadcrumb) senza errore.
   /// Utile per tracciare azioni dell'utente prima di un crash.
-  static void info(String message, {String? category}) {
-    debugPrint('[Info] $message');
+  static void info(String message, {String? category, Map<String, dynamic>? extras}) {
+    final sanitizedMessage = PrivacyUtils.sanitizeString(message);
+    debugPrint('[Info] $sanitizedMessage');
 
     if (kReleaseMode) {
       Sentry.addBreadcrumb(Breadcrumb(
-        message: message,
+        message: sanitizedMessage,
         category: category ?? 'app',
         level: SentryLevel.info,
+        data: PrivacyUtils.sanitizeMap(extras),
       ));
     }
   }
 
   /// Logga un warning (non bloccante ma sospetto).
-  static void warning(String message, [dynamic error, StackTrace? stackTrace]) {
-    debugPrint('[Warning] $message: $error');
+  static void warning(String message, [dynamic error, StackTrace? stackTrace, Map<String, dynamic>? extras]) {
+    final sanitizedMessage = PrivacyUtils.sanitizeString(message);
+    debugPrint('[Warning] $sanitizedMessage: $error');
 
     if (kReleaseMode) {
       Sentry.captureMessage(
-        message,
+        sanitizedMessage,
         level: SentryLevel.warning,
         withScope: (scope) {
           if (error != null) {
-            // Usiamo setContexts con una mappa invece di setExtra (deprecato)
             scope.setContexts('error_details', {'error': error.toString()});
+          }
+          if (extras != null) {
+            scope.setContexts('extras', PrivacyUtils.sanitizeMap(extras)!);
           }
         },
       );

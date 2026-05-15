@@ -20,5 +20,9 @@
     [ ] Cambiare icona dell'app
     [ ] 
 
+[ ] Opzione "Local-First" / Modalità solo Offline
+    [ ] Usare un DB Locale
+    [ ] Usare LLM Locale
+
 [ ] Gamification
     [ ] icone profilo in base a #goals completati

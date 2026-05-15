@@ -942,6 +942,17 @@
 - **SettingsProvider**: Aggiornato `_loadSecureSettings` per leggere asincronamente `pref_ai_suggestions`, `pref_is_pro`, `pref_focus_mode`, `pref_milestones` e `pref_deep_work_insights` da `SecureStorage` e aggiornare lo stato.
 - **SettingsProvider**: Aggiornato `_saveToPrefs` per scrivere queste impostazioni anche su `SecureStorage` (mantenendo la scrittura su `SharedPreferences` per un caricamento iniziale sincrono senza flickering).
 
+---
+
+## [2026-05-15 11:32]: Privacy - Zero-PII in Logs and Breadcrumbs (Step 4)
+*Details*: Centralizzata la logica di sanitizzazione dei dati in `PrivacyUtils` e applicata a `AppLogger` e `SentryConfig` per garantire che PII (email, token, password) non finiscano mai nei log o nei breadcrumb di Sentry.
+*Tech Notes*:
+- Creata `lib/core/privacy_utils.dart` con metodi `sanitizeString` e `sanitizeMap`.
+- Aggiornato `lib/core/sentry_config.dart` per usare `PrivacyUtils`.
+- Aggiornato `lib/core/app_logger.dart` per sanitizzare i messaggi prima di `debugPrint` e `Sentry.addBreadcrumb`.
+- Aggiunto supporto per `extras` strutturati in `AppLogger.info` e `AppLogger.warning` con sanitizzazione automatica.
+
+
 
 
 

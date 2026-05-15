@@ -1105,6 +1105,14 @@
 - **Soluzione**: Aggiornata la funzione in `mobile_schema.sql` per usare `COALESCE((NEW.raw_user_meta_data ->> 'sentry_consent')::boolean, false)`, garantendo che se il valore è nullo venga inserito `false`.
 - **Azione**: Aggiunta istruzione in `TO_SIMO_DO.md` per aggiornare la funzione direttamente su Supabase.
 
+---
+
+## [2026-05-15 15:35]: Onboarding - Tutorial Completo porta a Vista Mese
+*Details*: Configurato il comportamento del termine del tutorial: quando l'utente clicca su "Inizia" nella schermata finale del tutorial ("Sei pronto!"), viene portato alla Home con la visualizzazione impostata su "Mese".
+*Tech Notes*:
+- **File**: `lib/ui/screens/dashboard_screen.dart`.
+- **Modifiche**: Aggiunta la riga `ref.read(calendarViewProvider.notifier).setView(CalendarView.month);` nel callback `onTap` del pulsante "Inizia" nella fuzione `_showEndTutorialScreen`.
+
 
 
 

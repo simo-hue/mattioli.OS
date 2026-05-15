@@ -249,6 +249,7 @@ class _HomeScreenState extends ConsumerState<HomeScreen>
                       onTap: () {
                         ref.hapticMedium();
                         ref.read(tutorialProvider.notifier).setTutorialSeen(true);
+                        ref.read(calendarViewProvider.notifier).setView(CalendarView.month);
                         Navigator.pop(context);
                         _onItemTapped(1); // Go to Home
                       },

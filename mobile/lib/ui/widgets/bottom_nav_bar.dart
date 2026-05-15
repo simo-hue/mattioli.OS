@@ -30,85 +30,102 @@ class AppBottomNavBar extends ConsumerWidget {
       _NavItem(icon: LucideIcons.chartPie, label: context.l10n.translate('Obiettivi')),
     ];
 
-    return Container(
-      margin: EdgeInsets.fromLTRB(16, 0, 16, bottomPadding + 3),
-      child: ClipRRect(
-        borderRadius: BorderRadius.circular(28),
-        child: BackdropFilter(
-          filter: ImageFilter.blur(sigmaX: 30, sigmaY: 30),
-          child: Container(
-            width: double.infinity,
-            height: 68,
-            decoration: BoxDecoration(
-              color: context.appColors.card.withValues(alpha: 0.8),
-              borderRadius: BorderRadius.circular(28),
-              border: Border.all(
-                color: context.appColors.border.withValues(alpha: 0.5),
-                width: 1,
-              ),
-              boxShadow: [
-                BoxShadow(
-                  color: Colors.black.withValues(alpha: context.appColors.background.computeLuminance() > 0.5 ? 0.1 : 0.3),
-                  blurRadius: 20,
-                  offset: const Offset(0, 10),
+    return GestureDetector(
+      onHorizontalDragEnd: (details) {
+        if (details.primaryVelocity != null) {
+          if (details.primaryVelocity! > 0) {
+            // Swipe right -> Previous page
+            if (currentIndex > 0) {
+              onTap(currentIndex - 1);
+            }
+          } else if (details.primaryVelocity! < 0) {
+            // Swipe left -> Next page
+            if (currentIndex < items.length - 1) {
+              onTap(currentIndex + 1);
+            }
+          }
+        }
+      },
+      child: Container(
+        margin: EdgeInsets.fromLTRB(16, 0, 16, bottomPadding + 3),
+        child: ClipRRect(
+          borderRadius: BorderRadius.circular(28),
+          child: BackdropFilter(
+            filter: ImageFilter.blur(sigmaX: 30, sigmaY: 30),
+            child: Container(
+              width: double.infinity,
+              height: 68,
+              decoration: BoxDecoration(
+                color: context.appColors.card.withValues(alpha: 0.8),
+                borderRadius: BorderRadius.circular(28),
+                border: Border.all(
+                  color: context.appColors.border.withValues(alpha: 0.5),
+                  width: 1,
                 ),
-              ],
-            ),
-            child: LayoutBuilder(
-              builder: (context, constraints) {
-                final itemWidth = constraints.maxWidth / items.length;
-                
-                return Stack(
-                  children: [
-
-                    // Bottom "Accent" Bar
-                    AnimatedPositioned(
-                      duration: const Duration(milliseconds: 500),
-                      curve: Curves.easeOutQuart,
-                      left: itemWidth * currentIndex + (itemWidth * 0.15),
-                      bottom: 0,
-                      child: Container(
-                        width: itemWidth * 0.7,
-                        height: 3,
-                        decoration: BoxDecoration(
-                          color: primaryColor,
-                          borderRadius: const BorderRadius.vertical(top: Radius.circular(100)),
-                          boxShadow: [
-                            BoxShadow(
-                              color: primaryColor.withValues(alpha: 0.8),
-                              blurRadius: 10,
-                              spreadRadius: 1,
-                              offset: const Offset(0, -1),
-                            ),
-                          ],
+                boxShadow: [
+                  BoxShadow(
+                    color: Colors.black.withValues(alpha: context.appColors.background.computeLuminance() > 0.5 ? 0.1 : 0.3),
+                    blurRadius: 20,
+                    offset: const Offset(0, 10),
+                  ),
+                ],
+              ),
+              child: LayoutBuilder(
+                builder: (context, constraints) {
+                  final itemWidth = constraints.maxWidth / items.length;
+                  
+                  return Stack(
+                    children: [
+  
+                      // Bottom "Accent" Bar
+                      AnimatedPositioned(
+                        duration: const Duration(milliseconds: 500),
+                        curve: Curves.easeOutQuart,
+                        left: itemWidth * currentIndex + (itemWidth * 0.15),
+                        bottom: 0,
+                        child: Container(
+                          width: itemWidth * 0.7,
+                          height: 3,
+                          decoration: BoxDecoration(
+                            color: primaryColor,
+                            borderRadius: const BorderRadius.vertical(top: Radius.circular(100)),
+                            boxShadow: [
+                              BoxShadow(
+                                color: primaryColor.withValues(alpha: 0.8),
+                                blurRadius: 10,
+                                spreadRadius: 1,
+                                offset: const Offset(0, -1),
+                              ),
+                            ],
+                          ),
                         ),
                       ),
-                    ),
-                    
-                    // Nav Items
-                    SizedBox(
-                      height: 68,
-                      child: Row(
-                        mainAxisAlignment: MainAxisAlignment.spaceAround,
-                        children: List.generate(items.length, (index) {
-                          final item = items[index];
-                          final isActive = currentIndex == index;
-                          return _NavBarItem(
-                            key: navKeys?[index],
-                            icon: item.icon,
-                            label: item.label,
-                            isActive: isActive,
-                            onTap: () {
-                              ref.hapticSelection();
-                              onTap(index);
-                            },
-                          );
-                        }),
+                      
+                      // Nav Items
+                      SizedBox(
+                        height: 68,
+                        child: Row(
+                          mainAxisAlignment: MainAxisAlignment.spaceAround,
+                          children: List.generate(items.length, (index) {
+                            final item = items[index];
+                            final isActive = currentIndex == index;
+                            return _NavBarItem(
+                              key: navKeys?[index],
+                              icon: item.icon,
+                              label: item.label,
+                              isActive: isActive,
+                              onTap: () {
+                                ref.hapticSelection();
+                                onTap(index);
+                              },
+                            );
+                          }),
+                        ),
                       ),
-                    ),
-                  ],
-                );
-              },
+                    ],
+                  );
+                },
+              ),
             ),
           ),
         ),

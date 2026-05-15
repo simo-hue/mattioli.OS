@@ -1123,11 +1123,10 @@
 - **File**: `lib/ui/widgets/macro_goals/add_goal_bar.dart`.
 - **Modifiche**: Aggiornato il callback `onPressed` del pulsante "Crea" per attendere l'ID della nuova categoria e impostarlo nello stato `_selectedCategory` tramite `this.setState`.
 
+---
 
-
-
-
-
-
-
-
+## [2026-05-15 15:48]: UI - Horizontal Scroll in Bottom Nav Bar
+*Details*: Added horizontal swipe functionality to the floating bottom navigation bar to switch between pages (Stats, Home, Goals).
+*Tech Notes*:
+- **File**: `lib/ui/widgets/bottom_nav_bar.dart`.
+- **Modifiche**: Wrapped the bottom navigation bar container in a `GestureDetector` and implemented `onHorizontalDragEnd`. It detects swipes and calls `onTap` with the previous or next index, utilizing the existing smooth page transition logic.

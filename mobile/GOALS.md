@@ -1,6 +1,5 @@
 # DA FARE NEL BREVE TERMINE
 [ ] Controllo di sicurezza
-[ ] Implementare log in con google
 [ ] Implementare log in con apple
 [ ] pensare a come implementare la chat con LLM
 

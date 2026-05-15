@@ -1130,3 +1130,72 @@
 *Tech Notes*:
 - **File**: `lib/ui/widgets/bottom_nav_bar.dart`.
 - **Modifiche**: Wrapped the bottom navigation bar container in a `GestureDetector` and implemented `onHorizontalDragEnd`. It detects swipes and calls `onTap` with the previous or next index, utilizing the existing smooth page transition logic.
+
+---
+
+## [2026-05-15 16:23]: Feature - Open Router LLM Integration in Chat
+*Details*: Integrated Open Router API into the AI Chat to provide real LLM responses instead of mock ones. Secured the API key by putting it in a gitignored file.
+*Tech Notes*:
+- **File**: `lib/core/openrouter_config.dart` (created, gitignored).
+- **File**: `lib/core/openrouter_config.dart.example` (created).
+- **File**: `lib/core/openrouter_service.dart` (created).
+- **File**: `lib/ui/screens/ai_chat_screen.dart` (modified): Replaced local generation with API call.
+- **File**: `lib/models/chat_message.dart` (created): Moved model from screen file.
+- Added `http` package to dependencies in `pubspec.yaml`.
+- Passed user context (goals, habits) as system prompt to the LLM.
+
+---
+
+## [2026-05-15 16:29]: Feature - Robust System Prompt & Guardrails
+*Details*: Updated the system prompt for the AI Chat to include strict guardrails, preventing the LLM from going off-topic and answering questions not related to the app or user context.
+*Tech Notes*:
+- **File**: `lib/ui/screens/ai_chat_screen.dart` (modified): Added strict behavior rules to the system prompt in `_getSystemPrompt()`.
+
+---
+
+## [2026-05-15 16:40]: Feature - Concise AI Responses
+*Details*: Added an instruction to the system prompt to make the LLM concise and avoid excessively long responses.
+*Tech Notes*:
+- **File**: `lib/ui/screens/ai_chat_screen.dart` (modified): Added conciseness instruction to `_getSystemPrompt()`.
+
+---
+
+## [2026-05-15 16:41]: UI - Markdown Rendering in Chat
+*Details*: Implemented a markdown interpreter in the chat to render the LLM's responses beautifully (bold, lists, etc.).
+*Tech Notes*:
+- **File**: `lib/ui/screens/ai_chat_screen.dart` (modified): Replaced `Text` with `MarkdownBody` in message rendering.
+- Added `flutter_markdown` package to dependencies in `pubspec.yaml`.
+
+---
+
+## [2026-05-15 16:49]: Feature - AI Chat Context Settings
+*Details*: Added a settings dialog to the AI Chat to let the user choose what context to share with the LLM (Daily Habits and/or Macro Goals).
+*Tech Notes*:
+- **File**: `lib/ui/screens/ai_chat_screen.dart` (modified):
+    - Added `_shareHabits` and `_shareGoals` state variables (defaults: true and false).
+    - Added a settings icon button in the `AppBar` actions.
+    - Implemented `_showSettingsDialog` with a blur effect and switches.
+    - Updated `_getSystemPrompt()` to build the context block dynamically based on the switches.
+
+---
+
+## [2026-05-15 16:53]: Feature - Empty Context Protection
+*Details*: Added a check to prevent sending messages or using suggestions when both context switches (habits and goals) are disabled.
+*Tech Notes*:
+- **File**: `lib/ui/screens/ai_chat_screen.dart` (modified):
+    - Disabled the send button in the input field when both switches are false.
+    - Added a local response when clicking suggestions with both switches false, prompting the user to select a context.
+
+---
+
+## [2026-05-15 16:55]: Optimization - Emoji Removal in Suggestions
+*Details*: Removed emojis from the text sent to the LLM when clicking on a suggestion, to save tokens. The emojis are still visible in the suggestion chips.
+*Tech Notes*:
+- **File**: `lib/ui/screens/ai_chat_screen.dart` (modified): Added logic to extract text after the first space in `_buildSuggestedPrompt`.
+
+---
+
+## [2026-05-15 16:56]: UI - Fixed Typing Indicator Animation
+*Details*: Fixed the `_BouncingDot` animation in the typing indicator to create a wave effect by starting the repeat after the specified delay.
+*Tech Notes*:
+- **File**: `lib/ui/screens/ai_chat_screen.dart` (modified): Moved `_ctrl.repeat` inside the `Future.delayed` block in `initState`.

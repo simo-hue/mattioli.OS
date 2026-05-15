@@ -74,3 +74,5 @@ comando sentry-cli durante il build di release, ma è un passaggio che va config
     $$;
     ```
 
+## Configurazione Open Router
+- [ ] Inserire la chiave API di Open Router nel file `lib/core/openrouter_config.dart` per abilitare l'AI Chat.

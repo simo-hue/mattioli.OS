@@ -197,7 +197,7 @@ class _ConsentScreenState extends ConsumerState<ConsentScreen> {
                               ref.hapticLight();
                             },
                             activeColor: primaryColor,
-                            checkColor: Colors.white,
+                            checkColor: activeTextColor,
                             shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(4)),
                           ),
                           links: [

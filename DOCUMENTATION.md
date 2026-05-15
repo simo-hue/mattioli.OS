@@ -311,5 +311,9 @@
   - *Details*: Fixed a bug where snooze notifications would not appear. The issue was that `matchDateTimeComponents` was set to `DateTimeComponents.time`, making it a daily recurring notification instead of a one-off notification.
   - *Tech Notes*: Removed `matchDateTimeComponents: DateTimeComponents.time` from `_notifications.zonedSchedule` in the `_snoozeHabit` method.
 
+- [2026-05-15 16:35]: **Fix Consent Screen Checkbox Tick Visibility**
+  - *Details*: Fixed an issue where the checkmark in the "Termini e Privacy Policy" checkbox was invisible (white on white) in the consent screen.
+  - *Tech Notes*: Changed `checkColor` from `Colors.white` to `activeTextColor` (which dynamically switches between black and white based on the primary color's luminance) in `consent_screen.dart`.
+
 ## Current Status
-- **Next Step**: Waiting for user to verify that the snooze notification now appears after 10 minutes.
+- **Next Step**: Waiting for user to verify that the checkmark is now visible in the consent screen.

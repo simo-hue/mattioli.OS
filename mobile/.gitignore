@@ -47,3 +47,5 @@ app.*.map.json
 # Mattioli.OS Secrets (Supabase & Sentry Credentials)
 lib/core/supabase_config.dart
 lib/core/sentry_config.dart
+lib/core/openrouter_config.dart
+

@@ -271,7 +271,7 @@ class _AddGoalBarState extends ConsumerState<AddGoalBar> {
                       runSpacing: 12,
                       children: [
                         ...curatedColors.map((color) {
-                          final isSelected = selectedColor.value == color.value;
+                          final isSelected = selectedColor.toARGB32() == color.toARGB32();
                           return GestureDetector(
                             onTap: () => setState(() => selectedColor = color),
                             child: AnimatedContainer(
@@ -322,7 +322,7 @@ class _AddGoalBarState extends ConsumerState<AddGoalBar> {
                               color: context.appColors.border.withValues(alpha: 0.3),
                               shape: BoxShape.circle,
                               border: Border.all(
-                                color: !curatedColors.any((c) => c.value == selectedColor.value)
+                                color: !curatedColors.any((c) => c.toARGB32() == selectedColor.toARGB32())
                                     ? context.appColors.foreground
                                     : Colors.transparent,
                                 width: 2,
@@ -353,7 +353,7 @@ class _AddGoalBarState extends ConsumerState<AddGoalBar> {
                           onPressed: () {
                             final name = nameController.text.trim();
                             if (name.isNotEmpty) {
-                              final hexColor = '#${selectedColor.value.toRadixString(16).substring(2).toUpperCase()}';
+                              final hexColor = '#${selectedColor.toARGB32().toRadixString(16).substring(2).toUpperCase()}';
                               ref.read(macroGoalCategoriesProvider.notifier).addCategory(name, hexColor);
                               Navigator.pop(context);
                             }

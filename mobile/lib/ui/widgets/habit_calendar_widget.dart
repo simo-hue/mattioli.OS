@@ -376,8 +376,6 @@ class _DayCell extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final primaryColor = Theme.of(context).colorScheme.primary;
-
     Color? bgColor;
     Color borderColor = Colors.transparent;
 

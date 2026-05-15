@@ -741,12 +741,10 @@ class _BouncingDotState extends State<_BouncingDot> with SingleTickerProviderSta
 /// Animated wrapper for message entrance
 class _FadeInSlide extends StatefulWidget {
   final Widget child;
-  final Duration duration;
 
   const _FadeInSlide({
     super.key,
     required this.child,
-    this.duration = const Duration(milliseconds: 300),
   });
 
   @override
@@ -761,7 +759,7 @@ class _FadeInSlideState extends State<_FadeInSlide> with SingleTickerProviderSta
   @override
   void initState() {
     super.initState();
-    _controller = AnimationController(vsync: this, duration: widget.duration);
+    _controller = AnimationController(vsync: this, duration: const Duration(milliseconds: 300));
     _fadeAnimation = Tween<double>(begin: 0.0, end: 1.0).animate(
       CurvedAnimation(parent: _controller, curve: Curves.easeIn),
     );

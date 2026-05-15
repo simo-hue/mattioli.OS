@@ -17,7 +17,6 @@ class GlobalTrendTabWidget extends ConsumerStatefulWidget {
 
 class _GlobalTrendTabWidgetState extends ConsumerState<GlobalTrendTabWidget> {
   String _chartTimeframe = 'timeframe_week_short';
-  String _comparisonTimeframe = 'timeframe_week_short';
   List<Map<String, dynamic>>? _lastValidData;
 
   @override

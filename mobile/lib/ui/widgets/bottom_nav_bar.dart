@@ -155,8 +155,7 @@ class _NavBarItem extends StatelessWidget {
               AnimatedContainer(
                 duration: const Duration(milliseconds: 300),
                 curve: Curves.easeOutBack,
-                transform: Matrix4.identity()
-                  ..translate(0.0, isActive ? -4.0 : 0.0),
+                transform: Matrix4.translationValues(0.0, isActive ? -4.0 : 0.0, 0.0),
                 child: Icon(
                   icon,
                   size: 22,

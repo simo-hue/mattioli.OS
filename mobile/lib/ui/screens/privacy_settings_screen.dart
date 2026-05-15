@@ -683,7 +683,12 @@ class PrivacySettingsScreen extends ConsumerWidget {
         name: 'mattioli_os_export.json',
       );
 
-      await Share.shareXFiles([file], text: 'I miei dati esportati da mattioli.OS');
+      await SharePlus.instance.share(
+        ShareParams(
+          files: [file],
+          text: 'I miei dati esportati da mattioli.OS',
+        ),
+      );
     } catch (e, stack) {
       AppLogger.error('Error exporting data', e, stack);
       if (context.mounted) {

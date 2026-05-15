@@ -284,9 +284,7 @@ class _PersonalInfoScreenState extends ConsumerState<PersonalInfoScreen> {
                   CupertinoButton(
                     child: const Text('Fatto'),
                     onPressed: () {
-                      if (_selectedDate == null) {
-                        _selectedDate = DateTime(2000, 1, 1);
-                      }
+                      _selectedDate ??= DateTime(2000, 1, 1);
                       _dobController.text = _selectedDate!.toIso8601String().substring(0, 10);
                       Navigator.of(context).pop();
                     },

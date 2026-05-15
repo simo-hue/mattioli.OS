@@ -90,9 +90,6 @@ class _HomeScreenState extends ConsumerState<HomeScreen>
   }
 
   void _showWelcomeScreen() {
-    final userProfile = ref.read(userProfileProvider);
-    final displayName = userProfile.firstName ?? userProfile.displayName;
-
     showGeneralDialog(
       context: context,
       barrierDismissible: false,
@@ -668,9 +665,10 @@ class _HomeScreenState extends ConsumerState<HomeScreen>
                       if (name.isNotEmpty) {
                         ref.hapticMedium();
                         final success = await ref.read(authProvider.notifier).updateProfileName(name);
-                        if (success && mounted) {
+                        if (!context.mounted) return;
+                        if (success) {
                           Navigator.pop(context);
-                        } else if (mounted) {
+                        } else {
                           ScaffoldMessenger.of(context).showSnackBar(
                             const SnackBar(content: Text('Errore durante il salvataggio. Riprova.')),
                           );

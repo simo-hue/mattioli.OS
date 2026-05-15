@@ -163,6 +163,7 @@ class _DailyCheckInModalState extends ConsumerState<DailyCheckInModal> {
                         _mood.round(),
                         _energy.round(),
                       );
+                      if (!context.mounted) return;
                       Navigator.pop(context);
                     },
                     style: ElevatedButton.styleFrom(

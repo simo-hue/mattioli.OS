@@ -471,10 +471,10 @@ class AppSettingsScreen extends ConsumerWidget {
                 ...AppSettingsNotifier.premiumAccentColors.take(3).map((c) {
                   final settings = ref.read(settingsProvider);
                   var color = c;
-                  if (settings.themeMode == 'light' && color.value == 0xFFFAFAFA) {
+                  if (settings.themeMode == 'light' && color.toARGB32() == 0xFFFAFAFA) {
                     color = const Color(0xFF09090B);
                   }
-                  final isSelected = currentColor.value == color.value;
+                  final isSelected = currentColor.toARGB32() == color.toARGB32();
                   return _buildColorOption(context, ref, color, isSelected);
                 }),
                 // Custom Color Picker Button
@@ -581,7 +581,6 @@ class AppSettingsScreen extends ConsumerWidget {
                       enableAlpha: false,
                       displayThumbColor: true,
                       showParams: true,
-                      showLabel: true,
                     ),
                     if (isTooDark) ...[
                       const SizedBox(height: 16),

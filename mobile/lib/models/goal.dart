@@ -96,7 +96,7 @@ class Goal {
   }
 
   Map<String, dynamic> toJson() {
-    String toHex(Color c) => '#${c.value.toRadixString(16).substring(2, 8).toUpperCase()}';
+    String toHex(Color c) => '#${c.toARGB32().toRadixString(16).substring(2, 8).toUpperCase()}';
 
     return {
       if (id.isNotEmpty) 'id': id,

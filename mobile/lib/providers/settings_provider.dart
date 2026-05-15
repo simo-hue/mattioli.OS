@@ -275,7 +275,7 @@ class AppSettingsNotifier extends Notifier<AppSettings> {
   void _saveToPrefs(AppSettings s) {
     final prefs = ref.read(sharedPrefsProvider);
     
-    String toHex(Color color) => '#${color.value.toRadixString(16).substring(2, 8).toUpperCase()}';
+    String toHex(Color color) => '#${color.toARGB32().toRadixString(16).substring(2, 8).toUpperCase()}';
 
     prefs.setString('pref_theme_mode', s.themeMode);
     prefs.setString('pref_accent_color', toHex(s.accentColor));
@@ -364,7 +364,7 @@ class AppSettingsNotifier extends Notifier<AppSettings> {
     if (user == null) return;
 
     try {
-      String toHex(Color color) => '#${color.value.toRadixString(16).substring(2, 8).toUpperCase()}';
+      String toHex(Color color) => '#${color.toARGB32().toRadixString(16).substring(2, 8).toUpperCase()}';
 
       await supabase.from('profiles').update({
         'theme_mode': s.themeMode,

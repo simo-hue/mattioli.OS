@@ -1,6 +1,4 @@
-import 'dart:math' as math;
 import 'package:flutter/material.dart';
-import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:lucide_icons_flutter/lucide_icons.dart';
@@ -435,23 +433,31 @@ class _MacroGoalsScreenState extends ConsumerState<MacroGoalsScreen>
                     return AnimatedBuilder(
                       animation: animation,
                       builder: (context, child) {
-                        // Perspective Fold Logic (3D Flip)
-                        final double rotation = isIncoming 
-                            ? (1.0 - animation.value) * (math.pi / 2) * dir
-                            : animation.value * -(math.pi / 2) * dir;
-                        
-                        final alignment = isIncoming 
-                            ? (dir > 0 ? Alignment.centerRight : Alignment.centerLeft)
-                            : (dir > 0 ? Alignment.centerLeft : Alignment.centerRight);
+                        double pageOffset = 0.0;
+                        if (isIncoming) {
+                          pageOffset = (1.0 - animation.value) * dir;
+                        } else {
+                          pageOffset = (animation.value - 1.0) * dir;
+                        }
 
-                        return Transform(
-                          transform: Matrix4.identity()
-                            ..setEntry(3, 2, 0.0015) 
-                            ..rotateY(rotation),
-                          alignment: alignment,
-                          child: Opacity(
-                            opacity: animation.value.clamp(0.0, 1.0),
-                            child: child,
+                        final absOffset = pageOffset.abs();
+                        
+                        // Premium Parallax & Scale Effect (simulating Calendar PageView)
+                        final double scale = 1.0 - (absOffset * 0.05).clamp(0.0, 0.05);
+                        final double opacity = (1.0 - absOffset).clamp(0.0, 1.0);
+                        
+                        // We use the screen width to simulate the PageView horizontal scroll
+                        final double width = MediaQuery.of(context).size.width;
+                        final double translation = pageOffset * width; 
+
+                        return Transform.scale(
+                          scale: scale,
+                          child: Transform.translate(
+                            offset: Offset(translation, 0),
+                            child: Opacity(
+                              opacity: opacity,
+                              child: child,
+                            ),
                           ),
                         );
                       },

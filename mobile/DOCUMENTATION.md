@@ -1026,6 +1026,42 @@
 - **File**: `lib/ui/widgets/statistics/global_trend_tab_widget.dart`.
 - **Change**: Wrapped the delta badge widget and its leading `SizedBox` in a conditional block: `if (_chartTimeframe != 'timeframe_all')`.
 
+---
+
+## [2026-05-15 14:20]: Cleanup - Fixed Flutter Analyze Warnings
+*Details*: Resolved several warnings and deprecations reported by `flutter analyze` to clean up the codebase.
+*Tech Notes*:
+- **Deprecations**:
+  - Replaced `Color.value` with `Color.toARGB32()` in `goal.dart` and `settings_provider.dart` to address deprecation in Flutter 3.22+.
+  - Removed deprecated `AuthChangeEvent.userDeleted` in `auth_provider.dart`.
+- **Unused Imports**:
+  - Removed unused imports in `macro_goal_categories_provider.dart`, `macro_goals_provider.dart`, `mood_provider.dart`, `view_tab_bar.dart`, and `yearly_view_widget.dart`.
+
+---
+
+## [2026-05-15 14:22]: UI - Copiata Animazione Scrolling su Obiettivi
+*Details*: Copiata l'animazione di scrolling orizzontale (effetto parallasse e scala) dal calendario della home alla pagina degli obiettivi (MacroGoalsScreen).
+*Tech Notes*:
+- **File**: `lib/ui/screens/macro_goals_screen.dart`.
+- **Modifiche**: Sostituito l'effetto "3D Flip" nel `transitionBuilder` di `AnimatedSwitcher` con una simulazione di scorrimento orizzontale. Utilizzata la larghezza dello schermo per l'offset di traduzione e applicati gli stessi effetti di scala (0.95) e opacità del calendario per un look premium coerente.
+
+---
+
+## [2026-05-15 14:30]: Cleanup - Resolved Remaining Flutter Analyze Warnings
+*Details*: Fixed all remaining warnings and deprecations reported by `flutter analyze` in the `mobile` folder.
+*Tech Notes*:
+- **Deprecations**:
+  - Replaced `Color.value` with `Color.toARGB32()` in `add_goal_bar.dart` and `app_settings_screen.dart`.
+  - Removed deprecated `showLabel` in `app_settings_screen.dart` (SlidePicker).
+  - Replaced deprecated `Matrix4.translate` with `Matrix4.translationValues` in `bottom_nav_bar.dart`.
+  - Updated deprecated `Share.shareXFiles` to `SharePlus.instance.share` with `ShareParams` in `privacy_settings_screen.dart`.
+- **Lints**:
+  - Fixed `use_build_context_synchronously` in `dashboard_screen.dart` and `daily_check_in_modal.dart` by adding `context.mounted` checks.
+  - Fixed `prefer_conditional_assignment` in `personal_info_screen.dart` (using `??=`).
+  - Removed unused local variables in `dashboard_screen.dart`, `habit_calendar_widget.dart`, and `global_trend_tab_widget.dart`.
+  - Removed unnecessary imports of `services.dart` in `macro_goals_screen.dart`, `statistics_screen.dart`, and `goal_item_widget.dart`.
+  - Removed unused optional parameter `duration` in `ai_chat_screen.dart`.
+
 
 
 

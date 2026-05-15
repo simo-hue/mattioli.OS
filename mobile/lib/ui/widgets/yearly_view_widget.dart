@@ -4,7 +4,6 @@ import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../core/theme.dart';
 import '../../providers/goal_provider.dart';
-import '../../core/haptics.dart';
 
 const _kMonthShort = [
   'GEN', 'FEB', 'MAR', 'APR', 'MAG', 'GIU',

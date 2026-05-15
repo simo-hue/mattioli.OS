@@ -74,8 +74,7 @@ class AuthNotifier extends Notifier<AuthState> with ChangeNotifier {
               event == AuthChangeEvent.tokenRefreshed ||
               event == AuthChangeEvent.userUpdated);
 
-      final isLoggedOut = event == AuthChangeEvent.signedOut ||
-          event == AuthChangeEvent.userDeleted;
+      final isLoggedOut = event == AuthChangeEvent.signedOut;
 
       if (isLoggedIn) {
         state = AuthState(isLoggedIn: true, user: session.user);

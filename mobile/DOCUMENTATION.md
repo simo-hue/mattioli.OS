@@ -1236,3 +1236,39 @@
 *Details*: Replaced the standard `Switch.adaptive` with a custom animated toggle to match the premium aesthetic of the app.
 *Tech Notes*:
 - **File**: `lib/ui/screens/ai_chat_screen.dart` (modified): Created a custom toggle using `GestureDetector`, `AnimatedContainer`, and `AnimatedAlign` in `_buildContextSwitch`.
+
+---
+
+## [2026-05-15 17:20]: Feature - Error Handling & Sentry Integration in Chat
+*Details*: Integrated Sentry logging for chat errors and added user notifications via SnackBar.
+*Tech Notes*:
+- **File**: `lib/core/openrouter_service.dart` (modified): Added `AppLogger.error` calls when API returns non-200 status or throws exceptions.
+- **File**: `lib/ui/screens/ai_chat_screen.dart` (modified): Added `AppLogger.error` in stream `onError` and showed a floating `SnackBar` to the user.
+
+---
+
+## [2026-05-15 17:22]: Feature - Handled Token Limit Error (400) in Chat
+*Details*: Handled HTTP 400 errors in OpenRouter stream to detect context length exceeded and suggest clearing the chat.
+*Tech Notes*:
+- **File**: `lib/core/openrouter_service.dart` (modified): Added check for `response.statusCode == 400` and yielded a specific advice message. Also logged the full error body to Sentry.
+
+---
+
+## [2026-05-15 17:23]: Feature - Logged JSON Parsing Warnings in Chat
+*Details*: Added Sentry warning logs when JSON parsing of a stream chunk fails, to detect API changes.
+*Tech Notes*:
+- **File**: `lib/core/openrouter_service.dart` (modified): Replaced empty `catch` block with `AppLogger.warning` to log the failed JSON string.
+
+---
+
+## [2026-05-15 17:24]: Feature - Added Timeouts to Chat Stream
+*Details*: Added timeouts to the API call and the stream to prevent the UI from hanging indefinitely.
+*Tech Notes*:
+- **File**: `lib/core/openrouter_service.dart` (modified): Added `timeout(Duration(seconds: 15))` to `client.send` and `timeout(Duration(seconds: 10))` to the stream. Handled `TimeoutException` to yield a specific error message.
+
+---
+
+## [2026-05-15 17:25]: Feature - Pre-emptive Connection Check in Chat
+*Details*: Added a check to verify internet connectivity before attempting to call the OpenRouter API.
+*Tech Notes*:
+- **File**: `lib/core/openrouter_service.dart` (modified): Used `InternetAddress.lookup('openrouter.ai')` to check if the API is reachable. Yields an error message if not.

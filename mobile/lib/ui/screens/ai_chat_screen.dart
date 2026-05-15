@@ -4,7 +4,9 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:lucide_icons_flutter/lucide_icons.dart';
 import '../../core/theme.dart';
 import '../../core/openrouter_service.dart';
+import '../../core/app_logger.dart';
 import 'package:flutter_markdown/flutter_markdown.dart';
+
 import 'dart:ui';
 
 import '../../models/macro_goal.dart';
@@ -273,8 +275,10 @@ class _AIChatScreenState extends ConsumerState<AIChatScreen> {
         });
         _scrollToBottom();
       },
-      onError: (e) {
+      onError: (e, stack) {
         if (!mounted) return;
+        AppLogger.error('[AIChatScreen] Errore stream listener', e, stack);
+        
         setState(() {
           _isTyping = false;
           _messages[assistantMessageIndex] = ChatMessage(
@@ -284,7 +288,18 @@ class _AIChatScreenState extends ConsumerState<AIChatScreen> {
           );
         });
         _scrollToBottom();
+
+        // Avvisa l'utente in modo esplicito
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: const Text("Problemi di connessione con il Coach. Riprova più tardi."),
+            backgroundColor: Colors.redAccent,
+            behavior: SnackBarBehavior.floating,
+            shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+          ),
+        );
       },
+
       onDone: () {
         if (!mounted) return;
         if (_isTyping) {

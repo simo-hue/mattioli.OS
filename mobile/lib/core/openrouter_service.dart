@@ -1,5 +1,9 @@
 import 'dart:convert';
+import 'dart:async';
+import 'dart:io';
 import 'package:http/http.dart' as http;
+
+
 import '../models/chat_message.dart';
 import 'openrouter_config.dart';
 import 'app_logger.dart';
@@ -72,7 +76,23 @@ class OpenRouterService {
       return;
     }
 
+    // Verifica preventiva della connessione a internet
+    try {
+      final result = await InternetAddress.lookup('openrouter.ai').timeout(const Duration(seconds: 5));
+      if (result.isEmpty || result[0].rawAddress.isEmpty) {
+        yield "❌ Errore: Nessuna connessione a internet. Verifica la tua rete.";
+        return;
+      }
+    } on SocketException catch (_) {
+      yield "❌ Errore: Nessuna connessione a internet. Verifica la tua rete.";
+      return;
+    } on TimeoutException catch (_) {
+      yield "❌ Errore: La verifica della connessione ha impiegato troppo tempo.";
+      return;
+    }
+
     final url = Uri.parse('${OpenRouterConfig.baseUrl}/chat/completions');
+
     
     final messages = history.map((msg) {
       return {
@@ -104,15 +124,29 @@ class OpenRouterService {
       ..body = body;
 
     try {
-      final response = await client.send(request);
+      // Timeout di 15 secondi per stabilire la connessione
+      final response = await client.send(request).timeout(const Duration(seconds: 15));
       
       if (response.statusCode != 200) {
-        yield "❌ Errore API: ${response.statusCode}";
+        final errorBody = await response.stream.bytesToString();
+        AppLogger.error('[OpenRouter] Errore API streaming', 'Status: ${response.statusCode}, Body: $errorBody');
+        
+        if (response.statusCode == 400) {
+          yield "⚠️ Limite di memoria superato o richiesta non valida. La conversazione potrebbe essere troppo lunga o complessa. Usa l'icona del cestino in alto per svuotare la chat e ricominciare!";
+        } else {
+          yield "❌ Errore API: ${response.statusCode} (Verifica Sentry per i dettagli)";
+        }
         client.close();
         return;
       }
 
-      await for (final line in response.stream.transform(utf8.decoder).transform(const LineSplitter())) {
+      // Timeout di 10 secondi tra un chunk e l'altro
+      final stream = response.stream
+          .transform(utf8.decoder)
+          .transform(const LineSplitter())
+          .timeout(const Duration(seconds: 10));
+
+      await for (final line in stream) {
         if (line.isEmpty) continue;
         if (line.startsWith('data: ')) {
           final dataStr = line.substring(6);
@@ -125,17 +159,21 @@ class OpenRouterService {
               yield content.toString();
             }
           } catch (e) {
-            // Ignora errori di parsing per chunk incompleti
+            // Invia un warning a Sentry per capire se l'API ha cambiato formato
+            AppLogger.warning('[OpenRouter] Errore parsing chunk JSON', e, null, {'dataStr': dataStr});
           }
+
         }
       }
-    } catch (e) {
+    } on TimeoutException catch (e, stack) {
+      AppLogger.error('[OpenRouter] Timeout streaming', e, stack);
+      yield "❌ Errore: Il server sta impiegando troppo tempo a rispondere. Riprova.";
+    } catch (e, stack) {
+      AppLogger.error('[OpenRouter] Eccezione streaming', e, stack);
       yield "❌ Errore di connessione.";
+
     } finally {
       client.close();
     }
   }
 }
-
-
-

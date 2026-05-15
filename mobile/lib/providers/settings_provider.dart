@@ -276,6 +276,9 @@ class AppSettingsNotifier extends Notifier<AppSettings> {
     prefs.setBool('notif_evening_review', s.eveningReview);
     
     prefs.setBool('pref_biometric_lock', s.biometricLock);
+    // Anche nello storage sicuro per evitare manipolazioni
+    ref.read(secureStorageProvider).write(key: 'pref_biometric_lock', value: s.biometricLock.toString());
+    
     prefs.setBool('pref_anonymous_analytics', s.anonymousAnalytics);
     
     prefs.setString('notif_morning_brief_time', s.morningBriefTime);

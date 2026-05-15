@@ -18,6 +18,7 @@ import 'ui/widgets/error_modal.dart';
 import 'core/navigator_key.dart';
 import 'package:intl/date_symbol_data_local.dart';
 import 'core/app_logger.dart';
+import 'core/secure_local_storage.dart';
 
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
@@ -28,6 +29,9 @@ void main() async {
   await Supabase.initialize(
     url: SupabaseConfig.url,
     anonKey: SupabaseConfig.anonKey,
+    authOptions: FlutterAuthClientOptions(
+      localStorage: SecureLocalStorage(),
+    ),
   );
 
   // ── Notifications init ───────────────────────────────────────────────────

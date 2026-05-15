@@ -25,3 +25,7 @@
 ---
 
 comando sentry-cli durante il build di release, ma è un passaggio che va configurato quando sarai pronto per la submission all'App Store.
+
+## Sicurezza & Storage
+- [ ] **Riavviare l'applicazione**: L'aggiunta di `flutter_secure_storage` richiede il riavvio completo dell'app (non basta l'hot reload) perché installa codice nativo.
+- [ ] **Nuovo Login Richiesto**: Avendo spostato la sessione di Supabase su `flutter_secure_storage`, la sessione precedente salvata in `shared_preferences` non verrà letta. Dovrai effettuare nuovamente il login.

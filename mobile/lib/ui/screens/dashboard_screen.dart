@@ -5,6 +5,7 @@ import 'package:intl/intl.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:local_auth/local_auth.dart';
 import '../../providers/settings_provider.dart';
+import '../../providers/shared_prefs_provider.dart';
 
 import '../../core/localization.dart';
 
@@ -73,15 +74,6 @@ class _HomeScreenState extends ConsumerState<HomeScreen>
       statusBarColor: Colors.transparent,
       statusBarIconBrightness: Brightness.light,
     ));
-
-    // Biometric lock check
-    final biometricLock = ref.read(settingsProvider).biometricLock;
-    if (biometricLock) {
-      _isBiometricAuthenticated = false;
-      WidgetsBinding.instance.addPostFrameCallback((_) {
-        _authenticate();
-      });
-    }
 
     // Check profile name after first frame
     WidgetsBinding.instance.addPostFrameCallback((_) {
@@ -734,6 +726,14 @@ class _HomeScreenState extends ConsumerState<HomeScreen>
   @override
   Widget build(BuildContext context) {
     final currentView = ref.watch(calendarViewProvider);
+    final biometricLockAsync = ref.watch(biometricLockProvider);
+    
+    // Auto-authenticate when lock is active
+    ref.listen(biometricLockProvider, (prev, next) {
+      if (next.value == true && !_isBiometricAuthenticated) {
+        _authenticate();
+      }
+    });
 
     // Listen for tutorial reset
     ref.listen<bool>(tutorialProvider, (previous, next) {
@@ -742,7 +742,13 @@ class _HomeScreenState extends ConsumerState<HomeScreen>
       }
     });
 
-    if (!_isBiometricAuthenticated) {
+    if (biometricLockAsync.isLoading) {
+      return const Scaffold(body: Center(child: CircularProgressIndicator()));
+    }
+
+    final isLocked = biometricLockAsync.value ?? false;
+
+    if (isLocked && !_isBiometricAuthenticated) {
       return Scaffold(
         backgroundColor: context.appColors.background,
         body: Center(

@@ -887,3 +887,35 @@
 - **Router**: Aggiunto `SentryNavigatorObserver()` a `GoRouter.observers` per il tracking della navigazione.
 - **Refactoring Errori Silenti**: Sostituiti tutti i `debugPrint` all'interno dei blocchi `catch` (provider e servizi) con chiamate a `AppLogger.error` che inoltra l'errore a Sentry in produzione. File modificati includono `settings_provider.dart`, `mood_provider.dart`, `macro_goal_categories_provider.dart`, `notifications.dart`, `main.dart`, e svariati componenti UI (es. `privacy_settings_screen.dart`, `profile_screen.dart`, `dashboard_screen.dart`, `personal_info_screen.dart`).
 - **Analisi Catch Generici**: Condotta un'analisi approfondita su tutti i blocchi `catch` dell'app per individuare eccezioni di rete o di database silenziate. Aggiunto `AppLogger.error(..., e, stack)` ai fallimenti di autenticazione (`auth_provider.dart`), chiamate RPC Supabase (`goal_provider.dart`, `macro_goals_stats_provider.dart`), e opzioni di reset/delete account (`privacy_settings_screen.dart`).
+
+---
+
+## [2026-05-15 10:45]: Core - Implementazione flutter_secure_storage per Supabase
+*Details*: Aggiunto il pacchetto `flutter_secure_storage` per rendere l'applicazione più sicura, memorizzando la sessione di Supabase nel portachiavi sicuro del dispositivo anziché in SharedPreferences.
+*Tech Notes*:
+- **Dipendenza**: Aggiunta `flutter_secure_storage: ^9.2.2`.
+- **Risoluzione Conflitti**: Downgradato `share_plus` a `^12.0.2` per risolvere un conflitto di dipendenze con `win32` richiesto da `flutter_secure_storage_windows`.
+- **Implementazione**: Creata la classe `SecureLocalStorage` in `lib/core/secure_local_storage.dart` che estende `LocalStorage` di Supabase.
+- **main.dart**: Aggiornato `Supabase.initialize` per passare `SecureLocalStorage` tramite `authOptions`.
+
+---
+
+## [2026-05-15 10:50]: Core - Spostamento Biometric Lock su SecureStorage
+*Details*: Spostato lo stato del blocco biometrico (`biometricLock`) da `SharedPreferences` a `SecureStorage` per evitare che possa essere bypassato su dispositivi con root modificando il file delle preferenze.
+*Tech Notes*:
+- **Provider**: Aggiunto `biometricLockProvider` (FutureProvider) in `shared_prefs_provider.dart` per leggere lo stato in modo asincrono all'avvio.
+- **SettingsProvider**: Aggiornato `_saveToPrefs` per scrivere lo stato anche in `SecureStorage`.
+- **DashboardScreen**: 
+  - Rimosso il controllo sincrono da `initState` che falliva se l'attaccante modificava le preferenze.
+  - Aggiornato il metodo `build` per osservare `biometricLockProvider` e mostrare la schermata di blocco se attivo, garantendo che l'app rimanga bloccata finché l'operazione asincrona di lettura sicura non è completata.
+
+---
+
+## [2026-05-15 10:55]: Core - Hardening SecureStorage contro Corruzione KeyStore
+*Details*: Implementata una gestione difensiva degli errori per `flutter_secure_storage` per prevenire crash infiniti in caso di corruzione del KeyStore (Android) o Keychain (iOS).
+*Tech Notes*:
+- **SecureLocalStorage**: Avvolte tutte le chiamate (`read`, `write`, `delete`) in blocchi `try-catch`. In caso di errore, l'eccezione viene loggata su Sentry tramite `AppLogger` e lo storage viene resettato (`deleteAll()`) per permettere all'app di continuare a funzionare (l'utente dovrà rifare il login).
+- **biometricLockProvider**: Applicato lo stesso pattern di try-catch nella lettura dello stato del blocco biometrico. Se fallisce, logga l'errore, resetta lo storage e ritorna `false` per evitare di bloccare l'utente fuori dall'app in modo permanente.
+
+
+

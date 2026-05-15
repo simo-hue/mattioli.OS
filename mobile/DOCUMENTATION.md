@@ -1002,6 +1002,22 @@
   - Aggiornata la logica di redirect per forzare il passaggio da `/consent` se non completato.
   - Condizionata l'inizializzazione di Sentry al consenso dell'utente letto da `SharedPreferences`.
 
+---
+
+## [2026-05-15 14:10]: Statistics - Fix for Year Timeframe Single Dot Bug
+*Details*: Fixed a UI bug in the "Evoluzione Performance" chart where selecting the "Anno" (Year) timeframe resulted in only a single dot being displayed instead of a line.
+*Tech Notes*:
+- **File**: `lib/ui/widgets/statistics/global_trend_tab_widget.dart`.
+- **Change**: Modified the data processing for the chart. Previously, the data was split in half to calculate a delta, and only the second half was shown on the chart. For the "Year" timeframe, this often resulted in a single data point if the RPC returned few points (e.g., grouped by year or with few active months). Now, for `timeframe_year_short`, the chart displays all points returned by the RPC (`trendData`), ensuring a line is drawn if there are at least two points, while keeping the delta calculation based on the split data.
+
+---
+
+## [2026-05-15 14:15]: Statistics - Year Timeframe Padding with Default Values
+*Details*: Further refined the "Evoluzione Performance" chart for the "Anno" timeframe. When there is only data for a few months, the chart now pads the missing months of the last 12 months with a default value of 100%, ensuring a full line is displayed instead of a single dot, consistent with other views.
+*Tech Notes*:
+- **File**: `lib/ui/widgets/statistics/global_trend_tab_widget.dart`.
+- **Change**: Implemented a padding logic for `timeframe_year_short`. It generates labels for the last 12 months up to the current month. It initializes rates to 100.0 and fills in the actual rates from `trendData` where available. This ensures that the chart always shows 12 points and a continuous line.
+
 
 
 

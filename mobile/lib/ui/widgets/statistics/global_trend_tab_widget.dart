@@ -104,24 +104,52 @@ class _GlobalTrendTabWidgetState extends ConsumerState<GlobalTrendTabWidget> {
       isPositive = deltaValue >= 0;
       percentage = '${currentAvg.toStringAsFixed(1)}%';
 
-      for (int i = 0; i < current.length; i++) {
-        final item = current[i];
-        final rate = (item['rate'] as num?)?.toDouble() ?? 100.0;
-        spots.add(FlSpot(i.toDouble(), rate));
+      if (_chartTimeframe == 'timeframe_year_short') {
+        final now = DateTime.now();
+        final List<double> rates = List.filled(12, 100.0);
+        final List<String> monthLabels = [];
+        final monthsIT = ['Gen', 'Feb', 'Mar', 'Apr', 'Mag', 'Giu', 'Lug', 'Ago', 'Set', 'Ott', 'Nov', 'Dic'];
         
-        final date = DateTime.parse(item['date'] as String);
-        if (_chartTimeframe == 'timeframe_week_short') {
-          final weekDays = ['mon', 'tue', 'wed', 'thu', 'fri', 'sat', 'sun'];
-          dates.add(weekDays[date.weekday - 1]);
-        } else if (_chartTimeframe == 'timeframe_year_short') {
-          final monthsIT = ['Gen', 'Feb', 'Mar', 'Apr', 'Mag', 'Giu', 'Lug', 'Ago', 'Set', 'Ott', 'Nov', 'Dic'];
-          dates.add(monthsIT[date.month - 1]);
-        } else {
-          dates.add('${date.day.toString().padLeft(2, '0')}/${date.month.toString().padLeft(2, '0')}');
+        for (int i = 11; i >= 0; i--) {
+          final date = DateTime(now.year, now.month - i, 1);
+          monthLabels.add(monthsIT[date.month - 1]);
         }
-      }
+        
+        for (final item in trendData) {
+          final date = DateTime.parse(item['date'] as String);
+          final rate = (item['rate'] as num?)?.toDouble() ?? 100.0;
+          
+          final diffMonths = (now.year - date.year) * 12 + (now.month - date.month);
+          if (diffMonths >= 0 && diffMonths < 12) {
+            final index = 11 - diffMonths;
+            rates[index] = rate;
+          }
+        }
+        
+        for (int i = 0; i < 12; i++) {
+          spots.add(FlSpot(i.toDouble(), rates[i]));
+          dates.add(monthLabels[i]);
+        }
+        maxX = 11;
+      } else {
+        final displayData = current;
 
-      maxX = (current.length - 1).toDouble();
+        for (int i = 0; i < displayData.length; i++) {
+          final item = displayData[i];
+          final rate = (item['rate'] as num?)?.toDouble() ?? 100.0;
+          spots.add(FlSpot(i.toDouble(), rate));
+          
+          final date = DateTime.parse(item['date'] as String);
+          if (_chartTimeframe == 'timeframe_week_short') {
+            final weekDays = ['mon', 'tue', 'wed', 'thu', 'fri', 'sat', 'sun'];
+            dates.add(weekDays[date.weekday - 1]);
+          } else {
+            dates.add('${date.day.toString().padLeft(2, '0')}/${date.month.toString().padLeft(2, '0')}');
+          }
+        }
+
+        maxX = displayData.isNotEmpty ? (displayData.length - 1).toDouble() : 0;
+      }
       title = _chartTimeframe == 'timeframe_week_short' ? 'Settimanale' : _chartTimeframe == 'timeframe_month_short' ? 'Mensile' : 'Annuale';
     }
 

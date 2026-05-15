@@ -37,9 +37,8 @@ class AppLogger {
         withScope: (scope) {
           scope.setTag('source', message);
           if (extras != null) {
-            for (final entry in extras.entries) {
-              scope.setExtra(entry.key, entry.value);
-            }
+            // Usiamo setContexts invece di setExtra (deprecato)
+            scope.setContexts('extras', extras);
           }
         },
       );
@@ -70,7 +69,8 @@ class AppLogger {
         level: SentryLevel.warning,
         withScope: (scope) {
           if (error != null) {
-            scope.setExtra('error', error.toString());
+            // Usiamo setContexts con una mappa invece di setExtra (deprecato)
+            scope.setContexts('error_details', {'error': error.toString()});
           }
         },
       );

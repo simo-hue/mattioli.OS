@@ -917,5 +917,15 @@
 - **SecureLocalStorage**: Avvolte tutte le chiamate (`read`, `write`, `delete`) in blocchi `try-catch`. In caso di errore, l'eccezione viene loggata su Sentry tramite `AppLogger` e lo storage viene resettato (`deleteAll()`) per permettere all'app di continuare a funzionare (l'utente dovrà rifare il login).
 - **biometricLockProvider**: Applicato lo stesso pattern di try-catch nella lettura dello stato del blocco biometrico. Se fallisce, logga l'errore, resetta lo storage e ritorna `false` per evitare di bloccare l'utente fuori dall'app in modo permanente.
 
+---
+
+## [2026-05-15 11:00]: Privacy - Sanitizzazione Log e Sentry (PII Scrubbing)
+*Details*: Implementata la sanitizzazione dei log e degli eventi Sentry per garantire il massimo livello di privacy dei dati dell'utente, rimuovendo PII (Personally Identifiable Information) ed evitando di inviare l'email a Sentry.
+*Tech Notes*:
+- **SentryConfig**: Aggiunto il metodo `sanitizeEvent` che rimuove l'email dall'oggetto `SentryUser`, e pulisce ricorsivamente `breadcrumbs`, `contexts`, `message` e `exceptions` da pattern sensibili (Email, JWT, chiavi come password, token, secret).
+- **main.dart**: Aggiornato il callback `beforeSend` di Sentry per invocare `SentryConfig.sanitizeEvent`.
+- **AppLogger**: Aggiornato per usare `setContexts` invece del deprecato `setExtra` per allegare dati aggiuntivi agli errori, rimuovendo i warning del linter.
+
+
 
 

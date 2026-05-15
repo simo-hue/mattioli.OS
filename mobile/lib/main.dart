@@ -60,16 +60,9 @@ void main() async {
       // Disabilita in debug mode per non inquinare i dati
       options.debug = false;
 
-      // Associa l'user Supabase a ogni evento Sentry (se loggato)
+      // Sanitizza l'evento per la privacy rimuovendo PII e dati sensibili
       options.beforeSend = (event, hint) {
-        final user = Supabase.instance.client.auth.currentUser;
-        if (user != null) {
-          event.user = SentryUser(
-            id: user.id,
-            email: user.email,
-          );
-        }
-        return event;
+        return SentryConfig.sanitizeEvent(event);
       };
     },
     appRunner: () {

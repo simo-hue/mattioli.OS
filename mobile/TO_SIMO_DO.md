@@ -36,3 +36,14 @@ comando sentry-cli durante il build di release, ma è un passaggio che va config
       </intent>
   </queries>
   ```
+
+## Dettagli Obbligatori per la Privacy Policy (Sito Web)
+- [ ] **Aggiorna la pagina web della Privacy Policy** (`https://simo-hue.github.io/mattioli.OS/`) includendo questi elementi essenziali per la compliance GDPR:
+  - **Titolare del Trattamento**: Nome, Cognome (o ragione sociale) e un indirizzo email di contatto per esercitare i diritti.
+  - **Dati Raccolti**: Specifica che raccogli l'email (per l'autenticazione) e i dati inseriti dall'utente (abitudini, obiettivi, mood).
+  - **Finalità del Trattamento**: Spiega che i dati servono esclusivamente per fornire il servizio dell'app e non vengono ceduti a terzi.
+  - **Responsabili del Trattamento (Sub-processors)**:
+    - **Supabase**: Specifica che è il provider cloud per il database e l'autenticazione.
+    - **Sentry**: Specifica che è il servizio usato per monitorare i crash e migliorare l'app (indicando che l'invio è facoltativo e basato sul consenso).
+  - **Diritti dell'Utente**: Elenca il diritto di accesso, rettifica, cancellazione (diritto all'oblio) e revoca del consenso (tutti esercitabili direttamente dalle impostazioni dell'app).
+  - **Base Giuridica**: Specifica che il trattamento si basa sull'Esecuzione di un contratto (per l'uso dell'app) e sul Consenso (per i crash log di Sentry).

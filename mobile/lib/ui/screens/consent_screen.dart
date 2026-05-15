@@ -189,7 +189,7 @@ class _ConsentScreenState extends ConsumerState<ConsentScreen> {
                         _buildConsentCard(
                           icon: LucideIcons.fileText,
                           title: 'Termini e Privacy Policy',
-                          description: 'Dichiaro di aver letto e accettato i Termini di Servizio e la Privacy Policy.',
+                          description: 'Dichiaro di aver letto e accettato i Termini di Servizio e la Privacy Policy. Confermo di avere almeno 14 anni.',
                           trailing: Checkbox(
                             value: _acceptedTerms,
                             onChanged: (val) {

@@ -201,37 +201,39 @@ class _GlobalTrendTabWidgetState extends ConsumerState<GlobalTrendTabWidget> {
                   height: 1,
                 ),
               ),
-              const SizedBox(width: 12),
-              Padding(
-                padding: const EdgeInsets.only(bottom: 4),
-                child: Container(
-                  padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
-                  decoration: BoxDecoration(
-                    color: (isPositive ? const Color(0xFF10B981) : const Color(0xFFEF4444)).withValues(alpha: 0.1),
-                    borderRadius: BorderRadius.circular(8),
-                  ),
-                  child: Row(
-                    mainAxisSize: MainAxisSize.min,
-                    children: [
-                      Icon(
-                        isPositive ? LucideIcons.trendingUp : LucideIcons.trendingDown,
-                        size: 14,
-                        color: isPositive ? const Color(0xFF10B981) : const Color(0xFFEF4444),
-                      ),
-                      const SizedBox(width: 4),
-                      Text(
-                        delta,
-                        style: TextStyle(
-                          fontFamily: 'Inter',
-                          fontSize: 12,
-                          fontWeight: FontWeight.w800,
+              if (_chartTimeframe != 'timeframe_all') ...[
+                const SizedBox(width: 12),
+                Padding(
+                  padding: const EdgeInsets.only(bottom: 4),
+                  child: Container(
+                    padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+                    decoration: BoxDecoration(
+                      color: (isPositive ? const Color(0xFF10B981) : const Color(0xFFEF4444)).withValues(alpha: 0.1),
+                      borderRadius: BorderRadius.circular(8),
+                    ),
+                    child: Row(
+                      mainAxisSize: MainAxisSize.min,
+                      children: [
+                        Icon(
+                          isPositive ? LucideIcons.trendingUp : LucideIcons.trendingDown,
+                          size: 14,
                           color: isPositive ? const Color(0xFF10B981) : const Color(0xFFEF4444),
                         ),
-                      ),
-                    ],
+                        const SizedBox(width: 4),
+                        Text(
+                          delta,
+                          style: TextStyle(
+                            fontFamily: 'Inter',
+                            fontSize: 12,
+                            fontWeight: FontWeight.w800,
+                            color: isPositive ? const Color(0xFF10B981) : const Color(0xFFEF4444),
+                          ),
+                        ),
+                      ],
+                    ),
                   ),
                 ),
-              ),
+              ],
             ],
           ),
           const SizedBox(height: 32),

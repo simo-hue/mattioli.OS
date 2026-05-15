@@ -1018,6 +1018,14 @@
 - **File**: `lib/ui/widgets/statistics/global_trend_tab_widget.dart`.
 - **Change**: Implemented a padding logic for `timeframe_year_short`. It generates labels for the last 12 months up to the current month. It initializes rates to 100.0 and fills in the actual rates from `trendData` where available. This ensures that the chart always shows 12 points and a continuous line.
 
+---
+
+## [2026-05-15 14:18]: Statistics - Hide Delta Badge in 'Tutto' Timeframe
+*Details*: Removed the delta badge (percentage increase/decrease) from the "Evoluzione Performance" chart when the "Tutto" (All) timeframe is selected, as requested by the user. Only the overall completion rate is now displayed.
+*Tech Notes*:
+- **File**: `lib/ui/widgets/statistics/global_trend_tab_widget.dart`.
+- **Change**: Wrapped the delta badge widget and its leading `SizedBox` in a conditional block: `if (_chartTimeframe != 'timeframe_all')`.
+
 
 
 

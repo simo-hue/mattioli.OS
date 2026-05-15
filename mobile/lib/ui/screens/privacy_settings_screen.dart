@@ -540,7 +540,8 @@ class PrivacySettingsScreen extends ConsumerWidget {
                                       const SnackBar(content: Text('Password aggiornata con successo!')),
                                     );
                                   }
-                                } catch (e) {
+                                } catch (e, stack) {
+                                  AppLogger.error('Errore durante aggiornamento password', e, stack);
                                   setState(() {
                                     isLoading = false;
                                     errorMessage = e.toString().replaceAll('Exception: ', '');
@@ -967,7 +968,8 @@ class PrivacySettingsScreen extends ConsumerWidget {
           const SnackBar(content: Text('Dati resettati con successo!')),
         );
       }
-    } catch (e) {
+    } catch (e, stack) {
+      AppLogger.error('Errore durante reset dati', e, stack);
       if (context.mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(content: Text('Errore durante il reset: $e')),
@@ -994,7 +996,8 @@ class PrivacySettingsScreen extends ConsumerWidget {
           const SnackBar(content: Text('Account eliminato con successo!')),
         );
       }
-    } catch (e) {
+    } catch (e, stack) {
+      AppLogger.error('Errore durante eliminazione account', e, stack);
       if (context.mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(content: Text('Errore durante l\'eliminazione: $e')),

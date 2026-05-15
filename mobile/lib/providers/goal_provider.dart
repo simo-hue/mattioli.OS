@@ -429,7 +429,8 @@ final globalCriticalDayProvider = FutureProvider<String>((ref) async {
         .rpc('get_global_critical_day', params: {'p_user_id': user.id});
         
     return response as String;
-  } catch (e) {
+  } catch (e, stack) {
+    AppLogger.error('Errore get_global_critical_day RPC', e, stack);
     return 'N/A';
   }
 });
@@ -547,7 +548,8 @@ final allHabitCorrelationsProvider = FutureProvider<List<Map<String, dynamic>>>(
         .rpc('get_all_habit_correlations', params: {'p_user_id': user.id});
         
     return List<Map<String, dynamic>>.from(response);
-  } catch (e) {
+  } catch (e, stack) {
+    AppLogger.error('Errore get_all_habit_correlations RPC', e, stack);
     return [];
   }
 });

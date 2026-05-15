@@ -2,6 +2,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 import 'auth_provider.dart';
 import 'macro_goals_provider.dart';
+import '../core/app_logger.dart';
 
 /// Provider for macro goals statistics.
 /// Uses ref.keepAlive() to cache results and avoid continuous calls.
@@ -33,7 +34,8 @@ final macroGoalsStatsProvider = FutureProvider.family<Map<String, dynamic>, Stri
     } else {
       throw Exception('Invalid response format');
     }
-  } catch (e) {
+  } catch (e, stack) {
+    AppLogger.error('Errore get_macro_goals_stats RPC', e, stack);
     throw Exception('Failed to fetch stats: $e');
   }
 });

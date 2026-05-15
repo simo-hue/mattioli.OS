@@ -110,7 +110,8 @@ class AuthNotifier extends Notifier<AuthState> with ChangeNotifier {
     } on AuthException catch (e) {
       state = state.copyWith(isLoading: false, error: _mapAuthError(e.message));
       return false;
-    } catch (e) {
+    } catch (e, stack) {
+      AppLogger.error('[Auth] Login network error', e, stack);
       state = state.copyWith(isLoading: false, error: 'Errore di rete. Riprova.');
       return false;
     }
@@ -138,7 +139,8 @@ class AuthNotifier extends Notifier<AuthState> with ChangeNotifier {
     } on AuthException catch (e) {
       state = state.copyWith(isLoading: false, error: _mapAuthError(e.message));
       return false;
-    } catch (e) {
+    } catch (e, stack) {
+      AppLogger.error('[Auth] Sign up network error', e, stack);
       state = state.copyWith(isLoading: false, error: 'Errore di rete. Riprova.');
       return false;
     }
@@ -155,7 +157,8 @@ class AuthNotifier extends Notifier<AuthState> with ChangeNotifier {
     } on AuthException catch (e) {
       state = state.copyWith(isLoading: false, error: _mapAuthError(e.message));
       return false;
-    } catch (e) {
+    } catch (e, stack) {
+      AppLogger.error('[Auth] Reset password network error', e, stack);
       state = state.copyWith(isLoading: false, error: 'Errore di rete. Riprova.');
       return false;
     }
@@ -288,7 +291,8 @@ class AuthNotifier extends Notifier<AuthState> with ChangeNotifier {
     } on AuthException catch (e) {
       state = state.copyWith(isLoading: false, error: _mapAuthError(e.message));
       return false;
-    } catch (e) {
+    } catch (e, stack) {
+      AppLogger.error('[Auth] Update profile name network error', e, stack);
       state = state.copyWith(isLoading: false, error: 'Errore di rete. Riprova.');
       return false;
     }

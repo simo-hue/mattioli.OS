@@ -648,7 +648,6 @@ class PrivacySettingsScreen extends ConsumerWidget {
           'weeklyReports': settings.weeklyReports,
           'eveningReview': settings.eveningReview,
           'biometricLock': settings.biometricLock,
-          'anonymousAnalytics': settings.anonymousAnalytics,
           'morningBriefTime': settings.morningBriefTime,
           'eveningReviewTime': settings.eveningReviewTime,
         },

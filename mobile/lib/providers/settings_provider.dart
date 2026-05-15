@@ -30,7 +30,6 @@ class AppSettings {
 
   // Privacy
   final bool biometricLock;
-  final bool anonymousAnalytics;
 
   // Notification Times
   final String morningBriefTime;
@@ -53,7 +52,6 @@ class AppSettings {
     required this.milestones,
     required this.deepWorkInsights,
     required this.biometricLock,
-    required this.anonymousAnalytics,
     required this.eveningReview,
     required this.morningBriefTime,
     required this.eveningReviewTime,
@@ -76,7 +74,6 @@ class AppSettings {
     bool? milestones,
     bool? deepWorkInsights,
     bool? biometricLock,
-    bool? anonymousAnalytics,
     bool? eveningReview,
     String? morningBriefTime,
     String? eveningReviewTime,
@@ -98,7 +95,6 @@ class AppSettings {
       milestones: milestones ?? this.milestones,
       deepWorkInsights: deepWorkInsights ?? this.deepWorkInsights,
       biometricLock: biometricLock ?? this.biometricLock,
-      anonymousAnalytics: anonymousAnalytics ?? this.anonymousAnalytics,
       eveningReview: eveningReview ?? this.eveningReview,
       morningBriefTime: morningBriefTime ?? this.morningBriefTime,
       eveningReviewTime: eveningReviewTime ?? this.eveningReviewTime,
@@ -146,11 +142,22 @@ class AppSettingsNotifier extends Notifier<AppSettings> {
   Future<void> _loadSecureSettings() async {
     try {
       final secureStorage = ref.read(secureStorageProvider);
-      final val = await secureStorage.read(key: 'pref_biometric_lock');
-      if (val != null) {
-        final biometricLock = val == 'true';
-        state = state.copyWith(biometricLock: biometricLock);
-      }
+      
+      final biometricLockVal = await secureStorage.read(key: 'pref_biometric_lock');
+      final aiSuggestionsVal = await secureStorage.read(key: 'pref_ai_suggestions');
+      final isProVal = await secureStorage.read(key: 'pref_is_pro');
+      final focusModeVal = await secureStorage.read(key: 'pref_focus_mode');
+      final milestonesVal = await secureStorage.read(key: 'pref_milestones');
+      final deepWorkInsightsVal = await secureStorage.read(key: 'pref_deep_work_insights');
+
+      state = state.copyWith(
+        biometricLock: biometricLockVal != null ? biometricLockVal == 'true' : state.biometricLock,
+        aiSuggestions: aiSuggestionsVal != null ? aiSuggestionsVal == 'true' : state.aiSuggestions,
+        isPro: isProVal != null ? isProVal == 'true' : state.isPro,
+        focusMode: focusModeVal != null ? focusModeVal == 'true' : state.focusMode,
+        milestones: milestonesVal != null ? milestonesVal == 'true' : state.milestones,
+        deepWorkInsights: deepWorkInsightsVal != null ? deepWorkInsightsVal == 'true' : state.deepWorkInsights,
+      );
     } catch (e, stack) {
       AppLogger.error('Errore nel caricamento delle impostazioni sicure in SettingsProvider', e, stack);
     }
@@ -259,7 +266,6 @@ class AppSettingsNotifier extends Notifier<AppSettings> {
       eveningReview: prefs.getBool('notif_evening_review') ?? true,
       
       biometricLock: prefs.getBool('pref_biometric_lock') ?? false,
-      anonymousAnalytics: prefs.getBool('pref_anonymous_analytics') ?? true,
       
       morningBriefTime: prefs.getString('notif_morning_brief_time') ?? '09:00',
       eveningReviewTime: prefs.getString('notif_evening_review_time') ?? '21:00',
@@ -292,13 +298,16 @@ class AppSettingsNotifier extends Notifier<AppSettings> {
     prefs.setBool('notif_evening_review', s.eveningReview);
     
     prefs.setBool('pref_biometric_lock', s.biometricLock);
-    // Anche nello storage sicuro per evitare manipolazioni
-    ref.read(secureStorageProvider).write(key: 'pref_biometric_lock', value: s.biometricLock.toString())
-      .catchError((e, stack) {
-        AppLogger.error('Errore durante la scrittura di biometricLock su SecureStorage', e, stack);
-      });
     
-    prefs.setBool('pref_anonymous_analytics', s.anonymousAnalytics);
+    // Scrittura su SecureStorage per sicurezza (evita manipolazioni su dispositivi rooted)
+    final secureStorage = ref.read(secureStorageProvider);
+    
+    secureStorage.write(key: 'pref_biometric_lock', value: s.biometricLock.toString()).catchError((e, stack) => AppLogger.error('Errore scrittura biometric_lock su SecureStorage', e, stack));
+    secureStorage.write(key: 'pref_ai_suggestions', value: s.aiSuggestions.toString()).catchError((e, stack) => AppLogger.error('Errore scrittura ai_suggestions su SecureStorage', e, stack));
+    secureStorage.write(key: 'pref_is_pro', value: s.isPro.toString()).catchError((e, stack) => AppLogger.error('Errore scrittura is_pro su SecureStorage', e, stack));
+    secureStorage.write(key: 'pref_focus_mode', value: s.focusMode.toString()).catchError((e, stack) => AppLogger.error('Errore scrittura focus_mode su SecureStorage', e, stack));
+    secureStorage.write(key: 'pref_milestones', value: s.milestones.toString()).catchError((e, stack) => AppLogger.error('Errore scrittura milestones su SecureStorage', e, stack));
+    secureStorage.write(key: 'pref_deep_work_insights', value: s.deepWorkInsights.toString()).catchError((e, stack) => AppLogger.error('Errore scrittura deep_work_insights su SecureStorage', e, stack));
     
     prefs.setString('notif_morning_brief_time', s.morningBriefTime);
     prefs.setString('notif_evening_review_time', s.eveningReviewTime);
@@ -338,7 +347,6 @@ class AppSettingsNotifier extends Notifier<AppSettings> {
           weeklyReports: data['notif_weekly_reports'] ?? state.weeklyReports,
           eveningReview: data['notif_evening_review'] ?? state.eveningReview,
           biometricLock: data['biometric_lock'] ?? state.biometricLock,
-          anonymousAnalytics: data['anonymous_analytics'] ?? state.anonymousAnalytics,
           morningBriefTime: data['morning_brief_time'] ?? state.morningBriefTime,
           eveningReviewTime: data['evening_review_time'] ?? state.eveningReviewTime,
         );
@@ -372,7 +380,6 @@ class AppSettingsNotifier extends Notifier<AppSettings> {
         'notif_weekly_reports': s.weeklyReports,
         'notif_evening_review': s.eveningReview,
         'biometric_lock': s.biometricLock,
-        'anonymous_analytics': s.anonymousAnalytics,
         'morning_brief_time': s.morningBriefTime,
         'evening_review_time': s.eveningReviewTime,
       }).eq('id', user.id);

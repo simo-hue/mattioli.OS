@@ -926,6 +926,24 @@
 - **main.dart**: Aggiornato il callback `beforeSend` di Sentry per invocare `SentryConfig.sanitizeEvent`.
 - **AppLogger**: Aggiornato per usare `setContexts` invece del deprecato `setExtra` per allegare dati aggiuntivi agli errori, rimuovendo i warning del linter.
 
+---
+
+## [2026-05-15 11:05]: Cleanup - Rimozione Impostazione 'Analytics Anonimi'
+*Details*: Rimossa l'impostazione `anonymousAnalytics` (Analytics Anonimi) che era obsoleta e non più utilizzata nell'app.
+*Tech Notes*:
+- **SettingsProvider**: Rimossa la variabile `anonymousAnalytics` da `AppSettings`, `_loadFromPrefs`, `_saveToPrefs`, `_syncFromSupabase` e `_syncToSupabase`.
+- **PrivacySettingsScreen**: Rimossa l'esportazione di `anonymousAnalytics` nel metodo `_exportData`.
+
+---
+
+## [2026-05-15 11:10]: Privacy - Spostamento Impostazioni Pro/AI su SecureStorage
+*Details*: Spostate le impostazioni della Categoria 2 (Feature Pro / AI) su `SecureStorage` per garantire il massimo livello di sicurezza contro manipolazioni su dispositivi con root.
+*Tech Notes*:
+- **SettingsProvider**: Aggiornato `_loadSecureSettings` per leggere asincronamente `pref_ai_suggestions`, `pref_is_pro`, `pref_focus_mode`, `pref_milestones` e `pref_deep_work_insights` da `SecureStorage` e aggiornare lo stato.
+- **SettingsProvider**: Aggiornato `_saveToPrefs` per scrivere queste impostazioni anche su `SecureStorage` (mantenendo la scrittura su `SharedPreferences` per un caricamento iniziale sincrono senza flickering).
+
+
+
 
 
 

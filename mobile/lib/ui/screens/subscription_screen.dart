@@ -99,7 +99,7 @@ class SubscriptionScreen extends ConsumerWidget {
           ),
           const SizedBox(height: 16),
           Text(
-            'Passa a Growth Pro',
+            'Passa a Evolve Pro',
             style: GoogleFonts.inter(
               fontSize: 22,
               fontWeight: FontWeight.w800,
@@ -213,7 +213,7 @@ class SubscriptionScreen extends ConsumerWidget {
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
                     Text(
-                      'Growth Pro Mensile',
+                      'Evolve Pro Mensile',
                       style: GoogleFonts.inter(fontSize: 16, fontWeight: FontWeight.w700, color: context.appColors.foreground),
                     ),
                     const SizedBox(height: 4),
@@ -300,7 +300,7 @@ class SubscriptionScreen extends ConsumerWidget {
               mainAxisAlignment: MainAxisAlignment.spaceBetween,
               children: [
                 Text('Prodotto:', style: TextStyle(color: context.appColors.mutedForeground)),
-                Text('Growth Pro Mensile', style: TextStyle(fontWeight: FontWeight.w600, color: context.appColors.foreground)),
+                Text('Evolve Pro Mensile', style: TextStyle(fontWeight: FontWeight.w600, color: context.appColors.foreground)),
               ],
             ),
             const SizedBox(height: 8),
@@ -403,7 +403,7 @@ class SubscriptionScreen extends ConsumerWidget {
           ),
           const SizedBox(height: 8),
           Text(
-            'Grazie per sostenere lo sviluppo di Growth.',
+            'Grazie per sostenere lo sviluppo di Evolve.',
             textAlign: TextAlign.center,
             style: GoogleFonts.inter(
               fontSize: 14,
@@ -441,7 +441,7 @@ class SubscriptionScreen extends ConsumerWidget {
           ),
           child: Column(
             children: [
-              _buildDetailRow(context, 'Piano', 'Growth Pro Mensile'),
+              _buildDetailRow(context, 'Piano', 'Evolve Pro Mensile'),
               const Divider(height: 32),
               _buildDetailRow(context, 'Stato', 'Attivo', valueColor: Colors.green),
               const Divider(height: 32),

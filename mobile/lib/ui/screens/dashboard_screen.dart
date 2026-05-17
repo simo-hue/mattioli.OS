@@ -122,7 +122,7 @@ class _HomeScreenState extends ConsumerState<HomeScreen>
                     ),
                     const SizedBox(height: 40),
                     Text(
-                      "Benvenuto in Growth",
+                      context.l10n.translate("Benvenuto in Evolve"),
                       textAlign: TextAlign.center,
                       style: const TextStyle(
                         fontFamily: 'Inter',
@@ -135,7 +135,7 @@ class _HomeScreenState extends ConsumerState<HomeScreen>
                     ),
                     const SizedBox(height: 16),
                     Text(
-                      "Potrebbe essere uno STEP di NON RITORNO... Prima di iniziare però bisogna fare un tour per mostrarti come sfruttare al massimo l'applicazione.",
+                      context.l10n.translate("Potrebbe essere uno STEP di NON RITORNO... Prima di iniziare però bisogna fare un tour per mostrarti come sfruttare al massimo l'applicazione."),
                       textAlign: TextAlign.center,
                       style: TextStyle(
                         fontFamily: 'Inter',
@@ -167,7 +167,7 @@ class _HomeScreenState extends ConsumerState<HomeScreen>
                         ),
                         child: Center(
                           child: Text(
-                            'Inizia il Tour',
+                            context.l10n.translate('Inizia il Tour'),
                             style: TextStyle(
                               color: Theme.of(context).colorScheme.primary.computeLuminance() > 0.5 ? Colors.black : Colors.white,
                               fontSize: 16,
@@ -222,7 +222,7 @@ class _HomeScreenState extends ConsumerState<HomeScreen>
                     ),
                     const SizedBox(height: 40),
                     Text(
-                      "Sei pronto!",
+                      context.l10n.translate("Sei pronto!"),
                       textAlign: TextAlign.center,
                       style: const TextStyle(
                         fontFamily: 'Inter',
@@ -235,7 +235,7 @@ class _HomeScreenState extends ConsumerState<HomeScreen>
                     ),
                     const SizedBox(height: 16),
                     Text(
-                      "Il viaggio inizia ora. Dai il massimo!",
+                      context.l10n.translate("Il viaggio inizia ora. Dai il massimo!"),
                       textAlign: TextAlign.center,
                       style: TextStyle(
                         fontFamily: 'Inter',
@@ -269,7 +269,7 @@ class _HomeScreenState extends ConsumerState<HomeScreen>
                         ),
                         child: Center(
                           child: Text(
-                            'Inizia',
+                            context.l10n.translate('Inizia'),
                             style: TextStyle(
                               color: Theme.of(context).colorScheme.primary.computeLuminance() > 0.5 ? Colors.black : Colors.white,
                               fontSize: 16,
@@ -357,7 +357,7 @@ class _HomeScreenState extends ConsumerState<HomeScreen>
                     ref.hapticSelection();
                     controller.previous();
                   },
-                  child: Text("Indietro", style: TextStyle(color: context.appColors.mutedForeground, fontWeight: FontWeight.bold)),
+                  child: Text(context.l10n.translate("Indietro"), style: TextStyle(color: context.appColors.mutedForeground, fontWeight: FontWeight.bold)),
                 )
               else
                 const SizedBox.shrink(),
@@ -378,7 +378,12 @@ class _HomeScreenState extends ConsumerState<HomeScreen>
                   shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
                   elevation: 0,
                 ),
-                child: Text(nextButtonText ?? (isLast ? "Fine" : "Avanti"), style: const TextStyle(fontWeight: FontWeight.bold)),
+                child: Text(
+                  nextButtonText != null
+                      ? context.l10n.translate(nextButtonText)
+                      : (isLast ? context.l10n.translate("Fine") : context.l10n.translate("Avanti")),
+                  style: const TextStyle(fontWeight: FontWeight.bold),
+                ),
               ),
             ],
           ),
@@ -400,8 +405,8 @@ class _HomeScreenState extends ConsumerState<HomeScreen>
             align: ContentAlign.bottom,
             builder: (context, controller) {
               return _buildTutorialContent(
-                "Daily Check-in",
-                "Qui puoi registrare il tuo stato d'animo quotidiano per tracciare il tuo benessere nel tempo e soprattutto correlarlo con il completamento dei tuoi obiettivi.",
+                context.l10n.translate("Daily Check-in"),
+                context.l10n.translate("Qui puoi registrare il tuo stato d'animo quotidiano per tracciare il tuo benessere nel tempo e soprattutto correlarlo con il completamento dei tuoi obiettivi."),
                 controller,
                 isFirst: true,
               );
@@ -419,8 +424,8 @@ class _HomeScreenState extends ConsumerState<HomeScreen>
             align: ContentAlign.bottom,
             builder: (context, controller) {
               return _buildTutorialContent(
-                "AI Chat",
-                "Il tuo assistente personale. Chiedi consigli sulle tue abitudini. Lui è il tuo coach.",
+                context.l10n.translate("AI Chat"),
+                context.l10n.translate("Il tuo assistente personale. Chiedi consigli sulle tue abitudini. Lui è il tuo coach."),
                 controller,
               );
             },
@@ -437,8 +442,8 @@ class _HomeScreenState extends ConsumerState<HomeScreen>
             align: ContentAlign.bottom,
             builder: (context, controller) {
               return _buildTutorialContent(
-                "Gestione Abitudini",
-                "Aggiungi, modifica o elimina le tue abitudini quotidiane che vuoi rispettare in modo semplice e veloce.",
+                context.l10n.translate("Gestione Abitudini"),
+                context.l10n.translate("Aggiungi, modifica o elimina le tue abitudini quotidiane che vuoi rispettare in modo semplice e veloce."),
                 controller,
               );
             },
@@ -455,8 +460,8 @@ class _HomeScreenState extends ConsumerState<HomeScreen>
             align: ContentAlign.bottom,
             builder: (context, controller) {
               return _buildTutorialContent(
-                "Viste Calendario",
-                "Naviga tra le diverse visualizzazioni per vedere i tuoi progressi con varie alternative.",
+                context.l10n.translate("Viste Calendario"),
+                context.l10n.translate("Naviga tra le diverse visualizzazioni per vedere i tuoi progressi con varie alternative."),
                 controller,
               );
             },
@@ -473,8 +478,8 @@ class _HomeScreenState extends ConsumerState<HomeScreen>
             align: ContentAlign.top,
             builder: (context, controller) {
               return _buildTutorialContent(
-                "Calendario",
-                "Basta cliccare su un giorno per visualizzare le abitudini giornaliere e spuntarle.",
+                context.l10n.translate("Calendario"),
+                context.l10n.translate("Basta cliccare su un giorno per visualizzare le abitudini giornaliere e spuntarle."),
                 controller,
               );
             },
@@ -491,8 +496,8 @@ class _HomeScreenState extends ConsumerState<HomeScreen>
             align: ContentAlign.top,
             builder: (context, controller) {
               return _buildTutorialContent(
-                "Passiamo agli Obiettivi",
-                "La pagina dove puoi gestire i tuoi obiettivi a lungo termine e le relative performance.",
+                context.l10n.translate("Passiamo agli Obiettivi"),
+                context.l10n.translate("La pagina dove puoi gestire i tuoi obiettivi a lungo termine e le relative performance."),
                 controller,
                 isLast: true,
                 nextButtonText: "Vai agli Obiettivi",
@@ -615,7 +620,7 @@ class _HomeScreenState extends ConsumerState<HomeScreen>
                   const SizedBox(height: 24),
                   
                   Text(
-                    'Benvenuto in Growth!',
+                    context.l10n.translate('Benvenuto in Evolve!'),
                     style: TextStyle(
                       fontFamily: 'Inter',
                       fontSize: 22,
@@ -626,7 +631,7 @@ class _HomeScreenState extends ConsumerState<HomeScreen>
                   ),
                   const SizedBox(height: 8),
                   Text(
-                    'Per iniziare, come possiamo chiamarti?',
+                    context.l10n.translate('Per iniziare, come possiamo chiamarti?'),
                     textAlign: TextAlign.center,
                     style: TextStyle(
                       fontFamily: 'Inter',
@@ -640,7 +645,7 @@ class _HomeScreenState extends ConsumerState<HomeScreen>
                   TextField(
                     controller: controller,
                     decoration: InputDecoration(
-                      labelText: 'Il tuo nome',
+                      labelText: context.l10n.translate('Il tuo nome'),
                       labelStyle: TextStyle(color: context.appColors.mutedForeground, fontSize: 14),
                       floatingLabelStyle: TextStyle(color: Theme.of(context).colorScheme.primary),
                       filled: true,
@@ -671,7 +676,7 @@ class _HomeScreenState extends ConsumerState<HomeScreen>
                           Navigator.pop(context);
                         } else {
                           ScaffoldMessenger.of(context).showSnackBar(
-                            const SnackBar(content: Text('Errore durante il salvataggio. Riprova.')),
+                            SnackBar(content: Text(context.l10n.translate('Errore durante il salvataggio. Riprova.'))),
                           );
                         }
                       }
@@ -692,7 +697,7 @@ class _HomeScreenState extends ConsumerState<HomeScreen>
                       ),
                       child: Center(
                         child: Text(
-                          'Inizia ora',
+                          context.l10n.translate('Inizia ora'),
                           style: TextStyle(
                             color: Theme.of(context).colorScheme.primary.computeLuminance() > 0.5 ? Colors.black : Colors.white,
                             fontSize: 16,

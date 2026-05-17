@@ -1,4 +1,4 @@
-import 'package:flutter/material.dart';
+import 'dart:ui';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../core/notifications.dart';
 import '../core/app_logger.dart';
@@ -250,7 +250,7 @@ class AppSettingsNotifier extends Notifier<AppSettings> {
       accentColor: parseColor(prefs.getString('pref_accent_color')),
       defaultCalendarView: prefs.getString('pref_default_calendar_view') ?? 'settimana',
       hapticFeedback: prefs.getBool('pref_haptic_feedback') ?? true,
-      language: prefs.getString('pref_language') ?? 'Italiano',
+      language: prefs.getString('pref_language') ?? _getDefaultLanguage(),
       timeFormat24h: prefs.getBool('pref_time_format_24h') ?? true,
       
       aiSuggestions: prefs.getBool('pref_ai_suggestions') ?? false,
@@ -270,6 +270,19 @@ class AppSettingsNotifier extends Notifier<AppSettings> {
       morningBriefTime: prefs.getString('notif_morning_brief_time') ?? '09:00',
       eveningReviewTime: prefs.getString('notif_evening_review_time') ?? '21:00',
     );
+  }
+
+  String _getDefaultLanguage() {
+    try {
+      final locale = PlatformDispatcher.instance.locale;
+      final languageCode = locale.languageCode.toLowerCase();
+      if (languageCode == 'it') {
+        return 'Italiano';
+      }
+      return 'English';
+    } catch (_) {
+      return 'Italiano'; // Fallback predefinito
+    }
   }
 
   void _saveToPrefs(AppSettings s) {

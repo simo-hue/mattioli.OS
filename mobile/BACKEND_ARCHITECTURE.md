@@ -1,6 +1,6 @@
-# 🏗️ Backend Architecture: Growth (Enterprise Grade)
+# 🏗️ Backend Architecture: Evolve (Enterprise Grade)
 
-Questa documentazione definisce l'infrastruttura backend necessaria per scalare **Growth** da strumento personale ad applicazione multi-utente pronta per App Store e Google Play Store.
+Questa documentazione definisce l'infrastruttura backend necessaria per scalare **Evolve** da strumento personale ad applicazione multi-utente pronta per App Store e Google Play Store.
 
 ---
 

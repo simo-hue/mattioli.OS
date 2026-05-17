@@ -1,4 +1,4 @@
-# 🚀 Comandi Flutter per Growth
+# 🚀 Comandi Flutter per Evolve
 
 Tutti i comandi Flutter devono essere lanciati dalla cartella `mobile/`. Se ti trovi nella root del progetto, entra prima nella cartella: `cd mobile`.
 

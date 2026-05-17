@@ -137,7 +137,7 @@ class NotificationService {
 
     await _notifications.zonedSchedule(
       id: habitId.hashCode + 1000,
-      title: 'Growth • $title',
+      title: 'Evolve • $title',
       body: _getHabitMessage(title),
       scheduledDate: tz.TZDateTime.from(scheduledDate, tz.local),
       notificationDetails: platformDetails,
@@ -199,7 +199,7 @@ class NotificationService {
 
     await _notifications.zonedSchedule(
       id: 0,
-      title: 'Growth • Morning Brief',
+      title: 'Evolve • Morning Brief',
       body: 'È il momento di plasmare la tua giornata. Controlla i tuoi obiettivi.',
       scheduledDate: _nextInstanceOfTime(hour, minute),
       notificationDetails: platformDetails,
@@ -224,7 +224,7 @@ class NotificationService {
 
     await _notifications.zonedSchedule(
       id: 1,
-      title: 'Growth • Review Serale',
+      title: 'Evolve • Review Serale',
       body: 'Com\'è andata oggi? Traccia i tuoi progressi e aggiorna il Diario di Bordo.',
       scheduledDate: _nextInstanceOfTime(hour, minute),
       notificationDetails: platformDetails,
@@ -264,7 +264,7 @@ class NotificationService {
 
     await _notifications.zonedSchedule(
       id: notificationId,
-      title: 'Growth • $title',
+      title: 'Evolve • $title',
       body: _getHabitMessage(title),
       scheduledDate: _nextInstanceOfTime(hour, minute),
       notificationDetails: platformDetails,

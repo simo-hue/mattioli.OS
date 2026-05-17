@@ -58,7 +58,11 @@ class _StatisticsScreenState extends ConsumerState<StatisticsScreen>
         contents: [
           TargetContent(
             align: ContentAlign.bottom,
-            builder: (context, controller) => _buildTutorialContent("Filtra per Abitudine", "Da qui puoi selezionare una specifica abitudine per vederne i dettagli, oppure 'Tutti gli Habits' per una panoramica globale.", controller),
+            builder: (context, controller) => _buildTutorialContent(
+              context.l10n.translate("Filtra per Abitudine"),
+              context.l10n.translate("Da qui puoi selezionare una specifica abitudine per vederne i dettagli, oppure 'Tutti gli Habits' per una panoramica globale."),
+              controller,
+            ),
           ),
         ],
       ),
@@ -70,7 +74,12 @@ class _StatisticsScreenState extends ConsumerState<StatisticsScreen>
         contents: [
           TargetContent(
             align: ContentAlign.bottom,
-            builder: (context, controller) => _buildTutorialContent("Sezioni Statistiche", "Naviga tra le varie schede per vedere i Trend, gli Alert sulle performance, l'andamento delle Abitudini e il tuo Mood.", controller, isLast: true),
+            builder: (context, controller) => _buildTutorialContent(
+              context.l10n.translate("Sezioni Statistiche"),
+              context.l10n.translate("Naviga tra le varie schede per vedere i Trend, gli Alert sulle performance, l'andamento delle Abitudini e il tuo Mood."),
+              controller,
+              isLast: true,
+            ),
           ),
         ],
       ),
@@ -158,7 +167,7 @@ class _StatisticsScreenState extends ConsumerState<StatisticsScreen>
                     ref.hapticSelection();
                     controller.previous();
                   },
-                  child: Text("Indietro", style: TextStyle(color: Theme.of(context).colorScheme.onSurface.withValues(alpha: 0.5), fontWeight: FontWeight.bold)),
+                  child: Text(context.l10n.translate("Indietro"), style: TextStyle(color: Theme.of(context).colorScheme.onSurface.withValues(alpha: 0.5), fontWeight: FontWeight.bold)),
                 )
               else
                 const SizedBox.shrink(),
@@ -173,7 +182,7 @@ class _StatisticsScreenState extends ConsumerState<StatisticsScreen>
                   shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
                   elevation: 0,
                 ),
-                child: Text(isLast ? "Fine" : "Avanti", style: const TextStyle(fontWeight: FontWeight.bold)),
+                child: Text(isLast ? context.l10n.translate("Fine") : context.l10n.translate("Avanti"), style: const TextStyle(fontWeight: FontWeight.bold)),
               ),
             ],
           ),

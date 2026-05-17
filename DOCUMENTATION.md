@@ -315,5 +315,57 @@
   - *Details*: Fixed an issue where the checkmark in the "Termini e Privacy Policy" checkbox was invisible (white on white) in the consent screen.
   - *Tech Notes*: Changed `checkColor` from `Colors.white` to `activeTextColor` (which dynamically switches between black and white based on the primary color's luminance) in `consent_screen.dart`.
 
+- [2026-05-17 16:00]: **Mobile Application Rebranding to 'Evolve'**
+  - *Details*: Rebranded the entire mobile application from "Growth" to "Evolve" and updated the application's motto to "better each day, become who you're meant to be".
+  - *Tech Notes*:
+    - Updated `CFBundleDisplayName` and `CFBundleName` in `Info.plist` to "evolve".
+    - Updated `MaterialApp` title in `main.dart` and renamed the main app widget from `GrowthApp` to `EvolveApp`.
+    - Updated notification titles in `notifications.dart` to use 'Evolve • '.
+    - Updated `app_title` in `localization.dart` for both Italian and English.
+    - Updated the title and motto in `AuthScreen`, the welcome screens in `dashboard_screen.dart`, all tier texts in `subscription_screen.dart`, and the premium header modal in `pro_features_modal.dart`.
+    - Updated "Growth" to "Evolve" in documentation files: `FINANCIAL_PLAN.md`, `BACKEND_ARCHITECTURE.md`, and `FLUTTER_COMMANDS.md`.
+
+- [2026-05-17 16:15]: **Comprehensive System Locale Detection & Global Multi-Language Support**
+  - *Details*: Added dynamic iPhone/system language detection at application startup. Translated all login screens, onboarding pages, and tutorial sections into English and Italian dynamically.
+  - *Tech Notes*:
+    - Updated `settings_provider.dart` to import `dart:ui` and dynamically fallback to the iPhone's language (using `PlatformDispatcher.instance.locale`) on first startup.
+    - Updated `localization.dart` to add comprehensive translations for the Auth/Login screen, onboarding steps, and tutorials (Goals, Stats, and Dashboard). Removed duplicates and cleaned unused imports.
+    - Migrated hardcoded Italian strings in `auth_screen.dart`, `dashboard_screen.dart`, `macro_goals_screen.dart`, and `statistics_screen.dart` to use `context.l10n.translate(...)`.
+    - Validated formatting and clean compilation via `flutter analyze` with 0 warnings or errors.
+
+- [2026-05-17 16:18]: **Rebranding Motto Layout Update**
+  - *Details*: Set the login screen motto "better each day. become who you're meant to be" on two separate lines for a better layout design.
+  - *Tech Notes*:
+    - Modified `auth_screen.dart` to split the text with `\n` after the dot.
+
+- [2026-05-17 16:21]: **Fully Responsive & Non-Scrollable Login Layout**
+  - *Details*: Redesigned the authentication screen to fit 100% within the screen height without scrolling on standard and compact devices, while preserving scrollability only when the soft keyboard is visible.
+  - *Tech Notes*:
+    - Dynamically computed compact sizing parameters (logo size, margins, field spacing, and button height) based on `MediaQuery.sizeOf(context).height`.
+    - Automatically reduced spacing and layout paddings for heights below 780dp.
+
+- [2026-05-17 16:23]: **Ultra-Compact Legal Links Layout**
+  - *Details*: Further optimized vertical spacing and reduced font sizes for legal links and toggles on smaller screens. 
+  - *Tech Notes*:
+    - Set font size for legal links to 10.0 and vertical paddings to 2.0 when `isCompact` is active.
+    - Reduced bottom padding of the `SingleChildScrollView` to prevent any scroll behavior when the keyboard is closed.
+
+- [2026-05-17 16:24]: **Premium Typographic Motto Design**
+  - *Details*: Redesigned the login motto with a highly elegant and professional dual-font typography (Plus Jakarta Sans + Playfair Display) to create a premium visual experience.
+  - *Tech Notes*:
+    - Set the first part "better each day." to uppercase, custom letter-spaced Plus Jakarta Sans in primary theme color.
+    - Set the second part "become who you're meant to be" to beautiful semi-bold italic Playfair Display.
+
+- [2026-05-17 16:28]: **Bold Uppercase Title & Uniform Serif Motto Styling**
+  - *Details*: Styled the Evolve app logo title to "EVOLVE" in all-caps, ultra-bold, with generous letter spacing. Harmonized the motto to be entirely formatted in elegant Playfair Display italic.
+  - *Tech Notes*:
+    - Updated 'Evolve' title to 'EVOLVE' in `auth_screen.dart` with `FontWeight.w900` and `letterSpacing: 2.0`.
+    - Formatted both lines of the motto "better each day.\nbecome who you're meant to be" using the `Playfair Display` semi-bold italic layout.
+
+- [2026-05-17 16:29]: **Motto Exclamation Mark Update**
+  - *Details*: Added an exclamation mark to the end of the second line of the motto to give it an inspiring, energetic touch.
+  - *Tech Notes*:
+    - Updated the motto text to `"better each day.\nbecome who you're meant to be!"` in `auth_screen.dart`.
+
 ## Current Status
-- **Next Step**: Waiting for user to verify that the checkmark is now visible in the consent screen.
+- **Next Step**: Launch the application to experience the bold EVOLVE title and the inspiring, punctuated elegant motto!

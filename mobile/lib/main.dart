@@ -138,7 +138,7 @@ void main() async {
           initialGoalsProvider.overrideWithValue(goalsJson!),
           initialLogsProvider.overrideWithValue(logsJson!),
         ],
-        child: const GrowthApp(),
+        child: const EvolveApp(),
       ),
     );
   }
@@ -218,8 +218,8 @@ final routerProvider = Provider<GoRouter>((ref) {
 });
 
 // ── App ──────────────────────────────────────────────────────────────────────
-class GrowthApp extends ConsumerWidget {
-  const GrowthApp({super.key});
+class EvolveApp extends ConsumerWidget {
+  const EvolveApp({super.key});
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
@@ -227,7 +227,7 @@ class GrowthApp extends ConsumerWidget {
     final router = ref.watch(routerProvider);
 
     return MaterialApp.router(
-      title: 'Growth',
+      title: 'Evolve',
       theme: AppTheme.lightTheme(settings.accentColor),
       darkTheme: AppTheme.darkTheme(settings.accentColor),
       themeMode: settings.themeMode == 'dark' ? ThemeMode.dark : ThemeMode.light,

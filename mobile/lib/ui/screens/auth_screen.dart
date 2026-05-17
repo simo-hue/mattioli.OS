@@ -7,6 +7,7 @@ import 'package:google_fonts/google_fonts.dart';
 import '../../core/theme.dart';
 import '../../providers/auth_provider.dart';
 import '../../core/haptics.dart';
+import '../../core/localization.dart';
 
 enum AuthMode { login, signup }
 
@@ -150,6 +151,12 @@ class _AuthScreenState extends ConsumerState<AuthScreen> with SingleTickerProvid
   Widget build(BuildContext context) {
     final authState = ref.watch(authProvider);
     final primaryColor = Theme.of(context).colorScheme.primary;
+    final screenHeight = MediaQuery.sizeOf(context).height;
+    final isCompact = screenHeight < 780;
+
+    final logoSize = isCompact ? 60.0 : 100.0;
+    final titleSize = isCompact ? 22.0 : 28.0;
+    final mottoSize = isCompact ? 12.0 : 14.0;
 
     return Scaffold(
       backgroundColor: context.appColors.background,
@@ -192,7 +199,7 @@ class _AuthScreenState extends ConsumerState<AuthScreen> with SingleTickerProvid
           SafeArea(
             child: Center(
               child: SingleChildScrollView(
-                padding: const EdgeInsets.symmetric(horizontal: 24),
+                padding: EdgeInsets.symmetric(horizontal: 24, vertical: isCompact ? 8 : 24),
                 child: FadeTransition(
                   opacity: _fadeAnimation,
                   child: SlideTransition(
@@ -201,7 +208,7 @@ class _AuthScreenState extends ConsumerState<AuthScreen> with SingleTickerProvid
                       mainAxisAlignment: MainAxisAlignment.center,
                       crossAxisAlignment: CrossAxisAlignment.stretch,
                       children: [
-                        const SizedBox(height: 20), // Reduced top spacing
+                        SizedBox(height: isCompact ? 4 : 20),
                         // Logo/Header
                         Column(
                           children: [
@@ -209,36 +216,47 @@ class _AuthScreenState extends ConsumerState<AuthScreen> with SingleTickerProvid
                               borderRadius: BorderRadius.circular(24),
                               child: Image.asset(
                                 'assets/images/logo Background Removed.png',
-                                height: 100,
-                                width: 100,
+                                height: logoSize,
+                                width: logoSize,
                                 fit: BoxFit.cover,
                               ),
                             ),
-                            const SizedBox(height: 16), // Reduced
+                            SizedBox(height: isCompact ? 6 : 16),
                             Text(
-                              'Growth',
+                              'EVOLVE',
                               style: GoogleFonts.inter(
                                 color: context.appColors.foreground,
-                                fontSize: 28, // Smaller title
-                                fontWeight: FontWeight.w800,
-                                letterSpacing: -1.5,
+                                fontSize: titleSize,
+                                fontWeight: FontWeight.w900,
+                                letterSpacing: 2.0,
                               ),
                             ),
-                            const SizedBox(height: 8),
-                            Text(
-                              _mode == AuthMode.login
-                                  ? 'root deep, rise strong'
-                                  : 'Crea il tuo ecosistema personale.',
-                              textAlign: TextAlign.center,
-                              style: GoogleFonts.inter(
-                                color: context.appColors.mutedForeground,
-                                fontSize: 14,
-                                fontWeight: FontWeight.w500,
+                            SizedBox(height: isCompact ? 4 : 8),
+                            if (_mode == AuthMode.login)
+                              Text(
+                                "better each day.\nbecome who you're meant to be!",
+                                textAlign: TextAlign.center,
+                                style: GoogleFonts.playfairDisplay(
+                                  color: context.appColors.mutedForeground.withValues(alpha: 0.9),
+                                  fontSize: isCompact ? 15 : 17,
+                                  fontWeight: FontWeight.w600,
+                                  fontStyle: FontStyle.italic,
+                                  height: 1.35,
+                                ),
+                              )
+                            else
+                              Text(
+                                context.l10n.translate('Crea il tuo ecosistema personale.'),
+                                textAlign: TextAlign.center,
+                                style: GoogleFonts.inter(
+                                  color: context.appColors.mutedForeground,
+                                  fontSize: mottoSize,
+                                  fontWeight: FontWeight.w500,
+                                ),
                               ),
-                            ),
                           ],
                         ),
-                        const SizedBox(height: 32), // Reduced from 48
+                        SizedBox(height: isCompact ? 12 : 32),
 
                         // Form
                         Form(
@@ -247,31 +265,31 @@ class _AuthScreenState extends ConsumerState<AuthScreen> with SingleTickerProvid
                             children: [
                               _buildTextField(
                                 controller: _emailController,
-                                label: 'Email',
+                                label: context.l10n.translate('Email'),
                                 icon: LucideIcons.mail,
                                 keyboardType: TextInputType.emailAddress,
                                 validator: (value) {
                                   if (value == null || value.trim().isEmpty) {
-                                    return 'Inserisci la tua email.';
+                                    return context.l10n.translate('Inserisci la tua email.');
                                   }
                                   if (!value.contains('@') || !value.contains('.')) {
-                                    return 'Email non valida.';
+                                    return context.l10n.translate('Email non valida.');
                                   }
                                   return null;
                                 },
                               ),
-                              const SizedBox(height: 12),
+                              SizedBox(height: isCompact ? 6 : 12),
                               _buildTextField(
                                 controller: _passwordController,
-                                label: 'Password',
+                                label: context.l10n.translate('Password'),
                                 icon: LucideIcons.lock,
                                 isPassword: true,
                                 validator: (value) {
                                   if (value == null || value.isEmpty) {
-                                    return 'Inserisci la password.';
+                                    return context.l10n.translate('Inserisci la password.');
                                   }
                                   if (value.length < 6) {
-                                    return 'Minimo 6 caratteri.';
+                                    return context.l10n.translate('Minimo 6 caratteri.');
                                   }
                                   return null;
                                 },
@@ -282,7 +300,7 @@ class _AuthScreenState extends ConsumerState<AuthScreen> with SingleTickerProvid
                                   child: TextButton(
                                     onPressed: _handleForgotPassword,
                                     child: Text(
-                                      'Password dimenticata?',
+                                      context.l10n.translate('Password dimenticata?'),
                                       style: TextStyle(
                                         color: context.appColors.mutedForeground,
                                         fontSize: 12,
@@ -325,13 +343,13 @@ class _AuthScreenState extends ConsumerState<AuthScreen> with SingleTickerProvid
                                   ),
                                 );
                               }),
-                              const SizedBox(height: 24),
+                              SizedBox(height: isCompact ? 10 : 24),
                               _buildSubmitButton(authState.isLoading),
                             ],
                           ),
                         ),
 
-                        const SizedBox(height: 24), // Reduced from 32
+                        SizedBox(height: isCompact ? 10 : 24),
 
                         // OR Divider
                         Row(
@@ -340,7 +358,7 @@ class _AuthScreenState extends ConsumerState<AuthScreen> with SingleTickerProvid
                             Padding(
                               padding: const EdgeInsets.symmetric(horizontal: 16),
                               child: Text(
-                                'OPPURE',
+                                context.l10n.translate('OPPURE'),
                                 style: GoogleFonts.inter(
                                   color: context.appColors.mutedForeground.withValues(alpha: 0.5),
                                   fontSize: 10,
@@ -353,20 +371,20 @@ class _AuthScreenState extends ConsumerState<AuthScreen> with SingleTickerProvid
                           ],
                         ),
 
-                        const SizedBox(height: 24), // Reduced from 32
+                        SizedBox(height: isCompact ? 10 : 24),
 
                         // Social Logins
                         _buildSocialButton(
-                          label: 'Continua con Apple',
+                          label: context.l10n.translate('Continua con Apple'),
                           icon: LucideIcons.apple,
                           onPressed: () async {
                             final success = await ref.read(authProvider.notifier).signInWithApple();
                             if (success) ref.hapticMedium();
                           },
                         ),
-                        const SizedBox(height: 10),
+                        SizedBox(height: isCompact ? 6 : 10),
                         _buildSocialButton(
-                          label: 'Continua con Google',
+                          label: context.l10n.translate('Continua con Google'),
                           icon: LucideIcons.mail, 
                           isGoogle: true,
                           onPressed: () async {
@@ -375,7 +393,7 @@ class _AuthScreenState extends ConsumerState<AuthScreen> with SingleTickerProvid
                           },
                         ),
 
-                        const SizedBox(height: 24), // Reduced from 48
+                        SizedBox(height: isCompact ? 10 : 24),
 
                         // Toggle Mode
                         Row(
@@ -383,24 +401,26 @@ class _AuthScreenState extends ConsumerState<AuthScreen> with SingleTickerProvid
                           children: [
                             Text(
                               _mode == AuthMode.login
-                                  ? 'Non hai un account?'
-                                  : 'Hai già un account?',
-                              style: TextStyle(color: context.appColors.mutedForeground, fontSize: 14),
+                                  ? context.l10n.translate('Non hai un account?')
+                                  : context.l10n.translate('Hai già un account?'),
+                              style: TextStyle(color: context.appColors.mutedForeground, fontSize: isCompact ? 12 : 14),
                             ),
                             TextButton(
                               onPressed: _toggleMode,
                               child: Text(
-                                _mode == AuthMode.login ? 'Registrati' : 'Accedi',
+                                _mode == AuthMode.login
+                                    ? context.l10n.translate('Registrati')
+                                    : context.l10n.translate('Accedi'),
                                 style: TextStyle(
                                   color: primaryColor,
                                   fontWeight: FontWeight.w700,
-                                  fontSize: 14,
+                                  fontSize: isCompact ? 12 : 14,
                                 ),
                               ),
                             ),
                           ],
                         ),
-                        const SizedBox(height: 8),
+                        SizedBox(height: isCompact ? 2 : 8),
                         // Legal Links
                         Row(
                           mainAxisAlignment: MainAxisAlignment.center,
@@ -408,7 +428,7 @@ class _AuthScreenState extends ConsumerState<AuthScreen> with SingleTickerProvid
                             TextButton(
                               onPressed: () => _openUrl('https://simo-hue.github.io/mattioli.OS/'),
                               style: TextButton.styleFrom(
-                                padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+                                padding: EdgeInsets.symmetric(horizontal: isCompact ? 4 : 8, vertical: 2),
                                 minimumSize: Size.zero,
                                 tapTargetSize: MaterialTapTargetSize.shrinkWrap,
                               ),
@@ -416,7 +436,7 @@ class _AuthScreenState extends ConsumerState<AuthScreen> with SingleTickerProvid
                                 'Privacy Policy',
                                 style: TextStyle(
                                   color: context.appColors.mutedForeground,
-                                  fontSize: 12,
+                                  fontSize: isCompact ? 10 : 12,
                                   decoration: TextDecoration.underline,
                                 ),
                               ),
@@ -425,21 +445,21 @@ class _AuthScreenState extends ConsumerState<AuthScreen> with SingleTickerProvid
                               '•',
                               style: TextStyle(
                                 color: context.appColors.mutedForeground,
-                                fontSize: 12,
+                                fontSize: isCompact ? 10 : 12,
                               ),
                             ),
                             TextButton(
                               onPressed: () => _openUrl('https://simo-hue.github.io/mattioli.OS/'),
                               style: TextButton.styleFrom(
-                                padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+                                padding: EdgeInsets.symmetric(horizontal: isCompact ? 4 : 8, vertical: 2),
                                 minimumSize: Size.zero,
                                 tapTargetSize: MaterialTapTargetSize.shrinkWrap,
                               ),
                               child: Text(
-                                'Termini di Servizio',
+                                context.l10n.translate('Termini di Servizio'),
                                 style: TextStyle(
                                   color: context.appColors.mutedForeground,
-                                  fontSize: 12,
+                                  fontSize: isCompact ? 10 : 12,
                                   decoration: TextDecoration.underline,
                                 ),
                               ),
@@ -503,11 +523,13 @@ class _AuthScreenState extends ConsumerState<AuthScreen> with SingleTickerProvid
 
   Widget _buildSubmitButton(bool isLoading) {
     final primaryColor = Theme.of(context).colorScheme.primary;
+    final isCompact = MediaQuery.sizeOf(context).height < 780;
+    
     return GestureDetector(
       onTap: isLoading ? null : _handleSubmit,
       child: Container(
         width: double.infinity,
-        height: 52, // Reduced from 58
+        height: isCompact ? 46 : 52,
         decoration: BoxDecoration(
           gradient: LinearGradient(
             colors: [
@@ -537,7 +559,9 @@ class _AuthScreenState extends ConsumerState<AuthScreen> with SingleTickerProvid
                   ),
                 )
               : Text(
-                  _mode == AuthMode.login ? 'Accedi' : 'Crea Account',
+                  _mode == AuthMode.login
+                      ? context.l10n.translate('Accedi')
+                      : context.l10n.translate('Crea Account'),
                   style: TextStyle(
                     color: primaryColor.computeLuminance() > 0.5 ? Colors.black : Colors.white,
                     fontSize: 16,
@@ -556,12 +580,14 @@ class _AuthScreenState extends ConsumerState<AuthScreen> with SingleTickerProvid
     required VoidCallback onPressed,
     bool isGoogle = false,
   }) {
+    final isCompact = MediaQuery.sizeOf(context).height < 780;
+
     return InkWell(
       onTap: onPressed,
       borderRadius: BorderRadius.circular(18),
       child: Container(
         width: double.infinity,
-        height: 52, // Reduced from 56
+        height: isCompact ? 46 : 52,
         decoration: BoxDecoration(
           color: context.appColors.card,
           borderRadius: BorderRadius.circular(18),

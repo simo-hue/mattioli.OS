@@ -1272,3 +1272,15 @@
 *Details*: Added a check to verify internet connectivity before attempting to call the OpenRouter API.
 *Tech Notes*:
 - **File**: `lib/core/openrouter_service.dart` (modified): Used `InternetAddress.lookup('openrouter.ai')` to check if the API is reachable. Yields an error message if not.
+
+---
+
+## [2026-05-17 16:00]: Core - Full Rebranding to 'Evolve'
+*Details*: Rebranded the entire mobile application from "Growth" to "Evolve" and updated the application's motto to "better each day, become who you're meant to be".
+*Tech Notes*:
+- **iOS Config**: Updated `CFBundleDisplayName` and `CFBundleName` in `Info.plist` to "evolve".
+- **App Title**: Updated `MaterialApp` title in `main.dart` and renamed the main app widget from `GrowthApp` to `EvolveApp`.
+- **Notifications**: Updated notification titles in `notifications.dart` to use 'Evolve • '.
+- **Localization**: Updated `app_title` in `localization.dart` for both Italian and English.
+- **UI**: Updated the title and motto in `AuthScreen`, the welcome screens in `dashboard_screen.dart`, all tier texts in `subscription_screen.dart`, and the premium header modal in `pro_features_modal.dart`.
+- **Documentation**: Updated "Growth" to "Evolve" in `FINANCIAL_PLAN.md`, `BACKEND_ARCHITECTURE.md`, and `FLUTTER_COMMANDS.md`.

@@ -1,6 +1,6 @@
-# 📊 Business & Financial Plan Avanzato: Growth
+# 📊 Business & Financial Plan Avanzato: Evolve
 
-Questo documento analizza nel dettaglio ogni aspetto economico di **Growth**, dalla struttura dei costi alle diverse strategie di monetizzazione per garantire la scalabilità e l'indipendenza finanziaria del progetto.
+Questo documento analizza nel dettaglio ogni aspetto economico di **Evolve**, dalla struttura dei costi alle diverse strategie di monetizzazione per garantire la scalabilità e l'indipendenza finanziaria del progetto.
 
 ---
 
@@ -26,9 +26,9 @@ Abbiamo identificato 4 pilastri per generare ricavi:
 
 ### 💎 Modello A: Subscriptions (Il "Core")
 Il modello SaaS classico per utenti individuali.
-*   **Growth Basic (Free):** Tracciamento limitato, statistiche settimanali, storage locale.
-*   **Growth Premium (€4.99/mese):** Goal illimitati, Cloud Sync, AI Coach (10 analisi/mese).
-*   **Growth Elite (€9.99/mese):** AI Coach illimitato, Export dati avanzato, Accesso anticipato alle nuove feature, Widget esclusivi.
+*   **Evolve Basic (Free):** Tracciamento limitato, statistiche settimanali, storage locale.
+*   **Evolve Premium (€4.99/mese):** Goal illimitati, Cloud Sync, AI Coach (10 analisi/mese).
+*   **Evolve Elite (€9.99/mese):** AI Coach illimitato, Export dati avanzato, Accesso anticipato alle nuove feature, Widget esclusivi.
 
 ### ♾️ Modello B: Lifetime Access (Founding Members)
 Offerta limitata nel tempo per i primi 500 utenti.

@@ -12,6 +12,7 @@ import '../widgets/macro_goals/macro_goals_stats_view.dart';
 import '../../core/haptics.dart';
 import 'package:tutorial_coach_mark/tutorial_coach_mark.dart';
 import '../../providers/tutorial_provider.dart';
+import '../../core/localization.dart';
 
 class MacroGoalsScreen extends ConsumerStatefulWidget {
   final VoidCallback? onFinishTutorial;
@@ -123,7 +124,7 @@ class _MacroGoalsScreenState extends ConsumerState<MacroGoalsScreen>
                     ref.hapticSelection();
                     controller.previous();
                   },
-                  child: Text("Indietro", style: TextStyle(color: Theme.of(context).colorScheme.onSurface.withValues(alpha: 0.5), fontWeight: FontWeight.bold)),
+                  child: Text(context.l10n.translate("Indietro"), style: TextStyle(color: Theme.of(context).colorScheme.onSurface.withValues(alpha: 0.5), fontWeight: FontWeight.bold)),
                 )
               else
                 const SizedBox.shrink(),
@@ -144,7 +145,12 @@ class _MacroGoalsScreenState extends ConsumerState<MacroGoalsScreen>
                   shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
                   elevation: 0,
                 ),
-                child: Text(nextButtonLabel ?? (isLast ? "Fine" : "Avanti"), style: const TextStyle(fontWeight: FontWeight.bold)),
+                child: Text(
+                  nextButtonLabel != null
+                      ? context.l10n.translate(nextButtonLabel)
+                      : (isLast ? context.l10n.translate("Fine") : context.l10n.translate("Avanti")),
+                  style: const TextStyle(fontWeight: FontWeight.bold),
+                ),
               ),
             ],
           ),
@@ -165,8 +171,8 @@ class _MacroGoalsScreenState extends ConsumerState<MacroGoalsScreen>
             align: ContentAlign.bottom,
             builder: (context, controller) {
               return _buildTutorialContent(
-                "Tipo di Pianificazione",
-                "Qui puoi selezionare la visione temporale: Lifetime (per tutta la vita), Annuale, Trimestrale, Mensile o Settimanale.",
+                context.l10n.translate("Tipo di Pianificazione"),
+                context.l10n.translate("Qui puoi selezionare la visione temporale: Lifetime (per tutta la vita), Annuale, Trimestrale, Mensile o Settimanale."),
                 controller,
                 isFirst: true,
               );
@@ -184,8 +190,8 @@ class _MacroGoalsScreenState extends ConsumerState<MacroGoalsScreen>
             align: ContentAlign.top,
             builder: (context, controller) {
               return _buildTutorialContent(
-                "Nuovo Obiettivo",
-                "Da qui puoi inserire un nuovo obiettivo. Potrai anche personalizzare le Categorie a tuo piacimento per organizzare tutto al meglio.",
+                context.l10n.translate("Nuovo Obiettivo"),
+                context.l10n.translate("Da qui puoi inserire un nuovo obiettivo. Potrai anche personalizzare le Categorie a tuo piacimento per organizzare tutto al meglio."),
                 controller,
               );
             },
@@ -201,7 +207,11 @@ class _MacroGoalsScreenState extends ConsumerState<MacroGoalsScreen>
         contents: [
           TargetContent(
             align: ContentAlign.bottom,
-            builder: (context, controller) => _buildTutorialContent("Completare o Fallire", "Clicca qui per segnare l'obiettivo come completato. Cliccandolo di nuovo verrà segnato come fallito.", controller),
+            builder: (context, controller) => _buildTutorialContent(
+              context.l10n.translate("Completare o Fallire"),
+              context.l10n.translate("Clicca qui per segnare l'obiettivo come completato. Cliccandolo di nuovo verrà segnato come fallito."),
+              controller,
+            ),
           ),
         ],
       ),
@@ -214,7 +224,11 @@ class _MacroGoalsScreenState extends ConsumerState<MacroGoalsScreen>
         contents: [
           TargetContent(
             align: ContentAlign.bottom,
-            builder: (context, controller) => _buildTutorialContent("Categoria", "Usa questo pulsante per assegnare rapidamente una categoria all'obiettivo.", controller),
+            builder: (context, controller) => _buildTutorialContent(
+              context.l10n.translate("Categoria"),
+              context.l10n.translate("Usa questo pulsante per assegnare rapidamente una categoria all'obiettivo."),
+              controller,
+            ),
           ),
         ],
       ),
@@ -227,7 +241,11 @@ class _MacroGoalsScreenState extends ConsumerState<MacroGoalsScreen>
         contents: [
           TargetContent(
             align: ContentAlign.bottom,
-            builder: (context, controller) => _buildTutorialContent("Posticipare", "Se non hai fatto in tempo o i piani sono cambiati, puoi spostare questo obiettivo alla settimana / mese o anno successivo ( in base a dove hai inserito l'obiettivo).", controller),
+            builder: (context, controller) => _buildTutorialContent(
+              context.l10n.translate("Posticipare"),
+              context.l10n.translate("Se non hai fatto in tempo o i piani sono cambiati, puoi spostare questo obiettivo alla settimana / mese o anno successivo ( in base a dove hai inserito l'obiettivo)."),
+              controller,
+            ),
           ),
         ],
       ),
@@ -240,7 +258,11 @@ class _MacroGoalsScreenState extends ConsumerState<MacroGoalsScreen>
         contents: [
           TargetContent(
             align: ContentAlign.bottom,
-            builder: (context, controller) => _buildTutorialContent("Modifica", "Se devi semplicemente rinominare l'obiettivo, usa la matita.", controller),
+            builder: (context, controller) => _buildTutorialContent(
+              context.l10n.translate("Modifica"),
+              context.l10n.translate("Se devi semplicemente rinominare l'obiettivo, usa la matita."),
+              controller,
+            ),
           ),
         ],
       ),
@@ -259,7 +281,11 @@ class _MacroGoalsScreenState extends ConsumerState<MacroGoalsScreen>
                   setState(() => _showStats = false);
                 }
               });
-              return _buildTutorialContent("Elimina", "Infine, questo pulsante elimina definitivamente l'obiettivo.", controller);
+              return _buildTutorialContent(
+                context.l10n.translate("Elimina"),
+                context.l10n.translate("Infine, questo pulsante elimina definitivamente l'obiettivo."),
+                controller,
+              );
             },
           ),
         ],
@@ -279,8 +305,8 @@ class _MacroGoalsScreenState extends ConsumerState<MacroGoalsScreen>
                 }
               });
               return _buildTutorialContent(
-                "Analisi e Statistiche",
-                "Passa a questa scheda per visualizzare grafici e performance dettagliate selezionando l'anno corrente o tutti gli anni.",
+                context.l10n.translate("Analisi e Statistiche"),
+                context.l10n.translate("Passa a questa scheda per visualizzare grafici e performance dettagliate selezionando l'anno corrente o tutti gli anni."),
                 controller,
                 isLast: false,
                 nextButtonLabel: "Continua",
@@ -300,8 +326,8 @@ class _MacroGoalsScreenState extends ConsumerState<MacroGoalsScreen>
               align: ContentAlign.top,
               builder: (context, controller) {
                 return _buildTutorialContent(
-                  "Statistiche Abitudini",
-                  "Per vedere le statistiche delle tue abitudini giornaliere, puoi spostarti in questa sezione.",
+                  context.l10n.translate("Statistiche Abitudini"),
+                  context.l10n.translate("Per vedere le statistiche delle tue abitudini giornaliere, puoi spostarti in questa sezione."),
                   controller,
                   isLast: false,
                   nextButtonLabel: "Passa alle Statistiche",
@@ -375,7 +401,7 @@ class _MacroGoalsScreenState extends ConsumerState<MacroGoalsScreen>
     if (mainTutorialSeen && !goalsTutorialSeen) {
       displayGoals.insert(0, MacroGoal(
         id: 'tutorial_fake_goal',
-        title: 'Obiettivo Tutorial',
+        title: context.l10n.translate('Obiettivo Tutorial'),
         status: GoalStatus.active,
         type: viewState.selectedType,
         year: viewState.selectedYear,
@@ -498,7 +524,7 @@ class _MacroGoalsScreenState extends ConsumerState<MacroGoalsScreen>
             mainAxisAlignment: MainAxisAlignment.spaceBetween,
             children: [
               Text(
-                'Obiettivi',
+                context.l10n.translate('Obiettivi'),
                 style: GoogleFonts.inter(
                   fontSize: 28,
                   fontWeight: FontWeight.w700,
@@ -571,8 +597,8 @@ class _MacroGoalsScreenState extends ConsumerState<MacroGoalsScreen>
       ),
       child: Row(
         children: [
-          _buildToggleItem(false, 'I miei obiettivi'),
-          _buildToggleItem(true, 'Analisi Performance'),
+          _buildToggleItem(false, context.l10n.translate('I miei obiettivi')),
+          _buildToggleItem(true, context.l10n.translate('Analisi Performance')),
         ],
       ),
     );

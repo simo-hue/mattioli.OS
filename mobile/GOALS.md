@@ -1,9 +1,7 @@
 # DA FARE NEL BREVE TERMINE
-[ ] Implementare log in con apple
-
-[ ] Creare il design per la copertina
-    [ ] appLaunchPad
-    [ ] https://appscreens.com
+[] Implementare log in con apple (Codice Completato & Blindato)
+[] Tradurre in inglese le schermate dell'app ( copertine per app store )
+[] implementare mock blocco per pro plan
 
 # Feature Premium
     [ ] Analytics as a PRO Plan per quelle avanzate

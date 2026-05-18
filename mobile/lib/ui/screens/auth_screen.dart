@@ -426,7 +426,7 @@ class _AuthScreenState extends ConsumerState<AuthScreen> with SingleTickerProvid
                           mainAxisAlignment: MainAxisAlignment.center,
                           children: [
                             TextButton(
-                              onPressed: () => _openUrl('https://simo-hue.github.io/mattioli.OS/'),
+                              onPressed: () => _openUrl('https://simo-hue.github.io/evolve/privacy.html'),
                               style: TextButton.styleFrom(
                                 padding: EdgeInsets.symmetric(horizontal: isCompact ? 4 : 8, vertical: 2),
                                 minimumSize: Size.zero,
@@ -449,7 +449,7 @@ class _AuthScreenState extends ConsumerState<AuthScreen> with SingleTickerProvid
                               ),
                             ),
                             TextButton(
-                              onPressed: () => _openUrl('https://simo-hue.github.io/mattioli.OS/'),
+                              onPressed: () => _openUrl('https://simo-hue.github.io/evolve/privacy.html'),
                               style: TextButton.styleFrom(
                                 padding: EdgeInsets.symmetric(horizontal: isCompact ? 4 : 8, vertical: 2),
                                 minimumSize: Size.zero,

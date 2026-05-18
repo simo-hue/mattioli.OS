@@ -44,6 +44,8 @@ class _SubscriptionScreenState extends ConsumerState<SubscriptionScreen> {
   bool _isLoading = false;
   bool _isFetchingProducts = true;
   String _selectedMockPackage = 'yearly';
+  String _mockMonthlyPrice = '€4,99';
+  String _mockYearlyPrice = '€29,99';
 
   @override
   void initState() {
@@ -65,19 +67,37 @@ class _SubscriptionScreenState extends ConsumerState<SubscriptionScreen> {
           _selectedPackage = _yearlyPackage ?? _monthlyPackage;
           _isFetchingProducts = false;
         });
-      } else {
-        if (mounted) {
-          setState(() {
-            _isFetchingProducts = false;
-          });
-        }
+        return; // Success, live offerings loaded!
       }
     } catch (_) {
-      if (mounted) {
+      // Quiet fail to try direct products fetch
+    }
+
+    // Secondary attempt: Fetch raw products directly from App Store Connect to pull dynamic prices even before Offering is published!
+    try {
+      final products = await Purchases.getProducts([
+        'com.simo.evolve.pro.monthly',
+        'com.simo.evolve.pro.yearly',
+      ]);
+      if (products.isNotEmpty && mounted) {
         setState(() {
-          _isFetchingProducts = false;
+          for (final product in products) {
+            if (product.identifier == 'com.simo.evolve.pro.monthly') {
+              _mockMonthlyPrice = product.priceString;
+            } else if (product.identifier == 'com.simo.evolve.pro.yearly') {
+              _mockYearlyPrice = product.priceString;
+            }
+          }
         });
       }
+    } catch (e) {
+      debugPrint('Secondary product fetch failed: $e');
+    }
+
+    if (mounted) {
+      setState(() {
+        _isFetchingProducts = false;
+      });
     }
   }
 
@@ -305,7 +325,7 @@ class _SubscriptionScreenState extends ConsumerState<SubscriptionScreen> {
         const SizedBox(height: 16),
         _buildFeatureRow(context, LucideIcons.infinity, 'Abitudini Illimitate', 'Crea tutti gli habits che desideri senza limiti.'),
         const SizedBox(height: 16),
-        _buildFeatureRow(context, LucideIcons.cloud, 'Sincronizzazione Cloud', 'I tuoi dati al sicuro e sempre disponibili.'),
+        _buildFeatureRow(context, LucideIcons.target, 'Obiettivi Illimitati', 'Crea tutti i tuoi macro obiettivi senza limiti.'),
       ],
     );
   }
@@ -358,11 +378,11 @@ class _SubscriptionScreenState extends ConsumerState<SubscriptionScreen> {
             ),
           ),
           const SizedBox(height: 12),
-          _buildMockPlanCard('Mensile', '€4,99', 'Disdici quando vuoi', _selectedMockPackage == 'monthly', onTap: () {
+          _buildMockPlanCard('Mensile', _mockMonthlyPrice, 'Disdici quando vuoi', _selectedMockPackage == 'monthly', onTap: () {
             setState(() => _selectedMockPackage = 'monthly');
           }),
           const SizedBox(height: 12),
-          _buildMockPlanCard('Annuale', '€29,99', 'Risparmia oltre il 40%', _selectedMockPackage == 'yearly', isBestValue: true, onTap: () {
+          _buildMockPlanCard('Annuale', _mockYearlyPrice, 'Risparmia oltre il 40%', _selectedMockPackage == 'yearly', isBestValue: true, onTap: () {
             setState(() => _selectedMockPackage = 'yearly');
           }),
           const SizedBox(height: 32),
@@ -478,28 +498,6 @@ class _SubscriptionScreenState extends ConsumerState<SubscriptionScreen> {
                 'Attiva Abbonamento',
                 style: TextStyle(color: Colors.black, fontSize: 16, fontWeight: FontWeight.w700),
               ),
-            ),
-          ),
-        ),
-        const SizedBox(height: 20),
-        Center(
-          child: GestureDetector(
-            onTap: () => ref.read(subscriptionServiceProvider).presentPaywall(),
-            child: Row(
-              mainAxisAlignment: MainAxisAlignment.center,
-              children: [
-                const Icon(LucideIcons.sparkles, color: Colors.amber, size: 14),
-                const SizedBox(width: 8),
-                Text(
-                  'Mostra Paywall Grafico di RevenueCat',
-                  style: GoogleFonts.inter(
-                    fontSize: 13,
-                    color: Colors.amber,
-                    fontWeight: FontWeight.w600,
-                    decoration: TextDecoration.underline,
-                  ),
-                ),
-              ],
             ),
           ),
         ),
@@ -644,7 +642,7 @@ class _SubscriptionScreenState extends ConsumerState<SubscriptionScreen> {
           mainAxisAlignment: MainAxisAlignment.center,
           children: [
             GestureDetector(
-              onTap: () => launchUrl(Uri.parse('https://simo-hue.github.io/mattioli.OS/')),
+              onTap: () => launchUrl(Uri.parse('https://simo-hue.github.io/evolve/privacy.html')),
               child: Text(
                 'Privacy Policy',
                 style: GoogleFonts.inter(

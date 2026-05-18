@@ -451,6 +451,36 @@
     - Wiped and rebuilt all CocoaPods targets using `pod deintegrate` and a clean `pod install`.
     - Fully resolved Xcode link variables and verified that Cocoapods mapped all 29 pods (including RevenueCat, Google Sign-In, and Sentry) successfully with exit code 0.
 
+- [2026-05-18 22:15]: **Clean Custom Paywall Integration & RevenueCat UI Removal**
+  - *Details*: Fully decoupled the custom in-app native premium screen (`SubscriptionScreen`) from RevenueCat's dynamic cloud UI paywall wrapper. This eliminates any hybrid transitions or secondary redirects, ensuring that the app's visual identity remains perfectly consistent, clean, and professional.
+  - *Tech Notes*:
+    - Excised the secondary "Mostra Paywall Grafico di RevenueCat" button and its text styling assets from [subscription_screen.dart](file:///Users/simo/Downloads/DEV/mattioli.OS/mobile/lib/ui/screens/subscription_screen.dart) for both mock and active layouts.
+    - Confirmed that all premium buttons throughout the app (Profile, Habit Limit trigger, and Feature modals) map directly and exclusively to the custom native paywall.
+    - Verified all files compile cleanly with 0 errors/warnings via `flutter analyze`.
+
+- [2026-05-18 22:20]: **Pro Benefit Update: Sincronizzazione Cloud Replaced with Obiettivi Illimitati**
+  - *Details*: Replaced the "Sincronizzazione Cloud" entry in the Pro benefits list with "Obiettivi Illimitati" (Unlimited Goals). This keeps the monetization features perfectly focused on core user-facing functionality and is consistent with the "Abitudini Illimitate" design logic.
+  - *Tech Notes*:
+    - Updated [subscription_screen.dart](file:///Users/simo/Downloads/DEV/mattioli.OS/mobile/lib/ui/screens/subscription_screen.dart) at line 308 to display `LucideIcons.target` for the icon, "Obiettivi Illimitati" as the title, and "Crea tutti i tuoi macro obiettivi senza limiti." as the benefit description.
+    - Verified compile safety with `flutter analyze` returning 0 errors/warnings.
+
+- [2026-05-18 22:25]: **Dual-Layer Dynamic Pricing & StoreKit Direct Query Integration**
+  - *Details*: Fully automated the connection between App Store Connect and the paywall interface. If active offerings are not published yet, the app initiates a secondary query directly to Apple StoreKit using `Purchases.getProducts(...)` to pull localized pricing dynamically, completely replacing static values with live data and only keeping static values as a secure third-layer offline fallback.
+  - *Tech Notes*:
+    - Added `_mockMonthlyPrice` and `_mockYearlyPrice` state variables in [subscription_screen.dart](file:///Users/simo/Downloads/DEV/mattioli.OS/mobile/lib/ui/screens/subscription_screen.dart).
+    - Upgraded `_loadOfferings()` to perform a direct query for `com.simo.evolve.pro.monthly` and `com.simo.evolve.pro.yearly` via `Purchases.getProducts` if the initial dynamic offerings call fails or returns empty.
+    - Mapped the retrieved `product.priceString` values directly into the fallback pricing cards.
+    - Verified all files compile cleanly with 0 errors/warnings via `flutter analyze`.
+
+- [2026-05-18 22:30]: **Privacy Policy URL Alignment**
+  - *Details*: Updated all legal/Privacy Policy links across the mobile application to point to the new brand link requested by the user.
+  - *Tech Notes*:
+    - Replaced the old link with `https://simo-hue.github.io/evolve/privacy.html` in:
+      - [consent_screen.dart](file:///Users/simo/Downloads/DEV/mattioli.OS/mobile/lib/ui/screens/consent_screen.dart) at line 205.
+      - [auth_screen.dart](file:///Users/simo/Downloads/DEV/mattioli.OS/mobile/lib/ui/screens/auth_screen.dart) at lines 429 and 452.
+      - [subscription_screen.dart](file:///Users/simo/Downloads/DEV/mattioli.OS/mobile/lib/ui/screens/subscription_screen.dart) at line 645.
+    - Verified compilation with `flutter analyze` returning 0 errors/warnings.
+
 ## Current Status
 
 - **Immediate Next Step**: Compile a new iOS release build via `flutter build ipa --release` in the `mobile` directory, archive and upload it in Xcode, and resubmit it for App Store Review. Ensure that "App Privacy" settings are configured with NO tracking, make sure that both of Evolve's subscription products (Monthly and Yearly) are associated with the new app submission and submitted for review together with the build, and paste the three English review note sections (ATT fix, Sign in with Apple compliance fix, and Biometric lock monetization fix) from `TO_SIMO_DO.md` into the Review Notes in App Store Connect.

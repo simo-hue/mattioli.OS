@@ -202,7 +202,7 @@ class _ConsentScreenState extends ConsumerState<ConsentScreen> {
                           ),
                           links: [
                             TextButton(
-                              onPressed: () => _openUrl('https://simo-hue.github.io/mattioli.OS/'),
+                              onPressed: () => _openUrl('https://simo-hue.github.io/evolve/privacy.html'),
                               child: Text('Leggi Privacy Policy', style: TextStyle(color: primaryColor, fontSize: 12)),
                             ),
                           ],

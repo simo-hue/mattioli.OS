@@ -1377,3 +1377,35 @@
   - Fetched `settingsProvider` state at the beginning of `_showAccentColorPicker` to read the subscription state of the user.
   - Refactored the custom color picker plus button: if the user is free-tier, the button displays a lock icon (`LucideIcons.lock`) with Evolve Pro golden visual styling (`Color(0xFFEAB308)`) and a subtle gold shadow glow instead of the default plus symbol.
   - On tap of the locked button: plays a heavy haptic vibration (`ref.hapticHeavy()`), closes the accent color selection sheet, and opens the premium paywall modal (`ProFeaturesModal.show(context)`).
+
+---
+
+## [2026-05-18 11:35]: Feature - Premium Coming Soon Dialog
+*Details*: Implemented a gorgeous, glassmorphic "Coming Soon" dialog when clicking on the premium purchase Evolve Pro CTA, replacing the simple dismiss/close behaviour with an elegant informative alert.
+*Tech Notes*:
+- **File**: `lib/ui/widgets/pro_features_modal.dart` (modified):
+  - Imported `dart:ui`'s `ImageFilter` to support glassmorphic blurring.
+  - Refactored the CTA buy button `onTap` handler: dismisses the bottom sheet modal and opens a new custom informative dialog using the private `_showComingSoonDialog` helper method.
+  - Built `_showComingSoonDialog` using premium Evolve styling tokens: high-blur BackdropFilter backdrop (`sigmaX: 12, sigmaY: 12`), cards borders, gold Lucide sparkles badge, custom copy stating that payment systems are coming in an upcoming release, and a haptic-enhanced success click button ("Ho capito").
+
+---
+
+## [2026-05-18 11:40]: Bug Fix - Safe Haptics in Unmounted Dialog
+*Details*: Fixed a classic Riverpod crash where referencing `ref.hapticSuccess()` inside `_showComingSoonDialog` after the parent modal sheet unmounted caused a thread crash, freezing the dialog on screen.
+*Tech Notes*:
+- **File**: `lib/ui/widgets/pro_features_modal.dart` (modified):
+  - Imported `package:flutter/services.dart` and `settings_provider.dart`.
+  - Refactored `onTap` to read the user's `hapticFeedback` boolean setting *before* the sheet is popped and passed it as a parameter `hapticsEnabled`.
+  - Refactored `_showComingSoonDialog` to accept `bool hapticsEnabled` instead of the widget's `WidgetRef`.
+  - Changed the tap callback to trigger `HapticFeedback.mediumImpact()` directly from the SDK, preventing unmounted ref crashes and ensuring the dialog closes successfully.
+
+---
+
+## [2026-05-18 11:45]: Feature - Removed Apple Pay checkout mock & Integrated Coming Soon dialog
+*Details*: Removed the local Apple Pay mock sheet completely from the primary subscription page, and redirected the "Attiva Abbonamento" click to show the Evolve premium glassmorphic "Coming Soon" dialog.
+*Tech Notes*:
+- **File**: `lib/ui/screens/subscription_screen.dart` (modified):
+  - Imported `package:flutter/services.dart` to access native SDK `HapticFeedback` safely.
+  - Replaced the mock Apple Pay bottom sheet trigger `_mockPurchase(context, ref)` inside `_buildPlanSelector` with the unmount-safe `_showComingSoonDialog(context, hapticsEnabled)` call.
+  - Completely purged the `_mockPurchase` mock payment sheet code block (lines 271-374).
+  - Added the unified `_showComingSoonDialog` helper method inside the class definition, featuring complete glassmorphic blurring backdrop filter, Lucide sparkles, and haptic success confirmation.

@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:lucide_icons_flutter/lucide_icons.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
@@ -234,8 +235,9 @@ class SubscriptionScreen extends ConsumerWidget {
         const SizedBox(height: 32),
         GestureDetector(
           onTap: () {
+            final hapticsEnabled = ref.read(settingsProvider).hapticFeedback;
             ref.hapticMedium();
-            _mockPurchase(context, ref);
+            _showComingSoonDialog(context, hapticsEnabled);
           },
           child: Container(
             width: double.infinity,
@@ -267,108 +269,116 @@ class SubscriptionScreen extends ConsumerWidget {
     );
   }
 
-  void _mockPurchase(BuildContext context, WidgetRef ref) {
-    showModalBottomSheet(
+  void _showComingSoonDialog(BuildContext context, bool hapticsEnabled) {
+    showDialog<void>(
       context: context,
-      backgroundColor: Colors.transparent,
-      isScrollControlled: true,
-      builder: (context) => Container(
-        padding: const EdgeInsets.all(24),
-        decoration: BoxDecoration(
-          color: context.appColors.card,
-          borderRadius: const BorderRadius.vertical(top: Radius.circular(32)),
-          border: Border.all(color: context.appColors.border),
-        ),
-        child: Column(
-          mainAxisSize: MainAxisSize.min,
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            Center(
-              child: Container(
-                width: 40,
-                height: 4,
-                decoration: BoxDecoration(color: context.appColors.border, borderRadius: BorderRadius.circular(2)),
-              ),
-            ),
-            const SizedBox(height: 24),
-            Text(
-              'Conferma Pagamento',
-              style: GoogleFonts.inter(fontSize: 20, fontWeight: FontWeight.w700, color: context.appColors.foreground),
-            ),
-            const SizedBox(height: 16),
-            Row(
-              mainAxisAlignment: MainAxisAlignment.spaceBetween,
-              children: [
-                Text('Prodotto:', style: TextStyle(color: context.appColors.mutedForeground)),
-                Text('Evolve Pro Mensile', style: TextStyle(fontWeight: FontWeight.w600, color: context.appColors.foreground)),
-              ],
-            ),
-            const SizedBox(height: 8),
-            Row(
-              mainAxisAlignment: MainAxisAlignment.spaceBetween,
-              children: [
-                Text('Prezzo:', style: TextStyle(color: context.appColors.mutedForeground)),
-                Text('€4,99 / mese', style: TextStyle(fontWeight: FontWeight.w600, color: context.appColors.foreground)),
-              ],
-            ),
-            const SizedBox(height: 24),
-            Container(
-              padding: const EdgeInsets.all(16),
+      builder: (dialogContext) {
+        return BackdropFilter(
+          filter: ImageFilter.blur(sigmaX: 12, sigmaY: 12),
+          child: Dialog(
+            backgroundColor: Colors.transparent,
+            elevation: 0,
+            child: Container(
+              padding: const EdgeInsets.all(24),
               decoration: BoxDecoration(
-                color: context.appColors.background,
-                borderRadius: BorderRadius.circular(12),
-                border: Border.all(color: context.appColors.border),
+                color: context.appColors.card.withValues(alpha: 0.95),
+                borderRadius: BorderRadius.circular(24),
+                border: Border.all(
+                  color: context.appColors.border.withValues(alpha: 0.5),
+                  width: 1.5,
+                ),
+                boxShadow: [
+                  BoxShadow(
+                    color: Colors.black.withValues(alpha: 0.25),
+                    blurRadius: 24,
+                    spreadRadius: 4,
+                  )
+                ],
               ),
-              child: Row(
+              child: Column(
+                mainAxisSize: MainAxisSize.min,
+                crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  const Icon(LucideIcons.creditCard, color: Colors.blue),
-                  const SizedBox(width: 16),
-                  Expanded(
-                    child: Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        Text('Metodo di Pagamento', style: TextStyle(fontSize: 12, color: context.appColors.mutedForeground)),
-                        Text('Apple Pay (Mock)', style: TextStyle(fontWeight: FontWeight.w600, color: context.appColors.foreground)),
-                      ],
+                  Row(
+                    children: [
+                      Container(
+                        padding: const EdgeInsets.all(8),
+                        decoration: BoxDecoration(
+                          color: Colors.amber.withValues(alpha: 0.1),
+                          borderRadius: BorderRadius.circular(10),
+                        ),
+                        child: const Icon(
+                          LucideIcons.sparkles,
+                          color: Colors.amber,
+                          size: 20,
+                        ),
+                      ),
+                      const SizedBox(width: 12),
+                      Expanded(
+                        child: Text(
+                          'In Arrivo!',
+                          style: GoogleFonts.inter(
+                            fontSize: 18,
+                            fontWeight: FontWeight.w800,
+                            color: context.appColors.foreground,
+                            letterSpacing: -0.5,
+                          ),
+                        ),
+                      ),
+                    ],
+                  ),
+                  const SizedBox(height: 16),
+                  Text(
+                    'Ci stiamo ancora lavorando! La sottoscrizione ad Evolve Pro ed i relativi servizi di pagamento saranno disponibili tra pochissimo in un prossimo aggiornamento.',
+                    style: GoogleFonts.inter(
+                      fontSize: 14,
+                      height: 1.5,
+                      color: context.appColors.mutedForeground,
+                      fontWeight: FontWeight.w500,
                     ),
                   ),
-                  const Icon(Icons.check_circle, color: Colors.green),
+                  const SizedBox(height: 24),
+                  Row(
+                    mainAxisAlignment: MainAxisAlignment.end,
+                    children: [
+                      GestureDetector(
+                        onTap: () {
+                          if (hapticsEnabled) {
+                            HapticFeedback.mediumImpact();
+                          }
+                          Navigator.pop(dialogContext);
+                        },
+                        child: Container(
+                          padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 10),
+                          decoration: BoxDecoration(
+                            color: Theme.of(context).colorScheme.primary,
+                            borderRadius: BorderRadius.circular(12),
+                            boxShadow: [
+                              BoxShadow(
+                                color: Theme.of(context).colorScheme.primary.withValues(alpha: 0.3),
+                                blurRadius: 10,
+                                offset: const Offset(0, 2),
+                              )
+                            ],
+                          ),
+                          child: Text(
+                            'Ho capito',
+                            style: GoogleFonts.inter(
+                              color: Colors.black,
+                              fontSize: 14,
+                              fontWeight: FontWeight.w700,
+                            ),
+                          ),
+                        ),
+                      ),
+                    ],
+                  ),
                 ],
               ),
             ),
-            const SizedBox(height: 32),
-            GestureDetector(
-              onTap: () {
-                Navigator.pop(context);
-                final settings = ref.read(settingsProvider);
-                ref.read(settingsProvider.notifier).updateSettings(settings.copyWith(isPro: true));
-                ScaffoldMessenger.of(context).showSnackBar(
-                  const SnackBar(content: Text('Abbonamento Pro attivato con successo!')),
-                );
-              },
-              child: Container(
-                width: double.infinity,
-                height: 56,
-                decoration: BoxDecoration(
-                  color: context.appColors.foreground,
-                  borderRadius: BorderRadius.circular(16),
-                ),
-                child: Center(
-                  child: Text(
-                    'Paga con Apple Pay',
-                    style: TextStyle(
-                      color: context.appColors.background,
-                      fontSize: 16,
-                      fontWeight: FontWeight.w700,
-                    ),
-                  ),
-                ),
-              ),
-            ),
-            const SizedBox(height: 16),
-          ],
-        ),
-      ),
+          ),
+        );
+      },
     );
   }
 

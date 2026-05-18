@@ -256,6 +256,26 @@ class AuthNotifier extends Notifier<AuthState> with ChangeNotifier {
         nonce: rawNonce,
       );
 
+      // If Apple returned a full name, save it to user metadata immediately!
+      final givenName = credential.givenName;
+      final familyName = credential.familyName;
+      if (givenName != null || familyName != null) {
+        final fullName = '${givenName ?? ''} ${familyName ?? ''}'.trim();
+        if (fullName.isNotEmpty) {
+          try {
+            await supabase.auth.updateUser(
+              UserAttributes(
+                data: {
+                  'full_name': fullName,
+                },
+              ),
+            );
+          } catch (e, stack) {
+            AppLogger.error('[Apple Auth] Error updating profile name', e, stack);
+          }
+        }
+      }
+
       // onAuthStateChange gestirà il nuovo state
       state = state.copyWith(isLoading: false, clearError: true);
       return true;

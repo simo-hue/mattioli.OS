@@ -35,7 +35,7 @@ class ConsentNotifier extends Notifier<ConsentState> {
     final prefs = ref.read(sharedPrefsProvider);
     return ConsentState(
       hasCompletedOnboarding: prefs.getBool(_keyCompleted) ?? false,
-      hasSentryConsent: prefs.getBool(_keySentry) ?? false,
+      hasSentryConsent: prefs.getBool(_keySentry) ?? true,
       hasAcceptedTerms: prefs.getBool(_keyTerms) ?? false,
     );
   }

@@ -570,6 +570,13 @@ class _HomeScreenState extends ConsumerState<HomeScreen>
   }
 
   void _checkProfileName() {
+    final authState = ref.read(authProvider);
+    final provider = authState.user?.appMetadata['provider'] as String?;
+    if (provider == 'apple') {
+      // Don't show name dialog to comply with Apple's Sign in with Apple requirements!
+      return;
+    }
+
     final userProfile = ref.read(userProfileProvider);
     if (userProfile.firstName == null || userProfile.firstName!.isEmpty) {
       _showNameDialog();

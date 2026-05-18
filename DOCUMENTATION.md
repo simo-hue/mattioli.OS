@@ -409,16 +409,23 @@
     - Updated [habit_management_modal.dart](file:///Users/simo/Downloads/DEV/mattioli.OS/mobile/lib/ui/widgets/habit_management_modal.dart) to redirect the "Sblocca Evolve Pro" button and save actions directly to [SubscriptionScreen](file:///Users/simo/Downloads/DEV/mattioli.OS/mobile/lib/ui/screens/subscription_screen.dart), solving a bug where clicking the button with an empty name text field did nothing.
     - Created and deployed the secure [revenuecat-webhook/index.ts](file:///Users/simo/Downloads/DEV/mattioli.OS/supabase/functions/revenuecat-webhook/index.ts) Supabase Edge Function to securely synchronize active subscription entitlements with the `is_pro` field in the Supabase database.
     - Configured [config.toml](file:///Users/simo/Downloads/DEV/mattioli.OS/supabase/config.toml) to disable gateway-level JWT verification for the webhook, allowing custom Bearer token authorization checks.
+    - Cleanly excised the "Lifetime" package variables, selectors, and card UI elements from [subscription_screen.dart](file:///Users/simo/Downloads/DEV/mattioli.OS/mobile/lib/ui/screens/subscription_screen.dart) to focus Evolve Pro exclusively on standard recurring **Monthly** and **Yearly** subscription models.
+
+- [2026-05-18 21:35]: **App Tracking Transparency & Custom Onboarding Prompt Fix**
+  - *Details*: Resolved the iOS App Store rejection regarding custom tracking prompts and App Tracking Transparency (ATT). Since the app has no tracking/advertising code (Sentry diagnostics and Supabase database/auth do not count as tracking), we removed the Sentry switch from the initial `ConsentScreen` onboarding. This completely removes the "custom prompt" that Apple's review flagged.
+  - *Tech Notes*:
+    - Changed `hasSentryConsent` default value from `false` to `true` inside `consent_provider.dart` and `main.dart` so Sentry is enabled by default for new installations.
+    - Modified `consent_screen.dart` to completely remove the custom "Miglioramento App (Sentry)" consent switch card and its layout structures, while making `_sentryConsent` `final` with a value of `true`.
+    - Maintained the full "Invia Segnalazioni Crash" toggle switch in `PrivacySettingsScreen` under "Gestione Dati", keeping user opt-out options perfectly functional without conflicting with Apple's onboarding guidelines.
+    - Validated all Dart changes with `flutter analyze` ensuring exactly zero errors, warnings, or info logs.
+
+- [2026-05-18 21:50]: **Sign in with Apple Design & UX Compliance Fix**
+  - *Details*: Resolved the iOS App Store rejection regarding the "Sign in with Apple" flow. Apple requires that name and email are harvested automatically from the authentication framework and that users are NOT prompted with secondary custom registration or profile name screens. We updated our Apple auth flow to capture the name automatically on first registration, and modified the main dashboard name checker to completely bypass the blocking name dialogue for Apple users.
+  - *Tech Notes*:
+    - Updated `signInWithApple()` in `auth_provider.dart` to check if `credential.givenName` or `credential.familyName` is provided, construct the full name, and asynchronously save it to the Supabase Auth user metadata via `supabase.auth.updateUser` right after the user signs in with their ID token.
+    - Modified `_checkProfileName()` inside `dashboard_screen.dart` to check the current Riverpod `authProvider` state's OAuth provider. If the provider is `'apple'`, the screen bypasses the `_showNameDialog()` entirely, preventing any secondary name entry screens from blocking the user.
+    - Validated all changes with `flutter analyze` returning 0 errors or warnings.
 
 ## Current Status
 
-
-
-
-
-
-- **Next Step**: Simo to configure the Products (monthly, yearly, lifetime) and the Entitlement ID `'Evolve Pro'` inside the RevenueCat Dashboard. Once configured, launch the iOS simulator or device to start live Sandbox transactions!
-
-
-
-
+- **Immediate Next Step**: Compile a new iOS release build via `flutter build ipa --release` in the `mobile` directory, archive and upload it in Xcode, and resubmit it for App Store Review. Ensure that "App Privacy" settings are configured with NO tracking, and paste the two English review note sections (ATT fix and Sign in with Apple compliance fix) from `TO_SIMO_DO.md` into the Review Notes in App Store Connect.

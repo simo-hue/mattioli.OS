@@ -39,7 +39,6 @@ class SubscriptionScreen extends ConsumerStatefulWidget {
 class _SubscriptionScreenState extends ConsumerState<SubscriptionScreen> {
   Package? _monthlyPackage;
   Package? _yearlyPackage;
-  Package? _lifetimePackage;
   Package? _selectedPackage;
 
   bool _isLoading = false;
@@ -60,10 +59,9 @@ class _SubscriptionScreenState extends ConsumerState<SubscriptionScreen> {
         setState(() {
           _monthlyPackage = current.monthly;
           _yearlyPackage = current.annual;
-          _lifetimePackage = current.lifetime;
 
           // Default selection to Yearly (best value) or Monthly if Yearly is null
-          _selectedPackage = _yearlyPackage ?? _monthlyPackage ?? _lifetimePackage;
+          _selectedPackage = _yearlyPackage ?? _monthlyPackage;
           _isFetchingProducts = false;
         });
       } else {
@@ -334,7 +332,7 @@ class _SubscriptionScreenState extends ConsumerState<SubscriptionScreen> {
   }
 
   Widget _buildPlanSelector(BuildContext context) {
-    if (_monthlyPackage == null && _yearlyPackage == null && _lifetimePackage == null) {
+    if (_monthlyPackage == null && _yearlyPackage == null) {
       return Center(
         child: Padding(
           padding: const EdgeInsets.symmetric(vertical: 20),
@@ -364,10 +362,6 @@ class _SubscriptionScreenState extends ConsumerState<SubscriptionScreen> {
         if (_yearlyPackage != null) ...[
           const SizedBox(height: 12),
           _buildPlanCard(_yearlyPackage!, 'Annuale', 'Risparmia oltre il 40%', isBestValue: true),
-        ],
-        if (_lifetimePackage != null) ...[
-          const SizedBox(height: 12),
-          _buildPlanCard(_lifetimePackage!, 'Lifetime', 'Accesso per sempre, pagamento unico', isLifetime: true),
         ],
         const SizedBox(height: 32),
         GestureDetector(
@@ -424,7 +418,7 @@ class _SubscriptionScreenState extends ConsumerState<SubscriptionScreen> {
     );
   }
 
-  Widget _buildPlanCard(Package package, String title, String subtitle, {bool isBestValue = false, bool isLifetime = false}) {
+  Widget _buildPlanCard(Package package, String title, String subtitle, {bool isBestValue = false}) {
     final isSelected = _selectedPackage?.identifier == package.identifier;
     final priceStr = package.storeProduct.priceString;
 
@@ -511,24 +505,6 @@ class _SubscriptionScreenState extends ConsumerState<SubscriptionScreen> {
                               fontSize: 9,
                               fontWeight: FontWeight.w800,
                               color: Colors.amber,
-                            ),
-                          ),
-                        ),
-                      ],
-                      if (isLifetime) ...[
-                        const SizedBox(width: 8),
-                        Container(
-                          padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 2),
-                          decoration: BoxDecoration(
-                            color: Colors.green.withValues(alpha: 0.15),
-                            borderRadius: BorderRadius.circular(8),
-                          ),
-                          child: Text(
-                            'UNA TANTUM',
-                            style: GoogleFonts.inter(
-                              fontSize: 9,
-                              fontWeight: FontWeight.w800,
-                              color: Colors.green,
                             ),
                           ),
                         ),

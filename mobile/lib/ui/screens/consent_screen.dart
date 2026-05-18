@@ -21,7 +21,7 @@ class ConsentScreen extends ConsumerStatefulWidget {
 
 class _ConsentScreenState extends ConsumerState<ConsentScreen> {
   bool _acceptedTerms = false;
-  bool _sentryConsent = true; // Default to true, but user can opt-out
+  final bool _sentryConsent = true;
   bool _notificationsAllowed = false;
   bool _isLoading = false;
 
@@ -206,23 +206,6 @@ class _ConsentScreenState extends ConsumerState<ConsentScreen> {
                               child: Text('Leggi Privacy Policy', style: TextStyle(color: primaryColor, fontSize: 12)),
                             ),
                           ],
-                        ),
-                        
-                        const SizedBox(height: 16),
-                        
-                        // Item 2: Sentry Consent
-                        _buildConsentCard(
-                          icon: LucideIcons.circleAlert,
-                          title: 'Miglioramento App (Sentry)',
-                          description: 'Consento l\'invio di segnalazioni di crash anonime per aiutarci a risolvere i problemi più velocemente.',
-                          trailing: Switch(
-                            value: _sentryConsent,
-                            onChanged: (val) {
-                              setState(() => _sentryConsent = val);
-                              ref.hapticLight();
-                            },
-                            activeThumbColor: primaryColor,
-                          ),
                         ),
                         
                         const SizedBox(height: 16),

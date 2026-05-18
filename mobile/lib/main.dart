@@ -84,7 +84,7 @@ void main() async {
   }
 
   // ── Sentry init ──────────────────────────────────────────────────────────
-  final hasSentryConsent = prefs.getBool('has_sentry_consent') ?? false;
+  final hasSentryConsent = prefs.getBool('has_sentry_consent') ?? true;
 
   void startApp() {
     // ── Global error handler (UI modale per l'utente) ─────────────────

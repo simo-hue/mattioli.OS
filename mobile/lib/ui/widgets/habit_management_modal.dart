@@ -11,7 +11,7 @@ import '../../core/localization.dart';
 import '../../models/goal.dart';
 import '../../providers/goal_provider.dart';
 import '../../providers/settings_provider.dart';
-import 'pro_features_modal.dart';
+import '../screens/subscription_screen.dart';
 
 class HabitManagementModal extends ConsumerStatefulWidget {
   const HabitManagementModal({super.key});
@@ -88,7 +88,8 @@ class _HabitManagementModalState extends ConsumerState<HabitManagementModal> {
       if (!isPro && currentHabitsCount >= 5) {
         FocusScope.of(context).unfocus();
         ref.hapticHeavy();
-        ProFeaturesModal.show(context);
+        Navigator.pop(context); // Close the habit management sheet
+        Navigator.push(context, SubscriptionScreen.route()); // Redirect to payment!
         return;
       }
 
@@ -602,7 +603,15 @@ class _HabitManagementModalState extends ConsumerState<HabitManagementModal> {
                           width: double.infinity,
                           height: 48,
                           child: ElevatedButton(
-                            onPressed: _onSave,
+                          onPressed: () {
+                            if (!isPro && currentHabitsCount >= 5) {
+                              ref.hapticHeavy();
+                              Navigator.pop(context); // Close the habit management sheet
+                              Navigator.push(context, SubscriptionScreen.route()); // Redirect to payment!
+                            } else {
+                              _onSave();
+                            }
+                          },
                             style: ElevatedButton.styleFrom(
                               backgroundColor: (!isPro && currentHabitsCount >= 5) 
                                   ? const Color(0xFFEAB308) 

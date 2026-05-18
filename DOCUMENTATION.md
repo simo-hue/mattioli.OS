@@ -405,8 +405,15 @@
     - Embedded `RevenueCatUI.presentPaywall()` for beautiful native graphical paywall rendering in the cloud.
     - Embedded `RevenueCatUI.presentCustomerCenter()` for full in-app compliant subscription management, billing modifications, and refund processes.
     - Upgraded [subscription_screen.dart](file:///Users/simo/Downloads/DEV/mattioli.OS/mobile/lib/ui/screens/subscription_screen.dart) as a dynamic vertical selector for the three plans with interactive selection states, custom indicators, custom cloud Paywall triggers, a Flexible text layout strategy that completely prevents RenderFlex row overflows on compact screens, explicit red SnackBar feedback when a transaction is aborted or fails, and a beautiful premium glassmorphic celebration popup dialog that triggers a deep haptic sensation upon successful subscription activations.
+    - Updated [pro_features_modal.dart](file:///Users/simo/Downloads/DEV/mattioli.OS/mobile/lib/ui/widgets/pro_features_modal.dart) to cleanly redirect the "Ottieni Pro" button directly to the live [SubscriptionScreen](file:///Users/simo/Downloads/DEV/mattioli.OS/mobile/lib/ui/screens/subscription_screen.dart) routing, completely replacing the deprecated "Coming Soon" popup placeholders.
+    - Updated [habit_management_modal.dart](file:///Users/simo/Downloads/DEV/mattioli.OS/mobile/lib/ui/widgets/habit_management_modal.dart) to redirect the "Sblocca Evolve Pro" button and save actions directly to [SubscriptionScreen](file:///Users/simo/Downloads/DEV/mattioli.OS/mobile/lib/ui/screens/subscription_screen.dart), solving a bug where clicking the button with an empty name text field did nothing.
+    - Created and deployed the secure [revenuecat-webhook/index.ts](file:///Users/simo/Downloads/DEV/mattioli.OS/supabase/functions/revenuecat-webhook/index.ts) Supabase Edge Function to securely synchronize active subscription entitlements with the `is_pro` field in the Supabase database.
+    - Configured [config.toml](file:///Users/simo/Downloads/DEV/mattioli.OS/supabase/config.toml) to disable gateway-level JWT verification for the webhook, allowing custom Bearer token authorization checks.
 
 ## Current Status
+
+
+
 
 
 

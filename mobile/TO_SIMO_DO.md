@@ -52,3 +52,24 @@ comando sentry-cli durante il build di release, ma è un passaggio che va config
   - **Base Giuridica**: Specifica che il trattamento si basa sull'Esecuzione di un contratto (per l'uso dell'app) e sul Consenso (per i crash log di Sentry).
 
 - [ ] **Inizializzazione Cartella Android**: Se prevedi di pubblicare l'app anche sul Google Play Store, tieni presente che attualmente manca la cartella `android/` nel progetto. Puoi rigenerarla eseguendo `flutter create --org com.simo --platforms android .` nella cartella principale (`mobile/`), per poi configurare icone, permessi e integrazioni native (come per Supabase e Sentry).
+
+## Collegamento Codice & Offuscamento per Rilascio iOS (App Store Connect)
+- [ ] **Configurare la Firma e il Team su Xcode**:
+  - Apri `ios/Runner.xcworkspace` in Xcode.
+  - Clicca sul nodo radice `Runner` nella barra a sinistra.
+  - Vai alla scheda **Signing & Capabilities**.
+  - Assicurati che **Automatically manage signing** sia spuntato.
+  - Seleziona il tuo **Team** (il tuo Apple Developer Account).
+  - Assicurati che **Bundle Identifier** sia configurato esattamente come `com.simo.evolve`.
+- [ ] **Eseguire la Build di Rilascio con Offuscamento Totale**:
+  - Apri il terminale nella cartella `mobile/`.
+  - Esegui il comando di pulizia e compilazione con i flag di offuscamento:
+    ```bash
+    flutter clean
+    flutter pub get
+    flutter build ipa --release --obfuscate --split-debug-info=build/app/outputs/symbols
+    ```
+  - Questo comando compilerà il codice Dart in codice macchina offuscato, escludendo le stringhe di debug e rinominando classi e funzioni. I file di mappatura per decodificare i crash log futuri verranno salvati in `build/app/outputs/symbols`.
+- [ ] **Caricare l'App su App Store Connect**:
+  - **Metodo Xcode**: In Xcode, vai su **Product** > **Archive**. Al termine, seleziona l'archivio nell'Organizer e clicca su **Distribute App** > **App Store Connect** > **Upload**.
+  - **Metodo Transporter (Consigliato per semplicità)**: Scarica l'app **Transporter** dal Mac App Store, aprila e trascina il file `.ipa` generato da Flutter che trovi in `build/ios/ipa/Runner.ipa`. Clicca su **Invia**.

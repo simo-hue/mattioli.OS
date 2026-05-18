@@ -1417,3 +1417,12 @@
 *Tech Notes*:
 - **File**: `ios/Runner/Info.plist` (modified): Removed the `NSMicrophoneUsageDescription` key and string value.
 
+---
+
+## [2026-05-18 12:50]: Documentation - App Store Connect Alignment & Code Obfuscation Strategy
+*Details*: Formulated and documented a comprehensive deployment blueprint for Evolve on the Apple App Store, detailing native iOS project alignment and maximum obfuscation configurations to protect Dart IP.
+*Tech Notes*:
+- **Bundle Verification**: Confirmed active alignment of `com.simo.evolve` across all pbxproj build configurations.
+- **Obfuscation**: Described the usage of `--obfuscate` combined with `--split-debug-info` to securely strip Dart debugging identifiers and protect intellectual property.
+- **Action Plan**: Formulated a detailed task plan in `TO_SIMO_DO.md` for manual execution.
+

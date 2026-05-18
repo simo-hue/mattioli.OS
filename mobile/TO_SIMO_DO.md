@@ -2,6 +2,7 @@
 
 ## Configurazione Backend & Store
 - [ ] Creare account **Google Play Console** ($25 una tantum).
+- [ ] **Bypass Reviewer (Supabase)**: Registra l'utente `apple-tester@evolve.com` nell'app (o crealo da Supabase Auth). Successivamente, nel Table Editor della dashboard di Supabase, apri la tabella `profiles`, trova questa riga e imposta la colonna `is_pro = true`. Questo permetterà al reviewer Apple di testare l'app completamente sbloccata (evitando il rigetto per funzionalità incomplete/"Coming Soon").
 - [ ] Configurare **Sign in with Apple** (Integrazione a 360°):
   - [ ] **In Xcode**: Apri il progetto con `open ios/Runner.xcworkspace`. Seleziona il target `Runner` a sinistra, vai sulla scheda **Signing & Capabilities**, clicca in alto su **+ Capability** e fai doppio clic su **Sign in with Apple**. Questo genererà automaticamente il file `.entitlements` corretto.
   - [ ] **Su Apple Developer Portal**: Accedi a *Certificates, Identifiers & Profiles* > *Identifiers*. Seleziona l'App ID `com.simo.evolve` e verifica che la spunta su **Sign in with Apple** sia attiva.

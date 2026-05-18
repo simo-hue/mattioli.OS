@@ -1409,3 +1409,11 @@
   - Replaced the mock Apple Pay bottom sheet trigger `_mockPurchase(context, ref)` inside `_buildPlanSelector` with the unmount-safe `_showComingSoonDialog(context, hapticsEnabled)` call.
   - Completely purged the `_mockPurchase` mock payment sheet code block (lines 271-374).
   - Added the unified `_showComingSoonDialog` helper method inside the class definition, featuring complete glassmorphic blurring backdrop filter, Lucide sparkles, and haptic success confirmation.
+
+---
+
+## [2026-05-18 12:32]: Core - Info.plist Permission Hardening for App Store Submission
+*Details*: Removed the risky and redundant `NSMicrophoneUsageDescription` from `ios/Runner/Info.plist`. This eliminates potential Apple Store rejections under guideline 2.5.1 (Data Collection & Storage) and 5.1.1 since the app only picks images and does not record video or use the microphone.
+*Tech Notes*:
+- **File**: `ios/Runner/Info.plist` (modified): Removed the `NSMicrophoneUsageDescription` key and string value.
+

@@ -6,10 +6,12 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:lucide_icons_flutter/lucide_icons.dart';
 import 'package:flutter_colorpicker/flutter_colorpicker.dart';
 import '../../core/theme.dart';
+import '../../core/haptics.dart';
 import '../../core/localization.dart';
 import '../../models/goal.dart';
 import '../../providers/goal_provider.dart';
 import '../../providers/settings_provider.dart';
+import 'pro_features_modal.dart';
 
 class HabitManagementModal extends ConsumerStatefulWidget {
   const HabitManagementModal({super.key});
@@ -79,6 +81,17 @@ class _HabitManagementModalState extends ConsumerState<HabitManagementModal> {
       );
       ref.read(goalsProvider.notifier).updateHabit(updated);
     } else {
+      final settings = ref.read(settingsProvider);
+      final isPro = settings.isPro;
+      final currentHabitsCount = ref.read(goalsProvider).length;
+
+      if (!isPro && currentHabitsCount >= 5) {
+        FocusScope.of(context).unfocus();
+        ref.hapticHeavy();
+        ProFeaturesModal.show(context);
+        return;
+      }
+
       final newHabit = Goal(
         id: DateTime.now().millisecondsSinceEpoch.toString(),
         title: _nameController.text.trim(),
@@ -309,6 +322,9 @@ class _HabitManagementModalState extends ConsumerState<HabitManagementModal> {
   Widget build(BuildContext context) {
     final habits = ref.watch(goalsProvider);
     final bottomPadding = MediaQuery.of(context).viewInsets.bottom;
+    final settings = ref.watch(settingsProvider);
+    final isPro = settings.isPro;
+    final currentHabitsCount = habits.length;
 
     return Container(
       height: MediaQuery.of(context).size.height * 0.85,
@@ -552,27 +568,75 @@ class _HabitManagementModalState extends ConsumerState<HabitManagementModal> {
                             ),
                           ],
                         )
-                      else
+                      else ...[
+                        if (!isPro && currentHabitsCount >= 5) ...[
+                          Container(
+                            margin: const EdgeInsets.only(bottom: 16),
+                            padding: const EdgeInsets.all(12),
+                            decoration: BoxDecoration(
+                              color: const Color(0xFFEAB308).withValues(alpha: 0.1),
+                              borderRadius: BorderRadius.circular(12),
+                              border: Border.all(color: const Color(0xFFEAB308).withValues(alpha: 0.3), width: 1),
+                            ),
+                            child: Row(
+                              children: [
+                                const Icon(LucideIcons.lock, color: Color(0xFFEAB308), size: 16),
+                                const SizedBox(width: 10),
+                                Expanded(
+                                  child: Text(
+                                    'Hai riempito gli slot abitudini gratuite (5/5). Sblocca slot illimitati con Evolve Pro.',
+                                    style: TextStyle(
+                                      fontFamily: 'Inter',
+                                      color: const Color(0xFFEAB308),
+                                      fontSize: 12,
+                                      fontWeight: FontWeight.w600,
+                                      height: 1.3,
+                                    ),
+                                  ),
+                                ),
+                              ],
+                            ),
+                          ),
+                        ],
                         SizedBox(
                           width: double.infinity,
                           height: 48,
                           child: ElevatedButton(
                             onPressed: _onSave,
                             style: ElevatedButton.styleFrom(
-                              backgroundColor: Theme.of(context).colorScheme.primary,
-                              foregroundColor: _selectedColor.computeLuminance() > 0.5 ? Colors.black : Colors.white,
+                              backgroundColor: (!isPro && currentHabitsCount >= 5) 
+                                  ? const Color(0xFFEAB308) 
+                                  : Theme.of(context).colorScheme.primary,
+                              foregroundColor: (!isPro && currentHabitsCount >= 5) 
+                                  ? Colors.black 
+                                  : (_selectedColor.computeLuminance() > 0.5 ? Colors.black : Colors.white),
                               shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
                               elevation: 0,
                             ),
-                            child: Text(
-                              context.l10n.translate('Aggiungi Abitudine'),
-                              style: TextStyle(
-                                fontWeight: FontWeight.w600,
-                                color: Theme.of(context).colorScheme.primary.computeLuminance() > 0.5 ? Colors.black : Colors.white,
-                              ),
+                            child: Row(
+                              mainAxisAlignment: MainAxisAlignment.center,
+                              children: [
+                                if (!isPro && currentHabitsCount >= 5) ...[
+                                  const Icon(LucideIcons.sparkles, size: 16, color: Colors.black),
+                                  const SizedBox(width: 8),
+                                ],
+                                Text(
+                                  (!isPro && currentHabitsCount >= 5)
+                                      ? 'Sblocca Evolve Pro'
+                                      : context.l10n.translate('Aggiungi Abitudine'),
+                                  style: TextStyle(
+                                    fontFamily: 'Inter',
+                                    fontWeight: FontWeight.w700,
+                                    color: (!isPro && currentHabitsCount >= 5)
+                                        ? Colors.black
+                                        : (Theme.of(context).colorScheme.primary.computeLuminance() > 0.5 ? Colors.black : Colors.white),
+                                  ),
+                                ),
+                              ],
                             ),
                           ),
                         ),
+                      ],
                     ],
                   ),
                 ),

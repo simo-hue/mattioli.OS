@@ -1355,3 +1355,15 @@
   - Added a reactive guard at the top of the `build` method with `WidgetsBinding.instance.addPostFrameCallback` to ensure a non-Pro user's selection is immediately reset to 'all' if they somehow bypass the gates.
   - Refactored `_showYearPicker` to visually represent locked years with Lock icons instead of calendars for non-Pro users.
   - Intercepted selections of specific years on the free tier: it triggers `ref.hapticHeavy()`, closes the picker, and shows `ProFeaturesModal.show(context)` which defensively chains `.then` to keep/reset the selected year to 'all' upon dismissal.
+
+---
+
+## [2026-05-18 11:25]: Feature - Premium Gating for Active Habits (5 Habits Limit)
+*Details*: Gated habit creation for free tier users, limiting them to a maximum of 5 active habits. Creating a 6th habit triggers a beautiful, interactive Evolve Pro upselling flow.
+*Tech Notes*:
+- **File**: `lib/ui/widgets/habit_management_modal.dart` (modified):
+  - Imported `haptics.dart` and `pro_features_modal.dart`.
+  - Added dynamic `settingsProvider` watcher to read `isPro` subscription status and checked `currentHabitsCount` within the `build` method.
+  - Intercepted habit insertion within `_onSave`: if the user is not Pro and already tracks 5 habits, we unfocus the keyboard (`FocusScope.of(context).unfocus()`), play `ref.hapticHeavy()`, and display `ProFeaturesModal.show(context)` to prevent creation of a 6th habit.
+  - Implemented an elegant in-app premium warning banner (`Colors.amber` lock) right above the main button once they reach the 5/5 limit.
+  - Transformed the standard "Aggiungi Abitudine" button into a premium golden Evolve Pro button (`0xFFEAB308`) with a sparkle icon and "Sblocca Evolve Pro" text if the user hits the 5-habit limit, maximizing conversions.

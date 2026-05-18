@@ -8,8 +8,8 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 class ProFeaturesModal extends ConsumerWidget {
   const ProFeaturesModal({super.key});
 
-  static void show(BuildContext context) {
-    showModalBottomSheet(
+  static Future<void> show(BuildContext context) {
+    return showModalBottomSheet<void>(
       context: context,
       backgroundColor: Colors.transparent,
       isScrollControlled: true,
@@ -103,15 +103,15 @@ class ProFeaturesModal extends ConsumerWidget {
           _buildFeatureItem(
             context: context,
             icon: LucideIcons.cloud,
-            title: 'Sincronizzazione Cloud illimitata',
-            description: 'Accedi ai tuoi dati da qualsiasi dispositivo in tempo reale.',
+            title: 'Statistiche Specifiche Per Abitudine',
+            description: 'Informazioni chiave per aumentare la tua produttività.',
           ),
           const SizedBox(height: 20),
           _buildFeatureItem(
             context: context,
             icon: LucideIcons.trendingUp,
-            title: 'Metriche Avanzate',
-            description: 'Visualizza grafici dettagliati e statistiche di performance profonde.',
+            title: 'Metriche Avanzate Obiettivi',
+            description: 'Visualizza grafici dettagliati e statistiche di performance profonde per ogni anno.',
           ),
           const SizedBox(height: 20),
           _buildFeatureItem(

@@ -6,10 +6,14 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../../core/theme.dart';
 import '../../../core/localization.dart';
 import '../../../providers/goal_provider.dart';
+import '../../../providers/settings_provider.dart';
 import '../../../models/goal.dart';
+import '../../../core/haptics.dart';
+import '../pro_features_modal.dart';
 
 class GlobalHabitsTabWidget extends ConsumerStatefulWidget {
-  const GlobalHabitsTabWidget({super.key});
+  final Function(String?)? onGoalSelected;
+  const GlobalHabitsTabWidget({super.key, this.onGoalSelected});
 
   @override
   ConsumerState<GlobalHabitsTabWidget> createState() => _GlobalHabitsTabWidgetState();
@@ -24,6 +28,7 @@ class _GlobalHabitsTabWidgetState extends ConsumerState<GlobalHabitsTabWidget> {
       final goal = goals.cast<Goal?>().firstWhere((g) => g?.id == goalId, orElse: () => null);
       
       return {
+        'goal_id': goalId,
         'name': stat['title'] ?? '',
         'color': goal?.color ?? const Color(0xFF64748B),
         'best': stat['best_streak'] ?? 0,
@@ -92,7 +97,10 @@ class _GlobalHabitsTabWidgetState extends ConsumerState<GlobalHabitsTabWidget> {
                   itemCount: sortedHabits.length,
                   separatorBuilder: (context, index) => const SizedBox(height: 12),
                   itemBuilder: (context, index) {
-                    return _HabitDetailCard(habit: sortedHabits[index]);
+                    return _HabitDetailCard(
+                      habit: sortedHabits[index],
+                      onTap: widget.onGoalSelected,
+                    );
                   },
                 ),
             const SizedBox(height: 32),
@@ -243,104 +251,122 @@ class _GlobalHabitsTabWidgetState extends ConsumerState<GlobalHabitsTabWidget> {
 
 }
 
-class _HabitDetailCard extends StatelessWidget {
+class _HabitDetailCard extends ConsumerWidget {
   final Map<String, dynamic> habit;
+  final Function(String?)? onTap;
 
-  const _HabitDetailCard({required this.habit});
+  const _HabitDetailCard({required this.habit, this.onTap});
 
   @override
-  Widget build(BuildContext context) {
+  Widget build(BuildContext context, WidgetRef ref) {
     final Color habitColor = habit['color'] as Color;
+    final settings = ref.watch(settingsProvider);
+    final isPro = settings.isPro;
 
-    return Container(
-      padding: const EdgeInsets.all(16),
-      decoration: BoxDecoration(
-        color: context.appColors.card,
-        borderRadius: BorderRadius.circular(16),
-        border: Border.all(color: context.appColors.border, width: 1),
-      ),
-      child: Row(
-        children: [
-          // Habit Icon/Dot
-          Container(
-            width: 40,
-            height: 40,
-            decoration: BoxDecoration(
-              color: context.appColors.background,
-              borderRadius: BorderRadius.circular(10),
-              border: Border.all(color: context.appColors.border, width: 1),
-            ),
-            child: Center(
-              child: Container(
-                width: 10,
-                height: 10,
-                decoration: BoxDecoration(
-                  color: habitColor,
-                  shape: BoxShape.circle,
-                  boxShadow: [
-                    BoxShadow(
-                      color: habitColor.withValues(alpha: 0.4),
-                      blurRadius: 4,
-                      spreadRadius: 1,
-                    ),
-                  ],
-                ),
+    return GestureDetector(
+      onTap: () {
+        if (!isPro) {
+          ref.hapticHeavy();
+          ProFeaturesModal.show(context);
+        } else {
+          ref.hapticSelection();
+          if (onTap != null) {
+            onTap!(habit['goal_id'] as String?);
+          }
+        }
+      },
+      child: Container(
+        padding: const EdgeInsets.all(16),
+        decoration: BoxDecoration(
+          color: context.appColors.card,
+          borderRadius: BorderRadius.circular(16),
+          border: Border.all(color: context.appColors.border, width: 1),
+        ),
+        child: Row(
+          children: [
+            // Habit Icon/Dot
+            Container(
+              width: 40,
+              height: 40,
+              decoration: BoxDecoration(
+                color: context.appColors.background,
+                borderRadius: BorderRadius.circular(10),
+                border: Border.all(color: context.appColors.border, width: 1),
+              ),
+              child: Center(
+                child: isPro
+                    ? Container(
+                        width: 10,
+                        height: 10,
+                        decoration: BoxDecoration(
+                          color: habitColor,
+                          shape: BoxShape.circle,
+                          boxShadow: [
+                            BoxShadow(
+                              color: habitColor.withValues(alpha: 0.4),
+                              blurRadius: 4,
+                              spreadRadius: 1,
+                            ),
+                          ],
+                        ),
+                      )
+                    : Icon(LucideIcons.lock, size: 14, color: context.appColors.mutedForeground),
               ),
             ),
-          ),
-          const SizedBox(width: 16),
-          // Name and small progress bar
-          Expanded(
-            flex: 3,
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Text(
-                  habit['name'] as String,
-                  style: TextStyle(
-                    fontFamily: 'Inter',
-                    fontSize: 15,
-                    fontWeight: FontWeight.w700,
-                    color: context.appColors.foreground,
+            const SizedBox(width: 16),
+            // Name and small progress bar
+            Expanded(
+              flex: 3,
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text(
+                    habit['name'] as String,
+                    style: TextStyle(
+                      fontFamily: 'Inter',
+                      fontSize: 15,
+                      fontWeight: FontWeight.w700,
+                      color: context.appColors.foreground,
+                    ),
                   ),
-                ),
-
-                const SizedBox(height: 6),
-                Container(
-                  width: 60,
-                  height: 3,
-                  decoration: BoxDecoration(
-                    color: context.appColors.border.withValues(alpha: 0.3),
-                    borderRadius: BorderRadius.circular(2),
-                  ),
-                  child: FractionallySizedBox(
-                    alignment: Alignment.centerLeft,
-                    widthFactor: (habit['rate'] as int) / 100,
-                    child: Container(
-                      decoration: BoxDecoration(
-                        color: habitColor,
-                        borderRadius: BorderRadius.circular(2),
+  
+                  const SizedBox(height: 6),
+                  Container(
+                    width: 60,
+                    height: 3,
+                    decoration: BoxDecoration(
+                      color: context.appColors.border.withValues(alpha: 0.3),
+                      borderRadius: BorderRadius.circular(2),
+                    ),
+                    child: FractionallySizedBox(
+                      alignment: Alignment.centerLeft,
+                      widthFactor: (habit['rate'] as int) / 100,
+                      child: Container(
+                        decoration: BoxDecoration(
+                          color: habitColor,
+                          borderRadius: BorderRadius.circular(2),
+                        ),
                       ),
                     ),
                   ),
-                ),
-              ],
+                ],
+              ),
             ),
-          ),
-          // Stats
-          Expanded(
-            flex: 5,
-            child: Row(
-              mainAxisAlignment: MainAxisAlignment.spaceBetween,
-              children: [
-                _buildStatColumn(context, 'BEST', '${habit['best']}gg', icon: LucideIcons.trophy, iconColor: const Color(0xFFEAB308)),
-                _buildStatColumn(context, 'WORST', '${habit['worst']}gg', icon: LucideIcons.trendingDown, iconColor: const Color(0xFFEF4444)),
-                _buildStatColumn(context, 'SERIE', '${habit['serie']}gg'),
-                _buildStatColumn(context, 'RATE', '${habit['rate']}%', isBold: true),
-              ],
+            // Stats
+            Expanded(
+              flex: 5,
+              child: Row(
+                mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                children: [
+                  _buildStatColumn(context, 'BEST', '${habit['best']}gg', icon: LucideIcons.trophy, iconColor: const Color(0xFFEAB308)),
+                  _buildStatColumn(context, 'WORST', '${habit['worst']}gg', icon: LucideIcons.trendingDown, iconColor: const Color(0xFFEF4444)),
+                  _buildStatColumn(context, 'SERIE', '${habit['serie']}gg'),
+                  _buildStatColumn(context, 'RATE', '${habit['rate']}%', isBold: true),
+                ],
+              ),
             ),
-          ),
-        ],
+          ],
+        ),
       ),
     );
   }

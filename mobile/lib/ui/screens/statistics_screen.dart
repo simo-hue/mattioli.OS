@@ -6,8 +6,10 @@ import '../../providers/tutorial_provider.dart';
 import '../../core/theme.dart';
 import '../../models/goal.dart';
 import '../../providers/goal_provider.dart';
+import '../../providers/settings_provider.dart';
 import '../../core/haptics.dart';
 import '../../core/localization.dart';
+import '../widgets/pro_features_modal.dart';
 import '../widgets/statistics/info_tab_widget.dart';
 import '../widgets/statistics/global_trend_tab_widget.dart';
 import '../widgets/statistics/habit_overview_tab_widget.dart';
@@ -192,6 +194,16 @@ class _StatisticsScreenState extends ConsumerState<StatisticsScreen>
   }
 
   void _selectGoal(String? goalId) {
+    final settings = ref.read(settingsProvider);
+    if (goalId != null && !settings.isPro) {
+      ref.hapticHeavy();
+      ProFeaturesModal.show(context).then((_) {
+        if (mounted) {
+          _selectGoal(null);
+        }
+      });
+      return;
+    }
     setState(() {
       _selectedGoalId = goalId;
       if (_selectedGoalId == null) {
@@ -210,6 +222,15 @@ class _StatisticsScreenState extends ConsumerState<StatisticsScreen>
     final goals = ref.watch(goalsProvider);
     final goalsTutorialSeen = ref.watch(goalsTutorialProvider);
     final statsTutorialSeen = ref.watch(statsTutorialProvider);
+
+    final settings = ref.watch(settingsProvider);
+    if (!settings.isPro && _selectedGoalId != null) {
+      WidgetsBinding.instance.addPostFrameCallback((_) {
+        if (mounted) {
+          _selectGoal(null);
+        }
+      });
+    }
 
     ref.listen(statsTutorialProvider, (previous, next) {
       if (next == false) {
@@ -302,6 +323,9 @@ class _StatisticsScreenState extends ConsumerState<StatisticsScreen>
       }
     }
 
+    final settings = ref.watch(settingsProvider);
+    final isPro = settings.isPro;
+
     return GestureDetector(
       onTap: () {
         ref.hapticAction();
@@ -329,7 +353,11 @@ class _StatisticsScreenState extends ConsumerState<StatisticsScreen>
                 color: displayColor.withValues(alpha: 0.1),
                 borderRadius: BorderRadius.circular(10),
               ),
-              child: Icon(LucideIcons.target, size: 16, color: displayColor),
+              child: Icon(
+                _selectedGoalId != null && !isPro ? LucideIcons.lock : LucideIcons.target,
+                size: 16,
+                color: displayColor,
+              ),
             ),
             const SizedBox(width: 12),
             Text(
@@ -417,7 +445,10 @@ class _StatisticsScreenState extends ConsumerState<StatisticsScreen>
         case 'Alert':
           return const GlobalAlertsTabWidget(key: ValueKey('GlobalAlert'));
         case 'Abitudini':
-          return const GlobalHabitsTabWidget(key: ValueKey('GlobalHabits'));
+          return GlobalHabitsTabWidget(
+            key: const ValueKey('GlobalHabits'),
+            onGoalSelected: _selectGoal,
+          );
         case 'Mood':
           return const GlobalMoodTabWidget(key: ValueKey('GlobalMood'));
         default:
@@ -463,6 +494,9 @@ class _StatisticsScreenState extends ConsumerState<StatisticsScreen>
   }
 
   void _showGoalSelector(List<Goal> goals) {
+    final settings = ref.read(settingsProvider);
+    final isPro = settings.isPro;
+
     showModalBottomSheet(
       context: context,
       backgroundColor: context.appColors.background,
@@ -526,11 +560,31 @@ class _StatisticsScreenState extends ConsumerState<StatisticsScreen>
                         ),
                       ),
                     ),
-                    title: Text(goal.title, style: TextStyle(fontFamily: 'Inter', fontSize: 16, fontWeight: FontWeight.w500, color: context.appColors.foreground)),
-                    trailing: _selectedGoalId == goal.id ? Icon(LucideIcons.check, color: context.appColors.foreground) : null,
+                    title: Text(
+                      goal.title,
+                      style: TextStyle(
+                        fontFamily: 'Inter',
+                        fontSize: 16,
+                        fontWeight: FontWeight.w500,
+                        color: isPro ? context.appColors.foreground : context.appColors.mutedForeground,
+                      ),
+                    ),
+                    trailing: isPro
+                        ? (_selectedGoalId == goal.id ? Icon(LucideIcons.check, color: context.appColors.foreground) : null)
+                        : Icon(LucideIcons.lock, color: context.appColors.mutedForeground, size: 14),
                     onTap: () {
-                      _selectGoal(goal.id);
-                      Navigator.pop(context);
+                      if (!isPro) {
+                        Navigator.pop(context);
+                        ref.hapticHeavy();
+                        ProFeaturesModal.show(context).then((_) {
+                          if (mounted) {
+                            _selectGoal(null);
+                          }
+                        });
+                      } else {
+                        _selectGoal(goal.id);
+                        Navigator.pop(context);
+                      }
                     },
                   );
                 }),

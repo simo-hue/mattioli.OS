@@ -1322,3 +1322,25 @@
   - Implemented `_showLogoutConfirmationDialog` featuring the app's custom design system components (glass card container, rounded corners, subtle shadows, dynamic spacing, and localized text).
   - Wired the "Esci" gesture detector to trigger the confirmation dialog instead of performing an immediate logout.
   - Integrated structured haptic feedback: `hapticLight()` triggers on the initial settings tap, while `hapticHeavy()` occurs upon successful confirmation.
+
+---
+
+## [2026-05-18 11:15]: Feature - Premium Paywall for Individual Habit Statistics
+*Details*: Implemented a subscription check in the statistics section to limit detailed views of single habits to Evolve Pro subscribers, while allowing all users to view global habit statistics. Added explicit listeners to automatically reset the active state to the global "Tutti gli abitudini" view when the premium modal is dismissed.
+*Tech Notes*:
+- **File**: `lib/ui/widgets/pro_features_modal.dart` (modified):
+  - Changed `show(BuildContext context)` to return a `Future<void>` instead of `void` to allow downstream screens to execute callbacks upon dismissal.
+- **File**: `lib/ui/screens/statistics_screen.dart` (modified):
+  - Imported `settings_provider.dart` and `pro_features_modal.dart`.
+  - Added a defensive subscription check in `_selectGoal` to block non-Pro users from viewing individual habit detail tabs, prompting the Evolve Pro purchase modal instead.
+  - Chained `.then((_) { if (mounted) { _selectGoal(null); } })` to all invocations of `ProFeaturesModal.show(context)` in `_selectGoal` and `_showGoalSelector` to seamlessly redirect users to the global "Tutti gli abitudini" view upon dismissal of the Evolve Pro modal.
+  - Implemented an automatic reactive guard at the beginning of the `build` method using `WidgetsBinding.instance.addPostFrameCallback` to ensure a non-Pro user is never left viewing a specific habit if their subscription status changes or they somehow bypass standard flows.
+  - Customised `_buildGoalDropdown` to display a lock icon for the habit icon on free tier when a single habit is active, while keeping the accessible "Tutti gli abitudini" label visually pristine and badge-free.
+  - Hardened `_showGoalSelector` list items with trailing lock icons for non-Pro users, capturing clicks on individual habits to dismiss the menu and immediately display `ProFeaturesModal.show(context)` with high-precision tactile `hapticHeavy()` feedback.
+  - Passed `_selectGoal` as an `onGoalSelected` callback parameter to `GlobalHabitsTabWidget`.
+- **File**: `lib/ui/widgets/statistics/global_habits_tab_widget.dart` (modified):
+  - Declared and wired `onGoalSelected` callback in the `GlobalHabitsTabWidget` constructor and passed it down to `_HabitDetailCard`s.
+  - Appended `goal_id` during mapping in `_mapStatsToHabits` to properly link card clicks.
+  - Refactored `_HabitDetailCard` to inherit from `ConsumerWidget` and wrapped the parent layout inside a `GestureDetector`.
+  - Visualised locks elegantly by replacing the habit color indicator dot with Lucide's lock icon if the user is not Pro.
+  - Tapping a locked habit detail card triggers `ProFeaturesModal.show(context)` with haptic cues, whereas Pro subscribers enjoy seamless shortcut navigation to the detailed stats page.

@@ -1344,3 +1344,14 @@
   - Refactored `_HabitDetailCard` to inherit from `ConsumerWidget` and wrapped the parent layout inside a `GestureDetector`.
   - Visualised locks elegantly by replacing the habit color indicator dot with Lucide's lock icon if the user is not Pro.
   - Tapping a locked habit detail card triggers `ProFeaturesModal.show(context)` with haptic cues, whereas Pro subscribers enjoy seamless shortcut navigation to the detailed stats page.
+
+---
+
+## [2026-05-18 11:20]: Feature - Premium Paywall for Macro Goals Yearly Stats
+*Details*: Gated specific years' statistics in the Macro Goals performance panel, keeping "Tutti gli anni" free while restricting detailed year-by-year stats to Evolve Pro subscribers.
+*Tech Notes*:
+- **File**: `lib/ui/widgets/macro_goals/macro_goals_stats_view.dart` (modified):
+  - Imported `settings_provider.dart`, `pro_features_modal.dart`, and `haptics.dart`.
+  - Added a reactive guard at the top of the `build` method with `WidgetsBinding.instance.addPostFrameCallback` to ensure a non-Pro user's selection is immediately reset to 'all' if they somehow bypass the gates.
+  - Refactored `_showYearPicker` to visually represent locked years with Lock icons instead of calendars for non-Pro users.
+  - Intercepted selections of specific years on the free tier: it triggers `ref.hapticHeavy()`, closes the picker, and shows `ProFeaturesModal.show(context)` which defensively chains `.then` to keep/reset the selected year to 'all' upon dismissal.

@@ -8,10 +8,13 @@ import 'package:lucide_icons_flutter/lucide_icons.dart';
 import 'dart:math' as math;
 
 import '../../../core/theme.dart';
+import '../../../core/haptics.dart';
 import '../../../models/macro_goal.dart';
+import '../../../providers/settings_provider.dart';
 import '../../../providers/macro_goals_provider.dart';
 import '../../../providers/macro_goals_stats_provider.dart';
 import '../../../providers/macro_goal_categories_provider.dart';
+import '../pro_features_modal.dart';
 
 class MacroGoalsStatsView extends ConsumerStatefulWidget {
   const MacroGoalsStatsView({super.key});
@@ -26,6 +29,15 @@ class _MacroGoalsStatsViewState extends ConsumerState<MacroGoalsStatsView> {
   @override
   Widget build(BuildContext context) {
     final allGoals = ref.watch(macroGoalsProvider).goals;
+
+    final settings = ref.watch(settingsProvider);
+    if (!settings.isPro && _selectedYear != 'all') {
+      WidgetsBinding.instance.addPostFrameCallback((_) {
+        if (mounted) {
+          setState(() => _selectedYear = 'all');
+        }
+      });
+    }
 
     // Distinct years for dropdown
     final years = allGoals
@@ -260,6 +272,8 @@ class _MacroGoalsStatsViewState extends ConsumerState<MacroGoalsStatsView> {
   }
 
   void _showYearPicker(List<int> years) {
+    final settings = ref.read(settingsProvider);
+    final isPro = settings.isPro;
     final primaryColor = Theme.of(context).colorScheme.primary;
     
     showModalBottomSheet(
@@ -324,7 +338,7 @@ class _MacroGoalsStatsViewState extends ConsumerState<MacroGoalsStatsView> {
               final isSel = _selectedYear == '$y';
               return ListTile(
                 leading: Icon(
-                  LucideIcons.calendar,
+                  isPro ? LucideIcons.calendar : LucideIcons.lock,
                   size: 20,
                   color: isSel ? primaryColor : context.appColors.mutedForeground.withValues(alpha: 0.6),
                 ),
@@ -334,14 +348,28 @@ class _MacroGoalsStatsViewState extends ConsumerState<MacroGoalsStatsView> {
                     fontFamily: 'Inter',
                     fontSize: 16,
                     fontWeight: isSel ? FontWeight.w700 : FontWeight.w500,
-                    color: isSel ? context.appColors.foreground : context.appColors.mutedForeground,
+                    color: isPro
+                        ? (isSel ? context.appColors.foreground : context.appColors.mutedForeground)
+                        : context.appColors.mutedForeground,
                   ),
                 ),
-                trailing: isSel ? Icon(LucideIcons.check, color: primaryColor, size: 20) : null,
+                trailing: isPro 
+                    ? (isSel ? Icon(LucideIcons.check, color: primaryColor, size: 20) : null)
+                    : Icon(LucideIcons.lock, color: context.appColors.mutedForeground, size: 14),
                 onTap: () {
-                  HapticFeedback.selectionClick();
-                  setState(() => _selectedYear = '$y');
-                  Navigator.pop(context);
+                  if (!isPro) {
+                    Navigator.pop(context);
+                    ref.hapticHeavy();
+                    ProFeaturesModal.show(context).then((_) {
+                      if (mounted) {
+                        setState(() => _selectedYear = 'all');
+                      }
+                    });
+                  } else {
+                    HapticFeedback.selectionClick();
+                    setState(() => _selectedYear = '$y');
+                    Navigator.pop(context);
+                  }
                 },
               );
             }),

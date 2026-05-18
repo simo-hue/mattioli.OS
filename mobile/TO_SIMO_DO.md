@@ -1,7 +1,6 @@
 # PROSSIME AZIONI MANUALI (SIMO)
 
 ## Configurazione Backend & Store
-- [ ] Creare account **Apple Developer Program** ($99/anno).
 - [ ] Creare account **Google Play Console** ($25 una tantum).
 - [ ] Configurare **Sign in with Apple** (Integrazione a 360°):
   - [ ] **In Xcode**: Apri il progetto con `open ios/Runner.xcworkspace`. Seleziona il target `Runner` a sinistra, vai sulla scheda **Signing & Capabilities**, clicca in alto su **+ Capability** e fai doppio clic su **Sign in with Apple**. Questo genererà automaticamente il file `.entitlements` corretto.

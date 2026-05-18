@@ -620,6 +620,8 @@ class PrivacySettingsScreen extends ConsumerWidget {
     return TextField(
       controller: controller,
       obscureText: true,
+      autocorrect: false,
+      enableSuggestions: false,
       decoration: InputDecoration(
         labelText: label,
         labelStyle: TextStyle(color: context.appColors.mutedForeground, fontSize: 14),

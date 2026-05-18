@@ -1284,3 +1284,30 @@
 - **Localization**: Updated `app_title` in `localization.dart` for both Italian and English.
 - **UI**: Updated the title and motto in `AuthScreen`, the welcome screens in `dashboard_screen.dart`, all tier texts in `subscription_screen.dart`, and the premium header modal in `pro_features_modal.dart`.
 - **Documentation**: Updated "Growth" to "Evolve" in `FINANCIAL_PLAN.md`, `BACKEND_ARCHITECTURE.md`, and `FLUTTER_COMMANDS.md`.
+
+---
+
+## [2026-05-18 09:30]: Security - DailyMoodsNotifier Auth Listener Integration & Pre-Release Audit
+*Details*: Implemented a critical auth state listener inside `DailyMoodsNotifier` to guarantee strict user data isolation upon sign-out and login, matching the offline-first security paradigms used across other providers. Performed a comprehensive pre-release App Store readiness audit.
+*Tech Notes*:
+- **Providers**: Added `import 'auth_provider.dart';` and integrated `ref.listen(authProvider)` in `DailyMoodsNotifier.build()` in `mood_provider.dart`.
+- **Security**: Wipes local mood data state completely from memory and cached records upon sign-out, eliminating risks of data leaks or user data collisions on shared devices.
+- **Audit**: Conducted code signing, Bundle ID, display name, permissions, and multi-platform readiness review. Logged critical pre-release manual tasks to `TO_SIMO_DO.md` and prepared a comprehensive App Store Publishing Guide.
+
+---
+
+## [2026-05-18 09:35]: Core - Bundle Identifier and Display Name Customization
+*Details*: Configured the official bundle identifier and capitalized display names in native iOS files for release readiness as requested and approved by the user.
+*Tech Notes*:
+- **Xcode config**: Updated `PRODUCT_BUNDLE_IDENTIFIER` from `com.simo.mattioliOS` to `com.simo.evolve` across all build configurations (Debug, Release, Profile) in `project.pbxproj`.
+- **Xcode test config**: Updated test runner bundle ID from `com.mattioli.mattioliOs.RunnerTests` to `com.simo.evolve.RunnerTests` in `project.pbxproj`.
+- **Info.plist**: Capitalized `CFBundleDisplayName` and `CFBundleName` keys from `evolve` to `Evolve` in `Info.plist` for premium home-screen layout.
+- **Tasks**: Marked tasks as completed in `TO_SIMO_DO.md`.
+
+---
+
+## [2026-05-18 09:40]: Security - Vulnerability Assessment & Password Field Hardening
+*Details*: Conducted a comprehensive mobile security audit and implemented proactive password input hardening to protect users against keylogging/cache suggestions.
+*Tech Notes*:
+- **Hardening**: Configured `autocorrect: false` and `enableSuggestions: false` inside the custom `_buildPasswordField` in `privacy_settings_screen.dart` to secure password forms.
+- **Audit**: Conducted a thorough assessment across data persistence (Keychain/Keystore), API structures, Sentry PII scrubbing, biometric block overlays, and session life cycle. Compiled findings in a dedicated security report.

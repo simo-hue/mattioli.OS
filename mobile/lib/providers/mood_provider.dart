@@ -1,6 +1,7 @@
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 import 'goal_provider.dart';
+import 'auth_provider.dart';
 import '../core/navigator_key.dart';
 import '../core/app_logger.dart';
 import '../ui/widgets/error_modal.dart';
@@ -38,7 +39,19 @@ typedef DailyMoodsMap = Map<String, DailyMood>; // dateKey -> DailyMood
 class DailyMoodsNotifier extends Notifier<DailyMoodsMap> {
   @override
   DailyMoodsMap build() {
-    _syncFromSupabase();
+    ref.listen(authProvider, (previous, next) {
+      if (next.isLoggedIn && next.user != null) {
+        _syncFromSupabase();
+      } else if (!next.isLoggedIn) {
+        state = {};
+      }
+    });
+
+    final authState = ref.read(authProvider);
+    if (authState.isLoggedIn && authState.user != null) {
+      _syncFromSupabase();
+    }
+
     return {};
   }
 

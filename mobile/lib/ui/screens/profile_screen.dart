@@ -1,4 +1,5 @@
 import 'dart:io';
+import 'dart:ui' show ImageFilter;
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
@@ -46,6 +47,130 @@ class _ProfileScreenState extends ConsumerState<ProfileScreen> {
     } catch (e, stack) {
       AppLogger.error('Error picking image', e, stack);
     }
+  }
+
+  void _showLogoutConfirmationDialog(BuildContext context) {
+    showDialog(
+      context: context,
+      builder: (dialogContext) {
+        return BackdropFilter(
+          filter: ImageFilter.blur(sigmaX: 12, sigmaY: 12),
+          child: Dialog(
+            backgroundColor: Colors.transparent,
+            elevation: 0,
+            child: Container(
+              padding: const EdgeInsets.all(24),
+              decoration: BoxDecoration(
+                color: context.appColors.card.withValues(alpha: 0.95),
+                borderRadius: BorderRadius.circular(24),
+                border: Border.all(
+                  color: context.appColors.border.withValues(alpha: 0.5),
+                  width: 1.5,
+                ),
+                boxShadow: [
+                  BoxShadow(
+                    color: Colors.black.withValues(alpha: 0.2),
+                    blurRadius: 20,
+                    spreadRadius: 5,
+                  )
+                ],
+              ),
+              child: Column(
+                mainAxisSize: MainAxisSize.min,
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Row(
+                    children: [
+                      Container(
+                        padding: const EdgeInsets.all(8),
+                        decoration: BoxDecoration(
+                          color: context.appColors.destructive.withValues(alpha: 0.1),
+                          borderRadius: BorderRadius.circular(10),
+                        ),
+                        child: Icon(
+                          LucideIcons.logOut,
+                          color: context.appColors.destructive,
+                          size: 20,
+                        ),
+                      ),
+                      const SizedBox(width: 12),
+                      Text(
+                        'Conferma Uscita',
+                        style: TextStyle(
+                          fontSize: 18,
+                          fontWeight: FontWeight.w800,
+                          color: context.appColors.foreground,
+                          letterSpacing: -0.5,
+                        ),
+                      ),
+                    ],
+                  ),
+                  const SizedBox(height: 16),
+                  Text(
+                    'Sei sicuro di voler uscire dal tuo account? Dovrai reinserire le tue credenziali per accedere nuovamente.',
+                    style: TextStyle(
+                      fontSize: 13,
+                      height: 1.5,
+                      color: context.appColors.mutedForeground,
+                    ),
+                  ),
+                  const SizedBox(height: 24),
+                  Row(
+                    mainAxisAlignment: MainAxisAlignment.end,
+                    children: [
+                      TextButton(
+                        onPressed: () => Navigator.pop(dialogContext),
+                        child: Text(
+                          'Annulla',
+                          style: TextStyle(
+                            color: context.appColors.mutedForeground,
+                            fontSize: 14,
+                            fontWeight: FontWeight.w600,
+                          ),
+                        ),
+                      ),
+                      const SizedBox(width: 12),
+                      GestureDetector(
+                        onTap: () async {
+                          Navigator.pop(dialogContext);
+                          ref.hapticHeavy();
+                          await ref.read(authProvider.notifier).logout();
+                          if (context.mounted) {
+                            context.go('/login');
+                          }
+                        },
+                        child: Container(
+                          padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 10),
+                          decoration: BoxDecoration(
+                            color: context.appColors.destructive,
+                            borderRadius: BorderRadius.circular(12),
+                            boxShadow: [
+                              BoxShadow(
+                                color: context.appColors.destructive.withValues(alpha: 0.3),
+                                blurRadius: 10,
+                                offset: const Offset(0, 2),
+                              )
+                            ],
+                          ),
+                          child: const Text(
+                            'Esci',
+                            style: TextStyle(
+                              color: Colors.white,
+                              fontSize: 14,
+                              fontWeight: FontWeight.w700,
+                            ),
+                          ),
+                        ),
+                      ),
+                    ],
+                  ),
+                ],
+              ),
+            ),
+          ),
+        );
+      },
+    );
   }
 
   @override
@@ -312,12 +437,9 @@ class _ProfileScreenState extends ConsumerState<ProfileScreen> {
                 const SizedBox(height: 8),
                 // Logout Button
                 GestureDetector(
-                  onTap: () async {
-                    ref.hapticHeavy();
-                    await ref.read(authProvider.notifier).logout();
-                    if (context.mounted) {
-                      context.go('/login');
-                    }
+                  onTap: () {
+                    ref.hapticLight();
+                    _showLogoutConfirmationDialog(context);
                   },
                   child: Container(
                     width: double.infinity,

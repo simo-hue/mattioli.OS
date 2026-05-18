@@ -1311,3 +1311,14 @@
 *Tech Notes*:
 - **Hardening**: Configured `autocorrect: false` and `enableSuggestions: false` inside the custom `_buildPasswordField` in `privacy_settings_screen.dart` to secure password forms.
 - **Audit**: Conducted a thorough assessment across data persistence (Keychain/Keystore), API structures, Sentry PII scrubbing, biometric block overlays, and session life cycle. Compiled findings in a dedicated security report.
+
+---
+
+## [2026-05-18 11:05]: UI - Premium Logout Confirmation Dialog
+*Details*: Added a high-end, blurry glassmorphism confirmation popup to prevent accidental logout when a user taps the "Esci" button on the profile screen.
+*Tech Notes*:
+- **File**: `lib/ui/screens/profile_screen.dart` (modified):
+  - Added `dart:ui`'s `ImageFilter` to enable high-performance background blurring.
+  - Implemented `_showLogoutConfirmationDialog` featuring the app's custom design system components (glass card container, rounded corners, subtle shadows, dynamic spacing, and localized text).
+  - Wired the "Esci" gesture detector to trigger the confirmation dialog instead of performing an immediate logout.
+  - Integrated structured haptic feedback: `hapticLight()` triggers on the initial settings tap, while `hapticHeavy()` occurs upon successful confirmation.

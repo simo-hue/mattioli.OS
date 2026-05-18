@@ -1426,3 +1426,23 @@
 - **Obfuscation**: Described the usage of `--obfuscate` combined with `--split-debug-info` to securely strip Dart debugging identifiers and protect intellectual property.
 - **Action Plan**: Formulated a detailed task plan in `TO_SIMO_DO.md` for manual execution.
 
+---
+
+## [2026-05-18 12:57]: Build - Successful Xcode Archive & Obfuscated IPA Generation
+*Details*: Successfully generated the production archive and App Store-ready `.ipa` file for Evolve (v1.0.0+1) with maximum Dart code obfuscation.
+*Tech Notes*:
+- **Code Signing**: Automatically signed with team `8528AN28A3`.
+- **Obfuscation**: Compiled successfully using the `--obfuscate` flag.
+- **Artifacts**:
+  - Main IPA: `build/ios/ipa/Runner.ipa` (31.8 MB).
+  - Obfuscation Symbol Map: `build/app/outputs/symbols/app.ios-arm64.symbols` (4.4 MB).
+- **Status**: The build is fully prepared and ready for upload to App Store Connect.
+
+---
+
+## [2026-05-18 13:47]: Deployment - Confirmed Transporter Upload & App Store Connect Action Plan
+*Details*: Confirmed successful upload of Evolve (v1.0.0+1) to App Store Connect via Transporter. Formulated the exact steps to associate the build and submit for review.
+*Tech Notes*:
+- **Filing**: Checked off the upload action item in `TO_SIMO_DO.md`.
+- **Review Preparedness**: Validated the Sentry DSN configuration and local security hooks are ready for the Apple Review Team login.
+

@@ -423,6 +423,7 @@ class AppSettingsScreen extends ConsumerWidget {
   }
 
   void _showAccentColorPicker(BuildContext context, WidgetRef ref, Color currentColor) {
+    final settings = ref.read(settingsProvider);
     showModalBottomSheet(
       context: context,
       backgroundColor: Colors.transparent,
@@ -480,8 +481,15 @@ class AppSettingsScreen extends ConsumerWidget {
                 // Custom Color Picker Button
                 GestureDetector(
                   onTap: () {
-                    HapticFeedback.mediumImpact();
-                    _showFullColorPicker(context, ref, currentColor);
+                    final settings = ref.read(settingsProvider);
+                    if (!settings.isPro) {
+                      Navigator.pop(context); // Close the accent color selector sheet
+                      ref.hapticHeavy();
+                      ProFeaturesModal.show(context);
+                    } else {
+                      HapticFeedback.mediumImpact();
+                      _showFullColorPicker(context, ref, currentColor);
+                    }
                   },
                   child: Container(
                     width: 54,
@@ -489,9 +497,25 @@ class AppSettingsScreen extends ConsumerWidget {
                     decoration: BoxDecoration(
                       color: context.appColors.card,
                       shape: BoxShape.circle,
-                      border: Border.all(color: context.appColors.border, width: 2),
+                      border: Border.all(
+                        color: !settings.isPro ? const Color(0xFFEAB308).withValues(alpha: 0.5) : context.appColors.border, 
+                        width: 2,
+                      ),
+                      boxShadow: !settings.isPro 
+                          ? [
+                              BoxShadow(
+                                color: const Color(0xFFEAB308).withValues(alpha: 0.15),
+                                blurRadius: 8,
+                                spreadRadius: 1,
+                              )
+                            ]
+                          : null,
                     ),
-                    child: Icon(LucideIcons.plus, color: context.appColors.foreground),
+                    child: Icon(
+                      settings.isPro ? LucideIcons.plus : LucideIcons.lock, 
+                      color: settings.isPro ? context.appColors.foreground : const Color(0xFFEAB308),
+                      size: settings.isPro ? 24 : 18,
+                    ),
                   ),
                 ),
               ],

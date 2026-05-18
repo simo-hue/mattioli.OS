@@ -1367,3 +1367,13 @@
   - Intercepted habit insertion within `_onSave`: if the user is not Pro and already tracks 5 habits, we unfocus the keyboard (`FocusScope.of(context).unfocus()`), play `ref.hapticHeavy()`, and display `ProFeaturesModal.show(context)` to prevent creation of a 6th habit.
   - Implemented an elegant in-app premium warning banner (`Colors.amber` lock) right above the main button once they reach the 5/5 limit.
   - Transformed the standard "Aggiungi Abitudine" button into a premium golden Evolve Pro button (`0xFFEAB308`) with a sparkle icon and "Sblocca Evolve Pro" text if the user hits the 5-habit limit, maximizing conversions.
+
+---
+
+## [2026-05-18 11:30]: Feature - Premium Gating for Custom Accent Color
+*Details*: Gated the custom color picker wheel behind Evolve Pro, while allowing free users to select one of the three beautiful hardcoded preset color themes.
+*Tech Notes*:
+- **File**: `lib/ui/screens/app_settings_screen.dart` (modified):
+  - Fetched `settingsProvider` state at the beginning of `_showAccentColorPicker` to read the subscription state of the user.
+  - Refactored the custom color picker plus button: if the user is free-tier, the button displays a lock icon (`LucideIcons.lock`) with Evolve Pro golden visual styling (`Color(0xFFEAB308)`) and a subtle gold shadow glow instead of the default plus symbol.
+  - On tap of the locked button: plays a heavy haptic vibration (`ref.hapticHeavy()`), closes the accent color selection sheet, and opens the premium paywall modal (`ProFeaturesModal.show(context)`).

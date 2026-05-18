@@ -58,6 +58,8 @@ dependencies:
   flutter_secure_storage: ^9.2.2
   url_launcher: ^6.3.2
   flutter_markdown: ^0.7.7+1
+  purchases_flutter: ^10.1.0
+  purchases_ui_flutter: ^10.1.0
 
 dev_dependencies:
   flutter_test:

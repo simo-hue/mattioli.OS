@@ -56,6 +56,20 @@ PODS:
   - permission_handler_apple (9.3.0):
     - Flutter
   - PromisesObjC (2.4.0)
+  - purchases_flutter (10.1.0):
+    - Flutter
+    - PurchasesHybridCommon (= 18.6.0)
+  - purchases_ui_flutter (10.1.0):
+    - Flutter
+    - PurchasesHybridCommonUI (= 18.6.0)
+  - PurchasesHybridCommon (18.6.0):
+    - RevenueCat (= 5.72.0)
+  - PurchasesHybridCommonUI (18.6.0):
+    - PurchasesHybridCommon (= 18.6.0)
+    - RevenueCatUI (= 5.72.0)
+  - RevenueCat (5.72.0)
+  - RevenueCatUI (5.72.0):
+    - RevenueCat (= 5.72.0)
   - Sentry/HybridSDK (8.58.2)
   - sentry_flutter (9.20.0):
     - Flutter
@@ -82,6 +96,8 @@ DEPENDENCIES:
   - local_auth_darwin (from `.symlinks/plugins/local_auth_darwin/darwin`)
   - package_info_plus (from `.symlinks/plugins/package_info_plus/ios`)
   - permission_handler_apple (from `.symlinks/plugins/permission_handler_apple/ios`)
+  - purchases_flutter (from `.symlinks/plugins/purchases_flutter/ios`)
+  - purchases_ui_flutter (from `.symlinks/plugins/purchases_ui_flutter/ios`)
   - sentry_flutter (from `.symlinks/plugins/sentry_flutter/ios`)
   - share_plus (from `.symlinks/plugins/share_plus/ios`)
   - shared_preferences_foundation (from `.symlinks/plugins/shared_preferences_foundation/darwin`)
@@ -97,6 +113,10 @@ SPEC REPOS:
     - GTMAppAuth
     - GTMSessionFetcher
     - PromisesObjC
+    - PurchasesHybridCommon
+    - PurchasesHybridCommonUI
+    - RevenueCat
+    - RevenueCatUI
     - Sentry
 
 EXTERNAL SOURCES:
@@ -120,6 +140,10 @@ EXTERNAL SOURCES:
     :path: ".symlinks/plugins/package_info_plus/ios"
   permission_handler_apple:
     :path: ".symlinks/plugins/permission_handler_apple/ios"
+  purchases_flutter:
+    :path: ".symlinks/plugins/purchases_flutter/ios"
+  purchases_ui_flutter:
+    :path: ".symlinks/plugins/purchases_ui_flutter/ios"
   sentry_flutter:
     :path: ".symlinks/plugins/sentry_flutter/ios"
   share_plus:
@@ -149,6 +173,12 @@ SPEC CHECKSUMS:
   package_info_plus: af8e2ca6888548050f16fa2f1938db7b5a5df499
   permission_handler_apple: 4ed2196e43d0651e8ff7ca3483a069d469701f2d
   PromisesObjC: f5707f49cb48b9636751c5b2e7d227e43fba9f47
+  purchases_flutter: 136a8e1e9c28e9afb78d40b06e2b6ff3f16fc47e
+  purchases_ui_flutter: 45723a53789c880bbb9f7492066d6314fc1e1e31
+  PurchasesHybridCommon: 89a3ddba365c20457a4712bc3d6377b0ea3c9b4f
+  PurchasesHybridCommonUI: 4aba51371b9d6c0e2859a2e514e47bf37c8fb9eb
+  RevenueCat: 136390ad99039cdd692156af5e479293ae83b2a9
+  RevenueCatUI: 3fb3791bba4f7532b3b83dd2947824f8f702f6fa
   Sentry: de29b881e83bd91cf99a927f82f1fd86bfb39db2
   sentry_flutter: cbb414ef141b64f901bc1ba32daa871349510ce4
   share_plus: 50da8cb520a8f0f65671c6c6a99b3617ed10a58a

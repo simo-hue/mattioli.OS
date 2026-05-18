@@ -2,6 +2,7 @@ import 'dart:ui';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../core/notifications.dart';
 import '../core/app_logger.dart';
+import '../core/subscription_service.dart';
 import 'shared_prefs_provider.dart';
 import 'auth_provider.dart';
 import 'goal_provider.dart';
@@ -123,10 +124,11 @@ class AppSettingsNotifier extends Notifier<AppSettings> {
     // Carica le impostazioni sicure in modo asincrono per garantire coerenza UI
     _loadSecureSettings();
 
-    // 2. Ascolta i cambi di autenticazione: se l'utente fa login, sincronizziamo da Supabase
+    // 2. Ascolta i cambi di autenticazione: se l'utente fa login, sincronizziamo da Supabase e RevenueCat
     ref.listen(authProvider, (previous, next) {
       if (next.isLoggedIn && next.user != null) {
         _syncFromSupabase(next.user!.id);
+        ref.read(subscriptionServiceProvider).init(next.user!.id);
       }
     });
 
@@ -134,6 +136,7 @@ class AppSettingsNotifier extends Notifier<AppSettings> {
     final authState = ref.read(authProvider);
     if (authState.isLoggedIn && authState.user != null) {
       _syncFromSupabase(authState.user!.id);
+      ref.read(subscriptionServiceProvider).init(authState.user!.id);
     }
 
     return state;

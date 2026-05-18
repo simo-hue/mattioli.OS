@@ -73,3 +73,15 @@ comando sentry-cli durante il build di release, ma è un passaggio che va config
 - [x] **Caricare l'App su App Store Connect**:
   - **Metodo Xcode**: In Xcode, vai su **Product** > **Archive**. Al termine, seleziona l'archivio nell'Organizer e clicca su **Distribute App** > **App Store Connect** > **Upload**.
   - **Metodo Transporter (Consigliato per semplicità)**: Scarica l'app **Transporter** dal Mac App Store, aprila e trascina il file `.ipa` generato da Flutter che trovi in `build/ios/ipa/Runner.ipa`. Clicca su **Invia**.
+
+## 💳 Configurazione Abbonamenti iOS (Simo)
+- [ ] **Firmare Accordo Paid Applications**: Accedi ad App Store Connect > Business > Accordi. Completa i dettagli bancari e fiscali per poter ricevere pagamenti reali da Apple.
+- [ ] **Creare Gruppo di Abbonamento**: In App Store Connect > Le mie App > Evolve > Subscriptions. Crea un gruppo chiamato `Evolve_Pro_Group`.
+- [ ] **Creare Prodotto In-App**: All'interno del gruppo, aggiungi un abbonamento mensile con Product ID: `com.simo.evolve.pro.monthly`, imposta il prezzo a €4.99/mese e carica uno screenshot del paywall per la review.
+- [ ] **Configurare Progetto RevenueCat**:
+  - Crea un account e progetto gratuito su RevenueCat.
+  - Aggiungi l'app iOS con il Bundle ID `com.simo.evolve` e incolla il **Shared Secret** generato da App Store Connect.
+  - Crea un Entitlement `pro_access` e un Offering `default` contenente il package mensile collegato al Product ID di Apple.
+  - Genera la chiave API pubblica e inseriscila nel file Dart della configurazione SDK di Flutter.
+- [ ] **Collegare Webhook RevenueCat a Supabase**: Crea una Supabase Edge Function e inserisci il suo URL nei Webhook di RevenueCat per automatizzare la sincronizzazione dello stato `is_pro` sul profilo utente all'acquisto/rinnovo/cancellazione.
+

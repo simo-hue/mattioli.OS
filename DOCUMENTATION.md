@@ -395,6 +395,23 @@
     - Documented database acceleration (Supabase, RPC functions like get_global_trend, get_habit_analytics, get_habit_correlations, get_macro_goals_stats, RLS rules).
     - Fully detailed key features: actionable notifications, multitemporal goals, Memento Mori life view, context-aware AI chat coach, and 3-stage tutorial.
 
+- [2026-05-18 16:15]: **iOS Auto-Renewable Subscriptions & RevenueCat SDK Suite Integration**
+  - *Details*: Fully integrated RevenueCat SDK suite (`purchases_flutter` and `purchases_ui_flutter`) with dynamic product offerings, full entitlement checking for "Evolve Pro", cloud Paywall rendering, and Customer Center interface.
+  - *Tech Notes*:
+    - Installed `purchases_flutter` and `purchases_ui_flutter` (v10.1.0) and confirmed clean workspace build.
+    - Set Evolve's actual RevenueCat API key `test_fhgjUvndzwYEVcjbmswbQTiWWuX` in [revenuecat_config.dart](file:///Users/simo/Downloads/DEV/mattioli.OS/mobile/lib/core/revenuecat_config.dart).
+    - Upgraded [subscription_service.dart](file:///Users/simo/Downloads/DEV/mattioli.OS/mobile/lib/core/subscription_service.dart) to check the entitlement `'Evolve Pro'`.
+    - Added full support for Monthly, Yearly, and Lifetime (`lifetime`) packages with the modern `Purchases.purchase(PurchaseParams.package(package))` method.
+    - Embedded `RevenueCatUI.presentPaywall()` for beautiful native graphical paywall rendering in the cloud.
+    - Embedded `RevenueCatUI.presentCustomerCenter()` for full in-app compliant subscription management, billing modifications, and refund processes.
+    - Upgraded [subscription_screen.dart](file:///Users/simo/Downloads/DEV/mattioli.OS/mobile/lib/ui/screens/subscription_screen.dart) as a dynamic vertical selector for the three plans with interactive selection states, custom indicators, custom cloud Paywall triggers, a Flexible text layout strategy that completely prevents RenderFlex row overflows on compact screens, explicit red SnackBar feedback when a transaction is aborted or fails, and a beautiful premium glassmorphic celebration popup dialog that triggers a deep haptic sensation upon successful subscription activations.
+
 ## Current Status
-- **Next Step**: Review the generated App Description inside `mobile/README.md` and proceed with the App Store submission process!
+
+
+
+- **Next Step**: Simo to configure the Products (monthly, yearly, lifetime) and the Entitlement ID `'Evolve Pro'` inside the RevenueCat Dashboard. Once configured, launch the iOS simulator or device to start live Sandbox transactions!
+
+
+
 

@@ -493,6 +493,18 @@
     - Removed the conditional `isBestValue` Container check in [subscription_screen.dart](file:///Users/simo/Downloads/DEV/mattioli.OS/mobile/lib/ui/screens/subscription_screen.dart) at line 581 and line 1142.
     - Verified compilation with `flutter analyze` returning 0 errors/warnings.
 
+- [2026-05-18 22:50]: **Obfuscated Production Release Build Compiled (FASE 4)**
+  - *Details*: The production IPA release build was successfully generated in Flutter. The command cleaned the workspace, loaded all required packages, archived the iOS runner project with automatic developer signing (team key `8528AN28A3`), and built the final obfuscated `.ipa` binary for App Store Connect distribution, located at `build/ios/ipa/Runner.ipa`.
+  - *Tech Notes*:
+    - Build details: Version `1.0.0`, Build `1`, Deployment target `13.0`.
+    - Obfuscation applied: `--obfuscate --split-debug-info=build/app/outputs/symbols` to protect against reverse engineering.
+
+- [2026-05-18 22:55]: **App Privacy Configuration Completed (FASE 5)**
+  - *Details*: Configured and published all App Privacy settings on App Store Connect. Standardized declarations to indicate that the application collects Contact Info (Name, Email) and Diagnostics/Other Data for functional app purposes only, with zero third-party tracking.
+  - *Tech Notes*:
+    - Fully resolved the App Tracking Transparency (ATT) rejection. Since the app performs zero tracking, the ATT popups are completely omitted.
+    - Marked FASE 4 and FASE 5 as fully completed in `RESUBMISSION_PLAN.md`.
+
 ## Current Status
 
-- **Immediate Next Step**: Proceed to FASE 4 (Firma e compilazione Release Build in Xcode). The user should open Xcode to manage signing automatically, and then execute the obfuscated release build command `flutter build ipa --release --obfuscate --split-debug-info=build/app/outputs/symbols` in the terminal to generate the new binary for App Store Connect.
+- **Immediate Next Step**: Proceed to FASE 6 (Caricamento su App Store Connect ed Invio Review). Upload the `.ipa` using Transporter, associate the two subscription products, and submit the app with our pre-written, detailed English review notes.

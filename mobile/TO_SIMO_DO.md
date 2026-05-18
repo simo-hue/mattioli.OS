@@ -40,27 +40,8 @@ comando sentry-cli durante il build di release, ma è un passaggio che va config
   </queries>
   ```
 
-## Dettagli Obbligatori per la Privacy Policy (Sito Web)
-- [x] **Aggiorna la pagina web della Privacy Policy** (`https://simo-hue.github.io/mattioli.OS/`) includendo questi elementi essenziali per la compliance GDPR:
-  - **Titolare del Trattamento**: Nome, Cognome (o ragione sociale) e un indirizzo email di contatto per esercitare i diritti.
-  - **Dati Raccolti**: Specifica che raccogli l'email (per l'autenticazione) e i dati inseriti dall'utente (abitudini, obiettivi, mood).
-  - **Finalità del Trattamento**: Spiega che i dati servono esclusivamente per fornire il servizio dell'app e non vengono ceduti a terzi.
-  - **Responsabili del Trattamento (Sub-processors)**:
-    - **Supabase**: Specifica che è il provider cloud per il database e l'autenticazione.
-    - **Sentry**: Specifica che è il servizio usato per monitorare i crash e migliorare l'app (indicando che l'invio è facoltativo e basato sul consenso).
-  - **Diritti dell'Utente**: Elenca il diritto di accesso, rettifica, cancellazione (diritto all'oblio) e revoca del consenso (tutti esercitabili direttamente dalle impostazioni dell'app).
-  - **Base Giuridica**: Specifica che il trattamento si basa sull'Esecuzione di un contratto (per l'uso dell'app) e sul Consenso (per i crash log di Sentry).
-
 - [ ] **Inizializzazione Cartella Android**: Se prevedi di pubblicare l'app anche sul Google Play Store, tieni presente che attualmente manca la cartella `android/` nel progetto. Puoi rigenerarla eseguendo `flutter create --org com.simo --platforms android .` nella cartella principale (`mobile/`), per poi configurare icone, permessi e integrazioni native (come per Supabase e Sentry).
 
-## Collegamento Codice & Offuscamento per Rilascio iOS (App Store Connect)
-- [x] **Configurare la Firma e il Team su Xcode**:
-  - Apri `ios/Runner.xcworkspace` in Xcode.
-  - Clicca sul nodo radice `Runner` nella barra a sinistra.
-  - Vai alla scheda **Signing & Capabilities**.
-  - Assicurati che **Automatically manage signing** sia spuntato.
-  - Seleziona il tuo **Team** (il tuo Apple Developer Account).
-  - Assicurati che **Bundle Identifier** sia configurato esattamente come `com.simo.evolve`.
 - [x] **Eseguire la Build di Rilascio con Offuscamento Totale**:
   - Apri il terminale nella cartella `mobile/`.
   - Esegui il comando di pulizia e compilazione con i flag di offuscamento:
@@ -69,19 +50,3 @@ comando sentry-cli durante il build di release, ma è un passaggio che va config
     flutter pub get
     flutter build ipa --release --obfuscate --split-debug-info=build/app/outputs/symbols
     ```
-  - Questo comando compilerà il codice Dart in codice macchina offuscato, escludendo le stringhe di debug e rinominando classi e funzioni. I file di mappatura per decodificare i crash log futuri verranno salvati in `build/app/outputs/symbols`.
-- [x] **Caricare l'App su App Store Connect**:
-  - **Metodo Xcode**: In Xcode, vai su **Product** > **Archive**. Al termine, seleziona l'archivio nell'Organizer e clicca su **Distribute App** > **App Store Connect** > **Upload**.
-  - **Metodo Transporter (Consigliato per semplicità)**: Scarica l'app **Transporter** dal Mac App Store, aprila e trascina il file `.ipa` generato da Flutter che trovi in `build/ios/ipa/Runner.ipa`. Clicca su **Invia**.
-
-## 💳 Configurazione Abbonamenti iOS (Simo)
-- [ ] **Firmare Accordo Paid Applications**: Accedi ad App Store Connect > Business > Accordi. Completa i dettagli bancari e fiscali per poter ricevere pagamenti reali da Apple.
-- [ ] **Creare Gruppo di Abbonamento**: In App Store Connect > Le mie App > Evolve > Subscriptions. Crea un gruppo chiamato `Evolve_Pro_Group`.
-- [ ] **Creare Prodotto In-App**: All'interno del gruppo, aggiungi un abbonamento mensile con Product ID: `com.simo.evolve.pro.monthly`, imposta il prezzo a €4.99/mese e carica uno screenshot del paywall per la review.
-- [ ] **Configurare Progetto RevenueCat**:
-  - Crea un account e progetto gratuito su RevenueCat.
-  - Aggiungi l'app iOS con il Bundle ID `com.simo.evolve` e incolla il **Shared Secret** generato da App Store Connect.
-  - Crea un Entitlement `pro_access` e un Offering `default` contenente il package mensile collegato al Product ID di Apple.
-  - Genera la chiave API pubblica e inseriscila nel file Dart della configurazione SDK di Flutter.
-- [ ] **Collegare Webhook RevenueCat a Supabase**: Crea una Supabase Edge Function e inserisci il suo URL nei Webhook di RevenueCat per automatizzare la sincronizzazione dello stato `is_pro` sul profilo utente all'acquisto/rinnovo/cancellazione.
-

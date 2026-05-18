@@ -16,7 +16,6 @@ import '../../providers/consent_provider.dart';
 import '../../core/haptics.dart';
 import '../../core/localization.dart';
 import '../../core/app_logger.dart';
-import '../widgets/pro_features_modal.dart';
 
 class PrivacySettingsScreen extends ConsumerWidget {
   const PrivacySettingsScreen({super.key});
@@ -78,24 +77,18 @@ class PrivacySettingsScreen extends ConsumerWidget {
                 title: context.l10n.translate('Blocco Biometrico'),
                 subtitle: 'FaceID / TouchID',
                 value: settings.biometricLock,
-                isLocked: !settings.isPro,
                 onChanged: (val) async {
-                  if (settings.isPro) {
-                    if (val) {
-                      final authenticated = await _authenticate(context);
-                      if (authenticated) {
-                        final currentSettings = ref.read(settingsProvider);
-                        notifier.updateSettings(currentSettings.copyWith(biometricLock: true));
-                        ref.hapticLight();
-                      }
-                    } else {
+                  if (val) {
+                    final authenticated = await _authenticate(context);
+                    if (authenticated) {
                       final currentSettings = ref.read(settingsProvider);
-                      notifier.updateSettings(currentSettings.copyWith(biometricLock: false));
+                      notifier.updateSettings(currentSettings.copyWith(biometricLock: true));
                       ref.hapticLight();
                     }
                   } else {
-                    ref.hapticHeavy();
-                    ProFeaturesModal.show(context);
+                    final currentSettings = ref.read(settingsProvider);
+                    notifier.updateSettings(currentSettings.copyWith(biometricLock: false));
+                    ref.hapticLight();
                   }
                 },
               ),

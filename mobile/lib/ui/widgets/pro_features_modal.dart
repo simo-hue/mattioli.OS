@@ -117,9 +117,9 @@ class ProFeaturesModal extends ConsumerWidget {
           const SizedBox(height: 20),
           _buildFeatureItem(
             context: context,
-            icon: LucideIcons.shieldCheck,
-            title: 'Sicurezza Biometrica Avanzata',
-            description: 'Proteggi i tuoi dati più sensibili con FaceID o TouchID.',
+            icon: LucideIcons.infinity,
+            title: 'Abitudini Illimitate',
+            description: 'Crea e traccia tutti gli habits che desideri senza alcun limite.',
           ),
           
           const SizedBox(height: 40),

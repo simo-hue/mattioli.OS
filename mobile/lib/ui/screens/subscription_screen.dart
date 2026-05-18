@@ -43,6 +43,7 @@ class _SubscriptionScreenState extends ConsumerState<SubscriptionScreen> {
 
   bool _isLoading = false;
   bool _isFetchingProducts = true;
+  String _selectedMockPackage = 'yearly';
 
   @override
   void initState() {
@@ -193,27 +194,38 @@ class _SubscriptionScreenState extends ConsumerState<SubscriptionScreen> {
                     color: Colors.amber,
                   ),
                 )
-              : SingleChildScrollView(
-                  padding: const EdgeInsets.all(20),
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      if (!isPro) ...[
-                        _buildUpsellHeader(context),
-                        const SizedBox(height: 32),
-                        _buildFeaturesList(context),
-                        const SizedBox(height: 40),
-                        _buildPlanSelector(context),
-                        const SizedBox(height: 24),
-                        _buildComplianceLinks(context),
-                      ] else ...[
-                        _buildProStatusHeader(context),
-                        const SizedBox(height: 32),
-                        _buildSubscriptionDetails(context),
-                        const SizedBox(height: 40),
-                        _buildManageActions(context),
+              : RefreshIndicator(
+                  color: Colors.amber,
+                  backgroundColor: context.appColors.card,
+                  onRefresh: () async {
+                    setState(() {
+                      _isFetchingProducts = true;
+                    });
+                    await _loadOfferings();
+                  },
+                  child: SingleChildScrollView(
+                    physics: const AlwaysScrollableScrollPhysics(),
+                    padding: const EdgeInsets.all(20),
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        if (!isPro) ...[
+                          _buildUpsellHeader(context),
+                          const SizedBox(height: 32),
+                          _buildFeaturesList(context),
+                          const SizedBox(height: 40),
+                          _buildPlanSelector(context),
+                          const SizedBox(height: 24),
+                          _buildComplianceLinks(context),
+                        ] else ...[
+                          _buildProStatusHeader(context),
+                          const SizedBox(height: 32),
+                          _buildSubscriptionDetails(context),
+                          const SizedBox(height: 40),
+                          _buildManageActions(context),
+                        ],
                       ],
-                    ],
+                    ),
                   ),
                 ),
         ),
@@ -291,7 +303,7 @@ class _SubscriptionScreenState extends ConsumerState<SubscriptionScreen> {
         const SizedBox(height: 16),
         _buildFeatureRow(context, LucideIcons.trendingUp, 'Statistiche Avanzate', 'Grafici profondi e analisi dei trend.'),
         const SizedBox(height: 16),
-        _buildFeatureRow(context, LucideIcons.shieldCheck, 'Protezione Biometrica', 'Accedi con FaceID o TouchID.'),
+        _buildFeatureRow(context, LucideIcons.infinity, 'Abitudini Illimitate', 'Crea tutti gli habits che desideri senza limiti.'),
         const SizedBox(height: 16),
         _buildFeatureRow(context, LucideIcons.cloud, 'Sincronizzazione Cloud', 'I tuoi dati al sicuro e sempre disponibili.'),
       ],
@@ -333,14 +345,91 @@ class _SubscriptionScreenState extends ConsumerState<SubscriptionScreen> {
 
   Widget _buildPlanSelector(BuildContext context) {
     if (_monthlyPackage == null && _yearlyPackage == null) {
-      return Center(
-        child: Padding(
-          padding: const EdgeInsets.symmetric(vertical: 20),
-          child: Text(
-            'Nessun prodotto disponibile. Controlla la tua connessione.',
-            style: GoogleFonts.inter(color: context.appColors.mutedForeground),
+      return Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Text(
+            'SCEGLI IL TUO PIANO',
+            style: GoogleFonts.inter(
+              fontSize: 12,
+              fontWeight: FontWeight.w700,
+              color: context.appColors.mutedForeground,
+              letterSpacing: 1.2,
+            ),
           ),
-        ),
+          const SizedBox(height: 12),
+          _buildMockPlanCard('Mensile', '€4,99', 'Disdici quando vuoi', _selectedMockPackage == 'monthly', onTap: () {
+            setState(() => _selectedMockPackage = 'monthly');
+          }),
+          const SizedBox(height: 12),
+          _buildMockPlanCard('Annuale', '€29,99', 'Risparmia oltre il 40%', _selectedMockPackage == 'yearly', isBestValue: true, onTap: () {
+            setState(() => _selectedMockPackage = 'yearly');
+          }),
+          const SizedBox(height: 32),
+          GestureDetector(
+            onTap: () async {
+              ref.hapticMedium();
+              final messenger = ScaffoldMessenger.of(context);
+              setState(() => _isLoading = true);
+              try {
+                // Background attempt to dynamically load real offerings
+                final offerings = await ref.read(subscriptionServiceProvider).getOfferings();
+                if (mounted && offerings != null && offerings.current != null) {
+                  final current = offerings.current!;
+                  final package = _selectedMockPackage == 'monthly' ? current.monthly : current.annual;
+                  if (package != null) {
+                    setState(() {
+                      _monthlyPackage = current.monthly;
+                      _yearlyPackage = current.annual;
+                      _selectedPackage = package;
+                      _isLoading = false;
+                      _isFetchingProducts = false;
+                    });
+                    // Successfully bridged to real StoreKit purchase!
+                    await _purchase();
+                    return;
+                  }
+                }
+              } catch (_) {}
+              
+              if (mounted) {
+                setState(() => _isLoading = false);
+                messenger.showSnackBar(
+                  const SnackBar(
+                    content: Text('Servizio acquisti non raggiungibile. Verifica la tua connessione e riprova.'),
+                    backgroundColor: Colors.amber,
+                    duration: Duration(seconds: 4),
+                  ),
+                );
+              }
+            },
+            child: Container(
+              width: double.infinity,
+              height: 56,
+              decoration: BoxDecoration(
+                gradient: LinearGradient(
+                  colors: [Colors.amber.shade400, Colors.amber.shade700],
+                  begin: Alignment.topLeft,
+                  end: Alignment.bottomRight,
+                ),
+                borderRadius: BorderRadius.circular(16),
+                boxShadow: [
+                  BoxShadow(
+                    color: Colors.amber.withValues(alpha: 0.3),
+                    blurRadius: 12,
+                    offset: const Offset(0, 4),
+                  )
+                ],
+              ),
+              child: const Center(
+                child: Text(
+                  'Attiva Abbonamento',
+                  style: TextStyle(color: Colors.black, fontSize: 16, fontWeight: FontWeight.w700),
+                ),
+              ),
+            ),
+          ),
+        ],
       );
     }
 
@@ -972,6 +1061,126 @@ class _SubscriptionScreenState extends ConsumerState<SubscriptionScreen> {
               ],
             ),
           ),
+        ),
+      ),
+    );
+  }
+
+  Widget _buildMockPlanCard(
+    String title,
+    String priceStr,
+    String subtitle,
+    bool isSelected, {
+    bool isBestValue = false,
+    required VoidCallback onTap,
+  }) {
+    return GestureDetector(
+      onTap: () {
+        ref.hapticLight();
+        onTap();
+      },
+      child: Container(
+        padding: const EdgeInsets.all(18),
+        decoration: BoxDecoration(
+          color: context.appColors.card,
+          borderRadius: BorderRadius.circular(20),
+          border: Border.all(
+            color: isSelected ? Colors.amber.withValues(alpha: 0.8) : context.appColors.border,
+            width: isSelected ? 2 : 1.5,
+          ),
+          boxShadow: isSelected
+              ? [
+                  BoxShadow(
+                    color: Colors.amber.withValues(alpha: 0.08),
+                    blurRadius: 12,
+                    offset: const Offset(0, 4),
+                  )
+                ]
+              : [],
+        ),
+        child: Row(
+          children: [
+            Container(
+              width: 20,
+              height: 20,
+              decoration: BoxDecoration(
+                shape: BoxShape.circle,
+                border: Border.all(
+                  color: isSelected ? Colors.amber : context.appColors.border,
+                  width: 2,
+                ),
+              ),
+              child: isSelected
+                  ? Center(
+                      child: Container(
+                        width: 10,
+                        height: 10,
+                        decoration: const BoxDecoration(
+                          shape: BoxShape.circle,
+                          color: Colors.amber,
+                        ),
+                      ),
+                    )
+                  : null,
+            ),
+            const SizedBox(width: 16),
+            Expanded(
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Row(
+                    children: [
+                      Flexible(
+                        child: Text(
+                          'Evolve Pro $title',
+                          overflow: TextOverflow.ellipsis,
+                          style: GoogleFonts.inter(
+                            fontSize: 15,
+                            fontWeight: FontWeight.w700,
+                            color: context.appColors.foreground,
+                          ),
+                        ),
+                      ),
+                      if (isBestValue) ...[
+                        const SizedBox(width: 8),
+                        Container(
+                          padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 2),
+                          decoration: BoxDecoration(
+                            color: Colors.amber.withValues(alpha: 0.15),
+                            borderRadius: BorderRadius.circular(8),
+                          ),
+                          child: Text(
+                            'CONVENIENTE',
+                            style: GoogleFonts.inter(
+                              fontSize: 9,
+                              fontWeight: FontWeight.w800,
+                              color: Colors.amber,
+                            ),
+                          ),
+                        ),
+                      ],
+                    ],
+                  ),
+                  const SizedBox(height: 4),
+                  Text(
+                    subtitle,
+                    style: GoogleFonts.inter(
+                      fontSize: 12,
+                      color: context.appColors.mutedForeground,
+                    ),
+                  ),
+                ],
+              ),
+            ),
+            Text(
+              priceStr,
+              style: GoogleFonts.inter(
+                fontSize: 16,
+                fontWeight: FontWeight.w800,
+                color: context.appColors.foreground,
+              ),
+            ),
+          ],
         ),
       ),
     );

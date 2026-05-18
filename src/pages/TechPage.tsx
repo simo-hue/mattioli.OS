@@ -6,6 +6,7 @@ import {
 import { Link } from "react-router-dom";
 import { Button } from "@/components/ui/button";
 import PublicHeader from "@/components/PublicHeader";
+import PublicFooter from "@/components/PublicFooter";
 
 const TechPage = () => {
     const fadeInUp = {
@@ -130,7 +131,7 @@ const TechPage = () => {
                             </div>
                             <h3 className="text-2xl font-bold mb-4">Mobile Experience, App-Free</h3>
                             <p className="text-zinc-400 mb-6 leading-relaxed">
-                                You don't need to download anything from the App Store. Mattioli.OS is a <strong>Progressive Web App (PWA)</strong>.
+                                Alongside the native Evolve iOS App, the companion web dashboard is also a fully optimized <strong>Progressive Web App (PWA)</strong>.
                             </p>
                             <div className="grid grid-cols-2 gap-4 mb-8">
                                 <div className="p-4 rounded-2xl bg-white/5">
@@ -202,13 +203,7 @@ const TechPage = () => {
             </section>
 
             {/* Footer */}
-            <footer className="py-12 border-t border-white/10 bg-black text-center">
-                <div className="container mx-auto px-6">
-                    <p className="text-zinc-500 text-sm">
-                        Designed & Engineered by <span className="text-white">Simone Mattioli</span>
-                    </p>
-                </div>
-            </footer>
+            <PublicFooter />
         </div>
     );
 };

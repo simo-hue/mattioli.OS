@@ -6,6 +6,7 @@ import {
 import { Link } from "react-router-dom";
 import { Button } from "@/components/ui/button";
 import PublicHeader from "@/components/PublicHeader";
+import PublicFooter from "@/components/PublicFooter";
 
 const PhilosophyPage = () => {
     const fadeInUp = {
@@ -82,7 +83,7 @@ const PhilosophyPage = () => {
                 <div className="container mx-auto max-w-6xl">
                     <div className="text-center mb-16">
                         <h2 className="text-3xl font-bold mb-4">The Three Pillars</h2>
-                        <p className="text-zinc-400">The methodology on which Mattioli.OS is founded</p>
+                        <p className="text-zinc-400">The methodology on which EVOLVE is founded</p>
                     </div>
 
                     <motion.div
@@ -138,28 +139,12 @@ const PhilosophyPage = () => {
                     <blockquote className="text-3xl md:text-4xl font-serif italic text-zinc-300 mb-8 leading-relaxed">
                         "True freedom is not the absence of commitments, but the ability to choose your own chains. I chose discipline."
                     </blockquote>
-                    <cite className="text-amber-500 not-italic font-medium">— Mattioli.OS Manifesto</cite>
+                    <cite className="text-amber-500 not-italic font-medium">— EVOLVE Manifesto</cite>
                 </div>
             </section>
 
             {/* Footer */}
-            <footer className="py-12 border-t border-white/10 bg-zinc-900/20 text-center">
-                <div className="container mx-auto px-6">
-                    <p className="text-zinc-500 text-sm mb-6">
-                        Want to see the code that drives all this?
-                    </p>
-                    <Link to="/tech">
-                        <Button variant="outline" className="rounded-full border-white/10 hover:bg-white/5 text-zinc-300">
-                            Explore the Technology
-                        </Button>
-                    </Link>
-                    <a href="https://github.com/simo-hue/mattioli.OS" target="_blank" rel="noreferrer">
-                        <Button className="bg-white text-black hover:bg-zinc-200 rounded-full px-8 py-4 text-lg">
-                            Go to GitHub
-                        </Button>
-                    </a>
-                </div>
-            </footer>
+            <PublicFooter />
         </div>
     );
 };

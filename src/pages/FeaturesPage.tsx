@@ -7,6 +7,7 @@ import {
 import { Link } from "react-router-dom";
 import { Button } from "@/components/ui/button";
 import PublicHeader from "@/components/PublicHeader";
+import PublicFooter from "@/components/PublicFooter";
 
 const FeaturesPage = () => {
     const fadeInUp = {
@@ -177,18 +178,7 @@ const FeaturesPage = () => {
 
 
             {/* Footer */}
-            <footer className="py-12 bg-black text-center">
-                <div className="container mx-auto px-6">
-                    <p className="text-zinc-500 text-sm mb-6">
-                        Ready to take control?
-                    </p>
-                    <a href="https://github.com/simo-hue/mattioli.OS" target="_blank" rel="noreferrer">
-                        <Button className="bg-white text-black hover:bg-zinc-200 rounded-full px-8 py-6 text-lg">
-                            Go to GitHub
-                        </Button>
-                    </a>
-                </div>
-            </footer>
+            <PublicFooter />
         </div>
     );
 };

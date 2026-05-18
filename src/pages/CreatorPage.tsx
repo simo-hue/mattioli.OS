@@ -61,7 +61,7 @@ const CreatorPage = () => {
                                 Computer Science student at the University of Verona, passionate about AI.
                                 I'm fundamentally a very curious person, but above all DISCIPLINED, who wants to achieve big goals.
                                 <br /><br />
-                                Mattioli.OS was born from here: from the need for structure in a chaotic world.
+                                EVOLVE was born from here: from the need for structure in a chaotic world.
                             </p>
                         </motion.div>
 

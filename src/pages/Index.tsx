@@ -291,7 +291,7 @@ const Index = () => {
               )} />
             </div>
             <p className="text-xs text-muted-foreground mt-4 flex justify-between items-center">
-              <span>Mattioli.OS v4.1</span>
+              <span className="font-mono tracking-wider font-semibold text-zinc-400">EVOLVE v4.1</span>
               {latency && <span className="font-mono opacity-50">{latency}ms</span>}
             </p>
           </div>

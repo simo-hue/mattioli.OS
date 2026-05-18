@@ -21,6 +21,8 @@ import CompleteBackup from "./pages/CompleteBackup";
 
 import Auth from "./pages/Auth";
 import NotFound from "./pages/NotFound";
+import PrivacyPolicy from "./pages/PrivacyPolicy";
+import TermsOfService from "./pages/TermsOfService";
 import { PrivacyProvider } from "@/context/PrivacyContext";
 import { AIProvider } from "@/context/AIContext";
 
@@ -72,6 +74,8 @@ const App = () => {
                 <Route path="/features" element={<FeaturesPage />} />
                 <Route path="/get-started" element={<GetStartedPage />} />
                 <Route path="/creator" element={<CreatorPage />} />
+                <Route path="/privacy" element={<PrivacyPolicy />} />
+                <Route path="/terms" element={<TermsOfService />} />
 
                 <Route path="sw" element={
                   <ProtectedRoute>

@@ -5,6 +5,7 @@ import { Link } from "react-router-dom";
 import LandingMobileNav from "@/components/LandingMobileNav";
 import PublicHeader from "@/components/PublicHeader";
 import { LandingDemo } from "@/components/demo/LandingDemo";
+import PublicFooter from "@/components/PublicFooter";
 
 const LandingPage = () => {
     const fadeInUp = {
@@ -70,10 +71,33 @@ const LandingPage = () => {
                         initial={{ opacity: 0, y: 20 }}
                         animate={{ opacity: 1, y: 0 }}
                         transition={{ delay: 0.1 }}
-                        className="text-lg md:text-xl text-zinc-400 mb-10 max-w-2xl mx-auto leading-relaxed"
+                        className="text-lg md:text-xl text-zinc-400 mb-8 max-w-2xl mx-auto leading-relaxed"
                     >
                         A complete <span className="text-white font-medium">Open Source</span> and <span className="text-white font-medium">completely free</span> suite to track habits, define macro goals and monitor your personal growth with surgical precision.
                     </motion.p>
+
+                    <motion.div
+                        initial={{ opacity: 0, y: 20 }}
+                        animate={{ opacity: 1, y: 0 }}
+                        transition={{ delay: 0.2 }}
+                        className="flex flex-col sm:flex-row items-center justify-center gap-4 mb-16"
+                    >
+                        <Link to="/auth">
+                            <Button className="h-12 px-8 rounded-full bg-white text-black hover:bg-zinc-200 text-base font-medium transition-all shadow-lg hover:shadow-white/5 flex items-center gap-2">
+                                Access Web Companion
+                                <ArrowRight size={16} />
+                            </Button>
+                        </Link>
+                        <a 
+                            href="https://apps.apple.com" 
+                            target="_blank" 
+                            rel="noopener noreferrer"
+                            className="inline-flex items-center gap-2.5 h-12 px-6 rounded-full bg-white/5 border border-white/10 hover:border-purple-500/30 text-white hover:bg-white/10 text-base font-medium transition-all"
+                        >
+                            <span>Download Evolve for iOS</span>
+                            <span className="text-[10px] px-1.5 py-0.5 rounded bg-purple-500/20 text-purple-300 font-mono">App Store</span>
+                        </a>
+                    </motion.div>
                 </div>
             </section>
 
@@ -213,13 +237,7 @@ const LandingPage = () => {
             </section>
 
             {/* Footer */}
-            <footer className="py-12 px-6 border-t border-white/5 bg-black">
-                <div className="container mx-auto max-w-6xl flex flex-col md:flex-row justify-between items-center text-zinc-500 text-sm">
-                    <div className="mb-4 md:mb-0">
-                        <span className="font-semibold text-zinc-300">Mattioli.OS</span> © 2026. Open Source Project.
-                    </div>
-                </div>
-            </footer>
+            <PublicFooter />
         </div>
     );
 };

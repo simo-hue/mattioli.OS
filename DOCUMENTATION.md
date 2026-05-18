@@ -367,5 +367,26 @@
   - *Tech Notes*:
     - Updated the motto text to `"better each day.\nbecome who you're meant to be!"` in `auth_screen.dart`.
 
+- [2026-05-18 10:00]: **Elegant iOS Public Landing App Store Legal Set (Privacy & Terms)**
+  - *Details*: Built a stunning, cohesive "minimal tech" legal suite including GDPR-compliant Privacy Policy and Terms of Service pages required for iOS App Store distribution of the Evolve mobile application.
+  - *Tech Notes*:
+    - Created `src/pages/PrivacyPolicy.tsx` with side-scrolling navigation, clear data disclosures (local SharedPreferences, private Supabase RLS instances, zero data brokering, Sentry consents, and local-first Ollama AI coach settings).
+    - Created `src/pages/TermsOfService.tsx` detailing software licensing, MIT open-source disclaimers, account security, IP parameters, and a vital Wellness Correlation Index limitation of liability.
+    - Created a highly reusable premium component `src/components/PublicFooter.tsx` containing glowing purple layouts, legal links, and an App Store promotional card.
+    - Refactored `src/pages/LandingPage.tsx`, `src/pages/FeaturesPage.tsx`, `src/pages/PhilosophyPage.tsx`, `src/pages/TechPage.tsx`, and `src/pages/FAQ.tsx` to integrate the unified footer and include App Store download calls.
+    - Configured pathways `/privacy` and `/terms` inside `src/App.tsx`. Verified build success (`npm run build`).
+
+- [2026-05-18 12:05]: **Total Companion Site Visual Rebranding to EVOLVE**
+  - *Details*: Fully rebranded the companion web app's visual structure from "mattioli.OS" to "EVOLVE" to match the premium App Store name and look, while keeping the functional git pathing unchanged.
+  - *Tech Notes*:
+    - Rebranded `src/components/PublicHeader.tsx` and `src/components/PublicFooter.tsx` with mono-spaced, tracked-wide uppercase "EVOLVE" logos.
+    - Updated SEO `<title>` and social card meta headers inside `index.html`.
+    - Modified onboarding and setup texts inside `src/pages/GetStartedPage.tsx` and `src/pages/TechPage.tsx` to showcase the companion PWA and native iOS Evolve app.
+    - Rebranded developer bio paragraphs and manifesto headers inside `src/pages/CreatorPage.tsx` and `src/pages/PhilosophyPage.tsx`.
+    - Rewrote FAQ entries inside `src/pages/FAQ.tsx` emphasizing the native iOS App Store release of Evolve alongside the PWA.
+    - Refactored legal disclaimers, trademark ownership parameters, and contact queries to `support@evolve.app` inside `src/pages/PrivacyPolicy.tsx` and `src/pages/TermsOfService.tsx`.
+    - Rebranded dashboard footer widgets inside `src/pages/Index.tsx` and the authentication logo inside `src/pages/Auth.tsx`.
+    - Ran and validated complete compilation build (`npm run build`) successfully.
+
 ## Current Status
-- **Next Step**: Launch the application to experience the bold EVOLVE title and the inspiring, punctuated elegant motto!
+- **Next Step**: Deploy the newly rebranded website using `npm run deploy` and start promoting Evolve - Daily Habits & Goals to the public!

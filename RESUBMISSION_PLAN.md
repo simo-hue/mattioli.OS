@@ -1,5 +1,5 @@
 ## 📋 INDICE DELLE FASI
-- [ ] [FASE 3: Verifica Configurazione RevenueCat](#fase-3-verifica-configurazione-revenuecat)
+- [x] [FASE 3: Verifica Configurazione RevenueCat](#fase-3-verifica-configurazione-revenuecat)
 - [ ] [FASE 4: Preparazione, Firma e Compilazione Release Build (Xcode)](#fase-4-preparazione-firma-e-compilazione-release-build-xcode)
 - [ ] [FASE 5: Configurazione App Privacy su App Store Connect](#fase-5-configurazione-app-privacy-su-app-store-connect)
 - [ ] [FASE 6: Compilazione Note di Verifica (Review Notes) e Invio](#fase-6-compilazione-note-di-verifica-review-notes-e-invio)
@@ -7,19 +7,19 @@
 ### FASE 3: Verifica Configurazione RevenueCat
 *Verifica che l'SDK di RevenueCat possa comunicare correttamente con App Store Connect e che le chiavi API nel codice corrispondano.*
 
-- [ ] 1. Accedi alla dashboard di [RevenueCat](https://www.revenuecat.com/).
-- [ ] 2. Assicurati che nel tuo progetto sia presente l'App iOS con il Bundle ID esatto `com.simo.evolve`.
-- [ ] 3. Controlla che le chiavi di connessione con Apple siano caricate:
+- [x] 1. Accedi alla dashboard di [RevenueCat](https://www.revenuecat.com/).
+- [x] 2. Assicurati che nel tuo progetto sia presente l'App iOS con il Bundle ID esatto `com.simo.evolve` (Nome: *Evolve (App Store)*, App ID: *appa1177cd260*).
+- [x] 3. Controlla che le chiavi di connessione con Apple siano caricate:
   - Genera uno **Shared Secret in-app** su App Store Connect (in *Abbonamenti* > *Shared Secret*) e incollalo su RevenueCat.
   - Carica la **StoreKit 2 API Key** (.p8 file generato in *App Store Connect* > *Utenti e Accesso* > *Chiavi*) su RevenueCat per una sincronizzazione degli acquisti ultra-veloce.
-- [ ] 4. Nella sezione **Entitlements** di RevenueCat, verifica che sia presente l'entitlement `pro_access`.
-- [ ] 5. Nella sezione **Products**, aggiungi i due prodotti Apple appena creati:
+- [x] 4. Nella sezione **Entitlements** di RevenueCat, verifica che sia presente l'entitlement `Evolve Pro` (Perfettamente configurato e allineato al codice!).
+- [x] 5. Nella sezione **Products**, aggiungi i due prodotti Apple appena creati:
   - `com.simo.evolve.pro.monthly`
   - `com.simo.evolve.pro.yearly`
-- [ ] 6. Nella sezione **Offerings**, crea un offering `default`, aprilo e inserisci all'interno:
+- [x] 6. Nella sezione **Offerings**, crea un offering `default`, aprilo e inserisci all'interno:
   - Un package Monthly collegato a `com.simo.evolve.pro.monthly`.
   - Un package Yearly collegato a `com.simo.evolve.pro.yearly`.
-- [ ] 7. Verifica che nel codice Flutter, all'interno del file di configurazione di RevenueCat (`lib/core/revenuecat_config.dart` o simile), la **chiave API pubblica di iOS** corrisponda a quella generata sulla dashboard di RevenueCat.
+- [x] 7. Verifica che nel codice Flutter, all'interno del file di configurazione di RevenueCat (`lib/core/revenuecat_config.dart`), la **chiave API pubblica di iOS** corrisponda a quella generata sulla dashboard (`appl_goBFEcuJEbZZeifRFXecOGHFmhN`).
 
 ---
 

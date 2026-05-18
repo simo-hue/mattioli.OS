@@ -481,6 +481,18 @@
       - [subscription_screen.dart](file:///Users/simo/Downloads/DEV/mattioli.OS/mobile/lib/ui/screens/subscription_screen.dart) at line 645.
     - Verified compilation with `flutter analyze` returning 0 errors/warnings.
 
+- [2026-05-18 22:35]: **RevenueCat Configuration Completions (FASE 3)**
+  - *Details*: Fully completed and verified FASE 3 of the resubmission plan. The user successfully uploaded the StoreKit 2 API Key (.p8 file), Key ID, Issuer ID, and the App-Specific Shared Secret to the RevenueCat iOS App dashboard. Checked off all FASE 3 items in `RESUBMISSION_PLAN.md`.
+  - *Tech Notes*:
+    - Confirmed that Evolve's App Store entitlements (`Evolve Pro`) map 100% correctly with the Flutter code's dynamic entitlement checks.
+    - Verified all configurations are live and active.
+
+- [2026-05-18 22:40]: **Removed CONVENIENTE Badge & Fixed Plan Text Truncation**
+  - *Details*: Completely removed the 'CONVENIENTE' badge from both the active and fallback yearly subscription cards. This ensures that the full name of the subscription plan ("Evolve Pro Annuale") is fully displayed on all devices without any truncation or ellipsis, resulting in a cleaner and more professional UI.
+  - *Tech Notes*:
+    - Removed the conditional `isBestValue` Container check in [subscription_screen.dart](file:///Users/simo/Downloads/DEV/mattioli.OS/mobile/lib/ui/screens/subscription_screen.dart) at line 581 and line 1142.
+    - Verified compilation with `flutter analyze` returning 0 errors/warnings.
+
 ## Current Status
 
-- **Immediate Next Step**: Compile a new iOS release build via `flutter build ipa --release` in the `mobile` directory, archive and upload it in Xcode, and resubmit it for App Store Review. Ensure that "App Privacy" settings are configured with NO tracking, make sure that both of Evolve's subscription products (Monthly and Yearly) are associated with the new app submission and submitted for review together with the build, and paste the three English review note sections (ATT fix, Sign in with Apple compliance fix, and Biometric lock monetization fix) from `TO_SIMO_DO.md` into the Review Notes in App Store Connect.
+- **Immediate Next Step**: Proceed to FASE 4 (Firma e compilazione Release Build in Xcode). The user should open Xcode to manage signing automatically, and then execute the obfuscated release build command `flutter build ipa --release --obfuscate --split-debug-info=build/app/outputs/symbols` in the terminal to generate the new binary for App Store Connect.

@@ -10,6 +10,8 @@ import '../../../core/theme.dart';
 import '../../../models/macro_goal.dart';
 import '../../../providers/macro_goals_provider.dart';
 import '../../../providers/macro_goal_categories_provider.dart';
+import '../../../providers/settings_provider.dart';
+import '../pro_features_modal.dart';
 
 class AddGoalBar extends ConsumerStatefulWidget {
   final MacroGoalsViewState viewState;
@@ -40,6 +42,17 @@ class _AddGoalBarState extends ConsumerState<AddGoalBar> {
   }
 
   void _submit() {
+    final settings = ref.read(settingsProvider);
+    final isPro = settings.isPro;
+    final currentGoalsCount = ref.read(macroGoalsProvider).goals.length;
+
+    if (!isPro && currentGoalsCount >= 100) {
+      FocusScope.of(context).unfocus();
+      HapticFeedback.heavyImpact();
+      ProFeaturesModal.show(context);
+      return;
+    }
+
     final title = _controller.text.trim();
     if (title.isEmpty) return;
 
@@ -460,6 +473,11 @@ class _AddGoalBarState extends ConsumerState<AddGoalBar> {
       }
     }
 
+    final settings = ref.watch(settingsProvider);
+    final isPro = settings.isPro;
+    final currentGoalsCount = ref.watch(macroGoalsProvider).goals.length;
+    final isLimitReached = !isPro && currentGoalsCount >= 100;
+
     return Padding(
       padding: const EdgeInsets.symmetric(horizontal: 14),
       child: Row(
@@ -483,10 +501,10 @@ class _AddGoalBarState extends ConsumerState<AddGoalBar> {
                   contentPadding:
                       const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
                   border: InputBorder.none,
-                  hintText: _placeholder,
+                  hintText: isLimitReached ? 'Limite di 100 obiettivi raggiunto!' : _placeholder,
                   hintStyle: GoogleFonts.inter(
                     fontSize: 13,
-                    color: context.appColors.mutedForeground,
+                    color: isLimitReached ? const Color(0xFFEAB308) : context.appColors.mutedForeground,
                   ),
                 ),
                 onSubmitted: (_) => _submit(),
@@ -533,12 +551,12 @@ class _AddGoalBarState extends ConsumerState<AddGoalBar> {
               width: 44,
               height: 44,
               decoration: BoxDecoration(
-                color: Theme.of(context).colorScheme.primary,
+                color: isLimitReached ? const Color(0xFFEAB308) : Theme.of(context).colorScheme.primary,
                 borderRadius: BorderRadius.circular(12),
               ),
               child: Icon(
-                LucideIcons.plus,
-                color: context.appColors.background,
+                isLimitReached ? LucideIcons.sparkles : LucideIcons.plus,
+                color: isLimitReached ? Colors.black : context.appColors.background,
                 size: 20,
               ),
             ),

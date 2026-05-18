@@ -9,6 +9,8 @@ import '../../../models/macro_goal.dart';
 import '../../../providers/macro_goals_provider.dart';
 import '../../../providers/macro_goal_categories_provider.dart';
 import '../../../core/haptics.dart';
+import '../../../providers/settings_provider.dart';
+import '../pro_features_modal.dart';
 
 class GoalItemWidget extends ConsumerStatefulWidget {
   final MacroGoal goal;
@@ -88,6 +90,16 @@ class _GoalItemWidgetState extends ConsumerState<GoalItemWidget>
   }
 
   void _reschedule() {
+    final settings = ref.read(settingsProvider);
+    final isPro = settings.isPro;
+    final currentGoalsCount = ref.read(macroGoalsProvider).goals.length;
+
+    if (!isPro && currentGoalsCount >= 100) {
+      ref.hapticHeavy();
+      ProFeaturesModal.show(context);
+      return;
+    }
+
     ref.read(macroGoalsProvider.notifier).rescheduleGoal(widget.goal);
     ref.hapticSuccess();
   }

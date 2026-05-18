@@ -1446,3 +1446,15 @@
 - **Filing**: Checked off the upload action item in `TO_SIMO_DO.md`.
 - **Review Preparedness**: Validated the Sentry DSN configuration and local security hooks are ready for the Apple Review Team login.
 
+---
+
+## [2026-05-18 15:48]: Goals - 100 Macro Goals Limit for Free Tier
+*Details*: Implemented a total limit of 100 macro goals (obiettivi) across all categories (weekly, monthly, quarterly, annual, lifetime) for non-Evolve Pro users, matching the premium UX patterns of Evolve.
+*Tech Notes*:
+- **UI Enhancement (`add_goal_bar.dart`)**:
+  - Restyled the `AddGoalBar` dynamically when a free user reaches the 100 goals limit. The hint text turns amber with the label "Limite di 100 obiettivi raggiunto!", and the submit button transforms into a golden `LucideIcons.sparkles` icon.
+  - Tapping the submit button or hitting enter in the keyboard triggers the premium `ProFeaturesModal` to encourage upgrading to Evolve Pro.
+- **UI Protection (`goal_item_widget.dart`)**:
+  - Protected the rescheduling pathway inside `GoalItemWidget._reschedule()` by verifying the total goals limit. Non-pro users trying to reschedule beyond 100 total goals are blocked and presented with the Evolve Pro upgrade modal.
+
+

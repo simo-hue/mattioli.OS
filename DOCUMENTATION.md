@@ -388,5 +388,13 @@
     - Rebranded dashboard footer widgets inside `src/pages/Index.tsx` and the authentication logo inside `src/pages/Auth.tsx`.
     - Ran and validated complete compilation build (`npm run build`) successfully.
 
+- [2026-05-18 15:30]: **Comprehensive Mobile App Documentation & Overwrite**
+  - *Details*: Created a highly thorough, complete description of the Evolve app and overwrote the generic mobile README.md with it.
+  - *Tech Notes*:
+    - Documented product vision, motto, target audience, and complete technical mobile stack (Flutter, Riverpod, Go Router, FL Chart, etc.).
+    - Documented database acceleration (Supabase, RPC functions like get_global_trend, get_habit_analytics, get_habit_correlations, get_macro_goals_stats, RLS rules).
+    - Fully detailed key features: actionable notifications, multitemporal goals, Memento Mori life view, context-aware AI chat coach, and 3-stage tutorial.
+
 ## Current Status
-- **Next Step**: Deploy the newly rebranded website using `npm run deploy` and start promoting Evolve - Daily Habits & Goals to the public!
+- **Next Step**: Review the generated App Description inside `mobile/README.md` and proceed with the App Store submission process!
+

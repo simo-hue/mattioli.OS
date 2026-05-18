@@ -32,15 +32,6 @@ L'architettura dell'applicazione è progettata seguendo i migliori standard dell
 
 Il backend dell'app si appoggia a **Supabase (PostgreSQL)**, offrendo un'infrastruttura di livello enterprise a bassissima latenza.
 
-```mermaid
-graph TD
-    A[Flutter App] -->|Query & RPC| B(Supabase Client)
-    A -->|Biometric Lock| C(Local Auth)
-    B -->|User Authentication| D[Supabase Auth / Apple & Google Sign-In]
-    B -->|Row Level Security| E[(PostgreSQL DB)]
-    E -->|PL/pgSQL Functions| F[Database Acceleration]
-```
-
 ### 🏎️ Database Acceleration & Calcoli del Server
 Per ottimizzare la batteria dello smartphone e velocizzare i tempi di risposta, **tutte le elaborazioni statistiche pesanti sono state rimosse dal client** ed esternalizzate a livello database tramite funzioni `PL/pgSQL (RPC)` ottimizzate:
 *   `get_habit_analytics`: Estrae l'andamento delle singole abitudini e calcola dinamicamente il "giorno nero" (peggior giorno della settimana).
@@ -97,31 +88,3 @@ ON macro_goals FOR ALL USING (auth.uid() = user_id);
     3.  **Statistiche:** Reindirizzamento finale alle schede statistiche generali per illustrare filtri e analisi.
 *   **Blocco dell'Interazione:** Durante il tutorial, i tap esterni sono disabilitati e l'utente viene guidato esclusivamente tramite bottoni di controllo ("Avanti", "Indietro", "Fine") per massimizzare la comprensione del flusso.
 *   **Schermata Finale Motivazionale:** Una schermata a tutto schermo accoglie l'utente al termine del tour con un messaggio ispiratore.
-
----
-
-## 🛠️ Comandi Utili per lo Sviluppo
-
-### Installazione Dipendenze
-```bash
-flutter pub get
-```
-
-### Generazione Icone per iOS (Launcher Icons)
-Il progetto utilizza il pacchetto `flutter_launcher_icons` per generare gli asset nativi corretti partendo da `assets/images/app_icon.png`:
-```bash
-dart run flutter_launcher_icons
-```
-
-### Avvio in Modalità Sviluppo
-```bash
-flutter run
-```
-
-### Analisi Statica del Codice (Zero Errori & Warning)
-```bash
-flutter analyze
-```
-
----
-*Applicazione mobile architettata, sviluppata e rifinita con rigorosa attenzione ai dettagli da Antigravity, il tuo Mobile AI Architect.*

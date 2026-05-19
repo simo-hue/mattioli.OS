@@ -33,6 +33,7 @@ class _ConsentScreenState extends ConsumerState<ConsentScreen> {
 
   Future<void> _checkNotificationStatus() async {
     final status = await Permission.notification.status;
+    if (!mounted) return;
     setState(() {
       _notificationsAllowed = status.isGranted;
     });
@@ -41,6 +42,7 @@ class _ConsentScreenState extends ConsumerState<ConsentScreen> {
   Future<void> _requestNotificationPermission() async {
     ref.hapticLight();
     final status = await Permission.notification.request();
+    if (!mounted) return;
     setState(() {
       _notificationsAllowed = status.isGranted;
     });
@@ -61,45 +63,53 @@ class _ConsentScreenState extends ConsumerState<ConsentScreen> {
     if (!_acceptedTerms) {
       ref.hapticHeavy();
       ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('Devi accettare i Termini e la Privacy Policy per continuare.')),
+        const SnackBar(
+          content: Text(
+            'Devi accettare i Termini e la Privacy Policy per continuare.',
+          ),
+        ),
       );
       return;
     }
 
+    if (!mounted) return;
     setState(() => _isLoading = true);
     ref.hapticMedium();
 
     // Salva il consenso nel provider
-    await ref.read(consentProvider.notifier).setConsent(
-      acceptedTerms: _acceptedTerms,
-      sentryConsent: _sentryConsent,
-      completed: true,
-    );
+    await ref
+        .read(consentProvider.notifier)
+        .setConsent(
+          acceptedTerms: _acceptedTerms,
+          sentryConsent: _sentryConsent,
+          completed: true,
+        );
 
     // Se l'utente è già loggato, salva il consenso anche nel DB
     final isLoggedIn = ref.read(authProvider).isLoggedIn;
     if (isLoggedIn) {
-      await ref.read(authProvider.notifier).updateConsentInDb(_acceptedTerms, _sentryConsent);
+      await ref
+          .read(authProvider.notifier)
+          .updateConsentInDb(_acceptedTerms, _sentryConsent);
     }
 
     // Inizializza Sentry immediatamente se l'utente ha dato il consenso
     if (_sentryConsent) {
-      await SentryFlutter.init(
-        (options) {
-          options.dsn = SentryConfig.dsn;
-          options.environment = SentryConfig.environment;
-          options.tracesSampleRate = SentryConfig.tracesSampleRate;
-          options.reportPackages = true;
-          options.debug = false;
-          options.beforeSend = (event, hint) {
-            return SentryConfig.sanitizeEvent(event);
-          };
-        },
-      );
+      await SentryFlutter.init((options) {
+        options.dsn = SentryConfig.dsn;
+        options.environment = SentryConfig.environment;
+        options.tracesSampleRate = SentryConfig.tracesSampleRate;
+        options.reportPackages = true;
+        options.debug = false;
+        options.beforeSend = (event, hint) {
+          return SentryConfig.sanitizeEvent(event);
+        };
+      });
     }
 
+    if (!mounted) return;
     setState(() => _isLoading = false);
-    
+
     // La navigazione verrà gestita automaticamente dal router in main.dart
     // grazie al cambio di stato in consentProvider.
   }
@@ -109,10 +119,13 @@ class _ConsentScreenState extends ConsumerState<ConsentScreen> {
     final primaryColor = Theme.of(context).colorScheme.primary;
     final isLightBg = primaryColor.computeLuminance() > 0.5;
     final activeTextColor = isLightBg ? Colors.black : Colors.white;
-    final disabledTextColor = context.appColors.mutedForeground.computeLuminance() > 0.7
+    final disabledTextColor =
+        context.appColors.mutedForeground.computeLuminance() > 0.7
         ? Colors.grey[600]!
         : context.appColors.mutedForeground;
-    final buttonTextColor = _acceptedTerms ? activeTextColor : disabledTextColor;
+    final buttonTextColor = _acceptedTerms
+        ? activeTextColor
+        : disabledTextColor;
 
     return Scaffold(
       backgroundColor: context.appColors.background,
@@ -135,10 +148,13 @@ class _ConsentScreenState extends ConsumerState<ConsentScreen> {
               ),
             ),
           ),
-          
+
           SafeArea(
             child: Padding(
-              padding: const EdgeInsets.symmetric(horizontal: 24.0, vertical: 16.0),
+              padding: const EdgeInsets.symmetric(
+                horizontal: 24.0,
+                vertical: 16.0,
+              ),
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.stretch,
                 children: [
@@ -153,7 +169,11 @@ class _ConsentScreenState extends ConsumerState<ConsentScreen> {
                           borderRadius: BorderRadius.circular(20),
                           border: Border.all(color: context.appColors.border),
                         ),
-                        child: Icon(LucideIcons.shieldCheck, size: 40, color: primaryColor),
+                        child: Icon(
+                          LucideIcons.shieldCheck,
+                          size: 40,
+                          color: primaryColor,
+                        ),
                       ),
                       const SizedBox(height: 24),
                       Text(
@@ -178,9 +198,9 @@ class _ConsentScreenState extends ConsumerState<ConsentScreen> {
                       ),
                     ],
                   ),
-                  
+
                   const SizedBox(height: 40),
-                  
+
                   // Consent Items
                   Expanded(
                     child: ListView(
@@ -189,7 +209,8 @@ class _ConsentScreenState extends ConsumerState<ConsentScreen> {
                         _buildConsentCard(
                           icon: LucideIcons.fileText,
                           title: 'Termini e Privacy Policy',
-                          description: 'Dichiaro di aver letto e accettato i Termini di Servizio e la Privacy Policy. Confermo di avere almeno 14 anni.',
+                          description:
+                              'Dichiaro di aver letto e accettato i Termini di Servizio e la Privacy Policy. Confermo di avere almeno 14 anni.',
                           trailing: Checkbox(
                             value: _acceptedTerms,
                             onChanged: (val) {
@@ -198,66 +219,101 @@ class _ConsentScreenState extends ConsumerState<ConsentScreen> {
                             },
                             activeColor: primaryColor,
                             checkColor: activeTextColor,
-                            shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(4)),
+                            shape: RoundedRectangleBorder(
+                              borderRadius: BorderRadius.circular(4),
+                            ),
                           ),
                           links: [
                             TextButton(
-                              onPressed: () => _openUrl('https://simo-hue.github.io/evolve/privacy.html'),
-                              child: Text('Leggi Privacy Policy', style: TextStyle(color: primaryColor, fontSize: 12)),
+                              onPressed: () => _openUrl(
+                                'https://simo-hue.github.io/evolve/privacy.html',
+                              ),
+                              child: Text(
+                                'Leggi Privacy Policy',
+                                style: TextStyle(
+                                  color: primaryColor,
+                                  fontSize: 12,
+                                ),
+                              ),
                             ),
                           ],
                         ),
-                        
+
                         const SizedBox(height: 16),
-                        
+
                         // Item 3: Notifications
                         _buildConsentCard(
                           icon: LucideIcons.bell,
                           title: 'Notifiche di Sistema',
-                          description: 'Ricevi promemoria per le tue abitudini e report settimanali.',
+                          description:
+                              'Ricevi promemoria per le tue abitudini e report settimanali.',
                           trailing: _notificationsAllowed
-                              ? const Icon(Icons.check_circle, color: Colors.green, size: 24)
+                              ? const Icon(
+                                  Icons.check_circle,
+                                  color: Colors.green,
+                                  size: 24,
+                                )
                               : ElevatedButton(
                                   onPressed: _requestNotificationPermission,
                                   style: ElevatedButton.styleFrom(
-                                    backgroundColor: primaryColor.withValues(alpha: 0.1),
+                                    backgroundColor: primaryColor.withValues(
+                                      alpha: 0.1,
+                                    ),
                                     foregroundColor: primaryColor,
                                     elevation: 0,
-                                    shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
-                                    padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+                                    shape: RoundedRectangleBorder(
+                                      borderRadius: BorderRadius.circular(10),
+                                    ),
+                                    padding: const EdgeInsets.symmetric(
+                                      horizontal: 12,
+                                      vertical: 8,
+                                    ),
                                   ),
-                                  child: const Text('Abilita', style: TextStyle(fontSize: 12, fontWeight: FontWeight.bold)),
+                                  child: const Text(
+                                    'Abilita',
+                                    style: TextStyle(
+                                      fontSize: 12,
+                                      fontWeight: FontWeight.bold,
+                                    ),
+                                  ),
                                 ),
                         ),
                       ],
                     ),
                   ),
-                  
+
                   // Continue Button
                   Container(
                     padding: const EdgeInsets.symmetric(vertical: 16),
                     child: GestureDetector(
-                      onTap: _isLoading || !_acceptedTerms ? null : _handleContinue,
+                      onTap: _isLoading || !_acceptedTerms
+                          ? null
+                          : _handleContinue,
                       child: Container(
                         height: 56,
                         decoration: BoxDecoration(
                           gradient: _acceptedTerms
                               ? LinearGradient(
-                                  colors: [primaryColor, primaryColor.withValues(alpha: 0.8)],
+                                  colors: [
+                                    primaryColor,
+                                    primaryColor.withValues(alpha: 0.8),
+                                  ],
                                   begin: Alignment.topLeft,
                                   end: Alignment.bottomRight,
                                 )
                               : null,
                           color: _acceptedTerms ? null : context.appColors.card,
                           borderRadius: BorderRadius.circular(16),
-                          border: _acceptedTerms ? null : Border.all(color: context.appColors.border),
+                          border: _acceptedTerms
+                              ? null
+                              : Border.all(color: context.appColors.border),
                           boxShadow: _acceptedTerms
                               ? [
                                   BoxShadow(
                                     color: primaryColor.withValues(alpha: 0.3),
                                     blurRadius: 12,
                                     offset: const Offset(0, 4),
-                                  )
+                                  ),
                                 ]
                               : [],
                         ),
@@ -266,7 +322,10 @@ class _ConsentScreenState extends ConsumerState<ConsentScreen> {
                               ? const SizedBox(
                                   width: 24,
                                   height: 24,
-                                  child: CircularProgressIndicator(strokeWidth: 2, color: Colors.white),
+                                  child: CircularProgressIndicator(
+                                    strokeWidth: 2,
+                                    color: Colors.white,
+                                  ),
                                 )
                               : Text(
                                   'Continua',
@@ -316,7 +375,11 @@ class _ConsentScreenState extends ConsumerState<ConsentScreen> {
                   borderRadius: BorderRadius.circular(10),
                   border: Border.all(color: context.appColors.border),
                 ),
-                child: Icon(icon, size: 20, color: Theme.of(context).colorScheme.primary),
+                child: Icon(
+                  icon,
+                  size: 20,
+                  color: Theme.of(context).colorScheme.primary,
+                ),
               ),
               const SizedBox(width: 12),
               Expanded(
@@ -349,10 +412,7 @@ class _ConsentScreenState extends ConsumerState<ConsentScreen> {
           ),
           if (links != null) ...[
             const SizedBox(height: 8),
-            Row(
-              mainAxisAlignment: MainAxisAlignment.end,
-              children: links,
-            ),
+            Row(mainAxisAlignment: MainAxisAlignment.end, children: links),
           ],
         ],
       ),

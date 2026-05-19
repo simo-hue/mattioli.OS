@@ -70,10 +70,12 @@ class _HomeScreenState extends ConsumerState<HomeScreen>
     _fadeController.forward();
 
     // Transparent status bar
-    SystemChrome.setSystemUIOverlayStyle(const SystemUiOverlayStyle(
-      statusBarColor: Colors.transparent,
-      statusBarIconBrightness: Brightness.light,
-    ));
+    SystemChrome.setSystemUIOverlayStyle(
+      const SystemUiOverlayStyle(
+        statusBarColor: Colors.transparent,
+        statusBarIconBrightness: Brightness.light,
+      ),
+    );
 
     // Check profile name after first frame
     WidgetsBinding.instance.addPostFrameCallback((_) {
@@ -111,7 +113,9 @@ class _HomeScreenState extends ConsumerState<HomeScreen>
                     Container(
                       padding: const EdgeInsets.all(20),
                       decoration: BoxDecoration(
-                        color: Theme.of(context).colorScheme.primary.withValues(alpha: 0.1),
+                        color: Theme.of(
+                          context,
+                        ).colorScheme.primary.withValues(alpha: 0.1),
                         shape: BoxShape.circle,
                       ),
                       child: Icon(
@@ -135,7 +139,9 @@ class _HomeScreenState extends ConsumerState<HomeScreen>
                     ),
                     const SizedBox(height: 16),
                     Text(
-                      context.l10n.translate("Potrebbe essere uno STEP di NON RITORNO... Prima di iniziare però bisogna fare un tour per mostrarti come sfruttare al massimo l'applicazione."),
+                      context.l10n.translate(
+                        "Potrebbe essere uno STEP di NON RITORNO... Prima di iniziare però bisogna fare un tour per mostrarti come sfruttare al massimo l'applicazione.",
+                      ),
                       textAlign: TextAlign.center,
                       style: TextStyle(
                         fontFamily: 'Inter',
@@ -149,7 +155,7 @@ class _HomeScreenState extends ConsumerState<HomeScreen>
                       onTap: () {
                         ref.hapticMedium();
                         Navigator.pop(context);
-                        _showTutorial();
+                        _scheduleTutorialStart();
                       },
                       child: Container(
                         width: double.infinity,
@@ -159,17 +165,25 @@ class _HomeScreenState extends ConsumerState<HomeScreen>
                           borderRadius: BorderRadius.circular(16),
                           boxShadow: [
                             BoxShadow(
-                              color: Theme.of(context).colorScheme.primary.withValues(alpha: 0.3),
+                              color: Theme.of(
+                                context,
+                              ).colorScheme.primary.withValues(alpha: 0.3),
                               blurRadius: 15,
                               offset: const Offset(0, 5),
-                            )
+                            ),
                           ],
                         ),
                         child: Center(
                           child: Text(
                             context.l10n.translate('Inizia il Tour'),
                             style: TextStyle(
-                              color: Theme.of(context).colorScheme.primary.computeLuminance() > 0.5 ? Colors.black : Colors.white,
+                              color:
+                                  Theme.of(
+                                        context,
+                                      ).colorScheme.primary.computeLuminance() >
+                                      0.5
+                                  ? Colors.black
+                                  : Colors.white,
                               fontSize: 16,
                               fontWeight: FontWeight.w700,
                               letterSpacing: -0.2,
@@ -187,6 +201,17 @@ class _HomeScreenState extends ConsumerState<HomeScreen>
         );
       },
     );
+  }
+
+  void _scheduleTutorialStart() {
+    Future.delayed(const Duration(milliseconds: 350), () {
+      if (!mounted) return;
+      WidgetsBinding.instance.addPostFrameCallback((_) {
+        if (mounted) {
+          _showTutorial();
+        }
+      });
+    });
   }
 
   void _showEndTutorialScreen() {
@@ -211,7 +236,9 @@ class _HomeScreenState extends ConsumerState<HomeScreen>
                     Container(
                       padding: const EdgeInsets.all(20),
                       decoration: BoxDecoration(
-                        color: Theme.of(context).colorScheme.primary.withValues(alpha: 0.1),
+                        color: Theme.of(
+                          context,
+                        ).colorScheme.primary.withValues(alpha: 0.1),
                         shape: BoxShape.circle,
                       ),
                       child: Icon(
@@ -235,7 +262,9 @@ class _HomeScreenState extends ConsumerState<HomeScreen>
                     ),
                     const SizedBox(height: 16),
                     Text(
-                      context.l10n.translate("Il viaggio inizia ora. Dai il massimo!"),
+                      context.l10n.translate(
+                        "Il viaggio inizia ora. Dai il massimo!",
+                      ),
                       textAlign: TextAlign.center,
                       style: TextStyle(
                         fontFamily: 'Inter',
@@ -248,8 +277,12 @@ class _HomeScreenState extends ConsumerState<HomeScreen>
                     GestureDetector(
                       onTap: () {
                         ref.hapticMedium();
-                        ref.read(tutorialProvider.notifier).setTutorialSeen(true);
-                        ref.read(calendarViewProvider.notifier).setView(CalendarView.month);
+                        ref
+                            .read(tutorialProvider.notifier)
+                            .setTutorialSeen(true);
+                        ref
+                            .read(calendarViewProvider.notifier)
+                            .setView(CalendarView.month);
                         Navigator.pop(context);
                         _onItemTapped(1); // Go to Home
                       },
@@ -261,17 +294,25 @@ class _HomeScreenState extends ConsumerState<HomeScreen>
                           borderRadius: BorderRadius.circular(16),
                           boxShadow: [
                             BoxShadow(
-                              color: Theme.of(context).colorScheme.primary.withValues(alpha: 0.3),
+                              color: Theme.of(
+                                context,
+                              ).colorScheme.primary.withValues(alpha: 0.3),
                               blurRadius: 15,
                               offset: const Offset(0, 5),
-                            )
+                            ),
                           ],
                         ),
                         child: Center(
                           child: Text(
                             context.l10n.translate('Inizia'),
                             style: TextStyle(
-                              color: Theme.of(context).colorScheme.primary.computeLuminance() > 0.5 ? Colors.black : Colors.white,
+                              color:
+                                  Theme.of(
+                                        context,
+                                      ).colorScheme.primary.computeLuminance() >
+                                      0.5
+                                  ? Colors.black
+                                  : Colors.white,
                               fontSize: 16,
                               fontWeight: FontWeight.w700,
                               letterSpacing: -0.2,
@@ -306,15 +347,15 @@ class _HomeScreenState extends ConsumerState<HomeScreen>
         color: context.appColors.card,
         borderRadius: BorderRadius.circular(20),
         border: Border.all(
-          color: Theme.of(context).colorScheme.primary.withValues(alpha: 0.5), 
-          width: 1.5
+          color: Theme.of(context).colorScheme.primary.withValues(alpha: 0.5),
+          width: 1.5,
         ),
         boxShadow: [
           BoxShadow(
             color: Colors.black.withValues(alpha: 0.2),
             blurRadius: 20,
             offset: const Offset(0, 10),
-          )
+          ),
         ],
       ),
       child: Column(
@@ -323,7 +364,11 @@ class _HomeScreenState extends ConsumerState<HomeScreen>
         children: [
           Row(
             children: [
-              Icon(LucideIcons.info, color: Theme.of(context).colorScheme.primary, size: 20),
+              Icon(
+                LucideIcons.info,
+                color: Theme.of(context).colorScheme.primary,
+                size: 20,
+              ),
               const SizedBox(width: 8),
               Text(
                 title,
@@ -357,7 +402,13 @@ class _HomeScreenState extends ConsumerState<HomeScreen>
                     ref.hapticSelection();
                     controller.previous();
                   },
-                  child: Text(context.l10n.translate("Indietro"), style: TextStyle(color: context.appColors.mutedForeground, fontWeight: FontWeight.bold)),
+                  child: Text(
+                    context.l10n.translate("Indietro"),
+                    style: TextStyle(
+                      color: context.appColors.mutedForeground,
+                      fontWeight: FontWeight.bold,
+                    ),
+                  ),
                 )
               else
                 const SizedBox.shrink(),
@@ -374,14 +425,22 @@ class _HomeScreenState extends ConsumerState<HomeScreen>
                 },
                 style: ElevatedButton.styleFrom(
                   backgroundColor: Theme.of(context).colorScheme.primary,
-                  foregroundColor: Theme.of(context).colorScheme.primary.computeLuminance() > 0.5 ? Colors.black : Colors.white,
-                  shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
+                  foregroundColor:
+                      Theme.of(context).colorScheme.primary.computeLuminance() >
+                          0.5
+                      ? Colors.black
+                      : Colors.white,
+                  shape: RoundedRectangleBorder(
+                    borderRadius: BorderRadius.circular(10),
+                  ),
                   elevation: 0,
                 ),
                 child: Text(
                   nextButtonText != null
                       ? context.l10n.translate(nextButtonText)
-                      : (isLast ? context.l10n.translate("Fine") : context.l10n.translate("Avanti")),
+                      : (isLast
+                            ? context.l10n.translate("Fine")
+                            : context.l10n.translate("Avanti")),
                   style: const TextStyle(fontWeight: FontWeight.bold),
                 ),
               ),
@@ -406,7 +465,9 @@ class _HomeScreenState extends ConsumerState<HomeScreen>
             builder: (context, controller) {
               return _buildTutorialContent(
                 context.l10n.translate("Daily Check-in"),
-                context.l10n.translate("Qui puoi registrare il tuo stato d'animo quotidiano per tracciare il tuo benessere nel tempo e soprattutto correlarlo con il completamento dei tuoi obiettivi."),
+                context.l10n.translate(
+                  "Qui puoi registrare il tuo stato d'animo quotidiano per tracciare il tuo benessere nel tempo e soprattutto correlarlo con il completamento dei tuoi obiettivi.",
+                ),
                 controller,
                 isFirst: true,
               );
@@ -425,7 +486,9 @@ class _HomeScreenState extends ConsumerState<HomeScreen>
             builder: (context, controller) {
               return _buildTutorialContent(
                 context.l10n.translate("AI Chat"),
-                context.l10n.translate("Il tuo assistente personale. Chiedi consigli sulle tue abitudini. Lui è il tuo coach."),
+                context.l10n.translate(
+                  "Il tuo assistente personale. Chiedi consigli sulle tue abitudini. Lui è il tuo coach.",
+                ),
                 controller,
               );
             },
@@ -443,7 +506,9 @@ class _HomeScreenState extends ConsumerState<HomeScreen>
             builder: (context, controller) {
               return _buildTutorialContent(
                 context.l10n.translate("Gestione Abitudini"),
-                context.l10n.translate("Aggiungi, modifica o elimina le tue abitudini quotidiane che vuoi rispettare in modo semplice e veloce."),
+                context.l10n.translate(
+                  "Aggiungi, modifica o elimina le tue abitudini quotidiane che vuoi rispettare in modo semplice e veloce.",
+                ),
                 controller,
               );
             },
@@ -461,7 +526,9 @@ class _HomeScreenState extends ConsumerState<HomeScreen>
             builder: (context, controller) {
               return _buildTutorialContent(
                 context.l10n.translate("Viste Calendario"),
-                context.l10n.translate("Naviga tra le diverse visualizzazioni per vedere i tuoi progressi con varie alternative."),
+                context.l10n.translate(
+                  "Naviga tra le diverse visualizzazioni per vedere i tuoi progressi con varie alternative.",
+                ),
                 controller,
               );
             },
@@ -479,7 +546,9 @@ class _HomeScreenState extends ConsumerState<HomeScreen>
             builder: (context, controller) {
               return _buildTutorialContent(
                 context.l10n.translate("Calendario"),
-                context.l10n.translate("Basta cliccare su un giorno per visualizzare le abitudini giornaliere e spuntarle."),
+                context.l10n.translate(
+                  "Basta cliccare su un giorno per visualizzare le abitudini giornaliere e spuntarle.",
+                ),
                 controller,
               );
             },
@@ -497,7 +566,9 @@ class _HomeScreenState extends ConsumerState<HomeScreen>
             builder: (context, controller) {
               return _buildTutorialContent(
                 context.l10n.translate("Passiamo agli Obiettivi"),
-                context.l10n.translate("La pagina dove puoi gestire i tuoi obiettivi a lungo termine e le relative performance."),
+                context.l10n.translate(
+                  "La pagina dove puoi gestire i tuoi obiettivi a lungo termine e le relative performance.",
+                ),
                 controller,
                 isLast: true,
                 nextButtonText: "Vai agli Obiettivi",
@@ -530,14 +601,23 @@ class _HomeScreenState extends ConsumerState<HomeScreen>
         return true;
       },
     );
-    tutorial.show(context: context);
+    try {
+      tutorial.show(context: context);
+    } catch (e, stack) {
+      AppLogger.warning(
+        '[Tutorial] Unable to start dashboard tutorial',
+        e,
+        stack,
+      );
+    }
   }
 
   Future<void> _authenticate() async {
     final LocalAuthentication auth = LocalAuthentication();
     try {
       final bool canAuthenticateWithBiometrics = await auth.canCheckBiometrics;
-      final bool canAuthenticate = canAuthenticateWithBiometrics || await auth.isDeviceSupported();
+      final bool canAuthenticate =
+          canAuthenticateWithBiometrics || await auth.isDeviceSupported();
 
       if (!canAuthenticate) {
         if (mounted) {
@@ -599,13 +679,16 @@ class _HomeScreenState extends ConsumerState<HomeScreen>
               decoration: BoxDecoration(
                 color: context.appColors.card.withValues(alpha: 0.95),
                 borderRadius: BorderRadius.circular(24),
-                border: Border.all(color: context.appColors.border.withValues(alpha: 0.5), width: 1.5),
+                border: Border.all(
+                  color: context.appColors.border.withValues(alpha: 0.5),
+                  width: 1.5,
+                ),
                 boxShadow: [
                   BoxShadow(
                     color: Colors.black.withValues(alpha: 0.1),
                     blurRadius: 20,
                     spreadRadius: 5,
-                  )
+                  ),
                 ],
               ),
               child: Column(
@@ -615,7 +698,9 @@ class _HomeScreenState extends ConsumerState<HomeScreen>
                   Container(
                     padding: const EdgeInsets.all(16),
                     decoration: BoxDecoration(
-                      color: Theme.of(context).colorScheme.primary.withValues(alpha: 0.1),
+                      color: Theme.of(
+                        context,
+                      ).colorScheme.primary.withValues(alpha: 0.1),
                       shape: BoxShape.circle,
                     ),
                     child: Icon(
@@ -625,7 +710,7 @@ class _HomeScreenState extends ConsumerState<HomeScreen>
                     ),
                   ),
                   const SizedBox(height: 24),
-                  
+
                   Text(
                     context.l10n.translate('Benvenuto in Evolve!'),
                     style: TextStyle(
@@ -638,7 +723,9 @@ class _HomeScreenState extends ConsumerState<HomeScreen>
                   ),
                   const SizedBox(height: 8),
                   Text(
-                    context.l10n.translate('Per iniziare, come possiamo chiamarti?'),
+                    context.l10n.translate(
+                      'Per iniziare, come possiamo chiamarti?',
+                    ),
                     textAlign: TextAlign.center,
                     style: TextStyle(
                       fontFamily: 'Inter',
@@ -648,42 +735,70 @@ class _HomeScreenState extends ConsumerState<HomeScreen>
                     ),
                   ),
                   const SizedBox(height: 24),
-                  
+
                   TextField(
                     controller: controller,
                     decoration: InputDecoration(
                       labelText: context.l10n.translate('Il tuo nome'),
-                      labelStyle: TextStyle(color: context.appColors.mutedForeground, fontSize: 14),
-                      floatingLabelStyle: TextStyle(color: Theme.of(context).colorScheme.primary),
+                      labelStyle: TextStyle(
+                        color: context.appColors.mutedForeground,
+                        fontSize: 14,
+                      ),
+                      floatingLabelStyle: TextStyle(
+                        color: Theme.of(context).colorScheme.primary,
+                      ),
                       filled: true,
-                      fillColor: context.appColors.background.withValues(alpha: 0.5),
-                      contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 16),
+                      fillColor: context.appColors.background.withValues(
+                        alpha: 0.5,
+                      ),
+                      contentPadding: const EdgeInsets.symmetric(
+                        horizontal: 16,
+                        vertical: 16,
+                      ),
                       enabledBorder: OutlineInputBorder(
                         borderRadius: BorderRadius.circular(14),
-                        borderSide: BorderSide(color: context.appColors.border.withValues(alpha: 0.5)),
+                        borderSide: BorderSide(
+                          color: context.appColors.border.withValues(
+                            alpha: 0.5,
+                          ),
+                        ),
                       ),
                       focusedBorder: OutlineInputBorder(
                         borderRadius: BorderRadius.circular(14),
-                        borderSide: BorderSide(color: Theme.of(context).colorScheme.primary, width: 1.5),
+                        borderSide: BorderSide(
+                          color: Theme.of(context).colorScheme.primary,
+                          width: 1.5,
+                        ),
                       ),
                     ),
-                    style: TextStyle(color: context.appColors.foreground, fontFamily: 'Inter'),
+                    style: TextStyle(
+                      color: context.appColors.foreground,
+                      fontFamily: 'Inter',
+                    ),
                   ),
                   const SizedBox(height: 24),
-                  
+
                   // Action Button
                   GestureDetector(
                     onTap: () async {
                       final name = controller.text.trim();
                       if (name.isNotEmpty) {
                         ref.hapticMedium();
-                        final success = await ref.read(authProvider.notifier).updateProfileName(name);
+                        final success = await ref
+                            .read(authProvider.notifier)
+                            .updateProfileName(name);
                         if (!context.mounted) return;
                         if (success) {
                           Navigator.pop(context);
                         } else {
                           ScaffoldMessenger.of(context).showSnackBar(
-                            SnackBar(content: Text(context.l10n.translate('Errore durante il salvataggio. Riprova.'))),
+                            SnackBar(
+                              content: Text(
+                                context.l10n.translate(
+                                  'Errore durante il salvataggio. Riprova.',
+                                ),
+                              ),
+                            ),
                           );
                         }
                       }
@@ -696,17 +811,25 @@ class _HomeScreenState extends ConsumerState<HomeScreen>
                         borderRadius: BorderRadius.circular(14),
                         boxShadow: [
                           BoxShadow(
-                            color: Theme.of(context).colorScheme.primary.withValues(alpha: 0.3),
+                            color: Theme.of(
+                              context,
+                            ).colorScheme.primary.withValues(alpha: 0.3),
                             blurRadius: 10,
                             offset: const Offset(0, 4),
-                          )
+                          ),
                         ],
                       ),
                       child: Center(
                         child: Text(
                           context.l10n.translate('Inizia ora'),
                           style: TextStyle(
-                            color: Theme.of(context).colorScheme.primary.computeLuminance() > 0.5 ? Colors.black : Colors.white,
+                            color:
+                                Theme.of(
+                                      context,
+                                    ).colorScheme.primary.computeLuminance() >
+                                    0.5
+                                ? Colors.black
+                                : Colors.white,
                             fontSize: 16,
                             fontWeight: FontWeight.w700,
                             letterSpacing: -0.2,
@@ -726,7 +849,7 @@ class _HomeScreenState extends ConsumerState<HomeScreen>
 
   void _onItemTapped(int index) {
     if ((index - _selectedNavIndex).abs() > 1) {
-       _pageController.jumpToPage(index);
+      _pageController.jumpToPage(index);
     } else {
       _pageController.animateToPage(
         index,
@@ -742,7 +865,7 @@ class _HomeScreenState extends ConsumerState<HomeScreen>
   Widget build(BuildContext context) {
     final currentView = ref.watch(calendarViewProvider);
     final biometricLockAsync = ref.watch(biometricLockProvider);
-    
+
     // Auto-authenticate when lock is active
     ref.listen(biometricLockProvider, (prev, next) {
       next.whenData((isLocked) {
@@ -800,7 +923,10 @@ class _HomeScreenState extends ConsumerState<HomeScreen>
               GestureDetector(
                 onTap: _authenticate,
                 child: Container(
-                  padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 12),
+                  padding: const EdgeInsets.symmetric(
+                    horizontal: 24,
+                    vertical: 12,
+                  ),
                   decoration: BoxDecoration(
                     color: Theme.of(context).colorScheme.primary,
                     borderRadius: BorderRadius.circular(12),
@@ -808,7 +934,13 @@ class _HomeScreenState extends ConsumerState<HomeScreen>
                   child: Text(
                     'Riprova',
                     style: TextStyle(
-                      color: Theme.of(context).colorScheme.primary.computeLuminance() > 0.5 ? Colors.black : Colors.white,
+                      color:
+                          Theme.of(
+                                context,
+                              ).colorScheme.primary.computeLuminance() >
+                              0.5
+                          ? Colors.black
+                          : Colors.white,
                       fontWeight: FontWeight.w700,
                     ),
                   ),
@@ -847,13 +979,10 @@ class _HomeScreenState extends ConsumerState<HomeScreen>
                 // Initial state
                 value = index == _selectedNavIndex ? 1.0 : 0.95;
               }
-              
+
               return Opacity(
                 opacity: ((value - 0.9) / 0.1).clamp(0.0, 1.0),
-                child: Transform.scale(
-                  scale: value,
-                  child: child,
-                ),
+                child: Transform.scale(scale: value, child: child),
               );
             },
             child: _getPage(index, currentView),
@@ -906,29 +1035,29 @@ class _HomeScreenState extends ConsumerState<HomeScreen>
                 ViewTabBar(key: _viewTabKey),
                 const SizedBox(height: 12),
                 Expanded(
-                  child: habits.isEmpty && currentView != CalendarView.vita
-                      ? _buildGlobalEmptyState()
-                      : AnimatedSwitcher(
-                          duration: const Duration(milliseconds: 250),
-                          switchInCurve: Curves.easeOut,
-                          switchOutCurve: Curves.easeIn,
-                          transitionBuilder: (child, animation) {
-                            return FadeTransition(
-                              opacity: animation,
-                              child: SlideTransition(
-                                position: Tween<Offset>(
-                                  begin: const Offset(0, 0.02),
-                                  end: Offset.zero,
-                                ).animate(animation),
-                                child: child,
-                              ),
-                            );
-                          },
-                          child: Container(
-                            key: _calendarBoxKey,
+                  child: Container(
+                    key: _calendarBoxKey,
+                    child: habits.isEmpty && currentView != CalendarView.vita
+                        ? _buildGlobalEmptyState()
+                        : AnimatedSwitcher(
+                            duration: const Duration(milliseconds: 250),
+                            switchInCurve: Curves.easeOut,
+                            switchOutCurve: Curves.easeIn,
+                            transitionBuilder: (child, animation) {
+                              return FadeTransition(
+                                opacity: animation,
+                                child: SlideTransition(
+                                  position: Tween<Offset>(
+                                    begin: const Offset(0, 0.02),
+                                    end: Offset.zero,
+                                  ).animate(animation),
+                                  child: child,
+                                ),
+                              );
+                            },
                             child: _buildViewContent(currentView),
                           ),
-                        ),
+                  ),
                 ),
                 const SizedBox(height: 10),
               ],
@@ -941,7 +1070,7 @@ class _HomeScreenState extends ConsumerState<HomeScreen>
 
   Widget _buildGlobalEmptyState() {
     final primaryColor = Theme.of(context).colorScheme.primary;
-    
+
     return Container(
       decoration: AppTheme.glassPanelDecoration(context, radius: 14),
       padding: const EdgeInsets.all(24),
@@ -955,11 +1084,7 @@ class _HomeScreenState extends ConsumerState<HomeScreen>
               color: primaryColor.withValues(alpha: 0.1),
               shape: BoxShape.circle,
             ),
-            child: Icon(
-              LucideIcons.sparkles,
-              size: 40,
-              color: primaryColor,
-            ),
+            child: Icon(LucideIcons.sparkles, size: 40, color: primaryColor),
           ),
           const SizedBox(height: 24),
           Text(
@@ -997,8 +1122,12 @@ class _HomeScreenState extends ConsumerState<HomeScreen>
             ),
             style: ElevatedButton.styleFrom(
               backgroundColor: primaryColor,
-              foregroundColor: primaryColor.computeLuminance() > 0.5 ? Colors.black : Colors.white,
-              shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+              foregroundColor: primaryColor.computeLuminance() > 0.5
+                  ? Colors.black
+                  : Colors.white,
+              shape: RoundedRectangleBorder(
+                borderRadius: BorderRadius.circular(12),
+              ),
               padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 14),
               elevation: 0,
             ),
@@ -1024,9 +1153,11 @@ class _HomeScreenState extends ConsumerState<HomeScreen>
   Widget _getPage(int index, CalendarView currentView) {
     switch (index) {
       case 0:
-        return StatisticsScreen(onFinishTutorial: () {
-          _showEndTutorialScreen();
-        });
+        return StatisticsScreen(
+          onFinishTutorial: () {
+            _showEndTutorialScreen();
+          },
+        );
       case 1:
         return _HomeTabWrapper(child: _buildHomeBody(currentView));
       case 2:
@@ -1076,10 +1207,13 @@ class _AppBar extends ConsumerWidget {
   Widget build(BuildContext context, WidgetRef ref) {
     final primaryColor = Theme.of(context).colorScheme.primary;
     final greeting = _getGreeting(context);
-    final formattedDate = DateFormat('EEEE, d MMMM', context.l10n.language == 'Italiano' ? 'it_IT' : 'en_US').format(DateTime.now());
-    
+    final formattedDate = DateFormat(
+      'EEEE, d MMMM',
+      context.l10n.language == 'Italiano' ? 'it_IT' : 'en_US',
+    ).format(DateTime.now());
+
     // Capitalize first letter of date
-    final displayDate = formattedDate.isNotEmpty 
+    final displayDate = formattedDate.isNotEmpty
         ? formattedDate[0].toUpperCase() + formattedDate.substring(1)
         : formattedDate;
 
@@ -1170,7 +1304,9 @@ class _AppBar extends ConsumerWidget {
                           decoration: BoxDecoration(
                             shape: BoxShape.circle,
                             border: Border.all(
-                              color: isPro ? const Color(0xFFEAB308) : primaryColor.withValues(alpha: 0.4),
+                              color: isPro
+                                  ? const Color(0xFFEAB308)
+                                  : primaryColor.withValues(alpha: 0.4),
                               width: 1.5,
                             ),
                           ),
@@ -1179,9 +1315,15 @@ class _AppBar extends ConsumerWidget {
                               color: context.appColors.card,
                               shape: BoxShape.circle,
                               image: DecorationImage(
-                                image: (userProfile.avatarUrl != null
-                                    ? NetworkImage(userProfile.avatarUrl!)
-                                    : const AssetImage('assets/images/default_avatar.png')) as ImageProvider,
+                                image:
+                                    (userProfile.avatarUrl != null
+                                            ? NetworkImage(
+                                                userProfile.avatarUrl!,
+                                              )
+                                            : const AssetImage(
+                                                'assets/images/default_avatar.png',
+                                              ))
+                                        as ImageProvider,
                                 fit: BoxFit.cover,
                               ),
                             ),
@@ -1199,5 +1341,3 @@ class _AppBar extends ConsumerWidget {
     );
   }
 }
-
-

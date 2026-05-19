@@ -1549,3 +1549,33 @@
 - **Subscription Screen Integration**: Fully replaced standard SnackBars in `_restorePurchases`, `_purchase`, and mock plan purchase onTap with `SubscriptionAlertModal.show`.
 - **Code Optimization**: Cleaned up unused `messenger` variables and optimized BuildContext usage across asynchronous gaps by leveraging `context.mounted` to silence linter warnings.
 - **Verification**: Ran full `flutter analyze` ensuring zero issues or warnings remain in the codebase.
+
+---
+
+## [2026-05-19 15:15]: Auth - Invalid Refresh Token Startup Recovery
+*Details*: Fixed a startup crash where a stale Supabase persisted session emitted `AuthApiException(message: Invalid Refresh Token: Refresh Token Not Found, code: refresh_token_not_found)` through `auth.onAuthStateChange`, triggering the global error modal.
+*Tech Notes*:
+- **Auth Provider**: Added an `onError` handler to the Supabase auth state stream in `auth_provider.dart`.
+- **Recovery Behavior**: Invalid persisted sessions now move the app to logged-out state and run a local sign-out cleanup instead of surfacing as an app crash.
+- **Lifecycle**: Stored and cancelled the auth stream subscription through `ref.onDispose()` to avoid duplicate listeners.
+- **Verification**: `flutter analyze` and `flutter test test/subscription_service_test.dart` completed successfully.
+
+---
+
+## [2026-05-19 15:28]: Tutorial - Dashboard Calendar Target Resilience
+*Details*: Fixed the dashboard tutorial error `FormatException: It was not possible to obtain target position (Calendario Box)`, which could appear when the tutorial started while the calendar area was showing its empty state or before the welcome dialog transition had fully completed.
+*Tech Notes*:
+- **Dashboard UI**: Moved `_calendarBoxKey` to a stable wrapper around the entire calendar/empty-state area in `dashboard_screen.dart`, so the tutorial target is always mounted.
+- **Tutorial Timing**: Added a delayed post-frame tutorial start after the welcome modal closes.
+- **Safety**: Wrapped `TutorialCoachMark.show()` in a warning log guard so a missing target cannot surface as a global crash during review/test flows.
+- **Payment Test Result**: Confirmed from device logs that the annual sandbox subscription activates correctly: `matchedEntitlement=Evolve Pro`, `matchedProduct=com.simo.evolve.pro.yearly`, `activeSubscriptions=[com.simo.evolve.pro.yearly]`.
+- **Verification**: `flutter analyze` and `flutter test test/subscription_service_test.dart` completed successfully.
+
+---
+
+## [2026-05-19 15:30]: Consent - setState After Dispose Fix
+*Details*: Fixed a `setState() called after dispose()` crash in `ConsentScreen` that could occur after tapping Continue, because consent completion updates routing state and can unmount the screen before the async handler finishes.
+*Tech Notes*:
+- **Lifecycle Guard**: Added `mounted` checks after notification permission reads/requests and before clearing `_isLoading` in `_handleContinue()`.
+- **Root Cause**: The error is separate from the dashboard tutorial target issue; this one was caused by async consent/Sentry initialization completing after navigation away from the consent page.
+- **Verification**: `flutter analyze` and `flutter test test/subscription_service_test.dart` completed successfully.

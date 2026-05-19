@@ -1,3 +1,4 @@
+import 'dart:async';
 import 'dart:convert';
 import 'package:flutter/foundation.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
@@ -9,7 +10,6 @@ import 'package:crypto/crypto.dart';
 import '../core/supabase_config.dart';
 import '../core/app_logger.dart';
 
-
 // Accesso globale al client Supabase
 final supabase = Supabase.instance.client;
 
@@ -17,7 +17,7 @@ final supabase = Supabase.instance.client;
 
 class AuthState {
   final bool isLoggedIn;
-  final User? user;        // oggetto utente Supabase completo
+  final User? user; // oggetto utente Supabase completo
   final bool isLoading;
   final String? error;
 
@@ -53,6 +53,8 @@ class AuthState {
 // da GoRouter → la navigazione reagisce istantaneamente ai cambi di sessione.
 
 class AuthNotifier extends Notifier<AuthState> with ChangeNotifier {
+  StreamSubscription<dynamic>? _authSubscription;
+
   @override
   AuthState build() {
     // Legge la sessione corrente (già in memoria grazie a Supabase.initialize)
@@ -63,29 +65,72 @@ class AuthNotifier extends Notifier<AuthState> with ChangeNotifier {
     );
 
     // Ascolta i cambi di sessione in real-time (login/logout/token refresh)
-    supabase.auth.onAuthStateChange.listen((data) {
-      final event = data.event;
-      final session = data.session;
-
-      debugPrint('[Auth] Event: $event');
-
-      final isLoggedIn = session != null &&
-          (event == AuthChangeEvent.signedIn ||
-              event == AuthChangeEvent.tokenRefreshed ||
-              event == AuthChangeEvent.userUpdated);
-
-      final isLoggedOut = event == AuthChangeEvent.signedOut;
-
-      if (isLoggedIn) {
-        state = AuthState(isLoggedIn: true, user: session.user);
-        notifyListeners(); // aggiorna GoRouter
-      } else if (isLoggedOut) {
-        state = const AuthState(isLoggedIn: false);
-        notifyListeners();
-      }
+    _authSubscription?.cancel();
+    _authSubscription = supabase.auth.onAuthStateChange.listen(
+      _handleAuthStateChange,
+      onError: _handleAuthStreamError,
+    );
+    ref.onDispose(() {
+      _authSubscription?.cancel();
+      _authSubscription = null;
     });
 
     return initialState;
+  }
+
+  void _handleAuthStateChange(dynamic data) {
+    final event = data.event;
+    final session = data.session;
+
+    debugPrint('[Auth] Event: $event');
+
+    final isLoggedIn =
+        session != null &&
+        (event == AuthChangeEvent.signedIn ||
+            event == AuthChangeEvent.tokenRefreshed ||
+            event == AuthChangeEvent.userUpdated);
+
+    final isLoggedOut = event == AuthChangeEvent.signedOut;
+
+    if (isLoggedIn) {
+      state = AuthState(isLoggedIn: true, user: session.user);
+      notifyListeners(); // aggiorna GoRouter
+    } else if (isLoggedOut) {
+      state = const AuthState(isLoggedIn: false);
+      notifyListeners();
+    }
+  }
+
+  void _handleAuthStreamError(Object error, StackTrace stackTrace) {
+    AppLogger.warning('[Auth] Auth state stream error', error, stackTrace);
+
+    if (_isInvalidPersistedSession(error)) {
+      state = const AuthState(isLoggedIn: false);
+      notifyListeners();
+
+      unawaited(
+        supabase.auth.signOut().catchError((signOutError, signOutStack) {
+          AppLogger.warning(
+            '[Auth] Local sign-out after invalid persisted session failed',
+            signOutError,
+            signOutStack is StackTrace ? signOutStack : null,
+          );
+        }),
+      );
+    }
+  }
+
+  bool _isInvalidPersistedSession(Object error) {
+    if (error is! AuthException) return false;
+
+    final message = error.message.toLowerCase();
+    final code = error is AuthApiException ? error.code?.toLowerCase() : null;
+
+    return code == 'refresh_token_not_found' ||
+        message.contains('invalid refresh token') ||
+        message.contains('refresh token not found') ||
+        message.contains('session expired') ||
+        message.contains('current session is missing data');
   }
 
   // ── Email + Password Login ────────────────────────────────────────────────
@@ -112,7 +157,10 @@ class AuthNotifier extends Notifier<AuthState> with ChangeNotifier {
       return false;
     } catch (e, stack) {
       AppLogger.error('[Auth] Login network error', e, stack);
-      state = state.copyWith(isLoading: false, error: 'Errore di rete. Riprova.');
+      state = state.copyWith(
+        isLoading: false,
+        error: 'Errore di rete. Riprova.',
+      );
       return false;
     }
   }
@@ -123,7 +171,7 @@ class AuthNotifier extends Notifier<AuthState> with ChangeNotifier {
     state = state.copyWith(isLoading: true, clearError: true);
     try {
       final consentState = ref.read(consentProvider);
-      
+
       final response = await supabase.auth.signUp(
         email: email.trim(),
         password: password,
@@ -147,7 +195,10 @@ class AuthNotifier extends Notifier<AuthState> with ChangeNotifier {
       return false;
     } catch (e, stack) {
       AppLogger.error('[Auth] Sign up network error', e, stack);
-      state = state.copyWith(isLoading: false, error: 'Errore di rete. Riprova.');
+      state = state.copyWith(
+        isLoading: false,
+        error: 'Errore di rete. Riprova.',
+      );
       return false;
     }
   }
@@ -165,7 +216,10 @@ class AuthNotifier extends Notifier<AuthState> with ChangeNotifier {
       return false;
     } catch (e, stack) {
       AppLogger.error('[Auth] Reset password network error', e, stack);
-      state = state.copyWith(isLoading: false, error: 'Errore di rete. Riprova.');
+      state = state.copyWith(
+        isLoading: false,
+        error: 'Errore di rete. Riprova.',
+      );
       return false;
     }
   }
@@ -205,7 +259,10 @@ class AuthNotifier extends Notifier<AuthState> with ChangeNotifier {
       final idToken = googleAuth.idToken;
 
       if (idToken == null || accessToken == null) {
-        state = state.copyWith(isLoading: false, error: 'Errore nel recupero dei token di Google.');
+        state = state.copyWith(
+          isLoading: false,
+          error: 'Errore nel recupero dei token di Google.',
+        );
         return false;
       }
 
@@ -214,7 +271,7 @@ class AuthNotifier extends Notifier<AuthState> with ChangeNotifier {
         idToken: idToken,
         accessToken: accessToken,
       );
-      
+
       // onAuthStateChange gestirà il nuovo state
       state = state.copyWith(isLoading: false, clearError: true);
       return true;
@@ -223,7 +280,10 @@ class AuthNotifier extends Notifier<AuthState> with ChangeNotifier {
       return false;
     } catch (e, stack) {
       AppLogger.error('[Google Auth] Error', e, stack);
-      state = state.copyWith(isLoading: false, error: 'Errore di autenticazione con Google.');
+      state = state.copyWith(
+        isLoading: false,
+        error: 'Errore di autenticazione con Google.',
+      );
       return false;
     }
   }
@@ -246,7 +306,10 @@ class AuthNotifier extends Notifier<AuthState> with ChangeNotifier {
 
       final idToken = credential.identityToken;
       if (idToken == null) {
-        state = state.copyWith(isLoading: false, error: 'Errore nel recupero del token di Apple.');
+        state = state.copyWith(
+          isLoading: false,
+          error: 'Errore nel recupero del token di Apple.',
+        );
         return false;
       }
 
@@ -264,14 +327,14 @@ class AuthNotifier extends Notifier<AuthState> with ChangeNotifier {
         if (fullName.isNotEmpty) {
           try {
             await supabase.auth.updateUser(
-              UserAttributes(
-                data: {
-                  'full_name': fullName,
-                },
-              ),
+              UserAttributes(data: {'full_name': fullName}),
             );
           } catch (e, stack) {
-            AppLogger.error('[Apple Auth] Error updating profile name', e, stack);
+            AppLogger.error(
+              '[Apple Auth] Error updating profile name',
+              e,
+              stack,
+            );
           }
         }
       }
@@ -284,14 +347,20 @@ class AuthNotifier extends Notifier<AuthState> with ChangeNotifier {
         state = state.copyWith(isLoading: false, clearError: true);
         return false;
       }
-      state = state.copyWith(isLoading: false, error: 'Errore di autenticazione con Apple.');
+      state = state.copyWith(
+        isLoading: false,
+        error: 'Errore di autenticazione con Apple.',
+      );
       return false;
     } on AuthException catch (e) {
       state = state.copyWith(isLoading: false, error: _mapAuthError(e.message));
       return false;
     } catch (e, stack) {
       AppLogger.error('[Apple Auth] Error', e, stack);
-      state = state.copyWith(isLoading: false, error: 'Errore di autenticazione con Apple.');
+      state = state.copyWith(
+        isLoading: false,
+        error: 'Errore di autenticazione con Apple.',
+      );
       return false;
     }
   }
@@ -302,43 +371,57 @@ class AuthNotifier extends Notifier<AuthState> with ChangeNotifier {
     state = state.copyWith(isLoading: true, clearError: true);
     try {
       final response = await supabase.auth.updateUser(
-        UserAttributes(
-          data: {
-            'full_name': fullName.trim(),
-          },
-        ),
+        UserAttributes(data: {'full_name': fullName.trim()}),
       );
       if (response.user != null) {
-        state = state.copyWith(isLoading: false, user: response.user, clearError: true);
+        state = state.copyWith(
+          isLoading: false,
+          user: response.user,
+          clearError: true,
+        );
         return true;
       }
-      state = state.copyWith(isLoading: false, error: 'Impossibile aggiornare il profilo.');
+      state = state.copyWith(
+        isLoading: false,
+        error: 'Impossibile aggiornare il profilo.',
+      );
       return false;
     } on AuthException catch (e) {
       state = state.copyWith(isLoading: false, error: _mapAuthError(e.message));
       return false;
     } catch (e, stack) {
       AppLogger.error('[Auth] Update profile name network error', e, stack);
-      state = state.copyWith(isLoading: false, error: 'Errore di rete. Riprova.');
+      state = state.copyWith(
+        isLoading: false,
+        error: 'Errore di rete. Riprova.',
+      );
       return false;
     }
   }
 
   // ── Update Consent in DB ──────────────────────────────────────────────────
-  
+
   Future<bool> updateConsentInDb(bool acceptedTerms, bool sentryConsent) async {
     state = state.copyWith(isLoading: true, clearError: true);
     try {
-      await supabase.from('profiles').update({
-        'terms_accepted_at': acceptedTerms ? DateTime.now().toIso8601String() : null,
-        'sentry_consent': sentryConsent,
-      }).eq('id', state.userId!);
-      
+      await supabase
+          .from('profiles')
+          .update({
+            'terms_accepted_at': acceptedTerms
+                ? DateTime.now().toIso8601String()
+                : null,
+            'sentry_consent': sentryConsent,
+          })
+          .eq('id', state.userId!);
+
       state = state.copyWith(isLoading: false, clearError: true);
       return true;
     } catch (e, stack) {
       AppLogger.error('[Auth] Update consent in DB error', e, stack);
-      state = state.copyWith(isLoading: false, error: 'Errore di rete. Riprova.');
+      state = state.copyWith(
+        isLoading: false,
+        error: 'Errore di rete. Riprova.',
+      );
       return false;
     }
   }
@@ -347,13 +430,15 @@ class AuthNotifier extends Notifier<AuthState> with ChangeNotifier {
 
   String _mapAuthError(String supabaseMessage) {
     final msg = supabaseMessage.toLowerCase();
-    if (msg.contains('invalid login credentials') || msg.contains('invalid_credentials')) {
+    if (msg.contains('invalid login credentials') ||
+        msg.contains('invalid_credentials')) {
       return 'Email o password errata.';
     }
     if (msg.contains('email not confirmed')) {
       return 'Controlla la tua email e clicca il link di conferma.';
     }
-    if (msg.contains('user already registered') || msg.contains('already registered')) {
+    if (msg.contains('user already registered') ||
+        msg.contains('already registered')) {
       return 'Esiste già un account con questa email. Prova ad accedere.';
     }
     if (msg.contains('password should be at least')) {
@@ -371,4 +456,6 @@ class AuthNotifier extends Notifier<AuthState> with ChangeNotifier {
 
 // ── Provider ─────────────────────────────────────────────────────────────────
 
-final authProvider = NotifierProvider<AuthNotifier, AuthState>(AuthNotifier.new);
+final authProvider = NotifierProvider<AuthNotifier, AuthState>(
+  AuthNotifier.new,
+);

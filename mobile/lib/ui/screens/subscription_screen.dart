@@ -18,16 +18,17 @@ class SubscriptionScreen extends ConsumerStatefulWidget {
 
   static Route route() {
     return PageRouteBuilder(
-      pageBuilder: (context, animation, secondaryAnimation) => const SubscriptionScreen(),
+      pageBuilder: (context, animation, secondaryAnimation) =>
+          const SubscriptionScreen(),
       transitionsBuilder: (context, animation, secondaryAnimation, child) {
         const begin = Offset(1.0, 0.0);
         const end = Offset.zero;
         const curve = Curves.easeOutCubic;
-        var tween = Tween(begin: begin, end: end).chain(CurveTween(curve: curve));
-        return SlideTransition(
-          position: animation.drive(tween),
-          child: child,
-        );
+        var tween = Tween(
+          begin: begin,
+          end: end,
+        ).chain(CurveTween(curve: curve));
+        return SlideTransition(position: animation.drive(tween), child: child);
       },
       transitionDuration: const Duration(milliseconds: 400),
     );
@@ -57,7 +58,9 @@ class _SubscriptionScreenState extends ConsumerState<SubscriptionScreen> {
   /// Loads the active offerings from the App Store dynamically via RevenueCat
   Future<void> _loadOfferings() async {
     try {
-      final offerings = await ref.read(subscriptionServiceProvider).getOfferings();
+      final offerings = await ref
+          .read(subscriptionServiceProvider)
+          .getOfferings();
       if (mounted && offerings != null && offerings.current != null) {
         final current = offerings.current!;
         setState(() {
@@ -104,99 +107,190 @@ class _SubscriptionScreenState extends ConsumerState<SubscriptionScreen> {
 
   /// Restores previous purchases (Apple compliance required)
   Future<void> _restorePurchases() async {
+    if (_isLoading) return;
+
     setState(() => _isLoading = true);
     ref.hapticMedium();
 
     try {
-      final success = await ref.read(subscriptionServiceProvider).restorePurchases();
+      final result = await ref
+          .read(subscriptionServiceProvider)
+          .restorePurchasesWithResult();
       if (!mounted) return;
 
-      setState(() => _isLoading = false);
-
-      if (success) {
+      if (result.isProActive) {
         ScaffoldMessenger.of(context).showSnackBar(
           const SnackBar(
-            content: Text('Acquisti ripristinati con successo! Accesso Pro sbloccato.'),
+            content: Text(
+              'Acquisti ripristinati con successo! Accesso Pro sbloccato.',
+            ),
             backgroundColor: Colors.green,
           ),
         );
       } else {
         ScaffoldMessenger.of(context).showSnackBar(
           const SnackBar(
-            content: Text('Nessun abbonamento attivo trovato su questo account Apple.'),
+            content: Text(
+              'Nessun abbonamento Evolve Pro attivo trovato su questo Apple ID. Assicurati di usare lo stesso Apple ID dell\'acquisto.',
+            ),
+            duration: Duration(seconds: 6),
           ),
         );
       }
     } catch (e) {
       if (!mounted) return;
-      setState(() => _isLoading = false);
       ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text('Errore durante il ripristino: $e')),
+        SnackBar(
+          content: Text(_restoreErrorMessage(e)),
+          backgroundColor: AppColors.destructive,
+          behavior: SnackBarBehavior.floating,
+          shape: RoundedRectangleBorder(
+            borderRadius: BorderRadius.circular(12),
+          ),
+          duration: const Duration(seconds: 6),
+        ),
       );
+    } finally {
+      if (mounted) {
+        setState(() => _isLoading = false);
+      }
     }
   }
 
   /// Triggers Apple's payment sheet flow
   Future<void> _purchase() async {
-    if (_selectedPackage == null) return;
+    if (_isLoading || _selectedPackage == null) return;
 
     setState(() => _isLoading = true);
     ref.hapticMedium();
 
     try {
-      final success = await ref.read(subscriptionServiceProvider).purchasePackage(_selectedPackage!);
+      final result = await ref
+          .read(subscriptionServiceProvider)
+          .purchasePackageWithResult(_selectedPackage!);
       if (!mounted) return;
 
-      setState(() => _isLoading = false);
-
-      if (success) {
+      if (result.isProActive) {
         _showSuccessDialog(context);
       } else {
         ScaffoldMessenger.of(context).showSnackBar(
           const SnackBar(
-            content: Text('L\'acquisto è stato completato, ma non è stato possibile attivare il piano Pro. Prova a ripristinare gli acquisti.'),
+            content: Text(
+              'Acquisto registrato, ma l\'abbonamento Pro non risulta ancora attivo. Attendi qualche secondo e usa Ripristina acquisti.',
+            ),
             backgroundColor: Colors.amber,
+            duration: Duration(seconds: 6),
           ),
         );
       }
     } catch (e) {
       if (!mounted) return;
-      setState(() => _isLoading = false);
 
-      String errorMessage = 'Si è verificato un errore durante l\'acquisto. Riprova.';
-
-      if (e is PlatformException) {
-        final errorCode = PurchasesErrorHelper.getErrorCode(e);
-        if (errorCode == PurchasesErrorCode.purchaseCancelledError) {
-          // L'utente ha annullato l'acquisto: non mostrare messaggi di errore
-          return;
-        }
-
-        final msg = e.message?.toLowerCase() ?? '';
-        final details = e.details?.toString().toLowerCase() ?? '';
-        
-        if (msg.contains('paid apps agreement') || 
-            msg.contains('paid applications agreement') ||
-            details.contains('paid apps agreement') ||
-            details.contains('paid applications agreement')) {
-          errorMessage = 'Contratto Paid Apps non attivo. L\'amministratore dell\'account deve accettare l\'accordo Paid Apps in App Store Connect.';
-        } else if (msg.contains('storekit') || msg.contains('billing') || msg.contains('play store') || msg.contains('payment')) {
-          errorMessage = 'Servizio di pagamento temporaneamente non disponibile. Riprova più tardi.';
-        } else if (e.message != null) {
-          errorMessage = 'Errore d\'acquisto: ${e.message}';
-        }
+      if (_isPurchaseCancelled(e)) {
+        return;
       }
 
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(
-          content: Text(errorMessage),
+          content: Text(_purchaseErrorMessage(e)),
           backgroundColor: AppColors.destructive,
           behavior: SnackBarBehavior.floating,
-          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+          shape: RoundedRectangleBorder(
+            borderRadius: BorderRadius.circular(12),
+          ),
           duration: const Duration(seconds: 6),
         ),
       );
+    } finally {
+      if (mounted) {
+        setState(() => _isLoading = false);
+      }
     }
+  }
+
+  bool _isPurchaseCancelled(Object error) {
+    if (error is! PlatformException) return false;
+    return SubscriptionService.purchasesErrorCode(error) ==
+        PurchasesErrorCode.purchaseCancelledError;
+  }
+
+  String _purchaseErrorMessage(Object error) {
+    if (error is PlatformException) {
+      if (_isPaidAppsAgreementError(error)) {
+        return 'Contratto Paid Apps non attivo. L\'Account Holder deve accettare l\'accordo Paid Apps in App Store Connect.';
+      }
+
+      final errorCode = SubscriptionService.purchasesErrorCode(error);
+      return switch (errorCode) {
+        PurchasesErrorCode.productAlreadyPurchasedError =>
+          'Questo abbonamento risulta già acquistato. Usa Ripristina acquisti per riattivare l\'accesso Pro.',
+        PurchasesErrorCode.purchaseNotAllowedError =>
+          'Gli acquisti in-app non sono consentiti su questo dispositivo o account Apple.',
+        PurchasesErrorCode.productNotAvailableForPurchaseError =>
+          'Il piano selezionato non è disponibile per l\'acquisto. Riprova più tardi.',
+        PurchasesErrorCode.paymentPendingError =>
+          'Il pagamento è in sospeso. L\'accesso Pro verrà attivato quando Apple confermerà la transazione.',
+        PurchasesErrorCode.networkError ||
+        PurchasesErrorCode.offlineConnectionError ||
+        PurchasesErrorCode.apiEndpointBlocked =>
+          'Connessione non disponibile. Controlla la rete e riprova.',
+        PurchasesErrorCode.configurationError ||
+        PurchasesErrorCode.invalidCredentialsError ||
+        PurchasesErrorCode.invalidReceiptError ||
+        PurchasesErrorCode.missingReceiptFileError =>
+          'Configurazione acquisti non valida. Verifica App Store Connect e RevenueCat prima di inviare la build.',
+        PurchasesErrorCode.receiptAlreadyInUseError ||
+        PurchasesErrorCode.receiptInUseByOtherSubscriberError ||
+        PurchasesErrorCode.purchaseBelongsToOtherUser =>
+          'Questo acquisto è già collegato a un altro account Evolve. Accedi con quell\'account o contatta il supporto.',
+        PurchasesErrorCode.operationAlreadyInProgressError =>
+          'Un\'operazione di acquisto è già in corso. Attendi qualche secondo.',
+        _ => 'Non siamo riusciti a completare l\'acquisto. Riprova tra poco.',
+      };
+    }
+
+    return 'Non siamo riusciti a completare l\'acquisto. Riprova tra poco.';
+  }
+
+  String _restoreErrorMessage(Object error) {
+    if (error is PlatformException) {
+      if (_isPaidAppsAgreementError(error)) {
+        return 'Contratto Paid Apps non attivo. L\'Account Holder deve accettare l\'accordo Paid Apps in App Store Connect.';
+      }
+
+      final errorCode = SubscriptionService.purchasesErrorCode(error);
+      return switch (errorCode) {
+        PurchasesErrorCode.purchaseCancelledError => 'Ripristino annullato.',
+        PurchasesErrorCode.networkError ||
+        PurchasesErrorCode.offlineConnectionError ||
+        PurchasesErrorCode.apiEndpointBlocked =>
+          'Connessione non disponibile. Controlla la rete e riprova.',
+        PurchasesErrorCode.receiptAlreadyInUseError ||
+        PurchasesErrorCode.receiptInUseByOtherSubscriberError ||
+        PurchasesErrorCode.purchaseBelongsToOtherUser =>
+          'Questo acquisto è già collegato a un altro account Evolve. Accedi con quell\'account o contatta il supporto.',
+        PurchasesErrorCode.configurationError ||
+        PurchasesErrorCode.invalidCredentialsError ||
+        PurchasesErrorCode.invalidReceiptError ||
+        PurchasesErrorCode.missingReceiptFileError =>
+          'Configurazione acquisti non valida. Verifica App Store Connect e RevenueCat prima di inviare la build.',
+        PurchasesErrorCode.operationAlreadyInProgressError =>
+          'Un ripristino è già in corso. Attendi qualche secondo.',
+        _ =>
+          'Non siamo riusciti a ripristinare gli acquisti. Riprova tra poco.',
+      };
+    }
+
+    return 'Non siamo riusciti a ripristinare gli acquisti. Riprova tra poco.';
+  }
+
+  bool _isPaidAppsAgreementError(PlatformException error) {
+    final msg = error.message?.toLowerCase() ?? '';
+    final details = error.details?.toString().toLowerCase() ?? '';
+    return msg.contains('paid apps agreement') ||
+        msg.contains('paid applications agreement') ||
+        details.contains('paid apps agreement') ||
+        details.contains('paid applications agreement');
   }
 
   @override
@@ -212,7 +306,10 @@ class _SubscriptionScreenState extends ConsumerState<SubscriptionScreen> {
             backgroundColor: context.appColors.background,
             elevation: 0,
             leading: IconButton(
-              icon: Icon(LucideIcons.chevronLeft, color: context.appColors.foreground),
+              icon: Icon(
+                LucideIcons.chevronLeft,
+                color: context.appColors.foreground,
+              ),
               onPressed: () => Navigator.pop(context),
             ),
             title: Text(
@@ -225,26 +322,10 @@ class _SubscriptionScreenState extends ConsumerState<SubscriptionScreen> {
               ),
             ),
             centerTitle: true,
-            actions: [
-              if (!isPro)
-                TextButton(
-                  onPressed: _isLoading ? null : _restorePurchases,
-                  child: Text(
-                    'Ripristina',
-                    style: TextStyle(
-                      color: context.appColors.foreground,
-                      fontWeight: FontWeight.w600,
-                      fontSize: 14,
-                    ),
-                  ),
-                ),
-            ],
           ),
           body: _isFetchingProducts
               ? const Center(
-                  child: CircularProgressIndicator(
-                    color: Colors.amber,
-                  ),
+                  child: CircularProgressIndicator(color: Colors.amber),
                 )
               : RefreshIndicator(
                   color: Colors.amber,
@@ -285,9 +366,7 @@ class _SubscriptionScreenState extends ConsumerState<SubscriptionScreen> {
           Container(
             color: Colors.black.withValues(alpha: 0.5),
             child: const Center(
-              child: CircularProgressIndicator(
-                color: Colors.amber,
-              ),
+              child: CircularProgressIndicator(color: Colors.amber),
             ),
           ),
       ],
@@ -312,7 +391,11 @@ class _SubscriptionScreenState extends ConsumerState<SubscriptionScreen> {
               color: Colors.amber.withValues(alpha: 0.1),
               border: Border.all(color: Colors.amber.withValues(alpha: 0.3)),
             ),
-            child: const Icon(LucideIcons.sparkles, size: 32, color: Colors.amber),
+            child: const Icon(
+              LucideIcons.sparkles,
+              size: 32,
+              color: Colors.amber,
+            ),
           ),
           const SizedBox(height: 16),
           Text(
@@ -351,18 +434,43 @@ class _SubscriptionScreenState extends ConsumerState<SubscriptionScreen> {
           ),
         ),
         const SizedBox(height: 16),
-        _buildFeatureRow(context, LucideIcons.brainCircuit, 'AI Coach Personalizzato', 'Suggerimenti intelligenti basati sui tuoi dati.'),
+        _buildFeatureRow(
+          context,
+          LucideIcons.brainCircuit,
+          'AI Coach Personalizzato',
+          'Suggerimenti intelligenti basati sui tuoi dati.',
+        ),
         const SizedBox(height: 16),
-        _buildFeatureRow(context, LucideIcons.trendingUp, 'Statistiche Avanzate', 'Grafici profondi e analisi dei trend.'),
+        _buildFeatureRow(
+          context,
+          LucideIcons.trendingUp,
+          'Statistiche Avanzate',
+          'Grafici profondi e analisi dei trend.',
+        ),
         const SizedBox(height: 16),
-        _buildFeatureRow(context, LucideIcons.infinity, 'Abitudini Illimitate', 'Crea tutti gli habits che desideri senza limiti.'),
+        _buildFeatureRow(
+          context,
+          LucideIcons.infinity,
+          'Abitudini Illimitate',
+          'Crea tutti gli habits che desideri senza limiti.',
+        ),
         const SizedBox(height: 16),
-        _buildFeatureRow(context, LucideIcons.target, 'Obiettivi Illimitati', 'Crea tutti i tuoi macro obiettivi senza limiti.'),
+        _buildFeatureRow(
+          context,
+          LucideIcons.target,
+          'Obiettivi Illimitati',
+          'Crea tutti i tuoi macro obiettivi senza limiti.',
+        ),
       ],
     );
   }
 
-  Widget _buildFeatureRow(BuildContext context, IconData icon, String title, String description) {
+  Widget _buildFeatureRow(
+    BuildContext context,
+    IconData icon,
+    String title,
+    String description,
+  ) {
     return Row(
       children: [
         Container(
@@ -381,12 +489,19 @@ class _SubscriptionScreenState extends ConsumerState<SubscriptionScreen> {
             children: [
               Text(
                 title,
-                style: GoogleFonts.inter(fontSize: 15, fontWeight: FontWeight.w700, color: context.appColors.foreground),
+                style: GoogleFonts.inter(
+                  fontSize: 15,
+                  fontWeight: FontWeight.w700,
+                  color: context.appColors.foreground,
+                ),
               ),
               const SizedBox(height: 2),
               Text(
                 description,
-                style: GoogleFonts.inter(fontSize: 12, color: context.appColors.mutedForeground),
+                style: GoogleFonts.inter(
+                  fontSize: 12,
+                  color: context.appColors.mutedForeground,
+                ),
               ),
             ],
           ),
@@ -410,13 +525,26 @@ class _SubscriptionScreenState extends ConsumerState<SubscriptionScreen> {
             ),
           ),
           const SizedBox(height: 12),
-          _buildMockPlanCard('Mensile', _mockMonthlyPrice, 'Disdici quando vuoi', _selectedMockPackage == 'monthly', onTap: () {
-            setState(() => _selectedMockPackage = 'monthly');
-          }),
+          _buildMockPlanCard(
+            'Mensile',
+            _mockMonthlyPrice,
+            'Disdici quando vuoi',
+            _selectedMockPackage == 'monthly',
+            onTap: () {
+              setState(() => _selectedMockPackage = 'monthly');
+            },
+          ),
           const SizedBox(height: 12),
-          _buildMockPlanCard('Annuale', _mockYearlyPrice, 'Risparmia oltre il 40%', _selectedMockPackage == 'yearly', isBestValue: true, onTap: () {
-            setState(() => _selectedMockPackage = 'yearly');
-          }),
+          _buildMockPlanCard(
+            'Annuale',
+            _mockYearlyPrice,
+            'Risparmia oltre il 40%',
+            _selectedMockPackage == 'yearly',
+            isBestValue: true,
+            onTap: () {
+              setState(() => _selectedMockPackage = 'yearly');
+            },
+          ),
           const SizedBox(height: 32),
           GestureDetector(
             onTap: () async {
@@ -425,10 +553,14 @@ class _SubscriptionScreenState extends ConsumerState<SubscriptionScreen> {
               setState(() => _isLoading = true);
               try {
                 // Background attempt to dynamically load real offerings
-                final offerings = await ref.read(subscriptionServiceProvider).getOfferings();
+                final offerings = await ref
+                    .read(subscriptionServiceProvider)
+                    .getOfferings();
                 if (mounted && offerings != null && offerings.current != null) {
                   final current = offerings.current!;
-                  final package = _selectedMockPackage == 'monthly' ? current.monthly : current.annual;
+                  final package = _selectedMockPackage == 'monthly'
+                      ? current.monthly
+                      : current.annual;
                   if (package != null) {
                     setState(() {
                       _monthlyPackage = current.monthly;
@@ -443,12 +575,14 @@ class _SubscriptionScreenState extends ConsumerState<SubscriptionScreen> {
                   }
                 }
               } catch (_) {}
-              
+
               if (mounted) {
                 setState(() => _isLoading = false);
                 messenger.showSnackBar(
                   const SnackBar(
-                    content: Text('Servizio acquisti non raggiungibile. Verifica la tua connessione e riprova.'),
+                    content: Text(
+                      'Servizio acquisti non raggiungibile. Verifica la tua connessione e riprova.',
+                    ),
                     backgroundColor: Colors.amber,
                     duration: Duration(seconds: 4),
                   ),
@@ -470,13 +604,17 @@ class _SubscriptionScreenState extends ConsumerState<SubscriptionScreen> {
                     color: Colors.amber.withValues(alpha: 0.3),
                     blurRadius: 12,
                     offset: const Offset(0, 4),
-                  )
+                  ),
                 ],
               ),
               child: const Center(
                 child: Text(
                   'Attiva Abbonamento',
-                  style: TextStyle(color: Colors.black, fontSize: 16, fontWeight: FontWeight.w700),
+                  style: TextStyle(
+                    color: Colors.black,
+                    fontSize: 16,
+                    fontWeight: FontWeight.w700,
+                  ),
                 ),
               ),
             ),
@@ -502,7 +640,12 @@ class _SubscriptionScreenState extends ConsumerState<SubscriptionScreen> {
           _buildPlanCard(_monthlyPackage!, 'Mensile', 'Disdici quando vuoi'),
         if (_yearlyPackage != null) ...[
           const SizedBox(height: 12),
-          _buildPlanCard(_yearlyPackage!, 'Annuale', 'Risparmia oltre il 40%', isBestValue: true),
+          _buildPlanCard(
+            _yearlyPackage!,
+            'Annuale',
+            'Risparmia oltre il 40%',
+            isBestValue: true,
+          ),
         ],
         const SizedBox(height: 32),
         GestureDetector(
@@ -522,13 +665,17 @@ class _SubscriptionScreenState extends ConsumerState<SubscriptionScreen> {
                   color: Colors.amber.withValues(alpha: 0.3),
                   blurRadius: 12,
                   offset: const Offset(0, 4),
-                )
+                ),
               ],
             ),
             child: const Center(
               child: Text(
                 'Attiva Abbonamento',
-                style: TextStyle(color: Colors.black, fontSize: 16, fontWeight: FontWeight.w700),
+                style: TextStyle(
+                  color: Colors.black,
+                  fontSize: 16,
+                  fontWeight: FontWeight.w700,
+                ),
               ),
             ),
           ),
@@ -537,7 +684,12 @@ class _SubscriptionScreenState extends ConsumerState<SubscriptionScreen> {
     );
   }
 
-  Widget _buildPlanCard(Package package, String title, String subtitle, {bool isBestValue = false}) {
+  Widget _buildPlanCard(
+    Package package,
+    String title,
+    String subtitle, {
+    bool isBestValue = false,
+  }) {
     final isSelected = _selectedPackage?.identifier == package.identifier;
     final priceStr = package.storeProduct.priceString;
 
@@ -554,7 +706,9 @@ class _SubscriptionScreenState extends ConsumerState<SubscriptionScreen> {
           color: context.appColors.card,
           borderRadius: BorderRadius.circular(20),
           border: Border.all(
-            color: isSelected ? Colors.amber.withValues(alpha: 0.8) : context.appColors.border,
+            color: isSelected
+                ? Colors.amber.withValues(alpha: 0.8)
+                : context.appColors.border,
             width: isSelected ? 2 : 1.5,
           ),
           boxShadow: isSelected
@@ -563,7 +717,7 @@ class _SubscriptionScreenState extends ConsumerState<SubscriptionScreen> {
                     color: Colors.amber.withValues(alpha: 0.08),
                     blurRadius: 12,
                     offset: const Offset(0, 4),
-                  )
+                  ),
                 ]
               : [],
         ),
@@ -642,6 +796,19 @@ class _SubscriptionScreenState extends ConsumerState<SubscriptionScreen> {
     return Column(
       children: [
         const SizedBox(height: 8),
+        TextButton.icon(
+          onPressed: _isLoading ? null : _restorePurchases,
+          icon: const Icon(LucideIcons.refreshCcw, size: 16),
+          label: const Text('Ripristina acquisti'),
+          style: TextButton.styleFrom(
+            foregroundColor: Colors.amber,
+            textStyle: GoogleFonts.inter(
+              fontSize: 13,
+              fontWeight: FontWeight.w700,
+            ),
+          ),
+        ),
+        const SizedBox(height: 8),
         Text(
           'L\'abbonamento si rinnova automaticamente a meno che l\'autorinnovamento non venga disattivato nelle impostazioni dell\'account Apple almeno 24 ore prima della scadenza.',
           textAlign: TextAlign.center,
@@ -656,7 +823,9 @@ class _SubscriptionScreenState extends ConsumerState<SubscriptionScreen> {
           mainAxisAlignment: MainAxisAlignment.center,
           children: [
             GestureDetector(
-              onTap: () => launchUrl(Uri.parse('https://simo-hue.github.io/evolve/privacy.html')),
+              onTap: () => launchUrl(
+                Uri.parse('https://simo-hue.github.io/evolve/privacy.html'),
+              ),
               child: Text(
                 'Privacy Policy',
                 style: GoogleFonts.inter(
@@ -672,7 +841,11 @@ class _SubscriptionScreenState extends ConsumerState<SubscriptionScreen> {
               style: TextStyle(color: context.appColors.mutedForeground),
             ),
             GestureDetector(
-              onTap: () => launchUrl(Uri.parse('https://www.apple.com/legal/internet-services/itunes/dev/stdeula/')),
+              onTap: () => launchUrl(
+                Uri.parse(
+                  'https://www.apple.com/legal/internet-services/itunes/dev/stdeula/',
+                ),
+              ),
               child: Text(
                 'Termini d\'Uso (EULA)',
                 style: GoogleFonts.inter(
@@ -707,7 +880,11 @@ class _SubscriptionScreenState extends ConsumerState<SubscriptionScreen> {
               color: Colors.green.withValues(alpha: 0.1),
               border: Border.all(color: Colors.green.withValues(alpha: 0.3)),
             ),
-            child: const Icon(LucideIcons.shieldCheck, size: 32, color: Colors.green),
+            child: const Icon(
+              LucideIcons.shieldCheck,
+              size: 32,
+              color: Colors.green,
+            ),
           ),
           const SizedBox(height: 16),
           Text(
@@ -760,11 +937,24 @@ class _SubscriptionScreenState extends ConsumerState<SubscriptionScreen> {
             children: [
               _buildDetailRow(context, 'Piano', 'Evolve Pro Attivo'),
               const Divider(height: 32),
-              _buildDetailRow(context, 'Stato', 'Attivo', valueColor: Colors.green),
+              _buildDetailRow(
+                context,
+                'Stato',
+                'Attivo',
+                valueColor: Colors.green,
+              ),
               const Divider(height: 32),
-              _buildDetailRow(context, 'Prossimo Rinnovo', dateFormat.format(nextRenewal)),
+              _buildDetailRow(
+                context,
+                'Prossimo Rinnovo',
+                dateFormat.format(nextRenewal),
+              ),
               const Divider(height: 32),
-              _buildDetailRow(context, 'Metodo di Pagamento', 'Apple Pay / App Store'),
+              _buildDetailRow(
+                context,
+                'Metodo di Pagamento',
+                'Apple Pay / App Store',
+              ),
             ],
           ),
         ),
@@ -772,12 +962,30 @@ class _SubscriptionScreenState extends ConsumerState<SubscriptionScreen> {
     );
   }
 
-  Widget _buildDetailRow(BuildContext context, String label, String value, {Color? valueColor}) {
+  Widget _buildDetailRow(
+    BuildContext context,
+    String label,
+    String value, {
+    Color? valueColor,
+  }) {
     return Row(
       mainAxisAlignment: MainAxisAlignment.spaceBetween,
       children: [
-        Text(label, style: TextStyle(color: context.appColors.mutedForeground, fontSize: 14)),
-        Text(value, style: TextStyle(fontWeight: FontWeight.w600, color: valueColor ?? context.appColors.foreground, fontSize: 14)),
+        Text(
+          label,
+          style: TextStyle(
+            color: context.appColors.mutedForeground,
+            fontSize: 14,
+          ),
+        ),
+        Text(
+          value,
+          style: TextStyle(
+            fontWeight: FontWeight.w600,
+            color: valueColor ?? context.appColors.foreground,
+            fontSize: 14,
+          ),
+        ),
       ],
     );
   }
@@ -802,7 +1010,11 @@ class _SubscriptionScreenState extends ConsumerState<SubscriptionScreen> {
             child: Center(
               child: Text(
                 'Gestisci Abbonamento',
-                style: TextStyle(color: context.appColors.foreground, fontSize: 16, fontWeight: FontWeight.w700),
+                style: TextStyle(
+                  color: context.appColors.foreground,
+                  fontSize: 16,
+                  fontWeight: FontWeight.w700,
+                ),
               ),
             ),
           ),
@@ -819,12 +1031,18 @@ class _SubscriptionScreenState extends ConsumerState<SubscriptionScreen> {
             decoration: BoxDecoration(
               color: context.appColors.card,
               borderRadius: BorderRadius.circular(16),
-              border: Border.all(color: AppColors.destructive.withValues(alpha: 0.1)),
+              border: Border.all(
+                color: AppColors.destructive.withValues(alpha: 0.1),
+              ),
             ),
             child: const Center(
               child: Text(
                 'Disdici Abbonamento',
-                style: TextStyle(color: AppColors.destructive, fontSize: 16, fontWeight: FontWeight.w700),
+                style: TextStyle(
+                  color: AppColors.destructive,
+                  fontSize: 16,
+                  fontWeight: FontWeight.w700,
+                ),
               ),
             ),
           ),
@@ -858,7 +1076,7 @@ class _SubscriptionScreenState extends ConsumerState<SubscriptionScreen> {
                   color: Colors.amber.withValues(alpha: 0.1),
                   blurRadius: 30,
                   spreadRadius: 5,
-                )
+                ),
               ],
             ),
             child: Column(
@@ -907,7 +1125,9 @@ class _SubscriptionScreenState extends ConsumerState<SubscriptionScreen> {
                   onTap: () {
                     ref.hapticLight();
                     Navigator.pop(dialogContext);
-                    Navigator.pop(context); // Close the subscription screen to return home!
+                    Navigator.pop(
+                      context,
+                    ); // Close the subscription screen to return home!
                   },
                   child: Container(
                     width: double.infinity,
@@ -924,7 +1144,7 @@ class _SubscriptionScreenState extends ConsumerState<SubscriptionScreen> {
                           color: Colors.amber.withValues(alpha: 0.3),
                           blurRadius: 10,
                           offset: const Offset(0, 4),
-                        )
+                        ),
                       ],
                     ),
                     child: const Center(
@@ -960,13 +1180,16 @@ class _SubscriptionScreenState extends ConsumerState<SubscriptionScreen> {
             decoration: BoxDecoration(
               color: context.appColors.card.withValues(alpha: 0.95),
               borderRadius: BorderRadius.circular(24),
-              border: Border.all(color: context.appColors.border.withValues(alpha: 0.5), width: 1.5),
+              border: Border.all(
+                color: context.appColors.border.withValues(alpha: 0.5),
+                width: 1.5,
+              ),
               boxShadow: [
                 BoxShadow(
                   color: Colors.black.withValues(alpha: 0.1),
                   blurRadius: 20,
                   spreadRadius: 5,
-                )
+                ),
               ],
             ),
             child: Column(
@@ -1039,7 +1262,9 @@ class _SubscriptionScreenState extends ConsumerState<SubscriptionScreen> {
                         onTap: () {
                           Navigator.pop(dialogContext);
                           // Trigger the modern compliant Customer Center
-                          ref.read(subscriptionServiceProvider).presentCustomerCenter();
+                          ref
+                              .read(subscriptionServiceProvider)
+                              .presentCustomerCenter();
                         },
                         child: Container(
                           height: 50,
@@ -1048,10 +1273,12 @@ class _SubscriptionScreenState extends ConsumerState<SubscriptionScreen> {
                             borderRadius: BorderRadius.circular(14),
                             boxShadow: [
                               BoxShadow(
-                                color: AppColors.destructive.withValues(alpha: 0.3),
+                                color: AppColors.destructive.withValues(
+                                  alpha: 0.3,
+                                ),
                                 blurRadius: 10,
                                 offset: const Offset(0, 4),
-                              )
+                              ),
                             ],
                           ),
                           child: const Center(
@@ -1097,7 +1324,9 @@ class _SubscriptionScreenState extends ConsumerState<SubscriptionScreen> {
           color: context.appColors.card,
           borderRadius: BorderRadius.circular(20),
           border: Border.all(
-            color: isSelected ? Colors.amber.withValues(alpha: 0.8) : context.appColors.border,
+            color: isSelected
+                ? Colors.amber.withValues(alpha: 0.8)
+                : context.appColors.border,
             width: isSelected ? 2 : 1.5,
           ),
           boxShadow: isSelected
@@ -1106,7 +1335,7 @@ class _SubscriptionScreenState extends ConsumerState<SubscriptionScreen> {
                     color: Colors.amber.withValues(alpha: 0.08),
                     blurRadius: 12,
                     offset: const Offset(0, 4),
-                  )
+                  ),
                 ]
               : [],
         ),

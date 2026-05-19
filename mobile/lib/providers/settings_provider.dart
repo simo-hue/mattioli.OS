@@ -410,7 +410,7 @@ class AppSettingsNotifier extends Notifier<AppSettings> {
           hapticFeedback: data['pref_haptic_feedback'] ?? state.hapticFeedback,
           language: data['language'] ?? state.language,
           timeFormat24h: data['pref_time_format_24h'] ?? state.timeFormat24h,
-          isPro: data['is_pro'] ?? state.isPro,
+          isPro: state.isPro || (data['is_pro'] ?? false),
           habitReminders: data['notif_habit_reminders'] ?? state.habitReminders,
           goalDeadlines: data['notif_goal_deadlines'] ?? state.goalDeadlines,
           aiInsights: data['notif_ai_insights'] ?? state.aiInsights,

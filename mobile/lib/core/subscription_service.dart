@@ -1,4 +1,5 @@
 import 'package:flutter/foundation.dart';
+import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:purchases_flutter/purchases_flutter.dart';
 import 'package:purchases_ui_flutter/purchases_ui_flutter.dart';
@@ -7,6 +8,32 @@ import 'revenuecat_config.dart';
 import 'app_logger.dart';
 
 final subscriptionServiceProvider = Provider((ref) => SubscriptionService(ref));
+
+class SubscriptionAccessStatus {
+  final bool isActive;
+  final String? matchedEntitlementId;
+  final String? matchedProductId;
+  final bool usedGenericEntitlementFallback;
+
+  const SubscriptionAccessStatus({
+    required this.isActive,
+    this.matchedEntitlementId,
+    this.matchedProductId,
+    this.usedGenericEntitlementFallback = false,
+  });
+}
+
+class SubscriptionOperationResult {
+  final bool isProActive;
+  final CustomerInfo customerInfo;
+  final SubscriptionAccessStatus accessStatus;
+
+  const SubscriptionOperationResult({
+    required this.isProActive,
+    required this.customerInfo,
+    required this.accessStatus,
+  });
+}
 
 class SubscriptionService {
   final Ref _ref;
@@ -25,6 +52,7 @@ class SubscriptionService {
 
   static String? _configuredUserUuid;
   static Future<void>? _configurationFuture;
+  static bool _customerInfoListenerRegistered = false;
 
   SubscriptionService(this._ref);
 
@@ -61,7 +89,8 @@ class SubscriptionService {
     await Purchases.setLogLevel(kDebugMode ? LogLevel.debug : LogLevel.error);
 
     if (await Purchases.isConfigured) {
-      await Purchases.logIn(userUuid);
+      final loginResult = await Purchases.logIn(userUuid);
+      _syncLocalStatus(loginResult.customerInfo, source: 'revenuecat-login');
     } else {
       // Configure purchases_flutter with the static API key and current user's identifier
       PurchasesConfiguration configuration = PurchasesConfiguration(
@@ -71,6 +100,7 @@ class SubscriptionService {
     }
 
     _configuredUserUuid = userUuid;
+    _ensureCustomerInfoListener();
 
     AppLogger.info(
       'RevenueCat SDK configurato con successo per l\'utente: $userUuid',
@@ -85,22 +115,11 @@ class SubscriptionService {
   Future<bool> checkAndSyncStatus() async {
     try {
       CustomerInfo customerInfo = await Purchases.getCustomerInfo();
-      final isProActive = hasActiveProAccess(customerInfo);
-
-      AppLogger.info(
-        'Stato abbonamento RevenueCat: pro=$isProActive, '
-        'activeEntitlements=${customerInfo.entitlements.active.keys.toList()}, '
-        'activeSubscriptions=${customerInfo.activeSubscriptions}',
+      final accessStatus = _syncLocalStatus(
+        customerInfo,
+        source: 'revenuecat-check',
       );
-
-      // Sync local state if different from RevenueCat server truth
-      final currentSettings = _ref.read(settingsProvider);
-      if (currentSettings.isPro != isProActive) {
-        _ref
-            .read(settingsProvider.notifier)
-            .updateSettings(currentSettings.copyWith(isPro: isProActive));
-      }
-      return isProActive;
+      return accessStatus.isActive;
     } catch (e, stack) {
       AppLogger.error(
         'Errore nel recupero delle info abbonamento da RevenueCat',
@@ -128,24 +147,55 @@ class SubscriptionService {
   /// Purchases a specific RevenueCat Package (supports Monthly, Yearly, Lifetime).
   /// Automatically updates global app settings to PRO if the purchase is successful.
   Future<bool> purchasePackage(Package package) async {
+    final result = await purchasePackageWithResult(package);
+    return result.isProActive;
+  }
+
+  Future<SubscriptionOperationResult> purchasePackageWithResult(
+    Package package,
+  ) async {
     try {
       final purchaseResult = await Purchases.purchase(
         PurchaseParams.package(package),
       );
-      final customerInfo = purchaseResult.customerInfo;
-      await Purchases.invalidateCustomerInfoCache();
-      final refreshedCustomerInfo = await Purchases.getCustomerInfo();
-      final isProActive =
-          hasActiveProAccess(refreshedCustomerInfo) ||
-          hasActiveProAccess(customerInfo);
+      var result = await _resultFromCustomerInfo(
+        purchaseResult.customerInfo,
+        source: 'revenuecat-purchase',
+      );
 
-      // Sincronizza lo stato locale Pro
-      final currentSettings = _ref.read(settingsProvider);
-      _ref
-          .read(settingsProvider.notifier)
-          .updateSettings(currentSettings.copyWith(isPro: isProActive));
+      if (!result.isProActive) {
+        try {
+          await Purchases.syncPurchases();
+          await Purchases.invalidateCustomerInfoCache();
+          result = await _resultFromFreshCustomerInfo(
+            source: 'revenuecat-purchase-sync-fallback',
+          );
+        } catch (e, stack) {
+          AppLogger.warning(
+            'Acquisto completato ma fallback sync RevenueCat non riuscito',
+            e,
+            stack,
+          );
+        }
+      }
 
-      return isProActive;
+      return result;
+    } on PlatformException catch (e, stack) {
+      final errorCode = purchasesErrorCode(e);
+      if (errorCode == PurchasesErrorCode.productAlreadyPurchasedError) {
+        AppLogger.info(
+          'Prodotto gia acquistato: avvio restore automatico dopo azione utente.',
+          category: 'subscriptions',
+        );
+        return restorePurchasesWithResult();
+      }
+
+      AppLogger.error(
+        'Acquisto fallito o annullato per il pacchetto: ${package.identifier}',
+        e,
+        stack,
+      );
+      rethrow;
     } catch (e, stack) {
       AppLogger.error(
         'Acquisto fallito o annullato per il pacchetto: ${package.identifier}',
@@ -158,20 +208,34 @@ class SubscriptionService {
 
   /// Restores previous transactions (Apple compliance require this button to be prominent).
   Future<bool> restorePurchases() async {
+    final result = await restorePurchasesWithResult();
+    return result.isProActive;
+  }
+
+  Future<SubscriptionOperationResult> restorePurchasesWithResult() async {
     try {
       final restoredCustomerInfo = await Purchases.restorePurchases();
-      await Purchases.invalidateCustomerInfoCache();
-      final refreshedCustomerInfo = await Purchases.getCustomerInfo();
-      final isProActive =
-          hasActiveProAccess(restoredCustomerInfo) ||
-          hasActiveProAccess(refreshedCustomerInfo);
+      var result = await _resultFromCustomerInfo(
+        restoredCustomerInfo,
+        source: 'revenuecat-restore',
+      );
 
-      final currentSettings = _ref.read(settingsProvider);
-      _ref
-          .read(settingsProvider.notifier)
-          .updateSettings(currentSettings.copyWith(isPro: isProActive));
+      if (!result.isProActive) {
+        try {
+          await Purchases.invalidateCustomerInfoCache();
+          result = await _resultFromFreshCustomerInfo(
+            source: 'revenuecat-restore-refresh',
+          );
+        } catch (e, stack) {
+          AppLogger.warning(
+            'Restore completato ma refresh CustomerInfo non riuscito',
+            e,
+            stack,
+          );
+        }
+      }
 
-      return isProActive;
+      return result;
     } catch (e, stack) {
       AppLogger.error('Errore durante il ripristino degli acquisti', e, stack);
       rethrow;
@@ -214,19 +278,63 @@ class SubscriptionService {
   }
 
   static bool hasActiveProAccess(CustomerInfo customerInfo) {
-    final hasConfiguredEntitlement = entitlementIds.any(
-      (id) => customerInfo.entitlements.all[id]?.isActive ?? false,
-    );
-    if (hasConfiguredEntitlement) return true;
+    return evaluateProAccess(customerInfo).isActive;
+  }
 
-    final hasAnyActiveEntitlement = customerInfo.entitlements.active.values.any(
-      (entitlement) =>
-          entitlement.isActive &&
-          proProductIds.contains(entitlement.productIdentifier),
-    );
-    if (hasAnyActiveEntitlement) return true;
+  static PurchasesErrorCode? purchasesErrorCode(PlatformException exception) {
+    try {
+      return PurchasesErrorHelper.getErrorCode(exception);
+    } catch (_) {
+      return null;
+    }
+  }
 
-    return customerInfo.activeSubscriptions.any(proProductIds.contains);
+  static SubscriptionAccessStatus evaluateProAccess(CustomerInfo customerInfo) {
+    for (final entitlementId in entitlementIds) {
+      final entitlement = customerInfo.entitlements.all[entitlementId];
+      if (entitlement?.isActive ?? false) {
+        return SubscriptionAccessStatus(
+          isActive: true,
+          matchedEntitlementId: entitlementId,
+          matchedProductId: entitlement?.productIdentifier,
+        );
+      }
+    }
+
+    for (final entry in customerInfo.entitlements.active.entries) {
+      final entitlement = entry.value;
+      if (entitlement.isActive &&
+          proProductIds.contains(entitlement.productIdentifier)) {
+        return SubscriptionAccessStatus(
+          isActive: true,
+          matchedEntitlementId: entry.key,
+          matchedProductId: entitlement.productIdentifier,
+        );
+      }
+    }
+
+    for (final productId in customerInfo.activeSubscriptions) {
+      if (proProductIds.contains(productId)) {
+        return SubscriptionAccessStatus(
+          isActive: true,
+          matchedProductId: productId,
+        );
+      }
+    }
+
+    for (final entry in customerInfo.entitlements.active.entries) {
+      final entitlement = entry.value;
+      if (entitlement.isActive) {
+        return SubscriptionAccessStatus(
+          isActive: true,
+          matchedEntitlementId: entry.key,
+          matchedProductId: entitlement.productIdentifier,
+          usedGenericEntitlementFallback: true,
+        );
+      }
+    }
+
+    return const SubscriptionAccessStatus(isActive: false);
   }
 
   /// Presents the RevenueCat Customer Center (for managing active subscriptions, refunds, etc.)
@@ -243,5 +351,75 @@ class SubscriptionService {
         stack,
       );
     }
+  }
+
+  void _ensureCustomerInfoListener() {
+    if (_customerInfoListenerRegistered) return;
+
+    Purchases.addCustomerInfoUpdateListener((customerInfo) {
+      _syncLocalStatus(customerInfo, source: 'revenuecat-listener');
+    });
+    _customerInfoListenerRegistered = true;
+  }
+
+  Future<SubscriptionOperationResult> _resultFromFreshCustomerInfo({
+    required String source,
+  }) async {
+    final customerInfo = await Purchases.getCustomerInfo();
+    return _resultFromCustomerInfo(customerInfo, source: source);
+  }
+
+  Future<SubscriptionOperationResult> _resultFromCustomerInfo(
+    CustomerInfo customerInfo, {
+    required String source,
+  }) async {
+    final accessStatus = _syncLocalStatus(customerInfo, source: source);
+    return SubscriptionOperationResult(
+      isProActive: accessStatus.isActive,
+      customerInfo: customerInfo,
+      accessStatus: accessStatus,
+    );
+  }
+
+  SubscriptionAccessStatus _syncLocalStatus(
+    CustomerInfo customerInfo, {
+    required String source,
+  }) {
+    final accessStatus = evaluateProAccess(customerInfo);
+
+    AppLogger.info(
+      'Stato abbonamento RevenueCat: source=$source, '
+      'pro=${accessStatus.isActive}, '
+      'matchedEntitlement=${accessStatus.matchedEntitlementId}, '
+      'matchedProduct=${accessStatus.matchedProductId}, '
+      'activeEntitlements=${customerInfo.entitlements.active.keys.toList()}, '
+      'activeSubscriptions=${customerInfo.activeSubscriptions}',
+      category: 'subscriptions',
+    );
+
+    if (accessStatus.usedGenericEntitlementFallback) {
+      AppLogger.warning(
+        'Entitlement RevenueCat attivo non presente nella whitelist locale. '
+        'Accesso Pro concesso per evitare blocchi post-acquisto; verificare la dashboard RevenueCat.',
+        null,
+        null,
+        {
+          'matchedEntitlement': accessStatus.matchedEntitlementId,
+          'matchedProduct': accessStatus.matchedProductId,
+          'source': source,
+        },
+      );
+    }
+
+    final currentSettings = _ref.read(settingsProvider);
+    if (currentSettings.isPro != accessStatus.isActive) {
+      _ref
+          .read(settingsProvider.notifier)
+          .updateSettings(
+            currentSettings.copyWith(isPro: accessStatus.isActive),
+          );
+    }
+
+    return accessStatus;
   }
 }

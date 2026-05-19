@@ -1516,3 +1516,24 @@
 
 **Next Step**:
 - Generate the signed/obfuscated IPA for build `1.0.0+4`, upload it to App Store Connect, and reply in Resolution Center with the Apple Sign-In Keychain and subscription activation fixes.
+
+---
+
+## [2026-05-19 14:51]: App Store IAP - Production-Ready Restore Flow
+*Details*: Hardened the Evolve Pro restore and purchase activation flow for App Store review. The restore button now uses a typed RevenueCat result instead of a bare boolean, refreshes CustomerInfo after restore, and shows professional user-facing messages without exposing raw native exceptions.
+*Tech Notes*:
+- **RevenueCat Sync**: Added `SubscriptionAccessStatus` and `SubscriptionOperationResult` in `subscription_service.dart`, plus a `CustomerInfo` update listener so entitlement changes sync into `settings.isPro` as RevenueCat emits them.
+- **Restore Robustness**: `restorePurchasesWithResult()` now evaluates restored customer info first, refreshes the cache if Pro is still inactive, and logs diagnostics for active entitlements/subscriptions.
+- **Purchase Robustness**: `purchasePackageWithResult()` now syncs purchases as a fallback after a completed purchase if the returned CustomerInfo is not active yet, and handles `productAlreadyPurchasedError` by running the user-initiated restore path.
+- **Entitlement Matching**: Kept the official `Evolve Pro`, `evolve_pro`, and `pro` entitlement IDs, kept StoreKit SKU fallbacks, and added a safe fallback for any active RevenueCat entitlement to prevent App Store review from being blocked by a dashboard identifier mismatch.
+- **State Persistence**: Updated `settings_provider.dart` so stale `profiles.is_pro=false` from Supabase does not immediately overwrite a Pro state already validated/cached locally by RevenueCat.
+- **UI**: Added a visible `Ripristina acquisti` action inside the paywall compliance section and mapped RevenueCat/StoreKit errors to localized, production-safe messages.
+- **Tests**: Updated `subscription_service_test.dart` to cover configured entitlements, StoreKit subscription IDs, and the active-entitlement fallback.
+- **Verification**: `flutter test test/subscription_service_test.dart` and `flutter analyze` completed successfully. iOS build verification was skipped after user request.
+
+---
+
+## [2026-05-19 14:55]: Subscription UI - Removed Duplicate Restore Action
+*Details*: Removed the duplicate `Ripristina` text action from the top-right AppBar of the subscription screen, keeping the single `Ripristina acquisti` action inside the paywall body.
+*Tech Notes*:
+- **UI**: Updated `subscription_screen.dart` only. Restore logic remains unchanged and continues to run from the main paywall action.

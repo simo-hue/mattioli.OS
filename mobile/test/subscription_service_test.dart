@@ -34,6 +34,29 @@ void main() {
     });
 
     test(
+      'returns true for any active RevenueCat entitlement as a safe fallback',
+      () {
+        final customerInfo = _customerInfo(
+          activeEntitlements: {
+            'premium': _entitlement(
+              identifier: 'premium',
+              isActive: true,
+              productIdentifier: 'com.example.renamed.product',
+            ),
+          },
+        );
+
+        final accessStatus = SubscriptionService.evaluateProAccess(
+          customerInfo,
+        );
+
+        expect(accessStatus.isActive, isTrue);
+        expect(accessStatus.usedGenericEntitlementFallback, isTrue);
+        expect(accessStatus.matchedEntitlementId, 'premium');
+      },
+    );
+
+    test(
       'returns false when no known Pro entitlement or subscription is active',
       () {
         final customerInfo = _customerInfo(

@@ -129,6 +129,15 @@ void main() async {
     };
 
     PlatformDispatcher.instance.onError = (error, stack) {
+      if (_isRecoverableAuthSessionError(error)) {
+        AppLogger.warning(
+          '[Startup] Ignored recoverable auth session error',
+          error,
+          stack,
+        );
+        return true;
+      }
+
       // Invia l'errore a Sentry (se inizializzato)
       Sentry.captureException(error, stackTrace: stack);
 
@@ -171,6 +180,17 @@ void main() async {
   } else {
     startApp();
   }
+}
+
+bool _isRecoverableAuthSessionError(Object error) {
+  if (error is! AuthException) return false;
+
+  final message = error.message.toLowerCase();
+  final code = error is AuthApiException ? error.code?.toLowerCase() : null;
+
+  return code == 'refresh_token_not_found' ||
+      message.contains('invalid refresh token') ||
+      message.contains('refresh token not found');
 }
 
 // ── Router ───────────────────────────────────────────────────────────────────

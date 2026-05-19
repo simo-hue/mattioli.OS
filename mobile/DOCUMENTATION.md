@@ -1579,3 +1579,12 @@
 - **Lifecycle Guard**: Added `mounted` checks after notification permission reads/requests and before clearing `_isLoading` in `_handleContinue()`.
 - **Root Cause**: The error is separate from the dashboard tutorial target issue; this one was caused by async consent/Sentry initialization completing after navigation away from the consent page.
 - **Verification**: `flutter analyze` and `flutter test test/subscription_service_test.dart` completed successfully.
+
+---
+
+## [2026-05-19 15:45]: Error Handling - Responsive Error Modal & Auth Recovery Filter
+*Details*: Fixed a render overflow in the global `ErrorModal` that could occur when technical details were longer than the available screen height, especially after startup/auth recovery errors on smaller simulators.
+*Tech Notes*:
+- **Error Modal**: Updated `error_modal.dart` with a max-height constraint, scrollable body, fixed close button, safe-area padding, and selectable technical details.
+- **Auth Recovery**: Updated `main.dart` to ignore recoverable Supabase stale-session errors (`refresh_token_not_found`) at the global error handler level because `auth_provider.dart` already logs out and recovers locally.
+- **Verification**: `flutter analyze` and `flutter test test/subscription_service_test.dart` completed successfully.

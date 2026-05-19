@@ -1,12 +1,6 @@
 # DA FARE NEL BREVE TERMINE
 [ ] Tradurre in inglese le schermate dell'app ( copertine per app store )
 [ ] Verificare che siano collegati i prodotti da RevenueCat a app store connect
-[ ] Sostituire la chiave API di test con la chiave live di iOS ('appl_...') in `mobile/lib/core/revenuecat_config.dart`
-
-[ ] Configurare i link legali obbligatori in App Store Connect:
-    - Privacy Policy: `https://simo-hue.github.io/mattioli.OS/privacy`
-    - Terms of Service / EULA: `https://simo-hue.github.io/mattioli.OS/terms`
-[ ] Assicurarsi che l'accordo per le applicazioni a pagamento ("Paid Applications Agreement") sia attivo e firmato in App Store Connect > Agreements, Tax, and Banking
 
 # Feature Premium
     [ ] Analytics as a PRO Plan per quelle avanzate

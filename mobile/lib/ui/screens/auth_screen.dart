@@ -6,6 +6,7 @@ import 'package:url_launcher/url_launcher.dart';
 import 'package:google_fonts/google_fonts.dart';
 import '../../core/theme.dart';
 import '../../providers/auth_provider.dart';
+import '../../providers/settings_provider.dart';
 import '../../core/haptics.dart';
 import '../../core/localization.dart';
 
@@ -68,6 +69,7 @@ class _AuthScreenState extends ConsumerState<AuthScreen> with SingleTickerProvid
   Future<void> _handleSubmit() async {
     if (_formKey.currentState?.validate() ?? false) {
       bool success;
+      final hapticsEnabled = ref.read(settingsProvider).hapticFeedback;
       if (_mode == AuthMode.login) {
         success = await ref.read(authProvider.notifier).login(
               _emailController.text,
@@ -94,7 +96,9 @@ class _AuthScreenState extends ConsumerState<AuthScreen> with SingleTickerProvid
         }
       }
 
-      if (success) ref.hapticMedium();
+      if (success) {
+        AppHaptics.mediumImpactWithFlag(hapticsEnabled);
+      }
     } else {
       ref.hapticHeavy();
     }
@@ -378,8 +382,11 @@ class _AuthScreenState extends ConsumerState<AuthScreen> with SingleTickerProvid
                           label: context.l10n.translate('Continua con Apple'),
                           icon: LucideIcons.apple,
                           onPressed: () async {
+                            final hapticsEnabled = ref.read(settingsProvider).hapticFeedback;
                             final success = await ref.read(authProvider.notifier).signInWithApple();
-                            if (success) ref.hapticMedium();
+                            if (success) {
+                              AppHaptics.mediumImpactWithFlag(hapticsEnabled);
+                            }
                           },
                         ),
                         SizedBox(height: isCompact ? 6 : 10),
@@ -388,8 +395,11 @@ class _AuthScreenState extends ConsumerState<AuthScreen> with SingleTickerProvid
                           icon: LucideIcons.mail, 
                           isGoogle: true,
                           onPressed: () async {
+                            final hapticsEnabled = ref.read(settingsProvider).hapticFeedback;
                             final success = await ref.read(authProvider.notifier).signInWithGoogle();
-                            if (success) ref.hapticMedium();
+                            if (success) {
+                              AppHaptics.mediumImpactWithFlag(hapticsEnabled);
+                            }
                           },
                         ),
 

@@ -1458,3 +1458,12 @@
   - Protected the rescheduling pathway inside `GoalItemWidget._reschedule()` by verifying the total goals limit. Non-pro users trying to reschedule beyond 100 total goals are blocked and presented with the Evolve Pro upgrade modal.
 
 
+---
+
+## [2026-05-19 09:00]: Bugfix - Unmounted Widget Ref Crash on Apple Sign In
+*Details*: Fixed a severe crash found by the Apple Store reviewer when executing asynchronous sign-in (Sign In with Apple and Google Sign In). The crash occurred when attempting to trigger a success haptic feedback via the Riverpod `WidgetRef` extension (`ref.hapticMedium()`) after the user was successfully logged in. Because GoRouter immediately navigated to the HomeScreen and unmounted the AuthScreen, calling any method on the unmounted widget's `ref` threw a `Bad state: Using "ref" when a widget is about to or has been unmounted is unsafe.` exception.
+*Tech Notes*:
+- **File**: `lib/ui/screens/auth_screen.dart` (modified):
+  - Imported `../../providers/settings_provider.dart` to check `hapticFeedback` status.
+  - Read `hapticsEnabled = ref.read(settingsProvider).hapticFeedback` *before* entering any asynchronous authentication flow (`signInWithApple()`, `signInWithGoogle()`, `login()`, `signUp()`).
+  - Replaced the post-asynchronous `ref.hapticMedium()` call with a direct, unmount-safe static call: `AppHaptics.mediumImpactWithFlag(hapticsEnabled)`. This correctly triggers native device haptics directly through `HapticFeedback` without accessing the unmounted `BuildContext` or `WidgetRef`.

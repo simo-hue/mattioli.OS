@@ -1,10 +1,12 @@
 # PROSSIME AZIONI MANUALI (SIMO)
 
 ## Configurazione Backend & Store
+- [x] **Accettare l'accordo Paid Apps (Contratti per App a Pagamento) su App Store Connect**:
+  - Accedi ad [App Store Connect](https://appstoreconnect.apple.com/).
+  - Vai alla sezione **Business** (o *Accordi, codice fiscale e dati bancari* / *Agreements, Tax, and Banking*).
+  - Trova l'accordo **Paid Apps** (Applicazioni a pagamento) e clicca su **Accept** (Accetta) o compila le informazioni fiscali/bancarie se richieste.
+  - *Stato attuale*: **ATTIVO & APPROVATO!** (Verificato da screenshot).
 - [ ] Creare account **Google Play Console** ($25 una tantum).
-- [ ] **Bypass Reviewer (Supabase)**: Registra l'utente `apple-tester@evolve.com` nell'app (o crealo da Supabase Auth). Successivamente, nel Table Editor della dashboard di Supabase, apri la tabella `profiles`, trova questa riga e imposta la colonna `is_pro = true`. Questo permetterà al reviewer Apple di testare l'app completamente sbloccata (evitando il rigetto per funzionalità incomplete/"Coming Soon").
-- [ ] Configurare **Sign in with Apple** (Integrazione a 360°):
-  - [ ] **In Xcode**: Apri il progetto con `open ios/Runner.xcworkspace`. Seleziona il target `Runner` a sinistra, vai sulla scheda **Signing & Capabilities**, clicca in alto su **+ Capability** e fai doppio clic su **Sign in with Apple**. Questo genererà automaticamente il file `.entitlements` corretto.
   - [ ] **Su Apple Developer Portal**: Accedi a *Certificates, Identifiers & Profiles* > *Identifiers*. Seleziona l'App ID `com.simo.evolve` e verifica che la spunta su **Sign in with Apple** sia attiva.
   - [ ] **Su Supabase Dashboard**: Vai in *Authentication* > *Providers* > *Apple*. Abilita il provider. Se intendi supportare Apple Sign-In esclusivamente su iOS nativo (come è attualmente configurato), ti basta attivare lo switch. Se in futuro vorrai supportarlo su Android/Web, dovrai generare e inserire le chiavi *Services ID*, *Team ID* e il file `.p8` privato forniti da Apple.
 
@@ -42,11 +44,11 @@ comando sentry-cli durante il build di release, ma è un passaggio che va config
 
 - [ ] **Inizializzazione Cartella Android**: Se prevedi di pubblicare l'app anche sul Google Play Store, tieni presente che attualmente manca la cartella `android/` nel progetto. Puoi rigenerarla eseguendo `flutter create --org com.simo --platforms android .` nella cartella principale (`mobile/`), per poi configurare icone, permessi e integrazioni native (come per Supabase e Sentry).
 
-- [x] **Eseguire la Build di Rilascio con Offuscamento Totale**:
-  - Apri il terminale nella cartella `mobile/`.
-  - Esegui il comando di pulizia e compilazione con i flag di offuscamento:
-    ```bash
-    flutter clean
-    flutter pub get
-    flutter build ipa --release --obfuscate --split-debug-info=build/app/outputs/symbols
-    ```
+## 🚀 Preparazione Submission App Store (iOS)
+- [x] **Accettare l'accordo Paid Apps** nella sezione *Business* di App Store Connect. (COMPLETATO!)
+- [ ] **Aggiornare i Link Legali (EULA & Privacy)** nelle schede informative di App Store Connect.
+- [ ] **Incrementare il Build Number** in `pubspec.yaml` (es. a `1.0.0+3`).
+- [ ] **Rigenerare il pacchetto iOS offuscato** eseguendo `flutter build ipa --release --obfuscate --split-debug-info=build/app/outputs/symbols` nella cartella `mobile/`.
+- [ ] **Caricare la build tramite Transporter o Xcode Organizer**.
+- [ ] **Configurare le credenziali dell'account di test** e le note di risposta nel Resolution Center prima dell'invio.
+

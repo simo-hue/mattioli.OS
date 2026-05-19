@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:lucide_icons_flutter/lucide_icons.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:flutter/services.dart';
 import 'package:purchases_flutter/purchases_flutter.dart';
 import 'package:url_launcher/url_launcher.dart';
 import 'package:intl/intl.dart';
@@ -153,16 +154,47 @@ class _SubscriptionScreenState extends ConsumerState<SubscriptionScreen> {
       } else {
         ScaffoldMessenger.of(context).showSnackBar(
           const SnackBar(
-            content: Text('L\'acquisto non è andato a buon fine o è stato annullato. Riprova.'),
-            backgroundColor: Colors.redAccent,
+            content: Text('L\'acquisto è stato completato, ma non è stato possibile attivare il piano Pro. Prova a ripristinare gli acquisti.'),
+            backgroundColor: Colors.amber,
           ),
         );
       }
     } catch (e) {
       if (!mounted) return;
       setState(() => _isLoading = false);
+
+      String errorMessage = 'Si è verificato un errore durante l\'acquisto. Riprova.';
+
+      if (e is PlatformException) {
+        final errorCode = PurchasesErrorHelper.getErrorCode(e);
+        if (errorCode == PurchasesErrorCode.purchaseCancelledError) {
+          // L'utente ha annullato l'acquisto: non mostrare messaggi di errore
+          return;
+        }
+
+        final msg = e.message?.toLowerCase() ?? '';
+        final details = e.details?.toString().toLowerCase() ?? '';
+        
+        if (msg.contains('paid apps agreement') || 
+            msg.contains('paid applications agreement') ||
+            details.contains('paid apps agreement') ||
+            details.contains('paid applications agreement')) {
+          errorMessage = 'Contratto Paid Apps non attivo. L\'amministratore dell\'account deve accettare l\'accordo Paid Apps in App Store Connect.';
+        } else if (msg.contains('storekit') || msg.contains('billing') || msg.contains('play store') || msg.contains('payment')) {
+          errorMessage = 'Servizio di pagamento temporaneamente non disponibile. Riprova più tardi.';
+        } else if (e.message != null) {
+          errorMessage = 'Errore d\'acquisto: ${e.message}';
+        }
+      }
+
       ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text('Acquisto non completato: $e')),
+        SnackBar(
+          content: Text(errorMessage),
+          backgroundColor: AppColors.destructive,
+          behavior: SnackBarBehavior.floating,
+          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+          duration: const Duration(seconds: 6),
+        ),
       );
     }
   }

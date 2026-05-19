@@ -1,0 +1,99 @@
+Hello,
+
+Thank you for your efforts to follow our guidelines. There are some outstanding issues that still need your attention.
+
+If you have any questions, we are here to help. Reply to this message in App Store Connect and let us know.
+
+Review Environment
+
+Submission ID: 038da924-f45d-4c5d-8ff0-1791c60deb9f
+Review date: May 18, 2026
+Review Device: iPad Air 11-inch (M3)
+Version reviewed: 1.0 (2)
+
+Guideline 2.1(a) - Performance - App Completeness
+
+Issue Description
+
+The app exhibited one or more bugs that would negatively impact users.
+
+Bug description: the app displayed an error message when we tried to Sing in with Apple. 
+
+Review device details:
+
+- Device type: iPhone 17 Pro Max 
+- OS version: iOS 26.5
+- Internet Connection: Active
+
+Next Steps
+
+Test the app on supported devices to identify and resolve bugs and stability issues before submitting for review.
+
+If the bug cannot be reproduced, try the following:
+
+- For new apps, uninstall all previous versions of the app from a device, then install and follow the steps to reproduce.
+- For app updates, install the new version as an update to the previous version, then follow the steps to reproduce.
+
+Note that users expect apps they download to function on all the devices where they are available. For example, apps that may be downloaded onto iPad devices should function as expected for iPad users. 
+
+Resources
+
+- For information about testing apps and preparing them for review, see Testing a Release Build.
+- To learn about troubleshooting networking issues, see Networking Overview.
+
+
+Guideline 2.1(b) - Performance - App Completeness
+
+
+Issue Description
+
+The In-App Purchase products in the app exhibited one or more bugs which create a poor user experience. Specifically, the app displayed an error upon subscription purchase. Review the details and resources below to troubleshoot this issue.
+
+Review device details: 
+
+- Device type: iPhone 17 Pro Max 
+- OS version: iOS 26.5
+
+Next Steps
+
+Apple reviews In-App Purchase products in the sandbox and the In-App Purchase products do not need prior approval to function in review. Review the product configurations, complete any missing information, and test them in the sandbox.
+
+To offer In-App Purchases in the app, the Account Holder must also accept the Paid Apps Agreement in the Business section of App Store Connect. Confirm you have a Paid Apps Agreement in effect.
+
+If you still need assistance after completing the steps and reviewing the resources, visit the Apple Developer Forums. If you can’t find an answer from an existing thread, start a new thread with your question to get guidance from Apple engineers and other developers.
+
+Resources
+
+Learn more about app completeness requirements in guideline 2.1(b).
+Guideline 3.1.2(c) - Business - Payments - Subscriptions
+
+Issue Description
+
+The submission did not include all the required information for apps offering auto-renewable subscriptions.
+
+The following information needs to be included in the App Store metadata: a functional link to the Terms of Use (EULA) (if you are using the standard Apple Terms of Use (EULA), include a link in the App Description, and if you are using a custom EULA, add it in App Store Connect).
+
+Next Steps
+
+Update the App Store metadata to include the information specified above.
+
+Once the app and metadata includes all of the required information, or if they already do, reply to this message with a screen recording to confirm. Include this information in the Notes field of the App Review Information section in App Store Connect for future submissions.
+
+Resources
+
+Apps offering auto-renewable subscriptions must include all of the following required information in the app itself:
+
+- Title of auto-renewing subscription (this may be the same as the In-App Purchase product name)
+- Length of subscription
+- Price of subscription, and price per unit if appropriate
+- Functional links to the privacy policy and Terms of Use (EULA)
+
+The app metadata must also include functional links to the privacy policy in the Privacy Policy field in App Store Connect and the Terms of Use (EULA) in the App Description or EULA field in App Store Connect.
+
+Review Schedule 2 of the Apple Developer Program License Agreement to learn more.
+Support
+
+- Reply to this message in your preferred language if you need assistance. If you need additional support, use the Contact Us module.
+- Consult with fellow developers and Apple engineers on the Apple Developer Forums.
+- Request an App Review Appointment at Meet with Apple to discuss your app's review. Appointments subject to availability during your local business hours on Tuesdays and Thursdays.
+- Provide feedback on this message and your review experience by completing a short survey.

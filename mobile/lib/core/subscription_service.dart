@@ -87,7 +87,7 @@ class SubscriptionService {
       return isProActive;
     } catch (e, stack) {
       AppLogger.error('Acquisto fallito o annullato per il pacchetto: ${package.identifier}', e, stack);
-      return false;
+      rethrow;
     }
   }
 
@@ -105,7 +105,7 @@ class SubscriptionService {
       return isProActive;
     } catch (e, stack) {
       AppLogger.error('Errore durante il ripristino degli acquisti', e, stack);
-      return false;
+      rethrow;
     }
   }
 

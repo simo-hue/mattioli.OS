@@ -1467,3 +1467,35 @@
   - Imported `../../providers/settings_provider.dart` to check `hapticFeedback` status.
   - Read `hapticsEnabled = ref.read(settingsProvider).hapticFeedback` *before* entering any asynchronous authentication flow (`signInWithApple()`, `signInWithGoogle()`, `login()`, `signUp()`).
   - Replaced the post-asynchronous `ref.hapticMedium()` call with a direct, unmount-safe static call: `AppHaptics.mediumImpactWithFlag(hapticsEnabled)`. This correctly triggers native device haptics directly through `HapticFeedback` without accessing the unmounted `BuildContext` or `WidgetRef`.
+
+---
+
+## [2026-05-19 09:10]: Bugfix - In-App Purchase Error Resilience & Administrative Check
+*Details*: Solved the StoreKit purchase failure bug reported by the Apple reviewer. The native StoreKit sheet successfully processed the sandbox subscription purchase, but the app simultaneously displayed a generic red error banner stating that the purchase failed or was cancelled. This was due to: (1) `purchasePackage` suppressing all exceptions internally and returning `false`, causing the UI to always show the generic error message, and (2) the Apple account holder not having signed the mandatory **Paid Apps Agreement** in App Store Connect, which caused the Apple transaction to fail on the backend/RevenueCat level despite showing a successful native sheet.
+*Tech Notes*:
+- **File**: `lib/core/subscription_service.dart` (modified):
+  - Removed internal `try-catch` suppression inside `purchasePackage()` and `restorePurchases()`.
+  - Added `rethrow` inside `catch` blocks to correctly propagate StoreKit and billing exceptions up to the UI/caller level.
+- **File**: `lib/ui/screens/subscription_screen.dart` (modified):
+  - Imported `package:flutter/services.dart` to handle native `PlatformException`.
+  - Refactored `_purchase()` method to trap billing/store exceptions:
+    - Quietly intercepts user cancellations (`PurchasesErrorCode.purchaseCancelledError`) to prevent display of annoying error banners.
+    - Decodes and translates critical StoreKit failures, specifically identifying when the administrative **Paid Apps Agreement** is missing ("Contratto Paid Apps non attivo...").
+- **Documentation**: Updated `TO_SIMO_DO.md` adding a checklist action for Simo to accept the Paid Apps Agreement in App Store Connect.
+
+---
+
+## [2026-05-19 09:15]: Compliance - App Store Connect Subscription Metadata & EULA Review
+*Details*: Audited the codebase and metadata posture against Apple Store Guideline 3.1.2(c) (Payments - Subscriptions). Confirmed that the mobile application is already fully compliant with the guidelines, as `SubscriptionScreen` displays the required subscription titles ("Evolve Pro Mensile"/"Annuale"), dynamic lengths, pricing, and functional links to both the Privacy Policy and standard Apple EULA. The rejection was purely administrative: the reviewer did not find the EULA link and Terms of Use details in the App Store Connect metadata console.
+*Tech Notes*:
+- **File**: `TO_SIMO_DO.md` (modified): Created a copy-paste instructions section detailing exactly how to fill out the **App Description** and **EULA License Agreement** fields in App Store Connect.
+
+---
+
+## [2026-05-19 09:25]: Compliance - Cross-Post Compliance & Website Nomenclature Alignment
+*Details*: Performed a comprehensive alignment audit on the localized marketing and legal website files (`index.html`, `terms.html`, `privacy.html`, `cookie.html`, and `script.js`). Corrected a mismatch where the site referred to the premium tier as "Evolve Plus" whereas the mobile app and StoreKit entitlements expect "Evolve Pro".
+*Tech Notes*:
+- **Website Synced**: Replaced all `Evolve Plus` and `Prezzi / Plus` occurrences with `Evolve Pro` and `Prezzi / Pro` respectively.
+- **Link Integrity**: Validated header and mobile menus to ensure robust routing back to specific landing page anchors from legal sub-pages.
+- **Titolare Sync**: Confirmed perfect alignment of owner information and contact emails.
+

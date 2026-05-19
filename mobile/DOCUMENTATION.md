@@ -1588,3 +1588,13 @@
 - **Error Modal**: Updated `error_modal.dart` with a max-height constraint, scrollable body, fixed close button, safe-area padding, and selectable technical details.
 - **Auth Recovery**: Updated `main.dart` to ignore recoverable Supabase stale-session errors (`refresh_token_not_found`) at the global error handler level because `auth_provider.dart` already logs out and recovers locally.
 - **Verification**: `flutter analyze` and `flutter test test/subscription_service_test.dart` completed successfully.
+
+---
+
+## [2026-05-19 15:56]: iOS Simulator - Native Assets Objective-C Load Fix
+*Details*: Fixed the simulator startup error `Couldn't resolve native function 'DOBJ_initializeApi'` caused by the `objective_c` native asset pulled in by `path_provider_foundation` 2.6.0.
+*Tech Notes*:
+- **Dependency Override**: Added a targeted `dependency_overrides` entry for `path_provider_foundation: 2.5.1`, which uses the standard Flutter Darwin plugin path and does not depend on `objective_c`, `native_toolchain_c`, or native-assets code generation.
+- **Lockfiles**: Regenerated `pubspec.lock` and `ios/Podfile.lock`; the Dart lockfile no longer contains `objective_c`, `native_toolchain_c`, `code_assets`, `hooks`, or `record_use`.
+- **Build Cleanup**: Ran `flutter clean` and `flutter pub get` to remove stale copied `objective_c.framework` artifacts from prior simulator builds.
+- **Verification**: `flutter analyze`, `flutter test test/subscription_service_test.dart`, and `flutter run -d 4225E4CB-028F-48F5-AB0E-89D83D1D6BDE` completed successfully through app startup without the `DOBJ_initializeApi` error.

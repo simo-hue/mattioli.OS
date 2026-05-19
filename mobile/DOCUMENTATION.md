@@ -1537,3 +1537,15 @@
 *Details*: Removed the duplicate `Ripristina` text action from the top-right AppBar of the subscription screen, keeping the single `Ripristina acquisti` action inside the paywall body.
 *Tech Notes*:
 - **UI**: Updated `subscription_screen.dart` only. Restore logic remains unchanged and continues to run from the main paywall action.
+
+---
+
+## [2026-05-19 15:10]: Core - Elegant Subscription Dialogs & SnackBars Removal
+*Details*: Replaced all simple line SnackBars in the subscription management interface with beautiful, custom-designed glassmorphic modal dialogs (`SubscriptionAlertModal`), completely aligning the paywall and subscription events with the premium, state-of-the-art visual style of Evolve/Growth.
+*Tech Notes*:
+- **New Component**: Created `SubscriptionAlertModal` in `lib/ui/widgets/subscription_alert_modal.dart`.
+  - Parameters: `title`, `message`, `type` (`success`, `warning`, `error`), and `details` for technical error traces.
+  - Features: Curved borders (radius 28px), backdrop blur filter (sigma 12px), dynamic gradient confirmation buttons, modern icon headers with glowing borders, and tailored dynamic haptics (success/medium/error).
+- **Subscription Screen Integration**: Fully replaced standard SnackBars in `_restorePurchases`, `_purchase`, and mock plan purchase onTap with `SubscriptionAlertModal.show`.
+- **Code Optimization**: Cleaned up unused `messenger` variables and optimized BuildContext usage across asynchronous gaps by leveraging `context.mounted` to silence linter warnings.
+- **Verification**: Ran full `flutter analyze` ensuring zero issues or warnings remain in the codebase.

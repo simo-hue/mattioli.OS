@@ -12,6 +12,8 @@ import '../../core/theme.dart';
 import '../../core/haptics.dart';
 import '../../core/subscription_service.dart';
 import '../../providers/settings_provider.dart';
+import '../widgets/subscription_alert_modal.dart';
+
 
 class SubscriptionScreen extends ConsumerStatefulWidget {
   const SubscriptionScreen({super.key});
@@ -119,36 +121,31 @@ class _SubscriptionScreenState extends ConsumerState<SubscriptionScreen> {
       if (!mounted) return;
 
       if (result.isProActive) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(
-            content: Text(
-              'Acquisti ripristinati con successo! Accesso Pro sbloccato.',
-            ),
-            backgroundColor: Colors.green,
-          ),
+        SubscriptionAlertModal.show(
+          context,
+          title: 'Acquisti Ripristinati!',
+          message: 'L\'accesso Pro è stato ripristinato con successo su questo dispositivo. Divertiti!',
+          type: SubscriptionAlertType.success,
+          ref: ref,
         );
       } else {
-        ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(
-            content: Text(
-              'Nessun abbonamento Evolve Pro attivo trovato su questo Apple ID. Assicurati di usare lo stesso Apple ID dell\'acquisto.',
-            ),
-            duration: Duration(seconds: 6),
-          ),
+        SubscriptionAlertModal.show(
+          context,
+          title: 'Nessun Acquisto Trovato',
+          message: 'Nessun abbonamento Evolve Pro attivo è stato trovato su questo Apple ID. Assicurati di usare lo stesso Apple ID dell\'acquisto.',
+          type: SubscriptionAlertType.warning,
+          ref: ref,
         );
       }
     } catch (e) {
       if (!mounted) return;
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(
-          content: Text(_restoreErrorMessage(e)),
-          backgroundColor: AppColors.destructive,
-          behavior: SnackBarBehavior.floating,
-          shape: RoundedRectangleBorder(
-            borderRadius: BorderRadius.circular(12),
-          ),
-          duration: const Duration(seconds: 6),
-        ),
+      SubscriptionAlertModal.show(
+        context,
+        title: 'Ripristino Fallito',
+        message: _restoreErrorMessage(e),
+        type: SubscriptionAlertType.error,
+        details: e.toString(),
+        ref: ref,
       );
     } finally {
       if (mounted) {
@@ -173,14 +170,12 @@ class _SubscriptionScreenState extends ConsumerState<SubscriptionScreen> {
       if (result.isProActive) {
         _showSuccessDialog(context);
       } else {
-        ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(
-            content: Text(
-              'Acquisto registrato, ma l\'abbonamento Pro non risulta ancora attivo. Attendi qualche secondo e usa Ripristina acquisti.',
-            ),
-            backgroundColor: Colors.amber,
-            duration: Duration(seconds: 6),
-          ),
+        SubscriptionAlertModal.show(
+          context,
+          title: 'Abbonamento in Elaborazione',
+          message: 'L\'acquisto è registrato, ma l\'abbonamento Pro non risulta ancora attivo. Attendi qualche secondo e usa Ripristina acquisti.',
+          type: SubscriptionAlertType.warning,
+          ref: ref,
         );
       }
     } catch (e) {
@@ -190,16 +185,13 @@ class _SubscriptionScreenState extends ConsumerState<SubscriptionScreen> {
         return;
       }
 
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(
-          content: Text(_purchaseErrorMessage(e)),
-          backgroundColor: AppColors.destructive,
-          behavior: SnackBarBehavior.floating,
-          shape: RoundedRectangleBorder(
-            borderRadius: BorderRadius.circular(12),
-          ),
-          duration: const Duration(seconds: 6),
-        ),
+      SubscriptionAlertModal.show(
+        context,
+        title: 'Acquisto Fallito',
+        message: _purchaseErrorMessage(e),
+        type: SubscriptionAlertType.error,
+        details: e.toString(),
+        ref: ref,
       );
     } finally {
       if (mounted) {
@@ -549,7 +541,6 @@ class _SubscriptionScreenState extends ConsumerState<SubscriptionScreen> {
           GestureDetector(
             onTap: () async {
               ref.hapticMedium();
-              final messenger = ScaffoldMessenger.of(context);
               setState(() => _isLoading = true);
               try {
                 // Background attempt to dynamically load real offerings
@@ -576,18 +567,15 @@ class _SubscriptionScreenState extends ConsumerState<SubscriptionScreen> {
                 }
               } catch (_) {}
 
-              if (mounted) {
-                setState(() => _isLoading = false);
-                messenger.showSnackBar(
-                  const SnackBar(
-                    content: Text(
-                      'Servizio acquisti non raggiungibile. Verifica la tua connessione e riprova.',
-                    ),
-                    backgroundColor: Colors.amber,
-                    duration: Duration(seconds: 4),
-                  ),
-                );
-              }
+              if (!context.mounted) return;
+              setState(() => _isLoading = false);
+              SubscriptionAlertModal.show(
+                context,
+                title: 'Errore Connessione',
+                message: 'Il servizio acquisti non è raggiungibile. Verifica la tua connessione e riprova.',
+                type: SubscriptionAlertType.error,
+                ref: ref,
+              );
             },
             child: Container(
               width: double.infinity,

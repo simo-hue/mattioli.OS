@@ -1,24 +1,23 @@
 import 'package:supabase_flutter/supabase_flutter.dart';
-import 'package:flutter_secure_storage/flutter_secure_storage.dart';
 import 'app_logger.dart';
+import 'secure_storage_utils.dart';
 
 class SecureLocalStorage extends LocalStorage {
-  final FlutterSecureStorage _storage = const FlutterSecureStorage(
-    aOptions: AndroidOptions(encryptedSharedPreferences: true),
-    iOptions: IOSOptions(accessibility: KeychainAccessibility.first_unlock),
-  );
-
   @override
   Future<void> initialize() async {}
 
   @override
   Future<String?> accessToken() async {
     try {
-      return await _storage.read(key: supabasePersistSessionKey);
+      return await SecureStorageUtils.read(supabasePersistSessionKey);
     } catch (e, stack) {
-      AppLogger.error('SecureLocalStorage.accessToken error. Clearing storage.', e, stack);
+      AppLogger.error(
+        'SecureLocalStorage.accessToken error. Clearing auth session.',
+        e,
+        stack,
+      );
       try {
-        await _storage.deleteAll();
+        await SecureStorageUtils.delete(supabasePersistSessionKey);
       } catch (_) {}
       return null;
     }
@@ -27,11 +26,15 @@ class SecureLocalStorage extends LocalStorage {
   @override
   Future<bool> hasAccessToken() async {
     try {
-      return await _storage.containsKey(key: supabasePersistSessionKey);
+      return await SecureStorageUtils.containsKey(supabasePersistSessionKey);
     } catch (e, stack) {
-      AppLogger.error('SecureLocalStorage.hasAccessToken error. Clearing storage.', e, stack);
+      AppLogger.error(
+        'SecureLocalStorage.hasAccessToken error. Clearing auth session.',
+        e,
+        stack,
+      );
       try {
-        await _storage.deleteAll();
+        await SecureStorageUtils.delete(supabasePersistSessionKey);
       } catch (_) {}
       return false;
     }
@@ -40,11 +43,20 @@ class SecureLocalStorage extends LocalStorage {
   @override
   Future<void> persistSession(String persistSessionString) async {
     try {
-      await _storage.write(key: supabasePersistSessionKey, value: persistSessionString);
+      await SecureStorageUtils.write(
+        supabasePersistSessionKey,
+        persistSessionString,
+        context: 'SecureLocalStorage.persistSession',
+        clearAllOnDuplicateFailure: true,
+      );
     } catch (e, stack) {
-      AppLogger.error('SecureLocalStorage.persistSession error. Clearing storage.', e, stack);
+      AppLogger.error(
+        'SecureLocalStorage.persistSession error. Clearing auth session.',
+        e,
+        stack,
+      );
       try {
-        await _storage.deleteAll();
+        await SecureStorageUtils.delete(supabasePersistSessionKey);
       } catch (_) {}
     }
   }
@@ -52,11 +64,15 @@ class SecureLocalStorage extends LocalStorage {
   @override
   Future<void> removePersistedSession() async {
     try {
-      await _storage.delete(key: supabasePersistSessionKey);
+      await SecureStorageUtils.delete(supabasePersistSessionKey);
     } catch (e, stack) {
-      AppLogger.error('SecureLocalStorage.removePersistedSession error. Clearing storage.', e, stack);
+      AppLogger.error(
+        'SecureLocalStorage.removePersistedSession error. Clearing auth session.',
+        e,
+        stack,
+      );
       try {
-        await _storage.deleteAll();
+        await SecureStorageUtils.delete(supabasePersistSessionKey);
       } catch (_) {}
     }
   }

@@ -1,13 +1,13 @@
 import 'dart:convert';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
-import 'package:flutter_secure_storage/flutter_secure_storage.dart';
 import '../models/goal.dart';
 import 'auth_provider.dart';
 import 'settings_provider.dart';
 import '../core/notifications.dart';
 import '../core/navigator_key.dart';
 import '../core/app_logger.dart';
+import '../core/secure_storage_utils.dart';
 import '../ui/widgets/error_modal.dart';
 
 final initialGoalsProvider = Provider<String>((ref) => '[]');
@@ -54,9 +54,12 @@ class GoalsNotifier extends Notifier<List<Goal>> {
 
   void _saveToCache(List<Goal> goals) {
     final jsonList = goals.map((g) => g.toJson()).toList();
-    const storage = FlutterSecureStorage();
-    // Salva in modo asincrono nel portachiavi sicuro
-    storage.write(key: _cacheKey, value: jsonEncode(jsonList));
+    // Salva in modo asincrono nel portachiavi sicuro senza propagare errori UI.
+    SecureStorageUtils.tryWrite(
+      _cacheKey,
+      jsonEncode(jsonList),
+      context: '[Goals] cache',
+    );
   }
 
   Future<void> _syncFromSupabase() async {
@@ -90,18 +93,28 @@ class GoalsNotifier extends Notifier<List<Goal>> {
     try {
       final payload = habit.toJson();
       payload['user_id'] = user.id;
-      payload.remove('id'); 
-      
-      final result = await supabase.from('goals').insert(payload).select().single();
+      payload.remove('id');
+
+      final result = await supabase
+          .from('goals')
+          .insert(payload)
+          .select()
+          .single();
       final realGoal = Goal.fromJson(result);
-      
-      final updatedGoals = state.map((g) => g.id == habit.id ? realGoal : g).toList();
+
+      final updatedGoals = state
+          .map((g) => g.id == habit.id ? realGoal : g)
+          .toList();
       state = updatedGoals;
       _saveToCache(updatedGoals);
 
       // Schedula promemoria se presente
       if (realGoal.reminderTime != null) {
-        NotificationService().scheduleHabitReminder(realGoal.id, realGoal.title, realGoal.reminderTime);
+        NotificationService().scheduleHabitReminder(
+          realGoal.id,
+          realGoal.title,
+          realGoal.reminderTime,
+        );
       }
     } catch (e, stack) {
       AppLogger.error('[Goals] Insert error', e, stack);
@@ -118,7 +131,9 @@ class GoalsNotifier extends Notifier<List<Goal>> {
   }
 
   Future<void> updateHabit(Goal updatedHabit) async {
-    final newGoals = state.map((h) => h.id == updatedHabit.id ? updatedHabit : h).toList();
+    final newGoals = state
+        .map((h) => h.id == updatedHabit.id ? updatedHabit : h)
+        .toList();
     state = newGoals;
     _saveToCache(newGoals);
 
@@ -130,7 +145,11 @@ class GoalsNotifier extends Notifier<List<Goal>> {
       // Schedula promemoria
       NotificationService().cancelHabitReminder(updatedHabit.id);
       if (updatedHabit.reminderTime != null) {
-        NotificationService().scheduleHabitReminder(updatedHabit.id, updatedHabit.title, updatedHabit.reminderTime);
+        NotificationService().scheduleHabitReminder(
+          updatedHabit.id,
+          updatedHabit.title,
+          updatedHabit.reminderTime,
+        );
       }
     } catch (e, stack) {
       AppLogger.error('[Goals] Update error', e, stack);
@@ -179,13 +198,15 @@ class GoalsNotifier extends Notifier<List<Goal>> {
     for (int i = 0; i < list.length; i++) {
       list[i] = list[i].copyWith(displayOrder: i);
     }
-    
+
     state = list;
     _saveToCache(list);
 
     // Sync massivo degli order su Supabase
     try {
-      final updates = list.map((g) => {'id': g.id, 'display_order': g.displayOrder}).toList();
+      final updates = list
+          .map((g) => {'id': g.id, 'display_order': g.displayOrder})
+          .toList();
       await supabase.from('goals').upsert(updates);
     } catch (e, stack) {
       AppLogger.error('[Goals] Reorder error', e, stack);
@@ -198,7 +219,9 @@ class GoalsNotifier extends Notifier<List<Goal>> {
   }
 }
 
-final goalsProvider = NotifierProvider<GoalsNotifier, List<Goal>>(GoalsNotifier.new);
+final goalsProvider = NotifierProvider<GoalsNotifier, List<Goal>>(
+  GoalsNotifier.new,
+);
 
 // ─── Habit Logs Provider (Offline-First) ────────────────────────────────────
 
@@ -246,9 +269,12 @@ class HabitLogsNotifier extends Notifier<HabitLogsMap> {
   }
 
   void _saveToCache(HabitLogsMap logs) {
-    const storage = FlutterSecureStorage();
-    // Salva in modo asincrono nel portachiavi sicuro
-    storage.write(key: _cacheKey, value: jsonEncode(logs));
+    // Salva in modo asincrono nel portachiavi sicuro senza propagare errori UI.
+    SecureStorageUtils.tryWrite(
+      _cacheKey,
+      jsonEncode(logs),
+      context: '[HabitLogs] cache',
+    );
   }
 
   Future<void> _syncFromSupabase() async {
@@ -256,7 +282,7 @@ class HabitLogsNotifier extends Notifier<HabitLogsMap> {
     if (user == null) return;
 
     try {
-      // Per ottimizzare, potremmo scaricare solo gli ultimi X giorni, 
+      // Per ottimizzare, potremmo scaricare solo gli ultimi X giorni,
       // ma per ora sincronizziamo tutto per la heatmap.
       final response = await supabase
           .from('goal_logs')
@@ -264,12 +290,12 @@ class HabitLogsNotifier extends Notifier<HabitLogsMap> {
           .eq('user_id', user.id);
 
       final HabitLogsMap newLogs = {};
-      
+
       for (final row in response) {
         final date = row['date'] as String; // YYYY-MM-DD
         final goalId = row['goal_id'] as String;
         final status = row['status'] as String;
-        
+
         if (!newLogs.containsKey(date)) {
           newLogs[date] = {};
         }
@@ -287,14 +313,15 @@ class HabitLogsNotifier extends Notifier<HabitLogsMap> {
     final user = supabase.auth.currentUser;
     if (user == null) return;
 
-    final dateKey = '${date.year}-${date.month.toString().padLeft(2, '0')}-${date.day.toString().padLeft(2, '0')}';
-    
+    final dateKey =
+        '${date.year}-${date.month.toString().padLeft(2, '0')}-${date.day.toString().padLeft(2, '0')}';
+
     final newState = Map<String, Map<String, String>>.from(state);
     final dayLogs = Map<String, String>.from(newState[dateKey] ?? {});
 
     final currentStatus = dayLogs[habitId];
     String? nextStatus;
-    
+
     if (currentStatus == null) {
       nextStatus = 'done';
     } else if (currentStatus == 'done') {
@@ -318,7 +345,7 @@ class HabitLogsNotifier extends Notifier<HabitLogsMap> {
       if (lastLogResponse != null) {
         final lastDateStr = lastLogResponse['date'] as String;
         final lastStreak = lastLogResponse['streak'] as int? ?? 0;
-        
+
         final lastDate = DateTime.parse(lastDateStr);
         final diffDays = date.difference(lastDate).inDays;
 
@@ -376,7 +403,8 @@ class HabitLogsNotifier extends Notifier<HabitLogsMap> {
         ErrorModal.show(
           context,
           title: 'Errore durante l\'aggiornamento dello stato',
-          message: 'Non siamo riusciti a salvare lo stato dell\'abitudine. Riprova.',
+          message:
+              'Non siamo riusciti a salvare lo stato dell\'abitudine. Riprova.',
           details: e.toString(),
         );
       }
@@ -389,47 +417,56 @@ class HabitLogsNotifier extends Notifier<HabitLogsMap> {
   }
 }
 
-final habitLogsProvider = NotifierProvider<HabitLogsNotifier, HabitLogsMap>(HabitLogsNotifier.new);
+final habitLogsProvider = NotifierProvider<HabitLogsNotifier, HabitLogsMap>(
+  HabitLogsNotifier.new,
+);
 
-final habitStatsProvider = FutureProvider<List<Map<String, dynamic>>>((ref) async {
+final habitStatsProvider = FutureProvider<List<Map<String, dynamic>>>((
+  ref,
+) async {
   final user = Supabase.instance.client.auth.currentUser;
   if (user == null) return [];
-  
+
   final response = await Supabase.instance.client
       .from('habit_stats')
       .select('*')
       .eq('user_id', user.id);
-      
+
   return List<Map<String, dynamic>>.from(response);
 });
 
-final habitAnalyticsProvider = FutureProvider<Map<String, Map<String, dynamic>>>((ref) async {
-  ref.keepAlive();
-  final user = Supabase.instance.client.auth.currentUser;
-  if (user == null) return {};
-  
-  final response = await Supabase.instance.client
-      .rpc('get_habit_analytics', params: {'p_user_id': user.id});
-      
-  final list = List<Map<String, dynamic>>.from(response);
-  
-  final result = <String, Map<String, dynamic>>{};
-  for (final item in list) {
-    final goalId = item['goal_id'] as String;
-    result[goalId] = item;
-  }
-  return result;
-});
+final habitAnalyticsProvider =
+    FutureProvider<Map<String, Map<String, dynamic>>>((ref) async {
+      ref.keepAlive();
+      final user = Supabase.instance.client.auth.currentUser;
+      if (user == null) return {};
+
+      final response = await Supabase.instance.client.rpc(
+        'get_habit_analytics',
+        params: {'p_user_id': user.id},
+      );
+
+      final list = List<Map<String, dynamic>>.from(response);
+
+      final result = <String, Map<String, dynamic>>{};
+      for (final item in list) {
+        final goalId = item['goal_id'] as String;
+        result[goalId] = item;
+      }
+      return result;
+    });
 
 final globalCriticalDayProvider = FutureProvider<String>((ref) async {
   ref.keepAlive();
   final user = Supabase.instance.client.auth.currentUser;
   if (user == null) return 'N/A';
-  
+
   try {
-    final response = await Supabase.instance.client
-        .rpc('get_global_critical_day', params: {'p_user_id': user.id});
-        
+    final response = await Supabase.instance.client.rpc(
+      'get_global_critical_day',
+      params: {'p_user_id': user.id},
+    );
+
     return response as String;
   } catch (e, stack) {
     AppLogger.error('Errore get_global_critical_day RPC', e, stack);
@@ -437,124 +474,145 @@ final globalCriticalDayProvider = FutureProvider<String>((ref) async {
   }
 });
 
-final globalTrendProvider = FutureProvider.family<List<Map<String, dynamic>>, String>((ref, timeframe) async {
+final globalTrendProvider =
+    FutureProvider.family<List<Map<String, dynamic>>, String>((
+      ref,
+      timeframe,
+    ) async {
+      ref.keepAlive();
+      final user = Supabase.instance.client.auth.currentUser;
+      if (user == null) return [];
+
+      final response = await Supabase.instance.client.rpc(
+        'get_global_trend',
+        params: {'p_user_id': user.id, 'p_timeframe': timeframe},
+      );
+
+      return List<Map<String, dynamic>>.from(response);
+    });
+
+final criticalHabitsProvider = FutureProvider<List<Map<String, dynamic>>>((
+  ref,
+) async {
   ref.keepAlive();
   final user = Supabase.instance.client.auth.currentUser;
   if (user == null) return [];
-  
-  final response = await Supabase.instance.client
-      .rpc('get_global_trend', params: {
-        'p_user_id': user.id,
-        'p_timeframe': timeframe,
-      });
-      
+
+  final response = await Supabase.instance.client.rpc(
+    'get_critical_habits',
+    params: {'p_user_id': user.id},
+  );
+
   return List<Map<String, dynamic>>.from(response);
 });
 
-final criticalHabitsProvider = FutureProvider<List<Map<String, dynamic>>>((ref) async {
+final bestHabitsProvider =
+    FutureProvider.family<List<Map<String, dynamic>>, String>((
+      ref,
+      timeframe,
+    ) async {
+      ref.keepAlive();
+      final user = Supabase.instance.client.auth.currentUser;
+      if (user == null) return [];
+
+      final response = await Supabase.instance.client.rpc(
+        'get_best_habits',
+        params: {'p_user_id': user.id, 'p_timeframe': timeframe},
+      );
+
+      return List<Map<String, dynamic>>.from(response);
+    });
+
+final habitPerformanceProvider =
+    FutureProvider.family<List<Map<String, dynamic>>, String>((
+      ref,
+      goalId,
+    ) async {
+      ref.keepAlive();
+      final user = Supabase.instance.client.auth.currentUser;
+      if (user == null) return [];
+
+      final response = await Supabase.instance.client.rpc(
+        'get_habit_performance_by_day',
+        params: {'p_user_id': user.id, 'p_goal_id': goalId},
+      );
+
+      return List<Map<String, dynamic>>.from(response);
+    });
+
+final habitAlertsProvider = FutureProvider.family<Map<String, dynamic>, String>(
+  (ref, goalId) async {
+    ref.keepAlive();
+    final user = Supabase.instance.client.auth.currentUser;
+    if (user == null) return {};
+
+    final response = await Supabase.instance.client.rpc(
+      'get_habit_alerts',
+      params: {'p_user_id': user.id, 'p_goal_id': goalId},
+    );
+
+    if (response is List && response.isNotEmpty) {
+      return Map<String, dynamic>.from(response.first);
+    }
+    return {};
+  },
+);
+
+final habitYearlyGridProvider = FutureProvider.family<List<int>, String>((
+  ref,
+  goalId,
+) async {
   ref.keepAlive();
   final user = Supabase.instance.client.auth.currentUser;
   if (user == null) return [];
-  
-  final response = await Supabase.instance.client
-      .rpc('get_critical_habits', params: {
-        'p_user_id': user.id,
-      });
-      
-  return List<Map<String, dynamic>>.from(response);
-});
 
-final bestHabitsProvider = FutureProvider.family<List<Map<String, dynamic>>, String>((ref, timeframe) async {
-  ref.keepAlive();
-  final user = Supabase.instance.client.auth.currentUser;
-  if (user == null) return [];
-  
-  final response = await Supabase.instance.client
-      .rpc('get_best_habits', params: {
-        'p_user_id': user.id,
-        'p_timeframe': timeframe,
-      });
-      
-  return List<Map<String, dynamic>>.from(response);
-});
+  final response = await Supabase.instance.client.rpc(
+    'get_habit_yearly_grid',
+    params: {'p_user_id': user.id, 'p_goal_id': goalId},
+  );
 
-final habitPerformanceProvider = FutureProvider.family<List<Map<String, dynamic>>, String>((ref, goalId) async {
-  ref.keepAlive();
-  final user = Supabase.instance.client.auth.currentUser;
-  if (user == null) return [];
-  
-  final response = await Supabase.instance.client
-      .rpc('get_habit_performance_by_day', params: {
-        'p_user_id': user.id,
-        'p_goal_id': goalId,
-      });
-      
-  return List<Map<String, dynamic>>.from(response);
-});
-
-final habitAlertsProvider = FutureProvider.family<Map<String, dynamic>, String>((ref, goalId) async {
-  ref.keepAlive();
-  final user = Supabase.instance.client.auth.currentUser;
-  if (user == null) return {};
-  
-  final response = await Supabase.instance.client
-      .rpc('get_habit_alerts', params: {
-        'p_user_id': user.id,
-        'p_goal_id': goalId,
-      });
-      
-  if (response is List && response.isNotEmpty) {
-    return Map<String, dynamic>.from(response.first);
-  }
-  return {};
-});
-
-final habitYearlyGridProvider = FutureProvider.family<List<int>, String>((ref, goalId) async {
-  ref.keepAlive();
-  final user = Supabase.instance.client.auth.currentUser;
-  if (user == null) return [];
-  
-  final response = await Supabase.instance.client
-      .rpc('get_habit_yearly_grid', params: {
-        'p_user_id': user.id,
-        'p_goal_id': goalId,
-      });
-      
   if (response is List) {
     return response.map((r) => (r['status_code'] as num).toInt()).toList();
   }
   return [];
 });
 
-final habitCorrelationsProvider = FutureProvider.family<List<Map<String, dynamic>>, String>((ref, goalId) async {
-  ref.keepAlive();
-  final user = Supabase.instance.client.auth.currentUser;
-  if (user == null) return [];
-  
-  final response = await Supabase.instance.client
-      .rpc('get_habit_correlations', params: {
-        'p_user_id': user.id,
-        'p_target_goal_id': goalId,
-      });
-      
-  return List<Map<String, dynamic>>.from(response);
-});
+final habitCorrelationsProvider =
+    FutureProvider.family<List<Map<String, dynamic>>, String>((
+      ref,
+      goalId,
+    ) async {
+      ref.keepAlive();
+      final user = Supabase.instance.client.auth.currentUser;
+      if (user == null) return [];
 
-final allHabitCorrelationsProvider = FutureProvider<List<Map<String, dynamic>>>((ref) async {
-  ref.keepAlive();
-  final user = Supabase.instance.client.auth.currentUser;
-  if (user == null) return [];
-  
-  try {
-    final response = await Supabase.instance.client
-        .rpc('get_all_habit_correlations', params: {'p_user_id': user.id});
-        
-    return List<Map<String, dynamic>>.from(response);
-  } catch (e, stack) {
-    AppLogger.error('Errore get_all_habit_correlations RPC', e, stack);
-    return [];
-  }
-});
+      final response = await Supabase.instance.client.rpc(
+        'get_habit_correlations',
+        params: {'p_user_id': user.id, 'p_target_goal_id': goalId},
+      );
+
+      return List<Map<String, dynamic>>.from(response);
+    });
+
+final allHabitCorrelationsProvider = FutureProvider<List<Map<String, dynamic>>>(
+  (ref) async {
+    ref.keepAlive();
+    final user = Supabase.instance.client.auth.currentUser;
+    if (user == null) return [];
+
+    try {
+      final response = await Supabase.instance.client.rpc(
+        'get_all_habit_correlations',
+        params: {'p_user_id': user.id},
+      );
+
+      return List<Map<String, dynamic>>.from(response);
+    } catch (e, stack) {
+      AppLogger.error('Errore get_all_habit_correlations RPC', e, stack);
+      return [];
+    }
+  },
+);
 
 // ─── Calendar view enum & provider ───────────────────────────────────────────
 
@@ -563,7 +621,9 @@ enum CalendarView { month, week, year, vita }
 class CalendarViewNotifier extends Notifier<CalendarView> {
   @override
   CalendarView build() {
-    final defaultViewStr = ref.watch(settingsProvider.select((s) => s.defaultCalendarView));
+    final defaultViewStr = ref.watch(
+      settingsProvider.select((s) => s.defaultCalendarView),
+    );
     return _parseView(defaultViewStr);
   }
 
@@ -586,7 +646,10 @@ class CalendarViewNotifier extends Notifier<CalendarView> {
   void setView(CalendarView v) => state = v;
 }
 
-final calendarViewProvider = NotifierProvider<CalendarViewNotifier, CalendarView>(CalendarViewNotifier.new);
+final calendarViewProvider =
+    NotifierProvider<CalendarViewNotifier, CalendarView>(
+      CalendarViewNotifier.new,
+    );
 
 // ─── Privacy mode provider ────────────────────────────────────────────────────
 
@@ -597,4 +660,6 @@ class PrivacyModeNotifier extends Notifier<bool> {
   void set(bool v) => state = v;
 }
 
-final privacyModeProvider = NotifierProvider<PrivacyModeNotifier, bool>(PrivacyModeNotifier.new);
+final privacyModeProvider = NotifierProvider<PrivacyModeNotifier, bool>(
+  PrivacyModeNotifier.new,
+);

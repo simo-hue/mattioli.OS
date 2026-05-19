@@ -47,8 +47,15 @@ comando sentry-cli durante il build di release, ma è un passaggio che va config
 ## 🚀 Preparazione Submission App Store (iOS)
 - [x] **Accettare l'accordo Paid Apps** nella sezione *Business* di App Store Connect. (COMPLETATO!)
 - [ ] **Aggiornare i Link Legali (EULA & Privacy)** nelle schede informative di App Store Connect.
-- [ ] **Incrementare il Build Number** in `pubspec.yaml` (es. a `1.0.0+3`).
-- [ ] **Rigenerare il pacchetto iOS offuscato** eseguendo `flutter build ipa --release --obfuscate --split-debug-info=build/app/outputs/symbols` nella cartella `mobile/`.
+- [x] **Incrementare il Build Number** in `pubspec.yaml` a `1.0.0+4`.
+- [ ] **Verificare RevenueCat prima del nuovo upload**:
+  - Entitlement consigliato: `Evolve Pro` oppure `evolve_pro`.
+  - Associa entrambi gli SKU App Store Connect all'entitlement Pro:
+    - `com.simo.evolve.pro.monthly`
+    - `com.simo.evolve.pro.yearly`
+  - L'app ora riconosce anche gli SKU StoreKit attivi come fallback, ma la mappatura RevenueCat corretta mantiene dashboard, restore e analytics coerenti.
+- [ ] **Rigenerare il pacchetto iOS offuscato per build `1.0.0+4`** eseguendo `flutter build ipa --release --obfuscate --split-debug-info=build/app/outputs/symbols` nella cartella `mobile/`.
 - [ ] **Caricare la build tramite Transporter o Xcode Organizer**.
 - [ ] **Configurare le credenziali dell'account di test** e le note di risposta nel Resolution Center prima dell'invio.
-
+- [ ] **Risposta suggerita per Resolution Center**:
+  - "We fixed the Sign in with Apple post-login crash by making iOS Keychain persistence resilient to duplicate keychain items (`-25299`) during review reinstall/update flows. We also fixed subscription activation/restoration by refreshing RevenueCat customer info after purchase/restore and accepting active StoreKit subscription product IDs as Pro access in addition to RevenueCat entitlements. The new build is `1.0.0+4`."

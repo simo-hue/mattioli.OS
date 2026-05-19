@@ -1499,3 +1499,20 @@
 - **Link Integrity**: Validated header and mobile menus to ensure robust routing back to specific landing page anchors from legal sub-pages.
 - **Titolare Sync**: Confirmed perfect alignment of owner information and contact emails.
 
+---
+
+## [2026-05-19 14:08]: App Store Review - Apple Sign-In Keychain & IAP Activation Fix
+*Details*: Addressed the Apple Review feedback for Guideline 2.1(a) and 2.1(b). The Sign in with Apple failure was traced to unhandled iOS Keychain duplicate-item errors (`-25299`) during post-login session/cache writes. The subscription failure was traced to overly strict RevenueCat entitlement matching after StoreKit confirmed a sandbox purchase.
+*Tech Notes*:
+- **Keychain Resilience**: Added `lib/core/secure_storage_utils.dart` with shared secure-storage options and duplicate-item recovery. Updated Supabase session storage, startup cache migration, settings persistence, biometric preference reads, and goals/log cache writes to avoid unhandled Keychain exceptions after Apple login.
+- **RevenueCat Activation**: Hardened `SubscriptionService` initialization to avoid repeated SDK configuration, use `Purchases.logIn()` when already configured, refresh customer info after purchase/restore, and treat known active StoreKit subscription product IDs (`com.simo.evolve.pro.monthly`, `com.simo.evolve.pro.yearly`) as valid Pro access in addition to RevenueCat entitlement IDs.
+- **Store Review Build**: Incremented `pubspec.yaml` from `1.0.0+3` to `1.0.0+4` for the next App Store submission.
+- **Tests**: Added `test/subscription_service_test.dart` to verify Pro access detection through both RevenueCat entitlements and StoreKit active subscription IDs.
+- **Verification**: `flutter analyze`, `flutter test`, and `flutter build ios --release --no-codesign` all completed successfully.
+
+**Current Status**:
+- Implementation complete.
+- Local iOS release build without codesign succeeds.
+
+**Next Step**:
+- Generate the signed/obfuscated IPA for build `1.0.0+4`, upload it to App Store Connect, and reply in Resolution Center with the Apple Sign-In Keychain and subscription activation fixes.

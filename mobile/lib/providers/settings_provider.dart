@@ -3,6 +3,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../core/notifications.dart';
 import '../core/app_logger.dart';
 import '../core/subscription_service.dart';
+import '../core/secure_storage_utils.dart';
 import 'shared_prefs_provider.dart';
 import 'auth_provider.dart';
 import 'goal_provider.dart';
@@ -14,7 +15,7 @@ class AppSettings {
   final bool hapticFeedback;
   final String language;
   final bool timeFormat24h;
-  
+
   // Pro / AI features (some local, some synced)
   final bool aiSuggestions;
   final bool isPro;
@@ -145,24 +146,44 @@ class AppSettingsNotifier extends Notifier<AppSettings> {
   Future<void> _loadSecureSettings() async {
     try {
       final secureStorage = ref.read(secureStorageProvider);
-      
-      final biometricLockVal = await secureStorage.read(key: 'pref_biometric_lock');
-      final aiSuggestionsVal = await secureStorage.read(key: 'pref_ai_suggestions');
+
+      final biometricLockVal = await secureStorage.read(
+        key: 'pref_biometric_lock',
+      );
+      final aiSuggestionsVal = await secureStorage.read(
+        key: 'pref_ai_suggestions',
+      );
       final isProVal = await secureStorage.read(key: 'pref_is_pro');
       final focusModeVal = await secureStorage.read(key: 'pref_focus_mode');
       final milestonesVal = await secureStorage.read(key: 'pref_milestones');
-      final deepWorkInsightsVal = await secureStorage.read(key: 'pref_deep_work_insights');
+      final deepWorkInsightsVal = await secureStorage.read(
+        key: 'pref_deep_work_insights',
+      );
 
       state = state.copyWith(
-        biometricLock: biometricLockVal != null ? biometricLockVal == 'true' : state.biometricLock,
-        aiSuggestions: aiSuggestionsVal != null ? aiSuggestionsVal == 'true' : state.aiSuggestions,
+        biometricLock: biometricLockVal != null
+            ? biometricLockVal == 'true'
+            : state.biometricLock,
+        aiSuggestions: aiSuggestionsVal != null
+            ? aiSuggestionsVal == 'true'
+            : state.aiSuggestions,
         isPro: isProVal != null ? isProVal == 'true' : state.isPro,
-        focusMode: focusModeVal != null ? focusModeVal == 'true' : state.focusMode,
-        milestones: milestonesVal != null ? milestonesVal == 'true' : state.milestones,
-        deepWorkInsights: deepWorkInsightsVal != null ? deepWorkInsightsVal == 'true' : state.deepWorkInsights,
+        focusMode: focusModeVal != null
+            ? focusModeVal == 'true'
+            : state.focusMode,
+        milestones: milestonesVal != null
+            ? milestonesVal == 'true'
+            : state.milestones,
+        deepWorkInsights: deepWorkInsightsVal != null
+            ? deepWorkInsightsVal == 'true'
+            : state.deepWorkInsights,
       );
     } catch (e, stack) {
-      AppLogger.error('Errore nel caricamento delle impostazioni sicure in SettingsProvider', e, stack);
+      AppLogger.error(
+        'Errore nel caricamento delle impostazioni sicure in SettingsProvider',
+        e,
+        stack,
+      );
     }
   }
 
@@ -184,7 +205,10 @@ class AppSettingsNotifier extends Notifier<AppSettings> {
 
     // Smart visibility check: adjust accent color if theme mode changes
     if (newSettings.themeMode != state.themeMode) {
-      final safeAccent = _ensureSafeAccentColor(newSettings.accentColor, newSettings.themeMode);
+      final safeAccent = _ensureSafeAccentColor(
+        newSettings.accentColor,
+        newSettings.themeMode,
+      );
       finalSettings = newSettings.copyWith(accentColor: safeAccent);
     }
 
@@ -204,7 +228,7 @@ class AppSettingsNotifier extends Notifier<AppSettings> {
   /// Robust check to prevent "invisible" UI elements (e.g. white accent on white background)
   Color _ensureSafeAccentColor(Color color, String mode) {
     final double luminance = color.computeLuminance();
-    
+
     if (mode == 'light') {
       // If switching to Light Mode, ensure the accent color is dark enough
       // luminance > 0.9 is basically white or very pale yellow
@@ -234,7 +258,7 @@ class AppSettingsNotifier extends Notifier<AppSettings> {
 
   AppSettings _loadFromPrefs() {
     final prefs = ref.read(sharedPrefsProvider);
-    
+
     // Helper per leggere colori in esadecimale
     Color parseColor(String? hexString) {
       if (hexString == null || hexString.isEmpty) return premiumAccentColors[0];
@@ -251,27 +275,29 @@ class AppSettingsNotifier extends Notifier<AppSettings> {
     return AppSettings(
       themeMode: prefs.getString('pref_theme_mode') ?? 'dark',
       accentColor: parseColor(prefs.getString('pref_accent_color')),
-      defaultCalendarView: prefs.getString('pref_default_calendar_view') ?? 'settimana',
+      defaultCalendarView:
+          prefs.getString('pref_default_calendar_view') ?? 'settimana',
       hapticFeedback: prefs.getBool('pref_haptic_feedback') ?? true,
       language: prefs.getString('pref_language') ?? _getDefaultLanguage(),
       timeFormat24h: prefs.getBool('pref_time_format_24h') ?? true,
-      
+
       aiSuggestions: prefs.getBool('pref_ai_suggestions') ?? false,
-      isPro: prefs.getBool('pref_is_pro') ?? true, // Default to true in dev
+      isPro: prefs.getBool('pref_is_pro') ?? false,
       focusMode: prefs.getBool('pref_focus_mode') ?? false,
       milestones: prefs.getBool('pref_milestones') ?? true,
       deepWorkInsights: prefs.getBool('pref_deep_work_insights') ?? false,
-      
+
       habitReminders: prefs.getBool('notif_habit_reminders') ?? true,
       goalDeadlines: prefs.getBool('notif_goal_deadlines') ?? true,
       aiInsights: prefs.getBool('notif_ai_insights') ?? false,
       weeklyReports: prefs.getBool('notif_weekly_reports') ?? false,
       eveningReview: prefs.getBool('notif_evening_review') ?? true,
-      
+
       biometricLock: prefs.getBool('pref_biometric_lock') ?? false,
-      
+
       morningBriefTime: prefs.getString('notif_morning_brief_time') ?? '09:00',
-      eveningReviewTime: prefs.getString('notif_evening_review_time') ?? '21:00',
+      eveningReviewTime:
+          prefs.getString('notif_evening_review_time') ?? '21:00',
     );
   }
 
@@ -290,8 +316,9 @@ class AppSettingsNotifier extends Notifier<AppSettings> {
 
   void _saveToPrefs(AppSettings s) {
     final prefs = ref.read(sharedPrefsProvider);
-    
-    String toHex(Color color) => '#${color.toARGB32().toRadixString(16).substring(2, 8).toUpperCase()}';
+
+    String toHex(Color color) =>
+        '#${color.toARGB32().toRadixString(16).substring(2, 8).toUpperCase()}';
 
     prefs.setString('pref_theme_mode', s.themeMode);
     prefs.setString('pref_accent_color', toHex(s.accentColor));
@@ -299,32 +326,54 @@ class AppSettingsNotifier extends Notifier<AppSettings> {
     prefs.setBool('pref_haptic_feedback', s.hapticFeedback);
     prefs.setString('pref_language', s.language);
     prefs.setBool('pref_time_format_24h', s.timeFormat24h);
-    
+
     prefs.setBool('pref_ai_suggestions', s.aiSuggestions);
     // is_pro is read-only from server, but we cache it
     prefs.setBool('pref_is_pro', s.isPro);
     prefs.setBool('pref_focus_mode', s.focusMode);
     prefs.setBool('pref_milestones', s.milestones);
     prefs.setBool('pref_deep_work_insights', s.deepWorkInsights);
-    
+
     prefs.setBool('notif_habit_reminders', s.habitReminders);
     prefs.setBool('notif_goal_deadlines', s.goalDeadlines);
     prefs.setBool('notif_ai_insights', s.aiInsights);
     prefs.setBool('notif_weekly_reports', s.weeklyReports);
     prefs.setBool('notif_evening_review', s.eveningReview);
-    
+
     prefs.setBool('pref_biometric_lock', s.biometricLock);
-    
+
     // Scrittura su SecureStorage per sicurezza (evita manipolazioni su dispositivi rooted)
-    final secureStorage = ref.read(secureStorageProvider);
-    
-    secureStorage.write(key: 'pref_biometric_lock', value: s.biometricLock.toString()).catchError((e, stack) => AppLogger.error('Errore scrittura biometric_lock su SecureStorage', e, stack));
-    secureStorage.write(key: 'pref_ai_suggestions', value: s.aiSuggestions.toString()).catchError((e, stack) => AppLogger.error('Errore scrittura ai_suggestions su SecureStorage', e, stack));
-    secureStorage.write(key: 'pref_is_pro', value: s.isPro.toString()).catchError((e, stack) => AppLogger.error('Errore scrittura is_pro su SecureStorage', e, stack));
-    secureStorage.write(key: 'pref_focus_mode', value: s.focusMode.toString()).catchError((e, stack) => AppLogger.error('Errore scrittura focus_mode su SecureStorage', e, stack));
-    secureStorage.write(key: 'pref_milestones', value: s.milestones.toString()).catchError((e, stack) => AppLogger.error('Errore scrittura milestones su SecureStorage', e, stack));
-    secureStorage.write(key: 'pref_deep_work_insights', value: s.deepWorkInsights.toString()).catchError((e, stack) => AppLogger.error('Errore scrittura deep_work_insights su SecureStorage', e, stack));
-    
+    SecureStorageUtils.tryWrite(
+      'pref_biometric_lock',
+      s.biometricLock.toString(),
+      context: '[Settings] biometric_lock',
+    );
+    SecureStorageUtils.tryWrite(
+      'pref_ai_suggestions',
+      s.aiSuggestions.toString(),
+      context: '[Settings] ai_suggestions',
+    );
+    SecureStorageUtils.tryWrite(
+      'pref_is_pro',
+      s.isPro.toString(),
+      context: '[Settings] is_pro',
+    );
+    SecureStorageUtils.tryWrite(
+      'pref_focus_mode',
+      s.focusMode.toString(),
+      context: '[Settings] focus_mode',
+    );
+    SecureStorageUtils.tryWrite(
+      'pref_milestones',
+      s.milestones.toString(),
+      context: '[Settings] milestones',
+    );
+    SecureStorageUtils.tryWrite(
+      'pref_deep_work_insights',
+      s.deepWorkInsights.toString(),
+      context: '[Settings] deep_work_insights',
+    );
+
     prefs.setString('notif_morning_brief_time', s.morningBriefTime);
     prefs.setString('notif_evening_review_time', s.eveningReviewTime);
   }
@@ -343,7 +392,9 @@ class AppSettingsNotifier extends Notifier<AppSettings> {
         // Applica i dati dal server allo stato locale
         Color parseColor(String hexString) {
           try {
-            return Color(int.parse(hexString.replaceFirst('#', 'ff'), radix: 16));
+            return Color(
+              int.parse(hexString.replaceFirst('#', 'ff'), radix: 16),
+            );
           } catch (_) {
             return premiumAccentColors[0];
           }
@@ -351,8 +402,11 @@ class AppSettingsNotifier extends Notifier<AppSettings> {
 
         final serverSettings = state.copyWith(
           themeMode: data['theme_mode'] ?? state.themeMode,
-          accentColor: data['accent_color'] != null ? parseColor(data['accent_color']) : state.accentColor,
-          defaultCalendarView: data['pref_default_calendar_view'] ?? state.defaultCalendarView,
+          accentColor: data['accent_color'] != null
+              ? parseColor(data['accent_color'])
+              : state.accentColor,
+          defaultCalendarView:
+              data['pref_default_calendar_view'] ?? state.defaultCalendarView,
           hapticFeedback: data['pref_haptic_feedback'] ?? state.hapticFeedback,
           language: data['language'] ?? state.language,
           timeFormat24h: data['pref_time_format_24h'] ?? state.timeFormat24h,
@@ -363,15 +417,21 @@ class AppSettingsNotifier extends Notifier<AppSettings> {
           weeklyReports: data['notif_weekly_reports'] ?? state.weeklyReports,
           eveningReview: data['notif_evening_review'] ?? state.eveningReview,
           biometricLock: data['biometric_lock'] ?? state.biometricLock,
-          morningBriefTime: data['morning_brief_time'] ?? state.morningBriefTime,
-          eveningReviewTime: data['evening_review_time'] ?? state.eveningReviewTime,
+          morningBriefTime:
+              data['morning_brief_time'] ?? state.morningBriefTime,
+          eveningReviewTime:
+              data['evening_review_time'] ?? state.eveningReviewTime,
         );
 
         state = serverSettings;
         _saveToPrefs(state);
       }
     } catch (e, stack) {
-      AppLogger.error('[Settings] Errore nel download impostazioni da Supabase', e, stack);
+      AppLogger.error(
+        '[Settings] Errore nel download impostazioni da Supabase',
+        e,
+        stack,
+      );
     }
   }
 
@@ -380,27 +440,35 @@ class AppSettingsNotifier extends Notifier<AppSettings> {
     if (user == null) return;
 
     try {
-      String toHex(Color color) => '#${color.toARGB32().toRadixString(16).substring(2, 8).toUpperCase()}';
+      String toHex(Color color) =>
+          '#${color.toARGB32().toRadixString(16).substring(2, 8).toUpperCase()}';
 
-      await supabase.from('profiles').update({
-        'theme_mode': s.themeMode,
-        'accent_color': toHex(s.accentColor),
-        'pref_default_calendar_view': s.defaultCalendarView,
-        'pref_haptic_feedback': s.hapticFeedback,
-        'language': s.language,
-        'pref_time_format_24h': s.timeFormat24h,
-        // is_pro non lo inviamo per sicurezza, è gestito dal server
-        'notif_habit_reminders': s.habitReminders,
-        'notif_goal_deadlines': s.goalDeadlines,
-        'notif_ai_insights': s.aiInsights,
-        'notif_weekly_reports': s.weeklyReports,
-        'notif_evening_review': s.eveningReview,
-        'biometric_lock': s.biometricLock,
-        'morning_brief_time': s.morningBriefTime,
-        'evening_review_time': s.eveningReviewTime,
-      }).eq('id', user.id);
+      await supabase
+          .from('profiles')
+          .update({
+            'theme_mode': s.themeMode,
+            'accent_color': toHex(s.accentColor),
+            'pref_default_calendar_view': s.defaultCalendarView,
+            'pref_haptic_feedback': s.hapticFeedback,
+            'language': s.language,
+            'pref_time_format_24h': s.timeFormat24h,
+            // is_pro non lo inviamo per sicurezza, è gestito dal server
+            'notif_habit_reminders': s.habitReminders,
+            'notif_goal_deadlines': s.goalDeadlines,
+            'notif_ai_insights': s.aiInsights,
+            'notif_weekly_reports': s.weeklyReports,
+            'notif_evening_review': s.eveningReview,
+            'biometric_lock': s.biometricLock,
+            'morning_brief_time': s.morningBriefTime,
+            'evening_review_time': s.eveningReviewTime,
+          })
+          .eq('id', user.id);
     } catch (e, stack) {
-      AppLogger.error('[Settings] Errore nell\'upload impostazioni su Supabase', e, stack);
+      AppLogger.error(
+        '[Settings] Errore nell\'upload impostazioni su Supabase',
+        e,
+        stack,
+      );
       // Silenzioso, l'utente continuerà a usare le SharedPreferences locali
       // al prossimo riavvio l'app riproverà a sincronizzare se necessario
     }
@@ -413,29 +481,41 @@ class AppSettingsNotifier extends Notifier<AppSettings> {
       if (state.focusMode) return;
 
       if (state.habitReminders) {
-        _notificationService.scheduleDailyHabitReminder(timeStr: state.morningBriefTime);
+        _notificationService.scheduleDailyHabitReminder(
+          timeStr: state.morningBriefTime,
+        );
       }
 
       if (state.eveningReview) {
-        _notificationService.scheduleEveningReview(timeStr: state.eveningReviewTime);
+        _notificationService.scheduleEveningReview(
+          timeStr: state.eveningReviewTime,
+        );
       }
-      
+
       // Schedule specific habit reminders
       try {
         final goals = ref.read(goalsProvider);
         for (final goal in goals) {
           if (goal.reminderTime != null) {
-            _notificationService.scheduleHabitReminder(goal.id, goal.title, goal.reminderTime);
+            _notificationService.scheduleHabitReminder(
+              goal.id,
+              goal.title,
+              goal.reminderTime,
+            );
           }
         }
       } catch (e, stack) {
-        AppLogger.error('[Settings] Errore nella schedulazione promemoria abitudini', e, stack);
+        AppLogger.error(
+          '[Settings] Errore nella schedulazione promemoria abitudini',
+          e,
+          stack,
+        );
       }
-      
+
       if (state.aiInsights && state.isPro) {
         // Placeholder for AI scheduling
       }
-      
+
       if (state.weeklyReports && state.isPro) {
         // Placeholder for weekly scheduling
       }
@@ -443,4 +523,6 @@ class AppSettingsNotifier extends Notifier<AppSettings> {
   }
 }
 
-final settingsProvider = NotifierProvider<AppSettingsNotifier, AppSettings>(AppSettingsNotifier.new);
+final settingsProvider = NotifierProvider<AppSettingsNotifier, AppSettings>(
+  AppSettingsNotifier.new,
+);

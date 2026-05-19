@@ -3,7 +3,6 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 import 'package:shared_preferences/shared_preferences.dart';
-import 'package:flutter_secure_storage/flutter_secure_storage.dart';
 import 'providers/goal_provider.dart';
 import 'package:sentry_flutter/sentry_flutter.dart';
 import 'dart:ui';
@@ -23,19 +22,18 @@ import 'core/navigator_key.dart';
 import 'package:intl/date_symbol_data_local.dart';
 import 'core/app_logger.dart';
 import 'core/secure_local_storage.dart';
+import 'core/secure_storage_utils.dart';
 
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
-  
+
   await initializeDateFormatting('it', null);
 
   // ── Supabase init ─────────────────────────────────────────────────────────
   await Supabase.initialize(
     url: SupabaseConfig.url,
     anonKey: SupabaseConfig.anonKey,
-    authOptions: FlutterAuthClientOptions(
-      localStorage: SecureLocalStorage(),
-    ),
+    authOptions: FlutterAuthClientOptions(localStorage: SecureLocalStorage()),
   );
 
   // ── Notifications init ───────────────────────────────────────────────────
@@ -43,41 +41,56 @@ void main() async {
     final notificationService = NotificationService();
     await notificationService.init().timeout(const Duration(seconds: 3));
   } catch (e, stack) {
-    AppLogger.error('Notification initialization failed or timed out', e, stack);
+    AppLogger.error(
+      'Notification initialization failed or timed out',
+      e,
+      stack,
+    );
   }
 
   // ── SharedPreferences init ───────────────────────────────────────────────
   final prefs = await SharedPreferences.getInstance();
 
   // ── Secure Cache Loading & Migration ─────────────────────────────────────
-  const storage = FlutterSecureStorage(
-    aOptions: AndroidOptions(encryptedSharedPreferences: true),
-    iOptions: IOSOptions(accessibility: KeychainAccessibility.first_unlock),
-  );
-
   // Carica Goals Cache
-  String? goalsJson = await storage.read(key: 'goals_cache');
+  String? goalsJson;
+  try {
+    goalsJson = await SecureStorageUtils.read('goals_cache');
+  } catch (e, stack) {
+    AppLogger.error('[Startup] goals_cache secure read failed', e, stack);
+  }
   if (goalsJson == null) {
     // Migrazione da SharedPreferences se esiste
     final oldGoals = prefs.getString('goals_cache');
     if (oldGoals != null) {
       goalsJson = oldGoals;
-      await storage.write(key: 'goals_cache', value: goalsJson);
-      await prefs.remove('goals_cache');
+      await SecureStorageUtils.tryWrite(
+        'goals_cache',
+        goalsJson,
+        context: '[Startup] goals_cache migration',
+      );
     } else {
       goalsJson = '[]';
     }
   }
 
   // Carica Logs Cache
-  String? logsJson = await storage.read(key: 'goal_logs_cache');
+  String? logsJson;
+  try {
+    logsJson = await SecureStorageUtils.read('goal_logs_cache');
+  } catch (e, stack) {
+    AppLogger.error('[Startup] goal_logs_cache secure read failed', e, stack);
+  }
   if (logsJson == null) {
     // Migrazione da SharedPreferences se esiste
     final oldLogs = prefs.getString('goal_logs_cache');
     if (oldLogs != null) {
       logsJson = oldLogs;
-      await storage.write(key: 'goal_logs_cache', value: logsJson);
-      await prefs.remove('goal_logs_cache');
+      await SecureStorageUtils.tryWrite(
+        'goal_logs_cache',
+        logsJson,
+        context: '[Startup] goal_logs_cache migration',
+      );
     } else {
       logsJson = '{}';
     }
@@ -124,7 +137,8 @@ void main() async {
         ErrorModal.show(
           context,
           title: 'Si è verificato un errore',
-          message: 'L\'applicazione ha riscontrato un problema imprevisto. Abbiamo registrato l\'errore e cercheremo di risolverlo.',
+          message:
+              'L\'applicazione ha riscontrato un problema imprevisto. Abbiamo registrato l\'errore e cercheremo di risolverlo.',
           details: error.toString(),
         );
       }
@@ -144,25 +158,20 @@ void main() async {
   }
 
   if (hasSentryConsent) {
-    await SentryFlutter.init(
-      (options) {
-        options.dsn = SentryConfig.dsn;
-        options.environment = SentryConfig.environment;
-        options.tracesSampleRate = SentryConfig.tracesSampleRate;
-        options.reportPackages = true;
-        options.debug = false;
-        options.beforeSend = (event, hint) {
-          return SentryConfig.sanitizeEvent(event);
-        };
-      },
-      appRunner: startApp,
-    );
+    await SentryFlutter.init((options) {
+      options.dsn = SentryConfig.dsn;
+      options.environment = SentryConfig.environment;
+      options.tracesSampleRate = SentryConfig.tracesSampleRate;
+      options.reportPackages = true;
+      options.debug = false;
+      options.beforeSend = (event, hint) {
+        return SentryConfig.sanitizeEvent(event);
+      };
+    }, appRunner: startApp);
   } else {
     startApp();
   }
 }
-
-
 
 // ── Router ───────────────────────────────────────────────────────────────────
 // Usa un listenable che reagisce ai cambiamenti di sessione Supabase,
@@ -178,14 +187,8 @@ final routerProvider = Provider<GoRouter>((ref) {
     refreshListenable: authNotifier,
     observers: [SentryNavigatorObserver()],
     routes: [
-      GoRoute(
-        path: '/',
-        builder: (context, state) => const HomeScreen(),
-      ),
-      GoRoute(
-        path: '/login',
-        builder: (context, state) => const AuthScreen(),
-      ),
+      GoRoute(path: '/', builder: (context, state) => const HomeScreen()),
+      GoRoute(path: '/login', builder: (context, state) => const AuthScreen()),
       GoRoute(
         path: '/consent',
         builder: (context, state) => const ConsentScreen(),
@@ -230,7 +233,9 @@ class EvolveApp extends ConsumerWidget {
       title: 'Evolve',
       theme: AppTheme.lightTheme(settings.accentColor),
       darkTheme: AppTheme.darkTheme(settings.accentColor),
-      themeMode: settings.themeMode == 'dark' ? ThemeMode.dark : ThemeMode.light,
+      themeMode: settings.themeMode == 'dark'
+          ? ThemeMode.dark
+          : ThemeMode.light,
       routerConfig: router,
       debugShowCheckedModeBanner: false,
     );

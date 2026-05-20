@@ -65,7 +65,7 @@ const TermsOfService = () => {
                     </h1>
                     <p className="text-zinc-400 text-sm md:text-base max-w-2xl mx-auto">
                         Clear, transparent, and fair legal terms. Learn about your rights, our open-source MIT framework, 
-                        and the responsibilities governing your usage of <span className="text-white font-medium">Evolve</span>.
+                        and the responsibilities governing your usage of <span className="text-white font-medium">Mattioli.OS</span>.
                     </p>
                     <div className="text-xs text-zinc-500 font-mono mt-4">
                         Last Updated: {lastUpdated}
@@ -124,7 +124,7 @@ const TermsOfService = () => {
                                 1. Acceptance of Terms
                             </h2>
                             <p className="text-zinc-400 leading-relaxed text-sm md:text-base">
-                                By installing <span className="text-white font-medium">Evolve - Daily Habits & Goals</span>, launching its companion dashboard, or checking the "I Accept" consent checkbox during user onboarding, you represent that you have read, understood, and agreed to adhere to these Terms of Service. If you do not accept these criteria, you may not access our secure cloud backends or host databases on our infrastructure.
+                                By installing <span className="text-white font-medium">Mattioli.OS - Daily Habits & Goals</span>, launching its companion dashboard, or checking the "I Accept" consent checkbox during user onboarding, you represent that you have read, understood, and agreed to adhere to these Terms of Service. If you do not accept these criteria, you may not access our secure cloud backends or host databases on our infrastructure.
                             </p>
                         </motion.section>
 
@@ -135,12 +135,12 @@ const TermsOfService = () => {
                                 2. License & Open Source Frameworks
                             </h2>
                             <p className="text-zinc-400 leading-relaxed text-sm md:text-base">
-                                We grant you a revocable, non-exclusive, non-transferable, limited license to run Evolve on your personal iOS device for your own individual, non-commercial self-tracking purposes.
+                                We grant you a revocable, non-exclusive, non-transferable, limited license to run Mattioli.OS on your personal iOS device for your own individual, non-commercial self-tracking purposes.
                             </p>
                             <div className="p-5 rounded-xl bg-zinc-900/30 border border-white/5">
                                 <h3 className="text-sm font-semibold text-white mb-2 font-mono">MIT Open Source Compatibility</h3>
                                 <p className="text-xs md:text-sm text-zinc-500 leading-relaxed">
-                                    The software codebases for the Evolve ecosystem and the Flutter mobile client are open-source and released under the MIT License. If you clone, build, and deploy your own copy of the repository onto your personal servers or Apple developer accounts, that build is governed directly by the MIT License text. These terms govern only your usage of the official, published app store release and official cloud synchronization backends.
+                                    The software codebases for the Mattioli.OS ecosystem and the Flutter mobile client are open-source and released under the MIT License. If you clone, build, and deploy your own copy of the repository onto your personal servers or Apple developer accounts, that build is governed directly by the MIT License text. These terms govern only your usage of the official, published app store release and official cloud synchronization backends.
                                 </p>
                             </div>
                         </motion.section>
@@ -168,7 +168,7 @@ const TermsOfService = () => {
                                 4. Intellectual Property & Trademarks
                             </h2>
                             <p className="text-zinc-400 leading-relaxed text-sm md:text-base">
-                                While individual source code lines are accessible under public repositories, all stylized logos, UX designs, high-end layouts, "Evolve" App Store copy, the trademark name "Evolve", and premium concept arts are owned solely by Mattioli Simone. You may not repackage or rebrand the compiled application for commercial retail distribution under our brand name without explicit written authorization.
+                                While individual source code lines are accessible under public repositories, all stylized logos, UX designs, high-end layouts, "Mattioli.OS" App Store copy, the trademark name "Mattioli.OS", and premium concept arts are owned solely by Mattioli Simone. You may not repackage or rebrand the compiled application for commercial retail distribution under our brand name without explicit written authorization.
                             </p>
                         </motion.section>
 
@@ -179,7 +179,7 @@ const TermsOfService = () => {
                                 5. Wellness & Medical Disclaimer
                             </h2>
                             <p className="text-zinc-400 leading-relaxed text-sm md:text-base">
-                                Evolve includes analytics modules like the **Wellness vs Output Index**, mood logs, and the **Memento Mori Life Calendar** to help you understand personal trends.
+                                Mattioli.OS includes analytics modules like the **Wellness vs Output Index**, mood logs, and the **Memento Mori Life Calendar** to help you understand personal trends.
                             </p>
                             <div className="p-5 rounded-xl bg-red-950/10 border border-red-500/10 hover:border-red-500/20 transition-all duration-300">
                                 <h3 className="text-sm font-semibold text-red-400 mb-2 font-mono flex items-center gap-1.5">
@@ -187,7 +187,7 @@ const TermsOfService = () => {
                                     Not Medical or Psychological Advice
                                 </h3>
                                 <p className="text-xs md:text-sm text-zinc-400 leading-relaxed">
-                                    All insights, correlation graphs, and habit alerts generated by Evolve are computed by general data algorithms or local artificial intelligence (AI Coach) for self-reflection purposes only. They are not medical diagnoses, professional psychological suggestions, or therapeutic advice. If you are experiencing distress, anxiety, burnout, or health concerns, please consult a licensed medical or psychological professional immediately.
+                                    All insights, correlation graphs, and habit alerts generated by Mattioli.OS are computed by general data algorithms or local artificial intelligence (AI Coach) for self-reflection purposes only. They are not medical diagnoses, professional psychological suggestions, or therapeutic advice. If you are experiencing distress, anxiety, burnout, or health concerns, please consult a licensed medical or psychological professional immediately.
                                 </p>
                             </div>
                         </motion.section>
@@ -218,7 +218,7 @@ const TermsOfService = () => {
                                 7. Termination
                             </h2>
                             <p className="text-zinc-400 leading-relaxed text-sm md:text-base">
-                                You can terminate this legal agreement at any time by simply deleting your user account in settings (which wipes all records from cloud databases) and removing Evolve from your iOS mobile device. We reserve the right to suspend or block API connections immediately if we detect malicious network intrusion attempts or code exploits.
+                                You can terminate this legal agreement at any time by simply deleting your user account in settings (which wipes all records from cloud databases) and removing Mattioli.OS from your iOS mobile device. We reserve the right to suspend or block API connections immediately if we detect malicious network intrusion attempts or code exploits.
                             </p>
                         </motion.section>
 
@@ -233,8 +233,8 @@ const TermsOfService = () => {
                             </p>
                             <div className="p-5 rounded-xl bg-zinc-900/30 border border-white/5 max-w-md">
                                 <span className="text-xs text-zinc-500 uppercase tracking-widest font-mono block mb-1">Legal Queries</span>
-                                <a href="mailto:support@evolve.app" className="text-lg font-mono text-purple-400 hover:text-purple-300 transition-colors">
-                                    support@evolve.app
+                                <a href="mailto:support@mattioli.os" className="text-lg font-mono text-purple-400 hover:text-purple-300 transition-colors">
+                                    support@mattioli.os
                                 </a>
                             </div>
                         </motion.section>

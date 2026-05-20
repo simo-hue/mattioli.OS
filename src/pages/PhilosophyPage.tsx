@@ -83,7 +83,7 @@ const PhilosophyPage = () => {
                 <div className="container mx-auto max-w-6xl">
                     <div className="text-center mb-16">
                         <h2 className="text-3xl font-bold mb-4">The Three Pillars</h2>
-                        <p className="text-zinc-400">The methodology on which EVOLVE is founded</p>
+                        <p className="text-zinc-400">The methodology on which Mattioli.OS is founded</p>
                     </div>
 
                     <motion.div
@@ -139,7 +139,7 @@ const PhilosophyPage = () => {
                     <blockquote className="text-3xl md:text-4xl font-serif italic text-zinc-300 mb-8 leading-relaxed">
                         "True freedom is not the absence of commitments, but the ability to choose your own chains. I chose discipline."
                     </blockquote>
-                    <cite className="text-amber-500 not-italic font-medium">— EVOLVE Manifesto</cite>
+                    <cite className="text-amber-500 not-italic font-medium">— Mattioli.OS Manifesto</cite>
                 </div>
             </section>
 

@@ -57,7 +57,7 @@ const GetStartedPage = () => {
                         transition={{ delay: 0.1 }}
                         className="text-lg text-zinc-400 max-w-2xl mx-auto"
                     >
-                        You don't need to be an expert programmer. Follow this step-by-step guide to install EVOLVE on your computer and become operational today.
+                        You don't need to be an expert programmer. Follow this step-by-step guide to install Mattioli.OS on your computer and become operational today.
                     </motion.p>
                 </div>
             </section>
@@ -98,7 +98,7 @@ const GetStartedPage = () => {
                             <h2 className="text-2xl font-bold mb-2 flex items-center gap-2">
                                 <Database className="text-green-400" /> Database Setup
                             </h2>
-                            <p className="text-zinc-400 mb-4">EVOLVE uses Supabase (free). Let's create your backend.</p>
+                            <p className="text-zinc-400 mb-4">Mattioli.OS uses Supabase (free). Let's create your backend.</p>
                             <ol className="list-decimal list-inside space-y-2 text-zinc-300 ml-2 marker:text-zinc-500">
                                 <li>Go to <a href="https://supabase.com" target="_blank" className="text-green-400 hover:underline">supabase.com</a> and create an account.</li>
                                 <li>Click on <strong>"New Project"</strong> and give it a name (e.g., "My Life OS").</li>
@@ -226,7 +226,7 @@ const GetStartedPage = () => {
 
                         <p className="text-zinc-400">
                             Now open your browser and go to <a href="http://localhost:8080" className="text-white hover:underline font-mono">http://localhost:8080</a> (or the indicated port).
-                            <br />Welcome to EVOLVE.
+                            <br />Welcome to Mattioli.OS.
                         </p>
                     </div>
 
@@ -243,7 +243,7 @@ const GetStartedPage = () => {
                                 <Globe className="text-blue-400" /> Publish Online
                             </h2>
                         </div>
-                        <p className="text-zinc-400">Want to use EVOLVE from your phone or share it? Here's how to put it online for free.</p>
+                        <p className="text-zinc-400">Want to use Mattioli.OS from your phone or share it? Here's how to put it online for free.</p>
                     </div>
 
                     <div className="grid grid-cols-1 md:grid-cols-2 gap-6">

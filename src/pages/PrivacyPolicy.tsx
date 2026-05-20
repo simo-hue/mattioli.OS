@@ -65,8 +65,8 @@ const PrivacyPolicy = () => {
                     </h1>
                     <p className="text-zinc-400 text-sm md:text-base max-w-2xl mx-auto">
                         Your productivity should not compromise your privacy. Below you will find detailed information about how 
-                        <span className="text-white font-medium"> Evolve - Daily Habits & Goals</span> and the 
-                        <span className="text-white font-medium"> Evolve</span> ecosystem secure and handle your data.
+                        <span className="text-white font-medium"> Mattioli.OS - Daily Habits & Goals</span> and the 
+                        <span className="text-white font-medium"> Mattioli.OS</span> ecosystem secure and handle your data.
                     </p>
                     <div className="text-xs text-zinc-500 font-mono mt-4">
                         Last Updated: {lastUpdated}
@@ -97,7 +97,7 @@ const PrivacyPolicy = () => {
                             <h4 className="text-xs font-semibold text-zinc-400 font-mono uppercase tracking-wider">
                                 Quick Actions
                             </h4>
-                            <a href="mailto:support@evolve.app" className="block">
+                            <a href="mailto:support@mattioli.os" className="block">
                                 <Button variant="outline" className="w-full text-xs h-9 rounded-lg border-white/10 text-zinc-300 hover:bg-white hover:text-black">
                                     <Mail size={12} className="mr-2" />
                                     Email Support
@@ -125,7 +125,7 @@ const PrivacyPolicy = () => {
                                 Our Core Covenant: Zero Data Brokerage
                             </h2>
                             <p className="text-zinc-300 leading-relaxed text-sm md:text-base">
-                                Evolve is built on the philosophy of full data ownership. We do not sell your data, we do not monetize your behavior, we do not track you across apps or websites, and we show absolute zero third-party advertising. All telemetry is localized or direct to your secure database container.
+                                Mattioli.OS is built on the philosophy of full data ownership. We do not sell your data, we do not monetize your behavior, we do not track you across apps or websites, and we show absolute zero third-party advertising. All telemetry is localized or direct to your secure database container.
                             </p>
                         </motion.div>
 
@@ -136,7 +136,7 @@ const PrivacyPolicy = () => {
                                 1. Introduction
                             </h2>
                             <p className="text-zinc-400 leading-relaxed text-sm md:text-base">
-                                Welcome to Evolve - Daily Habits & Goals, a mobile companion developed in Flutter, and its paired desktop web suite EVOLVE. This Privacy Policy details how we govern, protect, and encrypt user records. By using the app or the web platform, you consent to the structure of this policy. If you self-host or manage local-only databases, your data stays entirely within your personal systems.
+                                Welcome to Mattioli.OS - Daily Habits & Goals, a mobile companion developed in Flutter, and its paired desktop web suite Mattioli.OS. This Privacy Policy details how we govern, protect, and encrypt user records. By using the app or the web platform, you consent to the structure of this policy. If you self-host or manage local-only databases, your data stays entirely within your personal systems.
                             </p>
                         </motion.section>
 
@@ -197,7 +197,7 @@ const PrivacyPolicy = () => {
                                 4. AI Neural Coach & LLMs
                             </h2>
                             <p className="text-zinc-400 leading-relaxed text-sm md:text-base">
-                                One of Evolve's premium modules is the AI Neural Coach, built specifically for data correlation analysis.
+                                One of Mattioli.OS's premium modules is the AI Neural Coach, built specifically for data correlation analysis.
                             </p>
                             <div className="p-5 rounded-xl bg-zinc-900/30 border border-purple-500/10 hover:border-purple-500/20 transition-all duration-300">
                                 <h3 className="text-base font-semibold text-purple-300 mb-2 font-mono">Local-First Neural Compute</h3>
@@ -273,8 +273,8 @@ const PrivacyPolicy = () => {
                             </p>
                             <div className="p-5 rounded-xl bg-zinc-900/30 border border-white/5 max-w-md">
                                 <span className="text-xs text-zinc-500 uppercase tracking-widest font-mono block mb-1">Developer Contact</span>
-                                <a href="mailto:support@evolve.app" className="text-lg font-mono text-purple-400 hover:text-purple-300 transition-colors">
-                                    support@evolve.app
+                                <a href="mailto:support@mattioli.os" className="text-lg font-mono text-purple-400 hover:text-purple-300 transition-colors">
+                                    support@mattioli.os
                                 </a>
                             </div>
                         </motion.section>

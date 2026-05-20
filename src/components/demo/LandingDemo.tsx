@@ -970,7 +970,7 @@ export function LandingDemo() {
                                 <span className="w-1.5 h-1.5 rounded-full bg-green-500 animate-pulse" />
                             </div>
                             <div className="flex justify-between text-[8px] text-zinc-600 mt-2">
-                                <span>Evolve</span>
+                                <span>Mattioli.OS</span>
                             </div>
                         </div>
 

@@ -131,7 +131,7 @@ const TechPage = () => {
                             </div>
                             <h3 className="text-2xl font-bold mb-4">Mobile Experience, App-Free</h3>
                             <p className="text-zinc-400 mb-6 leading-relaxed">
-                                Alongside the native Evolve iOS App, the companion web dashboard is also a fully optimized <strong>Progressive Web App (PWA)</strong>.
+                                Alongside the native Mattioli.OS iOS App, the companion web dashboard is also a fully optimized <strong>Progressive Web App (PWA)</strong>.
                             </p>
                             <div className="grid grid-cols-2 gap-4 mb-8">
                                 <div className="p-4 rounded-2xl bg-white/5">

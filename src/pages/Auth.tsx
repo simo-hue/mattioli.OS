@@ -58,8 +58,8 @@ const Auth = () => {
                     <div className="inline-flex items-center justify-center w-12 h-12 rounded-xl bg-primary/10 border border-primary/20 mb-4 shadow-[0_0_15px_rgba(255,255,255,0.1)]">
                         <ShieldCheck className="w-6 h-6 text-primary" />
                     </div>
-                    <h1 className="text-3xl font-display font-bold tracking-widest bg-gradient-to-br from-white to-white/60 bg-clip-text text-transparent uppercase font-mono">
-                        EVOLVE
+                    <h1 className="text-3xl font-display font-bold tracking-widest bg-gradient-to-br from-white to-white/60 bg-clip-text text-transparent font-mono">
+                        Mattioli.OS
                     </h1>
                     <p className="text-sm text-muted-foreground font-light tracking-wide">
                         Build Routines & Grow Daily

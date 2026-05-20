@@ -505,6 +505,36 @@
     - Fully resolved the App Tracking Transparency (ATT) rejection. Since the app performs zero tracking, the ATT popups are completely omitted.
     - Marked FASE 4 and FASE 5 as fully completed in `RESUBMISSION_PLAN.md`.
 
+- [2026-05-20 13:30]: **Web Companion Rebranding Reversion to Mattioli.OS**
+  - *Details*: Reverted companion web application's visual branding from "Evolve" / "EVOLVE" back to "Mattioli.OS" per request, restoring all SEO metadata, footer widgets, page references, and support emails to the original brand name.
+  - *Tech Notes*:
+    - Updated `index.html` titles, SEO metadata tags, and canonical links.
+    - Updated `PublicHeader.tsx` and `Auth.tsx` to display "Mattioli.OS" in standard mixed-casing (removed `uppercase` Tailwind styles for brand consistency).
+    - Updated `PublicFooter.tsx` and all page components (`LandingPage.tsx`, `PhilosophyPage.tsx`, `TechPage.tsx`, `FAQ.tsx`, `CreatorPage.tsx`, `GetStartedPage.tsx`, `Index.tsx`) to reference "Mattioli.OS" and support URLs.
+    - Updated legal policies (`PrivacyPolicy.tsx` and `TermsOfService.tsx`) to restore the original brand name and support email (`support@mattioli.os`).
+    - Verified compilation and layout safety using typescript typecheck `npx tsc --noEmit` with 0 compile errors.
+
+- [2026-05-20 13:35]: **Landing Page Navigation Update**
+  - *Details*: Removed the external App Store link "Download Mattioli.OS for iOS" on the hero section of the landing page and replaced it with a dynamic, internal link to the Philosophy page to keep visitors engaged with the core concept of the platform.
+  - *Tech Notes*:
+    - Replaced `<a>` element containing the App Store reference in `LandingPage.tsx` with a `<Link>` component pointing to `/philosophy`.
+    - Added an elegant inline `ArrowRight` icon styled with the theme's signature purple glow.
+    - Verified compilation and layout safety using typescript typecheck `npx tsc --noEmit` with 0 compile errors.
+
+- [2026-05-20 13:38]: **Primary Landing Page CTA Update**
+  - *Details*: Replaced the "Access Web Companion" primary CTA button with a highly-engaging "Get Started Now" button linking to the step-by-step self-hosting installation guide, optimizing the landing page funnel for open-source self-mastery adopters.
+  - *Tech Notes*:
+    - Updated the `<Link>` path from `/auth` to `/get-started` in `LandingPage.tsx`.
+    - Renamed CTA button text to "Get Started Now".
+    - Verified compilation and layout safety using typescript typecheck `npx tsc --noEmit` with 0 compile errors.
+
+- [2026-05-20 13:40]: **Removed Footer App Store Promotion Card**
+  - *Details*: Deleted the iOS App Store Promotion Card from the public footer (`PublicFooter.tsx`) to streamline the layout and focus exclusively on the core open-source web companion platform.
+  - *Tech Notes*:
+    - Removed the promotion card container and its dynamic animation effects from `PublicFooter.tsx`.
+    - Removed the unused `Download` icon import from `lucide-react` in `PublicFooter.tsx`.
+    - Verified compilation and layout safety using typescript typecheck `npx tsc --noEmit` with 0 compile errors.
+
 ## Current Status
 
-- **Immediate Next Step**: Proceed to FASE 6 (Caricamento su App Store Connect ed Invio Review). Upload the `.ipa` using Transporter, associate the two subscription products, and submit the app with our pre-written, detailed English review notes.
+- **Immediate Next Step**: Website rebranding, CTA custom routing, and footer promotional assets are completely updated and verified. The platform is ready for deployment.

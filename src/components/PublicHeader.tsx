@@ -8,8 +8,8 @@ const PublicHeader = () => {
             <div className="container mx-auto px-6 h-16 flex items-center justify-between">
                 <div className="flex items-center gap-2">
                     <Link to="/" className="flex items-center gap-2">
-                        <span className="text-xl font-bold tracking-widest bg-gradient-to-r from-white to-white/60 bg-clip-text text-transparent uppercase font-mono">
-                            EVOLVE
+                        <span className="text-xl font-bold tracking-widest bg-gradient-to-r from-white to-white/60 bg-clip-text text-transparent font-mono">
+                            Mattioli.OS
                         </span>
                     </Link>
                     <span className="px-2 py-0.5 rounded-full bg-white/5 text-[10px] font-medium border border-white/10 text-white/60">

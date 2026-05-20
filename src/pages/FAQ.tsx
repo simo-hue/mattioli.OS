@@ -17,10 +17,10 @@ const faqData = [
         category: "Philosophy & General",
         icon: Activity,
         questions: [
-            { q: "What is EVOLVE?", a: "It's a complete operating system for personal growth. It's not just a habit tracker, but an integrated suite for managing daily habits, long-term goals and performance analysis." },
+            { q: "What is Mattioli.OS?", a: "It's a complete operating system for personal growth. It's not just a habit tracker, but an integrated suite for managing daily habits, long-term goals and performance analysis." },
             { q: "Why 'OS' (Operating System)?", a: "Because it aims to replace the fragmented infrastructure we usually use (scattered notes, multiple apps, Excel sheets) with a single centralized and consistent system to manage your life." },
             { q: "Is it really free?", a: "Yes, 100%. It's an Open Source project released under the MIT license. Your data is yours, there's no premium subscription." },
-            { q: "How is it different from Notion or Todoist?", a: "EVOLVE is 'opinionated'. Notion is flexible but requires hours for setup. Todoist is focused on lists. This system is built specifically for discipline and quantitative data analysis, ready to use." },
+            { q: "How is it different from Notion or Todoist?", a: "Mattioli.OS is 'opinionated'. Notion is flexible but requires hours for setup. Todoist is focused on lists. This system is built specifically for discipline and quantitative data analysis, ready to use." },
             { q: "What is the core philosophy?", a: "It's based on 'Atomic Habits' by James Clear: 'We don't rise to the level of our goals, we fall to the level of our systems.' The focus is on reducing friction and visualizing progress." },
             { q: "Do I need to create an account?", a: "Yes, the system uses Supabase Auth to ensure your data is secure, encrypted and accessible only to you. The account is free." },
             { q: "Who is the developer?", a: "I'm Simone Mattioli, a developer passionate about productivity and data visualization. I initially built this tool for myself." },
@@ -70,7 +70,7 @@ const faqData = [
             { q: "Where is the data saved?", a: "On Supabase, an open source and secure PostgreSQL database. You are the only owner of your data through authentication." },
             { q: "Can I make a backup?", a: "Yes. There's a 'Complete Backup' function that downloads a ZIP archive containing all your data in JSON format, organized by tables." },
             { q: "Can I import/export data?", a: "Yes, the backup system supports both complete export and import, useful for migrating or securing information." },
-            { q: "Is there a mobile app?", a: "Yes! Evolve is available as a native iOS app in the Apple App Store. The companion web dashboard is also fully responsive and installable as a Progressive Web App (PWA) on any mobile home screen." },
+            { q: "Is there a mobile app?", a: "Yes! Mattioli.OS is available as a native iOS app in the Apple App Store. The companion web dashboard is also fully responsive and installable as a Progressive Web App (PWA) on any mobile home screen." },
             { q: "What is the tech stack?", a: "React 18, Vite, TypeScript, Tailwind CSS, shadcn/ui, Supabase, TanStack Query, Recharts." },
             { q: "Can I self-host the database?", a: "Yes, since Supabase is open source, you can host your own Docker instance if you have the technical skills to do so." },
         ]
@@ -117,7 +117,7 @@ const FAQPage = () => {
                         Frequently Asked Questions
                     </h1>
                     <p className="text-zinc-400 mb-8 max-w-2xl mx-auto">
-                        Everything you need to know about EVOLVE. From the core philosophy to the deepest technical details.
+                        Everything you need to know about Mattioli.OS. From the core philosophy to the deepest technical details.
                     </p>
 
                     <div className="relative max-w-xl mx-auto">

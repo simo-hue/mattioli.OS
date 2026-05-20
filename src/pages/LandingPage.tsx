@@ -82,21 +82,19 @@ const LandingPage = () => {
                         transition={{ delay: 0.2 }}
                         className="flex flex-col sm:flex-row items-center justify-center gap-4 mb-16"
                     >
-                        <Link to="/auth">
+                        <Link to="/get-started">
                             <Button className="h-12 px-8 rounded-full bg-white text-black hover:bg-zinc-200 text-base font-medium transition-all shadow-lg hover:shadow-white/5 flex items-center gap-2">
-                                Access Web Companion
+                                Get Started Now
                                 <ArrowRight size={16} />
                             </Button>
                         </Link>
-                        <a 
-                            href="https://apps.apple.com" 
-                            target="_blank" 
-                            rel="noopener noreferrer"
+                        <Link 
+                            to="/philosophy"
                             className="inline-flex items-center gap-2.5 h-12 px-6 rounded-full bg-white/5 border border-white/10 hover:border-purple-500/30 text-white hover:bg-white/10 text-base font-medium transition-all"
                         >
-                            <span>Download Evolve for iOS</span>
-                            <span className="text-[10px] px-1.5 py-0.5 rounded bg-purple-500/20 text-purple-300 font-mono">App Store</span>
-                        </a>
+                            <span>Discover Our Philosophy</span>
+                            <ArrowRight size={16} className="text-purple-400" />
+                        </Link>
                     </motion.div>
                 </div>
             </section>

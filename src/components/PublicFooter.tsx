@@ -1,5 +1,5 @@
 import { Link } from "react-router-dom";
-import { Github, Twitter, Youtube, ArrowUpRight, ShieldCheck, FileText, Download } from "lucide-react";
+import { Github, Twitter, Youtube, ArrowUpRight, ShieldCheck, FileText } from "lucide-react";
 
 const PublicFooter = () => {
     const currentYear = new Date().getFullYear();
@@ -34,8 +34,8 @@ const PublicFooter = () => {
                     <div className="md:col-span-5 flex flex-col justify-between space-y-6">
                         <div>
                             <div className="flex items-center gap-2 mb-4">
-                                <span className="text-xl font-bold tracking-widest text-white bg-gradient-to-r from-white to-zinc-400 bg-clip-text text-transparent uppercase font-mono">
-                                    EVOLVE
+                                <span className="text-xl font-bold tracking-widest text-white bg-gradient-to-r from-white to-zinc-400 bg-clip-text text-transparent font-mono">
+                                    Mattioli.OS
                                 </span>
                                 <span className="px-2 py-0.5 rounded-full bg-white/5 text-[9px] font-mono border border-white/10 text-zinc-400">
                                     v4.1
@@ -46,25 +46,6 @@ const PublicFooter = () => {
                             </p>
                         </div>
 
-                        {/* App Store Promotion Card */}
-                        <div className="p-4 rounded-xl bg-zinc-900/40 border border-white/5 hover:border-purple-500/20 transition-colors duration-300 max-w-sm flex items-center gap-4">
-                            <div className="p-2.5 rounded-lg bg-purple-500/10 text-purple-400">
-                                <Download size={20} className="animate-pulse" />
-                            </div>
-                            <div className="flex-1 min-w-0">
-                                <h4 className="text-xs font-semibold text-white font-mono tracking-tight">Evolve iOS App</h4>
-                                <p className="text-[11px] text-zinc-500 truncate">Sleek daily routine tracking on the go.</p>
-                            </div>
-                            <a 
-                                href="https://apps.apple.com" 
-                                target="_blank" 
-                                rel="noopener noreferrer"
-                                className="inline-flex items-center justify-center p-1.5 rounded-full bg-white/5 hover:bg-white text-zinc-400 hover:text-black transition-all"
-                                title="Download Evolve on App Store"
-                            >
-                                <ArrowUpRight size={14} />
-                            </a>
-                        </div>
                     </div>
 
                     {/* Links columns */}
@@ -130,7 +111,7 @@ const PublicFooter = () => {
                 <div className="pt-8 flex flex-col sm:flex-row justify-between items-center gap-4 text-xs text-zinc-600">
                     <div className="flex flex-wrap items-center gap-1.5 text-center sm:text-left">
                         <span>© {currentYear}</span>
-                        <span className="font-semibold text-zinc-400 font-mono tracking-wider">EVOLVE</span>
+                        <span className="font-semibold text-zinc-400 font-mono tracking-wider">Mattioli.OS</span>
                         <span className="h-1 w-1 rounded-full bg-zinc-800 hidden sm:inline-block" />
                         <span>Released under the MIT License.</span>
                     </div>

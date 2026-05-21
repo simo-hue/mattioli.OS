@@ -127,11 +127,11 @@ class GlobalAlertsTabWidget extends ConsumerWidget {
             );
           },
           loading: () => const Center(child: CircularProgressIndicator()),
-          error: (err, stack) => Center(child: Text('Error: $err', style: TextStyle(color: context.appColors.mutedForeground))),
+          error: (err, stack) => Center(child: Text('${context.l10n.translate('Errore')}: $err', style: TextStyle(color: context.appColors.mutedForeground))),
         );
       },
       loading: () => const Center(child: CircularProgressIndicator()),
-      error: (err, stack) => Center(child: Text('Error: $err', style: TextStyle(color: context.appColors.mutedForeground))),
+      error: (err, stack) => Center(child: Text('${context.l10n.translate('Errore')}: $err', style: TextStyle(color: context.appColors.mutedForeground))),
     );
   }
 
@@ -632,8 +632,8 @@ class _FailureDetailCard extends StatelessWidget {
           Row(
             mainAxisAlignment: MainAxisAlignment.spaceBetween,
             children: [
-              _StatMiniItem(label: 'WORST STREAK', value: worstStreak, color: const Color(0xFFEF4444)),
-              _StatMiniItem(label: 'FREQUENZA', value: frequency, color: const Color(0xFFF97316)),
+              _StatMiniItem(label: context.l10n.translate('WORST STREAK'), value: worstStreak, color: Color(0xFFEF4444)),
+              _StatMiniItem(label: context.l10n.translate('FREQUENZA'), value: frequency, color: Color(0xFFF97316)),
             ],
           ),
         ],
@@ -989,15 +989,15 @@ class _PerformanceComparisonCard extends StatelessWidget {
             ],
           ),
           const Spacer(),
-          _PerformanceBar(label: 'BEST', value: '$best gg', progress: 0.3, color: Theme.of(context).colorScheme.primary),
+          _PerformanceBar(label: context.l10n.translate('BEST'), value: '$best gg', progress: 0.3, color: Theme.of(context).colorScheme.primary),
           const SizedBox(height: 16),
-          _PerformanceBar(label: 'WORST', value: '$worst gg', progress: 0.9, color: const Color(0xFFEF4444)),
+          _PerformanceBar(label: context.l10n.translate('WORST'), value: '$worst gg', progress: 0.9, color: Color(0xFFEF4444)),
           const Spacer(),
           RichText(
             text: TextSpan(
               style: TextStyle(fontFamily: 'Inter', fontSize: 11, color: context.appColors.mutedForeground),
               children: [
-                const TextSpan(text: 'Gap: '),
+                TextSpan(text: context.l10n.translate('Gap: ')),
                 TextSpan(text: '${(gap * 100).toInt()}%', style: TextStyle(color: context.appColors.foreground, fontWeight: FontWeight.w800)),
               ],
             ),

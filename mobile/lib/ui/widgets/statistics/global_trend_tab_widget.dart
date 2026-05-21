@@ -46,7 +46,7 @@ class _GlobalTrendTabWidgetState extends ConsumerState<GlobalTrendTabWidget> {
           error: (err, stack) => Container(
             height: 300,
             alignment: Alignment.center,
-            child: Text('Error: $err', style: TextStyle(color: context.appColors.mutedForeground)),
+            child: Text('${context.l10n.translate('Errore')}: $err', style: TextStyle(color: context.appColors.mutedForeground)),
           ),
         ),
         const SizedBox(height: 24),
@@ -478,8 +478,8 @@ class _MiglioriAbitudiniSectionState extends ConsumerState<_MiglioriAbitudiniSec
 
         final List<Widget> cards = bestHabits.isEmpty
             ? [
-                const _MiglioreCard(
-                  title: 'Tutto alla grande!',
+                _MiglioreCard(
+                  title: context.l10n.translate('Tutto alla grande!'),
                   rate: '100%',
                   color: Color(0xFF10B981),
                   streak: '0 giorni',
@@ -573,7 +573,7 @@ class _MiglioriAbitudiniSectionState extends ConsumerState<_MiglioriAbitudiniSec
       ),
       error: (err, stack) => SizedBox(
         height: 200,
-        child: Center(child: Text('Error: $err', style: TextStyle(color: context.appColors.mutedForeground))),
+        child: Center(child: Text('${context.l10n.translate('Errore')}: $err', style: TextStyle(color: context.appColors.mutedForeground))),
       ),
     );
   }
@@ -703,8 +703,8 @@ class _AbitudiniCriticheSectionState extends ConsumerState<_AbitudiniCriticheSec
 
         final List<Widget> cards = criticalHabits.isEmpty
             ? [
-                const _CriticaCard(
-                  title: 'Tutto alla grande!',
+                _CriticaCard(
+                  title: context.l10n.translate('Tutto alla grande!'),
                   drop: '0%',
                   trend: 'trending_up',
                   color: Color(0xFF10B981),
@@ -801,7 +801,7 @@ class _AbitudiniCriticheSectionState extends ConsumerState<_AbitudiniCriticheSec
       ),
       error: (err, stack) => SizedBox(
         height: 200,
-        child: Center(child: Text('Error: $err', style: TextStyle(color: context.appColors.mutedForeground))),
+        child: Center(child: Text('${context.l10n.translate('Errore')}: $err', style: TextStyle(color: context.appColors.mutedForeground))),
       ),
     );
   }

@@ -75,11 +75,11 @@ class InfoTabWidget extends ConsumerWidget {
             );
           },
           loading: () => const Center(child: CircularProgressIndicator()),
-          error: (err, stack) => Center(child: Text('Error: $err', style: TextStyle(color: context.appColors.mutedForeground))),
+          error: (err, stack) => Center(child: Text('${context.l10n.translate('Errore')}: $err', style: TextStyle(color: context.appColors.mutedForeground))),
         );
       },
       loading: () => const Center(child: CircularProgressIndicator()),
-      error: (err, stack) => Center(child: Text('Error: $err', style: TextStyle(color: context.appColors.mutedForeground))),
+      error: (err, stack) => Center(child: Text('${context.l10n.translate('Errore')}: $err', style: TextStyle(color: context.appColors.mutedForeground))),
     );
   }
 
@@ -402,7 +402,7 @@ class _TopHabitCorrelationsSectionState extends ConsumerState<_TopHabitCorrelati
         );
       },
       loading: () => const Center(child: CircularProgressIndicator()),
-      error: (err, stack) => Center(child: Text('Error: $err', style: TextStyle(color: context.appColors.mutedForeground))),
+      error: (err, stack) => Center(child: Text('${context.l10n.translate('Errore')}: $err', style: TextStyle(color: context.appColors.mutedForeground))),
     );
   }
 }
@@ -769,7 +769,7 @@ class _CorrelationsSectionState extends ConsumerState<_CorrelationsSection> {
         );
       },
       loading: () => const Center(child: CircularProgressIndicator()),
-      error: (err, stack) => Center(child: Text('Error: $err', style: TextStyle(color: context.appColors.mutedForeground))),
+      error: (err, stack) => Center(child: Text('${context.l10n.translate('Errore')}: $err', style: TextStyle(color: context.appColors.mutedForeground))),
     );
   }
 }
@@ -863,11 +863,11 @@ class _CorrelazioneDetailCard extends StatelessWidget {
           const SizedBox(height: 16),
           Row(
             children: [
-              Expanded(child: _DetailBox(title: 'Coefficiente', value: coef, valueColor: tagColor)),
+              Expanded(child: _DetailBox(title: context.l10n.translate('Coefficiente'), value: coef, valueColor: tagColor)),
               const SizedBox(width: 8),
-              Expanded(child: _DetailBox(title: 'Co-occorrenza', value: cooccorrenza)),
+              Expanded(child: _DetailBox(title: context.l10n.translate('Co-occorrenza'), value: cooccorrenza)),
               const SizedBox(width: 8),
-              Expanded(child: _DetailBox(title: 'Giorni', value: giorni)),
+              Expanded(child: _DetailBox(title: context.l10n.translate('Giorni'), value: giorni)),
             ],
           ),
           const SizedBox(height: 16),

@@ -108,7 +108,7 @@ class _GlobalHabitsTabWidgetState extends ConsumerState<GlobalHabitsTabWidget> {
         );
       },
       loading: () => const Center(child: CircularProgressIndicator()),
-      error: (err, stack) => Center(child: Text('Error: $err', style: TextStyle(color: context.appColors.mutedForeground))),
+      error: (err, stack) => Center(child: Text('${context.l10n.translate('Errore')}: $err', style: TextStyle(color: context.appColors.mutedForeground))),
     );
   }
 

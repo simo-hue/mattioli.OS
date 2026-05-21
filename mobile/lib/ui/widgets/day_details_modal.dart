@@ -6,6 +6,7 @@ import '../../models/goal.dart';
 import '../../providers/goal_provider.dart';
 import '../../core/haptics.dart';
 import 'habit_management_modal.dart';
+import '../../core/localization.dart';
 
 const _kMonths = [
   'Gennaio', 'Febbraio', 'Marzo', 'Aprile', 'Maggio', 'Giugno',
@@ -122,7 +123,7 @@ class DayDetailsModal extends ConsumerWidget {
                             HabitManagementModal.show(context);
                           },
                           icon: const Icon(LucideIcons.plus, size: 16),
-                          label: const Text('Crea Abitudine'),
+                          label: Text(context.l10n.translate('Crea Abitudine')),
                           style: ElevatedButton.styleFrom(
                             backgroundColor: Theme.of(context).colorScheme.primary,
                             foregroundColor: Theme.of(context).colorScheme.primary.computeLuminance() > 0.5 ? Colors.black : Colors.white,
@@ -191,8 +192,8 @@ class DayDetailsModal extends ConsumerWidget {
                           
                           if (dateMidnight.isBefore(yesterday)) {
                             ScaffoldMessenger.of(context).showSnackBar(
-                              const SnackBar(
-                                content: Text('Puoi modificare solo oggi e ieri!'),
+                              SnackBar(
+                                content: Text(context.l10n.translate('Puoi modificare solo oggi e ieri!')),
                                 backgroundColor: Colors.redAccent,
                               ),
                             );

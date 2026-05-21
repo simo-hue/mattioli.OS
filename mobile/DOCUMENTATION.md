@@ -1665,3 +1665,11 @@
 - **Cleanup**: Removed the unused import for `pro_features_modal.dart` to maintain a clean codebase.
 - **Verification**: Ran `flutter analyze` ensuring zero compiler errors or warnings remain.
 
+
+- [2026-05-21 13:39]: Fix Missing UI Translations
+  - *Details*: Identificate e tradotte le stringhe hardcoded mancanti nelle sezioni Home, Obiettivi e Statistiche, tra cui empty states, titoli e messaggi di errore (es: 'La tua tela è vuota', 'Dati insufficienti', 'Coming Soon', 'Error').
+  - *Tech Notes*: Le traduzioni sono state aggiunte in `AppLocalizations` (`lib/core/localization.dart`) e implementate in `dashboard_screen.dart`, `day_details_modal.dart`, `macro_goals_stats_view.dart`, `life_view_widget.dart`, `statistics_screen.dart` e molteplici tab widgets delle statistiche.
+
+- [2026-05-21 13:46]: Full 100% Translation Coverage
+  - *Details*: Effettuato un deep scan e sostituzione di oltre 150 occorrenze di testo hardcoded sparsi in tutta la UI e back-end (tra cui titoli dei grafici, messaggi di alert, label delle statistiche e notifiche/snackbar emesse dai provider).
+  - *Tech Notes*: Aggiunte oltre 60 nuove chiavi in `AppLocalizations`. Sistemati i bug di inizializzazione `const` derivanti dall'inserimento di `context.l10n.translate()` su widget statici. Introdotto `ref.read(l10nProvider).translate()` nei provider per permettere la traduzione dinamica degli errori di background.

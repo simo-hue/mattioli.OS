@@ -549,7 +549,7 @@ class PrivacySettingsScreen extends ConsumerWidget {
                                   if (context.mounted) {
                                     Navigator.pop(context);
                                     ScaffoldMessenger.of(context).showSnackBar(
-                                      const SnackBar(content: Text('Password aggiornata con successo!')),
+                                      SnackBar(content: Text(context.l10n.translate('Password aggiornata con successo!'))),
                                     );
                                   }
                                 } catch (e, stack) {
@@ -983,7 +983,7 @@ class PrivacySettingsScreen extends ConsumerWidget {
       
       if (context.mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(content: Text('Dati resettati con successo!')),
+          SnackBar(content: Text(context.l10n.translate('Dati resettati con successo!'))),
         );
       }
     } catch (e, stack) {
@@ -1009,7 +1009,7 @@ class PrivacySettingsScreen extends ConsumerWidget {
       
       if (context.mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(content: Text('Account eliminato con successo!')),
+          SnackBar(content: Text(context.l10n.translate('Account eliminato con successo!'))),
         );
       }
     } catch (e, stack) {

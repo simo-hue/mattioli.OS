@@ -1,3 +1,4 @@
+import '../../../core/localization.dart';
 import 'dart:async';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
@@ -128,7 +129,7 @@ class _GoalItemWidgetState extends ConsumerState<GoalItemWidget>
             fontSize: 14,
           ),
           decoration: InputDecoration(
-            hintText: 'Titolo obiettivo...',
+            hintText: context.l10n.translate('Titolo obiettivo...'),
             hintStyle: GoogleFonts.inter(
               color: context.appColors.mutedForeground,
             ),
@@ -235,7 +236,7 @@ class _GoalItemWidgetState extends ConsumerState<GoalItemWidget>
     showMacroGoalCategoryPicker(
       context: context,
       ref: ref,
-      title: 'Cambia categoria',
+      title: context.l10n.translate('Cambia categoria'),
       noneLabel: 'Nessuna',
       noneSelected:
           widget.goal.categoryId == null && widget.goal.categoryKey == null,

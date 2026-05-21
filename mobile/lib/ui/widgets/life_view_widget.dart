@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../core/theme.dart';
 import '../../providers/user_provider.dart';
+import '../../core/localization.dart';
 
 class LifeViewWidget extends ConsumerWidget {
   const LifeViewWidget({super.key});
@@ -109,8 +110,8 @@ class LifeViewWidget extends ConsumerWidget {
           Row(
             mainAxisAlignment: MainAxisAlignment.spaceBetween,
             children: [
-              Text('nascita', style: TextStyle(fontSize: 10, fontWeight: FontWeight.w600, color: context.appColors.mutedForeground.withValues(alpha: 0.4), letterSpacing: 0.5)),
-              Text('85 anni', style: TextStyle(fontSize: 10, fontWeight: FontWeight.w600, color: context.appColors.mutedForeground.withValues(alpha: 0.4), letterSpacing: 0.5)),
+              Text(context.l10n.translate('nascita'), style: TextStyle(fontSize: 10, fontWeight: FontWeight.w600, color: context.appColors.mutedForeground.withValues(alpha: 0.4), letterSpacing: 0.5)),
+              Text(context.l10n.translate('85 anni'), style: TextStyle(fontSize: 10, fontWeight: FontWeight.w600, color: context.appColors.mutedForeground.withValues(alpha: 0.4), letterSpacing: 0.5)),
             ],
           )
 

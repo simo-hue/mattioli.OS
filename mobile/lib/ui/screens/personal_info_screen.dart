@@ -105,7 +105,7 @@ class _PersonalInfoScreenState extends ConsumerState<PersonalInfoScreen> {
         if (mounted) {
           ScaffoldMessenger.of(context).showSnackBar(
             SnackBar(
-              content: const Text('Errore durante il salvataggio.'),
+              content: Text(context.l10n.translate('Errore durante il salvataggio.')),
               backgroundColor: AppColors.destructive,
             ),
           );
@@ -282,7 +282,7 @@ class _PersonalInfoScreenState extends ConsumerState<PersonalInfoScreen> {
                     onPressed: () => Navigator.of(context).pop(),
                   ),
                   CupertinoButton(
-                    child: const Text('Fatto'),
+                    child: Text(context.l10n.translate('Fatto')),
                     onPressed: () {
                       _selectedDate ??= DateTime(2000, 1, 1);
                       _dobController.text = _selectedDate!.toIso8601String().substring(0, 10);

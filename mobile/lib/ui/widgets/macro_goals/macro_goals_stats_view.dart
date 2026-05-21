@@ -15,6 +15,7 @@ import '../../../providers/macro_goals_provider.dart';
 import '../../../providers/macro_goals_stats_provider.dart';
 import '../../../providers/macro_goal_categories_provider.dart';
 import '../pro_features_modal.dart';
+import '../../../core/localization.dart';
 
 class MacroGoalsStatsView extends ConsumerStatefulWidget {
   const MacroGoalsStatsView({super.key});
@@ -140,13 +141,13 @@ class _MacroGoalsStatsViewState extends ConsumerState<MacroGoalsStatsView> {
     return [
       Row(
         children: [
-          Expanded(child: _buildHighlightCard(title: 'Punto di Forza', value: bestCategory, subtitle: '$bestCatRate% di completamento', icon: LucideIcons.zap, color: const Color(0xFFA855F7))),
+          Expanded(child: _buildHighlightCard(title: context.l10n.translate('Punto di Forza'), value: bestCategory, subtitle: '$bestCatRate% di completamento', icon: LucideIcons.zap, color: const Color(0xFFA855F7))),
           const SizedBox(width: 12),
-          Expanded(child: _buildHighlightCard(title: 'Mese Migliore', value: (bestMonthIdx != null && bestMonthIdx > 0) ? monthsLabel[bestMonthIdx] : 'Nessuno', subtitle: '$bestMonthRate% di successo', icon: LucideIcons.trophy, color: const Color(0xFFF59E0B))),
+          Expanded(child: _buildHighlightCard(title: context.l10n.translate('Mese Migliore'), value: (bestMonthIdx != null && bestMonthIdx > 0) ? monthsLabel[bestMonthIdx] : 'Nessuno', subtitle: '$bestMonthRate% di successo', icon: LucideIcons.trophy, color: const Color(0xFFF59E0B))),
         ],
       ),
       const SizedBox(height: 12),
-      _buildHighlightCard(title: 'Tipologia Efficace', value: bestTypeLabel, subtitle: '$bestTypeRate% di successo', icon: LucideIcons.brainCircuit, color: Theme.of(context).colorScheme.primary, fullWidth: true),
+      _buildHighlightCard(title: context.l10n.translate('Tipologia Efficace'), value: bestTypeLabel, subtitle: '$bestTypeRate% di successo', icon: LucideIcons.brainCircuit, color: Theme.of(context).colorScheme.primary, fullWidth: true),
       const SizedBox(height: 16),
       Row(
         children: [
@@ -201,17 +202,17 @@ class _MacroGoalsStatsViewState extends ConsumerState<MacroGoalsStatsView> {
     return [
       Row(
         children: [
-          Expanded(child: _buildHighlightCard(title: 'Totale Storico', value: '$total', subtitle: 'dal ${sortedYears.isNotEmpty ? sortedYears.first : '-'}', icon: LucideIcons.target, color: const Color(0xFF6366F1))),
+          Expanded(child: _buildHighlightCard(title: context.l10n.translate('Totale Storico'), value: '$total', subtitle: 'dal ${sortedYears.isNotEmpty ? sortedYears.first : '-'}', icon: LucideIcons.target, color: const Color(0xFF6366F1))),
           const SizedBox(width: 12),
-          Expanded(child: _buildHighlightCard(title: 'Successo Globale', value: '$succ%', subtitle: '$comp obiettivi completati', icon: LucideIcons.trophy, color: const Color(0xFF10B981))),
+          Expanded(child: _buildHighlightCard(title: context.l10n.translate('Successo Globale'), value: '$succ%', subtitle: '$comp obiettivi completati', icon: LucideIcons.trophy, color: const Color(0xFF10B981))),
         ],
       ),
       const SizedBox(height: 12),
       Row(
         children: [
-          Expanded(child: _buildHighlightCard(title: 'Anno Migliore', value: bestYear != null ? '$bestYear' : 'N/A', subtitle: '$bestYearRate% completamento', icon: LucideIcons.calendar, color: const Color(0xFFD97706))),
+          Expanded(child: _buildHighlightCard(title: context.l10n.translate('Anno Migliore'), value: bestYear != null ? '$bestYear' : 'N/A', subtitle: '$bestYearRate% completamento', icon: LucideIcons.calendar, color: const Color(0xFFD97706))),
           const SizedBox(width: 12),
-          Expanded(child: _buildHighlightCard(title: 'Anno Più Produttivo', value: mostProdYear != null ? '$mostProdYear' : 'N/A', subtitle: '$mostProdCount obiettivi totali', icon: LucideIcons.activity, color: const Color(0xFF06B6D4))),
+          Expanded(child: _buildHighlightCard(title: context.l10n.translate('Anno Più Produttivo'), value: mostProdYear != null ? '$mostProdYear' : 'N/A', subtitle: '$mostProdCount obiettivi totali', icon: LucideIcons.activity, color: const Color(0xFF06B6D4))),
         ],
       ),
       const SizedBox(height: 24),
@@ -555,8 +556,8 @@ class _MacroGoalsStatsViewState extends ConsumerState<MacroGoalsStatsView> {
     final double maxY = math.max(10.0, maxTotal * 1.2);
 
     return _buildCardBase(
-      title: '🚀 Velocità di Esecuzione (Cumulativa)',
-      subtitle: 'Confronto tra obiettivi pianificati e completati nel tempo',
+      title: context.l10n.translate('🚀 Velocità di Esecuzione (Cumulativa)'),
+      subtitle: context.l10n.translate('Confronto tra obiettivi pianificati e completati nel tempo'),
       child: SizedBox(
         height: 220,
         child: LineChart(
@@ -639,15 +640,15 @@ class _MacroGoalsStatsViewState extends ConsumerState<MacroGoalsStatsView> {
     final categories = ref.watch(macroGoalCategoriesProvider).value ?? [];
     if (stats.isEmpty) {
       return _buildCardBase(
-        title: '🎯 Performance Categorie', subtitle: 'Tasso di successo',
-        child: SizedBox(height: 200, child: Center(child: Text('Nessun dato', style: TextStyle(color: context.appColors.mutedForeground)))),
+        title: context.l10n.translate('🎯 Performance Categorie'), subtitle: context.l10n.translate('Tasso di successo'),
+        child: SizedBox(height: 200, child: Center(child: Text(context.l10n.translate('Nessun dato'), style: TextStyle(color: context.appColors.mutedForeground)))),
       );
     }
     
     if (stats.length < 3) {
       return _buildCardBase(
-        title: '🎯 Performance Categorie', subtitle: 'Tasso di successo',
-        child: SizedBox(height: 200, child: Center(child: Text('Dati insufficienti (servono almeno 3 categorie)', style: TextStyle(color: context.appColors.mutedForeground)))),
+        title: context.l10n.translate('🎯 Performance Categorie'), subtitle: context.l10n.translate('Tasso di successo'),
+        child: SizedBox(height: 200, child: Center(child: Text(context.l10n.translate('Dati insufficienti (servono almeno 3 categorie)'), style: TextStyle(color: context.appColors.mutedForeground)))),
       );
     }
 
@@ -671,8 +672,8 @@ class _MacroGoalsStatsViewState extends ConsumerState<MacroGoalsStatsView> {
     }
 
     return _buildCardBase(
-      title: '🎯 Performance Categorie',
-      subtitle: 'Tasso di successo per categoria',
+      title: context.l10n.translate('🎯 Performance Categorie'),
+      subtitle: context.l10n.translate('Tasso di successo per categoria'),
       child: SizedBox(
         height: 240,
         child: RadarChart(
@@ -711,13 +712,13 @@ class _MacroGoalsStatsViewState extends ConsumerState<MacroGoalsStatsView> {
   Widget _buildQuarterlyBarCard(List<dynamic> stats) {
     if (stats.isEmpty) {
       return _buildCardBase(
-        title: 'Attività Trim.',
-        subtitle: 'Q1 - Q4',
+        title: context.l10n.translate('Attività Trim.'),
+        subtitle: context.l10n.translate('Q1 - Q4'),
         child: SizedBox(
           height: 150,
           child: Center(
             child: Text(
-              'Nessun dato',
+              context.l10n.translate('Nessun dato'),
               style: TextStyle(color: context.appColors.mutedForeground),
             ),
           ),
@@ -759,8 +760,8 @@ class _MacroGoalsStatsViewState extends ConsumerState<MacroGoalsStatsView> {
     }
 
     return _buildCardBase(
-      title: 'Attività Trim.',
-      subtitle: 'In Q1-Q4',
+      title: context.l10n.translate('Attività Trim.'),
+      subtitle: context.l10n.translate('In Q1-Q4'),
       child: SizedBox(
         height: 150,
         child: BarChart(
@@ -788,7 +789,7 @@ class _MacroGoalsStatsViewState extends ConsumerState<MacroGoalsStatsView> {
 
   Widget _buildMonthlyComposedCard(List<dynamic> stats) {
     if (stats.isEmpty) {
-      return _buildCardBase(title: 'Attività Mensile', subtitle: 'Totale/Completati', child: const SizedBox(height: 150));
+      return _buildCardBase(title: context.l10n.translate('Attività Mensile'), subtitle: context.l10n.translate('Totale/Completati'), child: const SizedBox(height: 150));
     }
 
     List<BarChartGroupData> barGroups = [];
@@ -839,8 +840,8 @@ class _MacroGoalsStatsViewState extends ConsumerState<MacroGoalsStatsView> {
     const mLabel = ['', 'G', 'F', 'M', 'A', 'M', 'G', 'L', 'A', 'S', 'O', 'N', 'D'];
 
     return _buildCardBase(
-      title: 'Completamenti',
-      subtitle: 'Mensili',
+      title: context.l10n.translate('Completamenti'),
+      subtitle: context.l10n.translate('Mensili'),
       child: SizedBox(
         height: 180,
         child: BarChart(
@@ -907,7 +908,7 @@ class _MacroGoalsStatsViewState extends ConsumerState<MacroGoalsStatsView> {
 
   Widget _buildCategoryPieCard(List<dynamic> stats, List<GoalCategory> categories) {
     if (stats.isEmpty) {
-       return _buildCardBase(title: 'Distribuzione', subtitle: '', child: SizedBox(height: 200, child: Center(child: Text('Nessun dato', style: TextStyle(color: context.appColors.mutedForeground)))));
+       return _buildCardBase(title: context.l10n.translate('Distribuzione'), subtitle: '', child: SizedBox(height: 200, child: Center(child: Text(context.l10n.translate('Nessun dato'), style: TextStyle(color: context.appColors.mutedForeground)))));
     }
 
     List<PieChartSectionData> sections = [];
@@ -943,8 +944,8 @@ class _MacroGoalsStatsViewState extends ConsumerState<MacroGoalsStatsView> {
     }
 
     return _buildCardBase(
-      title: '🎯 Distribuzione Categorie',
-      subtitle: 'Ripartizione degli obiettivi per area di focus',
+      title: context.l10n.translate('🎯 Distribuzione Categorie'),
+      subtitle: context.l10n.translate('Ripartizione degli obiettivi per area di focus'),
       child: Column(
         children: [
           SizedBox(
@@ -963,7 +964,7 @@ class _MacroGoalsStatsViewState extends ConsumerState<MacroGoalsStatsView> {
                   mainAxisSize: MainAxisSize.min,
                   children: [
                     Text('$totalCount', style: GoogleFonts.inter(fontSize: 28, fontWeight: FontWeight.bold, color: context.appColors.foreground)),
-                    Text('obiettivi', style: GoogleFonts.inter(fontSize: 12, color: context.appColors.mutedForeground)),
+                    Text(context.l10n.translate('obiettivi'), style: GoogleFonts.inter(fontSize: 12, color: context.appColors.mutedForeground)),
                   ],
                 ),
               ],
@@ -1060,8 +1061,8 @@ class _MacroGoalsStatsViewState extends ConsumerState<MacroGoalsStatsView> {
     }
 
     return _buildCardBase(
-      title: '📈 Progressione Annuale',
-      subtitle: 'Confronto anno per anno del volume di obiettivi e completamenti',
+      title: context.l10n.translate('📈 Progressione Annuale'),
+      subtitle: context.l10n.translate('Confronto anno per anno del volume di obiettivi e completamenti'),
       child: Column(
         children: [
           SizedBox(
@@ -1170,8 +1171,8 @@ class _MacroGoalsStatsViewState extends ConsumerState<MacroGoalsStatsView> {
     };
     int maxV = counts.values.fold(0, (p, c) => math.max(p, c));
     return _buildCardBase(
-      title: '🔮 Distribuzione Tipologie',
-      subtitle: 'Ripartizione degli obiettivi per orizzonte temporale',
+      title: context.l10n.translate('🔮 Distribuzione Tipologie'),
+      subtitle: context.l10n.translate('Ripartizione degli obiettivi per orizzonte temporale'),
       child: Column(
         children: counts.entries.map((e) => Padding(
           padding: const EdgeInsets.only(bottom: 12),
@@ -1254,8 +1255,8 @@ class _MacroGoalsStatsViewState extends ConsumerState<MacroGoalsStatsView> {
       ]));
     }
     return _buildCardBase(
-      title: '🎂 Stagionalità',
-      subtitle: 'Performance Trimestrale aggregata',
+      title: context.l10n.translate('🎂 Stagionalità'),
+      subtitle: context.l10n.translate('Performance Trimestrale aggregata'),
       child: Column(
         children: [
           SizedBox(height: 150, child: BarChart(BarChartData(
@@ -1336,8 +1337,8 @@ class _MacroGoalsStatsViewState extends ConsumerState<MacroGoalsStatsView> {
     }
 
     return _buildCardBase(
-      title: '📈 Mensile (Storico)',
-      subtitle: 'Successo medio per mese',
+      title: context.l10n.translate('📈 Mensile (Storico)'),
+      subtitle: context.l10n.translate('Successo medio per mese'),
       child: SizedBox(height: 180, child: LineChart(LineChartData(
         lineTouchData: LineTouchData(
           touchTooltipData: LineTouchTooltipData(
@@ -1491,8 +1492,8 @@ class _MacroGoalsStatsViewState extends ConsumerState<MacroGoalsStatsView> {
     }
 
     return _buildCardBase(
-      title: '📈 Evoluzione Interessi',
-      subtitle: 'Composizione delle aree di focus negli anni',
+      title: context.l10n.translate('📈 Evoluzione Interessi'),
+      subtitle: context.l10n.translate('Composizione delle aree di focus negli anni'),
       child: Column(
         children: [
           SizedBox(height: 240, child: BarChart(BarChartData(

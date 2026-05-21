@@ -454,7 +454,7 @@ class _StatisticsScreenState extends ConsumerState<StatisticsScreen>
         default:
           return Center(
             key: ValueKey(_selectedTab),
-            child: Text('${context.l10n.translate(_selectedTab)} - Coming Soon', style: TextStyle(color: context.appColors.mutedForeground)),
+            child: Text('${context.l10n.translate(_selectedTab)} - ${context.l10n.translate('Coming Soon')}', style: TextStyle(color: context.appColors.mutedForeground)),
           );
       }
     } else {
@@ -487,7 +487,7 @@ class _StatisticsScreenState extends ConsumerState<StatisticsScreen>
         default:
           return Center(
             key: ValueKey('$_selectedTab$_selectedGoalId'),
-            child: Text('${context.l10n.translate(_selectedTab)} - Coming Soon', style: TextStyle(color: context.appColors.mutedForeground)),
+            child: Text('${context.l10n.translate(_selectedTab)} - ${context.l10n.translate('Coming Soon')}', style: TextStyle(color: context.appColors.mutedForeground)),
           );
       }
     }

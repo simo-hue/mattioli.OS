@@ -1,5 +1,6 @@
 import 'dart:convert';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import '../core/localization.dart';
 
 import '../models/macro_goal.dart';
 import '../core/macro_goal_calendar.dart';
@@ -147,7 +148,7 @@ class MacroGoalsNotifier extends Notifier<MacroGoalsState> {
       if (context != null && context.mounted) {
         ErrorModal.show(
           context,
-          title: 'Errore durante il salvataggio',
+          title: context.l10n.translate('Errore durante il salvataggio'),
           message: 'Non siamo riusciti a salvare l\'obiettivo. Riprova.',
           details: e.toString(),
         );

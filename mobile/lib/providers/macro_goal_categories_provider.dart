@@ -1,4 +1,5 @@
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import '../core/localization.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 import '../models/macro_goal.dart';
 import 'auth_provider.dart';
@@ -59,7 +60,7 @@ class MacroGoalCategoriesNotifier extends AsyncNotifier<List<GoalCategory>> {
       if (context != null && context.mounted) {
         ErrorModal.show(
           context,
-          title: 'Errore durante la creazione della categoria',
+          title: context.l10n.translate('Errore durante la creazione della categoria'),
           message: 'Non siamo riusciti a creare la categoria. Riprova.',
           details: e.toString(),
         );
@@ -89,7 +90,7 @@ class MacroGoalCategoriesNotifier extends AsyncNotifier<List<GoalCategory>> {
       if (context != null && context.mounted) {
         ErrorModal.show(
           context,
-          title: 'Errore durante la modifica della categoria',
+          title: context.l10n.translate('Errore durante la modifica della categoria'),
           message: 'Non siamo riusciti ad aggiornare la categoria. Riprova.',
           details: e.toString(),
         );

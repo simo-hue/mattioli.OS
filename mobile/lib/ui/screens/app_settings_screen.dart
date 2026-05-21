@@ -586,7 +586,7 @@ class AppSettingsScreen extends ConsumerWidget {
               ),
               title: Row(
                 children: [
-                  const Text('Colore Personalizzato'),
+                  Text(context.l10n.translate('Colore Personalizzato')),
                   const Spacer(),
                   if (isTooDark)
                     Icon(LucideIcons.triangleAlert, color: context.appColors.destructive, size: 20),
@@ -649,7 +649,7 @@ class AppSettingsScreen extends ConsumerWidget {
                     foregroundColor: context.appColors.background,
                     shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
                   ),
-                  child: const Text('Verifica'),
+                  child: Text(context.l10n.translate('Verifica')),
                 ),
               ],
             );

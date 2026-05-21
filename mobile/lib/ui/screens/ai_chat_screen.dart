@@ -1,3 +1,4 @@
+import '../../core/localization.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
@@ -292,7 +293,7 @@ class _AIChatScreenState extends ConsumerState<AIChatScreen> {
         // Avvisa l'utente in modo esplicito
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
-            content: const Text("Problemi di connessione con il Coach. Riprova più tardi."),
+            content: Text(context.l10n.translate('Problemi di connessione con il Coach. Riprova più tardi.')),
             backgroundColor: Colors.redAccent,
             behavior: SnackBarBehavior.floating,
             shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
@@ -508,7 +509,7 @@ Se l'utente non chiede nulla di specifico, offri consigli sulla disciplina o chi
             Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                const Text("AI Coach"),
+                Text(context.l10n.translate('AI Coach')),
                 Row(
                   children: [
                     Container(
@@ -602,7 +603,7 @@ Se l'utente non chiede nulla di specifico, offri consigli sulla disciplina o chi
                                         borderRadius: BorderRadius.circular(12),
                                       ),
                                     ),
-                                    child: const Text("Elimina"),
+                                    child: Text(context.l10n.translate('Elimina')),
                                   ),
                                 ],
                               ),

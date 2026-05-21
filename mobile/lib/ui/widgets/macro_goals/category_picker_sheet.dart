@@ -1,3 +1,4 @@
+import '../../../core/localization.dart';
 import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
@@ -239,7 +240,7 @@ class _CategoryListTile extends StatelessWidget {
             ),
           IconButton(
             visualDensity: VisualDensity.compact,
-            tooltip: 'Modifica categoria',
+            tooltip: context.l10n.translate('Modifica categoria'),
             icon: Icon(
               LucideIcons.pencil,
               size: 17,
@@ -249,7 +250,7 @@ class _CategoryListTile extends StatelessWidget {
           ),
           IconButton(
             visualDensity: VisualDensity.compact,
-            tooltip: 'Archivia categoria',
+            tooltip: context.l10n.translate('Archivia categoria'),
             icon: Icon(
               LucideIcons.trash2,
               size: 17,
@@ -354,7 +355,7 @@ Future<String?> _showCategoryEditorDialogSafe({
                           vertical: 12,
                         ),
                         border: InputBorder.none,
-                        hintText: 'Nome categoria...',
+                        hintText: context.l10n.translate('Nome categoria...'),
                         hintStyle: GoogleFonts.inter(
                           fontSize: 14,
                           color: context.appColors.mutedForeground,

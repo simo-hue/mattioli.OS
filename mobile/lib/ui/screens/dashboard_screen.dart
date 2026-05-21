@@ -902,7 +902,7 @@ class _HomeScreenState extends ConsumerState<HomeScreen>
               ),
               const SizedBox(height: 24),
               Text(
-                'App Bloccata',
+                context.l10n.translate('App Bloccata'),
                 style: TextStyle(
                   fontFamily: 'Inter',
                   fontSize: 22,
@@ -912,7 +912,7 @@ class _HomeScreenState extends ConsumerState<HomeScreen>
               ),
               const SizedBox(height: 8),
               Text(
-                'Sblocca con i dati biometrici per continuare',
+                context.l10n.translate('Sblocca con i dati biometrici per continuare'),
                 style: TextStyle(
                   fontFamily: 'Inter',
                   fontSize: 14,
@@ -932,7 +932,7 @@ class _HomeScreenState extends ConsumerState<HomeScreen>
                     borderRadius: BorderRadius.circular(12),
                   ),
                   child: Text(
-                    'Riprova',
+                    context.l10n.translate('Riprova'),
                     style: TextStyle(
                       color:
                           Theme.of(
@@ -1088,7 +1088,7 @@ class _HomeScreenState extends ConsumerState<HomeScreen>
           ),
           const SizedBox(height: 24),
           Text(
-            'La tua tela è vuota',
+            context.l10n.translate('La tua tela è vuota'),
             style: TextStyle(
               fontFamily: 'Inter',
               fontSize: 22,
@@ -1099,7 +1099,7 @@ class _HomeScreenState extends ConsumerState<HomeScreen>
           ),
           const SizedBox(height: 12),
           Text(
-            'Crea la tua prima abitudine per iniziare a tracciare i tuoi progressi e costruire la tua routine.',
+            context.l10n.translate('Crea la tua prima abitudine per iniziare a tracciare i tuoi progressi e costruire la tua routine.'),
             textAlign: TextAlign.center,
             style: TextStyle(
               fontFamily: 'Inter',
@@ -1116,9 +1116,9 @@ class _HomeScreenState extends ConsumerState<HomeScreen>
               HabitManagementModal.show(context);
             },
             icon: const Icon(LucideIcons.plus, size: 18),
-            label: const Text(
-              'Aggiungi Abitudine',
-              style: TextStyle(fontWeight: FontWeight.w700),
+            label: Text(
+              context.l10n.translate('Aggiungi Abitudine'),
+              style: const TextStyle(fontWeight: FontWeight.w700),
             ),
             style: ElevatedButton.styleFrom(
               backgroundColor: primaryColor,

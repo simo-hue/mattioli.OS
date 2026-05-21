@@ -56,7 +56,7 @@ class HabitMiglioramentoTabWidget extends ConsumerWidget {
       ),
       error: (err, stack) => SizedBox(
         height: 200,
-        child: Center(child: Text('Error: $err', style: TextStyle(color: context.appColors.mutedForeground))),
+        child: Center(child: Text('${context.l10n.translate('Errore')}: $err', style: TextStyle(color: context.appColors.mutedForeground))),
       ),
     );
   }

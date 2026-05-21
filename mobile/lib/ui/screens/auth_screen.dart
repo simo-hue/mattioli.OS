@@ -109,7 +109,7 @@ class _AuthScreenState extends ConsumerState<AuthScreen> with SingleTickerProvid
     if (email.isEmpty || !email.contains('@')) {
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(
-          content: const Text('Inserisci la tua email per reimpostare la password.'),
+          content: Text(context.l10n.translate('Inserisci la tua email per reimpostare la password.')),
           backgroundColor: AppColors.card,
           behavior: SnackBarBehavior.floating,
           shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
@@ -141,7 +141,7 @@ class _AuthScreenState extends ConsumerState<AuthScreen> with SingleTickerProvid
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
-            content: const Text('Impossibile aprire il link.'),
+            content: Text(context.l10n.translate('Impossibile aprire il link.')),
             backgroundColor: AppColors.destructive,
             behavior: SnackBarBehavior.floating,
             shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),

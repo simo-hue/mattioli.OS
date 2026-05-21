@@ -1,5 +1,6 @@
 import 'dart:convert';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import '../core/localization.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 import '../models/goal.dart';
 import 'auth_provider.dart';
@@ -122,7 +123,7 @@ class GoalsNotifier extends Notifier<List<Goal>> {
       if (context != null && context.mounted) {
         ErrorModal.show(
           context,
-          title: 'Errore durante il salvataggio',
+          title: context.l10n.translate('Errore durante il salvataggio'),
           message: 'Non siamo riusciti a salvare l\'abitudine. Riprova.',
           details: e.toString(),
         );

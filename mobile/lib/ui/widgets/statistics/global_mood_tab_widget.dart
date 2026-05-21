@@ -553,7 +553,7 @@ class _CorrelazioneMoodSection extends StatelessWidget {
                 children: [
                   _MoodStatMini(label: 'MOOD BASSO', value: '$lowVal%', icon: LucideIcons.frown, small: true),
                   const SizedBox(width: 12),
-                  _MoodStatMini(label: 'MOOD ALTO', value: '$highVal%', icon: LucideIcons.smile, small: true),
+                  _MoodStatMini(label: context.l10n.translate('MOOD ALTO'), value: '$highVal%', icon: LucideIcons.smile, small: true),
                 ],
               ),
             ],

@@ -1,3 +1,4 @@
+import '../../core/localization.dart';
 import 'package:flutter/material.dart';
 import 'package:lucide_icons_flutter/lucide_icons.dart';
 import 'package:google_fonts/google_fonts.dart';
@@ -787,7 +788,7 @@ class _SubscriptionScreenState extends ConsumerState<SubscriptionScreen> {
         TextButton.icon(
           onPressed: _isLoading ? null : _restorePurchases,
           icon: const Icon(LucideIcons.refreshCcw, size: 16),
-          label: const Text('Ripristina acquisti'),
+          label: Text(context.l10n.translate('Ripristina acquisti')),
           style: TextButton.styleFrom(
             foregroundColor: Colors.amber,
             textStyle: GoogleFonts.inter(

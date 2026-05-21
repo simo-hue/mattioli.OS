@@ -1,3 +1,4 @@
+import '../../../core/localization.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
@@ -88,7 +89,7 @@ class _AddGoalBarState extends ConsumerState<AddGoalBar> {
     showMacroGoalCategoryPicker(
       context: context,
       ref: ref,
-      title: 'Scegli categoria',
+      title: context.l10n.translate('Scegli categoria'),
       noneLabel: 'Default',
       noneSelected: _selectedCategory == null,
       selectedCategoryId: _selectedCategory,

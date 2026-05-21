@@ -114,7 +114,7 @@ class _GoalItemWidgetState extends ConsumerState<GoalItemWidget>
         backgroundColor: context.appColors.card,
         shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
         title: Text(
-          'Modifica Obiettivo',
+          context.l10n.translate('Modifica Obiettivo'),
           style: GoogleFonts.inter(
             color: context.appColors.foreground,
             fontWeight: FontWeight.w600,
@@ -154,7 +154,7 @@ class _GoalItemWidgetState extends ConsumerState<GoalItemWidget>
           TextButton(
             onPressed: () => Navigator.pop(context),
             child: Text(
-              'Annulla',
+              context.l10n.translate('Annulla'),
               style: GoogleFonts.inter(
                 color: context.appColors.mutedForeground,
               ),
@@ -171,7 +171,7 @@ class _GoalItemWidgetState extends ConsumerState<GoalItemWidget>
               Navigator.pop(context);
             },
             child: Text(
-              'Salva',
+              context.l10n.translate('Salva'),
               style: GoogleFonts.inter(
                 color: context.appColors.foreground,
                 fontWeight: FontWeight.w600,
@@ -190,7 +190,7 @@ class _GoalItemWidgetState extends ConsumerState<GoalItemWidget>
         backgroundColor: context.appColors.card,
         shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
         title: Text(
-          'Eliminare obiettivo?',
+          context.l10n.translate('Eliminare obiettivo?'),
           style: GoogleFonts.inter(
             color: context.appColors.foreground,
             fontWeight: FontWeight.w600,
@@ -198,7 +198,7 @@ class _GoalItemWidgetState extends ConsumerState<GoalItemWidget>
           ),
         ),
         content: Text(
-          'Questa azione non può essere annullata.',
+          context.l10n.translate('Questa azione non può essere annullata.'),
           style: GoogleFonts.inter(
             color: context.appColors.mutedForeground,
             fontSize: 13,
@@ -208,7 +208,7 @@ class _GoalItemWidgetState extends ConsumerState<GoalItemWidget>
           TextButton(
             onPressed: () => Navigator.pop(context),
             child: Text(
-              'Annulla',
+              context.l10n.translate('Annulla'),
               style: GoogleFonts.inter(
                 color: context.appColors.mutedForeground,
               ),
@@ -220,7 +220,7 @@ class _GoalItemWidgetState extends ConsumerState<GoalItemWidget>
               _delete();
             },
             child: Text(
-              'Elimina',
+              context.l10n.translate('Elimina'),
               style: GoogleFonts.inter(
                 color: context.appColors.destructive,
                 fontWeight: FontWeight.w600,
@@ -237,7 +237,7 @@ class _GoalItemWidgetState extends ConsumerState<GoalItemWidget>
       context: context,
       ref: ref,
       title: context.l10n.translate('Cambia categoria'),
-      noneLabel: 'Nessuna',
+      noneLabel: context.l10n.translate('Nessuna'),
       noneSelected:
           widget.goal.categoryId == null && widget.goal.categoryKey == null,
       selectedCategoryId: widget.goal.categoryId,

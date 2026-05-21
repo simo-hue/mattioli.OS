@@ -1,3 +1,4 @@
+import "../../core/localization.dart";
 import 'package:flutter/material.dart';
 import 'package:lucide_icons_flutter/lucide_icons.dart';
 import 'package:google_fonts/google_fonts.dart';
@@ -73,7 +74,7 @@ class ProFeaturesModal extends ConsumerWidget {
           const SizedBox(height: 24),
           
           Text(
-            'Sblocca Evolve Pro',
+            context.l10n.translate('Sblocca Evolve Pro'),
             style: GoogleFonts.inter(
               color: context.appColors.foreground,
               fontSize: 24,
@@ -83,7 +84,7 @@ class ProFeaturesModal extends ConsumerWidget {
           ),
           const SizedBox(height: 8),
           Text(
-            'Porta il tuo sistema di abitudini al livello successivo',
+            context.l10n.translate('Porta il tuo sistema di abitudini al livello successivo'),
             textAlign: TextAlign.center,
             style: GoogleFonts.inter(
               color: context.appColors.mutedForeground,
@@ -97,29 +98,29 @@ class ProFeaturesModal extends ConsumerWidget {
           _buildFeatureItem(
             context: context,
             icon: LucideIcons.brainCircuit,
-            title: 'AI Coach Personalizzato',
-            description: 'Analisi avanzata dei trend e suggerimenti intelligenti generati dall\'AI.',
+            title: context.l10n.translate('AI Coach Personalizzato'),
+            description: context.l10n.translate('Analisi avanzata dei trend e suggerimenti intelligenti generati dall\'AI.'),
           ),
           const SizedBox(height: 20),
           _buildFeatureItem(
             context: context,
             icon: LucideIcons.cloud,
-            title: 'Statistiche Specifiche Per Abitudine',
-            description: 'Informazioni chiave per aumentare la tua produttività.',
+            title: context.l10n.translate('Statistiche Specifiche Per Abitudine'),
+            description: context.l10n.translate('Informazioni chiave per aumentare la tua produttività.'),
           ),
           const SizedBox(height: 20),
           _buildFeatureItem(
             context: context,
             icon: LucideIcons.trendingUp,
-            title: 'Metriche Avanzate Obiettivi',
-            description: 'Visualizza grafici dettagliati e statistiche di performance profonde per ogni anno.',
+            title: context.l10n.translate('Metriche Avanzate Obiettivi'),
+            description: context.l10n.translate('Visualizza grafici dettagliati e statistiche di performance profonde per ogni anno.'),
           ),
           const SizedBox(height: 20),
           _buildFeatureItem(
             context: context,
             icon: LucideIcons.infinity,
-            title: 'Abitudini Illimitate',
-            description: 'Crea e traccia tutti gli habits che desideri senza alcun limite.',
+            title: context.l10n.translate('Abitudini Illimitate'),
+            description: context.l10n.translate('Crea e traccia tutti gli habits che desideri senza alcun limite.'),
           ),
           
           const SizedBox(height: 40),
@@ -152,10 +153,10 @@ class ProFeaturesModal extends ConsumerWidget {
                   )
                 ],
               ),
-              child: const Center(
+              child: Center(
                 child: Text(
-                  'Ottieni Pro a €4,99 / mese',
-                  style: TextStyle(
+                  context.l10n.translate('Ottieni Pro a €4,99 / mese'),
+                  style: const TextStyle(
                     color: Colors.black,
                     fontSize: 16,
                     fontWeight: FontWeight.w800,
@@ -169,7 +170,7 @@ class ProFeaturesModal extends ConsumerWidget {
           TextButton(
             onPressed: () => Navigator.pop(context),
             child: Text(
-              'Forse più tardi',
+              context.l10n.translate('Forse più tardi'),
               style: GoogleFonts.inter(
                 color: context.appColors.mutedForeground,
                 fontSize: 13,

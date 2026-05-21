@@ -180,7 +180,9 @@ class _DailyCheckInModalState extends ConsumerState<DailyCheckInModal> {
                         const Icon(LucideIcons.save, size: 18),
                         const SizedBox(width: 10),
                         Text(
-                          isFirstTime ? 'Inserisci' : 'Aggiorna',
+                          isFirstTime
+                              ? context.l10n.translate('Inserisci')
+                              : context.l10n.translate('Aggiorna'),
                           style: const TextStyle(
                             fontSize: 15,
                             fontWeight: FontWeight.w600,

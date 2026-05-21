@@ -209,7 +209,7 @@ class _ConsentScreenState extends ConsumerState<ConsentScreen> {
                         // Item 1: Terms & Privacy
                         _buildConsentCard(
                           icon: LucideIcons.fileText,
-                          title: 'Termini e Privacy Policy',
+                          title: context.l10n.translate('Termini e Privacy Policy'),
                           description:
                               'Dichiaro di aver letto e accettato i Termini di Servizio e la Privacy Policy. Confermo di avere almeno 14 anni.',
                           trailing: Checkbox(
@@ -245,7 +245,7 @@ class _ConsentScreenState extends ConsumerState<ConsentScreen> {
                         // Item 3: Notifications
                         _buildConsentCard(
                           icon: LucideIcons.bell,
-                          title: 'Notifiche di Sistema',
+                          title: context.l10n.translate('Notifiche di Sistema'),
                           description:
                               'Ricevi promemoria per le tue abitudini e report settimanali.',
                           trailing: _notificationsAllowed

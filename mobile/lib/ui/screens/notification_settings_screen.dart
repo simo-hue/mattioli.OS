@@ -78,7 +78,7 @@ class NotificationSettingsScreen extends ConsumerWidget {
               if (settings.habitReminders)
                 _buildTimePickerRow(
                   context: context,
-                  title: 'Orario Morning Brief',
+                  title: context.l10n.translate('Orario Morning Brief'),
                   time: settings.morningBriefTime,
                   onTap: () {
                     _showAppleStyleTimePicker(
@@ -109,7 +109,7 @@ class NotificationSettingsScreen extends ConsumerWidget {
               if (settings.eveningReview)
                 _buildTimePickerRow(
                   context: context,
-                  title: 'Orario Review Serale',
+                  title: context.l10n.translate('Orario Review Serale'),
                   time: settings.eveningReviewTime,
                   onTap: () {
                     _showAppleStyleTimePicker(
@@ -341,7 +341,7 @@ class NotificationSettingsScreen extends ConsumerWidget {
                       GestureDetector(
                         onTap: () => Navigator.pop(modalContext),
                         child: Text(
-                          'Annulla',
+                          context.l10n.translate('Annulla'),
                           style: GoogleFonts.inter(
                             color: context.appColors.mutedForeground,
                             fontSize: 16,
@@ -350,7 +350,7 @@ class NotificationSettingsScreen extends ConsumerWidget {
                         ),
                       ),
                       Text(
-                        'Seleziona Orario',
+                        context.l10n.translate('Seleziona Orario'),
                         style: GoogleFonts.inter(
                           color: context.appColors.foreground,
                           fontSize: 16,
@@ -363,7 +363,7 @@ class NotificationSettingsScreen extends ConsumerWidget {
                           Navigator.pop(modalContext);
                         },
                         child: Text(
-                          'Fatto',
+                          context.l10n.translate('Fatto'),
                           style: GoogleFonts.inter(
                             color: Theme.of(context).colorScheme.primary,
                             fontSize: 16,

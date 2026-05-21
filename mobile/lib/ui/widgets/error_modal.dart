@@ -3,6 +3,7 @@ import 'package:lucide_icons_flutter/lucide_icons.dart';
 import 'package:google_fonts/google_fonts.dart';
 import '../../core/theme.dart';
 import '../../core/haptics.dart';
+import '../../core/localization.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 class ErrorModal extends ConsumerWidget {
@@ -136,7 +137,7 @@ class ErrorModal extends ConsumerWidget {
                           crossAxisAlignment: CrossAxisAlignment.start,
                           children: [
                             Text(
-                              'Dettagli tecnici:',
+                              context.l10n.translate('Dettagli tecnici:'),
                               style: GoogleFonts.inter(
                                 color: colors.mutedForeground,
                                 fontSize: 12,
@@ -183,7 +184,7 @@ class ErrorModal extends ConsumerWidget {
                 ),
                 child: Center(
                   child: Text(
-                    'Ho capito',
+                    context.l10n.translate('Ho capito'),
                     style: TextStyle(
                       color: colors.background,
                       fontSize: 16,

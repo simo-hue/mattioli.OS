@@ -50,7 +50,7 @@ class _AIChatScreenState extends ConsumerState<AIChatScreen> {
   void _addInitialMessages() {
     _messages.add(
       ChatMessage(
-        text: "Ciao! Sono il tuo Coach di Disciplina. Come posso aiutarti oggi?",
+        text: context.l10n.translate("Ciao! Sono il tuo Coach di Disciplina. Come posso aiutarti oggi?"),
         isUser: false,
         timestamp: DateTime.now().subtract(const Duration(minutes: 1)),
       ),
@@ -78,7 +78,7 @@ class _AIChatScreenState extends ConsumerState<AIChatScreen> {
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
                   Text(
-                    "Contesto dell'AI",
+                    context.l10n.translate("Contesto dell'AI"),
                     style: TextStyle(
                       fontSize: 18,
                       fontWeight: FontWeight.bold,
@@ -87,7 +87,7 @@ class _AIChatScreenState extends ConsumerState<AIChatScreen> {
                   ),
                   const SizedBox(height: 8),
                   Text(
-                    "Scegli quali informazioni condividere con l'assistente per personalizzare le risposte.",
+                    context.l10n.translate("Scegli quali informazioni condividere con l'assistente per personalizzare le risposte."),
                     style: TextStyle(
                       fontSize: 13,
                       color: colors.mutedForeground,
@@ -95,8 +95,8 @@ class _AIChatScreenState extends ConsumerState<AIChatScreen> {
                   ),
                   const SizedBox(height: 16),
                   _buildContextSwitch(
-                    title: "Abitudini giornaliere",
-                    subtitle: "Stato di completamento di oggi",
+                    title: context.l10n.translate('Abitudini giornaliere'),
+                    subtitle: context.l10n.translate('Stato di completamento di oggi'),
                     value: _shareHabits,
                     onChanged: (val) {
                       setDialogState(() => _shareHabits = val);
@@ -105,8 +105,8 @@ class _AIChatScreenState extends ConsumerState<AIChatScreen> {
                   ),
                   const SizedBox(height: 12),
                   _buildContextSwitch(
-                    title: "Macro obiettivi",
-                    subtitle: "Lista degli obiettivi attivi e completati",
+                    title: context.l10n.translate('Macro obiettivi'),
+                    subtitle: context.l10n.translate('Lista degli obiettivi attivi e completati'),
                     value: _shareGoals,
                     onChanged: (val) {
                       setDialogState(() => _shareGoals = val);
@@ -127,7 +127,7 @@ class _AIChatScreenState extends ConsumerState<AIChatScreen> {
                         ),
                         padding: const EdgeInsets.symmetric(vertical: 12),
                       ),
-                      child: const Text("Salva"),
+                      child: Text( context.l10n.translate('Salva')),
                     ),
                   ),
                 ],
@@ -522,7 +522,7 @@ Se l'utente non chiede nulla di specifico, offri consigli sulla disciplina o chi
                     ),
                     const SizedBox(width: 4),
                     Text(
-                      "Online per ${userProfile.displayName}",
+                      "${context.l10n.translate('Online per')} ${userProfile.displayName}",
                       style: TextStyle(
                         fontSize: 11,
                         fontWeight: FontWeight.w400,
@@ -561,7 +561,7 @@ Se l'utente non chiede nulla di specifico, offri consigli sulla disciplina o chi
                             crossAxisAlignment: CrossAxisAlignment.start,
                             children: [
                               Text(
-                                "Elimina chat",
+                                context.l10n.translate("Elimina chat"),
                                 style: TextStyle(
                                   fontSize: 18,
                                   fontWeight: FontWeight.w700,
@@ -570,7 +570,7 @@ Se l'utente non chiede nulla di specifico, offri consigli sulla disciplina o chi
                               ),
                               const SizedBox(height: 12),
                               Text(
-                                "Sei sicuro di voler eliminare tutti i messaggi? Questa azione non può essere annullata.",
+                                context.l10n.translate("Sei sicuro di voler eliminare tutti i messaggi? Questa azione non può essere annullata."),
                                 style: TextStyle(
                                   fontSize: 14,
                                   color: colors.mutedForeground,
@@ -583,7 +583,7 @@ Se l'utente non chiede nulla di specifico, offri consigli sulla disciplina o chi
                                   TextButton(
                                     onPressed: () => Navigator.pop(context),
                                     child: Text(
-                                      "Annulla",
+                                      context.l10n.translate("Annulla"),
                                       style: TextStyle(color: colors.foreground),
                                     ),
                                   ),
@@ -616,12 +616,12 @@ Se l'utente non chiede nulla di specifico, offri consigli sulla disciplina o chi
                 );
               },
 
-              tooltip: 'Nuova chat',
+              tooltip: context.l10n.translate('Nuova chat'),
             ),
           IconButton(
             icon: Icon(LucideIcons.settings, size: 18, color: colors.mutedForeground),
             onPressed: _showSettingsDialog,
-            tooltip: 'Impostazioni contesto',
+            tooltip: context.l10n.translate('Impostazioni contesto'),
           ),
         ],
 
@@ -676,7 +676,7 @@ Se l'utente non chiede nulla di specifico, offri consigli sulla disciplina o chi
                           crossAxisAlignment: CrossAxisAlignment.start,
                           children: [
                             Text(
-                              "Coach Virtuale",
+                              context.l10n.translate("Coach Virtuale"),
                               style: TextStyle(
                                 color: colors.foreground,
                                 fontSize: 15,
@@ -685,7 +685,7 @@ Se l'utente non chiede nulla di specifico, offri consigli sulla disciplina o chi
                             ),
                             const SizedBox(height: 2),
                             Text(
-                              "Pronto ad aiutarti a mantenere la disciplina.",
+                              context.l10n.translate("Pronto ad aiutarti a mantenere la disciplina."),
                               style: TextStyle(
                                 color: colors.mutedForeground,
                                 fontSize: 12,
@@ -715,7 +715,7 @@ Se l'utente non chiede nulla di specifico, offri consigli sulla disciplina o chi
                     child: Row(
                       children: [
                         Text(
-                          "Suggerimenti",
+                          context.l10n.translate("Suggerimenti"),
                           style: TextStyle(
                             color: colors.mutedForeground,
                             fontSize: 12,
@@ -762,7 +762,7 @@ Se l'utente non chiede nulla di specifico, offri consigli sulla disciplina o chi
                         controller: _controller,
                         style: TextStyle(color: colors.foreground),
                         decoration: InputDecoration(
-                          hintText: "Fai una domanda...",
+                          hintText: context.l10n.translate('Fai una domanda...'),
                           hintStyle: TextStyle(color: colors.mutedForeground),
                           border: InputBorder.none,
                           contentPadding: const EdgeInsets.symmetric(
@@ -826,7 +826,7 @@ Se l'utente non chiede nulla di specifico, offri consigli sulla disciplina o chi
               timestamp: DateTime.now(),
             ));
             _messages.add(ChatMessage(
-              text: "Per favore, seleziona almeno un contesto (abitudini o obiettivi) nelle impostazioni per poter parlare con il Coach.",
+              text: context.l10n.translate("Per favore, seleziona almeno un contesto (abitudini o obiettivi) nelle impostazioni per poter parlare con il Coach."),
               isUser: false,
               timestamp: DateTime.now().add(const Duration(milliseconds: 100)),
             ));
@@ -873,7 +873,7 @@ Se l'utente non chiede nulla di specifico, offri consigli sulla disciplina o chi
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
             content: Text(
-              "Messaggio copiato",
+              context.l10n.translate("Messaggio copiato"),
               style: TextStyle(color: colors.foreground),
             ),
             backgroundColor: colors.cardElevated,
@@ -906,7 +906,7 @@ Se l'utente non chiede nulla di specifico, offri consigli sulla disciplina o chi
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
             MarkdownBody(
-              data: message.text,
+              data: context.l10n.translate(message.text),
               styleSheet: MarkdownStyleSheet.fromTheme(Theme.of(context)).copyWith(
                 p: TextStyle(
                   color: isUser ? Colors.white : colors.foreground,

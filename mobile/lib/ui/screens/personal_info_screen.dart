@@ -177,7 +177,7 @@ class _PersonalInfoScreenState extends ConsumerState<PersonalInfoScreen> {
               ),
               const SizedBox(height: 20),
               _buildDateField(
-                label: 'DATA DI NASCITA',
+                label: context.l10n.translate('DATA DI NASCITA'),
                 controller: _dobController,
                 onTap: _showDatePicker,
               ),
@@ -278,7 +278,7 @@ class _PersonalInfoScreenState extends ConsumerState<PersonalInfoScreen> {
                 mainAxisAlignment: MainAxisAlignment.spaceBetween,
                 children: [
                   CupertinoButton(
-                    child: const Text('Annulla'),
+                    child: Text( context.l10n.translate('Annulla')),
                     onPressed: () => Navigator.of(context).pop(),
                   ),
                   CupertinoButton(

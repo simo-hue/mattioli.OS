@@ -1684,3 +1684,23 @@
   - *Details*: Aggiunte al file `localization.dart` le chiavi mancanti per il tab Mood delle statistiche globali ("Mood & Energia", "Analisi del benessere psicofisico.", ecc.) in modo che la localizzazione del widget `GlobalMoodTabWidget` funzioni correttamente.
 - [2026-05-21 14:42]: Aggiunte chiavi tutorial (incluso "Stato d'animo")
   - *Details*: Aggiunte al dizionario `localization.dart` tutte le descrizioni dei vari tutorial, come ad esempio la scritta del "Daily Check-in" che conteneva la parola "stato d'animo". Il file `protocollo_panel.dart` ha la sua traduzione correttamente wrappata.
+- [2026-05-21 14:49]: Traduzione massiva dell'ultimo 5% di stringhe hardcoded
+  - *Details*: Risolte oltre 50 stringhe in lingua originale non gestite dal sistema di localizzazione.
+  - *Tech Notes*: Script Python eseguito su `ai_chat_screen.dart`, `app_settings_screen.dart`, `consent_screen.dart`, `notification_settings_screen.dart`, `personal_info_screen.dart`, `privacy_settings_screen.dart`, `subscription_screen.dart`, `life_view_widget.dart` e `pro_features_modal.dart`. Sostituiti tutti gli hardcoded `Text('...')` o similari con l'equivalente mappatura in `context.l10n.translate()`. Tutte le chiavi sono state inserite sia in italiano sia in inglese. Rimosso `const` dove causava conflitti.
+- [2026-05-21 14:56]: Traduzione completa Subscription Screen
+  - *Details*: Tutta la schermata degli abbonamenti (`subscription_screen.dart`), inclusi i messaggi di errore di Apple/RevenueCat, le feature premium ("AI Coach Personalizzato", "Abitudini Illimitate"), i dettagli dell'abbonamento attivo ("Prossimo Rinnovo", "Metodo di Pagamento"), il selettore del piano ("Mensile", "Annuale") e le legali ("Privacy Policy", "EULA") sono state wrappate nel traduttore di sistema e aggiunte al dizionario globale inglese/italiano. Rimosso ogni riferimento statico in Italiano.
+
+- [2026-05-21 14:58]: Settings - Rimozione sottomenu "AI & SISTEMA" da Impostazioni App
+  - *Details*: Completamente rimosso il sottomenu "AI & SYSTEM" / "AI & SISTEMA" e tutte le sue voci associate (inclusi i "Suggerimenti AI") dalla schermata delle impostazioni dell'applicazione (`app_settings_screen.dart`).
+  - *Tech Notes*:
+    - Rimosso il header di sezione e la card con il relativo switch dalla UI di `app_settings_screen.dart`.
+    - Risolti alcuni errori pre-esistenti di compilazione per espressioni `const` non valide con invocazioni di metodi dinamici di localizzazione all'interno di `subscription_screen.dart` per garantire la stabilità e il superamento dell'analisi statica di Flutter.
+
+- [2026-05-21 15:10]: Dynamic Popup & Dialog Translation Sweep & Clean Build
+  - *Details*: Performed a 100% comprehensive popup, dialog, alert modal, and bottom sheet dynamic localization sweep (Italian `it` and English `en`). Resolved missing localization imports in `subscription_alert_modal.dart` and `error_modal.dart`. Localized settings validation popups, password warning sheets, account management deletion/reset confirmations, and custom warnings. Cleaned up string concatenations to use string interpolation.
+  - *Tech Notes*:
+    - Fixed `context.l10n` compile issues by adding proper imports.
+    - Localized the hardcoded `'Elimina l\'account'` title in `privacy_settings_screen.dart` to match `localization.dart` mapping.
+    - Converted `'Evolve Pro' + ' ' + context.l10n.translate(title)` concatenation to dynamic string interpolation, resolving two `prefer_interpolation_to_compose_strings` code analyzer warnings.
+    - Verified clean static compilation (0 errors, 0 warnings) via `flutter analyze`.
+

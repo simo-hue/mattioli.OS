@@ -203,28 +203,6 @@ class AppSettingsScreen extends ConsumerWidget {
                 },
               ),
             ]),
-            const SizedBox(height: 32),
-            _buildSectionHeader(context, context.l10n.translate('AI & SISTEMA')),
-            _buildSettingsCard(context, [
-              _buildSwitchRow(
-                context: context,
-                icon: LucideIcons.brainCircuit,
-                title: context.l10n.translate('Suggerimenti AI'),
-                subtitle: context.l10n.translate('Analisi intelligente delle abitudini'),
-                value: settings.aiSuggestions,
-                isLocked: !settings.isPro,
-                onChanged: (val) {
-                  if (settings.isPro) {
-                    final currentSettings = ref.read(settingsProvider);
-                    notifier.updateSettings(currentSettings.copyWith(aiSuggestions: val));
-                    ref.hapticLight();
-                  } else {
-                    ref.hapticHeavy();
-                    ProFeaturesModal.show(context);
-                  }
-                },
-              ),
-            ]),
             const SizedBox(height: 40),
           ],
         ),
@@ -627,7 +605,7 @@ class AppSettingsScreen extends ConsumerWidget {
                             const SizedBox(width: 8),
                             Expanded(
                               child: Text(
-                                'Colore troppo scuro per la visibilità in Dark Mode.',
+                                context.l10n.translate('Colore troppo scuro per la visibilità in Dark Mode.'),
                                 style: TextStyle(color: context.appColors.destructive, fontSize: 11, fontWeight: FontWeight.w600),
                               ),
                             ),
@@ -641,7 +619,7 @@ class AppSettingsScreen extends ConsumerWidget {
               actions: [
                 TextButton(
                   onPressed: () => Navigator.pop(dialogContext),
-                  child: Text('Annulla', style: TextStyle(color: context.appColors.mutedForeground)),
+                  child: Text( context.l10n.translate('Annulla'), style: TextStyle(color: context.appColors.mutedForeground)),
                 ),
                 ElevatedButton(
                   onPressed: isTooDark
@@ -851,7 +829,7 @@ class _ValidationDialog extends StatelessWidget {
           ),
           const SizedBox(height: 24),
           Text(
-            'Verifica Visibilità',
+            context.l10n.translate('Verifica Visibilità'),
             style: TextStyle(
               color: context.appColors.foreground,
               fontSize: 22,
@@ -860,7 +838,7 @@ class _ValidationDialog extends StatelessWidget {
           ),
           const SizedBox(height: 12),
           Text(
-            'Riesci a leggere chiaramente questo testo e a vedere il pulsante qui sotto?',
+            context.l10n.translate('Riesci a leggere chiaramente questo testo e a vedere il pulsante qui sotto?'),
             textAlign: TextAlign.center,
             style: TextStyle(
               color: context.appColors.mutedForeground.withValues(alpha: 0.8),
@@ -890,7 +868,7 @@ class _ValidationDialog extends StatelessWidget {
               ),
               child: Center(
                 child: Text(
-                  'SI, CONFERMA',
+                  context.l10n.translate('SI, CONFERMA'),
                   style: TextStyle(
                     color: testColor.computeLuminance() > 0.5 ? Colors.black : Colors.white,
                     fontWeight: FontWeight.w900,
@@ -904,7 +882,7 @@ class _ValidationDialog extends StatelessWidget {
           TextButton(
             onPressed: () => Navigator.pop(context),
             child: Text(
-              'NO, TORNA INDIETRO',
+              context.l10n.translate('NO, TORNA INDIETRO'),
               style: TextStyle(color: testColor.withValues(alpha: 0.6), fontSize: 12, fontWeight: FontWeight.w700),
             ),
           ),

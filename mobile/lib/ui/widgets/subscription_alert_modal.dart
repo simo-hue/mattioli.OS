@@ -6,6 +6,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../../core/theme.dart';
 import '../../core/haptics.dart';
+import '../../core/localization.dart';
 
 enum SubscriptionAlertType {
   success,
@@ -224,7 +225,9 @@ class SubscriptionAlertModal extends ConsumerWidget {
               ),
               child: Center(
                 child: Text(
-                  type == SubscriptionAlertType.success ? 'Inizia il tuo Percorso' : 'Ho capito',
+                  type == SubscriptionAlertType.success
+                      ? context.l10n.translate('Inizia il tuo Percorso')
+                      : context.l10n.translate('Ho capito'),
                   style: TextStyle(
                     color: type == SubscriptionAlertType.error ? Colors.white : Colors.black,
                     fontSize: 15,

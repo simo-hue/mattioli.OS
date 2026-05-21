@@ -325,7 +325,9 @@ Future<String?> _showCategoryEditorDialogSafe({
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
                   Text(
-                    isEditing ? 'Modifica categoria' : 'Nuova categoria',
+                    isEditing
+                        ? context.l10n.translate('Modifica categoria')
+                        : context.l10n.translate('Crea nuova categoria'),
                     style: GoogleFonts.inter(
                       fontSize: 18,
                       fontWeight: FontWeight.w600,
@@ -365,7 +367,7 @@ Future<String?> _showCategoryEditorDialogSafe({
                   ),
                   const SizedBox(height: 20),
                   Text(
-                    'Scegli colore',
+                    context.l10n.translate('Scegli colore'),
                     style: GoogleFonts.inter(
                       fontSize: 14,
                       fontWeight: FontWeight.w500,
@@ -432,7 +434,7 @@ Future<String?> _showCategoryEditorDialogSafe({
                       TextButton(
                         onPressed: () => Navigator.pop(dialogContext),
                         child: Text(
-                          'Annulla',
+                          context.l10n.translate('Annulla'),
                           style: GoogleFonts.inter(
                             fontSize: 14,
                             color: context.appColors.mutedForeground,
@@ -477,7 +479,9 @@ Future<String?> _showCategoryEditorDialogSafe({
                           ),
                         ),
                         child: Text(
-                          isEditing ? 'Salva' : 'Crea',
+                          isEditing
+                              ? context.l10n.translate('Salva')
+                              : context.l10n.translate('Crea'),
                           style: GoogleFonts.inter(
                             fontSize: 14,
                             fontWeight: FontWeight.w600,
@@ -545,7 +549,7 @@ Future<bool> _showDeleteCategoryDialog({
       backgroundColor: context.appColors.card,
       shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
       title: Text(
-        'Archiviare categoria?',
+        context.l10n.translate('Archiviare categoria?'),
         style: GoogleFonts.inter(
           color: context.appColors.foreground,
           fontWeight: FontWeight.w600,
@@ -554,8 +558,17 @@ Future<bool> _showDeleteCategoryDialog({
       ),
       content: Text(
         linkedGoalsCount > 0
-            ? 'La categoria "${category.label}" non sarà più disponibile per nuovi obiettivi, ma resterà collegata a $linkedGoalsCount obiettivi storici e alle statistiche.'
-            : 'La categoria "${category.label}" non sarà più disponibile per nuovi obiettivi, ma resterà nello storico.',
+            ? context.l10n
+                .translate(
+                  'La categoria "label" non sarà più disponibile per nuovi obiettivi, ma resterà collegata a count obiettivi storici e alle statistiche.',
+                )
+                .replaceFirst('label', category.label)
+                .replaceFirst('count', linkedGoalsCount.toString())
+            : context.l10n
+                .translate(
+                  'La categoria "label" non sarà più disponibile per nuovi obiettivi, ma resterà nello storico.',
+                )
+                .replaceFirst('label', category.label),
         style: GoogleFonts.inter(
           color: context.appColors.mutedForeground,
           fontSize: 13,
@@ -565,7 +578,7 @@ Future<bool> _showDeleteCategoryDialog({
         TextButton(
           onPressed: () => Navigator.pop(dialogContext, false),
           child: Text(
-            'Annulla',
+            context.l10n.translate('Annulla'),
             style: GoogleFonts.inter(color: context.appColors.mutedForeground),
           ),
         ),
@@ -582,7 +595,7 @@ Future<bool> _showDeleteCategoryDialog({
             }
           },
           child: Text(
-            'Archivia',
+            context.l10n.translate('Archivia'),
             style: GoogleFonts.inter(
               color: context.appColors.destructive,
               fontWeight: FontWeight.w600,
@@ -615,14 +628,14 @@ void _showColorPickerDialog(
               children: [
                 CupertinoButton(
                   child: Text(
-                    'Annulla',
+                    context.l10n.translate('Annulla'),
                     style: TextStyle(color: context.appColors.mutedForeground),
                   ),
                   onPressed: () => Navigator.pop(context),
                 ),
                 CupertinoButton(
                   child: Text(
-                    'Conferma',
+                    context.l10n.translate('Conferma'),
                     style: TextStyle(
                       color: Theme.of(context).colorScheme.primary,
                     ),

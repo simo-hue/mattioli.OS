@@ -1,5 +1,4 @@
 # NEXT RELEASE ( v1.1 )
-[ ] Modifica ed eliminazione di una categoria dagli obiettivi
 [ ] Capire immagine profilo
 [ ] Realizzare foto app store complete definitive
 [ ] Aggiunta e traduzione delle lingue completa

@@ -96,7 +96,7 @@ class _ProfileScreenState extends ConsumerState<ProfileScreen> {
                       ),
                       const SizedBox(width: 12),
                       Text(
-                        'Conferma Uscita',
+                        context.l10n.translate('Conferma Uscita'),
                         style: TextStyle(
                           fontSize: 18,
                           fontWeight: FontWeight.w800,
@@ -108,7 +108,7 @@ class _ProfileScreenState extends ConsumerState<ProfileScreen> {
                   ),
                   const SizedBox(height: 16),
                   Text(
-                    'Sei sicuro di voler uscire dal tuo account? Dovrai reinserire le tue credenziali per accedere nuovamente.',
+                    context.l10n.translate('Sei sicuro di voler uscire dal tuo account? Dovrai reinserire le tue credenziali per accedere nuovamente.'),
                     style: TextStyle(
                       fontSize: 13,
                       height: 1.5,
@@ -122,7 +122,7 @@ class _ProfileScreenState extends ConsumerState<ProfileScreen> {
                       TextButton(
                         onPressed: () => Navigator.pop(dialogContext),
                         child: Text(
-                          'Annulla',
+                          context.l10n.translate('Annulla'),
                           style: TextStyle(
                             color: context.appColors.mutedForeground,
                             fontSize: 14,
@@ -153,9 +153,9 @@ class _ProfileScreenState extends ConsumerState<ProfileScreen> {
                               )
                             ],
                           ),
-                          child: const Text(
-                            'Esci',
-                            style: TextStyle(
+                          child: Text(
+                            context.l10n.translate('Esci'),
+                            style: const TextStyle(
                               color: Colors.white,
                               fontSize: 14,
                               fontWeight: FontWeight.w700,

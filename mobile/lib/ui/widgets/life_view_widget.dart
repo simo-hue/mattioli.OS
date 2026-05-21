@@ -59,9 +59,9 @@ class LifeViewWidget extends ConsumerWidget {
           Row(
             mainAxisAlignment: MainAxisAlignment.center,
             children: [
-              _LegendItem(color: Colors.blue.withValues(alpha: 0.4), label: 'Pre-tracking'),
+              _LegendItem(color: Colors.blue.withValues(alpha: 0.4), label: context.l10n.translate('Pre-tracking')),
               const SizedBox(width: 16),
-              _LegendItem(color: const Color(0xFF10B981), label: 'Attuale'),
+              _LegendItem(color: const Color(0xFF10B981), label: context.l10n.translate('Attuale')),
             ],
           ),
           const SizedBox(height: 16),
@@ -77,9 +77,9 @@ class LifeViewWidget extends ConsumerWidget {
             child: Row(
               mainAxisAlignment: MainAxisAlignment.spaceAround,
               children: [
-                _StatItem(value: '$livedMonths', label: 'MESI VISSUTI'),
-                _StatItem(value: '$age', label: 'ETÀ ATTUALE'),
-                _StatItem(value: '$remainingMonths', label: 'RIMANENTI'),
+                _StatItem(value: '$livedMonths', label: context.l10n.translate('MESI VISSUTI')),
+                _StatItem(value: '$age', label: context.l10n.translate('ETÀ ATTUALE')),
+                _StatItem(value: '$remainingMonths', label: context.l10n.translate('RIMANENTI')),
               ],
             ),
           ),

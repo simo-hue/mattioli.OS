@@ -1,33 +1,27 @@
+class MacroGoalDateRange {
+  final DateTime start;
+  final DateTime end;
+
+  const MacroGoalDateRange({required this.start, required this.end});
+}
+
 int logicalWeekOfMonth(DateTime date) {
-  final normalizedDate = DateTime.utc(date.year, date.month, date.day);
-  final monthStart = DateTime.utc(date.year, date.month, 1);
-  final effectiveFirstMonday = _firstMondayInMonth(monthStart);
-
-  if (normalizedDate.isBefore(effectiveFirstMonday)) {
-    return 1;
-  }
-
-  final dateWeekStart = _startOfWeek(normalizedDate);
-  final weeksFromFirstMonday =
-      dateWeekStart.difference(effectiveFirstMonday).inDays ~/ 7;
-  final daysBeforeFirstMonday = effectiveFirstMonday
-      .difference(monthStart)
-      .inDays;
-  final baseWeek = daysBeforeFirstMonday > 1 ? 2 : 1;
-
-  return weeksFromFirstMonday + baseWeek;
+  return ((date.day - 1) ~/ 7) + 1;
 }
 
 int logicalWeeksInMonth(int year, int month) {
-  final endOfMonth = DateTime.utc(year, month + 1, 0);
-  return logicalWeekOfMonth(endOfMonth);
+  final daysInMonth = DateTime.utc(year, month + 1, 0).day;
+  return ((daysInMonth - 1) ~/ 7) + 1;
 }
 
-DateTime _firstMondayInMonth(DateTime monthStart) {
-  final daysUntilMonday = (DateTime.monday - monthStart.weekday) % 7;
-  return monthStart.add(Duration(days: daysUntilMonday));
-}
+MacroGoalDateRange logicalWeekRange(int year, int month, int week) {
+  final maxWeek = logicalWeeksInMonth(year, month);
+  final selectedWeek = week < 1 ? 1 : (week > maxWeek ? maxWeek : week);
+  final monthStart = DateTime.utc(year, month, 1);
+  final start = monthStart.add(Duration(days: (selectedWeek - 1) * 7));
 
-DateTime _startOfWeek(DateTime date) {
-  return date.subtract(Duration(days: date.weekday - DateTime.monday));
+  return MacroGoalDateRange(
+    start: start,
+    end: start.add(const Duration(days: 6)),
+  );
 }

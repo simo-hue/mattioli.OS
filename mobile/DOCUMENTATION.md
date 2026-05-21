@@ -1608,3 +1608,13 @@
 - **Provider**: Updated `MacroGoalsViewNotifier` and `weeksInMonth()` to use logical month weeks for initialization, navigation, clamping, and rescheduling.
 - **Tests**: Added `test/macro_goal_calendar_test.dart` covering 4-, 5-, and 6-week month shapes, including the February 2026 Sunday-start case.
 - **Verification**: `flutter analyze` and `flutter test` completed successfully.
+
+---
+
+## [2026-05-21 09:58]: Macro Goals - Weekly Range Titles
+*Details*: Updated the weekly macro-goal period header to show the actual date range instead of a generic week number, e.g. `1 - 7, maggio 2026`.
+*Tech Notes*:
+- **Range Logic**: Refined `lib/core/macro_goal_calendar.dart` so goal weeks are 7-day month buckets starting from day 1; final buckets can extend into the next month/year.
+- **UI**: Updated `macro_goals_screen.dart` to format same-month, cross-month, and cross-year ranges in Italian while preventing header overflow.
+- **Tests**: Extended `test/macro_goal_calendar_test.dart` with same-month, cross-month, and cross-year range cases.
+- **Verification**: `flutter analyze` and `flutter test` completed successfully.

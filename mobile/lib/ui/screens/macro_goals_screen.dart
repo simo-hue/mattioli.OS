@@ -3,6 +3,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:lucide_icons_flutter/lucide_icons.dart';
 
+import '../../core/macro_goal_calendar.dart';
 import '../../core/theme.dart';
 import '../../models/macro_goal.dart';
 import '../../providers/macro_goals_provider.dart';
@@ -757,7 +758,11 @@ class _MacroGoalsScreenState extends ConsumerState<MacroGoalsScreen>
         highlightColor = const Color(0xFF60A5FA); // blue
         break;
       case GoalType.weekly:
-        periodTitle = 'Settimana ${vs.selectedWeek}, ${months[vs.selectedMonth]} ${vs.selectedYear}';
+        periodTitle = _formatWeeklyRange(
+          vs.selectedYear,
+          vs.selectedMonth,
+          vs.selectedWeek,
+        );
         highlightColor = const Color(0xFFA78BFA); // purple
         break;
       case GoalType.lifetime:
@@ -791,6 +796,8 @@ class _MacroGoalsScreenState extends ConsumerState<MacroGoalsScreen>
             child: Text(
               periodTitle,
               textAlign: TextAlign.center,
+              maxLines: 2,
+              overflow: TextOverflow.ellipsis,
               style: GoogleFonts.inter(
                 fontSize: 16,
                 fontWeight: FontWeight.w600,
@@ -819,6 +826,27 @@ class _MacroGoalsScreenState extends ConsumerState<MacroGoalsScreen>
         ],
       ),
     );
+  }
+
+  String _formatWeeklyRange(int year, int month, int week) {
+    final range = logicalWeekRange(year, month, week);
+    final months = [
+      '', 'gennaio', 'febbraio', 'marzo', 'aprile', 'maggio', 'giugno',
+      'luglio', 'agosto', 'settembre', 'ottobre', 'novembre', 'dicembre',
+    ];
+
+    final sameMonth = range.start.year == range.end.year &&
+        range.start.month == range.end.month;
+    if (sameMonth) {
+      return '${range.start.day} - ${range.end.day}, ${months[range.end.month]} ${range.end.year}';
+    }
+
+    final sameYear = range.start.year == range.end.year;
+    if (sameYear) {
+      return '${range.start.day} ${months[range.start.month]} - ${range.end.day} ${months[range.end.month]} ${range.end.year}';
+    }
+
+    return '${range.start.day} ${months[range.start.month]} ${range.start.year} - ${range.end.day} ${months[range.end.month]} ${range.end.year}';
   }
 }
 

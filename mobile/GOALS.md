@@ -1,10 +1,32 @@
-# NEXT RELEASE ( v1.0.1 )
+# NEXT RELEASE ( v1.1 )
 [ ] Modifica ed eliminazione di una categoria dagli obiettivi
 [ ] Capire immagine profilo
 [ ] Realizzare foto app store complete definitive
 [ ] Aggiunta e traduzione delle lingue completa
 [ ] Come rendere internazionale app store ( immagini + description )
 [ ] Realizzare Video YouTube per mostrare l'app.
+
+
+
+
+
+
+
+
+
+
+
+---
+
+
+
+
+
+
+
+
+
+
 
 # Feature Premium
     [ ] Analytics as a PRO Plan per quelle avanzate

@@ -6,9 +6,8 @@ import 'package:lucide_icons_flutter/lucide_icons.dart';
 import '../../core/theme.dart';
 import '../../providers/settings_provider.dart';
 import '../../core/haptics.dart';
-import '../../core/notifications.dart';
 import '../../core/localization.dart';
-import '../widgets/pro_features_modal.dart';
+import '../../core/notifications.dart';
 
 class NotificationSettingsScreen extends ConsumerWidget {
   const NotificationSettingsScreen({super.key});
@@ -125,92 +124,6 @@ class NotificationSettingsScreen extends ConsumerWidget {
                 ),
             ]),
             const SizedBox(height: 32),
-            _buildSectionHeader(context, 'INTELLIGENZA ARTIFICIALE'),
-            _buildSettingsCard(context, [
-              _buildSwitchRow(
-                context: context,
-                ref: ref,
-                icon: LucideIcons.brainCircuit,
-                title: context.l10n.translate('Insight AI'),
-                subtitle: context.l10n.translate('Analisi intelligente delle abitudini'),
-                value: settings.aiInsights,
-                isLocked: !settings.isPro,
-                onChanged: (val) {
-                  if (settings.isPro) {
-                    final currentSettings = ref.read(settingsProvider);
-                    notifier.updateSettings(currentSettings.copyWith(aiInsights: val));
-                    ref.hapticLight();
-                  } else {
-                    ref.hapticHeavy();
-                    ProFeaturesModal.show(context);
-                  }
-                },
-              ),
-              _buildDivider(context),
-              _buildSwitchRow(
-                context: context,
-                ref: ref,
-                icon: LucideIcons.zap,
-                title: context.l10n.translate('Deep Work Insights'),
-                subtitle: context.l10n.translate('Deep Work Insights'),
-                value: settings.deepWorkInsights,
-                isLocked: !settings.isPro,
-                onChanged: (val) {
-                  if (settings.isPro) {
-                    final currentSettings = ref.read(settingsProvider);
-                    notifier.updateSettings(currentSettings.copyWith(deepWorkInsights: val));
-                    ref.hapticLight();
-                  } else {
-                    ref.hapticHeavy();
-                    ProFeaturesModal.show(context);
-                  }
-                },
-              ),
-            ]),
-            const SizedBox(height: 32),
-            _buildSectionHeader(context, 'GESTIONE SISTEMA'),
-            _buildSettingsCard(context, [
-              _buildSwitchRow(
-                context: context,
-                ref: ref,
-                icon: LucideIcons.chartBar,
-                title: context.l10n.translate('Resoconti Settimanali'),
-                subtitle: context.l10n.translate('Resoconti Settimanali'),
-                value: settings.weeklyReports,
-                isLocked: !settings.isPro,
-                onChanged: (val) {
-                  if (settings.isPro) {
-                    final currentSettings = ref.read(settingsProvider);
-                    notifier.updateSettings(currentSettings.copyWith(weeklyReports: val));
-                    ref.hapticLight();
-                  } else {
-                    ref.hapticHeavy();
-                    ProFeaturesModal.show(context);
-                  }
-                },
-              ),
-              _buildDivider(context),
-              _buildSwitchRow(
-                context: context,
-                ref: ref,
-                icon: LucideIcons.moonStar,
-                title: context.l10n.translate('Modalità Focus'),
-                subtitle: context.l10n.translate('Modalità Focus'),
-                value: settings.focusMode,
-                isLocked: !settings.isPro,
-                onChanged: (val) {
-                  if (settings.isPro) {
-                    final currentSettings = ref.read(settingsProvider);
-                    notifier.updateSettings(currentSettings.copyWith(focusMode: val));
-                    ref.hapticLight();
-                  } else {
-                    ref.hapticHeavy();
-                    ProFeaturesModal.show(context);
-                  }
-                },
-              ),
-            ]),
-            const SizedBox(height: 48),
           ],
         ),
       ),

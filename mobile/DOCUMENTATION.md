@@ -1655,3 +1655,13 @@
 - **Root Cause**: In `category_picker_sheet.dart`, the "Crea nuova categoria" handler called `Navigator.pop(sheetContext)` first, then used the `Consumer`'s `ref` to show the editor dialog. Since the `Consumer` was already unmounted, `ref.read(...)` threw a "Bad state" error.
 - **Fix**: Captured the caller's context and the `MacroGoalCategoriesNotifier` reference eagerly (before popping the sheet). Created `_showCategoryEditorDialogSafe()` that takes a pre-captured notifier instead of a `WidgetRef`, making it safe to call after the sheet is disposed.
 - **Scope**: The existing `_showCategoryEditorDialog` (used for in-sheet edit) now also eagerly captures the notifier as a safety measure.
+
+---
+
+## [2026-05-21 13:28]: UI - Removed AI and System Sections from Notification Settings
+*Details*: Completely removed the "INTELLIGENZA ARTIFICIALE" (Artificial Intelligence) and "GESTIONE SISTEMA" (System Management) menus with all their respective items/options from the Notification Settings screen.
+*Tech Notes*:
+- **UI**: Modified `lib/ui/screens/notification_settings_screen.dart` to eliminate the sections and cards for AI Insights, Deep Work Insights, Weekly Reports, and Focus Mode.
+- **Cleanup**: Removed the unused import for `pro_features_modal.dart` to maintain a clean codebase.
+- **Verification**: Ran `flutter analyze` ensuring zero compiler errors or warnings remain.
+

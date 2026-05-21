@@ -141,27 +141,27 @@ class _MacroGoalsStatsViewState extends ConsumerState<MacroGoalsStatsView> {
     return [
       Row(
         children: [
-          Expanded(child: _buildHighlightCard(title: context.l10n.translate('Punto di Forza'), value: bestCategory, subtitle: '$bestCatRate% di completamento', icon: LucideIcons.zap, color: const Color(0xFFA855F7))),
+          Expanded(child: _buildHighlightCard(title: context.l10n.translate('Punto di Forza'), value: bestCategory, subtitle: '$bestCatRate% ${context.l10n.translate('di completamento')}', icon: LucideIcons.zap, color: const Color(0xFFA855F7))),
           const SizedBox(width: 12),
-          Expanded(child: _buildHighlightCard(title: context.l10n.translate('Mese Migliore'), value: (bestMonthIdx != null && bestMonthIdx > 0) ? monthsLabel[bestMonthIdx] : 'Nessuno', subtitle: '$bestMonthRate% di successo', icon: LucideIcons.trophy, color: const Color(0xFFF59E0B))),
+          Expanded(child: _buildHighlightCard(title: context.l10n.translate('Mese Migliore'), value: (bestMonthIdx != null && bestMonthIdx > 0) ? monthsLabel[bestMonthIdx] : context.l10n.translate('Nessuno'), subtitle: '$bestMonthRate% ${context.l10n.translate('di successo')}', icon: LucideIcons.trophy, color: const Color(0xFFF59E0B))),
         ],
       ),
       const SizedBox(height: 12),
-      _buildHighlightCard(title: context.l10n.translate('Tipologia Efficace'), value: bestTypeLabel, subtitle: '$bestTypeRate% di successo', icon: LucideIcons.brainCircuit, color: Theme.of(context).colorScheme.primary, fullWidth: true),
+      _buildHighlightCard(title: context.l10n.translate('Tipologia Efficace'), value: context.l10n.translate(bestTypeLabel), subtitle: '$bestTypeRate% ${context.l10n.translate('di successo')}', icon: LucideIcons.brainCircuit, color: Theme.of(context).colorScheme.primary, fullWidth: true),
       const SizedBox(height: 16),
       Row(
         children: [
-          Expanded(child: _buildKpiCard('Totale', '$totalGoals', LucideIcons.target)),
+          Expanded(child: _buildKpiCard(context.l10n.translate('Totale'), '$totalGoals', LucideIcons.target)),
           const SizedBox(width: 8),
-          Expanded(child: _buildKpiCard('Completati', '$completedGoals', LucideIcons.circleCheck, color: const Color(0xFF10B981))),
+          Expanded(child: _buildKpiCard(context.l10n.translate('Completati'), '$completedGoals', LucideIcons.circleCheck, color: const Color(0xFF10B981))),
         ],
       ),
       const SizedBox(height: 12),
       Row(
         children: [
-          Expanded(child: _buildKpiCard('Successo', '$successRate%', LucideIcons.trophy, color: const Color(0xFFFBBF24))),
+          Expanded(child: _buildKpiCard(context.l10n.translate('Successo'), '$successRate%', LucideIcons.trophy, color: const Color(0xFFFBBF24))),
           const SizedBox(width: 8),
-          Expanded(child: _buildKpiCard('Trend', trendPositive ? 'Crescita' : 'Calo', trendPositive ? LucideIcons.trendingUp : LucideIcons.trendingDown, color: const Color(0xFF60A5FA))),
+          Expanded(child: _buildKpiCard(context.l10n.translate('Trend'), context.l10n.translate(trendPositive ? 'Crescita' : 'Calo'), trendPositive ? LucideIcons.trendingUp : LucideIcons.trendingDown, color: const Color(0xFF60A5FA))),
         ],
       ),
       const SizedBox(height: 24),
@@ -202,17 +202,17 @@ class _MacroGoalsStatsViewState extends ConsumerState<MacroGoalsStatsView> {
     return [
       Row(
         children: [
-          Expanded(child: _buildHighlightCard(title: context.l10n.translate('Totale Storico'), value: '$total', subtitle: 'dal ${sortedYears.isNotEmpty ? sortedYears.first : '-'}', icon: LucideIcons.target, color: const Color(0xFF6366F1))),
+          Expanded(child: _buildHighlightCard(title: context.l10n.translate('Totale Storico'), value: '$total', subtitle: '${context.l10n.translate('dal')} ${sortedYears.isNotEmpty ? sortedYears.first : '-'}', icon: LucideIcons.target, color: const Color(0xFF6366F1))),
           const SizedBox(width: 12),
-          Expanded(child: _buildHighlightCard(title: context.l10n.translate('Successo Globale'), value: '$succ%', subtitle: '$comp obiettivi completati', icon: LucideIcons.trophy, color: const Color(0xFF10B981))),
+          Expanded(child: _buildHighlightCard(title: context.l10n.translate('Successo Globale'), value: '$succ%', subtitle: '$comp ${context.l10n.translate('obiettivi completati')}', icon: LucideIcons.trophy, color: const Color(0xFF10B981))),
         ],
       ),
       const SizedBox(height: 12),
       Row(
         children: [
-          Expanded(child: _buildHighlightCard(title: context.l10n.translate('Anno Migliore'), value: bestYear != null ? '$bestYear' : 'N/A', subtitle: '$bestYearRate% completamento', icon: LucideIcons.calendar, color: const Color(0xFFD97706))),
+          Expanded(child: _buildHighlightCard(title: context.l10n.translate('Anno Migliore'), value: bestYear != null ? '$bestYear' : 'N/A', subtitle: '$bestYearRate% ${context.l10n.translate('completamento')}', icon: LucideIcons.calendar, color: const Color(0xFFD97706))),
           const SizedBox(width: 12),
-          Expanded(child: _buildHighlightCard(title: context.l10n.translate('Anno Più Produttivo'), value: mostProdYear != null ? '$mostProdYear' : 'N/A', subtitle: '$mostProdCount obiettivi totali', icon: LucideIcons.activity, color: const Color(0xFF06B6D4))),
+          Expanded(child: _buildHighlightCard(title: context.l10n.translate('Anno Più Produttivo'), value: mostProdYear != null ? '$mostProdYear' : 'N/A', subtitle: '$mostProdCount ${context.l10n.translate('obiettivi totali')}', icon: LucideIcons.activity, color: const Color(0xFF06B6D4))),
         ],
       ),
       const SizedBox(height: 24),

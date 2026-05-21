@@ -64,8 +64,8 @@ class ProtocolloPanel extends ConsumerWidget {
               child: _ActionTile(
                 key: checkInKey,
                 icon: LucideIcons.heartPulse,
-                label: 'Daily Check-in',
-                subtitle: 'Stato d\'animo',
+                label: context.l10n.translate('Daily Check-in'),
+                subtitle: context.l10n.translate('Stato d\'animo'),
                 color: const Color(0xFFEF4444),
                 onTap: () => DailyCheckInModal.show(context),
               ),
@@ -97,8 +97,8 @@ class ProtocolloPanel extends ConsumerWidget {
               child: _ActionTile(
                 key: manageHabitsKey,
                 icon: LucideIcons.listTodo,
-                label: 'Gestione',
-                subtitle: 'Abitudini',
+                label: context.l10n.translate('Gestione'),
+                subtitle: context.l10n.translate('Abitudini'),
                 color: Theme.of(context).colorScheme.primary,
                 onTap: () => HabitManagementModal.show(context),
               ),

@@ -1673,3 +1673,14 @@
 - [2026-05-21 13:46]: Full 100% Translation Coverage
   - *Details*: Effettuato un deep scan e sostituzione di oltre 150 occorrenze di testo hardcoded sparsi in tutta la UI e back-end (tra cui titoli dei grafici, messaggi di alert, label delle statistiche e notifiche/snackbar emesse dai provider).
   - *Tech Notes*: Aggiunte oltre 60 nuove chiavi in `AppLocalizations`. Sistemati i bug di inizializzazione `const` derivanti dall'inserimento di `context.l10n.translate()` su widget statici. Introdotto `ref.read(l10nProvider).translate()` nei provider per permettere la traduzione dinamica degli errori di background.
+
+- [2026-05-21 13:51]: Fix Default Calendar View Label Bug
+  - *Details*: Risolto un bug in `app_settings_screen.dart` dove la vista predefinita mostrava la stringa inglese raw salvata (`WEEK`) o mancava il checkmark nelle opzioni a causa di una non conformità con il nome salvato su disco. 
+  - *Tech Notes*: Implementato un parse esplicito per convertire i valori `week`, `month`, `year` in formati localizzati (usando `context.l10n.translate`) e migliorata la logica di `isSelected` nel menù a tendina.
+- [2026-05-21 14:09]: Completamento 11 Bug di Traduzione (100% Coverage)
+  - *Details*: Risolti gli 11 bug rimanenti di traduzione che erano ancora in inglese e non coperti nel precedente refactor.
+  - *Tech Notes*: Sostituito testo statico con `context.l10n.translate()` nei seguenti file: `profile_screen.dart`, `app_settings_screen.dart`, `protocollo_panel.dart`, `day_details_modal.dart`, `global_trend_tab_widget.dart`, `global_mood_tab_widget.dart`, `macro_goals_stats_view.dart`, `macro_goals_screen.dart`, `add_goal_bar.dart`, `category_picker_sheet.dart`. Aggiunte tutte le chiavi mancanti al dizionario in `localization.dart`. Analisi flutter superata.
+- [2026-05-21 14:40]: Aggiunte chiavi traduzione Mood
+  - *Details*: Aggiunte al file `localization.dart` le chiavi mancanti per il tab Mood delle statistiche globali ("Mood & Energia", "Analisi del benessere psicofisico.", ecc.) in modo che la localizzazione del widget `GlobalMoodTabWidget` funzioni correttamente.
+- [2026-05-21 14:42]: Aggiunte chiavi tutorial (incluso "Stato d'animo")
+  - *Details*: Aggiunte al dizionario `localization.dart` tutte le descrizioni dei vari tutorial, come ad esempio la scritta del "Daily Check-in" che conteneva la parola "stato d'animo". Il file `protocollo_panel.dart` ha la sua traduzione correttamente wrappata.

@@ -109,7 +109,14 @@ class AppSettingsScreen extends ConsumerWidget {
                 context: context,
                 icon: LucideIcons.calendar,
                 title: context.l10n.translate('Vista Predefinita'),
-                trailingText: settings.defaultCalendarView.toUpperCase(),
+                trailingText: (() {
+                  final v = settings.defaultCalendarView.toLowerCase();
+                  if (v == 'week' || v == 'settimana') return context.l10n.translate('Settimana');
+                  if (v == 'month' || v == 'mese') return context.l10n.translate('Mese');
+                  if (v == 'year' || v == 'anno') return context.l10n.translate('Anno');
+                  if (v == 'vita') return context.l10n.translate('Vita');
+                  return context.l10n.translate('Settimana');
+                })().toUpperCase(),
                 onTap: () {
                   ref.hapticLight();
                   showModalBottomSheet(
@@ -699,7 +706,11 @@ class AppSettingsScreen extends ConsumerWidget {
     String value,
     String currentValue,
   ) {
-    final isSelected = value == currentValue;
+    bool isSelected = value == currentValue;
+    if (currentValue == 'week' && value == 'settimana') isSelected = true;
+    if (currentValue == 'month' && value == 'mese') isSelected = true;
+    if (currentValue == 'year' && value == 'anno') isSelected = true;
+    
     final primaryColor = Theme.of(context).colorScheme.primary;
     return ListTile(
       onTap: () {

@@ -277,7 +277,7 @@ class _GlobalMoodTabWidgetState extends ConsumerState<GlobalMoodTabWidget> {
                       return touchedBarSpots.map((barSpot) {
                         final isMood = barSpot.barIndex == 0;
                         return LineTooltipItem(
-                          '${isMood ? 'Mood' : 'Energia'}: ${barSpot.y.toInt()}',
+                          '${isMood ? context.l10n.translate('Mood') : context.l10n.translate('Energia')}: ${barSpot.y.toInt()}',
                           TextStyle(
                             color: isMood ? const Color(0xFFFBBF24) : const Color(0xFF06B6D4),
                             fontWeight: FontWeight.bold,
@@ -551,7 +551,7 @@ class _CorrelazioneMoodSection extends StatelessWidget {
               Text(name, style: TextStyle(fontFamily: 'Inter', fontSize: 14, fontWeight: FontWeight.w700, color: context.appColors.foreground)),
               Row(
                 children: [
-                  _MoodStatMini(label: 'MOOD BASSO', value: '$lowVal%', icon: LucideIcons.frown, small: true),
+                  _MoodStatMini(label: context.l10n.translate('MOOD BASSO'), value: '$lowVal%', icon: LucideIcons.frown, small: true),
                   const SizedBox(width: 12),
                   _MoodStatMini(label: context.l10n.translate('MOOD ALTO'), value: '$highVal%', icon: LucideIcons.smile, small: true),
                 ],

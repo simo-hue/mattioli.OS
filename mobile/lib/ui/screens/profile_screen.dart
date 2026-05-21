@@ -1,3 +1,4 @@
+import '../../core/localization.dart';
 import 'dart:io';
 import 'dart:ui' show ImageFilter;
 import 'package:flutter/material.dart';
@@ -357,7 +358,7 @@ class _ProfileScreenState extends ConsumerState<ProfileScreen> {
                 _buildProfileOption(
                   context: context,
                   icon: LucideIcons.user,
-                  title: 'Informazioni Personali',
+                  title: context.l10n.translate('Informazioni Personali'),
                   subtitle: userProfile.email ?? '',
                   onTap: () {
                     Navigator.push(context, PersonalInfoScreen.route());
@@ -366,7 +367,7 @@ class _ProfileScreenState extends ConsumerState<ProfileScreen> {
                 _buildProfileOption(
                   context: context,
                   icon: LucideIcons.creditCard,
-                  title: 'Abbonamento',
+                  title: context.l10n.translate('Abbonamento'),
                   subtitle: settings.isPro ? 'Gestisci il tuo piano Pro' : 'Passa a Pro',
                   onTap: () {
                     Navigator.push(context, SubscriptionScreen.route());
@@ -375,8 +376,8 @@ class _ProfileScreenState extends ConsumerState<ProfileScreen> {
                 _buildProfileOption(
                   context: context,
                   icon: LucideIcons.settings,
-                  title: 'Impostazioni App',
-                  subtitle: 'Lingua, Tema, Unità di misura',
+                  title: context.l10n.translate('Impostazioni App'),
+                  subtitle: context.l10n.translate('Lingua, Tema, Unità di misura'),
                   onTap: () {
                     Navigator.push(context, AppSettingsScreen.route());
                   },
@@ -384,8 +385,8 @@ class _ProfileScreenState extends ConsumerState<ProfileScreen> {
                 _buildProfileOption(
                   context: context,
                   icon: LucideIcons.bell,
-                  title: 'Notifiche',
-                  subtitle: 'Promemoria e avvisi di sistema',
+                  title: context.l10n.translate('Notifiche'),
+                  subtitle: context.l10n.translate('Promemoria e avvisi di sistema'),
                   onTap: () {
                     Navigator.push(context, NotificationSettingsScreen.route());
                   },
@@ -393,8 +394,8 @@ class _ProfileScreenState extends ConsumerState<ProfileScreen> {
                 _buildProfileOption(
                   context: context,
                   icon: LucideIcons.shield,
-                  title: 'Privacy e Sicurezza',
-                  subtitle: 'Gestione dati e biometrica',
+                  title: context.l10n.translate('Privacy e Sicurezza'),
+                  subtitle: context.l10n.translate('Gestione dati e biometrica'),
                   onTap: () {
                     Navigator.push(context, PrivacySettingsScreen.route());
                   },
@@ -413,8 +414,8 @@ class _ProfileScreenState extends ConsumerState<ProfileScreen> {
                 _buildProfileOption(
                   context: context,
                   icon: LucideIcons.info,
-                  title: 'Ripeti Tutorial',
-                  subtitle: 'Visualizza di nuovo la guida iniziale',
+                  title: context.l10n.translate('Ripeti Tutorial'),
+                  subtitle: context.l10n.translate('Visualizza di nuovo la guida iniziale'),
                   onTap: () async {
                     Navigator.pop(context); // Torna alla home
                     // Piccola attesa per completare la transizione

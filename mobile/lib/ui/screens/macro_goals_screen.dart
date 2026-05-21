@@ -951,7 +951,7 @@ class _GoalsList extends ConsumerWidget {
   }
 
   Widget _buildSectionHeader(BuildContext context, GoalStatus status, Key key) {
-    final label = status == GoalStatus.completed ? 'COMPLETATI' : 'FALLITI';
+    final label = status == GoalStatus.completed ? context.l10n.translate('COMPLETATI') : context.l10n.translate('FALLITI');
     final color = status == GoalStatus.completed
         ? const Color(0xFF10B981).withValues(alpha: 0.7)
         : context.appColors.destructive.withValues(alpha: 0.7);

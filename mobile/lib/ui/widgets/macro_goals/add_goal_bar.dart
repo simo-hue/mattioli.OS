@@ -29,15 +29,15 @@ class _AddGoalBarState extends ConsumerState<AddGoalBar> {
   String get _placeholder {
     switch (widget.viewState.selectedType) {
       case GoalType.lifetime:
-        return 'Aggiungi obiettivo lifetime...';
+        return context.l10n.translate('Aggiungi obiettivo lifetime...');
       case GoalType.annual:
-        return 'Aggiungi obiettivo annuale...';
+        return context.l10n.translate('Aggiungi obiettivo annuale...');
       case GoalType.quarterly:
-        return 'Aggiungi obiettivo trimestrale...';
+        return context.l10n.translate('Aggiungi obiettivo trimestrale...');
       case GoalType.monthly:
-        return 'Aggiungi obiettivo mensile...';
+        return context.l10n.translate('Aggiungi obiettivo mensile...');
       case GoalType.weekly:
-        return 'Aggiungi obiettivo settimanale...';
+        return context.l10n.translate('Aggiungi obiettivo settimanale...');
     }
   }
 
@@ -155,7 +155,7 @@ class _AddGoalBarState extends ConsumerState<AddGoalBar> {
                   ),
                   border: InputBorder.none,
                   hintText: isLimitReached
-                      ? 'Limite di 100 obiettivi raggiunto!'
+                      ? context.l10n.translate('Limite di 100 obiettivi raggiunto!')
                       : _placeholder,
                   hintStyle: GoogleFonts.inter(
                     fontSize: 13,

@@ -149,7 +149,7 @@ class _GlobalTrendTabWidgetState extends ConsumerState<GlobalTrendTabWidget> {
 
         maxX = displayData.isNotEmpty ? (displayData.length - 1).toDouble() : 0;
       }
-      title = _chartTimeframe == 'timeframe_week_short' ? 'Settimanale' : _chartTimeframe == 'timeframe_month_short' ? 'Mensile' : 'Annuale';
+      title = _chartTimeframe == 'timeframe_week_short' ? context.l10n.translate('Trend Settimanale') : _chartTimeframe == 'timeframe_month_short' ? context.l10n.translate('Trend Mensile') : context.l10n.translate('Trend Annuale');
     }
 
     return Container(
@@ -173,7 +173,7 @@ class _GlobalTrendTabWidgetState extends ConsumerState<GlobalTrendTabWidget> {
                 ),
               ),
               Text(
-                '${context.l10n.translate('Trend')} $title',
+                _chartTimeframe == 'all' ? context.l10n.translate('Trend Globale') : title,
                 style: TextStyle(
                   fontFamily: 'Inter',
                   fontSize: 12,
@@ -366,10 +366,10 @@ class _GlobalTrendTabWidgetState extends ConsumerState<GlobalTrendTabWidget> {
     final selectedKey = _chartTimeframe == 'timeframe_week_short' ? 'week' : _chartTimeframe == 'timeframe_month_short' ? 'month' : _chartTimeframe == 'timeframe_year_short' ? 'year' : 'all';
 
     final Map<String, String> italianLabels = {
-      'week': 'Settimana',
-      'month': 'Mese',
-      'year': 'Anno',
-      'all': 'Tutto',
+      'week': context.l10n.translate('Settimana'),
+      'month': context.l10n.translate('Mese'),
+      'year': context.l10n.translate('Anno'),
+      'all': context.l10n.translate('Tutto'),
     };
 
     return Container(

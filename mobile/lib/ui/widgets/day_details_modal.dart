@@ -67,8 +67,8 @@ class DayDetailsModal extends ConsumerWidget {
                       letterSpacing: -0.5,
                     ),
                   ),
-                  const Text(
-                    'I tuoi progressi per oggi',
+                  Text(
+                    context.l10n.translate('I tuoi progressi per oggi'),
                     style: TextStyle(
                       fontFamily: 'Inter',
                       fontSize: 14,
@@ -97,8 +97,8 @@ class DayDetailsModal extends ConsumerWidget {
                           color: AppColors.mutedForeground.withValues(alpha: 0.5),
                         ),
                         const SizedBox(height: 16),
-                        const Text(
-                          'Nessuna abitudine',
+                        Text(
+                          context.l10n.translate('Nessuna abitudine'),
                           style: TextStyle(
                             fontFamily: 'Inter',
                             fontSize: 18,
@@ -107,8 +107,8 @@ class DayDetailsModal extends ConsumerWidget {
                           ),
                         ),
                         const SizedBox(height: 8),
-                        const Text(
-                          'Non ci sono abitudini per questo giorno.\nInizia a crearne una!',
+                        Text(
+                          context.l10n.translate('Non ci sono abitudini per questo giorno.\nInizia a crearne una!'),
                           textAlign: TextAlign.center,
                           style: TextStyle(
                             fontFamily: 'Inter',

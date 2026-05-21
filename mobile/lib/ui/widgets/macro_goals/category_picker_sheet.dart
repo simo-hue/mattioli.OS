@@ -153,7 +153,7 @@ Future<void> showMacroGoalCategoryPicker({
                           size: 20,
                         ),
                         title: Text(
-                          'Crea nuova categoria',
+                          context.l10n.translate('Crea nuova categoria'),
                           style: GoogleFonts.inter(
                             fontSize: 13,
                             color: Theme.of(context).colorScheme.primary,

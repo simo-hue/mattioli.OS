@@ -149,7 +149,7 @@ class MacroGoalsNotifier extends Notifier<MacroGoalsState> {
         ErrorModal.show(
           context,
           title: context.l10n.translate('Errore durante il salvataggio'),
-          message: 'Non siamo riusciti a salvare l\'obiettivo. Riprova.',
+          message: context.l10n.macroGoalSaveFailed,
           details: e.toString(),
         );
       }
@@ -174,9 +174,8 @@ class MacroGoalsNotifier extends Notifier<MacroGoalsState> {
       if (context != null && context.mounted) {
         ErrorModal.show(
           context,
-          title: 'Errore durante l\'aggiornamento',
-          message:
-              'Non siamo riusciti a salvare lo stato dell\'obiettivo. Riprova.',
+          title: context.l10n.translate('Errore durante l\'aggiornamento'),
+          message: context.l10n.macroGoalStatusSaveFailed,
           details: e.toString(),
         );
       }
@@ -201,9 +200,8 @@ class MacroGoalsNotifier extends Notifier<MacroGoalsState> {
       if (context != null && context.mounted) {
         ErrorModal.show(
           context,
-          title: 'Errore durante l\'aggiornamento',
-          message:
-              'Non siamo riusciti a salvare il titolo dell\'obiettivo. Riprova.',
+          title: context.l10n.translate('Errore durante l\'aggiornamento'),
+          message: context.l10n.macroGoalTitleSaveFailed,
           details: e.toString(),
         );
       }
@@ -231,9 +229,8 @@ class MacroGoalsNotifier extends Notifier<MacroGoalsState> {
       if (context != null && context.mounted) {
         ErrorModal.show(
           context,
-          title: 'Errore durante l\'aggiornamento',
-          message:
-              'Non siamo riusciti a salvare la categoria dell\'obiettivo. Riprova.',
+          title: context.l10n.translate('Errore durante l\'aggiornamento'),
+          message: context.l10n.macroGoalCategorySaveFailed,
           details: e.toString(),
         );
       }
@@ -253,8 +250,8 @@ class MacroGoalsNotifier extends Notifier<MacroGoalsState> {
       if (context != null && context.mounted) {
         ErrorModal.show(
           context,
-          title: 'Errore durante l\'eliminazione',
-          message: 'Non siamo riusciti a eliminare l\'obiettivo. Riprova.',
+          title: context.l10n.macroGoalDeleteErrorTitle,
+          message: context.l10n.macroGoalDeleteFailed,
           details: e.toString(),
         );
       }

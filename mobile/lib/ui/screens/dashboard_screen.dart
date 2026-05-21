@@ -912,7 +912,9 @@ class _HomeScreenState extends ConsumerState<HomeScreen>
               ),
               const SizedBox(height: 8),
               Text(
-                context.l10n.translate('Sblocca con i dati biometrici per continuare'),
+                context.l10n.translate(
+                  'Sblocca con i dati biometrici per continuare',
+                ),
                 style: TextStyle(
                   fontFamily: 'Inter',
                   fontSize: 14,
@@ -1099,7 +1101,9 @@ class _HomeScreenState extends ConsumerState<HomeScreen>
           ),
           const SizedBox(height: 12),
           Text(
-            context.l10n.translate('Crea la tua prima abitudine per iniziare a tracciare i tuoi progressi e costruire la tua routine.'),
+            context.l10n.translate(
+              'Crea la tua prima abitudine per iniziare a tracciare i tuoi progressi e costruire la tua routine.',
+            ),
             textAlign: TextAlign.center,
             style: TextStyle(
               fontFamily: 'Inter',
@@ -1209,7 +1213,7 @@ class _AppBar extends ConsumerWidget {
     final greeting = _getGreeting(context);
     final formattedDate = DateFormat(
       'EEEE, d MMMM',
-      context.l10n.language == 'Italiano' ? 'it_IT' : 'en_US',
+      context.l10n.localeName,
     ).format(DateTime.now());
 
     // Capitalize first letter of date

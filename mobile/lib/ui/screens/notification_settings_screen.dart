@@ -59,7 +59,7 @@ class NotificationSettingsScreen extends ConsumerWidget {
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            _buildSectionHeader(context, 'PROMEMORIA OPERATIVI'),
+            _buildSectionHeader(context, context.l10n.operationalRemindersHeader),
             _buildSettingsCard(context, [
               _buildSwitchRow(
                 context: context,

@@ -1,9 +1,12 @@
+import 'dart:ui' as ui;
+
 import 'package:flutter/material.dart';
 import 'package:flutter_local_notifications/flutter_local_notifications.dart';
 import 'package:timezone/timezone.dart' as tz;
 import 'package:timezone/data/latest.dart' as tz;
 import 'package:flutter_timezone/flutter_timezone.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
+import '../l10n/generated/app_localizations.dart';
 import 'supabase_config.dart';
 import 'app_logger.dart';
 
@@ -12,33 +15,59 @@ class NotificationService {
   factory NotificationService() => _instance;
   NotificationService._internal();
 
-  final FlutterLocalNotificationsPlugin _notifications = FlutterLocalNotificationsPlugin();
+  final FlutterLocalNotificationsPlugin _notifications =
+      FlutterLocalNotificationsPlugin();
+
+  AppLocalizations get _l10n {
+    final locale = ui.PlatformDispatcher.instance.locale;
+    try {
+      return lookupAppLocalizations(locale);
+    } catch (_) {
+      return lookupAppLocalizations(const ui.Locale('en'));
+    }
+  }
 
   Future<void> init() async {
     try {
       // Initialize timezone data
       tz.initializeTimeZones();
       final dynamic timeZoneInfo = await FlutterTimezone.getLocalTimezone();
-      final String timeZoneName = timeZoneInfo is String ? timeZoneInfo : timeZoneInfo.identifier;
-      
+      final String timeZoneName = timeZoneInfo is String
+          ? timeZoneInfo
+          : timeZoneInfo.identifier;
+
       try {
         tz.setLocalLocation(tz.getLocation(timeZoneName));
       } catch (e, stack) {
-        AppLogger.error('Failed to set local location, falling back to UTC', e, stack);
+        AppLogger.error(
+          'Failed to set local location, falling back to UTC',
+          e,
+          stack,
+        );
         tz.setLocalLocation(tz.getLocation('UTC'));
       }
 
       const AndroidInitializationSettings androidSettings =
           AndroidInitializationSettings('@mipmap/ic_launcher');
-      
+
       // Define iOS category with actions
+      final l10n = _l10n;
       final List<DarwinNotificationCategory> darwinCategories = [
         DarwinNotificationCategory(
           'habit_actions',
           actions: <DarwinNotificationAction>[
-            DarwinNotificationAction.plain('action_done', 'Fatto'),
-            DarwinNotificationAction.plain('action_snooze', 'Posticipa'),
-            DarwinNotificationAction.plain('action_skip', 'Salta'),
+            DarwinNotificationAction.plain(
+              'action_done',
+              l10n.notificationActionDone,
+            ),
+            DarwinNotificationAction.plain(
+              'action_snooze',
+              l10n.notificationActionSnooze,
+            ),
+            DarwinNotificationAction.plain(
+              'action_skip',
+              l10n.notificationActionSkip,
+            ),
           ],
           options: <DarwinNotificationCategoryOption>{
             DarwinNotificationCategoryOption.customDismissAction,
@@ -46,12 +75,13 @@ class NotificationService {
         ),
       ];
 
-      final DarwinInitializationSettings iosSettings = DarwinInitializationSettings(
-        requestAlertPermission: true,
-        requestBadgePermission: true,
-        requestSoundPermission: true,
-        notificationCategories: darwinCategories,
-      );
+      final DarwinInitializationSettings iosSettings =
+          DarwinInitializationSettings(
+            requestAlertPermission: true,
+            requestBadgePermission: true,
+            requestSoundPermission: true,
+            notificationCategories: darwinCategories,
+          );
 
       final InitializationSettings initSettings = InitializationSettings(
         android: androidSettings,
@@ -69,14 +99,16 @@ class NotificationService {
   }
 
   void _onNotificationResponse(NotificationResponse response) async {
-    debugPrint('Notification response: ${response.payload}, action: ${response.actionId}');
-    
+    debugPrint(
+      'Notification response: ${response.payload}, action: ${response.actionId}',
+    );
+
     final payload = response.payload;
     if (payload == null) return;
 
     final parts = payload.split('|');
     if (parts.length < 2) return;
-    
+
     final type = parts[0];
     final habitId = parts[1];
 
@@ -96,7 +128,8 @@ class NotificationService {
     if (user == null) return;
 
     final now = DateTime.now();
-    final dateKey = '${now.year}-${now.month.toString().padLeft(2, '0')}-${now.day.toString().padLeft(2, '0')}';
+    final dateKey =
+        '${now.year}-${now.month.toString().padLeft(2, '0')}-${now.day.toString().padLeft(2, '0')}';
 
     try {
       await Supabase.instance.client.from('goal_logs').upsert({
@@ -114,31 +147,34 @@ class NotificationService {
   Future<void> _snoozeHabit(String habitId, String title) async {
     final now = DateTime.now();
     final scheduledDate = now.add(const Duration(minutes: 10));
-    
-    const AndroidNotificationDetails androidDetails = AndroidNotificationDetails(
+    final l10n = _l10n;
+
+    final AndroidNotificationDetails
+    androidDetails = AndroidNotificationDetails(
       'habit_reminders',
-      'Habit Reminders',
-      channelDescription: 'Reminders for your habits',
+      l10n.notificationHabitChannelName,
+      channelDescription: l10n.notificationHabitChannelDescription,
       importance: Importance.max,
       priority: Priority.high,
       actions: <AndroidNotificationAction>[
-        AndroidNotificationAction('action_done', 'Fatto'),
-        AndroidNotificationAction('action_snooze', 'Posticipa'),
-        AndroidNotificationAction('action_skip', 'Salta'),
+        AndroidNotificationAction('action_done', l10n.notificationActionDone),
+        AndroidNotificationAction(
+          'action_snooze',
+          l10n.notificationActionSnooze,
+        ),
+        AndroidNotificationAction('action_skip', l10n.notificationActionSkip),
       ],
     );
 
-    const NotificationDetails platformDetails = NotificationDetails(
+    final NotificationDetails platformDetails = NotificationDetails(
       android: androidDetails,
-      iOS: DarwinNotificationDetails(
-        categoryIdentifier: 'habit_actions',
-      ),
+      iOS: const DarwinNotificationDetails(categoryIdentifier: 'habit_actions'),
     );
 
     await _notifications.zonedSchedule(
       id: habitId.hashCode + 1000,
       title: 'Evolve • $title',
-      body: _getHabitMessage(title),
+      body: _getHabitMessage(title, l10n),
       scheduledDate: tz.TZDateTime.from(scheduledDate, tz.local),
       notificationDetails: platformDetails,
       androidScheduleMode: AndroidScheduleMode.exactAllowWhileIdle,
@@ -149,12 +185,13 @@ class NotificationService {
 
   Future<void> _skipHabit(String habitId) async {
     await _notifications.cancel(id: habitId.hashCode);
-    
+
     final user = Supabase.instance.client.auth.currentUser;
     if (user == null) return;
 
     final now = DateTime.now();
-    final dateKey = '${now.year}-${now.month.toString().padLeft(2, '0')}-${now.day.toString().padLeft(2, '0')}';
+    final dateKey =
+        '${now.year}-${now.month.toString().padLeft(2, '0')}-${now.day.toString().padLeft(2, '0')}';
 
     try {
       await Supabase.instance.client.from('goal_logs').upsert({
@@ -165,42 +202,46 @@ class NotificationService {
       }, onConflict: 'goal_id, date');
       debugPrint('[Notifications] Habit $habitId marked as missed/skipped');
     } catch (e, stack) {
-      AppLogger.error('[Notifications] Error marking habit as missed', e, stack);
+      AppLogger.error(
+        '[Notifications] Error marking habit as missed',
+        e,
+        stack,
+      );
     }
   }
 
   Future<void> requestPermissions() async {
     await _notifications
-        .resolvePlatformSpecificImplementation<IOSFlutterLocalNotificationsPlugin>()
-        ?.requestPermissions(
-          alert: true,
-          badge: true,
-          sound: true,
-        );
+        .resolvePlatformSpecificImplementation<
+          IOSFlutterLocalNotificationsPlugin
+        >()
+        ?.requestPermissions(alert: true, badge: true, sound: true);
   }
 
   Future<void> scheduleDailyHabitReminder({String timeStr = '09:00'}) async {
     final parts = timeStr.split(':');
     final hour = int.parse(parts[0]);
     final minute = int.parse(parts[1]);
+    final l10n = _l10n;
 
-    const AndroidNotificationDetails androidDetails = AndroidNotificationDetails(
-      'habit_reminders',
-      'Habit Reminders',
-      channelDescription: 'Daily reminders for habits',
-      importance: Importance.max,
-      priority: Priority.high,
-    );
+    final AndroidNotificationDetails androidDetails =
+        AndroidNotificationDetails(
+          'habit_reminders',
+          l10n.notificationHabitChannelName,
+          channelDescription: l10n.notificationDailyHabitChannelDescription,
+          importance: Importance.max,
+          priority: Priority.high,
+        );
 
-    const NotificationDetails platformDetails = NotificationDetails(
+    final NotificationDetails platformDetails = NotificationDetails(
       android: androidDetails,
-      iOS: DarwinNotificationDetails(),
+      iOS: const DarwinNotificationDetails(),
     );
 
     await _notifications.zonedSchedule(
       id: 0,
-      title: 'Evolve • Morning Brief',
-      body: 'È il momento di plasmare la tua giornata. Controlla i tuoi obiettivi.',
+      title: 'Evolve • ${l10n.morningBrief}',
+      body: l10n.notificationMorningBriefBody,
       scheduledDate: _nextInstanceOfTime(hour, minute),
       notificationDetails: platformDetails,
       androidScheduleMode: AndroidScheduleMode.exactAllowWhileIdle,
@@ -212,20 +253,21 @@ class NotificationService {
     final parts = timeStr.split(':');
     final hour = int.parse(parts[0]);
     final minute = int.parse(parts[1]);
+    final l10n = _l10n;
 
-    const NotificationDetails platformDetails = NotificationDetails(
+    final NotificationDetails platformDetails = NotificationDetails(
       android: AndroidNotificationDetails(
         'system_reviews',
-        'System Reviews',
+        l10n.notificationSystemReviewsChannelName,
         importance: Importance.low,
       ),
-      iOS: DarwinNotificationDetails(),
+      iOS: const DarwinNotificationDetails(),
     );
 
     await _notifications.zonedSchedule(
       id: 1,
-      title: 'Evolve • Review Serale',
-      body: 'Com\'è andata oggi? Traccia i tuoi progressi e aggiorna il Diario di Bordo.',
+      title: 'Evolve • ${l10n.reviewSerale}',
+      body: l10n.notificationEveningReviewBody,
       scheduledDate: _nextInstanceOfTime(hour, minute),
       notificationDetails: platformDetails,
       androidScheduleMode: AndroidScheduleMode.exactAllowWhileIdle,
@@ -233,31 +275,38 @@ class NotificationService {
     );
   }
 
-  Future<void> scheduleHabitReminder(String id, String title, String? reminderTime) async {
+  Future<void> scheduleHabitReminder(
+    String id,
+    String title,
+    String? reminderTime,
+  ) async {
     if (reminderTime == null) return;
 
     final parts = reminderTime.split(':');
     final hour = int.parse(parts[0]);
     final minute = int.parse(parts[1]);
+    final l10n = _l10n;
 
-    const AndroidNotificationDetails androidDetails = AndroidNotificationDetails(
+    final AndroidNotificationDetails
+    androidDetails = AndroidNotificationDetails(
       'habit_reminders',
-      'Habit Reminders',
-      channelDescription: 'Reminders for specific habits',
+      l10n.notificationHabitChannelName,
+      channelDescription: l10n.notificationSpecificHabitChannelDescription,
       importance: Importance.max,
       priority: Priority.high,
       actions: <AndroidNotificationAction>[
-        AndroidNotificationAction('action_done', 'Fatto'),
-        AndroidNotificationAction('action_snooze', 'Posticipa'),
-        AndroidNotificationAction('action_skip', 'Salta'),
+        AndroidNotificationAction('action_done', l10n.notificationActionDone),
+        AndroidNotificationAction(
+          'action_snooze',
+          l10n.notificationActionSnooze,
+        ),
+        AndroidNotificationAction('action_skip', l10n.notificationActionSkip),
       ],
     );
 
-    const NotificationDetails platformDetails = NotificationDetails(
+    final NotificationDetails platformDetails = NotificationDetails(
       android: androidDetails,
-      iOS: DarwinNotificationDetails(
-        categoryIdentifier: 'habit_actions',
-      ),
+      iOS: const DarwinNotificationDetails(categoryIdentifier: 'habit_actions'),
     );
 
     final notificationId = id.hashCode;
@@ -265,7 +314,7 @@ class NotificationService {
     await _notifications.zonedSchedule(
       id: notificationId,
       title: 'Evolve • $title',
-      body: _getHabitMessage(title),
+      body: _getHabitMessage(title, l10n),
       scheduledDate: _nextInstanceOfTime(hour, minute),
       notificationDetails: platformDetails,
       androidScheduleMode: AndroidScheduleMode.exactAllowWhileIdle,
@@ -282,33 +331,41 @@ class NotificationService {
     await _notifications.cancelAll();
   }
 
-  String _getHabitMessage(String title) {
+  String _getHabitMessage(String title, AppLocalizations l10n) {
     final messages = [
-      'A che punto siamo con "$title"?',
-      'Tempo di agire! Dedichiamo qualche minuto a "$title".',
-      'È il momento perfetto per dedicarti a "$title".',
-      'Pronto a fare un passo avanti con "$title"?',
-      'Non dimenticarti di "$title" oggi!',
-      'Cosa ne dici di dedicare solo 5 minuti a "$title"?',
-      'Non spezzare la catena! È il momento di "$title".',
-      'Il tuo futuro sé ti ringrazierà per aver fatto "$title" oggi.',
-      'È ora di "$title". Sei pronto?',
-      'Piccole azioni portano a grandi risultati: tocca a "$title".',
-      'Fai spazio nella tua giornata per "$title".',
-      'Hai già spuntato "$title" dalla tua lista oggi?',
-      'Dai valore al tuo tempo: è l\'ora di "$title".',
-      'Mettiti alla prova anche oggi con "$title"!',
-      'Solo un piccolo sforzo per completare "$title".',
+      l10n.habitReminderMessage1(title),
+      l10n.habitReminderMessage2(title),
+      l10n.habitReminderMessage3(title),
+      l10n.habitReminderMessage4(title),
+      l10n.habitReminderMessage5(title),
+      l10n.habitReminderMessage6(title),
+      l10n.habitReminderMessage7(title),
+      l10n.habitReminderMessage8(title),
+      l10n.habitReminderMessage9(title),
+      l10n.habitReminderMessage10(title),
+      l10n.habitReminderMessage11(title),
+      l10n.habitReminderMessage12(title),
+      l10n.habitReminderMessage13(title),
+      l10n.habitReminderMessage14(title),
+      l10n.habitReminderMessage15(title),
     ];
-    
-    final index = (title.hashCode + DateTime.now().minute + DateTime.now().hour) % messages.length;
+
+    final index =
+        (title.hashCode + DateTime.now().minute + DateTime.now().hour) %
+        messages.length;
     return messages[index.abs()];
   }
 
   tz.TZDateTime _nextInstanceOfTime(int hour, int minute) {
     final tz.TZDateTime now = tz.TZDateTime.now(tz.local);
-    tz.TZDateTime scheduledDate =
-        tz.TZDateTime(tz.local, now.year, now.month, now.day, hour, minute);
+    tz.TZDateTime scheduledDate = tz.TZDateTime(
+      tz.local,
+      now.year,
+      now.month,
+      now.day,
+      hour,
+      minute,
+    );
     if (scheduledDate.isBefore(now)) {
       scheduledDate = scheduledDate.add(const Duration(days: 1));
     }
@@ -319,12 +376,14 @@ class NotificationService {
 @pragma('vm:entry-point')
 void notificationTapBackground(NotificationResponse response) async {
   WidgetsFlutterBinding.ensureInitialized();
-  
+
   // Initialize timezones for this isolate
   tz.initializeTimeZones();
   try {
     final dynamic timeZoneInfo = await FlutterTimezone.getLocalTimezone();
-    final String timeZoneName = timeZoneInfo is String ? timeZoneInfo : timeZoneInfo.identifier;
+    final String timeZoneName = timeZoneInfo is String
+        ? timeZoneInfo
+        : timeZoneInfo.identifier;
     tz.setLocalLocation(tz.getLocation(timeZoneName));
   } catch (e) {
     tz.setLocalLocation(tz.getLocation('UTC'));

@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:intl/intl.dart';
 import 'package:lucide_icons_flutter/lucide_icons.dart';
 import '../../core/theme.dart';
 import '../../models/goal.dart';
@@ -7,11 +8,6 @@ import '../../providers/goal_provider.dart';
 import '../../core/haptics.dart';
 import 'habit_management_modal.dart';
 import '../../core/localization.dart';
-
-const _kMonths = [
-  'Gennaio', 'Febbraio', 'Marzo', 'Aprile', 'Maggio', 'Giugno',
-  'Luglio', 'Agosto', 'Settembre', 'Ottobre', 'Novembre', 'Dicembre',
-];
 
 class DayDetailsModal extends ConsumerWidget {
   final DateTime date;
@@ -58,7 +54,7 @@ class DayDetailsModal extends ConsumerWidget {
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
                   Text(
-                    '${date.day} ${_kMonths[date.month - 1]}',
+                    DateFormat.MMMMd(context.l10n.localeName).format(date),
                     style: const TextStyle(
                       fontFamily: 'Inter',
                       fontSize: 24,
@@ -94,7 +90,9 @@ class DayDetailsModal extends ConsumerWidget {
                         Icon(
                           LucideIcons.clipboardList,
                           size: 64,
-                          color: AppColors.mutedForeground.withValues(alpha: 0.5),
+                          color: AppColors.mutedForeground.withValues(
+                            alpha: 0.5,
+                          ),
                         ),
                         const SizedBox(height: 16),
                         Text(
@@ -108,7 +106,9 @@ class DayDetailsModal extends ConsumerWidget {
                         ),
                         const SizedBox(height: 8),
                         Text(
-                          context.l10n.translate('Non ci sono abitudini per questo giorno.\nInizia a crearne una!'),
+                          context.l10n.translate(
+                            'Non ci sono abitudini per questo giorno.\nInizia a crearne una!',
+                          ),
                           textAlign: TextAlign.center,
                           style: TextStyle(
                             fontFamily: 'Inter',
@@ -125,10 +125,23 @@ class DayDetailsModal extends ConsumerWidget {
                           icon: const Icon(LucideIcons.plus, size: 16),
                           label: Text(context.l10n.translate('Crea Abitudine')),
                           style: ElevatedButton.styleFrom(
-                            backgroundColor: Theme.of(context).colorScheme.primary,
-                            foregroundColor: Theme.of(context).colorScheme.primary.computeLuminance() > 0.5 ? Colors.black : Colors.white,
-                            shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
-                            padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+                            backgroundColor: Theme.of(
+                              context,
+                            ).colorScheme.primary,
+                            foregroundColor:
+                                Theme.of(
+                                      context,
+                                    ).colorScheme.primary.computeLuminance() >
+                                    0.5
+                                ? Colors.black
+                                : Colors.white,
+                            shape: RoundedRectangleBorder(
+                              borderRadius: BorderRadius.circular(12),
+                            ),
+                            padding: const EdgeInsets.symmetric(
+                              horizontal: 16,
+                              vertical: 12,
+                            ),
                             elevation: 0,
                           ),
                         ),
@@ -139,7 +152,8 @@ class DayDetailsModal extends ConsumerWidget {
                 : ListView.separated(
                     shrinkWrap: true,
                     itemCount: activeHabits.length,
-                    separatorBuilder: (context, index) => const SizedBox(height: 12),
+                    separatorBuilder: (context, index) =>
+                        const SizedBox(height: 12),
                     itemBuilder: (context, index) {
                       final habit = activeHabits[index];
                       final status = dayRecord[habit.id];
@@ -147,14 +161,19 @@ class DayDetailsModal extends ConsumerWidget {
                       // Calculate streak
                       int streak = 0;
                       DateTime checkDate = date;
-                      final today = DateTime(DateTime.now().year, DateTime.now().month, DateTime.now().day);
-                      
+                      final today = DateTime(
+                        DateTime.now().year,
+                        DateTime.now().month,
+                        DateTime.now().day,
+                      );
+
                       bool isNegative = false;
                       while (true) {
-                        final dk = '${checkDate.year}-${checkDate.month.toString().padLeft(2, '0')}-${checkDate.day.toString().padLeft(2, '0')}';
+                        final dk =
+                            '${checkDate.year}-${checkDate.month.toString().padLeft(2, '0')}-${checkDate.day.toString().padLeft(2, '0')}';
                         final dl = logs[dk] ?? {};
                         final s = dl[habit.id];
-                        
+
                         if (s == 'done') {
                           if (isNegative) break;
                           streak++;
@@ -164,20 +183,32 @@ class DayDetailsModal extends ConsumerWidget {
                           streak--;
                         } else {
                           if (habit.isActiveOn(checkDate)) {
-                            final checkDateMidnight = DateTime(checkDate.year, checkDate.month, checkDate.day);
+                            final checkDateMidnight = DateTime(
+                              checkDate.year,
+                              checkDate.month,
+                              checkDate.day,
+                            );
                             if (checkDateMidnight.isBefore(today)) {
                               break;
                             }
                           }
                         }
-                        
+
                         // Condizione di uscita per evitare loop infiniti!
-                        final startMidnight = DateTime(habit.startDate.year, habit.startDate.month, habit.startDate.day);
-                        final checkDateMidnight = DateTime(checkDate.year, checkDate.month, checkDate.day);
+                        final startMidnight = DateTime(
+                          habit.startDate.year,
+                          habit.startDate.month,
+                          habit.startDate.day,
+                        );
+                        final checkDateMidnight = DateTime(
+                          checkDate.year,
+                          checkDate.month,
+                          checkDate.day,
+                        );
                         if (checkDateMidnight.isBefore(startMidnight)) {
                           break;
                         }
-                        
+
                         checkDate = checkDate.subtract(const Duration(days: 1));
                       }
 
@@ -186,20 +217,34 @@ class DayDetailsModal extends ConsumerWidget {
                         status: status,
                         streak: streak,
                         onTap: () {
-                          final today = DateTime(DateTime.now().year, DateTime.now().month, DateTime.now().day);
-                          final yesterday = today.subtract(const Duration(days: 1));
-                          final dateMidnight = DateTime(date.year, date.month, date.day);
-                          
+                          final today = DateTime(
+                            DateTime.now().year,
+                            DateTime.now().month,
+                            DateTime.now().day,
+                          );
+                          final yesterday = today.subtract(
+                            const Duration(days: 1),
+                          );
+                          final dateMidnight = DateTime(
+                            date.year,
+                            date.month,
+                            date.day,
+                          );
+
                           if (dateMidnight.isBefore(yesterday)) {
                             ScaffoldMessenger.of(context).showSnackBar(
                               SnackBar(
-                                content: Text(context.l10n.translate('Puoi modificare solo oggi e ieri!')),
+                                content: Text(
+                                  context.l10n.translate(
+                                    'Puoi modificare solo oggi e ieri!',
+                                  ),
+                                ),
                                 backgroundColor: Colors.redAccent,
                               ),
                             );
                             return;
                           }
-                          
+
                           ref
                               .read(habitLogsProvider.notifier)
                               .cycleStatus(date, habit.id);
@@ -239,17 +284,17 @@ class GoalLogCard extends ConsumerWidget {
     Color iconColor = AppColors.mutedForeground;
     bool hasStrikethrough = false;
 
-
-
     if (status == 'done') {
-      cardColor = AppColors.success.withValues(alpha: 0.15); 
+      cardColor = AppColors.success.withValues(alpha: 0.15);
       borderColor = AppColors.success.withValues(alpha: 0.4);
       textColor = AppColors.success;
       iconBgColor = AppColors.success.withValues(alpha: 0.2);
       iconColor = AppColors.success;
       icon = LucideIcons.check;
     } else if (status == 'missed') {
-      cardColor = const Color(0xFF450A0A).withValues(alpha: 0.2); // Very dark red
+      cardColor = const Color(
+        0xFF450A0A,
+      ).withValues(alpha: 0.2); // Very dark red
       borderColor = const Color(0xFFEF4444).withValues(alpha: 0.4);
       textColor = AppColors.mutedForeground;
       iconBgColor = const Color(0xFF450A0A).withValues(alpha: 0.4);
@@ -291,8 +336,12 @@ class GoalLogCard extends ConsumerWidget {
                   fontSize: 17,
                   fontWeight: FontWeight.w600,
                   color: textColor,
-                  decoration: hasStrikethrough ? TextDecoration.lineThrough : null,
-                  decorationColor: const Color(0xFFEF4444).withValues(alpha: 0.5),
+                  decoration: hasStrikethrough
+                      ? TextDecoration.lineThrough
+                      : null,
+                  decorationColor: const Color(
+                    0xFFEF4444,
+                  ).withValues(alpha: 0.5),
                   decorationThickness: 2,
                 ),
               ),
@@ -327,8 +376,6 @@ class StreakBadge extends StatelessWidget {
     Color textColor = AppColors.mutedForeground;
     IconData icon = LucideIcons.flame;
     Color iconColor = const Color(0xFFF97316); // Orange
-
-
 
     if (isMissed) {
       bgColor = const Color(0xFF450A0A).withValues(alpha: 0.5);

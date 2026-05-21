@@ -144,7 +144,7 @@ class _PersonalInfoScreenState extends ConsumerState<PersonalInfoScreen> {
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
               Text(
-                'I TUOI DATI',
+                context.l10n.yourDataHeader,
                 style: TextStyle(
                   fontSize: 11,
                   fontWeight: FontWeight.w800,

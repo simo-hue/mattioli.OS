@@ -11,11 +11,11 @@ class LifeViewWidget extends ConsumerWidget {
   Widget build(BuildContext context, WidgetRef ref) {
     final userProfile = ref.watch(userProfileProvider);
     final dobStr = userProfile.dateOfBirth;
-    
+
     int birthYear = 2003; // Fallback
     int endYear = 2088; // Fallback
     DateTime birthDate = DateTime(birthYear, 1, 1);
-    
+
     if (dobStr != null) {
       final parsedDate = DateTime.tryParse(dobStr);
       if (parsedDate != null) {
@@ -26,9 +26,10 @@ class LifeViewWidget extends ConsumerWidget {
     }
 
     final now = DateTime.now();
-    
+
     final int totalMonths = (endYear - birthYear + 1) * 12;
-    final int livedMonths = (now.year - birthDate.year) * 12 + now.month - birthDate.month;
+    final int livedMonths =
+        (now.year - birthDate.year) * 12 + now.month - birthDate.month;
     final int remainingMonths = totalMonths - livedMonths;
     final int age = (livedMonths / 12).floor();
 
@@ -43,7 +44,7 @@ class LifeViewWidget extends ConsumerWidget {
         children: [
           // Title
           Text(
-            'La Mia Vita Produttiva',
+            context.l10n.productiveLifeTitle,
             style: TextStyle(
               fontFamily: 'Inter',
               fontSize: 20,
@@ -59,9 +60,15 @@ class LifeViewWidget extends ConsumerWidget {
           Row(
             mainAxisAlignment: MainAxisAlignment.center,
             children: [
-              _LegendItem(color: Colors.blue.withValues(alpha: 0.4), label: context.l10n.translate('Pre-tracking')),
+              _LegendItem(
+                color: Colors.blue.withValues(alpha: 0.4),
+                label: context.l10n.translate('Pre-tracking'),
+              ),
               const SizedBox(width: 16),
-              _LegendItem(color: const Color(0xFF10B981), label: context.l10n.translate('Attuale')),
+              _LegendItem(
+                color: const Color(0xFF10B981),
+                label: context.l10n.translate('Attuale'),
+              ),
             ],
           ),
           const SizedBox(height: 16),
@@ -72,14 +79,26 @@ class LifeViewWidget extends ConsumerWidget {
             decoration: BoxDecoration(
               color: context.appColors.card.withValues(alpha: 0.3),
               borderRadius: BorderRadius.circular(20),
-              border: Border.all(color: context.appColors.border.withValues(alpha: 0.5), width: 1),
+              border: Border.all(
+                color: context.appColors.border.withValues(alpha: 0.5),
+                width: 1,
+              ),
             ),
             child: Row(
               mainAxisAlignment: MainAxisAlignment.spaceAround,
               children: [
-                _StatItem(value: '$livedMonths', label: context.l10n.translate('MESI VISSUTI')),
-                _StatItem(value: '$age', label: context.l10n.translate('ETÀ ATTUALE')),
-                _StatItem(value: '$remainingMonths', label: context.l10n.translate('RIMANENTI')),
+                _StatItem(
+                  value: '$livedMonths',
+                  label: context.l10n.translate('MESI VISSUTI'),
+                ),
+                _StatItem(
+                  value: '$age',
+                  label: context.l10n.translate('ETÀ ATTUALE'),
+                ),
+                _StatItem(
+                  value: '$remainingMonths',
+                  label: context.l10n.translate('RIMANENTI'),
+                ),
               ],
             ),
           ),
@@ -110,11 +129,30 @@ class LifeViewWidget extends ConsumerWidget {
           Row(
             mainAxisAlignment: MainAxisAlignment.spaceBetween,
             children: [
-              Text(context.l10n.translate('nascita'), style: TextStyle(fontSize: 10, fontWeight: FontWeight.w600, color: context.appColors.mutedForeground.withValues(alpha: 0.4), letterSpacing: 0.5)),
-              Text(context.l10n.translate('85 anni'), style: TextStyle(fontSize: 10, fontWeight: FontWeight.w600, color: context.appColors.mutedForeground.withValues(alpha: 0.4), letterSpacing: 0.5)),
+              Text(
+                context.l10n.translate('nascita'),
+                style: TextStyle(
+                  fontSize: 10,
+                  fontWeight: FontWeight.w600,
+                  color: context.appColors.mutedForeground.withValues(
+                    alpha: 0.4,
+                  ),
+                  letterSpacing: 0.5,
+                ),
+              ),
+              Text(
+                context.l10n.translate('85 anni'),
+                style: TextStyle(
+                  fontSize: 10,
+                  fontWeight: FontWeight.w600,
+                  color: context.appColors.mutedForeground.withValues(
+                    alpha: 0.4,
+                  ),
+                  letterSpacing: 0.5,
+                ),
+              ),
             ],
-          )
-
+          ),
         ],
       ),
     );
@@ -139,7 +177,10 @@ class _LegendItem extends StatelessWidget {
         const SizedBox(width: 6),
         Text(
           label,
-          style: TextStyle(fontSize: 11, color: context.appColors.mutedForeground),
+          style: TextStyle(
+            fontSize: 11,
+            color: context.appColors.mutedForeground,
+          ),
         ),
       ],
     );
@@ -202,9 +243,11 @@ class _LifeGridPainter extends CustomPainter {
     const double dotSize = 4.0;
     const double spacing = 4.0;
     final int dotsPerRow = (size.width / (dotSize + spacing)).floor();
-    
-    final Paint preTrackingPaint = Paint()..color = Colors.blue.withValues(alpha: 0.2);
-    final Paint livedPaint = Paint()..color = accentColor.withValues(alpha: 0.8);
+
+    final Paint preTrackingPaint = Paint()
+      ..color = Colors.blue.withValues(alpha: 0.2);
+    final Paint livedPaint = Paint()
+      ..color = accentColor.withValues(alpha: 0.8);
     final Paint currentPaint = Paint()
       ..color = const Color(0xFF10B981)
       ..style = PaintingStyle.fill;
@@ -212,7 +255,8 @@ class _LifeGridPainter extends CustomPainter {
       ..color = foregroundColor
       ..style = PaintingStyle.stroke
       ..strokeWidth = 1.5;
-    final Paint remainingPaint = Paint()..color = borderColor.withValues(alpha: 0.2);
+    final Paint remainingPaint = Paint()
+      ..color = borderColor.withValues(alpha: 0.2);
 
     for (int i = 0; i < totalMonths; i++) {
       final int row = i ~/ dotsPerRow;

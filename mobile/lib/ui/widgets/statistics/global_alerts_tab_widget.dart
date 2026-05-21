@@ -40,10 +40,7 @@ class RecuperoSectionData {
   final String avgGlobalRecovery;
   final List<RecuperoData> items;
 
-  RecuperoSectionData({
-    required this.avgGlobalRecovery,
-    required this.items,
-  });
+  RecuperoSectionData({required this.avgGlobalRecovery, required this.items});
 }
 
 class RecuperoData {
@@ -87,17 +84,36 @@ class GlobalAlertsTabWidget extends ConsumerWidget {
       data: (stats) {
         return analyticsAsync.when(
           data: (analytics) {
-            final miglioramentoData = _calculateMiglioramentoData(stats, goals, analytics, context);
-            final fallimentiData = _calculateFallimentiData(stats, goals);
-            final recuperoData = _calculateRecuperoData(stats, goals, analytics, context);
+            final miglioramentoData = _calculateMiglioramentoData(
+              stats,
+              goals,
+              analytics,
+              context,
+            );
+            final fallimentiData = _calculateFallimentiData(
+              stats,
+              goals,
+              context,
+            );
+            final recuperoData = _calculateRecuperoData(
+              stats,
+              goals,
+              analytics,
+              context,
+            );
             final confrontoData = _calculateConfrontoData(stats, goals);
 
-            if (miglioramentoData.isEmpty && fallimentiData.isEmpty && recuperoData.items.isEmpty && confrontoData.isEmpty) {
+            if (miglioramentoData.isEmpty &&
+                fallimentiData.isEmpty &&
+                recuperoData.items.isEmpty &&
+                confrontoData.isEmpty) {
               return Center(
                 child: Padding(
                   padding: const EdgeInsets.all(32.0),
                   child: Text(
-                    context.l10n.translate('Nessun dato sufficiente per generare alert.'),
+                    context.l10n.translate(
+                      'Nessun dato sufficiente per generare alert.',
+                    ),
                     style: TextStyle(color: context.appColors.mutedForeground),
                   ),
                 ),
@@ -127,18 +143,35 @@ class GlobalAlertsTabWidget extends ConsumerWidget {
             );
           },
           loading: () => const Center(child: CircularProgressIndicator()),
-          error: (err, stack) => Center(child: Text('${context.l10n.translate('Errore')}: $err', style: TextStyle(color: context.appColors.mutedForeground))),
+          error: (err, stack) => Center(
+            child: Text(
+              '${context.l10n.translate('Errore')}: $err',
+              style: TextStyle(color: context.appColors.mutedForeground),
+            ),
+          ),
         );
       },
       loading: () => const Center(child: CircularProgressIndicator()),
-      error: (err, stack) => Center(child: Text('${context.l10n.translate('Errore')}: $err', style: TextStyle(color: context.appColors.mutedForeground))),
+      error: (err, stack) => Center(
+        child: Text(
+          '${context.l10n.translate('Errore')}: $err',
+          style: TextStyle(color: context.appColors.mutedForeground),
+        ),
+      ),
     );
   }
 
-  List<MiglioramentoData> _calculateMiglioramentoData(List<Map<String, dynamic>> stats, List<Goal> goals, Map<String, Map<String, dynamic>> analytics, BuildContext context) {
+  List<MiglioramentoData> _calculateMiglioramentoData(
+    List<Map<String, dynamic>> stats,
+    List<Goal> goals,
+    Map<String, Map<String, dynamic>> analytics,
+    BuildContext context,
+  ) {
     final sortedStats = List<Map<String, dynamic>>.from(stats)
-      ..sort((a, b) => (a['rate'] as num? ?? 0).compareTo(b['rate'] as num? ?? 0));
-    
+      ..sort(
+        (a, b) => (a['rate'] as num? ?? 0).compareTo(b['rate'] as num? ?? 0),
+      );
+
     final worstStats = sortedStats.take(3).toList();
     final List<MiglioramentoData> result = [];
 
@@ -151,34 +184,52 @@ class GlobalAlertsTabWidget extends ConsumerWidget {
       final worstDow = analytic?['worst_dow'] as int? ?? 1;
       final dayName = _getDayName(worstDow, context);
 
-      result.add(MiglioramentoData(
-        title: goal.title,
-        successRate: '${(stat['rate'] as num? ?? 0).round()}%',
-        day: dayName,
-        dayCompletion: '', // Not returned by RPC for simplicity
-        color: goal.color,
-      ));
+      result.add(
+        MiglioramentoData(
+          title: goal.title,
+          successRate: '${(stat['rate'] as num? ?? 0).round()}%',
+          day: dayName,
+          dayCompletion: '', // Not returned by RPC for simplicity
+          color: goal.color,
+        ),
+      );
     }
     return result;
   }
 
   String _getDayName(int dow, BuildContext context) {
     switch (dow) {
-      case 1: return context.l10n.translate('Lunedì');
-      case 2: return context.l10n.translate('Martedì');
-      case 3: return context.l10n.translate('Mercoledì');
-      case 4: return context.l10n.translate('Giovedì');
-      case 5: return context.l10n.translate('Venerdì');
-      case 6: return context.l10n.translate('Sabato');
-      case 7: return context.l10n.translate('Domenica');
-      default: return '';
+      case 1:
+        return context.l10n.translate('Lunedì');
+      case 2:
+        return context.l10n.translate('Martedì');
+      case 3:
+        return context.l10n.translate('Mercoledì');
+      case 4:
+        return context.l10n.translate('Giovedì');
+      case 5:
+        return context.l10n.translate('Venerdì');
+      case 6:
+        return context.l10n.translate('Sabato');
+      case 7:
+        return context.l10n.translate('Domenica');
+      default:
+        return '';
     }
   }
 
-  List<FallimentiData> _calculateFallimentiData(List<Map<String, dynamic>> stats, List<Goal> goals) {
+  List<FallimentiData> _calculateFallimentiData(
+    List<Map<String, dynamic>> stats,
+    List<Goal> goals,
+    BuildContext context,
+  ) {
     final sortedStats = List<Map<String, dynamic>>.from(stats)
-      ..sort((a, b) => (b['worst_streak'] as int? ?? 0).compareTo(a['worst_streak'] as int? ?? 0));
-    
+      ..sort(
+        (a, b) => (b['worst_streak'] as int? ?? 0).compareTo(
+          a['worst_streak'] as int? ?? 0,
+        ),
+      );
+
     final worstStats = sortedStats.take(3).toList();
     final List<FallimentiData> result = [];
 
@@ -191,17 +242,25 @@ class GlobalAlertsTabWidget extends ConsumerWidget {
       final totalDays = stat['total_active_days'] as int? ?? 1;
       final freq = totalDays > 0 ? (missedDays / totalDays * 30).round() : 0;
 
-      result.add(FallimentiData(
-        title: goal.title,
-        worstStreak: '${stat['worst_streak'] ?? 0} gg',
-        frequency: '~$freq/mese',
-        color: goal.color,
-      ));
+      result.add(
+        FallimentiData(
+          title: goal.title,
+          worstStreak:
+              '${stat['worst_streak'] ?? 0} ${context.l10n.daysShortUnit}',
+          frequency: '~$freq/${context.l10n.perMonthUnit}',
+          color: goal.color,
+        ),
+      );
     }
     return result;
   }
 
-  RecuperoSectionData _calculateRecuperoData(List<Map<String, dynamic>> stats, List<Goal> goals, Map<String, Map<String, dynamic>> analytics, BuildContext context) {
+  RecuperoSectionData _calculateRecuperoData(
+    List<Map<String, dynamic>> stats,
+    List<Goal> goals,
+    Map<String, Map<String, dynamic>> analytics,
+    BuildContext context,
+  ) {
     final List<RecuperoData> items = [];
     num totalGlobalRecovery = 0;
     int globalCount = 0;
@@ -214,17 +273,21 @@ class GlobalAlertsTabWidget extends ConsumerWidget {
 
       final progress = avgRecovery > 0 ? 1.0 / avgRecovery : 1.0;
 
-      items.add(RecuperoData(
-        title: goal.title,
-        time: '${avgRecovery.round()} gg',
-        color: goal.color,
-        progress: progress.clamp(0.0, 1.0),
-      ));
+      items.add(
+        RecuperoData(
+          title: goal.title,
+          time: '${avgRecovery.round()} ${context.l10n.daysShortUnit}',
+          color: goal.color,
+          progress: progress.clamp(0.0, 1.0),
+        ),
+      );
     }
 
     items.sort((a, b) => a.time.compareTo(b.time));
 
-    final avgGlobal = globalCount > 0 ? (totalGlobalRecovery / globalCount).round() : 0;
+    final avgGlobal = globalCount > 0
+        ? (totalGlobalRecovery / globalCount).round()
+        : 0;
 
     return RecuperoSectionData(
       avgGlobalRecovery: '$avgGlobal ${context.l10n.translate('giorni')}',
@@ -232,9 +295,10 @@ class GlobalAlertsTabWidget extends ConsumerWidget {
     );
   }
 
-
-
-  List<ConfrontoData> _calculateConfrontoData(List<Map<String, dynamic>> stats, List<Goal> goals) {
+  List<ConfrontoData> _calculateConfrontoData(
+    List<Map<String, dynamic>> stats,
+    List<Goal> goals,
+  ) {
     final List<ConfrontoData> result = [];
 
     for (final stat in stats) {
@@ -246,12 +310,14 @@ class GlobalAlertsTabWidget extends ConsumerWidget {
       final worst = stat['worst_streak'] as int? ?? 0;
       final gap = best > 0 ? (best - worst) / best : 0.0;
 
-      result.add(ConfrontoData(
-        title: goal.title,
-        gap: gap.clamp(0.0, 1.0),
-        best: best,
-        worst: worst,
-      ));
+      result.add(
+        ConfrontoData(
+          title: goal.title,
+          gap: gap.clamp(0.0, 1.0),
+          best: best,
+          worst: worst,
+        ),
+      );
     }
 
     result.sort((a, b) => b.gap.compareTo(a.gap));
@@ -265,7 +331,8 @@ class _AreeMiglioramentoSection extends StatefulWidget {
   const _AreeMiglioramentoSection({required this.data});
 
   @override
-  State<_AreeMiglioramentoSection> createState() => _AreeMiglioramentoSectionState();
+  State<_AreeMiglioramentoSection> createState() =>
+      _AreeMiglioramentoSectionState();
 }
 
 class _AreeMiglioramentoSectionState extends State<_AreeMiglioramentoSection> {
@@ -286,13 +353,17 @@ class _AreeMiglioramentoSectionState extends State<_AreeMiglioramentoSection> {
 
   @override
   Widget build(BuildContext context) {
-    final List<Widget> cards = widget.data.map((d) => _MiglioramentoCard(
-      title: d.title,
-      successRate: d.successRate,
-      day: d.day,
-      dayCompletion: d.dayCompletion,
-      color: d.color,
-    )).toList();
+    final List<Widget> cards = widget.data
+        .map(
+          (d) => _MiglioramentoCard(
+            title: d.title,
+            successRate: d.successRate,
+            day: d.day,
+            dayCompletion: d.dayCompletion,
+            color: d.color,
+          ),
+        )
+        .toList();
 
     if (cards.isEmpty) return const SizedBox.shrink();
 
@@ -301,7 +372,11 @@ class _AreeMiglioramentoSectionState extends State<_AreeMiglioramentoSection> {
       children: [
         Row(
           children: [
-            Icon(LucideIcons.target, size: 16, color: context.appColors.foreground),
+            Icon(
+              LucideIcons.target,
+              size: 16,
+              color: context.appColors.foreground,
+            ),
             const SizedBox(width: 8),
             Text(
               context.l10n.translate('Aree di Miglioramento'),
@@ -324,7 +399,7 @@ class _AreeMiglioramentoSectionState extends State<_AreeMiglioramentoSection> {
           ),
         ),
         const SizedBox(height: 16),
-        
+
         // Carousel
         SizedBox(
           height: 160,
@@ -340,9 +415,9 @@ class _AreeMiglioramentoSectionState extends State<_AreeMiglioramentoSection> {
             },
           ),
         ),
-        
+
         const SizedBox(height: 12),
-        
+
         // Pagination Dots
         Center(
           child: Row(
@@ -355,9 +430,11 @@ class _AreeMiglioramentoSectionState extends State<_AreeMiglioramentoSection> {
                 width: isActive ? 16 : 6,
                 height: 6,
                 decoration: BoxDecoration(
-                  color: isActive 
-                      ? Theme.of(context).colorScheme.primary 
-                      : context.appColors.mutedForeground.withValues(alpha: 0.3),
+                  color: isActive
+                      ? Theme.of(context).colorScheme.primary
+                      : context.appColors.mutedForeground.withValues(
+                          alpha: 0.3,
+                        ),
                   borderRadius: BorderRadius.circular(3),
                 ),
               );
@@ -406,7 +483,10 @@ class _MiglioramentoCard extends StatelessWidget {
                     Container(
                       width: 8,
                       height: 8,
-                      decoration: BoxDecoration(color: color, shape: BoxShape.circle),
+                      decoration: BoxDecoration(
+                        color: color,
+                        shape: BoxShape.circle,
+                      ),
                     ),
                     const SizedBox(width: 8),
                     Expanded(
@@ -470,11 +550,26 @@ class _MiglioramentoCard extends StatelessWidget {
                       const SizedBox(height: 4),
                       RichText(
                         text: TextSpan(
-                          style: TextStyle(fontFamily: 'Inter', fontSize: 11, color: context.appColors.mutedForeground),
+                          style: TextStyle(
+                            fontFamily: 'Inter',
+                            fontSize: 11,
+                            color: context.appColors.mutedForeground,
+                          ),
                           children: [
-                            TextSpan(text: '${context.l10n.translate('Solo')} '),
-                            TextSpan(text: dayCompletion, style: TextStyle(color: Color(0xFFEF4444), fontWeight: FontWeight.w700)),
-                            TextSpan(text: ' ${context.l10n.translate('di completamento')}'),
+                            TextSpan(
+                              text: '${context.l10n.translate('Solo')} ',
+                            ),
+                            TextSpan(
+                              text: dayCompletion,
+                              style: TextStyle(
+                                color: Color(0xFFEF4444),
+                                fontWeight: FontWeight.w700,
+                              ),
+                            ),
+                            TextSpan(
+                              text:
+                                  ' ${context.l10n.translate('di completamento')}',
+                            ),
                           ],
                         ),
                       ),
@@ -490,13 +585,13 @@ class _MiglioramentoCard extends StatelessWidget {
   }
 }
 
-
 class _AnalisiFallimentiSection extends StatefulWidget {
   final List<FallimentiData> data;
   const _AnalisiFallimentiSection({required this.data});
 
   @override
-  State<_AnalisiFallimentiSection> createState() => _AnalisiFallimentiSectionState();
+  State<_AnalisiFallimentiSection> createState() =>
+      _AnalisiFallimentiSectionState();
 }
 
 class _AnalisiFallimentiSectionState extends State<_AnalisiFallimentiSection> {
@@ -517,12 +612,16 @@ class _AnalisiFallimentiSectionState extends State<_AnalisiFallimentiSection> {
 
   @override
   Widget build(BuildContext context) {
-    final List<Widget> cards = widget.data.map((d) => _FailureDetailCard(
-      title: d.title,
-      worstStreak: d.worstStreak,
-      frequency: d.frequency,
-      color: d.color,
-    )).toList();
+    final List<Widget> cards = widget.data
+        .map(
+          (d) => _FailureDetailCard(
+            title: d.title,
+            worstStreak: d.worstStreak,
+            frequency: d.frequency,
+            color: d.color,
+          ),
+        )
+        .toList();
 
     if (cards.isEmpty) return const SizedBox.shrink();
 
@@ -546,7 +645,9 @@ class _AnalisiFallimentiSectionState extends State<_AnalisiFallimentiSection> {
         ),
         const SizedBox(height: 4),
         Text(
-          context.l10n.translate('Frequenza e pattern dei tuoi giorni mancati.'),
+          context.l10n.translate(
+            'Frequenza e pattern dei tuoi giorni mancati.',
+          ),
           style: TextStyle(
             fontFamily: 'Inter',
             fontSize: 11,
@@ -554,7 +655,7 @@ class _AnalisiFallimentiSectionState extends State<_AnalisiFallimentiSection> {
           ),
         ),
         const SizedBox(height: 16),
-        
+
         SizedBox(
           height: 150,
           child: PageView.builder(
@@ -569,7 +670,7 @@ class _AnalisiFallimentiSectionState extends State<_AnalisiFallimentiSection> {
             },
           ),
         ),
-        
+
         const SizedBox(height: 12),
         Center(
           child: Row(
@@ -582,9 +683,11 @@ class _AnalisiFallimentiSectionState extends State<_AnalisiFallimentiSection> {
                 width: isActive ? 16 : 6,
                 height: 6,
                 decoration: BoxDecoration(
-                  color: isActive 
+                  color: isActive
                       ? const Color(0xFFF97316)
-                      : context.appColors.mutedForeground.withValues(alpha: 0.3),
+                      : context.appColors.mutedForeground.withValues(
+                          alpha: 0.3,
+                        ),
                   borderRadius: BorderRadius.circular(3),
                 ),
               );
@@ -623,17 +726,37 @@ class _FailureDetailCard extends StatelessWidget {
         children: [
           Row(
             children: [
-              Container(width: 8, height: 8, decoration: BoxDecoration(color: color, shape: BoxShape.circle)),
+              Container(
+                width: 8,
+                height: 8,
+                decoration: BoxDecoration(color: color, shape: BoxShape.circle),
+              ),
               const SizedBox(width: 8),
-              Text(title, style: TextStyle(fontFamily: 'Inter', fontSize: 15, fontWeight: FontWeight.w700, color: context.appColors.foreground)),
+              Text(
+                title,
+                style: TextStyle(
+                  fontFamily: 'Inter',
+                  fontSize: 15,
+                  fontWeight: FontWeight.w700,
+                  color: context.appColors.foreground,
+                ),
+              ),
             ],
           ),
           const Spacer(),
           Row(
             mainAxisAlignment: MainAxisAlignment.spaceBetween,
             children: [
-              _StatMiniItem(label: context.l10n.translate('WORST STREAK'), value: worstStreak, color: Color(0xFFEF4444)),
-              _StatMiniItem(label: context.l10n.translate('FREQUENZA'), value: frequency, color: Color(0xFFF97316)),
+              _StatMiniItem(
+                label: context.l10n.translate('WORST STREAK'),
+                value: worstStreak,
+                color: Color(0xFFEF4444),
+              ),
+              _StatMiniItem(
+                label: context.l10n.translate('FREQUENZA'),
+                value: frequency,
+                color: Color(0xFFF97316),
+              ),
             ],
           ),
         ],
@@ -647,7 +770,8 @@ class _PatternRecuperoSection extends StatefulWidget {
   const _PatternRecuperoSection({required this.data});
 
   @override
-  State<_PatternRecuperoSection> createState() => _PatternRecuperoSectionState();
+  State<_PatternRecuperoSection> createState() =>
+      _PatternRecuperoSectionState();
 }
 
 class _PatternRecuperoSectionState extends State<_PatternRecuperoSection> {
@@ -668,12 +792,16 @@ class _PatternRecuperoSectionState extends State<_PatternRecuperoSection> {
 
   @override
   Widget build(BuildContext context) {
-    final List<Widget> cards = widget.data.items.map((d) => _RecoveryDetailCard(
-      title: d.title,
-      time: d.time,
-      color: d.color,
-      progress: d.progress,
-    )).toList();
+    final List<Widget> cards = widget.data.items
+        .map(
+          (d) => _RecoveryDetailCard(
+            title: d.title,
+            time: d.time,
+            color: d.color,
+            progress: d.progress,
+          ),
+        )
+        .toList();
 
     if (cards.isEmpty) return const SizedBox.shrink();
 
@@ -682,7 +810,11 @@ class _PatternRecuperoSectionState extends State<_PatternRecuperoSection> {
       children: [
         Row(
           children: [
-            Icon(LucideIcons.calendarClock, size: 16, color: context.appColors.foreground),
+            Icon(
+              LucideIcons.calendarClock,
+              size: 16,
+              color: context.appColors.foreground,
+            ),
             const SizedBox(width: 8),
             Text(
               context.l10n.translate('Pattern di Recupero'),
@@ -697,7 +829,9 @@ class _PatternRecuperoSectionState extends State<_PatternRecuperoSection> {
         ),
         const SizedBox(height: 4),
         Text(
-          context.l10n.translate('Quanto velocemente torni in carreggiata dopo un errore.'),
+          context.l10n.translate(
+            'Quanto velocemente torni in carreggiata dopo un errore.',
+          ),
           style: TextStyle(
             fontFamily: 'Inter',
             fontSize: 11,
@@ -717,12 +851,27 @@ class _PatternRecuperoSectionState extends State<_PatternRecuperoSection> {
           child: Row(
             mainAxisAlignment: MainAxisAlignment.spaceBetween,
             children: [
-              Text(context.l10n.translate('Tempo Medio Recupero'), style: TextStyle(fontFamily: 'Inter', fontSize: 12, color: context.appColors.mutedForeground)),
-              Text(widget.data.avgGlobalRecovery, style: TextStyle(fontFamily: 'Inter', fontSize: 14, fontWeight: FontWeight.w800, color: context.appColors.foreground)),
+              Text(
+                context.l10n.translate('Tempo Medio Recupero'),
+                style: TextStyle(
+                  fontFamily: 'Inter',
+                  fontSize: 12,
+                  color: context.appColors.mutedForeground,
+                ),
+              ),
+              Text(
+                widget.data.avgGlobalRecovery,
+                style: TextStyle(
+                  fontFamily: 'Inter',
+                  fontSize: 14,
+                  fontWeight: FontWeight.w800,
+                  color: context.appColors.foreground,
+                ),
+              ),
             ],
           ),
         ),
-        
+
         const SizedBox(height: 16),
 
         SizedBox(
@@ -739,7 +888,7 @@ class _PatternRecuperoSectionState extends State<_PatternRecuperoSection> {
             },
           ),
         ),
-        
+
         const SizedBox(height: 12),
         Center(
           child: Row(
@@ -752,9 +901,11 @@ class _PatternRecuperoSectionState extends State<_PatternRecuperoSection> {
                 width: isActive ? 16 : 6,
                 height: 6,
                 decoration: BoxDecoration(
-                  color: isActive 
+                  color: isActive
                       ? Theme.of(context).colorScheme.primary
-                      : context.appColors.mutedForeground.withValues(alpha: 0.3),
+                      : context.appColors.mutedForeground.withValues(
+                          alpha: 0.3,
+                        ),
                   borderRadius: BorderRadius.circular(3),
                 ),
               );
@@ -797,12 +948,35 @@ class _RecoveryDetailCard extends StatelessWidget {
             children: [
               Row(
                 children: [
-                  Container(width: 6, height: 6, decoration: BoxDecoration(color: color, shape: BoxShape.circle)),
+                  Container(
+                    width: 6,
+                    height: 6,
+                    decoration: BoxDecoration(
+                      color: color,
+                      shape: BoxShape.circle,
+                    ),
+                  ),
                   const SizedBox(width: 8),
-                  Text(title, style: TextStyle(fontFamily: 'Inter', fontSize: 14, fontWeight: FontWeight.w700, color: context.appColors.foreground)),
+                  Text(
+                    title,
+                    style: TextStyle(
+                      fontFamily: 'Inter',
+                      fontSize: 14,
+                      fontWeight: FontWeight.w700,
+                      color: context.appColors.foreground,
+                    ),
+                  ),
                 ],
               ),
-              Text(time, style: TextStyle(fontFamily: 'Inter', fontSize: 14, fontWeight: FontWeight.w900, color: color)),
+              Text(
+                time,
+                style: TextStyle(
+                  fontFamily: 'Inter',
+                  fontSize: 14,
+                  fontWeight: FontWeight.w900,
+                  color: color,
+                ),
+              ),
             ],
           ),
           const SizedBox(height: 12),
@@ -826,16 +1000,37 @@ class _StatMiniItem extends StatelessWidget {
   final String value;
   final Color color;
 
-  const _StatMiniItem({required this.label, required this.value, required this.color});
+  const _StatMiniItem({
+    required this.label,
+    required this.value,
+    required this.color,
+  });
 
   @override
   Widget build(BuildContext context) {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        Text(label, style: TextStyle(fontFamily: 'Inter', fontSize: 8, fontWeight: FontWeight.w800, color: context.appColors.mutedForeground, letterSpacing: 0.5)),
+        Text(
+          label,
+          style: TextStyle(
+            fontFamily: 'Inter',
+            fontSize: 8,
+            fontWeight: FontWeight.w800,
+            color: context.appColors.mutedForeground,
+            letterSpacing: 0.5,
+          ),
+        ),
         const SizedBox(height: 2),
-        Text(value, style: TextStyle(fontFamily: 'Inter', fontSize: 14, fontWeight: FontWeight.w900, color: color)),
+        Text(
+          value,
+          style: TextStyle(
+            fontFamily: 'Inter',
+            fontSize: 14,
+            fontWeight: FontWeight.w900,
+            color: color,
+          ),
+        ),
       ],
     );
   }
@@ -846,10 +1041,12 @@ class _ConfrontoPerformanceSection extends StatefulWidget {
   const _ConfrontoPerformanceSection({required this.data});
 
   @override
-  State<_ConfrontoPerformanceSection> createState() => _ConfrontoPerformanceSectionState();
+  State<_ConfrontoPerformanceSection> createState() =>
+      _ConfrontoPerformanceSectionState();
 }
 
-class _ConfrontoPerformanceSectionState extends State<_ConfrontoPerformanceSection> {
+class _ConfrontoPerformanceSectionState
+    extends State<_ConfrontoPerformanceSection> {
   late PageController _pageController;
   int _currentPage = 0;
 
@@ -867,12 +1064,16 @@ class _ConfrontoPerformanceSectionState extends State<_ConfrontoPerformanceSecti
 
   @override
   Widget build(BuildContext context) {
-    final List<Widget> cards = widget.data.map((d) => _PerformanceComparisonCard(
-      title: d.title,
-      gap: d.gap,
-      best: d.best,
-      worst: d.worst,
-    )).toList();
+    final List<Widget> cards = widget.data
+        .map(
+          (d) => _PerformanceComparisonCard(
+            title: d.title,
+            gap: d.gap,
+            best: d.best,
+            worst: d.worst,
+          ),
+        )
+        .toList();
 
     if (cards.isEmpty) return const SizedBox.shrink();
 
@@ -881,7 +1082,11 @@ class _ConfrontoPerformanceSectionState extends State<_ConfrontoPerformanceSecti
       children: [
         Row(
           children: [
-            Icon(LucideIcons.trendingUp, size: 16, color: context.appColors.foreground),
+            Icon(
+              LucideIcons.trendingUp,
+              size: 16,
+              color: context.appColors.foreground,
+            ),
             const SizedBox(width: 8),
             Text(
               context.l10n.translate('Confronto Performance'),
@@ -896,7 +1101,9 @@ class _ConfrontoPerformanceSectionState extends State<_ConfrontoPerformanceSecti
         ),
         const SizedBox(height: 4),
         Text(
-          context.l10n.translate('Compara le tue migliori performance con le peggiori.'),
+          context.l10n.translate(
+            'Compara le tue migliori performance con le peggiori.',
+          ),
           style: TextStyle(
             fontFamily: 'Inter',
             fontSize: 11,
@@ -904,7 +1111,7 @@ class _ConfrontoPerformanceSectionState extends State<_ConfrontoPerformanceSecti
           ),
         ),
         const SizedBox(height: 16),
-        
+
         SizedBox(
           height: 220,
           child: PageView.builder(
@@ -919,7 +1126,7 @@ class _ConfrontoPerformanceSectionState extends State<_ConfrontoPerformanceSecti
             },
           ),
         ),
-        
+
         const SizedBox(height: 12),
         Center(
           child: Row(
@@ -932,9 +1139,11 @@ class _ConfrontoPerformanceSectionState extends State<_ConfrontoPerformanceSecti
                 width: isActive ? 16 : 6,
                 height: 6,
                 decoration: BoxDecoration(
-                  color: isActive 
-                      ? Theme.of(context).colorScheme.primary 
-                      : context.appColors.mutedForeground.withValues(alpha: 0.3),
+                  color: isActive
+                      ? Theme.of(context).colorScheme.primary
+                      : context.appColors.mutedForeground.withValues(
+                          alpha: 0.3,
+                        ),
                   borderRadius: BorderRadius.circular(3),
                 ),
               );
@@ -976,29 +1185,75 @@ class _PerformanceComparisonCard extends StatelessWidget {
             children: [
               Row(
                 children: [
-                  Container(width: 6, height: 6, decoration: const BoxDecoration(color: Color(0xFFEF4444), shape: BoxShape.circle)),
+                  Container(
+                    width: 6,
+                    height: 6,
+                    decoration: const BoxDecoration(
+                      color: Color(0xFFEF4444),
+                      shape: BoxShape.circle,
+                    ),
+                  ),
                   const SizedBox(width: 8),
-                  Text(title, style: TextStyle(fontFamily: 'Inter', fontSize: 15, fontWeight: FontWeight.w700, color: context.appColors.foreground)),
+                  Text(
+                    title,
+                    style: TextStyle(
+                      fontFamily: 'Inter',
+                      fontSize: 15,
+                      fontWeight: FontWeight.w700,
+                      color: context.appColors.foreground,
+                    ),
+                  ),
                 ],
               ),
               Container(
                 padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
-                decoration: BoxDecoration(color: const Color(0xFFF97316).withValues(alpha: 0.1), borderRadius: BorderRadius.circular(6)),
-                child: Text(context.l10n.translate('Attenzione'), style: TextStyle(fontFamily: 'Inter', fontSize: 10, fontWeight: FontWeight.w800, color: Color(0xFFF97316))),
+                decoration: BoxDecoration(
+                  color: const Color(0xFFF97316).withValues(alpha: 0.1),
+                  borderRadius: BorderRadius.circular(6),
+                ),
+                child: Text(
+                  context.l10n.translate('Attenzione'),
+                  style: TextStyle(
+                    fontFamily: 'Inter',
+                    fontSize: 10,
+                    fontWeight: FontWeight.w800,
+                    color: Color(0xFFF97316),
+                  ),
+                ),
               ),
             ],
           ),
           const Spacer(),
-          _PerformanceBar(label: context.l10n.translate('BEST'), value: '$best gg', progress: 0.3, color: Theme.of(context).colorScheme.primary),
+          _PerformanceBar(
+            label: context.l10n.translate('BEST'),
+            value: '$best ${context.l10n.daysShortUnit}',
+            progress: 0.3,
+            color: Theme.of(context).colorScheme.primary,
+          ),
           const SizedBox(height: 16),
-          _PerformanceBar(label: context.l10n.translate('WORST'), value: '$worst gg', progress: 0.9, color: Color(0xFFEF4444)),
+          _PerformanceBar(
+            label: context.l10n.translate('WORST'),
+            value: '$worst ${context.l10n.daysShortUnit}',
+            progress: 0.9,
+            color: Color(0xFFEF4444),
+          ),
           const Spacer(),
           RichText(
             text: TextSpan(
-              style: TextStyle(fontFamily: 'Inter', fontSize: 11, color: context.appColors.mutedForeground),
+              style: TextStyle(
+                fontFamily: 'Inter',
+                fontSize: 11,
+                color: context.appColors.mutedForeground,
+              ),
               children: [
                 TextSpan(text: context.l10n.translate('Gap: ')),
-                TextSpan(text: '${(gap * 100).toInt()}%', style: TextStyle(color: context.appColors.foreground, fontWeight: FontWeight.w800)),
+                TextSpan(
+                  text: '${(gap * 100).toInt()}%',
+                  style: TextStyle(
+                    color: context.appColors.foreground,
+                    fontWeight: FontWeight.w800,
+                  ),
+                ),
               ],
             ),
           ),
@@ -1014,7 +1269,12 @@ class _PerformanceBar extends StatelessWidget {
   final double progress;
   final Color color;
 
-  const _PerformanceBar({required this.label, required this.value, required this.progress, required this.color});
+  const _PerformanceBar({
+    required this.label,
+    required this.value,
+    required this.progress,
+    required this.color,
+  });
 
   @override
   Widget build(BuildContext context) {
@@ -1024,8 +1284,25 @@ class _PerformanceBar extends StatelessWidget {
         Row(
           mainAxisAlignment: MainAxisAlignment.spaceBetween,
           children: [
-            Text(label, style: TextStyle(fontFamily: 'Inter', fontSize: 9, fontWeight: FontWeight.w800, color: context.appColors.mutedForeground, letterSpacing: 0.5)),
-            Text(value, style: TextStyle(fontFamily: 'Inter', fontSize: 12, fontWeight: FontWeight.w800, color: color)),
+            Text(
+              label,
+              style: TextStyle(
+                fontFamily: 'Inter',
+                fontSize: 9,
+                fontWeight: FontWeight.w800,
+                color: context.appColors.mutedForeground,
+                letterSpacing: 0.5,
+              ),
+            ),
+            Text(
+              value,
+              style: TextStyle(
+                fontFamily: 'Inter',
+                fontSize: 12,
+                fontWeight: FontWeight.w800,
+                color: color,
+              ),
+            ),
           ],
         ),
         const SizedBox(height: 6),

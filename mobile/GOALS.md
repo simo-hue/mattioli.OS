@@ -43,7 +43,7 @@
     [ ] Cambiare icona dell'app
     [ ] 
 
-[ ] Opzione "Local-First" / Modalità solo Offline
+[ ] Opzione "Local-First" / Modalità solo Offline -> Acquisto unico 399
     [ ] Usare un DB Locale
     [ ] Usare LLM Locale
 

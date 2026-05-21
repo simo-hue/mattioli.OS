@@ -1,16 +1,12 @@
 import 'dart:math' as math;
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:intl/intl.dart';
 import '../../core/theme.dart';
 import '../../providers/goal_provider.dart';
 import 'day_details_modal.dart';
 import '../../core/haptics.dart';
-
-const _kDays = ['LUN', 'MAR', 'MER', 'GIO', 'VEN', 'SAB', 'DOM'];
-const _kMonths = [
-  'Gennaio', 'Febbraio', 'Marzo', 'Aprile', 'Maggio', 'Giugno',
-  'Luglio', 'Agosto', 'Settembre', 'Ottobre', 'Novembre', 'Dicembre',
-];
+import '../../core/localization.dart';
 
 class WeeklyViewWidget extends ConsumerStatefulWidget {
   const WeeklyViewWidget({super.key});
@@ -49,12 +45,14 @@ class _WeeklyViewWidgetState extends ConsumerState<WeeklyViewWidget> {
     ref.hapticAction();
   }
 
-  String _formatDateRange() {
+  String _formatDateRange(BuildContext context) {
     final end = _currentWeekStart.add(const Duration(days: 6));
+    final fullMonthFormatter = DateFormat.MMMM(context.l10n.localeName);
+    final shortMonthFormatter = DateFormat.MMM(context.l10n.localeName);
     if (_currentWeekStart.month == end.month) {
-      return '${_currentWeekStart.day} - ${end.day} ${_kMonths[_currentWeekStart.month - 1]}';
+      return '${_currentWeekStart.day} - ${end.day} ${fullMonthFormatter.format(_currentWeekStart)}';
     }
-    return '${_currentWeekStart.day} ${_kMonths[_currentWeekStart.month - 1].substring(0, 3)} - ${end.day} ${_kMonths[end.month - 1].substring(0, 3)}';
+    return '${_currentWeekStart.day} ${shortMonthFormatter.format(_currentWeekStart)} - ${end.day} ${shortMonthFormatter.format(end)}';
   }
 
   String _dateKey(DateTime date) =>
@@ -83,23 +81,28 @@ class _WeeklyViewWidgetState extends ConsumerState<WeeklyViewWidget> {
           switchInCurve: Curves.easeOutQuart,
           switchOutCurve: Curves.easeOutQuart,
           transitionBuilder: (child, animation) {
-            final isIncoming = child.key == ValueKey(_dateKey(_currentWeekStart));
-            
+            final isIncoming =
+                child.key == ValueKey(_dateKey(_currentWeekStart));
+
             return AnimatedBuilder(
               animation: animation,
               builder: (context, child) {
                 // Perspective Fold Logic (3D Flip)
-                final double rotation = isIncoming 
+                final double rotation = isIncoming
                     ? (1.0 - animation.value) * (math.pi / 2) * _slideDirection
                     : animation.value * -(math.pi / 2) * _slideDirection;
-                
-                final alignment = isIncoming 
-                    ? (_slideDirection > 0 ? Alignment.centerRight : Alignment.centerLeft)
-                    : (_slideDirection > 0 ? Alignment.centerLeft : Alignment.centerRight);
+
+                final alignment = isIncoming
+                    ? (_slideDirection > 0
+                          ? Alignment.centerRight
+                          : Alignment.centerLeft)
+                    : (_slideDirection > 0
+                          ? Alignment.centerLeft
+                          : Alignment.centerRight);
 
                 return Transform(
                   transform: Matrix4.identity()
-                    ..setEntry(3, 2, 0.0015) 
+                    ..setEntry(3, 2, 0.0015)
                     ..rotateY(rotation),
                   alignment: alignment,
                   child: Opacity(
@@ -121,7 +124,7 @@ class _WeeklyViewWidgetState extends ConsumerState<WeeklyViewWidget> {
                   mainAxisAlignment: MainAxisAlignment.spaceBetween,
                   children: [
                     Text(
-                      _formatDateRange(),
+                      _formatDateRange(context),
                       style: TextStyle(
                         fontFamily: 'Inter',
                         fontSize: 18,
@@ -141,40 +144,54 @@ class _WeeklyViewWidgetState extends ConsumerState<WeeklyViewWidget> {
                 ),
               ),
               const SizedBox(height: 20),
-    
+
               // Days labels
               Row(
                 children: List.generate(7, (index) {
                   final dayDate = _currentWeekStart.add(Duration(days: index));
                   final isToday = _dateKey(dayDate) == _dateKey(DateTime.now());
-    
+
                   return Expanded(
                     child: Column(
                       children: [
                         Text(
-                          _kDays[index],
+                          DateFormat.E(
+                            context.l10n.localeName,
+                          ).format(dayDate).toUpperCase(),
                           style: TextStyle(
                             fontFamily: 'Inter',
                             fontSize: 10,
                             fontWeight: FontWeight.w600,
-                            color: isToday ? context.appColors.mutedForeground : context.appColors.mutedForeground.withValues(alpha: 0.5),
+                            color: isToday
+                                ? context.appColors.mutedForeground
+                                : context.appColors.mutedForeground.withValues(
+                                    alpha: 0.5,
+                                  ),
                             letterSpacing: 0.5,
                           ),
                         ),
                         const SizedBox(height: 4),
                         Container(
-                          padding: const EdgeInsets.symmetric(vertical: 4, horizontal: 8),
+                          padding: const EdgeInsets.symmetric(
+                            vertical: 4,
+                            horizontal: 8,
+                          ),
                           decoration: isToday
                               ? BoxDecoration(
                                   color: context.appColors.card,
                                   borderRadius: BorderRadius.circular(8),
-                                  border: Border.all(color: context.appColors.border, width: 1),
+                                  border: Border.all(
+                                    color: context.appColors.border,
+                                    width: 1,
+                                  ),
                                   boxShadow: [
                                     BoxShadow(
-                                      color: Colors.black.withValues(alpha: 0.3),
+                                      color: Colors.black.withValues(
+                                        alpha: 0.3,
+                                      ),
                                       blurRadius: 10,
                                       offset: const Offset(0, 4),
-                                    )
+                                    ),
                                   ],
                                 )
                               : null,
@@ -183,8 +200,12 @@ class _WeeklyViewWidgetState extends ConsumerState<WeeklyViewWidget> {
                             style: TextStyle(
                               fontFamily: 'Inter',
                               fontSize: 16,
-                              fontWeight: isToday ? FontWeight.w700 : FontWeight.w600,
-                              color: isToday ? context.appColors.foreground : context.appColors.mutedForeground,
+                              fontWeight: isToday
+                                  ? FontWeight.w700
+                                  : FontWeight.w600,
+                              color: isToday
+                                  ? context.appColors.foreground
+                                  : context.appColors.mutedForeground,
                             ),
                           ),
                         ),
@@ -194,7 +215,7 @@ class _WeeklyViewWidgetState extends ConsumerState<WeeklyViewWidget> {
                 }),
               ),
               const SizedBox(height: 16),
-    
+
               // Habit Stacks - Scrollable if too many
               Expanded(
                 child: SingleChildScrollView(
@@ -203,35 +224,48 @@ class _WeeklyViewWidgetState extends ConsumerState<WeeklyViewWidget> {
                     children: [
                       ...habits.asMap().entries.map((entry) {
                         final habit = entry.value;
-    
+
                         return Column(
                           children: [
                             Row(
                               children: List.generate(7, (dayIdx) {
-                                final dayDate = _currentWeekStart.add(Duration(days: dayIdx));
+                                final dayDate = _currentWeekStart.add(
+                                  Duration(days: dayIdx),
+                                );
                                 final dayKey = _dateKey(dayDate);
                                 final status = logs[dayKey]?[habit.id];
-                                final isFuture = dayDate.isAfter(DateTime.now());
+                                final isFuture = dayDate.isAfter(
+                                  DateTime.now(),
+                                );
                                 final isActive = habit.isActiveOn(dayDate);
 
                                 return Expanded(
                                   child: Padding(
-                                    padding: const EdgeInsets.symmetric(horizontal: 4, vertical: 4),
+                                    padding: const EdgeInsets.symmetric(
+                                      horizontal: 4,
+                                      vertical: 4,
+                                    ),
                                     child: Opacity(
                                       opacity: isActive ? 1.0 : 0.0,
                                       child: _HabitCapsule(
                                         status: status,
                                         isFuture: isFuture,
                                         isPrivacy: isPrivacy,
-                                        onTap: (isFuture || !isActive) ? null : () {
-                                          showModalBottomSheet(
-                                            context: context,
-                                            backgroundColor: Colors.transparent,
-                                            isScrollControlled: true,
-                                            builder: (context) => DayDetailsModal(date: dayDate),
-                                          );
-                                          ref.hapticAction();
-                                        },
+                                        onTap: (isFuture || !isActive)
+                                            ? null
+                                            : () {
+                                                showModalBottomSheet(
+                                                  context: context,
+                                                  backgroundColor:
+                                                      Colors.transparent,
+                                                  isScrollControlled: true,
+                                                  builder: (context) =>
+                                                      DayDetailsModal(
+                                                        date: dayDate,
+                                                      ),
+                                                );
+                                                ref.hapticAction();
+                                              },
                                       ),
                                     ),
                                   ),
@@ -239,10 +273,11 @@ class _WeeklyViewWidgetState extends ConsumerState<WeeklyViewWidget> {
                               }),
                             ),
                             // Optional spacing between groups
-                            if (entry.key == 2 || entry.key == 6) const SizedBox(height: 12),
+                            if (entry.key == 2 || entry.key == 6)
+                              const SizedBox(height: 12),
                           ],
                         );
-                      })
+                      }),
                     ],
                   ),
                 ),
@@ -252,7 +287,6 @@ class _WeeklyViewWidgetState extends ConsumerState<WeeklyViewWidget> {
         ),
       ),
     );
-
   }
 }
 
@@ -301,15 +335,19 @@ class _HabitCapsule extends StatelessWidget {
     List<BoxShadow>? shadows;
 
     if (isDone) {
-      capsuleColor = isPrivacy ? context.appColors.mutedForeground.withValues(alpha: 0.2) : context.appColors.primary;
-      borderColor = isPrivacy ? context.appColors.border : context.appColors.primary.withValues(alpha: 0.5);
+      capsuleColor = isPrivacy
+          ? context.appColors.mutedForeground.withValues(alpha: 0.2)
+          : context.appColors.primary;
+      borderColor = isPrivacy
+          ? context.appColors.border
+          : context.appColors.primary.withValues(alpha: 0.5);
       if (!isPrivacy) {
         shadows = [
           BoxShadow(
             color: context.appColors.primary.withValues(alpha: 0.4),
             blurRadius: 8,
             spreadRadius: -1,
-          )
+          ),
         ];
       }
     } else if (isMissed) {
@@ -325,10 +363,7 @@ class _HabitCapsule extends StatelessWidget {
         decoration: BoxDecoration(
           color: capsuleColor,
           borderRadius: BorderRadius.circular(8),
-          border: Border.all(
-            color: borderColor,
-            width: 1,
-          ),
+          border: Border.all(color: borderColor, width: 1),
           boxShadow: shadows,
         ),
       ),

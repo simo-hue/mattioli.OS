@@ -294,9 +294,9 @@ class _ProfileScreenState extends ConsumerState<ProfileScreen> {
                             children: [
                               const Icon(LucideIcons.shieldCheck, size: 10, color: Color(0xFF10B981)),
                               const SizedBox(width: 4),
-                              const Text(
-                                'Account Verificato',
-                                style: TextStyle(
+                              Text(
+                                context.l10n.accountVerified,
+                                style: const TextStyle(
                                   color: Color(0xFF10B981),
                                   fontSize: 10,
                                   fontWeight: FontWeight.w700,
@@ -346,7 +346,7 @@ class _ProfileScreenState extends ConsumerState<ProfileScreen> {
             sliver: SliverList(
               delegate: SliverChildListDelegate([
                 Text(
-                  'IMPOSTAZIONI ACCOUNT',
+                  context.l10n.accountSettingsHeader,
                   style: TextStyle(
                     fontSize: 10,
                     fontWeight: FontWeight.w800,
@@ -368,7 +368,9 @@ class _ProfileScreenState extends ConsumerState<ProfileScreen> {
                   context: context,
                   icon: LucideIcons.creditCard,
                   title: context.l10n.translate('Abbonamento'),
-                  subtitle: settings.isPro ? 'Gestisci il tuo piano Pro' : 'Passa a Pro',
+                  subtitle: settings.isPro
+                      ? context.l10n.manageProPlan
+                      : context.l10n.upgradeToPro,
                   onTap: () {
                     Navigator.push(context, SubscriptionScreen.route());
                   },
@@ -469,7 +471,7 @@ class _ProfileScreenState extends ConsumerState<ProfileScreen> {
                 const SizedBox(height: 16),
                 Center(
                   child: Text(
-                    'Versione 1.0.0',
+                    context.l10n.appVersion,
                     style: TextStyle(
                       color: context.appColors.mutedForeground.withValues(alpha: 0.5),
                       fontSize: 10,

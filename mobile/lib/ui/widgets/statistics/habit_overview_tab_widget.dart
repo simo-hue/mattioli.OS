@@ -37,13 +37,24 @@ class HabitOverviewTabWidget extends ConsumerWidget {
     final statsAsync = ref.watch(habitStatsProvider);
     final gridAsync = ref.watch(habitYearlyGridProvider(goalId));
     final correlationsAsync = ref.watch(habitCorrelationsProvider(goalId));
-    
-    final goal = goals.firstWhere((g) => g.id == goalId, orElse: () => Goal(id: '', title: '', color: Colors.blue, startDate: DateTime.now()));
-    
+
+    final goal = goals.firstWhere(
+      (g) => g.id == goalId,
+      orElse: () => Goal(
+        id: '',
+        title: '',
+        color: Colors.blue,
+        startDate: DateTime.now(),
+      ),
+    );
+
     return statsAsync.when(
       data: (statsList) {
-        final stat = statsList.firstWhere((s) => s['goal_id'] == goalId, orElse: () => {});
-        
+        final stat = statsList.firstWhere(
+          (s) => s['goal_id'] == goalId,
+          orElse: () => {},
+        );
+
         final habitStats = HabitStats(
           currentStreak: stat['current_streak'] ?? 0,
           bestStreak: stat['best_streak'] ?? 0,
@@ -53,24 +64,37 @@ class HabitOverviewTabWidget extends ConsumerWidget {
           missedDays: stat['missed_days'] ?? 0,
           trend30Days: [], // Will be filled below
         );
-        
+
         return gridAsync.when(
           data: (grid) {
             // Take last 30 items
-            final trend30Days = grid.length >= 30 ? grid.sublist(grid.length - 30) : grid;
-            
+            final trend30Days = grid.length >= 30
+                ? grid.sublist(grid.length - 30)
+                : grid;
+
             return correlationsAsync.when(
               data: (correlationsData) {
                 final correlations = <Map<String, dynamic>>[];
                 for (final item in correlationsData) {
                   final otherGoalId = item['goal_id'] as String;
-                  final otherGoal = goals.firstWhere((g) => g.id == otherGoalId, orElse: () => Goal(id: '', title: '', color: Colors.blue, startDate: DateTime.now()));
+                  final otherGoal = goals.firstWhere(
+                    (g) => g.id == otherGoalId,
+                    orElse: () => Goal(
+                      id: '',
+                      title: '',
+                      color: Colors.blue,
+                      startDate: DateTime.now(),
+                    ),
+                  );
                   if (otherGoal.id.isNotEmpty) {
                     correlations.add({
                       'goal': otherGoal,
                       'percentage': (item['percentage'] as num?)?.toInt() ?? 0,
-                      'strength': ((item['percentage'] as num?)?.toDouble() ?? 0.0) / 100.0,
-                      'togetherCount': (item['together_count'] as num?)?.toInt() ?? 0,
+                      'strength':
+                          ((item['percentage'] as num?)?.toDouble() ?? 0.0) /
+                          100.0,
+                      'togetherCount':
+                          (item['together_count'] as num?)?.toInt() ?? 0,
                     });
                   }
                 }
@@ -82,21 +106,40 @@ class HabitOverviewTabWidget extends ConsumerWidget {
                     const SizedBox(height: 16),
                     _TrendUltimi30Giorni(trend: trend30Days),
                     const SizedBox(height: 16),
-                    _CorrelazioniSection(goalId: goalId, correlations: correlations, currentGoalTitle: goal.title),
+                    _CorrelazioniSection(
+                      goalId: goalId,
+                      correlations: correlations,
+                      currentGoalTitle: goal.title,
+                    ),
                     const SizedBox(height: 32),
                   ],
                 );
               },
               loading: () => const Center(child: CircularProgressIndicator()),
-              error: (err, stack) => Center(child: Text('${context.l10n.translate('Errore')}: $err', style: TextStyle(color: context.appColors.mutedForeground))),
+              error: (err, stack) => Center(
+                child: Text(
+                  '${context.l10n.translate('Errore')}: $err',
+                  style: TextStyle(color: context.appColors.mutedForeground),
+                ),
+              ),
             );
           },
           loading: () => const Center(child: CircularProgressIndicator()),
-          error: (err, stack) => Center(child: Text('${context.l10n.translate('Errore')}: $err', style: TextStyle(color: context.appColors.mutedForeground))),
+          error: (err, stack) => Center(
+            child: Text(
+              '${context.l10n.translate('Errore')}: $err',
+              style: TextStyle(color: context.appColors.mutedForeground),
+            ),
+          ),
         );
       },
       loading: () => const Center(child: CircularProgressIndicator()),
-      error: (err, stack) => Center(child: Text('${context.l10n.translate('Errore')}: $err', style: TextStyle(color: context.appColors.mutedForeground))),
+      error: (err, stack) => Center(
+        child: Text(
+          '${context.l10n.translate('Errore')}: $err',
+          style: TextStyle(color: context.appColors.mutedForeground),
+        ),
+      ),
     );
   }
 }
@@ -130,7 +173,8 @@ class _TopStatsGrid extends StatelessWidget {
         _StatCard(
           title: context.l10n.translate('COMPLETAMENTO'),
           value: '${stats.completionRate}%',
-          subtitle: '${stats.totalCompletions}/${stats.totalActiveDays} ${context.l10n.translate('gg')}',
+          subtitle:
+              '${stats.totalCompletions}/${stats.totalActiveDays} ${context.l10n.daysShortUnit}',
           valueColor: context.appColors.foreground,
         ),
         _StatCard(
@@ -245,11 +289,13 @@ class _TrendUltimi30Giorni extends StatelessWidget {
               final status = statuses[index];
               Color color;
               if (status == 1) {
-                color = Colors.green; 
+                color = Colors.green;
               } else if (status == 2) {
                 color = const Color(0xFFFF0000); // Red
               } else {
-                color = context.appColors.muted.withValues(alpha: 0.3); // Dynamic Grey
+                color = context.appColors.muted.withValues(
+                  alpha: 0.3,
+                ); // Dynamic Grey
               }
 
               return Container(
@@ -268,29 +314,71 @@ class _TrendUltimi30Giorni extends StatelessWidget {
               Row(
                 mainAxisSize: MainAxisSize.min,
                 children: [
-                  Container(width: 10, height: 10, decoration: const BoxDecoration(color: Colors.green, shape: BoxShape.circle)),
+                  Container(
+                    width: 10,
+                    height: 10,
+                    decoration: const BoxDecoration(
+                      color: Colors.green,
+                      shape: BoxShape.circle,
+                    ),
+                  ),
                   const SizedBox(width: 6),
-                  Text(context.l10n.translate('Completato'), style: TextStyle(fontFamily: 'Inter', fontSize: 11, color: context.appColors.mutedForeground)),
+                  Text(
+                    context.l10n.translate('Completato'),
+                    style: TextStyle(
+                      fontFamily: 'Inter',
+                      fontSize: 11,
+                      color: context.appColors.mutedForeground,
+                    ),
+                  ),
                 ],
               ),
               Row(
                 mainAxisSize: MainAxisSize.min,
                 children: [
-                  Container(width: 10, height: 10, decoration: const BoxDecoration(color: Color(0xFFFF0000), shape: BoxShape.circle)),
+                  Container(
+                    width: 10,
+                    height: 10,
+                    decoration: const BoxDecoration(
+                      color: Color(0xFFFF0000),
+                      shape: BoxShape.circle,
+                    ),
+                  ),
                   const SizedBox(width: 6),
-                  Text(context.l10n.translate('Non completato'), style: TextStyle(fontFamily: 'Inter', fontSize: 11, color: context.appColors.mutedForeground)),
+                  Text(
+                    context.l10n.translate('Non completato'),
+                    style: TextStyle(
+                      fontFamily: 'Inter',
+                      fontSize: 11,
+                      color: context.appColors.mutedForeground,
+                    ),
+                  ),
                 ],
               ),
               Row(
                 mainAxisSize: MainAxisSize.min,
                 children: [
-                  Container(width: 10, height: 10, decoration: BoxDecoration(color: context.appColors.muted.withValues(alpha: 0.3), shape: BoxShape.circle)),
+                  Container(
+                    width: 10,
+                    height: 10,
+                    decoration: BoxDecoration(
+                      color: context.appColors.muted.withValues(alpha: 0.3),
+                      shape: BoxShape.circle,
+                    ),
+                  ),
                   const SizedBox(width: 6),
-                  Text(context.l10n.translate('Saltato'), style: TextStyle(fontFamily: 'Inter', fontSize: 11, color: context.appColors.mutedForeground)),
+                  Text(
+                    context.l10n.translate('Saltato'),
+                    style: TextStyle(
+                      fontFamily: 'Inter',
+                      fontSize: 11,
+                      color: context.appColors.mutedForeground,
+                    ),
+                  ),
                 ],
               ),
             ],
-          )
+          ),
         ],
       ),
     );
@@ -301,7 +389,11 @@ class _CorrelazioniSection extends StatefulWidget {
   final String goalId;
   final List<Map<String, dynamic>> correlations;
   final String currentGoalTitle;
-  const _CorrelazioniSection({required this.goalId, required this.correlations, required this.currentGoalTitle});
+  const _CorrelazioniSection({
+    required this.goalId,
+    required this.correlations,
+    required this.currentGoalTitle,
+  });
 
   @override
   State<_CorrelazioniSection> createState() => _CorrelazioniSectionState();
@@ -329,11 +421,19 @@ class _CorrelazioniSectionState extends State<_CorrelazioniSection> {
 
   @override
   Widget build(BuildContext context) {
-    final positiveCorrelations = widget.correlations.where((c) => c['percentage'] >= 50).toList();
-    final negativeCorrelations = widget.correlations.where((c) => c['percentage'] < 50).toList();
-    
-    final displayPositives = positiveCorrelations.isNotEmpty ? positiveCorrelations.take(3).toList() : [];
-    final displayNegatives = negativeCorrelations.isNotEmpty ? negativeCorrelations.take(3).toList() : [];
+    final positiveCorrelations = widget.correlations
+        .where((c) => c['percentage'] >= 50)
+        .toList();
+    final negativeCorrelations = widget.correlations
+        .where((c) => c['percentage'] < 50)
+        .toList();
+
+    final displayPositives = positiveCorrelations.isNotEmpty
+        ? positiveCorrelations.take(3).toList()
+        : [];
+    final displayNegatives = negativeCorrelations.isNotEmpty
+        ? negativeCorrelations.take(3).toList()
+        : [];
 
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
@@ -349,7 +449,9 @@ class _CorrelazioniSectionState extends State<_CorrelazioniSection> {
         ),
         const SizedBox(height: 4),
         Text(
-          context.l10n.translate('Come questa abitudine si relaziona con le altre'),
+          context.l10n.translate(
+            'Come questa abitudine si relaziona con le altre',
+          ),
           style: TextStyle(
             fontFamily: 'Inter',
             fontSize: 12,
@@ -361,7 +463,11 @@ class _CorrelazioniSectionState extends State<_CorrelazioniSection> {
         // POSITIVE CORRELATIONS
         Row(
           children: [
-            const Icon(LucideIcons.trendingUp, size: 16, color: Color(0xFF10B981)),
+            const Icon(
+              LucideIcons.trendingUp,
+              size: 16,
+              color: Color(0xFF10B981),
+            ),
             const SizedBox(width: 8),
             Text(
               context.l10n.translate('Correlazioni Positive'),
@@ -377,38 +483,63 @@ class _CorrelazioniSectionState extends State<_CorrelazioniSection> {
         const SizedBox(height: 16),
         SizedBox(
           height: 210,
-          child: displayPositives.isEmpty 
-            ? Center(child: Text(context.l10n.translate('Nessuna correlazione positiva significativa'), style: TextStyle(color: context.appColors.mutedForeground)))
-            : PageView.builder(
-                controller: _positiveController,
-                itemCount: displayPositives.length,
-                onPageChanged: (i) => setState(() => _positiveIndex = i),
-                itemBuilder: (context, index) {
-                  final c = displayPositives[index];
-                  final goal = c['goal'] as Goal;
-                  return _buildPaddedCard(
-                    _CorrelazioneCard(
-                      habitName: goal.title,
-                      habitColor: goal.color,
-                      strengthText: 'Forte (+${(c['percentage']/100).toStringAsFixed(2)})',
-                      strengthColor: const Color(0xFF10B981),
-                      subtitle: '${c['percentage']}% insieme',
-                      description: 'Quando completi "${widget.currentGoalTitle}", hai una probabilità del ${c['percentage']}% di completare anche "${goal.title}".',
-                      borderColor: const Color(0xFF10B981),
+          child: displayPositives.isEmpty
+              ? Center(
+                  child: Text(
+                    context.l10n.translate(
+                      'Nessuna correlazione positiva significativa',
                     ),
-                  );
-                },
-              ),
+                    style: TextStyle(color: context.appColors.mutedForeground),
+                  ),
+                )
+              : PageView.builder(
+                  controller: _positiveController,
+                  itemCount: displayPositives.length,
+                  onPageChanged: (i) => setState(() => _positiveIndex = i),
+                  itemBuilder: (context, index) {
+                    final c = displayPositives[index];
+                    final goal = c['goal'] as Goal;
+                    return _buildPaddedCard(
+                      _CorrelazioneCard(
+                        habitName: goal.title,
+                        habitColor: goal.color,
+                        strengthText: context.l10n.strongCorrelationStrength(
+                          '+${(c['percentage'] / 100).toStringAsFixed(2)}',
+                        ),
+                        strengthColor: const Color(0xFF10B981),
+                        subtitle: context.l10n.habitTogetherPercent(
+                          c['percentage'] as int,
+                        ),
+                        description: context.l10n
+                            .habitPositiveCorrelationDescription(
+                              widget.currentGoalTitle,
+                              c['percentage'] as int,
+                              goal.title,
+                            ),
+                        borderColor: const Color(0xFF10B981),
+                      ),
+                    );
+                  },
+                ),
         ),
         const SizedBox(height: 12),
-        if (displayPositives.isNotEmpty) _buildDots(displayPositives.length, _positiveIndex, const Color(0xFF10B981)),
+        if (displayPositives.isNotEmpty)
+          _buildDots(
+            displayPositives.length,
+            _positiveIndex,
+            const Color(0xFF10B981),
+          ),
 
         const SizedBox(height: 32),
 
         // NEGATIVE CORRELATIONS
         Row(
           children: [
-            const Icon(LucideIcons.trendingDown, size: 16, color: Color(0xFFEF4444)),
+            const Icon(
+              LucideIcons.trendingDown,
+              size: 16,
+              color: Color(0xFFEF4444),
+            ),
             const SizedBox(width: 8),
             Text(
               context.l10n.translate('Correlazioni Negative'),
@@ -424,31 +555,52 @@ class _CorrelazioniSectionState extends State<_CorrelazioniSection> {
         const SizedBox(height: 16),
         SizedBox(
           height: 210,
-          child: displayNegatives.isEmpty 
-            ? Center(child: Text(context.l10n.translate('Nessuna correlazione negativa significativa'), style: TextStyle(color: context.appColors.mutedForeground)))
-            : PageView.builder(
-                controller: _negativeController,
-                itemCount: displayNegatives.length,
-                onPageChanged: (i) => setState(() => _negativeIndex = i),
-                itemBuilder: (context, index) {
-                  final c = displayNegatives[index];
-                  final goal = c['goal'] as Goal;
-                  return _buildPaddedCard(
-                    _CorrelazioneCard(
-                      habitName: goal.title,
-                      habitColor: goal.color,
-                      strengthText: 'Debole (+${(c['percentage']/100).toStringAsFixed(2)})',
-                      strengthColor: const Color(0xFFEF4444),
-                      subtitle: '${c['percentage']}% insieme',
-                      description: 'Quando completi "${widget.currentGoalTitle}", hai solo una probabilità del ${c['percentage']}% di completare anche "${goal.title}".',
-                      borderColor: const Color(0xFFEF4444),
+          child: displayNegatives.isEmpty
+              ? Center(
+                  child: Text(
+                    context.l10n.translate(
+                      'Nessuna correlazione negativa significativa',
                     ),
-                  );
-                },
-              ),
+                    style: TextStyle(color: context.appColors.mutedForeground),
+                  ),
+                )
+              : PageView.builder(
+                  controller: _negativeController,
+                  itemCount: displayNegatives.length,
+                  onPageChanged: (i) => setState(() => _negativeIndex = i),
+                  itemBuilder: (context, index) {
+                    final c = displayNegatives[index];
+                    final goal = c['goal'] as Goal;
+                    return _buildPaddedCard(
+                      _CorrelazioneCard(
+                        habitName: goal.title,
+                        habitColor: goal.color,
+                        strengthText: context.l10n.weakCorrelationStrength(
+                          '+${(c['percentage'] / 100).toStringAsFixed(2)}',
+                        ),
+                        strengthColor: const Color(0xFFEF4444),
+                        subtitle: context.l10n.habitTogetherPercent(
+                          c['percentage'] as int,
+                        ),
+                        description: context.l10n
+                            .habitNegativeCorrelationDescription(
+                              widget.currentGoalTitle,
+                              c['percentage'] as int,
+                              goal.title,
+                            ),
+                        borderColor: const Color(0xFFEF4444),
+                      ),
+                    );
+                  },
+                ),
         ),
         const SizedBox(height: 12),
-        if (displayNegatives.isNotEmpty) _buildDots(displayNegatives.length, _negativeIndex, const Color(0xFFEF4444)),
+        if (displayNegatives.isNotEmpty)
+          _buildDots(
+            displayNegatives.length,
+            _negativeIndex,
+            const Color(0xFFEF4444),
+          ),
 
         const SizedBox(height: 32),
       ],
@@ -474,7 +626,9 @@ class _CorrelazioniSectionState extends State<_CorrelazioniSection> {
             width: isActive ? 16 : 6,
             height: 6,
             decoration: BoxDecoration(
-              color: isActive ? color : context.appColors.mutedForeground.withValues(alpha: 0.3),
+              color: isActive
+                  ? color
+                  : context.appColors.mutedForeground.withValues(alpha: 0.3),
               borderRadius: BorderRadius.circular(3),
             ),
           );
@@ -525,7 +679,14 @@ class _CorrelazioneCard extends StatelessWidget {
         children: [
           Row(
             children: [
-              Container(width: 10, height: 10, decoration: BoxDecoration(color: habitColor, shape: BoxShape.circle)),
+              Container(
+                width: 10,
+                height: 10,
+                decoration: BoxDecoration(
+                  color: habitColor,
+                  shape: BoxShape.circle,
+                ),
+              ),
               const SizedBox(width: 10),
               Expanded(
                 child: Text(
@@ -553,7 +714,13 @@ class _CorrelazioneCard extends StatelessWidget {
                 ),
               ),
               const SizedBox(width: 6),
-              Text('•', style: TextStyle(color: context.appColors.mutedForeground, fontSize: 12)),
+              Text(
+                '•',
+                style: TextStyle(
+                  color: context.appColors.mutedForeground,
+                  fontSize: 12,
+                ),
+              ),
               const SizedBox(width: 6),
               Text(
                 subtitle,

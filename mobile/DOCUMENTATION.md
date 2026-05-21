@@ -1704,3 +1704,38 @@
     - Converted `'Evolve Pro' + ' ' + context.l10n.translate(title)` concatenation to dynamic string interpolation, resolving two `prefer_interpolation_to_compose_strings` code analyzer warnings.
     - Verified clean static compilation (0 errors, 0 warnings) via `flutter analyze`.
 
+## [2026-05-21 15:28 CEST]: Professional Flutter Localization Migration
+
+*Details*: Replaced the in-code translation map with Flutter's official `gen-l10n` pipeline. Added ARB-based Italian and English resources, generated typed `AppLocalizations`, wired `MaterialApp.router` to `localizationsDelegates` and `supportedLocales`, and changed language settings to support a scalable `system/it/en` preference model. The default now follows the iPhone/app language automatically, while still allowing explicit Italian or English overrides.
+
+*Tech Notes*: Added `flutter_localizations`, `l10n.yaml`, `lib/l10n/app_en.arb`, `lib/l10n/app_it.arb`, and generated localization classes under `lib/l10n/generated/`. Kept a compatibility `translate(String key)` adapter in `lib/core/localization.dart` so existing dynamic translation paths keep working while ARB files become the single source of truth. Updated date formatting to use the active locale, normalized legacy saved language labels such as `Italiano`/`English` back to `system`, added iOS `CFBundleLocalizations`, and localized native iOS permission strings via `en.lproj` and `it.lproj`. Verified with `flutter analyze`, `flutter test`, and `flutter build ios --simulator --debug`.
+
+## [2026-05-21 15:41 CEST]: Life View Title Localization Fix
+
+*Details*: Moved the hardcoded "La Mia Vita Produttiva" title in the life view into the ARB localization pipeline so it now translates with the active app locale.
+
+*Tech Notes*: Added `productiveLifeTitle` to `lib/l10n/app_it.arb` and `lib/l10n/app_en.arb`, regenerated `lib/l10n/generated/`, and updated `lib/ui/widgets/life_view_widget.dart` to use `context.l10n.productiveLifeTitle`. Verified with `flutter analyze` and `flutter test`.
+
+## [2026-05-21 15:44 CEST]: Goals Period Selector Localization Fix
+
+*Details*: Localized the Goals planning selector labels and the period navigator so weekly and monthly headings follow the active app locale instead of using hardcoded Italian month/type names.
+
+*Tech Notes*: Added typed ARB keys for macro goal planning types, the selector header, and lifetime description. Updated `macro_goals_screen.dart` to use localized goal type labels and `intl.DateFormat` for monthly/weekly period titles, including English-specific week range ordering such as `May 15 - 21, 2026`. Updated macro goal statistics type labels to reuse the same localized labels. Verified with `flutter analyze` and `flutter test`.
+
+## [2026-05-21 15:48 CEST]: Goals Empty State Localization Fix
+
+*Details*: Localized the empty state shown when a Goals period has no objectives.
+
+*Tech Notes*: Added `emptyGoalsTitle` and `emptyGoalsSubtitle` to `lib/l10n/app_it.arb` and `lib/l10n/app_en.arb`, regenerated `lib/l10n/generated/`, and updated `macro_goals_screen.dart` to use typed `context.l10n` getters. Verified with `flutter analyze` and `flutter test`.
+
+## [2026-05-21 15:51 CEST]: Performance Analysis Localization Fix
+
+*Details*: Localized the Performance Analysis year selector and removed hardcoded Italian month/type labels from macro goal statistics charts.
+
+*Tech Notes*: Added `allYears` and `selectYearHeader` to the ARB resources, regenerated `lib/l10n/generated/`, and updated `macro_goals_stats_view.dart` to use typed localization for "All years" / "Select year". Replaced hardcoded month arrays in the monthly and historical charts with `intl.DateFormat` based on `context.l10n.localeName`, and localized tooltip labels such as totals, completed counts, and success suffixes. Verified with `flutter analyze` and `flutter test`.
+
+## [2026-05-21 16:12 CEST]: Full App Localization Sweep
+
+*Details*: Performed a deep localization sweep across menus, pop-up flows, provider error modals, chart tooltips, local notifications, AI chat prompts, statistics cards, weekly/date headers, and remaining secondary labels. Removed the remaining high-confidence user-facing Italian hardcoded strings found by targeted `rg`/heuristic scans and moved them into the ARB `it`/`en` pipeline.
+
+*Tech Notes*: Added typed ARB keys for AI suggestions/system prompts, OpenRouter user-facing errors, notification actions/bodies/reminder variants, habit/macro-goal/category error messages, chart units, correlation descriptions, quarter labels, compact statistics labels, and fallback habit names. Updated `notifications.dart` and `openrouter_service.dart` to resolve localized strings from the device locale outside widget context, with English fallback for unsupported locales. Replaced Italian month arrays in weekly and day detail widgets with locale-aware `intl.DateFormat`. Regenerated `lib/l10n/generated/`; `build/l10n_untranslated.txt` is empty (`{}`). Verified with `flutter analyze` and `flutter test`.

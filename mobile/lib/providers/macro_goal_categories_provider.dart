@@ -60,8 +60,10 @@ class MacroGoalCategoriesNotifier extends AsyncNotifier<List<GoalCategory>> {
       if (context != null && context.mounted) {
         ErrorModal.show(
           context,
-          title: context.l10n.translate('Errore durante la creazione della categoria'),
-          message: 'Non siamo riusciti a creare la categoria. Riprova.',
+          title: context.l10n.translate(
+            'Errore durante la creazione della categoria',
+          ),
+          message: context.l10n.categoryCreateFailed,
           details: e.toString(),
         );
       }
@@ -90,8 +92,10 @@ class MacroGoalCategoriesNotifier extends AsyncNotifier<List<GoalCategory>> {
       if (context != null && context.mounted) {
         ErrorModal.show(
           context,
-          title: context.l10n.translate('Errore durante la modifica della categoria'),
-          message: 'Non siamo riusciti ad aggiornare la categoria. Riprova.',
+          title: context.l10n.translate(
+            'Errore durante la modifica della categoria',
+          ),
+          message: context.l10n.categoryUpdateFailed,
           details: e.toString(),
         );
       }
@@ -121,8 +125,8 @@ class MacroGoalCategoriesNotifier extends AsyncNotifier<List<GoalCategory>> {
       if (context != null && context.mounted) {
         ErrorModal.show(
           context,
-          title: 'Errore durante l\'archiviazione della categoria',
-          message: 'Non siamo riusciti ad archiviare la categoria. Riprova.',
+          title: context.l10n.categoryArchiveErrorTitle,
+          message: context.l10n.categoryArchiveFailed,
           details: e.toString(),
         );
       }

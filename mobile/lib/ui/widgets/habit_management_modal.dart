@@ -631,7 +631,7 @@ class _HabitManagementModalState extends ConsumerState<HabitManagementModal> {
                                 ],
                                 Text(
                                   (!isPro && currentHabitsCount >= 5)
-                                      ? 'Sblocca Evolve Pro'
+                                      ? context.l10n.translate('Sblocca Evolve Pro')
                                       : context.l10n.translate('Aggiungi Abitudine'),
                                   style: TextStyle(
                                     fontFamily: 'Inter',

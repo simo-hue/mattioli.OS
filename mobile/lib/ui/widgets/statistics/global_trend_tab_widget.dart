@@ -3,6 +3,7 @@ import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:lucide_icons_flutter/lucide_icons.dart';
 import 'package:fl_chart/fl_chart.dart';
+import 'package:intl/intl.dart';
 import '../../../core/theme.dart';
 import '../../../core/localization.dart';
 import '../../../models/goal.dart';
@@ -12,7 +13,8 @@ class GlobalTrendTabWidget extends ConsumerStatefulWidget {
   const GlobalTrendTabWidget({super.key});
 
   @override
-  ConsumerState<GlobalTrendTabWidget> createState() => _GlobalTrendTabWidgetState();
+  ConsumerState<GlobalTrendTabWidget> createState() =>
+      _GlobalTrendTabWidgetState();
 }
 
 class _GlobalTrendTabWidgetState extends ConsumerState<GlobalTrendTabWidget> {
@@ -46,19 +48,29 @@ class _GlobalTrendTabWidgetState extends ConsumerState<GlobalTrendTabWidget> {
           error: (err, stack) => Container(
             height: 300,
             alignment: Alignment.center,
-            child: Text('${context.l10n.translate('Errore')}: $err', style: TextStyle(color: context.appColors.mutedForeground)),
+            child: Text(
+              '${context.l10n.translate('Errore')}: $err',
+              style: TextStyle(color: context.appColors.mutedForeground),
+            ),
           ),
         ),
         const SizedBox(height: 24),
         _AbitudiniCriticheSection(goals: goals, logs: logs),
         const SizedBox(height: 24),
-        _MiglioriAbitudiniSection(goals: goals, logs: logs, timeframe: _chartTimeframe),
+        _MiglioriAbitudiniSection(
+          goals: goals,
+          logs: logs,
+          timeframe: _chartTimeframe,
+        ),
         const SizedBox(height: 32),
       ],
     );
   }
 
-  Widget _buildTrendChartSection(List<Goal> goals, List<Map<String, dynamic>> trendData) {
+  Widget _buildTrendChartSection(
+    List<Goal> goals,
+    List<Map<String, dynamic>> trendData,
+  ) {
     final List<FlSpot> spots = [];
     final List<String> dates = [];
     final double maxX;
@@ -81,12 +93,14 @@ class _GlobalTrendTabWidgetState extends ConsumerState<GlobalTrendTabWidget> {
         final rate = (item['rate'] as num?)?.toDouble() ?? 100.0;
         spots.add(FlSpot(i.toDouble(), rate));
         final date = DateTime.parse(item['date'] as String);
-        dates.add('${date.day.toString().padLeft(2, '0')}/${date.month.toString().padLeft(2, '0')}');
+        dates.add(
+          '${date.day.toString().padLeft(2, '0')}/${date.month.toString().padLeft(2, '0')}',
+        );
       }
       maxX = spots.isNotEmpty ? (spots.length - 1).toDouble() : 0;
-      title = 'Totale';
-      percentage = spots.isNotEmpty 
-          ? '${(spots.map((e) => e.y).reduce((a, b) => a + b) / spots.length).toStringAsFixed(1)}%' 
+      title = context.l10n.translate('Totale');
+      percentage = spots.isNotEmpty
+          ? '${(spots.map((e) => e.y).reduce((a, b) => a + b) / spots.length).toStringAsFixed(1)}%'
           : '100%';
       delta = 'N/A';
       isPositive = true;
@@ -95,9 +109,19 @@ class _GlobalTrendTabWidgetState extends ConsumerState<GlobalTrendTabWidget> {
       final previous = trendData.sublist(0, halfLength);
       final current = trendData.sublist(halfLength);
 
-      final currentAvg = current.isEmpty ? 100.0 : current.map((e) => (e['rate'] as num?)?.toDouble() ?? 100.0).reduce((a, b) => a + b) / current.length;
-      final prevAvg = previous.isEmpty ? 100.0 : previous.map((e) => (e['rate'] as num?)?.toDouble() ?? 100.0).reduce((a, b) => a + b) / previous.length;
-      
+      final currentAvg = current.isEmpty
+          ? 100.0
+          : current
+                    .map((e) => (e['rate'] as num?)?.toDouble() ?? 100.0)
+                    .reduce((a, b) => a + b) /
+                current.length;
+      final prevAvg = previous.isEmpty
+          ? 100.0
+          : previous
+                    .map((e) => (e['rate'] as num?)?.toDouble() ?? 100.0)
+                    .reduce((a, b) => a + b) /
+                previous.length;
+
       final deltaValue = currentAvg - prevAvg;
       delta = '${deltaValue >= 0 ? '+' : ''}${deltaValue.toStringAsFixed(1)}%';
       isPositive = deltaValue >= 0;
@@ -107,24 +131,25 @@ class _GlobalTrendTabWidgetState extends ConsumerState<GlobalTrendTabWidget> {
         final now = DateTime.now();
         final List<double> rates = List.filled(12, 100.0);
         final List<String> monthLabels = [];
-        final monthsIT = ['Gen', 'Feb', 'Mar', 'Apr', 'Mag', 'Giu', 'Lug', 'Ago', 'Set', 'Ott', 'Nov', 'Dic'];
-        
+        final monthFormatter = DateFormat.MMM(context.l10n.localeName);
+
         for (int i = 11; i >= 0; i--) {
           final date = DateTime(now.year, now.month - i, 1);
-          monthLabels.add(monthsIT[date.month - 1]);
+          monthLabels.add(monthFormatter.format(date));
         }
-        
+
         for (final item in trendData) {
           final date = DateTime.parse(item['date'] as String);
           final rate = (item['rate'] as num?)?.toDouble() ?? 100.0;
-          
-          final diffMonths = (now.year - date.year) * 12 + (now.month - date.month);
+
+          final diffMonths =
+              (now.year - date.year) * 12 + (now.month - date.month);
           if (diffMonths >= 0 && diffMonths < 12) {
             final index = 11 - diffMonths;
             rates[index] = rate;
           }
         }
-        
+
         for (int i = 0; i < 12; i++) {
           spots.add(FlSpot(i.toDouble(), rates[i]));
           dates.add(monthLabels[i]);
@@ -137,19 +162,24 @@ class _GlobalTrendTabWidgetState extends ConsumerState<GlobalTrendTabWidget> {
           final item = displayData[i];
           final rate = (item['rate'] as num?)?.toDouble() ?? 100.0;
           spots.add(FlSpot(i.toDouble(), rate));
-          
+
           final date = DateTime.parse(item['date'] as String);
           if (_chartTimeframe == 'timeframe_week_short') {
-            final weekDays = ['mon', 'tue', 'wed', 'thu', 'fri', 'sat', 'sun'];
-            dates.add(weekDays[date.weekday - 1]);
+            dates.add(DateFormat.E(context.l10n.localeName).format(date));
           } else {
-            dates.add('${date.day.toString().padLeft(2, '0')}/${date.month.toString().padLeft(2, '0')}');
+            dates.add(
+              '${date.day.toString().padLeft(2, '0')}/${date.month.toString().padLeft(2, '0')}',
+            );
           }
         }
 
         maxX = displayData.isNotEmpty ? (displayData.length - 1).toDouble() : 0;
       }
-      title = _chartTimeframe == 'timeframe_week_short' ? context.l10n.translate('Trend Settimanale') : _chartTimeframe == 'timeframe_month_short' ? context.l10n.translate('Trend Mensile') : context.l10n.translate('Trend Annuale');
+      title = _chartTimeframe == 'timeframe_week_short'
+          ? context.l10n.translate('Trend Settimanale')
+          : _chartTimeframe == 'timeframe_month_short'
+          ? context.l10n.translate('Trend Mensile')
+          : context.l10n.translate('Trend Annuale');
     }
 
     return Container(
@@ -173,7 +203,9 @@ class _GlobalTrendTabWidgetState extends ConsumerState<GlobalTrendTabWidget> {
                 ),
               ),
               Text(
-                _chartTimeframe == 'all' ? context.l10n.translate('Trend Globale') : title,
+                _chartTimeframe == 'timeframe_all'
+                    ? context.l10n.translate('Trend Globale')
+                    : title,
                 style: TextStyle(
                   fontFamily: 'Inter',
                   fontSize: 12,
@@ -205,18 +237,29 @@ class _GlobalTrendTabWidgetState extends ConsumerState<GlobalTrendTabWidget> {
                 Padding(
                   padding: const EdgeInsets.only(bottom: 4),
                   child: Container(
-                    padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+                    padding: const EdgeInsets.symmetric(
+                      horizontal: 8,
+                      vertical: 4,
+                    ),
                     decoration: BoxDecoration(
-                      color: (isPositive ? const Color(0xFF10B981) : const Color(0xFFEF4444)).withValues(alpha: 0.1),
+                      color:
+                          (isPositive
+                                  ? const Color(0xFF10B981)
+                                  : const Color(0xFFEF4444))
+                              .withValues(alpha: 0.1),
                       borderRadius: BorderRadius.circular(8),
                     ),
                     child: Row(
                       mainAxisSize: MainAxisSize.min,
                       children: [
                         Icon(
-                          isPositive ? LucideIcons.trendingUp : LucideIcons.trendingDown,
+                          isPositive
+                              ? LucideIcons.trendingUp
+                              : LucideIcons.trendingDown,
                           size: 14,
-                          color: isPositive ? const Color(0xFF10B981) : const Color(0xFFEF4444),
+                          color: isPositive
+                              ? const Color(0xFF10B981)
+                              : const Color(0xFFEF4444),
                         ),
                         const SizedBox(width: 4),
                         Text(
@@ -225,7 +268,9 @@ class _GlobalTrendTabWidgetState extends ConsumerState<GlobalTrendTabWidget> {
                             fontFamily: 'Inter',
                             fontSize: 12,
                             fontWeight: FontWeight.w800,
-                            color: isPositive ? const Color(0xFF10B981) : const Color(0xFFEF4444),
+                            color: isPositive
+                                ? const Color(0xFF10B981)
+                                : const Color(0xFFEF4444),
                           ),
                         ),
                       ],
@@ -251,8 +296,12 @@ class _GlobalTrendTabWidgetState extends ConsumerState<GlobalTrendTabWidget> {
                 ),
                 titlesData: FlTitlesData(
                   show: true,
-                  rightTitles: const AxisTitles(sideTitles: SideTitles(showTitles: false)),
-                  topTitles: const AxisTitles(sideTitles: SideTitles(showTitles: false)),
+                  rightTitles: const AxisTitles(
+                    sideTitles: SideTitles(showTitles: false),
+                  ),
+                  topTitles: const AxisTitles(
+                    sideTitles: SideTitles(showTitles: false),
+                  ),
                   leftTitles: AxisTitles(
                     sideTitles: SideTitles(
                       showTitles: true,
@@ -277,12 +326,15 @@ class _GlobalTrendTabWidgetState extends ConsumerState<GlobalTrendTabWidget> {
                     sideTitles: SideTitles(
                       showTitles: true,
                       reservedSize: 32,
-                      interval: _chartTimeframe == 'timeframe_week_short' ? 1 : _chartTimeframe == 'timeframe_month_short' ? 6 : 3,
+                      interval: _chartTimeframe == 'timeframe_week_short'
+                          ? 1
+                          : _chartTimeframe == 'timeframe_month_short'
+                          ? 6
+                          : 3,
                       getTitlesWidget: (value, meta) {
-                        if (value.toInt() < dates.length && value.toInt() >= 0) {
-                          final String label = _chartTimeframe == 'timeframe_week_short' 
-                              ? context.l10n.translate(dates[value.toInt()]).toLowerCase()
-                              : dates[value.toInt()];
+                        if (value.toInt() < dates.length &&
+                            value.toInt() >= 0) {
+                          final String label = dates[value.toInt()];
                           return SideTitleWidget(
                             axisSide: meta.axisSide,
                             space: 8,
@@ -316,19 +368,24 @@ class _GlobalTrendTabWidgetState extends ConsumerState<GlobalTrendTabWidget> {
                     isStrokeCapRound: true,
                     dotData: FlDotData(
                       show: _chartTimeframe == 'timeframe_week_short',
-                      getDotPainter: (spot, percent, barData, index) => FlDotCirclePainter(
-                        radius: 3,
-                        color: Colors.white,
-                        strokeWidth: 2,
-                        strokeColor: Theme.of(context).colorScheme.primary,
-                      ),
+                      getDotPainter: (spot, percent, barData, index) =>
+                          FlDotCirclePainter(
+                            radius: 3,
+                            color: Colors.white,
+                            strokeWidth: 2,
+                            strokeColor: Theme.of(context).colorScheme.primary,
+                          ),
                     ),
                     belowBarData: BarAreaData(
                       show: true,
                       gradient: LinearGradient(
                         colors: [
-                          Theme.of(context).colorScheme.primary.withValues(alpha: 0.2),
-                          Theme.of(context).colorScheme.primary.withValues(alpha: 0.0),
+                          Theme.of(
+                            context,
+                          ).colorScheme.primary.withValues(alpha: 0.2),
+                          Theme.of(
+                            context,
+                          ).colorScheme.primary.withValues(alpha: 0.0),
                         ],
                         begin: Alignment.topCenter,
                         end: Alignment.bottomCenter,
@@ -338,13 +395,18 @@ class _GlobalTrendTabWidgetState extends ConsumerState<GlobalTrendTabWidget> {
                 ],
                 lineTouchData: LineTouchData(
                   touchTooltipData: LineTouchTooltipData(
-                    getTooltipColor: (touchedSpot) => context.appColors.card.withValues(alpha: 0.9),
+                    getTooltipColor: (touchedSpot) =>
+                        context.appColors.card.withValues(alpha: 0.9),
                     tooltipRoundedRadius: 8,
                     getTooltipItems: (List<LineBarSpot> touchedBarSpots) {
                       return touchedBarSpots.map((barSpot) {
                         return LineTooltipItem(
                           '${barSpot.y.toStringAsFixed(1)}%',
-                          TextStyle(color: context.appColors.foreground, fontWeight: FontWeight.bold, fontSize: 12),
+                          TextStyle(
+                            color: context.appColors.foreground,
+                            fontWeight: FontWeight.bold,
+                            fontSize: 12,
+                          ),
                         );
                       }).toList();
                     },
@@ -359,11 +421,15 @@ class _GlobalTrendTabWidgetState extends ConsumerState<GlobalTrendTabWidget> {
     );
   }
 
-
-
   Widget _buildPremiumSelector() {
     final options = ['week', 'month', 'year', 'all'];
-    final selectedKey = _chartTimeframe == 'timeframe_week_short' ? 'week' : _chartTimeframe == 'timeframe_month_short' ? 'month' : _chartTimeframe == 'timeframe_year_short' ? 'year' : 'all';
+    final selectedKey = _chartTimeframe == 'timeframe_week_short'
+        ? 'week'
+        : _chartTimeframe == 'timeframe_month_short'
+        ? 'month'
+        : _chartTimeframe == 'timeframe_year_short'
+        ? 'year'
+        : 'all';
 
     final Map<String, String> italianLabels = {
       'week': context.l10n.translate('Settimana'),
@@ -406,10 +472,20 @@ class _GlobalTrendTabWidgetState extends ConsumerState<GlobalTrendTabWidget> {
                 curve: Curves.easeOutCubic,
                 padding: const EdgeInsets.symmetric(vertical: 10),
                 decoration: BoxDecoration(
-                  color: isSelected ? Theme.of(context).colorScheme.primary : Colors.transparent,
+                  color: isSelected
+                      ? Theme.of(context).colorScheme.primary
+                      : Colors.transparent,
                   borderRadius: BorderRadius.circular(12),
-                  boxShadow: isSelected 
-                      ? [BoxShadow(color: Theme.of(context).colorScheme.primary.withValues(alpha: 0.2), blurRadius: 8, offset: const Offset(0, 4))] 
+                  boxShadow: isSelected
+                      ? [
+                          BoxShadow(
+                            color: Theme.of(
+                              context,
+                            ).colorScheme.primary.withValues(alpha: 0.2),
+                            blurRadius: 8,
+                            offset: const Offset(0, 4),
+                          ),
+                        ]
                       : null,
                 ),
                 child: Text(
@@ -419,7 +495,9 @@ class _GlobalTrendTabWidgetState extends ConsumerState<GlobalTrendTabWidget> {
                     fontFamily: 'Inter',
                     fontSize: 12,
                     fontWeight: isSelected ? FontWeight.w800 : FontWeight.w600,
-                    color: isSelected ? context.appColors.background : context.appColors.mutedForeground,
+                    color: isSelected
+                        ? context.appColors.background
+                        : context.appColors.mutedForeground,
                   ),
                 ),
               ),
@@ -435,13 +513,19 @@ class _MiglioriAbitudiniSection extends ConsumerStatefulWidget {
   final List<Goal> goals;
   final Map<String, Map<String, String>> logs;
   final String timeframe;
-  const _MiglioriAbitudiniSection({required this.goals, required this.logs, required this.timeframe});
+  const _MiglioriAbitudiniSection({
+    required this.goals,
+    required this.logs,
+    required this.timeframe,
+  });
 
   @override
-  ConsumerState<_MiglioriAbitudiniSection> createState() => _MiglioriAbitudiniSectionState();
+  ConsumerState<_MiglioriAbitudiniSection> createState() =>
+      _MiglioriAbitudiniSectionState();
 }
 
-class _MiglioriAbitudiniSectionState extends ConsumerState<_MiglioriAbitudiniSection> {
+class _MiglioriAbitudiniSectionState
+    extends ConsumerState<_MiglioriAbitudiniSection> {
   late PageController _pageController;
   int _currentPage = 0;
 
@@ -482,20 +566,23 @@ class _MiglioriAbitudiniSectionState extends ConsumerState<_MiglioriAbitudiniSec
                   title: context.l10n.translate('Tutto alla grande!'),
                   rate: '100%',
                   color: Color(0xFF10B981),
-                  streak: '0 giorni',
-                  desc: 'Tutte le tue abitudini stanno mantenendo o migliorando il loro trend! Continua così!',
-                )
+                  streak: '0 ${context.l10n.translate('giorni')}',
+                  desc: context.l10n.allHabitsStableDescription,
+                ),
               ]
             : bestHabits.take(3).map((item) {
                 final habit = item['habit'] as Goal;
                 final rate = item['rate'] as double;
-                
+
                 return _MiglioreCard(
                   title: habit.title,
                   rate: '${(rate * 100).toStringAsFixed(0)}%',
                   color: const Color(0xFF10B981),
-                  streak: '${item['streak']} giorni',
-                  desc: 'Hai completato questa abitudine il ${(rate * 100).toStringAsFixed(0)}% delle volte nel periodo selezionato.',
+                  streak:
+                      '${item['streak']} ${context.l10n.translate('giorni')}',
+                  desc: context.l10n.habitCompletionPeriodDescription(
+                    (rate * 100).toStringAsFixed(0),
+                  ),
                 );
               }).toList();
 
@@ -504,10 +591,14 @@ class _MiglioriAbitudiniSectionState extends ConsumerState<_MiglioriAbitudiniSec
           children: [
             Row(
               children: [
-                const Icon(LucideIcons.trophy, size: 16, color: Color(0xFF10B981)),
+                const Icon(
+                  LucideIcons.trophy,
+                  size: 16,
+                  color: Color(0xFF10B981),
+                ),
                 const SizedBox(width: 8),
                 Text(
-                  'Abitudini Migliori',
+                  context.l10n.bestHabitsTitle,
                   style: TextStyle(
                     fontFamily: 'Inter',
                     fontSize: 14,
@@ -527,7 +618,7 @@ class _MiglioriAbitudiniSectionState extends ConsumerState<_MiglioriAbitudiniSec
               ),
             ),
             const SizedBox(height: 16),
-            
+
             SizedBox(
               height: 180,
               child: PageView.builder(
@@ -542,7 +633,7 @@ class _MiglioriAbitudiniSectionState extends ConsumerState<_MiglioriAbitudiniSec
                 },
               ),
             ),
-            
+
             const SizedBox(height: 12),
             Center(
               child: Row(
@@ -555,9 +646,11 @@ class _MiglioriAbitudiniSectionState extends ConsumerState<_MiglioriAbitudiniSec
                     width: isActive ? 16 : 6,
                     height: 6,
                     decoration: BoxDecoration(
-                      color: isActive 
+                      color: isActive
                           ? const Color(0xFF10B981)
-                          : context.appColors.mutedForeground.withValues(alpha: 0.3),
+                          : context.appColors.mutedForeground.withValues(
+                              alpha: 0.3,
+                            ),
                       borderRadius: BorderRadius.circular(3),
                     ),
                   );
@@ -573,7 +666,12 @@ class _MiglioriAbitudiniSectionState extends ConsumerState<_MiglioriAbitudiniSec
       ),
       error: (err, stack) => SizedBox(
         height: 200,
-        child: Center(child: Text('${context.l10n.translate('Errore')}: $err', style: TextStyle(color: context.appColors.mutedForeground))),
+        child: Center(
+          child: Text(
+            '${context.l10n.translate('Errore')}: $err',
+            style: TextStyle(color: context.appColors.mutedForeground),
+          ),
+        ),
       ),
     );
   }
@@ -611,9 +709,24 @@ class _MiglioreCard extends StatelessWidget {
             children: [
               Row(
                 children: [
-                  Container(width: 8, height: 8, decoration: BoxDecoration(color: color, shape: BoxShape.circle)),
+                  Container(
+                    width: 8,
+                    height: 8,
+                    decoration: BoxDecoration(
+                      color: color,
+                      shape: BoxShape.circle,
+                    ),
+                  ),
                   const SizedBox(width: 8),
-                  Text(title, style: TextStyle(fontFamily: 'Inter', fontSize: 15, fontWeight: FontWeight.w700, color: context.appColors.foreground)),
+                  Text(
+                    title,
+                    style: TextStyle(
+                      fontFamily: 'Inter',
+                      fontSize: 15,
+                      fontWeight: FontWeight.w700,
+                      color: context.appColors.foreground,
+                    ),
+                  ),
                 ],
               ),
               Container(
@@ -627,7 +740,15 @@ class _MiglioreCard extends StatelessWidget {
                   children: [
                     Icon(LucideIcons.trendingUp, size: 12, color: color),
                     const SizedBox(width: 4),
-                    Text(rate, style: TextStyle(fontFamily: 'Inter', fontSize: 11, fontWeight: FontWeight.w800, color: color)),
+                    Text(
+                      rate,
+                      style: TextStyle(
+                        fontFamily: 'Inter',
+                        fontSize: 11,
+                        fontWeight: FontWeight.w800,
+                        color: color,
+                      ),
+                    ),
                   ],
                 ),
               ),
@@ -637,7 +758,12 @@ class _MiglioreCard extends StatelessWidget {
           Expanded(
             child: Text(
               desc,
-              style: TextStyle(fontFamily: 'Inter', fontSize: 12, color: context.appColors.mutedForeground, height: 1.4),
+              style: TextStyle(
+                fontFamily: 'Inter',
+                fontSize: 12,
+                color: context.appColors.mutedForeground,
+                height: 1.4,
+              ),
               maxLines: 3,
               overflow: TextOverflow.ellipsis,
             ),
@@ -647,8 +773,23 @@ class _MiglioreCard extends StatelessWidget {
             children: [
               const Icon(LucideIcons.flame, size: 14, color: Colors.grey),
               const SizedBox(width: 6),
-              Text('${context.l10n.translate('Serie Attuale')}: ', style: TextStyle(fontFamily: 'Inter', fontSize: 12, color: context.appColors.mutedForeground)),
-              Text(streak, style: TextStyle(fontFamily: 'Inter', fontSize: 12, fontWeight: FontWeight.w700, color: color)),
+              Text(
+                '${context.l10n.translate('Serie Attuale')}: ',
+                style: TextStyle(
+                  fontFamily: 'Inter',
+                  fontSize: 12,
+                  color: context.appColors.mutedForeground,
+                ),
+              ),
+              Text(
+                streak,
+                style: TextStyle(
+                  fontFamily: 'Inter',
+                  fontSize: 12,
+                  fontWeight: FontWeight.w700,
+                  color: color,
+                ),
+              ),
             ],
           ),
         ],
@@ -663,10 +804,12 @@ class _AbitudiniCriticheSection extends ConsumerStatefulWidget {
   const _AbitudiniCriticheSection({required this.goals, required this.logs});
 
   @override
-  ConsumerState<_AbitudiniCriticheSection> createState() => _AbitudiniCriticheSectionState();
+  ConsumerState<_AbitudiniCriticheSection> createState() =>
+      _AbitudiniCriticheSectionState();
 }
 
-class _AbitudiniCriticheSectionState extends ConsumerState<_AbitudiniCriticheSection> {
+class _AbitudiniCriticheSectionState
+    extends ConsumerState<_AbitudiniCriticheSection> {
   late PageController _pageController;
   int _currentPage = 0;
 
@@ -708,22 +851,26 @@ class _AbitudiniCriticheSectionState extends ConsumerState<_AbitudiniCriticheSec
                   drop: '0%',
                   trend: 'trending_up',
                   color: Color(0xFF10B981),
-                  streak: '0 giorni',
-                  desc: 'Tutte le tue abitudini stanno mantenendo o migliorando il loro trend! Continua così!',
-                )
+                  streak: '0 ${context.l10n.translate('giorni')}',
+                  desc: context.l10n.allHabitsStableDescription,
+                ),
               ]
             : criticalHabits.take(3).map((item) {
                 final habit = item['habit'] as Goal;
                 final drop = item['drop'] as double;
                 final negStreak = item['negStreak'] as int;
-                
+
                 return _CriticaCard(
                   title: habit.title,
                   drop: '-${drop.toStringAsFixed(0)}%',
                   trend: 'trending_down',
-                  color: drop > 30 ? const Color(0xFFEF4444) : const Color(0xFFF97316),
-                  streak: '$negStreak giorni',
-                  desc: 'Questa abitudine ha perso il ${drop.toStringAsFixed(0)}% di costanza nell\'ultima settimana rispetto alla precedente.',
+                  color: drop > 30
+                      ? const Color(0xFFEF4444)
+                      : const Color(0xFFF97316),
+                  streak: '$negStreak ${context.l10n.translate('giorni')}',
+                  desc: context.l10n.habitLostConsistencyDescription(
+                    drop.toStringAsFixed(0),
+                  ),
                 );
               }).toList();
 
@@ -732,7 +879,11 @@ class _AbitudiniCriticheSectionState extends ConsumerState<_AbitudiniCriticheSec
           children: [
             Row(
               children: [
-                const Icon(LucideIcons.flame, size: 16, color: Color(0xFFEF4444)),
+                const Icon(
+                  LucideIcons.flame,
+                  size: 16,
+                  color: Color(0xFFEF4444),
+                ),
                 const SizedBox(width: 8),
                 Text(
                   context.l10n.translate('Abitudini Critiche'),
@@ -747,7 +898,7 @@ class _AbitudiniCriticheSectionState extends ConsumerState<_AbitudiniCriticheSec
             ),
             const SizedBox(height: 4),
             Text(
-              'Le abitudini che stanno peggiorando di più.',
+              context.l10n.worseningHabitsDescription,
               style: TextStyle(
                 fontFamily: 'Inter',
                 fontSize: 11,
@@ -755,7 +906,7 @@ class _AbitudiniCriticheSectionState extends ConsumerState<_AbitudiniCriticheSec
               ),
             ),
             const SizedBox(height: 16),
-            
+
             SizedBox(
               height: 180,
               child: PageView.builder(
@@ -770,7 +921,7 @@ class _AbitudiniCriticheSectionState extends ConsumerState<_AbitudiniCriticheSec
                 },
               ),
             ),
-            
+
             const SizedBox(height: 12),
             Center(
               child: Row(
@@ -783,9 +934,11 @@ class _AbitudiniCriticheSectionState extends ConsumerState<_AbitudiniCriticheSec
                     width: isActive ? 16 : 6,
                     height: 6,
                     decoration: BoxDecoration(
-                      color: isActive 
+                      color: isActive
                           ? const Color(0xFFEF4444)
-                          : context.appColors.mutedForeground.withValues(alpha: 0.3),
+                          : context.appColors.mutedForeground.withValues(
+                              alpha: 0.3,
+                            ),
                       borderRadius: BorderRadius.circular(3),
                     ),
                   );
@@ -801,7 +954,12 @@ class _AbitudiniCriticheSectionState extends ConsumerState<_AbitudiniCriticheSec
       ),
       error: (err, stack) => SizedBox(
         height: 200,
-        child: Center(child: Text('${context.l10n.translate('Errore')}: $err', style: TextStyle(color: context.appColors.mutedForeground))),
+        child: Center(
+          child: Text(
+            '${context.l10n.translate('Errore')}: $err',
+            style: TextStyle(color: context.appColors.mutedForeground),
+          ),
+        ),
       ),
     );
   }
@@ -841,9 +999,24 @@ class _CriticaCard extends StatelessWidget {
             children: [
               Row(
                 children: [
-                  Container(width: 8, height: 8, decoration: BoxDecoration(color: color, shape: BoxShape.circle)),
+                  Container(
+                    width: 8,
+                    height: 8,
+                    decoration: BoxDecoration(
+                      color: color,
+                      shape: BoxShape.circle,
+                    ),
+                  ),
                   const SizedBox(width: 8),
-                  Text(title, style: TextStyle(fontFamily: 'Inter', fontSize: 15, fontWeight: FontWeight.w700, color: context.appColors.foreground)),
+                  Text(
+                    title,
+                    style: TextStyle(
+                      fontFamily: 'Inter',
+                      fontSize: 15,
+                      fontWeight: FontWeight.w700,
+                      color: context.appColors.foreground,
+                    ),
+                  ),
                 ],
               ),
               Container(
@@ -857,7 +1030,15 @@ class _CriticaCard extends StatelessWidget {
                   children: [
                     Icon(LucideIcons.trendingDown, size: 12, color: color),
                     const SizedBox(width: 4),
-                    Text(drop, style: TextStyle(fontFamily: 'Inter', fontSize: 11, fontWeight: FontWeight.w800, color: color)),
+                    Text(
+                      drop,
+                      style: TextStyle(
+                        fontFamily: 'Inter',
+                        fontSize: 11,
+                        fontWeight: FontWeight.w800,
+                        color: color,
+                      ),
+                    ),
                   ],
                 ),
               ),
@@ -867,7 +1048,12 @@ class _CriticaCard extends StatelessWidget {
           Expanded(
             child: Text(
               desc,
-              style: TextStyle(fontFamily: 'Inter', fontSize: 12, color: context.appColors.mutedForeground, height: 1.4),
+              style: TextStyle(
+                fontFamily: 'Inter',
+                fontSize: 12,
+                color: context.appColors.mutedForeground,
+                height: 1.4,
+              ),
               maxLines: 3,
               overflow: TextOverflow.ellipsis,
             ),
@@ -877,8 +1063,23 @@ class _CriticaCard extends StatelessWidget {
             children: [
               const Icon(LucideIcons.calendarX, size: 14, color: Colors.grey),
               const SizedBox(width: 6),
-              Text('${context.l10n.translate('Streak Negativa')}: ', style: TextStyle(fontFamily: 'Inter', fontSize: 12, color: context.appColors.mutedForeground)),
-              Text(streak, style: TextStyle(fontFamily: 'Inter', fontSize: 12, fontWeight: FontWeight.w700, color: color)),
+              Text(
+                '${context.l10n.translate('Streak Negativa')}: ',
+                style: TextStyle(
+                  fontFamily: 'Inter',
+                  fontSize: 12,
+                  color: context.appColors.mutedForeground,
+                ),
+              ),
+              Text(
+                streak,
+                style: TextStyle(
+                  fontFamily: 'Inter',
+                  fontSize: 12,
+                  fontWeight: FontWeight.w700,
+                  color: color,
+                ),
+              ),
             ],
           ),
         ],

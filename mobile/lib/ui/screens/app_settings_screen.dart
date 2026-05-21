@@ -15,16 +15,17 @@ class AppSettingsScreen extends ConsumerWidget {
 
   static Route route() {
     return PageRouteBuilder(
-      pageBuilder: (context, animation, secondaryAnimation) => const AppSettingsScreen(),
+      pageBuilder: (context, animation, secondaryAnimation) =>
+          const AppSettingsScreen(),
       transitionsBuilder: (context, animation, secondaryAnimation, child) {
         const begin = Offset(1.0, 0.0);
         const end = Offset.zero;
         const curve = Curves.easeOutCubic;
-        var tween = Tween(begin: begin, end: end).chain(CurveTween(curve: curve));
-        return SlideTransition(
-          position: animation.drive(tween),
-          child: child,
-        );
+        var tween = Tween(
+          begin: begin,
+          end: end,
+        ).chain(CurveTween(curve: curve));
+        return SlideTransition(position: animation.drive(tween), child: child);
       },
       transitionDuration: const Duration(milliseconds: 400),
     );
@@ -62,7 +63,10 @@ class AppSettingsScreen extends ConsumerWidget {
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            _buildSectionHeader(context, context.l10n.translate('ASPETTO & VISUAL')),
+            _buildSectionHeader(
+              context,
+              context.l10n.translate('ASPETTO & VISUAL'),
+            ),
             _buildSettingsCard(context, [
               _buildSwitchRow(
                 context: context,
@@ -71,7 +75,9 @@ class AppSettingsScreen extends ConsumerWidget {
                 value: settings.themeMode == 'dark',
                 onChanged: (val) {
                   final currentSettings = ref.read(settingsProvider);
-                  notifier.updateSettings(currentSettings.copyWith(themeMode: val ? 'dark' : 'light'));
+                  notifier.updateSettings(
+                    currentSettings.copyWith(themeMode: val ? 'dark' : 'light'),
+                  );
                   ref.hapticLight();
                 },
               ),
@@ -86,13 +92,16 @@ class AppSettingsScreen extends ConsumerWidget {
                   decoration: BoxDecoration(
                     color: settings.accentColor,
                     shape: BoxShape.circle,
-                    border: Border.all(color: Colors.white.withValues(alpha: 0.2), width: 1.5),
+                    border: Border.all(
+                      color: Colors.white.withValues(alpha: 0.2),
+                      width: 1.5,
+                    ),
                     boxShadow: [
                       BoxShadow(
                         color: settings.accentColor.withValues(alpha: 0.3),
                         blurRadius: 6,
                         spreadRadius: 1,
-                      )
+                      ),
                     ],
                   ),
                 ),
@@ -103,7 +112,10 @@ class AppSettingsScreen extends ConsumerWidget {
               ),
             ]),
             const SizedBox(height: 32),
-            _buildSectionHeader(context, context.l10n.translate('CALENDARIO & DASHBOARD')),
+            _buildSectionHeader(
+              context,
+              context.l10n.translate('CALENDARIO & DASHBOARD'),
+            ),
             _buildSettingsCard(context, [
               _buildActionRow(
                 context: context,
@@ -111,9 +123,15 @@ class AppSettingsScreen extends ConsumerWidget {
                 title: context.l10n.translate('Vista Predefinita'),
                 trailingText: (() {
                   final v = settings.defaultCalendarView.toLowerCase();
-                  if (v == 'week' || v == 'settimana') return context.l10n.translate('Settimana');
-                  if (v == 'month' || v == 'mese') return context.l10n.translate('Mese');
-                  if (v == 'year' || v == 'anno') return context.l10n.translate('Anno');
+                  if (v == 'week' || v == 'settimana') {
+                    return context.l10n.translate('Settimana');
+                  }
+                  if (v == 'month' || v == 'mese') {
+                    return context.l10n.translate('Mese');
+                  }
+                  if (v == 'year' || v == 'anno') {
+                    return context.l10n.translate('Anno');
+                  }
                   if (v == 'vita') return context.l10n.translate('Vita');
                   return context.l10n.translate('Settimana');
                 })().toUpperCase(),
@@ -125,7 +143,9 @@ class AppSettingsScreen extends ConsumerWidget {
                     builder: (context) => Container(
                       decoration: BoxDecoration(
                         color: context.appColors.card,
-                        borderRadius: const BorderRadius.vertical(top: Radius.circular(24)),
+                        borderRadius: const BorderRadius.vertical(
+                          top: Radius.circular(24),
+                        ),
                         border: Border.all(color: context.appColors.border),
                       ),
                       child: Column(
@@ -150,10 +170,34 @@ class AppSettingsScreen extends ConsumerWidget {
                             ),
                           ),
                           const SizedBox(height: 24),
-                          _buildViewOption(context, ref, context.l10n.translate('Mese'), 'mese', settings.defaultCalendarView),
-                          _buildViewOption(context, ref, context.l10n.translate('Settimana'), 'settimana', settings.defaultCalendarView),
-                          _buildViewOption(context, ref, context.l10n.translate('Anno'), 'anno', settings.defaultCalendarView),
-                          _buildViewOption(context, ref, context.l10n.translate('Vita'), 'vita', settings.defaultCalendarView),
+                          _buildViewOption(
+                            context,
+                            ref,
+                            context.l10n.translate('Mese'),
+                            'mese',
+                            settings.defaultCalendarView,
+                          ),
+                          _buildViewOption(
+                            context,
+                            ref,
+                            context.l10n.translate('Settimana'),
+                            'settimana',
+                            settings.defaultCalendarView,
+                          ),
+                          _buildViewOption(
+                            context,
+                            ref,
+                            context.l10n.translate('Anno'),
+                            'anno',
+                            settings.defaultCalendarView,
+                          ),
+                          _buildViewOption(
+                            context,
+                            ref,
+                            context.l10n.translate('Vita'),
+                            'vita',
+                            settings.defaultCalendarView,
+                          ),
                           const SizedBox(height: 40),
                         ],
                       ),
@@ -163,7 +207,10 @@ class AppSettingsScreen extends ConsumerWidget {
               ),
             ]),
             const SizedBox(height: 32),
-            _buildSectionHeader(context, context.l10n.translate('ESPERIENZA UTENTE')),
+            _buildSectionHeader(
+              context,
+              context.l10n.translate('ESPERIENZA UTENTE'),
+            ),
             _buildSettingsCard(context, [
               _buildSwitchRow(
                 context: context,
@@ -172,19 +219,27 @@ class AppSettingsScreen extends ConsumerWidget {
                 value: settings.hapticFeedback,
                 onChanged: (val) {
                   final currentSettings = ref.read(settingsProvider);
-                  notifier.updateSettings(currentSettings.copyWith(hapticFeedback: val));
+                  notifier.updateSettings(
+                    currentSettings.copyWith(hapticFeedback: val),
+                  );
                   if (val) ref.hapticMedium();
                 },
               ),
             ]),
             const SizedBox(height: 32),
-            _buildSectionHeader(context, context.l10n.translate('UNITÀ E LINGUA')),
+            _buildSectionHeader(
+              context,
+              context.l10n.translate('UNITÀ E LINGUA'),
+            ),
             _buildSettingsCard(context, [
               _buildActionRow(
                 context: context,
                 icon: LucideIcons.languages,
                 title: context.l10n.translate('Lingua'),
-                trailingText: settings.language,
+                trailingText: _languagePreferenceLabel(
+                  context,
+                  settings.language,
+                ),
                 onTap: () {
                   ref.hapticLight();
                   _showLanguageSelector(context, ref, settings.language);
@@ -198,7 +253,9 @@ class AppSettingsScreen extends ConsumerWidget {
                 value: settings.timeFormat24h,
                 onChanged: (val) {
                   final currentSettings = ref.read(settingsProvider);
-                  notifier.updateSettings(currentSettings.copyWith(timeFormat24h: val));
+                  notifier.updateSettings(
+                    currentSettings.copyWith(timeFormat24h: val),
+                  );
                   ref.hapticLight();
                 },
               ),
@@ -236,9 +293,7 @@ class AppSettingsScreen extends ConsumerWidget {
           width: 1,
         ),
       ),
-      child: Column(
-        children: children,
-      ),
+      child: Column(children: children),
     );
   }
 
@@ -254,7 +309,7 @@ class AppSettingsScreen extends ConsumerWidget {
   }) {
     final primaryColor = Theme.of(context).colorScheme.primary;
     final isDisabled = isLocked || isComingSoon;
-    
+
     return Padding(
       padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
       child: Row(
@@ -267,7 +322,13 @@ class AppSettingsScreen extends ConsumerWidget {
               borderRadius: BorderRadius.circular(10),
               border: Border.all(color: context.appColors.border),
             ),
-            child: Icon(icon, size: 18, color: isDisabled ? context.appColors.mutedForeground : primaryColor),
+            child: Icon(
+              icon,
+              size: 18,
+              color: isDisabled
+                  ? context.appColors.mutedForeground
+                  : primaryColor,
+            ),
           ),
           const SizedBox(width: 16),
           Expanded(
@@ -279,7 +340,9 @@ class AppSettingsScreen extends ConsumerWidget {
                     Text(
                       title,
                       style: GoogleFonts.inter(
-                        color: isDisabled ? context.appColors.mutedForeground : context.appColors.foreground,
+                        color: isDisabled
+                            ? context.appColors.mutedForeground
+                            : context.appColors.foreground,
                         fontSize: 15,
                         fontWeight: FontWeight.w600,
                       ),
@@ -287,30 +350,48 @@ class AppSettingsScreen extends ConsumerWidget {
                     if (isLocked) ...[
                       const SizedBox(width: 8),
                       Container(
-                        padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
+                        padding: const EdgeInsets.symmetric(
+                          horizontal: 6,
+                          vertical: 2,
+                        ),
                         decoration: BoxDecoration(
                           color: Colors.amber.withValues(alpha: 0.2),
                           borderRadius: BorderRadius.circular(4),
-                          border: Border.all(color: Colors.amber.withValues(alpha: 0.4)),
+                          border: Border.all(
+                            color: Colors.amber.withValues(alpha: 0.4),
+                          ),
                         ),
                         child: Text(
                           'PRO',
-                          style: GoogleFonts.inter(color: Colors.amber, fontSize: 9, fontWeight: FontWeight.w900),
+                          style: GoogleFonts.inter(
+                            color: Colors.amber,
+                            fontSize: 9,
+                            fontWeight: FontWeight.w900,
+                          ),
                         ),
                       ),
                     ],
                     if (isComingSoon) ...[
                       const SizedBox(width: 8),
                       Container(
-                        padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
+                        padding: const EdgeInsets.symmetric(
+                          horizontal: 6,
+                          vertical: 2,
+                        ),
                         decoration: BoxDecoration(
                           color: primaryColor.withValues(alpha: 0.1),
                           borderRadius: BorderRadius.circular(4),
-                          border: Border.all(color: primaryColor.withValues(alpha: 0.3)),
+                          border: Border.all(
+                            color: primaryColor.withValues(alpha: 0.3),
+                          ),
                         ),
                         child: Text(
                           context.l10n.translate('PROSSIMAMENTE'),
-                          style: GoogleFonts.inter(color: primaryColor, fontSize: 9, fontWeight: FontWeight.w900),
+                          style: GoogleFonts.inter(
+                            color: primaryColor,
+                            fontSize: 9,
+                            fontWeight: FontWeight.w900,
+                          ),
                         ),
                       ),
                     ],
@@ -320,7 +401,9 @@ class AppSettingsScreen extends ConsumerWidget {
                   Text(
                     subtitle,
                     style: GoogleFonts.inter(
-                      color: context.appColors.mutedForeground.withValues(alpha: 0.7),
+                      color: context.appColors.mutedForeground.withValues(
+                        alpha: 0.7,
+                      ),
                       fontSize: 12,
                     ),
                   ),
@@ -331,7 +414,8 @@ class AppSettingsScreen extends ConsumerWidget {
             scale: 0.8,
             child: Switch(
               value: value,
-              onChanged: (val) => onChanged(val), // Always interactive to allow modal trigger
+              onChanged: (val) =>
+                  onChanged(val), // Always interactive to allow modal trigger
               activeTrackColor: primaryColor.withValues(alpha: 0.5),
               activeThumbColor: primaryColor,
               inactiveThumbColor: context.appColors.mutedForeground,
@@ -391,7 +475,11 @@ class AppSettingsScreen extends ConsumerWidget {
               ),
             trailing ?? const SizedBox.shrink(),
             const SizedBox(width: 4),
-            Icon(LucideIcons.chevronRight, size: 16, color: context.appColors.mutedForeground),
+            Icon(
+              LucideIcons.chevronRight,
+              size: 16,
+              color: context.appColors.mutedForeground,
+            ),
           ],
         ),
       ),
@@ -407,7 +495,11 @@ class AppSettingsScreen extends ConsumerWidget {
     );
   }
 
-  void _showAccentColorPicker(BuildContext context, WidgetRef ref, Color currentColor) {
+  void _showAccentColorPicker(
+    BuildContext context,
+    WidgetRef ref,
+    Color currentColor,
+  ) {
     final settings = ref.read(settingsProvider);
     showModalBottomSheet(
       context: context,
@@ -443,7 +535,9 @@ class AppSettingsScreen extends ConsumerWidget {
             ),
             const SizedBox(height: 8),
             Text(
-              context.l10n.translate('Scegli una tonalità premium o creane una tua'),
+              context.l10n.translate(
+                'Scegli una tonalità premium o creane una tua',
+              ),
               style: TextStyle(
                 color: context.appColors.mutedForeground,
                 fontSize: 14,
@@ -457,10 +551,12 @@ class AppSettingsScreen extends ConsumerWidget {
                 ...AppSettingsNotifier.premiumAccentColors.take(3).map((c) {
                   final settings = ref.read(settingsProvider);
                   var color = c;
-                  if (settings.themeMode == 'light' && color.toARGB32() == 0xFFFAFAFA) {
+                  if (settings.themeMode == 'light' &&
+                      color.toARGB32() == 0xFFFAFAFA) {
                     color = const Color(0xFF09090B);
                   }
-                  final isSelected = currentColor.toARGB32() == color.toARGB32();
+                  final isSelected =
+                      currentColor.toARGB32() == color.toARGB32();
                   return _buildColorOption(context, ref, color, isSelected);
                 }),
                 // Custom Color Picker Button
@@ -468,7 +564,9 @@ class AppSettingsScreen extends ConsumerWidget {
                   onTap: () {
                     final settings = ref.read(settingsProvider);
                     if (!settings.isPro) {
-                      Navigator.pop(context); // Close the accent color selector sheet
+                      Navigator.pop(
+                        context,
+                      ); // Close the accent color selector sheet
                       ref.hapticHeavy();
                       ProFeaturesModal.show(context);
                     } else {
@@ -483,22 +581,28 @@ class AppSettingsScreen extends ConsumerWidget {
                       color: context.appColors.card,
                       shape: BoxShape.circle,
                       border: Border.all(
-                        color: !settings.isPro ? const Color(0xFFEAB308).withValues(alpha: 0.5) : context.appColors.border, 
+                        color: !settings.isPro
+                            ? const Color(0xFFEAB308).withValues(alpha: 0.5)
+                            : context.appColors.border,
                         width: 2,
                       ),
-                      boxShadow: !settings.isPro 
+                      boxShadow: !settings.isPro
                           ? [
                               BoxShadow(
-                                color: const Color(0xFFEAB308).withValues(alpha: 0.15),
+                                color: const Color(
+                                  0xFFEAB308,
+                                ).withValues(alpha: 0.15),
                                 blurRadius: 8,
                                 spreadRadius: 1,
-                              )
+                              ),
                             ]
                           : null,
                     ),
                     child: Icon(
-                      settings.isPro ? LucideIcons.plus : LucideIcons.lock, 
-                      color: settings.isPro ? context.appColors.foreground : const Color(0xFFEAB308),
+                      settings.isPro ? LucideIcons.plus : LucideIcons.lock,
+                      color: settings.isPro
+                          ? context.appColors.foreground
+                          : const Color(0xFFEAB308),
                       size: settings.isPro ? 24 : 18,
                     ),
                   ),
@@ -512,7 +616,12 @@ class AppSettingsScreen extends ConsumerWidget {
     );
   }
 
-  Widget _buildColorOption(BuildContext context, WidgetRef ref, Color color, bool isSelected) {
+  Widget _buildColorOption(
+    BuildContext context,
+    WidgetRef ref,
+    Color color,
+    bool isSelected,
+  ) {
     return GestureDetector(
       onTap: () {
         ref.hapticMedium();
@@ -526,9 +635,11 @@ class AppSettingsScreen extends ConsumerWidget {
           color: color,
           shape: BoxShape.circle,
           border: Border.all(
-            color: isSelected 
-              ? (color.computeLuminance() > 0.7 ? Colors.black.withValues(alpha: 0.2) : Colors.white) 
-              : Colors.transparent,
+            color: isSelected
+                ? (color.computeLuminance() > 0.7
+                      ? Colors.black.withValues(alpha: 0.2)
+                      : Colors.white)
+                : Colors.transparent,
             width: 3,
           ),
           boxShadow: isSelected
@@ -537,18 +648,28 @@ class AppSettingsScreen extends ConsumerWidget {
                     color: color.withValues(alpha: 0.4),
                     blurRadius: 12,
                     spreadRadius: 2,
-                  )
+                  ),
                 ]
               : null,
         ),
         child: isSelected
-            ? Icon(LucideIcons.check, size: 24, color: color.computeLuminance() > 0.5 ? Colors.black : Colors.white)
+            ? Icon(
+                LucideIcons.check,
+                size: 24,
+                color: color.computeLuminance() > 0.5
+                    ? Colors.black
+                    : Colors.white,
+              )
             : null,
       ),
     );
   }
 
-  void _showFullColorPicker(BuildContext parentContext, WidgetRef ref, Color currentColor) {
+  void _showFullColorPicker(
+    BuildContext parentContext,
+    WidgetRef ref,
+    Color currentColor,
+  ) {
     final themeMode = ref.read(settingsProvider).themeMode;
 
     showDialog(
@@ -565,7 +686,9 @@ class AppSettingsScreen extends ConsumerWidget {
               shape: RoundedRectangleBorder(
                 borderRadius: BorderRadius.circular(24),
                 side: BorderSide(
-                  color: isTooDark ? context.appColors.destructive.withValues(alpha: 0.5) : context.appColors.border,
+                  color: isTooDark
+                      ? context.appColors.destructive.withValues(alpha: 0.5)
+                      : context.appColors.border,
                   width: isTooDark ? 2 : 1,
                 ),
               ),
@@ -574,7 +697,11 @@ class AppSettingsScreen extends ConsumerWidget {
                   Text(context.l10n.translate('Colore Personalizzato')),
                   const Spacer(),
                   if (isTooDark)
-                    Icon(LucideIcons.triangleAlert, color: context.appColors.destructive, size: 20),
+                    Icon(
+                      LucideIcons.triangleAlert,
+                      color: context.appColors.destructive,
+                      size: 20,
+                    ),
                 ],
               ),
               content: SingleChildScrollView(
@@ -596,17 +723,29 @@ class AppSettingsScreen extends ConsumerWidget {
                       Container(
                         padding: const EdgeInsets.all(12),
                         decoration: BoxDecoration(
-                          color: context.appColors.destructive.withValues(alpha: 0.1),
+                          color: context.appColors.destructive.withValues(
+                            alpha: 0.1,
+                          ),
                           borderRadius: BorderRadius.circular(12),
                         ),
                         child: Row(
                           children: [
-                            Icon(LucideIcons.info, size: 16, color: context.appColors.destructive),
+                            Icon(
+                              LucideIcons.info,
+                              size: 16,
+                              color: context.appColors.destructive,
+                            ),
                             const SizedBox(width: 8),
                             Expanded(
                               child: Text(
-                                context.l10n.translate('Colore troppo scuro per la visibilità in Dark Mode.'),
-                                style: TextStyle(color: context.appColors.destructive, fontSize: 11, fontWeight: FontWeight.w600),
+                                context.l10n.translate(
+                                  'Colore troppo scuro per la visibilità in Dark Mode.',
+                                ),
+                                style: TextStyle(
+                                  color: context.appColors.destructive,
+                                  fontSize: 11,
+                                  fontWeight: FontWeight.w600,
+                                ),
                               ),
                             ),
                           ],
@@ -619,7 +758,10 @@ class AppSettingsScreen extends ConsumerWidget {
               actions: [
                 TextButton(
                   onPressed: () => Navigator.pop(dialogContext),
-                  child: Text( context.l10n.translate('Annulla'), style: TextStyle(color: context.appColors.mutedForeground)),
+                  child: Text(
+                    context.l10n.translate('Annulla'),
+                    style: TextStyle(color: context.appColors.mutedForeground),
+                  ),
                 ),
                 ElevatedButton(
                   onPressed: isTooDark
@@ -627,12 +769,20 @@ class AppSettingsScreen extends ConsumerWidget {
                       : () {
                           Navigator.of(dialogContext).pop();
                           Navigator.of(parentContext).pop();
-                          _showValidationDialog(parentContext, ref, pickedColor);
+                          _showValidationDialog(
+                            parentContext,
+                            ref,
+                            pickedColor,
+                          );
                         },
                   style: ElevatedButton.styleFrom(
-                    backgroundColor: isTooDark ? context.appColors.border : Theme.of(dialogContext).colorScheme.primary,
+                    backgroundColor: isTooDark
+                        ? context.appColors.border
+                        : Theme.of(dialogContext).colorScheme.primary,
                     foregroundColor: context.appColors.background,
-                    shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+                    shape: RoundedRectangleBorder(
+                      borderRadius: BorderRadius.circular(12),
+                    ),
                   ),
                   child: Text(context.l10n.translate('Verifica')),
                 ),
@@ -644,18 +794,29 @@ class AppSettingsScreen extends ConsumerWidget {
     );
   }
 
-  void _showValidationDialog(BuildContext context, WidgetRef ref, Color testColor) {
+  void _showValidationDialog(
+    BuildContext context,
+    WidgetRef ref,
+    Color testColor,
+  ) {
     showDialog(
       context: context,
       barrierDismissible: false,
-      builder: (context) => _ValidationDialog(testColor: testColor, onConfirm: () {
-        // SCENOGRAPHIC ANIMATION TRIGGER
-        _applyColorWithAnimation(context, ref, testColor);
-      }),
+      builder: (context) => _ValidationDialog(
+        testColor: testColor,
+        onConfirm: () {
+          // SCENOGRAPHIC ANIMATION TRIGGER
+          _applyColorWithAnimation(context, ref, testColor);
+        },
+      ),
     );
   }
 
-  void _applyColorWithAnimation(BuildContext context, WidgetRef ref, Color newColor) {
+  void _applyColorWithAnimation(
+    BuildContext context,
+    WidgetRef ref,
+    Color newColor,
+  ) {
     // We show a full screen overlay that fades in/out to create a "wow" transition
     final overlay = OverlayEntry(
       builder: (context) => _ScenographicTransition(color: newColor),
@@ -688,11 +849,13 @@ class AppSettingsScreen extends ConsumerWidget {
     if (currentValue == 'week' && value == 'settimana') isSelected = true;
     if (currentValue == 'month' && value == 'mese') isSelected = true;
     if (currentValue == 'year' && value == 'anno') isSelected = true;
-    
+
     final primaryColor = Theme.of(context).colorScheme.primary;
     return ListTile(
       onTap: () {
-        ref.read(settingsProvider.notifier).updateSettings(
+        ref
+            .read(settingsProvider.notifier)
+            .updateSettings(
               ref.read(settingsProvider).copyWith(defaultCalendarView: value),
             );
         ref.hapticMedium();
@@ -713,7 +876,25 @@ class AppSettingsScreen extends ConsumerWidget {
     );
   }
 
-  void _showLanguageSelector(BuildContext context, WidgetRef ref, String currentLanguage) {
+  String _languagePreferenceLabel(BuildContext context, String language) {
+    switch (AppLanguagePreference.normalize(language)) {
+      case AppLanguagePreference.italian:
+        return context.l10n.italianLanguage;
+      case AppLanguagePreference.english:
+        return context.l10n.englishLanguage;
+      case AppLanguagePreference.system:
+      default:
+        return context.l10n.systemLanguage;
+    }
+  }
+
+  void _showLanguageSelector(
+    BuildContext context,
+    WidgetRef ref,
+    String currentLanguage,
+  ) {
+    final currentPreference = AppLanguagePreference.normalize(currentLanguage);
+
     showModalBottomSheet(
       context: context,
       backgroundColor: Colors.transparent,
@@ -745,8 +926,25 @@ class AppSettingsScreen extends ConsumerWidget {
               ),
             ),
             const SizedBox(height: 24),
-            _buildLanguageOption(context, ref, 'Italiano', currentLanguage),
-            _buildLanguageOption(context, ref, 'English', currentLanguage),
+            _buildLanguageOption(
+              context,
+              ref,
+              AppLanguagePreference.system,
+              currentPreference,
+              subtitle: context.l10n.followSystemLanguageDescription,
+            ),
+            _buildLanguageOption(
+              context,
+              ref,
+              AppLanguagePreference.italian,
+              currentPreference,
+            ),
+            _buildLanguageOption(
+              context,
+              ref,
+              AppLanguagePreference.english,
+              currentPreference,
+            ),
             const SizedBox(height: 40),
           ],
         ),
@@ -754,8 +952,15 @@ class AppSettingsScreen extends ConsumerWidget {
     );
   }
 
-  Widget _buildLanguageOption(BuildContext context, WidgetRef ref, String language, String currentLanguage) {
-    final isSelected = language == currentLanguage;
+  Widget _buildLanguageOption(
+    BuildContext context,
+    WidgetRef ref,
+    String language,
+    String currentLanguage, {
+    String? subtitle,
+  }) {
+    final isSelected =
+        AppLanguagePreference.normalize(language) == currentLanguage;
     final primaryColor = Theme.of(context).colorScheme.primary;
     return ListTile(
       onTap: () {
@@ -768,24 +973,39 @@ class AppSettingsScreen extends ConsumerWidget {
       },
       contentPadding: const EdgeInsets.symmetric(horizontal: 24, vertical: 4),
       title: Text(
-        language,
+        _languagePreferenceLabel(context, language),
         style: TextStyle(
           color: isSelected ? primaryColor : context.appColors.foreground,
           fontSize: 16,
           fontWeight: isSelected ? FontWeight.w700 : FontWeight.w500,
         ),
       ),
-      trailing: isSelected ? Icon(LucideIcons.check, color: primaryColor, size: 20) : null,
+      subtitle: subtitle == null
+          ? null
+          : Text(
+              subtitle,
+              style: TextStyle(
+                color: context.appColors.mutedForeground,
+                fontSize: 12,
+              ),
+            ),
+      trailing: isSelected
+          ? Icon(LucideIcons.check, color: primaryColor, size: 20)
+          : null,
     );
   }
 
-  void _applyLanguageWithAnimation(BuildContext context, WidgetRef ref, String newLanguage) {
+  void _applyLanguageWithAnimation(
+    BuildContext context,
+    WidgetRef ref,
+    String newLanguage,
+  ) {
     ref.hapticSuccess();
-    
+
     final overlay = OverlayEntry(
       builder: (context) => _LanguageTransition(
         color: Theme.of(context).colorScheme.primary,
-        language: newLanguage,
+        language: _languagePreferenceLabel(context, newLanguage),
       ),
     );
 
@@ -793,7 +1013,9 @@ class AppSettingsScreen extends ConsumerWidget {
 
     Future.delayed(const Duration(milliseconds: 400), () {
       final currentSettings = ref.read(settingsProvider);
-      ref.read(settingsProvider.notifier).updateSettings(currentSettings.copyWith(language: newLanguage));
+      ref
+          .read(settingsProvider.notifier)
+          .updateSettings(currentSettings.copyWith(language: newLanguage));
     });
 
     Future.delayed(const Duration(milliseconds: 1200), () {
@@ -838,7 +1060,9 @@ class _ValidationDialog extends StatelessWidget {
           ),
           const SizedBox(height: 12),
           Text(
-            context.l10n.translate('Riesci a leggere chiaramente questo testo e a vedere il pulsante qui sotto?'),
+            context.l10n.translate(
+              'Riesci a leggere chiaramente questo testo e a vedere il pulsante qui sotto?',
+            ),
             textAlign: TextAlign.center,
             style: TextStyle(
               color: context.appColors.mutedForeground.withValues(alpha: 0.8),
@@ -863,14 +1087,16 @@ class _ValidationDialog extends StatelessWidget {
                     color: testColor.withValues(alpha: 0.4),
                     blurRadius: 15,
                     spreadRadius: 2,
-                  )
+                  ),
                 ],
               ),
               child: Center(
                 child: Text(
                   context.l10n.translate('SI, CONFERMA'),
                   style: TextStyle(
-                    color: testColor.computeLuminance() > 0.5 ? Colors.black : Colors.white,
+                    color: testColor.computeLuminance() > 0.5
+                        ? Colors.black
+                        : Colors.white,
                     fontWeight: FontWeight.w900,
                     letterSpacing: 1,
                   ),
@@ -883,7 +1109,11 @@ class _ValidationDialog extends StatelessWidget {
             onPressed: () => Navigator.pop(context),
             child: Text(
               context.l10n.translate('NO, TORNA INDIETRO'),
-              style: TextStyle(color: testColor.withValues(alpha: 0.6), fontSize: 12, fontWeight: FontWeight.w700),
+              style: TextStyle(
+                color: testColor.withValues(alpha: 0.6),
+                fontSize: 12,
+                fontWeight: FontWeight.w700,
+              ),
             ),
           ),
         ],
@@ -897,10 +1127,12 @@ class _ScenographicTransition extends StatefulWidget {
   const _ScenographicTransition({required this.color});
 
   @override
-  State<_ScenographicTransition> createState() => _ScenographicTransitionState();
+  State<_ScenographicTransition> createState() =>
+      _ScenographicTransitionState();
 }
 
-class _ScenographicTransitionState extends State<_ScenographicTransition> with SingleTickerProviderStateMixin {
+class _ScenographicTransitionState extends State<_ScenographicTransition>
+    with SingleTickerProviderStateMixin {
   late AnimationController _controller;
   late Animation<double> _scale;
   late Animation<double> _fade;
@@ -908,8 +1140,16 @@ class _ScenographicTransitionState extends State<_ScenographicTransition> with S
   @override
   void initState() {
     super.initState();
-    _controller = AnimationController(vsync: this, duration: const Duration(milliseconds: 1000));
-    _scale = Tween<double>(begin: 0.0, end: 5.0).animate(CurvedAnimation(parent: _controller, curve: const Interval(0.0, 0.7, curve: Curves.easeInCubic)));
+    _controller = AnimationController(
+      vsync: this,
+      duration: const Duration(milliseconds: 1000),
+    );
+    _scale = Tween<double>(begin: 0.0, end: 5.0).animate(
+      CurvedAnimation(
+        parent: _controller,
+        curve: const Interval(0.0, 0.7, curve: Curves.easeInCubic),
+      ),
+    );
     _fade = TweenSequence<double>([
       TweenSequenceItem(tween: Tween<double>(begin: 0.0, end: 1.0), weight: 30),
       TweenSequenceItem(tween: ConstantTween<double>(1.0), weight: 40),
@@ -958,7 +1198,8 @@ class _LanguageTransition extends StatefulWidget {
   State<_LanguageTransition> createState() => _LanguageTransitionState();
 }
 
-class _LanguageTransitionState extends State<_LanguageTransition> with SingleTickerProviderStateMixin {
+class _LanguageTransitionState extends State<_LanguageTransition>
+    with SingleTickerProviderStateMixin {
   late AnimationController _controller;
   late Animation<double> _scale;
   late Animation<double> _fade;
@@ -966,8 +1207,16 @@ class _LanguageTransitionState extends State<_LanguageTransition> with SingleTic
   @override
   void initState() {
     super.initState();
-    _controller = AnimationController(vsync: this, duration: const Duration(milliseconds: 1000));
-    _scale = Tween<double>(begin: 0.0, end: 6.0).animate(CurvedAnimation(parent: _controller, curve: const Interval(0.0, 0.7, curve: Curves.easeInCubic)));
+    _controller = AnimationController(
+      vsync: this,
+      duration: const Duration(milliseconds: 1000),
+    );
+    _scale = Tween<double>(begin: 0.0, end: 6.0).animate(
+      CurvedAnimation(
+        parent: _controller,
+        curve: const Interval(0.0, 0.7, curve: Curves.easeInCubic),
+      ),
+    );
     _fade = TweenSequence<double>([
       TweenSequenceItem(tween: Tween<double>(begin: 0.0, end: 1.0), weight: 30),
       TweenSequenceItem(tween: ConstantTween<double>(1.0), weight: 40),
@@ -1008,12 +1257,18 @@ class _LanguageTransitionState extends State<_LanguageTransition> with SingleTic
               child: Column(
                 mainAxisSize: MainAxisSize.min,
                 children: [
-                  Icon(LucideIcons.languages, color: context.appColors.foreground, size: 60),
+                  Icon(
+                    LucideIcons.languages,
+                    color: context.appColors.foreground,
+                    size: 60,
+                  ),
                   const SizedBox(height: 16),
                   Text(
                     widget.language.toUpperCase(),
                     style: TextStyle(
-                      color: widget.color.computeLuminance() > 0.5 ? Colors.black : Colors.white,
+                      color: widget.color.computeLuminance() > 0.5
+                          ? Colors.black
+                          : Colors.white,
                       fontSize: 24,
                       fontWeight: FontWeight.w900,
                       letterSpacing: 2,

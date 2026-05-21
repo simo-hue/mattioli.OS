@@ -1,0 +1,4 @@
+"CFBundleDisplayName" = "Evolve";
+"NSCameraUsageDescription" = "Questa app richiede l'accesso alla fotocamera per permetterti di scattare una foto profilo.";
+"NSFaceIDUsageDescription" = "Questa app richiede l'accesso a Face ID per proteggere i tuoi dati personali.";
+"NSPhotoLibraryUsageDescription" = "Questa app richiede l'accesso alla galleria per permetterti di caricare la tua foto profilo.";

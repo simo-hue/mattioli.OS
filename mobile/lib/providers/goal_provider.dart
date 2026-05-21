@@ -124,7 +124,7 @@ class GoalsNotifier extends Notifier<List<Goal>> {
         ErrorModal.show(
           context,
           title: context.l10n.translate('Errore durante il salvataggio'),
-          message: 'Non siamo riusciti a salvare l\'abitudine. Riprova.',
+          message: context.l10n.habitSaveFailed,
           details: e.toString(),
         );
       }
@@ -158,8 +158,8 @@ class GoalsNotifier extends Notifier<List<Goal>> {
       if (context != null && context.mounted) {
         ErrorModal.show(
           context,
-          title: 'Errore durante l\'aggiornamento',
-          message: 'Non siamo riusciti a salvare le modifiche. Riprova.',
+          title: context.l10n.translate('Errore durante l\'aggiornamento'),
+          message: context.l10n.habitUpdateFailed,
           details: e.toString(),
         );
       }
@@ -181,8 +181,8 @@ class GoalsNotifier extends Notifier<List<Goal>> {
       if (context != null && context.mounted) {
         ErrorModal.show(
           context,
-          title: 'Errore durante l\'eliminazione',
-          message: 'Non siamo riusciti a eliminare l\'abitudine. Riprova.',
+          title: context.l10n.translate('Errore durante l\'eliminazione'),
+          message: context.l10n.habitDeleteFailed,
           details: e.toString(),
         );
       }
@@ -403,9 +403,10 @@ class HabitLogsNotifier extends Notifier<HabitLogsMap> {
       if (context != null && context.mounted) {
         ErrorModal.show(
           context,
-          title: 'Errore durante l\'aggiornamento dello stato',
-          message:
-              'Non siamo riusciti a salvare lo stato dell\'abitudine. Riprova.',
+          title: context.l10n.translate(
+            'Errore durante l\'aggiornamento dello stato',
+          ),
+          message: context.l10n.habitStatusSaveFailed,
           details: e.toString(),
         );
       }

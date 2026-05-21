@@ -8,6 +8,45 @@ import 'shared_prefs_provider.dart';
 import 'auth_provider.dart';
 import 'goal_provider.dart';
 
+class AppLanguagePreference {
+  static const system = 'system';
+  static const italian = 'it';
+  static const english = 'en';
+
+  static const supportedOverrides = [italian, english];
+
+  static String normalize(String? value) {
+    final normalized = value?.trim().toLowerCase();
+
+    switch (normalized) {
+      case null:
+      case '':
+      case system:
+      case 'iphone':
+      case 'ios':
+      case 'device':
+      case 'italiano':
+      case 'english':
+        return system;
+      case italian:
+      case 'it_it':
+        return italian;
+      case english:
+      case 'en_us':
+      case 'en_gb':
+        return english;
+      default:
+        return system;
+    }
+  }
+
+  static Locale? localeOverrideFor(String value) {
+    final normalized = normalize(value);
+    if (normalized == system) return null;
+    return Locale(normalized);
+  }
+}
+
 class AppSettings {
   final String themeMode;
   final Color accentColor;
@@ -58,6 +97,9 @@ class AppSettings {
     required this.morningBriefTime,
     required this.eveningReviewTime,
   });
+
+  Locale? get localeOverride =>
+      AppLanguagePreference.localeOverrideFor(language);
 
   AppSettings copyWith({
     String? themeMode,
@@ -201,15 +243,17 @@ class AppSettingsNotifier extends Notifier<AppSettings> {
   }
 
   void updateSettings(AppSettings newSettings) {
-    AppSettings finalSettings = newSettings;
+    AppSettings finalSettings = newSettings.copyWith(
+      language: AppLanguagePreference.normalize(newSettings.language),
+    );
 
     // Smart visibility check: adjust accent color if theme mode changes
-    if (newSettings.themeMode != state.themeMode) {
+    if (finalSettings.themeMode != state.themeMode) {
       final safeAccent = _ensureSafeAccentColor(
-        newSettings.accentColor,
-        newSettings.themeMode,
+        finalSettings.accentColor,
+        finalSettings.themeMode,
       );
-      finalSettings = newSettings.copyWith(accentColor: safeAccent);
+      finalSettings = finalSettings.copyWith(accentColor: safeAccent);
     }
 
     state = finalSettings;
@@ -278,7 +322,9 @@ class AppSettingsNotifier extends Notifier<AppSettings> {
       defaultCalendarView:
           prefs.getString('pref_default_calendar_view') ?? 'settimana',
       hapticFeedback: prefs.getBool('pref_haptic_feedback') ?? true,
-      language: prefs.getString('pref_language') ?? _getDefaultLanguage(),
+      language: AppLanguagePreference.normalize(
+        prefs.getString('pref_language'),
+      ),
       timeFormat24h: prefs.getBool('pref_time_format_24h') ?? true,
 
       aiSuggestions: prefs.getBool('pref_ai_suggestions') ?? false,
@@ -301,19 +347,6 @@ class AppSettingsNotifier extends Notifier<AppSettings> {
     );
   }
 
-  String _getDefaultLanguage() {
-    try {
-      final locale = PlatformDispatcher.instance.locale;
-      final languageCode = locale.languageCode.toLowerCase();
-      if (languageCode == 'it') {
-        return 'Italiano';
-      }
-      return 'English';
-    } catch (_) {
-      return 'Italiano'; // Fallback predefinito
-    }
-  }
-
   void _saveToPrefs(AppSettings s) {
     final prefs = ref.read(sharedPrefsProvider);
 
@@ -324,7 +357,10 @@ class AppSettingsNotifier extends Notifier<AppSettings> {
     prefs.setString('pref_accent_color', toHex(s.accentColor));
     prefs.setString('pref_default_calendar_view', s.defaultCalendarView);
     prefs.setBool('pref_haptic_feedback', s.hapticFeedback);
-    prefs.setString('pref_language', s.language);
+    prefs.setString(
+      'pref_language',
+      AppLanguagePreference.normalize(s.language),
+    );
     prefs.setBool('pref_time_format_24h', s.timeFormat24h);
 
     prefs.setBool('pref_ai_suggestions', s.aiSuggestions);
@@ -408,7 +444,9 @@ class AppSettingsNotifier extends Notifier<AppSettings> {
           defaultCalendarView:
               data['pref_default_calendar_view'] ?? state.defaultCalendarView,
           hapticFeedback: data['pref_haptic_feedback'] ?? state.hapticFeedback,
-          language: data['language'] ?? state.language,
+          language: AppLanguagePreference.normalize(
+            data['language']?.toString() ?? state.language,
+          ),
           timeFormat24h: data['pref_time_format_24h'] ?? state.timeFormat24h,
           isPro: state.isPro || (data['is_pro'] ?? false),
           habitReminders: data['notif_habit_reminders'] ?? state.habitReminders,

@@ -64,10 +64,8 @@ class _ConsentScreenState extends ConsumerState<ConsentScreen> {
     if (!_acceptedTerms) {
       ref.hapticHeavy();
       ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(
-          content: Text(
-            'Devi accettare i Termini e la Privacy Policy per continuare.',
-          ),
+        SnackBar(
+          content: Text(context.l10n.consentTermsRequired),
         ),
       );
       return;
@@ -178,7 +176,7 @@ class _ConsentScreenState extends ConsumerState<ConsentScreen> {
                       ),
                       const SizedBox(height: 24),
                       Text(
-                        'La tua Privacy è Importante',
+                        context.l10n.privacyOnboardingTitle,
                         textAlign: TextAlign.center,
                         style: GoogleFonts.inter(
                           color: context.appColors.foreground,
@@ -189,7 +187,7 @@ class _ConsentScreenState extends ConsumerState<ConsentScreen> {
                       ),
                       const SizedBox(height: 12),
                       Text(
-                        'Per garantirti un\'esperienza sicura e personalizzata, abbiamo bisogno di alcune conferme.',
+                        context.l10n.privacyOnboardingSubtitle,
                         textAlign: TextAlign.center,
                         style: GoogleFonts.inter(
                           color: context.appColors.mutedForeground,
@@ -210,8 +208,7 @@ class _ConsentScreenState extends ConsumerState<ConsentScreen> {
                         _buildConsentCard(
                           icon: LucideIcons.fileText,
                           title: context.l10n.translate('Termini e Privacy Policy'),
-                          description:
-                              'Dichiaro di aver letto e accettato i Termini di Servizio e la Privacy Policy. Confermo di avere almeno 14 anni.',
+                          description: context.l10n.termsConsentDescription,
                           trailing: Checkbox(
                             value: _acceptedTerms,
                             onChanged: (val) {
@@ -230,7 +227,7 @@ class _ConsentScreenState extends ConsumerState<ConsentScreen> {
                                 'https://simo-hue.github.io/evolve/privacy.html',
                               ),
                               child: Text(
-                                'Leggi Privacy Policy',
+                                context.l10n.readPrivacyPolicy,
                                 style: TextStyle(
                                   color: primaryColor,
                                   fontSize: 12,

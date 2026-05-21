@@ -23,11 +23,12 @@ import 'package:intl/date_symbol_data_local.dart';
 import 'core/app_logger.dart';
 import 'core/secure_local_storage.dart';
 import 'core/secure_storage_utils.dart';
+import 'core/localization.dart';
 
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
 
-  await initializeDateFormatting('it', null);
+  await initializeDateFormatting();
 
   // ── Supabase init ─────────────────────────────────────────────────────────
   await Supabase.initialize(
@@ -256,6 +257,9 @@ class EvolveApp extends ConsumerWidget {
       themeMode: settings.themeMode == 'dark'
           ? ThemeMode.dark
           : ThemeMode.light,
+      locale: settings.localeOverride,
+      localizationsDelegates: AppLocalizations.localizationsDelegates,
+      supportedLocales: AppLocalizations.supportedLocales,
       routerConfig: router,
       debugShowCheckedModeBanner: false,
     );

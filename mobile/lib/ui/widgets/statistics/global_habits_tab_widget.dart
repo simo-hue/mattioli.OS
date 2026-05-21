@@ -16,17 +16,24 @@ class GlobalHabitsTabWidget extends ConsumerStatefulWidget {
   const GlobalHabitsTabWidget({super.key, this.onGoalSelected});
 
   @override
-  ConsumerState<GlobalHabitsTabWidget> createState() => _GlobalHabitsTabWidgetState();
+  ConsumerState<GlobalHabitsTabWidget> createState() =>
+      _GlobalHabitsTabWidgetState();
 }
 
 class _GlobalHabitsTabWidgetState extends ConsumerState<GlobalHabitsTabWidget> {
   String _sortBy = 'rate';
 
-  List<Map<String, dynamic>> _mapStatsToHabits(List<Map<String, dynamic>> stats, List<Goal> goals) {
+  List<Map<String, dynamic>> _mapStatsToHabits(
+    List<Map<String, dynamic>> stats,
+    List<Goal> goals,
+  ) {
     return stats.map((stat) {
       final goalId = stat['goal_id'] as String;
-      final goal = goals.cast<Goal?>().firstWhere((g) => g?.id == goalId, orElse: () => null);
-      
+      final goal = goals.cast<Goal?>().firstWhere(
+        (g) => g?.id == goalId,
+        orElse: () => null,
+      );
+
       return {
         'goal_id': goalId,
         'name': stat['title'] ?? '',
@@ -39,7 +46,9 @@ class _GlobalHabitsTabWidgetState extends ConsumerState<GlobalHabitsTabWidget> {
     }).toList();
   }
 
-  List<Map<String, dynamic>> _getSortedHabits(List<Map<String, dynamic>> habits) {
+  List<Map<String, dynamic>> _getSortedHabits(
+    List<Map<String, dynamic>> habits,
+  ) {
     final sorted = List<Map<String, dynamic>>.from(habits);
     sorted.sort((a, b) {
       switch (_sortBy) {
@@ -69,7 +78,7 @@ class _GlobalHabitsTabWidgetState extends ConsumerState<GlobalHabitsTabWidget> {
       data: (stats) {
         final habits = _mapStatsToHabits(stats, goals);
         final sortedHabits = _getSortedHabits(habits);
-        
+
         return Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
@@ -90,25 +99,38 @@ class _GlobalHabitsTabWidgetState extends ConsumerState<GlobalHabitsTabWidget> {
             ),
             const SizedBox(height: 20),
             sortedHabits.isEmpty
-              ? Center(child: Text(context.l10n.translate('Nessuna abitudine trovata'), style: TextStyle(color: context.appColors.mutedForeground)))
-              : ListView.separated(
-                  shrinkWrap: true,
-                  physics: const NeverScrollableScrollPhysics(),
-                  itemCount: sortedHabits.length,
-                  separatorBuilder: (context, index) => const SizedBox(height: 12),
-                  itemBuilder: (context, index) {
-                    return _HabitDetailCard(
-                      habit: sortedHabits[index],
-                      onTap: widget.onGoalSelected,
-                    );
-                  },
-                ),
+                ? Center(
+                    child: Text(
+                      context.l10n.translate('Nessuna abitudine trovata'),
+                      style: TextStyle(
+                        color: context.appColors.mutedForeground,
+                      ),
+                    ),
+                  )
+                : ListView.separated(
+                    shrinkWrap: true,
+                    physics: const NeverScrollableScrollPhysics(),
+                    itemCount: sortedHabits.length,
+                    separatorBuilder: (context, index) =>
+                        const SizedBox(height: 12),
+                    itemBuilder: (context, index) {
+                      return _HabitDetailCard(
+                        habit: sortedHabits[index],
+                        onTap: widget.onGoalSelected,
+                      );
+                    },
+                  ),
             const SizedBox(height: 32),
           ],
         );
       },
       loading: () => const Center(child: CircularProgressIndicator()),
-      error: (err, stack) => Center(child: Text('${context.l10n.translate('Errore')}: $err', style: TextStyle(color: context.appColors.mutedForeground))),
+      error: (err, stack) => Center(
+        child: Text(
+          '${context.l10n.translate('Errore')}: $err',
+          style: TextStyle(color: context.appColors.mutedForeground),
+        ),
+      ),
     );
   }
 
@@ -139,7 +161,11 @@ class _GlobalHabitsTabWidgetState extends ConsumerState<GlobalHabitsTabWidget> {
         child: Row(
           mainAxisSize: MainAxisSize.min,
           children: [
-            Icon(_getSortIcon(_sortBy), size: 14, color: Theme.of(context).colorScheme.primary),
+            Icon(
+              _getSortIcon(_sortBy),
+              size: 14,
+              color: Theme.of(context).colorScheme.primary,
+            ),
             const SizedBox(width: 8),
             Text(
               context.l10n.translate(_sortBy).replaceAll('_', ' '),
@@ -151,7 +177,11 @@ class _GlobalHabitsTabWidgetState extends ConsumerState<GlobalHabitsTabWidget> {
               ),
             ),
             const SizedBox(width: 6),
-            Icon(LucideIcons.chevronDown, size: 12, color: context.appColors.mutedForeground.withValues(alpha: 0.5)),
+            Icon(
+              LucideIcons.chevronDown,
+              size: 12,
+              color: context.appColors.mutedForeground.withValues(alpha: 0.5),
+            ),
           ],
         ),
       ),
@@ -209,9 +239,13 @@ class _GlobalHabitsTabWidgetState extends ConsumerState<GlobalHabitsTabWidget> {
               final primaryColor = Theme.of(context).colorScheme.primary;
               return ListTile(
                 leading: Icon(
-                  opt.icon, 
-                  size: 20, 
-                  color: isSel ? primaryColor : context.appColors.mutedForeground.withValues(alpha: 0.6)
+                  opt.icon,
+                  size: 20,
+                  color: isSel
+                      ? primaryColor
+                      : context.appColors.mutedForeground.withValues(
+                          alpha: 0.6,
+                        ),
                 ),
                 title: Text(
                   context.l10n.translate(opt.val).replaceAll('_', ' '),
@@ -219,10 +253,14 @@ class _GlobalHabitsTabWidgetState extends ConsumerState<GlobalHabitsTabWidget> {
                     fontFamily: 'Inter',
                     fontSize: 16,
                     fontWeight: isSel ? FontWeight.w700 : FontWeight.w500,
-                    color: isSel ? context.appColors.foreground : context.appColors.mutedForeground,
+                    color: isSel
+                        ? context.appColors.foreground
+                        : context.appColors.mutedForeground,
                   ),
                 ),
-                trailing: isSel ? Icon(LucideIcons.check, color: primaryColor, size: 20) : null,
+                trailing: isSel
+                    ? Icon(LucideIcons.check, color: primaryColor, size: 20)
+                    : null,
                 onTap: () {
                   HapticFeedback.selectionClick();
                   setState(() => _sortBy = opt.val);
@@ -237,18 +275,22 @@ class _GlobalHabitsTabWidgetState extends ConsumerState<GlobalHabitsTabWidget> {
     );
   }
 
-
   IconData _getSortIcon(String sort) {
     switch (sort) {
-      case 'rate': return LucideIcons.trendingUp;
-      case 'best_streak_label': return LucideIcons.trophy;
-      case 'worst_streak_label': return LucideIcons.trendingDown;
-      case 'current_streak_label': return LucideIcons.flame;
-      case 'first_name': return LucideIcons.list;
-      default: return LucideIcons.trendingUp;
+      case 'rate':
+        return LucideIcons.trendingUp;
+      case 'best_streak_label':
+        return LucideIcons.trophy;
+      case 'worst_streak_label':
+        return LucideIcons.trendingDown;
+      case 'current_streak_label':
+        return LucideIcons.flame;
+      case 'first_name':
+        return LucideIcons.list;
+      default:
+        return LucideIcons.trendingUp;
     }
   }
-
 }
 
 class _HabitDetailCard extends ConsumerWidget {
@@ -310,7 +352,11 @@ class _HabitDetailCard extends ConsumerWidget {
                           ],
                         ),
                       )
-                    : Icon(LucideIcons.lock, size: 14, color: context.appColors.mutedForeground),
+                    : Icon(
+                        LucideIcons.lock,
+                        size: 14,
+                        color: context.appColors.mutedForeground,
+                      ),
               ),
             ),
             const SizedBox(width: 16),
@@ -329,7 +375,7 @@ class _HabitDetailCard extends ConsumerWidget {
                       color: context.appColors.foreground,
                     ),
                   ),
-  
+
                   const SizedBox(height: 6),
                   Container(
                     width: 60,
@@ -358,10 +404,32 @@ class _HabitDetailCard extends ConsumerWidget {
               child: Row(
                 mainAxisAlignment: MainAxisAlignment.spaceBetween,
                 children: [
-                  _buildStatColumn(context, 'BEST', '${habit['best']}gg', icon: LucideIcons.trophy, iconColor: const Color(0xFFEAB308)),
-                  _buildStatColumn(context, 'WORST', '${habit['worst']}gg', icon: LucideIcons.trendingDown, iconColor: const Color(0xFFEF4444)),
-                  _buildStatColumn(context, 'SERIE', '${habit['serie']}gg'),
-                  _buildStatColumn(context, 'RATE', '${habit['rate']}%', isBold: true),
+                  _buildStatColumn(
+                    context,
+                    context.l10n.translate('BEST'),
+                    '${habit['best']}${context.l10n.daysShortUnit}',
+                    icon: LucideIcons.trophy,
+                    iconColor: const Color(0xFFEAB308),
+                  ),
+                  _buildStatColumn(
+                    context,
+                    context.l10n.translate('WORST'),
+                    '${habit['worst']}${context.l10n.daysShortUnit}',
+                    icon: LucideIcons.trendingDown,
+                    iconColor: const Color(0xFFEF4444),
+                    isDanger: true,
+                  ),
+                  _buildStatColumn(
+                    context,
+                    context.l10n.streakCompactLabel,
+                    '${habit['serie']}${context.l10n.daysShortUnit}',
+                  ),
+                  _buildStatColumn(
+                    context,
+                    context.l10n.rateCompactLabel,
+                    '${habit['rate']}%',
+                    isBold: true,
+                  ),
                 ],
               ),
             ),
@@ -371,14 +439,26 @@ class _HabitDetailCard extends ConsumerWidget {
     );
   }
 
-  Widget _buildStatColumn(BuildContext context, String label, String value, {IconData? icon, Color? iconColor, bool isBold = false}) {
+  Widget _buildStatColumn(
+    BuildContext context,
+    String label,
+    String value, {
+    IconData? icon,
+    Color? iconColor,
+    bool isBold = false,
+    bool isDanger = false,
+  }) {
     return Column(
       children: [
         Row(
           mainAxisSize: MainAxisSize.min,
           children: [
             if (icon != null) ...[
-              Icon(icon, size: 10, color: iconColor ?? context.appColors.mutedForeground),
+              Icon(
+                icon,
+                size: 10,
+                color: iconColor ?? context.appColors.mutedForeground,
+              ),
               const SizedBox(width: 4),
             ],
             Text(
@@ -400,12 +480,12 @@ class _HabitDetailCard extends ConsumerWidget {
             fontFamily: 'Inter',
             fontSize: 14,
             fontWeight: isBold ? FontWeight.w800 : FontWeight.w700,
-            color: label == 'WORST' ? const Color(0xFFEF4444) : context.appColors.foreground,
+            color: isDanger
+                ? const Color(0xFFEF4444)
+                : context.appColors.foreground,
           ),
         ),
       ],
     );
   }
 }
-
-

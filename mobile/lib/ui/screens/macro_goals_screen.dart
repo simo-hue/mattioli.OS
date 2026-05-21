@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:google_fonts/google_fonts.dart';
+import 'package:intl/intl.dart';
 import 'package:lucide_icons_flutter/lucide_icons.dart';
 
 import '../../core/macro_goal_calendar.dart';
@@ -50,7 +51,7 @@ class _MacroGoalsScreenState extends ConsumerState<MacroGoalsScreen>
   void _checkGoalsTutorial() {
     final mainTutorialSeen = ref.read(tutorialProvider);
     final goalsTutorialSeen = ref.read(goalsTutorialProvider);
-    
+
     // Only show if main tutorial is finished but goals tutorial isn't
     if (mainTutorialSeen && !goalsTutorialSeen) {
       Future.delayed(const Duration(milliseconds: 400), () {
@@ -74,15 +75,15 @@ class _MacroGoalsScreenState extends ConsumerState<MacroGoalsScreen>
         color: Theme.of(context).colorScheme.surface,
         borderRadius: BorderRadius.circular(20),
         border: Border.all(
-          color: Theme.of(context).colorScheme.primary.withValues(alpha: 0.5), 
-          width: 1.5
+          color: Theme.of(context).colorScheme.primary.withValues(alpha: 0.5),
+          width: 1.5,
         ),
         boxShadow: [
           BoxShadow(
             color: Colors.black.withValues(alpha: 0.2),
             blurRadius: 20,
             offset: const Offset(0, 10),
-          )
+          ),
         ],
       ),
       child: Column(
@@ -91,7 +92,11 @@ class _MacroGoalsScreenState extends ConsumerState<MacroGoalsScreen>
         children: [
           Row(
             children: [
-              Icon(LucideIcons.info, color: Theme.of(context).colorScheme.primary, size: 20),
+              Icon(
+                LucideIcons.info,
+                color: Theme.of(context).colorScheme.primary,
+                size: 20,
+              ),
               const SizedBox(width: 8),
               Text(
                 title,
@@ -109,7 +114,9 @@ class _MacroGoalsScreenState extends ConsumerState<MacroGoalsScreen>
           Text(
             description,
             style: TextStyle(
-              color: Theme.of(context).colorScheme.onSurface.withValues(alpha: 0.7),
+              color: Theme.of(
+                context,
+              ).colorScheme.onSurface.withValues(alpha: 0.7),
               fontFamily: 'Inter',
               fontSize: 14,
               height: 1.5,
@@ -125,7 +132,15 @@ class _MacroGoalsScreenState extends ConsumerState<MacroGoalsScreen>
                     ref.hapticSelection();
                     controller.previous();
                   },
-                  child: Text(context.l10n.translate("Indietro"), style: TextStyle(color: Theme.of(context).colorScheme.onSurface.withValues(alpha: 0.5), fontWeight: FontWeight.bold)),
+                  child: Text(
+                    context.l10n.translate("Indietro"),
+                    style: TextStyle(
+                      color: Theme.of(
+                        context,
+                      ).colorScheme.onSurface.withValues(alpha: 0.5),
+                      fontWeight: FontWeight.bold,
+                    ),
+                  ),
                 )
               else
                 const SizedBox.shrink(),
@@ -142,14 +157,22 @@ class _MacroGoalsScreenState extends ConsumerState<MacroGoalsScreen>
                 },
                 style: ElevatedButton.styleFrom(
                   backgroundColor: Theme.of(context).colorScheme.primary,
-                  foregroundColor: Theme.of(context).colorScheme.primary.computeLuminance() > 0.5 ? Colors.black : Colors.white,
-                  shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
+                  foregroundColor:
+                      Theme.of(context).colorScheme.primary.computeLuminance() >
+                          0.5
+                      ? Colors.black
+                      : Colors.white,
+                  shape: RoundedRectangleBorder(
+                    borderRadius: BorderRadius.circular(10),
+                  ),
                   elevation: 0,
                 ),
                 child: Text(
                   nextButtonLabel != null
                       ? context.l10n.translate(nextButtonLabel)
-                      : (isLast ? context.l10n.translate("Fine") : context.l10n.translate("Avanti")),
+                      : (isLast
+                            ? context.l10n.translate("Fine")
+                            : context.l10n.translate("Avanti")),
                   style: const TextStyle(fontWeight: FontWeight.bold),
                 ),
               ),
@@ -173,7 +196,9 @@ class _MacroGoalsScreenState extends ConsumerState<MacroGoalsScreen>
             builder: (context, controller) {
               return _buildTutorialContent(
                 context.l10n.translate("Tipo di Pianificazione"),
-                context.l10n.translate("Qui puoi selezionare la visione temporale: Lifetime (per tutta la vita), Annuale, Trimestrale, Mensile o Settimanale."),
+                context.l10n.translate(
+                  "Qui puoi selezionare la visione temporale: Lifetime (per tutta la vita), Annuale, Trimestrale, Mensile o Settimanale.",
+                ),
                 controller,
                 isFirst: true,
               );
@@ -192,7 +217,9 @@ class _MacroGoalsScreenState extends ConsumerState<MacroGoalsScreen>
             builder: (context, controller) {
               return _buildTutorialContent(
                 context.l10n.translate("Nuovo Obiettivo"),
-                context.l10n.translate("Da qui puoi inserire un nuovo obiettivo. Potrai anche personalizzare le Categorie a tuo piacimento per organizzare tutto al meglio."),
+                context.l10n.translate(
+                  "Da qui puoi inserire un nuovo obiettivo. Potrai anche personalizzare le Categorie a tuo piacimento per organizzare tutto al meglio.",
+                ),
                 controller,
               );
             },
@@ -210,7 +237,9 @@ class _MacroGoalsScreenState extends ConsumerState<MacroGoalsScreen>
             align: ContentAlign.bottom,
             builder: (context, controller) => _buildTutorialContent(
               context.l10n.translate("Completare o Fallire"),
-              context.l10n.translate("Clicca qui per segnare l'obiettivo come completato. Cliccandolo di nuovo verrà segnato come fallito."),
+              context.l10n.translate(
+                "Clicca qui per segnare l'obiettivo come completato. Cliccandolo di nuovo verrà segnato come fallito.",
+              ),
               controller,
             ),
           ),
@@ -227,7 +256,9 @@ class _MacroGoalsScreenState extends ConsumerState<MacroGoalsScreen>
             align: ContentAlign.bottom,
             builder: (context, controller) => _buildTutorialContent(
               context.l10n.translate("Categoria"),
-              context.l10n.translate("Usa questo pulsante per assegnare rapidamente una categoria all'obiettivo."),
+              context.l10n.translate(
+                "Usa questo pulsante per assegnare rapidamente una categoria all'obiettivo.",
+              ),
               controller,
             ),
           ),
@@ -244,7 +275,9 @@ class _MacroGoalsScreenState extends ConsumerState<MacroGoalsScreen>
             align: ContentAlign.bottom,
             builder: (context, controller) => _buildTutorialContent(
               context.l10n.translate("Posticipare"),
-              context.l10n.translate("Se non hai fatto in tempo o i piani sono cambiati, puoi spostare questo obiettivo alla settimana / mese o anno successivo ( in base a dove hai inserito l'obiettivo)."),
+              context.l10n.translate(
+                "Se non hai fatto in tempo o i piani sono cambiati, puoi spostare questo obiettivo alla settimana / mese o anno successivo ( in base a dove hai inserito l'obiettivo).",
+              ),
               controller,
             ),
           ),
@@ -261,7 +294,9 @@ class _MacroGoalsScreenState extends ConsumerState<MacroGoalsScreen>
             align: ContentAlign.bottom,
             builder: (context, controller) => _buildTutorialContent(
               context.l10n.translate("Modifica"),
-              context.l10n.translate("Se devi semplicemente rinominare l'obiettivo, usa la matita."),
+              context.l10n.translate(
+                "Se devi semplicemente rinominare l'obiettivo, usa la matita.",
+              ),
               controller,
             ),
           ),
@@ -284,7 +319,9 @@ class _MacroGoalsScreenState extends ConsumerState<MacroGoalsScreen>
               });
               return _buildTutorialContent(
                 context.l10n.translate("Elimina"),
-                context.l10n.translate("Infine, questo pulsante elimina definitivamente l'obiettivo."),
+                context.l10n.translate(
+                  "Infine, questo pulsante elimina definitivamente l'obiettivo.",
+                ),
                 controller,
               );
             },
@@ -307,7 +344,9 @@ class _MacroGoalsScreenState extends ConsumerState<MacroGoalsScreen>
               });
               return _buildTutorialContent(
                 context.l10n.translate("Analisi e Statistiche"),
-                context.l10n.translate("Passa a questa scheda per visualizzare grafici e performance dettagliate selezionando l'anno corrente o tutti gli anni."),
+                context.l10n.translate(
+                  "Passa a questa scheda per visualizzare grafici e performance dettagliate selezionando l'anno corrente o tutti gli anni.",
+                ),
                 controller,
                 isLast: false,
                 nextButtonLabel: "Continua",
@@ -328,12 +367,16 @@ class _MacroGoalsScreenState extends ConsumerState<MacroGoalsScreen>
               builder: (context, controller) {
                 return _buildTutorialContent(
                   context.l10n.translate("Statistiche Abitudini"),
-                  context.l10n.translate("Per vedere le statistiche delle tue abitudini giornaliere, puoi spostarti in questa sezione."),
+                  context.l10n.translate(
+                    "Per vedere le statistiche delle tue abitudini giornaliere, puoi spostarti in questa sezione.",
+                  ),
                   controller,
                   isLast: false,
                   nextButtonLabel: "Passa alle Statistiche",
                   onNextPressed: () {
-                    ref.read(goalsTutorialProvider.notifier).setTutorialSeen(true);
+                    ref
+                        .read(goalsTutorialProvider.notifier)
+                        .setTutorialSeen(true);
                     if (widget.onFinishTutorial != null) {
                       widget.onFinishTutorial!();
                     }
@@ -372,7 +415,7 @@ class _MacroGoalsScreenState extends ConsumerState<MacroGoalsScreen>
     super.build(context);
     final viewState = ref.watch(macroGoalsViewProvider);
     final primaryColor = Theme.of(context).colorScheme.primary;
-    
+
     // Force re-compute on state change
     ref.watch(macroGoalsProvider);
 
@@ -387,7 +430,9 @@ class _MacroGoalsScreenState extends ConsumerState<MacroGoalsScreen>
       }
     });
 
-    final filteredGoals = ref.read(macroGoalsProvider.notifier).getFilteredGoals(
+    final filteredGoals = ref
+        .read(macroGoalsProvider.notifier)
+        .getFilteredGoals(
           type: viewState.selectedType,
           year: viewState.selectedYear,
           quarter: viewState.selectedQuarter,
@@ -397,20 +442,23 @@ class _MacroGoalsScreenState extends ConsumerState<MacroGoalsScreen>
 
     final mainTutorialSeen = ref.watch(tutorialProvider);
     final goalsTutorialSeen = ref.watch(goalsTutorialProvider);
-    
+
     List<MacroGoal> displayGoals = List.from(filteredGoals);
     if (mainTutorialSeen && !goalsTutorialSeen) {
-      displayGoals.insert(0, MacroGoal(
-        id: 'tutorial_fake_goal',
-        title: context.l10n.translate('Obiettivo Tutorial'),
-        status: GoalStatus.active,
-        type: viewState.selectedType,
-        year: viewState.selectedYear,
-        quarter: viewState.selectedQuarter,
-        month: viewState.selectedMonth,
-        weekNumber: viewState.selectedWeek,
-        createdAt: DateTime.now(),
-      ));
+      displayGoals.insert(
+        0,
+        MacroGoal(
+          id: 'tutorial_fake_goal',
+          title: context.l10n.translate('Obiettivo Tutorial'),
+          status: GoalStatus.active,
+          type: viewState.selectedType,
+          year: viewState.selectedYear,
+          quarter: viewState.selectedQuarter,
+          month: viewState.selectedMonth,
+          weekNumber: viewState.selectedWeek,
+          createdAt: DateTime.now(),
+        ),
+      );
     }
 
     return Scaffold(
@@ -430,92 +478,108 @@ class _MacroGoalsScreenState extends ConsumerState<MacroGoalsScreen>
 
               const SizedBox(height: 16),
 
-
-            // ── Goals list ────────────────────────────────────────────────
-            Expanded(
-              child: GestureDetector(
-                behavior: HitTestBehavior.opaque,
-                onHorizontalDragEnd: (details) {
-                  if (viewState.selectedType == GoalType.lifetime) return;
-                  const velocityThreshold = 300.0;
-                  final vx = details.primaryVelocity ?? 0.0;
-                  if (vx < -velocityThreshold) {
-                    setState(() => _isForward = true);
-                    ref.read(macroGoalsViewProvider.notifier).nextPeriod();
-                    ref.hapticLight();
-                  } else if (vx > velocityThreshold) {
-                    setState(() => _isForward = false);
-                    ref.read(macroGoalsViewProvider.notifier).prevPeriod();
-                    ref.hapticLight();
-                  }
-                },
-                child: AnimatedSwitcher(
-                  duration: const Duration(milliseconds: 450),
-                  switchInCurve: Curves.easeOutQuart,
-                  switchOutCurve: Curves.easeOutQuart,
-                  transitionBuilder: (child, animation) {
-                    final isIncoming = child.key == ValueKey('${viewState.selectedType}-${viewState.selectedYear}-${viewState.selectedMonth}-${viewState.selectedWeek}-${viewState.selectedQuarter}');
-                    final dir = _isForward ? 1 : -1;
-
-                    return AnimatedBuilder(
-                      animation: animation,
-                      builder: (context, child) {
-                        double pageOffset = 0.0;
-                        if (isIncoming) {
-                          pageOffset = (1.0 - animation.value) * dir;
-                        } else {
-                          pageOffset = (animation.value - 1.0) * dir;
-                        }
-
-                        final absOffset = pageOffset.abs();
-                        
-                        // Premium Parallax & Scale Effect (simulating Calendar PageView)
-                        final double scale = 1.0 - (absOffset * 0.05).clamp(0.0, 0.05);
-                        final double opacity = (1.0 - absOffset).clamp(0.0, 1.0);
-                        
-                        // We use the screen width to simulate the PageView horizontal scroll
-                        final double width = MediaQuery.of(context).size.width;
-                        final double translation = pageOffset * width; 
-
-                        return Transform.scale(
-                          scale: scale,
-                          child: Transform.translate(
-                            offset: Offset(translation, 0),
-                            child: Opacity(
-                              opacity: opacity,
-                              child: child,
-                            ),
-                          ),
-                        );
-                      },
-                      child: child,
-                    );
+              // ── Goals list ────────────────────────────────────────────────
+              Expanded(
+                child: GestureDetector(
+                  behavior: HitTestBehavior.opaque,
+                  onHorizontalDragEnd: (details) {
+                    if (viewState.selectedType == GoalType.lifetime) return;
+                    const velocityThreshold = 300.0;
+                    final vx = details.primaryVelocity ?? 0.0;
+                    if (vx < -velocityThreshold) {
+                      setState(() => _isForward = true);
+                      ref.read(macroGoalsViewProvider.notifier).nextPeriod();
+                      ref.hapticLight();
+                    } else if (vx > velocityThreshold) {
+                      setState(() => _isForward = false);
+                      ref.read(macroGoalsViewProvider.notifier).prevPeriod();
+                      ref.hapticLight();
+                    }
                   },
-                  child: _GoalsList(
-                    key: ValueKey('${viewState.selectedType}-${viewState.selectedYear}-${viewState.selectedMonth}-${viewState.selectedWeek}-${viewState.selectedQuarter}'),
-                    goals: displayGoals,
-                    viewState: viewState,
-                    emptyStateKey: _goalsListKey,
-                    tutorialCheckboxKey: _tutorialCheckboxKey,
-                    tutorialCategoryKey: _tutorialCategoryKey,
-                    tutorialRescheduleKey: _tutorialRescheduleKey,
-                    tutorialEditKey: _tutorialEditKey,
-                    tutorialDeleteKey: _tutorialDeleteKey,
+                  child: AnimatedSwitcher(
+                    duration: const Duration(milliseconds: 450),
+                    switchInCurve: Curves.easeOutQuart,
+                    switchOutCurve: Curves.easeOutQuart,
+                    transitionBuilder: (child, animation) {
+                      final isIncoming =
+                          child.key ==
+                          ValueKey(
+                            '${viewState.selectedType}-${viewState.selectedYear}-${viewState.selectedMonth}-${viewState.selectedWeek}-${viewState.selectedQuarter}',
+                          );
+                      final dir = _isForward ? 1 : -1;
+
+                      return AnimatedBuilder(
+                        animation: animation,
+                        builder: (context, child) {
+                          double pageOffset = 0.0;
+                          if (isIncoming) {
+                            pageOffset = (1.0 - animation.value) * dir;
+                          } else {
+                            pageOffset = (animation.value - 1.0) * dir;
+                          }
+
+                          final absOffset = pageOffset.abs();
+
+                          // Premium Parallax & Scale Effect (simulating Calendar PageView)
+                          final double scale =
+                              1.0 - (absOffset * 0.05).clamp(0.0, 0.05);
+                          final double opacity = (1.0 - absOffset).clamp(
+                            0.0,
+                            1.0,
+                          );
+
+                          // We use the screen width to simulate the PageView horizontal scroll
+                          final double width = MediaQuery.of(
+                            context,
+                          ).size.width;
+                          final double translation = pageOffset * width;
+
+                          return Transform.scale(
+                            scale: scale,
+                            child: Transform.translate(
+                              offset: Offset(translation, 0),
+                              child: Opacity(opacity: opacity, child: child),
+                            ),
+                          );
+                        },
+                        child: child,
+                      );
+                    },
+                    child: _GoalsList(
+                      key: ValueKey(
+                        '${viewState.selectedType}-${viewState.selectedYear}-${viewState.selectedMonth}-${viewState.selectedWeek}-${viewState.selectedQuarter}',
+                      ),
+                      goals: displayGoals,
+                      viewState: viewState,
+                      emptyStateKey: _goalsListKey,
+                      tutorialCheckboxKey: _tutorialCheckboxKey,
+                      tutorialCategoryKey: _tutorialCategoryKey,
+                      tutorialRescheduleKey: _tutorialRescheduleKey,
+                      tutorialEditKey: _tutorialEditKey,
+                      tutorialDeleteKey: _tutorialDeleteKey,
+                    ),
                   ),
                 ),
               ),
-            ),
-            const SizedBox(height: 12),
-            Container(key: _addGoalKey, child: AddGoalBar(viewState: viewState)),
-            const SizedBox(height: 12),
+              const SizedBox(height: 12),
+              Container(
+                key: _addGoalKey,
+                child: AddGoalBar(viewState: viewState),
+              ),
+              const SizedBox(height: 12),
+            ],
           ],
-        ],
+        ),
       ),
-    ),
-  );
-}
+    );
+  }
 
-  Widget _buildUnifiedHeader(BuildContext context, WidgetRef ref, MacroGoalsViewState vs, Color primaryColor) {
+  Widget _buildUnifiedHeader(
+    BuildContext context,
+    WidgetRef ref,
+    MacroGoalsViewState vs,
+    Color primaryColor,
+  ) {
     return Padding(
       padding: const EdgeInsets.fromLTRB(16, 12, 16, 8),
       child: Column(
@@ -543,15 +607,13 @@ class _MacroGoalsScreenState extends ConsumerState<MacroGoalsScreen>
     );
   }
 
-  Widget _buildTypePicker(BuildContext context, WidgetRef ref, MacroGoalsViewState vs, Color primaryColor) {
-    String typeLabel = '';
-    switch (vs.selectedType) {
-      case GoalType.lifetime: typeLabel = 'Lifetime'; break;
-      case GoalType.annual: typeLabel = 'Annuale'; break;
-      case GoalType.quarterly: typeLabel = 'Trimestrale'; break;
-      case GoalType.monthly: typeLabel = 'Mensile'; break;
-      case GoalType.weekly: typeLabel = 'Settimanale'; break;
-    }
+  Widget _buildTypePicker(
+    BuildContext context,
+    WidgetRef ref,
+    MacroGoalsViewState vs,
+    Color primaryColor,
+  ) {
+    final typeLabel = _goalTypeLabel(context, vs.selectedType);
 
     return GestureDetector(
       onTap: () {
@@ -580,7 +642,11 @@ class _MacroGoalsScreenState extends ConsumerState<MacroGoalsScreen>
               ),
             ),
             const SizedBox(width: 4),
-            Icon(LucideIcons.chevronDown, size: 12, color: context.appColors.mutedForeground),
+            Icon(
+              LucideIcons.chevronDown,
+              size: 12,
+              color: context.appColors.mutedForeground,
+            ),
           ],
         ),
       ),
@@ -594,7 +660,10 @@ class _MacroGoalsScreenState extends ConsumerState<MacroGoalsScreen>
       decoration: BoxDecoration(
         color: context.appColors.card.withValues(alpha: 0.3),
         borderRadius: BorderRadius.circular(14),
-        border: Border.all(color: context.appColors.border.withValues(alpha: 0.5), width: 1),
+        border: Border.all(
+          color: context.appColors.border.withValues(alpha: 0.5),
+          width: 1,
+        ),
       ),
       child: Row(
         children: [
@@ -620,7 +689,9 @@ class _MacroGoalsScreenState extends ConsumerState<MacroGoalsScreen>
           duration: const Duration(milliseconds: 250),
           curve: Curves.easeInOut,
           decoration: BoxDecoration(
-            color: active ? Theme.of(context).colorScheme.primary : Colors.transparent,
+            color: active
+                ? Theme.of(context).colorScheme.primary
+                : Colors.transparent,
             borderRadius: BorderRadius.circular(10),
             boxShadow: active
                 ? [
@@ -628,7 +699,7 @@ class _MacroGoalsScreenState extends ConsumerState<MacroGoalsScreen>
                       color: Colors.black.withValues(alpha: 0.3),
                       blurRadius: 8,
                       offset: const Offset(0, 2),
-                    )
+                    ),
                   ]
                 : null,
           ),
@@ -639,7 +710,9 @@ class _MacroGoalsScreenState extends ConsumerState<MacroGoalsScreen>
               fontFamily: 'Inter',
               fontSize: 11,
               fontWeight: active ? FontWeight.w800 : FontWeight.w600,
-              color: active ? context.appColors.background : context.appColors.mutedForeground,
+              color: active
+                  ? context.appColors.background
+                  : context.appColors.mutedForeground,
               letterSpacing: -0.2,
             ),
           ),
@@ -648,13 +721,18 @@ class _MacroGoalsScreenState extends ConsumerState<MacroGoalsScreen>
     );
   }
 
-  void _showTypePicker(BuildContext context, WidgetRef ref, MacroGoalsViewState vs, Color primaryColor) {
+  void _showTypePicker(
+    BuildContext context,
+    WidgetRef ref,
+    MacroGoalsViewState vs,
+    Color primaryColor,
+  ) {
     final types = [
-      (t: GoalType.lifetime, l: 'LIFETIME', i: LucideIcons.infinity),
-      (t: GoalType.annual, l: 'ANNUALE', i: LucideIcons.calendar),
-      (t: GoalType.quarterly, l: 'TRIMESTRALE', i: LucideIcons.calendarRange),
-      (t: GoalType.monthly, l: 'MENSILE', i: LucideIcons.calendarDays),
-      (t: GoalType.weekly, l: 'SETTIMANALE', i: LucideIcons.clock),
+      (t: GoalType.lifetime, i: LucideIcons.infinity),
+      (t: GoalType.annual, i: LucideIcons.calendar),
+      (t: GoalType.quarterly, i: LucideIcons.calendarRange),
+      (t: GoalType.monthly, i: LucideIcons.calendarDays),
+      (t: GoalType.weekly, i: LucideIcons.clock),
     ];
 
     showModalBottomSheet(
@@ -682,14 +760,14 @@ class _MacroGoalsScreenState extends ConsumerState<MacroGoalsScreen>
               child: Align(
                 alignment: Alignment.center,
                 child: Text(
-                  'TIPO PIANIFICAZIONE', 
+                  context.l10n.planningTypeHeader,
                   style: TextStyle(
-                    fontFamily: 'Inter', 
-                    fontWeight: FontWeight.w800, 
-                    color: context.appColors.mutedForeground, 
+                    fontFamily: 'Inter',
+                    fontWeight: FontWeight.w800,
+                    color: context.appColors.mutedForeground,
                     fontSize: 10,
                     letterSpacing: 1.2,
-                  )
+                  ),
                 ),
               ),
             ),
@@ -699,18 +777,26 @@ class _MacroGoalsScreenState extends ConsumerState<MacroGoalsScreen>
                 leading: Icon(
                   type.i,
                   size: 20,
-                  color: isSel ? primaryColor : context.appColors.mutedForeground.withValues(alpha: 0.6),
+                  color: isSel
+                      ? primaryColor
+                      : context.appColors.mutedForeground.withValues(
+                          alpha: 0.6,
+                        ),
                 ),
                 title: Text(
-                  type.l,
+                  _goalTypeLabel(context, type.t).toUpperCase(),
                   style: TextStyle(
                     fontFamily: 'Inter',
                     fontSize: 16,
-                    color: isSel ? context.appColors.foreground : context.appColors.mutedForeground,
+                    color: isSel
+                        ? context.appColors.foreground
+                        : context.appColors.mutedForeground,
                     fontWeight: isSel ? FontWeight.w700 : FontWeight.w500,
                   ),
                 ),
-                trailing: isSel ? Icon(LucideIcons.check, color: primaryColor, size: 20) : null,
+                trailing: isSel
+                    ? Icon(LucideIcons.check, color: primaryColor, size: 20)
+                    : null,
                 onTap: () {
                   ref.read(macroGoalsViewProvider.notifier).setType(type.t);
                   Navigator.pop(context);
@@ -723,24 +809,25 @@ class _MacroGoalsScreenState extends ConsumerState<MacroGoalsScreen>
         ),
       ),
     );
-
   }
 
-  Widget _buildPeriodNavigator(BuildContext context, WidgetRef ref, MacroGoalsViewState vs) {
+  Widget _buildPeriodNavigator(
+    BuildContext context,
+    WidgetRef ref,
+    MacroGoalsViewState vs,
+  ) {
     if (vs.selectedType == GoalType.lifetime) {
       return Padding(
         padding: const EdgeInsets.fromLTRB(16, 6, 16, 8),
         child: Text(
-          'Visione a lungo termine della tua vita.',
-          style: GoogleFonts.inter(fontSize: 14, color: context.appColors.mutedForeground),
+          context.l10n.lifetimeGoalsDescription,
+          style: GoogleFonts.inter(
+            fontSize: 14,
+            color: context.appColors.mutedForeground,
+          ),
         ),
       );
     }
-
-    final months = [
-      '', 'Gennaio', 'Febbraio', 'Marzo', 'Aprile', 'Maggio', 'Giugno',
-      'Luglio', 'Agosto', 'Settembre', 'Ottobre', 'Novembre', 'Dicembre',
-    ];
 
     String periodTitle = '';
     Color highlightColor = context.appColors.foreground;
@@ -754,11 +841,16 @@ class _MacroGoalsScreenState extends ConsumerState<MacroGoalsScreen>
         highlightColor = const Color(0xFFFBBF24); // amber
         break;
       case GoalType.monthly:
-        periodTitle = '${months[vs.selectedMonth]} ${vs.selectedYear}';
+        periodTitle = _capitalizeFirst(
+          DateFormat.yMMMM(
+            context.l10n.localeName,
+          ).format(DateTime(vs.selectedYear, vs.selectedMonth)),
+        );
         highlightColor = const Color(0xFF60A5FA); // blue
         break;
       case GoalType.weekly:
         periodTitle = _formatWeeklyRange(
+          context,
           vs.selectedYear,
           vs.selectedMonth,
           vs.selectedWeek,
@@ -787,7 +879,11 @@ class _MacroGoalsScreenState extends ConsumerState<MacroGoalsScreen>
                 shape: BoxShape.circle,
                 color: context.appColors.card.withValues(alpha: 0.8),
               ),
-              child: Icon(LucideIcons.chevronLeft, size: 20, color: context.appColors.foreground),
+              child: Icon(
+                LucideIcons.chevronLeft,
+                size: 20,
+                color: context.appColors.foreground,
+              ),
             ),
           ),
 
@@ -820,7 +916,11 @@ class _MacroGoalsScreenState extends ConsumerState<MacroGoalsScreen>
                 shape: BoxShape.circle,
                 color: context.appColors.card.withValues(alpha: 0.8),
               ),
-              child: Icon(LucideIcons.chevronRight, size: 20, color: context.appColors.foreground),
+              child: Icon(
+                LucideIcons.chevronRight,
+                size: 20,
+                color: context.appColors.foreground,
+              ),
             ),
           ),
         ],
@@ -828,25 +928,61 @@ class _MacroGoalsScreenState extends ConsumerState<MacroGoalsScreen>
     );
   }
 
-  String _formatWeeklyRange(int year, int month, int week) {
-    final range = logicalWeekRange(year, month, week);
-    final months = [
-      '', 'gennaio', 'febbraio', 'marzo', 'aprile', 'maggio', 'giugno',
-      'luglio', 'agosto', 'settembre', 'ottobre', 'novembre', 'dicembre',
-    ];
+  String _goalTypeLabel(BuildContext context, GoalType type) {
+    switch (type) {
+      case GoalType.lifetime:
+        return context.l10n.goalTypeLifetime;
+      case GoalType.annual:
+        return context.l10n.goalTypeAnnual;
+      case GoalType.quarterly:
+        return context.l10n.goalTypeQuarterly;
+      case GoalType.monthly:
+        return context.l10n.goalTypeMonthly;
+      case GoalType.weekly:
+        return context.l10n.goalTypeWeekly;
+    }
+  }
 
-    final sameMonth = range.start.year == range.end.year &&
+  String _formatWeeklyRange(
+    BuildContext context,
+    int year,
+    int month,
+    int week,
+  ) {
+    final range = logicalWeekRange(year, month, week);
+    final locale = context.l10n.localeName;
+    final monthFormat = DateFormat.MMMM(locale);
+    final startMonth = monthFormat.format(range.start);
+    final endMonth = monthFormat.format(range.end);
+    final isEnglish = locale.toLowerCase().startsWith('en');
+
+    final sameMonth =
+        range.start.year == range.end.year &&
         range.start.month == range.end.month;
     if (sameMonth) {
-      return '${range.start.day} - ${range.end.day}, ${months[range.end.month]} ${range.end.year}';
+      if (isEnglish) {
+        return '$endMonth ${range.start.day} - ${range.end.day}, ${range.end.year}';
+      }
+      return '${range.start.day} - ${range.end.day} $endMonth ${range.end.year}';
     }
 
     final sameYear = range.start.year == range.end.year;
     if (sameYear) {
-      return '${range.start.day} ${months[range.start.month]} - ${range.end.day} ${months[range.end.month]} ${range.end.year}';
+      if (isEnglish) {
+        return '$startMonth ${range.start.day} - $endMonth ${range.end.day}, ${range.end.year}';
+      }
+      return '${range.start.day} $startMonth - ${range.end.day} $endMonth ${range.end.year}';
     }
 
-    return '${range.start.day} ${months[range.start.month]} ${range.start.year} - ${range.end.day} ${months[range.end.month]} ${range.end.year}';
+    if (isEnglish) {
+      return '$startMonth ${range.start.day}, ${range.start.year} - $endMonth ${range.end.day}, ${range.end.year}';
+    }
+    return '${range.start.day} $startMonth ${range.start.year} - ${range.end.day} $endMonth ${range.end.year}';
+  }
+
+  String _capitalizeFirst(String value) {
+    if (value.isEmpty) return value;
+    return value[0].toUpperCase() + value.substring(1);
   }
 }
 
@@ -863,9 +999,9 @@ class _GoalsList extends ConsumerWidget {
   final GlobalKey? tutorialDeleteKey;
 
   const _GoalsList({
-    super.key, 
-    required this.goals, 
-    required this.viewState, 
+    super.key,
+    required this.goals,
+    required this.viewState,
     required this.emptyStateKey,
     this.tutorialCheckboxKey,
     this.tutorialCategoryKey,
@@ -886,36 +1022,36 @@ class _GoalsList extends ConsumerWidget {
               mainAxisSize: MainAxisSize.min,
               children: [
                 Icon(
-                LucideIcons.target,
-                color: context.appColors.border,
-                size: 40,
-              ),
-              const SizedBox(height: 16),
-              Text(
-                'Nessun obiettivo.',
-                textAlign: TextAlign.center,
-                style: GoogleFonts.inter(
-                  fontSize: 15,
-                  fontWeight: FontWeight.w500,
-                  color: context.appColors.foreground,
+                  LucideIcons.target,
+                  color: context.appColors.border,
+                  size: 40,
                 ),
-              ),
-              const SizedBox(height: 4),
-              Text(
-                'Aggiungi un obiettivo per questo periodo usando la barra qui sotto.',
-                textAlign: TextAlign.center,
-                style: GoogleFonts.inter(
-                  fontSize: 13,
-                  color: context.appColors.mutedForeground,
-                  height: 1.4,
+                const SizedBox(height: 16),
+                Text(
+                  context.l10n.emptyGoalsTitle,
+                  textAlign: TextAlign.center,
+                  style: GoogleFonts.inter(
+                    fontSize: 15,
+                    fontWeight: FontWeight.w500,
+                    color: context.appColors.foreground,
+                  ),
                 ),
-              ),
-            ],
+                const SizedBox(height: 4),
+                Text(
+                  context.l10n.emptyGoalsSubtitle,
+                  textAlign: TextAlign.center,
+                  style: GoogleFonts.inter(
+                    fontSize: 13,
+                    color: context.appColors.mutedForeground,
+                    height: 1.4,
+                  ),
+                ),
+              ],
+            ),
           ),
         ),
-      ),
-    );
-  }
+      );
+    }
 
     final items = _buildItems(goals);
 
@@ -931,12 +1067,16 @@ class _GoalsList extends ConsumerWidget {
       itemBuilder: (context, index) {
         final item = items[index];
         if (item is _SectionHeader) {
-          return _buildSectionHeader(context, item.status, ValueKey('header-${item.status.name}'));
+          return _buildSectionHeader(
+            context,
+            item.status,
+            ValueKey('header-${item.status.name}'),
+          );
         }
         final goal = item as MacroGoal;
         if (goal.id == 'tutorial_fake_goal') {
           return GoalItemWidget(
-            key: ValueKey(goal.id), 
+            key: ValueKey(goal.id),
             goal: goal,
             checkboxKey: tutorialCheckboxKey,
             categoryKey: tutorialCategoryKey,
@@ -951,7 +1091,9 @@ class _GoalsList extends ConsumerWidget {
   }
 
   Widget _buildSectionHeader(BuildContext context, GoalStatus status, Key key) {
-    final label = status == GoalStatus.completed ? context.l10n.translate('COMPLETATI') : context.l10n.translate('FALLITI');
+    final label = status == GoalStatus.completed
+        ? context.l10n.translate('COMPLETATI')
+        : context.l10n.translate('FALLITI');
     final color = status == GoalStatus.completed
         ? const Color(0xFF10B981).withValues(alpha: 0.7)
         : context.appColors.destructive.withValues(alpha: 0.7);
@@ -962,10 +1104,7 @@ class _GoalsList extends ConsumerWidget {
       child: Row(
         children: [
           Expanded(
-            child: Container(
-              height: 1,
-              color: color.withValues(alpha: 0.2),
-            ),
+            child: Container(height: 1, color: color.withValues(alpha: 0.2)),
           ),
           const SizedBox(width: 12),
           Text(
@@ -979,10 +1118,7 @@ class _GoalsList extends ConsumerWidget {
           ),
           const SizedBox(width: 12),
           Expanded(
-            child: Container(
-              height: 1,
-              color: color.withValues(alpha: 0.2),
-            ),
+            child: Container(height: 1, color: color.withValues(alpha: 0.2)),
           ),
         ],
       ),

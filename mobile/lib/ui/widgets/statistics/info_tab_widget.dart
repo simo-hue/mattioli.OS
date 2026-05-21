@@ -21,33 +21,47 @@ class InfoTabWidget extends ConsumerWidget {
             if (statsList.isEmpty) {
               return _buildEmptyState(context);
             }
-            
+
             // Calculate Global Completion
             int totalCompletions = 0;
             int totalActiveDays = 0;
             int maxBestStreak = 0;
             Map<String, dynamic>? topPerformerStat;
-            
+
             for (final stat in statsList) {
-              totalCompletions += (stat['total_completions'] as num?)?.toInt() ?? 0;
-              totalActiveDays += (stat['total_active_days'] as num?)?.toInt() ?? 1;
+              totalCompletions +=
+                  (stat['total_completions'] as num?)?.toInt() ?? 0;
+              totalActiveDays +=
+                  (stat['total_active_days'] as num?)?.toInt() ?? 1;
               final bestStreak = (stat['best_streak'] as num?)?.toInt() ?? 0;
               if (bestStreak > maxBestStreak) {
                 maxBestStreak = bestStreak;
               }
-              if (topPerformerStat == null || ((stat['rate'] as num?)?.toDouble() ?? 0) > ((topPerformerStat['rate'] as num?)?.toDouble() ?? 0)) {
+              if (topPerformerStat == null ||
+                  ((stat['rate'] as num?)?.toDouble() ?? 0) >
+                      ((topPerformerStat['rate'] as num?)?.toDouble() ?? 0)) {
                 topPerformerStat = stat;
               }
             }
-            
-            final globalCompletionRate = totalActiveDays > 0 ? (totalCompletions / totalActiveDays * 100).round() : 0;
-            
+
+            final globalCompletionRate = totalActiveDays > 0
+                ? (totalCompletions / totalActiveDays * 100).round()
+                : 0;
+
             final topPerformerName = topPerformerStat?['title'] ?? 'N/A';
-            final topPerformerRate = (topPerformerStat?['rate'] as num?)?.round() ?? 0;
+            final topPerformerRate =
+                (topPerformerStat?['rate'] as num?)?.round() ?? 0;
 
             final sortedStats = List<Map<String, dynamic>>.from(statsList);
-            sortedStats.sort((a, b) => ((b['rate'] as num?)?.toDouble() ?? 0).compareTo((a['rate'] as num?)?.toDouble() ?? 0));
-            final top3Ids = sortedStats.take(3).map((s) => s['goal_id'] as String).toList();
+            sortedStats.sort(
+              (a, b) => ((b['rate'] as num?)?.toDouble() ?? 0).compareTo(
+                (a['rate'] as num?)?.toDouble() ?? 0,
+              ),
+            );
+            final top3Ids = sortedStats
+                .take(3)
+                .map((s) => s['goal_id'] as String)
+                .toList();
 
             return Column(
               crossAxisAlignment: CrossAxisAlignment.start,
@@ -69,23 +83,36 @@ class InfoTabWidget extends ConsumerWidget {
                   _CorrelationsSection(goalId: top3Ids.first, isPositive: true),
                 const SizedBox(height: 16),
                 if (top3Ids.isNotEmpty)
-                  _CorrelationsSection(goalId: top3Ids.first, isPositive: false),
+                  _CorrelationsSection(
+                    goalId: top3Ids.first,
+                    isPositive: false,
+                  ),
                 const SizedBox(height: 32),
               ],
             );
           },
           loading: () => const Center(child: CircularProgressIndicator()),
-          error: (err, stack) => Center(child: Text('${context.l10n.translate('Errore')}: $err', style: TextStyle(color: context.appColors.mutedForeground))),
+          error: (err, stack) => Center(
+            child: Text(
+              '${context.l10n.translate('Errore')}: $err',
+              style: TextStyle(color: context.appColors.mutedForeground),
+            ),
+          ),
         );
       },
       loading: () => const Center(child: CircularProgressIndicator()),
-      error: (err, stack) => Center(child: Text('${context.l10n.translate('Errore')}: $err', style: TextStyle(color: context.appColors.mutedForeground))),
+      error: (err, stack) => Center(
+        child: Text(
+          '${context.l10n.translate('Errore')}: $err',
+          style: TextStyle(color: context.appColors.mutedForeground),
+        ),
+      ),
     );
   }
 
   Widget _buildEmptyState(BuildContext context) {
     final primaryColor = Theme.of(context).colorScheme.primary;
-    
+
     return Container(
       decoration: AppTheme.glassPanelDecoration(context, radius: 14),
       padding: const EdgeInsets.all(24),
@@ -100,15 +127,11 @@ class InfoTabWidget extends ConsumerWidget {
               color: primaryColor.withValues(alpha: 0.1),
               shape: BoxShape.circle,
             ),
-            child: Icon(
-              LucideIcons.chartBar,
-              size: 40,
-              color: primaryColor,
-            ),
+            child: Icon(LucideIcons.chartBar, size: 40, color: primaryColor),
           ),
           const SizedBox(height: 24),
           Text(
-            'Raccogliamo i primi dati',
+            context.l10n.statsCollectingFirstData,
             style: TextStyle(
               fontFamily: 'Inter',
               fontSize: 20,
@@ -177,7 +200,7 @@ class _TopStatsGrid extends StatelessWidget {
           icon: LucideIcons.trophy,
           title: context.l10n.translate('Top Performer'),
           value: topPerformer,
-          subtitle: '$topPerformerRate Rate',
+          subtitle: '$topPerformerRate ${context.l10n.translate('Rate')}',
           accentColor: Theme.of(context).colorScheme.primary,
         ),
         _StatCard(
@@ -191,7 +214,6 @@ class _TopStatsGrid extends StatelessWidget {
     );
   }
 }
-
 
 class _StatCard extends StatelessWidget {
   final IconData icon;
@@ -312,16 +334,17 @@ class _StatCard extends StatelessWidget {
   }
 }
 
-
 class _TopHabitCorrelationsSection extends ConsumerStatefulWidget {
   final List<String> goalIds;
   const _TopHabitCorrelationsSection({required this.goalIds});
 
   @override
-  ConsumerState<_TopHabitCorrelationsSection> createState() => _TopHabitCorrelationsSectionState();
+  ConsumerState<_TopHabitCorrelationsSection> createState() =>
+      _TopHabitCorrelationsSectionState();
 }
 
-class _TopHabitCorrelationsSectionState extends ConsumerState<_TopHabitCorrelationsSection> {
+class _TopHabitCorrelationsSectionState
+    extends ConsumerState<_TopHabitCorrelationsSection> {
   late PageController _pageController;
   int _currentPage = 0;
 
@@ -340,7 +363,7 @@ class _TopHabitCorrelationsSectionState extends ConsumerState<_TopHabitCorrelati
   @override
   Widget build(BuildContext context) {
     final correlationsAsync = ref.watch(allHabitCorrelationsProvider);
-    
+
     return correlationsAsync.when(
       data: (allCorrelations) {
         return Column(
@@ -348,15 +371,36 @@ class _TopHabitCorrelationsSectionState extends ConsumerState<_TopHabitCorrelati
           children: [
             Row(
               children: [
-                const Icon(LucideIcons.crown, size: 16, color: Color(0xFFEAB308)),
+                const Icon(
+                  LucideIcons.crown,
+                  size: 16,
+                  color: Color(0xFFEAB308),
+                ),
                 const SizedBox(width: 8),
-                Text(context.l10n.translate('Abitudini Chiave'), style: TextStyle(fontFamily: 'Inter', fontSize: 14, fontWeight: FontWeight.w700, color: context.appColors.foreground)),
+                Text(
+                  context.l10n.translate('Abitudini Chiave'),
+                  style: TextStyle(
+                    fontFamily: 'Inter',
+                    fontSize: 14,
+                    fontWeight: FontWeight.w700,
+                    color: context.appColors.foreground,
+                  ),
+                ),
               ],
             ),
             const SizedBox(height: 4),
-            Text(context.l10n.translate('Abitudini che influenzano positivamente molte altre'), style: TextStyle(fontFamily: 'Inter', fontSize: 11, color: context.appColors.mutedForeground)),
+            Text(
+              context.l10n.translate(
+                'Abitudini che influenzano positivamente molte altre',
+              ),
+              style: TextStyle(
+                fontFamily: 'Inter',
+                fontSize: 11,
+                color: context.appColors.mutedForeground,
+              ),
+            ),
             const SizedBox(height: 16),
-            
+
             // Carousel
             SizedBox(
               height: 280, // Height for habit cards
@@ -366,17 +410,22 @@ class _TopHabitCorrelationsSectionState extends ConsumerState<_TopHabitCorrelati
                 onPageChanged: (index) => setState(() => _currentPage = index),
                 itemBuilder: (context, index) {
                   final goalId = widget.goalIds[index];
-                  final habitCorrelations = allCorrelations.where((c) => c['goal_id'] == goalId).toList();
+                  final habitCorrelations = allCorrelations
+                      .where((c) => c['goal_id'] == goalId)
+                      .toList();
                   return Padding(
                     padding: const EdgeInsets.symmetric(horizontal: 8),
-                    child: _TopHabitCorrelationCard(goalId: goalId, correlationsData: habitCorrelations),
+                    child: _TopHabitCorrelationCard(
+                      goalId: goalId,
+                      correlationsData: habitCorrelations,
+                    ),
                   );
                 },
               ),
             ),
-            
+
             const SizedBox(height: 12),
-            
+
             // Pagination Dots
             Center(
               child: Row(
@@ -389,9 +438,11 @@ class _TopHabitCorrelationsSectionState extends ConsumerState<_TopHabitCorrelati
                     width: isActive ? 16 : 6,
                     height: 6,
                     decoration: BoxDecoration(
-                      color: isActive 
+                      color: isActive
                           ? const Color(0xFFEAB308)
-                          : context.appColors.mutedForeground.withValues(alpha: 0.3),
+                          : context.appColors.mutedForeground.withValues(
+                              alpha: 0.3,
+                            ),
                       borderRadius: BorderRadius.circular(3),
                     ),
                   );
@@ -402,7 +453,12 @@ class _TopHabitCorrelationsSectionState extends ConsumerState<_TopHabitCorrelati
         );
       },
       loading: () => const Center(child: CircularProgressIndicator()),
-      error: (err, stack) => Center(child: Text('${context.l10n.translate('Errore')}: $err', style: TextStyle(color: context.appColors.mutedForeground))),
+      error: (err, stack) => Center(
+        child: Text(
+          '${context.l10n.translate('Errore')}: $err',
+          style: TextStyle(color: context.appColors.mutedForeground),
+        ),
+      ),
     );
   }
 }
@@ -410,14 +466,25 @@ class _TopHabitCorrelationsSectionState extends ConsumerState<_TopHabitCorrelati
 class _TopHabitCorrelationCard extends ConsumerWidget {
   final String goalId;
   final List<Map<String, dynamic>> correlationsData;
-  const _TopHabitCorrelationCard({required this.goalId, required this.correlationsData});
+  const _TopHabitCorrelationCard({
+    required this.goalId,
+    required this.correlationsData,
+  });
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final goals = ref.watch(goalsProvider);
-    
-    final currentGoal = goals.firstWhere((g) => g.id == goalId, orElse: () => Goal(id: '', title: '', color: Colors.blue, startDate: DateTime.now()));
-    
+
+    final currentGoal = goals.firstWhere(
+      (g) => g.id == goalId,
+      orElse: () => Goal(
+        id: '',
+        title: '',
+        color: Colors.blue,
+        startDate: DateTime.now(),
+      ),
+    );
+
     if (currentGoal.id.isEmpty) {
       return const SizedBox.shrink();
     }
@@ -425,28 +492,46 @@ class _TopHabitCorrelationCard extends ConsumerWidget {
     final List<MapEntry<String, String>> correlationEntries = [];
     for (final item in correlationsData.take(4)) {
       final otherGoalId = item['other_goal_id'] as String;
-      final otherGoal = goals.firstWhere((g) => g.id == otherGoalId, orElse: () => Goal(id: '', title: '', color: Colors.blue, startDate: DateTime.now()));
+      final otherGoal = goals.firstWhere(
+        (g) => g.id == otherGoalId,
+        orElse: () => Goal(
+          id: '',
+          title: '',
+          color: Colors.blue,
+          startDate: DateTime.now(),
+        ),
+      );
       if (otherGoal.id.isNotEmpty) {
         final percentage = (item['percentage'] as num?)?.toInt() ?? 0;
         final strength = percentage / 100.0;
-        correlationEntries.add(MapEntry(otherGoal.title, '${strength >= 0 ? '+' : ''}${strength.toStringAsFixed(2)}'));
+        correlationEntries.add(
+          MapEntry(
+            otherGoal.title,
+            '${strength >= 0 ? '+' : ''}${strength.toStringAsFixed(2)}',
+          ),
+        );
       }
     }
 
-    final media = correlationEntries.isNotEmpty 
-        ? (correlationEntries.map((e) => double.tryParse(e.value) ?? 0.0).reduce((a, b) => a + b) / correlationEntries.length).toStringAsFixed(2)
+    final media = correlationEntries.isNotEmpty
+        ? (correlationEntries
+                      .map((e) => double.tryParse(e.value) ?? 0.0)
+                      .reduce((a, b) => a + b) /
+                  correlationEntries.length)
+              .toStringAsFixed(2)
         : '0.00';
 
     return _AbitudineChiaveCard(
       title: currentGoal.title,
       dotColor: currentGoal.color,
       correlations: correlationEntries,
-      extraConnections: correlationsData.length > 4 ? correlationsData.length - 4 : 0,
+      extraConnections: correlationsData.length > 4
+          ? correlationsData.length - 4
+          : 0,
       media: media,
     );
   }
 }
-
 
 class _AbitudineChiaveCard extends StatelessWidget {
   final String title;
@@ -492,7 +577,11 @@ class _AbitudineChiaveCard extends StatelessWidget {
                   color: dotColor,
                   shape: BoxShape.circle,
                   boxShadow: [
-                    BoxShadow(color: dotColor.withValues(alpha: 0.4), blurRadius: 4, spreadRadius: 1),
+                    BoxShadow(
+                      color: dotColor.withValues(alpha: 0.4),
+                      blurRadius: 4,
+                      spreadRadius: 1,
+                    ),
                   ],
                 ),
               ),
@@ -509,7 +598,11 @@ class _AbitudineChiaveCard extends StatelessWidget {
                   ),
                 ),
               ),
-              Icon(LucideIcons.crown, size: 18, color: Theme.of(context).colorScheme.primary),
+              Icon(
+                LucideIcons.crown,
+                size: 18,
+                color: Theme.of(context).colorScheme.primary,
+              ),
             ],
           ),
           const SizedBox(height: 14),
@@ -518,7 +611,9 @@ class _AbitudineChiaveCard extends StatelessWidget {
               Container(
                 padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
                 decoration: BoxDecoration(
-                  color: Theme.of(context).colorScheme.primary.withValues(alpha: 0.15),
+                  color: Theme.of(
+                    context,
+                  ).colorScheme.primary.withValues(alpha: 0.15),
                   borderRadius: BorderRadius.circular(8),
                 ),
                 child: Text(
@@ -565,7 +660,9 @@ class _AbitudineChiaveCard extends StatelessWidget {
                       fontFamily: 'Inter',
                       fontSize: 12,
                       fontWeight: FontWeight.w700,
-                      color: isPositive ? const Color(0xFF10B981) : const Color(0xFFEF4444),
+                      color: isPositive
+                          ? const Color(0xFF10B981)
+                          : const Color(0xFFEF4444),
                     ),
                   ),
                 ],
@@ -575,7 +672,7 @@ class _AbitudineChiaveCard extends StatelessWidget {
           const SizedBox(height: 8),
           Center(
             child: Text(
-              '+$extraConnections altre connessioni',
+              context.l10n.additionalConnections(extraConnections),
               style: TextStyle(
                 fontFamily: 'Inter',
                 fontSize: 10,
@@ -592,7 +689,11 @@ class _AbitudineChiaveCard extends StatelessWidget {
             children: [
               Row(
                 children: [
-                  Icon(LucideIcons.chartSpline, size: 14, color: context.appColors.mutedForeground),
+                  Icon(
+                    LucideIcons.chartSpline,
+                    size: 14,
+                    color: context.appColors.mutedForeground,
+                  ),
                   const SizedBox(width: 6),
                   Text(
                     context.l10n.translate('Media Impatto'),
@@ -622,19 +723,15 @@ class _AbitudineChiaveCard extends StatelessWidget {
   }
 }
 
-
-
 class _CorrelationsSection extends ConsumerStatefulWidget {
   final String goalId;
   final bool isPositive;
 
-  const _CorrelationsSection({
-    required this.goalId,
-    required this.isPositive,
-  });
+  const _CorrelationsSection({required this.goalId, required this.isPositive});
 
   @override
-  ConsumerState<_CorrelationsSection> createState() => _CorrelationsSectionState();
+  ConsumerState<_CorrelationsSection> createState() =>
+      _CorrelationsSectionState();
 }
 
 class _CorrelationsSectionState extends ConsumerState<_CorrelationsSection> {
@@ -655,18 +752,30 @@ class _CorrelationsSectionState extends ConsumerState<_CorrelationsSection> {
 
   @override
   Widget build(BuildContext context) {
-    final correlationsAsync = ref.watch(habitCorrelationsProvider(widget.goalId));
+    final correlationsAsync = ref.watch(
+      habitCorrelationsProvider(widget.goalId),
+    );
     final goals = ref.watch(goalsProvider);
 
     return correlationsAsync.when(
       data: (allCorrelations) {
-        final currentGoal = goals.firstWhere((g) => g.id == widget.goalId, orElse: () => Goal(id: '', title: '', color: Colors.blue, startDate: DateTime.now()));
-        
+        final currentGoal = goals.firstWhere(
+          (g) => g.id == widget.goalId,
+          orElse: () => Goal(
+            id: '',
+            title: '',
+            color: Colors.blue,
+            startDate: DateTime.now(),
+          ),
+        );
+
         if (currentGoal.id.isEmpty) {
           return const SizedBox.shrink();
         }
 
-        final correlationsData = allCorrelations.where((c) => c['goal_id'] == widget.goalId).toList();
+        final correlationsData = allCorrelations
+            .where((c) => c['goal_id'] == widget.goalId)
+            .toList();
 
         final filteredCorrelations = correlationsData.where((item) {
           final percentage = (item['percentage'] as num?)?.toInt() ?? 0;
@@ -679,14 +788,26 @@ class _CorrelationsSectionState extends ConsumerState<_CorrelationsSection> {
 
         final List<Widget> cards = filteredCorrelations.take(4).map((item) {
           final otherGoalId = item['other_goal_id'] as String;
-          final otherGoal = goals.firstWhere((g) => g.id == otherGoalId, orElse: () => Goal(id: '', title: '', color: Colors.blue, startDate: DateTime.now()));
+          final otherGoal = goals.firstWhere(
+            (g) => g.id == otherGoalId,
+            orElse: () => Goal(
+              id: '',
+              title: '',
+              color: Colors.blue,
+              startDate: DateTime.now(),
+            ),
+          );
           final percentage = (item['percentage'] as num?)?.toInt() ?? 0;
           final strength = percentage / 100.0;
           final togetherCount = (item['together_count'] as num?)?.toInt() ?? 0;
 
           return _CorrelazioneDetailCard(
-            tag: widget.isPositive ? 'Correlazione Positiva' : 'Correlazione Negativa',
-            tagColor: widget.isPositive ? const Color(0xFF10B981) : const Color(0xFFEF4444),
+            tag: widget.isPositive
+                ? context.l10n.positiveCorrelation
+                : context.l10n.negativeCorrelation,
+            tagColor: widget.isPositive
+                ? const Color(0xFF10B981)
+                : const Color(0xFFEF4444),
             habit1: currentGoal.title,
             habit1Color: currentGoal.color,
             habit2: otherGoal.title,
@@ -695,8 +816,16 @@ class _CorrelationsSectionState extends ConsumerState<_CorrelationsSection> {
             cooccorrenza: '$percentage%',
             giorni: '$togetherCount',
             desc: widget.isPositive
-                ? 'Quando completi "${currentGoal.title}", hai una probabilità del $percentage% di completare anche "${otherGoal.title}".'
-                : 'Quando completi "${currentGoal.title}", la probabilità di completare anche "${otherGoal.title}" è solo del $percentage%.',
+                ? context.l10n.habitPositiveCorrelationDescription(
+                    currentGoal.title,
+                    percentage,
+                    otherGoal.title,
+                  )
+                : context.l10n.habitNegativeCorrelationDescription(
+                    currentGoal.title,
+                    percentage,
+                    otherGoal.title,
+                  ),
           );
         }).toList();
 
@@ -706,14 +835,25 @@ class _CorrelationsSectionState extends ConsumerState<_CorrelationsSection> {
             Row(
               children: [
                 Icon(
-                  widget.isPositive ? LucideIcons.trendingUp : LucideIcons.trendingDown,
+                  widget.isPositive
+                      ? LucideIcons.trendingUp
+                      : LucideIcons.trendingDown,
                   size: 16,
-                  color: widget.isPositive ? const Color(0xFF10B981) : const Color(0xFFEF4444),
+                  color: widget.isPositive
+                      ? const Color(0xFF10B981)
+                      : const Color(0xFFEF4444),
                 ),
                 const SizedBox(width: 8),
                 Text(
-                  widget.isPositive ? context.l10n.translate('Correlazioni Positive') : context.l10n.translate('Correlazioni Negative'),
-                  style: TextStyle(fontFamily: 'Inter', fontSize: 14, fontWeight: FontWeight.w700, color: context.appColors.foreground),
+                  widget.isPositive
+                      ? context.l10n.translate('Correlazioni Positive')
+                      : context.l10n.translate('Correlazioni Negative'),
+                  style: TextStyle(
+                    fontFamily: 'Inter',
+                    fontSize: 14,
+                    fontWeight: FontWeight.w700,
+                    color: context.appColors.foreground,
+                  ),
                 ),
               ],
             ),
@@ -721,11 +861,17 @@ class _CorrelationsSectionState extends ConsumerState<_CorrelationsSection> {
             Text(
               widget.isPositive
                   ? context.l10n.translate('Abitudini che tendi a fare insieme')
-                  : context.l10n.translate('Abitudini che tendi a non fare insieme'),
-              style: TextStyle(fontFamily: 'Inter', fontSize: 11, color: context.appColors.mutedForeground),
+                  : context.l10n.translate(
+                      'Abitudini che tendi a non fare insieme',
+                    ),
+              style: TextStyle(
+                fontFamily: 'Inter',
+                fontSize: 11,
+                color: context.appColors.mutedForeground,
+              ),
             ),
             const SizedBox(height: 16),
-            
+
             // Carousel
             SizedBox(
               height: 240,
@@ -735,15 +881,18 @@ class _CorrelationsSectionState extends ConsumerState<_CorrelationsSection> {
                 onPageChanged: (index) => setState(() => _currentPage = index),
                 itemBuilder: (context, index) {
                   return Padding(
-                    padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 10),
+                    padding: const EdgeInsets.symmetric(
+                      horizontal: 8,
+                      vertical: 10,
+                    ),
                     child: cards[index],
                   );
                 },
               ),
             ),
-            
+
             const SizedBox(height: 12),
-            
+
             // Pagination Dots
             Center(
               child: Row(
@@ -756,9 +905,13 @@ class _CorrelationsSectionState extends ConsumerState<_CorrelationsSection> {
                     width: isActive ? 16 : 6,
                     height: 6,
                     decoration: BoxDecoration(
-                      color: isActive 
-                          ? (widget.isPositive ? const Color(0xFF10B981) : const Color(0xFFEF4444))
-                          : context.appColors.mutedForeground.withValues(alpha: 0.3),
+                      color: isActive
+                          ? (widget.isPositive
+                                ? const Color(0xFF10B981)
+                                : const Color(0xFFEF4444))
+                          : context.appColors.mutedForeground.withValues(
+                              alpha: 0.3,
+                            ),
                       borderRadius: BorderRadius.circular(3),
                     ),
                   );
@@ -769,7 +922,12 @@ class _CorrelationsSectionState extends ConsumerState<_CorrelationsSection> {
         );
       },
       loading: () => const Center(child: CircularProgressIndicator()),
-      error: (err, stack) => Center(child: Text('${context.l10n.translate('Errore')}: $err', style: TextStyle(color: context.appColors.mutedForeground))),
+      error: (err, stack) => Center(
+        child: Text(
+          '${context.l10n.translate('Errore')}: $err',
+          style: TextStyle(color: context.appColors.mutedForeground),
+        ),
+      ),
     );
   }
 }
@@ -802,7 +960,9 @@ class _CorrelazioneDetailCard extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Container(
-      padding: const EdgeInsets.all(20), // Increased padding for a more "airy" feel
+      padding: const EdgeInsets.all(
+        20,
+      ), // Increased padding for a more "airy" feel
       decoration: BoxDecoration(
         color: context.appColors.card,
         borderRadius: BorderRadius.circular(20), // Matched Key Habits
@@ -823,14 +983,25 @@ class _CorrelazioneDetailCard extends StatelessWidget {
             decoration: BoxDecoration(
               color: tagColor.withValues(alpha: 0.15),
               borderRadius: BorderRadius.circular(12),
-              border: Border.all(color: tagColor.withValues(alpha: 0.3), width: 1),
+              border: Border.all(
+                color: tagColor.withValues(alpha: 0.3),
+                width: 1,
+              ),
             ),
             child: Row(
               mainAxisSize: MainAxisSize.min,
               children: [
                 Icon(LucideIcons.trendingUp, size: 10, color: tagColor),
                 const SizedBox(width: 4),
-                Text(tag, style: TextStyle(fontFamily: 'Inter', fontSize: 9, fontWeight: FontWeight.w600, color: tagColor)),
+                Text(
+                  tag,
+                  style: TextStyle(
+                    fontFamily: 'Inter',
+                    fontSize: 9,
+                    fontWeight: FontWeight.w600,
+                    color: tagColor,
+                  ),
+                ),
               ],
             ),
           ),
@@ -841,9 +1012,27 @@ class _CorrelazioneDetailCard extends StatelessWidget {
               Expanded(
                 child: Row(
                   children: [
-                    Container(width: 8, height: 8, decoration: BoxDecoration(color: habit1Color, shape: BoxShape.circle)),
+                    Container(
+                      width: 8,
+                      height: 8,
+                      decoration: BoxDecoration(
+                        color: habit1Color,
+                        shape: BoxShape.circle,
+                      ),
+                    ),
                     const SizedBox(width: 8),
-                    Expanded(child: Text(habit1, style: TextStyle(fontFamily: 'Inter', fontSize: 13, fontWeight: FontWeight.w600, color: context.appColors.foreground), overflow: TextOverflow.ellipsis)),
+                    Expanded(
+                      child: Text(
+                        habit1,
+                        style: TextStyle(
+                          fontFamily: 'Inter',
+                          fontSize: 13,
+                          fontWeight: FontWeight.w600,
+                          color: context.appColors.foreground,
+                        ),
+                        overflow: TextOverflow.ellipsis,
+                      ),
+                    ),
                   ],
                 ),
               ),
@@ -852,9 +1041,27 @@ class _CorrelazioneDetailCard extends StatelessWidget {
                 child: Row(
                   mainAxisAlignment: MainAxisAlignment.end,
                   children: [
-                    Container(width: 8, height: 8, decoration: BoxDecoration(color: habit2Color, shape: BoxShape.circle)),
+                    Container(
+                      width: 8,
+                      height: 8,
+                      decoration: BoxDecoration(
+                        color: habit2Color,
+                        shape: BoxShape.circle,
+                      ),
+                    ),
                     const SizedBox(width: 8),
-                    Expanded(child: Text(habit2, style: TextStyle(fontFamily: 'Inter', fontSize: 13, fontWeight: FontWeight.w600, color: context.appColors.foreground), overflow: TextOverflow.ellipsis)),
+                    Expanded(
+                      child: Text(
+                        habit2,
+                        style: TextStyle(
+                          fontFamily: 'Inter',
+                          fontSize: 13,
+                          fontWeight: FontWeight.w600,
+                          color: context.appColors.foreground,
+                        ),
+                        overflow: TextOverflow.ellipsis,
+                      ),
+                    ),
                   ],
                 ),
               ),
@@ -863,20 +1070,50 @@ class _CorrelazioneDetailCard extends StatelessWidget {
           const SizedBox(height: 16),
           Row(
             children: [
-              Expanded(child: _DetailBox(title: context.l10n.translate('Coefficiente'), value: coef, valueColor: tagColor)),
+              Expanded(
+                child: _DetailBox(
+                  title: context.l10n.translate('Coefficiente'),
+                  value: coef,
+                  valueColor: tagColor,
+                ),
+              ),
               const SizedBox(width: 8),
-              Expanded(child: _DetailBox(title: context.l10n.translate('Co-occorrenza'), value: cooccorrenza)),
+              Expanded(
+                child: _DetailBox(
+                  title: context.l10n.translate('Co-occorrenza'),
+                  value: cooccorrenza,
+                ),
+              ),
               const SizedBox(width: 8),
-              Expanded(child: _DetailBox(title: context.l10n.translate('Giorni'), value: giorni)),
+              Expanded(
+                child: _DetailBox(
+                  title: context.l10n.translate('Giorni'),
+                  value: giorni,
+                ),
+              ),
             ],
           ),
           const SizedBox(height: 16),
           Row(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              const Icon(LucideIcons.chevronRight, size: 14, color: Colors.grey),
+              const Icon(
+                LucideIcons.chevronRight,
+                size: 14,
+                color: Colors.grey,
+              ),
               const SizedBox(width: 6),
-              Expanded(child: Text(desc, style: TextStyle(fontFamily: 'Inter', fontSize: 10, color: context.appColors.mutedForeground, height: 1.4))),
+              Expanded(
+                child: Text(
+                  desc,
+                  style: TextStyle(
+                    fontFamily: 'Inter',
+                    fontSize: 10,
+                    color: context.appColors.mutedForeground,
+                    height: 1.4,
+                  ),
+                ),
+              ),
             ],
           ),
         ],
@@ -902,16 +1139,29 @@ class _DetailBox extends StatelessWidget {
       ),
       child: Column(
         children: [
-          Text(title, style: TextStyle(fontFamily: 'Inter', fontSize: 9, color: context.appColors.mutedForeground)),
+          Text(
+            title,
+            style: TextStyle(
+              fontFamily: 'Inter',
+              fontSize: 9,
+              color: context.appColors.mutedForeground,
+            ),
+          ),
           const SizedBox(height: 4),
-          Text(value, style: TextStyle(fontFamily: 'Inter', fontSize: 14, fontWeight: FontWeight.w700, color: valueColor ?? context.appColors.foreground)),
+          Text(
+            value,
+            style: TextStyle(
+              fontFamily: 'Inter',
+              fontSize: 14,
+              fontWeight: FontWeight.w700,
+              color: valueColor ?? context.appColors.foreground,
+            ),
+          ),
         ],
       ),
     );
   }
 }
-
-
 
 class _AttivitaRecenteSection extends ConsumerWidget {
   const _AttivitaRecenteSection();
@@ -920,7 +1170,7 @@ class _AttivitaRecenteSection extends ConsumerWidget {
   Widget build(BuildContext context, WidgetRef ref) {
     final accentColor = Theme.of(context).colorScheme.primary;
     final logs = ref.watch(habitLogsProvider);
-    
+
     return Container(
       padding: const EdgeInsets.all(20),
       decoration: BoxDecoration(
@@ -942,7 +1192,11 @@ class _AttivitaRecenteSection extends ConsumerWidget {
                       color: accentColor.withValues(alpha: 0.15),
                       borderRadius: BorderRadius.circular(8),
                     ),
-                    child: Icon(LucideIcons.calendarRange, size: 18, color: accentColor),
+                    child: Icon(
+                      LucideIcons.calendarRange,
+                      size: 18,
+                      color: accentColor,
+                    ),
                   ),
                   const SizedBox(width: 12),
                   Column(
@@ -959,7 +1213,9 @@ class _AttivitaRecenteSection extends ConsumerWidget {
                         ),
                       ),
                       Text(
-                        context.l10n.translate('La tua costanza negli ultimi mesi'),
+                        context.l10n.translate(
+                          'La tua costanza negli ultimi mesi',
+                        ),
                         style: TextStyle(
                           fontFamily: 'Inter',
                           fontSize: 11,
@@ -973,14 +1229,12 @@ class _AttivitaRecenteSection extends ConsumerWidget {
             ],
           ),
           const SizedBox(height: 24),
-          
+
           // Activity Grid
-          Center(
-            child: _buildActivityGrid(context, accentColor, logs),
-          ),
-          
+          Center(child: _buildActivityGrid(context, accentColor, logs)),
+
           const SizedBox(height: 20),
-          
+
           // Legend
           Row(
             mainAxisAlignment: MainAxisAlignment.end,
@@ -1034,37 +1288,53 @@ class _AttivitaRecenteSection extends ConsumerWidget {
 
   Color _getColor(BuildContext context, int intensity, Color accentColor) {
     switch (intensity) {
-      case 0: return context.appColors.border.withValues(alpha: 0.3);
-      case 1: return accentColor.withValues(alpha: 0.2);
-      case 2: return accentColor.withValues(alpha: 0.4);
-      case 3: return accentColor.withValues(alpha: 0.7);
-      case 4: return accentColor;
-      default: return context.appColors.border.withValues(alpha: 0.3);
+      case 0:
+        return context.appColors.border.withValues(alpha: 0.3);
+      case 1:
+        return accentColor.withValues(alpha: 0.2);
+      case 2:
+        return accentColor.withValues(alpha: 0.4);
+      case 3:
+        return accentColor.withValues(alpha: 0.7);
+      case 4:
+        return accentColor;
+      default:
+        return context.appColors.border.withValues(alpha: 0.3);
     }
   }
 
-  Widget _buildActivityGrid(BuildContext context, Color accentColor, HabitLogsMap logs) {
+  Widget _buildActivityGrid(
+    BuildContext context,
+    Color accentColor,
+    HabitLogsMap logs,
+  ) {
     const numRows = 7;
     const numCols = 18;
-    
-    final pattern = List.generate(numRows, (_) => List.generate(numCols, (_) => 0));
-    
+
+    final pattern = List.generate(
+      numRows,
+      (_) => List.generate(numCols, (_) => 0),
+    );
+
     final today = DateTime.now();
     final currentDayOfWeek = today.weekday; // 1 = Mon, 7 = Sun
     final currentMonday = today.subtract(Duration(days: currentDayOfWeek - 1));
-    
+
     for (int col = 0; col < numCols; col++) {
       for (int row = 0; row < numRows; row++) {
         final weeksBack = numCols - 1 - col;
-        final date = currentMonday.subtract(Duration(days: weeksBack * 7)).add(Duration(days: row));
-        
+        final date = currentMonday
+            .subtract(Duration(days: weeksBack * 7))
+            .add(Duration(days: row));
+
         if (date.isAfter(today)) {
           pattern[row][col] = -1;
           continue;
         }
-        
-        final dateStr = "${date.year}-${date.month.toString().padLeft(2, '0')}-${date.day.toString().padLeft(2, '0')}";
-        
+
+        final dateStr =
+            "${date.year}-${date.month.toString().padLeft(2, '0')}-${date.day.toString().padLeft(2, '0')}";
+
         final habitMap = logs[dateStr];
         if (habitMap != null) {
           int doneCount = 0;
@@ -1085,19 +1355,24 @@ class _AttivitaRecenteSection extends ConsumerWidget {
         final availableWidth = constraints.maxWidth;
         const spacing = 4.0;
         final totalSpacing = spacing * (numCols - 1);
-        final size = ((availableWidth - totalSpacing) / numCols).clamp(6.0, 14.0);
+        final size = ((availableWidth - totalSpacing) / numCols).clamp(
+          6.0,
+          14.0,
+        );
 
         return Row(
           crossAxisAlignment: CrossAxisAlignment.start,
           mainAxisAlignment: MainAxisAlignment.center,
           children: List.generate(numCols, (colIndex) {
             return Padding(
-              padding: EdgeInsets.only(right: colIndex == numCols - 1 ? 0 : spacing),
+              padding: EdgeInsets.only(
+                right: colIndex == numCols - 1 ? 0 : spacing,
+              ),
               child: Column(
                 children: List.generate(numRows, (rowIndex) {
                   final intensity = pattern[rowIndex][colIndex];
                   if (intensity == -1) {
-                    return SizedBox(width: size, height: size + spacing); 
+                    return SizedBox(width: size, height: size + spacing);
                   }
                   return Padding(
                     padding: const EdgeInsets.only(bottom: spacing),

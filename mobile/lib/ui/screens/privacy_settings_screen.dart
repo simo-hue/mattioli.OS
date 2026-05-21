@@ -68,7 +68,7 @@ class PrivacySettingsScreen extends ConsumerWidget {
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            _buildSectionHeader(context, 'PROTEZIONE ACCESSO'),
+            _buildSectionHeader(context, context.l10n.accessProtectionHeader),
             _buildSettingsCard(context, [
               _buildSwitchRow(
                 context: context,
@@ -104,14 +104,14 @@ class PrivacySettingsScreen extends ConsumerWidget {
               ),
             ]),
             const SizedBox(height: 32),
-            _buildSectionHeader(context, 'GESTIONE DATI'),
+            _buildSectionHeader(context, context.l10n.dataManagementHeader),
             _buildSettingsCard(context, [
               _buildSwitchRow(
                 context: context,
                 ref: ref,
                 icon: LucideIcons.circleAlert,
                 title: context.l10n.translate('Invia Segnalazioni Crash'),
-                subtitle: 'Aiutaci a migliorare l\'app (Sentry)',
+                subtitle: context.l10n.sentryHelpSubtitle,
                 value: consentState.hasSentryConsent,
                 onChanged: (val) {
                   ref.read(consentProvider.notifier).setConsent(
@@ -146,7 +146,7 @@ class PrivacySettingsScreen extends ConsumerWidget {
               ),
             ]),
             const SizedBox(height: 32),
-            _buildSectionHeader(context, 'PERMESSI DI SISTEMA'),
+            _buildSectionHeader(context, context.l10n.systemPermissionsHeader),
             _buildSettingsCard(context, [
               _buildActionRow(
                 context: context,
@@ -687,7 +687,7 @@ class PrivacySettingsScreen extends ConsumerWidget {
       AppLogger.error('Error exporting data', e, stack);
       if (context.mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text('Errore durante l\'esportazione: $e')),
+          SnackBar(content: Text('${context.l10n.exportErrorPrefix}$e')),
         );
       }
     }
@@ -989,7 +989,7 @@ class PrivacySettingsScreen extends ConsumerWidget {
       AppLogger.error('Errore durante reset dati', e, stack);
       if (context.mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text('Errore durante il reset: $e')),
+          SnackBar(content: Text('${context.l10n.resetErrorPrefix}$e')),
         );
       }
     }
@@ -1015,7 +1015,7 @@ class PrivacySettingsScreen extends ConsumerWidget {
       AppLogger.error('Errore durante eliminazione account', e, stack);
       if (context.mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text('Errore durante l\'eliminazione: $e')),
+          SnackBar(content: Text('${context.l10n.deleteErrorPrefix}$e')),
         );
       }
     }

@@ -1,1233 +1,1292 @@
-import 'package:flutter/material.dart';
-import 'package:flutter_riverpod/flutter_riverpod.dart';
-import '../providers/settings_provider.dart';
+import 'package:flutter/widgets.dart';
+import 'package:mattioli_os/l10n/generated/app_localizations.dart';
 
-class AppLocalizations {
-  final String language;
-
-  AppLocalizations(this.language);
-
-  static final Map<String, Map<String, String>> _localizedValues = {
-    'Italiano': {
-      'app_title': 'Evolve',
-      'Impostazioni App': 'Impostazioni App',
-      'ASPETTO & VISUAL': 'ASPETTO & VISUAL',
-      'Modalità Scura': 'Modalità Scura',
-      'Colore Accento': 'Colore Accento',
-      'CALENDARIO & DASHBOARD': 'CALENDARIO & DASHBOARD',
-      'Vista Predefinita': 'Vista Predefinita',
-      'ESPERIENZA UTENTE': 'ESPERIENZA UTENTE',
-      'Feedback Aptico': 'Feedback Aptico',
-      'UNITÀ E LINGUA': 'UNITÀ E LINGUA',
-      'Lingua': 'Lingua',
-      'Formato 24h': 'Formato 24h',
-      'AI & SISTEMA': 'AI & SISTEMA',
-      'Suggerimenti AI': 'Suggerimenti AI',
-      'Analisi intelligente delle abitudini': 'Analisi intelligente delle abitudini',
-      'PRO ONLY': 'Questa funzione è disponibile solo per utenti PRO',
-      'Home': 'Home',
-      'Statistiche': 'Statistiche',
-      'Obiettivi': 'Obiettivi',
-      'Salva': 'Salva',
-      'Annulla': 'Annulla',
-      'Conferma': 'Conferma',
-      'Aggiorna Stato Giornaliero': 'Aggiorna Stato Giornaliero',
-      'Check-in Giornaliero': 'Check-in Giornaliero',
-      'Oggi': 'Oggi',
-      'Abitudini': 'Abitudini',
-      'Umore': 'Umore',
-      'Energia': 'Energia',
-      'AI Chat': 'AI Chat',
-      'Morning Brief': 'Morning Brief',
-      'Review Serale': 'Review Serale',
-      'Notifiche': 'Notifiche',
-      'Privacy e Sicurezza': 'Privacy e Sicurezza',
-      'Account': 'Account',
-      'Piano PRO': 'Piano PRO',
-      'Informazioni Personali': 'Informazioni Personali',
-      'Blocco Biometrico': 'Blocco Biometrico',
-      'Analytics Anonimi': 'Analytics Anonimi',
-      'Promemoria Abitudini': 'Promemoria Abitudini',
-      'Scadenze Obiettivi': 'Scadenze Obiettivi',
-      'Insight AI': 'Insight AI',
-      'Resoconti Settimanali': 'Resoconti Settimanali',
-      'Modalità Focus': 'Modalità Focus',
-      'Milestones': 'Milestones',
-      'Deep Work Insights': 'Deep Work Insights',
-      'Gestione Abitudini': 'Gestione Abitudini',
-      'Aggiungi Abitudine': 'Aggiungi Abitudine',
-      'Modifica Abitudine': 'Modifica Abitudine',
-      'Elimina Abitudine': 'Elimina Abitudine',
-      'Nome Abitudine': 'Nome Abitudine',
-      'Colore': 'Colore',
-      'Trascina per riordinare': 'Trascina per riordinare',
-      'Nessuna abitudine tracciata oggi': 'Nessuna abitudine tracciata oggi',
-      'Panoramica Statistiche': 'Panoramica Statistiche',
-      'Mese': 'Mese',
-      'Settimana': 'Settimana',
-      'Anno': 'Anno',
-      'Vita': 'Vita',
-      'Analisi dettagliata delle tue performance.': 'Analisi dettagliata delle tue performance.',
-      'Tutti gli Habits': 'Tutte le abitudini',
-      'SELEZIONA HABIT': 'SELEZIONA HABIT',
-      'Info': 'Info',
-      'Trend': 'Trend',
-      'Alert': 'Alert',
-      'Stats': 'Stats',
-      'Completamento': 'Completamento',
-      'Globale': 'Globale',
-      'Miglior Serie': 'Miglior Serie',
-      'Giorni': 'Giorni',
-      'Top Performer': 'Top Performer',
-      'Giorno Critico': 'Giorno Critico',
-      'Focus richiesto': 'Focus richiesto',
-      'Abitudini Chiave': 'Abitudini Chiave',
-      'Abitudini che influenzano positivamente molte altre': 'Abitudini che influenzano positivamente molte altre',
-      'Alto Impatto': 'Alto Impatto',
-      'connessioni': 'connessioni',
-      'Media Impatto': 'Media Impatto',
-      'Analisi Correlazioni': 'Analisi Correlazioni',
-      'Pattern tra le tue abitudini': 'Pattern tra le tue abitudini',
-      'Coppie Analizzate': 'Coppie Analizzate',
-      'Correlazione Media': 'Correlazione Media',
-      'Positive': 'Positive',
-      'Negative': 'Negative',
-      'Abitudini Isolate': 'Abitudini Isolate',
-      'Non hanno correlazioni significative.': 'Non hanno correlazioni significative.',
-      'Correlazioni Positive': 'Correlazioni Positive',
-      'Correlazioni Negative': 'Correlazioni Negative',
-      'Attività Recente': 'Attività Recente',
-      'Suggerimento': 'Suggerimento',
-      'Le abitudini chiave hanno un effetto "domino".': 'Le abitudini chiave hanno un effetto "domino".',
-      'timeframe_week_short': 'Sett',
-      'timeframe_month_short': 'Mese',
-      'timeframe_year_short': 'Anno',
-      'timeframe_all': 'Tutto',
-      'week': 'Sett',
-      'month': 'Mese',
-      'year': 'Anno',
-      'all': 'Tutto',
-      '7d': '7g',
-      '14d': '14g',
-      '30d': '30g',
-      'Trend Completamento': 'Trend Completamento',
-      'Performance Evolution': 'Evoluzione Performance',
-      'Sett': 'Sett',
-      'Tutto': 'Tutto',
-      'Confronto Temporale': 'Confronto Temporale',
-      'Analizza come stai andando rispetto al passato.': 'Analizza come stai andando rispetto al passato.',
-      'vs': 'vs',
-      'Aree di Miglioramento': 'Aree di Miglioramento',
-      'Abitudini che richiedono più attenzione.': 'Abitudini che richiedono più attenzione.',
-      'succ.': 'succ.',
-      'GIORNO NERO': 'GIORNO NERO',
-      'Solo il': 'Solo il',
-      'di completamento': 'di completamento',
-      'Analisi Worst Streaks': 'Analisi Worst Streaks',
-      'Analisi serie negative per identificare pattern.': 'Analisi serie negative per identificare pattern.',
-      'Abitudini Critiche': 'Abitudini Critiche',
-      'Top 3 Worst Streaks': 'Top 3 Worst Streaks',
-      'giorni consecutivi': 'giorni consecutivi',
-      'Analisi Fallimenti': 'Analisi Fallimenti',
-      'Pattern di Recupero': 'Pattern di Recupero',
-      'Tempo Medio Recupero': 'Tempo Medio Recupero',
-      'Buono': 'Buono',
-      'RECUPERATORI VELOCI': 'RECUPERATORI VELOCI',
-      'Confronto Performance': 'Confronto Performance',
-      'Attenzione': 'Attenzione',
-      'Suggerimenti Pratici': 'Suggerimenti Pratici',
-      'Dettagli Abitudini': 'Dettagli Abitudini',
-      'Ordina per': 'Ordina per',
-      'Rate': 'Rate',
-      'Peggior Serie': 'Peggior Serie',
-      'Serie Attuale': 'Serie Attuale',
-      'ORDINA PER': 'ORDINA PER',
-      'Mood & Energy vs Productivity': 'Mood & Energy vs Productivity',
-      'Correlazione tra benessere e abitudini': 'Correlazione tra benessere e abitudini',
-      'time_range_7d': '7gg',
-      'time_range_14d': '14gg',
-      'time_range_30d': '30gg',
-      'Produttività': 'Produttività',
-      'Sensibili al Mood': 'Sensibili al Mood',
-      'Richiedono un buon mood per essere completate.': 'Richiedono un buon mood per essere completate.',
-      'con mood basso': 'con mood basso',
-      'con mood alto': 'con mood alto',
-      'Resilienti': 'Resilienti',
-      'Mantenute anche con mood ed energia bassi.': 'Mantenute anche con mood ed energia bassi.',
-      'Mood': 'Mood',
-      'Stabile': 'Stabile',
-      'Suggerimenti': 'Suggerimenti',
-      'Pianifica le abitudini sensibili al mood quando ti senti meglio.': 'Pianifica le abitudini sensibili al mood quando ti senti meglio.',
-      'Le abitudini resilienti sono ottime nei giorni difficili.': 'Le abitudini resilienti sono ottime nei giorni difficili.',
-      'Monitora mood ed energia per insights più accurati.': 'Monitora mood ed energia per insights più accurati.',
-      'SERIE ATTUALE': 'SERIE ATTUALE',
-      'RECORD': 'RECORD',
-      'COMPLETAMENTO': 'COMPLETAMENTO',
-      'MANCATI': 'MANCATI',
-      'Trend Ultimi 30 Giorni': 'Trend Ultimi 30 Giorni',
-      'Completato': 'Completato',
-      'Non completato': 'Non completato',
-      'Correlazioni con': 'Correlazioni con',
-      'Come questa abitudine si relaziona con le altre': 'Come questa abitudine si relaziona con le altre',
-      'insieme': 'insieme',
-      'Info Correlazioni': 'Le correlazioni positive suggeriscono abitudini che funzionano bene insieme. Le negative indicano possibili conflitti di tempo o energia.',
-      'Calendario Annuale': 'Calendario Annuale',
-      'Mancato': 'Mancato',
-      'Non tracciato': 'Non tracciato',
-      'Performance per Giorno': 'Performance per Giorno',
-      'Giorno più forte': 'Giorno più forte',
-      'Giorno più debole': 'Giorno più debole',
-      'Ben fatto! % di completamento': 'Ben fatto! % di completamento',
-      'Solo % di completamento': 'Solo % di completamento',
-      'Serie Negativa Peggiore': 'Serie Negativa Peggiore',
-      'giorni consecutivi mancati': 'giorni consecutivi mancati',
-      'Iniziata il': 'Iniziata il',
-      'Streak Interrotti': 'Streak Interrotti',
-      'Streak di count giorni interrotto': 'Streak di count giorni interrotto',
-      'Concentrati sul Dom - è il tuo giorno più debole': 'Concentrati sul Dom - è il tuo giorno più debole',
-      'Evita pause prolungate - la tua serie negativa più lunga è stata di 12 giorni': 'Evita pause prolungate - la tua serie negativa più lunga è stata di 12 giorni',
-      'Obiettivo: raggiungi almeno il 70% di completamento per consolidare l\'abitudine': 'Obiettivo: raggiungi almeno il 70% di completamento per consolidare l\'abitudine',
-      'Traccia il tuo umore ed energia.': 'Traccia il tuo umore ed energia.',
-      'Scegli un colore': 'Scegli un colore',
-      'Es. Bere acqua, Leggere...': 'Es. Bere acqua, Leggere...',
-      'Correlazione Mood': 'Correlazione Mood',
-      'Correlazione Energia': 'Correlazione Energia',
-      'Mood Medio (✓)': 'Mood Medio (✓)',
-      'Energia Media (✓)': 'Energia Media (✓)',
-      'Nessuna': 'Nessuna',
-      'su 10': 'su 10',
-      'Resiliente': 'Resiliente',
-      'Completato vs Mancato': 'Completato vs Mancato',
-      'Performance per Livello': 'Performance per Livello',
-      'Basso (1-4) • Medio (5-7) • Alto (8-10)': 'Basso (1-4) • Medio (5-7) • Alto (8-10)',
-      'Basso': 'Basso',
-      'Medio': 'Medio',
-      'Alto': 'Alto',
-      'Con Mood': 'Con Mood',
-      'Con Energia': 'Con Energia',
-      'Analisi basata su count giorni con dati mood/energia (done completati, missed mancati)': 'Analisi basata su count giorni con dati mood/energia (done completati, missed mancati)',
-      'Nome': 'Nome',
-      'Cognome': 'Cognome',
-      'Email': 'Email',
-      'Telefono (Opzionale)': 'Telefono (Opzionale)',
-      'Informazioni salvate con successo': 'Informazioni salvate con successo',
-      'Campo obbligatorio': 'Campo obbligatorio',
-      'Inserisci un\'email valida': 'Inserisci un\'email valida',
-      'Giorno': 'Giorno',
-      'Buongiorno': 'Buongiorno',
-      'Buon pomeriggio': 'Buon pomeriggio',
-      'Buonasera': 'Buonasera',
-      'Bentornato': 'Bentornato',
-      'Sistema Sincronizzato': 'Sistema Sincronizzato',
-      'succ': 'succ.',
-      'only': 'Solo',
-      'attention': 'Attenzione',
-      'monday': 'Lunedì',
-      'tuesday': 'Martedì',
-      'wednesday': 'Mercoledì',
-      'thursday': 'Giovedì',
-      'friday': 'Venerdì',
-      'saturday': 'Sabato',
-      'sunday': 'Domenica',
-      'mon': 'Lun',
-      'tue': 'Mar',
-      'wed': 'Mer',
-      'thu': 'Gio',
-      'fri': 'Ven',
-      'sat': 'Sab',
-      'sun': 'Dom',
-      'january': 'Gennaio',
-      'february': 'Febbraio',
-      'march': 'Marzo',
-      'april': 'Aprile',
-      'may': 'Maggio',
-      'june': 'Giugno',
-      'july': 'Luglio',
-      'august': 'Agosto',
-      'september': 'Settembre',
-      'october': 'Ottobre',
-      'november': 'Novembre',
-      'december': 'Dicembre',
-      'rate': 'Tasso di Successo',
-      'best_streak_label': 'Miglior Serie',
-      'worst_streak_label': 'Peggior Serie',
-      'current_streak_label': 'Serie Attuale',
-      'first_name': 'Nome',
-      'Crea Abitudine': 'Crea Abitudine',
-      'Puoi modificare solo oggi e ieri!': 'Puoi modificare solo oggi e ieri!',
-      'Nessun dato': 'Nessun dato',
-      'Dati insufficienti (servono almeno 3 categorie)': 'Dati insufficienti (servono almeno 3 categorie)',
-      'Distribuzione': 'Distribuzione',
-      'obiettivi': 'obiettivi',
-      'nascita': 'nascita',
-      '85 anni': '85 anni',
-      'Sensibilità': 'Sensibilità',
-      'Streak Negativa': 'Streak Negativa',
-      'Coming Soon': 'Coming Soon',
-      'Errore': 'Errore',
-      'L\'accesso Pro è stato ripristinato con successo su questo dispositivo. Divertiti!': 'L\'accesso Pro è stato ripristinato con successo su questo dispositivo. Divertiti!',
-      'Nessun abbonamento Evolve Pro attivo è stato trovato su questo Apple ID. Assicurati di usare lo stesso Apple ID dell\'acquisto.': 'Nessun abbonamento Evolve Pro attivo è stato trovato su questo Apple ID. Assicurati di usare lo stesso Apple ID dell\'acquisto.',
-      'L\'acquisto è registrato, ma l\'abbonamento Pro non risulta ancora attivo. Attendi qualche secondo e usa Ripristina acquisti.': 'L\'acquisto è registrato, ma l\'abbonamento Pro non risulta ancora attivo. Attendi qualche secondo e usa Ripristina acquisti.',
-      'Contratto Paid Apps non attivo. L\'Account Holder deve accettare l\'accordo Paid Apps in App Store Connect.': 'Contratto Paid Apps non attivo. L\'Account Holder deve accettare l\'accordo Paid Apps in App Store Connect.',
-      'Questo abbonamento risulta già acquistato. Usa Ripristina acquisti per riattivare l\'accesso Pro.': 'Questo abbonamento risulta già acquistato. Usa Ripristina acquisti per riattivare l\'accesso Pro.',
-      'Gli acquisti in-app non sono consentiti su questo dispositivo o account Apple.': 'Gli acquisti in-app non sono consentiti su questo dispositivo o account Apple.',
-      'Il piano selezionato non è disponibile per l\'acquisto. Riprova più tardi.': 'Il piano selezionato non è disponibile per l\'acquisto. Riprova più tardi.',
-      'Il pagamento è in sospeso. L\'accesso Pro verrà attivato quando Apple confermerà la transazione.': 'Il pagamento è in sospeso. L\'accesso Pro verrà attivato quando Apple confermerà la transazione.',
-      'Connessione non disponibile. Controlla la rete e riprova.': 'Connessione non disponibile. Controlla la rete e riprova.',
-      'Configurazione acquisti non valida. Verifica App Store Connect e RevenueCat prima di inviare la build.': 'Configurazione acquisti non valida. Verifica App Store Connect e RevenueCat prima di inviare la build.',
-      'Questo acquisto è già collegato a un altro account Evolve. Accedi con quell\'account o contatta il supporto.': 'Questo acquisto è già collegato a un altro account Evolve. Accedi con quell\'account o contatta il supporto.',
-      'Un\'operazione di acquisto è già in corso. Attendi qualche secondo.': 'Un\'operazione di acquisto è già in corso. Attendi qualche secondo.',
-      'Non siamo riusciti a completare l\'acquisto. Riprova tra poco.': 'Non siamo riusciti a completare l\'acquisto. Riprova tra poco.',
-      'Ripristino annullato.': 'Ripristino annullato.',
-      'Un ripristino è già in corso. Attendi qualche secondo.': 'Un ripristino è già in corso. Attendi qualche secondo.',
-      'Non siamo riusciti a ripristinare gli acquisti. Riprova tra poco.': 'Non siamo riusciti a ripristinare gli acquisti. Riprova tra poco.',
-      'Passa a Evolve Pro': 'Passa a Evolve Pro',
-      'Sblocca tutte le funzionalità e accelera la tua crescita.': 'Sblocca tutte le funzionalità e accelera la tua crescita.',
-      'COSA INCLUDE IL PIANO PRO': 'COSA INCLUDE IL PIANO PRO',
-      'Suggerimenti intelligenti basati sui tuoi dati.': 'Suggerimenti intelligenti basati sui tuoi dati.',
-      'Statistiche Avanzate': 'Statistiche Avanzate',
-      'Grafici profondi e analisi dei trend.': 'Grafici profondi e analisi dei trend.',
-      'Crea tutti gli habits che desideri senza limiti.': 'Crea tutti gli habits che desideri senza limiti.',
-      'Obiettivi Illimitati': 'Obiettivi Illimitati',
-      'Crea tutti i tuoi macro obiettivi senza limiti.': 'Crea tutti i tuoi macro obiettivi senza limiti.',
-      'SCEGLI IL TUO PIANO': 'SCEGLI IL TUO PIANO',
-      'Mensile': 'Mensile',
-      'Disdici quando vuoi': 'Disdici quando vuoi',
-      'Annuale': 'Annuale',
-      'Risparmia oltre il 40%': 'Risparmia oltre il 40%',
-      'Il servizio acquisti non è raggiungibile. Verifica la tua connessione e riprova.': 'Il servizio acquisti non è raggiungibile. Verifica la tua connessione e riprova.',
-      'Attiva Abbonamento': 'Attiva Abbonamento',
-      'L\'abbonamento si rinnova automaticamente a meno che l\'autorinnovamento non venga disattivato nelle impostazioni dell\'account Apple almeno 24 ore prima della scadenza.': 'L\'abbonamento si rinnova automaticamente a meno che l\'autorinnovamento non venga disattivato nelle impostazioni dell\'account Apple almeno 24 ore prima della scadenza.',
-      'Privacy Policy': 'Privacy Policy',
-      'Termini d\'Uso (EULA)': 'Termini d\'Uso (EULA)',
-      'Sei un utente Pro!': 'Sei un utente Pro!',
-      'Grazie per sostenere lo sviluppo di Evolve.': 'Grazie per sostenere lo sviluppo di Evolve.',
-      'DETTAGLI ABBONAMENTO': 'DETTAGLI ABBONAMENTO',
-      'Piano': 'Piano',
-      'Evolve Pro Attivo': 'Evolve Pro Attivo',
-      'Stato': 'Stato',
-      'Attivo': 'Attivo',
-      'Prossimo Rinnovo': 'Prossimo Rinnovo',
-      'Metodo di Pagamento': 'Metodo di Pagamento',
-      'Apple Pay / App Store': 'Apple Pay / App Store',
-      'Gestisci Abbonamento': 'Gestisci Abbonamento',
-      'Disdici Abbonamento': 'Disdici Abbonamento',
-      'Benvenuto in Evolve Pro!': 'Benvenuto in Evolve Pro!',
-      'La tua iscrizione è attiva. Ora hai accesso completo ed illimitato all\'AI Coach personalizzato, alle statistiche avanzate dei trend e a tutti gli strumenti di crescita personale di Evolve.': 'La tua iscrizione è attiva. Ora hai accesso completo ed illimitato all\'AI Coach personalizzato, alle statistiche avanzate dei trend e a tutti gli strumenti di crescita personale di Evolve.',
-      'Inizia il tuo Percorso': 'Inizia il tuo Percorso',
-      'Per modificare, aggiornare o disdire il tuo abbonamento Pro, verrai indirizzato al portale ufficiale di RevenueCat o del tuo Account Apple.': 'Per modificare, aggiornare o disdire il tuo abbonamento Pro, verrai indirizzato al portale ufficiale di RevenueCat o del tuo Account Apple.',
-      'Evolve Pro': 'Evolve Pro',
-
-      'Termini e Privacy Policy': 'Termini e Privacy Policy',
-      'Notifiche di Sistema': 'Notifiche di Sistema',
-      'Abitudini giornaliere': 'Abitudini giornaliere',
-      'Stato di completamento di oggi': 'Stato di completamento di oggi',
-      'Macro obiettivi': 'Macro obiettivi',
-      'Lista degli obiettivi attivi e completati': 'Lista degli obiettivi attivi e completati',
-      'Nuova chat': 'Nuova chat',
-      'Impostazioni contesto': 'Impostazioni contesto',
-      'Fai una domanda...': 'Fai una domanda...',
-      'Orario Morning Brief': 'Orario Morning Brief',
-      'Orario Review Serale': 'Orario Review Serale',
-      'FaceID / TouchID': 'FaceID / TouchID',
-      'Cambia Password': 'Cambia Password',
-      'Invia Segnalazioni Crash': 'Invia Segnalazioni Crash',
-      'Aiutaci a migliorare l\'app...': 'Aiutaci a migliorare l\'app...',
-      'Esporta Dati': 'Esporta Dati',
-      'Formato JSON / CSV': 'Formato JSON / CSV',
-      'Elimina Account & Dati': 'Elimina Account & Dati',
-      'Gestione Permessi': 'Gestione Permessi',
-      'Notifiche, Calendario, etc.': 'Notifiche, Calendario, etc.',
-      'Password Attuale': 'Password Attuale',
-      'Nuova Password': 'Nuova Password',
-      'Conferma Nuova Password': 'Conferma Nuova Password',
-      'Errore durante l\'aggiornamento della password.': 'Errore durante l\'aggiornamento della password.',
-      'Errore durante l\'esportazione dei dati.': 'Errore durante l\'esportazione dei dati.',
-      'Errore durante l\'eliminazione dell\'account.': 'Errore durante l\'eliminazione dell\'account.',
-      'Errore durante l\'eliminazione: \$e': 'Errore durante l\'eliminazione: \$e',
-      'Resetta i Dati': 'Resetta i Dati',
-      'Eliminerà abitudini, obiettivi e preferenze, ma manterrà il tuo account attivo.': 'Eliminerà abitudini, obiettivi e preferenze, ma manterrà il tuo account attivo.',
-      'Conferma Reset Dati': 'Conferma Reset Dati',
-      'Elimina l\'account': 'Elimina l\'account',
-      'Eliminerà definitivamente il tuo account e tutti i dati associati. Questa azione è irreversibile.': 'Eliminerà definitivamente il tuo account e tutti i dati associati. Questa azione è irreversibile.',
-      'Conferma Eliminazione Account': 'Conferma Eliminazione Account',
-      'Acquisti Ripristinati!': 'Acquisti Ripristinati!',
-      'Nessun Acquisto Trovato': 'Nessun Acquisto Trovato',
-      'Ripristino Fallito': 'Ripristino Fallito',
-      'Abbonamento in Elaborazione': 'Abbonamento in Elaborazione',
-      'Acquisto Fallito': 'Acquisto Fallito',
-      'Errore Connessione': 'Errore Connessione',
-      'DATA DI NASCITA': 'DATA DI NASCITA',
-      'Pre-tracking': 'Pre-tracking',
-      'Attuale': 'Attuale',
-      'MESI VISSUTI': 'MESI VISSUTI',
-      'ETÀ ATTUALE': 'ETÀ ATTUALE',
-      'RIMANENTI': 'RIMANENTI',
-      'AI Coach Personalizzato': 'AI Coach Personalizzato',
-      'Statistiche Specifiche Per Abitudine': 'Statistiche Specifiche Per Abitudine',
-      'Metriche Avanzate Obiettivi': 'Metriche Avanzate Obiettivi',
-      'Abitudini Illimitate': 'Abitudini Illimitate',
-
-      'Clicca qui per segnare l\'obiettivo come completato. Cliccandolo di nuovo verrà segnato come fallito.': 'Clicca qui per segnare l\'obiettivo come completato. Cliccandolo di nuovo verrà segnato come fallito.',
-      'Usa questo pulsante per assegnare rapidamente una categoria all\'obiettivo.': 'Usa questo pulsante per assegnare rapidamente una categoria all\'obiettivo.',
-      'Se non hai fatto in tempo o i piani sono cambiati, puoi spostare questo obiettivo alla settimana / mese o anno successivo ( in base a dove hai inserito l\'obiettivo).': 'Se non hai fatto in tempo o i piani sono cambiati, puoi spostare questo obiettivo alla settimana / mese o anno successivo ( in base a dove hai inserito l\'obiettivo).',
-      'Se devi semplicemente rinominare l\'obiettivo, usa la matita.': 'Se devi semplicemente rinominare l\'obiettivo, usa la matita.',
-      'Infine, questo pulsante elimina definitivamente l\'obiettivo.': 'Infine, questo pulsante elimina definitivamente l\'obiettivo.',
-      'Passa a questa scheda per visualizzare grafici e performance dettagliate selezionando l\'anno corrente o tutti gli anni.': 'Passa a questa scheda per visualizzare grafici e performance dettagliate selezionando l\'anno corrente o tutti gli anni.',
-      'Da qui puoi selezionare una specifica abitudine per vederne i dettagli, oppure \'Tutti gli Habits\' per una panoramica globale.': 'Da qui puoi selezionare una specifica abitudine per vederne i dettagli, oppure \'Tutti gli Habits\' per una panoramica globale.',
-      'Naviga tra le varie schede per vedere i Trend, gli Alert sulle performance, l\'andamento delle Abitudini e il tuo Mood.': 'Naviga tra le varie schede per vedere i Trend, gli Alert sulle performance, l\'andamento delle Abitudini e il tuo Mood.',
-
-      'Mood & Energia': 'Mood & Energia',
-      'Analisi del benessere psicofisico.': 'Analisi del benessere psicofisico.',
-      'Non ci sono abbastanza dati per calcolare la sensibilità.': 'Non ci sono abbastanza dati per calcolare la sensibilità.',
-      'Non ci sono abbastanza dati per calcolare la resilienza.': 'Non ci sono abbastanza dati per calcolare la resilienza.',
-      'Resilienza': 'Resilienza',
-      'Analisi di Correlazione': 'Analisi di Correlazione',
-      'Non ci sono abbastanza dati per l\'analisi di correlazione.': 'Non ci sono abbastanza dati per l\'analisi di correlazione.',
-
-      'Trend Globale': 'Trend Globale',
-      'COMPLETATI': 'COMPLETATI',
-      'FALLITI': 'FALLITI',
-      'di successo': 'di successo',
-      'completamento': 'completamento',
-      'dal': 'dal',
-      'Totale': 'Totale',
-      'Successo': 'Successo',
-      'Crescita': 'Crescita',
-      'Calo': 'Calo',
-      'Aggiungi obiettivo lifetime...': 'Aggiungi obiettivo lifetime...',
-      'Aggiungi obiettivo annuale...': 'Aggiungi obiettivo annuale...',
-      'Aggiungi obiettivo trimestrale...': 'Aggiungi obiettivo trimestrale...',
-      'Aggiungi obiettivo mensile...': 'Aggiungi obiettivo mensile...',
-      'Aggiungi obiettivo settimanale...': 'Aggiungi obiettivo settimanale...',
-      'Limite di 100 obiettivi raggiunto!': 'Limite di 100 obiettivi raggiunto!',
-
-      'Scegli una tonalità premium o creane una tua': 'Scegli una tonalità premium o creane una tua',
-      'Abbonamento': 'Abbonamento',
-      'Lingua, Tema, Unità di misura': 'Lingua, Tema, Unità di misura',
-      'Promemoria e avvisi di sistema': 'Promemoria e avvisi di sistema',
-      'Gestione dati e biometrica': 'Gestione dati e biometrica',
-      'Ripeti Tutorial': 'Ripeti Tutorial',
-      'Visualizza di nuovo la guida iniziale': 'Visualizza di nuovo la guida iniziale',
-      'Stato d\'animo': 'Stato d\'animo',
-      'Gestione': 'Gestione',
-      'I tuoi progressi per oggi': 'I tuoi progressi per oggi',
-      'Nessuna abitudine': 'Nessuna abitudine',
-      'Non ci sono abitudini per questo giorno.\nInizia a crearne una!': 'Non ci sono abitudini per questo giorno.\nInizia a crearne una!',
-      'Trend Settimanale': 'Trend Settimanale',
-      'Trend Mensile': 'Trend Mensile',
-      'Trend Annuale': 'Trend Annuale',
-      'MOOD BASSO': 'MOOD BASSO',
-      'Abitudini Sensibili al Mood': 'Abitudini Sensibili al Mood',
-      'Abitudini Resilienti': 'Abitudini Resilienti',
-      'Abitudini che mantieni anche quando il mood è basso.': 'Abitudini che mantieni anche quando il mood è basso.',
-      'Analisi Performance': 'Analisi Performance',
-      ' di completamento': ' di completamento',
-      ' di successo': ' di successo',
-      ' completamento': ' completamento',
-      'Crea nuova categoria': 'Crea nuova categoria',
-      'Completati': 'Completati',
-      'Falliti': 'Falliti',
-
-      'Impossibile aprire il link.': 'Impossibile aprire il link.',
-      'Colore Personalizzato': 'Colore Personalizzato',
-      'Verifica': 'Verifica',
-      'Problemi di connessione con il Coach. Riprova più tardi.': 'Problemi di connessione con il Coach. Riprova più tardi.',
-      'AI Coach': 'AI Coach',
-      'Password aggiornata con successo!': 'Password aggiornata con successo!',
-      'Errore durante l\'esportazione: ': 'Errore durante l\'esportazione: ',
-      'Dati resettati con successo!': 'Dati resettati con successo!',
-      'Errore durante il reset: ': 'Errore durante il reset: ',
-      'Account eliminato con successo!': 'Account eliminato con successo!',
-      'Errore durante l\'eliminazione: ': 'Errore durante l\'eliminazione: ',
-      'Ripristina acquisti': 'Ripristina acquisti',
-      'Errore durante il salvataggio.': 'Errore durante il salvataggio.',
-      'Fatto': 'Fatto',
-      'Inserisci la tua email per reimpostare la password.': 'Inserisci la tua email per reimpostare la password.',
-      'Tasso di successo': 'Tasso di successo',
-      'Tasso di successo per categoria': 'Tasso di successo per categoria',
-      'Attività Trim.': 'Attività Trim.',
-      'Q1 - Q4': 'Q1 - Q4',
-      'In Q1-Q4': 'In Q1-Q4',
-      'Attività Mensile': 'Attività Mensile',
-      'Totale/Completati': 'Totale/Completati',
-      'Completamenti': 'Completamenti',
-      'Mensili': 'Mensili',
-      'Totali: ': 'Totali: ',
-      'Completati: ': 'Completati: ',
-      '🎯 Distribuzione Categorie': '🎯 Distribuzione Categorie',
-      'Ripartizione degli obiettivi per area di focus': 'Ripartizione degli obiettivi per area di focus',
-      '📈 Progressione Annuale': '📈 Progressione Annuale',
-      'Confronto anno per anno del volume di obiettivi e completamenti': 'Confronto anno per anno del volume di obiettivi e completamenti',
-      'Attivi: ': 'Attivi: ',
-      'Falliti: ': 'Falliti: ',
-      '🔮 Distribuzione Tipologie': '🔮 Distribuzione Tipologie',
-      'Ripartizione degli obiettivi per orizzonte temporale': 'Ripartizione degli obiettivi per orizzonte temporale',
-      '🎂 Stagionalità': '🎂 Stagionalità',
-      'Performance Trimestrale aggregata': 'Performance Trimestrale aggregata',
-      '📈 Mensile (Storico)': '📈 Mensile (Storico)',
-      'Successo medio per mese': 'Successo medio per mese',
-      ' successo': ' successo',
-      '📈 Evoluzione Interessi': '📈 Evoluzione Interessi',
-      'Composizione delle aree di focus negli anni': 'Composizione delle aree di focus negli anni',
-      'Modifica categoria': 'Modifica categoria',
-      'Archivia categoria': 'Archivia categoria',
-      'Nome categoria...': 'Nome categoria...',
-      'Titolo obiettivo...': 'Titolo obiettivo...',
-      'Cambia categoria': 'Cambia categoria',
-      'Scegli categoria': 'Scegli categoria',
-      'Punto di Forza': 'Punto di Forza',
-      'Mese Migliore': 'Mese Migliore',
-      'Nessuno': 'Nessuno',
-      'Tipologia Efficace': 'Tipologia Efficace',
-      'Totale Storico': 'Totale Storico',
-      'dal ': 'dal ',
-      'Successo Globale': 'Successo Globale',
-      'obiettivi completati': 'obiettivi completati',
-      'Anno Migliore': 'Anno Migliore',
-      'Anno Più Produttivo': 'Anno Più Produttivo',
-      'obiettivi totali': 'obiettivi totali',
-      '🚀 Velocità di Esecuzione (Cumulativa)': '🚀 Velocità di Esecuzione (Cumulativa)',
-      'Confronto tra obiettivi pianificati e completati nel tempo': 'Confronto tra obiettivi pianificati e completati nel tempo',
-      '🎯 Performance Categorie': '🎯 Performance Categorie',
-      'Tutto alla grande!': 'Tutto alla grande!',
-      'WORST STREAK': 'WORST STREAK',
-      'FREQUENZA': 'FREQUENZA',
-      'BEST': 'BEST',
-      'WORST': 'WORST',
-      'Gap: ': 'Gap: ',
-      'MOOD ALTO': 'MOOD ALTO',
-      'Coefficiente': 'Coefficiente',
-      'Co-occorrenza': 'Co-occorrenza',
-      'Errore durante la creazione della categoria': 'Errore durante la creazione della categoria',
-      'Errore durante la modifica della categoria': 'Errore durante la modifica della categoria',
-      'Errore durante l\'archiviazione della categoria': 'Errore durante l\'archiviazione della categoria',
-      'Errore durante l\'aggiornamento': 'Errore durante l\'aggiornamento',
-      'Errore durante l\'aggiornamento dello stato': 'Errore durante l\'aggiornamento dello stato',
-      'Errore durante il salvataggio dell\'umore': 'Errore durante il salvataggio dell\'umore',
-      'Lavoro': 'Lavoro',
-      'Salute': 'Salute',
-      'Finanza': 'Finanza',
-      'Relazioni': 'Relazioni',
-      'Formazione': 'Formazione',
-      'Hobby': 'Hobby',
-      'Spirituale': 'Spirituale',
-      'Altro': 'Altro',
-      'Evolve • ': 'Evolve • ',
-      'Errore durante il salvataggio': 'Errore durante il salvataggio',
-      'Errore durante l\'eliminazione': 'Errore durante l\'eliminazione',
-
-      'App Bloccata': 'App Bloccata',
-      'Sblocca con i dati biometrici per continuare': 'Sblocca con i dati biometrici per continuare',
-      'Riprova': 'Riprova',
-      'La tua tela è vuota': 'La tua tela è vuota',
-      'Crea la tua prima abitudine per iniziare a tracciare i tuoi progressi e costruire la tua routine.': 'Crea la tua prima abitudine per iniziare a tracciare i tuoi progressi e costruire la tua routine.',
-      'Ho capito': 'Ho capito',
-      'Dettagli tecnici:': 'Dettagli tecnici:',
-      'Inserisci': 'Inserisci',
-      'Aggiorna': 'Aggiorna',
-      'Sblocca Evolve Pro': 'Sblocca Evolve Pro',
-      'Porta il tuo sistema di abitudini al livello successivo': 'Porta il tuo sistema di abitudini al livello successivo',
-      'Analisi avanzata dei trend e suggerimenti intelligenti generati dall\'AI.': 'Analisi avanzata dei trend e suggerimenti intelligenti generati dall\'AI.',
-      'Informazioni chiave per aumentare la tua produttività.': 'Informazioni chiave per aumentare la tua produttività.',
-      'Visualizza grafici dettagliati e statistiche di performance profonde per ogni anno.': 'Visualizza grafici dettagliati e statistiche di performance profonde per ogni anno.',
-      'Crea e traccia tutti gli habits che desideri senza alcun limite.': 'Crea e traccia tutti gli habits che desideri senza alcun limite.',
-      'Ottieni Pro a €4,99 / mese': 'Ottieni Pro a €4,99 / mese',
-      'Forse più tardi': 'Forse più tardi',
-      'Modifica Obiettivo': 'Modifica Obiettivo',
-      'Eliminare obiettivo?': 'Eliminare obiettivo?',
-      'Questa azione non può essere annullata.': 'Questa azione non può essere annullata.',
-      'Scegli colore': 'Scegli colore',
-      'Crea': 'Crea',
-      'Archiviare categoria?': 'Archiviare categoria?',
-      'La categoria "label" non sarà più disponibile per nuovi obiettivi, ma resterà collegata a count obiettivi storici e alle statistiche.': 'La categoria "label" non sarà più disponibile per nuovi obiettivi, ma resterà collegata a count obiettivi storici e alle statistiche.',
-      'La categoria "label" non sarà più disponibile per nuovi obiettivi, ma resterà nello storico.': 'La categoria "label" non sarà più disponibile per nuovi obiettivi, ma resterà nello storico.',
-      'Archivia': 'Archivia',
-      'Seleziona Orario': 'Seleziona Orario',
-      'Conferma Uscita': 'Conferma Uscita',
-      'Sei sicuro di voler uscire dal tuo account? Dovrai reinserire le tue credenziali per accedere nuovamente.': 'Sei sicuro di voler uscire dal tuo account? Dovrai reinserire le tue credenziali per accedere nuovamente.',
-      'Esci': 'Esci',
-      'Sei sicuro di voler eliminare': 'Sei sicuro di voler eliminare',
-      'Colore troppo scuro per la visibilità in Dark Mode.': 'Colore troppo scuro per la visibilità in Dark Mode.',
-      'Verifica Visibilità': 'Verifica Visibilità',
-      'Riesci a leggere chiaramente questo testo e a vedere il pulsante qui sotto?': 'Riesci a leggere chiaramente questo testo e a vedere il pulsante qui sotto?',
-      'SI, CONFERMA': 'SI, CONFERMA',
-      'NO, TORNA INDIETRO': 'NO, TORNA INDIETRO',
-      'Inserisci la tua nuova password.': 'Inserisci la tua nuova password.',
-      'Inserisci la tua password attuale per continuare.': 'Inserisci la tua password attuale per continuare.',
-      'Inserisci la password attuale.': 'Inserisci la password attuale.',
-      'Utente non trovato.': 'Utente non trovato.',
-      'La password attuale non è corretta.': 'La password attuale non è corretta.',
-      'Tutti i campi sono obbligatori.': 'Tutti i campi sono obbligatori.',
-      'La nuova password deve essere di almeno 8 caratteri.': 'La nuova password deve essere di almeno 8 caratteri.',
-      'Le password non coincidono.': 'Le password non coincidono.',
-      'Gestione Account e Dati': 'Gestione Account e Dati',
-      'Scegli l\'operazione che desideri effettuare. Entrambe le azioni richiedono conferma.': 'Scegli l\'operazione che desideri effettuare. Entrambe le azioni richiedono conferma.',
-      'Sei sicuro di voler eliminare tutti i tuoi dati? Questa azione non può essere annullata.': 'Sei sicuro di voler eliminare tutti i tuoi dati? Questa azione non può essere annullata.',
-      'Elimina l\'Account': 'Elimina l\'Account',
-      'Sei sicuro di voler eliminare definitivamente il tuo account? Tutti i tuoi dati andranno persi per sempre.': 'Sei sicuro di voler eliminare definitivamente il tuo account? Tutti i tuoi dati andranno persi per sempre.',
-      'I miei dati esportati da Growth': 'I miei dati esportati da Growth',
-      'Contesto dell\'AI': 'Contesto dell\'AI',
-      'Scegli quali informazioni condividere con l\'assistente per personalizzare le risposte.': 'Scegli quali informazioni condividere con l\'assistente per personalizzare le risposte.',
-      'Online per': 'Online per',
-      'Elimina chat': 'Elimina chat',
-      'Sei sicuro di voler eliminare tutti i messaggi? Questa azione non può essere annullata.': 'Sei sicuro di voler eliminare tutti i messaggi? Questa azione non può essere annullata.',
-      'Coach Virtuale': 'Coach Virtuale',
-      'Pronto ad aiutarti a mantenere la disciplina.': 'Pronto ad aiutarti a mantenere la disciplina.',
-      'Per favore, seleziona almeno un contesto (abitudini o obiettivi) nelle impostazioni per poter parlare con il Coach.': 'Per favore, seleziona almeno un contesto (abitudini o obiettivi) nelle impostazioni per poter parlare con il Coach.',
-      'Ciao! Sono il tuo Coach di Disciplina. Come posso aiutarti oggi?': 'Ciao! Sono il tuo Coach di Disciplina. Come posso aiutarti oggi?',
-      'Messaggio copiato': 'Messaggio copiato',
-    },
-    'English': {
-      'app_title': 'Evolve',
-      'Impostazioni App': 'App Settings',
-      'ASPETTO & VISUAL': 'APPEARANCE & VISUAL',
-      'Modalità Scura': 'Dark Mode',
-      'Colore Accento': 'Accent Color',
-      'CALENDARIO & DASHBOARD': 'CALENDARIO & DASHBOARD',
-      'Vista Predefinita': 'Default View',
-      'ESPERIENZA UTENTE': 'USER EXPERIENCE',
-      'Feedback Aptico': 'Haptic Feedback',
-      'UNITÀ E LINGUA': 'UNITS & LANGUAGE',
-      'Lingua': 'Language',
-      'Formato 24h': '24h Format',
-      'AI & SISTEMA': 'AI & SYSTEM',
-      'Suggerimenti AI': 'AI Suggestions',
-      'Analisi intelligente delle abitudini': 'Intelligent habit analysis',
-      'PRO ONLY': 'This feature is only available for PRO users',
-      'Home': 'Home',
-      'Statistiche': 'Statistics',
-      'Obiettivi': 'Goals',
-      'Salva': 'Save',
-      'Annulla': 'Cancel',
-      'Conferma': 'Confirm',
-      'Aggiorna Stato Giornaliero': 'Update Daily Status',
-      'Check-in Giornaliero': 'Daily Check-in',
-      'Oggi': 'Today',
-      'Abitudini': 'Habits',
-      'Umore': 'Mood',
-      'Energia': 'Energy',
-      'AI Chat': 'AI Chat',
-      'Morning Brief': 'Morning Brief',
-      'Review Serale': 'Evening Review',
-      'Notifiche': 'Notifications',
-      'Privacy e Sicurezza': 'Privacy & Security',
-      'Account': 'Account',
-      'Piano PRO': 'PRO Plan',
-      'Informazioni Personali': 'Personal Information',
-      'Blocco Biometrico': 'Biometric Lock',
-      'Analytics Anonimi': 'Anonymous Analytics',
-      'Promemoria Abitudini': 'Habit Reminders',
-      'Scadenze Obiettivi': 'Goal Deadlines',
-      'Insight AI': 'AI Insights',
-      'Resoconti Settimanali': 'Weekly Reports',
-      'Modalità Focus': 'Focus Mode',
-      'Milestones': 'Milestones',
-      'Deep Work Insights': 'Deep Work Insights',
-      'Gestione Abitudini': 'Manage Habits',
-      'Aggiungi Abitudine': 'Add Habit',
-      'Modifica Abitudine': 'Edit Habit',
-      'Elimina Abitudine': 'Delete Habit',
-      'Nome Abitudine': 'Habit Name',
-      'Colore': 'Color',
-      'Trascina per riordinare': 'Drag to reorder',
-      'Nessuna abitudine tracciata oggi': 'No habits tracked today',
-      'Panoramica Statistiche': 'Statistics Overview',
-      'Mese': 'Month',
-      'Settimana': 'Week',
-      'Anno': 'Year',
-      'Vita': 'Life',
-      'Analisi dettagliata delle tue performance.': 'Detailed analysis of your performance.',
-      'Tutti gli Habits': 'All Habits',
-      'SELEZIONA HABIT': 'SELECT HABIT',
-      'Info': 'Info',
-      'Trend': 'Trend',
-      'Alert': 'Alert',
-      'Stats': 'Stats',
-      'Completamento': 'Completion',
-      'Globale': 'Global',
-      'Miglior Serie': 'Best Streak',
-      'Giorni': 'Days',
-      'Top Performer': 'Top Performer',
-      'Giorno Critico': 'Critical Day',
-      'Focus richiesto': 'Focus Required',
-      'Abitudini Chiave': 'Key Habits',
-      'Abitudini che influenzano positivamente molte altre': 'Habits that positively influence many others',
-      'Alto Impatto': 'High Impact',
-      'connessioni': 'connections',
-      'Media Impatto': 'Avg Impact',
-      'Analisi Correlazioni': 'Correlation Analysis',
-      'Pattern tra le tue abitudini': 'Patterns between your habits',
-      'Coppie Analizzate': 'Pairs Analyzed',
-      'Correlazione Media': 'Avg Correlation',
-      'Positive': 'Positive',
-      'Negative': 'Negative',
-      'Abitudini Isolate': 'Isolated Habits',
-      'Non hanno correlazioni significative.': 'No significant correlations found.',
-      'Correlazioni Positive': 'Positive Correlations',
-      'Correlazioni Negative': 'Negative Correlations',
-      'Attività Recente': 'Recent Activity',
-      'Suggerimento': 'Suggestion',
-      'Le abitudini chiave have un effetto "domino".': 'Key habits have a "domino" effect.',
-      'timeframe_week_short': 'Week',
-      'timeframe_month_short': 'Month',
-      'timeframe_year_short': 'Year',
-      'timeframe_all': 'All',
-      'week': 'Week',
-      'month': 'Month',
-      'year': 'Year',
-      'all': 'All',
-      '7d': '7d',
-      '14d': '14d',
-      '30d': '30d',
-      'Trend Completamento': 'Completion Trend',
-      'Performance Evolution': 'Performance Evolution',
-      'Sett': 'Week',
-      'Tutto': 'All',
-      'Confronto Temporale': 'Temporal Comparison',
-      'Analizza come stai andando rispetto al passato.': 'Analyze how you are doing compared to the past.',
-      'vs': 'vs',
-      'Aree di Miglioramento': 'Improvement Areas',
-      'Abitudini che richiedono più attenzione.': 'Habits requiring more attention.',
-      'succ.': 'succ.',
-      'GIORNO NERO': 'BLACK DAY',
-      'Solo il': 'Only',
-      'di completamento': 'of completion',
-      'Analisi Worst Streaks': 'Worst Streaks Analysis',
-      'Analisi serie negative per identificare pattern.': 'Analyzing negative streaks to find patterns.',
-      'Abitudini Critiche': 'Critical Habits',
-      'Top 3 Worst Streaks': 'Top 3 Worst Streaks',
-      'giorni consecutivi': 'consecutive days',
-      'Analisi Fallimenti': 'Failure Analysis',
-      'Pattern di Recupero': 'Recovery Patterns',
-      'Tempo Medio Recupero': 'Avg Recovery Time',
-      'Buono': 'Good',
-      'RECUPERATORI VELOCI': 'FAST RECOVERERS',
-      'Confronto Performance': 'Performance Comparison',
-      'Attenzione': 'Attention',
-      'Suggerimenti Pratici': 'Practical Suggestions',
-      'Dettagli Abitudini': 'Habit Details',
-      'Ordina per': 'Sort by',
-      'Rate': 'Rate',
-      'Peggior Serie': 'Worst Streak',
-      'Serie Attuale': 'Current Streak',
-      'ORDINA PER': 'ORDER BY',
-      'Mood & Energy vs Productivity': 'Mood & Energy vs Productivity',
-      'Correlazione tra benessere e abitudini': 'Wellbeing & habit correlation',
-      'time_range_7d': '7d',
-      'time_range_14d': '14d',
-      'time_range_30d': '30d',
-      'Produttività': 'Productivity',
-      'Sensibili al Mood': 'Mood Sensitive',
-      'Richiedono un buon mood per essere completate.': 'These habits require a good mood to be completed.',
-      'con mood basso': 'with low mood',
-      'con mood alto': 'with high mood',
-      'Resilienti': 'Resilient',
-      'Mantenute anche con mood ed energia bassi.': 'Maintained even when mood and energy are low.',
-      'Mood': 'Mood',
-      'Stabile': 'Stable',
-      'Suggerimenti': 'Suggestions',
-      'Pianifica le abitudini sensibili al mood quando ti senti meglio.': 'Plan mood-sensitive habits when you feel best.',
-      'Le abitudini resilienti sono ottime nei giorni difficili.': 'Resilient habits are great to keep on difficult days.',
-      'Monitora mood ed energia for insights più accurati.': 'Track mood and energy for more accurate insights.',
-      'SERIE ATTUALE': 'CURRENT STREAK',
-      'RECORD': 'RECORD',
-      'COMPLETAMENTO': 'COMPLETATION',
-      'MANCATI': 'MISSED',
-      'Trend Ultimi 30 Giorni': 'Last 30 Days Trend',
-      'Completato': 'Completed',
-      'Non completato': 'Not completed',
-      'Correlazioni con': 'Correlations with',
-      'Come questa abitudine si relaziona con le altre': 'How this habit relates to others',
-      'insieme': 'together',
-      'Info Correlazioni': 'Positive correlations suggest habits that work well together. Negative ones indicate possible conflicts of time or energy.',
-      'Calendario Annuale': 'Annual Calendar',
-      'Mancato': 'Missed',
-      'Non tracciato': 'Not tracked',
-      'Performance per Giorno': 'Performance per Day',
-      'Giorno più forte': 'Strongest day',
-      'Giorno più debole': 'Weakest day',
-      'Ben fatto! % di completamento': 'Well done! % completion',
-      'Solo % di completamento': 'Only % completion',
-      'Serie Negativa Peggiore': 'Worst Negative Streak',
-      'giorni consecutivi mancati': 'missed consecutive days',
-      'Iniziata il': 'Started on',
-      'Streak Interrotti': 'Broken Streaks',
-      'Streak di count giorni interrotto': 'Streak of count days broken',
-      'Concentrati sul Dom - è il tuo giorno più debole': 'Focus on Sun - it\'s your weakest day',
-      'Evita pause prolungate - la tua serie negativa più lunga è stata di 12 giorni': 'Avoid prolonged breaks - your longest negative streak was 12 days',
-      'Obiettivo: raggiungi almeno il 70% di completamento per consolidare l\'abitudine': 'Goal: reach at least 70% completion to consolidate the habit',
-      'Traccia il tuo umore ed energia.': 'Track your mood and energy.',
-      'Scegli un colore': 'Choose a color',
-      'Es. Bere acqua, Leggere...': 'e.g. Drink water, Read...',
-      'Correlazione Mood': 'Mood Correlation',
-      'Correlazione Energia': 'Energy Correlation',
-      'Mood Medio (✓)': 'Avg Mood (✓)',
-      'Energia Media (✓)': 'Avg Energy (✓)',
-      'Nessuna': 'None',
-      'su 10': 'of 10',
-      'Resiliente': 'Resilient',
-      'Completato vs Mancato': 'Completed vs Missed',
-      'Performance per Livello': 'Performance per Level',
-      'Basso (1-4) • Medio (5-7) • Alto (8-10)': 'Low (1-4) • Medium (5-7) • High (8-10)',
-      'Basso': 'Low',
-      'Medio': 'Medium',
-      'Alto': 'High',
-      'Con Mood': 'With Mood',
-      'Con Energia': 'With Energy',
-      'Analisi basata su count giorni con dati mood/energia (done completati, missed mancati)': 'Analysis based on count days with mood/energy data (done completed, missed missed)',
-      'Nome': 'First Name',
-      'Cognome': 'Last Name',
-      'Email': 'Email',
-      'Telefono (Opzionale)': 'Phone (Optional)',
-      'Informazioni salvate con successo': 'Information saved successfully',
-      'Campo obbligatorio': 'Required field',
-      'Inserisci un\'email valida': 'Enter a valid email',
-      'Giorno': 'Day',
-      'Buongiorno': 'Good morning',
-      'Buon pomeriggio': 'Good afternoon',
-      'Buonasera': 'Good evening',
-      'Bentornato': 'Welcome back',
-      'Sistema Sincronizzato': 'System Synced',
-      'succ': 'succ.',
-      'only': 'Only',
-      'attention': 'Attention',
-      'monday': 'Monday',
-      'tuesday': 'Tuesday',
-      'wednesday': 'Wednesday',
-      'thursday': 'Thursday',
-      'friday': 'Friday',
-      'saturday': 'Saturday',
-      'sunday': 'Sunday',
-      'mon': 'Mon',
-      'tue': 'Tue',
-      'wed': 'Wed',
-      'thu': 'Thu',
-      'fri': 'Fri',
-      'sat': 'Sat',
-      'sun': 'Sun',
-      'january': 'January',
-      'february': 'February',
-      'march': 'March',
-      'april': 'April',
-      'may': 'May',
-      'june': 'June',
-      'july': 'July',
-      'august': 'August',
-      'september': 'September',
-      'october': 'October',
-      'november': 'November',
-      'december': 'December',
-      'rate': 'Success Rate',
-      'best_streak_label': 'Best Streak',
-      'worst_streak_label': 'Worst Streak',
-      'current_streak_label': 'Current Streak',
-      'first_name': 'Name',
-      'Crea Abitudine': 'Create Habit',
-      'Puoi modificare solo oggi e ieri!': 'You can only edit today and yesterday!',
-      'Nessun dato': 'No data',
-      'Dati insufficienti (servono almeno 3 categorie)': 'Insufficient data (at least 3 categories needed)',
-      'Distribuzione': 'Distribution',
-      'obiettivi': 'goals',
-      'nascita': 'birth',
-      '85 anni': '85 years',
-      'Sensibilità': 'Sensitivity',
-      'Streak Negativa': 'Negative Streak',
-      'Coming Soon': 'Coming Soon',
-      'Errore': 'Error',
-      'L\'accesso Pro è stato ripristinato con successo su questo dispositivo. Divertiti!': 'Pro access has been successfully restored on this device. Enjoy!',
-      'Nessun abbonamento Evolve Pro attivo è stato trovato su questo Apple ID. Assicurati di usare lo stesso Apple ID dell\'acquisto.': 'No active Evolve Pro subscription found on this Apple ID. Make sure to use the same Apple ID as the purchase.',
-      'L\'acquisto è registrato, ma l\'abbonamento Pro non risulta ancora attivo. Attendi qualche secondo e usa Ripristina acquisti.': 'Purchase registered, but Pro subscription is not active yet. Wait a few seconds and use Restore Purchases.',
-      'Contratto Paid Apps non attivo. L\'Account Holder deve accettare l\'accordo Paid Apps in App Store Connect.': 'Paid Apps agreement not active. The Account Holder must accept the Paid Apps agreement in App Store Connect.',
-      'Questo abbonamento risulta già acquistato. Usa Ripristina acquisti per riattivare l\'accesso Pro.': 'This subscription is already purchased. Use Restore Purchases to reactivate Pro access.',
-      'Gli acquisti in-app non sono consentiti su questo dispositivo o account Apple.': 'In-app purchases are not allowed on this device or Apple account.',
-      'Il piano selezionato non è disponibile per l\'acquisto. Riprova più tardi.': 'Selected plan is not available for purchase. Try again later.',
-      'Il pagamento è in sospeso. L\'accesso Pro verrà attivato quando Apple confermerà la transazione.': 'Payment is pending. Pro access will be activated when Apple confirms the transaction.',
-      'Connessione non disponibile. Controlla la rete e riprova.': 'Connection unavailable. Check your network and try again.',
-      'Configurazione acquisti non valida. Verifica App Store Connect e RevenueCat prima di inviare la build.': 'Invalid purchase configuration. Check App Store Connect and RevenueCat.',
-      'Questo acquisto è già collegato a un altro account Evolve. Accedi con quell\'account o contatta il supporto.': 'This purchase is already linked to another Evolve account. Log in with that account or contact support.',
-      'Un\'operazione di acquisto è già in corso. Attendi qualche secondo.': 'A purchase operation is already in progress. Wait a few seconds.',
-      'Non siamo riusciti a completare l\'acquisto. Riprova tra poco.': 'Could not complete the purchase. Try again shortly.',
-      'Ripristino annullato.': 'Restore cancelled.',
-      'Un ripristino è già in corso. Attendi qualche secondo.': 'A restore is already in progress. Wait a few seconds.',
-      'Non siamo riusciti a ripristinare gli acquisti. Riprova tra poco.': 'Could not restore purchases. Try again shortly.',
-      'Passa a Evolve Pro': 'Upgrade to Evolve Pro',
-      'Sblocca tutte le funzionalità e accelera la tua crescita.': 'Unlock all features and accelerate your growth.',
-      'COSA INCLUDE IL PIANO PRO': 'WHAT THE PRO PLAN INCLUDES',
-      'Suggerimenti intelligenti basati sui tuoi dati.': 'Smart suggestions based on your data.',
-      'Statistiche Avanzate': 'Advanced Statistics',
-      'Grafici profondi e analisi dei trend.': 'Deep charts and trend analysis.',
-      'Crea tutti gli habits che desideri senza limiti.': 'Create all the habits you want without limits.',
-      'Obiettivi Illimitati': 'Unlimited Goals',
-      'Crea tutti i tuoi macro obiettivi senza limiti.': 'Create all your macro goals without limits.',
-      'SCEGLI IL TUO PIANO': 'CHOOSE YOUR PLAN',
-      'Mensile': 'Monthly',
-      'Disdici quando vuoi': 'Cancel anytime',
-      'Annuale': 'Annually',
-      'Risparmia oltre il 40%': 'Save over 40%',
-      'Il servizio acquisti non è raggiungibile. Verifica la tua connessione e riprova.': 'Purchase service unreachable. Check your connection and try again.',
-      'Attiva Abbonamento': 'Activate Subscription',
-      'L\'abbonamento si rinnova automaticamente a meno che l\'autorinnovamento non venga disattivato nelle impostazioni dell\'account Apple almeno 24 ore prima della scadenza.': 'The subscription renews automatically unless auto-renew is turned off in Apple account settings at least 24 hours before the end of the period.',
-      'Privacy Policy': 'Privacy Policy',
-      'Termini d\'Uso (EULA)': 'Terms of Use (EULA)',
-      'Sei un utente Pro!': 'You are a Pro user!',
-      'Grazie per sostenere lo sviluppo di Evolve.': 'Thank you for supporting Evolve\'s development.',
-      'DETTAGLI ABBONAMENTO': 'SUBSCRIPTION DETAILS',
-      'Piano': 'Plan',
-      'Evolve Pro Attivo': 'Active Evolve Pro',
-      'Stato': 'Status',
-      'Attivo': 'Active',
-      'Prossimo Rinnovo': 'Next Renewal',
-      'Metodo di Pagamento': 'Payment Method',
-      'Apple Pay / App Store': 'Apple Pay / App Store',
-      'Gestisci Abbonamento': 'Manage Subscription',
-      'Disdici Abbonamento': 'Cancel Subscription',
-      'Benvenuto in Evolve Pro!': 'Welcome to Evolve Pro!',
-      'La tua iscrizione è attiva. Ora hai accesso completo ed illimitato all\'AI Coach personalizzato, alle statistiche avanzate dei trend e a tutti gli strumenti di crescita personale di Evolve.': 'Your subscription is active. You now have full and unlimited access to the personalized AI Coach, advanced trend statistics, and all Evolve\'s personal growth tools.',
-      'Inizia il tuo Percorso': 'Start your Journey',
-      'Per modificare, aggiornare o disdire il tuo abbonamento Pro, verrai indirizzato al portale ufficiale di RevenueCat o del tuo Account Apple.': 'To modify, update, or cancel your Pro subscription, you will be directed to the official RevenueCat or Apple Account portal.',
-      'Evolve Pro': 'Evolve Pro',
-
-      'Termini e Privacy Policy': "Terms and Privacy Policy",
-      'Notifiche di Sistema': "System Notifications",
-      'Abitudini giornaliere': "Daily habits",
-      'Stato di completamento di oggi': "Today's completion status",
-      'Macro obiettivi': "Macro goals",
-      'Lista degli obiettivi attivi e completati': "List of active and completed goals",
-      'Nuova chat': "New chat",
-      'Impostazioni contesto': "Context settings",
-      'Fai una domanda...': "Ask a question...",
-      'Orario Morning Brief': "Morning Brief Time",
-      'Orario Review Serale': "Evening Review Time",
-      'FaceID / TouchID': "FaceID / TouchID",
-      'Cambia Password': "Change Password",
-      'Invia Segnalazioni Crash': "Send Crash Reports",
-      'Aiutaci a migliorare l\'app...': "Help us improve the app...",
-      'Esporta Dati': "Export Data",
-      'Formato JSON / CSV': "JSON / CSV format",
-      'Elimina Account & Dati': "Delete Account & Data",
-      'Gestione Permessi': "Manage Permissions",
-      'Notifiche, Calendario, etc.': "Notifications, Calendar, etc.",
-      'Password Attuale': "Current Password",
-      'Nuova Password': "New Password",
-      'Conferma Nuova Password': "Confirm New Password",
-      'Errore durante l\'aggiornamento della password.': "Error updating password.",
-      'Errore durante l\'esportazione dei dati.': "Error exporting data.",
-      'Errore durante l\'eliminazione dell\'account.': "Error deleting account.",
-      'Errore durante l\'eliminazione: \$e': "Error deleting: \$e",
-      'Resetta i Dati': "Reset Data",
-      'Eliminerà abitudini, obiettivi e preferenze, ma manterrà il tuo account attivo.': "Will delete habits, goals, and preferences, but keep your account active.",
-      'Conferma Reset Dati': "Confirm Data Reset",
-      'Elimina l\'account': "Delete account",
-      'Eliminerà definitivamente il tuo account e tutti i dati associati. Questa azione è irreversibile.': "Will permanently delete your account and all associated data. This action is irreversible.",
-      'Conferma Eliminazione Account': "Confirm Account Deletion",
-      'Acquisti Ripristinati!': "Purchases Restored!",
-      'Nessun Acquisto Trovato': "No Purchase Found",
-      'Ripristino Fallito': "Restore Failed",
-      'Abbonamento in Elaborazione': "Subscription Processing",
-      'Acquisto Fallito': "Purchase Failed",
-      'Errore Connessione': "Connection Error",
-      'DATA DI NASCITA': "DATE OF BIRTH",
-      'Pre-tracking': "Pre-tracking",
-      'Attuale': "Current",
-      'MESI VISSUTI': "MONTHS LIVED",
-      'ETÀ ATTUALE': "CURRENT AGE",
-      'RIMANENTI': "REMAINING",
-      'AI Coach Personalizzato': "Personalized AI Coach",
-      'Statistiche Specifiche Per Abitudine': "Specific Statistics By Habit",
-      'Metriche Avanzate Obiettivi': "Advanced Goal Metrics",
-      'Abitudini Illimitate': "Unlimited Habits",
-
-      'Clicca qui per segnare l\'obiettivo come completato. Cliccandolo di nuovo verrà segnato come fallito.': 'Click here to mark the goal as completed. Clicking again will mark it as failed.',
-      'Usa questo pulsante per assegnare rapidamente una categoria all\'obiettivo.': 'Use this button to quickly assign a category to the goal.',
-      'Se non hai fatto in tempo o i piani sono cambiati, puoi spostare questo obiettivo alla settimana / mese o anno successivo ( in base a dove hai inserito l\'obiettivo).': 'If you ran out of time or plans changed, you can move this goal to the next week / month or year.',
-      'Se devi semplicemente rinominare l\'obiettivo, usa la matita.': 'If you just need to rename the goal, use the pencil icon.',
-      'Infine, questo pulsante elimina definitivamente l\'obiettivo.': 'Finally, this button permanently deletes the goal.',
-      'Passa a questa scheda per visualizzare grafici e performance dettagliate selezionando l\'anno corrente o tutti gli anni.': 'Switch to this tab to view charts and detailed performance by selecting the current year or all years.',
-      'Da qui puoi selezionare una specifica abitudine per vederne i dettagli, oppure \'Tutti gli Habits\' per una panoramica globale.': 'Select a specific habit to see its details, or \'All Habits\' for a global overview.',
-      'Naviga tra le varie schede per vedere i Trend, gli Alert sulle performance, l\'andamento delle Abitudini e il tuo Mood.': 'Navigate tabs to see Trends, performance Alerts, Habits progress and your Mood.',
-
-      'Mood & Energia': 'Mood & Energy',
-      'Analisi del benessere psicofisico.': 'Psychophysical well-being analysis.',
-      'Non ci sono abbastanza dati per calcolare la sensibilità.': 'Not enough data to calculate sensitivity.',
-      'Non ci sono abbastanza dati per calcolare la resilienza.': 'Not enough data to calculate resilience.',
-      'Resilienza': 'Resilience',
-      'Analisi di Correlazione': 'Correlation Analysis',
-      'Non ci sono abbastanza dati per l\'analisi di correlazione.': 'Not enough data for correlation analysis.',
-
-      'Trend Globale': 'Global Trend',
-      'COMPLETATI': 'COMPLETED',
-      'FALLITI': 'FAILED',
-      'di successo': 'success rate',
-      'completamento': 'completion',
-      'dal': 'from',
-      'Totale': 'Total',
-      'Successo': 'Success',
-      'Crescita': 'Growth',
-      'Calo': 'Decline',
-      'Aggiungi obiettivo lifetime...': 'Add lifetime goal...',
-      'Aggiungi obiettivo annuale...': 'Add annual goal...',
-      'Aggiungi obiettivo trimestrale...': 'Add quarterly goal...',
-      'Aggiungi obiettivo mensile...': 'Add monthly goal...',
-      'Aggiungi obiettivo settimanale...': 'Add weekly goal...',
-      'Limite di 100 obiettivi raggiunto!': 'Limit of 100 goals reached!',
-
-      'Scegli una tonalità premium o creane una tua': 'Choose a premium shade or create your own',
-      'Abbonamento': 'Subscription',
-      'Lingua, Tema, Unità di misura': 'Language, Theme, Measurement unit',
-      'Promemoria e avvisi di sistema': 'Reminders and system alerts',
-      'Gestione dati e biometrica': 'Data and biometrics management',
-      'Ripeti Tutorial': 'Repeat Tutorial',
-      'Visualizza di nuovo la guida iniziale': 'View the initial guide again',
-      'Stato d\'animo': 'Mood',
-      'Gestione': 'Manager',
-      'I tuoi progressi per oggi': 'Your progress for today',
-      'Nessuna abitudine': 'No habit',
-      'Non ci sono abitudini per questo giorno.\nInizia a crearne una!': 'There are no habits for this day.\nStart creating one!',
-      'Trend Settimanale': 'Weekly Trend',
-      'Trend Mensile': 'Monthly Trend',
-      'Trend Annuale': 'Yearly Trend',
-      'MOOD BASSO': 'LOW MOOD',
-      'Abitudini Sensibili al Mood': 'Mood-Sensitive Habits',
-      'Abitudini Resilienti': 'Resilient Habits',
-      'Abitudini che mantieni anche quando il mood è basso.': 'Habits you keep even when your mood is low.',
-      'Analisi Performance': 'Performance Analysis',
-      ' di completamento': ' completion rate',
-      ' di successo': ' success rate',
-      ' completamento': ' completion',
-      'Crea nuova categoria': 'Create new category',
-      'Completati': 'Completed',
-      'Falliti': 'Failed',
-
-      'Impossibile aprire il link.': 'Unable to open the link.',
-      'Colore Personalizzato': 'Custom Color',
-      'Verifica': 'Verify',
-      'Problemi di connessione con il Coach. Riprova più tardi.': 'Connection issues with the Coach. Try again later.',
-      'AI Coach': 'AI Coach',
-      'Password aggiornata con successo!': 'Password updated successfully!',
-      'Errore durante l\'esportazione: ': 'Error during export: ',
-      'Dati resettati con successo!': 'Data reset successfully!',
-      'Errore durante il reset: ': 'Error during reset: ',
-      'Account eliminato con successo!': 'Account deleted successfully!',
-      'Errore durante l\'eliminazione: ': 'Error during deletion: ',
-      'Ripristina acquisti': 'Restore purchases',
-      'Errore durante il salvataggio.': 'Error during saving.',
-      'Fatto': 'Done',
-      'Inserisci la tua email per reimpostare la password.': 'Enter your email to reset the password.',
-      'Tasso di successo': 'Success rate',
-      'Tasso di successo per categoria': 'Success rate by category',
-      'Attività Trim.': 'Quarterly Activity',
-      'Q1 - Q4': 'Q1 - Q4',
-      'In Q1-Q4': 'In Q1-Q4',
-      'Attività Mensile': 'Monthly Activity',
-      'Totale/Completati': 'Total/Completed',
-      'Completamenti': 'Completions',
-      'Mensili': 'Monthly',
-      'Totali: ': 'Total: ',
-      'Completati: ': 'Completed: ',
-      '🎯 Distribuzione Categorie': '🎯 Category Distribution',
-      'Ripartizione degli obiettivi per area di focus': 'Breakdown of goals by focus area',
-      '📈 Progressione Annuale': '📈 Annual Progression',
-      'Confronto anno per anno del volume di obiettivi e completamenti': 'Year-over-year comparison of goals volume and completions',
-      'Attivi: ': 'Active: ',
-      'Falliti: ': 'Failed: ',
-      '🔮 Distribuzione Tipologie': '🔮 Type Distribution',
-      'Ripartizione degli obiettivi per orizzonte temporale': 'Breakdown of goals by time horizon',
-      '🎂 Stagionalità': '🎂 Seasonality',
-      'Performance Trimestrale aggregata': 'Aggregated Quarterly Performance',
-      '📈 Mensile (Storico)': '📈 Monthly (Historical)',
-      'Successo medio per mese': 'Average success per month',
-      ' successo': ' success',
-      '📈 Evoluzione Interessi': '📈 Interest Evolution',
-      'Composizione delle aree di focus negli anni': 'Composition of focus areas over the years',
-      'Modifica categoria': 'Edit category',
-      'Archivia categoria': 'Archive category',
-      'Nome categoria...': 'Category name...',
-      'Titolo obiettivo...': 'Goal title...',
-      'Cambia categoria': 'Change category',
-      'Scegli categoria': 'Choose category',
-      'Punto di Forza': 'Strength',
-      'Mese Migliore': 'Best Month',
-      'Nessuno': 'None',
-      'Tipologia Efficace': 'Effective Type',
-      'Totale Storico': 'Historical Total',
-      'dal ': 'since ',
-      'Successo Globale': 'Global Success',
-      'obiettivi completati': 'completed goals',
-      'Anno Migliore': 'Best Year',
-      'Anno Più Produttivo': 'Most Productive Year',
-      'obiettivi totali': 'total goals',
-      '🚀 Velocità di Esecuzione (Cumulativa)': '🚀 Execution Speed (Cumulative)',
-      'Confronto tra obiettivi pianificati e completati nel tempo': 'Comparison of planned vs completed goals over time',
-      '🎯 Performance Categorie': '🎯 Category Performance',
-      'Tutto alla grande!': 'Everything is great!',
-      'WORST STREAK': 'WORST STREAK',
-      'FREQUENZA': 'FREQUENCY',
-      'BEST': 'BEST',
-      'WORST': 'WORST',
-      'Gap: ': 'Gap: ',
-      'MOOD ALTO': 'HIGH MOOD',
-      'Coefficiente': 'Coefficient',
-      'Co-occorrenza': 'Co-occurrence',
-      'Errore durante la creazione della categoria': 'Error creating category',
-      'Errore durante la modifica della categoria': 'Error editing category',
-      'Errore durante l\'archiviazione della categoria': 'Error archiving category',
-      'Errore durante l\'aggiornamento': 'Error during update',
-      'Errore durante l\'aggiornamento dello stato': 'Error updating state',
-      'Errore durante il salvataggio dell\'umore': 'Error saving mood',
-      'Lavoro': 'Work',
-      'Salute': 'Health',
-      'Finanza': 'Finance',
-      'Relazioni': 'Relationships',
-      'Formazione': 'Education',
-      'Hobby': 'Hobbies',
-      'Spirituale': 'Spiritual',
-      'Altro': 'Other',
-      'Evolve • ': 'Evolve • ',
-      'Errore durante il salvataggio': 'Error during saving',
-      'Errore durante l\'eliminazione': 'Error during deletion',
-
-      'App Bloccata': 'App Locked',
-      'Sblocca con i dati biometrici per continuare': 'Unlock with biometrics to continue',
-      'Riprova': 'Retry',
-      'La tua tela è vuota': 'Your canvas is empty',
-      'Crea la tua prima abitudine per iniziare a tracciare i tuoi progressi e costruire la tua routine.': 'Create your first habit to start tracking your progress and build your routine.',
-
-      // Auth Screen
-      'Crea il tuo ecosistema personale.': 'Create your personal ecosystem.',
-      'Inserisci la tua email.': 'Please enter your email.',
-      'Email non valida.': 'Invalid email.',
-      'Inserisci la password.': 'Please enter your password.',
-      'Minimo 6 caratteri.': 'Minimum 6 characters.',
-      'Password dimenticata?': 'Forgot password?',
-      'OPPURE': 'OR',
-      'Continua con Apple': 'Continue with Apple',
-      'Continua con Google': 'Continue with Google',
-      'Non hai un account?': 'Don\'t have an account?',
-      'Hai già un account?': 'Already have an account?',
-      'Registrati': 'Sign Up',
-      'Accedi': 'Log In',
-      'Crea Account': 'Create Account',
-      'Termini di Servizio': 'Terms of Service',
-      'Password': 'Password',
-
-      // Onboarding & Welcome
-      'Daily Check-in': 'Daily Check-in',
-      'Qui puoi registrare il tuo stato d\'animo quotidiano per tracciare il tuo benessere nel tempo e soprattutto correlarlo con il completamento dei tuoi obiettivi.': 'Here you can record your daily mood to track your well-being over time and correlate it with the completion of your goals.',
-      'Il tuo assistente personale. Chiedi consigli sulle tue abitudini. Lui è il tuo coach.': 'Your personal AI assistant. Ask for advice about your habits. He is your coach.',
-      'Aggiungi, modifica o elimina le tue abitudini quotidiane che vuoi rispettare in modo semplice e veloce.': 'Add, edit or delete daily habits you want to maintain quickly and easily.',
-      'Viste Calendario': 'Calendar Views',
-      'Naviga tra le diverse visualizzazioni per vedere i tuoi progressi con varie alternative.': 'Navigate between different views to see your progress with various alternatives.',
-      'Calendario': 'Calendar',
-      'Basta cliccare su un giorno per visualizzare le abitudini giornaliere e spuntarle.': 'Simply click on a day to view daily habits and check them off.',
-      'Passiamo agli Obiettivi': 'Moving to Goals',
-      'La pagina dove puoi gestire i tuoi obiettivi a lungo termine e relative performance.': 'The page where you can manage your long-term goals and their performance.',
-      'Vai agli Obiettivi': 'Go to Goals',
-      'Inizia il Tour': 'Start Tour',
-      'Sei pronto!': 'You are ready!',
-      'Il viaggio inizia ora. Dai il massimo!': 'The journey starts now. Give your best!',
-      'Inizia': 'Start',
-      'Benvenuto in Evolve!': 'Welcome to Evolve!',
-      'Per iniziare, come possiamo chiamarti?': 'To start, what should we call you?',
-      'Il tuo nome': 'Your name',
-      'Inizia ora': 'Start now',
-      'Errore durante il salvataggio. Riprova.': 'Error saving. Please try again.',
-      'Benvenuto in Evolve': 'Welcome to Evolve',
-      'Potrebbe essere uno STEP di NON RITORNO... Prima di iniziare però bisogna fare un tour per mostrarti come sfruttare al massimo l\'applicazione.': 'This could be a STEP of NO RETURN... Before starting, let\'s take a quick tour to show you how to get the most out of the application.',
-
-      // Goals Tutorial
-      'Tipo di Pianificazione': 'Planning Type',
-      'Qui puoi selezionare la visione temporale: Lifetime (per tutta la vita), Annuale, Trimestrale, Mensile o Settimanale.': 'Here you can select the time perspective: Lifetime, Annual, Quarterly, Monthly or Weekly.',
-      'Nuovo Obiettivo': 'New Goal',
-      'Da qui puoi inserire un nuovo obiettivo. Potrai anche personalizzare le Categorie a tuo piacimento per organizzare tutto al meglio.': 'From here you can insert a new goal. You can also customize Categories to organize everything perfectly.',
-      'Completare o Fallire': 'Complete or Fail',
-      'Categoria': 'Category',
-      'Posticipare': 'Reschedule',
-      'Modifica': 'Edit',
-      'Elimina': 'Delete',
-      'Analisi e Statistiche': 'Analysis & Stats',
-      'Continua': 'Continue',
-      'Statistiche Abitudini': 'Habit Statistics',
-      'Per vedere le statistiche delle tue abitudini giornaliere, puoi spostarti in questa sezione.': 'To view statistics for your daily habits, you can navigate to this section.',
-      'Passa alle Statistiche': 'Go to Statistics',
-      'Indietro': 'Back',
-      'Fine': 'Finish',
-      'Avanti': 'Next',
-      'Obiettivo Tutorial': 'Tutorial Goal',
-      'I miei obiettivi': 'My Goals',
-
-      // Stats Tutorial
-      'Filtra per Abitudine': 'Filter by Habit',
-      'Sezioni Statistiche': 'Statistics Sections',
-      'Ho capito': 'Got it',
-      'Dettagli tecnici:': 'Technical details:',
-      'Inserisci': 'Enter',
-      'Aggiorna': 'Update',
-      'Sblocca Evolve Pro': 'Unlock Evolve Pro',
-      'Porta il tuo sistema di abitudini al livello successivo': 'Take your habit system to the next level',
-      'Analisi avanzata dei trend e suggerimenti intelligenti generati dall\'AI.': 'Advanced trend analysis and smart AI-generated suggestions.',
-      'Informazioni chiave per aumentare la tua produttività.': 'Key insights to boost your productivity.',
-      'Visualizza grafici dettagliati e statistiche di performance profonde per ogni anno.': 'View detailed charts and deep performance stats for each year.',
-      'Crea e traccia tutti gli habits che desideri senza alcun limite.': 'Create and track all the habits you want without any limits.',
-      'Ottieni Pro a €4,99 / mese': 'Get Pro at €4.99 / month',
-      'Forse più tardi': 'Maybe later',
-      'Modifica Obiettivo': 'Edit Goal',
-      'Eliminare obiettivo?': 'Delete goal?',
-      'Questa azione non può essere annullata.': 'This action cannot be undone.',
-      'Scegli colore': 'Choose color',
-      'Crea': 'Create',
-      'Archiviare categoria?': 'Archive category?',
-      'La categoria "label" non sarà più disponibile per nuovi obiettivi, ma resterà collegata a count obiettivi storici e alle statistiche.': 'The category "label" will no longer be available for new goals, but it will remain linked to count historical goals and statistics.',
-      'La categoria "label" non sarà più disponibile per nuovi obiettivi, ma resterà nello storico.': 'The category "label" will no longer be available for new goals, but it will remain in history.',
-      'Archivia': 'Archive',
-      'Seleziona Orario': 'Select Time',
-      'Conferma Uscita': 'Confirm Logout',
-      'Sei sicuro di voler uscire dal tuo account? Dovrai reinserire le tue credenziali per accedere nuovamente.': 'Are you sure you want to log out of your account? You will have to re-enter your credentials to log in again.',
-      'Esci': 'Log Out',
-      'Sei sicuro di voler eliminare': 'Are you sure you want to delete',
-      'Colore troppo scuro per la visibilità in Dark Mode.': 'Color too dark for visibility in Dark Mode.',
-      'Verifica Visibilità': 'Verify Visibility',
-      'Riesci a leggere chiaramente questo testo e a vedere il pulsante qui sotto?': 'Can you clearly read this text and see the button below?',
-      'SI, CONFERMA': 'YES, CONFIRM',
-      'NO, TORNA INDIETRO': 'NO, GO BACK',
-      'Inserisci la tua nuova password.': 'Enter your new password.',
-      'Inserisci la tua password attuale per continuare.': 'Enter your current password to continue.',
-      'Inserisci la password attuale.': 'Enter current password.',
-      'Utente non trovato.': 'User not found.',
-      'La password attuale non è corretta.': 'Current password is incorrect.',
-      'Tutti i campi sono obbligatori.': 'All fields are required.',
-      'La nuova password deve essere di almeno 8 caratteri.': 'The new password must be at least 8 characters.',
-      'Le password non coincidono.': 'Passwords do not match.',
-      'Gestione Account e Dati': 'Account & Data Management',
-      'Scegli l\'operazione che desideri effettuare. Entrambe le azioni richiedono conferma.': 'Choose the operation you wish to perform. Both actions require confirmation.',
-      'Sei sicuro di voler eliminare tutti i tuoi dati? Questa azione non può essere annullata.': 'Are you sure you want to delete all your data? This action cannot be undone.',
-      'Elimina l\'Account': 'Delete Account',
-      'Sei sicuro di voler eliminare definitivamente il tuo account? Tutti i tuoi dati andranno persi per sempre.': 'Are you sure you want to permanently delete your account? All your data will be lost forever.',
-      'I miei dati esportati da Growth': 'My exported data from Growth',
-      'Contesto dell\'AI': 'AI Context',
-      'Scegli quali informazioni condividere con l\'assistente per personalizzare le risposte.': 'Choose what information to share with the assistant to customize responses.',
-      'Online per': 'Online for',
-      'Elimina chat': 'Delete chat',
-      'Sei sicuro di voler eliminare tutti i messaggi? Questa azione non può essere annullata.': 'Are you sure you want to delete all messages? This action cannot be undone.',
-      'Coach Virtuale': 'Virtual Coach',
-      'Pronto ad aiutarti a mantenere la disciplina.': 'Ready to help you stay disciplined.',
-      'Per favore, seleziona almeno un contesto (abitudini o obiettivi) nelle impostazioni per poter parlare con il Coach.': 'Please select at least one context (habits or goals) in settings to talk with the Coach.',
-      'Ciao! Sono il tuo Coach di Disciplina. Come posso aiutarti oggi?': 'Hello! I\'m your Discipline Coach. How can I help you today?',
-      'Messaggio copiato': 'Message copied',
-    },
-  };
-
-  String translate(String key) {
-    final lang = language == 'it' ? 'Italiano' : language == 'en' ? 'English' : language;
-    return _localizedValues[lang]?[key] ?? key;
-  }
-}
-
-final l10nProvider = Provider<AppLocalizations>((ref) {
-  final language = ref.watch(settingsProvider.select((s) => s.language));
-  return AppLocalizations(language);
-});
+export 'package:mattioli_os/l10n/generated/app_localizations.dart';
 
 extension AppLocalizationsExtension on BuildContext {
-  AppLocalizations get l10n => ProviderScope.containerOf(this).read(l10nProvider);
+  AppLocalizations get l10n => AppLocalizations.of(this);
+}
+
+extension AppLocalizationsCompatibility on AppLocalizations {
+  String get language => localeName;
+
+  String translate(String key) {
+    switch (key) {
+      case 'app_title':
+        return appTitle;
+      case 'Impostazioni App':
+        return impostazioniApp;
+      case 'ASPETTO & VISUAL':
+        return aspettoVisual;
+      case 'Modalità Scura':
+        return modalitaScura;
+      case 'Colore Accento':
+        return coloreAccento;
+      case 'CALENDARIO & DASHBOARD':
+        return calendarioDashboard;
+      case 'Vista Predefinita':
+        return vistaPredefinita;
+      case 'ESPERIENZA UTENTE':
+        return esperienzaUtente;
+      case 'Feedback Aptico':
+        return feedbackAptico;
+      case 'UNITÀ E LINGUA':
+        return unitaELingua;
+      case 'Lingua':
+        return lingua;
+      case 'Formato 24h':
+        return formato24h;
+      case 'AI & SISTEMA':
+        return aiSistema;
+      case 'Suggerimenti AI':
+        return suggerimentiAi;
+      case 'Analisi intelligente delle abitudini':
+        return analisiIntelligenteDelleAbitudini;
+      case 'PRO ONLY':
+        return proOnly;
+      case 'Home':
+        return home;
+      case 'Statistiche':
+        return statistiche;
+      case 'Obiettivi':
+        return obiettivi;
+      case 'Salva':
+        return salva;
+      case 'Annulla':
+        return annulla;
+      case 'Conferma':
+        return conferma;
+      case 'Aggiorna Stato Giornaliero':
+        return aggiornaStatoGiornaliero;
+      case 'Check-in Giornaliero':
+        return checkInGiornaliero;
+      case 'Oggi':
+        return oggi;
+      case 'Abitudini':
+        return abitudini;
+      case 'Umore':
+        return umore;
+      case 'Energia':
+        return energia;
+      case 'AI Chat':
+        return aiChat;
+      case 'Morning Brief':
+        return morningBrief;
+      case 'Review Serale':
+        return reviewSerale;
+      case 'Notifiche':
+        return notifiche;
+      case 'Privacy e Sicurezza':
+        return privacyESicurezza;
+      case 'Account':
+        return account;
+      case 'Piano PRO':
+        return pianoPro;
+      case 'Informazioni Personali':
+        return informazioniPersonali;
+      case 'Blocco Biometrico':
+        return bloccoBiometrico;
+      case 'Analytics Anonimi':
+        return analyticsAnonimi;
+      case 'Promemoria Abitudini':
+        return promemoriaAbitudini;
+      case 'Scadenze Obiettivi':
+        return scadenzeObiettivi;
+      case 'Insight AI':
+        return insightAi;
+      case 'Resoconti Settimanali':
+        return resocontiSettimanali;
+      case 'Modalità Focus':
+        return modalitaFocus;
+      case 'Milestones':
+        return milestones;
+      case 'Deep Work Insights':
+        return deepWorkInsights;
+      case 'Gestione Abitudini':
+        return gestioneAbitudini;
+      case 'Aggiungi Abitudine':
+        return aggiungiAbitudine;
+      case 'Modifica Abitudine':
+        return modificaAbitudine;
+      case 'Elimina Abitudine':
+        return eliminaAbitudine;
+      case 'Nome Abitudine':
+        return nomeAbitudine;
+      case 'Colore':
+        return colore;
+      case 'Trascina per riordinare':
+        return trascinaPerRiordinare;
+      case 'Nessuna abitudine tracciata oggi':
+        return nessunaAbitudineTracciataOggi;
+      case 'Panoramica Statistiche':
+        return panoramicaStatistiche;
+      case 'Mese':
+        return mese;
+      case 'Settimana':
+        return settimana;
+      case 'Anno':
+        return anno;
+      case 'Vita':
+        return vita;
+      case 'Analisi dettagliata delle tue performance.':
+        return analisiDettagliataDelleTuePerformance;
+      case 'Tutti gli Habits':
+        return tuttiGliHabits;
+      case 'SELEZIONA HABIT':
+        return selezionaHabit;
+      case 'Info':
+        return info;
+      case 'Trend':
+        return trend;
+      case 'Alert':
+        return alert;
+      case 'Stats':
+        return stats;
+      case 'Completamento':
+        return completamento;
+      case 'Globale':
+        return globale;
+      case 'Miglior Serie':
+        return migliorSerie;
+      case 'Giorni':
+        return giorni;
+      case 'Top Performer':
+        return topPerformer;
+      case 'Giorno Critico':
+        return giornoCritico;
+      case 'Focus richiesto':
+        return focusRichiesto;
+      case 'Abitudini Chiave':
+        return abitudiniChiave;
+      case 'Abitudini che influenzano positivamente molte altre':
+        return abitudiniCheInfluenzanoPositivamenteMolteAltre;
+      case 'Alto Impatto':
+        return altoImpatto;
+      case 'connessioni':
+        return connessioni;
+      case 'Media Impatto':
+        return mediaImpatto;
+      case 'Analisi Correlazioni':
+        return analisiCorrelazioni;
+      case 'Pattern tra le tue abitudini':
+        return patternTraLeTueAbitudini;
+      case 'Coppie Analizzate':
+        return coppieAnalizzate;
+      case 'Correlazione Media':
+        return correlazioneMedia;
+      case 'Positive':
+        return positive;
+      case 'Negative':
+        return negative;
+      case 'Abitudini Isolate':
+        return abitudiniIsolate;
+      case 'Non hanno correlazioni significative.':
+        return nonHannoCorrelazioniSignificative;
+      case 'Correlazioni Positive':
+        return correlazioniPositive;
+      case 'Correlazioni Negative':
+        return correlazioniNegative;
+      case 'Attività Recente':
+        return attivitaRecente;
+      case 'Suggerimento':
+        return suggerimento;
+      case 'Le abitudini chiave hanno un effetto "domino".':
+        return leAbitudiniChiaveHannoUnEffettoDomino;
+      case 'timeframe_week_short':
+        return timeframeWeekShort;
+      case 'timeframe_month_short':
+        return timeframeMonthShort;
+      case 'timeframe_year_short':
+        return timeframeYearShort;
+      case 'timeframe_all':
+        return timeframeAll;
+      case 'week':
+        return week;
+      case 'month':
+        return month;
+      case 'year':
+        return year;
+      case 'all':
+        return all;
+      case '7d':
+        return label7d;
+      case '14d':
+        return label14d;
+      case '30d':
+        return label30d;
+      case 'Trend Completamento':
+        return trendCompletamento;
+      case 'Performance Evolution':
+        return performanceEvolution;
+      case 'Sett':
+        return sett;
+      case 'Tutto':
+        return tutto;
+      case 'Confronto Temporale':
+        return confrontoTemporale;
+      case 'Analizza come stai andando rispetto al passato.':
+        return analizzaComeStaiAndandoRispettoAlPassato;
+      case 'vs':
+        return vs;
+      case 'Aree di Miglioramento':
+        return areeDiMiglioramento;
+      case 'Abitudini che richiedono più attenzione.':
+        return abitudiniCheRichiedonoPiuAttenzione;
+      case 'succ.':
+        return succ;
+      case 'GIORNO NERO':
+        return giornoNero;
+      case 'Solo il':
+        return soloIl;
+      case 'di completamento':
+        return diCompletamento;
+      case 'Analisi Worst Streaks':
+        return analisiWorstStreaks;
+      case 'Analisi serie negative per identificare pattern.':
+        return analisiSerieNegativePerIdentificarePattern;
+      case 'Abitudini Critiche':
+        return abitudiniCritiche;
+      case 'Top 3 Worst Streaks':
+        return top3WorstStreaks;
+      case 'giorni consecutivi':
+        return giorniConsecutivi;
+      case 'Analisi Fallimenti':
+        return analisiFallimenti;
+      case 'Pattern di Recupero':
+        return patternDiRecupero;
+      case 'Tempo Medio Recupero':
+        return tempoMedioRecupero;
+      case 'Buono':
+        return buono;
+      case 'RECUPERATORI VELOCI':
+        return recuperatoriVeloci;
+      case 'Confronto Performance':
+        return confrontoPerformance;
+      case 'Attenzione':
+        return attenzione;
+      case 'Suggerimenti Pratici':
+        return suggerimentiPratici;
+      case 'Dettagli Abitudini':
+        return dettagliAbitudini;
+      case 'Ordina per':
+        return ordinaPer;
+      case 'Rate':
+        return rate;
+      case 'Peggior Serie':
+        return peggiorSerie;
+      case 'Serie Attuale':
+        return serieAttuale;
+      case 'ORDINA PER':
+        return ordinaPer2;
+      case 'Mood & Energy vs Productivity':
+        return moodEnergyVsProductivity;
+      case 'Correlazione tra benessere e abitudini':
+        return correlazioneTraBenessereEAbitudini;
+      case 'time_range_7d':
+        return timeRange7d;
+      case 'time_range_14d':
+        return timeRange14d;
+      case 'time_range_30d':
+        return timeRange30d;
+      case 'Produttività':
+        return produttivita;
+      case 'Sensibili al Mood':
+        return sensibiliAlMood;
+      case 'Richiedono un buon mood per essere completate.':
+        return richiedonoUnBuonMoodPerEssereCompletate;
+      case 'con mood basso':
+        return conMoodBasso;
+      case 'con mood alto':
+        return conMoodAlto;
+      case 'Resilienti':
+        return resilienti;
+      case 'Mantenute anche con mood ed energia bassi.':
+        return mantenuteAncheConMoodEdEnergiaBassi;
+      case 'Mood':
+        return mood;
+      case 'Stabile':
+        return stabile;
+      case 'Suggerimenti':
+        return suggerimenti;
+      case 'Pianifica le abitudini sensibili al mood quando ti senti meglio.':
+        return pianificaLeAbitudiniSensibiliAlMoodQuandoTiSentiMeglio;
+      case 'Le abitudini resilienti sono ottime nei giorni difficili.':
+        return leAbitudiniResilientiSonoOttimeNeiGiorniDifficili;
+      case 'Monitora mood ed energia per insights più accurati.':
+        return monitoraMoodEdEnergiaPerInsightsPiuAccurati;
+      case 'SERIE ATTUALE':
+        return serieAttuale2;
+      case 'RECORD':
+        return rECORD;
+      case 'COMPLETAMENTO':
+        return cOMPLETAMENTO;
+      case 'MANCATI':
+        return mANCATI;
+      case 'Trend Ultimi 30 Giorni':
+        return trendUltimi30Giorni;
+      case 'Completato':
+        return completato;
+      case 'Non completato':
+        return nonCompletato;
+      case 'Correlazioni con':
+        return correlazioniCon;
+      case 'Come questa abitudine si relaziona con le altre':
+        return comeQuestaAbitudineSiRelazionaConLeAltre;
+      case 'insieme':
+        return insieme;
+      case 'Info Correlazioni':
+        return infoCorrelazioni;
+      case 'Calendario Annuale':
+        return calendarioAnnuale;
+      case 'Mancato':
+        return mancato;
+      case 'Non tracciato':
+        return nonTracciato;
+      case 'Performance per Giorno':
+        return performancePerGiorno;
+      case 'Giorno più forte':
+        return giornoPiuForte;
+      case 'Giorno più debole':
+        return giornoPiuDebole;
+      case 'Ben fatto! % di completamento':
+        return benFattoDiCompletamento;
+      case 'Solo % di completamento':
+        return soloDiCompletamento;
+      case 'Serie Negativa Peggiore':
+        return serieNegativaPeggiore;
+      case 'giorni consecutivi mancati':
+        return giorniConsecutiviMancati;
+      case 'Iniziata il':
+        return iniziataIl;
+      case 'Streak Interrotti':
+        return streakInterrotti;
+      case 'Streak di count giorni interrotto':
+        return streakDiCountGiorniInterrotto;
+      case 'Concentrati sul Dom - è il tuo giorno più debole':
+        return concentratiSulDomEIlTuoGiornoPiuDebole;
+      case 'Evita pause prolungate - la tua serie negativa più lunga è stata di 12 giorni':
+        return evitaPauseProlungateLaTuaSerieNegativaPiuLungaEStataDi12Giorni;
+      case 'Obiettivo: raggiungi almeno il 70% di completamento per consolidare l\'abitudine':
+        return obiettivoRaggiungiAlmenoIl70DiCompletamentoPerConsolidareLAbitudine;
+      case 'Traccia il tuo umore ed energia.':
+        return tracciaIlTuoUmoreEdEnergia;
+      case 'Scegli un colore':
+        return scegliUnColore;
+      case 'Es. Bere acqua, Leggere...':
+        return esBereAcquaLeggere;
+      case 'Correlazione Mood':
+        return correlazioneMood;
+      case 'Correlazione Energia':
+        return correlazioneEnergia;
+      case 'Mood Medio (✓)':
+        return moodMedio;
+      case 'Energia Media (✓)':
+        return energiaMedia;
+      case 'Nessuna':
+        return nessuna;
+      case 'su 10':
+        return su10;
+      case 'Resiliente':
+        return resiliente;
+      case 'Completato vs Mancato':
+        return completatoVsMancato;
+      case 'Performance per Livello':
+        return performancePerLivello;
+      case 'Basso (1-4) • Medio (5-7) • Alto (8-10)':
+        return basso14Medio57Alto810;
+      case 'Basso':
+        return basso;
+      case 'Medio':
+        return medio;
+      case 'Alto':
+        return alto;
+      case 'Con Mood':
+        return conMood;
+      case 'Con Energia':
+        return conEnergia;
+      case 'Analisi basata su count giorni con dati mood/energia (done completati, missed mancati)':
+        return analisiBasataSuCountGiorniConDatiMoodEnergiaDoneCompletatiMissedMancati;
+      case 'Nome':
+        return nome;
+      case 'Cognome':
+        return cognome;
+      case 'Email':
+        return email;
+      case 'Telefono (Opzionale)':
+        return telefonoOpzionale;
+      case 'Informazioni salvate con successo':
+        return informazioniSalvateConSuccesso;
+      case 'Campo obbligatorio':
+        return campoObbligatorio;
+      case 'Inserisci un\'email valida':
+        return inserisciUnEmailValida;
+      case 'Giorno':
+        return giorno;
+      case 'Buongiorno':
+        return buongiorno;
+      case 'Buon pomeriggio':
+        return buonPomeriggio;
+      case 'Buonasera':
+        return buonasera;
+      case 'Bentornato':
+        return bentornato;
+      case 'Sistema Sincronizzato':
+        return sistemaSincronizzato;
+      case 'succ':
+        return succ2;
+      case 'only':
+        return only;
+      case 'attention':
+        return attention;
+      case 'monday':
+        return monday;
+      case 'tuesday':
+        return tuesday;
+      case 'wednesday':
+        return wednesday;
+      case 'thursday':
+        return thursday;
+      case 'friday':
+        return friday;
+      case 'saturday':
+        return saturday;
+      case 'sunday':
+        return sunday;
+      case 'mon':
+        return mon;
+      case 'tue':
+        return tue;
+      case 'wed':
+        return wed;
+      case 'thu':
+        return thu;
+      case 'fri':
+        return fri;
+      case 'sat':
+        return sat;
+      case 'sun':
+        return sun;
+      case 'january':
+        return january;
+      case 'february':
+        return february;
+      case 'march':
+        return march;
+      case 'april':
+        return april;
+      case 'may':
+        return may;
+      case 'june':
+        return june;
+      case 'july':
+        return july;
+      case 'august':
+        return august;
+      case 'september':
+        return september;
+      case 'october':
+        return october;
+      case 'november':
+        return november;
+      case 'december':
+        return december;
+      case 'rate':
+        return rate2;
+      case 'best_streak_label':
+        return bestStreakLabel;
+      case 'worst_streak_label':
+        return worstStreakLabel;
+      case 'current_streak_label':
+        return currentStreakLabel;
+      case 'first_name':
+        return firstName;
+      case 'Crea Abitudine':
+        return creaAbitudine;
+      case 'Puoi modificare solo oggi e ieri!':
+        return puoiModificareSoloOggiEIeri;
+      case 'Nessun dato':
+        return nessunDato;
+      case 'Dati insufficienti (servono almeno 3 categorie)':
+        return datiInsufficientiServonoAlmeno3Categorie;
+      case 'Distribuzione':
+        return distribuzione;
+      case 'obiettivi':
+        return obiettivi2;
+      case 'nascita':
+        return nascita;
+      case '85 anni':
+        return label85Anni;
+      case 'Sensibilità':
+        return sensibilita;
+      case 'Streak Negativa':
+        return streakNegativa;
+      case 'Coming Soon':
+        return comingSoon;
+      case 'Errore':
+        return errore;
+      case 'L\'accesso Pro è stato ripristinato con successo su questo dispositivo. Divertiti!':
+        return lAccessoProEStatoRipristinatoConSuccessoSuQuestoDispositivoDivertiti;
+      case 'Nessun abbonamento Evolve Pro attivo è stato trovato su questo Apple ID. Assicurati di usare lo stesso Apple ID dell\'acquisto.':
+        return nessunAbbonamentoEvolveProAttivoEStatoTrovatoSuQuestoAppleIdAssicuratiDiUsareLoStessoAppleIdDellAcquisto;
+      case 'L\'acquisto è registrato, ma l\'abbonamento Pro non risulta ancora attivo. Attendi qualche secondo e usa Ripristina acquisti.':
+        return lAcquistoERegistratoMaLAbbonamentoProNonRisultaAncoraAttivoAttendiQualcheSecondoEUsaRipristinaAcquisti;
+      case 'Contratto Paid Apps non attivo. L\'Account Holder deve accettare l\'accordo Paid Apps in App Store Connect.':
+        return contrattoPaidAppsNonAttivoLAccountHolderDeveAccettareLAccordoPaidAppsInAppStoreConnect;
+      case 'Questo abbonamento risulta già acquistato. Usa Ripristina acquisti per riattivare l\'accesso Pro.':
+        return questoAbbonamentoRisultaGiaAcquistatoUsaRipristinaAcquistiPerRiattivareLAccessoPro;
+      case 'Gli acquisti in-app non sono consentiti su questo dispositivo o account Apple.':
+        return gliAcquistiInAppNonSonoConsentitiSuQuestoDispositivoOAccountApple;
+      case 'Il piano selezionato non è disponibile per l\'acquisto. Riprova più tardi.':
+        return ilPianoSelezionatoNonEDisponibilePerLAcquistoRiprovaPiuTardi;
+      case 'Il pagamento è in sospeso. L\'accesso Pro verrà attivato quando Apple confermerà la transazione.':
+        return ilPagamentoEInSospesoLAccessoProVerraAttivatoQuandoAppleConfermeraLaTransazione;
+      case 'Connessione non disponibile. Controlla la rete e riprova.':
+        return connessioneNonDisponibileControllaLaReteERiprova;
+      case 'Configurazione acquisti non valida. Verifica App Store Connect e RevenueCat prima di inviare la build.':
+        return configurazioneAcquistiNonValidaVerificaAppStoreConnectERevenuecatPrimaDiInviareLaBuild;
+      case 'Questo acquisto è già collegato a un altro account Evolve. Accedi con quell\'account o contatta il supporto.':
+        return questoAcquistoEGiaCollegatoAUnAltroAccountEvolveAccediConQuellAccountOContattaIlSupporto;
+      case 'Un\'operazione di acquisto è già in corso. Attendi qualche secondo.':
+        return unOperazioneDiAcquistoEGiaInCorsoAttendiQualcheSecondo;
+      case 'Non siamo riusciti a completare l\'acquisto. Riprova tra poco.':
+        return nonSiamoRiuscitiACompletareLAcquistoRiprovaTraPoco;
+      case 'Ripristino annullato.':
+        return ripristinoAnnullato;
+      case 'Un ripristino è già in corso. Attendi qualche secondo.':
+        return unRipristinoEGiaInCorsoAttendiQualcheSecondo;
+      case 'Non siamo riusciti a ripristinare gli acquisti. Riprova tra poco.':
+        return nonSiamoRiuscitiARipristinareGliAcquistiRiprovaTraPoco;
+      case 'Passa a Evolve Pro':
+        return passaAEvolvePro;
+      case 'Sblocca tutte le funzionalità e accelera la tua crescita.':
+        return sbloccaTutteLeFunzionalitaEAcceleraLaTuaCrescita;
+      case 'COSA INCLUDE IL PIANO PRO':
+        return cosaIncludeIlPianoPro;
+      case 'Suggerimenti intelligenti basati sui tuoi dati.':
+        return suggerimentiIntelligentiBasatiSuiTuoiDati;
+      case 'Statistiche Avanzate':
+        return statisticheAvanzate;
+      case 'Grafici profondi e analisi dei trend.':
+        return graficiProfondiEAnalisiDeiTrend;
+      case 'Crea tutti gli habits che desideri senza limiti.':
+        return creaTuttiGliHabitsCheDesideriSenzaLimiti;
+      case 'Obiettivi Illimitati':
+        return obiettiviIllimitati;
+      case 'Crea tutti i tuoi macro obiettivi senza limiti.':
+        return creaTuttiITuoiMacroObiettiviSenzaLimiti;
+      case 'SCEGLI IL TUO PIANO':
+        return scegliIlTuoPiano;
+      case 'Mensile':
+        return mensile;
+      case 'Settimanale':
+        return goalTypeWeekly;
+      case 'Trimestrale':
+        return goalTypeQuarterly;
+      case 'Lifetime':
+        return goalTypeLifetime;
+      case 'Disdici quando vuoi':
+        return disdiciQuandoVuoi;
+      case 'Annuale':
+        return goalTypeAnnual;
+      case 'Risparmia oltre il 40%':
+        return risparmiaOltreIl40;
+      case 'Il servizio acquisti non è raggiungibile. Verifica la tua connessione e riprova.':
+        return ilServizioAcquistiNonERaggiungibileVerificaLaTuaConnessioneERiprova;
+      case 'Attiva Abbonamento':
+        return attivaAbbonamento;
+      case 'L\'abbonamento si rinnova automaticamente a meno che l\'autorinnovamento non venga disattivato nelle impostazioni dell\'account Apple almeno 24 ore prima della scadenza.':
+        return lAbbonamentoSiRinnovaAutomaticamenteAMenoCheLAutorinnovamentoNonVengaDisattivatoNelleImpostazioniDellAccountAppleAlmeno24OrePrimaDellaScadenza;
+      case 'Privacy Policy':
+        return privacyPolicy;
+      case 'Termini d\'Uso (EULA)':
+        return terminiDUsoEula;
+      case 'Sei un utente Pro!':
+        return seiUnUtentePro;
+      case 'Grazie per sostenere lo sviluppo di Evolve.':
+        return graziePerSostenereLoSviluppoDiEvolve;
+      case 'DETTAGLI ABBONAMENTO':
+        return dettagliAbbonamento;
+      case 'Piano':
+        return piano;
+      case 'Evolve Pro Attivo':
+        return evolveProAttivo;
+      case 'Stato':
+        return stato;
+      case 'Attivo':
+        return attivo;
+      case 'Prossimo Rinnovo':
+        return prossimoRinnovo;
+      case 'Metodo di Pagamento':
+        return metodoDiPagamento;
+      case 'Apple Pay / App Store':
+        return applePayAppStore;
+      case 'Gestisci Abbonamento':
+        return gestisciAbbonamento;
+      case 'Disdici Abbonamento':
+        return disdiciAbbonamento;
+      case 'Benvenuto in Evolve Pro!':
+        return benvenutoInEvolvePro;
+      case 'La tua iscrizione è attiva. Ora hai accesso completo ed illimitato all\'AI Coach personalizzato, alle statistiche avanzate dei trend e a tutti gli strumenti di crescita personale di Evolve.':
+        return laTuaIscrizioneEAttivaOraHaiAccessoCompletoEdIllimitatoAllAiCoachPersonalizzatoAlleStatisticheAvanzateDeiTrendEATuttiGliStrumentiDiCrescitaPersonaleDiEvolve;
+      case 'Inizia il tuo Percorso':
+        return iniziaIlTuoPercorso;
+      case 'Per modificare, aggiornare o disdire il tuo abbonamento Pro, verrai indirizzato al portale ufficiale di RevenueCat o del tuo Account Apple.':
+        return perModificareAggiornareODisdireIlTuoAbbonamentoProVerraiIndirizzatoAlPortaleUfficialeDiRevenuecatODelTuoAccountApple;
+      case 'Evolve Pro':
+        return evolvePro;
+      case 'Termini e Privacy Policy':
+        return terminiEPrivacyPolicy;
+      case 'Notifiche di Sistema':
+        return notificheDiSistema;
+      case 'Abitudini giornaliere':
+        return abitudiniGiornaliere;
+      case 'Stato di completamento di oggi':
+        return statoDiCompletamentoDiOggi;
+      case 'Macro obiettivi':
+        return macroObiettivi;
+      case 'Lista degli obiettivi attivi e completati':
+        return listaDegliObiettiviAttiviECompletati;
+      case 'Nuova chat':
+        return nuovaChat;
+      case 'Impostazioni contesto':
+        return impostazioniContesto;
+      case 'Fai una domanda...':
+        return faiUnaDomanda;
+      case 'Orario Morning Brief':
+        return orarioMorningBrief;
+      case 'Orario Review Serale':
+        return orarioReviewSerale;
+      case 'FaceID / TouchID':
+        return faceidTouchid;
+      case 'Cambia Password':
+        return cambiaPassword;
+      case 'Invia Segnalazioni Crash':
+        return inviaSegnalazioniCrash;
+      case 'Aiutaci a migliorare l\'app...':
+        return aiutaciAMigliorareLApp;
+      case 'Esporta Dati':
+        return esportaDati;
+      case 'Formato JSON / CSV':
+        return formatoJsonCsv;
+      case 'Elimina Account & Dati':
+        return eliminaAccountDati;
+      case 'Gestione Permessi':
+        return gestionePermessi;
+      case 'Notifiche, Calendario, etc.':
+        return notificheCalendarioEtc;
+      case 'Password Attuale':
+        return passwordAttuale;
+      case 'Nuova Password':
+        return nuovaPassword;
+      case 'Conferma Nuova Password':
+        return confermaNuovaPassword;
+      case 'Errore durante l\'aggiornamento della password.':
+        return erroreDuranteLAggiornamentoDellaPassword;
+      case 'Errore durante l\'esportazione dei dati.':
+        return erroreDuranteLEsportazioneDeiDati;
+      case 'Errore durante l\'eliminazione dell\'account.':
+        return erroreDuranteLEliminazioneDellAccount;
+      case 'Errore durante l\'eliminazione: \\\$e':
+        return erroreDuranteLEliminazioneE;
+      case 'Resetta i Dati':
+        return resettaIDati;
+      case 'Eliminerà abitudini, obiettivi e preferenze, ma manterrà il tuo account attivo.':
+        return elimineraAbitudiniObiettiviEPreferenzeMaManterraIlTuoAccountAttivo;
+      case 'Conferma Reset Dati':
+        return confermaResetDati;
+      case 'Elimina l\'account':
+        return eliminaLAccount;
+      case 'Eliminerà definitivamente il tuo account e tutti i dati associati. Questa azione è irreversibile.':
+        return elimineraDefinitivamenteIlTuoAccountETuttiIDatiAssociatiQuestaAzioneEIrreversibile;
+      case 'Conferma Eliminazione Account':
+        return confermaEliminazioneAccount;
+      case 'Acquisti Ripristinati!':
+        return acquistiRipristinati;
+      case 'Nessun Acquisto Trovato':
+        return nessunAcquistoTrovato;
+      case 'Ripristino Fallito':
+        return ripristinoFallito;
+      case 'Abbonamento in Elaborazione':
+        return abbonamentoInElaborazione;
+      case 'Acquisto Fallito':
+        return acquistoFallito;
+      case 'Errore Connessione':
+        return erroreConnessione;
+      case 'DATA DI NASCITA':
+        return dataDiNascita;
+      case 'Pre-tracking':
+        return preTracking;
+      case 'Attuale':
+        return attuale;
+      case 'MESI VISSUTI':
+        return mesiVissuti;
+      case 'ETÀ ATTUALE':
+        return etaAttuale;
+      case 'RIMANENTI':
+        return rIMANENTI;
+      case 'AI Coach Personalizzato':
+        return aiCoachPersonalizzato;
+      case 'Statistiche Specifiche Per Abitudine':
+        return statisticheSpecifichePerAbitudine;
+      case 'Metriche Avanzate Obiettivi':
+        return metricheAvanzateObiettivi;
+      case 'Abitudini Illimitate':
+        return abitudiniIllimitate;
+      case 'Clicca qui per segnare l\'obiettivo come completato. Cliccandolo di nuovo verrà segnato come fallito.':
+        return cliccaQuiPerSegnareLObiettivoComeCompletatoCliccandoloDiNuovoVerraSegnatoComeFallito;
+      case 'Usa questo pulsante per assegnare rapidamente una categoria all\'obiettivo.':
+        return usaQuestoPulsantePerAssegnareRapidamenteUnaCategoriaAllObiettivo;
+      case 'Se non hai fatto in tempo o i piani sono cambiati, puoi spostare questo obiettivo alla settimana / mese o anno successivo ( in base a dove hai inserito l\'obiettivo).':
+        return seNonHaiFattoInTempoOIPianiSonoCambiatiPuoiSpostareQuestoObiettivoAllaSettimanaMeseOAnnoSuccessivoInBaseADoveHaiInseritoLObiettivo;
+      case 'Se devi semplicemente rinominare l\'obiettivo, usa la matita.':
+        return seDeviSemplicementeRinominareLObiettivoUsaLaMatita;
+      case 'Infine, questo pulsante elimina definitivamente l\'obiettivo.':
+        return infineQuestoPulsanteEliminaDefinitivamenteLObiettivo;
+      case 'Passa a questa scheda per visualizzare grafici e performance dettagliate selezionando l\'anno corrente o tutti gli anni.':
+        return passaAQuestaSchedaPerVisualizzareGraficiEPerformanceDettagliateSelezionandoLAnnoCorrenteOTuttiGliAnni;
+      case 'Da qui puoi selezionare una specifica abitudine per vederne i dettagli, oppure \'Tutti gli Habits\' per una panoramica globale.':
+        return daQuiPuoiSelezionareUnaSpecificaAbitudinePerVederneIDettagliOppureTuttiGliHabitsPerUnaPanoramicaGlobale;
+      case 'Naviga tra le varie schede per vedere i Trend, gli Alert sulle performance, l\'andamento delle Abitudini e il tuo Mood.':
+        return navigaTraLeVarieSchedePerVedereITrendGliAlertSullePerformanceLAndamentoDelleAbitudiniEIlTuoMood;
+      case 'Mood & Energia':
+        return moodEnergia;
+      case 'Analisi del benessere psicofisico.':
+        return analisiDelBenesserePsicofisico;
+      case 'Non ci sono abbastanza dati per calcolare la sensibilità.':
+        return nonCiSonoAbbastanzaDatiPerCalcolareLaSensibilita;
+      case 'Non ci sono abbastanza dati per calcolare la resilienza.':
+        return nonCiSonoAbbastanzaDatiPerCalcolareLaResilienza;
+      case 'Resilienza':
+        return resilienza;
+      case 'Analisi di Correlazione':
+        return analisiDiCorrelazione;
+      case 'Non ci sono abbastanza dati per l\'analisi di correlazione.':
+        return nonCiSonoAbbastanzaDatiPerLAnalisiDiCorrelazione;
+      case 'Trend Globale':
+        return trendGlobale;
+      case 'COMPLETATI':
+        return cOMPLETATI;
+      case 'FALLITI':
+        return fALLITI;
+      case 'di successo':
+        return diSuccesso;
+      case 'completamento':
+        return completamento2;
+      case 'dal':
+        return dal;
+      case 'Totale':
+        return totale;
+      case 'Successo':
+        return successo;
+      case 'Crescita':
+        return crescita;
+      case 'Calo':
+        return calo;
+      case 'Aggiungi obiettivo lifetime...':
+        return aggiungiObiettivoLifetime;
+      case 'Aggiungi obiettivo annuale...':
+        return aggiungiObiettivoAnnuale;
+      case 'Aggiungi obiettivo trimestrale...':
+        return aggiungiObiettivoTrimestrale;
+      case 'Aggiungi obiettivo mensile...':
+        return aggiungiObiettivoMensile;
+      case 'Aggiungi obiettivo settimanale...':
+        return aggiungiObiettivoSettimanale;
+      case 'Limite di 100 obiettivi raggiunto!':
+        return limiteDi100ObiettiviRaggiunto;
+      case 'Scegli una tonalità premium o creane una tua':
+        return scegliUnaTonalitaPremiumOCreaneUnaTua;
+      case 'Abbonamento':
+        return abbonamento;
+      case 'Lingua, Tema, Unità di misura':
+        return linguaTemaUnitaDiMisura;
+      case 'Promemoria e avvisi di sistema':
+        return promemoriaEAvvisiDiSistema;
+      case 'Gestione dati e biometrica':
+        return gestioneDatiEBiometrica;
+      case 'Ripeti Tutorial':
+        return ripetiTutorial;
+      case 'Visualizza di nuovo la guida iniziale':
+        return visualizzaDiNuovoLaGuidaIniziale;
+      case 'Stato d\'animo':
+        return statoDAnimo;
+      case 'Gestione':
+        return gestione;
+      case 'I tuoi progressi per oggi':
+        return iTuoiProgressiPerOggi;
+      case 'Nessuna abitudine':
+        return nessunaAbitudine;
+      case 'Non ci sono abitudini per questo giorno.\nInizia a crearne una!':
+        return nonCiSonoAbitudiniPerQuestoGiornoIniziaACrearneUna;
+      case 'Trend Settimanale':
+        return trendSettimanale;
+      case 'Trend Mensile':
+        return trendMensile;
+      case 'Trend Annuale':
+        return trendAnnuale;
+      case 'MOOD BASSO':
+        return moodBasso;
+      case 'Abitudini Sensibili al Mood':
+        return abitudiniSensibiliAlMood;
+      case 'Abitudini Resilienti':
+        return abitudiniResilienti;
+      case 'Abitudini che mantieni anche quando il mood è basso.':
+        return abitudiniCheMantieniAncheQuandoIlMoodEBasso;
+      case 'Analisi Performance':
+        return analisiPerformance;
+      case ' di completamento':
+        return diCompletamento2;
+      case ' di successo':
+        return diSuccesso2;
+      case ' completamento':
+        return completamento3;
+      case 'Crea nuova categoria':
+        return creaNuovaCategoria;
+      case 'Completati':
+        return completati;
+      case 'Falliti':
+        return falliti;
+      case 'Impossibile aprire il link.':
+        return impossibileAprireIlLink;
+      case 'Colore Personalizzato':
+        return colorePersonalizzato;
+      case 'Verifica':
+        return verifica;
+      case 'Problemi di connessione con il Coach. Riprova più tardi.':
+        return problemiDiConnessioneConIlCoachRiprovaPiuTardi;
+      case 'AI Coach':
+        return aiCoach;
+      case 'Password aggiornata con successo!':
+        return passwordAggiornataConSuccesso;
+      case 'Errore durante l\'esportazione: ':
+        return erroreDuranteLEsportazione;
+      case 'Dati resettati con successo!':
+        return datiResettatiConSuccesso;
+      case 'Errore durante il reset: ':
+        return erroreDuranteIlReset;
+      case 'Account eliminato con successo!':
+        return accountEliminatoConSuccesso;
+      case 'Errore durante l\'eliminazione: ':
+        return erroreDuranteLEliminazione;
+      case 'Ripristina acquisti':
+        return ripristinaAcquisti;
+      case 'Errore durante il salvataggio.':
+        return erroreDuranteIlSalvataggio;
+      case 'Fatto':
+        return fatto;
+      case 'Inserisci la tua email per reimpostare la password.':
+        return inserisciLaTuaEmailPerReimpostareLaPassword;
+      case 'Tasso di successo':
+        return tassoDiSuccesso;
+      case 'Tasso di successo per categoria':
+        return tassoDiSuccessoPerCategoria;
+      case 'Attività Trim.':
+        return attivitaTrim;
+      case 'Q1 - Q4':
+        return q1Q4;
+      case 'In Q1-Q4':
+        return inQ1Q4;
+      case 'Attività Mensile':
+        return attivitaMensile;
+      case 'Totale/Completati':
+        return totaleCompletati;
+      case 'Completamenti':
+        return completamenti;
+      case 'Mensili':
+        return mensili;
+      case 'Totali: ':
+        return totali;
+      case 'Completati: ':
+        return completati2;
+      case '🎯 Distribuzione Categorie':
+        return distribuzioneCategorie;
+      case 'Ripartizione degli obiettivi per area di focus':
+        return ripartizioneDegliObiettiviPerAreaDiFocus;
+      case '📈 Progressione Annuale':
+        return progressioneAnnuale;
+      case 'Confronto anno per anno del volume di obiettivi e completamenti':
+        return confrontoAnnoPerAnnoDelVolumeDiObiettiviECompletamenti;
+      case 'Attivi: ':
+        return attivi;
+      case 'Falliti: ':
+        return falliti2;
+      case '🔮 Distribuzione Tipologie':
+        return distribuzioneTipologie;
+      case 'Ripartizione degli obiettivi per orizzonte temporale':
+        return ripartizioneDegliObiettiviPerOrizzonteTemporale;
+      case '🎂 Stagionalità':
+        return stagionalita;
+      case 'Performance Trimestrale aggregata':
+        return performanceTrimestraleAggregata;
+      case '📈 Mensile (Storico)':
+        return mensileStorico;
+      case 'Successo medio per mese':
+        return successoMedioPerMese;
+      case ' successo':
+        return successo2;
+      case '📈 Evoluzione Interessi':
+        return evoluzioneInteressi;
+      case 'Composizione delle aree di focus negli anni':
+        return composizioneDelleAreeDiFocusNegliAnni;
+      case 'Modifica categoria':
+        return modificaCategoria;
+      case 'Archivia categoria':
+        return archiviaCategoria;
+      case 'Nome categoria...':
+        return nomeCategoria;
+      case 'Titolo obiettivo...':
+        return titoloObiettivo;
+      case 'Cambia categoria':
+        return cambiaCategoria;
+      case 'Scegli categoria':
+        return scegliCategoria;
+      case 'Punto di Forza':
+        return puntoDiForza;
+      case 'Mese Migliore':
+        return meseMigliore;
+      case 'Nessuno':
+        return nessuno;
+      case 'Tipologia Efficace':
+        return tipologiaEfficace;
+      case 'Totale Storico':
+        return totaleStorico;
+      case 'dal ':
+        return dal2;
+      case 'Successo Globale':
+        return successoGlobale;
+      case 'obiettivi completati':
+        return obiettiviCompletati;
+      case 'Anno Migliore':
+        return annoMigliore;
+      case 'Anno Più Produttivo':
+        return annoPiuProduttivo;
+      case 'obiettivi totali':
+        return obiettiviTotali;
+      case '🚀 Velocità di Esecuzione (Cumulativa)':
+        return velocitaDiEsecuzioneCumulativa;
+      case 'Confronto tra obiettivi pianificati e completati nel tempo':
+        return confrontoTraObiettiviPianificatiECompletatiNelTempo;
+      case '🎯 Performance Categorie':
+        return performanceCategorie;
+      case 'Tutto alla grande!':
+        return tuttoAllaGrande;
+      case 'WORST STREAK':
+        return worstStreak;
+      case 'FREQUENZA':
+        return fREQUENZA;
+      case 'BEST':
+        return bEST;
+      case 'WORST':
+        return wORST;
+      case 'Gap: ':
+        return gap;
+      case 'MOOD ALTO':
+        return moodAlto;
+      case 'Coefficiente':
+        return coefficiente;
+      case 'Co-occorrenza':
+        return coOccorrenza;
+      case 'Errore durante la creazione della categoria':
+        return erroreDuranteLaCreazioneDellaCategoria;
+      case 'Errore durante la modifica della categoria':
+        return erroreDuranteLaModificaDellaCategoria;
+      case 'Errore durante l\'archiviazione della categoria':
+        return erroreDuranteLArchiviazioneDellaCategoria;
+      case 'Errore durante l\'aggiornamento':
+        return erroreDuranteLAggiornamento;
+      case 'Errore durante l\'aggiornamento dello stato':
+        return erroreDuranteLAggiornamentoDelloStato;
+      case 'Errore durante il salvataggio dell\'umore':
+        return erroreDuranteIlSalvataggioDellUmore;
+      case 'Lavoro':
+        return lavoro;
+      case 'Salute':
+        return salute;
+      case 'Finanza':
+        return finanza;
+      case 'Relazioni':
+        return relazioni;
+      case 'Formazione':
+        return formazione;
+      case 'Hobby':
+        return hobby;
+      case 'Spirituale':
+        return spirituale;
+      case 'Altro':
+        return altro;
+      case 'Evolve • ':
+        return evolve;
+      case 'Errore durante il salvataggio':
+        return erroreDuranteIlSalvataggio2;
+      case 'Errore durante l\'eliminazione':
+        return erroreDuranteLEliminazione2;
+      case 'App Bloccata':
+        return appBloccata;
+      case 'Sblocca con i dati biometrici per continuare':
+        return sbloccaConIDatiBiometriciPerContinuare;
+      case 'Riprova':
+        return riprova;
+      case 'La tua tela è vuota':
+        return laTuaTelaEVuota;
+      case 'Crea la tua prima abitudine per iniziare a tracciare i tuoi progressi e costruire la tua routine.':
+        return creaLaTuaPrimaAbitudinePerIniziareATracciareITuoiProgressiECostruireLaTuaRoutine;
+      case 'Ho capito':
+        return hoCapito;
+      case 'Dettagli tecnici:':
+        return dettagliTecnici;
+      case 'Inserisci':
+        return inserisci;
+      case 'Aggiorna':
+        return aggiorna;
+      case 'Sblocca Evolve Pro':
+        return sbloccaEvolvePro;
+      case 'Porta il tuo sistema di abitudini al livello successivo':
+        return portaIlTuoSistemaDiAbitudiniAlLivelloSuccessivo;
+      case 'Analisi avanzata dei trend e suggerimenti intelligenti generati dall\'AI.':
+        return analisiAvanzataDeiTrendESuggerimentiIntelligentiGeneratiDallAi;
+      case 'Informazioni chiave per aumentare la tua produttività.':
+        return informazioniChiavePerAumentareLaTuaProduttivita;
+      case 'Visualizza grafici dettagliati e statistiche di performance profonde per ogni anno.':
+        return visualizzaGraficiDettagliatiEStatisticheDiPerformanceProfondePerOgniAnno;
+      case 'Crea e traccia tutti gli habits che desideri senza alcun limite.':
+        return creaETracciaTuttiGliHabitsCheDesideriSenzaAlcunLimite;
+      case 'Ottieni Pro a €4,99 / mese':
+        return ottieniProA499Mese;
+      case 'Forse più tardi':
+        return forsePiuTardi;
+      case 'Modifica Obiettivo':
+        return modificaObiettivo;
+      case 'Eliminare obiettivo?':
+        return eliminareObiettivo;
+      case 'Questa azione non può essere annullata.':
+        return questaAzioneNonPuoEssereAnnullata;
+      case 'Scegli colore':
+        return scegliColore;
+      case 'Crea':
+        return crea;
+      case 'Archiviare categoria?':
+        return archiviareCategoria;
+      case 'La categoria "label" non sarà più disponibile per nuovi obiettivi, ma resterà collegata a count obiettivi storici e alle statistiche.':
+        return laCategoriaLabelNonSaraPiuDisponibilePerNuoviObiettiviMaResteraCollegataACountObiettiviStoriciEAlleStatistiche;
+      case 'La categoria "label" non sarà più disponibile per nuovi obiettivi, ma resterà nello storico.':
+        return laCategoriaLabelNonSaraPiuDisponibilePerNuoviObiettiviMaResteraNelloStorico;
+      case 'Archivia':
+        return archivia;
+      case 'Seleziona Orario':
+        return selezionaOrario;
+      case 'Conferma Uscita':
+        return confermaUscita;
+      case 'Sei sicuro di voler uscire dal tuo account? Dovrai reinserire le tue credenziali per accedere nuovamente.':
+        return seiSicuroDiVolerUscireDalTuoAccountDovraiReinserireLeTueCredenzialiPerAccedereNuovamente;
+      case 'Esci':
+        return esci;
+      case 'Sei sicuro di voler eliminare':
+        return seiSicuroDiVolerEliminare;
+      case 'Colore troppo scuro per la visibilità in Dark Mode.':
+        return coloreTroppoScuroPerLaVisibilitaInDarkMode;
+      case 'Verifica Visibilità':
+        return verificaVisibilita;
+      case 'Riesci a leggere chiaramente questo testo e a vedere il pulsante qui sotto?':
+        return riesciALeggereChiaramenteQuestoTestoEAVedereIlPulsanteQuiSotto;
+      case 'SI, CONFERMA':
+        return siConferma;
+      case 'NO, TORNA INDIETRO':
+        return noTornaIndietro;
+      case 'Inserisci la tua nuova password.':
+        return inserisciLaTuaNuovaPassword;
+      case 'Inserisci la tua password attuale per continuare.':
+        return inserisciLaTuaPasswordAttualePerContinuare;
+      case 'Inserisci la password attuale.':
+        return inserisciLaPasswordAttuale;
+      case 'Utente non trovato.':
+        return utenteNonTrovato;
+      case 'La password attuale non è corretta.':
+        return laPasswordAttualeNonECorretta;
+      case 'Tutti i campi sono obbligatori.':
+        return tuttiICampiSonoObbligatori;
+      case 'La nuova password deve essere di almeno 8 caratteri.':
+        return laNuovaPasswordDeveEssereDiAlmeno8Caratteri;
+      case 'Le password non coincidono.':
+        return lePasswordNonCoincidono;
+      case 'Gestione Account e Dati':
+        return gestioneAccountEDati;
+      case 'Scegli l\'operazione che desideri effettuare. Entrambe le azioni richiedono conferma.':
+        return scegliLOperazioneCheDesideriEffettuareEntrambeLeAzioniRichiedonoConferma;
+      case 'Sei sicuro di voler eliminare tutti i tuoi dati? Questa azione non può essere annullata.':
+        return seiSicuroDiVolerEliminareTuttiITuoiDatiQuestaAzioneNonPuoEssereAnnullata;
+      case 'Elimina l\'Account':
+        return eliminaLAccount2;
+      case 'Sei sicuro di voler eliminare definitivamente il tuo account? Tutti i tuoi dati andranno persi per sempre.':
+        return seiSicuroDiVolerEliminareDefinitivamenteIlTuoAccountTuttiITuoiDatiAndrannoPersiPerSempre;
+      case 'I miei dati esportati da Growth':
+        return iMieiDatiEsportatiDaGrowth;
+      case 'Contesto dell\'AI':
+        return contestoDellAi;
+      case 'Scegli quali informazioni condividere con l\'assistente per personalizzare le risposte.':
+        return scegliQualiInformazioniCondividereConLAssistentePerPersonalizzareLeRisposte;
+      case 'Online per':
+        return onlinePer;
+      case 'Elimina chat':
+        return eliminaChat;
+      case 'Sei sicuro di voler eliminare tutti i messaggi? Questa azione non può essere annullata.':
+        return seiSicuroDiVolerEliminareTuttiIMessaggiQuestaAzioneNonPuoEssereAnnullata;
+      case 'Coach Virtuale':
+        return coachVirtuale;
+      case 'Pronto ad aiutarti a mantenere la disciplina.':
+        return prontoAdAiutartiAMantenereLaDisciplina;
+      case 'Per favore, seleziona almeno un contesto (abitudini o obiettivi) nelle impostazioni per poter parlare con il Coach.':
+        return perFavoreSelezionaAlmenoUnContestoAbitudiniOObiettiviNelleImpostazioniPerPoterParlareConIlCoach;
+      case 'Ciao! Sono il tuo Coach di Disciplina. Come posso aiutarti oggi?':
+        return ciaoSonoIlTuoCoachDiDisciplinaComePossoAiutartiOggi;
+      case 'Messaggio copiato':
+        return messaggioCopiato;
+      case 'Le abitudini chiave have un effetto "domino".':
+        return leAbitudiniChiaveHaveUnEffettoDomino;
+      case 'Monitora mood ed energia for insights più accurati.':
+        return monitoraMoodEdEnergiaForInsightsPiuAccurati;
+      case 'Crea il tuo ecosistema personale.':
+        return creaIlTuoEcosistemaPersonale;
+      case 'Inserisci la tua email.':
+        return inserisciLaTuaEmail;
+      case 'Email non valida.':
+        return emailNonValida;
+      case 'Inserisci la password.':
+        return inserisciLaPassword;
+      case 'Minimo 6 caratteri.':
+        return minimo6Caratteri;
+      case 'Password dimenticata?':
+        return passwordDimenticata;
+      case 'OPPURE':
+        return oPPURE;
+      case 'Continua con Apple':
+        return continuaConApple;
+      case 'Continua con Google':
+        return continuaConGoogle;
+      case 'Non hai un account?':
+        return nonHaiUnAccount;
+      case 'Hai già un account?':
+        return haiGiaUnAccount;
+      case 'Registrati':
+        return registrati;
+      case 'Accedi':
+        return accedi;
+      case 'Crea Account':
+        return creaAccount;
+      case 'Termini di Servizio':
+        return terminiDiServizio;
+      case 'Password':
+        return password;
+      case 'Daily Check-in':
+        return dailyCheckIn;
+      case 'Qui puoi registrare il tuo stato d\'animo quotidiano per tracciare il tuo benessere nel tempo e soprattutto correlarlo con il completamento dei tuoi obiettivi.':
+        return quiPuoiRegistrareIlTuoStatoDAnimoQuotidianoPerTracciareIlTuoBenessereNelTempoESoprattuttoCorrelarloConIlCompletamentoDeiTuoiObiettivi;
+      case 'Il tuo assistente personale. Chiedi consigli sulle tue abitudini. Lui è il tuo coach.':
+        return ilTuoAssistentePersonaleChiediConsigliSulleTueAbitudiniLuiEIlTuoCoach;
+      case 'Aggiungi, modifica o elimina le tue abitudini quotidiane che vuoi rispettare in modo semplice e veloce.':
+        return aggiungiModificaOEliminaLeTueAbitudiniQuotidianeCheVuoiRispettareInModoSempliceEVeloce;
+      case 'Viste Calendario':
+        return visteCalendario;
+      case 'Naviga tra le diverse visualizzazioni per vedere i tuoi progressi con varie alternative.':
+        return navigaTraLeDiverseVisualizzazioniPerVedereITuoiProgressiConVarieAlternative;
+      case 'Calendario':
+        return calendario;
+      case 'Basta cliccare su un giorno per visualizzare le abitudini giornaliere e spuntarle.':
+        return bastaCliccareSuUnGiornoPerVisualizzareLeAbitudiniGiornaliereESpuntarle;
+      case 'Passiamo agli Obiettivi':
+        return passiamoAgliObiettivi;
+      case 'La pagina dove puoi gestire i tuoi obiettivi a lungo termine e relative performance.':
+        return laPaginaDovePuoiGestireITuoiObiettiviALungoTermineERelativePerformance;
+      case 'Vai agli Obiettivi':
+        return vaiAgliObiettivi;
+      case 'Inizia il Tour':
+        return iniziaIlTour;
+      case 'Sei pronto!':
+        return seiPronto;
+      case 'Il viaggio inizia ora. Dai il massimo!':
+        return ilViaggioIniziaOraDaiIlMassimo;
+      case 'Inizia':
+        return inizia;
+      case 'Benvenuto in Evolve!':
+        return benvenutoInEvolve;
+      case 'Per iniziare, come possiamo chiamarti?':
+        return perIniziareComePossiamoChiamarti;
+      case 'Il tuo nome':
+        return ilTuoNome;
+      case 'Inizia ora':
+        return iniziaOra;
+      case 'Errore durante il salvataggio. Riprova.':
+        return erroreDuranteIlSalvataggioRiprova;
+      case 'Benvenuto in Evolve':
+        return benvenutoInEvolve2;
+      case 'Potrebbe essere uno STEP di NON RITORNO... Prima di iniziare però bisogna fare un tour per mostrarti come sfruttare al massimo l\'applicazione.':
+        return potrebbeEssereUnoStepDiNonRitornoPrimaDiIniziarePeroBisognaFareUnTourPerMostrartiComeSfruttareAlMassimoLApplicazione;
+      case 'Tipo di Pianificazione':
+        return tipoDiPianificazione;
+      case 'Qui puoi selezionare la visione temporale: Lifetime (per tutta la vita), Annuale, Trimestrale, Mensile o Settimanale.':
+        return quiPuoiSelezionareLaVisioneTemporaleLifetimePerTuttaLaVitaAnnualeTrimestraleMensileOSettimanale;
+      case 'Nuovo Obiettivo':
+        return nuovoObiettivo;
+      case 'Da qui puoi inserire un nuovo obiettivo. Potrai anche personalizzare le Categorie a tuo piacimento per organizzare tutto al meglio.':
+        return daQuiPuoiInserireUnNuovoObiettivoPotraiAnchePersonalizzareLeCategorieATuoPiacimentoPerOrganizzareTuttoAlMeglio;
+      case 'Completare o Fallire':
+        return completareOFallire;
+      case 'Categoria':
+        return categoria;
+      case 'Posticipare':
+        return posticipare;
+      case 'Modifica':
+        return modifica;
+      case 'Elimina':
+        return elimina;
+      case 'Analisi e Statistiche':
+        return analisiEStatistiche;
+      case 'Continua':
+        return continua;
+      case 'Statistiche Abitudini':
+        return statisticheAbitudini;
+      case 'Per vedere le statistiche delle tue abitudini giornaliere, puoi spostarti in questa sezione.':
+        return perVedereLeStatisticheDelleTueAbitudiniGiornalierePuoiSpostartiInQuestaSezione;
+      case 'Passa alle Statistiche':
+        return passaAlleStatistiche;
+      case 'Indietro':
+        return indietro;
+      case 'Fine':
+        return fine;
+      case 'Avanti':
+        return avanti;
+      case 'Obiettivo Tutorial':
+        return obiettivoTutorial;
+      case 'I miei obiettivi':
+        return iMieiObiettivi;
+      case 'Filtra per Abitudine':
+        return filtraPerAbitudine;
+      case 'Sezioni Statistiche':
+        return sezioniStatistiche;
+      case 'it':
+        return italianLanguage;
+      case 'en':
+        return englishLanguage;
+      case 'system':
+        return systemLanguage;
+      case 'Accesso non riuscito. Controlla email e password.':
+        return authAccessFailed;
+      case 'Errore di rete. Riprova.':
+        return authNetworkRetry;
+      case 'Controlla la tua email per confermare la registrazione.':
+        return authConfirmRegistrationEmail;
+      case 'Impossibile aggiornare il profilo.':
+        return authUpdateProfileFailed;
+      case 'Email o password errata.':
+        return authInvalidCredentials;
+      case 'Controlla la tua email e clicca il link di conferma.':
+        return authEmailNotConfirmed;
+      case 'Esiste già un account con questa email. Prova ad accedere.':
+        return authAccountAlreadyExists;
+      case 'La password deve essere di almeno 6 caratteri.':
+        return authPasswordMinSix;
+      case 'Errore. Riprova.':
+        return genericErrorRetry;
+    }
+    return key;
+  }
 }

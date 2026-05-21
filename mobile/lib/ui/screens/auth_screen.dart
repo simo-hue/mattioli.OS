@@ -86,7 +86,7 @@ class _AuthScreenState extends ConsumerState<AuthScreen> with SingleTickerProvid
           if (error != null && error.contains('email')) {
             ScaffoldMessenger.of(context).showSnackBar(
               SnackBar(
-                content: Text(error),
+                content: Text(context.l10n.translate(error)),
                 backgroundColor: const Color(0xFF10B981),
                 behavior: SnackBarBehavior.floating,
                 shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
@@ -124,8 +124,10 @@ class _AuthScreenState extends ConsumerState<AuthScreen> with SingleTickerProvid
         SnackBar(
           content: Text(
             success
-                ? 'Email inviata! Controlla la tua casella di posta.'
-                : ref.read(authProvider).error ?? 'Errore. Riprova.',
+                ? context.l10n.passwordResetEmailSent
+                : context.l10n.translate(
+                    ref.read(authProvider).error ?? 'Errore. Riprova.',
+                  ),
           ),
           backgroundColor: success ? const Color(0xFF10B981) : AppColors.destructive,
           behavior: SnackBarBehavior.floating,
@@ -238,7 +240,7 @@ class _AuthScreenState extends ConsumerState<AuthScreen> with SingleTickerProvid
                             SizedBox(height: isCompact ? 4 : 8),
                             if (_mode == AuthMode.login)
                               Text(
-                                "better each day.\nbecome who you're meant to be!",
+                                context.l10n.authLoginMotto,
                                 textAlign: TextAlign.center,
                                 style: GoogleFonts.playfairDisplay(
                                   color: context.appColors.mutedForeground.withValues(alpha: 0.9),
@@ -334,7 +336,7 @@ class _AuthScreenState extends ConsumerState<AuthScreen> with SingleTickerProvid
                                         const SizedBox(width: 8),
                                         Expanded(
                                           child: Text(
-                                            error,
+                                            context.l10n.translate(error),
                                             style: const TextStyle(
                                               color: AppColors.destructive,
                                               fontSize: 12,
@@ -443,7 +445,7 @@ class _AuthScreenState extends ConsumerState<AuthScreen> with SingleTickerProvid
                                 tapTargetSize: MaterialTapTargetSize.shrinkWrap,
                               ),
                               child: Text(
-                                'Privacy Policy',
+                                context.l10n.readPrivacyPolicy,
                                 style: TextStyle(
                                   color: context.appColors.mutedForeground,
                                   fontSize: isCompact ? 10 : 12,

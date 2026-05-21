@@ -1598,3 +1598,13 @@
 - **Lockfiles**: Regenerated `pubspec.lock` and `ios/Podfile.lock`; the Dart lockfile no longer contains `objective_c`, `native_toolchain_c`, `code_assets`, `hooks`, or `record_use`.
 - **Build Cleanup**: Ran `flutter clean` and `flutter pub get` to remove stale copied `objective_c.framework` artifacts from prior simulator builds.
 - **Verification**: `flutter analyze`, `flutter test test/subscription_service_test.dart`, and `flutter run -d 4225E4CB-028F-48F5-AB0E-89D83D1D6BDE` completed successfully through app startup without the `DOBJ_initializeApi` error.
+
+---
+
+## [2026-05-21 09:45]: Macro Goals - Logical Weeks Per Month
+*Details*: Fixed weekly macro-goal navigation so each month uses its real logical number of weeks instead of treating Sunday-start and edge-case months as five-week periods.
+*Tech Notes*:
+- **Calendar Helper**: Added `lib/core/macro_goal_calendar.dart` with timezone-safe logical week calculation aligned with the web app behavior.
+- **Provider**: Updated `MacroGoalsViewNotifier` and `weeksInMonth()` to use logical month weeks for initialization, navigation, clamping, and rescheduling.
+- **Tests**: Added `test/macro_goal_calendar_test.dart` covering 4-, 5-, and 6-week month shapes, including the February 2026 Sunday-start case.
+- **Verification**: `flutter analyze` and `flutter test` completed successfully.

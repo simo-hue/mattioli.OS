@@ -2,6 +2,7 @@ import 'dart:convert';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../models/macro_goal.dart';
+import '../core/macro_goal_calendar.dart';
 import 'shared_prefs_provider.dart';
 import 'auth_provider.dart';
 import '../core/navigator_key.dart';
@@ -100,7 +101,7 @@ class MacroGoalsNotifier extends Notifier<MacroGoalsState> {
           .order('created_at', ascending: true);
 
       final goals = (response as List).map((j) => MacroGoal.fromJson(j)).toList();
-      
+
       state = state.copyWith(goals: goals);
       _saveToCache(goals);
     } catch (e, stack) {
@@ -125,9 +126,9 @@ class MacroGoalsNotifier extends Notifier<MacroGoalsState> {
       final payload = goal.toJson();
       payload['user_id'] = user.id; // forza l'id utente
       payload.remove('id'); // Lasciamo generare l'UUID a Supabase se vuoto
-      
+
       final result = await supabase.from('long_term_goals').insert(payload).select().single();
-      
+
       // 3. Sostituisci l'ID locale (che potrebbe essere fittizio) con quello reale
       final realGoal = MacroGoal.fromJson(result);
       final updatedGoals = state.goals.map((g) => g.id == goal.id ? realGoal : g).toList();
@@ -394,23 +395,30 @@ class MacroGoalsViewNotifier extends Notifier<MacroGoalsViewState> {
       selectedYear: now.year,
       selectedQuarter: _quarter(now.month),
       selectedMonth: now.month,
-      selectedWeek: _logicalWeekOfMonth(now),
+      selectedWeek: logicalWeekOfMonth(now),
     );
   }
 
   void setType(GoalType t) => state = state.copyWith(selectedType: t);
-  void setYear(int y) => state = state.copyWith(selectedYear: y);
+  void setYear(int y) {
+    state = state.copyWith(
+      selectedYear: y,
+      selectedWeek: _clampWeek(y, state.selectedMonth, state.selectedWeek),
+    );
+  }
+
   void setQuarter(int q) => state = state.copyWith(selectedQuarter: q);
   void setMonth(int m) => state = state.copyWith(selectedMonth: m, selectedWeek: 1);
-  void setWeek(int w) => state = state.copyWith(selectedWeek: w);
+  void setWeek(int w) {
+    state = state.copyWith(
+      selectedWeek: _clampWeek(state.selectedYear, state.selectedMonth, w),
+    );
+  }
 
   int _quarter(int month) => ((month - 1) ~/ 3) + 1;
 
-  int _logicalWeekOfMonth(DateTime date) {
-    final firstOfMonth = DateTime(date.year, date.month, 1);
-    final firstWeekday = firstOfMonth.weekday; // 1=Mon, 7=Sun
-    final offset = (firstWeekday - 1) % 7;
-    return ((date.day + offset - 1) ~/ 7) + 1;
+  int _clampWeek(int year, int month, int week) {
+    return week.clamp(1, weeksInMonth(year, month));
   }
 
   void nextPeriod() {
@@ -507,9 +515,5 @@ final macroGoalsViewProvider =
 // ─── Helpers ─────────────────────────────────────────────────────────────────
 
 int weeksInMonth(int year, int month) {
-  final firstOfMonth = DateTime(year, month, 1);
-  final daysInMonth = DateTime(year, month + 1, 0).day;
-  final firstWeekday = firstOfMonth.weekday;
-  final offset = (firstWeekday - 1) % 7;
-  return ((daysInMonth + offset - 1) ~/ 7) + 1;
+  return logicalWeeksInMonth(year, month);
 }

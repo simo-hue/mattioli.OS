@@ -13,7 +13,7 @@ class MacroGoal {
   final int? year;
   final int? quarter; // 1-4
   final int? month; // 1-12
-  final int? weekNumber; // 1-5 (logical week of month)
+  final int? weekNumber; // 1-6 (logical week of month)
   final String? categoryKey; // e.g. 'red', 'blue', 'lavoro', etc.
   final String? categoryId; // UUID for custom categories
   final DateTime createdAt;

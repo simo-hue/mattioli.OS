@@ -1618,3 +1618,31 @@
 - **UI**: Updated `macro_goals_screen.dart` to format same-month, cross-month, and cross-year ranges in Italian while preventing header overflow.
 - **Tests**: Extended `test/macro_goal_calendar_test.dart` with same-month, cross-month, and cross-year range cases.
 - **Verification**: `flutter analyze` and `flutter test` completed successfully.
+
+---
+
+## [2026-05-21 10:25]: Macro Goals - Editable Custom Categories
+*Details*: Added full category management from the macro-goal category selector so custom categories can be created, renamed, recolored, selected, and deleted after creation.
+*Tech Notes*:
+- **Reusable UI**: Added `category_picker_sheet.dart` and connected it to both the add-goal bar and existing goal category selector.
+- **Provider**: Added category update support and an initial safe deletion flow, later superseded by soft archiving to preserve historical statistics.
+- **Verification**: `flutter analyze` and `flutter test` completed successfully.
+
+---
+
+## [2026-05-21 10:28]: Macro Goals - Category Selector Cleanup
+*Details*: Removed the visible linked-goal count subtitle from custom categories in the macro-goal category selector.
+*Tech Notes*:
+- **UI**: Updated `category_picker_sheet.dart`; linked-goal counts remain available internally for the deletion confirmation message.
+- **Verification**: `flutter analyze` completed successfully.
+
+---
+
+## [2026-05-21 10:33]: Macro Goals - Soft Archive Categories
+*Details*: Reworked category deletion into soft archiving so historical goals and statistics keep their category association after a user removes a category from active use.
+*Tech Notes*:
+- **Database**: Added `migrations/20260521_archive_macro_goal_categories.sql` with nullable `archived_at` and an active-category index. Existing categories remain active because `archived_at` defaults to `NULL`.
+- **Model/Provider**: Added `GoalCategory.archivedAt` / `isArchived`; category fetch keeps archived rows available for historical label/color resolution.
+- **UI**: Category picker hides archived categories for new selections, while stats and existing goals can still resolve archived category metadata.
+- **Manual Action**: Logged the Supabase migration in `TO_SIMO_DO.md`.
+- **Verification**: `flutter analyze` and `flutter test` completed successfully.

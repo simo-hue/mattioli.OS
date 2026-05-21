@@ -10,6 +10,7 @@ import '../../../providers/macro_goals_provider.dart';
 import '../../../providers/macro_goal_categories_provider.dart';
 import '../../../core/haptics.dart';
 import '../../../providers/settings_provider.dart';
+import 'category_picker_sheet.dart';
 import '../pro_features_modal.dart';
 
 class GoalItemWidget extends ConsumerStatefulWidget {
@@ -21,7 +22,7 @@ class GoalItemWidget extends ConsumerStatefulWidget {
   final GlobalKey? deleteKey;
 
   const GoalItemWidget({
-    super.key, 
+    super.key,
     required this.goal,
     this.checkboxKey,
     this.categoryKey,
@@ -56,7 +57,7 @@ class _GoalItemWidgetState extends ConsumerState<GoalItemWidget>
   void _cycleStatus() {
     // Start by giving haptic feedback
     ref.hapticAction();
-    
+
     // Immediate visual feedback (Optimistic Update)
     setState(() {
       _visualStatusOverride = _nextStatus;
@@ -71,7 +72,7 @@ class _GoalItemWidgetState extends ConsumerState<GoalItemWidget>
       ref
           .read(macroGoalsProvider.notifier)
           .updateStatus(widget.goal.id, _visualStatusOverride!);
-      
+
       setState(() {
         _visualStatusOverride = null;
       });
@@ -122,28 +123,41 @@ class _GoalItemWidgetState extends ConsumerState<GoalItemWidget>
         content: TextField(
           controller: ctrl,
           autofocus: true,
-          style: GoogleFonts.inter(color: context.appColors.foreground, fontSize: 14),
+          style: GoogleFonts.inter(
+            color: context.appColors.foreground,
+            fontSize: 14,
+          ),
           decoration: InputDecoration(
             hintText: 'Titolo obiettivo...',
-            hintStyle: GoogleFonts.inter(color: context.appColors.mutedForeground),
+            hintStyle: GoogleFonts.inter(
+              color: context.appColors.mutedForeground,
+            ),
             enabledBorder: OutlineInputBorder(
               borderSide: BorderSide(color: context.appColors.border),
               borderRadius: BorderRadius.circular(10),
             ),
             focusedBorder: OutlineInputBorder(
-              borderSide:
-                  BorderSide(color: context.appColors.foreground, width: 1),
+              borderSide: BorderSide(
+                color: context.appColors.foreground,
+                width: 1,
+              ),
               borderRadius: BorderRadius.circular(10),
             ),
-            contentPadding:
-                const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
+            contentPadding: const EdgeInsets.symmetric(
+              horizontal: 14,
+              vertical: 12,
+            ),
           ),
         ),
         actions: [
           TextButton(
             onPressed: () => Navigator.pop(context),
-            child: Text('Annulla',
-                style: GoogleFonts.inter(color: context.appColors.mutedForeground)),
+            child: Text(
+              'Annulla',
+              style: GoogleFonts.inter(
+                color: context.appColors.mutedForeground,
+              ),
+            ),
           ),
           TextButton(
             onPressed: () {
@@ -158,7 +172,9 @@ class _GoalItemWidgetState extends ConsumerState<GoalItemWidget>
             child: Text(
               'Salva',
               style: GoogleFonts.inter(
-                  color: context.appColors.foreground, fontWeight: FontWeight.w600),
+                color: context.appColors.foreground,
+                fontWeight: FontWeight.w600,
+              ),
             ),
           ),
         ],
@@ -183,13 +199,19 @@ class _GoalItemWidgetState extends ConsumerState<GoalItemWidget>
         content: Text(
           'Questa azione non può essere annullata.',
           style: GoogleFonts.inter(
-              color: context.appColors.mutedForeground, fontSize: 13),
+            color: context.appColors.mutedForeground,
+            fontSize: 13,
+          ),
         ),
         actions: [
           TextButton(
             onPressed: () => Navigator.pop(context),
-            child: Text('Annulla',
-                style: GoogleFonts.inter(color: context.appColors.mutedForeground)),
+            child: Text(
+              'Annulla',
+              style: GoogleFonts.inter(
+                color: context.appColors.mutedForeground,
+              ),
+            ),
           ),
           TextButton(
             onPressed: () {
@@ -199,7 +221,9 @@ class _GoalItemWidgetState extends ConsumerState<GoalItemWidget>
             child: Text(
               'Elimina',
               style: GoogleFonts.inter(
-                  color: context.appColors.destructive, fontWeight: FontWeight.w600),
+                color: context.appColors.destructive,
+                fontWeight: FontWeight.w600,
+              ),
             ),
           ),
         ],
@@ -208,116 +232,19 @@ class _GoalItemWidgetState extends ConsumerState<GoalItemWidget>
   }
 
   void _showCategorySheet() {
-    final categories = ref.read(macroGoalCategoriesProvider).value ?? [];
-
-    showModalBottomSheet(
+    showMacroGoalCategoryPicker(
       context: context,
-      isScrollControlled: true,
-      backgroundColor: context.appColors.card,
-      shape: const RoundedRectangleBorder(
-        borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
-      ),
-      builder: (_) {
-        return DraggableScrollableSheet(
-          initialChildSize: 0.6,
-          minChildSize: 0.4,
-          maxChildSize: 0.9,
-          expand: false,
-          builder: (context, scrollController) {
-            return SafeArea(
-              child: SingleChildScrollView(
-                controller: scrollController,
-                child: Column(
-                  mainAxisSize: MainAxisSize.min,
-                  children: [
-                    const SizedBox(height: 8),
-                    Container(
-                      width: 36,
-                      height: 4,
-                      decoration: BoxDecoration(
-                        color: context.appColors.border,
-                        borderRadius: BorderRadius.circular(2),
-                      ),
-                    ),
-                    const SizedBox(height: 8),
-                    Padding(
-                      padding:
-                          const EdgeInsets.symmetric(horizontal: 16, vertical: 4),
-                      child: Text(
-                        'Cambia categoria',
-                        style: GoogleFonts.inter(
-                          fontSize: 14,
-                          fontWeight: FontWeight.w600,
-                          color: context.appColors.foreground,
-                        ),
-                      ),
-                    ),
-                    ListTile(
-                      leading: Container(
-                        width: 20,
-                        height: 20,
-                        decoration: BoxDecoration(
-                          shape: BoxShape.circle,
-                          border:
-                              Border.all(color: context.appColors.border, width: 1.5),
-                        ),
-                      ),
-                      title: Text('Nessuna',
-                          style:
-                              GoogleFonts.inter(color: context.appColors.mutedForeground)),
-                      trailing: (widget.goal.categoryId == null && widget.goal.categoryKey == null)
-                          ? Icon(Icons.check,
-                              color: Theme.of(context).colorScheme.primary, size: 18)
-                          : null,
-                      onTap: () {
-                        ref
-                            .read(macroGoalsProvider.notifier)
-                            .updateCategory(widget.goal.id, null);
-                        Navigator.pop(context);
-                      },
-                    ),
-                    ...categories.map(
-                      (cat) => ListTile(
-                        leading: Container(
-                          width: 20,
-                          height: 20,
-                          decoration: BoxDecoration(
-                            color: cat.color.withValues(alpha: 0.3),
-                            shape: BoxShape.circle,
-                            border: Border.all(
-                                color: cat.color.withValues(alpha: 0.6), width: 1.5),
-                          ),
-                        ),
-                        title: Text(
-                          cat.label,
-                          style: GoogleFonts.inter(
-                            fontSize: 13,
-                            color: context.appColors.foreground,
-                            fontWeight: widget.goal.categoryId == cat.key
-                                ? FontWeight.w600
-                                : FontWeight.w400,
-                          ),
-                        ),
-                        trailing: widget.goal.categoryId == cat.key
-                            ? Icon(Icons.check,
-                                color: Theme.of(context).colorScheme.primary, size: 18)
-                            : null,
-                        onTap: () {
-                          ref
-                              .read(macroGoalsProvider.notifier)
-                              .updateCategory(widget.goal.id, cat.key);
-                          Navigator.pop(context);
-                          ref.hapticSelection();
-                        },
-                      ),
-                    ),
-                    const SizedBox(height: 16),
-                  ],
-                ),
-              ),
-            );
-          },
-        );
+      ref: ref,
+      title: 'Cambia categoria',
+      noneLabel: 'Nessuna',
+      noneSelected:
+          widget.goal.categoryId == null && widget.goal.categoryKey == null,
+      selectedCategoryId: widget.goal.categoryId,
+      onSelected: (categoryId) {
+        ref
+            .read(macroGoalsProvider.notifier)
+            .updateCategory(widget.goal.id, categoryId);
+        ref.hapticSelection();
       },
     );
   }
@@ -328,7 +255,7 @@ class _GoalItemWidgetState extends ConsumerState<GoalItemWidget>
     final status = _visualStatusOverride ?? goal.status;
     final categoriesAsync = ref.watch(macroGoalCategoriesProvider);
     final categories = categoriesAsync.value ?? [];
-    
+
     Color? catColor;
     if (goal.categoryId != null) {
       try {
@@ -419,10 +346,7 @@ class _GoalItemWidgetState extends ConsumerState<GoalItemWidget>
             child: Row(
               children: [
                 // Checkbox
-                Container(
-                  key: widget.checkboxKey,
-                  child: checkbox(),
-                ),
+                Container(key: widget.checkboxKey, child: checkbox()),
                 const SizedBox(width: 12),
 
                 // Category dot (if set)
@@ -446,16 +370,22 @@ class _GoalItemWidgetState extends ConsumerState<GoalItemWidget>
                       fontSize: 14,
                       fontWeight: FontWeight.w500,
                       color: isCompleted
-                          ? Theme.of(context).colorScheme.primary.withValues(alpha: 0.7)
+                          ? Theme.of(
+                              context,
+                            ).colorScheme.primary.withValues(alpha: 0.7)
                           : isFailed
-                              ? context.appColors.destructive.withValues(alpha: 0.7)
-                              : context.appColors.foreground,
+                          ? context.appColors.destructive.withValues(alpha: 0.7)
+                          : context.appColors.foreground,
                       decoration: (isCompleted || isFailed)
                           ? TextDecoration.lineThrough
                           : TextDecoration.none,
                       decorationColor: isCompleted
-                          ? Theme.of(context).colorScheme.primary.withValues(alpha: 0.5)
-                          : context.appColors.destructive.withValues(alpha: 0.5),
+                          ? Theme.of(
+                              context,
+                            ).colorScheme.primary.withValues(alpha: 0.5)
+                          : context.appColors.destructive.withValues(
+                              alpha: 0.5,
+                            ),
                     ),
                   ),
                 ),
@@ -522,11 +452,11 @@ class _ActionButtons extends StatelessWidget {
               width: 14,
               height: 14,
               decoration: BoxDecoration(
-                color:
-                    catColor?.withValues(alpha: 0.7) ?? Colors.transparent,
+                color: catColor?.withValues(alpha: 0.7) ?? Colors.transparent,
                 shape: BoxShape.circle,
                 border: Border.all(
-                  color: catColor?.withValues(alpha: 0.9) ??
+                  color:
+                      catColor?.withValues(alpha: 0.9) ??
                       context.appColors.border,
                   width: 1.5,
                 ),
@@ -539,8 +469,11 @@ class _ActionButtons extends StatelessWidget {
           key: rescheduleKey,
           child: _IconBtn(
             onTap: onReschedule,
-            child: Icon(LucideIcons.calendarClock,
-                size: 14, color: context.appColors.mutedForeground),
+            child: Icon(
+              LucideIcons.calendarClock,
+              size: 14,
+              color: context.appColors.mutedForeground,
+            ),
           ),
         ),
         const SizedBox(width: 2),
@@ -548,8 +481,11 @@ class _ActionButtons extends StatelessWidget {
           key: editKey,
           child: _IconBtn(
             onTap: onEdit,
-            child: Icon(LucideIcons.pencil,
-                size: 14, color: context.appColors.mutedForeground),
+            child: Icon(
+              LucideIcons.pencil,
+              size: 14,
+              color: context.appColors.mutedForeground,
+            ),
           ),
         ),
         const SizedBox(width: 2),
@@ -557,8 +493,11 @@ class _ActionButtons extends StatelessWidget {
           key: deleteKey,
           child: _IconBtn(
             onTap: onDelete,
-            child: Icon(LucideIcons.trash2,
-                size: 14, color: context.appColors.destructive.withValues(alpha: 0.7)),
+            child: Icon(
+              LucideIcons.trash2,
+              size: 14,
+              color: context.appColors.destructive.withValues(alpha: 0.7),
+            ),
           ),
         ),
       ],
@@ -577,10 +516,7 @@ class _IconBtn extends StatelessWidget {
     return GestureDetector(
       onTap: onTap,
       behavior: HitTestBehavior.opaque,
-      child: Padding(
-        padding: const EdgeInsets.all(6),
-        child: child,
-      ),
+      child: Padding(padding: const EdgeInsets.all(6), child: child),
     );
   }
 }

@@ -28,9 +28,3 @@
   ```
 
 - [ ] **Inizializzazione Cartella Android**: Se prevedi di pubblicare l'app anche sul Google Play Store, tieni presente che attualmente manca la cartella `android/` nel progetto. Puoi rigenerarla eseguendo `flutter create --org com.simo --platforms android .` nella cartella principale (`mobile/`), per poi configurare icone, permessi e integrazioni native (come per Supabase e Sentry).
-
-## Verifica App Store - Evolve Pro Restore
-- [ ] In RevenueCat, verificare che l'entitlement Pro sia attivo e che includa entrambi gli SKU App Store Connect: `com.simo.evolve.pro.monthly` e `com.simo.evolve.pro.yearly`.
-- [ ] In App Store Connect, confermare che il gruppo abbonamenti e i due prodotti siano nello stato corretto per la review e associati alla build inviata.
-- [ ] Prima della nuova submission, testare su sandbox iOS il flusso completo: acquisto, chiusura app, riapertura, logout/login se previsto, e pulsante `Ripristina acquisti`.
-- [ ] Nelle note di review, indicare che il restore ora richiama RevenueCat `restorePurchases`, sincronizza `CustomerInfo` e sblocca Pro se trova entitlement o StoreKit subscription attivi.

@@ -15,7 +15,7 @@ class MacroGoalCategoriesNotifier extends AsyncNotifier<List<GoalCategory>> {
     }
 
     final supabase = Supabase.instance.client;
-    
+
     try {
       final response = await supabase
           .from('macro_goal_categories')
@@ -37,17 +37,21 @@ class MacroGoalCategoriesNotifier extends AsyncNotifier<List<GoalCategory>> {
     if (!authState.isLoggedIn || authState.user == null) return null;
 
     final supabase = Supabase.instance.client;
-    
+
     try {
-      final response = await supabase.from('macro_goal_categories').insert({
-        'user_id': authState.user!.id,
-        'name': name,
-        'color': colorHex,
-      }).select('id').single();
-      
+      final response = await supabase
+          .from('macro_goal_categories')
+          .insert({
+            'user_id': authState.user!.id,
+            'name': name,
+            'color': colorHex,
+          })
+          .select('id')
+          .single();
+
       // Invalidate to refetch
       ref.invalidateSelf();
-      
+
       return response['id'] as String;
     } catch (e, stack) {
       AppLogger.error('[Categories] Add error', e, stack);
@@ -64,30 +68,69 @@ class MacroGoalCategoriesNotifier extends AsyncNotifier<List<GoalCategory>> {
     }
   }
 
-  Future<void> deleteCategory(String id) async {
+  Future<bool> updateCategory(String id, String name, String colorHex) async {
+    final authState = ref.read(authProvider);
+    if (!authState.isLoggedIn || authState.user == null) return false;
+
     final supabase = Supabase.instance.client;
-    
+
     try {
-      await supabase.from('macro_goal_categories').delete().eq('id', id);
-      
+      await supabase
+          .from('macro_goal_categories')
+          .update({'name': name, 'color': colorHex})
+          .eq('id', id)
+          .eq('user_id', authState.user!.id);
+
+      ref.invalidateSelf();
+      return true;
+    } catch (e, stack) {
+      AppLogger.error('[Categories] Update error', e, stack);
+      final context = navigatorKey.currentContext;
+      if (context != null && context.mounted) {
+        ErrorModal.show(
+          context,
+          title: 'Errore durante la modifica della categoria',
+          message: 'Non siamo riusciti ad aggiornare la categoria. Riprova.',
+          details: e.toString(),
+        );
+      }
+      return false;
+    }
+  }
+
+  Future<bool> deleteCategory(String id) async {
+    final authState = ref.read(authProvider);
+    if (!authState.isLoggedIn || authState.user == null) return false;
+
+    final supabase = Supabase.instance.client;
+
+    try {
+      await supabase
+          .from('macro_goal_categories')
+          .update({'archived_at': DateTime.now().toUtc().toIso8601String()})
+          .eq('id', id)
+          .eq('user_id', authState.user!.id);
+
       // Invalidate to refetch
       ref.invalidateSelf();
+      return true;
     } catch (e, stack) {
       AppLogger.error('[Categories] Delete error', e, stack);
       final context = navigatorKey.currentContext;
       if (context != null && context.mounted) {
         ErrorModal.show(
           context,
-          title: 'Errore durante l\'eliminazione della categoria',
-          message: 'Non siamo riusciti a eliminare la categoria. Riprova.',
+          title: 'Errore durante l\'archiviazione della categoria',
+          message: 'Non siamo riusciti ad archiviare la categoria. Riprova.',
           details: e.toString(),
         );
       }
+      return false;
     }
   }
 }
 
 final macroGoalCategoriesProvider =
     AsyncNotifierProvider<MacroGoalCategoriesNotifier, List<GoalCategory>>(
-  MacroGoalCategoriesNotifier.new,
-);
+      MacroGoalCategoriesNotifier.new,
+    );

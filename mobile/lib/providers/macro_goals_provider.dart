@@ -26,12 +26,11 @@ class MacroGoalsState {
     List<MacroGoal>? goals,
     bool? isLoading,
     String? error,
-  }) =>
-      MacroGoalsState(
-        goals: goals ?? this.goals,
-        isLoading: isLoading ?? this.isLoading,
-        error: error,
-      );
+  }) => MacroGoalsState(
+    goals: goals ?? this.goals,
+    isLoading: isLoading ?? this.isLoading,
+    error: error,
+  );
 }
 
 // ─── Notifier ─────────────────────────────────────────────────────────────────
@@ -100,7 +99,9 @@ class MacroGoalsNotifier extends Notifier<MacroGoalsState> {
           .eq('user_id', user.id)
           .order('created_at', ascending: true);
 
-      final goals = (response as List).map((j) => MacroGoal.fromJson(j)).toList();
+      final goals = (response as List)
+          .map((j) => MacroGoal.fromJson(j))
+          .toList();
 
       state = state.copyWith(goals: goals);
       _saveToCache(goals);
@@ -127,11 +128,17 @@ class MacroGoalsNotifier extends Notifier<MacroGoalsState> {
       payload['user_id'] = user.id; // forza l'id utente
       payload.remove('id'); // Lasciamo generare l'UUID a Supabase se vuoto
 
-      final result = await supabase.from('long_term_goals').insert(payload).select().single();
+      final result = await supabase
+          .from('long_term_goals')
+          .insert(payload)
+          .select()
+          .single();
 
       // 3. Sostituisci l'ID locale (che potrebbe essere fittizio) con quello reale
       final realGoal = MacroGoal.fromJson(result);
-      final updatedGoals = state.goals.map((g) => g.id == goal.id ? realGoal : g).toList();
+      final updatedGoals = state.goals
+          .map((g) => g.id == goal.id ? realGoal : g)
+          .toList();
       state = state.copyWith(goals: updatedGoals);
       _saveToCache(updatedGoals);
     } catch (e, stack) {
@@ -149,12 +156,17 @@ class MacroGoalsNotifier extends Notifier<MacroGoalsState> {
   }
 
   Future<void> updateStatus(String id, GoalStatus status) async {
-    final newGoals = state.goals.map((g) => g.id == id ? g.copyWith(status: status) : g).toList();
+    final newGoals = state.goals
+        .map((g) => g.id == id ? g.copyWith(status: status) : g)
+        .toList();
     state = state.copyWith(goals: newGoals);
     _saveToCache(newGoals);
 
     try {
-      await supabase.from('long_term_goals').update({'status': status.name}).eq('id', id);
+      await supabase
+          .from('long_term_goals')
+          .update({'status': status.name})
+          .eq('id', id);
     } catch (e, stack) {
       AppLogger.error('[MacroGoals] Update status error', e, stack);
       final context = navigatorKey.currentContext;
@@ -162,7 +174,8 @@ class MacroGoalsNotifier extends Notifier<MacroGoalsState> {
         ErrorModal.show(
           context,
           title: 'Errore durante l\'aggiornamento',
-          message: 'Non siamo riusciti a salvare lo stato dell\'obiettivo. Riprova.',
+          message:
+              'Non siamo riusciti a salvare lo stato dell\'obiettivo. Riprova.',
           details: e.toString(),
         );
       }
@@ -170,12 +183,17 @@ class MacroGoalsNotifier extends Notifier<MacroGoalsState> {
   }
 
   Future<void> updateTitle(String id, String title) async {
-    final newGoals = state.goals.map((g) => g.id == id ? g.copyWith(title: title) : g).toList();
+    final newGoals = state.goals
+        .map((g) => g.id == id ? g.copyWith(title: title) : g)
+        .toList();
     state = state.copyWith(goals: newGoals);
     _saveToCache(newGoals);
 
     try {
-      await supabase.from('long_term_goals').update({'title': title}).eq('id', id);
+      await supabase
+          .from('long_term_goals')
+          .update({'title': title})
+          .eq('id', id);
     } catch (e, stack) {
       AppLogger.error('[MacroGoals] Update title error', e, stack);
       final context = navigatorKey.currentContext;
@@ -183,7 +201,8 @@ class MacroGoalsNotifier extends Notifier<MacroGoalsState> {
         ErrorModal.show(
           context,
           title: 'Errore durante l\'aggiornamento',
-          message: 'Non siamo riusciti a salvare il titolo dell\'obiettivo. Riprova.',
+          message:
+              'Non siamo riusciti a salvare il titolo dell\'obiettivo. Riprova.',
           details: e.toString(),
         );
       }
@@ -193,13 +212,18 @@ class MacroGoalsNotifier extends Notifier<MacroGoalsState> {
   Future<void> updateCategory(String id, String? categoryId) async {
     final newGoals = state.goals.map((g) {
       if (g.id != id) return g;
-      return categoryId == null ? g.copyWith(clearCategory: true) : g.copyWith(categoryId: categoryId);
+      return categoryId == null
+          ? g.copyWith(clearCategory: true)
+          : g.copyWith(categoryId: categoryId);
     }).toList();
     state = state.copyWith(goals: newGoals);
     _saveToCache(newGoals);
 
     try {
-      await supabase.from('long_term_goals').update({'category_id': categoryId}).eq('id', id);
+      await supabase
+          .from('long_term_goals')
+          .update({'category_id': categoryId})
+          .eq('id', id);
     } catch (e, stack) {
       AppLogger.error('[MacroGoals] Update category error', e, stack);
       final context = navigatorKey.currentContext;
@@ -207,7 +231,8 @@ class MacroGoalsNotifier extends Notifier<MacroGoalsState> {
         ErrorModal.show(
           context,
           title: 'Errore durante l\'aggiornamento',
-          message: 'Non siamo riusciti a salvare la categoria dell\'obiettivo. Riprova.',
+          message:
+              'Non siamo riusciti a salvare la categoria dell\'obiettivo. Riprova.',
           details: e.toString(),
         );
       }
@@ -325,16 +350,18 @@ class MacroGoalsNotifier extends Notifier<MacroGoalsState> {
         return false;
       }
       return true;
-    }).toList()
-      ..sort(_sortGoals);
+    }).toList()..sort(_sortGoals);
   }
 
   int _sortGoals(MacroGoal a, MacroGoal b) {
     int statusOrder(GoalStatus s) {
       switch (s) {
-        case GoalStatus.active: return 0;
-        case GoalStatus.completed: return 1;
-        case GoalStatus.failed: return 2;
+        case GoalStatus.active:
+          return 0;
+        case GoalStatus.completed:
+          return 1;
+        case GoalStatus.failed:
+          return 2;
       }
     }
 
@@ -351,7 +378,9 @@ class MacroGoalsNotifier extends Notifier<MacroGoalsState> {
 }
 
 final macroGoalsProvider =
-    NotifierProvider<MacroGoalsNotifier, MacroGoalsState>(MacroGoalsNotifier.new);
+    NotifierProvider<MacroGoalsNotifier, MacroGoalsState>(
+      MacroGoalsNotifier.new,
+    );
 
 // ─── View state provider ──────────────────────────────────────────────────────
 
@@ -376,14 +405,13 @@ class MacroGoalsViewState {
     int? selectedQuarter,
     int? selectedMonth,
     int? selectedWeek,
-  }) =>
-      MacroGoalsViewState(
-        selectedType: selectedType ?? this.selectedType,
-        selectedYear: selectedYear ?? this.selectedYear,
-        selectedQuarter: selectedQuarter ?? this.selectedQuarter,
-        selectedMonth: selectedMonth ?? this.selectedMonth,
-        selectedWeek: selectedWeek ?? this.selectedWeek,
-      );
+  }) => MacroGoalsViewState(
+    selectedType: selectedType ?? this.selectedType,
+    selectedYear: selectedYear ?? this.selectedYear,
+    selectedQuarter: selectedQuarter ?? this.selectedQuarter,
+    selectedMonth: selectedMonth ?? this.selectedMonth,
+    selectedWeek: selectedWeek ?? this.selectedWeek,
+  );
 }
 
 class MacroGoalsViewNotifier extends Notifier<MacroGoalsViewState> {
@@ -408,7 +436,8 @@ class MacroGoalsViewNotifier extends Notifier<MacroGoalsViewState> {
   }
 
   void setQuarter(int q) => state = state.copyWith(selectedQuarter: q);
-  void setMonth(int m) => state = state.copyWith(selectedMonth: m, selectedWeek: 1);
+  void setMonth(int m) =>
+      state = state.copyWith(selectedMonth: m, selectedWeek: 1);
   void setWeek(int w) {
     state = state.copyWith(
       selectedWeek: _clampWeek(state.selectedYear, state.selectedMonth, w),
@@ -456,7 +485,11 @@ class MacroGoalsViewNotifier extends Notifier<MacroGoalsViewState> {
           if (m < 12) {
             state = s.copyWith(selectedMonth: m + 1, selectedWeek: 1);
           } else {
-            state = s.copyWith(selectedYear: y + 1, selectedMonth: 1, selectedWeek: 1);
+            state = s.copyWith(
+              selectedYear: y + 1,
+              selectedMonth: 1,
+              selectedWeek: 1,
+            );
           }
         }
         break;
@@ -500,7 +533,11 @@ class MacroGoalsViewNotifier extends Notifier<MacroGoalsViewState> {
             state = s.copyWith(selectedMonth: prevMonth, selectedWeek: maxW);
           } else {
             final maxW = weeksInMonth(y - 1, 12);
-            state = s.copyWith(selectedYear: y - 1, selectedMonth: 12, selectedWeek: maxW);
+            state = s.copyWith(
+              selectedYear: y - 1,
+              selectedMonth: 12,
+              selectedWeek: maxW,
+            );
           }
         }
         break;
@@ -510,7 +547,8 @@ class MacroGoalsViewNotifier extends Notifier<MacroGoalsViewState> {
 
 final macroGoalsViewProvider =
     NotifierProvider<MacroGoalsViewNotifier, MacroGoalsViewState>(
-        MacroGoalsViewNotifier.new);
+      MacroGoalsViewNotifier.new,
+    );
 
 // ─── Helpers ─────────────────────────────────────────────────────────────────
 

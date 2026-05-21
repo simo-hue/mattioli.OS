@@ -105,19 +105,25 @@ class GoalCategory {
   final String key;
   final String label;
   final Color color;
+  final DateTime? archivedAt;
 
   const GoalCategory({
     required this.key,
     required this.label,
     required this.color,
+    this.archivedAt,
   });
+
+  bool get isArchived => archivedAt != null;
 
   factory GoalCategory.fromJson(Map<String, dynamic> json) {
     final colorStr = json['color'] as String? ?? '#6B7280';
+    final archivedAtStr = json['archived_at'] as String?;
     return GoalCategory(
       key: json['id'] as String,
       label: json['name'] as String,
       color: Color(int.parse(colorStr.replaceAll('#', '0xFF'))),
+      archivedAt: archivedAtStr == null ? null : DateTime.parse(archivedAtStr),
     );
   }
 }
@@ -128,9 +134,17 @@ const List<GoalCategory> kDefaultCategories = [
   GoalCategory(key: 'salute', label: 'Salute', color: Color(0xFF10B981)),
   GoalCategory(key: 'finanza', label: 'Finanza', color: Color(0xFFF59E0B)),
   GoalCategory(key: 'relazioni', label: 'Relazioni', color: Color(0xFFEC4899)),
-  GoalCategory(key: 'formazione', label: 'Formazione', color: Color(0xFF7C3AED)),
+  GoalCategory(
+    key: 'formazione',
+    label: 'Formazione',
+    color: Color(0xFF7C3AED),
+  ),
   GoalCategory(key: 'hobby', label: 'Hobby', color: Color(0xFF06B6D4)),
-  GoalCategory(key: 'spirituale', label: 'Spirituale', color: Color(0xFFF97316)),
+  GoalCategory(
+    key: 'spirituale',
+    label: 'Spirituale',
+    color: Color(0xFFF97316),
+  ),
   GoalCategory(key: 'altro', label: 'Altro', color: Color(0xFF6B7280)),
 ];
 

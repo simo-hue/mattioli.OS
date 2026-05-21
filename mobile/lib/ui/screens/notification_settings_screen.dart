@@ -8,22 +8,24 @@ import '../../providers/settings_provider.dart';
 import '../../core/haptics.dart';
 import '../../core/localization.dart';
 import '../../core/notifications.dart';
+import '../../core/time_formatting.dart';
 
 class NotificationSettingsScreen extends ConsumerWidget {
   const NotificationSettingsScreen({super.key});
 
   static Route route() {
     return PageRouteBuilder(
-      pageBuilder: (context, animation, secondaryAnimation) => const NotificationSettingsScreen(),
+      pageBuilder: (context, animation, secondaryAnimation) =>
+          const NotificationSettingsScreen(),
       transitionsBuilder: (context, animation, secondaryAnimation, child) {
         const begin = Offset(1.0, 0.0);
         const end = Offset.zero;
         const curve = Curves.easeOutCubic;
-        var tween = Tween(begin: begin, end: end).chain(CurveTween(curve: curve));
-        return SlideTransition(
-          position: animation.drive(tween),
-          child: child,
-        );
+        var tween = Tween(
+          begin: begin,
+          end: end,
+        ).chain(CurveTween(curve: curve));
+        return SlideTransition(position: animation.drive(tween), child: child);
       },
       transitionDuration: const Duration(milliseconds: 400),
     );
@@ -40,7 +42,10 @@ class NotificationSettingsScreen extends ConsumerWidget {
         backgroundColor: context.appColors.background,
         elevation: 0,
         leading: IconButton(
-          icon: Icon(LucideIcons.chevronLeft, color: context.appColors.foreground),
+          icon: Icon(
+            LucideIcons.chevronLeft,
+            color: context.appColors.foreground,
+          ),
           onPressed: () => Navigator.pop(context),
         ),
         title: Text(
@@ -59,7 +64,10 @@ class NotificationSettingsScreen extends ConsumerWidget {
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            _buildSectionHeader(context, context.l10n.operationalRemindersHeader),
+            _buildSectionHeader(
+              context,
+              context.l10n.operationalRemindersHeader,
+            ),
             _buildSettingsCard(context, [
               _buildSwitchRow(
                 context: context,
@@ -71,7 +79,9 @@ class NotificationSettingsScreen extends ConsumerWidget {
                 onChanged: (val) {
                   if (val) NotificationService().requestPermissions();
                   final currentSettings = ref.read(settingsProvider);
-                  notifier.updateSettings(currentSettings.copyWith(habitReminders: val));
+                  notifier.updateSettings(
+                    currentSettings.copyWith(habitReminders: val),
+                  );
                   ref.hapticLight();
                 },
               ),
@@ -79,13 +89,20 @@ class NotificationSettingsScreen extends ConsumerWidget {
                 _buildTimePickerRow(
                   context: context,
                   title: context.l10n.translate('Orario Morning Brief'),
-                  time: settings.morningBriefTime,
+                  time: AppTimeFormatting.formatStoredTime(
+                    settings.morningBriefTime,
+                    use24hFormat: settings.timeFormat24h,
+                  ),
                   onTap: () {
                     _showAppleStyleTimePicker(
                       context: context,
                       initialTime: settings.morningBriefTime,
+                      use24hFormat: settings.timeFormat24h,
                       onTimeSelected: (timeStr) {
-                        notifier.updateSettings(settings.copyWith(morningBriefTime: timeStr));
+                        final currentSettings = ref.read(settingsProvider);
+                        notifier.updateSettings(
+                          currentSettings.copyWith(morningBriefTime: timeStr),
+                        );
                         ref.hapticLight();
                       },
                     );
@@ -102,7 +119,9 @@ class NotificationSettingsScreen extends ConsumerWidget {
                 onChanged: (val) {
                   if (val) NotificationService().requestPermissions();
                   final currentSettings = ref.read(settingsProvider);
-                  notifier.updateSettings(currentSettings.copyWith(eveningReview: val));
+                  notifier.updateSettings(
+                    currentSettings.copyWith(eveningReview: val),
+                  );
                   ref.hapticLight();
                 },
               ),
@@ -110,13 +129,20 @@ class NotificationSettingsScreen extends ConsumerWidget {
                 _buildTimePickerRow(
                   context: context,
                   title: context.l10n.translate('Orario Review Serale'),
-                  time: settings.eveningReviewTime,
+                  time: AppTimeFormatting.formatStoredTime(
+                    settings.eveningReviewTime,
+                    use24hFormat: settings.timeFormat24h,
+                  ),
                   onTap: () {
                     _showAppleStyleTimePicker(
                       context: context,
                       initialTime: settings.eveningReviewTime,
+                      use24hFormat: settings.timeFormat24h,
                       onTimeSelected: (timeStr) {
-                        notifier.updateSettings(settings.copyWith(eveningReviewTime: timeStr));
+                        final currentSettings = ref.read(settingsProvider);
+                        notifier.updateSettings(
+                          currentSettings.copyWith(eveningReviewTime: timeStr),
+                        );
                         ref.hapticLight();
                       },
                     );
@@ -223,7 +249,7 @@ class NotificationSettingsScreen extends ConsumerWidget {
   }) {
     final primaryColor = Theme.of(context).colorScheme.primary;
     final isDisabled = isLocked;
-    
+
     return Padding(
       padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
       child: Row(
@@ -236,7 +262,13 @@ class NotificationSettingsScreen extends ConsumerWidget {
               borderRadius: BorderRadius.circular(10),
               border: Border.all(color: context.appColors.border),
             ),
-            child: Icon(icon, size: 18, color: isDisabled ? context.appColors.mutedForeground : primaryColor),
+            child: Icon(
+              icon,
+              size: 18,
+              color: isDisabled
+                  ? context.appColors.mutedForeground
+                  : primaryColor,
+            ),
           ),
           const SizedBox(width: 16),
           Expanded(
@@ -249,7 +281,9 @@ class NotificationSettingsScreen extends ConsumerWidget {
                       child: Text(
                         title,
                         style: GoogleFonts.inter(
-                          color: isDisabled ? context.appColors.mutedForeground : context.appColors.foreground,
+                          color: isDisabled
+                              ? context.appColors.mutedForeground
+                              : context.appColors.foreground,
                           fontSize: 15,
                           fontWeight: FontWeight.w600,
                         ),
@@ -259,17 +293,22 @@ class NotificationSettingsScreen extends ConsumerWidget {
                     if (isLocked) ...[
                       const SizedBox(width: 8),
                       Container(
-                        padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
+                        padding: const EdgeInsets.symmetric(
+                          horizontal: 6,
+                          vertical: 2,
+                        ),
                         decoration: BoxDecoration(
                           color: Colors.amber.withValues(alpha: 0.2),
                           borderRadius: BorderRadius.circular(4),
-                          border: Border.all(color: Colors.amber.withValues(alpha: 0.4)),
+                          border: Border.all(
+                            color: Colors.amber.withValues(alpha: 0.4),
+                          ),
                         ),
                         child: Text(
                           'PRO',
                           style: GoogleFonts.inter(
-                            color: Colors.amber, 
-                            fontSize: 9, 
+                            color: Colors.amber,
+                            fontSize: 9,
                             fontWeight: FontWeight.w900,
                           ),
                         ),
@@ -294,7 +333,8 @@ class NotificationSettingsScreen extends ConsumerWidget {
             scale: 0.8,
             child: Switch(
               value: value,
-              onChanged: (val) => onChanged(val), // Always interactive to allow modal trigger
+              onChanged: (val) =>
+                  onChanged(val), // Always interactive to allow modal trigger
               activeTrackColor: primaryColor.withValues(alpha: 0.5),
               activeThumbColor: primaryColor,
               inactiveThumbColor: context.appColors.mutedForeground,
@@ -309,14 +349,11 @@ class NotificationSettingsScreen extends ConsumerWidget {
   void _showAppleStyleTimePicker({
     required BuildContext context,
     required String initialTime,
+    required bool use24hFormat,
     required Function(String) onTimeSelected,
   }) {
-    final parts = initialTime.split(':');
-    final initialHour = int.parse(parts[0]);
-    final initialMinute = int.parse(parts[1]);
-    final now = DateTime.now();
-    final initialDateTime = DateTime(now.year, now.month, now.day, initialHour, initialMinute);
-    
+    final initialDateTime = AppTimeFormatting.dateTimeForToday(initialTime);
+
     String selectedTime = initialTime;
 
     showCupertinoModalPopup(
@@ -327,14 +364,19 @@ class NotificationSettingsScreen extends ConsumerWidget {
           decoration: BoxDecoration(
             color: context.appColors.card,
             borderRadius: const BorderRadius.vertical(top: Radius.circular(24)),
-            border: Border.all(color: context.appColors.border.withValues(alpha: 0.5)),
+            border: Border.all(
+              color: context.appColors.border.withValues(alpha: 0.5),
+            ),
           ),
           child: SafeArea(
             top: false,
             child: Column(
               children: [
                 Padding(
-                  padding: const EdgeInsets.symmetric(horizontal: 20.0, vertical: 12.0),
+                  padding: const EdgeInsets.symmetric(
+                    horizontal: 20.0,
+                    vertical: 12.0,
+                  ),
                   child: Row(
                     mainAxisAlignment: MainAxisAlignment.spaceBetween,
                     children: [
@@ -388,10 +430,12 @@ class NotificationSettingsScreen extends ConsumerWidget {
                     ),
                     child: CupertinoDatePicker(
                       mode: CupertinoDatePickerMode.time,
-                      use24hFormat: true,
+                      use24hFormat: use24hFormat,
                       initialDateTime: initialDateTime,
                       onDateTimeChanged: (DateTime newDateTime) {
-                        selectedTime = '${newDateTime.hour.toString().padLeft(2, '0')}:${newDateTime.minute.toString().padLeft(2, '0')}';
+                        selectedTime = AppTimeFormatting.serializeDateTime(
+                          newDateTime,
+                        );
                       },
                     ),
                   ),

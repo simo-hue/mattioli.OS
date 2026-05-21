@@ -8,6 +8,7 @@ import 'package:flutter_colorpicker/flutter_colorpicker.dart';
 import '../../core/theme.dart';
 import '../../core/haptics.dart';
 import '../../core/localization.dart';
+import '../../core/time_formatting.dart';
 import '../../models/goal.dart';
 import '../../providers/goal_provider.dart';
 import '../../providers/settings_provider.dart';
@@ -26,7 +27,8 @@ class HabitManagementModal extends ConsumerStatefulWidget {
   }
 
   @override
-  ConsumerState<HabitManagementModal> createState() => _HabitManagementModalState();
+  ConsumerState<HabitManagementModal> createState() =>
+      _HabitManagementModalState();
 }
 
 class _HabitManagementModalState extends ConsumerState<HabitManagementModal> {
@@ -68,7 +70,6 @@ class _HabitManagementModalState extends ConsumerState<HabitManagementModal> {
     const Color(0xFF10B981),
   ];
 
-
   void _onSave() {
     if (_nameController.text.trim().isEmpty) return;
 
@@ -89,7 +90,10 @@ class _HabitManagementModalState extends ConsumerState<HabitManagementModal> {
         FocusScope.of(context).unfocus();
         ref.hapticHeavy();
         Navigator.pop(context); // Close the habit management sheet
-        Navigator.push(context, SubscriptionScreen.route()); // Redirect to payment!
+        Navigator.push(
+          context,
+          SubscriptionScreen.route(),
+        ); // Redirect to payment!
         return;
       }
 
@@ -99,7 +103,11 @@ class _HabitManagementModalState extends ConsumerState<HabitManagementModal> {
         description: '',
         icon: 'circle',
         color: _selectedColor,
-        startDate: DateTime(DateTime.now().year, DateTime.now().month, DateTime.now().day),
+        startDate: DateTime(
+          DateTime.now().year,
+          DateTime.now().month,
+          DateTime.now().day,
+        ),
         reminderTime: _reminderTime,
       );
       ref.read(goalsProvider.notifier).addHabit(newHabit);
@@ -142,11 +150,21 @@ class _HabitManagementModalState extends ConsumerState<HabitManagementModal> {
                 mainAxisAlignment: MainAxisAlignment.spaceBetween,
                 children: [
                   CupertinoButton(
-                    child: Text(context.l10n.translate('Annulla'), style: TextStyle(color: context.appColors.mutedForeground)),
+                    child: Text(
+                      context.l10n.translate('Annulla'),
+                      style: TextStyle(
+                        color: context.appColors.mutedForeground,
+                      ),
+                    ),
                     onPressed: () => Navigator.pop(context),
                   ),
                   CupertinoButton(
-                    child: Text(context.l10n.translate('Conferma'), style: TextStyle(color: Theme.of(context).colorScheme.primary)),
+                    child: Text(
+                      context.l10n.translate('Conferma'),
+                      style: TextStyle(
+                        color: Theme.of(context).colorScheme.primary,
+                      ),
+                    ),
                     onPressed: () => Navigator.pop(context),
                   ),
                 ],
@@ -159,7 +177,8 @@ class _HabitManagementModalState extends ConsumerState<HabitManagementModal> {
                   color: Colors.transparent,
                   child: ColorPicker(
                     pickerColor: _selectedColor,
-                    onColorChanged: (color) => setState(() => _selectedColor = color),
+                    onColorChanged: (color) =>
+                        setState(() => _selectedColor = color),
                     pickerAreaHeightPercent: 0.7,
                     enableAlpha: false,
                     displayThumbColor: true,
@@ -180,12 +199,17 @@ class _HabitManagementModalState extends ConsumerState<HabitManagementModal> {
 
     TimeOfDay initialTime = const TimeOfDay(hour: 9, minute: 0);
     if (_reminderTime != null) {
-      final parts = _reminderTime!.split(':');
-      initialTime = TimeOfDay(hour: int.parse(parts[0]), minute: int.parse(parts[1]));
+      initialTime = AppTimeFormatting.parseTimeOfDay(_reminderTime!);
     }
 
     final now = DateTime.now();
-    DateTime initialDateTime = DateTime(now.year, now.month, now.day, initialTime.hour, initialTime.minute);
+    DateTime initialDateTime = DateTime(
+      now.year,
+      now.month,
+      now.day,
+      initialTime.hour,
+      initialTime.minute,
+    );
 
     showCupertinoModalPopup(
       context: context,
@@ -200,13 +224,25 @@ class _HabitManagementModalState extends ConsumerState<HabitManagementModal> {
                 mainAxisAlignment: MainAxisAlignment.spaceBetween,
                 children: [
                   CupertinoButton(
-                    child: Text(context.l10n.translate('Annulla'), style: TextStyle(color: context.appColors.mutedForeground)),
+                    child: Text(
+                      context.l10n.translate('Annulla'),
+                      style: TextStyle(
+                        color: context.appColors.mutedForeground,
+                      ),
+                    ),
                     onPressed: () => Navigator.pop(context),
                   ),
                   CupertinoButton(
-                    child: Text(context.l10n.translate('Conferma'), style: TextStyle(color: Theme.of(context).colorScheme.primary)),
+                    child: Text(
+                      context.l10n.translate('Conferma'),
+                      style: TextStyle(
+                        color: Theme.of(context).colorScheme.primary,
+                      ),
+                    ),
                     onPressed: () {
-                      final timeStr = '${initialDateTime.hour.toString().padLeft(2, '0')}:${initialDateTime.minute.toString().padLeft(2, '0')}';
+                      final timeStr = AppTimeFormatting.serializeDateTime(
+                        initialDateTime,
+                      );
                       setState(() => _reminderTime = timeStr);
                       Navigator.pop(context);
                     },
@@ -256,7 +292,11 @@ class _HabitManagementModalState extends ConsumerState<HabitManagementModal> {
                       color: AppColors.destructive.withValues(alpha: 0.1),
                       shape: BoxShape.circle,
                     ),
-                    child: const Icon(LucideIcons.trash2, color: AppColors.destructive, size: 24),
+                    child: const Icon(
+                      LucideIcons.trash2,
+                      color: AppColors.destructive,
+                      size: 24,
+                    ),
                   ),
                   const SizedBox(height: 16),
                   Text(
@@ -284,7 +324,12 @@ class _HabitManagementModalState extends ConsumerState<HabitManagementModal> {
                       Expanded(
                         child: CupertinoButton(
                           padding: EdgeInsets.zero,
-                          child: Text(context.l10n.translate('Annulla'), style: TextStyle(color: context.appColors.mutedForeground)),
+                          child: Text(
+                            context.l10n.translate('Annulla'),
+                            style: TextStyle(
+                              color: context.appColors.mutedForeground,
+                            ),
+                          ),
                           onPressed: () => Navigator.pop(context),
                         ),
                       ),
@@ -292,14 +337,18 @@ class _HabitManagementModalState extends ConsumerState<HabitManagementModal> {
                       Expanded(
                         child: ElevatedButton(
                           onPressed: () {
-                            ref.read(goalsProvider.notifier).deleteHabit(habit.id);
+                            ref
+                                .read(goalsProvider.notifier)
+                                .deleteHabit(habit.id);
                             HapticFeedback.mediumImpact();
                             Navigator.pop(context);
                           },
                           style: ElevatedButton.styleFrom(
                             backgroundColor: AppColors.destructive,
                             foregroundColor: Colors.white,
-                            shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+                            shape: RoundedRectangleBorder(
+                              borderRadius: BorderRadius.circular(12),
+                            ),
                             elevation: 0,
                           ),
                           child: Text(
@@ -358,7 +407,11 @@ class _HabitManagementModalState extends ConsumerState<HabitManagementModal> {
                     ),
                     IconButton(
                       onPressed: () => Navigator.pop(context),
-                      icon: Icon(LucideIcons.x, color: context.appColors.mutedForeground, size: 20),
+                      icon: Icon(
+                        LucideIcons.x,
+                        color: context.appColors.mutedForeground,
+                        size: 20,
+                      ),
                     ),
                   ],
                 ),
@@ -372,14 +425,17 @@ class _HabitManagementModalState extends ConsumerState<HabitManagementModal> {
                   ),
                 ),
                 const SizedBox(height: 24),
-      
+
                 // Add/Edit Section
                 Container(
                   padding: const EdgeInsets.all(16),
                   decoration: BoxDecoration(
                     color: context.appColors.card.withValues(alpha: 0.5),
                     borderRadius: BorderRadius.circular(16),
-                    border: Border.all(color: context.appColors.border, width: 1),
+                    border: Border.all(
+                      color: context.appColors.border,
+                      width: 1,
+                    ),
                   ),
                   child: Column(
                     crossAxisAlignment: CrossAxisAlignment.start,
@@ -390,16 +446,22 @@ class _HabitManagementModalState extends ConsumerState<HabitManagementModal> {
                             width: 28,
                             height: 28,
                             decoration: BoxDecoration(
-                              color: context.appColors.border.withValues(alpha: 0.3),
+                              color: context.appColors.border.withValues(
+                                alpha: 0.3,
+                              ),
                               shape: BoxShape.circle,
                             ),
-                            child: Icon(LucideIcons.plus, size: 14, color: context.appColors.foreground),
+                            child: Icon(
+                              LucideIcons.plus,
+                              size: 14,
+                              color: context.appColors.foreground,
+                            ),
                           ),
                           const SizedBox(width: 10),
                           Text(
-                            _editingHabit != null 
-                              ? context.l10n.translate('Modifica Abitudine') 
-                              : context.l10n.translate('Aggiungi Abitudine'),
+                            _editingHabit != null
+                                ? context.l10n.translate('Modifica Abitudine')
+                                : context.l10n.translate('Aggiungi Abitudine'),
                             style: TextStyle(
                               fontWeight: FontWeight.w600,
                               fontSize: 15,
@@ -411,32 +473,60 @@ class _HabitManagementModalState extends ConsumerState<HabitManagementModal> {
                       const SizedBox(height: 16),
                       Text(
                         context.l10n.translate('Nome Abitudine').toUpperCase(),
-                        style: TextStyle(fontSize: 10, fontWeight: FontWeight.w600, color: context.appColors.mutedForeground, letterSpacing: 0.5),
+                        style: TextStyle(
+                          fontSize: 10,
+                          fontWeight: FontWeight.w600,
+                          color: context.appColors.mutedForeground,
+                          letterSpacing: 0.5,
+                        ),
                       ),
                       const SizedBox(height: 8),
                       TextField(
                         controller: _nameController,
-                        style: TextStyle(color: context.appColors.foreground, fontSize: 15),
+                        style: TextStyle(
+                          color: context.appColors.foreground,
+                          fontSize: 15,
+                        ),
                         decoration: InputDecoration(
-                          hintText: context.l10n.translate('Es. Bere acqua, Leggere...'),
-                          hintStyle: TextStyle(color: context.appColors.mutedForeground.withValues(alpha: 0.5)),
+                          hintText: context.l10n.translate(
+                            'Es. Bere acqua, Leggere...',
+                          ),
+                          hintStyle: TextStyle(
+                            color: context.appColors.mutedForeground.withValues(
+                              alpha: 0.5,
+                            ),
+                          ),
                           filled: true,
-                          fillColor: context.appColors.background.withValues(alpha: 0.5),
-                          contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+                          fillColor: context.appColors.background.withValues(
+                            alpha: 0.5,
+                          ),
+                          contentPadding: const EdgeInsets.symmetric(
+                            horizontal: 16,
+                            vertical: 12,
+                          ),
                           enabledBorder: OutlineInputBorder(
                             borderRadius: BorderRadius.circular(12),
-                            borderSide: BorderSide(color: context.appColors.border),
+                            borderSide: BorderSide(
+                              color: context.appColors.border,
+                            ),
                           ),
                           focusedBorder: OutlineInputBorder(
                             borderRadius: BorderRadius.circular(12),
-                            borderSide: BorderSide(color: Theme.of(context).colorScheme.primary),
+                            borderSide: BorderSide(
+                              color: Theme.of(context).colorScheme.primary,
+                            ),
                           ),
                         ),
                       ),
                       const SizedBox(height: 16),
                       Text(
                         context.l10n.translate('Colore').toUpperCase(),
-                        style: TextStyle(fontSize: 10, fontWeight: FontWeight.w600, color: context.appColors.mutedForeground, letterSpacing: 0.5),
+                        style: TextStyle(
+                          fontSize: 10,
+                          fontWeight: FontWeight.w600,
+                          color: context.appColors.mutedForeground,
+                          letterSpacing: 0.5,
+                        ),
                       ),
                       const SizedBox(height: 10),
                       Wrap(
@@ -446,7 +536,8 @@ class _HabitManagementModalState extends ConsumerState<HabitManagementModal> {
                           ..._presetColors.map((color) {
                             final isSelected = _selectedColor == color;
                             return GestureDetector(
-                              onTap: () => setState(() => _selectedColor = color),
+                              onTap: () =>
+                                  setState(() => _selectedColor = color),
                               child: Container(
                                 width: 28,
                                 height: 28,
@@ -454,14 +545,24 @@ class _HabitManagementModalState extends ConsumerState<HabitManagementModal> {
                                   color: color,
                                   shape: BoxShape.circle,
                                   border: Border.all(
-                                    color: isSelected 
-                                      ? (color.computeLuminance() > 0.7 ? Colors.black.withValues(alpha: 0.2) : Colors.white) 
-                                      : Colors.transparent,
+                                    color: isSelected
+                                        ? (color.computeLuminance() > 0.7
+                                              ? Colors.black.withValues(
+                                                  alpha: 0.2,
+                                                )
+                                              : Colors.white)
+                                        : Colors.transparent,
                                     width: 2,
                                   ),
-                                  boxShadow: isSelected ? [
-                                    BoxShadow(color: color.withValues(alpha: 0.5), blurRadius: 8, spreadRadius: 0)
-                                  ] : null,
+                                  boxShadow: isSelected
+                                      ? [
+                                          BoxShadow(
+                                            color: color.withValues(alpha: 0.5),
+                                            blurRadius: 8,
+                                            spreadRadius: 0,
+                                          ),
+                                        ]
+                                      : null,
                                 ),
                               ),
                             );
@@ -473,16 +574,26 @@ class _HabitManagementModalState extends ConsumerState<HabitManagementModal> {
                               width: 28,
                               height: 28,
                               decoration: BoxDecoration(
-                                color: context.appColors.border.withValues(alpha: 0.3),
+                                color: context.appColors.border.withValues(
+                                  alpha: 0.3,
+                                ),
                                 shape: BoxShape.circle,
                                 border: Border.all(
-                                  color: !_presetColors.contains(_selectedColor) 
-                                    ? (_selectedColor.computeLuminance() > 0.7 ? Colors.black.withValues(alpha: 0.2) : Colors.white) 
-                                    : Colors.transparent,
+                                  color: !_presetColors.contains(_selectedColor)
+                                      ? (_selectedColor.computeLuminance() > 0.7
+                                            ? Colors.black.withValues(
+                                                alpha: 0.2,
+                                              )
+                                            : Colors.white)
+                                      : Colors.transparent,
                                   width: 2,
                                 ),
                               ),
-                              child: Icon(LucideIcons.plus, size: 14, color: context.appColors.foreground),
+                              child: Icon(
+                                LucideIcons.plus,
+                                size: 14,
+                                color: context.appColors.foreground,
+                              ),
                             ),
                           ),
                         ],
@@ -490,15 +601,25 @@ class _HabitManagementModalState extends ConsumerState<HabitManagementModal> {
                       const SizedBox(height: 16),
                       Text(
                         context.l10n.translate('Promemoria').toUpperCase(),
-                        style: TextStyle(fontSize: 10, fontWeight: FontWeight.w600, color: context.appColors.mutedForeground, letterSpacing: 0.5),
+                        style: TextStyle(
+                          fontSize: 10,
+                          fontWeight: FontWeight.w600,
+                          color: context.appColors.mutedForeground,
+                          letterSpacing: 0.5,
+                        ),
                       ),
                       const SizedBox(height: 10),
                       InkWell(
                         onTap: _showCupertinoTimePicker,
                         child: Container(
-                          padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+                          padding: const EdgeInsets.symmetric(
+                            horizontal: 16,
+                            vertical: 12,
+                          ),
                           decoration: BoxDecoration(
-                            color: context.appColors.background.withValues(alpha: 0.5),
+                            color: context.appColors.background.withValues(
+                              alpha: 0.5,
+                            ),
                             borderRadius: BorderRadius.circular(12),
                             border: Border.all(color: context.appColors.border),
                           ),
@@ -506,21 +627,37 @@ class _HabitManagementModalState extends ConsumerState<HabitManagementModal> {
                             mainAxisAlignment: MainAxisAlignment.spaceBetween,
                             children: [
                               Text(
-                                _reminderTime ?? context.l10n.translate('Nessuno'),
+                                _reminderTime != null
+                                    ? AppTimeFormatting.formatStoredTime(
+                                        _reminderTime!,
+                                        use24hFormat: settings.timeFormat24h,
+                                      )
+                                    : context.l10n.translate('Nessuno'),
                                 style: TextStyle(
-                                  color: _reminderTime != null ? context.appColors.foreground : context.appColors.mutedForeground,
+                                  color: _reminderTime != null
+                                      ? context.appColors.foreground
+                                      : context.appColors.mutedForeground,
                                   fontSize: 15,
                                 ),
                               ),
                               if (_reminderTime != null)
                                 IconButton(
-                                  icon: Icon(LucideIcons.x, size: 16, color: context.appColors.mutedForeground),
-                                  onPressed: () => setState(() => _reminderTime = null),
+                                  icon: Icon(
+                                    LucideIcons.x,
+                                    size: 16,
+                                    color: context.appColors.mutedForeground,
+                                  ),
+                                  onPressed: () =>
+                                      setState(() => _reminderTime = null),
                                   constraints: const BoxConstraints(),
                                   padding: EdgeInsets.zero,
                                 )
                               else
-                                Icon(LucideIcons.bell, size: 16, color: context.appColors.mutedForeground),
+                                Icon(
+                                  LucideIcons.bell,
+                                  size: 16,
+                                  color: context.appColors.mutedForeground,
+                                ),
                             ],
                           ),
                         ),
@@ -537,13 +674,22 @@ class _HabitManagementModalState extends ConsumerState<HabitManagementModal> {
                                   _reminderTime = null;
                                 }),
                                 style: OutlinedButton.styleFrom(
-                                  padding: const EdgeInsets.symmetric(vertical: 14),
-                                  shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
-                                  side: BorderSide(color: context.appColors.border),
+                                  padding: const EdgeInsets.symmetric(
+                                    vertical: 14,
+                                  ),
+                                  shape: RoundedRectangleBorder(
+                                    borderRadius: BorderRadius.circular(12),
+                                  ),
+                                  side: BorderSide(
+                                    color: context.appColors.border,
+                                  ),
                                 ),
                                 child: Text(
                                   context.l10n.translate('Annulla'),
-                                  style: TextStyle(color: context.appColors.mutedForeground, fontWeight: FontWeight.w600),
+                                  style: TextStyle(
+                                    color: context.appColors.mutedForeground,
+                                    fontWeight: FontWeight.w600,
+                                  ),
                                 ),
                               ),
                             ),
@@ -552,17 +698,31 @@ class _HabitManagementModalState extends ConsumerState<HabitManagementModal> {
                               child: ElevatedButton(
                                 onPressed: _onSave,
                                 style: ElevatedButton.styleFrom(
-                                  backgroundColor: Theme.of(context).colorScheme.primary,
-                                  foregroundColor: _selectedColor.computeLuminance() > 0.5 ? Colors.black : Colors.white,
-                                  shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+                                  backgroundColor: Theme.of(
+                                    context,
+                                  ).colorScheme.primary,
+                                  foregroundColor:
+                                      _selectedColor.computeLuminance() > 0.5
+                                      ? Colors.black
+                                      : Colors.white,
+                                  shape: RoundedRectangleBorder(
+                                    borderRadius: BorderRadius.circular(12),
+                                  ),
                                   elevation: 0,
-                                  padding: const EdgeInsets.symmetric(vertical: 14),
+                                  padding: const EdgeInsets.symmetric(
+                                    vertical: 14,
+                                  ),
                                 ),
                                 child: Text(
                                   context.l10n.translate('Aggiorna'),
                                   style: TextStyle(
                                     fontWeight: FontWeight.w600,
-                                    color: Theme.of(context).colorScheme.primary.computeLuminance() > 0.5 ? Colors.black : Colors.white,
+                                    color:
+                                        Theme.of(context).colorScheme.primary
+                                                .computeLuminance() >
+                                            0.5
+                                        ? Colors.black
+                                        : Colors.white,
                                   ),
                                 ),
                               ),
@@ -575,13 +735,24 @@ class _HabitManagementModalState extends ConsumerState<HabitManagementModal> {
                             margin: const EdgeInsets.only(bottom: 16),
                             padding: const EdgeInsets.all(12),
                             decoration: BoxDecoration(
-                              color: const Color(0xFFEAB308).withValues(alpha: 0.1),
+                              color: const Color(
+                                0xFFEAB308,
+                              ).withValues(alpha: 0.1),
                               borderRadius: BorderRadius.circular(12),
-                              border: Border.all(color: const Color(0xFFEAB308).withValues(alpha: 0.3), width: 1),
+                              border: Border.all(
+                                color: const Color(
+                                  0xFFEAB308,
+                                ).withValues(alpha: 0.3),
+                                width: 1,
+                              ),
                             ),
                             child: Row(
                               children: [
-                                const Icon(LucideIcons.lock, color: Color(0xFFEAB308), size: 16),
+                                const Icon(
+                                  LucideIcons.lock,
+                                  color: Color(0xFFEAB308),
+                                  size: 16,
+                                ),
                                 const SizedBox(width: 10),
                                 Expanded(
                                   child: Text(
@@ -603,42 +774,65 @@ class _HabitManagementModalState extends ConsumerState<HabitManagementModal> {
                           width: double.infinity,
                           height: 48,
                           child: ElevatedButton(
-                          onPressed: () {
-                            if (!isPro && currentHabitsCount >= 5) {
-                              ref.hapticHeavy();
-                              Navigator.pop(context); // Close the habit management sheet
-                              Navigator.push(context, SubscriptionScreen.route()); // Redirect to payment!
-                            } else {
-                              _onSave();
-                            }
-                          },
+                            onPressed: () {
+                              if (!isPro && currentHabitsCount >= 5) {
+                                ref.hapticHeavy();
+                                Navigator.pop(
+                                  context,
+                                ); // Close the habit management sheet
+                                Navigator.push(
+                                  context,
+                                  SubscriptionScreen.route(),
+                                ); // Redirect to payment!
+                              } else {
+                                _onSave();
+                              }
+                            },
                             style: ElevatedButton.styleFrom(
-                              backgroundColor: (!isPro && currentHabitsCount >= 5) 
-                                  ? const Color(0xFFEAB308) 
+                              backgroundColor:
+                                  (!isPro && currentHabitsCount >= 5)
+                                  ? const Color(0xFFEAB308)
                                   : Theme.of(context).colorScheme.primary,
-                              foregroundColor: (!isPro && currentHabitsCount >= 5) 
-                                  ? Colors.black 
-                                  : (_selectedColor.computeLuminance() > 0.5 ? Colors.black : Colors.white),
-                              shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+                              foregroundColor:
+                                  (!isPro && currentHabitsCount >= 5)
+                                  ? Colors.black
+                                  : (_selectedColor.computeLuminance() > 0.5
+                                        ? Colors.black
+                                        : Colors.white),
+                              shape: RoundedRectangleBorder(
+                                borderRadius: BorderRadius.circular(12),
+                              ),
                               elevation: 0,
                             ),
                             child: Row(
                               mainAxisAlignment: MainAxisAlignment.center,
                               children: [
                                 if (!isPro && currentHabitsCount >= 5) ...[
-                                  const Icon(LucideIcons.sparkles, size: 16, color: Colors.black),
+                                  const Icon(
+                                    LucideIcons.sparkles,
+                                    size: 16,
+                                    color: Colors.black,
+                                  ),
                                   const SizedBox(width: 8),
                                 ],
                                 Text(
                                   (!isPro && currentHabitsCount >= 5)
-                                      ? context.l10n.translate('Sblocca Evolve Pro')
-                                      : context.l10n.translate('Aggiungi Abitudine'),
+                                      ? context.l10n.translate(
+                                          'Sblocca Evolve Pro',
+                                        )
+                                      : context.l10n.translate(
+                                          'Aggiungi Abitudine',
+                                        ),
                                   style: TextStyle(
                                     fontFamily: 'Inter',
                                     fontWeight: FontWeight.w700,
                                     color: (!isPro && currentHabitsCount >= 5)
                                         ? Colors.black
-                                        : (Theme.of(context).colorScheme.primary.computeLuminance() > 0.5 ? Colors.black : Colors.white),
+                                        : (Theme.of(context).colorScheme.primary
+                                                      .computeLuminance() >
+                                                  0.5
+                                              ? Colors.black
+                                              : Colors.white),
                                   ),
                                 ),
                               ],
@@ -650,7 +844,7 @@ class _HabitManagementModalState extends ConsumerState<HabitManagementModal> {
                   ),
                 ),
                 const SizedBox(height: 24),
-      
+
                 // Habits List Section Header
                 Align(
                   alignment: Alignment.centerLeft,
@@ -689,7 +883,6 @@ class _HabitManagementModalState extends ConsumerState<HabitManagementModal> {
           const SliverToBoxAdapter(child: SizedBox(height: 40)),
         ],
       ),
-
     );
   }
 }
@@ -724,7 +917,11 @@ class _HabitListItem extends StatelessWidget {
             index: index,
             child: Padding(
               padding: const EdgeInsets.symmetric(vertical: 4, horizontal: 8),
-              child: Icon(LucideIcons.gripVertical, size: 16, color: context.appColors.mutedForeground),
+              child: Icon(
+                LucideIcons.gripVertical,
+                size: 16,
+                color: context.appColors.mutedForeground,
+              ),
             ),
           ),
 
@@ -736,7 +933,11 @@ class _HabitListItem extends StatelessWidget {
               color: habit.color,
               shape: BoxShape.circle,
               boxShadow: [
-                BoxShadow(color: habit.color.withValues(alpha: 0.4), blurRadius: 4, spreadRadius: 0)
+                BoxShadow(
+                  color: habit.color.withValues(alpha: 0.4),
+                  blurRadius: 4,
+                  spreadRadius: 0,
+                ),
               ],
             ),
           ),
@@ -753,11 +954,19 @@ class _HabitListItem extends StatelessWidget {
           ),
           IconButton(
             onPressed: onEdit,
-            icon: Icon(LucideIcons.pencil, size: 16, color: context.appColors.mutedForeground),
+            icon: Icon(
+              LucideIcons.pencil,
+              size: 16,
+              color: context.appColors.mutedForeground,
+            ),
           ),
           IconButton(
             onPressed: onDelete,
-            icon: const Icon(LucideIcons.trash2, size: 16, color: AppColors.destructive),
+            icon: const Icon(
+              LucideIcons.trash2,
+              size: 16,
+              color: AppColors.destructive,
+            ),
           ),
         ],
       ),

@@ -262,6 +262,19 @@ class EvolveApp extends ConsumerWidget {
       supportedLocales: AppLocalizations.supportedLocales,
       routerConfig: router,
       debugShowCheckedModeBanner: false,
+      builder: (context, child) {
+        final mediaQuery = MediaQuery.maybeOf(context);
+        if (mediaQuery == null || child == null) {
+          return child ?? const SizedBox.shrink();
+        }
+
+        return MediaQuery(
+          data: mediaQuery.copyWith(
+            alwaysUse24HourFormat: settings.timeFormat24h,
+          ),
+          child: child,
+        );
+      },
     );
   }
 }

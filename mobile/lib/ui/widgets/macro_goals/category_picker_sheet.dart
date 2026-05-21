@@ -21,6 +21,11 @@ Future<void> showMacroGoalCategoryPicker({
   required ValueChanged<String?> onSelected,
   bool clearSelectionOnArchive = false,
 }) {
+  // Capture the caller's context & notifier BEFORE opening the sheet.
+  // These stay valid even after the bottom‐sheet's Consumer is disposed.
+  final callerContext = context;
+  final categoriesNotifier = ref.read(macroGoalCategoriesProvider.notifier);
+
   return showModalBottomSheet(
     context: context,
     isScrollControlled: true,
@@ -156,9 +161,12 @@ Future<void> showMacroGoalCategoryPicker({
                         ),
                         onTap: () async {
                           Navigator.pop(sheetContext);
-                          final categoryId = await _showCategoryEditorDialog(
-                            context: context,
-                            ref: ref,
+                          // Use callerContext & pre-captured notifier so we
+                          // don't touch the now-disposed Consumer ref.
+                          final categoryId =
+                              await _showCategoryEditorDialogSafe(
+                            context: callerContext,
+                            notifier: categoriesNotifier,
                           );
                           if (categoryId != null) {
                             onSelected(categoryId);
@@ -259,6 +267,23 @@ class _CategoryListTile extends StatelessWidget {
 Future<String?> _showCategoryEditorDialog({
   required BuildContext context,
   required WidgetRef ref,
+  GoalCategory? category,
+}) {
+  // Capture the notifier eagerly so it stays valid if the caller's
+  // Consumer is disposed while the dialog is still open.
+  final notifier = ref.read(macroGoalCategoriesProvider.notifier);
+  return _showCategoryEditorDialogSafe(
+    context: context,
+    notifier: notifier,
+    category: category,
+  );
+}
+
+/// Variant that takes a pre-captured [notifier] instead of a [WidgetRef],
+/// safe to call after the originating sheet / Consumer has been disposed.
+Future<String?> _showCategoryEditorDialogSafe({
+  required BuildContext context,
+  required MacroGoalCategoriesNotifier notifier,
   GoalCategory? category,
 }) {
   final nameController = TextEditingController(text: category?.label ?? '');
@@ -423,13 +448,11 @@ Future<String?> _showCategoryEditorDialog({
                           final colorHex = _colorToHex(selectedColor);
                           String? categoryId;
                           if (isEditing) {
-                            final updated = await ref
-                                .read(macroGoalCategoriesProvider.notifier)
+                            final updated = await notifier
                                 .updateCategory(category.key, name, colorHex);
                             categoryId = updated ? category.key : null;
                           } else {
-                            categoryId = await ref
-                                .read(macroGoalCategoriesProvider.notifier)
+                            categoryId = await notifier
                                 .addCategory(name, colorHex);
                           }
 

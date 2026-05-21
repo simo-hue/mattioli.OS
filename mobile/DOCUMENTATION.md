@@ -1646,3 +1646,12 @@
 - **UI**: Category picker hides archived categories for new selections, while stats and existing goals can still resolve archived category metadata.
 - **Manual Action**: Logged the Supabase migration in `TO_SIMO_DO.md`.
 - **Verification**: `flutter analyze` and `flutter test` completed successfully.
+
+---
+
+## [2026-05-21 10:40]: Fix - Category Creation Crash ("Bad state: Using ref when unmounted")
+*Details*: Fixed a crash when creating a new category from the Goals section. The error "Bad state: Using ref when a widget is about to or has been unmounted" occurred because the bottom sheet's `Consumer` widget was disposed (via `Navigator.pop`) before the category editor dialog tried to use its `ref`.
+*Tech Notes*:
+- **Root Cause**: In `category_picker_sheet.dart`, the "Crea nuova categoria" handler called `Navigator.pop(sheetContext)` first, then used the `Consumer`'s `ref` to show the editor dialog. Since the `Consumer` was already unmounted, `ref.read(...)` threw a "Bad state" error.
+- **Fix**: Captured the caller's context and the `MacroGoalCategoriesNotifier` reference eagerly (before popping the sheet). Created `_showCategoryEditorDialogSafe()` that takes a pre-captured notifier instead of a `WidgetRef`, making it safe to call after the sheet is disposed.
+- **Scope**: The existing `_showCategoryEditorDialog` (used for in-sheet edit) now also eagerly captures the notifier as a safety measure.

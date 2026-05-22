@@ -12,8 +12,9 @@ class AppLanguagePreference {
   static const system = 'system';
   static const italian = 'it';
   static const english = 'en';
+  static const arabic = 'ar';
 
-  static const supportedOverrides = [italian, english];
+  static const supportedOverrides = [italian, english, arabic];
 
   static String normalize(String? value) {
     final normalized = value?.trim().toLowerCase();
@@ -35,6 +36,12 @@ class AppLanguagePreference {
       case 'en_us':
       case 'en_gb':
         return english;
+      case arabic:
+      case 'ar_sa':
+      case 'ar_ae':
+      case 'arabic':
+      case 'العربية':
+        return arabic;
       default:
         return system;
     }

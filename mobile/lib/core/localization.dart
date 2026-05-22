@@ -1266,8 +1266,12 @@ extension AppLocalizationsCompatibility on AppLocalizations {
         return italianLanguage;
       case 'en':
         return englishLanguage;
+      case 'ar':
+        return arabicLanguage;
       case 'system':
         return systemLanguage;
+      case 'language':
+        return lingua;
       case 'Accesso non riuscito. Controlla email e password.':
         return authAccessFailed;
       case 'Errore di rete. Riprova.':

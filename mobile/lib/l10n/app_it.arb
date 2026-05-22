@@ -2500,6 +2500,10 @@
   "@englishLanguage": {
     "description": "Language preference UI label."
   },
+  "arabicLanguage": "العربية",
+  "@arabicLanguage": {
+    "description": "Language preference UI label."
+  },
   "followSystemLanguageDescription": "Usa automaticamente la lingua selezionata nelle impostazioni di iOS.",
   "@followSystemLanguageDescription": {
     "description": "Language preference UI label."

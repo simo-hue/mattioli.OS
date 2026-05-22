@@ -1,0 +1,4 @@
+"CFBundleDisplayName" = "Evolve";
+"NSCameraUsageDescription" = "يحتاج هذا التطبيق إلى الوصول إلى الكاميرا لكي تتمكن من التقاط صورة للملف الشخصي.";
+"NSFaceIDUsageDescription" = "يستخدم هذا التطبيق Face ID لحماية بياناتك الشخصية.";
+"NSPhotoLibraryUsageDescription" = "يحتاج هذا التطبيق إلى الوصول إلى مكتبة الصور لكي تتمكن من تحميل صورة ملفك الشخصي.";

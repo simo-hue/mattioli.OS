@@ -28,7 +28,3 @@
   ```
 
 - [ ] **Inizializzazione Cartella Android**: Se prevedi di pubblicare l'app anche sul Google Play Store, tieni presente che attualmente manca la cartella `android/` nel progetto. Puoi rigenerarla eseguendo `flutter create --org com.simo --platforms android .` nella cartella principale (`mobile/`), per poi configurare icone, permessi e integrazioni native (come per Supabase e Sentry).
-## [2026-05-22 18:23 CEST]: App Store Connect Upload
-
-- Build and upload a new iOS archive to App Store Connect using version `1.0.1` and build `5`.
-- In App Store Connect, attach build `5` to the new app version/update submission before releasing.

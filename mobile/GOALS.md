@@ -1,7 +1,7 @@
 # NEXT RELEASE ( v1.1 )
-[ ] Capire immagine profilo
-[ ] Realizzare foto app store complete definitive
-[ ] Aggiunta e traduzione delle lingue completa
+[ ] Realizzare immagini per App Store con tutti i dispositivi
+[ ] Capire immagine profilo cosa fare
+[ ] Aggiungere altre lingue
 [ ] Come rendere internazionale app store ( immagini + description )
 [ ] Realizzare Video YouTube per mostrare l'app.
 

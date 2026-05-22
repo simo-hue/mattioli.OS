@@ -882,6 +882,8 @@ class AppSettingsScreen extends ConsumerWidget {
         return context.l10n.italianLanguage;
       case AppLanguagePreference.english:
         return context.l10n.englishLanguage;
+      case AppLanguagePreference.arabic:
+        return context.l10n.arabicLanguage;
       case AppLanguagePreference.system:
       default:
         return context.l10n.systemLanguage;
@@ -943,6 +945,12 @@ class AppSettingsScreen extends ConsumerWidget {
               context,
               ref,
               AppLanguagePreference.english,
+              currentPreference,
+            ),
+            _buildLanguageOption(
+              context,
+              ref,
+              AppLanguagePreference.arabic,
               currentPreference,
             ),
             const SizedBox(height: 40),

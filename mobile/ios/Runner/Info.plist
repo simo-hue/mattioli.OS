@@ -26,6 +26,7 @@
 	<array>
 		<string>en</string>
 		<string>it</string>
+		<string>ar</string>
 	</array>
 	<key>CFBundleShortVersionString</key>
 	<string>$(FLUTTER_BUILD_NAME)</string>

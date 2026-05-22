@@ -260,6 +260,7 @@ class EvolveApp extends ConsumerWidget {
       locale: settings.localeOverride,
       localizationsDelegates: AppLocalizations.localizationsDelegates,
       supportedLocales: AppLocalizations.supportedLocales,
+      localeListResolutionCallback: _resolveAppLocale,
       routerConfig: router,
       debugShowCheckedModeBanner: false,
       builder: (context, child) {
@@ -277,4 +278,19 @@ class EvolveApp extends ConsumerWidget {
       },
     );
   }
+}
+
+Locale _resolveAppLocale(
+  List<Locale>? preferredLocales,
+  Iterable<Locale> supportedLocales,
+) {
+  for (final preferredLocale in preferredLocales ?? const <Locale>[]) {
+    for (final supportedLocale in supportedLocales) {
+      if (supportedLocale.languageCode == preferredLocale.languageCode) {
+        return supportedLocale;
+      }
+    }
+  }
+
+  return const Locale('en');
 }

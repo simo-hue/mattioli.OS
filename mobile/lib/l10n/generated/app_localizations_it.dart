@@ -2058,6 +2058,9 @@ class AppLocalizationsIt extends AppLocalizations {
   String get englishLanguage => 'English';
 
   @override
+  String get arabicLanguage => 'العربية';
+
+  @override
   String get followSystemLanguageDescription =>
       'Usa automaticamente la lingua selezionata nelle impostazioni di iOS.';
 

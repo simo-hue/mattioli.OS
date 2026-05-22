@@ -1751,3 +1751,9 @@
 *Details*: Updated the Flutter app version from `1.0.0+4` to `1.0.1+5` so the next iOS archive can be uploaded to App Store Connect as a new app update build.
 
 *Tech Notes*: Changed `pubspec.yaml` `version` only. Flutter maps `1.0.1` to iOS `CFBundleShortVersionString` through `$(FLUTTER_BUILD_NAME)` and `5` to `CFBundleVersion` through `$(FLUTTER_BUILD_NUMBER)`.
+
+## [2026-05-22 21:34 CEST]: Arabic Localization Implementation
+
+*Details*: Added Arabic as a first-class app language alongside Italian and English. The implementation includes a complete `app_ar.arb`, generated Flutter localization classes, Arabic language selection in App Settings, and native iOS Arabic permission strings.
+
+*Tech Notes*: Added `ar` to `AppLanguagePreference`, `AppLocalizations.supportedLocales`, iOS `CFBundleLocalizations`, and the Xcode `InfoPlist.strings` variant group. Added `ios/Runner/ar.lproj/InfoPlist.strings`, regenerated `lib/l10n/generated/`, and verified ARB key/placeholder parity. Flutter automatically applies RTL layout direction when the active locale is Arabic. Added explicit locale resolution so unsupported device languages fall back to English instead of the alphabetically first generated locale. Verified with `flutter analyze`, `flutter test`, and `flutter build ios --no-codesign`.

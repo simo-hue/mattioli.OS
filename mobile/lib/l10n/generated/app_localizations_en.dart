@@ -2041,6 +2041,12 @@ class AppLocalizationsEn extends AppLocalizations {
   String get englishLanguage => 'English';
 
   @override
+  String get spanishLanguage => 'Spanish';
+
+  @override
+  String get germanLanguage => 'German';
+
+  @override
   String get arabicLanguage => 'Arabic';
 
   @override

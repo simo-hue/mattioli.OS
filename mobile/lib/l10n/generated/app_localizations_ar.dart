@@ -2042,6 +2042,12 @@ class AppLocalizationsAr extends AppLocalizations {
   String get englishLanguage => 'الإنجليزية';
 
   @override
+  String get spanishLanguage => 'الإسبانية';
+
+  @override
+  String get germanLanguage => 'الألمانية';
+
+  @override
   String get arabicLanguage => 'العربية';
 
   @override

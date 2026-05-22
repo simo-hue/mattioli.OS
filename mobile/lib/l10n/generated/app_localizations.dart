@@ -6,7 +6,9 @@ import 'package:flutter_localizations/flutter_localizations.dart';
 import 'package:intl/intl.dart' as intl;
 
 import 'app_localizations_ar.dart';
+import 'app_localizations_de.dart';
 import 'app_localizations_en.dart';
+import 'app_localizations_es.dart';
 import 'app_localizations_it.dart';
 
 // ignore_for_file: type=lint
@@ -96,7 +98,9 @@ abstract class AppLocalizations {
   /// A list of this localizations delegate's supported locales.
   static const List<Locale> supportedLocales = <Locale>[
     Locale('ar'),
+    Locale('de'),
     Locale('en'),
+    Locale('es'),
     Locale('it'),
   ];
 
@@ -3895,6 +3899,18 @@ abstract class AppLocalizations {
   /// Language preference UI label.
   ///
   /// In en, this message translates to:
+  /// **'Spanish'**
+  String get spanishLanguage;
+
+  /// Language preference UI label.
+  ///
+  /// In en, this message translates to:
+  /// **'German'**
+  String get germanLanguage;
+
+  /// Language preference UI label.
+  ///
+  /// In en, this message translates to:
   /// **'Arabic'**
   String get arabicLanguage;
 
@@ -4776,7 +4792,7 @@ class _AppLocalizationsDelegate
 
   @override
   bool isSupported(Locale locale) =>
-      <String>['ar', 'en', 'it'].contains(locale.languageCode);
+      <String>['ar', 'de', 'en', 'es', 'it'].contains(locale.languageCode);
 
   @override
   bool shouldReload(_AppLocalizationsDelegate old) => false;
@@ -4787,8 +4803,12 @@ AppLocalizations lookupAppLocalizations(Locale locale) {
   switch (locale.languageCode) {
     case 'ar':
       return AppLocalizationsAr();
+    case 'de':
+      return AppLocalizationsDe();
     case 'en':
       return AppLocalizationsEn();
+    case 'es':
+      return AppLocalizationsEs();
     case 'it':
       return AppLocalizationsIt();
   }

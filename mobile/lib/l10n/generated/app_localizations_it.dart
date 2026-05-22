@@ -2058,6 +2058,12 @@ class AppLocalizationsIt extends AppLocalizations {
   String get englishLanguage => 'English';
 
   @override
+  String get spanishLanguage => 'Spagnolo';
+
+  @override
+  String get germanLanguage => 'Tedesco';
+
+  @override
   String get arabicLanguage => 'العربية';
 
   @override

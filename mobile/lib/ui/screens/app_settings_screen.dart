@@ -882,6 +882,10 @@ class AppSettingsScreen extends ConsumerWidget {
         return context.l10n.italianLanguage;
       case AppLanguagePreference.english:
         return context.l10n.englishLanguage;
+      case AppLanguagePreference.spanish:
+        return context.l10n.spanishLanguage;
+      case AppLanguagePreference.german:
+        return context.l10n.germanLanguage;
       case AppLanguagePreference.arabic:
         return context.l10n.arabicLanguage;
       case AppLanguagePreference.system:
@@ -945,6 +949,18 @@ class AppSettingsScreen extends ConsumerWidget {
               context,
               ref,
               AppLanguagePreference.english,
+              currentPreference,
+            ),
+            _buildLanguageOption(
+              context,
+              ref,
+              AppLanguagePreference.spanish,
+              currentPreference,
+            ),
+            _buildLanguageOption(
+              context,
+              ref,
+              AppLanguagePreference.german,
               currentPreference,
             ),
             _buildLanguageOption(

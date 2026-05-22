@@ -13,8 +13,10 @@ class AppLanguagePreference {
   static const italian = 'it';
   static const english = 'en';
   static const arabic = 'ar';
+  static const spanish = 'es';
+  static const german = 'de';
 
-  static const supportedOverrides = [italian, english, arabic];
+  static const supportedOverrides = [italian, english, spanish, german, arabic];
 
   static String normalize(String? value) {
     final normalized = value?.trim().toLowerCase();
@@ -42,6 +44,22 @@ class AppLanguagePreference {
       case 'arabic':
       case 'العربية':
         return arabic;
+      case spanish:
+      case 'es_es':
+      case 'es_mx':
+      case 'spanish':
+      case 'spagnolo':
+      case 'espanol':
+      case 'español':
+        return spanish;
+      case german:
+      case 'de_de':
+      case 'de_at':
+      case 'de_ch':
+      case 'german':
+      case 'tedesco':
+      case 'deutsch':
+        return german;
       default:
         return system;
     }

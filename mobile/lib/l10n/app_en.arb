@@ -2500,6 +2500,14 @@
   "@englishLanguage": {
     "description": "Language preference UI label."
   },
+  "spanishLanguage": "Spanish",
+  "@spanishLanguage": {
+    "description": "Language preference UI label."
+  },
+  "germanLanguage": "German",
+  "@germanLanguage": {
+    "description": "Language preference UI label."
+  },
   "arabicLanguage": "Arabic",
   "@arabicLanguage": {
     "description": "Language preference UI label."

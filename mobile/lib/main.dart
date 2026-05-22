@@ -284,9 +284,12 @@ Locale _resolveAppLocale(
   List<Locale>? preferredLocales,
   Iterable<Locale> supportedLocales,
 ) {
-  for (final preferredLocale in preferredLocales ?? const <Locale>[]) {
+  final primaryLocale = preferredLocales == null || preferredLocales.isEmpty
+      ? null
+      : preferredLocales.first;
+  if (primaryLocale != null) {
     for (final supportedLocale in supportedLocales) {
-      if (supportedLocale.languageCode == preferredLocale.languageCode) {
+      if (supportedLocale.languageCode == primaryLocale.languageCode) {
         return supportedLocale;
       }
     }

@@ -1266,6 +1266,10 @@ extension AppLocalizationsCompatibility on AppLocalizations {
         return italianLanguage;
       case 'en':
         return englishLanguage;
+      case 'es':
+        return spanishLanguage;
+      case 'de':
+        return germanLanguage;
       case 'ar':
         return arabicLanguage;
       case 'system':

@@ -1757,3 +1757,15 @@
 *Details*: Added Arabic as a first-class app language alongside Italian and English. The implementation includes a complete `app_ar.arb`, generated Flutter localization classes, Arabic language selection in App Settings, and native iOS Arabic permission strings.
 
 *Tech Notes*: Added `ar` to `AppLanguagePreference`, `AppLocalizations.supportedLocales`, iOS `CFBundleLocalizations`, and the Xcode `InfoPlist.strings` variant group. Added `ios/Runner/ar.lproj/InfoPlist.strings`, regenerated `lib/l10n/generated/`, and verified ARB key/placeholder parity. Flutter automatically applies RTL layout direction when the active locale is Arabic. Added explicit locale resolution so unsupported device languages fall back to English instead of the alphabetically first generated locale. Verified with `flutter analyze`, `flutter test`, and `flutter build ios --no-codesign`.
+
+## [2026-05-22 21:44 CEST]: Spanish Localization Implementation
+
+*Details*: Added Spanish as a first-class app language alongside English, Italian, and Arabic. The implementation includes a complete `app_es.arb`, curated Spanish UI terminology, generated Flutter localization classes, Spanish language selection in App Settings, and native iOS Spanish permission strings.
+
+*Tech Notes*: Added `es` to `AppLanguagePreference`, `AppLocalizations.supportedLocales`, iOS `CFBundleLocalizations`, and the Xcode `InfoPlist.strings` variant group. Added `ios/Runner/es.lproj/InfoPlist.strings`, regenerated `lib/l10n/generated/`, and verified ARB key/placeholder parity across `en`, `it`, `ar`, and `es`. The explicit locale resolver uses English as the fallback whenever the device's primary language is unsupported. Verified with `flutter analyze`, `flutter test`, and `flutter build ios --no-codesign`.
+
+## [2026-05-22 21:56 CEST]: German Localization Implementation
+
+*Details*: Added German as a first-class app language. German was selected because it is a high-value European language for iOS consumer apps and the project already contains German marketplace screenshot assets, making it a practical next localization target.
+
+*Tech Notes*: Added `de` to `AppLanguagePreference`, `AppLocalizations.supportedLocales`, iOS `CFBundleLocalizations`, and the Xcode `InfoPlist.strings` variant group. Added `lib/l10n/app_de.arb`, generated `lib/l10n/generated/app_localizations_de.dart`, and added `ios/Runner/de.lproj/InfoPlist.strings`. Applied a German UI terminology pass for navigation, settings, statistics, subscriptions, onboarding, notifications, and error messages. Verified ARB key/placeholder parity across `en`, `it`, `ar`, `es`, and `de`. The explicit locale resolver continues to use English whenever the device's primary language is unsupported. Verified with `flutter analyze`, `flutter test`, and `flutter build ios --no-codesign`.

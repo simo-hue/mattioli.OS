@@ -1745,3 +1745,9 @@
 *Details*: Made the "Formato 24h" setting consistently affect notification and habit reminder time selection/display. Notification settings now open their Cupertino time pickers with the selected 12h/24h mode and show stored notification times in the selected display format instead of always rendering raw `HH:mm` values.
 
 *Tech Notes*: Added `AppTimeFormatting` in `lib/core/time_formatting.dart` to keep persisted times canonical as `HH:mm` while formatting UI labels as either `HH:mm` or `h:mm AM/PM`. Updated `notification_settings_screen.dart`, `habit_management_modal.dart`, and the root `MaterialApp.router` `MediaQuery` override in `main.dart` so app-level time widgets receive the current `timeFormat24h` preference. Added `test/time_formatting_test.dart`. Verified with `flutter analyze`, `flutter test test/time_formatting_test.dart`, and full `flutter test`.
+
+## [2026-05-22 18:23 CEST]: App Store Release Version Bump
+
+*Details*: Updated the Flutter app version from `1.0.0+4` to `1.0.1+5` so the next iOS archive can be uploaded to App Store Connect as a new app update build.
+
+*Tech Notes*: Changed `pubspec.yaml` `version` only. Flutter maps `1.0.1` to iOS `CFBundleShortVersionString` through `$(FLUTTER_BUILD_NAME)` and `5` to `CFBundleVersion` through `$(FLUTTER_BUILD_NUMBER)`.

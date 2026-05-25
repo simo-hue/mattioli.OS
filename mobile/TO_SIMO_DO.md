@@ -27,4 +27,32 @@
   </queries>
   ```
 
-- [ ] **Inizializzazione Cartella Android**: Se prevedi di pubblicare l'app anche sul Google Play Store, tieni presente che attualmente manca la cartella `android/` nel progetto. Puoi rigenerarla eseguendo `flutter create --org com.simo --platforms android .` nella cartella principale (`mobile/`), per poi configurare icone, permessi e integrazioni native (come per Supabase e Sentry).
+---
+
+## 🚀 Pubblicazione Android (Google Play Store)
+
+- [ ] **4. Creare la chiave di firma (Keystore)**
+  Per pubblicare devi firmare l'app. Da terminale crea una chiave (salvala al sicuro e non perderla mai!):
+  `keytool -genkey -v -keystore ~/upload-keystore.jks -keyalg RSA -keysize 2048 -validity 10000 -alias upload`
+  Segui le istruzioni e inserisci una password.
+
+- [ ] **5. Configurare la firma nel progetto (build.gradle)**
+  Crea un file chiamato `key.properties` dentro la cartella `android/` con questi dati:
+  ```properties
+  storePassword=<la tua password>
+  keyPassword=<la tua password>
+  keyAlias=upload
+  storeFile=/Users/simo/upload-keystore.jks
+  ```
+  Modifica poi il file `android/app/build.gradle` per caricare le configurazioni della chiave come spiegato nella [documentazione ufficiale Flutter](https://docs.flutter.dev/deployment/android#configure-signing-in-gradle).
+
+- [ ] **6. Compilare l'App Bundle (.aab)**
+  Genera il pacchetto ottimizzato da caricare sullo store:
+  `flutter build appbundle`
+  Questo creerà un file in `build/app/outputs/bundle/release/app-release.aab`.
+
+- [ ] **7. Configurare Google Play Console**
+  - Vai su [Google Play Console](https://play.google.com/apps/publish) (costa 25$ una tantum).
+  - Crea l'app e compila tutti i dati (Screenshot, Descrizioni, Rating Età).
+  - Crea una nuova "Release Interna" o "Produzione" e carica il file `.aab` appena generato.
+  - Invia in revisione.

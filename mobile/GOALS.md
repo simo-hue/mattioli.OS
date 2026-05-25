@@ -1,5 +1,6 @@
 # NEXT RELEASE ( v1.1 )
 [ ] Realizzare immagini per App Store con tutti i dispositivi
+[ ] Inserire la "s" in GOALs
 [ ] Capire immagine profilo cosa fare
 [ ] Aggiungere altre lingue
 [ ] Come rendere internazionale app store ( immagini + description )
@@ -9,7 +10,7 @@
 
 
 
-
+[ ] Collegamento del proprio account anche tramite web browser extension ?
 
 
 

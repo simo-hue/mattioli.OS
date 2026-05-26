@@ -1769,3 +1769,12 @@
 *Details*: Added German as a first-class app language. German was selected because it is a high-value European language for iOS consumer apps and the project already contains German marketplace screenshot assets, making it a practical next localization target.
 
 *Tech Notes*: Added `de` to `AppLanguagePreference`, `AppLocalizations.supportedLocales`, iOS `CFBundleLocalizations`, and the Xcode `InfoPlist.strings` variant group. Added `lib/l10n/app_de.arb`, generated `lib/l10n/generated/app_localizations_de.dart`, and added `ios/Runner/de.lproj/InfoPlist.strings`. Applied a German UI terminology pass for navigation, settings, statistics, subscriptions, onboarding, notifications, and error messages. Verified ARB key/placeholder parity across `en`, `it`, `ar`, `es`, and `de`. The explicit locale resolver continues to use English whenever the device's primary language is unsupported. Verified with `flutter analyze`, `flutter test`, and `flutter build ios --no-codesign`.
+
+## [2026-05-26 10:50]: Statistics - Sparse Mood Chart Window
+*Details*: Updated the global "Mood & Energia" chart so users with little recent history no longer see new data floating in the middle of the graph. When the selected range contains only sparse mood entries, the chart now starts from the first available mood date in that range and still ends at today.
+*Tech Notes*:
+- Added `MoodChartWindow` to calculate a data-aware chart window for 14D, 30D, and 90D views.
+- Kept the empty-state behavior unchanged when there are no mood entries in the selected range.
+- Enabled point markers for sparse mood histories to keep very small datasets visible and professional.
+- Added `test/mood_chart_window_test.dart` for the new window calculation.
+- Updated the stale root widget smoke test from `MyApp` to `EvolveApp` so `flutter analyze` and `flutter test` can run cleanly.

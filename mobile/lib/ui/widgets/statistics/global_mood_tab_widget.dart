@@ -9,6 +9,64 @@ import '../../../providers/mood_provider.dart';
 import '../../../providers/goal_provider.dart';
 import '../../../models/goal.dart';
 
+class MoodChartWindow {
+  final DateTime startDate;
+  final int dayCount;
+  final double labelInterval;
+
+  const MoodChartWindow({
+    required this.startDate,
+    required this.dayCount,
+    required this.labelInterval,
+  });
+
+  double get minX => dayCount == 1 ? -1 : 0;
+
+  double get maxX => (dayCount - 1).toDouble();
+
+  DateTime dateAt(double x) {
+    return startDate.add(Duration(days: x.toInt()));
+  }
+
+  static MoodChartWindow resolve({
+    required DateTime now,
+    required int selectedDays,
+    required Iterable<String> moodDateKeys,
+  }) {
+    final today = DateTime(now.year, now.month, now.day);
+    final defaultStartDate = today.subtract(Duration(days: selectedDays - 1));
+    final moodDatesInRange =
+        moodDateKeys
+            .map(DateTime.tryParse)
+            .whereType<DateTime>()
+            .map((date) => DateTime(date.year, date.month, date.day))
+            .where(
+              (date) =>
+                  !date.isBefore(defaultStartDate) && !date.isAfter(today),
+            )
+            .toList()
+          ..sort();
+
+    final startDate = moodDatesInRange.isEmpty
+        ? defaultStartDate
+        : moodDatesInRange.first;
+    final dayCount = today.difference(startDate).inDays + 1;
+
+    return MoodChartWindow(
+      startDate: startDate,
+      dayCount: dayCount,
+      labelInterval: _labelIntervalFor(dayCount),
+    );
+  }
+
+  static double _labelIntervalFor(int dayCount) {
+    if (dayCount <= 7) return 1;
+    if (dayCount <= 14) return 2;
+    if (dayCount <= 30) return 5;
+    return 15;
+  }
+}
+
 class GlobalMoodTabWidget extends ConsumerStatefulWidget {
   const GlobalMoodTabWidget({super.key});
 
@@ -140,32 +198,22 @@ class _GlobalMoodTabWidgetState extends ConsumerState<GlobalMoodTabWidget> {
   Widget _buildMainChart(DailyMoodsMap moods) {
     final List<FlSpot> moodSpots = [];
     final List<FlSpot> energySpots = [];
-    final double maxX;
-    final double interval;
 
     final now = DateTime.now();
-    final int days;
-    switch (_timeRange) {
-      case 'time_range_30d':
-        days = 30;
-        interval = 5;
-        break;
-      case 'time_range_90d':
-        days = 90;
-        interval = 15;
-        break;
-      case 'time_range_14d':
-      default:
-        days = 14;
-        interval = 2;
-        break;
-    }
-    maxX = (days - 1).toDouble();
+    final selectedDays = switch (_timeRange) {
+      'time_range_30d' => 30,
+      'time_range_90d' => 90,
+      _ => 14,
+    };
 
-    final startDate = now.subtract(Duration(days: days - 1));
+    final chartWindow = MoodChartWindow.resolve(
+      now: now,
+      selectedDays: selectedDays,
+      moodDateKeys: moods.keys,
+    );
 
-    for (int i = 0; i < days; i++) {
-      final date = startDate.add(Duration(days: i));
+    for (int i = 0; i < chartWindow.dayCount; i++) {
+      final date = chartWindow.startDate.add(Duration(days: i));
       final dateKey =
           '${date.year}-${date.month.toString().padLeft(2, '0')}-${date.day.toString().padLeft(2, '0')}';
 
@@ -177,7 +225,9 @@ class _GlobalMoodTabWidgetState extends ConsumerState<GlobalMoodTabWidget> {
     }
 
     // If no data, add some empty spots to avoid crash
-    if (moodSpots.isEmpty) moodSpots.add(const FlSpot(0, 0));
+    final hasMoodData = moodSpots.isNotEmpty;
+
+    if (!hasMoodData) moodSpots.add(const FlSpot(0, 0));
     if (energySpots.isEmpty) energySpots.add(const FlSpot(0, 0));
 
     return Container(
@@ -227,11 +277,13 @@ class _GlobalMoodTabWidgetState extends ConsumerState<GlobalMoodTabWidget> {
                     sideTitles: SideTitles(
                       showTitles: true,
                       reservedSize: 30,
-                      interval: interval,
+                      interval: chartWindow.labelInterval,
                       getTitlesWidget: (value, meta) {
-                        final date = startDate.add(
-                          Duration(days: value.toInt()),
-                        );
+                        if (value < 0 ||
+                            value > (chartWindow.dayCount - 1).toDouble()) {
+                          return const SizedBox.shrink();
+                        }
+                        final date = chartWindow.dateAt(value);
                         return Padding(
                           padding: const EdgeInsets.only(top: 8.0),
                           child: Text(
@@ -265,8 +317,8 @@ class _GlobalMoodTabWidgetState extends ConsumerState<GlobalMoodTabWidget> {
                   ),
                 ),
                 borderData: FlBorderData(show: false),
-                minX: 0,
-                maxX: maxX,
+                minX: chartWindow.minX,
+                maxX: chartWindow.maxX,
                 minY: 0,
                 maxY: 100,
                 lineBarsData: [
@@ -276,7 +328,9 @@ class _GlobalMoodTabWidgetState extends ConsumerState<GlobalMoodTabWidget> {
                     color: const Color(0xFFFBBF24),
                     barWidth: 3,
                     isStrokeCapRound: true,
-                    dotData: const FlDotData(show: false),
+                    dotData: FlDotData(
+                      show: hasMoodData && moodSpots.length <= 7,
+                    ),
                     belowBarData: BarAreaData(
                       show: true,
                       color: const Color(0xFFFBBF24).withValues(alpha: 0.05),
@@ -288,7 +342,9 @@ class _GlobalMoodTabWidgetState extends ConsumerState<GlobalMoodTabWidget> {
                     color: const Color(0xFF06B6D4),
                     barWidth: 3,
                     isStrokeCapRound: true,
-                    dotData: const FlDotData(show: false),
+                    dotData: FlDotData(
+                      show: hasMoodData && energySpots.length <= 7,
+                    ),
                     belowBarData: BarAreaData(
                       show: true,
                       color: const Color(0xFF06B6D4).withValues(alpha: 0.05),

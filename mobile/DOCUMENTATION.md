@@ -1778,3 +1778,9 @@
 - Enabled point markers for sparse mood histories to keep very small datasets visible and professional.
 - Added `test/mood_chart_window_test.dart` for the new window calculation.
 - Updated the stale root widget smoke test from `MyApp` to `EvolveApp` so `flutter analyze` and `flutter test` can run cleanly.
+
+## [2026-05-26 11:21 CEST]: App Store Release Version Bump
+
+*Details*: Updated the Flutter app version from `1.0.1+5` to `1.0.2+6` so a new iOS archive can be uploaded to App Store Connect without reusing the previous build number.
+
+*Tech Notes*: Changed `pubspec.yaml` `version` only. Flutter maps `1.0.2` to iOS `CFBundleShortVersionString` and `6` to `CFBundleVersion` through the generated Flutter build settings.

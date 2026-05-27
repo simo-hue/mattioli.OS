@@ -47,3 +47,10 @@
 ## 2026-05-27 - Verifica blocco orientamento verticale
 
 - [ ] Esegui una build/reinstallazione completa dell'app sul simulatore o device. Le modifiche native a `ios/Runner/Info.plist` e `android/app/src/main/AndroidManifest.xml` non vengono applicate con il solo hot reload.
+
+---
+
+## 2026-05-27 - App Store Connect: train 1.0.2 chiusa
+
+- [ ] In App Store Connect crea/seleziona una nuova versione superiore a `1.0.2`, ad esempio `1.0.3`, perché la train `1.0.2` è chiusa per nuovi upload.
+- [ ] Aggiorna la versione marketing iOS dell'app a `1.0.3`, ricrea l'archivio `.ipa` e ricaricalo con Transporter.

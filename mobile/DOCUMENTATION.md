@@ -1792,3 +1792,7 @@
 - [2026-05-27 08:41 CEST]: Portrait-Only App Orientation
   - *Details*: Locked the app to portrait orientation so tutorial and app screens no longer enter landscape layouts on phone rotation.
   - *Tech Notes*: Added `SystemChrome.setPreferredOrientations([DeviceOrientation.portraitUp])` during Flutter startup, restricted iOS `UISupportedInterfaceOrientations` to portrait values, enabled `UIRequiresFullScreen` so iPad honors orientation restrictions, and set Android `MainActivity` to `android:screenOrientation="portrait"`. Verified with `flutter analyze`, `flutter test`, `plutil -lint ios/Runner/Info.plist`, and `xmllint --noout android/app/src/main/AndroidManifest.xml`.
+
+- [2026-05-27 08:45 CEST]: App Store Release Version Bump
+  - *Details*: Updated the Flutter app version from `1.0.2+6` to `1.0.3+7` so the next archive can be uploaded as a new store update without reusing the previous build number.
+  - *Tech Notes*: Changed `pubspec.yaml` `version` only. Flutter maps `1.0.3` to iOS `CFBundleShortVersionString` / Android `versionName` and `7` to iOS `CFBundleVersion` / Android `versionCode` through the generated Flutter build settings.

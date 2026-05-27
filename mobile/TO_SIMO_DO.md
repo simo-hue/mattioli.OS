@@ -41,3 +41,9 @@
   - Crea l'app e compila tutti i dati (Screenshot, Descrizioni, Rating Età).
   - Crea una nuova "Release Interna" o "Produzione" e carica il file `.aab` appena generato.
   - Invia in revisione.
+
+---
+
+## 2026-05-27 - Verifica blocco orientamento verticale
+
+- [ ] Esegui una build/reinstallazione completa dell'app sul simulatore o device. Le modifiche native a `ios/Runner/Info.plist` e `android/app/src/main/AndroidManifest.xml` non vengono applicate con il solo hot reload.

@@ -1784,3 +1784,11 @@
 *Details*: Updated the Flutter app version from `1.0.1+5` to `1.0.2+6` so a new iOS archive can be uploaded to App Store Connect without reusing the previous build number.
 
 *Tech Notes*: Changed `pubspec.yaml` `version` only. Flutter maps `1.0.2` to iOS `CFBundleShortVersionString` and `6` to `CFBundleVersion` through the generated Flutter build settings.
+
+- [2026-05-27 08:37 CEST]: Tutorial Orientation Layout Fix
+  - *Details*: Fixed tutorial coachmark layout issues when rotating between portrait and landscape, with special handling for the macro goals tutorial steps shown around the fake tutorial goal action buttons.
+  - *Tech Notes*: Added responsive width/height constraints and scroll-safe tutorial cards in `dashboard_screen.dart` and `macro_goals_screen.dart`. The macro goals tutorial now observes metric changes, removes and recreates the active `TutorialCoachMark` on resize/orientation changes, restores the same step via `initialFocus`, and switches the goals/statistics surface before target measurement so previous/next navigation remains stable. Verified with `flutter analyze` and `flutter test`.
+
+- [2026-05-27 08:41 CEST]: Portrait-Only App Orientation
+  - *Details*: Locked the app to portrait orientation so tutorial and app screens no longer enter landscape layouts on phone rotation.
+  - *Tech Notes*: Added `SystemChrome.setPreferredOrientations([DeviceOrientation.portraitUp])` during Flutter startup, restricted iOS `UISupportedInterfaceOrientations` to portrait values, enabled `UIRequiresFullScreen` so iPad honors orientation restrictions, and set Android `MainActivity` to `android:screenOrientation="portrait"`. Verified with `flutter analyze`, `flutter test`, `plutil -lint ios/Runner/Info.plist`, and `xmllint --noout android/app/src/main/AndroidManifest.xml`.

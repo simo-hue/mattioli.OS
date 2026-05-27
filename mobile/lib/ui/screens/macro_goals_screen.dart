@@ -1,3 +1,6 @@
+import 'dart:async';
+import 'dart:math' as math;
+
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:google_fonts/google_fonts.dart';
@@ -26,9 +29,20 @@ class MacroGoalsScreen extends ConsumerStatefulWidget {
 }
 
 class _MacroGoalsScreenState extends ConsumerState<MacroGoalsScreen>
-    with AutomaticKeepAliveClientMixin {
+    with AutomaticKeepAliveClientMixin, WidgetsBindingObserver {
+  static const Duration _tutorialStartDelay = Duration(milliseconds: 400);
+  static const Duration _tutorialMetricsRestartDelay = Duration(
+    milliseconds: 350,
+  );
+  static const int _performanceTutorialIndex = 7;
+
   bool _isForward = true;
   bool _showStats = false;
+  bool _isShowingGoalsTutorial = false;
+  int _goalsTutorialIndex = 0;
+  Timer? _goalsTutorialStartTimer;
+  Timer? _goalsTutorialMetricsTimer;
+  TutorialCoachMark? _goalsTutorial;
 
   final GlobalKey _planSelectorKey = GlobalKey();
   final GlobalKey _addGoalKey = GlobalKey();
@@ -43,8 +57,36 @@ class _MacroGoalsScreenState extends ConsumerState<MacroGoalsScreen>
   @override
   void initState() {
     super.initState();
+    WidgetsBinding.instance.addObserver(this);
     WidgetsBinding.instance.addPostFrameCallback((_) {
       _checkGoalsTutorial();
+    });
+  }
+
+  @override
+  void dispose() {
+    WidgetsBinding.instance.removeObserver(this);
+    _goalsTutorialStartTimer?.cancel();
+    _goalsTutorialMetricsTimer?.cancel();
+    _goalsTutorial?.removeOverlayEntry();
+    super.dispose();
+  }
+
+  @override
+  void didChangeMetrics() {
+    super.didChangeMetrics();
+    if (!_isShowingGoalsTutorial) return;
+
+    _goalsTutorialMetricsTimer?.cancel();
+    _goalsTutorial?.removeOverlayEntry();
+    _goalsTutorial = null;
+
+    _goalsTutorialMetricsTimer = Timer(_tutorialMetricsRestartDelay, () {
+      if (!mounted || !_isShowingGoalsTutorial) return;
+      WidgetsBinding.instance.addPostFrameCallback((_) {
+        if (!mounted || !_isShowingGoalsTutorial) return;
+        _showGoalsTutorial(initialFocus: _goalsTutorialIndex, replace: true);
+      });
     });
   }
 
@@ -54,7 +96,9 @@ class _MacroGoalsScreenState extends ConsumerState<MacroGoalsScreen>
 
     // Only show if main tutorial is finished but goals tutorial isn't
     if (mainTutorialSeen && !goalsTutorialSeen) {
-      Future.delayed(const Duration(milliseconds: 400), () {
+      if (_isShowingGoalsTutorial) return;
+      _goalsTutorialStartTimer?.cancel();
+      _goalsTutorialStartTimer = Timer(_tutorialStartDelay, () {
         if (mounted) _showGoalsTutorial();
       });
     }
@@ -69,122 +113,183 @@ class _MacroGoalsScreenState extends ConsumerState<MacroGoalsScreen>
     VoidCallback? onNextPressed,
     String? nextButtonLabel,
   }) {
-    return Container(
-      padding: const EdgeInsets.all(24),
-      decoration: BoxDecoration(
-        color: Theme.of(context).colorScheme.surface,
-        borderRadius: BorderRadius.circular(20),
-        border: Border.all(
-          color: Theme.of(context).colorScheme.primary.withValues(alpha: 0.5),
-          width: 1.5,
-        ),
-        boxShadow: [
-          BoxShadow(
-            color: Colors.black.withValues(alpha: 0.2),
-            blurRadius: 20,
-            offset: const Offset(0, 10),
-          ),
-        ],
-      ),
-      child: Column(
-        mainAxisSize: MainAxisSize.min,
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Row(
-            children: [
-              Icon(
-                LucideIcons.info,
-                color: Theme.of(context).colorScheme.primary,
-                size: 20,
+    final mediaQuery = MediaQuery.of(context);
+    final size = mediaQuery.size;
+    final isLandscape = size.width > size.height;
+    final horizontalMargin = isLandscape ? 16.0 : 20.0;
+    final availableWidth = math.max(240.0, size.width - (horizontalMargin * 2));
+    final maxWidth = math.min(availableWidth, isLandscape ? 480.0 : 520.0);
+    final availableHeight = math.max(
+      160.0,
+      size.height - mediaQuery.padding.vertical,
+    );
+    final maxHeight = isLandscape
+        ? math.min(220.0, math.max(160.0, availableHeight - 48.0))
+        : math.min(360.0, math.max(220.0, availableHeight - 96.0));
+    final cardPadding = isLandscape
+        ? const EdgeInsets.all(16)
+        : const EdgeInsets.all(22);
+
+    return Align(
+      alignment: AlignmentDirectional.topStart,
+      child: SizedBox(
+        width: maxWidth,
+        child: ConstrainedBox(
+          constraints: BoxConstraints(maxHeight: maxHeight),
+          child: Container(
+            padding: cardPadding,
+            decoration: BoxDecoration(
+              color: Theme.of(context).colorScheme.surface,
+              borderRadius: BorderRadius.circular(20),
+              border: Border.all(
+                color: Theme.of(
+                  context,
+                ).colorScheme.primary.withValues(alpha: 0.5),
+                width: 1.5,
               ),
-              const SizedBox(width: 8),
-              Text(
-                title,
-                style: TextStyle(
-                  fontWeight: FontWeight.w800,
-                  color: Theme.of(context).colorScheme.onSurface,
-                  fontSize: 18.0,
-                  fontFamily: 'Inter',
-                  letterSpacing: -0.5,
+              boxShadow: [
+                BoxShadow(
+                  color: Colors.black.withValues(alpha: 0.2),
+                  blurRadius: 20,
+                  offset: const Offset(0, 10),
                 ),
-              ),
-            ],
-          ),
-          const SizedBox(height: 12.0),
-          Text(
-            description,
-            style: TextStyle(
-              color: Theme.of(
-                context,
-              ).colorScheme.onSurface.withValues(alpha: 0.7),
-              fontFamily: 'Inter',
-              fontSize: 14,
-              height: 1.5,
+              ],
             ),
-          ),
-          const SizedBox(height: 20.0),
-          Row(
-            mainAxisAlignment: MainAxisAlignment.spaceBetween,
-            children: [
-              if (!isFirst)
-                TextButton(
-                  onPressed: () {
-                    ref.hapticSelection();
-                    controller.previous();
-                  },
-                  child: Text(
-                    context.l10n.translate("Indietro"),
+            child: SingleChildScrollView(
+              physics: const ClampingScrollPhysics(),
+              child: Column(
+                mainAxisSize: MainAxisSize.min,
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Row(
+                    children: [
+                      Icon(
+                        LucideIcons.info,
+                        color: Theme.of(context).colorScheme.primary,
+                        size: 20,
+                      ),
+                      const SizedBox(width: 8),
+                      Expanded(
+                        child: Text(
+                          title,
+                          maxLines: 2,
+                          overflow: TextOverflow.ellipsis,
+                          style: TextStyle(
+                            fontWeight: FontWeight.w800,
+                            color: Theme.of(context).colorScheme.onSurface,
+                            fontSize: isLandscape ? 17.0 : 18.0,
+                            fontFamily: 'Inter',
+                            letterSpacing: 0,
+                          ),
+                        ),
+                      ),
+                    ],
+                  ),
+                  SizedBox(height: isLandscape ? 10.0 : 12.0),
+                  Text(
+                    description,
                     style: TextStyle(
                       color: Theme.of(
                         context,
-                      ).colorScheme.onSurface.withValues(alpha: 0.5),
-                      fontWeight: FontWeight.bold,
+                      ).colorScheme.onSurface.withValues(alpha: 0.7),
+                      fontFamily: 'Inter',
+                      fontSize: isLandscape ? 13 : 14,
+                      height: isLandscape ? 1.38 : 1.5,
                     ),
                   ),
-                )
-              else
-                const SizedBox.shrink(),
-              ElevatedButton(
-                onPressed: () {
-                  ref.hapticSelection();
-                  if (onNextPressed != null) {
-                    onNextPressed();
-                  } else if (isLast) {
-                    controller.skip();
-                  } else {
-                    controller.next();
-                  }
-                },
-                style: ElevatedButton.styleFrom(
-                  backgroundColor: Theme.of(context).colorScheme.primary,
-                  foregroundColor:
-                      Theme.of(context).colorScheme.primary.computeLuminance() >
-                          0.5
-                      ? Colors.black
-                      : Colors.white,
-                  shape: RoundedRectangleBorder(
-                    borderRadius: BorderRadius.circular(10),
+                  SizedBox(height: isLandscape ? 14.0 : 20.0),
+                  Wrap(
+                    alignment: WrapAlignment.spaceBetween,
+                    crossAxisAlignment: WrapCrossAlignment.center,
+                    spacing: 10,
+                    runSpacing: 8,
+                    children: [
+                      if (!isFirst)
+                        TextButton(
+                          onPressed: () {
+                            ref.hapticSelection();
+                            controller.previous();
+                          },
+                          child: Text(
+                            context.l10n.translate("Indietro"),
+                            style: TextStyle(
+                              color: Theme.of(
+                                context,
+                              ).colorScheme.onSurface.withValues(alpha: 0.5),
+                              fontWeight: FontWeight.bold,
+                            ),
+                          ),
+                        )
+                      else
+                        const SizedBox.shrink(),
+                      ElevatedButton(
+                        onPressed: () {
+                          ref.hapticSelection();
+                          if (onNextPressed != null) {
+                            onNextPressed();
+                          } else if (isLast) {
+                            controller.skip();
+                          } else {
+                            controller.next();
+                          }
+                        },
+                        style: ElevatedButton.styleFrom(
+                          backgroundColor: Theme.of(
+                            context,
+                          ).colorScheme.primary,
+                          foregroundColor:
+                              Theme.of(
+                                    context,
+                                  ).colorScheme.primary.computeLuminance() >
+                                  0.5
+                              ? Colors.black
+                              : Colors.white,
+                          shape: RoundedRectangleBorder(
+                            borderRadius: BorderRadius.circular(10),
+                          ),
+                          elevation: 0,
+                        ),
+                        child: Text(
+                          nextButtonLabel != null
+                              ? context.l10n.translate(nextButtonLabel)
+                              : (isLast
+                                    ? context.l10n.translate("Fine")
+                                    : context.l10n.translate("Avanti")),
+                          style: const TextStyle(fontWeight: FontWeight.bold),
+                        ),
+                      ),
+                    ],
                   ),
-                  elevation: 0,
-                ),
-                child: Text(
-                  nextButtonLabel != null
-                      ? context.l10n.translate(nextButtonLabel)
-                      : (isLast
-                            ? context.l10n.translate("Fine")
-                            : context.l10n.translate("Avanti")),
-                  style: const TextStyle(fontWeight: FontWeight.bold),
-                ),
+                ],
               ),
-            ],
+            ),
           ),
-        ],
+        ),
       ),
     );
   }
 
-  void _showGoalsTutorial() {
-    List<TargetFocus> targets = [
+  ContentAlign _goalActionTutorialAlign() {
+    final size = MediaQuery.sizeOf(context);
+    return size.width > size.height || size.height < 560
+        ? ContentAlign.top
+        : ContentAlign.bottom;
+  }
+
+  EdgeInsets _tutorialTargetPadding() {
+    final size = MediaQuery.sizeOf(context);
+    final isLandscape = size.width > size.height;
+    return EdgeInsets.symmetric(
+      horizontal: isLandscape ? 16 : 20,
+      vertical: isLandscape ? 8 : 12,
+    );
+  }
+
+  List<TargetFocus> _buildGoalsTutorialTargets() {
+    final goalActionAlign = _goalActionTutorialAlign();
+    final targetPadding = _tutorialTargetPadding();
+
+    return [
       TargetFocus(
         identify: "Tipo Pianificazione",
         keyTarget: _planSelectorKey,
@@ -193,6 +298,7 @@ class _MacroGoalsScreenState extends ConsumerState<MacroGoalsScreen>
         contents: [
           TargetContent(
             align: ContentAlign.bottom,
+            padding: targetPadding,
             builder: (context, controller) {
               return _buildTutorialContent(
                 context.l10n.translate("Tipo di Pianificazione"),
@@ -214,6 +320,7 @@ class _MacroGoalsScreenState extends ConsumerState<MacroGoalsScreen>
         contents: [
           TargetContent(
             align: ContentAlign.top,
+            padding: targetPadding,
             builder: (context, controller) {
               return _buildTutorialContent(
                 context.l10n.translate("Nuovo Obiettivo"),
@@ -234,7 +341,8 @@ class _MacroGoalsScreenState extends ConsumerState<MacroGoalsScreen>
         paddingFocus: 12,
         contents: [
           TargetContent(
-            align: ContentAlign.bottom,
+            align: goalActionAlign,
+            padding: targetPadding,
             builder: (context, controller) => _buildTutorialContent(
               context.l10n.translate("Completare o Fallire"),
               context.l10n.translate(
@@ -253,7 +361,8 @@ class _MacroGoalsScreenState extends ConsumerState<MacroGoalsScreen>
         paddingFocus: 12,
         contents: [
           TargetContent(
-            align: ContentAlign.bottom,
+            align: goalActionAlign,
+            padding: targetPadding,
             builder: (context, controller) => _buildTutorialContent(
               context.l10n.translate("Categoria"),
               context.l10n.translate(
@@ -272,7 +381,8 @@ class _MacroGoalsScreenState extends ConsumerState<MacroGoalsScreen>
         paddingFocus: 12,
         contents: [
           TargetContent(
-            align: ContentAlign.bottom,
+            align: goalActionAlign,
+            padding: targetPadding,
             builder: (context, controller) => _buildTutorialContent(
               context.l10n.translate("Posticipare"),
               context.l10n.translate(
@@ -291,7 +401,8 @@ class _MacroGoalsScreenState extends ConsumerState<MacroGoalsScreen>
         paddingFocus: 12,
         contents: [
           TargetContent(
-            align: ContentAlign.bottom,
+            align: goalActionAlign,
+            padding: targetPadding,
             builder: (context, controller) => _buildTutorialContent(
               context.l10n.translate("Modifica"),
               context.l10n.translate(
@@ -310,13 +421,9 @@ class _MacroGoalsScreenState extends ConsumerState<MacroGoalsScreen>
         paddingFocus: 12,
         contents: [
           TargetContent(
-            align: ContentAlign.bottom,
+            align: goalActionAlign,
+            padding: targetPadding,
             builder: (context, controller) {
-              WidgetsBinding.instance.addPostFrameCallback((_) {
-                if (mounted && _showStats) {
-                  setState(() => _showStats = false);
-                }
-              });
               return _buildTutorialContent(
                 context.l10n.translate("Elimina"),
                 context.l10n.translate(
@@ -336,12 +443,8 @@ class _MacroGoalsScreenState extends ConsumerState<MacroGoalsScreen>
         contents: [
           TargetContent(
             align: ContentAlign.bottom,
+            padding: targetPadding,
             builder: (context, controller) {
-              WidgetsBinding.instance.addPostFrameCallback((_) {
-                if (mounted && !_showStats) {
-                  setState(() => _showStats = true);
-                }
-              });
               return _buildTutorialContent(
                 context.l10n.translate("Analisi e Statistiche"),
                 context.l10n.translate(
@@ -364,6 +467,7 @@ class _MacroGoalsScreenState extends ConsumerState<MacroGoalsScreen>
           contents: [
             TargetContent(
               align: ContentAlign.top,
+              padding: targetPadding,
               builder: (context, controller) {
                 return _buildTutorialContent(
                   context.l10n.translate("Statistiche Abitudini"),
@@ -374,12 +478,7 @@ class _MacroGoalsScreenState extends ConsumerState<MacroGoalsScreen>
                   isLast: false,
                   nextButtonLabel: "Passa alle Statistiche",
                   onNextPressed: () {
-                    ref
-                        .read(goalsTutorialProvider.notifier)
-                        .setTutorialSeen(true);
-                    if (widget.onFinishTutorial != null) {
-                      widget.onFinishTutorial!();
-                    }
+                    _completeGoalsTutorial();
                     controller.skip();
                   },
                 );
@@ -388,9 +487,53 @@ class _MacroGoalsScreenState extends ConsumerState<MacroGoalsScreen>
           ],
         ),
     ];
+  }
 
-    TutorialCoachMark(
+  Future<void> _beforeGoalsTutorialFocus(
+    TargetFocus target,
+    List<TargetFocus> targets,
+  ) async {
+    final index = targets.indexOf(target);
+    if (index < 0 || !mounted) return;
+
+    _goalsTutorialIndex = index;
+    final shouldShowStats = index >= _performanceTutorialIndex;
+    if (_showStats != shouldShowStats) {
+      setState(() => _showStats = shouldShowStats);
+      await WidgetsBinding.instance.endOfFrame;
+    }
+  }
+
+  void _clearGoalsTutorialState() {
+    _goalsTutorialMetricsTimer?.cancel();
+    _goalsTutorial = null;
+    _isShowingGoalsTutorial = false;
+    _goalsTutorialIndex = 0;
+  }
+
+  void _completeGoalsTutorial() {
+    ref.read(goalsTutorialProvider.notifier).setTutorialSeen(true);
+    if (widget.onFinishTutorial != null) {
+      widget.onFinishTutorial!();
+    }
+  }
+
+  void _showGoalsTutorial({int initialFocus = 0, bool replace = false}) {
+    if (_isShowingGoalsTutorial && !replace) return;
+
+    _goalsTutorialStartTimer?.cancel();
+    _goalsTutorial?.removeOverlayEntry();
+    final targets = _buildGoalsTutorialTargets();
+    final resolvedInitialFocus = initialFocus
+        .clamp(0, targets.length - 1)
+        .toInt();
+    _goalsTutorialIndex = resolvedInitialFocus;
+    _isShowingGoalsTutorial = true;
+
+    final tutorial = TutorialCoachMark(
       targets: targets,
+      initialFocus: resolvedInitialFocus,
+      beforeFocus: (target) => _beforeGoalsTutorialFocus(target, targets),
       colorShadow: Colors.black,
       hideSkip: true,
       paddingFocus: 10,
@@ -399,12 +542,17 @@ class _MacroGoalsScreenState extends ConsumerState<MacroGoalsScreen>
       unFocusAnimationDuration: Duration.zero,
       pulseEnable: false,
       onFinish: () {
-        ref.read(goalsTutorialProvider.notifier).setTutorialSeen(true);
-        if (widget.onFinishTutorial != null) {
-          widget.onFinishTutorial!();
-        }
+        _completeGoalsTutorial();
+        _clearGoalsTutorialState();
       },
-    ).show(context: context);
+      onSkip: () {
+        _clearGoalsTutorialState();
+        return true;
+      },
+    );
+
+    _goalsTutorial = tutorial;
+    tutorial.show(context: context);
   }
 
   @override

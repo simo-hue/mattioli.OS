@@ -1,3 +1,4 @@
+import 'dart:math' as math;
 import 'dart:ui';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
@@ -341,112 +342,154 @@ class _HomeScreenState extends ConsumerState<HomeScreen>
     VoidCallback? onNextPressed,
     String? nextButtonText,
   }) {
-    return Container(
-      padding: const EdgeInsets.all(24),
-      decoration: BoxDecoration(
-        color: context.appColors.card,
-        borderRadius: BorderRadius.circular(20),
-        border: Border.all(
-          color: Theme.of(context).colorScheme.primary.withValues(alpha: 0.5),
-          width: 1.5,
-        ),
-        boxShadow: [
-          BoxShadow(
-            color: Colors.black.withValues(alpha: 0.2),
-            blurRadius: 20,
-            offset: const Offset(0, 10),
-          ),
-        ],
-      ),
-      child: Column(
-        mainAxisSize: MainAxisSize.min,
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Row(
-            children: [
-              Icon(
-                LucideIcons.info,
-                color: Theme.of(context).colorScheme.primary,
-                size: 20,
+    final mediaQuery = MediaQuery.of(context);
+    final size = mediaQuery.size;
+    final isLandscape = size.width > size.height;
+    final horizontalMargin = isLandscape ? 16.0 : 20.0;
+    final availableWidth = math.max(240.0, size.width - (horizontalMargin * 2));
+    final maxWidth = math.min(availableWidth, isLandscape ? 480.0 : 520.0);
+    final availableHeight = math.max(
+      160.0,
+      size.height - mediaQuery.padding.vertical,
+    );
+    final maxHeight = isLandscape
+        ? math.min(220.0, math.max(160.0, availableHeight - 48.0))
+        : math.min(360.0, math.max(220.0, availableHeight - 96.0));
+    final cardPadding = isLandscape
+        ? const EdgeInsets.all(16)
+        : const EdgeInsets.all(22);
+
+    return Align(
+      alignment: AlignmentDirectional.topStart,
+      child: SizedBox(
+        width: maxWidth,
+        child: ConstrainedBox(
+          constraints: BoxConstraints(maxHeight: maxHeight),
+          child: Container(
+            padding: cardPadding,
+            decoration: BoxDecoration(
+              color: context.appColors.card,
+              borderRadius: BorderRadius.circular(20),
+              border: Border.all(
+                color: Theme.of(
+                  context,
+                ).colorScheme.primary.withValues(alpha: 0.5),
+                width: 1.5,
               ),
-              const SizedBox(width: 8),
-              Text(
-                title,
-                style: TextStyle(
-                  fontWeight: FontWeight.w800,
-                  color: context.appColors.foreground,
-                  fontSize: 18.0,
-                  fontFamily: 'Inter',
-                  letterSpacing: -0.5,
+              boxShadow: [
+                BoxShadow(
+                  color: Colors.black.withValues(alpha: 0.2),
+                  blurRadius: 20,
+                  offset: const Offset(0, 10),
                 ),
-              ),
-            ],
-          ),
-          const SizedBox(height: 12.0),
-          Text(
-            description,
-            style: TextStyle(
-              color: context.appColors.mutedForeground,
-              fontFamily: 'Inter',
-              fontSize: 14,
-              height: 1.5,
+              ],
             ),
-          ),
-          const SizedBox(height: 20.0),
-          Row(
-            mainAxisAlignment: MainAxisAlignment.spaceBetween,
-            children: [
-              if (!isFirst)
-                TextButton(
-                  onPressed: () {
-                    ref.hapticSelection();
-                    controller.previous();
-                  },
-                  child: Text(
-                    context.l10n.translate("Indietro"),
+            child: SingleChildScrollView(
+              physics: const ClampingScrollPhysics(),
+              child: Column(
+                mainAxisSize: MainAxisSize.min,
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Row(
+                    children: [
+                      Icon(
+                        LucideIcons.info,
+                        color: Theme.of(context).colorScheme.primary,
+                        size: 20,
+                      ),
+                      const SizedBox(width: 8),
+                      Expanded(
+                        child: Text(
+                          title,
+                          maxLines: 2,
+                          overflow: TextOverflow.ellipsis,
+                          style: TextStyle(
+                            fontWeight: FontWeight.w800,
+                            color: context.appColors.foreground,
+                            fontSize: isLandscape ? 17.0 : 18.0,
+                            fontFamily: 'Inter',
+                            letterSpacing: 0,
+                          ),
+                        ),
+                      ),
+                    ],
+                  ),
+                  SizedBox(height: isLandscape ? 10.0 : 12.0),
+                  Text(
+                    description,
                     style: TextStyle(
                       color: context.appColors.mutedForeground,
-                      fontWeight: FontWeight.bold,
+                      fontFamily: 'Inter',
+                      fontSize: isLandscape ? 13 : 14,
+                      height: isLandscape ? 1.38 : 1.5,
                     ),
                   ),
-                )
-              else
-                const SizedBox.shrink(),
-              ElevatedButton(
-                onPressed: () {
-                  ref.hapticSelection();
-                  if (onNextPressed != null) {
-                    onNextPressed();
-                  } else if (isLast) {
-                    controller.skip();
-                  } else {
-                    controller.next();
-                  }
-                },
-                style: ElevatedButton.styleFrom(
-                  backgroundColor: Theme.of(context).colorScheme.primary,
-                  foregroundColor:
-                      Theme.of(context).colorScheme.primary.computeLuminance() >
-                          0.5
-                      ? Colors.black
-                      : Colors.white,
-                  shape: RoundedRectangleBorder(
-                    borderRadius: BorderRadius.circular(10),
+                  SizedBox(height: isLandscape ? 14.0 : 20.0),
+                  Wrap(
+                    alignment: WrapAlignment.spaceBetween,
+                    crossAxisAlignment: WrapCrossAlignment.center,
+                    spacing: 10,
+                    runSpacing: 8,
+                    children: [
+                      if (!isFirst)
+                        TextButton(
+                          onPressed: () {
+                            ref.hapticSelection();
+                            controller.previous();
+                          },
+                          child: Text(
+                            context.l10n.translate("Indietro"),
+                            style: TextStyle(
+                              color: context.appColors.mutedForeground,
+                              fontWeight: FontWeight.bold,
+                            ),
+                          ),
+                        )
+                      else
+                        const SizedBox.shrink(),
+                      ElevatedButton(
+                        onPressed: () {
+                          ref.hapticSelection();
+                          if (onNextPressed != null) {
+                            onNextPressed();
+                          } else if (isLast) {
+                            controller.skip();
+                          } else {
+                            controller.next();
+                          }
+                        },
+                        style: ElevatedButton.styleFrom(
+                          backgroundColor: Theme.of(
+                            context,
+                          ).colorScheme.primary,
+                          foregroundColor:
+                              Theme.of(
+                                    context,
+                                  ).colorScheme.primary.computeLuminance() >
+                                  0.5
+                              ? Colors.black
+                              : Colors.white,
+                          shape: RoundedRectangleBorder(
+                            borderRadius: BorderRadius.circular(10),
+                          ),
+                          elevation: 0,
+                        ),
+                        child: Text(
+                          nextButtonText != null
+                              ? context.l10n.translate(nextButtonText)
+                              : (isLast
+                                    ? context.l10n.translate("Fine")
+                                    : context.l10n.translate("Avanti")),
+                          style: const TextStyle(fontWeight: FontWeight.bold),
+                        ),
+                      ),
+                    ],
                   ),
-                  elevation: 0,
-                ),
-                child: Text(
-                  nextButtonText != null
-                      ? context.l10n.translate(nextButtonText)
-                      : (isLast
-                            ? context.l10n.translate("Fine")
-                            : context.l10n.translate("Avanti")),
-                  style: const TextStyle(fontWeight: FontWeight.bold),
-                ),
+                ],
               ),
-            ],
+            ),
           ),
-        ],
+        ),
       ),
     );
   }

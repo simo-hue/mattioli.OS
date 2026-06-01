@@ -508,7 +508,7 @@ class _CheckInPanel extends StatelessWidget {
           const SizedBox(height: 6),
           Text(
             checkIn.isComplete
-                ? 'Umore ${checkIn.mood}% · Energia ${checkIn.energy}%'
+                ? 'Umore ${checkIn.mood}/10 · Energia ${checkIn.energy}/10'
                 : 'Registra umore ed energia per migliorare le analisi dei tuoi pattern.',
             style: Theme.of(context).textTheme.bodySmall,
           ),
@@ -540,8 +540,8 @@ class _DailyCheckInDialog extends ConsumerStatefulWidget {
 }
 
 class _DailyCheckInDialogState extends ConsumerState<_DailyCheckInDialog> {
-  double _mood = 70;
-  double _energy = 65;
+  double _mood = 7;
+  double _energy = 6;
 
   @override
   Widget build(BuildContext context) {
@@ -634,14 +634,15 @@ class _CheckInSlider extends StatelessWidget {
               ),
             ),
             Text(
-              '${value.round()}%',
+              '${value.round()}/10',
               style: TextStyle(color: color, fontWeight: FontWeight.w800),
             ),
           ],
         ),
         Slider(
           value: value,
-          max: 100,
+          max: 10,
+          divisions: 10,
           activeColor: color,
           onChanged: onChanged,
         ),

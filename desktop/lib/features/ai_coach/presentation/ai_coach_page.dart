@@ -2,6 +2,7 @@ import 'package:evolve_desktop/app/theme/evolve_theme.dart';
 import 'package:evolve_desktop/shared/widgets/desktop_page.dart';
 import 'package:evolve_desktop/shared/widgets/evolve_panel.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 
 class AiCoachPage extends StatefulWidget {
   const AiCoachPage({super.key});
@@ -12,13 +13,10 @@ class AiCoachPage extends StatefulWidget {
 
 class _AiCoachPageState extends State<AiCoachPage> {
   final _controller = TextEditingController();
-  final _messages = <_ChatMessage>[
-    const _ChatMessage(
-      text:
-          'Ho analizzato il tuo protocollo. La routine del mattino continua a essere il tuo abilitatore principale: nei giorni in cui la completi, il deep work sale sensibilmente.',
-      fromCoach: true,
-    ),
-  ];
+  final _messages = <_ChatMessage>[_welcomeMessage];
+  bool _shareHabits = true;
+  bool _shareGoals = true;
+  bool _typing = false;
 
   @override
   void dispose() {
@@ -26,19 +24,41 @@ class _AiCoachPageState extends State<AiCoachPage> {
     super.dispose();
   }
 
-  void _send() {
-    final text = _controller.text.trim();
-    if (text.isEmpty) return;
+  Future<void> _send([String? prompt]) async {
+    final text = (prompt ?? _controller.text).trim();
+    if (text.isEmpty || _typing) return;
     setState(() {
       _messages.add(_ChatMessage(text: text, fromCoach: false));
+      _controller.clear();
+      _typing = true;
+    });
+    await Future<void>.delayed(const Duration(milliseconds: 360));
+    if (!mounted) return;
+    setState(() {
       _messages.add(
-        const _ChatMessage(
+        _ChatMessage(
           text:
-              'Il collegamento al servizio AI condiviso con il mobile verra attivato nello strato repository. La UI desktop e gia pronta per ricevere risposte in streaming.',
+              'Ho preparato il contesto desktop con ${_shareHabits ? 'le abitudini' : 'le abitudini escluse'} e ${_shareGoals ? 'gli obiettivi' : 'gli obiettivi esclusi'}. La risposta streaming reale verra attivata tramite l\'adapter OpenRouter condiviso dopo la configurazione sicura delle credenziali.',
           fromCoach: true,
         ),
       );
-      _controller.clear();
+      _typing = false;
+    });
+  }
+
+  void _newConversation() {
+    setState(() {
+      _messages
+        ..clear()
+        ..add(_welcomeMessage);
+      _typing = false;
+    });
+  }
+
+  void _clearConversation() {
+    setState(() {
+      _messages.clear();
+      _typing = false;
     });
   }
 
@@ -47,58 +67,58 @@ class _AiCoachPageState extends State<AiCoachPage> {
     return DesktopPage(
       title: 'AI Coach',
       subtitle:
-          'Ragiona sui tuoi pattern con un coach contestuale, basato sui dati del tuo percorso.',
+          'Ragiona sui pattern con un coach contestuale basato sui dati del percorso.',
       trailing: const StatusPill(
         label: 'Evolve Pro',
         color: EvolveColors.amber,
         icon: Icons.auto_awesome_outlined,
       ),
       child: SizedBox(
-        height: 680,
+        height: 720,
         child: EvolvePanel(
           padding: EdgeInsets.zero,
           child: Row(
             children: [
-              const SizedBox(width: 250, child: _CoachSidebar()),
+              SizedBox(
+                width: 275,
+                child: _CoachSidebar(
+                  shareHabits: _shareHabits,
+                  shareGoals: _shareGoals,
+                  onHabitsChanged: (value) {
+                    setState(() => _shareHabits = value);
+                  },
+                  onGoalsChanged: (value) {
+                    setState(() => _shareGoals = value);
+                  },
+                  onNewConversation: _newConversation,
+                ),
+              ),
               const VerticalDivider(width: 1),
               Expanded(
                 child: Column(
                   children: [
-                    const _CoachHeader(),
+                    _CoachHeader(onClear: _clearConversation),
                     const Divider(height: 1),
                     Expanded(
-                      child: ListView.separated(
-                        padding: const EdgeInsets.all(22),
-                        itemCount: _messages.length,
-                        separatorBuilder: (context, index) =>
-                            const SizedBox(height: 14),
-                        itemBuilder: (context, index) =>
-                            _MessageBubble(message: _messages[index]),
-                      ),
+                      child: _messages.isEmpty
+                          ? const _EmptyConversation()
+                          : ListView.separated(
+                              padding: const EdgeInsets.all(22),
+                              itemCount: _messages.length + (_typing ? 1 : 0),
+                              separatorBuilder: (context, index) =>
+                                  const SizedBox(height: 14),
+                              itemBuilder: (context, index) {
+                                if (index == _messages.length) {
+                                  return const _TypingIndicator();
+                                }
+                                return _MessageBubble(
+                                  message: _messages[index],
+                                );
+                              },
+                            ),
                     ),
                     const Divider(height: 1),
-                    Padding(
-                      padding: const EdgeInsets.all(15),
-                      child: Row(
-                        children: [
-                          Expanded(
-                            child: TextField(
-                              controller: _controller,
-                              onSubmitted: (_) => _send(),
-                              decoration: const InputDecoration(
-                                hintText:
-                                    'Chiedi qualcosa sui tuoi progressi...',
-                              ),
-                            ),
-                          ),
-                          const SizedBox(width: 10),
-                          IconButton.filled(
-                            onPressed: _send,
-                            icon: const Icon(Icons.arrow_upward_rounded),
-                          ),
-                        ],
-                      ),
-                    ),
+                    _Composer(controller: _controller, onSend: _send),
                   ],
                 ),
               ),
@@ -111,7 +131,19 @@ class _AiCoachPageState extends State<AiCoachPage> {
 }
 
 class _CoachSidebar extends StatelessWidget {
-  const _CoachSidebar();
+  const _CoachSidebar({
+    required this.shareHabits,
+    required this.shareGoals,
+    required this.onHabitsChanged,
+    required this.onGoalsChanged,
+    required this.onNewConversation,
+  });
+
+  final bool shareHabits;
+  final bool shareGoals;
+  final ValueChanged<bool> onHabitsChanged;
+  final ValueChanged<bool> onGoalsChanged;
+  final VoidCallback onNewConversation;
 
   @override
   Widget build(BuildContext context) {
@@ -125,9 +157,31 @@ class _CoachSidebar extends StatelessWidget {
           const _ConversationTile(label: 'Analisi settimanale', selected: true),
           const _ConversationTile(label: 'Obiettivi Q3'),
           const _ConversationTile(label: 'Routine del mattino'),
+          const SizedBox(height: 20),
+          const Divider(),
+          const SizedBox(height: 10),
+          Text(
+            'CONTESTO CONDIVISO',
+            style: Theme.of(context).textTheme.bodySmall,
+          ),
+          const SizedBox(height: 8),
+          SwitchListTile(
+            dense: true,
+            contentPadding: EdgeInsets.zero,
+            title: const Text('Abitudini'),
+            value: shareHabits,
+            onChanged: onHabitsChanged,
+          ),
+          SwitchListTile(
+            dense: true,
+            contentPadding: EdgeInsets.zero,
+            title: const Text('Obiettivi'),
+            value: shareGoals,
+            onChanged: onGoalsChanged,
+          ),
           const Spacer(),
           OutlinedButton.icon(
-            onPressed: () {},
+            onPressed: onNewConversation,
             icon: const Icon(Icons.add_rounded, size: 17),
             label: const Text('Nuova chat'),
           ),
@@ -165,15 +219,17 @@ class _ConversationTile extends StatelessWidget {
 }
 
 class _CoachHeader extends StatelessWidget {
-  const _CoachHeader();
+  const _CoachHeader({required this.onClear});
+
+  final VoidCallback onClear;
 
   @override
   Widget build(BuildContext context) {
-    return const Padding(
-      padding: EdgeInsets.symmetric(horizontal: 18, vertical: 14),
+    return Padding(
+      padding: const EdgeInsets.symmetric(horizontal: 18, vertical: 14),
       child: Row(
         children: [
-          CircleAvatar(
+          const CircleAvatar(
             radius: 16,
             backgroundColor: Color(0x2210B981),
             child: Icon(
@@ -182,21 +238,81 @@ class _CoachHeader extends StatelessWidget {
               size: 17,
             ),
           ),
-          SizedBox(width: 10),
-          Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
+          const SizedBox(width: 10),
+          const Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(
+                  'Evolve Coach',
+                  style: TextStyle(
+                    color: EvolveColors.foreground,
+                    fontSize: 13,
+                    fontWeight: FontWeight.w700,
+                  ),
+                ),
+                Text(
+                  'Contesto selettivo · streaming adapter pending',
+                  style: TextStyle(color: EvolveColors.subtle, fontSize: 11),
+                ),
+              ],
+            ),
+          ),
+          IconButton(
+            tooltip: 'Pulisci conversazione',
+            onPressed: onClear,
+            icon: const Icon(Icons.delete_sweep_outlined),
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+class _Composer extends StatelessWidget {
+  const _Composer({required this.controller, required this.onSend});
+
+  final TextEditingController controller;
+  final Future<void> Function([String? prompt]) onSend;
+
+  @override
+  Widget build(BuildContext context) {
+    return Padding(
+      padding: const EdgeInsets.all(15),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Wrap(
+            spacing: 7,
+            runSpacing: 7,
             children: [
-              Text(
-                'Evolve Coach',
-                style: TextStyle(
-                  color: EvolveColors.foreground,
-                  fontSize: 13,
-                  fontWeight: FontWeight.w700,
+              for (final prompt in const [
+                'Dove sto perdendo consistenza?',
+                'Riassumi la settimana',
+                'Quale obiettivo richiede attenzione?',
+              ])
+                ActionChip(
+                  label: Text(prompt),
+                  onPressed: () => onSend(prompt),
+                ),
+            ],
+          ),
+          const SizedBox(height: 10),
+          Row(
+            children: [
+              Expanded(
+                child: TextField(
+                  controller: controller,
+                  onSubmitted: (_) => onSend(),
+                  decoration: const InputDecoration(
+                    hintText: 'Chiedi qualcosa sui tuoi progressi...',
+                  ),
                 ),
               ),
-              Text(
-                'Contesto aggiornato oggi',
-                style: TextStyle(color: EvolveColors.subtle, fontSize: 11),
+              const SizedBox(width: 10),
+              IconButton.filled(
+                onPressed: onSend,
+                icon: const Icon(Icons.arrow_upward_rounded),
               ),
             ],
           ),
@@ -218,7 +334,7 @@ class _MessageBubble extends StatelessWidget {
           ? Alignment.centerLeft
           : Alignment.centerRight,
       child: ConstrainedBox(
-        constraints: const BoxConstraints(maxWidth: 620),
+        constraints: const BoxConstraints(maxWidth: 660),
         child: Container(
           padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
           decoration: BoxDecoration(
@@ -232,11 +348,59 @@ class _MessageBubble extends StatelessWidget {
                   : EvolveColors.primary.withValues(alpha: 0.2),
             ),
           ),
-          child: Text(
-            message.text,
-            style: Theme.of(context).textTheme.bodyLarge,
+          child: Row(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Expanded(
+                child: Text(
+                  message.text,
+                  style: Theme.of(context).textTheme.bodyLarge,
+                ),
+              ),
+              if (message.fromCoach) ...[
+                const SizedBox(width: 8),
+                IconButton(
+                  tooltip: 'Copia messaggio',
+                  visualDensity: VisualDensity.compact,
+                  onPressed: () {
+                    Clipboard.setData(ClipboardData(text: message.text));
+                  },
+                  icon: const Icon(Icons.copy_outlined, size: 16),
+                ),
+              ],
+            ],
           ),
         ),
+      ),
+    );
+  }
+}
+
+class _TypingIndicator extends StatelessWidget {
+  const _TypingIndicator();
+
+  @override
+  Widget build(BuildContext context) {
+    return const Align(
+      alignment: Alignment.centerLeft,
+      child: StatusPill(
+        label: 'Evolve Coach sta preparando la risposta...',
+        color: EvolveColors.violet,
+        icon: Icons.more_horiz_rounded,
+      ),
+    );
+  }
+}
+
+class _EmptyConversation extends StatelessWidget {
+  const _EmptyConversation();
+
+  @override
+  Widget build(BuildContext context) {
+    return Center(
+      child: Text(
+        'La conversazione e vuota. Scrivi una domanda o usa un prompt rapido.',
+        style: Theme.of(context).textTheme.bodyMedium,
       ),
     );
   }
@@ -248,3 +412,9 @@ class _ChatMessage {
   final String text;
   final bool fromCoach;
 }
+
+const _welcomeMessage = _ChatMessage(
+  text:
+      'Ho analizzato il protocollo. La routine del mattino continua a essere il tuo abilitatore principale: nei giorni in cui la completi, il deep work sale sensibilmente.',
+  fromCoach: true,
+);

@@ -27,27 +27,49 @@ lib/
   shared/widgets/       reusable desktop components
 ```
 
-`DashboardRepository` is the boundary for data access. The current
-`InMemoryDashboardRepository` keeps the native desktop baseline runnable while
-the Supabase adapter is implemented. UI code must not depend directly on
-Supabase or on demo data.
+`DashboardRepository` is the boundary for data access.
+`InMemoryDashboardRepository` keeps preview and tests runnable without
+credentials. A configured build uses `SupabaseDashboardRepository` with the
+same `goals`, `goal_logs`, `daily_moods`, `long_term_goals` and `profiles`
+contract as the mobile application. Auth sessions and the dashboard cache use
+the platform credential store through `flutter_secure_storage`. Retryable
+dashboard mutations are queued per user in the same encrypted store and replayed
+before the next cloud refresh.
 
-## Supabase integration gate
+The detailed mobile-to-desktop audit lives in
+[`FEATURE_PARITY.md`](FEATURE_PARITY.md). It is the source of truth for local
+preview coverage, cloud integration gates and per-platform adaptations.
 
-The desktop client must not bind to the live backend until the repository has a
-single canonical schema. The current SQL artifacts expose contract drift:
+## Supabase configuration
 
-- `mobile/mobile_schema.sql` constrains `daily_moods.mood_score` and
-  `energy_score` to `1..5`, while the mobile UI saves values on a `0..10`
-  scale.
-- The root `schema.sql` and `mobile/mobile_schema.sql` do not describe the same
-  `long_term_goals` columns.
+Supply the frontend key at build time. Do not commit it and never use a
+service-role or secret key in a desktop binary.
 
-Before implementing `SupabaseDashboardRepository`, pull the applied production
-schema, reconcile these differences through a reviewed migration, and verify
-the existing mobile client against the canonical contract. Desktop
-credentials must use a Supabase publishable key supplied at build time; never
-embed a service-role or secret key in the client.
+```bash
+flutter run -d macos \
+  --dart-define=EVOLVE_SUPABASE_URL=https://PROJECT.supabase.co \
+  --dart-define=EVOLVE_SUPABASE_PUBLISHABLE_KEY=YOUR_FRONTEND_KEY
+```
+
+Without these define values the app intentionally starts in local preview mode.
+
+The adapter is implemented, but publishing still requires a schema pull,
+migration reconciliation and RLS audit. The applied Supabase project exposes
+columns and RPCs that are ahead of the checked-in SQL artifacts. See
+[`FEATURE_PARITY.md`](FEATURE_PARITY.md) for the verified mismatches.
+
+## macOS signing
+
+The release entitlement enables Keychain Sharing for encrypted session
+storage. A release build therefore requires an Apple development or
+distribution certificate:
+
+```bash
+flutter build macos --release
+```
+
+Unsigned local release builds fail intentionally once Keychain Sharing is
+enabled. Debug preview builds remain ad-hoc buildable.
 
 ## Run locally
 

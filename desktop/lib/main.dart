@@ -1,8 +1,33 @@
 import 'package:evolve_desktop/app/evolve_desktop_app.dart';
+import 'package:evolve_desktop/core/app_bootstrap.dart';
+import 'package:evolve_desktop/core/desktop_supabase_config.dart';
+import 'package:evolve_desktop/core/secure_local_storage.dart';
 import 'package:flutter/widgets.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:shared_preferences/shared_preferences.dart';
+import 'package:supabase_flutter/supabase_flutter.dart';
 
-void main() {
+Future<void> main() async {
   WidgetsFlutterBinding.ensureInitialized();
-  runApp(const ProviderScope(child: EvolveDesktopApp()));
+  DesktopSupabaseConfig.validate();
+
+  final sharedPreferences = await SharedPreferences.getInstance();
+  final backendConfigured = DesktopSupabaseConfig.isConfigured;
+  if (backendConfigured) {
+    await Supabase.initialize(
+      url: DesktopSupabaseConfig.url,
+      anonKey: DesktopSupabaseConfig.publishableKey,
+      authOptions: FlutterAuthClientOptions(localStorage: SecureLocalStorage()),
+    );
+  }
+
+  runApp(
+    ProviderScope(
+      overrides: [
+        sharedPreferencesProvider.overrideWithValue(sharedPreferences),
+        backendConfiguredProvider.overrideWithValue(backendConfigured),
+      ],
+      child: const EvolveDesktopApp(),
+    ),
+  );
 }

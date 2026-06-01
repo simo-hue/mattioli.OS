@@ -1,5 +1,7 @@
 import 'package:evolve_desktop/app/theme/evolve_theme.dart';
+import 'package:evolve_desktop/core/app_bootstrap.dart';
 import 'package:evolve_desktop/features/ai_coach/presentation/ai_coach_page.dart';
+import 'package:evolve_desktop/features/dashboard/application/dashboard_controller.dart';
 import 'package:evolve_desktop/features/dashboard/presentation/dashboard_page.dart';
 import 'package:evolve_desktop/features/goals/presentation/goals_page.dart';
 import 'package:evolve_desktop/features/habits/presentation/habits_page.dart';
@@ -279,24 +281,54 @@ class _SidebarDestination extends StatelessWidget {
   }
 }
 
-class _TopBar extends StatelessWidget {
+class _TopBar extends ConsumerWidget {
   const _TopBar({required this.onOpenSearch});
 
   final VoidCallback onOpenSearch;
 
   @override
-  Widget build(BuildContext context) {
+  Widget build(BuildContext context, WidgetRef ref) {
+    final cloudEnabled = ref.watch(backendConfiguredProvider);
+    final dashboard = ref.watch(dashboardControllerProvider);
+    final syncPending = cloudEnabled && dashboard.errorMessage != null;
     return SizedBox(
       height: 68,
       child: Padding(
         padding: const EdgeInsets.symmetric(horizontal: 24),
         child: Row(
           children: [
-            const StatusPill(
-              label: 'Preview locale',
-              color: EvolveColors.amber,
-              icon: Icons.science_outlined,
+            StatusPill(
+              label: !cloudEnabled
+                  ? 'Preview locale'
+                  : syncPending
+                  ? 'Sync in attesa'
+                  : dashboard.isRefreshing
+                  ? 'Sincronizzazione'
+                  : 'Sincronizzato',
+              color: !cloudEnabled || syncPending
+                  ? EvolveColors.amber
+                  : EvolveColors.primaryStrong,
+              icon: !cloudEnabled
+                  ? Icons.science_outlined
+                  : syncPending
+                  ? Icons.cloud_off_outlined
+                  : Icons.cloud_done_outlined,
             ),
+            if (cloudEnabled) ...[
+              const SizedBox(width: 8),
+              IconButton(
+                tooltip: 'Sincronizza',
+                onPressed: dashboard.isRefreshing
+                    ? null
+                    : ref.read(dashboardControllerProvider.notifier).refresh,
+                icon: dashboard.isRefreshing
+                    ? const SizedBox.square(
+                        dimension: 16,
+                        child: CircularProgressIndicator(strokeWidth: 2),
+                      )
+                    : const Icon(Icons.sync_rounded, size: 19),
+              ),
+            ],
             const Spacer(),
             SizedBox(
               width: 260,

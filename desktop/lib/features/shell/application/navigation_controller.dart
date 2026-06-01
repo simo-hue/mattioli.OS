@@ -1,0 +1,50 @@
+import 'package:flutter/material.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
+
+enum DesktopSection {
+  overview,
+  habits,
+  insights,
+  goals,
+  coach,
+  settings;
+
+  String get label => switch (this) {
+    overview => 'Panoramica',
+    habits => 'Abitudini',
+    insights => 'Statistiche',
+    goals => 'Obiettivi',
+    coach => 'AI Coach',
+    settings => 'Impostazioni',
+  };
+
+  String get shortcut => switch (this) {
+    overview => '⌘1',
+    habits => '⌘2',
+    insights => '⌘3',
+    goals => '⌘4',
+    coach => '⌘5',
+    settings => '⌘,',
+  };
+
+  IconData get icon => switch (this) {
+    overview => Icons.space_dashboard_outlined,
+    habits => Icons.check_circle_outline_rounded,
+    insights => Icons.query_stats_rounded,
+    goals => Icons.flag_outlined,
+    coach => Icons.auto_awesome_outlined,
+    settings => Icons.settings_outlined,
+  };
+}
+
+final navigationControllerProvider =
+    NotifierProvider<NavigationController, DesktopSection>(
+      NavigationController.new,
+    );
+
+class NavigationController extends Notifier<DesktopSection> {
+  @override
+  DesktopSection build() => DesktopSection.overview;
+
+  void select(DesktopSection section) => state = section;
+}

@@ -5,6 +5,7 @@ import 'package:evolve_desktop/features/dashboard/domain/dashboard_models.dart';
 import 'package:evolve_desktop/features/goals/application/goal_categories_controller.dart';
 import 'package:evolve_desktop/features/statistics/data/statistics_rpc_providers.dart';
 import 'package:evolve_desktop/shared/widgets/desktop_page.dart';
+import 'package:evolve_desktop/shared/widgets/evolve_dialog.dart';
 import 'package:evolve_desktop/shared/widgets/evolve_panel.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
@@ -220,7 +221,7 @@ class _GoalsPageState extends ConsumerState<GoalsPage> {
   }
 
   Future<void> _openGoalEditor() async {
-    final draft = await showDialog<_GoalDraft>(
+    final draft = await showEvolveDialog<_GoalDraft>(
       context: context,
       builder: (context) => _GoalEditorDialog(
         categories: _availableCategories,
@@ -247,7 +248,7 @@ class _GoalsPageState extends ConsumerState<GoalsPage> {
   Future<void> _openGoalEditorFor(DashboardGoal goal) async {
     final categories = _availableCategories;
     final category = _categoryForGoal(goal, categories);
-    final draft = await showDialog<_GoalDraft>(
+    final draft = await showEvolveDialog<_GoalDraft>(
       context: context,
       builder: (context) => _GoalEditorDialog(
         categories: categories,
@@ -269,11 +270,12 @@ class _GoalsPageState extends ConsumerState<GoalsPage> {
   }
 
   Future<void> _openCategoryManager() async {
-    await showDialog<void>(
+    await showEvolveDialog<void>(
       context: context,
       builder: (context) => StatefulBuilder(
         builder: (context, setDialogState) {
-          return AlertDialog(
+          return EvolveAlertDialog(
+            icon: Icons.category_outlined,
             title: const Text('Categorie obiettivi'),
             content: SizedBox(
               width: 420,
@@ -318,7 +320,7 @@ class _GoalsPageState extends ConsumerState<GoalsPage> {
             actions: [
               TextButton.icon(
                 onPressed: () async {
-                  final category = await showDialog<_GoalCategory>(
+                  final category = await showEvolveDialog<_GoalCategory>(
                     context: context,
                     builder: (context) => const _CategoryEditorDialog(),
                   );
@@ -404,7 +406,7 @@ class _GoalsPageState extends ConsumerState<GoalsPage> {
   }
 
   Future<void> _editCategory(_GoalCategory category) async {
-    final updated = await showDialog<_GoalCategory>(
+    final updated = await showEvolveDialog<_GoalCategory>(
       context: context,
       builder: (context) => _CategoryEditorDialog(category: category),
     );
@@ -1001,7 +1003,8 @@ class _GoalEditorDialogState extends State<_GoalEditorDialog> {
 
   @override
   Widget build(BuildContext context) {
-    return AlertDialog(
+    return EvolveAlertDialog(
+      icon: Icons.flag_outlined,
       title: Text(
         widget.goal == null ? 'Nuovo obiettivo' : 'Modifica obiettivo',
       ),
@@ -1099,7 +1102,8 @@ class _CategoryEditorDialogState extends State<_CategoryEditorDialog> {
 
   @override
   Widget build(BuildContext context) {
-    return AlertDialog(
+    return EvolveAlertDialog(
+      icon: Icons.palette_outlined,
       title: Text(
         widget.category == null ? 'Nuova categoria' : 'Modifica categoria',
       ),

@@ -5,6 +5,7 @@ import 'package:evolve_desktop/features/auth/application/auth_controller.dart';
 import 'package:evolve_desktop/features/dashboard/application/dashboard_controller.dart';
 import 'package:evolve_desktop/features/dashboard/domain/dashboard_models.dart';
 import 'package:evolve_desktop/shared/widgets/desktop_page.dart';
+import 'package:evolve_desktop/shared/widgets/evolve_dialog.dart';
 import 'package:evolve_desktop/shared/widgets/evolve_panel.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
@@ -532,7 +533,7 @@ class _CheckInPanel extends StatelessWidget {
           SizedBox(
             width: double.infinity,
             child: FilledButton(
-              onPressed: () => showDialog<void>(
+              onPressed: () => showEvolveDialog<void>(
                 context: context,
                 builder: (context) => const _DailyCheckInDialog(),
               ),
@@ -561,65 +562,45 @@ class _DailyCheckInDialogState extends ConsumerState<_DailyCheckInDialog> {
 
   @override
   Widget build(BuildContext context) {
-    return Dialog(
-      child: ConstrainedBox(
-        constraints: const BoxConstraints(maxWidth: 420),
-        child: Padding(
-          padding: const EdgeInsets.all(22),
-          child: Column(
-            mainAxisSize: MainAxisSize.min,
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              Text(
-                'Check-in quotidiano',
-                style: Theme.of(context).textTheme.headlineSmall,
-              ),
-              const SizedBox(height: 6),
-              Text(
-                'Una rilevazione rapida aiuta Evolve a leggere meglio i tuoi pattern.',
-                style: Theme.of(context).textTheme.bodyMedium,
-              ),
-              const SizedBox(height: 22),
-              _CheckInSlider(
-                label: 'Umore',
-                value: _mood,
-                color: EvolveColors.violet,
-                onChanged: (value) => setState(() => _mood = value),
-              ),
-              const SizedBox(height: 14),
-              _CheckInSlider(
-                label: 'Energia',
-                value: _energy,
-                color: EvolveColors.amber,
-                onChanged: (value) => setState(() => _energy = value),
-              ),
-              const SizedBox(height: 20),
-              Row(
-                mainAxisAlignment: MainAxisAlignment.end,
-                children: [
-                  TextButton(
-                    onPressed: () => Navigator.pop(context),
-                    child: const Text('Annulla'),
-                  ),
-                  const SizedBox(width: 8),
-                  FilledButton(
-                    onPressed: () async {
-                      await ref
-                          .read(dashboardControllerProvider.notifier)
-                          .updateCheckIn(
-                            mood: _mood.round(),
-                            energy: _energy.round(),
-                          );
-                      if (context.mounted) Navigator.pop(context);
-                    },
-                    child: const Text('Registra'),
-                  ),
-                ],
-              ),
-            ],
+    return EvolveAlertDialog(
+      maxWidth: 420,
+      icon: Icons.spa_outlined,
+      title: const Text('Check-in quotidiano'),
+      subtitle:
+          'Una rilevazione rapida aiuta Evolve a leggere meglio i tuoi pattern.',
+      content: Column(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          _CheckInSlider(
+            label: 'Umore',
+            value: _mood,
+            color: EvolveColors.violet,
+            onChanged: (value) => setState(() => _mood = value),
           ),
-        ),
+          const SizedBox(height: 14),
+          _CheckInSlider(
+            label: 'Energia',
+            value: _energy,
+            color: EvolveColors.amber,
+            onChanged: (value) => setState(() => _energy = value),
+          ),
+        ],
       ),
+      actions: [
+        TextButton(
+          onPressed: () => Navigator.pop(context),
+          child: const Text('Annulla'),
+        ),
+        FilledButton(
+          onPressed: () async {
+            await ref
+                .read(dashboardControllerProvider.notifier)
+                .updateCheckIn(mood: _mood.round(), energy: _energy.round());
+            if (context.mounted) Navigator.pop(context);
+          },
+          child: const Text('Registra'),
+        ),
+      ],
     );
   }
 }

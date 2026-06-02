@@ -16,6 +16,7 @@ import 'package:evolve_desktop/features/settings/application/desktop_subscriptio
 import 'package:evolve_desktop/features/settings/data/desktop_notification_service.dart';
 import 'package:evolve_desktop/features/settings/data/desktop_system_settings_service.dart';
 import 'package:evolve_desktop/shared/widgets/desktop_page.dart';
+import 'package:evolve_desktop/shared/widgets/evolve_dialog.dart';
 import 'package:evolve_desktop/shared/widgets/evolve_panel.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
@@ -169,7 +170,7 @@ class _SettingsPageState extends ConsumerState<SettingsPage> {
               title: 'Informazioni personali',
               detail: 'Nome, cognome, email e data di nascita',
               onTap: auth.isLoggedIn
-                  ? () => showDialog<void>(
+                  ? () => showEvolveDialog<void>(
                       context: context,
                       builder: (context) => const _PersonalInfoDialog(),
                     )
@@ -441,7 +442,7 @@ class _SettingsPageState extends ConsumerState<SettingsPage> {
               title: 'Cambia password',
               detail: 'Aggiornamento credenziali tramite Supabase Auth.',
               onTap: ref.watch(desktopAuthControllerProvider).isLoggedIn
-                  ? () => showDialog<void>(
+                  ? () => showEvolveDialog<void>(
                       context: context,
                       builder: (context) => const _ChangePasswordDialog(),
                     )
@@ -669,9 +670,10 @@ class _SettingsPageState extends ConsumerState<SettingsPage> {
   }
 
   Future<void> _showDeleteOrResetDialog() async {
-    final action = await showDialog<String>(
+    final action = await showEvolveDialog<String>(
       context: context,
-      builder: (context) => AlertDialog(
+      builder: (context) => EvolveAlertDialog(
+        icon: Icons.manage_accounts_outlined,
         title: const Text('Gestione account e dati'),
         content: const Text(
           'Scegli se eliminare i dati mantenendo attivo l account oppure cancellare definitivamente l account.',
@@ -718,9 +720,13 @@ class _SettingsPageState extends ConsumerState<SettingsPage> {
     required String message,
     bool destructive = false,
   }) async {
-    return await showDialog<bool>(
+    return await showEvolveDialog<bool>(
           context: context,
-          builder: (context) => AlertDialog(
+          builder: (context) => EvolveAlertDialog(
+            icon: destructive
+                ? Icons.warning_amber_rounded
+                : Icons.check_circle_outline_rounded,
+            iconColor: destructive ? EvolveColors.rose : null,
             title: Text(title),
             content: Text(message),
             actions: [
@@ -1304,9 +1310,10 @@ class _ColorRow extends StatelessWidget {
 
   Future<void> _showFullColorPicker(BuildContext context) async {
     var color = selected;
-    final picked = await showDialog<Color>(
+    final picked = await showEvolveDialog<Color>(
       context: context,
-      builder: (context) => AlertDialog(
+      builder: (context) => EvolveAlertDialog(
+        icon: Icons.palette_outlined,
         title: const Text('Colore accento'),
         content: SingleChildScrollView(
           child: ColorPicker(
@@ -1768,7 +1775,8 @@ class _PersonalInfoDialogState extends ConsumerState<_PersonalInfoDialog> {
   @override
   Widget build(BuildContext context) {
     final email = ref.watch(desktopAuthControllerProvider).user?.email;
-    return AlertDialog(
+    return EvolveAlertDialog(
+      icon: Icons.person_outline_rounded,
       title: const Text('Informazioni personali'),
       content: SizedBox(
         width: 460,
@@ -1860,7 +1868,8 @@ class _ChangePasswordDialogState extends ConsumerState<_ChangePasswordDialog> {
 
   @override
   Widget build(BuildContext context) {
-    return AlertDialog(
+    return EvolveAlertDialog(
+      icon: Icons.lock_reset_rounded,
       title: const Text('Cambia password'),
       content: SizedBox(
         width: 470,

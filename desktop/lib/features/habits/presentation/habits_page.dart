@@ -5,6 +5,7 @@ import 'package:evolve_desktop/features/auth/application/auth_controller.dart';
 import 'package:evolve_desktop/features/dashboard/application/dashboard_controller.dart';
 import 'package:evolve_desktop/features/dashboard/domain/dashboard_models.dart';
 import 'package:evolve_desktop/shared/widgets/desktop_page.dart';
+import 'package:evolve_desktop/shared/widgets/evolve_dialog.dart';
 import 'package:evolve_desktop/shared/widgets/evolve_panel.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
@@ -114,7 +115,7 @@ class _HabitsPageState extends ConsumerState<HabitsPage> {
   };
 
   Future<void> _openHabitEditor([DashboardHabit? habit]) async {
-    final draft = await showDialog<_HabitDraft>(
+    final draft = await showEvolveDialog<_HabitDraft>(
       context: context,
       builder: (context) => _HabitEditorDialog(habit: habit),
     );
@@ -140,9 +141,11 @@ class _HabitsPageState extends ConsumerState<HabitsPage> {
   }
 
   Future<void> _deleteHabit(DashboardHabit habit) async {
-    final confirmed = await showDialog<bool>(
+    final confirmed = await showEvolveDialog<bool>(
       context: context,
-      builder: (context) => AlertDialog(
+      builder: (context) => EvolveAlertDialog(
+        icon: Icons.delete_outline_rounded,
+        iconColor: EvolveColors.rose,
         title: const Text('Elimina abitudine'),
         content: Text('Vuoi rimuovere "${habit.title}" dal protocollo?'),
         actions: [
@@ -162,7 +165,7 @@ class _HabitsPageState extends ConsumerState<HabitsPage> {
   }
 
   Future<void> _openDayDetails(DateTime date) async {
-    await showDialog<void>(
+    await showEvolveDialog<void>(
       context: context,
       builder: (context) => _DayDetailsDialog(date: date),
     );
@@ -935,54 +938,38 @@ class _DayDetailsDialog extends ConsumerWidget {
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final snapshot = ref.watch(dashboardControllerProvider);
-    return Dialog(
-      child: ConstrainedBox(
-        constraints: const BoxConstraints(maxWidth: 560),
-        child: Padding(
-          padding: const EdgeInsets.all(22),
-          child: Column(
-            mainAxisSize: MainAxisSize.min,
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              Text(
-                'Dettaglio ${date.day} ${_months[date.month - 1]}',
-                style: Theme.of(context).textTheme.headlineSmall,
+    return EvolveAlertDialog(
+      maxWidth: 560,
+      icon: Icons.calendar_today_outlined,
+      title: Text('Dettaglio ${date.day} ${_months[date.month - 1]}'),
+      subtitle: 'Aggiorna lo stato delle abitudini per questo giorno.',
+      content: Column(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          for (final habit in snapshot.habitsFor(date))
+            CheckboxListTile(
+              dense: true,
+              contentPadding: EdgeInsets.zero,
+              title: Text(habit.title),
+              subtitle: Text(
+                _habitStatusLabel(snapshot, habit.id, date, habit),
               ),
-              const SizedBox(height: 5),
-              Text(
-                'Aggiorna lo stato delle abitudini per questo giorno.',
-                style: Theme.of(context).textTheme.bodyMedium,
-              ),
-              const SizedBox(height: 16),
-              for (final habit in snapshot.habitsFor(date))
-                CheckboxListTile(
-                  dense: true,
-                  contentPadding: EdgeInsets.zero,
-                  title: Text(habit.title),
-                  subtitle: Text(
-                    _habitStatusLabel(snapshot, habit.id, date, habit),
-                  ),
-                  activeColor: habit.color,
-                  value:
-                      _habitStatus(snapshot, habit.id, date, habit) == 'done',
-                  onChanged: _canEditDate(date)
-                      ? (_) => ref
-                            .read(dashboardControllerProvider.notifier)
-                            .toggleHabitForDay(habit.id, date)
-                      : null,
-                ),
-              const SizedBox(height: 10),
-              Align(
-                alignment: Alignment.centerRight,
-                child: FilledButton(
-                  onPressed: () => Navigator.pop(context),
-                  child: const Text('Chiudi'),
-                ),
-              ),
-            ],
-          ),
-        ),
+              activeColor: habit.color,
+              value: _habitStatus(snapshot, habit.id, date, habit) == 'done',
+              onChanged: _canEditDate(date)
+                  ? (_) => ref
+                        .read(dashboardControllerProvider.notifier)
+                        .toggleHabitForDay(habit.id, date)
+                  : null,
+            ),
+        ],
       ),
+      actions: [
+        FilledButton(
+          onPressed: () => Navigator.pop(context),
+          child: const Text('Chiudi'),
+        ),
+      ],
     );
   }
 }
@@ -1031,7 +1018,8 @@ class _HabitEditorDialogState extends State<_HabitEditorDialog> {
 
   @override
   Widget build(BuildContext context) {
-    return AlertDialog(
+    return EvolveAlertDialog(
+      icon: Icons.event_repeat_rounded,
       title: Text(
         widget.habit == null ? 'Nuova abitudine' : 'Modifica abitudine',
       ),

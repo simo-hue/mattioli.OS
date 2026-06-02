@@ -8,6 +8,7 @@ import 'package:evolve_desktop/features/habits/presentation/habits_page.dart';
 import 'package:evolve_desktop/features/settings/presentation/settings_page.dart';
 import 'package:evolve_desktop/features/shell/application/navigation_controller.dart';
 import 'package:evolve_desktop/features/statistics/presentation/statistics_page.dart';
+import 'package:evolve_desktop/shared/widgets/evolve_dialog.dart';
 import 'package:evolve_desktop/shared/widgets/evolve_panel.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
@@ -100,7 +101,7 @@ class _DesktopShellState extends ConsumerState<DesktopShell> {
   };
 
   Future<void> _showCommandPalette() async {
-    await showDialog<void>(
+    await showEvolveDialog<void>(
       context: context,
       builder: (context) => const _CommandPalette(),
     );
@@ -408,46 +409,42 @@ class _CommandPalette extends ConsumerWidget {
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
-    return Dialog(
+    return EvolveDialog(
       alignment: const Alignment(0, -0.55),
-      backgroundColor: Colors.transparent,
-      child: ConstrainedBox(
-        constraints: const BoxConstraints(maxWidth: 520),
-        child: EvolvePanel(
-          padding: const EdgeInsets.all(10),
-          color: context.evolveColors.panelRaised,
-          child: Column(
-            mainAxisSize: MainAxisSize.min,
-            children: [
-              const TextField(
-                autofocus: true,
-                decoration: InputDecoration(
-                  prefixIcon: Icon(Icons.search_rounded, size: 19),
-                  hintText: 'Cerca una sezione...',
-                ),
+      maxWidth: 520,
+      child: Padding(
+        padding: const EdgeInsets.all(10),
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            const TextField(
+              autofocus: true,
+              decoration: InputDecoration(
+                prefixIcon: Icon(Icons.search_rounded, size: 19),
+                hintText: 'Cerca una sezione...',
               ),
-              const SizedBox(height: 10),
-              for (final section in DesktopSection.values)
-                ListTile(
-                  dense: true,
-                  leading: Icon(section.icon, size: 19),
-                  title: Text(section.label),
-                  trailing: Text(
-                    section.shortcut,
-                    style: Theme.of(context).textTheme.bodySmall,
-                  ),
-                  shape: RoundedRectangleBorder(
-                    borderRadius: BorderRadius.circular(9),
-                  ),
-                  onTap: () {
-                    ref
-                        .read(navigationControllerProvider.notifier)
-                        .select(section);
-                    Navigator.pop(context);
-                  },
+            ),
+            const SizedBox(height: 10),
+            for (final section in DesktopSection.values)
+              ListTile(
+                dense: true,
+                leading: Icon(section.icon, size: 19),
+                title: Text(section.label),
+                trailing: Text(
+                  section.shortcut,
+                  style: Theme.of(context).textTheme.bodySmall,
                 ),
-            ],
-          ),
+                shape: RoundedRectangleBorder(
+                  borderRadius: BorderRadius.circular(9),
+                ),
+                onTap: () {
+                  ref
+                      .read(navigationControllerProvider.notifier)
+                      .select(section);
+                  Navigator.pop(context);
+                },
+              ),
+          ],
         ),
       ),
     );

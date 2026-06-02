@@ -167,6 +167,15 @@ abstract final class EvolveTheme {
       splashColor: accentColor.withValues(alpha: 0.06),
       highlightColor: accentColor.withValues(alpha: 0.04),
       dividerColor: palette.border,
+      dialogTheme: DialogThemeData(
+        backgroundColor: palette.panelRaised,
+        surfaceTintColor: Colors.transparent,
+        elevation: 0,
+        shape: RoundedRectangleBorder(
+          borderRadius: BorderRadius.circular(22),
+          side: BorderSide(color: palette.borderStrong),
+        ),
+      ),
       textTheme: base.textTheme.copyWith(
         displaySmall: TextStyle(
           color: palette.foreground,
@@ -221,6 +230,34 @@ abstract final class EvolveTheme {
         border: _inputBorder(palette.border),
         enabledBorder: _inputBorder(palette.border),
         focusedBorder: _inputBorder(accentColor),
+      ),
+      filledButtonTheme: FilledButtonThemeData(
+        style: FilledButton.styleFrom(
+          padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+          shape: RoundedRectangleBorder(
+            borderRadius: BorderRadius.circular(10),
+          ),
+          textStyle: const TextStyle(fontSize: 13, fontWeight: FontWeight.w700),
+        ),
+      ),
+      outlinedButtonTheme: OutlinedButtonThemeData(
+        style: OutlinedButton.styleFrom(
+          padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+          side: BorderSide(color: palette.borderStrong),
+          shape: RoundedRectangleBorder(
+            borderRadius: BorderRadius.circular(10),
+          ),
+          textStyle: const TextStyle(fontSize: 13, fontWeight: FontWeight.w700),
+        ),
+      ),
+      textButtonTheme: TextButtonThemeData(
+        style: TextButton.styleFrom(
+          padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
+          shape: RoundedRectangleBorder(
+            borderRadius: BorderRadius.circular(10),
+          ),
+          textStyle: const TextStyle(fontSize: 13, fontWeight: FontWeight.w700),
+        ),
       ),
       tooltipTheme: TooltipThemeData(
         decoration: BoxDecoration(

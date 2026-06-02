@@ -663,7 +663,9 @@ class _PendingMutation {
   };
 }
 
-const _seedSnapshot = DashboardSnapshot(
+final _previewNow = DateTime.now();
+
+final _seedSnapshot = DashboardSnapshot(
   habits: [
     DashboardHabit(
       id: 'morning-focus',
@@ -715,29 +717,46 @@ const _seedSnapshot = DashboardSnapshot(
     DashboardGoal(
       id: 'portfolio',
       title: 'Pubblicare il nuovo portfolio',
-      category: 'Lavoro',
+      category: 'lavoro',
       color: EvolveColors.cyan,
       progress: 0.72,
       dueLabel: 'Scade tra 18 giorni',
       type: GoalType.monthly,
+      year: _previewNow.year,
+      month: _previewNow.month,
     ),
     DashboardGoal(
       id: 'half-marathon',
       title: 'Preparare la mezza maratona',
-      category: 'Salute',
+      category: 'salute',
       color: EvolveColors.primaryStrong,
       progress: 0.58,
       dueLabel: 'Q3 2026',
       type: GoalType.quarterly,
+      year: _previewNow.year,
+      quarter: ((_previewNow.month - 1) ~/ 3) + 1,
     ),
     DashboardGoal(
       id: 'spanish',
       title: 'Completare il corso di spagnolo',
-      category: 'Formazione',
+      category: 'formazione',
       color: EvolveColors.violet,
       progress: 0.41,
       dueLabel: 'Obiettivo annuale',
       type: GoalType.annual,
+      year: _previewNow.year,
+    ),
+    DashboardGoal(
+      id: 'weekly-review',
+      title: 'Completare il recap settimanale',
+      category: 'lavoro',
+      color: EvolveColors.cyan,
+      progress: 0,
+      dueLabel: 'Settimana corrente',
+      type: GoalType.weekly,
+      year: _previewNow.year,
+      month: _previewNow.month,
+      weekNumber: ((_previewNow.day - 1) ~/ 7) + 1,
     ),
   ],
   trend: [

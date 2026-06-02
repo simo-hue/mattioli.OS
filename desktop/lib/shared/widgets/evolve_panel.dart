@@ -17,8 +17,8 @@ class EvolvePanel extends StatelessWidget {
   Widget build(BuildContext context) {
     return DecoratedBox(
       decoration: BoxDecoration(
-        color: color ?? EvolveColors.panel,
-        border: Border.all(color: EvolveColors.border),
+        color: color ?? context.evolveColors.panel,
+        border: Border.all(color: context.evolveColors.border),
         borderRadius: BorderRadius.circular(16),
       ),
       child: Padding(padding: padding, child: child),
@@ -65,34 +65,35 @@ class StatusPill extends StatelessWidget {
   const StatusPill({
     required this.label,
     super.key,
-    this.color = EvolveColors.primary,
+    this.color,
     this.icon,
   });
 
   final String label;
-  final Color color;
+  final Color? color;
   final IconData? icon;
 
   @override
   Widget build(BuildContext context) {
+    final effectiveColor = color ?? context.evolveAccent;
     return Container(
       padding: const EdgeInsets.symmetric(horizontal: 9, vertical: 5),
       decoration: BoxDecoration(
-        color: color.withValues(alpha: 0.11),
+        color: effectiveColor.withValues(alpha: 0.11),
         borderRadius: BorderRadius.circular(100),
-        border: Border.all(color: color.withValues(alpha: 0.22)),
+        border: Border.all(color: effectiveColor.withValues(alpha: 0.22)),
       ),
       child: Row(
         mainAxisSize: MainAxisSize.min,
         children: [
           if (icon != null) ...[
-            Icon(icon, size: 13, color: color),
+            Icon(icon, size: 13, color: effectiveColor),
             const SizedBox(width: 5),
           ],
           Text(
             label,
             style: TextStyle(
-              color: color,
+              color: effectiveColor,
               fontSize: 11,
               fontWeight: FontWeight.w700,
             ),

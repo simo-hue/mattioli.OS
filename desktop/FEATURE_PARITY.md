@@ -1,12 +1,18 @@
 # Evolve Desktop Feature Parity
 
-Audit date: 2026-06-01.
+Audit date: 2026-06-02.
 
 This document compares the Flutter iPhone client in `../mobile` with the native
 Flutter desktop client. The desktop application remains runnable with an
 in-memory preview repository when build-time Supabase values are omitted. A
 configured build now uses the shared mobile backend through an authenticated,
 offline-capable adapter. This is not yet a production-readiness claim.
+
+`../mobile/lib/core/supabase_config.dart` is the only valid backend
+configuration source for the desktop client. The root web `.env` targets a
+different legacy Supabase project and must not be reused for native builds.
+Use `dart run tool/flutter_with_mobile_supabase.dart run -d macos` so desktop
+receives the mobile production URL and frontend key without duplicating them.
 
 ## Status legend
 
@@ -28,7 +34,7 @@ offline-capable adapter. This is not yet a production-readiness claim.
 | Habit creation, editing and deletion | `Local` + `Cloud` | Writes the shared `goals` table. |
 | Habit reminder time | `Local` + `Platform gate` | Preference is editable; native scheduler is not wired. |
 | Day detail modal | `Local` + `Cloud` | Uses selected-date logs, the mobile today/yesterday edit guard and `done -> missed -> empty` cycle. |
-| Month calendar | `Local` + `Cloud` | Historical density derives from date-indexed logs. |
+| Month calendar | `Local` + `Cloud` | Historical density derives from date-indexed logs, active date ranges and per-habit colored indicators. |
 | Week calendar | `Local` + `Cloud` | Values derive from date-indexed logs. |
 | Year calendar | `Local` + `Cloud` | Weekly density bars derive from date-indexed logs. |
 | Life calendar | `Local` + `Cloud` | Uses Auth profile birth date and the mobile 85-year monthly projection, with fallback matching iOS. |
@@ -42,9 +48,9 @@ offline-capable adapter. This is not yet a production-readiness claim.
 | --- | --- | --- |
 | Lifetime, annual, quarterly, monthly and weekly goals | `Local` + `Cloud` | All `GoalType` values map to `long_term_goals`. |
 | Active, completed and failed states | `Local` + `Cloud` | Reschedule keeps failed history and creates the following period like mobile. |
-| Period navigation and type filtering | `Local` + `Cloud` | Filters use synchronized year, quarter, month and logical week fields. |
+| Period navigation and type filtering | `Local` + `Cloud` | Desktop reproduces the five mobile horizon tabs, hierarchical period selectors and logical week rollover. |
 | Goal creation and deletion | `Local` + `Cloud` | Repository-backed CRUD. |
-| Goal categories | `Local` + `Cloud` | Defaults plus synchronized custom category creation and archive UI. |
+| Goal categories | `Local` + `Cloud` | Defaults plus synchronized custom category creation, editing and archive UI. Archived categories remain resolvable for historical goals. |
 | Goal statistics overview | `Local` + `Cloud` | Local KPI and type distribution with `get_macro_goals_stats` enrichment when authenticated. |
 | Advanced goal analytics | `Cloud` + `Surface` | Shared RPC adapter is active; the richer mobile chart set is not fully reproduced on desktop. |
 | Evolve Pro limit and year-level gating | `Surface` | Pro badges and plan UI exist; entitlement provider is not wired. |
@@ -113,7 +119,7 @@ offline-capable adapter. This is not yet a production-readiness claim.
 ## Canonical schema blockers
 
 Anonymous zero-row Data API probes against the mobile project
-`raxizttlmsofixqyanwc` passed on 2026-06-01 for the tables, columns and RPCs
+`raxizttlmsofixqyanwc` passed on 2026-06-02 for the tables and columns
 currently used by the mobile client. This confirms that the applied backend is
 ahead of the repository SQL. It does not replace a schema pull or RLS audit.
 
@@ -173,24 +179,26 @@ for secure auth persistence. Signed Apple builds are required for release.
 
 ## Audit evidence
 
-Executed successfully on macOS on 2026-06-01:
+Executed successfully on macOS on 2026-06-02:
 
-- `dart format --output=none --set-exit-if-changed lib test`
+- `dart format --output=none --set-exit-if-changed lib test tool`
 - `flutter analyze`
-- `flutter test`: 11 tests passed
+- `flutter test`: 20 tests passed
 - `flutter build macos --debug`
-- configured `flutter run -d macos --debug` against mobile project
-  `raxizttlmsofixqyanwc`: Supabase initialization completed
-- `flutter build macos --release`: correctly blocked on this host until an
-  Apple development or distribution signing certificate is configured for the
-  Keychain Sharing entitlement
-- `flutter test --coverage`: `914/3748` loaded lines covered (`24.4%`)
+- `dart run tool/flutter_with_mobile_supabase.dart build macos --debug`
+- `dart run tool/flutter_with_mobile_supabase.dart run -d macos --debug`:
+  Supabase initialization completed against the mobile production project
+- `dart run tool/flutter_with_mobile_supabase.dart build macos --release`:
+  correctly blocked on this host until an Apple development or distribution
+  signing certificate is configured for the Keychain Sharing entitlement
 - `flutter build windows`: not executable on a macOS host; requires Windows CI
 - `flutter build linux`: not executable on a macOS host; requires Linux CI
-- Anonymous zero-row Data API probes for mobile tables, required columns and
-  RPCs
+- Anonymous zero-row Data API probes for mobile tables and required columns
+- Anonymous probes for the 10 RPCs consumed by desktop statistics
 - Unauthenticated empty-payload RevenueCat webhook probe, which returned
   `401 Unauthorized`
+- `supabase status`: local schema verification remains blocked because Docker
+  is not running on this host
 
 ## Platform references
 

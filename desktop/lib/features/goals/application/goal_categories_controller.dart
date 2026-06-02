@@ -55,7 +55,6 @@ class DesktopGoalCategoriesController
       return (response as List)
           .map((row) => Map<String, dynamic>.from(row as Map))
           .map(DesktopGoalCategory.fromRemoteJson)
-          .where((category) => !category.isArchived)
           .toList();
     } catch (error, stack) {
       AppLogger.error('Unable to load macro goal categories', error, stack);
@@ -103,6 +102,34 @@ class DesktopGoalCategoriesController
       ref.invalidateSelf();
     } catch (error, stack) {
       AppLogger.error('Unable to archive macro goal category', error, stack);
+      rethrow;
+    }
+  }
+
+  Future<DesktopGoalCategory?> updateCategory(
+    String id,
+    String label,
+    Color color,
+  ) async {
+    final client = ref.read(supabaseClientProvider);
+    final userId = ref.read(desktopAuthControllerProvider).user?.id;
+    if (client == null || userId == null) return null;
+
+    try {
+      final response = await client
+          .from('macro_goal_categories')
+          .update({'name': label, 'color': dashboardColorToHex(color)})
+          .eq('id', id)
+          .eq('user_id', userId)
+          .select()
+          .single();
+      final category = DesktopGoalCategory.fromRemoteJson(
+        Map<String, dynamic>.from(response),
+      );
+      ref.invalidateSelf();
+      return category;
+    } catch (error, stack) {
+      AppLogger.error('Unable to update macro goal category', error, stack);
       rethrow;
     }
   }

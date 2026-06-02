@@ -1,4 +1,5 @@
 import 'package:evolve_desktop/app/theme/evolve_theme.dart';
+import 'package:evolve_desktop/core/macro_goal_calendar.dart';
 import 'package:evolve_desktop/core/app_bootstrap.dart';
 import 'package:evolve_desktop/features/auth/application/auth_controller.dart';
 import 'package:evolve_desktop/features/dashboard/application/dashboard_controller.dart';
@@ -182,7 +183,7 @@ class _Summary extends StatelessWidget {
             label: 'Protocollo attivo',
             value: '${snapshot.totalHabits}',
             icon: Icons.event_available_outlined,
-            color: EvolveColors.primaryStrong,
+            color: context.evolveAccent,
           ),
         ),
         const SizedBox(width: 14),
@@ -599,9 +600,12 @@ class _MonthCalendar extends StatelessWidget {
               index - leading + 1,
             );
             return _DayCell(
+              snapshot: snapshot,
               date: date,
               completion: _completionFor(snapshot, date),
-              onTap: () => onSelectDay(date),
+              onTap: date.isAfter(DateTime.now())
+                  ? null
+                  : () => onSelectDay(date),
             );
           },
         ),
@@ -631,13 +635,16 @@ class _WeekCalendar extends StatelessWidget {
           if (index > 0) const SizedBox(width: 8),
           Expanded(
             child: _DayCell(
+              snapshot: snapshot,
               date: monday.add(Duration(days: index)),
               completion: _completionFor(
                 snapshot,
                 monday.add(Duration(days: index)),
               ),
               expanded: true,
-              onTap: () => onSelectDay(monday.add(Duration(days: index))),
+              onTap: monday.add(Duration(days: index)).isAfter(DateTime.now())
+                  ? null
+                  : () => onSelectDay(monday.add(Duration(days: index))),
             ),
           ),
         ],
@@ -648,20 +655,26 @@ class _WeekCalendar extends StatelessWidget {
 
 class _DayCell extends StatelessWidget {
   const _DayCell({
+    required this.snapshot,
     required this.date,
     required this.completion,
     required this.onTap,
     this.expanded = false,
   });
 
+  final DashboardSnapshot snapshot;
   final DateTime date;
   final double completion;
-  final VoidCallback onTap;
+  final VoidCallback? onTap;
   final bool expanded;
 
   @override
   Widget build(BuildContext context) {
     final isToday = DateUtils.isSameDay(date, DateTime.now());
+    final indicators = snapshot.habitsFor(date);
+    final indicatorLimit = expanded ? 28 : 14;
+    final hiddenIndicators = indicators.length - indicatorLimit;
+    final isFuture = date.isAfter(DateTime.now());
     return InkWell(
       onTap: onTap,
       borderRadius: BorderRadius.circular(11),
@@ -669,10 +682,16 @@ class _DayCell extends StatelessWidget {
         height: expanded ? 155 : null,
         padding: const EdgeInsets.all(10),
         decoration: BoxDecoration(
-          color: isToday ? const Color(0xFF14251E) : EvolveColors.panelRaised,
+          color: isToday
+              ? context.evolveAccent.withValues(alpha: 0.08)
+              : isFuture
+              ? context.evolveColors.panelSoft.withValues(alpha: 0.5)
+              : context.evolveColors.panelRaised,
           borderRadius: BorderRadius.circular(11),
           border: Border.all(
-            color: isToday ? EvolveColors.primaryStrong : EvolveColors.border,
+            color: isToday
+                ? context.evolveAccent
+                : context.evolveColors.border,
           ),
         ),
         child: Column(
@@ -682,22 +701,41 @@ class _DayCell extends StatelessWidget {
               '${date.day}',
               style: TextStyle(
                 color: isToday
-                    ? EvolveColors.primaryStrong
-                    : EvolveColors.foreground,
+                    ? context.evolveAccent
+                    : context.evolveColors.foreground,
                 fontWeight: FontWeight.w800,
               ),
             ),
-            const Spacer(),
-            LinearProgressIndicator(
-              value: completion,
-              minHeight: 5,
-              color: EvolveColors.primaryStrong,
-              backgroundColor: EvolveColors.panelSoft,
-              borderRadius: BorderRadius.circular(8),
+            const SizedBox(height: 9),
+            Wrap(
+              spacing: 4,
+              runSpacing: 4,
+              children: [
+                for (final habit in indicators.take(indicatorLimit))
+                  Container(
+                    width: 6,
+                    height: 6,
+                    decoration: BoxDecoration(
+                      color: switch (snapshot.habitStatusFor(habit.id, date)) {
+                        'done' => habit.color,
+                        'missed' => EvolveColors.rose,
+                        _ => habit.color.withValues(alpha: 0.22),
+                      },
+                      shape: BoxShape.circle,
+                    ),
+                  ),
+                if (hiddenIndicators > 0)
+                  Text(
+                    '+$hiddenIndicators',
+                    style: Theme.of(context).textTheme.bodySmall,
+                  ),
+              ],
             ),
-            const SizedBox(height: 6),
+            const Spacer(),
             Text(
-              '${(completion * 100).round()}%',
+              indicators.isEmpty
+                  ? 'Nessuna abitudine'
+                  : '${(completion * 100).round()}%',
               style: Theme.of(context).textTheme.bodySmall,
             ),
           ],
@@ -740,15 +778,20 @@ class _YearCalendar extends StatelessWidget {
                         style: Theme.of(context).textTheme.titleMedium,
                       ),
                       const SizedBox(height: 10),
-                      for (var week = 0; week < 4; week++) ...[
+                      for (
+                        var week = 0;
+                        week < logicalWeeksInMonth(anchor.year, month);
+                        week++
+                      ) ...[
                         LinearProgressIndicator(
                           value: _weekCompletion(month, week),
                           minHeight: 4,
-                          color: EvolveColors.primaryStrong,
-                          backgroundColor: EvolveColors.panelSoft,
+                          color: context.evolveAccent,
+                          backgroundColor: context.evolveColors.panelSoft,
                           borderRadius: BorderRadius.circular(6),
                         ),
-                        if (week < 3) const SizedBox(height: 5),
+                        if (week < logicalWeeksInMonth(anchor.year, month) - 1)
+                          const SizedBox(height: 5),
                       ],
                     ],
                   ),
@@ -845,8 +888,8 @@ class _LifeCalendar extends ConsumerWidget {
                     color: index == livedMonths - 1
                         ? EvolveColors.amber
                         : index < livedMonths
-                        ? EvolveColors.primaryStrong.withValues(alpha: 0.52)
-                        : EvolveColors.panelSoft,
+                        ? context.evolveAccent.withValues(alpha: 0.52)
+                        : context.evolveColors.panelSoft,
                     borderRadius: BorderRadius.circular(2),
                   ),
                 ),
@@ -911,7 +954,7 @@ class _DayDetailsDialog extends ConsumerWidget {
                 style: Theme.of(context).textTheme.bodyMedium,
               ),
               const SizedBox(height: 16),
-              for (final habit in snapshot.habits)
+              for (final habit in snapshot.habitsFor(date))
                 CheckboxListTile(
                   dense: true,
                   contentPadding: EdgeInsets.zero,
@@ -958,6 +1001,7 @@ class _HabitEditorDialogState extends State<_HabitEditorDialog> {
   late final TextEditingController _reminder;
   late String _category;
   late Color _color;
+  var _usesDefaultColor = false;
 
   @override
   void initState() {
@@ -965,7 +1009,17 @@ class _HabitEditorDialogState extends State<_HabitEditorDialog> {
     _title = TextEditingController(text: widget.habit?.title);
     _reminder = TextEditingController(text: widget.habit?.reminderTime);
     _category = widget.habit?.category ?? 'Benessere';
+    _usesDefaultColor = widget.habit == null;
     _color = widget.habit?.color ?? EvolveColors.primaryStrong;
+  }
+
+  @override
+  void didChangeDependencies() {
+    super.didChangeDependencies();
+    if (_usesDefaultColor) {
+      _color = context.evolveAccent;
+      _usesDefaultColor = false;
+    }
   }
 
   @override

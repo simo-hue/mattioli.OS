@@ -2,6 +2,7 @@ import 'dart:async';
 import 'dart:math';
 
 import 'package:evolve_desktop/core/app_logger.dart';
+import 'package:evolve_desktop/core/macro_goal_calendar.dart';
 import 'package:evolve_desktop/features/dashboard/data/dashboard_repository.dart';
 import 'package:evolve_desktop/features/dashboard/domain/dashboard_models.dart';
 import 'package:flutter/material.dart';
@@ -183,6 +184,10 @@ class DashboardController extends Notifier<DashboardSnapshot> {
     required GoalType type,
     required String dueLabel,
     String? categoryId,
+    int? year,
+    int? quarter,
+    int? month,
+    int? weekNumber,
   }) async {
     final now = DateTime.now();
     final draft = DashboardGoal(
@@ -194,15 +199,47 @@ class DashboardController extends Notifier<DashboardSnapshot> {
       dueLabel: dueLabel,
       type: type,
       categoryId: categoryId,
-      year: type == GoalType.lifetime ? null : now.year,
-      quarter: type == GoalType.quarterly ? ((now.month - 1) ~/ 3) + 1 : null,
-      month: type == GoalType.monthly || type == GoalType.weekly
-          ? now.month
+      year: type == GoalType.lifetime ? null : (year ?? now.year),
+      quarter: type == GoalType.quarterly
+          ? (quarter ?? ((now.month - 1) ~/ 3) + 1)
           : null,
-      weekNumber: type == GoalType.weekly ? ((now.day - 1) ~/ 7) + 1 : null,
+      month: type == GoalType.monthly || type == GoalType.weekly
+          ? (month ?? now.month)
+          : null,
+      weekNumber: type == GoalType.weekly
+          ? (weekNumber ?? logicalWeekOfMonth(now))
+          : null,
       createdAt: now,
     );
     await _createGoalOptimistically(draft);
+  }
+
+  Future<void> updateGoal({
+    required String id,
+    required String title,
+    required String category,
+    required Color color,
+    String? categoryId,
+  }) async {
+    final goals = [
+      for (final goal in state.goals)
+        if (goal.id == id)
+          goal.copyWith(
+            title: title,
+            category: category,
+            color: color,
+            categoryId: categoryId,
+            clearCategory: category.isEmpty && categoryId == null,
+            clearCategoryId: categoryId == null,
+          )
+        else
+          goal,
+    ];
+    state = state.copyWith(goals: goals);
+    await _saveLocal();
+    await _syncRemote(
+      () => _repository.updateGoal(goals.firstWhere((goal) => goal.id == id)),
+    );
   }
 
   Future<void> updateGoalState(String id, GoalState goalState) async {
@@ -387,7 +424,7 @@ class DashboardController extends Notifier<DashboardSnapshot> {
         }
         quarter = ((month - 1) ~/ 3) + 1;
       case GoalType.weekly:
-        final maximumWeek = (DateUtils.getDaysInMonth(year, month) / 7).ceil();
+        final maximumWeek = logicalWeeksInMonth(year, month);
         if (weekNumber < maximumWeek) {
           weekNumber++;
         } else if (month < 12) {

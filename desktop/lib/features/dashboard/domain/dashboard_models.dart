@@ -43,6 +43,19 @@ class DashboardHabit {
   final String? reminderTime;
   final bool isActive;
 
+  bool isActiveOn(DateTime date) {
+    final viewingDate = DateTime(date.year, date.month, date.day);
+    final start = startDate == null
+        ? null
+        : DateTime(startDate!.year, startDate!.month, startDate!.day);
+    final end = endDate == null
+        ? null
+        : DateTime(endDate!.year, endDate!.month, endDate!.day);
+    return isActive &&
+        (start == null || !start.isAfter(viewingDate)) &&
+        (end == null || !end.isBefore(viewingDate));
+  }
+
   DashboardHabit copyWith({
     String? id,
     String? title,
@@ -166,13 +179,15 @@ class DashboardGoal {
     int? quarter,
     int? month,
     int? weekNumber,
+    bool clearCategory = false,
+    bool clearCategoryId = false,
     String? categoryId,
     DateTime? createdAt,
   }) {
     return DashboardGoal(
       id: id ?? this.id,
       title: title ?? this.title,
-      category: category ?? this.category,
+      category: clearCategory ? '' : (category ?? this.category),
       color: color ?? this.color,
       progress: progress ?? this.progress,
       dueLabel: dueLabel ?? this.dueLabel,
@@ -182,7 +197,9 @@ class DashboardGoal {
       quarter: quarter ?? this.quarter,
       month: month ?? this.month,
       weekNumber: weekNumber ?? this.weekNumber,
-      categoryId: categoryId ?? this.categoryId,
+      categoryId: clearCategory || clearCategoryId
+          ? null
+          : (categoryId ?? this.categoryId),
       createdAt: createdAt ?? this.createdAt,
     );
   }
@@ -213,7 +230,7 @@ class DashboardGoal {
     return DashboardGoal(
       id: json['id'] as String,
       title: json['title'] as String,
-      category: json['category_key'] as String? ?? 'generale',
+      category: json['category_key'] as String? ?? '',
       color: dashboardGoalColor(json['category_key'] as String?),
       progress: state == GoalState.completed ? 1 : 0,
       dueLabel: dashboardGoalDueLabel(
@@ -285,10 +302,12 @@ class DashboardSnapshot {
   final bool isRefreshing;
   final String? errorMessage;
 
-  int get completedHabits =>
-      habits.where((habit) => habit.state == HabitState.completed).length;
+  List<DashboardHabit> get todayHabits => habitsFor(DateTime.now());
 
-  int get totalHabits => habits.length;
+  int get completedHabits =>
+      todayHabits.where((habit) => habit.state == HabitState.completed).length;
+
+  int get totalHabits => todayHabits.length;
 
   double get completionRate =>
       totalHabits == 0 ? 0 : completedHabits / totalHabits;
@@ -311,15 +330,19 @@ class DashboardSnapshot {
       habitLogs[dashboardDateKey(date)]?[habitId];
 
   double completionFor(DateTime date) {
-    if (habits.isEmpty) return 0;
-    final done = habits.where((habit) {
+    final activeHabits = habitsFor(date);
+    if (activeHabits.isEmpty) return 0;
+    final done = activeHabits.where((habit) {
       final status = habitStatusFor(habit.id, date);
       if (status != null) return status == 'done';
       return _isDashboardCurrentWeek(date) &&
           habit.weeklyProgress[date.weekday - 1];
     }).length;
-    return done / habits.length;
+    return done / activeHabits.length;
   }
+
+  List<DashboardHabit> habitsFor(DateTime date) =>
+      habits.where((habit) => habit.isActiveOn(date)).toList();
 
   DashboardSnapshot copyWith({
     List<DashboardHabit>? habits,
@@ -384,11 +407,14 @@ Color dashboardColorFromHex(String? hex) {
 }
 
 Color dashboardGoalColor(String? category) => switch (category) {
+  'lavoro' => const Color(0xFF3B82F6),
   'salute' => const Color(0xFF10B981),
   'finanza' => const Color(0xFFF59E0B),
   'relazioni' => const Color(0xFFEC4899),
   'formazione' => const Color(0xFF7C3AED),
   'hobby' => const Color(0xFF06B6D4),
+  'spirituale' => const Color(0xFFF97316),
+  'altro' => const Color(0xFF6B7280),
   _ => const Color(0xFF3B82F6),
 };
 

@@ -42,16 +42,17 @@ preview coverage, cloud integration gates and per-platform adaptations.
 
 ## Supabase configuration
 
-Supply the frontend key at build time. Do not commit it and never use a
-service-role or secret key in a desktop binary.
+The mobile production config is the only source of truth. Do not use the root
+web `.env`, duplicate credentials under `desktop`, or embed a service-role or
+secret key in a desktop binary.
 
 ```bash
-flutter run -d macos \
-  --dart-define=EVOLVE_SUPABASE_URL=https://PROJECT.supabase.co \
-  --dart-define=EVOLVE_SUPABASE_PUBLISHABLE_KEY=YOUR_FRONTEND_KEY
+dart run tool/flutter_with_mobile_supabase.dart run -d macos
 ```
 
-Without these define values the app intentionally starts in local preview mode.
+The launcher reads `../mobile/lib/core/supabase_config.dart` and forwards its
+production URL and frontend `anonKey` as compile-time desktop defines. Without
+those define values the app intentionally starts in local preview mode.
 
 The adapter is implemented, but publishing still requires a schema pull,
 migration reconciliation and RLS audit. The applied Supabase project exposes
@@ -77,6 +78,9 @@ enabled. Debug preview builds remain ad-hoc buildable.
 flutter pub get
 flutter run -d macos
 ```
+
+Use `dart run tool/flutter_with_mobile_supabase.dart run -d macos` when testing
+the shared production backend.
 
 ## Verify
 

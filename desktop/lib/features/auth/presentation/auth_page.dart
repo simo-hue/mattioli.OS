@@ -45,10 +45,10 @@ class _DesktopAuthPageState extends ConsumerState<DesktopAuthPage> {
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.stretch,
                   children: [
-                    const Icon(
+                    Icon(
                       Icons.auto_awesome_rounded,
                       size: 38,
-                      color: EvolveColors.primary,
+                      color: context.evolveAccent,
                     ),
                     const SizedBox(height: 16),
                     Text(

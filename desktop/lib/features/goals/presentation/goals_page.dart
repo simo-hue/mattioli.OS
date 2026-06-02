@@ -1,4 +1,5 @@
 import 'package:evolve_desktop/app/theme/evolve_theme.dart';
+import 'package:evolve_desktop/core/macro_goal_calendar.dart';
 import 'package:evolve_desktop/features/dashboard/application/dashboard_controller.dart';
 import 'package:evolve_desktop/features/dashboard/domain/dashboard_models.dart';
 import 'package:evolve_desktop/features/goals/application/goal_categories_controller.dart';
@@ -16,17 +17,31 @@ class GoalsPage extends ConsumerStatefulWidget {
 }
 
 class _GoalsPageState extends ConsumerState<GoalsPage> {
-  GoalType? _filter;
+  late GoalType _selectedType;
+  late int _selectedYear;
+  late int _selectedQuarter;
+  late int _selectedMonth;
+  late int _selectedWeek;
   bool _showStats = false;
-  int _periodOffset = 0;
   final _categories = [..._defaultGoalCategories];
   final _archivedCategoryIds = <String>{};
+
+  @override
+  void initState() {
+    super.initState();
+    final now = DateTime.now();
+    _selectedType = GoalType.weekly;
+    _selectedYear = now.year;
+    _selectedQuarter = ((now.month - 1) ~/ 3) + 1;
+    _selectedMonth = now.month;
+    _selectedWeek = logicalWeekOfMonth(now);
+  }
 
   @override
   Widget build(BuildContext context) {
     ref.watch(desktopGoalCategoriesControllerProvider);
     final allGoals = ref.watch(dashboardControllerProvider).goals;
-    final goals = allGoals.where(_matchesPeriod).toList();
+    final goals = allGoals.where(_matchesPeriod).toList()..sort(_sortGoals);
 
     return DesktopPage(
       title: 'Obiettivi',
@@ -44,13 +59,31 @@ class _GoalsPageState extends ConsumerState<GoalsPage> {
           _GoalOverview(goals: allGoals),
           const SizedBox(height: 18),
           _GoalToolbar(
-            filter: _filter,
+            selectedType: _selectedType,
             showStats: _showStats,
             periodLabel: _periodLabel,
-            onFilterChanged: (type) => setState(() => _filter = type),
+            selectedYear: _selectedYear,
+            selectedQuarter: _selectedQuarter,
+            selectedMonth: _selectedMonth,
+            selectedWeek: _selectedWeek,
+            onTypeChanged: (type) => setState(() => _selectedType = type),
+            onYearChanged: (year) => setState(() {
+              _selectedYear = year;
+              _selectedWeek = _selectedWeek.clamp(
+                1,
+                logicalWeeksInMonth(_selectedYear, _selectedMonth),
+              );
+            }),
+            onQuarterChanged: (quarter) =>
+                setState(() => _selectedQuarter = quarter),
+            onMonthChanged: (month) => setState(() {
+              _selectedMonth = month;
+              _selectedWeek = 1;
+            }),
+            onWeekChanged: (week) => setState(() => _selectedWeek = week),
             onToggleStats: () => setState(() => _showStats = !_showStats),
-            onPrevious: () => setState(() => _periodOffset--),
-            onNext: () => setState(() => _periodOffset++),
+            onPrevious: () => _movePeriod(-1),
+            onNext: () => _movePeriod(1),
             onManageCategories: _openCategoryManager,
           ),
           const SizedBox(height: 14),
@@ -66,6 +99,7 @@ class _GoalsPageState extends ConsumerState<GoalsPage> {
                   goals: goals
                       .where((goal) => goal.state == GoalState.active)
                       .toList(),
+                  onEdit: _openGoalEditorFor,
                 );
                 final history = Column(
                   children: [
@@ -75,6 +109,7 @@ class _GoalsPageState extends ConsumerState<GoalsPage> {
                       goals: goals
                           .where((goal) => goal.state == GoalState.completed)
                           .toList(),
+                      onEdit: _openGoalEditorFor,
                     ),
                     const SizedBox(height: 18),
                     _GoalList(
@@ -83,6 +118,7 @@ class _GoalsPageState extends ConsumerState<GoalsPage> {
                       goals: goals
                           .where((goal) => goal.state == GoalState.failed)
                           .toList(),
+                      onEdit: _openGoalEditorFor,
                     ),
                   ],
                 );
@@ -106,53 +142,128 @@ class _GoalsPageState extends ConsumerState<GoalsPage> {
   }
 
   String get _periodLabel {
-    final now = DateTime.now();
-    final year = now.year + _periodOffset;
-    return switch (_filter) {
-      null || GoalType.lifetime => 'Tutti i periodi',
-      GoalType.annual => '$year',
-      GoalType.quarterly => 'Q${((now.month - 1) ~/ 3) + 1} $year',
-      GoalType.monthly => '${now.month}/$year',
+    return switch (_selectedType) {
+      GoalType.lifetime => 'Obiettivi di vita',
+      GoalType.annual => '$_selectedYear',
+      GoalType.quarterly => 'Q$_selectedQuarter $_selectedYear',
+      GoalType.monthly => '${_months[_selectedMonth - 1]} $_selectedYear',
       GoalType.weekly =>
-        'Settimana ${((now.day - 1) ~/ 7) + 1}, ${now.month}/$year',
+        'Settimana $_selectedWeek, ${_months[_selectedMonth - 1]} $_selectedYear',
     };
   }
 
   bool _matchesPeriod(DashboardGoal goal) {
-    final type = _filter;
-    if (type == null) return true;
+    final type = _selectedType;
     if (goal.type != type) return false;
     if (type == GoalType.lifetime) return true;
-
-    final now = DateTime.now();
-    final year = now.year + _periodOffset;
-    if (goal.year != null && goal.year != year) return false;
+    if (goal.year != _selectedYear) return false;
     return switch (type) {
-      GoalType.quarterly =>
-        goal.quarter == null || goal.quarter == ((now.month - 1) ~/ 3) + 1,
-      GoalType.monthly => goal.month == null || goal.month == now.month,
+      GoalType.quarterly => goal.quarter == _selectedQuarter,
+      GoalType.monthly => goal.month == _selectedMonth,
       GoalType.weekly =>
-        (goal.month == null || goal.month == now.month) &&
-            (goal.weekNumber == null ||
-                goal.weekNumber == ((now.day - 1) ~/ 7) + 1),
+        goal.month == _selectedMonth && goal.weekNumber == _selectedWeek,
       _ => true,
     };
+  }
+
+  void _movePeriod(int direction) {
+    setState(() {
+      switch (_selectedType) {
+        case GoalType.lifetime:
+          return;
+        case GoalType.annual:
+          _selectedYear += direction;
+        case GoalType.quarterly:
+          _selectedQuarter += direction;
+          if (_selectedQuarter > 4) {
+            _selectedQuarter = 1;
+            _selectedYear++;
+          } else if (_selectedQuarter < 1) {
+            _selectedQuarter = 4;
+            _selectedYear--;
+          }
+        case GoalType.monthly:
+          _selectedMonth += direction;
+          if (_selectedMonth > 12) {
+            _selectedMonth = 1;
+            _selectedYear++;
+          } else if (_selectedMonth < 1) {
+            _selectedMonth = 12;
+            _selectedYear--;
+          }
+        case GoalType.weekly:
+          _selectedWeek += direction;
+          if (_selectedWeek >
+              logicalWeeksInMonth(_selectedYear, _selectedMonth)) {
+            _selectedWeek = 1;
+            _selectedMonth++;
+            if (_selectedMonth > 12) {
+              _selectedMonth = 1;
+              _selectedYear++;
+            }
+          } else if (_selectedWeek < 1) {
+            _selectedMonth--;
+            if (_selectedMonth < 1) {
+              _selectedMonth = 12;
+              _selectedYear--;
+            }
+            _selectedWeek = logicalWeeksInMonth(_selectedYear, _selectedMonth);
+          }
+      }
+    });
+  }
+
+  int _sortGoals(DashboardGoal a, DashboardGoal b) {
+    final stateComparison = a.state.index.compareTo(b.state.index);
+    if (stateComparison != 0) return stateComparison;
+    return (a.createdAt ?? DateTime(0)).compareTo(b.createdAt ?? DateTime(0));
   }
 
   Future<void> _openGoalEditor() async {
     final draft = await showDialog<_GoalDraft>(
       context: context,
-      builder: (context) => _GoalEditorDialog(categories: _availableCategories),
+      builder: (context) => _GoalEditorDialog(
+        categories: _availableCategories,
+        initialType: _selectedType,
+      ),
     );
     if (draft == null) return;
     await ref
         .read(dashboardControllerProvider.notifier)
         .addGoal(
           title: draft.title,
-          category: draft.category.label,
+          category: draft.category.key ?? '',
           color: draft.category.color,
           type: draft.type,
           dueLabel: draft.dueLabel,
+          categoryId: draft.category.id,
+          year: _selectedYear,
+          quarter: _selectedQuarter,
+          month: _selectedMonth,
+          weekNumber: _selectedWeek,
+        );
+  }
+
+  Future<void> _openGoalEditorFor(DashboardGoal goal) async {
+    final categories = _availableCategories;
+    final category = _categoryForGoal(goal, categories);
+    final draft = await showDialog<_GoalDraft>(
+      context: context,
+      builder: (context) => _GoalEditorDialog(
+        categories: categories,
+        initialType: goal.type,
+        goal: goal,
+        initialCategory: category,
+      ),
+    );
+    if (draft == null) return;
+    await ref
+        .read(dashboardControllerProvider.notifier)
+        .updateGoal(
+          id: goal.id,
+          title: draft.title,
+          category: draft.category.key ?? '',
+          color: draft.category.color,
           categoryId: draft.category.id,
         );
   }
@@ -179,13 +290,26 @@ class _GoalsPageState extends ConsumerState<GoalsPage> {
                       title: Text(category.label),
                       trailing: category.isDefault
                           ? const StatusPill(label: 'Predefinita')
-                          : IconButton(
-                              tooltip: 'Archivia categoria',
-                              onPressed: () {
-                                _archiveCategory(category);
-                                setDialogState(() {});
-                              },
-                              icon: const Icon(Icons.archive_outlined),
+                          : Row(
+                              mainAxisSize: MainAxisSize.min,
+                              children: [
+                                IconButton(
+                                  tooltip: 'Modifica categoria',
+                                  onPressed: () async {
+                                    await _editCategory(category);
+                                    setDialogState(() {});
+                                  },
+                                  icon: const Icon(Icons.edit_outlined),
+                                ),
+                                IconButton(
+                                  tooltip: 'Archivia categoria',
+                                  onPressed: () {
+                                    _archiveCategory(category);
+                                    setDialogState(() {});
+                                  },
+                                  icon: const Icon(Icons.archive_outlined),
+                                ),
+                              ],
                             ),
                     ),
                 ],
@@ -245,6 +369,7 @@ class _GoalsPageState extends ConsumerState<GoalsPage> {
     final remote =
         ref.read(desktopGoalCategoriesControllerProvider).value ?? const [];
     for (final category in remote) {
+      if (category.isArchived) continue;
       if (_archivedCategoryIds.contains(category.id)) continue;
       if (categories.any((item) => item.id == category.id)) continue;
       categories.add(
@@ -277,24 +402,70 @@ class _GoalsPageState extends ConsumerState<GoalsPage> {
       );
     }
   }
+
+  Future<void> _editCategory(_GoalCategory category) async {
+    final updated = await showDialog<_GoalCategory>(
+      context: context,
+      builder: (context) => _CategoryEditorDialog(category: category),
+    );
+    if (updated == null) return;
+
+    final id = category.id;
+    if (id != null) {
+      try {
+        await ref
+            .read(desktopGoalCategoriesControllerProvider.notifier)
+            .updateCategory(id, updated.label, updated.color);
+      } catch (_) {
+        if (!mounted) return;
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(content: Text('Modifica categoria non riuscita.')),
+        );
+        return;
+      }
+    }
+    if (!mounted) return;
+    setState(() {
+      final index = _categories.indexOf(category);
+      if (index != -1) {
+        _categories[index] = updated.copyWith(id: id);
+      }
+    });
+  }
 }
 
 class _GoalToolbar extends StatelessWidget {
   const _GoalToolbar({
-    required this.filter,
+    required this.selectedType,
     required this.showStats,
     required this.periodLabel,
-    required this.onFilterChanged,
+    required this.selectedYear,
+    required this.selectedQuarter,
+    required this.selectedMonth,
+    required this.selectedWeek,
+    required this.onTypeChanged,
+    required this.onYearChanged,
+    required this.onQuarterChanged,
+    required this.onMonthChanged,
+    required this.onWeekChanged,
     required this.onToggleStats,
     required this.onPrevious,
     required this.onNext,
     required this.onManageCategories,
   });
 
-  final GoalType? filter;
+  final GoalType selectedType;
   final bool showStats;
   final String periodLabel;
-  final ValueChanged<GoalType?> onFilterChanged;
+  final int selectedYear;
+  final int selectedQuarter;
+  final int selectedMonth;
+  final int selectedWeek;
+  final ValueChanged<GoalType> onTypeChanged;
+  final ValueChanged<int> onYearChanged;
+  final ValueChanged<int> onQuarterChanged;
+  final ValueChanged<int> onMonthChanged;
+  final ValueChanged<int> onWeekChanged;
   final VoidCallback onToggleStats;
   final VoidCallback onPrevious;
   final VoidCallback onNext;
@@ -304,58 +475,155 @@ class _GoalToolbar extends StatelessWidget {
   Widget build(BuildContext context) {
     return EvolvePanel(
       padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 11),
-      child: Row(
+      child: Column(
         children: [
-          PopupMenuButton<String>(
-            tooltip: 'Filtra per orizzonte',
-            initialValue: filter?.name ?? 'all',
-            onSelected: (value) {
-              onFilterChanged(
-                value == 'all' ? null : GoalType.values.byName(value),
-              );
-            },
-            itemBuilder: (context) => [
-              const PopupMenuItem(
-                value: 'all',
-                child: Text('Tutti gli orizzonti'),
+          SizedBox(
+            width: double.infinity,
+            child: SegmentedButton<GoalType>(
+              segments: [
+                for (final type in GoalType.values)
+                  ButtonSegment(value: type, label: Text(type.label)),
+              ],
+              selected: {selectedType},
+              onSelectionChanged: (selection) =>
+                  onTypeChanged(selection.single),
+            ),
+          ),
+          const SizedBox(height: 11),
+          Wrap(
+            spacing: 12,
+            runSpacing: 8,
+            alignment: WrapAlignment.spaceBetween,
+            crossAxisAlignment: WrapCrossAlignment.center,
+            children: [
+              Wrap(
+                spacing: 8,
+                runSpacing: 8,
+                crossAxisAlignment: WrapCrossAlignment.center,
+                children: [
+                  if (selectedType != GoalType.lifetime) ...[
+                    _PeriodDropdown(
+                      value: selectedYear,
+                      values: [
+                        for (
+                          var year = DateTime.now().year - 10;
+                          year <= DateTime.now().year + 10;
+                          year++
+                        )
+                          year,
+                      ],
+                      labelFor: (value) => '$value',
+                      onChanged: onYearChanged,
+                    ),
+                    if (selectedType == GoalType.quarterly)
+                      _PeriodDropdown(
+                        value: selectedQuarter,
+                        values: const [1, 2, 3, 4],
+                        labelFor: (value) => 'Q$value',
+                        onChanged: onQuarterChanged,
+                      ),
+                    if (selectedType == GoalType.monthly ||
+                        selectedType == GoalType.weekly)
+                      _PeriodDropdown(
+                        value: selectedMonth,
+                        values: [
+                          for (var month = 1; month <= 12; month++) month,
+                        ],
+                        labelFor: (value) => _months[value - 1],
+                        onChanged: onMonthChanged,
+                      ),
+                    if (selectedType == GoalType.weekly)
+                      _PeriodDropdown(
+                        value: selectedWeek,
+                        values: [
+                          for (
+                            var week = 1;
+                            week <=
+                                logicalWeeksInMonth(
+                                  selectedYear,
+                                  selectedMonth,
+                                );
+                            week++
+                          )
+                            week,
+                        ],
+                        labelFor: (value) => 'Settimana $value',
+                        onChanged: onWeekChanged,
+                      ),
+                    IconButton(
+                      tooltip: 'Periodo precedente',
+                      onPressed: onPrevious,
+                      icon: const Icon(Icons.chevron_left_rounded),
+                    ),
+                    IconButton(
+                      tooltip: 'Periodo successivo',
+                      onPressed: onNext,
+                      icon: const Icon(Icons.chevron_right_rounded),
+                    ),
+                  ],
+                  Text(
+                    periodLabel,
+                    style: Theme.of(context).textTheme.titleMedium,
+                  ),
+                ],
               ),
-              for (final type in GoalType.values)
-                PopupMenuItem(value: type.name, child: Text(type.label)),
+              Wrap(
+                spacing: 8,
+                crossAxisAlignment: WrapCrossAlignment.center,
+                children: [
+                  OutlinedButton.icon(
+                    onPressed: onManageCategories,
+                    icon: const Icon(Icons.category_outlined, size: 17),
+                    label: const Text('Categorie'),
+                  ),
+                  FilledButton.tonalIcon(
+                    onPressed: onToggleStats,
+                    icon: Icon(
+                      showStats
+                          ? Icons.view_list_outlined
+                          : Icons.insights_outlined,
+                      size: 17,
+                    ),
+                    label: Text(showStats ? 'Lista' : 'Statistiche'),
+                  ),
+                ],
+              ),
             ],
-            child: StatusPill(
-              label: filter?.label ?? 'Tutti gli orizzonti',
-              icon: Icons.filter_list_rounded,
-            ),
-          ),
-          const SizedBox(width: 13),
-          IconButton(
-            tooltip: 'Periodo precedente',
-            onPressed: onPrevious,
-            icon: const Icon(Icons.chevron_left_rounded),
-          ),
-          Text(periodLabel, style: Theme.of(context).textTheme.titleMedium),
-          IconButton(
-            tooltip: 'Periodo successivo',
-            onPressed: onNext,
-            icon: const Icon(Icons.chevron_right_rounded),
-          ),
-          const Spacer(),
-          OutlinedButton.icon(
-            onPressed: onManageCategories,
-            icon: const Icon(Icons.category_outlined, size: 17),
-            label: const Text('Categorie'),
-          ),
-          const SizedBox(width: 8),
-          FilledButton.tonalIcon(
-            onPressed: onToggleStats,
-            icon: Icon(
-              showStats ? Icons.view_list_outlined : Icons.insights_outlined,
-              size: 17,
-            ),
-            label: Text(showStats ? 'Lista' : 'Statistiche'),
           ),
         ],
       ),
+    );
+  }
+}
+
+class _PeriodDropdown extends StatelessWidget {
+  const _PeriodDropdown({
+    required this.value,
+    required this.values,
+    required this.labelFor,
+    required this.onChanged,
+  });
+
+  final int value;
+  final List<int> values;
+  final String Function(int value) labelFor;
+  final ValueChanged<int> onChanged;
+
+  @override
+  Widget build(BuildContext context) {
+    return DropdownButton<int>(
+      value: value,
+      items: [
+        for (final item in values)
+          DropdownMenuItem(value: item, child: Text(labelFor(item))),
+      ],
+      onChanged: (value) {
+        if (value != null) onChanged(value);
+      },
+      underline: const SizedBox.shrink(),
+      borderRadius: BorderRadius.circular(10),
+      style: Theme.of(context).textTheme.bodyMedium,
+      dropdownColor: EvolveColors.panelRaised,
     );
   }
 }
@@ -376,19 +644,19 @@ class _GoalOverview extends StatelessWidget {
               active.length;
 
     return EvolvePanel(
-      color: const Color(0xFF11191E),
+      color: context.evolveColors.panelRaised,
       child: Row(
         children: [
           Container(
             width: 50,
             height: 50,
             decoration: BoxDecoration(
-              color: EvolveColors.primaryStrong.withValues(alpha: 0.12),
+              color: context.evolveAccent.withValues(alpha: 0.12),
               borderRadius: BorderRadius.circular(15),
             ),
-            child: const Icon(
+            child: Icon(
               Icons.explore_outlined,
-              color: EvolveColors.primaryStrong,
+              color: context.evolveAccent,
             ),
           ),
           const SizedBox(width: 16),
@@ -423,11 +691,13 @@ class _GoalList extends StatelessWidget {
     required this.title,
     required this.subtitle,
     required this.goals,
+    required this.onEdit,
   });
 
   final String title;
   final String subtitle;
   final List<DashboardGoal> goals;
+  final ValueChanged<DashboardGoal> onEdit;
 
   @override
   Widget build(BuildContext context) {
@@ -446,7 +716,7 @@ class _GoalList extends StatelessWidget {
             )
           else
             for (var index = 0; index < goals.length; index++) ...[
-              _GoalCard(goal: goals[index]),
+              _GoalCard(goal: goals[index], onEdit: onEdit),
               if (index != goals.length - 1) const SizedBox(height: 11),
             ],
         ],
@@ -456,13 +726,21 @@ class _GoalList extends StatelessWidget {
 }
 
 class _GoalCard extends ConsumerWidget {
-  const _GoalCard({required this.goal});
+  const _GoalCard({required this.goal, required this.onEdit});
 
   final DashboardGoal goal;
+  final ValueChanged<DashboardGoal> onEdit;
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final controller = ref.read(dashboardControllerProvider.notifier);
+    final remoteCategories =
+        ref.watch(desktopGoalCategoriesControllerProvider).value ?? const [];
+    final category = _categoryForGoal(goal, [
+      ..._defaultGoalCategories,
+      for (final remote in remoteCategories)
+        _GoalCategory(id: remote.id, label: remote.label, color: remote.color),
+    ]);
     return Container(
       padding: const EdgeInsets.all(14),
       decoration: BoxDecoration(
@@ -479,7 +757,7 @@ class _GoalCard extends ConsumerWidget {
                 width: 9,
                 height: 9,
                 decoration: BoxDecoration(
-                  color: goal.color,
+                  color: category.color,
                   shape: BoxShape.circle,
                 ),
               ),
@@ -500,6 +778,8 @@ class _GoalCard extends ConsumerWidget {
                       controller.updateGoalState(goal.id, GoalState.failed);
                     case 'reschedule':
                       controller.rescheduleGoal(goal.id);
+                    case 'edit':
+                      onEdit(goal);
                     case 'delete':
                       controller.deleteGoal(goal.id);
                   }
@@ -520,6 +800,7 @@ class _GoalCard extends ConsumerWidget {
                       value: 'reschedule',
                       child: Text('Ripianifica'),
                     ),
+                  const PopupMenuItem(value: 'edit', child: Text('Modifica')),
                   const PopupMenuDivider(),
                   const PopupMenuItem(value: 'delete', child: Text('Elimina')),
                 ],
@@ -532,7 +813,7 @@ class _GoalCard extends ConsumerWidget {
             child: LinearProgressIndicator(
               value: goal.progress,
               minHeight: 6,
-              color: goal.color,
+              color: category.color,
               backgroundColor: EvolveColors.panelSoft,
             ),
           ),
@@ -540,7 +821,7 @@ class _GoalCard extends ConsumerWidget {
           Row(
             children: [
               Text(
-                '${goal.category} · ${goal.type.label}',
+                '${category.label} · ${goal.type.label}',
                 style: Theme.of(context).textTheme.bodySmall,
               ),
               const Spacer(),
@@ -550,7 +831,7 @@ class _GoalCard extends ConsumerWidget {
                     : goal.state.label,
                 style: TextStyle(
                   color: goal.state == GoalState.completed
-                      ? EvolveColors.primaryStrong
+                      ? context.evolveAccent
                       : goal.state == GoalState.failed
                       ? EvolveColors.rose
                       : EvolveColors.subtle,
@@ -682,9 +963,17 @@ class _TypeProgress extends StatelessWidget {
 }
 
 class _GoalEditorDialog extends StatefulWidget {
-  const _GoalEditorDialog({required this.categories});
+  const _GoalEditorDialog({
+    required this.categories,
+    required this.initialType,
+    this.goal,
+    this.initialCategory,
+  });
 
   final List<_GoalCategory> categories;
+  final GoalType initialType;
+  final DashboardGoal? goal;
+  final _GoalCategory? initialCategory;
 
   @override
   State<_GoalEditorDialog> createState() => _GoalEditorDialogState();
@@ -692,13 +981,19 @@ class _GoalEditorDialog extends StatefulWidget {
 
 class _GoalEditorDialogState extends State<_GoalEditorDialog> {
   final _title = TextEditingController();
-  GoalType _type = GoalType.annual;
+  late GoalType _type;
   late _GoalCategory _category;
 
   @override
   void initState() {
     super.initState();
-    _category = widget.categories.first;
+    _title.text = widget.goal?.title ?? '';
+    _type = widget.initialType;
+    _category =
+        widget.categories
+            .where((item) => item == widget.initialCategory)
+            .firstOrNull ??
+        widget.categories.first;
   }
 
   @override
@@ -710,7 +1005,9 @@ class _GoalEditorDialogState extends State<_GoalEditorDialog> {
   @override
   Widget build(BuildContext context) {
     return AlertDialog(
-      title: const Text('Nuovo obiettivo'),
+      title: Text(
+        widget.goal == null ? 'Nuovo obiettivo' : 'Modifica obiettivo',
+      ),
       content: SizedBox(
         width: 430,
         child: Column(
@@ -770,7 +1067,7 @@ class _GoalEditorDialogState extends State<_GoalEditorDialog> {
               ),
             );
           },
-          child: const Text('Crea'),
+          child: Text(widget.goal == null ? 'Crea' : 'Salva'),
         ),
       ],
     );
@@ -778,15 +1075,24 @@ class _GoalEditorDialogState extends State<_GoalEditorDialog> {
 }
 
 class _CategoryEditorDialog extends StatefulWidget {
-  const _CategoryEditorDialog();
+  const _CategoryEditorDialog({this.category});
+
+  final _GoalCategory? category;
 
   @override
   State<_CategoryEditorDialog> createState() => _CategoryEditorDialogState();
 }
 
 class _CategoryEditorDialogState extends State<_CategoryEditorDialog> {
-  final _name = TextEditingController();
-  Color _color = EvolveColors.cyan;
+  late final TextEditingController _name;
+  late Color _color;
+
+  @override
+  void initState() {
+    super.initState();
+    _name = TextEditingController(text: widget.category?.label ?? '');
+    _color = widget.category?.color ?? EvolveColors.cyan;
+  }
 
   @override
   void dispose() {
@@ -797,7 +1103,9 @@ class _CategoryEditorDialogState extends State<_CategoryEditorDialog> {
   @override
   Widget build(BuildContext context) {
     return AlertDialog(
-      title: const Text('Nuova categoria'),
+      title: Text(
+        widget.category == null ? 'Nuova categoria' : 'Modifica categoria',
+      ),
       content: SizedBox(
         width: 380,
         child: Column(
@@ -842,7 +1150,7 @@ class _CategoryEditorDialogState extends State<_CategoryEditorDialog> {
               _GoalCategory(label: _name.text.trim(), color: _color),
             );
           },
-          child: const Text('Aggiungi'),
+          child: Text(widget.category == null ? 'Aggiungi' : 'Salva'),
         ),
       ],
     );
@@ -866,15 +1174,32 @@ class _GoalDraft {
 class _GoalCategory {
   const _GoalCategory({
     this.id,
+    this.key,
     required this.label,
     required this.color,
     this.isDefault = false,
   });
 
   final String? id;
+  final String? key;
   final String label;
   final Color color;
   final bool isDefault;
+
+  _GoalCategory copyWith({
+    String? id,
+    String? key,
+    String? label,
+    Color? color,
+  }) {
+    return _GoalCategory(
+      id: id ?? this.id,
+      key: key ?? this.key,
+      label: label ?? this.label,
+      color: color ?? this.color,
+      isDefault: isDefault,
+    );
+  }
 }
 
 String _dueLabelFor(GoalType type) => switch (type) {
@@ -894,17 +1219,86 @@ const _goalColors = [
 ];
 
 const _defaultGoalCategories = [
-  _GoalCategory(label: 'Lavoro', color: EvolveColors.cyan, isDefault: true),
   _GoalCategory(
+    key: 'lavoro',
+    label: 'Lavoro',
+    color: EvolveColors.cyan,
+    isDefault: true,
+  ),
+  _GoalCategory(
+    key: 'salute',
     label: 'Salute',
     color: EvolveColors.primaryStrong,
     isDefault: true,
   ),
-  _GoalCategory(label: 'Finanza', color: EvolveColors.amber, isDefault: true),
-  _GoalCategory(label: 'Relazioni', color: EvolveColors.rose, isDefault: true),
   _GoalCategory(
+    key: 'finanza',
+    label: 'Finanza',
+    color: EvolveColors.amber,
+    isDefault: true,
+  ),
+  _GoalCategory(
+    key: 'relazioni',
+    label: 'Relazioni',
+    color: EvolveColors.rose,
+    isDefault: true,
+  ),
+  _GoalCategory(
+    key: 'formazione',
     label: 'Formazione',
     color: EvolveColors.violet,
     isDefault: true,
   ),
+  _GoalCategory(
+    key: 'hobby',
+    label: 'Hobby',
+    color: EvolveColors.cyan,
+    isDefault: true,
+  ),
+  _GoalCategory(
+    key: 'spirituale',
+    label: 'Spirituale',
+    color: Color(0xFFF97316),
+    isDefault: true,
+  ),
+  _GoalCategory(
+    key: 'altro',
+    label: 'Altro',
+    color: Color(0xFF6B7280),
+    isDefault: true,
+  ),
+];
+
+_GoalCategory _categoryForGoal(
+  DashboardGoal goal,
+  List<_GoalCategory> categories,
+) {
+  for (final category in categories) {
+    if (goal.categoryId != null && category.id == goal.categoryId) {
+      return category;
+    }
+  }
+  for (final category in categories) {
+    if (category.key == goal.category) return category;
+  }
+  return _GoalCategory(
+    key: goal.category.isEmpty ? null : goal.category,
+    label: goal.category.isEmpty ? 'Default' : goal.category,
+    color: goal.color,
+  );
+}
+
+const _months = [
+  'Gennaio',
+  'Febbraio',
+  'Marzo',
+  'Aprile',
+  'Maggio',
+  'Giugno',
+  'Luglio',
+  'Agosto',
+  'Settembre',
+  'Ottobre',
+  'Novembre',
+  'Dicembre',
 ];

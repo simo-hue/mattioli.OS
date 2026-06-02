@@ -1,6 +1,7 @@
 import 'dart:async';
 import 'dart:convert';
 
+import 'package:evolve_desktop/app/theme/desktop_appearance_controller.dart';
 import 'package:evolve_desktop/app/theme/evolve_theme.dart';
 import 'package:evolve_desktop/core/app_bootstrap.dart';
 import 'package:evolve_desktop/core/app_logger.dart';
@@ -52,9 +53,11 @@ class _SettingsPageState extends ConsumerState<SettingsPage> {
   void initState() {
     super.initState();
     final preferences = ref.read(sharedPreferencesProvider);
+    final appearance = ref.read(desktopAppearanceControllerProvider);
+    _darkMode = appearance.themeMode != ThemeMode.light;
+    _accent = appearance.accentColor;
     if (preferences == null) return;
     _launchAtLogin = preferences.getBool('desktop_launch_at_login') ?? false;
-    _darkMode = preferences.getBool('desktop_dark_mode') ?? true;
     _reduceAnimations =
         preferences.getBool('desktop_reduce_animations') ?? false;
     _timeFormat24h = preferences.getBool('pref_time_format_24h') ?? true;
@@ -70,10 +73,6 @@ class _SettingsPageState extends ConsumerState<SettingsPage> {
     _language = preferences.getString('language') ?? 'Sistema';
     _morningTime = preferences.getString('morning_brief_time') ?? '08:00';
     _eveningTime = preferences.getString('evening_review_time') ?? '20:30';
-    _accent = Color(
-      preferences.getInt('accent_color') ??
-          EvolveColors.primaryStrong.toARGB32(),
-    );
     unawaited(_loadProfilePreferences());
   }
 
@@ -239,13 +238,18 @@ class _SettingsPageState extends ConsumerState<SettingsPage> {
               label: 'Modalita scura',
               detail: 'Il tema chiaro verra applicato dal theme controller.',
               value: _darkMode,
-              onChanged: (value) => _setBool(
-                'desktop_dark_mode',
-                value,
-                () => _darkMode = value,
-                profileColumn: 'theme_mode',
-                profileValue: value ? 'dark' : 'light',
-              ),
+              onChanged: (value) {
+                ref
+                    .read(desktopAppearanceControllerProvider.notifier)
+                    .setThemeMode(value ? ThemeMode.dark : ThemeMode.light);
+                _setBool(
+                  'desktop_dark_mode',
+                  value,
+                  () => _darkMode = value,
+                  profileColumn: 'theme_mode',
+                  profileValue: value ? 'dark' : 'light',
+                );
+              },
             ),
             _SwitchRow(
               label: 'Riduci animazioni',
@@ -268,15 +272,17 @@ class _SettingsPageState extends ConsumerState<SettingsPage> {
               detail: 'Palette estesa riservata a Evolve Pro sul mobile.',
               selected: _accent,
               onChanged: (color) {
-                setState(() => _accent = color);
-                final preferences = ref.read(sharedPreferencesProvider);
-                if (preferences != null) {
-                  unawaited(
-                    preferences.setInt('accent_color', color.toARGB32()),
-                  );
-                }
+                ref
+                    .read(desktopAppearanceControllerProvider.notifier)
+                    .setAccentColor(color);
+                final accent = ref.read(
+                  desktopAppearanceControllerProvider.select(
+                    (appearance) => appearance.accentColor,
+                  ),
+                );
+                setState(() => _accent = accent);
                 unawaited(
-                  _syncProfile({'accent_color': dashboardColorToHex(color)}),
+                  _syncProfile({'accent_color': dashboardColorToHex(accent)}),
                 );
               },
             ),
@@ -663,6 +669,12 @@ class _SettingsPageState extends ConsumerState<SettingsPage> {
             profile['evening_review_time'] as String? ?? _eveningTime;
         _accent = dashboardColorFromHex(profile['accent_color'] as String?);
       });
+      ref
+          .read(desktopAppearanceControllerProvider.notifier)
+          .applyProfile(
+            themeMode: profile['theme_mode'] as String?,
+            accentColor: profile['accent_color'] as String?,
+          );
       final preferences = ref.read(sharedPreferencesProvider);
       if (preferences != null) {
         await Future.wait([

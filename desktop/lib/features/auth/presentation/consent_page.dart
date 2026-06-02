@@ -30,10 +30,10 @@ class _DesktopConsentPageState extends ConsumerState<DesktopConsentPage> {
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  const Icon(
+                  Icon(
                     Icons.shield_outlined,
                     size: 42,
-                    color: EvolveColors.primary,
+                    color: context.evolveAccent,
                   ),
                   const SizedBox(height: 20),
                   Text(

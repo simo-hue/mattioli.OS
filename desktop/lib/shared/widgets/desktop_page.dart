@@ -82,13 +82,15 @@ class PageActionButton extends StatelessWidget {
       child: FilledButton.icon(
         style: FilledButton.styleFrom(
           backgroundColor: primary
-              ? EvolveColors.primary
-              : EvolveColors.panelRaised,
+              ? context.evolveAccent
+              : context.evolveColors.panelRaised,
           foregroundColor: primary
-              ? const Color(0xFF092113)
-              : EvolveColors.foreground,
+              ? Theme.of(context).colorScheme.onPrimary
+              : context.evolveColors.foreground,
           side: BorderSide(
-            color: primary ? EvolveColors.primary : EvolveColors.border,
+            color: primary
+                ? context.evolveAccent
+                : context.evolveColors.border,
           ),
           shape: RoundedRectangleBorder(
             borderRadius: BorderRadius.circular(10),

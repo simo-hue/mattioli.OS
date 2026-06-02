@@ -131,7 +131,7 @@ class _MetricGrid extends StatelessWidget {
               value: '${(snapshot.completionRate * 100).round()}%',
               detail:
                   '${snapshot.completedHabits}/${snapshot.totalHabits} abitudini',
-              color: EvolveColors.primaryStrong,
+              color: context.evolveAccent,
               icon: Icons.bolt_rounded,
             ),
             _MetricCard(
@@ -198,8 +198,8 @@ class _MetricCard extends StatelessWidget {
                   const SizedBox(height: 8),
                   Text(
                     value,
-                    style: const TextStyle(
-                      color: EvolveColors.foreground,
+                    style: TextStyle(
+                      color: context.evolveColors.foreground,
                       fontSize: 27,
                       fontWeight: FontWeight.w800,
                       letterSpacing: -1,
@@ -237,12 +237,12 @@ class _TrendPanel extends StatelessWidget {
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          const SectionHeading(
+          SectionHeading(
             title: 'Andamento settimanale',
             subtitle: 'Percentuale di completamento delle tue abitudini',
             trailing: StatusPill(
               label: '+18% questa settimana',
-              color: EvolveColors.primaryStrong,
+              color: context.evolveAccent,
               icon: Icons.north_east_rounded,
             ),
           ),
@@ -250,7 +250,13 @@ class _TrendPanel extends StatelessWidget {
           SizedBox(
             height: 220,
             width: double.infinity,
-            child: CustomPaint(painter: _TrendChartPainter(points)),
+            child: CustomPaint(
+              painter: _TrendChartPainter(
+                points,
+                accent: context.evolveAccent,
+                palette: context.evolveColors,
+              ),
+            ),
           ),
         ],
       ),
@@ -259,9 +265,15 @@ class _TrendPanel extends StatelessWidget {
 }
 
 class _TrendChartPainter extends CustomPainter {
-  const _TrendChartPainter(this.points);
+  const _TrendChartPainter(
+    this.points, {
+    required this.accent,
+    required this.palette,
+  });
 
   final List<TrendPoint> points;
+  final Color accent;
+  final EvolvePalette palette;
 
   @override
   void paint(Canvas canvas, Size size) {
@@ -276,7 +288,7 @@ class _TrendChartPainter extends CustomPainter {
       size.height - bottom,
     );
     final gridPaint = Paint()
-      ..color = EvolveColors.border
+      ..color = palette.border
       ..strokeWidth = 1;
     final labelPainter = TextPainter(textDirection: TextDirection.ltr);
 
@@ -286,7 +298,7 @@ class _TrendChartPainter extends CustomPainter {
       labelPainter
         ..text = TextSpan(
           text: '${i * 25}%',
-          style: const TextStyle(color: EvolveColors.subtle, fontSize: 10),
+          style: TextStyle(color: palette.subtle, fontSize: 10),
         )
         ..layout()
         ..paint(canvas, Offset(0, y - 6));
@@ -323,32 +335,35 @@ class _TrendChartPainter extends CustomPainter {
     canvas.drawPath(
       fillPath,
       Paint()
-        ..shader = const LinearGradient(
+        ..shader = LinearGradient(
           begin: Alignment.topCenter,
           end: Alignment.bottomCenter,
-          colors: [Color(0x4455C881), Color(0x0055C881)],
+          colors: [
+            accent.withValues(alpha: 0.27),
+            accent.withValues(alpha: 0),
+          ],
         ).createShader(chart),
     );
     canvas.drawPath(
       linePath,
       Paint()
-        ..color = EvolveColors.primaryStrong
+        ..color = accent
         ..strokeWidth = 2.5
         ..style = PaintingStyle.stroke
         ..strokeCap = StrokeCap.round,
     );
 
     for (var i = 0; i < offsets.length; i++) {
-      canvas.drawCircle(offsets[i], 4.5, Paint()..color = EvolveColors.panel);
+      canvas.drawCircle(offsets[i], 4.5, Paint()..color = palette.panel);
       canvas.drawCircle(
         offsets[i],
         3,
-        Paint()..color = EvolveColors.primaryStrong,
+        Paint()..color = accent,
       );
       labelPainter
         ..text = TextSpan(
           text: points[i].label,
-          style: const TextStyle(color: EvolveColors.muted, fontSize: 11),
+          style: TextStyle(color: palette.muted, fontSize: 11),
         )
         ..layout()
         ..paint(
@@ -360,7 +375,9 @@ class _TrendChartPainter extends CustomPainter {
 
   @override
   bool shouldRepaint(covariant _TrendChartPainter oldDelegate) =>
-      oldDelegate.points != points;
+      oldDelegate.points != points ||
+      oldDelegate.accent != accent ||
+      oldDelegate.palette != palette;
 }
 
 class _HabitPanel extends ConsumerWidget {
@@ -374,13 +391,13 @@ class _HabitPanel extends ConsumerWidget {
       padding: const EdgeInsets.fromLTRB(18, 18, 18, 8),
       child: Column(
         children: [
-          const SectionHeading(
+          SectionHeading(
             title: 'Protocollo di oggi',
             subtitle: 'Completa le azioni essenziali prima di aggiungere altro',
-            trailing: StatusPill(label: '5 azioni'),
+            trailing: StatusPill(label: '${snapshot.totalHabits} azioni'),
           ),
           const SizedBox(height: 14),
-          for (final habit in snapshot.habits)
+          for (final habit in snapshot.todayHabits)
             _HabitRow(
               habit: habit,
               onTap: () => ref
@@ -417,7 +434,7 @@ class _HabitRow extends StatelessWidget {
               decoration: BoxDecoration(
                 color: isDone ? habit.color : Colors.transparent,
                 border: Border.all(
-                  color: isDone ? habit.color : EvolveColors.borderStrong,
+                  color: isDone ? habit.color : context.evolveColors.borderStrong,
                 ),
                 borderRadius: BorderRadius.circular(7),
               ),
@@ -438,8 +455,8 @@ class _HabitRow extends StatelessWidget {
                     habit.title,
                     style: TextStyle(
                       color: isDone
-                          ? EvolveColors.muted
-                          : EvolveColors.foreground,
+                          ? context.evolveColors.muted
+                          : context.evolveColors.foreground,
                       fontSize: 13,
                       fontWeight: FontWeight.w600,
                       decoration: isDone ? TextDecoration.lineThrough : null,
@@ -459,7 +476,7 @@ class _HabitRow extends StatelessWidget {
                 height: 8,
                 margin: const EdgeInsets.only(left: 5),
                 decoration: BoxDecoration(
-                  color: completed ? habit.color : EvolveColors.panelSoft,
+                  color: completed ? habit.color : context.evolveColors.panelSoft,
                   shape: BoxShape.circle,
                 ),
               ),
@@ -491,14 +508,14 @@ class _CheckInPanel extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return EvolvePanel(
-      color: const Color(0xFF111A1E),
+      color: context.evolveColors.panelRaised,
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          const Icon(
+          Icon(
             Icons.spa_outlined,
             size: 23,
-            color: EvolveColors.primaryStrong,
+            color: context.evolveAccent,
           ),
           const SizedBox(height: 14),
           Text(
@@ -715,7 +732,7 @@ class _GoalProgressRow extends StatelessWidget {
             value: goal.progress,
             minHeight: 5,
             color: goal.color,
-            backgroundColor: EvolveColors.panelSoft,
+            backgroundColor: context.evolveColors.panelSoft,
           ),
         ),
         const SizedBox(height: 5),
@@ -768,12 +785,16 @@ class _ProgressRing extends StatelessWidget {
       width: 58,
       height: 58,
       child: CustomPaint(
-        painter: _RingPainter(value),
+        painter: _RingPainter(
+          value,
+          accent: context.evolveAccent,
+          track: context.evolveColors.panelSoft,
+        ),
         child: Center(
           child: Text(
             '${(value * 100).round()}%',
-            style: const TextStyle(
-              color: EvolveColors.primary,
+            style: TextStyle(
+              color: context.evolveAccent,
               fontSize: 11,
               fontWeight: FontWeight.w800,
             ),
@@ -785,9 +806,11 @@ class _ProgressRing extends StatelessWidget {
 }
 
 class _RingPainter extends CustomPainter {
-  const _RingPainter(this.value);
+  const _RingPainter(this.value, {required this.accent, required this.track});
 
   final double value;
+  final Color accent;
+  final Color track;
 
   @override
   void paint(Canvas canvas, Size size) {
@@ -798,7 +821,7 @@ class _RingPainter extends CustomPainter {
       center,
       radius,
       Paint()
-        ..color = EvolveColors.panelSoft
+        ..color = track
         ..style = PaintingStyle.stroke
         ..strokeWidth = 5,
     );
@@ -808,7 +831,7 @@ class _RingPainter extends CustomPainter {
       value * math.pi * 2,
       false,
       Paint()
-        ..color = EvolveColors.primaryStrong
+        ..color = accent
         ..style = PaintingStyle.stroke
         ..strokeCap = StrokeCap.round
         ..strokeWidth = 5,
@@ -817,5 +840,7 @@ class _RingPainter extends CustomPainter {
 
   @override
   bool shouldRepaint(covariant _RingPainter oldDelegate) =>
-      oldDelegate.value != value;
+      oldDelegate.value != value ||
+      oldDelegate.accent != accent ||
+      oldDelegate.track != track;
 }

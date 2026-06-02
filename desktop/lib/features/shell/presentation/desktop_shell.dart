@@ -122,7 +122,7 @@ class _DesktopSidebar extends ConsumerWidget {
     return AnimatedContainer(
       duration: const Duration(milliseconds: 180),
       width: width,
-      color: EvolveColors.sidebar,
+      color: context.evolveColors.sidebar,
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.stretch,
         children: [
@@ -169,23 +169,23 @@ class _BrandMark extends StatelessWidget {
             height: 38,
             padding: const EdgeInsets.all(6),
             decoration: BoxDecoration(
-              color: EvolveColors.primary.withValues(alpha: 0.1),
+              color: context.evolveAccent.withValues(alpha: 0.1),
               borderRadius: BorderRadius.circular(12),
               border: Border.all(
-                color: EvolveColors.primary.withValues(alpha: 0.24),
+                color: context.evolveAccent.withValues(alpha: 0.24),
               ),
             ),
             child: Image.asset('assets/images/logo.png'),
           ),
           if (!collapsed) ...[
             const SizedBox(width: 11),
-            const Column(
+            Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
                 Text(
                   'Evolve',
                   style: TextStyle(
-                    color: EvolveColors.foreground,
+                    color: context.evolveColors.foreground,
                     fontWeight: FontWeight.w800,
                     fontSize: 17,
                     letterSpacing: -0.4,
@@ -194,7 +194,7 @@ class _BrandMark extends StatelessWidget {
                 Text(
                   'DESKTOP',
                   style: TextStyle(
-                    color: EvolveColors.primary,
+                    color: context.evolveAccent,
                     fontWeight: FontWeight.w700,
                     fontSize: 9,
                     letterSpacing: 1.6,
@@ -224,7 +224,7 @@ class _SidebarDestination extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final color = selected ? EvolveColors.primary : EvolveColors.muted;
+    final color = selected ? context.evolveAccent : context.evolveColors.muted;
     final destination = Padding(
       padding: EdgeInsets.symmetric(
         horizontal: collapsed ? 11 : 14,
@@ -232,7 +232,7 @@ class _SidebarDestination extends StatelessWidget {
       ),
       child: Material(
         color: selected
-            ? EvolveColors.primary.withValues(alpha: 0.1)
+            ? context.evolveAccent.withValues(alpha: 0.1)
             : Colors.transparent,
         borderRadius: BorderRadius.circular(10),
         child: InkWell(
@@ -262,8 +262,8 @@ class _SidebarDestination extends StatelessWidget {
                   ),
                   Text(
                     section.shortcut,
-                    style: const TextStyle(
-                      color: EvolveColors.subtle,
+                    style: TextStyle(
+                      color: context.evolveColors.subtle,
                       fontSize: 10,
                     ),
                   ),
@@ -307,7 +307,7 @@ class _TopBar extends ConsumerWidget {
                   : 'Sincronizzato',
               color: !cloudEnabled || syncPending
                   ? EvolveColors.amber
-                  : EvolveColors.primaryStrong,
+                  : context.evolveAccent,
               icon: !cloudEnabled
                   ? Icons.science_outlined
                   : syncPending
@@ -339,23 +339,23 @@ class _TopBar extends ConsumerWidget {
                   height: 38,
                   padding: const EdgeInsets.symmetric(horizontal: 11),
                   decoration: BoxDecoration(
-                    color: EvolveColors.panel,
-                    border: Border.all(color: EvolveColors.border),
+                    color: context.evolveColors.panel,
+                    border: Border.all(color: context.evolveColors.border),
                     borderRadius: BorderRadius.circular(10),
                   ),
-                  child: const Row(
+                  child: Row(
                     children: [
                       Icon(
                         Icons.search_rounded,
                         size: 18,
-                        color: EvolveColors.muted,
+                        color: context.evolveColors.muted,
                       ),
                       SizedBox(width: 8),
                       Expanded(
                         child: Text(
                           'Cerca o naviga',
                           style: TextStyle(
-                            color: EvolveColors.muted,
+                            color: context.evolveColors.muted,
                             fontSize: 12,
                           ),
                         ),
@@ -363,7 +363,7 @@ class _TopBar extends ConsumerWidget {
                       Text(
                         '⌘ K',
                         style: TextStyle(
-                          color: EvolveColors.subtle,
+                          color: context.evolveColors.subtle,
                           fontSize: 11,
                         ),
                       ),
@@ -373,19 +373,19 @@ class _TopBar extends ConsumerWidget {
               ),
             ),
             const SizedBox(width: 16),
-            const Icon(
+            Icon(
               Icons.notifications_none_rounded,
-              color: EvolveColors.muted,
+              color: context.evolveColors.muted,
               size: 21,
             ),
             const SizedBox(width: 18),
-            const CircleAvatar(
+            CircleAvatar(
               radius: 16,
-              backgroundColor: EvolveColors.panelSoft,
+              backgroundColor: context.evolveColors.panelSoft,
               child: Text(
                 'SM',
                 style: TextStyle(
-                  color: EvolveColors.primary,
+                  color: context.evolveAccent,
                   fontWeight: FontWeight.w700,
                   fontSize: 10,
                 ),
@@ -410,7 +410,7 @@ class _CommandPalette extends ConsumerWidget {
         constraints: const BoxConstraints(maxWidth: 520),
         child: EvolvePanel(
           padding: const EdgeInsets.all(10),
-          color: EvolveColors.panelRaised,
+          color: context.evolveColors.panelRaised,
           child: Column(
             mainAxisSize: MainAxisSize.min,
             children: [

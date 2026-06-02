@@ -232,6 +232,136 @@ void main() {
     expect(snapshot.completionFor(missingDate), 0);
   });
 
+  test('historical completion ignores habits outside their active range', () {
+    final beforeStart = DateTime(2025, 1, 9);
+    final firstActiveDay = DateTime(2025, 1, 10);
+    final snapshot = DashboardSnapshot(
+      habits: [
+        DashboardHabit(
+          id: 'read',
+          title: 'Leggere',
+          category: 'Formazione',
+          color: EvolveColors.violet,
+          streak: 1,
+          weeklyProgress: const [
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+          ],
+          state: HabitState.pending,
+          startDate: firstActiveDay,
+        ),
+      ],
+      goals: const [],
+      trend: const [],
+      checkIn: const DailyCheckIn(),
+      habitLogs: {
+        '2025-01-09': {'read': 'done'},
+        '2025-01-10': {'read': 'done'},
+      },
+    );
+
+    expect(snapshot.habitsFor(beforeStart), isEmpty);
+    expect(snapshot.completionFor(beforeStart), 0);
+    expect(snapshot.completionFor(firstActiveDay), 1);
+  });
+
+  test('today summary ignores habits outside their active range', () {
+    final today = DateTime.now();
+    final tomorrow = today.add(const Duration(days: 1));
+    final snapshot = DashboardSnapshot(
+      habits: [
+        const DashboardHabit(
+          id: 'active',
+          title: 'Attiva',
+          category: 'Salute',
+          color: EvolveColors.cyan,
+          streak: 1,
+          weeklyProgress: [true, true, true, true, true, true, true],
+          state: HabitState.completed,
+        ),
+        DashboardHabit(
+          id: 'future',
+          title: 'Futura',
+          category: 'Salute',
+          color: EvolveColors.cyan,
+          streak: 0,
+          weeklyProgress: const [
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+          ],
+          state: HabitState.pending,
+          startDate: tomorrow,
+        ),
+      ],
+      goals: const [],
+      trend: const [],
+      checkIn: const DailyCheckIn(),
+    );
+
+    expect(snapshot.todayHabits.map((habit) => habit.id), ['active']);
+    expect(snapshot.completedHabits, 1);
+    expect(snapshot.totalHabits, 1);
+    expect(snapshot.completionRate, 1);
+  });
+
+  test(
+    'goal creation and updates retain selected period and custom category',
+    () async {
+      final repository = InMemoryDashboardRepository();
+      await repository.save(DashboardSnapshot.empty);
+      final container = ProviderContainer(
+        overrides: [dashboardRepositoryProvider.overrideWithValue(repository)],
+      );
+      addTearDown(container.dispose);
+      final controller = container.read(dashboardControllerProvider.notifier);
+
+      await controller.addGoal(
+        title: 'Preparare la retrospettiva',
+        category: 'lavoro',
+        color: EvolveColors.cyan,
+        type: GoalType.weekly,
+        dueLabel: 'Settimana 5, Maggio 2026',
+        year: 2026,
+        month: 5,
+        weekNumber: 5,
+      );
+      var goal = container.read(dashboardControllerProvider).goals.single;
+      expect(goal.year, 2026);
+      expect(goal.month, 5);
+      expect(goal.weekNumber, 5);
+
+      await controller.updateGoal(
+        id: goal.id,
+        title: goal.title,
+        category: '',
+        categoryId: 'custom-category',
+        color: EvolveColors.rose,
+      );
+      goal = container.read(dashboardControllerProvider).goals.single;
+      expect(goal.category, isEmpty);
+      expect(goal.categoryId, 'custom-category');
+
+      await controller.rescheduleGoal(goal.id);
+      final rescheduled = container
+          .read(dashboardControllerProvider)
+          .goals
+          .lastWhere((item) => item.id != goal.id);
+      expect(rescheduled.month, 6);
+      expect(rescheduled.weekNumber, 1);
+      expect(rescheduled.categoryId, 'custom-category');
+    },
+  );
+
   test('offline habit creation keeps a syncable optimistic draft', () async {
     final repository = _OfflineDashboardRepository();
     final container = ProviderContainer(

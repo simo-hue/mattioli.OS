@@ -220,7 +220,7 @@ class _GlobalInfo extends ConsumerWidget {
                 value: '${(snapshot.completionRate * 100).round()}%',
                 detail:
                     '${snapshot.completedHabits}/${snapshot.totalHabits} azioni',
-                color: EvolveColors.primaryStrong,
+                color: context.evolveAccent,
               ),
             ),
             const SizedBox(width: 14),
@@ -318,7 +318,7 @@ class _GlobalTrend extends ConsumerWidget {
                                 heightFactor: point.value,
                                 child: Container(
                                   decoration: BoxDecoration(
-                                    color: EvolveColors.primaryStrong,
+                                    color: context.evolveAccent,
                                     borderRadius: BorderRadius.circular(8),
                                   ),
                                 ),
@@ -341,7 +341,7 @@ class _GlobalTrend extends ConsumerWidget {
                 child: _InlineInsight(
                   title: 'Abitudine migliore',
                   value: _bestHabit(snapshot),
-                  color: EvolveColors.primaryStrong,
+                  color: context.evolveAccent,
                 ),
               ),
               SizedBox(width: 12),
@@ -464,7 +464,7 @@ class _GlobalMood extends StatelessWidget {
                 label: 'Abitudine resiliente',
                 value: _bestHabit(snapshot),
                 detail: 'Completata anche nei giorni difficili',
-                color: EvolveColors.primaryStrong,
+                color: context.evolveAccent,
               ),
             ),
           ],
@@ -517,7 +517,7 @@ class _HabitOverview extends StatelessWidget {
                 label: 'Trend 30 giorni',
                 value: '${(completion * 100).round()}%',
                 detail: 'Completamento negli ultimi 30 giorni',
-                color: EvolveColors.primaryStrong,
+                color: context.evolveAccent,
               ),
             ),
           ],
@@ -633,7 +633,7 @@ class _HabitImprovement extends ConsumerWidget {
           title: 'Leva positiva rilevata',
           detail:
               '${_bestHabit(snapshot)} mantiene la migliore regolarita recente.',
-          color: EvolveColors.primaryStrong,
+          color: context.evolveAccent,
           icon: Icons.trending_up_rounded,
         ),
       ],
@@ -669,7 +669,7 @@ class _HabitMood extends StatelessWidget {
                 value:
                     '${(_habitLowEnergyCompletion(snapshot, habit.id) * 100).round()}%',
                 detail: 'Completamento con energia bassa',
-                color: EvolveColors.primaryStrong,
+                color: context.evolveAccent,
               ),
             ),
           ],
@@ -728,12 +728,12 @@ class _HeatmapPanel extends StatelessWidget {
     required this.title,
     required this.subtitle,
     required this.values,
-    this.color = EvolveColors.primaryStrong,
+    this.color,
   });
 
   final String title;
   final String subtitle;
-  final Color color;
+  final Color? color;
   final List<double> values;
 
   @override
@@ -753,7 +753,9 @@ class _HeatmapPanel extends StatelessWidget {
                   width: 10,
                   height: 10,
                   decoration: BoxDecoration(
-                    color: color.withValues(alpha: _alphaFor(index)),
+                    color: (color ?? context.evolveAccent).withValues(
+                      alpha: _alphaFor(index),
+                    ),
                     borderRadius: BorderRadius.circular(2),
                   ),
                 ),
@@ -798,7 +800,7 @@ class _CorrelationPanel extends StatelessWidget {
               _InlineInsight(
                 title: correlation.label,
                 value: '${(correlation.value * 100).round()}%',
-                color: EvolveColors.primaryStrong,
+                color: context.evolveAccent,
               ),
               const SizedBox(height: 10),
             ],

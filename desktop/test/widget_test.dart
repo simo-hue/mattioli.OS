@@ -17,4 +17,55 @@ void main() {
     expect(find.text('Obiettivi'), findsOneWidget);
     expect(find.text('AI Coach'), findsOneWidget);
   });
+
+  testWidgets('habits calendar exposes the mobile parity views', (
+    tester,
+  ) async {
+    await tester.binding.setSurfaceSize(const Size(1440, 900));
+    addTearDown(() => tester.binding.setSurfaceSize(null));
+
+    await tester.pumpWidget(const ProviderScope(child: EvolveDesktopApp()));
+    await tester.tap(find.text('Abitudini'));
+    await tester.pumpAndSettle();
+    await tester.tap(find.text('Calendario'));
+    await tester.pumpAndSettle();
+
+    expect(find.text('Mese'), findsOneWidget);
+    expect(find.text('Settimana'), findsOneWidget);
+    expect(find.text('Anno'), findsOneWidget);
+    expect(find.text('Vita'), findsOneWidget);
+  });
+
+  testWidgets('macro goals expose mobile horizons and period selectors', (
+    tester,
+  ) async {
+    await tester.binding.setSurfaceSize(const Size(1440, 900));
+    addTearDown(() => tester.binding.setSurfaceSize(null));
+
+    await tester.pumpWidget(const ProviderScope(child: EvolveDesktopApp()));
+    await tester.tap(find.text('Obiettivi'));
+    await tester.pumpAndSettle();
+
+    expect(find.text('Vita'), findsOneWidget);
+    expect(find.text('Annuale'), findsOneWidget);
+    expect(find.text('Trimestrale'), findsOneWidget);
+    expect(find.text('Mensile'), findsOneWidget);
+    expect(find.text('Settimanale'), findsOneWidget);
+    expect(find.text('Categorie'), findsOneWidget);
+    expect(find.text('Statistiche'), findsWidgets);
+  });
+
+  testWidgets('macro goals toolbar fits the minimum desktop window', (
+    tester,
+  ) async {
+    await tester.binding.setSurfaceSize(const Size(960, 640));
+    addTearDown(() => tester.binding.setSurfaceSize(null));
+
+    await tester.pumpWidget(const ProviderScope(child: EvolveDesktopApp()));
+    await tester.tap(find.byTooltip('Obiettivi'));
+    await tester.pumpAndSettle();
+
+    expect(find.text('Settimanale'), findsOneWidget);
+    expect(tester.takeException(), isNull);
+  });
 }

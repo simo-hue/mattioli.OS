@@ -229,12 +229,12 @@ class _CoachHeader extends StatelessWidget {
       padding: const EdgeInsets.symmetric(horizontal: 18, vertical: 14),
       child: Row(
         children: [
-          const CircleAvatar(
+          CircleAvatar(
             radius: 16,
-            backgroundColor: Color(0x2210B981),
+            backgroundColor: context.evolveAccent.withValues(alpha: 0.13),
             child: Icon(
               Icons.auto_awesome_outlined,
-              color: EvolveColors.primaryStrong,
+              color: context.evolveAccent,
               size: 17,
             ),
           ),
@@ -339,13 +339,13 @@ class _MessageBubble extends StatelessWidget {
           padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
           decoration: BoxDecoration(
             color: message.fromCoach
-                ? EvolveColors.panelRaised
-                : EvolveColors.primary.withValues(alpha: 0.14),
+                ? context.evolveColors.panelRaised
+                : context.evolveAccent.withValues(alpha: 0.14),
             borderRadius: BorderRadius.circular(13),
             border: Border.all(
               color: message.fromCoach
-                  ? EvolveColors.border
-                  : EvolveColors.primary.withValues(alpha: 0.2),
+                  ? context.evolveColors.border
+                  : context.evolveAccent.withValues(alpha: 0.2),
             ),
           ),
           child: Row(

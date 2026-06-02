@@ -2,7 +2,6 @@ import 'dart:async';
 import 'dart:convert';
 import 'dart:io';
 
-import 'package:evolve_desktop/app/theme/evolve_theme.dart';
 import 'package:evolve_desktop/core/app_bootstrap.dart';
 import 'package:evolve_desktop/core/app_logger.dart';
 import 'package:evolve_desktop/core/secure_storage_utils.dart';
@@ -57,25 +56,55 @@ final dashboardRepositoryProvider = Provider<DashboardRepository>((ref) {
     desktopAuthControllerProvider.select((state) => state.user?.id),
   );
   if (client == null || userId == null) {
-    return InMemoryDashboardRepository();
+    return UnavailableDashboardRepository();
   }
   return SupabaseDashboardRepository(client: client, userId: userId);
 });
 
-class InMemoryDashboardRepository extends DashboardRepository {
-  DashboardSnapshot? _snapshot;
+class UnavailableDashboardRepository extends DashboardRepository {
+  @override
+  DashboardSnapshot load() => DashboardSnapshot.empty;
 
   @override
-  DashboardSnapshot load() => _snapshot ??= _seedSnapshot;
+  Future<DashboardSnapshot> refresh() async => DashboardSnapshot.empty;
 
   @override
-  Future<void> save(DashboardSnapshot snapshot) async {
-    _snapshot = snapshot;
-  }
+  Future<void> save(DashboardSnapshot snapshot) => _requireSession();
 
   @override
-  Future<void> resetData() async {
-    _snapshot = DashboardSnapshot.empty;
+  Future<DashboardHabit> createHabit(DashboardHabit habit) => _requireSession();
+
+  @override
+  Future<void> updateHabit(DashboardHabit habit) => _requireSession();
+
+  @override
+  Future<void> deleteHabit(String id) => _requireSession();
+
+  @override
+  Future<String?> setHabitStatus({
+    required String habitId,
+    required DateTime date,
+    required String? currentStatus,
+  }) => _requireSession();
+
+  @override
+  Future<void> saveCheckIn(DateTime date, DailyCheckIn checkIn) =>
+      _requireSession();
+
+  @override
+  Future<DashboardGoal> createGoal(DashboardGoal goal) => _requireSession();
+
+  @override
+  Future<void> updateGoal(DashboardGoal goal) => _requireSession();
+
+  @override
+  Future<void> deleteGoal(String id) => _requireSession();
+
+  @override
+  Future<void> resetData() => _requireSession();
+
+  Future<T> _requireSession<T>() {
+    throw StateError('An authenticated Supabase session is required.');
   }
 }
 
@@ -680,111 +709,3 @@ class _PendingMutation {
     if (onConflict != null) 'on_conflict': onConflict,
   };
 }
-
-final _previewNow = DateTime.now();
-
-final _seedSnapshot = DashboardSnapshot(
-  habits: [
-    DashboardHabit(
-      id: 'morning-focus',
-      title: 'Routine del mattino',
-      category: 'Benessere',
-      color: EvolveColors.primaryStrong,
-      streak: 24,
-      weeklyProgress: [true, true, true, true, true, true, false],
-      state: HabitState.completed,
-    ),
-    DashboardHabit(
-      id: 'deep-work',
-      title: 'Deep work: 90 minuti',
-      category: 'Produttivita',
-      color: EvolveColors.cyan,
-      streak: 12,
-      weeklyProgress: [true, true, true, false, true, true, false],
-      state: HabitState.completed,
-    ),
-    DashboardHabit(
-      id: 'reading',
-      title: 'Leggere 20 pagine',
-      category: 'Formazione',
-      color: EvolveColors.violet,
-      streak: 8,
-      weeklyProgress: [true, true, false, true, true, false, false],
-      state: HabitState.pending,
-    ),
-    DashboardHabit(
-      id: 'movement',
-      title: 'Allenamento funzionale',
-      category: 'Salute',
-      color: EvolveColors.amber,
-      streak: 5,
-      weeklyProgress: [true, false, true, true, false, false, false],
-      state: HabitState.pending,
-    ),
-    DashboardHabit(
-      id: 'reflection',
-      title: 'Journal serale',
-      category: 'Mindfulness',
-      color: EvolveColors.rose,
-      streak: 16,
-      weeklyProgress: [true, true, true, true, true, true, false],
-      state: HabitState.pending,
-    ),
-  ],
-  goals: [
-    DashboardGoal(
-      id: 'portfolio',
-      title: 'Pubblicare il nuovo portfolio',
-      category: 'lavoro',
-      color: EvolveColors.cyan,
-      progress: 0.72,
-      dueLabel: 'Scade tra 18 giorni',
-      type: GoalType.monthly,
-      year: _previewNow.year,
-      month: _previewNow.month,
-    ),
-    DashboardGoal(
-      id: 'half-marathon',
-      title: 'Preparare la mezza maratona',
-      category: 'salute',
-      color: EvolveColors.primaryStrong,
-      progress: 0.58,
-      dueLabel: 'Q3 2026',
-      type: GoalType.quarterly,
-      year: _previewNow.year,
-      quarter: ((_previewNow.month - 1) ~/ 3) + 1,
-    ),
-    DashboardGoal(
-      id: 'spanish',
-      title: 'Completare il corso di spagnolo',
-      category: 'formazione',
-      color: EvolveColors.violet,
-      progress: 0.41,
-      dueLabel: 'Obiettivo annuale',
-      type: GoalType.annual,
-      year: _previewNow.year,
-    ),
-    DashboardGoal(
-      id: 'weekly-review',
-      title: 'Completare il recap settimanale',
-      category: 'lavoro',
-      color: EvolveColors.cyan,
-      progress: 0,
-      dueLabel: 'Settimana corrente',
-      type: GoalType.weekly,
-      year: _previewNow.year,
-      month: _previewNow.month,
-      weekNumber: ((_previewNow.day - 1) ~/ 7) + 1,
-    ),
-  ],
-  trend: [
-    TrendPoint(label: 'Lun', value: 0.58),
-    TrendPoint(label: 'Mar', value: 0.66),
-    TrendPoint(label: 'Mer', value: 0.62),
-    TrendPoint(label: 'Gio', value: 0.76),
-    TrendPoint(label: 'Ven', value: 0.71),
-    TrendPoint(label: 'Sab', value: 0.84),
-    TrendPoint(label: 'Dom', value: 0.79),
-  ],
-  checkIn: DailyCheckIn(),
-);

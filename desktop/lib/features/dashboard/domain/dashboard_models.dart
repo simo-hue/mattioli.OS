@@ -312,6 +312,14 @@ class DashboardSnapshot {
   double get completionRate =>
       totalHabits == 0 ? 0 : completedHabits / totalHabits;
 
+  double get currentWeekCompletionRate => _weekCompletionRate(DateTime.now());
+
+  double get previousWeekCompletionRate =>
+      _weekCompletionRate(DateTime.now().subtract(const Duration(days: 7)));
+
+  double get weeklyMomentum =>
+      currentWeekCompletionRate - previousWeekCompletionRate;
+
   int get activeGoals =>
       goals.where((goal) => goal.state == GoalState.active).length;
 
@@ -343,6 +351,25 @@ class DashboardSnapshot {
 
   List<DashboardHabit> habitsFor(DateTime date) =>
       habits.where((habit) => habit.isActiveOn(date)).toList();
+
+  double _weekCompletionRate(DateTime anchor) {
+    final monday = DateTime(
+      anchor.year,
+      anchor.month,
+      anchor.day,
+    ).subtract(Duration(days: anchor.weekday - 1));
+    var done = 0;
+    var total = 0;
+    for (var day = 0; day < 7; day++) {
+      final date = monday.add(Duration(days: day));
+      final activeHabits = habitsFor(date);
+      total += activeHabits.length;
+      done += activeHabits.where((habit) {
+        return habitStatusFor(habit.id, date) == 'done';
+      }).length;
+    }
+    return total == 0 ? 0 : done / total;
+  }
 
   DashboardSnapshot copyWith({
     List<DashboardHabit>? habits,

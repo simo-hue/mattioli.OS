@@ -9,7 +9,7 @@ import 'package:flutter_test/flutter_test.dart';
 
 void main() {
   test('toggling a habit updates the desktop dashboard snapshot', () async {
-    final container = ProviderContainer();
+    final container = _testContainer(snapshot: _singleHabitSnapshot());
     addTearDown(container.dispose);
 
     final initial = container.read(dashboardControllerProvider);
@@ -31,7 +31,7 @@ void main() {
   });
 
   test('daily check-in persists mood and energy in state', () async {
-    final container = ProviderContainer();
+    final container = _testContainer();
     addTearDown(container.dispose);
 
     await container
@@ -45,7 +45,7 @@ void main() {
   });
 
   test('habit management supports create update and delete', () async {
-    final container = ProviderContainer();
+    final container = _testContainer();
     addTearDown(container.dispose);
     final controller = container.read(dashboardControllerProvider.notifier);
 
@@ -90,7 +90,7 @@ void main() {
   test(
     'goal lifecycle supports create fail reschedule complete and delete',
     () async {
-      final container = ProviderContainer();
+      final container = _testContainer();
       addTearDown(container.dispose);
       final controller = container.read(dashboardControllerProvider.notifier);
 
@@ -172,7 +172,7 @@ void main() {
       trend: const [],
       checkIn: const DailyCheckIn(),
     );
-    final repository = InMemoryDashboardRepository()..save(snapshot);
+    final repository = _TestDashboardRepository(snapshot);
     final container = ProviderContainer(
       overrides: [dashboardRepositoryProvider.overrideWithValue(repository)],
     );
@@ -317,8 +317,7 @@ void main() {
   test(
     'goal creation and updates retain selected period and custom category',
     () async {
-      final repository = InMemoryDashboardRepository();
-      await repository.save(DashboardSnapshot.empty);
+      final repository = _TestDashboardRepository(DashboardSnapshot.empty);
       final container = ProviderContainer(
         overrides: [dashboardRepositoryProvider.overrideWithValue(repository)],
       );
@@ -393,7 +392,7 @@ void main() {
   });
 
   test('reset data clears the dashboard repository and controller', () async {
-    final repository = InMemoryDashboardRepository();
+    final repository = _TestDashboardRepository(DashboardSnapshot.empty);
     final container = ProviderContainer(
       overrides: [dashboardRepositoryProvider.overrideWithValue(repository)],
     );
@@ -423,6 +422,100 @@ void main() {
       expect(snapshot.isRefreshing, isFalse);
     },
   );
+
+  test('weekly momentum is derived from synchronized habit logs', () {
+    final now = DateTime.now();
+    final thisMonday = DateTime(
+      now.year,
+      now.month,
+      now.day,
+    ).subtract(Duration(days: now.weekday - 1));
+    final previousMonday = thisMonday.subtract(const Duration(days: 7));
+    final snapshot = DashboardSnapshot(
+      habits: [
+        DashboardHabit(
+          id: 'walk',
+          title: 'Passeggiata',
+          category: 'Salute',
+          color: EvolveColors.primaryStrong,
+          streak: 0,
+          weeklyProgress: const [
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+          ],
+          state: HabitState.pending,
+          startDate: previousMonday,
+        ),
+      ],
+      goals: const [],
+      trend: const [],
+      checkIn: const DailyCheckIn(),
+      habitLogs: {
+        dashboardDateKey(previousMonday): {'walk': 'done'},
+        dashboardDateKey(thisMonday): {'walk': 'done'},
+        dashboardDateKey(thisMonday.add(const Duration(days: 1))): {
+          'walk': 'done',
+        },
+      },
+    );
+
+    expect(snapshot.currentWeekCompletionRate, closeTo(2 / 7, 0.0001));
+    expect(snapshot.previousWeekCompletionRate, closeTo(1 / 7, 0.0001));
+    expect(snapshot.weeklyMomentum, closeTo(1 / 7, 0.0001));
+  });
+}
+
+ProviderContainer _testContainer({DashboardSnapshot? snapshot}) {
+  return ProviderContainer(
+    overrides: [
+      dashboardRepositoryProvider.overrideWithValue(
+        _TestDashboardRepository(snapshot ?? DashboardSnapshot.empty),
+      ),
+    ],
+  );
+}
+
+DashboardSnapshot _singleHabitSnapshot() {
+  return DashboardSnapshot(
+    habits: const [
+      DashboardHabit(
+        id: 'walk',
+        title: 'Passeggiata',
+        category: 'Salute',
+        color: EvolveColors.primaryStrong,
+        streak: 0,
+        weeklyProgress: [false, false, false, false, false, false, false],
+        state: HabitState.pending,
+      ),
+    ],
+    goals: const [],
+    trend: const [],
+    checkIn: const DailyCheckIn(),
+  );
+}
+
+class _TestDashboardRepository extends DashboardRepository {
+  _TestDashboardRepository(this._snapshot);
+
+  DashboardSnapshot _snapshot;
+
+  @override
+  DashboardSnapshot load() => _snapshot;
+
+  @override
+  Future<void> save(DashboardSnapshot snapshot) async {
+    _snapshot = snapshot;
+  }
+
+  @override
+  Future<void> resetData() async {
+    _snapshot = DashboardSnapshot.empty;
+  }
 }
 
 class _OfflineDashboardRepository extends DashboardRepository {

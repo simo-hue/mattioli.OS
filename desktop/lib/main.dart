@@ -14,14 +14,11 @@ Future<void> main() async {
   DesktopSupabaseConfig.validate();
 
   final sharedPreferences = await SharedPreferences.getInstance();
-  final backendConfigured = DesktopSupabaseConfig.isConfigured;
-  if (backendConfigured) {
-    await Supabase.initialize(
-      url: DesktopSupabaseConfig.url,
-      anonKey: DesktopSupabaseConfig.publishableKey,
-      authOptions: FlutterAuthClientOptions(localStorage: SecureLocalStorage()),
-    );
-  }
+  await Supabase.initialize(
+    url: DesktopSupabaseConfig.url,
+    anonKey: DesktopSupabaseConfig.publishableKey,
+    authOptions: FlutterAuthClientOptions(localStorage: SecureLocalStorage()),
+  );
   await DesktopNotificationService.instance.init();
 
   await DesktopSentryService.setEnabled(
@@ -32,7 +29,6 @@ Future<void> main() async {
     ProviderScope(
       overrides: [
         sharedPreferencesProvider.overrideWithValue(sharedPreferences),
-        backendConfiguredProvider.overrideWithValue(backendConfigured),
       ],
       child: const EvolveDesktopApp(),
     ),

@@ -1,6 +1,7 @@
 import 'dart:math' as math;
 
 import 'package:evolve_desktop/app/theme/evolve_theme.dart';
+import 'package:evolve_desktop/features/auth/application/auth_controller.dart';
 import 'package:evolve_desktop/features/dashboard/application/dashboard_controller.dart';
 import 'package:evolve_desktop/features/dashboard/domain/dashboard_models.dart';
 import 'package:evolve_desktop/shared/widgets/desktop_page.dart';
@@ -14,9 +15,10 @@ class DashboardPage extends ConsumerWidget {
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final snapshot = ref.watch(dashboardControllerProvider);
+    final user = ref.watch(desktopAuthControllerProvider).user;
 
     return DesktopPage(
-      title: 'Buongiorno, Simone',
+      title: _greeting(user?.userMetadata, user?.email),
       subtitle:
           'Mantieni il ritmo. Ogni piccola azione consolida la persona che stai costruendo.',
       trailing: _TodayLabel(date: DateTime.now()),
@@ -29,7 +31,10 @@ class DashboardPage extends ConsumerWidget {
               final useColumns = constraints.maxWidth >= 1120;
               final primary = Column(
                 children: [
-                  _TrendPanel(points: snapshot.trend),
+                  _TrendPanel(
+                    points: snapshot.trend,
+                    weeklyMomentum: snapshot.weeklyMomentum,
+                  ),
                   const SizedBox(height: 18),
                   _HabitPanel(snapshot: snapshot),
                 ],
@@ -40,7 +45,7 @@ class DashboardPage extends ConsumerWidget {
                   const SizedBox(height: 18),
                   _FocusGoalsPanel(goals: snapshot.goals),
                   const SizedBox(height: 18),
-                  const _WeeklyReviewPanel(),
+                  _WeeklyReviewPanel(snapshot: snapshot),
                 ],
               );
 
@@ -154,7 +159,7 @@ class _MetricGrid extends StatelessWidget {
             _MetricCard(
               width: cardWidth,
               label: 'Momentum',
-              value: '+18%',
+              value: _signedPercentage(snapshot.weeklyMomentum),
               detail: 'rispetto alla scorsa settimana',
               color: EvolveColors.violet,
               icon: Icons.trending_up_rounded,
@@ -227,9 +232,10 @@ class _MetricCard extends StatelessWidget {
 }
 
 class _TrendPanel extends StatelessWidget {
-  const _TrendPanel({required this.points});
+  const _TrendPanel({required this.points, required this.weeklyMomentum});
 
   final List<TrendPoint> points;
+  final double weeklyMomentum;
 
   @override
   Widget build(BuildContext context) {
@@ -241,7 +247,7 @@ class _TrendPanel extends StatelessWidget {
             title: 'Andamento settimanale',
             subtitle: 'Percentuale di completamento delle tue abitudini',
             trailing: StatusPill(
-              label: '+18% questa settimana',
+              label: '${_signedPercentage(weeklyMomentum)} questa settimana',
               color: context.evolveAccent,
               icon: Icons.north_east_rounded,
             ),
@@ -736,26 +742,34 @@ class _GoalProgressRow extends StatelessWidget {
 }
 
 class _WeeklyReviewPanel extends StatelessWidget {
-  const _WeeklyReviewPanel();
+  const _WeeklyReviewPanel({required this.snapshot});
+
+  final DashboardSnapshot snapshot;
 
   @override
   Widget build(BuildContext context) {
+    final momentum = snapshot.weeklyMomentum;
+    final completion = snapshot.currentWeekCompletionRate;
     return EvolvePanel(
       child: Row(
         children: [
-          const _ProgressRing(value: 0.82),
+          _ProgressRing(value: completion),
           const SizedBox(width: 14),
           Expanded(
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
                 Text(
-                  'Settimana solida',
+                  completion == 0
+                      ? 'Settimana da avviare'
+                      : momentum >= 0
+                      ? 'Settimana in crescita'
+                      : 'Settimana da recuperare',
                   style: Theme.of(context).textTheme.titleMedium,
                 ),
                 const SizedBox(height: 4),
                 Text(
-                  'Sei sopra la media delle ultime 4 settimane.',
+                  '${_signedPercentage(momentum)} rispetto alla settimana precedente.',
                   style: Theme.of(context).textTheme.bodySmall,
                 ),
               ],
@@ -836,4 +850,17 @@ class _RingPainter extends CustomPainter {
       oldDelegate.value != value ||
       oldDelegate.accent != accent ||
       oldDelegate.track != track;
+}
+
+String _greeting(Map<String, dynamic>? metadata, String? email) {
+  final fullName = (metadata?['full_name'] as String?)?.trim();
+  final name = fullName?.isNotEmpty ?? false
+      ? fullName!.split(RegExp(r'\s+')).first
+      : email?.split('@').first;
+  return name == null || name.isEmpty ? 'Buongiorno' : 'Buongiorno, $name';
+}
+
+String _signedPercentage(double value) {
+  final percentage = (value * 100).round();
+  return '${percentage > 0 ? '+' : ''}$percentage%';
 }

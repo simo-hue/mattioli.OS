@@ -1,16 +1,31 @@
 import 'package:evolve_desktop/app/evolve_desktop_app.dart';
+import 'package:evolve_desktop/app/theme/desktop_appearance_controller.dart';
+import 'package:evolve_desktop/app/theme/evolve_theme.dart';
 import 'package:evolve_desktop/core/app_bootstrap.dart';
+import 'package:evolve_desktop/features/shell/presentation/desktop_shell.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
 void main() {
+  testWidgets('desktop app reports unavailable Supabase initialization', (
+    tester,
+  ) async {
+    await tester.pumpWidget(const ProviderScope(child: EvolveDesktopApp()));
+
+    expect(
+      find.textContaining('Configurazione Supabase desktop mancante'),
+      findsOne,
+    );
+    expect(find.byType(DesktopShell), findsNothing);
+  });
+
   testWidgets('desktop shell exposes the primary navigation', (tester) async {
     await tester.binding.setSurfaceSize(const Size(1440, 900));
     addTearDown(() => tester.binding.setSurfaceSize(null));
 
-    await tester.pumpWidget(const ProviderScope(child: EvolveDesktopApp()));
+    await tester.pumpWidget(const ProviderScope(child: _DesktopTestApp()));
 
     expect(find.text('Evolve'), findsOneWidget);
     expect(find.text('Panoramica'), findsOneWidget);
@@ -20,13 +35,11 @@ void main() {
     expect(find.text('AI Coach'), findsOneWidget);
   });
 
-  testWidgets('habits calendar exposes the mobile parity views', (
-    tester,
-  ) async {
+  testWidgets('habits calendar exposes the supported views', (tester) async {
     await tester.binding.setSurfaceSize(const Size(1440, 900));
     addTearDown(() => tester.binding.setSurfaceSize(null));
 
-    await tester.pumpWidget(const ProviderScope(child: EvolveDesktopApp()));
+    await tester.pumpWidget(const ProviderScope(child: _DesktopTestApp()));
     await tester.tap(find.text('Abitudini'));
     await tester.pumpAndSettle();
     await tester.tap(find.text('Calendario'));
@@ -38,13 +51,13 @@ void main() {
     expect(find.text('Vita'), findsOneWidget);
   });
 
-  testWidgets('macro goals expose mobile horizons and period selectors', (
+  testWidgets('macro goals expose horizons and period selectors', (
     tester,
   ) async {
     await tester.binding.setSurfaceSize(const Size(1440, 900));
     addTearDown(() => tester.binding.setSurfaceSize(null));
 
-    await tester.pumpWidget(const ProviderScope(child: EvolveDesktopApp()));
+    await tester.pumpWidget(const ProviderScope(child: _DesktopTestApp()));
     await tester.tap(find.text('Obiettivi'));
     await tester.pumpAndSettle();
 
@@ -63,7 +76,7 @@ void main() {
     await tester.binding.setSurfaceSize(const Size(960, 640));
     addTearDown(() => tester.binding.setSurfaceSize(null));
 
-    await tester.pumpWidget(const ProviderScope(child: EvolveDesktopApp()));
+    await tester.pumpWidget(const ProviderScope(child: _DesktopTestApp()));
     await tester.tap(find.byTooltip('Obiettivi'));
     await tester.pumpAndSettle();
 
@@ -77,7 +90,7 @@ void main() {
     await tester.binding.setSurfaceSize(const Size(1440, 900));
     addTearDown(() => tester.binding.setSurfaceSize(null));
 
-    await tester.pumpWidget(const ProviderScope(child: EvolveDesktopApp()));
+    await tester.pumpWidget(const ProviderScope(child: _DesktopTestApp()));
     await tester.tap(find.text('Impostazioni'));
     await tester.pumpAndSettle();
     await tester.tap(find.text('Applicazione'));
@@ -91,13 +104,13 @@ void main() {
     expect(tester.takeException(), isNull);
   });
 
-  testWidgets('settings menu exposes the complete mobile account surfaces', (
+  testWidgets('settings menu exposes the complete account surfaces', (
     tester,
   ) async {
     await tester.binding.setSurfaceSize(const Size(1440, 1100));
     addTearDown(() => tester.binding.setSurfaceSize(null));
 
-    await tester.pumpWidget(const ProviderScope(child: EvolveDesktopApp()));
+    await tester.pumpWidget(const ProviderScope(child: _DesktopTestApp()));
     await tester.tap(find.text('Impostazioni'));
     await tester.pumpAndSettle();
 
@@ -137,7 +150,7 @@ void main() {
     expect(tester.takeException(), isNull);
   });
 
-  testWidgets('tutorial reset clears the three canonical mobile flags', (
+  testWidgets('tutorial reset clears the three canonical flags', (
     tester,
   ) async {
     SharedPreferences.setMockInitialValues({
@@ -152,7 +165,7 @@ void main() {
     await tester.pumpWidget(
       ProviderScope(
         overrides: [sharedPreferencesProvider.overrideWithValue(preferences)],
-        child: const EvolveDesktopApp(),
+        child: const _DesktopTestApp(),
       ),
     );
     await tester.tap(find.text('Impostazioni'));
@@ -167,4 +180,19 @@ void main() {
     expect(preferences.getBool('has_seen_stats_tutorial'), isFalse);
     expect(tester.takeException(), isNull);
   });
+}
+
+class _DesktopTestApp extends ConsumerWidget {
+  const _DesktopTestApp();
+
+  @override
+  Widget build(BuildContext context, WidgetRef ref) {
+    final appearance = ref.watch(desktopAppearanceControllerProvider);
+    return MaterialApp(
+      theme: EvolveTheme.light(appearance.accentColor),
+      darkTheme: EvolveTheme.dark(appearance.accentColor),
+      themeMode: appearance.themeMode,
+      home: const DesktopShell(),
+    );
+  }
 }

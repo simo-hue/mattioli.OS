@@ -4,9 +4,10 @@ import 'package:supabase_flutter/supabase_flutter.dart';
 
 final sharedPreferencesProvider = Provider<SharedPreferences?>((ref) => null);
 
-final backendConfiguredProvider = Provider<bool>((ref) => false);
-
 final supabaseClientProvider = Provider<SupabaseClient?>((ref) {
-  if (!ref.watch(backendConfiguredProvider)) return null;
-  return Supabase.instance.client;
+  try {
+    return Supabase.instance.client;
+  } on AssertionError {
+    return null;
+  }
 });

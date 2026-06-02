@@ -6,20 +6,17 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
 void main() {
-  test(
-    'desktop appearance defaults to the mobile dark monochrome theme',
-    () async {
-      final container = await _containerWithPreferences({});
-      addTearDown(container.dispose);
+  test('desktop appearance defaults to the dark monochrome theme', () async {
+    final container = await _containerWithPreferences({});
+    addTearDown(container.dispose);
 
-      final appearance = container.read(desktopAppearanceControllerProvider);
+    final appearance = container.read(desktopAppearanceControllerProvider);
 
-      expect(appearance.themeMode, ThemeMode.dark);
-      expect(appearance.accentColor, const Color(0xFFFAFAFA));
-    },
-  );
+    expect(appearance.themeMode, ThemeMode.dark);
+    expect(appearance.accentColor, const Color(0xFFFAFAFA));
+  });
 
-  test('accent updates persist the mobile preference keys', () async {
+  test('accent updates persist the preference keys', () async {
     final container = await _containerWithPreferences({});
     addTearDown(container.dispose);
     final controller = container.read(
@@ -37,7 +34,7 @@ void main() {
     expect(preferences.getString('pref_theme_mode'), 'dark');
   });
 
-  test('theme changes keep the accent visible like mobile', () async {
+  test('theme changes keep the accent visible', () async {
     final container = await _containerWithPreferences({});
     addTearDown(container.dispose);
     final controller = container.read(

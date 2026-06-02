@@ -12,7 +12,7 @@ void main() {
     expect(container.read(desktopLocaleControllerProvider), isNull);
   });
 
-  test('desktop locale persists the canonical mobile language key', () async {
+  test('desktop locale persists the canonical language key', () async {
     final container = await _containerWithPreferences({});
     addTearDown(container.dispose);
 

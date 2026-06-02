@@ -887,7 +887,7 @@ class _GoalStats extends ConsumerWidget {
               const SectionHeading(
                 title: 'Distribuzione per orizzonte',
                 subtitle:
-                    'Sintesi locale con arricchimento RPC quando disponibile',
+                    'Sintesi calcolata dai dati sincronizzati con arricchimento RPC',
               ),
               const SizedBox(height: 18),
               for (final type in GoalType.values) ...[

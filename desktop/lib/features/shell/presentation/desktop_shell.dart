@@ -1,6 +1,6 @@
 import 'package:evolve_desktop/app/theme/evolve_theme.dart';
-import 'package:evolve_desktop/core/app_bootstrap.dart';
 import 'package:evolve_desktop/features/ai_coach/presentation/ai_coach_page.dart';
+import 'package:evolve_desktop/features/auth/application/auth_controller.dart';
 import 'package:evolve_desktop/features/dashboard/application/dashboard_controller.dart';
 import 'package:evolve_desktop/features/dashboard/presentation/dashboard_page.dart';
 import 'package:evolve_desktop/features/goals/presentation/goals_page.dart';
@@ -288,9 +288,9 @@ class _TopBar extends ConsumerWidget {
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
-    final cloudEnabled = ref.watch(backendConfiguredProvider);
     final dashboard = ref.watch(dashboardControllerProvider);
-    final syncPending = cloudEnabled && dashboard.errorMessage != null;
+    final syncPending = dashboard.errorMessage != null;
+    final user = ref.watch(desktopAuthControllerProvider).user;
     return SizedBox(
       height: 68,
       child: Padding(
@@ -298,37 +298,29 @@ class _TopBar extends ConsumerWidget {
         child: Row(
           children: [
             StatusPill(
-              label: !cloudEnabled
-                  ? 'Preview locale'
-                  : syncPending
+              label: syncPending
                   ? 'Sync in attesa'
                   : dashboard.isRefreshing
                   ? 'Sincronizzazione'
                   : 'Sincronizzato',
-              color: !cloudEnabled || syncPending
-                  ? EvolveColors.amber
-                  : context.evolveAccent,
-              icon: !cloudEnabled
-                  ? Icons.science_outlined
-                  : syncPending
+              color: syncPending ? EvolveColors.amber : context.evolveAccent,
+              icon: syncPending
                   ? Icons.cloud_off_outlined
                   : Icons.cloud_done_outlined,
             ),
-            if (cloudEnabled) ...[
-              const SizedBox(width: 8),
-              IconButton(
-                tooltip: 'Sincronizza',
-                onPressed: dashboard.isRefreshing
-                    ? null
-                    : ref.read(dashboardControllerProvider.notifier).refresh,
-                icon: dashboard.isRefreshing
-                    ? const SizedBox.square(
-                        dimension: 16,
-                        child: CircularProgressIndicator(strokeWidth: 2),
-                      )
-                    : const Icon(Icons.sync_rounded, size: 19),
-              ),
-            ],
+            const SizedBox(width: 8),
+            IconButton(
+              tooltip: 'Sincronizza',
+              onPressed: dashboard.isRefreshing
+                  ? null
+                  : ref.read(dashboardControllerProvider.notifier).refresh,
+              icon: dashboard.isRefreshing
+                  ? const SizedBox.square(
+                      dimension: 16,
+                      child: CircularProgressIndicator(strokeWidth: 2),
+                    )
+                  : const Icon(Icons.sync_rounded, size: 19),
+            ),
             const Spacer(),
             SizedBox(
               width: 260,
@@ -383,7 +375,7 @@ class _TopBar extends ConsumerWidget {
               radius: 16,
               backgroundColor: context.evolveColors.panelSoft,
               child: Text(
-                'SM',
+                _initials(user?.userMetadata, user?.email),
                 style: TextStyle(
                   color: context.evolveAccent,
                   fontWeight: FontWeight.w700,
@@ -396,6 +388,19 @@ class _TopBar extends ConsumerWidget {
       ),
     );
   }
+}
+
+String _initials(Map<String, dynamic>? metadata, String? email) {
+  final fullName = (metadata?['full_name'] as String?)?.trim();
+  final source = fullName?.isNotEmpty ?? false ? fullName! : email ?? '';
+  final parts = source
+      .split(RegExp(r'[\s@._-]+'))
+      .where((part) => part.isNotEmpty)
+      .take(2)
+      .toList();
+  return parts.isEmpty
+      ? '--'
+      : parts.map((part) => part[0].toUpperCase()).join();
 }
 
 class _CommandPalette extends ConsumerWidget {

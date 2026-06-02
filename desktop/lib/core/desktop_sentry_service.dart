@@ -4,14 +4,17 @@ import 'package:sentry_flutter/sentry_flutter.dart';
 class DesktopSentryService {
   const DesktopSentryService._();
 
-  static const _dsn = String.fromEnvironment('EVOLVE_SENTRY_DSN');
+  static const _dsn = String.fromEnvironment(
+    'EVOLVE_SENTRY_DSN',
+    defaultValue: 'https://default_placeholder@sentry.io/12345',
+  );
   static const _environment = String.fromEnvironment(
     'EVOLVE_SENTRY_ENVIRONMENT',
-    defaultValue: 'production',
+    defaultValue: 'development',
   );
   static const _tracesSampleRateValue = String.fromEnvironment(
     'EVOLVE_SENTRY_TRACES_SAMPLE_RATE',
-    defaultValue: '0.1',
+    defaultValue: '1.0',
   );
 
   static bool _initialized = false;

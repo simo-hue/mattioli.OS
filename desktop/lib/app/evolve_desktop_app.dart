@@ -17,7 +17,7 @@ class EvolveDesktopApp extends ConsumerWidget {
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
-    final backendConfigured = ref.watch(backendConfiguredProvider);
+    final backendConfigured = ref.watch(supabaseClientProvider) != null;
     final consent = ref.watch(desktopConsentControllerProvider);
     final auth = ref.watch(desktopAuthControllerProvider);
     final appearance = ref.watch(desktopAppearanceControllerProvider);
@@ -39,12 +39,31 @@ class EvolveDesktopApp extends ConsumerWidget {
       ],
       localizationsDelegates: GlobalMaterialLocalizations.delegates,
       home: !backendConfigured
-          ? const DesktopShell()
+          ? const _DesktopBackendConfigurationErrorPage()
           : !consent.hasCompletedOnboarding
           ? const DesktopConsentPage()
           : auth.isLoggedIn
           ? const DesktopBiometricGate(child: DesktopShell())
           : const DesktopAuthPage(),
+    );
+  }
+}
+
+class _DesktopBackendConfigurationErrorPage extends StatelessWidget {
+  const _DesktopBackendConfigurationErrorPage();
+
+  @override
+  Widget build(BuildContext context) {
+    return const Scaffold(
+      body: Center(
+        child: Padding(
+          padding: EdgeInsets.all(32),
+          child: Text(
+            'Configurazione Supabase desktop mancante.',
+            textAlign: TextAlign.center,
+          ),
+        ),
+      ),
     );
   }
 }

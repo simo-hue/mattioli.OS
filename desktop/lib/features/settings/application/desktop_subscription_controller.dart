@@ -176,7 +176,7 @@ class DesktopSubscriptionController extends Notifier<DesktopSubscriptionState> {
     }
     if (!state.isConfigured) {
       state = state.copyWith(
-        message: 'Avvia il desktop tramite il launcher mobile configurato.',
+        message: 'Configura la public key RevenueCat del client desktop.',
       );
       return false;
     }

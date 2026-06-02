@@ -414,7 +414,8 @@ class _GlobalHabits extends StatelessWidget {
         children: [
           const SectionHeading(
             title: 'Performance per abitudine',
-            subtitle: 'Classifica locale ordinata per consistenza settimanale',
+            subtitle:
+                'Classifica calcolata dai log sincronizzati per consistenza settimanale',
           ),
           const SizedBox(height: 15),
           for (final habit in snapshot.habits) ...[

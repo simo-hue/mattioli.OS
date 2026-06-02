@@ -137,7 +137,6 @@ class _SettingsPageState extends ConsumerState<SettingsPage> {
   }
 
   Widget _profile() {
-    final backendConfigured = ref.watch(backendConfiguredProvider);
     final auth = ref.watch(desktopAuthControllerProvider);
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
@@ -159,16 +158,11 @@ class _SettingsPageState extends ConsumerState<SettingsPage> {
           children: [
             _InfoRow(
               label: 'Account',
-              value: auth.user?.email ?? 'Preview locale',
+              value: auth.user?.email ?? 'Sessione non disponibile',
             ),
-            _InfoRow(
+            const _InfoRow(
               label: 'Repository dati',
-              value: backendConfigured
-                  ? 'Supabase con cache cifrata'
-                  : 'In-memory preview',
-              color: backendConfigured
-                  ? context.evolveAccent
-                  : EvolveColors.amber,
+              value: 'Supabase con cache cifrata',
             ),
             _ActionRow(
               icon: Icons.badge_outlined,
@@ -187,7 +181,7 @@ class _SettingsPageState extends ConsumerState<SettingsPage> {
             _ActionRow(
               icon: Icons.photo_camera_outlined,
               title: 'Aggiorna avatar',
-              detail: 'Scegli un immagine locale come nella versione mobile.',
+              detail: 'Scegli un immagine locale per il profilo desktop.',
               onTap: _pickAvatar,
             ),
             _ActionRow(
@@ -230,7 +224,7 @@ class _SettingsPageState extends ConsumerState<SettingsPage> {
           children: [
             _SwitchRow(
               label: 'Modalita scura',
-              detail: 'Usa il tema scuro in bianco e nero del client mobile.',
+              detail: 'Usa il tema scuro in bianco e nero.',
               value: _darkMode,
               onChanged: (value) {
                 ref
@@ -253,7 +247,7 @@ class _SettingsPageState extends ConsumerState<SettingsPage> {
           children: [
             _ColorRow(
               label: 'Colore accento',
-              detail: 'Palette estesa riservata a Evolve Pro sul mobile.',
+              detail: 'Palette estesa riservata a Evolve Pro.',
               selected: _accent,
               onChanged: (color) {
                 ref
@@ -320,7 +314,7 @@ class _SettingsPageState extends ConsumerState<SettingsPage> {
             _SwitchRow(
               label: 'Feedback aptico',
               detail:
-                  'Preferenza condivisa con mobile; il desktop non genera vibrazioni.',
+                  'Il desktop conserva la preferenza ma non genera vibrazioni.',
               value:
                   ref
                       .read(sharedPreferencesProvider)
@@ -351,7 +345,7 @@ class _SettingsPageState extends ConsumerState<SettingsPage> {
       children: [
         const _SettingsHeading(
           title: 'Notifiche',
-          subtitle: 'Promemoria operativi sincronizzati con il client mobile',
+          subtitle: 'Promemoria operativi del client desktop',
         ),
         const SizedBox(height: 17),
         _SettingsGroup(
@@ -497,9 +491,7 @@ class _SettingsPageState extends ConsumerState<SettingsPage> {
     final snapshot = ref.read(dashboardControllerProvider);
     final json = const JsonEncoder.withIndent('  ').convert({
       'exportDate': DateTime.now().toIso8601String(),
-      'source': ref.read(backendConfiguredProvider)
-          ? 'evolve-desktop-supabase-cache'
-          : 'evolve-desktop-local-preview',
+      'source': 'evolve-desktop-supabase-cache',
       'settings': {
         'themeMode': _darkMode ? 'dark' : 'light',
         'accentColor': dashboardColorToHex(_accent),
@@ -1397,11 +1389,10 @@ class _ActionRow extends StatelessWidget {
 }
 
 class _InfoRow extends StatelessWidget {
-  const _InfoRow({required this.label, required this.value, this.color});
+  const _InfoRow({required this.label, required this.value});
 
   final String label;
   final String value;
-  final Color? color;
 
   @override
   Widget build(BuildContext context) {
@@ -1413,7 +1404,7 @@ class _InfoRow extends StatelessWidget {
           Text(
             value,
             style: TextStyle(
-              color: color ?? context.evolveColors.foreground,
+              color: context.evolveColors.foreground,
               fontWeight: FontWeight.w700,
             ),
           ),
@@ -1503,7 +1494,7 @@ class _ProfileCard extends StatelessWidget {
                 Text(
                   fullName?.isNotEmpty ?? false
                       ? fullName!
-                      : user?.email?.split('@').first ?? 'Profilo locale',
+                      : user?.email?.split('@').first ?? 'Profilo',
                   style: TextStyle(
                     color: context.evolveColors.foreground,
                     fontSize: 15,
@@ -1512,7 +1503,7 @@ class _ProfileCard extends StatelessWidget {
                 ),
                 SizedBox(height: 4),
                 Text(
-                  user?.email ?? 'Sessione locale di anteprima',
+                  user?.email ?? 'Sessione non disponibile',
                   style: TextStyle(
                     color: context.evolveColors.subtle,
                     fontSize: 12,
@@ -1529,10 +1520,10 @@ class _ProfileCard extends StatelessWidget {
             )
           else
             StatusPill(
-              label: user == null ? 'Preview' : 'Verificato',
+              label: user == null ? 'Non autenticato' : 'Verificato',
               color: user == null ? EvolveColors.amber : context.evolveAccent,
               icon: user == null
-                  ? Icons.science_outlined
+                  ? Icons.lock_outline_rounded
                   : Icons.verified_outlined,
             ),
         ],
@@ -1594,8 +1585,8 @@ class _SubscriptionSettingsState extends ConsumerState<_SubscriptionSettings> {
               : 'Canale commerciale richiesto',
           detail: subscription.isSupportedPlatform
               ? subscription.isConfigured
-                    ? 'Offerte e stato entitlement vengono letti dal progetto RevenueCat mobile.'
-                    : 'Avvia il desktop con il launcher mobile per iniettare la public key RevenueCat.'
+                    ? 'Offerte e stato entitlement vengono letti da RevenueCat.'
+                    : 'Configura la public key RevenueCat del client desktop.'
               : 'RevenueCat Flutter non espone acquisti in-app su Windows e Linux.',
         ),
         const SizedBox(height: 16),
@@ -1793,7 +1784,7 @@ class _PersonalInfoDialogState extends ConsumerState<_PersonalInfoDialog> {
               readOnly: true,
               decoration: InputDecoration(
                 labelText: 'Email',
-                hintText: email ?? 'Preview locale',
+                hintText: email ?? 'Sessione non disponibile',
               ),
             ),
             const SizedBox(height: 10),

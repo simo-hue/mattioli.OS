@@ -42,7 +42,7 @@ preview coverage, cloud integration gates and per-platform adaptations.
 
 ## Supabase configuration
 
-The mobile production config is the only source of truth. Do not use the root
+The mobile production configs are the only source of truth. Do not use the root
 web `.env`, duplicate credentials under `desktop`, or embed a service-role or
 secret key in a desktop binary.
 
@@ -50,9 +50,12 @@ secret key in a desktop binary.
 dart run tool/flutter_with_mobile_supabase.dart run -d macos
 ```
 
-The launcher reads `../mobile/lib/core/supabase_config.dart` and forwards its
-production URL and frontend `anonKey` as compile-time desktop defines. Without
-those define values the app intentionally starts in local preview mode.
+The launcher reads `../mobile/lib/core/supabase_config.dart`,
+`../mobile/lib/core/revenuecat_config.dart` and
+`../mobile/lib/core/sentry_config.dart`. It forwards only the mobile frontend
+Supabase key and the public client configuration required by RevenueCat and
+Sentry as compile-time desktop defines. Without the Supabase define values the
+app intentionally starts in local preview mode.
 
 The adapter is implemented, but publishing still requires a schema pull,
 migration reconciliation and RLS audit. The applied Supabase project exposes
@@ -95,6 +98,13 @@ The desktop theme matches the mobile client: dark mode defaults to a
 black-and-white palette, while the appearance settings apply the selected
 contrast color immediately. Theme mode and accent color reuse the mobile
 preference keys and synchronize through the shared Supabase profile.
+
+The desktop settings menu mirrors the mobile profile surfaces: personal
+information, local avatar selection, appearance, calendar view, language,
+24-hour format, tutorial reset, reminders, biometric lock, password update,
+Sentry consent, JSON export, reset/delete data and macOS RevenueCat purchase
+management. Platform-specific adaptations and release prerequisites are listed
+in [`FEATURE_PARITY.md`](FEATURE_PARITY.md).
 
 ## Desktop conventions
 

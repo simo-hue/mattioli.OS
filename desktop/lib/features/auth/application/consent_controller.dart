@@ -1,5 +1,6 @@
 import 'package:evolve_desktop/core/app_bootstrap.dart';
 import 'package:evolve_desktop/core/app_logger.dart';
+import 'package:evolve_desktop/core/desktop_sentry_service.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 class DesktopConsentState {
@@ -64,6 +65,7 @@ class DesktopConsentController extends Notifier<DesktopConsentState> {
       hasSentryConsent: sentryConsent,
       hasCompletedOnboarding: completed,
     );
+    await DesktopSentryService.setEnabled(sentryConsent);
     await syncToProfile();
   }
 

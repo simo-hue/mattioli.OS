@@ -392,6 +392,20 @@ void main() {
     expect(repository.load().habits.single.id, habit.id);
   });
 
+  test('reset data clears the dashboard repository and controller', () async {
+    final repository = InMemoryDashboardRepository();
+    final container = ProviderContainer(
+      overrides: [dashboardRepositoryProvider.overrideWithValue(repository)],
+    );
+    addTearDown(container.dispose);
+
+    await container.read(dashboardControllerProvider.notifier).resetData();
+
+    expect(container.read(dashboardControllerProvider).habits, isEmpty);
+    expect(container.read(dashboardControllerProvider).goals, isEmpty);
+    expect(repository.load().habits, isEmpty);
+  });
+
   test(
     'offline refresh exposes cached data and keeps the sync warning',
     () async {

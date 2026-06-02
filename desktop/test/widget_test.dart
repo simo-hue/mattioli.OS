@@ -1,7 +1,9 @@
 import 'package:evolve_desktop/app/evolve_desktop_app.dart';
+import 'package:evolve_desktop/core/app_bootstrap.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
+import 'package:shared_preferences/shared_preferences.dart';
 
 void main() {
   testWidgets('desktop shell exposes the primary navigation', (tester) async {
@@ -86,6 +88,83 @@ void main() {
     final app = tester.widget<MaterialApp>(find.byType(MaterialApp));
     expect(app.darkTheme?.colorScheme.primary, const Color(0xFF3B82F6));
     expect(find.byTooltip('Colore personalizzato'), findsOneWidget);
+    expect(tester.takeException(), isNull);
+  });
+
+  testWidgets('settings menu exposes the complete mobile account surfaces', (
+    tester,
+  ) async {
+    await tester.binding.setSurfaceSize(const Size(1440, 1100));
+    addTearDown(() => tester.binding.setSurfaceSize(null));
+
+    await tester.pumpWidget(const ProviderScope(child: EvolveDesktopApp()));
+    await tester.tap(find.text('Impostazioni'));
+    await tester.pumpAndSettle();
+
+    expect(find.text('Informazioni personali'), findsOneWidget);
+    expect(find.text('Aggiorna avatar'), findsOneWidget);
+    expect(find.text('Ripristina tutorial'), findsNothing);
+
+    await tester.tap(find.text('Applicazione'));
+    await tester.pumpAndSettle();
+    expect(find.text('Modalita scura'), findsOneWidget);
+    expect(find.text('Colore accento'), findsOneWidget);
+    expect(find.text('Vista calendario predefinita'), findsOneWidget);
+    expect(find.text('Feedback aptico'), findsOneWidget);
+    expect(find.text('Lingua'), findsOneWidget);
+    expect(find.text('Formato 24h'), findsOneWidget);
+    expect(find.text('Ripristina tutorial'), findsOneWidget);
+
+    await tester.tap(find.text('Notifiche'));
+    await tester.pumpAndSettle();
+    expect(find.text('Promemoria abitudini'), findsOneWidget);
+    expect(find.text('Orario morning brief'), findsOneWidget);
+    expect(find.text('Review serale'), findsOneWidget);
+    expect(find.text('Orario review serale'), findsOneWidget);
+
+    await tester.tap(find.text('Privacy'));
+    await tester.pumpAndSettle();
+    expect(find.text('Blocco biometrico'), findsOneWidget);
+    expect(find.text('Cambia password'), findsOneWidget);
+    expect(find.text('Esporta dati'), findsOneWidget);
+    expect(find.text('Elimina account e dati'), findsOneWidget);
+
+    await tester.tap(find.text('Abbonamento'));
+    await tester.pumpAndSettle();
+    expect(find.text('Attiva Evolve Pro'), findsOneWidget);
+    expect(find.text('Ripristina acquisti'), findsOneWidget);
+    expect(find.text('Gestisci abbonamento'), findsOneWidget);
+    expect(tester.takeException(), isNull);
+  });
+
+  testWidgets('tutorial reset clears the three canonical mobile flags', (
+    tester,
+  ) async {
+    SharedPreferences.setMockInitialValues({
+      'has_seen_tutorial': true,
+      'has_seen_goals_tutorial': true,
+      'has_seen_stats_tutorial': true,
+    });
+    final preferences = await SharedPreferences.getInstance();
+    await tester.binding.setSurfaceSize(const Size(1440, 1100));
+    addTearDown(() => tester.binding.setSurfaceSize(null));
+
+    await tester.pumpWidget(
+      ProviderScope(
+        overrides: [sharedPreferencesProvider.overrideWithValue(preferences)],
+        child: const EvolveDesktopApp(),
+      ),
+    );
+    await tester.tap(find.text('Impostazioni'));
+    await tester.pumpAndSettle();
+    await tester.tap(find.text('Applicazione'));
+    await tester.pumpAndSettle();
+    await tester.tap(find.text('Ripristina tutorial'));
+    await tester.pumpAndSettle();
+
+    expect(preferences.getBool('has_seen_tutorial'), isFalse);
+    expect(preferences.getBool('has_seen_goals_tutorial'), isFalse);
+    expect(preferences.getBool('has_seen_stats_tutorial'), isFalse);
     expect(tester.takeException(), isNull);
   });
 }

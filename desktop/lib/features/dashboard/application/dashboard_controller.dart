@@ -294,6 +294,11 @@ class DashboardController extends Notifier<DashboardSnapshot> {
     await _syncRemote(() => _repository.deleteGoal(id));
   }
 
+  Future<void> resetData() async {
+    await _repository.resetData();
+    state = DashboardSnapshot.empty;
+  }
+
   Future<void> _createGoalOptimistically(DashboardGoal draft) async {
     state = state.copyWith(goals: [...state.goals, draft]);
     await _saveLocal();

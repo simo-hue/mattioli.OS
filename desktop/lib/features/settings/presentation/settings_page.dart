@@ -1,20 +1,29 @@
 import 'dart:async';
 import 'dart:convert';
+import 'dart:io';
 
 import 'package:evolve_desktop/app/theme/desktop_appearance_controller.dart';
 import 'package:evolve_desktop/app/theme/evolve_theme.dart';
+import 'package:evolve_desktop/app/localization/desktop_locale_controller.dart';
 import 'package:evolve_desktop/core/app_bootstrap.dart';
 import 'package:evolve_desktop/core/app_logger.dart';
 import 'package:evolve_desktop/features/auth/application/auth_controller.dart';
 import 'package:evolve_desktop/features/auth/application/consent_controller.dart';
 import 'package:evolve_desktop/features/dashboard/application/dashboard_controller.dart';
 import 'package:evolve_desktop/features/dashboard/domain/dashboard_models.dart';
+import 'package:evolve_desktop/features/settings/application/desktop_biometric_controller.dart';
+import 'package:evolve_desktop/features/settings/application/desktop_subscription_controller.dart';
+import 'package:evolve_desktop/features/settings/data/desktop_notification_service.dart';
+import 'package:evolve_desktop/features/settings/data/desktop_system_settings_service.dart';
 import 'package:evolve_desktop/shared/widgets/desktop_page.dart';
 import 'package:evolve_desktop/shared/widgets/evolve_panel.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_colorpicker/flutter_colorpicker.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:image_picker/image_picker.dart';
+import 'package:share_plus/share_plus.dart';
+import 'package:supabase_flutter/supabase_flutter.dart';
 
 enum _SettingsSection {
   profile,
@@ -33,22 +42,20 @@ class SettingsPage extends ConsumerStatefulWidget {
 
 class _SettingsPageState extends ConsumerState<SettingsPage> {
   _SettingsSection _section = _SettingsSection.profile;
-  bool _launchAtLogin = false;
   bool _darkMode = true;
-  bool _reduceAnimations = false;
   bool _timeFormat24h = true;
   bool _habitReminders = true;
   bool _eveningReview = true;
   bool _goalDeadlines = true;
   bool _aiInsights = true;
   bool _weeklyReport = true;
-  bool _biometricLock = false;
-  bool _crashReports = false;
+  bool _crashReports = true;
   String _calendarView = 'Settimana';
   String _language = 'Sistema';
   String _morningTime = '08:00';
   String _eveningTime = '20:30';
   Color _accent = EvolveColors.primaryStrong;
+  File? _profileImage;
 
   @override
   void initState() {
@@ -58,22 +65,27 @@ class _SettingsPageState extends ConsumerState<SettingsPage> {
     _darkMode = appearance.themeMode != ThemeMode.light;
     _accent = appearance.accentColor;
     if (preferences == null) return;
-    _launchAtLogin = preferences.getBool('desktop_launch_at_login') ?? false;
-    _reduceAnimations =
-        preferences.getBool('desktop_reduce_animations') ?? false;
     _timeFormat24h = preferences.getBool('pref_time_format_24h') ?? true;
     _habitReminders = preferences.getBool('notif_habit_reminders') ?? true;
     _eveningReview = preferences.getBool('notif_evening_review') ?? true;
     _goalDeadlines = preferences.getBool('notif_goal_deadlines') ?? true;
     _aiInsights = preferences.getBool('notif_ai_insights') ?? true;
     _weeklyReport = preferences.getBool('notif_weekly_reports') ?? true;
-    _biometricLock = preferences.getBool('biometric_lock') ?? false;
-    _crashReports = preferences.getBool('has_sentry_consent') ?? false;
+    _crashReports = preferences.getBool('has_sentry_consent') ?? true;
     _calendarView =
         preferences.getString('pref_default_calendar_view') ?? 'Settimana';
-    _language = preferences.getString('language') ?? 'Sistema';
-    _morningTime = preferences.getString('morning_brief_time') ?? '08:00';
-    _eveningTime = preferences.getString('evening_review_time') ?? '20:30';
+    _language = _languageLabel(
+      preferences.getString('pref_language') ??
+          preferences.getString('language'),
+    );
+    _morningTime =
+        preferences.getString('notif_morning_brief_time') ??
+        preferences.getString('morning_brief_time') ??
+        '09:00';
+    _eveningTime =
+        preferences.getString('notif_evening_review_time') ??
+        preferences.getString('evening_review_time') ??
+        '21:00';
     unawaited(_loadProfilePreferences());
   }
 
@@ -135,7 +147,12 @@ class _SettingsPageState extends ConsumerState<SettingsPage> {
           subtitle: 'Informazioni personali e stato sincronizzazione',
         ),
         const SizedBox(height: 17),
-        const _ProfileCard(),
+        _ProfileCard(
+          user: auth.user,
+          image: _profileImage,
+          isPro: ref.watch(desktopSubscriptionControllerProvider).isPro,
+          onPickAvatar: _pickAvatar,
+        ),
         const SizedBox(height: 16),
         _SettingsGroup(
           title: 'Account e onboarding',
@@ -170,22 +187,8 @@ class _SettingsPageState extends ConsumerState<SettingsPage> {
             _ActionRow(
               icon: Icons.photo_camera_outlined,
               title: 'Aggiorna avatar',
-              detail: 'Richiede file picker e storage profile adapter',
-              onTap: () => _showGate(
-                'Avatar profile-gated',
-                'La superficie e pronta; upload e persistenza richiedono lo storage adapter.',
-              ),
-            ),
-            _ActionRow(
-              icon: Icons.login_rounded,
-              title: 'Autenticazione',
-              detail: backendConfigured
-                  ? 'Sessione Supabase attiva'
-                  : 'Configura Supabase per attivare l’accesso reale',
-              onTap: () => showDialog<void>(
-                context: context,
-                builder: (context) => const _AuthSessionDialog(),
-              ),
+              detail: 'Scegli un immagine locale come nella versione mobile.',
+              onTap: _pickAvatar,
             ),
             _ActionRow(
               icon: Icons.fact_check_outlined,
@@ -201,7 +204,7 @@ class _SettingsPageState extends ConsumerState<SettingsPage> {
                   : 'Disponibile con una sessione Supabase attiva',
               destructive: true,
               onTap: auth.isLoggedIn
-                  ? () => unawaited(_signOut())
+                  ? () => _confirmSignOut()
                   : () => _showGate(
                       'Logout',
                       'Richiede una sessione Supabase attiva.',
@@ -223,21 +226,11 @@ class _SettingsPageState extends ConsumerState<SettingsPage> {
         ),
         const SizedBox(height: 17),
         _SettingsGroup(
-          title: 'Applicazione desktop',
+          title: 'Aspetto e visual',
           children: [
             _SwitchRow(
-              label: 'Apri Evolve all\'accesso',
-              detail: 'Avvio automatico della sessione desktop.',
-              value: _launchAtLogin,
-              onChanged: (value) => _setBool(
-                'desktop_launch_at_login',
-                value,
-                () => _launchAtLogin = value,
-              ),
-            ),
-            _SwitchRow(
               label: 'Modalita scura',
-              detail: 'Il tema chiaro verra applicato dal theme controller.',
+              detail: 'Usa il tema scuro in bianco e nero del client mobile.',
               value: _darkMode,
               onChanged: (value) {
                 ref
@@ -252,21 +245,11 @@ class _SettingsPageState extends ConsumerState<SettingsPage> {
                 );
               },
             ),
-            _SwitchRow(
-              label: 'Riduci animazioni',
-              detail: 'Limita le transizioni per una maggiore accessibilita.',
-              value: _reduceAnimations,
-              onChanged: (value) => _setBool(
-                'desktop_reduce_animations',
-                value,
-                () => _reduceAnimations = value,
-              ),
-            ),
           ],
         ),
         const SizedBox(height: 16),
         _SettingsGroup(
-          title: 'Dashboard e localizzazione',
+          title: 'Calendario, esperienza e lingua',
           children: [
             _ColorRow(
               label: 'Colore accento',
@@ -311,9 +294,14 @@ class _SettingsPageState extends ConsumerState<SettingsPage> {
                 'Arabic',
               ],
               onChanged: (value) => _setString(
-                'language',
+                'pref_language',
                 value,
-                () => _language = value,
+                () {
+                  _language = value;
+                  ref
+                      .read(desktopLocaleControllerProvider.notifier)
+                      .setLanguage(_languageProfileValue(value));
+                },
                 profileColumn: 'language',
                 profileValue: _languageProfileValue(value),
               ),
@@ -329,20 +317,27 @@ class _SettingsPageState extends ConsumerState<SettingsPage> {
                 profileColumn: 'pref_time_format_24h',
               ),
             ),
-            const _ReadOnlyRow(
+            _SwitchRow(
               label: 'Feedback aptico',
               detail:
-                  'Adattamento desktop: non applicabile a mouse e tastiera.',
-              status: 'Mobile only',
+                  'Preferenza condivisa con mobile; il desktop non genera vibrazioni.',
+              value:
+                  ref
+                      .read(sharedPreferencesProvider)
+                      ?.getBool('pref_haptic_feedback') ??
+                  true,
+              onChanged: (value) => _setBool(
+                'pref_haptic_feedback',
+                value,
+                () {},
+                profileColumn: 'pref_haptic_feedback',
+              ),
             ),
             _ActionRow(
               icon: Icons.restart_alt_rounded,
               title: 'Ripristina tutorial',
               detail: 'Riapre i walkthrough di dashboard e obiettivi.',
-              onTap: () => _showGate(
-                'Tutorial ripristinati',
-                'La preview locale registrera il walkthrough al prossimo avvio.',
-              ),
+              onTap: _resetTutorials,
             ),
           ],
         ),
@@ -356,8 +351,7 @@ class _SettingsPageState extends ConsumerState<SettingsPage> {
       children: [
         const _SettingsHeading(
           title: 'Notifiche',
-          subtitle:
-              'Preferenze replicate; il delivery nativo verra collegato per piattaforma',
+          subtitle: 'Promemoria operativi sincronizzati con il client mobile',
         ),
         const SizedBox(height: 17),
         _SettingsGroup(
@@ -367,20 +361,21 @@ class _SettingsPageState extends ConsumerState<SettingsPage> {
               label: 'Promemoria abitudini',
               detail: 'Invia il morning briefing giornaliero.',
               value: _habitReminders,
-              onChanged: (value) => _setBool(
-                'notif_habit_reminders',
-                value,
-                () => _habitReminders = value,
+              onChanged: (value) => _setNotificationBool(
+                key: 'notif_habit_reminders',
+                value: value,
+                update: () => _habitReminders = value,
                 profileColumn: 'notif_habit_reminders',
+                requestPermissions: value,
               ),
             ),
             if (_habitReminders)
-              _SelectRow(
+              _TimeRow(
                 label: 'Orario morning brief',
                 value: _morningTime,
-                options: const ['07:30', '08:00', '08:30', '09:00'],
-                onChanged: (value) => _setString(
-                  'morning_brief_time',
+                use24hFormat: _timeFormat24h,
+                onChanged: (value) => _setNotificationString(
+                  'notif_morning_brief_time',
                   value,
                   () => _morningTime = value,
                   profileColumn: 'morning_brief_time',
@@ -390,80 +385,45 @@ class _SettingsPageState extends ConsumerState<SettingsPage> {
               label: 'Review serale',
               detail: 'Ricorda di consolidare la giornata.',
               value: _eveningReview,
-              onChanged: (value) => _setBool(
-                'notif_evening_review',
-                value,
-                () => _eveningReview = value,
+              onChanged: (value) => _setNotificationBool(
+                key: 'notif_evening_review',
+                value: value,
+                update: () => _eveningReview = value,
                 profileColumn: 'notif_evening_review',
+                requestPermissions: value,
               ),
             ),
             if (_eveningReview)
-              _SelectRow(
+              _TimeRow(
                 label: 'Orario review serale',
                 value: _eveningTime,
-                options: const ['19:30', '20:00', '20:30', '21:00'],
-                onChanged: (value) => _setString(
-                  'evening_review_time',
+                use24hFormat: _timeFormat24h,
+                onChanged: (value) => _setNotificationString(
+                  'notif_evening_review_time',
                   value,
                   () => _eveningTime = value,
                   profileColumn: 'evening_review_time',
                 ),
               ),
-            _SwitchRow(
-              label: 'Scadenze obiettivi',
-              detail: 'Avvisa prima dei macro-obiettivi in scadenza.',
-              value: _goalDeadlines,
-              onChanged: (value) => _setBool(
-                'notif_goal_deadlines',
-                value,
-                () => _goalDeadlines = value,
-                profileColumn: 'notif_goal_deadlines',
-              ),
-            ),
-            _SwitchRow(
-              label: 'Insight AI',
-              detail: 'Mostra suggerimenti quando emerge un pattern utile.',
-              value: _aiInsights,
-              onChanged: (value) => _setBool(
-                'notif_ai_insights',
-                value,
-                () => _aiInsights = value,
-                profileColumn: 'notif_ai_insights',
-              ),
-            ),
-            _SwitchRow(
-              label: 'Report settimanale',
-              detail: 'Prepara una sintesi ogni domenica.',
-              value: _weeklyReport,
-              onChanged: (value) => _setBool(
-                'notif_weekly_reports',
-                value,
-                () => _weeklyReport = value,
-                profileColumn: 'notif_weekly_reports',
-              ),
-            ),
             _ActionRow(
               icon: Icons.notifications_active_outlined,
               title: 'Richiedi permessi notifiche',
               detail: 'Apre il prompt nativo sul target supportato.',
-              onTap: () => _showGate(
-                'Permessi notifiche',
-                'Il prompt verra collegato al notification adapter per ciascun target desktop.',
-              ),
+              onTap: _requestNotificationPermissions,
             ),
           ],
         ),
         const SizedBox(height: 16),
-        const _PlatformNote(
+        _PlatformNote(
           title: 'Delivery nativo per sistema operativo',
-          detail:
-              'macOS, Windows e Linux richiedono inizializzazione e permessi differenti. Le preferenze sono pronte; il servizio di scheduling resta platform-gated.',
+          detail: DesktopNotificationService.instance.platformSummary,
         ),
       ],
     );
   }
 
   Widget _privacy() {
+    final biometric = ref.watch(desktopBiometricControllerProvider);
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
@@ -479,19 +439,8 @@ class _SettingsPageState extends ConsumerState<SettingsPage> {
               label: 'Blocco biometrico',
               detail:
                   'Disponibile con adapter nativo su macOS e Windows; non supportato su Linux.',
-              value: _biometricLock,
-              onChanged: (value) {
-                _setBool(
-                  'biometric_lock',
-                  value,
-                  () => _biometricLock = value,
-                  profileColumn: 'biometric_lock',
-                );
-                _showGate(
-                  'Biometria platform-gated',
-                  'La preferenza e registrata localmente. L\'autenticazione nativa verra attivata per macOS e Windows.',
-                );
-              },
+              value: biometric.enabled,
+              onChanged: _setBiometricLock,
             ),
             _ActionRow(
               icon: Icons.key_outlined,
@@ -517,38 +466,26 @@ class _SettingsPageState extends ConsumerState<SettingsPage> {
               label: 'Invia segnalazioni crash',
               detail: 'Consenso separato per Sentry.',
               value: _crashReports,
-              onChanged: (value) => _setBool(
-                'has_sentry_consent',
-                value,
-                () => _crashReports = value,
-                profileColumn: 'sentry_consent',
-              ),
+              onChanged: _setCrashReportingConsent,
             ),
             _ActionRow(
               icon: Icons.download_outlined,
               title: 'Esporta dati',
-              detail:
-                  'Copia un export JSON dei dati disponibili negli appunti.',
-              onTap: _exportPreview,
+              detail: 'Condivide un export JSON completo dei dati disponibili.',
+              onTap: _exportData,
             ),
             _ActionRow(
               icon: Icons.settings_outlined,
               title: 'Gestione permessi di sistema',
-              detail: 'Notifiche, avvio automatico e sicurezza.',
-              onTap: () => _showGate(
-                'Permessi di sistema',
-                'L\'apertura delle impostazioni native verra implementata per target.',
-              ),
+              detail: 'Notifiche, calendario e sicurezza.',
+              onTap: _openSystemPermissions,
             ),
             _ActionRow(
               icon: Icons.delete_forever_outlined,
               title: 'Elimina account e dati',
               detail: 'Operazione irreversibile protetta da conferma.',
               destructive: true,
-              onTap: () => _showGate(
-                'Eliminazione account',
-                'Disabilitata nella preview: richiede RPC verificata, sessione valida e conferma esplicita.',
-              ),
+              onTap: _showDeleteOrResetDialog,
             ),
           ],
         ),
@@ -556,12 +493,28 @@ class _SettingsPageState extends ConsumerState<SettingsPage> {
     );
   }
 
-  Future<void> _exportPreview() async {
+  Future<void> _exportData() async {
     final snapshot = ref.read(dashboardControllerProvider);
     final json = const JsonEncoder.withIndent('  ').convert({
+      'exportDate': DateTime.now().toIso8601String(),
       'source': ref.read(backendConfiguredProvider)
           ? 'evolve-desktop-supabase-cache'
           : 'evolve-desktop-local-preview',
+      'settings': {
+        'themeMode': _darkMode ? 'dark' : 'light',
+        'accentColor': dashboardColorToHex(_accent),
+        'defaultCalendarView': _calendarProfileValue(_calendarView),
+        'language': _languageProfileValue(_language),
+        'timeFormat24h': _timeFormat24h,
+        'habitReminders': _habitReminders,
+        'goalDeadlines': _goalDeadlines,
+        'aiInsights': _aiInsights,
+        'weeklyReports': _weeklyReport,
+        'eveningReview': _eveningReview,
+        'biometricLock': ref.read(desktopBiometricControllerProvider).enabled,
+        'morningBriefTime': _morningTime,
+        'eveningReviewTime': _eveningTime,
+      },
       'habits': [
         for (final habit in snapshot.habits)
           {
@@ -569,6 +522,7 @@ class _SettingsPageState extends ConsumerState<SettingsPage> {
             'title': habit.title,
             'category': habit.category,
             'weekly_progress': habit.weeklyProgress,
+            'reminder_time': habit.reminderTime,
           },
       ],
       'goals': [
@@ -580,12 +534,31 @@ class _SettingsPageState extends ConsumerState<SettingsPage> {
             'type': goal.type.name,
           },
       ],
+      'habitLogs': snapshot.habitLogs,
+      'moods': {
+        for (final entry in snapshot.moods.entries)
+          entry.key: entry.value.toJson(),
+      },
     });
-    await Clipboard.setData(ClipboardData(text: json));
+    if (Platform.isLinux) {
+      await Clipboard.setData(ClipboardData(text: json));
+    } else {
+      await SharePlus.instance.share(
+        ShareParams(
+          files: [
+            XFile.fromData(utf8.encode(json), mimeType: 'application/json'),
+          ],
+          fileNameOverrides: const ['mattioli_os_export.json'],
+          text: 'I miei dati esportati da Evolve',
+        ),
+      );
+    }
     if (!mounted) return;
     _showGate(
-      'Export copiato',
-      'Il JSON dei dati disponibili e negli appunti.',
+      'Export completato',
+      Platform.isLinux
+          ? 'Il JSON e negli appunti: Linux non supporta la condivisione file.'
+          : 'Il JSON e stato inviato al selettore di condivisione.',
     );
   }
 
@@ -593,6 +566,262 @@ class _SettingsPageState extends ConsumerState<SettingsPage> {
     try {
       await ref.read(desktopAuthControllerProvider.notifier).signOut();
     } catch (_) {}
+  }
+
+  Future<void> _pickAvatar() async {
+    try {
+      final image = await ImagePicker().pickImage(source: ImageSource.gallery);
+      if (image == null || !mounted) return;
+      setState(() => _profileImage = File(image.path));
+    } catch (error, stack) {
+      AppLogger.error('Unable to pick desktop avatar', error, stack);
+      if (mounted) {
+        _showGate('Avatar', 'Selezione immagine non riuscita.');
+      }
+    }
+  }
+
+  Future<void> _confirmSignOut() async {
+    final confirmed = await _confirm(
+      title: 'Conferma uscita',
+      message:
+          'Sei sicuro di voler uscire? Dovrai reinserire le credenziali per accedere nuovamente.',
+      destructive: true,
+    );
+    if (confirmed) await _signOut();
+  }
+
+  Future<void> _setBiometricLock(bool value) async {
+    final changed = await ref
+        .read(desktopBiometricControllerProvider.notifier)
+        .setEnabled(value);
+    if (!mounted) return;
+    if (!changed) {
+      final message = ref.read(desktopBiometricControllerProvider).errorMessage;
+      _showGate('Blocco biometrico', message ?? 'Attivazione annullata.');
+    }
+  }
+
+  Future<void> _requestNotificationPermissions() async {
+    final granted = await DesktopNotificationService.instance
+        .requestPermissions();
+    if (!mounted) return;
+    _showGate(
+      'Permessi notifiche',
+      granted
+          ? 'Permessi disponibili per questo sistema.'
+          : 'Permesso non concesso. Puoi modificarlo dalle impostazioni di sistema.',
+    );
+  }
+
+  void _setNotificationBool({
+    required String key,
+    required bool value,
+    required VoidCallback update,
+    required String profileColumn,
+    bool requestPermissions = false,
+  }) {
+    _setBool(key, value, update, profileColumn: profileColumn);
+    if (requestPermissions) {
+      unawaited(DesktopNotificationService.instance.requestPermissions());
+    }
+    unawaited(_syncNotifications());
+  }
+
+  void _setNotificationString(
+    String key,
+    String value,
+    VoidCallback update, {
+    required String profileColumn,
+  }) {
+    _setString(key, value, update, profileColumn: profileColumn);
+    unawaited(_syncNotifications());
+  }
+
+  Future<void> _syncNotifications() async {
+    await DesktopNotificationService.instance.sync(
+      habitReminders: _habitReminders,
+      eveningReview: _eveningReview,
+      morningBriefTime: _morningTime,
+      eveningReviewTime: _eveningTime,
+      habits: ref.read(dashboardControllerProvider).habits,
+    );
+  }
+
+  Future<void> _openSystemPermissions() async {
+    try {
+      await DesktopSystemSettingsService.openPermissions();
+    } catch (error, stack) {
+      AppLogger.error('Unable to open system permissions', error, stack);
+      if (mounted) {
+        _showGate('Permessi di sistema', 'Impossibile aprire le impostazioni.');
+      }
+    }
+  }
+
+  Future<void> _resetTutorials() async {
+    final preferences = ref.read(sharedPreferencesProvider);
+    if (preferences != null) {
+      await Future.wait([
+        preferences.setBool('has_seen_tutorial', false),
+        preferences.setBool('has_seen_goals_tutorial', false),
+        preferences.setBool('has_seen_stats_tutorial', false),
+      ]);
+    }
+    if (mounted) {
+      _showGate(
+        'Tutorial ripristinati',
+        'Le guide verranno mostrate nuovamente nelle relative sezioni.',
+      );
+    }
+  }
+
+  Future<void> _showDeleteOrResetDialog() async {
+    final action = await showDialog<String>(
+      context: context,
+      builder: (context) => AlertDialog(
+        title: const Text('Gestione account e dati'),
+        content: const Text(
+          'Scegli se eliminare i dati mantenendo attivo l account oppure cancellare definitivamente l account.',
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(context),
+            child: const Text('Annulla'),
+          ),
+          OutlinedButton(
+            onPressed: () => Navigator.pop(context, 'reset'),
+            child: const Text('Resetta i dati'),
+          ),
+          FilledButton(
+            onPressed: () => Navigator.pop(context, 'delete'),
+            child: const Text('Elimina account'),
+          ),
+        ],
+      ),
+    );
+    if (!mounted || action == null) return;
+    if (action == 'reset') {
+      final confirmed = await _confirm(
+        title: 'Conferma reset dati',
+        message:
+            'Verranno eliminate abitudini, obiettivi e preferenze. L account restera attivo. Questa azione non puo essere annullata.',
+        destructive: true,
+      );
+      if (confirmed) await _resetData();
+      return;
+    }
+
+    final confirmed = await _confirm(
+      title: 'Conferma eliminazione account',
+      message:
+          'L account e tutti i dati associati verranno eliminati definitivamente. Questa azione e irreversibile.',
+      destructive: true,
+    );
+    if (confirmed) await _deleteAccount();
+  }
+
+  Future<bool> _confirm({
+    required String title,
+    required String message,
+    bool destructive = false,
+  }) async {
+    return await showDialog<bool>(
+          context: context,
+          builder: (context) => AlertDialog(
+            title: Text(title),
+            content: Text(message),
+            actions: [
+              TextButton(
+                onPressed: () => Navigator.pop(context, false),
+                child: const Text('Annulla'),
+              ),
+              FilledButton(
+                onPressed: () => Navigator.pop(context, true),
+                style: destructive
+                    ? FilledButton.styleFrom(backgroundColor: EvolveColors.rose)
+                    : null,
+                child: const Text('Conferma'),
+              ),
+            ],
+          ),
+        ) ??
+        false;
+  }
+
+  Future<void> _resetData() async {
+    try {
+      await ref.read(dashboardControllerProvider.notifier).resetData();
+      await _resetSettingsToDefaults();
+      if (mounted) _showGate('Reset dati', 'Dati eliminati con successo.');
+    } catch (error, stack) {
+      AppLogger.error('Unable to reset desktop data', error, stack);
+      if (mounted) _showGate('Reset dati', 'Operazione non riuscita.');
+    }
+  }
+
+  Future<void> _deleteAccount() async {
+    if (!ref.read(desktopAuthControllerProvider).isLoggedIn) {
+      _showGate('Elimina account', 'Richiede una sessione Supabase attiva.');
+      return;
+    }
+    try {
+      await ref.read(desktopAuthControllerProvider.notifier).deleteAccount();
+      if (mounted) _showGate('Elimina account', 'Account eliminato.');
+    } catch (error, stack) {
+      AppLogger.error('Unable to delete desktop account', error, stack);
+      if (mounted) _showGate('Elimina account', 'Operazione non riuscita.');
+    }
+  }
+
+  Future<void> _resetSettingsToDefaults() async {
+    final preferences = ref.read(sharedPreferencesProvider);
+    final keys = preferences?.getKeys().where(
+      (key) => key.startsWith('pref_') || key.startsWith('notif_'),
+    );
+    if (preferences != null && keys != null) {
+      await Future.wait([for (final key in keys) preferences.remove(key)]);
+    }
+    ref
+        .read(desktopAppearanceControllerProvider.notifier)
+        .setThemeMode(ThemeMode.dark);
+    ref
+        .read(desktopAppearanceControllerProvider.notifier)
+        .setAccentColor(DesktopAppearanceController.defaultAccent);
+    setState(() {
+      _darkMode = true;
+      _accent = DesktopAppearanceController.defaultAccent;
+      _calendarView = 'Settimana';
+      _language = 'Sistema';
+      _timeFormat24h = true;
+      _habitReminders = true;
+      _goalDeadlines = true;
+      _aiInsights = false;
+      _weeklyReport = false;
+      _eveningReview = true;
+      _morningTime = '09:00';
+      _eveningTime = '21:00';
+    });
+    await ref
+        .read(desktopBiometricControllerProvider.notifier)
+        .setEnabled(false);
+    await _syncProfile({
+      'theme_mode': 'dark',
+      'accent_color': '#FAFAFA',
+      'pref_default_calendar_view': 'settimana',
+      'pref_haptic_feedback': true,
+      'language': 'system',
+      'pref_time_format_24h': true,
+      'notif_habit_reminders': true,
+      'notif_goal_deadlines': true,
+      'notif_ai_insights': false,
+      'notif_weekly_reports': false,
+      'notif_evening_review': true,
+      'biometric_lock': false,
+      'morning_brief_time': '09:00',
+      'evening_review_time': '21:00',
+    });
+    await _syncNotifications();
   }
 
   Future<void> _reviewConsent() async {
@@ -603,6 +832,18 @@ class _SettingsPageState extends ConsumerState<SettingsPage> {
           acceptedTerms: false,
           sentryConsent: consent.hasSentryConsent,
           completed: false,
+        );
+  }
+
+  Future<void> _setCrashReportingConsent(bool value) async {
+    final consent = ref.read(desktopConsentControllerProvider);
+    setState(() => _crashReports = value);
+    await ref
+        .read(desktopConsentControllerProvider.notifier)
+        .setConsent(
+          acceptedTerms: consent.hasAcceptedTerms,
+          sentryConsent: value,
+          completed: consent.hasCompletedOnboarding,
         );
   }
 
@@ -667,7 +908,6 @@ class _SettingsPageState extends ConsumerState<SettingsPage> {
         _aiInsights = profile['notif_ai_insights'] as bool? ?? _aiInsights;
         _weeklyReport =
             profile['notif_weekly_reports'] as bool? ?? _weeklyReport;
-        _biometricLock = profile['biometric_lock'] as bool? ?? _biometricLock;
         _calendarView = _calendarLabel(
           profile['pref_default_calendar_view'] as String?,
         );
@@ -687,14 +927,23 @@ class _SettingsPageState extends ConsumerState<SettingsPage> {
           preferences.setBool('notif_goal_deadlines', _goalDeadlines),
           preferences.setBool('notif_ai_insights', _aiInsights),
           preferences.setBool('notif_weekly_reports', _weeklyReport),
-          preferences.setBool('biometric_lock', _biometricLock),
           preferences.setString('pref_default_calendar_view', _calendarView),
-          preferences.setString('language', _language),
-          preferences.setString('morning_brief_time', _morningTime),
-          preferences.setString('evening_review_time', _eveningTime),
+          preferences.setString(
+            'pref_language',
+            _languageProfileValue(_language),
+          ),
+          preferences.setString('notif_morning_brief_time', _morningTime),
+          preferences.setString('notif_evening_review_time', _eveningTime),
           preferences.setInt('accent_color', _accent.toARGB32()),
         ]);
       }
+      final biometric = profile['biometric_lock'] as bool?;
+      if (biometric != null) {
+        await ref
+            .read(desktopBiometricControllerProvider.notifier)
+            .applyProfile(biometric);
+      }
+      await _syncNotifications();
     } catch (error, stack) {
       AppLogger.error('Unable to download desktop preferences', error, stack);
     }
@@ -930,6 +1179,56 @@ class _SelectRow extends StatelessWidget {
   }
 }
 
+class _TimeRow extends StatelessWidget {
+  const _TimeRow({
+    required this.label,
+    required this.value,
+    required this.use24hFormat,
+    required this.onChanged,
+  });
+
+  final String label;
+  final String value;
+  final bool use24hFormat;
+  final ValueChanged<String> onChanged;
+
+  @override
+  Widget build(BuildContext context) {
+    return Padding(
+      padding: const EdgeInsets.symmetric(horizontal: 15, vertical: 8),
+      child: Row(
+        children: [
+          Expanded(child: Text(label)),
+          OutlinedButton(
+            onPressed: () async {
+              final parts = value.split(':');
+              final selected = await showTimePicker(
+                context: context,
+                initialTime: TimeOfDay(
+                  hour: int.tryParse(parts.first) ?? 9,
+                  minute: parts.length > 1 ? int.tryParse(parts[1]) ?? 0 : 0,
+                ),
+                builder: (context, child) => MediaQuery(
+                  data: MediaQuery.of(
+                    context,
+                  ).copyWith(alwaysUse24HourFormat: use24hFormat),
+                  child: child!,
+                ),
+              );
+              if (selected == null) return;
+              onChanged(
+                '${selected.hour.toString().padLeft(2, '0')}:'
+                '${selected.minute.toString().padLeft(2, '0')}',
+              );
+            },
+            child: Text(value),
+          ),
+        ],
+      ),
+    );
+  }
+}
+
 class _ColorRow extends StatelessWidget {
   const _ColorRow({
     required this.label,
@@ -1055,33 +1354,6 @@ class _ColorRow extends StatelessWidget {
       '#${color.toARGB32().toRadixString(16).substring(2, 8).toUpperCase()}';
 }
 
-class _ReadOnlyRow extends StatelessWidget {
-  const _ReadOnlyRow({
-    required this.label,
-    required this.detail,
-    required this.status,
-  });
-
-  final String label;
-  final String detail;
-  final String status;
-
-  @override
-  Widget build(BuildContext context) {
-    return Padding(
-      padding: const EdgeInsets.symmetric(horizontal: 15, vertical: 12),
-      child: Row(
-        children: [
-          Expanded(
-            child: _RowCopy(label: label, detail: detail),
-          ),
-          StatusPill(label: status, color: context.evolveColors.subtle),
-        ],
-      ),
-    );
-  }
-}
-
 class _ActionRow extends StatelessWidget {
   const _ActionRow({
     required this.icon,
@@ -1178,10 +1450,23 @@ class _RowCopy extends StatelessWidget {
 }
 
 class _ProfileCard extends StatelessWidget {
-  const _ProfileCard();
+  const _ProfileCard({
+    required this.user,
+    required this.image,
+    required this.isPro,
+    required this.onPickAvatar,
+  });
+
+  final User? user;
+  final File? image;
+  final bool isPro;
+  final VoidCallback onPickAvatar;
 
   @override
   Widget build(BuildContext context) {
+    final metadata = user?.userMetadata;
+    final fullName = (metadata?['full_name'] as String?)?.trim();
+    final avatarUrl = metadata?['avatar_url'] as String?;
     return Container(
       padding: const EdgeInsets.all(16),
       decoration: BoxDecoration(
@@ -1191,12 +1476,23 @@ class _ProfileCard extends StatelessWidget {
       ),
       child: Row(
         children: [
-          CircleAvatar(
-            radius: 28,
-            backgroundColor: context.evolveAccent.withValues(alpha: 0.13),
-            child: Icon(
-              Icons.person_outline_rounded,
-              color: context.evolveAccent,
+          InkWell(
+            onTap: onPickAvatar,
+            customBorder: const CircleBorder(),
+            child: CircleAvatar(
+              radius: 28,
+              backgroundColor: context.evolveAccent.withValues(alpha: 0.13),
+              backgroundImage: image != null
+                  ? FileImage(image!)
+                  : avatarUrl != null
+                  ? NetworkImage(avatarUrl)
+                  : null,
+              child: image == null && avatarUrl == null
+                  ? Icon(
+                      Icons.person_outline_rounded,
+                      color: context.evolveAccent,
+                    )
+                  : null,
             ),
           ),
           SizedBox(width: 14),
@@ -1205,7 +1501,9 @@ class _ProfileCard extends StatelessWidget {
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
                 Text(
-                  'Profilo locale',
+                  fullName?.isNotEmpty ?? false
+                      ? fullName!
+                      : user?.email?.split('@').first ?? 'Profilo locale',
                   style: TextStyle(
                     color: context.evolveColors.foreground,
                     fontSize: 15,
@@ -1214,7 +1512,7 @@ class _ProfileCard extends StatelessWidget {
                 ),
                 SizedBox(height: 4),
                 Text(
-                  'Nome, email, data di nascita e avatar arriveranno dal profilo Supabase.',
+                  user?.email ?? 'Sessione locale di anteprima',
                   style: TextStyle(
                     color: context.evolveColors.subtle,
                     fontSize: 12,
@@ -1223,11 +1521,20 @@ class _ProfileCard extends StatelessWidget {
               ],
             ),
           ),
-          StatusPill(
-            label: 'Preview',
-            color: EvolveColors.amber,
-            icon: Icons.science_outlined,
-          ),
+          if (isPro)
+            const StatusPill(
+              label: 'PRO',
+              color: EvolveColors.amber,
+              icon: Icons.workspace_premium_outlined,
+            )
+          else
+            StatusPill(
+              label: user == null ? 'Preview' : 'Verificato',
+              color: user == null ? EvolveColors.amber : context.evolveAccent,
+              icon: user == null
+                  ? Icons.science_outlined
+                  : Icons.verified_outlined,
+            ),
         ],
       ),
     );
@@ -1257,18 +1564,22 @@ class _PlatformNote extends StatelessWidget {
   }
 }
 
-class _SubscriptionSettings extends StatefulWidget {
+class _SubscriptionSettings extends ConsumerStatefulWidget {
   const _SubscriptionSettings();
 
   @override
-  State<_SubscriptionSettings> createState() => _SubscriptionSettingsState();
+  ConsumerState<_SubscriptionSettings> createState() =>
+      _SubscriptionSettingsState();
 }
 
-class _SubscriptionSettingsState extends State<_SubscriptionSettings> {
+class _SubscriptionSettingsState extends ConsumerState<_SubscriptionSettings> {
   String _plan = 'yearly';
 
   @override
   Widget build(BuildContext context) {
+    final subscription = ref.watch(desktopSubscriptionControllerProvider);
+    final monthly = subscription.monthlyPackage;
+    final yearly = subscription.yearlyPackage;
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
@@ -1277,10 +1588,15 @@ class _SubscriptionSettingsState extends State<_SubscriptionSettings> {
           subtitle: 'Piano, ripristino acquisti e gestione abbonamento',
         ),
         const SizedBox(height: 17),
-        const _PlatformNote(
-          title: 'Acquisti platform-gated',
-          detail:
-              'RevenueCat e previsto per macOS. Windows e Linux richiedono un canale commerciale alternativo.',
+        _PlatformNote(
+          title: subscription.isSupportedPlatform
+              ? 'RevenueCat macOS'
+              : 'Canale commerciale richiesto',
+          detail: subscription.isSupportedPlatform
+              ? subscription.isConfigured
+                    ? 'Offerte e stato entitlement vengono letti dal progetto RevenueCat mobile.'
+                    : 'Avvia il desktop con il launcher mobile per iniettare la public key RevenueCat.'
+              : 'RevenueCat Flutter non espone acquisti in-app su Windows e Linux.',
         ),
         const SizedBox(height: 16),
         Row(
@@ -1288,7 +1604,7 @@ class _SubscriptionSettingsState extends State<_SubscriptionSettings> {
             Expanded(
               child: _PlanCard(
                 title: 'Mensile',
-                price: '4,99 EUR',
+                price: monthly?.storeProduct.priceString ?? 'Mensile',
                 selected: _plan == 'monthly',
                 onTap: () => setState(() => _plan = 'monthly'),
               ),
@@ -1297,7 +1613,7 @@ class _SubscriptionSettingsState extends State<_SubscriptionSettings> {
             Expanded(
               child: _PlanCard(
                 title: 'Annuale',
-                price: '29,99 EUR',
+                price: yearly?.storeProduct.priceString ?? 'Annuale',
                 detail: 'Miglior valore',
                 selected: _plan == 'yearly',
                 onTap: () => setState(() => _plan = 'yearly'),
@@ -1312,36 +1628,60 @@ class _SubscriptionSettingsState extends State<_SubscriptionSettings> {
             _ActionRow(
               icon: Icons.workspace_premium_outlined,
               title: 'Attiva Evolve Pro',
-              detail: 'Apre il checkout nativo sul target supportato.',
-              onTap: () =>
-                  _show(context, 'Checkout non attivo nella preview locale.'),
+              detail: subscription.isPro
+                  ? 'Entitlement Evolve Pro attivo.'
+                  : 'Avvia il checkout StoreKit nativo su macOS.',
+              onTap: subscription.isLoading
+                  ? () {}
+                  : () {
+                      final package = _plan == 'monthly' ? monthly : yearly;
+                      if (package == null) {
+                        unawaited(
+                          ref
+                              .read(
+                                desktopSubscriptionControllerProvider.notifier,
+                              )
+                              .refresh(),
+                        );
+                        return;
+                      }
+                      unawaited(
+                        ref
+                            .read(
+                              desktopSubscriptionControllerProvider.notifier,
+                            )
+                            .purchase(package),
+                      );
+                    },
             ),
             _ActionRow(
               icon: Icons.restore_rounded,
               title: 'Ripristina acquisti',
               detail: 'Recupera lo stato entitlement dal provider.',
-              onTap: () =>
-                  _show(context, 'Restore non attivo nella preview locale.'),
+              onTap: () => unawaited(
+                ref
+                    .read(desktopSubscriptionControllerProvider.notifier)
+                    .restore(),
+              ),
             ),
             _ActionRow(
               icon: Icons.manage_accounts_outlined,
               title: 'Gestisci abbonamento',
-              detail: 'Apre il customer center quando disponibile.',
-              onTap: () => _show(
-                context,
-                'Customer center non attivo nella preview locale.',
+              detail: 'Apre la gestione abbonamenti dell account Apple.',
+              onTap: () => unawaited(
+                ref
+                    .read(desktopSubscriptionControllerProvider.notifier)
+                    .manageSubscription(),
               ),
             ),
           ],
         ),
+        if (subscription.message != null) ...[
+          const SizedBox(height: 12),
+          Text(subscription.message!),
+        ],
       ],
     );
-  }
-
-  void _show(BuildContext context, String message) {
-    ScaffoldMessenger.of(
-      context,
-    ).showSnackBar(SnackBar(content: Text(message)));
   }
 }
 
@@ -1501,60 +1841,6 @@ class _PersonalInfoDialogState extends ConsumerState<_PersonalInfoDialog> {
     } catch (_) {
       if (mounted) setState(() => _isSaving = false);
     }
-  }
-}
-
-class _AuthSessionDialog extends ConsumerWidget {
-  const _AuthSessionDialog();
-
-  @override
-  Widget build(BuildContext context, WidgetRef ref) {
-    final auth = ref.watch(desktopAuthControllerProvider);
-    return AlertDialog(
-      title: const Text('Autenticazione desktop'),
-      content: SizedBox(
-        width: 430,
-        child: Column(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            _InfoRow(
-              label: 'Sessione',
-              value: auth.isLoggedIn ? 'Attiva' : 'Preview locale',
-              color: auth.isLoggedIn
-                  ? context.evolveAccent
-                  : EvolveColors.amber,
-            ),
-            _InfoRow(
-              label: 'Email',
-              value: auth.user?.email ?? 'Non collegata',
-            ),
-            const SizedBox(height: 10),
-            const Row(
-              children: [
-                Expanded(
-                  child: OutlinedButton(onPressed: null, child: Text('Apple')),
-                ),
-                SizedBox(width: 8),
-                Expanded(
-                  child: OutlinedButton(onPressed: null, child: Text('Google')),
-                ),
-              ],
-            ),
-            const SizedBox(height: 10),
-            const Text(
-              'Apple e Google richiedono la configurazione dei redirect desktop.',
-              textAlign: TextAlign.center,
-            ),
-          ],
-        ),
-      ),
-      actions: [
-        TextButton(
-          onPressed: () => Navigator.pop(context),
-          child: const Text('Chiudi'),
-        ),
-      ],
-    );
   }
 }
 

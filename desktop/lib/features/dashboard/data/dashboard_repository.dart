@@ -45,6 +45,10 @@ abstract class DashboardRepository {
   Future<void> updateGoal(DashboardGoal goal) async {}
 
   Future<void> deleteGoal(String id) async {}
+
+  Future<void> resetData() async {
+    await save(DashboardSnapshot.empty);
+  }
 }
 
 final dashboardRepositoryProvider = Provider<DashboardRepository>((ref) {
@@ -67,6 +71,11 @@ class InMemoryDashboardRepository extends DashboardRepository {
   @override
   Future<void> save(DashboardSnapshot snapshot) async {
     _snapshot = snapshot;
+  }
+
+  @override
+  Future<void> resetData() async {
+    _snapshot = DashboardSnapshot.empty;
   }
 }
 
@@ -251,6 +260,15 @@ class SupabaseDashboardRepository extends DashboardRepository {
       _PendingMutation.delete('long_term_goals', {'id': id}),
       () => _client.from('long_term_goals').delete().eq('id', id),
     );
+  }
+
+  @override
+  Future<void> resetData() async {
+    await _client.from('goals').delete().eq('user_id', _userId);
+    await _client.from('long_term_goals').delete().eq('user_id', _userId);
+    _snapshot = DashboardSnapshot.empty;
+    await SecureStorageUtils.delete(_cacheKey);
+    await SecureStorageUtils.delete(_pendingKey);
   }
 
   Future<T> _runOrQueue<T>(

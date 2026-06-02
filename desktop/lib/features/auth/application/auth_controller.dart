@@ -158,6 +158,19 @@ class DesktopAuthController extends Notifier<DesktopAuthState> {
     });
   }
 
+  Future<void> deleteAccount() async {
+    final userId = state.user?.id;
+    if (userId == null) {
+      throw StateError('The authenticated user is missing.');
+    }
+    await _execute(() async {
+      await _client.rpc('delete_user_account');
+      await _client.auth.signOut();
+    });
+    await SecureStorageUtils.delete('desktop_dashboard_cache_$userId');
+    await SecureStorageUtils.delete('desktop_dashboard_pending_$userId');
+  }
+
   Future<void> clearError() async {
     state = state.copyWith(clearError: true);
   }

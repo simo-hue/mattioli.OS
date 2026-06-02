@@ -32,14 +32,14 @@ receives the mobile production URL and frontend key without duplicating them.
 | Daily protocol list and completion toggle | `Local` + `Cloud` | Shared controller writes date-indexed `goal_logs`; retryable offline mutations are queued per user in encrypted storage. |
 | Daily mood and energy check-in | `Local` + `Cloud` | Desktop and mobile UI now both use the `0..10` scale. |
 | Habit creation, editing and deletion | `Local` + `Cloud` | Writes the shared `goals` table. |
-| Habit reminder time | `Local` + `Platform gate` | Preference is editable; native scheduler is not wired. |
+| Habit reminder time | `Local` + `Desktop adaptation` | Preference is editable and per-habit native scheduling is wired for macOS and Windows. Linux does not expose a scheduler API. |
 | Day detail modal | `Local` + `Cloud` | Uses selected-date logs, the mobile today/yesterday edit guard and `done -> missed -> empty` cycle. |
 | Month calendar | `Local` + `Cloud` | Historical density derives from date-indexed logs, active date ranges and per-habit colored indicators. |
 | Week calendar | `Local` + `Cloud` | Values derive from date-indexed logs. |
 | Year calendar | `Local` + `Cloud` | Weekly density bars derive from date-indexed logs. |
 | Life calendar | `Local` + `Cloud` | Uses Auth profile birth date and the mobile 85-year monthly projection, with fallback matching iOS. |
 | Protocol quick actions | `Desktop adaptation` | First-class sidebar sections replace the mobile panel shortcuts. |
-| Dashboard tutorial | `Surface` | Tutorial reset entry is exposed in settings; walkthrough persistence is pending. |
+| Dashboard tutorial | `Surface` | Settings now reset the three canonical mobile tutorial keys. Desktop walkthrough overlays still need to be reproduced. |
 | Haptic feedback | `Desktop adaptation` | Marked mobile-only for mouse and keyboard workflows. |
 
 ## Long-term goals
@@ -54,7 +54,7 @@ receives the mobile production URL and frontend key without duplicating them.
 | Goal statistics overview | `Local` + `Cloud` | Local KPI and type distribution with `get_macro_goals_stats` enrichment when authenticated. |
 | Advanced goal analytics | `Cloud` + `Surface` | Shared RPC adapter is active; the richer mobile chart set is not fully reproduced on desktop. |
 | Evolve Pro limit and year-level gating | `Surface` | Pro badges and plan UI exist; entitlement provider is not wired. |
-| Goals tutorial | `Surface` | Tutorial state persistence remains pending. |
+| Goals tutorial | `Surface` | Canonical tutorial state resets correctly; the desktop walkthrough overlay still needs to be reproduced. |
 
 ## Statistics
 
@@ -95,26 +95,26 @@ receives the mobile production URL and frontend key without duplicating them.
 | Apple and Google sign-in | `Surface` + `Platform gate` | Desktop OAuth redirects and provider configuration must be verified. |
 | Consent onboarding | `Local` + `Cloud` | Persisted locally and synchronized to `profiles` when authenticated. |
 | Realtime session handling and secure storage | `Cloud` + `Platform gate` | Auth stream is active. Credential-store adapter is implemented; macOS release requires signed Keychain Sharing entitlement. |
-| Personal information and avatar | `Cloud` + `Surface` | Name and birth date update Auth metadata and `profiles`; avatar upload remains gated. |
+| Personal information and avatar | `Local` + `Cloud` | Name and birth date update Auth metadata and `profiles`. Avatar selection uses the desktop gallery picker and remains local, matching the current mobile implementation; remote OAuth avatar metadata is displayed when present. |
 | Theme and accent color | `Local` + `Cloud` | Matches the mobile monochrome default, applies dark/light palettes and selected contrast colors at runtime, persists the canonical mobile preference keys and synchronizes the profile. |
 | Default calendar view | `Local` + `Cloud` | Persisted, profile-synchronized and applied when opening habits. |
-| Language selection | `Local` + `Cloud` + `Surface` | Persisted and profile-synchronized; desktop localization bundles remain to wire. |
+| Language selection | `Local` + `Cloud` + `Surface` | Persisted with the canonical mobile key, profile-synchronized and applied to `MaterialApp`; the remaining desktop static copy still needs ARB-backed translation. |
 | 24-hour time format | `Local` + `Cloud` | Persisted and profile-synchronized. |
-| Crash reporting consent | `Local` + `Cloud` + `Surface` | Persisted and profile-synchronized; Sentry initialization remains to wire. |
-| Tutorial reset | `Surface` | Entry point exists; persistence remains to wire. |
+| Crash reporting consent | `Local` + `Cloud` | Persisted, profile-synchronized and applied at runtime. Sentry DSN, environment and sample rate are injected from the mobile config by the launcher. |
+| Tutorial reset | `Local` | Resets `has_seen_tutorial`, `has_seen_goals_tutorial` and `has_seen_stats_tutorial`, matching mobile. |
 
 ## Notifications, privacy and subscription
 
 | Mobile feature | Desktop status | Notes |
 | --- | --- | --- |
-| Morning brief and evening review | `Local` + `Cloud` + `Platform gate` | Preferences and times persist and sync; native scheduling remains to implement. |
-| Habit, goal, AI and weekly notifications | `Local` + `Cloud` + `Platform gate` | Preferences persist and sync; scheduler remains platform-specific. |
-| Biometric lock | `Surface` + `Platform gate` | Planned for macOS and Windows; Linux is explicitly unsupported. |
+| Morning brief and evening review | `Local` + `Cloud` + `Desktop adaptation` | Preferences and times persist and sync. macOS schedules daily notifications; Windows schedules the next occurrence at each launch because the plugin does not support repeating notifications; Linux exposes its scheduler limitation. |
+| Habit, goal, AI and weekly notifications | `Local` + `Cloud` + `Platform gate` | Per-habit reminders are scheduled with the operational adapter. Goal, AI and weekly fields remain synchronized mobile placeholders because the mobile client does not implement their delivery yet. |
+| Biometric lock | `Local` + `Cloud` + `Desktop adaptation` | `local_auth` gate is active on macOS and Windows, persisted in secure storage and profile-synchronized. Linux is explicitly unsupported. |
 | Change password | `Cloud` | Re-authenticates with the current password before updating Supabase Auth. |
-| Export data | `Local` + `Cloud` | JSON export copies the synchronized desktop cache; full privacy export remains gated. |
-| Reset data and delete account | `Surface` + `Cloud gate` | Disabled until reviewed destructive RPC and re-auth are available. |
-| Monthly and annual subscription plans | `Surface` + `Platform gate` | `purchases_flutter` supports macOS; Windows and Linux need a separate channel. |
-| Restore purchases and customer center | `Surface` + `Platform gate` | Desktop actions are visible but disabled. RevenueCat `purchases_ui_flutter` is mobile-only, so macOS needs native desktop UX. |
+| Export data | `Local` + `Cloud` | Full JSON privacy export includes settings, habits, macro goals, logs and moods. macOS and Windows use the share sheet; Linux copies JSON to the clipboard because `share_plus` cannot share files there. |
+| Reset data and delete account | `Local` + `Cloud` | Reset deletes user habits and macro goals and clears local preferences. Account deletion invokes the same authenticated `delete_user_account` RPC as mobile after explicit confirmation. Destructive production execution is intentionally not part of automated tests. |
+| Monthly and annual subscription plans | `Cloud` + `Platform gate` | macOS uses RevenueCat offerings and StoreKit prices injected from the mobile public config. Windows and Linux need a separate commercial channel. |
+| Restore purchases and customer center | `Cloud` + `Desktop adaptation` | macOS restore is active through RevenueCat. Because `purchases_ui_flutter` is mobile-only, desktop opens the Apple subscription management page externally. |
 
 ## Canonical schema blockers
 
@@ -162,13 +162,14 @@ not yet have mobile feature parity. Release blockers:
    regression coverage for both clients.
 2. Complete the richer desktop visualizations for the remaining advanced RPC
    analytics and add authenticated integration coverage.
-3. Complete avatar upload, desktop OAuth redirects and entitlement state.
-4. Add Sentry initialization, native notification
-   adapters and per-platform permission flows.
+3. Complete desktop OAuth redirects and decide whether avatar selection should
+   be upgraded beyond the current mobile-local behavior to Supabase Storage.
+4. Validate native notification permissions and delivery in signed installers
+   on each supported operating system.
 5. Implement secure AI streaming through a backend adapter. Do not embed the
    OpenRouter secret in desktop binaries.
-6. Implement macOS subscription flows and make an explicit product decision
-   for Windows and Linux.
+6. Validate macOS StoreKit products in a signed sandbox build and make an
+   explicit product decision for Windows and Linux.
 7. Validate signed installers and release builds on macOS, Windows and Linux.
 
 ## Fix applied during audit
@@ -183,11 +184,13 @@ Executed successfully on macOS on 2026-06-02:
 
 - `dart format --output=none --set-exit-if-changed lib test tool`
 - `flutter analyze`
-- `flutter test`: 24 tests passed
+- `flutter test`: 29 tests passed
 - `flutter build macos --debug`
 - `dart run tool/flutter_with_mobile_supabase.dart build macos --debug`
 - `dart run tool/flutter_with_mobile_supabase.dart run -d macos --debug`:
-  Supabase initialization completed against the mobile production project
+  Supabase initialization completed against the mobile production project;
+  notifications, Sentry and RevenueCat plugins initialized without runtime
+  exceptions
 - `dart run tool/flutter_with_mobile_supabase.dart build macos --release`:
   correctly blocked on this host until an Apple development or distribution
   signing certificate is configured for the Keychain Sharing entitlement
@@ -210,6 +213,9 @@ Executed successfully on macOS on 2026-06-02:
 - `share_plus` supports file sharing on macOS and Windows, but not Linux.
 - `purchases_flutter` exposes Android, iOS, macOS and web, not Windows or
   Linux. `purchases_ui_flutter` exposes Android and iOS only.
+- CocoaPods emitted Swift 6 compatibility and deprecation warnings from the
+  upstream Sentry and RevenueCat pods. The debug build completes; release CI
+  should keep these dependencies monitored.
 
 - `local_auth`: <https://pub.dev/packages/local_auth>
 - `flutter_local_notifications`: <https://pub.dev/packages/flutter_local_notifications>

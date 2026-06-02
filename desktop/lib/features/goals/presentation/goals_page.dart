@@ -623,7 +623,7 @@ class _PeriodDropdown extends StatelessWidget {
       underline: const SizedBox.shrink(),
       borderRadius: BorderRadius.circular(10),
       style: Theme.of(context).textTheme.bodyMedium,
-      dropdownColor: EvolveColors.panelRaised,
+      dropdownColor: context.evolveColors.panelRaised,
     );
   }
 }
@@ -654,10 +654,7 @@ class _GoalOverview extends StatelessWidget {
               color: context.evolveAccent.withValues(alpha: 0.12),
               borderRadius: BorderRadius.circular(15),
             ),
-            child: Icon(
-              Icons.explore_outlined,
-              color: context.evolveAccent,
-            ),
+            child: Icon(Icons.explore_outlined, color: context.evolveAccent),
           ),
           const SizedBox(width: 16),
           Expanded(
@@ -744,9 +741,9 @@ class _GoalCard extends ConsumerWidget {
     return Container(
       padding: const EdgeInsets.all(14),
       decoration: BoxDecoration(
-        color: EvolveColors.panelRaised,
+        color: context.evolveColors.panelRaised,
         borderRadius: BorderRadius.circular(12),
-        border: Border.all(color: EvolveColors.border),
+        border: Border.all(color: context.evolveColors.border),
       ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
@@ -814,7 +811,7 @@ class _GoalCard extends ConsumerWidget {
               value: goal.progress,
               minHeight: 6,
               color: category.color,
-              backgroundColor: EvolveColors.panelSoft,
+              backgroundColor: context.evolveColors.panelSoft,
             ),
           ),
           const SizedBox(height: 8),
@@ -834,7 +831,7 @@ class _GoalCard extends ConsumerWidget {
                       ? context.evolveAccent
                       : goal.state == GoalState.failed
                       ? EvolveColors.rose
-                      : EvolveColors.subtle,
+                      : context.evolveColors.subtle,
                   fontSize: 11,
                   fontWeight: FontWeight.w700,
                 ),
@@ -921,8 +918,8 @@ class _Kpi extends StatelessWidget {
           const SizedBox(height: 7),
           Text(
             value,
-            style: const TextStyle(
-              color: EvolveColors.foreground,
+            style: TextStyle(
+              color: context.evolveColors.foreground,
               fontSize: 25,
               fontWeight: FontWeight.w800,
             ),
@@ -951,7 +948,7 @@ class _TypeProgress extends StatelessWidget {
             value: value,
             minHeight: 6,
             color: EvolveColors.cyan,
-            backgroundColor: EvolveColors.panelSoft,
+            backgroundColor: context.evolveColors.panelSoft,
             borderRadius: BorderRadius.circular(8),
           ),
         ),

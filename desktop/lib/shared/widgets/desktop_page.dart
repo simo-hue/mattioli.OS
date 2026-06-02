@@ -88,9 +88,7 @@ class PageActionButton extends StatelessWidget {
               ? Theme.of(context).colorScheme.onPrimary
               : context.evolveColors.foreground,
           side: BorderSide(
-            color: primary
-                ? context.evolveAccent
-                : context.evolveColors.border,
+            color: primary ? context.evolveAccent : context.evolveColors.border,
           ),
           shape: RoundedRectangleBorder(
             borderRadius: BorderRadius.circular(10),

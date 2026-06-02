@@ -209,7 +209,7 @@ class _ConversationTile extends StatelessWidget {
       child: Text(
         label,
         style: TextStyle(
-          color: selected ? EvolveColors.violet : EvolveColors.muted,
+          color: selected ? EvolveColors.violet : context.evolveColors.muted,
           fontSize: 12,
           fontWeight: selected ? FontWeight.w700 : FontWeight.w500,
         ),
@@ -239,21 +239,24 @@ class _CoachHeader extends StatelessWidget {
             ),
           ),
           const SizedBox(width: 10),
-          const Expanded(
+          Expanded(
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
                 Text(
                   'Evolve Coach',
                   style: TextStyle(
-                    color: EvolveColors.foreground,
+                    color: context.evolveColors.foreground,
                     fontSize: 13,
                     fontWeight: FontWeight.w700,
                   ),
                 ),
                 Text(
                   'Contesto selettivo · streaming adapter pending',
-                  style: TextStyle(color: EvolveColors.subtle, fontSize: 11),
+                  style: TextStyle(
+                    color: context.evolveColors.subtle,
+                    fontSize: 11,
+                  ),
                 ),
               ],
             ),

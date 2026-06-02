@@ -244,8 +244,8 @@ class _SummaryCard extends StatelessWidget {
               const SizedBox(height: 4),
               Text(
                 value,
-                style: const TextStyle(
-                  color: EvolveColors.foreground,
+                style: TextStyle(
+                  color: context.evolveColors.foreground,
                   fontSize: 20,
                   fontWeight: FontWeight.w800,
                 ),
@@ -333,8 +333,8 @@ class _ColumnLabel extends StatelessWidget {
   Widget build(BuildContext context) {
     return Text(
       label,
-      style: const TextStyle(
-        color: EvolveColors.subtle,
+      style: TextStyle(
+        color: context.evolveColors.subtle,
         fontSize: 10,
         fontWeight: FontWeight.w800,
         letterSpacing: 0.9,
@@ -376,7 +376,9 @@ class _HabitRow extends StatelessWidget {
                     completed
                         ? Icons.check_circle_rounded
                         : Icons.radio_button_unchecked_rounded,
-                    color: completed ? habit.color : EvolveColors.subtle,
+                    color: completed
+                        ? habit.color
+                        : context.evolveColors.subtle,
                     size: 20,
                   ),
                 ),
@@ -420,7 +422,7 @@ class _HabitRow extends StatelessWidget {
                         decoration: BoxDecoration(
                           color: done
                               ? habit.color.withValues(alpha: 0.86)
-                              : EvolveColors.panelSoft,
+                              : context.evolveColors.panelSoft,
                           borderRadius: BorderRadius.circular(5),
                         ),
                       ),
@@ -689,9 +691,7 @@ class _DayCell extends StatelessWidget {
               : context.evolveColors.panelRaised,
           borderRadius: BorderRadius.circular(11),
           border: Border.all(
-            color: isToday
-                ? context.evolveAccent
-                : context.evolveColors.border,
+            color: isToday ? context.evolveAccent : context.evolveColors.border,
           ),
         ),
         child: Column(
@@ -766,9 +766,9 @@ class _YearCalendar extends StatelessWidget {
                 child: Container(
                   padding: const EdgeInsets.all(12),
                   decoration: BoxDecoration(
-                    color: EvolveColors.panelRaised,
+                    color: context.evolveColors.panelRaised,
                     borderRadius: BorderRadius.circular(11),
-                    border: Border.all(color: EvolveColors.border),
+                    border: Border.all(color: context.evolveColors.border),
                   ),
                   child: Column(
                     crossAxisAlignment: CrossAxisAlignment.start,
@@ -841,9 +841,9 @@ class _LifeCalendar extends ConsumerWidget {
     return Container(
       padding: const EdgeInsets.all(16),
       decoration: BoxDecoration(
-        color: EvolveColors.panelRaised,
+        color: context.evolveColors.panelRaised,
         borderRadius: BorderRadius.circular(12),
-        border: Border.all(color: EvolveColors.border),
+        border: Border.all(color: context.evolveColors.border),
       ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
@@ -912,7 +912,7 @@ class _LifeMetric extends StatelessWidget {
     return Container(
       padding: const EdgeInsets.all(12),
       decoration: BoxDecoration(
-        color: EvolveColors.panelSoft,
+        color: context.evolveColors.panelSoft,
         borderRadius: BorderRadius.circular(10),
       ),
       child: Column(
@@ -1084,7 +1084,7 @@ class _HabitEditorDialogState extends State<_HabitEditorDialog> {
                         shape: BoxShape.circle,
                         border: Border.all(
                           color: _color == color
-                              ? EvolveColors.foreground
+                              ? context.evolveColors.foreground
                               : Colors.transparent,
                           width: 2,
                         ),

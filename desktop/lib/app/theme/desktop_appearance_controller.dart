@@ -3,10 +3,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 class DesktopAppearance {
-  const DesktopAppearance({
-    required this.themeMode,
-    required this.accentColor,
-  });
+  const DesktopAppearance({required this.themeMode, required this.accentColor});
 
   final ThemeMode themeMode;
   final Color accentColor;

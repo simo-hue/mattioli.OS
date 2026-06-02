@@ -102,8 +102,7 @@ class EvolvePalette extends ThemeExtension<EvolvePalette> {
 }
 
 extension EvolveThemeContext on BuildContext {
-  EvolvePalette get evolveColors =>
-      Theme.of(this).extension<EvolvePalette>()!;
+  EvolvePalette get evolveColors => Theme.of(this).extension<EvolvePalette>()!;
 
   Color get evolveAccent => Theme.of(this).colorScheme.primary;
 }
@@ -147,18 +146,19 @@ abstract final class EvolveTheme {
     EvolvePalette palette,
   ) {
     final base = ThemeData(brightness: brightness, useMaterial3: true);
-    final scheme = ColorScheme.fromSeed(
-      seedColor: accentColor,
-      brightness: brightness,
-      primary: accentColor,
-      surface: palette.panel,
-      error: const Color(0xFFEF4444),
-    ).copyWith(
-      onPrimary: _foregroundFor(accentColor),
-      secondary: accentColor,
-      outline: palette.border,
-      onSurface: palette.foreground,
-    );
+    final scheme =
+        ColorScheme.fromSeed(
+          seedColor: accentColor,
+          brightness: brightness,
+          primary: accentColor,
+          surface: palette.panel,
+          error: const Color(0xFFEF4444),
+        ).copyWith(
+          onPrimary: _foregroundFor(accentColor),
+          secondary: accentColor,
+          outline: palette.border,
+          onSurface: palette.foreground,
+        );
 
     return base.copyWith(
       colorScheme: scheme,

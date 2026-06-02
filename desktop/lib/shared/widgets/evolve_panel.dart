@@ -62,12 +62,7 @@ class SectionHeading extends StatelessWidget {
 }
 
 class StatusPill extends StatelessWidget {
-  const StatusPill({
-    required this.label,
-    super.key,
-    this.color,
-    this.icon,
-  });
+  const StatusPill({required this.label, super.key, this.color, this.icon});
 
   final String label;
   final Color? color;

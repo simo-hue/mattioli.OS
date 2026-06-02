@@ -85,11 +85,16 @@ the shared production backend.
 ## Verify
 
 ```bash
-dart format --output=none --set-exit-if-changed lib test
+dart format --output=none --set-exit-if-changed lib test tool
 flutter analyze
 flutter test
 flutter build macos --debug
 ```
+
+The desktop theme matches the mobile client: dark mode defaults to a
+black-and-white palette, while the appearance settings apply the selected
+contrast color immediately. Theme mode and accent color reuse the mobile
+preference keys and synchronize through the shared Supabase profile.
 
 ## Desktop conventions
 

@@ -586,7 +586,7 @@ class _HabitPerformance extends ConsumerWidget {
                     ),
                     minHeight: 7,
                     color: habit.color,
-                    backgroundColor: EvolveColors.panelSoft,
+                    backgroundColor: context.evolveColors.panelSoft,
                     borderRadius: BorderRadius.circular(8),
                   ),
                 ),
@@ -826,9 +826,9 @@ class _InlineInsight extends StatelessWidget {
     return Container(
       padding: const EdgeInsets.all(11),
       decoration: BoxDecoration(
-        color: EvolveColors.panelRaised,
+        color: context.evolveColors.panelRaised,
         borderRadius: BorderRadius.circular(9),
-        border: Border.all(color: EvolveColors.border),
+        border: Border.all(color: context.evolveColors.border),
       ),
       child: Row(
         children: [
@@ -902,7 +902,7 @@ class _HabitPerformanceRow extends StatelessWidget {
             value: done / 7,
             minHeight: 6,
             color: habit.color,
-            backgroundColor: EvolveColors.panelSoft,
+            backgroundColor: context.evolveColors.panelSoft,
             borderRadius: BorderRadius.circular(8),
           ),
         ),

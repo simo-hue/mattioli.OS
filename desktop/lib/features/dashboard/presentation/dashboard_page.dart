@@ -338,10 +338,7 @@ class _TrendChartPainter extends CustomPainter {
         ..shader = LinearGradient(
           begin: Alignment.topCenter,
           end: Alignment.bottomCenter,
-          colors: [
-            accent.withValues(alpha: 0.27),
-            accent.withValues(alpha: 0),
-          ],
+          colors: [accent.withValues(alpha: 0.27), accent.withValues(alpha: 0)],
         ).createShader(chart),
     );
     canvas.drawPath(
@@ -355,11 +352,7 @@ class _TrendChartPainter extends CustomPainter {
 
     for (var i = 0; i < offsets.length; i++) {
       canvas.drawCircle(offsets[i], 4.5, Paint()..color = palette.panel);
-      canvas.drawCircle(
-        offsets[i],
-        3,
-        Paint()..color = accent,
-      );
+      canvas.drawCircle(offsets[i], 3, Paint()..color = accent);
       labelPainter
         ..text = TextSpan(
           text: points[i].label,
@@ -434,7 +427,9 @@ class _HabitRow extends StatelessWidget {
               decoration: BoxDecoration(
                 color: isDone ? habit.color : Colors.transparent,
                 border: Border.all(
-                  color: isDone ? habit.color : context.evolveColors.borderStrong,
+                  color: isDone
+                      ? habit.color
+                      : context.evolveColors.borderStrong,
                 ),
                 borderRadius: BorderRadius.circular(7),
               ),
@@ -476,7 +471,9 @@ class _HabitRow extends StatelessWidget {
                 height: 8,
                 margin: const EdgeInsets.only(left: 5),
                 decoration: BoxDecoration(
-                  color: completed ? habit.color : context.evolveColors.panelSoft,
+                  color: completed
+                      ? habit.color
+                      : context.evolveColors.panelSoft,
                   shape: BoxShape.circle,
                 ),
               ),
@@ -512,11 +509,7 @@ class _CheckInPanel extends StatelessWidget {
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          Icon(
-            Icons.spa_outlined,
-            size: 23,
-            color: context.evolveAccent,
-          ),
+          Icon(Icons.spa_outlined, size: 23, color: context.evolveAccent),
           const SizedBox(height: 14),
           Text(
             checkIn.isComplete ? 'Check-in registrato' : 'Come ti senti oggi?',

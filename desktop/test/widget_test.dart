@@ -68,4 +68,24 @@ void main() {
     expect(find.text('Settimanale'), findsOneWidget);
     expect(tester.takeException(), isNull);
   });
+
+  testWidgets('appearance settings apply the selected contrast color', (
+    tester,
+  ) async {
+    await tester.binding.setSurfaceSize(const Size(1440, 900));
+    addTearDown(() => tester.binding.setSurfaceSize(null));
+
+    await tester.pumpWidget(const ProviderScope(child: EvolveDesktopApp()));
+    await tester.tap(find.text('Impostazioni'));
+    await tester.pumpAndSettle();
+    await tester.tap(find.text('Applicazione'));
+    await tester.pumpAndSettle();
+    await tester.tap(find.byTooltip('Usa accento #3B82F6'));
+    await tester.pumpAndSettle();
+
+    final app = tester.widget<MaterialApp>(find.byType(MaterialApp));
+    expect(app.darkTheme?.colorScheme.primary, const Color(0xFF3B82F6));
+    expect(find.byTooltip('Colore personalizzato'), findsOneWidget);
+    expect(tester.takeException(), isNull);
+  });
 }

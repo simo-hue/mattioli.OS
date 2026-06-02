@@ -13,6 +13,7 @@ import 'package:evolve_desktop/shared/widgets/desktop_page.dart';
 import 'package:evolve_desktop/shared/widgets/evolve_panel.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
+import 'package:flutter_colorpicker/flutter_colorpicker.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 enum _SettingsSection {
@@ -149,7 +150,7 @@ class _SettingsPageState extends ConsumerState<SettingsPage> {
                   ? 'Supabase con cache cifrata'
                   : 'In-memory preview',
               color: backendConfigured
-                  ? EvolveColors.primaryStrong
+                  ? context.evolveAccent
                   : EvolveColors.amber,
             ),
             _ActionRow(
@@ -646,8 +647,15 @@ class _SettingsPageState extends ConsumerState<SettingsPage> {
           .eq('id', user.id)
           .maybeSingle();
       if (!mounted || profile == null) return;
+      ref
+          .read(desktopAppearanceControllerProvider.notifier)
+          .applyProfile(
+            themeMode: profile['theme_mode'] as String?,
+            accentColor: profile['accent_color'] as String?,
+          );
+      final appearance = ref.read(desktopAppearanceControllerProvider);
       setState(() {
-        _darkMode = (profile['theme_mode'] as String? ?? 'dark') != 'light';
+        _darkMode = appearance.themeMode != ThemeMode.light;
         _timeFormat24h =
             profile['pref_time_format_24h'] as bool? ?? _timeFormat24h;
         _habitReminders =
@@ -667,14 +675,8 @@ class _SettingsPageState extends ConsumerState<SettingsPage> {
         _morningTime = profile['morning_brief_time'] as String? ?? _morningTime;
         _eveningTime =
             profile['evening_review_time'] as String? ?? _eveningTime;
-        _accent = dashboardColorFromHex(profile['accent_color'] as String?);
+        _accent = appearance.accentColor;
       });
-      ref
-          .read(desktopAppearanceControllerProvider.notifier)
-          .applyProfile(
-            themeMode: profile['theme_mode'] as String?,
-            accentColor: profile['accent_color'] as String?,
-          );
       final preferences = ref.read(sharedPreferencesProvider);
       if (preferences != null) {
         await Future.wait([
@@ -765,7 +767,7 @@ class _SettingsDestination extends StatelessWidget {
       padding: const EdgeInsets.only(bottom: 5),
       child: Material(
         color: selected
-            ? EvolveColors.primary.withValues(alpha: 0.1)
+            ? context.evolveAccent.withValues(alpha: 0.1)
             : Colors.transparent,
         borderRadius: BorderRadius.circular(9),
         child: InkWell(
@@ -777,7 +779,9 @@ class _SettingsDestination extends StatelessWidget {
               children: [
                 Icon(
                   section.icon,
-                  color: selected ? EvolveColors.primary : EvolveColors.muted,
+                  color: selected
+                      ? context.evolveAccent
+                      : context.evolveColors.muted,
                   size: 18,
                 ),
                 const SizedBox(width: 10),
@@ -788,8 +792,8 @@ class _SettingsDestination extends StatelessWidget {
                     overflow: TextOverflow.ellipsis,
                     style: TextStyle(
                       color: selected
-                          ? EvolveColors.primary
-                          : EvolveColors.muted,
+                          ? context.evolveAccent
+                          : context.evolveColors.muted,
                       fontWeight: selected ? FontWeight.w700 : FontWeight.w500,
                     ),
                   ),
@@ -832,9 +836,9 @@ class _SettingsGroup extends StatelessWidget {
   Widget build(BuildContext context) {
     return Container(
       decoration: BoxDecoration(
-        color: EvolveColors.panelRaised,
+        color: context.evolveColors.panelRaised,
         borderRadius: BorderRadius.circular(12),
-        border: Border.all(color: EvolveColors.border),
+        border: Border.all(color: context.evolveColors.border),
       ),
       child: Column(
         children: [
@@ -941,6 +945,15 @@ class _ColorRow extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final colors = [
+      const Color(0xFFFAFAFA),
+      const Color(0xFFEAB308),
+      const Color(0xFF3B82F6),
+      const Color(0xFF10B981),
+      const Color(0xFF8B5CF6),
+      const Color(0xFFEC4899),
+      const Color(0xFFF97316),
+    ].map((color) => _visibleAccent(context, color));
     return Padding(
       padding: const EdgeInsets.symmetric(horizontal: 15, vertical: 10),
       child: Row(
@@ -948,30 +961,98 @@ class _ColorRow extends StatelessWidget {
           Expanded(
             child: _RowCopy(label: label, detail: detail),
           ),
-          for (final color in const [
-            EvolveColors.primaryStrong,
-            EvolveColors.cyan,
-            EvolveColors.violet,
-            EvolveColors.amber,
-            EvolveColors.rose,
-          ])
-            Padding(
-              padding: const EdgeInsets.only(left: 8),
-              child: InkWell(
-                onTap: () => onChanged(color),
-                child: CircleAvatar(
-                  radius: 11,
-                  backgroundColor: color,
-                  child: selected == color
-                      ? const Icon(Icons.check_rounded, size: 14)
-                      : null,
+          SizedBox(
+            width: 220,
+            child: Wrap(
+              alignment: WrapAlignment.end,
+              spacing: 8,
+              runSpacing: 8,
+              children: [
+                for (final color in colors)
+                  Tooltip(
+                    message: 'Usa accento ${_toHex(color)}',
+                    child: InkWell(
+                      onTap: () => onChanged(color),
+                      customBorder: const CircleBorder(),
+                      child: CircleAvatar(
+                        radius: 11,
+                        backgroundColor: color,
+                        child: selected == color
+                            ? Icon(
+                                Icons.check_rounded,
+                                size: 14,
+                                color: _checkColor(color),
+                              )
+                            : null,
+                      ),
+                    ),
+                  ),
+                Tooltip(
+                  message: 'Colore personalizzato',
+                  child: InkWell(
+                    onTap: () => _showFullColorPicker(context),
+                    customBorder: const CircleBorder(),
+                    child: CircleAvatar(
+                      radius: 11,
+                      backgroundColor: context.evolveColors.panelRaised,
+                      child: Icon(
+                        Icons.add_rounded,
+                        size: 15,
+                        color: context.evolveColors.foreground,
+                      ),
+                    ),
+                  ),
                 ),
-              ),
+              ],
             ),
+          ),
         ],
       ),
     );
   }
+
+  Future<void> _showFullColorPicker(BuildContext context) async {
+    var color = selected;
+    final picked = await showDialog<Color>(
+      context: context,
+      builder: (context) => AlertDialog(
+        title: const Text('Colore accento'),
+        content: SingleChildScrollView(
+          child: ColorPicker(
+            pickerColor: color,
+            onColorChanged: (value) => color = value,
+            enableAlpha: false,
+            labelTypes: const [],
+          ),
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(context),
+            child: const Text('Annulla'),
+          ),
+          FilledButton(
+            onPressed: () => Navigator.pop(context, color),
+            child: const Text('Applica'),
+          ),
+        ],
+      ),
+    );
+    if (picked != null) onChanged(picked);
+  }
+
+  Color _visibleAccent(BuildContext context, Color color) {
+    if (Theme.of(context).brightness == Brightness.light &&
+        color.toARGB32() == 0xFFFAFAFA) {
+      return const Color(0xFF09090B);
+    }
+    return color;
+  }
+
+  Color _checkColor(Color color) =>
+      color.computeLuminance() > 0.45 ? const Color(0xFF09090B) : Colors.white;
+
+  String _toHex(Color color) =>
+      '#${color.toARGB32().toRadixString(16).substring(2, 8).toUpperCase()}';
 }
 
 class _ReadOnlyRow extends StatelessWidget {
@@ -994,7 +1075,7 @@ class _ReadOnlyRow extends StatelessWidget {
           Expanded(
             child: _RowCopy(label: label, detail: detail),
           ),
-          StatusPill(label: status, color: EvolveColors.subtle),
+          StatusPill(label: status, color: context.evolveColors.subtle),
         ],
       ),
     );
@@ -1018,7 +1099,9 @@ class _ActionRow extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final color = destructive ? EvolveColors.rose : EvolveColors.foreground;
+    final color = destructive
+        ? EvolveColors.rose
+        : context.evolveColors.foreground;
     return InkWell(
       onTap: onTap,
       child: Padding(
@@ -1030,7 +1113,10 @@ class _ActionRow extends StatelessWidget {
             Expanded(
               child: _RowCopy(label: title, detail: detail, color: color),
             ),
-            const Icon(Icons.chevron_right_rounded, color: EvolveColors.subtle),
+            Icon(
+              Icons.chevron_right_rounded,
+              color: context.evolveColors.subtle,
+            ),
           ],
         ),
       ),
@@ -1039,15 +1125,11 @@ class _ActionRow extends StatelessWidget {
 }
 
 class _InfoRow extends StatelessWidget {
-  const _InfoRow({
-    required this.label,
-    required this.value,
-    this.color = EvolveColors.foreground,
-  });
+  const _InfoRow({required this.label, required this.value, this.color});
 
   final String label;
   final String value;
-  final Color color;
+  final Color? color;
 
   @override
   Widget build(BuildContext context) {
@@ -1058,7 +1140,10 @@ class _InfoRow extends StatelessWidget {
           Expanded(child: Text(label)),
           Text(
             value,
-            style: TextStyle(color: color, fontWeight: FontWeight.w700),
+            style: TextStyle(
+              color: color ?? context.evolveColors.foreground,
+              fontWeight: FontWeight.w700,
+            ),
           ),
         ],
       ),
@@ -1067,15 +1152,11 @@ class _InfoRow extends StatelessWidget {
 }
 
 class _RowCopy extends StatelessWidget {
-  const _RowCopy({
-    required this.label,
-    required this.detail,
-    this.color = EvolveColors.foreground,
-  });
+  const _RowCopy({required this.label, required this.detail, this.color});
 
   final String label;
   final String detail;
-  final Color color;
+  final Color? color;
 
   @override
   Widget build(BuildContext context) {
@@ -1084,7 +1165,10 @@ class _RowCopy extends StatelessWidget {
       children: [
         Text(
           label,
-          style: TextStyle(color: color, fontWeight: FontWeight.w600),
+          style: TextStyle(
+            color: color ?? context.evolveColors.foreground,
+            fontWeight: FontWeight.w600,
+          ),
         ),
         const SizedBox(height: 3),
         Text(detail, style: Theme.of(context).textTheme.bodySmall),
@@ -1101,18 +1185,18 @@ class _ProfileCard extends StatelessWidget {
     return Container(
       padding: const EdgeInsets.all(16),
       decoration: BoxDecoration(
-        color: EvolveColors.panelRaised,
+        color: context.evolveColors.panelRaised,
         borderRadius: BorderRadius.circular(12),
-        border: Border.all(color: EvolveColors.border),
+        border: Border.all(color: context.evolveColors.border),
       ),
-      child: const Row(
+      child: Row(
         children: [
           CircleAvatar(
             radius: 28,
-            backgroundColor: Color(0x2255C881),
+            backgroundColor: context.evolveAccent.withValues(alpha: 0.13),
             child: Icon(
               Icons.person_outline_rounded,
-              color: EvolveColors.primary,
+              color: context.evolveAccent,
             ),
           ),
           SizedBox(width: 14),
@@ -1123,7 +1207,7 @@ class _ProfileCard extends StatelessWidget {
                 Text(
                   'Profilo locale',
                   style: TextStyle(
-                    color: EvolveColors.foreground,
+                    color: context.evolveColors.foreground,
                     fontSize: 15,
                     fontWeight: FontWeight.w700,
                   ),
@@ -1131,7 +1215,10 @@ class _ProfileCard extends StatelessWidget {
                 SizedBox(height: 4),
                 Text(
                   'Nome, email, data di nascita e avatar arriveranno dal profilo Supabase.',
-                  style: TextStyle(color: EvolveColors.subtle, fontSize: 12),
+                  style: TextStyle(
+                    color: context.evolveColors.subtle,
+                    fontSize: 12,
+                  ),
                 ),
               ],
             ),
@@ -1281,10 +1368,14 @@ class _PlanCard extends StatelessWidget {
       child: Container(
         padding: const EdgeInsets.all(15),
         decoration: BoxDecoration(
-          color: selected ? const Color(0xFF14251E) : EvolveColors.panelRaised,
+          color: selected
+              ? context.evolveAccent.withValues(alpha: 0.08)
+              : context.evolveColors.panelRaised,
           borderRadius: BorderRadius.circular(12),
           border: Border.all(
-            color: selected ? EvolveColors.primaryStrong : EvolveColors.border,
+            color: selected
+                ? context.evolveAccent
+                : context.evolveColors.border,
           ),
         ),
         child: Column(
@@ -1294,8 +1385,8 @@ class _PlanCard extends StatelessWidget {
             const SizedBox(height: 8),
             Text(
               price,
-              style: const TextStyle(
-                color: EvolveColors.primaryStrong,
+              style: TextStyle(
+                color: context.evolveAccent,
                 fontSize: 22,
                 fontWeight: FontWeight.w800,
               ),
@@ -1430,7 +1521,7 @@ class _AuthSessionDialog extends ConsumerWidget {
               label: 'Sessione',
               value: auth.isLoggedIn ? 'Attiva' : 'Preview locale',
               color: auth.isLoggedIn
-                  ? EvolveColors.primaryStrong
+                  ? context.evolveAccent
                   : EvolveColors.amber,
             ),
             _InfoRow(

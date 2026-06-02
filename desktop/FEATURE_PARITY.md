@@ -96,7 +96,7 @@ receives the mobile production URL and frontend key without duplicating them.
 | Consent onboarding | `Local` + `Cloud` | Persisted locally and synchronized to `profiles` when authenticated. |
 | Realtime session handling and secure storage | `Cloud` + `Platform gate` | Auth stream is active. Credential-store adapter is implemented; macOS release requires signed Keychain Sharing entitlement. |
 | Personal information and avatar | `Cloud` + `Surface` | Name and birth date update Auth metadata and `profiles`; avatar upload remains gated. |
-| Theme and accent color | `Local` + `Cloud` + `Surface` | Persisted and profile-synchronized; runtime theme application remains to wire. |
+| Theme and accent color | `Local` + `Cloud` | Matches the mobile monochrome default, applies dark/light palettes and selected contrast colors at runtime, persists the canonical mobile preference keys and synchronizes the profile. |
 | Default calendar view | `Local` + `Cloud` | Persisted, profile-synchronized and applied when opening habits. |
 | Language selection | `Local` + `Cloud` + `Surface` | Persisted and profile-synchronized; desktop localization bundles remain to wire. |
 | 24-hour time format | `Local` + `Cloud` | Persisted and profile-synchronized. |
@@ -183,7 +183,7 @@ Executed successfully on macOS on 2026-06-02:
 
 - `dart format --output=none --set-exit-if-changed lib test tool`
 - `flutter analyze`
-- `flutter test`: 20 tests passed
+- `flutter test`: 24 tests passed
 - `flutter build macos --debug`
 - `dart run tool/flutter_with_mobile_supabase.dart build macos --debug`
 - `dart run tool/flutter_with_mobile_supabase.dart run -d macos --debug`:

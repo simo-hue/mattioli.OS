@@ -112,6 +112,22 @@ class _DesktopAuthPageState extends ConsumerState<DesktopAuthPage> {
                                   : 'Accedi',
                             ),
                     ),
+                    if (_mode != _AuthMode.resetPassword) ...[
+                      const SizedBox(height: 18),
+                      _AuthDivider(label: 'Oppure'),
+                      const SizedBox(height: 18),
+                      _SocialAuthButton(
+                        icon: Icons.apple,
+                        label: 'Continua con Apple',
+                        onPressed: auth.isLoading ? null : _signInWithApple,
+                      ),
+                      const SizedBox(height: 10),
+                      _SocialAuthButton(
+                        icon: Icons.g_mobiledata_rounded,
+                        label: 'Continua con Google',
+                        onPressed: auth.isLoading ? null : _signInWithGoogle,
+                      ),
+                    ],
                     const SizedBox(height: 10),
                     if (_mode == _AuthMode.signIn)
                       TextButton(
@@ -174,6 +190,18 @@ class _DesktopAuthPageState extends ConsumerState<DesktopAuthPage> {
     } catch (_) {}
   }
 
+  Future<void> _signInWithApple() async {
+    try {
+      await ref.read(desktopAuthControllerProvider.notifier).signInWithApple();
+    } catch (_) {}
+  }
+
+  Future<void> _signInWithGoogle() async {
+    try {
+      await ref.read(desktopAuthControllerProvider.notifier).signInWithGoogle();
+    } catch (_) {}
+  }
+
   Future<void> _openPrivacyPolicy() async {
     await launchUrl(
       Uri.parse('https://simo-hue.github.io/evolve/privacy.html'),
@@ -185,5 +213,60 @@ class _DesktopAuthPageState extends ConsumerState<DesktopAuthPage> {
     ScaffoldMessenger.of(
       context,
     ).showSnackBar(SnackBar(content: Text(message)));
+  }
+}
+
+class _AuthDivider extends StatelessWidget {
+  const _AuthDivider({required this.label});
+
+  final String label;
+
+  @override
+  Widget build(BuildContext context) {
+    return Row(
+      children: [
+        Expanded(child: Divider(color: context.evolveColors.border)),
+        Padding(
+          padding: const EdgeInsets.symmetric(horizontal: 12),
+          child: Text(
+            label.toUpperCase(),
+            style: Theme.of(context).textTheme.bodySmall?.copyWith(
+              color: context.evolveColors.subtle,
+              fontSize: 10,
+              fontWeight: FontWeight.w800,
+              letterSpacing: 1.2,
+            ),
+          ),
+        ),
+        Expanded(child: Divider(color: context.evolveColors.border)),
+      ],
+    );
+  }
+}
+
+class _SocialAuthButton extends StatelessWidget {
+  const _SocialAuthButton({
+    required this.icon,
+    required this.label,
+    required this.onPressed,
+  });
+
+  final IconData icon;
+  final String label;
+  final VoidCallback? onPressed;
+
+  @override
+  Widget build(BuildContext context) {
+    return OutlinedButton.icon(
+      onPressed: onPressed,
+      icon: Icon(icon, size: 20),
+      label: Text(label),
+      style: OutlinedButton.styleFrom(
+        alignment: Alignment.center,
+        foregroundColor: context.evolveColors.foreground,
+        side: BorderSide(color: context.evolveColors.borderStrong),
+        minimumSize: const Size.fromHeight(44),
+      ),
+    );
   }
 }

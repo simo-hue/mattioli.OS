@@ -61,13 +61,13 @@ void main() {
     await tester.tap(find.text('Obiettivi'));
     await tester.pumpAndSettle();
 
-    expect(find.text('Vita'), findsOneWidget);
+    expect(find.text('Lifetime'), findsOneWidget);
     expect(find.text('Annuale'), findsOneWidget);
     expect(find.text('Trimestrale'), findsOneWidget);
     expect(find.text('Mensile'), findsOneWidget);
     expect(find.text('Settimanale'), findsOneWidget);
-    expect(find.text('Categorie'), findsOneWidget);
-    expect(find.text('Statistiche'), findsWidgets);
+    expect(find.byTooltip('Categorie'), findsOneWidget);
+    expect(find.text('Stats'), findsOneWidget);
   });
 
   testWidgets('macro goals toolbar fits the minimum desktop window', (

@@ -42,15 +42,47 @@ The desktop client configuration lives under `lib/core/`:
 - `desktop_revenuecat_config.dart`
 - `desktop_sentry_service.dart`
 
-The checked-in defaults are public client values. Never add a Supabase
-`service_role` key or another server secret to the desktop binary. Build-time
-overrides remain available through `--dart-define`.
+No Supabase project URL or publishable key is checked into the repository.
+Desktop builds require those values at compile time and fail when they are
+missing. Pass them through `--dart-define`:
+
+```bash
+flutter run -d macos \
+  --dart-define=EVOLVE_SUPABASE_URL="$EVOLVE_SUPABASE_URL" \
+  --dart-define=EVOLVE_SUPABASE_PUBLISHABLE_KEY="$EVOLVE_SUPABASE_PUBLISHABLE_KEY"
+```
+
+For local development or CI, use an ignored `.env` file inside `desktop/`.
+The tracked `.env.example` documents the required keys:
+
+```bash
+EVOLVE_SUPABASE_URL=
+EVOLVE_SUPABASE_PUBLISHABLE_KEY=
+EVOLVE_DESKTOP_OAUTH_REDIRECT_URL=http://127.0.0.1:39876/auth/callback
+EVOLVE_DESKTOP_NATIVE_APPLE_SIGN_IN=false
+```
+
+Then run:
+
+```bash
+flutter run -d macos --dart-define-from-file=.env
+flutter build macos --release --dart-define-from-file=.env
+```
+
+The desktop native targets include build guards that fail macOS, Linux and
+Windows builds when the required Supabase dart defines are missing. These
+guards validate only key presence and never print secret values.
+
+`EVOLVE_DESKTOP_OAUTH_REDIRECT_URL` can also be overridden when needed; it
+defaults to the local loopback callback used by the desktop OAuth flow. Never
+add a Supabase `service_role` key or another server secret to the desktop
+binary or source tree.
 
 ## Run locally
 
 ```bash
 flutter pub get
-flutter run -d macos
+flutter run -d macos --dart-define-from-file=.env
 ```
 
 ## Verify
@@ -58,8 +90,8 @@ flutter run -d macos
 ```bash
 dart format --output=none --set-exit-if-changed lib test
 flutter analyze
-flutter test
-flutter build macos --debug
+flutter test --dart-define-from-file=.env
+flutter build macos --debug --dart-define-from-file=.env
 ```
 
 ## macOS signing

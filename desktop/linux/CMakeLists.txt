@@ -48,6 +48,9 @@ endfunction()
 
 # Flutter library and tool build rules.
 set(FLUTTER_MANAGED_DIR "${CMAKE_CURRENT_SOURCE_DIR}/flutter")
+include("${FLUTTER_MANAGED_DIR}/ephemeral/generated_config.cmake")
+include("${CMAKE_CURRENT_SOURCE_DIR}/../cmake/check_required_dart_defines.cmake")
+evolve_check_required_dart_defines("${FLUTTER_TOOL_ENVIRONMENT}")
 add_subdirectory(${FLUTTER_MANAGED_DIR})
 
 # System-level dependencies.

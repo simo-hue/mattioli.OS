@@ -1,14 +1,9 @@
 class DesktopSupabaseConfig {
   const DesktopSupabaseConfig._();
 
-  static const url = String.fromEnvironment(
-    'EVOLVE_SUPABASE_URL',
-    defaultValue: 'https://raxizttlmsofixqyanwc.supabase.co',
-  );
+  static const url = String.fromEnvironment('EVOLVE_SUPABASE_URL');
   static const publishableKey = String.fromEnvironment(
     'EVOLVE_SUPABASE_PUBLISHABLE_KEY',
-    defaultValue:
-        'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InJheGl6dHRsbXNvZml4cXlhbndjIiwicm9sZSI6ImFub24iLCJpYXQiOjE3Nzc1ODI0NjIsImV4cCI6MjA5MzE1ODQ2Mn0.Mauqn4tPL0oPdkjyjpJt8cpCFLpVzzixt7MAIjAeF_Y',
   );
   static const oauthRedirectUrl = String.fromEnvironment(
     'EVOLVE_DESKTOP_OAUTH_REDIRECT_URL',
@@ -23,7 +18,8 @@ class DesktopSupabaseConfig {
 
   static Uri get oauthRedirectUri => Uri.parse(oauthRedirectUrl);
 
-  static bool get isConfigured => url.isNotEmpty && publishableKey.isNotEmpty;
+  static bool get isConfigured =>
+      url.trim().isNotEmpty && publishableKey.trim().isNotEmpty;
 
   static void validate() {
     if (!isConfigured) {

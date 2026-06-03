@@ -15,8 +15,8 @@ Future<void> main() async {
 
   final sharedPreferences = await SharedPreferences.getInstance();
   await Supabase.initialize(
-    url: DesktopSupabaseConfig.url,
-    anonKey: DesktopSupabaseConfig.publishableKey,
+    url: DesktopSupabaseConfig.url.trim(),
+    anonKey: DesktopSupabaseConfig.publishableKey.trim(),
     authOptions: FlutterAuthClientOptions(localStorage: SecureLocalStorage()),
   );
   await DesktopNotificationService.instance.init();

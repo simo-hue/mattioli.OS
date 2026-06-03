@@ -246,6 +246,7 @@
 				33CC10EA2044A3C60003C045 /* Frameworks */,
 				33CC10EB2044A3C60003C045 /* Resources */,
 				33CC110E2044A8840003C045 /* Bundle Framework */,
+				E0C0D3A10000000000000001 /* Check Required Dart Defines */,
 				3399D490228B24CF009A79C7 /* ShellScript */,
 				930B3787C9A7C9F265FDF783 /* [CP] Embed Pods Frameworks */,
 			);
@@ -414,6 +415,26 @@
 			runOnlyForDeploymentPostprocessing = 0;
 			shellPath = /bin/sh;
 			shellScript = "\"$FLUTTER_ROOT\"/packages/flutter_tools/bin/macos_assemble.sh && touch Flutter/ephemeral/tripwire";
+		};
+		E0C0D3A10000000000000001 /* Check Required Dart Defines */ = {
+			isa = PBXShellScriptBuildPhase;
+			alwaysOutOfDate = 1;
+			buildActionMask = 2147483647;
+			files = (
+			);
+			inputFileListPaths = (
+			);
+			inputPaths = (
+			);
+			name = "Check Required Dart Defines";
+			outputFileListPaths = (
+			);
+			outputPaths = (
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+			shellPath = /bin/sh;
+			shellScript = "sh \"$SRCROOT/../scripts/check_required_dart_defines.sh\"\n";
+			showEnvVarsInLog = 0;
 		};
 		930B3787C9A7C9F265FDF783 /* [CP] Embed Pods Frameworks */ = {
 			isa = PBXShellScriptBuildPhase;

@@ -1,4 +1,4 @@
-project_id = "raxizttlmsofixqyanwc"
+project_id = "mattioli-os-local"
 
 [functions.revenuecat-webhook]
 verify_jwt = false

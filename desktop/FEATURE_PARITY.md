@@ -41,8 +41,8 @@ repositories or seeded dashboard data.
 
 ## Production schema notes
 
-Anonymous zero-row Data API probes against the configured project
-`raxizttlmsofixqyanwc` passed on 2026-06-02 for:
+Anonymous zero-row Data API probes against the configured Supabase project
+passed on 2026-06-02 for:
 
 - `profiles`
 - `goals`

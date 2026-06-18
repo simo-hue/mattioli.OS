@@ -1,92 +1,13 @@
 PODS:
-  - app_links (7.0.0):
-    - Flutter
-  - AppAuth (1.7.6):
-    - AppAuth/Core (= 1.7.6)
-    - AppAuth/ExternalUserAgent (= 1.7.6)
-  - AppAuth/Core (1.7.6)
-  - AppAuth/ExternalUserAgent (1.7.6):
-    - AppAuth/Core
-  - AppCheckCore (11.2.0):
-    - GoogleUtilities/Environment (~> 8.0)
-    - GoogleUtilities/UserDefaults (~> 8.0)
-    - PromisesObjC (~> 2.4)
   - Flutter (1.0.0)
-  - flutter_local_notifications (0.0.1):
-    - Flutter
   - flutter_secure_storage (6.0.0):
-    - Flutter
-  - flutter_timezone (0.0.1):
     - Flutter
   - FMDB/Core (2.7.12)
   - FMDB/SQLCipher (2.7.12):
     - FMDB/Core
     - SQLCipher (~> 4.6)
-  - google_sign_in_ios (0.0.1):
-    - AppAuth (>= 1.7.4)
-    - Flutter
-    - FlutterMacOS
-    - GoogleSignIn (~> 8.0)
-    - GTMSessionFetcher (>= 3.4.0)
-  - GoogleSignIn (8.0.0):
-    - AppAuth (< 2.0, >= 1.7.3)
-    - AppCheckCore (~> 11.0)
-    - GTMAppAuth (< 5.0, >= 4.1.1)
-    - GTMSessionFetcher/Core (~> 3.3)
-  - GoogleUtilities/Environment (8.1.0):
-    - GoogleUtilities/Privacy
-  - GoogleUtilities/Logger (8.1.0):
-    - GoogleUtilities/Environment
-    - GoogleUtilities/Privacy
-  - GoogleUtilities/Privacy (8.1.0)
-  - GoogleUtilities/UserDefaults (8.1.0):
-    - GoogleUtilities/Logger
-    - GoogleUtilities/Privacy
-  - GTMAppAuth (4.1.1):
-    - AppAuth/Core (~> 1.7)
-    - GTMSessionFetcher/Core (< 4.0, >= 3.3)
-  - GTMSessionFetcher (3.5.0):
-    - GTMSessionFetcher/Full (= 3.5.0)
-  - GTMSessionFetcher/Core (3.5.0)
-  - GTMSessionFetcher/Full (3.5.0):
-    - GTMSessionFetcher/Core
-  - image_picker_ios (0.0.1):
-    - Flutter
-  - local_auth_darwin (0.0.1):
-    - Flutter
-    - FlutterMacOS
-  - package_info_plus (0.4.5):
-    - Flutter
-  - path_provider_foundation (0.0.1):
-    - Flutter
-    - FlutterMacOS
   - permission_handler_apple (9.3.0):
     - Flutter
-  - PromisesObjC (2.4.0)
-  - purchases_flutter (10.1.0):
-    - Flutter
-    - PurchasesHybridCommon (= 18.6.0)
-  - purchases_ui_flutter (10.1.0):
-    - Flutter
-    - PurchasesHybridCommonUI (= 18.6.0)
-  - PurchasesHybridCommon (18.6.0):
-    - RevenueCat (= 5.72.0)
-  - PurchasesHybridCommonUI (18.6.0):
-    - PurchasesHybridCommon (= 18.6.0)
-    - RevenueCatUI (= 5.72.0)
-  - RevenueCat (5.72.0)
-  - RevenueCatUI (5.72.0):
-    - RevenueCat (= 5.72.0)
-  - Sentry/HybridSDK (8.58.2)
-  - sentry_flutter (9.20.0):
-    - Flutter
-    - FlutterMacOS
-    - Sentry/HybridSDK (= 8.58.2)
-  - share_plus (0.0.1):
-    - Flutter
-  - shared_preferences_foundation (0.0.1):
-    - Flutter
-    - FlutterMacOS
   - sign_in_with_apple (0.0.1):
     - Flutter
   - sqflite_sqlcipher (0.0.1):
@@ -98,121 +19,39 @@ PODS:
   - SQLCipher/common (4.10.0)
   - SQLCipher/standard (4.10.0):
     - SQLCipher/common
-  - url_launcher_ios (0.0.1):
-    - Flutter
 
 DEPENDENCIES:
-  - app_links (from `.symlinks/plugins/app_links/ios`)
   - Flutter (from `Flutter`)
-  - flutter_local_notifications (from `.symlinks/plugins/flutter_local_notifications/ios`)
   - flutter_secure_storage (from `.symlinks/plugins/flutter_secure_storage/ios`)
-  - flutter_timezone (from `.symlinks/plugins/flutter_timezone/ios`)
-  - google_sign_in_ios (from `.symlinks/plugins/google_sign_in_ios/darwin`)
-  - image_picker_ios (from `.symlinks/plugins/image_picker_ios/ios`)
-  - local_auth_darwin (from `.symlinks/plugins/local_auth_darwin/darwin`)
-  - package_info_plus (from `.symlinks/plugins/package_info_plus/ios`)
-  - path_provider_foundation (from `.symlinks/plugins/path_provider_foundation/darwin`)
   - permission_handler_apple (from `.symlinks/plugins/permission_handler_apple/ios`)
-  - purchases_flutter (from `.symlinks/plugins/purchases_flutter/ios`)
-  - purchases_ui_flutter (from `.symlinks/plugins/purchases_ui_flutter/ios`)
-  - sentry_flutter (from `.symlinks/plugins/sentry_flutter/ios`)
-  - share_plus (from `.symlinks/plugins/share_plus/ios`)
-  - shared_preferences_foundation (from `.symlinks/plugins/shared_preferences_foundation/darwin`)
   - sign_in_with_apple (from `.symlinks/plugins/sign_in_with_apple/ios`)
   - sqflite_sqlcipher (from `.symlinks/plugins/sqflite_sqlcipher/ios`)
-  - url_launcher_ios (from `.symlinks/plugins/url_launcher_ios/ios`)
 
 SPEC REPOS:
   trunk:
-    - AppAuth
-    - AppCheckCore
     - FMDB
-    - GoogleSignIn
-    - GoogleUtilities
-    - GTMAppAuth
-    - GTMSessionFetcher
-    - PromisesObjC
-    - PurchasesHybridCommon
-    - PurchasesHybridCommonUI
-    - RevenueCat
-    - RevenueCatUI
-    - Sentry
     - SQLCipher
 
 EXTERNAL SOURCES:
-  app_links:
-    :path: ".symlinks/plugins/app_links/ios"
   Flutter:
     :path: Flutter
-  flutter_local_notifications:
-    :path: ".symlinks/plugins/flutter_local_notifications/ios"
   flutter_secure_storage:
     :path: ".symlinks/plugins/flutter_secure_storage/ios"
-  flutter_timezone:
-    :path: ".symlinks/plugins/flutter_timezone/ios"
-  google_sign_in_ios:
-    :path: ".symlinks/plugins/google_sign_in_ios/darwin"
-  image_picker_ios:
-    :path: ".symlinks/plugins/image_picker_ios/ios"
-  local_auth_darwin:
-    :path: ".symlinks/plugins/local_auth_darwin/darwin"
-  package_info_plus:
-    :path: ".symlinks/plugins/package_info_plus/ios"
-  path_provider_foundation:
-    :path: ".symlinks/plugins/path_provider_foundation/darwin"
   permission_handler_apple:
     :path: ".symlinks/plugins/permission_handler_apple/ios"
-  purchases_flutter:
-    :path: ".symlinks/plugins/purchases_flutter/ios"
-  purchases_ui_flutter:
-    :path: ".symlinks/plugins/purchases_ui_flutter/ios"
-  sentry_flutter:
-    :path: ".symlinks/plugins/sentry_flutter/ios"
-  share_plus:
-    :path: ".symlinks/plugins/share_plus/ios"
-  shared_preferences_foundation:
-    :path: ".symlinks/plugins/shared_preferences_foundation/darwin"
   sign_in_with_apple:
     :path: ".symlinks/plugins/sign_in_with_apple/ios"
   sqflite_sqlcipher:
     :path: ".symlinks/plugins/sqflite_sqlcipher/ios"
-  url_launcher_ios:
-    :path: ".symlinks/plugins/url_launcher_ios/ios"
 
 SPEC CHECKSUMS:
-  app_links: a754cbec3c255bd4bbb4d236ecc06f28cd9a7ce8
-  AppAuth: d4f13a8fe0baf391b2108511793e4b479691fb73
-  AppCheckCore: cc8fd0a3a230ddd401f326489c99990b013f0c4f
   Flutter: cabc95a1d2626b1b06e7179b784ebcf0c0cde467
-  flutter_local_notifications: 643a3eda1ce1c0599413ca31672536d423dee214
   flutter_secure_storage: 1ed9476fba7e7a782b22888f956cce43e2c62f13
-  flutter_timezone: 7c838e17ffd4645d261e87037e5bebf6d38fe544
   FMDB: 728731dd336af3936ce00f91d9d8495f5718a0e6
-  google_sign_in_ios: b48bb9af78576358a168361173155596c845f0b9
-  GoogleSignIn: ce8c89bb9b37fb624b92e7514cc67335d1e277e4
-  GoogleUtilities: 00c88b9a86066ef77f0da2fab05f65d7768ed8e1
-  GTMAppAuth: f69bd07d68cd3b766125f7e072c45d7340dea0de
-  GTMSessionFetcher: 5aea5ba6bd522a239e236100971f10cb71b96ab6
-  image_picker_ios: e0ece4aa2a75771a7de3fa735d26d90817041326
-  local_auth_darwin: c3ee6cce0a8d56be34c8ccb66ba31f7f180aaebb
-  package_info_plus: af8e2ca6888548050f16fa2f1938db7b5a5df499
-  path_provider_foundation: bb55f6dbba17d0dccd6737fe6f7f34fbd0376880
   permission_handler_apple: 4ed2196e43d0651e8ff7ca3483a069d469701f2d
-  PromisesObjC: f5707f49cb48b9636751c5b2e7d227e43fba9f47
-  purchases_flutter: 136a8e1e9c28e9afb78d40b06e2b6ff3f16fc47e
-  purchases_ui_flutter: 45723a53789c880bbb9f7492066d6314fc1e1e31
-  PurchasesHybridCommon: 89a3ddba365c20457a4712bc3d6377b0ea3c9b4f
-  PurchasesHybridCommonUI: 4aba51371b9d6c0e2859a2e514e47bf37c8fb9eb
-  RevenueCat: 136390ad99039cdd692156af5e479293ae83b2a9
-  RevenueCatUI: 3fb3791bba4f7532b3b83dd2947824f8f702f6fa
-  Sentry: de29b881e83bd91cf99a927f82f1fd86bfb39db2
-  sentry_flutter: cbb414ef141b64f901bc1ba32daa871349510ce4
-  share_plus: 50da8cb520a8f0f65671c6c6a99b3617ed10a58a
-  shared_preferences_foundation: 7036424c3d8ec98dfe75ff1667cb0cd531ec82bb
   sign_in_with_apple: c5dcc141574c8c54d5ac99dd2163c0c72ad22418
   sqflite_sqlcipher: 8e5bdaae6b2c254f8a277a564f07bc4e2a8642a3
   SQLCipher: eb79c64049cb002b4e9fcb30edb7979bf4706dfc
-  url_launcher_ios: 7a95fa5b60cc718a708b8f2966718e93db0cef1b
 
 PODFILE CHECKSUM: f79e1872da79a29354b04cf03619f8f3d69fe58e
 

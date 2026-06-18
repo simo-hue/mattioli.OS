@@ -800,195 +800,20 @@ class _HomeScreenState extends ConsumerState<HomeScreen>
     if (_isNameDialogOpen || !mounted) return false;
 
     _isNameDialogOpen = true;
-    final controller = TextEditingController();
     try {
       final didSave = await showDialog<bool>(
         context: context,
         barrierDismissible: false,
         builder: (context) {
-          return PopScope(
-            canPop: false,
-            child: BackdropFilter(
-              filter: ImageFilter.blur(sigmaX: 10, sigmaY: 10),
-              child: Dialog(
-                backgroundColor: Colors.transparent,
-                elevation: 0,
-                child: Container(
-                  padding: const EdgeInsets.all(28),
-                  decoration: BoxDecoration(
-                    color: context.appColors.card.withValues(alpha: 0.95),
-                    borderRadius: BorderRadius.circular(24),
-                    border: Border.all(
-                      color: context.appColors.border.withValues(alpha: 0.5),
-                      width: 1.5,
-                    ),
-                    boxShadow: [
-                      BoxShadow(
-                        color: Colors.black.withValues(alpha: 0.1),
-                        blurRadius: 20,
-                        spreadRadius: 5,
-                      ),
-                    ],
-                  ),
-                  child: Column(
-                    mainAxisSize: MainAxisSize.min,
-                    children: [
-                      // Icon
-                      Container(
-                        padding: const EdgeInsets.all(16),
-                        decoration: BoxDecoration(
-                          color: Theme.of(
-                            context,
-                          ).colorScheme.primary.withValues(alpha: 0.1),
-                          shape: BoxShape.circle,
-                        ),
-                        child: Icon(
-                          Icons.person_outline,
-                          size: 32,
-                          color: Theme.of(context).colorScheme.primary,
-                        ),
-                      ),
-                      const SizedBox(height: 24),
-
-                      Text(
-                        context.l10n.translate('Benvenuto in Evolve!'),
-                        style: TextStyle(
-                          fontFamily: 'Inter',
-                          fontSize: 22,
-                          fontWeight: FontWeight.w800,
-                          color: context.appColors.foreground,
-                          letterSpacing: -0.5,
-                        ),
-                      ),
-                      const SizedBox(height: 8),
-                      Text(
-                        context.l10n.translate(
-                          'Per iniziare, come possiamo chiamarti?',
-                        ),
-                        textAlign: TextAlign.center,
-                        style: TextStyle(
-                          fontFamily: 'Inter',
-                          fontSize: 14,
-                          color: context.appColors.mutedForeground,
-                          fontWeight: FontWeight.w500,
-                        ),
-                      ),
-                      const SizedBox(height: 24),
-
-                      TextField(
-                        controller: controller,
-                        decoration: InputDecoration(
-                          labelText: context.l10n.translate('Il tuo nome'),
-                          labelStyle: TextStyle(
-                            color: context.appColors.mutedForeground,
-                            fontSize: 14,
-                          ),
-                          floatingLabelStyle: TextStyle(
-                            color: Theme.of(context).colorScheme.primary,
-                          ),
-                          filled: true,
-                          fillColor: context.appColors.background.withValues(
-                            alpha: 0.5,
-                          ),
-                          contentPadding: const EdgeInsets.symmetric(
-                            horizontal: 16,
-                            vertical: 16,
-                          ),
-                          enabledBorder: OutlineInputBorder(
-                            borderRadius: BorderRadius.circular(14),
-                            borderSide: BorderSide(
-                              color: context.appColors.border.withValues(
-                                alpha: 0.5,
-                              ),
-                            ),
-                          ),
-                          focusedBorder: OutlineInputBorder(
-                            borderRadius: BorderRadius.circular(14),
-                            borderSide: BorderSide(
-                              color: Theme.of(context).colorScheme.primary,
-                              width: 1.5,
-                            ),
-                          ),
-                        ),
-                        style: TextStyle(
-                          color: context.appColors.foreground,
-                          fontFamily: 'Inter',
-                        ),
-                      ),
-                      const SizedBox(height: 24),
-
-                      // Action Button
-                      GestureDetector(
-                        onTap: () async {
-                          final name = controller.text.trim();
-                          if (name.isNotEmpty) {
-                            ref.hapticMedium();
-                            final success = await _saveProfileName(
-                              name,
-                              isPrivateMode: isPrivateMode,
-                            );
-                            if (!context.mounted) return;
-                            if (success) {
-                              Navigator.pop(context, true);
-                            } else {
-                              ScaffoldMessenger.of(context).showSnackBar(
-                                SnackBar(
-                                  content: Text(
-                                    context.l10n.translate(
-                                      'Errore durante il salvataggio. Riprova.',
-                                    ),
-                                  ),
-                                ),
-                              );
-                            }
-                          }
-                        },
-                        child: Container(
-                          width: double.infinity,
-                          height: 54,
-                          decoration: BoxDecoration(
-                            color: Theme.of(context).colorScheme.primary,
-                            borderRadius: BorderRadius.circular(14),
-                            boxShadow: [
-                              BoxShadow(
-                                color: Theme.of(
-                                  context,
-                                ).colorScheme.primary.withValues(alpha: 0.3),
-                                blurRadius: 10,
-                                offset: const Offset(0, 4),
-                              ),
-                            ],
-                          ),
-                          child: Center(
-                            child: Text(
-                              context.l10n.translate('Inizia ora'),
-                              style: TextStyle(
-                                color:
-                                    Theme.of(context).colorScheme.primary
-                                            .computeLuminance() >
-                                        0.5
-                                    ? Colors.black
-                                    : Colors.white,
-                                fontSize: 16,
-                                fontWeight: FontWeight.w700,
-                                letterSpacing: -0.2,
-                              ),
-                            ),
-                          ),
-                        ),
-                      ),
-                    ],
-                  ),
-                ),
-              ),
-            ),
+          return _NamePromptDialog(
+            onSave: (name) =>
+                _saveProfileName(name, isPrivateMode: isPrivateMode),
           );
         },
       );
 
       return didSave ?? false;
     } finally {
-      controller.dispose();
       _isNameDialogOpen = false;
     }
   }
@@ -1343,6 +1168,210 @@ class _HomeScreenState extends ConsumerState<HomeScreen>
       default:
         return const SizedBox();
     }
+  }
+}
+
+class _NamePromptDialog extends ConsumerStatefulWidget {
+  const _NamePromptDialog({required this.onSave});
+
+  final Future<bool> Function(String name) onSave;
+
+  @override
+  ConsumerState<_NamePromptDialog> createState() => _NamePromptDialogState();
+}
+
+class _NamePromptDialogState extends ConsumerState<_NamePromptDialog> {
+  late final TextEditingController _controller;
+
+  @override
+  void initState() {
+    super.initState();
+    _controller = TextEditingController();
+  }
+
+  @override
+  void dispose() {
+    _controller.dispose();
+    super.dispose();
+  }
+
+  Future<void> _handleSubmit() async {
+    final name = _controller.text.trim();
+    if (name.isEmpty) return;
+
+    ref.hapticMedium();
+    final success = await widget.onSave(name);
+    if (!mounted) return;
+
+    if (success) {
+      Navigator.pop(context, true);
+      return;
+    }
+
+    ScaffoldMessenger.of(context).showSnackBar(
+      SnackBar(
+        content: Text(
+          context.l10n.translate('Errore durante il salvataggio. Riprova.'),
+        ),
+      ),
+    );
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return PopScope(
+      canPop: false,
+      child: BackdropFilter(
+        filter: ImageFilter.blur(sigmaX: 10, sigmaY: 10),
+        child: Dialog(
+          backgroundColor: Colors.transparent,
+          elevation: 0,
+          child: Container(
+            padding: const EdgeInsets.all(28),
+            decoration: BoxDecoration(
+              color: context.appColors.card.withValues(alpha: 0.95),
+              borderRadius: BorderRadius.circular(24),
+              border: Border.all(
+                color: context.appColors.border.withValues(alpha: 0.5),
+                width: 1.5,
+              ),
+              boxShadow: [
+                BoxShadow(
+                  color: Colors.black.withValues(alpha: 0.1),
+                  blurRadius: 20,
+                  spreadRadius: 5,
+                ),
+              ],
+            ),
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                // Icon
+                Container(
+                  padding: const EdgeInsets.all(16),
+                  decoration: BoxDecoration(
+                    color: Theme.of(
+                      context,
+                    ).colorScheme.primary.withValues(alpha: 0.1),
+                    shape: BoxShape.circle,
+                  ),
+                  child: Icon(
+                    Icons.person_outline,
+                    size: 32,
+                    color: Theme.of(context).colorScheme.primary,
+                  ),
+                ),
+                const SizedBox(height: 24),
+
+                Text(
+                  context.l10n.translate('Benvenuto in Evolve!'),
+                  style: TextStyle(
+                    fontFamily: 'Inter',
+                    fontSize: 22,
+                    fontWeight: FontWeight.w800,
+                    color: context.appColors.foreground,
+                    letterSpacing: -0.5,
+                  ),
+                ),
+                const SizedBox(height: 8),
+                Text(
+                  context.l10n.translate(
+                    'Per iniziare, come possiamo chiamarti?',
+                  ),
+                  textAlign: TextAlign.center,
+                  style: TextStyle(
+                    fontFamily: 'Inter',
+                    fontSize: 14,
+                    color: context.appColors.mutedForeground,
+                    fontWeight: FontWeight.w500,
+                  ),
+                ),
+                const SizedBox(height: 24),
+
+                TextField(
+                  controller: _controller,
+                  decoration: InputDecoration(
+                    labelText: context.l10n.translate('Il tuo nome'),
+                    labelStyle: TextStyle(
+                      color: context.appColors.mutedForeground,
+                      fontSize: 14,
+                    ),
+                    floatingLabelStyle: TextStyle(
+                      color: Theme.of(context).colorScheme.primary,
+                    ),
+                    filled: true,
+                    fillColor: context.appColors.background.withValues(
+                      alpha: 0.5,
+                    ),
+                    contentPadding: const EdgeInsets.symmetric(
+                      horizontal: 16,
+                      vertical: 16,
+                    ),
+                    enabledBorder: OutlineInputBorder(
+                      borderRadius: BorderRadius.circular(14),
+                      borderSide: BorderSide(
+                        color: context.appColors.border.withValues(alpha: 0.5),
+                      ),
+                    ),
+                    focusedBorder: OutlineInputBorder(
+                      borderRadius: BorderRadius.circular(14),
+                      borderSide: BorderSide(
+                        color: Theme.of(context).colorScheme.primary,
+                        width: 1.5,
+                      ),
+                    ),
+                  ),
+                  style: TextStyle(
+                    color: context.appColors.foreground,
+                    fontFamily: 'Inter',
+                  ),
+                ),
+                const SizedBox(height: 24),
+
+                // Action Button
+                GestureDetector(
+                  onTap: _handleSubmit,
+                  child: Container(
+                    width: double.infinity,
+                    height: 54,
+                    decoration: BoxDecoration(
+                      color: Theme.of(context).colorScheme.primary,
+                      borderRadius: BorderRadius.circular(14),
+                      boxShadow: [
+                        BoxShadow(
+                          color: Theme.of(
+                            context,
+                          ).colorScheme.primary.withValues(alpha: 0.3),
+                          blurRadius: 10,
+                          offset: const Offset(0, 4),
+                        ),
+                      ],
+                    ),
+                    child: Center(
+                      child: Text(
+                        context.l10n.translate('Inizia ora'),
+                        style: TextStyle(
+                          color:
+                              Theme.of(
+                                    context,
+                                  ).colorScheme.primary.computeLuminance() >
+                                  0.5
+                              ? Colors.black
+                              : Colors.white,
+                          fontSize: 16,
+                          fontWeight: FontWeight.w700,
+                          letterSpacing: -0.2,
+                        ),
+                      ),
+                    ),
+                  ),
+                ),
+              ],
+            ),
+          ),
+        ),
+      ),
+    );
   }
 }
 

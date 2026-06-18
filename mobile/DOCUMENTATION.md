@@ -219,8 +219,6 @@
 *Tech Notes*:
 - **UI**: Changed `userProfile.displayName` to `userProfile.firstName ?? userProfile.displayName` in `dashboard_screen.dart`.
 
----
-
 ## [2026-05-12 16:30]: UI - LifeViewWidget Layout Adjustments
 *Details*: Modified the "Life" panel to remove unnecessary text and reduce the height of the stats box for a more compact layout.
 *Tech Notes*:
@@ -1832,3 +1830,10 @@
 *Details*: Fixed the startup/login regression where the name prompt could appear before the user chose Login or Private mode. The name setup prompt is now exclusively part of Private mode setup and cannot be triggered by an unauthenticated or Supabase-mode startup frame.
 
 *Tech Notes*: Added `shouldPromptForStartupName()` in `user_provider.dart` and updated `dashboard_screen.dart` so startup onboarding stops immediately when `authState.canAccessApp` is false, skips name setup in Supabase mode, and only loads/checks the local private profile when `AppDataMode.private` is active. Added regression coverage in `test/user_profile_test.dart` for unauthenticated, Supabase, and Private-mode prompt eligibility. Verified with `flutter test test/user_profile_test.dart test/tutorial_provider_test.dart`, `flutter analyze`, `flutter test`, and `flutter build ios --no-codesign`.
+
+## [2026-06-18 22:10 CEST]: Private Mode - Name Prompt Controller Lifecycle Fix
+*Details*: Fixed the crash that occurred immediately after entering a name in Private mode by moving the name prompt `TextEditingController` into a dedicated stateful dialog widget. This keeps the controller alive for exactly as long as the `TextField` subtree is mounted.
+*Tech Notes*:
+- Updated `lib/ui/screens/dashboard_screen.dart`.
+- Extracted the name prompt UI into `_NamePromptDialog`, a `ConsumerStatefulWidget` that owns and disposes its controller in widget lifecycle methods.
+- No new dependencies, endpoints, migrations, or manual user actions required.

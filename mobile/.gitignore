@@ -49,3 +49,6 @@ lib/core/supabase_config.dart
 lib/core/sentry_config.dart
 lib/core/openrouter_config.dart
 
+# Keystore and Play Store related
+*.jks
+key.properties

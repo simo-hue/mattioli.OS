@@ -6,6 +6,8 @@ import 'package:lucide_icons_flutter/lucide_icons.dart';
 import '../../core/theme.dart';
 import '../../core/openrouter_service.dart';
 import '../../core/app_logger.dart';
+import '../../core/data_mode.dart';
+import '../../core/private_local_database.dart';
 import 'package:flutter_markdown/flutter_markdown.dart';
 
 import 'dart:ui';
@@ -221,8 +223,11 @@ class _AIChatScreenState extends ConsumerState<AIChatScreen> {
     super.dispose();
   }
 
-  void _sendMessage(String text) {
+  Future<void> _sendMessage(String text) async {
     if (text.trim().isEmpty) return;
+    if (!await _ensurePrivateAiConsent()) return;
+    if (!mounted) return;
+
     HapticFeedback.mediumImpact();
 
     setState(() {
@@ -312,6 +317,49 @@ class _AIChatScreenState extends ConsumerState<AIChatScreen> {
         }
       },
     );
+  }
+
+  Future<bool> _ensurePrivateAiConsent() async {
+    if (ref.read(activeDataModeProvider) != AppDataMode.private) return true;
+
+    final db = ref.read(privateLocalDatabaseProvider);
+    if (await db.hasPrivateAiExternalConsent()) return true;
+    if (!mounted) return false;
+
+    final accepted = await showDialog<bool>(
+      context: context,
+      builder: (dialogContext) {
+        return AlertDialog(
+          backgroundColor: context.appColors.card,
+          title: Text(
+            context.l10n.translate('Consenso AI in modalità privata'),
+            style: TextStyle(color: context.appColors.foreground),
+          ),
+          content: Text(
+            context.l10n.translate(
+              'Per usare il Coach AI, il messaggio e il contesto selezionato vengono inviati al provider AI esterno. Il database privato resta sul dispositivo.',
+            ),
+            style: TextStyle(color: context.appColors.mutedForeground),
+          ),
+          actions: [
+            TextButton(
+              onPressed: () => Navigator.pop(dialogContext, false),
+              child: Text(context.l10n.translate('Annulla')),
+            ),
+            TextButton(
+              onPressed: () => Navigator.pop(dialogContext, true),
+              child: Text(context.l10n.translate('Accetto')),
+            ),
+          ],
+        );
+      },
+    );
+
+    if (accepted == true) {
+      await db.setPrivateAiExternalConsent(true);
+      return true;
+    }
+    return false;
   }
 
   String _getSystemPrompt() {

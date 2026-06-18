@@ -9,6 +9,8 @@ import '../core/notifications.dart';
 import '../core/navigator_key.dart';
 import '../core/app_logger.dart';
 import '../core/secure_storage_utils.dart';
+import '../core/data_mode.dart';
+import '../core/private_local_database.dart';
 import '../ui/widgets/error_modal.dart';
 
 final initialGoalsProvider = Provider<String>((ref) => '[]');
@@ -21,6 +23,12 @@ class GoalsNotifier extends Notifier<List<Goal>> {
 
   @override
   List<Goal> build() {
+    final dataMode = ref.watch(activeDataModeProvider);
+    if (dataMode == AppDataMode.private) {
+      _loadFromPrivateStore();
+      return [];
+    }
+
     final initialState = _loadFromCache();
 
     ref.listen(authProvider, (previous, next) {
@@ -38,6 +46,15 @@ class GoalsNotifier extends Notifier<List<Goal>> {
     }
 
     return initialState;
+  }
+
+  Future<void> _loadFromPrivateStore() async {
+    try {
+      state = await ref.read(privateLocalDatabaseProvider).loadGoals();
+    } catch (e, stack) {
+      AppLogger.error('[Goals] Private load error', e, stack);
+      state = [];
+    }
   }
 
   List<Goal> _loadFromCache() {
@@ -64,6 +81,7 @@ class GoalsNotifier extends Notifier<List<Goal>> {
   }
 
   Future<void> _syncFromSupabase() async {
+    if (ref.read(activeDataModeProvider) == AppDataMode.private) return;
     final user = supabase.auth.currentUser;
     if (user == null) return;
 
@@ -86,6 +104,19 @@ class GoalsNotifier extends Notifier<List<Goal>> {
   Future<void> addHabit(Goal habit) async {
     final newGoals = [...state, habit];
     state = newGoals;
+
+    if (ref.read(activeDataModeProvider) == AppDataMode.private) {
+      await ref.read(privateLocalDatabaseProvider).upsertGoal(habit);
+      if (habit.reminderTime != null) {
+        NotificationService().scheduleHabitReminder(
+          habit.id,
+          habit.title,
+          habit.reminderTime,
+        );
+      }
+      return;
+    }
+
     _saveToCache(newGoals);
 
     final user = supabase.auth.currentUser;
@@ -136,6 +167,20 @@ class GoalsNotifier extends Notifier<List<Goal>> {
         .map((h) => h.id == updatedHabit.id ? updatedHabit : h)
         .toList();
     state = newGoals;
+
+    if (ref.read(activeDataModeProvider) == AppDataMode.private) {
+      await ref.read(privateLocalDatabaseProvider).upsertGoal(updatedHabit);
+      NotificationService().cancelHabitReminder(updatedHabit.id);
+      if (updatedHabit.reminderTime != null) {
+        NotificationService().scheduleHabitReminder(
+          updatedHabit.id,
+          updatedHabit.title,
+          updatedHabit.reminderTime,
+        );
+      }
+      return;
+    }
+
     _saveToCache(newGoals);
 
     try {
@@ -169,6 +214,13 @@ class GoalsNotifier extends Notifier<List<Goal>> {
   Future<void> deleteHabit(String id) async {
     final newGoals = state.where((h) => h.id != id).toList();
     state = newGoals;
+
+    if (ref.read(activeDataModeProvider) == AppDataMode.private) {
+      await ref.read(privateLocalDatabaseProvider).deleteGoal(id);
+      NotificationService().cancelHabitReminder(id);
+      return;
+    }
+
     _saveToCache(newGoals);
 
     try {
@@ -201,6 +253,15 @@ class GoalsNotifier extends Notifier<List<Goal>> {
     }
 
     state = list;
+
+    if (ref.read(activeDataModeProvider) == AppDataMode.private) {
+      final db = ref.read(privateLocalDatabaseProvider);
+      for (final goal in list) {
+        await db.upsertGoal(goal);
+      }
+      return;
+    }
+
     _saveToCache(list);
 
     // Sync massivo degli order su Supabase
@@ -216,7 +277,9 @@ class GoalsNotifier extends Notifier<List<Goal>> {
 
   void clearAll() {
     state = [];
-    _saveToCache([]);
+    if (ref.read(activeDataModeProvider) != AppDataMode.private) {
+      _saveToCache([]);
+    }
   }
 }
 
@@ -233,6 +296,12 @@ class HabitLogsNotifier extends Notifier<HabitLogsMap> {
 
   @override
   HabitLogsMap build() {
+    final dataMode = ref.watch(activeDataModeProvider);
+    if (dataMode == AppDataMode.private) {
+      _loadFromPrivateStore();
+      return {};
+    }
+
     final initialState = _loadFromCache();
 
     ref.listen(authProvider, (previous, next) {
@@ -250,6 +319,15 @@ class HabitLogsNotifier extends Notifier<HabitLogsMap> {
     }
 
     return initialState;
+  }
+
+  Future<void> _loadFromPrivateStore() async {
+    try {
+      state = await ref.read(privateLocalDatabaseProvider).loadHabitLogs();
+    } catch (e, stack) {
+      AppLogger.error('[HabitLogs] Private load error', e, stack);
+      state = {};
+    }
   }
 
   HabitLogsMap _loadFromCache() {
@@ -279,6 +357,7 @@ class HabitLogsNotifier extends Notifier<HabitLogsMap> {
   }
 
   Future<void> _syncFromSupabase() async {
+    if (ref.read(activeDataModeProvider) == AppDataMode.private) return;
     final user = supabase.auth.currentUser;
     if (user == null) return;
 
@@ -311,8 +390,10 @@ class HabitLogsNotifier extends Notifier<HabitLogsMap> {
   }
 
   Future<void> cycleStatus(DateTime date, String habitId) async {
-    final user = supabase.auth.currentUser;
-    if (user == null) return;
+    final isPrivateMode =
+        ref.read(activeDataModeProvider) == AppDataMode.private;
+    final user = isPrivateMode ? null : supabase.auth.currentUser;
+    if (!isPrivateMode && user == null) return;
 
     final dateKey =
         '${date.year}-${date.month.toString().padLeft(2, '0')}-${date.day.toString().padLeft(2, '0')}';
@@ -333,33 +414,35 @@ class HabitLogsNotifier extends Notifier<HabitLogsMap> {
 
     // Get previous streak
     int prevStreak = 0;
-    try {
-      final lastLogResponse = await supabase
-          .from('goal_logs')
-          .select('streak, date')
-          .eq('goal_id', habitId)
-          .eq('user_id', user.id)
-          .order('date', ascending: false)
-          .limit(1)
-          .maybeSingle();
+    if (!isPrivateMode) {
+      try {
+        final lastLogResponse = await supabase
+            .from('goal_logs')
+            .select('streak, date')
+            .eq('goal_id', habitId)
+            .eq('user_id', user!.id)
+            .order('date', ascending: false)
+            .limit(1)
+            .maybeSingle();
 
-      if (lastLogResponse != null) {
-        final lastDateStr = lastLogResponse['date'] as String;
-        final lastStreak = lastLogResponse['streak'] as int? ?? 0;
+        if (lastLogResponse != null) {
+          final lastDateStr = lastLogResponse['date'] as String;
+          final lastStreak = lastLogResponse['streak'] as int? ?? 0;
 
-        final lastDate = DateTime.parse(lastDateStr);
-        final diffDays = date.difference(lastDate).inDays;
+          final lastDate = DateTime.parse(lastDateStr);
+          final diffDays = date.difference(lastDate).inDays;
 
-        if (diffDays == 1) {
-          prevStreak = lastStreak;
-        } else {
-          // Non consecutivo. Per ora azzeriamo lo streak se non è il giorno dopo.
-          // Si potrebbe affinare controllando la frequenza dell'abitudine.
-          prevStreak = 0;
+          if (diffDays == 1) {
+            prevStreak = lastStreak;
+          } else {
+            // Non consecutivo. Per ora azzeriamo lo streak se non è il giorno dopo.
+            // Si potrebbe affinare controllando la frequenza dell'abitudine.
+            prevStreak = 0;
+          }
         }
+      } catch (e, stack) {
+        AppLogger.error('[HabitLogs] Error getting previous streak', e, stack);
       }
-    } catch (e, stack) {
-      AppLogger.error('[HabitLogs] Error getting previous streak', e, stack);
     }
 
     int newStreak = 0;
@@ -377,13 +460,33 @@ class HabitLogsNotifier extends Notifier<HabitLogsMap> {
 
     newState[dateKey] = dayLogs;
     state = newState;
+
+    if (isPrivateMode) {
+      if (nextStatus != null) {
+        await ref
+            .read(privateLocalDatabaseProvider)
+            .setHabitLog(
+              goalId: habitId,
+              date: dateKey,
+              status: nextStatus,
+              streak: newStreak,
+            );
+      } else {
+        await ref
+            .read(privateLocalDatabaseProvider)
+            .deleteHabitLog(goalId: habitId, date: dateKey);
+      }
+      ref.invalidate(habitStatsProvider);
+      return;
+    }
+
     _saveToCache(newState);
 
     // Sync con Supabase
     try {
       if (nextStatus != null) {
         await supabase.from('goal_logs').upsert({
-          'user_id': user.id,
+          'user_id': user!.id,
           'goal_id': habitId,
           'date': dateKey,
           'status': nextStatus,
@@ -415,7 +518,9 @@ class HabitLogsNotifier extends Notifier<HabitLogsMap> {
 
   void clearAll() {
     state = {};
-    _saveToCache({});
+    if (ref.read(activeDataModeProvider) != AppDataMode.private) {
+      _saveToCache({});
+    }
   }
 }
 
@@ -426,6 +531,10 @@ final habitLogsProvider = NotifierProvider<HabitLogsNotifier, HabitLogsMap>(
 final habitStatsProvider = FutureProvider<List<Map<String, dynamic>>>((
   ref,
 ) async {
+  if (ref.watch(activeDataModeProvider) == AppDataMode.private) {
+    return ref.read(privateLocalDatabaseProvider).habitStats();
+  }
+
   final user = Supabase.instance.client.auth.currentUser;
   if (user == null) return [];
 
@@ -440,6 +549,10 @@ final habitStatsProvider = FutureProvider<List<Map<String, dynamic>>>((
 final habitAnalyticsProvider =
     FutureProvider<Map<String, Map<String, dynamic>>>((ref) async {
       ref.keepAlive();
+      if (ref.watch(activeDataModeProvider) == AppDataMode.private) {
+        return ref.read(privateLocalDatabaseProvider).habitAnalytics();
+      }
+
       final user = Supabase.instance.client.auth.currentUser;
       if (user == null) return {};
 
@@ -460,6 +573,10 @@ final habitAnalyticsProvider =
 
 final globalCriticalDayProvider = FutureProvider<String>((ref) async {
   ref.keepAlive();
+  if (ref.watch(activeDataModeProvider) == AppDataMode.private) {
+    return ref.read(privateLocalDatabaseProvider).globalCriticalDay();
+  }
+
   final user = Supabase.instance.client.auth.currentUser;
   if (user == null) return 'N/A';
 
@@ -482,6 +599,10 @@ final globalTrendProvider =
       timeframe,
     ) async {
       ref.keepAlive();
+      if (ref.watch(activeDataModeProvider) == AppDataMode.private) {
+        return ref.read(privateLocalDatabaseProvider).globalTrend(timeframe);
+      }
+
       final user = Supabase.instance.client.auth.currentUser;
       if (user == null) return [];
 
@@ -497,6 +618,10 @@ final criticalHabitsProvider = FutureProvider<List<Map<String, dynamic>>>((
   ref,
 ) async {
   ref.keepAlive();
+  if (ref.watch(activeDataModeProvider) == AppDataMode.private) {
+    return ref.read(privateLocalDatabaseProvider).criticalHabits();
+  }
+
   final user = Supabase.instance.client.auth.currentUser;
   if (user == null) return [];
 
@@ -514,6 +639,10 @@ final bestHabitsProvider =
       timeframe,
     ) async {
       ref.keepAlive();
+      if (ref.watch(activeDataModeProvider) == AppDataMode.private) {
+        return ref.read(privateLocalDatabaseProvider).bestHabits(timeframe);
+      }
+
       final user = Supabase.instance.client.auth.currentUser;
       if (user == null) return [];
 
@@ -531,6 +660,12 @@ final habitPerformanceProvider =
       goalId,
     ) async {
       ref.keepAlive();
+      if (ref.watch(activeDataModeProvider) == AppDataMode.private) {
+        return ref
+            .read(privateLocalDatabaseProvider)
+            .habitPerformanceByDay(goalId);
+      }
+
       final user = Supabase.instance.client.auth.currentUser;
       if (user == null) return [];
 
@@ -545,6 +680,10 @@ final habitPerformanceProvider =
 final habitAlertsProvider = FutureProvider.family<Map<String, dynamic>, String>(
   (ref, goalId) async {
     ref.keepAlive();
+    if (ref.watch(activeDataModeProvider) == AppDataMode.private) {
+      return ref.read(privateLocalDatabaseProvider).habitAlerts(goalId);
+    }
+
     final user = Supabase.instance.client.auth.currentUser;
     if (user == null) return {};
 
@@ -565,6 +704,10 @@ final habitYearlyGridProvider = FutureProvider.family<List<int>, String>((
   goalId,
 ) async {
   ref.keepAlive();
+  if (ref.watch(activeDataModeProvider) == AppDataMode.private) {
+    return ref.read(privateLocalDatabaseProvider).habitYearlyGrid(goalId);
+  }
+
   final user = Supabase.instance.client.auth.currentUser;
   if (user == null) return [];
 
@@ -585,6 +728,10 @@ final habitCorrelationsProvider =
       goalId,
     ) async {
       ref.keepAlive();
+      if (ref.watch(activeDataModeProvider) == AppDataMode.private) {
+        return ref.read(privateLocalDatabaseProvider).habitCorrelations(goalId);
+      }
+
       final user = Supabase.instance.client.auth.currentUser;
       if (user == null) return [];
 
@@ -599,6 +746,10 @@ final habitCorrelationsProvider =
 final allHabitCorrelationsProvider = FutureProvider<List<Map<String, dynamic>>>(
   (ref) async {
     ref.keepAlive();
+    if (ref.watch(activeDataModeProvider) == AppDataMode.private) {
+      return ref.read(privateLocalDatabaseProvider).allHabitCorrelations();
+    }
+
     final user = Supabase.instance.client.auth.currentUser;
     if (user == null) return [];
 

@@ -1,3 +1,6 @@
+import 'dart:async';
+import 'dart:math' as math;
+
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:lucide_icons_flutter/lucide_icons.dart';
@@ -9,6 +12,7 @@ import '../../providers/goal_provider.dart';
 import '../../providers/settings_provider.dart';
 import '../../core/haptics.dart';
 import '../../core/localization.dart';
+import '../../core/app_logger.dart';
 import '../widgets/pro_features_modal.dart';
 import '../widgets/statistics/info_tab_widget.dart';
 import '../widgets/statistics/global_trend_tab_widget.dart';
@@ -21,10 +25,14 @@ import '../widgets/statistics/global_alerts_tab_widget.dart';
 import '../widgets/statistics/global_habits_tab_widget.dart';
 import '../widgets/statistics/global_mood_tab_widget.dart';
 
-
 class StatisticsScreen extends ConsumerStatefulWidget {
+  final bool isActive;
   final VoidCallback? onFinishTutorial;
-  const StatisticsScreen({super.key, this.onFinishTutorial});
+  const StatisticsScreen({
+    super.key,
+    required this.isActive,
+    this.onFinishTutorial,
+  });
 
   @override
   ConsumerState<StatisticsScreen> createState() => _StatisticsScreenState();
@@ -33,13 +41,7 @@ class StatisticsScreen extends ConsumerStatefulWidget {
 class _StatisticsScreenState extends ConsumerState<StatisticsScreen>
     with AutomaticKeepAliveClientMixin {
   String _selectedTab = 'Info';
-  List<String> _tabs = [
-    'Info',
-    'Trend',
-    'Alert',
-    'Abitudini',
-    'Mood'
-  ];
+  List<String> _tabs = ['Info', 'Trend', 'Alert', 'Abitudini', 'Mood'];
   String? _selectedGoalId;
 
   final GlobalKey _goalDropdownKey = GlobalKey();
@@ -49,8 +51,83 @@ class _StatisticsScreenState extends ConsumerState<StatisticsScreen>
   bool get wantKeepAlive => true;
 
   bool _tutorialTriggered = false;
+  bool _isShowingStatsTutorial = false;
+  Timer? _statsTutorialStartTimer;
+  TutorialCoachMark? _statsTutorial;
+
+  @override
+  void didUpdateWidget(covariant StatisticsScreen oldWidget) {
+    super.didUpdateWidget(oldWidget);
+    if (!oldWidget.isActive && widget.isActive) {
+      WidgetsBinding.instance.addPostFrameCallback((_) {
+        if (mounted) _maybeScheduleStatsTutorial();
+      });
+    }
+    if (oldWidget.isActive && !widget.isActive && _isShowingStatsTutorial) {
+      _clearStatsTutorialState(removeOverlay: true);
+    }
+  }
+
+  @override
+  void dispose() {
+    _statsTutorialStartTimer?.cancel();
+    _statsTutorial?.removeOverlayEntry();
+    super.dispose();
+  }
+
+  bool _areStatsTutorialTargetsReady() {
+    return [
+      _goalDropdownKey,
+      _tabsKey,
+    ].every((key) => key.currentContext != null);
+  }
+
+  void _completeStatsTutorial() {
+    ref.read(statsTutorialProvider.notifier).setTutorialSeen(true);
+    if (widget.onFinishTutorial != null) {
+      widget.onFinishTutorial!();
+    }
+  }
+
+  void _clearStatsTutorialState({bool removeOverlay = false}) {
+    _statsTutorialStartTimer?.cancel();
+    if (removeOverlay) {
+      _statsTutorial?.removeOverlayEntry();
+    }
+    _statsTutorial = null;
+    _isShowingStatsTutorial = false;
+  }
+
+  void _maybeScheduleStatsTutorial() {
+    if (!widget.isActive || _tutorialTriggered || _isShowingStatsTutorial) {
+      return;
+    }
+
+    final goalsTutorialSeen = ref.read(goalsTutorialProvider);
+    final statsTutorialSeen = ref.read(statsTutorialProvider);
+    if (!goalsTutorialSeen || statsTutorialSeen) return;
+
+    _tutorialTriggered = true;
+    _statsTutorialStartTimer?.cancel();
+    _statsTutorialStartTimer = Timer(const Duration(milliseconds: 600), () {
+      if (!mounted || !widget.isActive) return;
+      WidgetsBinding.instance.addPostFrameCallback((_) {
+        if (mounted && widget.isActive) _showStatsTutorial();
+      });
+    });
+  }
 
   void _showStatsTutorial() {
+    if (!widget.isActive || _isShowingStatsTutorial) return;
+    if (!_areStatsTutorialTargetsReady()) {
+      AppLogger.warning(
+        '[Tutorial] Stats tutorial targets are not ready; delaying start',
+      );
+      _tutorialTriggered = false;
+      _maybeScheduleStatsTutorial();
+      return;
+    }
+
     final targets = [
       TargetFocus(
         identify: "Filtro Goal",
@@ -62,8 +139,11 @@ class _StatisticsScreenState extends ConsumerState<StatisticsScreen>
             align: ContentAlign.bottom,
             builder: (context, controller) => _buildTutorialContent(
               context.l10n.translate("Filtra per Abitudine"),
-              context.l10n.translate("Da qui puoi selezionare una specifica abitudine per vederne i dettagli, oppure 'Tutti gli Habits' per una panoramica globale."),
+              context.l10n.translate(
+                "Da qui puoi selezionare una specifica abitudine per vederne i dettagli, oppure 'Tutti gli Habits' per una panoramica globale.",
+              ),
               controller,
+              isFirst: true,
             ),
           ),
         ],
@@ -78,7 +158,9 @@ class _StatisticsScreenState extends ConsumerState<StatisticsScreen>
             align: ContentAlign.bottom,
             builder: (context, controller) => _buildTutorialContent(
               context.l10n.translate("Sezioni Statistiche"),
-              context.l10n.translate("Naviga tra le varie schede per vedere i Trend, gli Alert sulle performance, l'andamento delle Abitudini e il tuo Mood."),
+              context.l10n.translate(
+                "Naviga tra le varie schede per vedere i Trend, gli Alert sulle performance, l'andamento delle Abitudini e il tuo Mood.",
+              ),
               controller,
               isLast: true,
             ),
@@ -87,7 +169,7 @@ class _StatisticsScreenState extends ConsumerState<StatisticsScreen>
       ),
     ];
 
-    TutorialCoachMark(
+    final tutorial = TutorialCoachMark(
       targets: targets,
       colorShadow: Colors.black,
       hideSkip: true,
@@ -97,12 +179,24 @@ class _StatisticsScreenState extends ConsumerState<StatisticsScreen>
       unFocusAnimationDuration: Duration.zero,
       pulseEnable: false,
       onFinish: () {
-        ref.read(statsTutorialProvider.notifier).setTutorialSeen(true);
-        if (widget.onFinishTutorial != null) {
-          widget.onFinishTutorial!();
-        }
+        _completeStatsTutorial();
+        _clearStatsTutorialState();
       },
-    ).show(context: context);
+      onSkip: () {
+        _completeStatsTutorial();
+        _clearStatsTutorialState();
+        return true;
+      },
+    );
+
+    _statsTutorial = tutorial;
+    _isShowingStatsTutorial = true;
+    try {
+      tutorial.show(context: context);
+    } catch (e, stack) {
+      _clearStatsTutorialState();
+      AppLogger.warning('[Tutorial] Unable to start stats tutorial', e, stack);
+    }
   }
 
   Widget _buildTutorialContent(
@@ -112,83 +206,151 @@ class _StatisticsScreenState extends ConsumerState<StatisticsScreen>
     bool isFirst = false,
     bool isLast = false,
   }) {
-    return Container(
-      padding: const EdgeInsets.all(24),
-      decoration: BoxDecoration(
-        color: Theme.of(context).colorScheme.surface,
-        borderRadius: BorderRadius.circular(20),
-        border: Border.all(
-          color: Theme.of(context).colorScheme.primary.withValues(alpha: 0.5), 
-          width: 1.5
-        ),
-        boxShadow: [
-          BoxShadow(
-            color: Colors.black.withValues(alpha: 0.2),
-            blurRadius: 20,
-            offset: const Offset(0, 10),
-          )
-        ],
-      ),
-      child: Column(
-        mainAxisSize: MainAxisSize.min,
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Row(
-            children: [
-              Icon(LucideIcons.info, color: Theme.of(context).colorScheme.primary, size: 20),
-              const SizedBox(width: 8),
-              Text(
-                title,
-                style: TextStyle(
-                  fontWeight: FontWeight.w800,
-                  color: Theme.of(context).colorScheme.onSurface,
-                  fontSize: 18.0,
-                  fontFamily: 'Inter',
-                  letterSpacing: -0.5,
-                ),
+    final mediaQuery = MediaQuery.of(context);
+    final size = mediaQuery.size;
+    final isLandscape = size.width > size.height;
+    final horizontalMargin = isLandscape ? 16.0 : 20.0;
+    final availableWidth = math.max(240.0, size.width - (horizontalMargin * 2));
+    final maxWidth = math.min(availableWidth, isLandscape ? 480.0 : 520.0);
+    final availableHeight = math.max(
+      160.0,
+      size.height - mediaQuery.padding.vertical,
+    );
+    final maxHeight = isLandscape
+        ? math.min(220.0, math.max(160.0, availableHeight - 48.0))
+        : math.min(360.0, math.max(220.0, availableHeight - 96.0));
+
+    return Align(
+      alignment: AlignmentDirectional.topStart,
+      child: SizedBox(
+        width: maxWidth,
+        child: ConstrainedBox(
+          constraints: BoxConstraints(maxHeight: maxHeight),
+          child: Container(
+            padding: EdgeInsets.all(isLandscape ? 16 : 22),
+            decoration: BoxDecoration(
+              color: Theme.of(context).colorScheme.surface,
+              borderRadius: BorderRadius.circular(20),
+              border: Border.all(
+                color: Theme.of(
+                  context,
+                ).colorScheme.primary.withValues(alpha: 0.5),
+                width: 1.5,
               ),
-            ],
-          ),
-          const SizedBox(height: 12.0),
-          Text(
-            description,
-            style: TextStyle(
-              color: Theme.of(context).colorScheme.onSurface.withValues(alpha: 0.7),
-              fontFamily: 'Inter',
-              fontSize: 14,
-              height: 1.5,
+              boxShadow: [
+                BoxShadow(
+                  color: Colors.black.withValues(alpha: 0.2),
+                  blurRadius: 20,
+                  offset: const Offset(0, 10),
+                ),
+              ],
+            ),
+            child: SingleChildScrollView(
+              physics: const ClampingScrollPhysics(),
+              child: Column(
+                mainAxisSize: MainAxisSize.min,
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Row(
+                    children: [
+                      Icon(
+                        LucideIcons.info,
+                        color: Theme.of(context).colorScheme.primary,
+                        size: 20,
+                      ),
+                      const SizedBox(width: 8),
+                      Expanded(
+                        child: Text(
+                          title,
+                          maxLines: 2,
+                          overflow: TextOverflow.ellipsis,
+                          style: TextStyle(
+                            fontWeight: FontWeight.w800,
+                            color: Theme.of(context).colorScheme.onSurface,
+                            fontSize: isLandscape ? 17.0 : 18.0,
+                            fontFamily: 'Inter',
+                            letterSpacing: 0,
+                          ),
+                        ),
+                      ),
+                    ],
+                  ),
+                  SizedBox(height: isLandscape ? 10.0 : 12.0),
+                  Text(
+                    description,
+                    style: TextStyle(
+                      color: Theme.of(
+                        context,
+                      ).colorScheme.onSurface.withValues(alpha: 0.7),
+                      fontFamily: 'Inter',
+                      fontSize: isLandscape ? 13 : 14,
+                      height: isLandscape ? 1.38 : 1.5,
+                    ),
+                  ),
+                  SizedBox(height: isLandscape ? 14.0 : 20.0),
+                  Wrap(
+                    alignment: WrapAlignment.spaceBetween,
+                    crossAxisAlignment: WrapCrossAlignment.center,
+                    spacing: 10,
+                    runSpacing: 8,
+                    children: [
+                      if (!isFirst)
+                        TextButton(
+                          onPressed: () {
+                            ref.hapticSelection();
+                            controller.previous();
+                          },
+                          child: Text(
+                            context.l10n.translate("Indietro"),
+                            style: TextStyle(
+                              color: Theme.of(
+                                context,
+                              ).colorScheme.onSurface.withValues(alpha: 0.5),
+                              fontWeight: FontWeight.bold,
+                            ),
+                          ),
+                        )
+                      else
+                        const SizedBox.shrink(),
+                      ElevatedButton(
+                        onPressed: () {
+                          ref.hapticSelection();
+                          if (isLast) {
+                            controller.skip();
+                          } else {
+                            controller.next();
+                          }
+                        },
+                        style: ElevatedButton.styleFrom(
+                          backgroundColor: Theme.of(
+                            context,
+                          ).colorScheme.primary,
+                          foregroundColor:
+                              Theme.of(
+                                    context,
+                                  ).colorScheme.primary.computeLuminance() >
+                                  0.5
+                              ? Colors.black
+                              : Colors.white,
+                          shape: RoundedRectangleBorder(
+                            borderRadius: BorderRadius.circular(10),
+                          ),
+                          elevation: 0,
+                        ),
+                        child: Text(
+                          isLast
+                              ? context.l10n.translate("Fine")
+                              : context.l10n.translate("Avanti"),
+                          style: const TextStyle(fontWeight: FontWeight.bold),
+                        ),
+                      ),
+                    ],
+                  ),
+                ],
+              ),
             ),
           ),
-          const SizedBox(height: 20.0),
-          Row(
-            mainAxisAlignment: MainAxisAlignment.spaceBetween,
-            children: [
-              if (!isFirst)
-                TextButton(
-                  onPressed: () {
-                    ref.hapticSelection();
-                    controller.previous();
-                  },
-                  child: Text(context.l10n.translate("Indietro"), style: TextStyle(color: Theme.of(context).colorScheme.onSurface.withValues(alpha: 0.5), fontWeight: FontWeight.bold)),
-                )
-              else
-                const SizedBox.shrink(),
-              ElevatedButton(
-                onPressed: () {
-                  ref.hapticSelection();
-                  controller.next();
-                },
-                style: ElevatedButton.styleFrom(
-                  backgroundColor: Theme.of(context).colorScheme.primary,
-                  foregroundColor: Theme.of(context).colorScheme.primary.computeLuminance() > 0.5 ? Colors.black : Colors.white,
-                  shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
-                  elevation: 0,
-                ),
-                child: Text(isLast ? context.l10n.translate("Fine") : context.l10n.translate("Avanti"), style: const TextStyle(fontWeight: FontWeight.bold)),
-              ),
-            ],
-          ),
-        ],
+        ),
       ),
     );
   }
@@ -220,8 +382,8 @@ class _StatisticsScreenState extends ConsumerState<StatisticsScreen>
   Widget build(BuildContext context) {
     super.build(context);
     final goals = ref.watch(goalsProvider);
-    final goalsTutorialSeen = ref.watch(goalsTutorialProvider);
-    final statsTutorialSeen = ref.watch(statsTutorialProvider);
+    ref.watch(goalsTutorialProvider);
+    ref.watch(statsTutorialProvider);
 
     final settings = ref.watch(settingsProvider);
     if (!settings.isPro && _selectedGoalId != null) {
@@ -238,16 +400,7 @@ class _StatisticsScreenState extends ConsumerState<StatisticsScreen>
       }
     });
 
-    if (goalsTutorialSeen && !statsTutorialSeen && !_tutorialTriggered) {
-      _tutorialTriggered = true;
-      WidgetsBinding.instance.addPostFrameCallback((_) {
-        Future.delayed(const Duration(milliseconds: 600), () {
-          if (mounted) {
-            _showStatsTutorial();
-          }
-        });
-      });
-    }
+    _maybeScheduleStatsTutorial();
 
     return Scaffold(
       backgroundColor: Colors.transparent,
@@ -281,13 +434,17 @@ class _StatisticsScreenState extends ConsumerState<StatisticsScreen>
                         fontFamily: 'Inter',
                         fontSize: 14,
                         fontWeight: FontWeight.w500,
-                        color: context.appColors.mutedForeground.withValues(alpha: 0.7),
+                        color: context.appColors.mutedForeground.withValues(
+                          alpha: 0.7,
+                        ),
                       ),
                     ),
                     const SizedBox(height: 24),
 
-
-                    Container(key: _goalDropdownKey, child: _buildGoalDropdown(goals)),
+                    Container(
+                      key: _goalDropdownKey,
+                      child: _buildGoalDropdown(goals),
+                    ),
                     const SizedBox(height: 16),
 
                     Container(key: _tabsKey, child: _buildTabs()),
@@ -295,7 +452,7 @@ class _StatisticsScreenState extends ConsumerState<StatisticsScreen>
                   ],
                 ),
               ),
-              
+
               Padding(
                 padding: const EdgeInsets.symmetric(horizontal: 16.0),
                 child: AnimatedSwitcher(
@@ -303,7 +460,6 @@ class _StatisticsScreenState extends ConsumerState<StatisticsScreen>
                   child: _buildTabContent(),
                 ),
               ),
-
             ],
           ),
         ),
@@ -314,7 +470,7 @@ class _StatisticsScreenState extends ConsumerState<StatisticsScreen>
   Widget _buildGoalDropdown(List<Goal> goals) {
     String displayTitle = context.l10n.translate('Tutti gli Habits');
     Color displayColor = context.appColors.foreground;
-    
+
     if (_selectedGoalId != null) {
       final match = goals.where((g) => g.id == _selectedGoalId).toList();
       if (match.isNotEmpty) {
@@ -336,7 +492,10 @@ class _StatisticsScreenState extends ConsumerState<StatisticsScreen>
         decoration: BoxDecoration(
           color: context.appColors.card.withValues(alpha: 0.5),
           borderRadius: BorderRadius.circular(16),
-          border: Border.all(color: context.appColors.border.withValues(alpha: 0.5), width: 1),
+          border: Border.all(
+            color: context.appColors.border.withValues(alpha: 0.5),
+            width: 1,
+          ),
           boxShadow: [
             BoxShadow(
               color: Colors.black.withValues(alpha: 0.05),
@@ -354,7 +513,9 @@ class _StatisticsScreenState extends ConsumerState<StatisticsScreen>
                 borderRadius: BorderRadius.circular(10),
               ),
               child: Icon(
-                _selectedGoalId != null && !isPro ? LucideIcons.lock : LucideIcons.target,
+                _selectedGoalId != null && !isPro
+                    ? LucideIcons.lock
+                    : LucideIcons.target,
                 size: 16,
                 color: displayColor,
               ),
@@ -371,13 +532,16 @@ class _StatisticsScreenState extends ConsumerState<StatisticsScreen>
               ),
             ),
             const Spacer(),
-            Icon(LucideIcons.chevronDown, size: 16, color: context.appColors.mutedForeground),
+            Icon(
+              LucideIcons.chevronDown,
+              size: 16,
+              color: context.appColors.mutedForeground,
+            ),
           ],
         ),
       ),
     );
   }
-
 
   Widget _buildTabs() {
     return Container(
@@ -386,7 +550,10 @@ class _StatisticsScreenState extends ConsumerState<StatisticsScreen>
       decoration: BoxDecoration(
         color: context.appColors.card.withValues(alpha: 0.3),
         borderRadius: BorderRadius.circular(14),
-        border: Border.all(color: context.appColors.border.withValues(alpha: 0.5), width: 1),
+        border: Border.all(
+          color: context.appColors.border.withValues(alpha: 0.5),
+          width: 1,
+        ),
       ),
       child: Row(
         children: _tabs.map((tab) {
@@ -404,7 +571,9 @@ class _StatisticsScreenState extends ConsumerState<StatisticsScreen>
                 duration: const Duration(milliseconds: 250),
                 curve: Curves.easeInOut,
                 decoration: BoxDecoration(
-                  color: isSelected ? Theme.of(context).colorScheme.primary : Colors.transparent,
+                  color: isSelected
+                      ? Theme.of(context).colorScheme.primary
+                      : Colors.transparent,
                   borderRadius: BorderRadius.circular(10),
                   boxShadow: isSelected
                       ? [
@@ -412,7 +581,7 @@ class _StatisticsScreenState extends ConsumerState<StatisticsScreen>
                             color: Colors.black.withValues(alpha: 0.3),
                             blurRadius: 8,
                             offset: const Offset(0, 2),
-                          )
+                          ),
                         ]
                       : null,
                 ),
@@ -423,7 +592,9 @@ class _StatisticsScreenState extends ConsumerState<StatisticsScreen>
                     fontFamily: 'Inter',
                     fontSize: 11,
                     fontWeight: isSelected ? FontWeight.w800 : FontWeight.w600,
-                    color: isSelected ? context.appColors.background : context.appColors.mutedForeground,
+                    color: isSelected
+                        ? context.appColors.background
+                        : context.appColors.mutedForeground,
                   ),
                 ),
               ),
@@ -433,7 +604,6 @@ class _StatisticsScreenState extends ConsumerState<StatisticsScreen>
       ),
     );
   }
-
 
   Widget _buildTabContent() {
     if (_selectedGoalId == null) {
@@ -454,7 +624,10 @@ class _StatisticsScreenState extends ConsumerState<StatisticsScreen>
         default:
           return Center(
             key: ValueKey(_selectedTab),
-            child: Text('${context.l10n.translate(_selectedTab)} - ${context.l10n.translate('Coming Soon')}', style: TextStyle(color: context.appColors.mutedForeground)),
+            child: Text(
+              '${context.l10n.translate(_selectedTab)} - ${context.l10n.translate('Coming Soon')}',
+              style: TextStyle(color: context.appColors.mutedForeground),
+            ),
           );
       }
     } else {
@@ -487,7 +660,10 @@ class _StatisticsScreenState extends ConsumerState<StatisticsScreen>
         default:
           return Center(
             key: ValueKey('$_selectedTab$_selectedGoalId'),
-            child: Text('${context.l10n.translate(_selectedTab)} - ${context.l10n.translate('Coming Soon')}', style: TextStyle(color: context.appColors.mutedForeground)),
+            child: Text(
+              '${context.l10n.translate(_selectedTab)} - ${context.l10n.translate('Coming Soon')}',
+              style: TextStyle(color: context.appColors.mutedForeground),
+            ),
           );
       }
     }
@@ -531,10 +707,27 @@ class _StatisticsScreenState extends ConsumerState<StatisticsScreen>
                       color: context.appColors.muted,
                       borderRadius: BorderRadius.circular(6),
                     ),
-                    child: Icon(LucideIcons.list, size: 14, color: context.appColors.foreground),
+                    child: Icon(
+                      LucideIcons.list,
+                      size: 14,
+                      color: context.appColors.foreground,
+                    ),
                   ),
-                  title: Text(context.l10n.translate('Tutti gli Habits'), style: TextStyle(fontFamily: 'Inter', fontSize: 16, fontWeight: FontWeight.w600, color: context.appColors.foreground)),
-                  trailing: _selectedGoalId == null ? Icon(LucideIcons.check, color: context.appColors.foreground) : null,
+                  title: Text(
+                    context.l10n.translate('Tutti gli Habits'),
+                    style: TextStyle(
+                      fontFamily: 'Inter',
+                      fontSize: 16,
+                      fontWeight: FontWeight.w600,
+                      color: context.appColors.foreground,
+                    ),
+                  ),
+                  trailing: _selectedGoalId == null
+                      ? Icon(
+                          LucideIcons.check,
+                          color: context.appColors.foreground,
+                        )
+                      : null,
                   onTap: () {
                     _selectGoal(null);
                     Navigator.pop(context);
@@ -566,12 +759,23 @@ class _StatisticsScreenState extends ConsumerState<StatisticsScreen>
                         fontFamily: 'Inter',
                         fontSize: 16,
                         fontWeight: FontWeight.w500,
-                        color: isPro ? context.appColors.foreground : context.appColors.mutedForeground,
+                        color: isPro
+                            ? context.appColors.foreground
+                            : context.appColors.mutedForeground,
                       ),
                     ),
                     trailing: isPro
-                        ? (_selectedGoalId == goal.id ? Icon(LucideIcons.check, color: context.appColors.foreground) : null)
-                        : Icon(LucideIcons.lock, color: context.appColors.mutedForeground, size: 14),
+                        ? (_selectedGoalId == goal.id
+                              ? Icon(
+                                  LucideIcons.check,
+                                  color: context.appColors.foreground,
+                                )
+                              : null)
+                        : Icon(
+                            LucideIcons.lock,
+                            color: context.appColors.mutedForeground,
+                            size: 14,
+                          ),
                     onTap: () {
                       if (!isPro) {
                         Navigator.pop(context);

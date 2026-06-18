@@ -25,6 +25,7 @@ import 'core/app_logger.dart';
 import 'core/secure_local_storage.dart';
 import 'core/secure_storage_utils.dart';
 import 'core/localization.dart';
+import 'core/data_mode.dart';
 
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
@@ -32,12 +33,20 @@ void main() async {
 
   await initializeDateFormatting();
 
+  // ── SharedPreferences init ───────────────────────────────────────────────
+  final prefs = await SharedPreferences.getInstance();
+  final startsInPrivateMode =
+      prefs.getString('active_data_mode') == AppDataMode.private.name;
+  AppLogger.setExternalReportingDisabled(startsInPrivateMode);
+
   // ── Supabase init ─────────────────────────────────────────────────────────
-  await Supabase.initialize(
-    url: SupabaseConfig.url,
-    anonKey: SupabaseConfig.anonKey,
-    authOptions: FlutterAuthClientOptions(localStorage: SecureLocalStorage()),
-  );
+  if (!startsInPrivateMode) {
+    await Supabase.initialize(
+      url: SupabaseConfig.url,
+      anonKey: SupabaseConfig.anonKey,
+      authOptions: FlutterAuthClientOptions(localStorage: SecureLocalStorage()),
+    );
+  }
 
   // ── Notifications init ───────────────────────────────────────────────────
   try {
@@ -50,9 +59,6 @@ void main() async {
       stack,
     );
   }
-
-  // ── SharedPreferences init ───────────────────────────────────────────────
-  final prefs = await SharedPreferences.getInstance();
 
   // ── Secure Cache Loading & Migration ─────────────────────────────────────
   // Carica Goals Cache
@@ -142,7 +148,9 @@ void main() async {
       }
 
       // Invia l'errore a Sentry (se inizializzato)
-      Sentry.captureException(error, stackTrace: stack);
+      if (!AppLogger.externalReportingDisabled) {
+        Sentry.captureException(error, stackTrace: stack);
+      }
 
       final context = navigatorKey.currentContext;
       if (context != null) {
@@ -169,7 +177,7 @@ void main() async {
     );
   }
 
-  if (hasSentryConsent) {
+  if (hasSentryConsent && !startsInPrivateMode) {
     await SentryFlutter.init((options) {
       options.dsn = SentryConfig.dsn;
       options.environment = SentryConfig.environment;
@@ -201,14 +209,18 @@ bool _isRecoverableAuthSessionError(Object error) {
 // così GoRouter redireziona automaticamente senza polling.
 final routerProvider = Provider<GoRouter>((ref) {
   final authNotifier = ref.watch(authProvider.notifier);
+  final dataModeNotifier = ref.watch(activeDataModeProvider.notifier);
+  final dataMode = ref.watch(activeDataModeProvider);
   final consentState = ref.watch(consentProvider);
 
   return GoRouter(
     navigatorKey: navigatorKey,
     initialLocation: '/',
     debugLogDiagnostics: false,
-    refreshListenable: authNotifier,
-    observers: [SentryNavigatorObserver()],
+    refreshListenable: Listenable.merge([authNotifier, dataModeNotifier]),
+    observers: dataMode == AppDataMode.private
+        ? const []
+        : [SentryNavigatorObserver()],
     routes: [
       GoRoute(path: '/', builder: (context, state) => const HomeScreen()),
       GoRoute(path: '/login', builder: (context, state) => const AuthScreen()),
@@ -218,7 +230,8 @@ final routerProvider = Provider<GoRouter>((ref) {
       ),
     ],
     redirect: (context, state) {
-      final isLoggedIn = ref.read(authProvider).isLoggedIn;
+      final authState = ref.read(authProvider);
+      final canAccessApp = authState.canAccessApp;
       final isLoggingIn = state.matchedLocation == '/login';
       final isConsentPage = state.matchedLocation == '/consent';
 
@@ -232,12 +245,12 @@ final routerProvider = Provider<GoRouter>((ref) {
 
       // 2. Se ha completato il consenso ed è su /consent, vai avanti
       if (isConsentPage) {
-        return isLoggedIn ? '/' : '/login';
+        return canAccessApp ? '/' : '/login';
       }
 
       // 3. Logica normale di autenticazione
-      if (!isLoggedIn && !isLoggingIn) return '/login';
-      if (isLoggedIn && isLoggingIn) return '/';
+      if (!canAccessApp && !isLoggingIn) return '/login';
+      if (canAccessApp && isLoggingIn) return '/';
       return null;
     },
   );

@@ -9,25 +9,47 @@ import 'package:sign_in_with_apple/sign_in_with_apple.dart';
 import 'package:crypto/crypto.dart';
 import '../core/supabase_config.dart';
 import '../core/app_logger.dart';
+import '../core/data_mode.dart';
+import '../core/private_local_database.dart';
+import '../core/secure_local_storage.dart';
 
-// Accesso globale al client Supabase
-final supabase = Supabase.instance.client;
+// Accesso globale al client Supabase. Keep this as a getter so Private-mode
+// cold starts can skip Supabase.initialize until the user explicitly returns
+// to the account/login path.
+SupabaseClient get supabase => Supabase.instance.client;
+
+Future<void> ensureSupabaseInitialized() async {
+  try {
+    Supabase.instance.client;
+    return;
+  } catch (_) {
+    await Supabase.initialize(
+      url: SupabaseConfig.url,
+      anonKey: SupabaseConfig.anonKey,
+      authOptions: FlutterAuthClientOptions(localStorage: SecureLocalStorage()),
+    );
+  }
+}
 
 // ── Auth State ────────────────────────────────────────────────────────────────
 
 class AuthState {
   final bool isLoggedIn;
   final User? user; // oggetto utente Supabase completo
+  final AppDataMode dataMode;
   final bool isLoading;
   final String? error;
 
   const AuthState({
     required this.isLoggedIn,
     this.user,
+    this.dataMode = AppDataMode.supabase,
     this.isLoading = false,
     this.error,
   });
 
+  bool get isPrivateMode => dataMode == AppDataMode.private;
+  bool get canAccessApp => isLoggedIn || isPrivateMode;
   String? get email => user?.email;
   String? get userId => user?.id;
 
@@ -35,6 +57,7 @@ class AuthState {
     bool? isLoggedIn,
     User? user,
     bool clearUser = false,
+    AppDataMode? dataMode,
     bool? isLoading,
     String? error,
     bool clearError = false,
@@ -42,6 +65,7 @@ class AuthState {
     return AuthState(
       isLoggedIn: isLoggedIn ?? this.isLoggedIn,
       user: clearUser ? null : (user ?? this.user),
+      dataMode: dataMode ?? this.dataMode,
       isLoading: isLoading ?? this.isLoading,
       error: clearError ? null : (error ?? this.error),
     );
@@ -57,11 +81,19 @@ class AuthNotifier extends Notifier<AuthState> with ChangeNotifier {
 
   @override
   AuthState build() {
+    final dataMode = ref.watch(activeDataModeProvider);
+    if (dataMode == AppDataMode.private) {
+      _authSubscription?.cancel();
+      _authSubscription = null;
+      return const AuthState(isLoggedIn: false, dataMode: AppDataMode.private);
+    }
+
     // Legge la sessione corrente (già in memoria grazie a Supabase.initialize)
     final session = supabase.auth.currentSession;
     final initialState = AuthState(
-      isLoggedIn: session != null,
-      user: session?.user,
+      isLoggedIn: dataMode == AppDataMode.supabase && session != null,
+      user: dataMode == AppDataMode.supabase ? session?.user : null,
+      dataMode: dataMode,
     );
 
     // Ascolta i cambi di sessione in real-time (login/logout/token refresh)
@@ -81,8 +113,15 @@ class AuthNotifier extends Notifier<AuthState> with ChangeNotifier {
   void _handleAuthStateChange(dynamic data) {
     final event = data.event;
     final session = data.session;
+    final dataMode = ref.read(activeDataModeProvider);
 
     debugPrint('[Auth] Event: $event');
+
+    if (dataMode == AppDataMode.private) {
+      state = const AuthState(isLoggedIn: false, dataMode: AppDataMode.private);
+      notifyListeners();
+      return;
+    }
 
     final isLoggedIn =
         session != null &&
@@ -93,10 +132,17 @@ class AuthNotifier extends Notifier<AuthState> with ChangeNotifier {
     final isLoggedOut = event == AuthChangeEvent.signedOut;
 
     if (isLoggedIn) {
-      state = AuthState(isLoggedIn: true, user: session.user);
+      state = AuthState(
+        isLoggedIn: true,
+        user: session.user,
+        dataMode: AppDataMode.supabase,
+      );
       notifyListeners(); // aggiorna GoRouter
     } else if (isLoggedOut) {
-      state = const AuthState(isLoggedIn: false);
+      state = const AuthState(
+        isLoggedIn: false,
+        dataMode: AppDataMode.supabase,
+      );
       notifyListeners();
     }
   }
@@ -105,7 +151,7 @@ class AuthNotifier extends Notifier<AuthState> with ChangeNotifier {
     AppLogger.warning('[Auth] Auth state stream error', error, stackTrace);
 
     if (_isInvalidPersistedSession(error)) {
-      state = const AuthState(isLoggedIn: false);
+      state = state.copyWith(isLoggedIn: false, clearUser: true);
       notifyListeners();
 
       unawaited(
@@ -138,6 +184,7 @@ class AuthNotifier extends Notifier<AuthState> with ChangeNotifier {
   Future<bool> login(String email, String password) async {
     state = state.copyWith(isLoading: true, clearError: true);
     try {
+      await ensureSupabaseInitialized();
       final response = await supabase.auth.signInWithPassword(
         email: email.trim(),
         password: password,
@@ -149,6 +196,7 @@ class AuthNotifier extends Notifier<AuthState> with ChangeNotifier {
         );
         return false;
       }
+      await ref.read(activeDataModeProvider.notifier).enterSupabaseMode();
       // onAuthStateChange gestirà il cambio di state
       state = state.copyWith(isLoading: false, clearError: true);
       return true;
@@ -170,6 +218,7 @@ class AuthNotifier extends Notifier<AuthState> with ChangeNotifier {
   Future<bool> signUp(String email, String password) async {
     state = state.copyWith(isLoading: true, clearError: true);
     try {
+      await ensureSupabaseInitialized();
       final consentState = ref.read(consentProvider);
 
       final response = await supabase.auth.signUp(
@@ -181,6 +230,9 @@ class AuthNotifier extends Notifier<AuthState> with ChangeNotifier {
         },
       );
       state = state.copyWith(isLoading: false, clearError: true);
+      if (response.session != null) {
+        await ref.read(activeDataModeProvider.notifier).enterSupabaseMode();
+      }
 
       // Se Supabase ha la email confirmation abilitata, la sessione è null
       // e l'utente riceve un'email. Restituiamo true comunque.
@@ -208,6 +260,7 @@ class AuthNotifier extends Notifier<AuthState> with ChangeNotifier {
   Future<bool> resetPassword(String email) async {
     state = state.copyWith(isLoading: true, clearError: true);
     try {
+      await ensureSupabaseInitialized();
       await supabase.auth.resetPasswordForEmail(email.trim());
       state = state.copyWith(isLoading: false, clearError: true);
       return true;
@@ -228,6 +281,7 @@ class AuthNotifier extends Notifier<AuthState> with ChangeNotifier {
 
   Future<void> logout() async {
     try {
+      await ensureSupabaseInitialized();
       await supabase.auth.signOut();
       // onAuthStateChange emette signedOut → state si aggiorna automaticamente
     } catch (e, stack) {
@@ -238,11 +292,42 @@ class AuthNotifier extends Notifier<AuthState> with ChangeNotifier {
     }
   }
 
+  Future<void> startPrivateMode() async {
+    final previousMode = ref.read(activeDataModeProvider);
+    state = state.copyWith(isLoading: true, clearError: true);
+    AppLogger.setExternalReportingDisabled(true);
+    try {
+      await ref.read(privateLocalDatabaseProvider).ensureReady();
+      await ref.read(activeDataModeProvider.notifier).enterPrivateMode();
+      state = const AuthState(isLoggedIn: false, dataMode: AppDataMode.private);
+      notifyListeners();
+    } catch (e, stack) {
+      AppLogger.error('[Auth] Private mode startup error', e, stack);
+      AppLogger.setExternalReportingDisabled(previousMode.isPrivate);
+      state = state.copyWith(
+        isLoading: false,
+        error: 'Impossibile avviare la modalità privata.',
+      );
+    }
+  }
+
+  Future<void> returnToLoginFromPrivateMode() async {
+    await ensureSupabaseInitialized();
+    await ref.read(activeDataModeProvider.notifier).enterSupabaseMode();
+    state = AuthState(
+      isLoggedIn: supabase.auth.currentSession != null,
+      user: supabase.auth.currentUser,
+      dataMode: AppDataMode.supabase,
+    );
+    notifyListeners();
+  }
+
   // ── Native Google Sign In ────────────────────────────────────────────────
 
   Future<bool> signInWithGoogle() async {
     state = state.copyWith(isLoading: true, clearError: true);
     try {
+      await ensureSupabaseInitialized();
       final googleSignIn = google_auth.GoogleSignIn(
         clientId: SupabaseConfig.googleIosClientId,
         serverClientId: SupabaseConfig.googleWebClientId,
@@ -272,6 +357,7 @@ class AuthNotifier extends Notifier<AuthState> with ChangeNotifier {
         accessToken: accessToken,
       );
 
+      await ref.read(activeDataModeProvider.notifier).enterSupabaseMode();
       // onAuthStateChange gestirà il nuovo state
       state = state.copyWith(isLoading: false, clearError: true);
       return true;
@@ -293,6 +379,7 @@ class AuthNotifier extends Notifier<AuthState> with ChangeNotifier {
   Future<bool> signInWithApple() async {
     state = state.copyWith(isLoading: true, clearError: true);
     try {
+      await ensureSupabaseInitialized();
       final rawNonce = supabase.auth.generateRawNonce();
       final hashedNonce = sha256.convert(utf8.encode(rawNonce)).toString();
 
@@ -319,6 +406,7 @@ class AuthNotifier extends Notifier<AuthState> with ChangeNotifier {
         nonce: rawNonce,
       );
 
+      await ref.read(activeDataModeProvider.notifier).enterSupabaseMode();
       // If Apple returned a full name, save it to user metadata immediately!
       final givenName = credential.givenName;
       final familyName = credential.familyName;
@@ -370,6 +458,7 @@ class AuthNotifier extends Notifier<AuthState> with ChangeNotifier {
   Future<bool> updateProfileName(String fullName) async {
     state = state.copyWith(isLoading: true, clearError: true);
     try {
+      await ensureSupabaseInitialized();
       final response = await supabase.auth.updateUser(
         UserAttributes(data: {'full_name': fullName.trim()}),
       );
@@ -404,6 +493,7 @@ class AuthNotifier extends Notifier<AuthState> with ChangeNotifier {
   Future<bool> updateConsentInDb(bool acceptedTerms, bool sentryConsent) async {
     state = state.copyWith(isLoading: true, clearError: true);
     try {
+      await ensureSupabaseInitialized();
       await supabase
           .from('profiles')
           .update({

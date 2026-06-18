@@ -2,44 +2,27 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 import 'goal_provider.dart';
 import 'auth_provider.dart';
+import '../models/daily_mood.dart';
+import '../core/data_mode.dart';
+import '../core/private_local_database.dart';
 import '../core/navigator_key.dart';
 import '../core/app_logger.dart';
 import '../core/localization.dart';
 import '../ui/widgets/error_modal.dart';
 
-final supabase = Supabase.instance.client;
-
-class DailyMood {
-  final String id;
-  final String userId;
-  final String date;
-  final int moodScore;
-  final int energyScore;
-
-  DailyMood({
-    required this.id,
-    required this.userId,
-    required this.date,
-    required this.moodScore,
-    required this.energyScore,
-  });
-
-  factory DailyMood.fromJson(Map<String, dynamic> json) {
-    return DailyMood(
-      id: json['id'],
-      userId: json['user_id'],
-      date: json['date'],
-      moodScore: json['mood_score'],
-      energyScore: json['energy_score'],
-    );
-  }
-}
+SupabaseClient get supabase => Supabase.instance.client;
 
 typedef DailyMoodsMap = Map<String, DailyMood>; // dateKey -> DailyMood
 
 class DailyMoodsNotifier extends Notifier<DailyMoodsMap> {
   @override
   DailyMoodsMap build() {
+    final dataMode = ref.watch(activeDataModeProvider);
+    if (dataMode == AppDataMode.private) {
+      _loadFromPrivateStore();
+      return {};
+    }
+
     ref.listen(authProvider, (previous, next) {
       if (next.isLoggedIn && next.user != null) {
         _syncFromSupabase();
@@ -56,7 +39,17 @@ class DailyMoodsNotifier extends Notifier<DailyMoodsMap> {
     return {};
   }
 
+  Future<void> _loadFromPrivateStore() async {
+    try {
+      state = await ref.read(privateLocalDatabaseProvider).loadDailyMoods();
+    } catch (e, stack) {
+      AppLogger.error('[DailyMoods] Private load error', e, stack);
+      state = {};
+    }
+  }
+
   Future<void> _syncFromSupabase() async {
+    if (ref.read(activeDataModeProvider) == AppDataMode.private) return;
     final user = supabase.auth.currentUser;
     if (user == null) return;
 
@@ -78,6 +71,20 @@ class DailyMoodsNotifier extends Notifier<DailyMoodsMap> {
   }
 
   Future<void> saveMood(DateTime date, int mood, int energy) async {
+    if (ref.read(activeDataModeProvider) == AppDataMode.private) {
+      try {
+        final updatedMood = await ref
+            .read(privateLocalDatabaseProvider)
+            .saveMood(date, mood, energy);
+        final newState = Map<String, DailyMood>.from(state);
+        newState[updatedMood.date] = updatedMood;
+        state = newState;
+      } catch (e, stack) {
+        AppLogger.error('[DailyMoods] Private save error', e, stack);
+      }
+      return;
+    }
+
     final user = supabase.auth.currentUser;
     if (user == null) return;
 

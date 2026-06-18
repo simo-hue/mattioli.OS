@@ -578,3 +578,7 @@
 ## Current Status
 
 - **Immediate Next Step**: Configure desktop build/run environments with `EVOLVE_SUPABASE_URL` and `EVOLVE_SUPABASE_PUBLISHABLE_KEY` via local environment variables, CI secrets, or Flutter `--dart-define`/`--dart-define-from-file` flags before compiling desktop. For Supabase CLI deploys, keep the real project ref in local/CI secret configuration rather than committed files.
+
+- [2026-06-17]: Android Folder Regeneration and Publishing Prep
+  - *Details*: Regenerated the Android folder, configured release signing, and modified MainActivity for local_auth.
+  - *Tech Notes*: Keystore generated in android/app/upload-keystore.jks. Passwords stored in key.properties. Both ignored in .gitignore. Successfully built the release appbundle.

@@ -1,3 +1,4 @@
+import 'dart:async';
 import 'dart:math' as math;
 import 'dart:ui';
 import 'package:flutter/material.dart';
@@ -6,7 +7,6 @@ import 'package:intl/intl.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:local_auth/local_auth.dart';
 import '../../providers/settings_provider.dart';
-import '../../providers/shared_prefs_provider.dart';
 
 import '../../core/localization.dart';
 
@@ -14,6 +14,7 @@ import '../../core/theme.dart';
 import '../../providers/goal_provider.dart';
 import '../../providers/user_provider.dart';
 import '../../providers/auth_provider.dart';
+import '../../core/data_mode.dart';
 import '../widgets/bottom_nav_bar.dart';
 import '../widgets/protocollo_panel.dart';
 import '../widgets/view_tab_bar.dart';
@@ -55,6 +56,12 @@ class _HomeScreenState extends ConsumerState<HomeScreen>
   final GlobalKey _statsNavKey = GlobalKey();
   final GlobalKey _homeNavKey = GlobalKey();
   final GlobalKey _goalsNavKey = GlobalKey();
+  bool _isRunningStartupOnboardingFlow = false;
+  bool _isNameDialogOpen = false;
+  bool _isWelcomeDialogOpen = false;
+  bool _isDashboardTutorialShowing = false;
+  Timer? _dashboardTutorialStartTimer;
+  TutorialCoachMark? _dashboardTutorial;
 
   @override
   void initState() {
@@ -78,137 +85,192 @@ class _HomeScreenState extends ConsumerState<HomeScreen>
       ),
     );
 
-    // Check profile name after first frame
+    // Profile setup must finish before any tutorial overlay is allowed to run.
     WidgetsBinding.instance.addPostFrameCallback((_) {
-      _checkProfileName();
-      _checkTutorial();
+      _runStartupOnboardingFlow();
     });
+  }
+
+  Future<void> _runStartupOnboardingFlow() async {
+    if (_isRunningStartupOnboardingFlow || !mounted) return;
+
+    _isRunningStartupOnboardingFlow = true;
+    try {
+      final isProfileReady = await _ensureProfileNameReady();
+      if (!isProfileReady || !mounted) return;
+      _checkTutorial();
+    } finally {
+      _isRunningStartupOnboardingFlow = false;
+    }
+  }
+
+  Future<bool> _ensureProfileNameReady() async {
+    final authState = ref.read(authProvider);
+    if (!authState.canAccessApp) {
+      return false;
+    }
+
+    if (authState.dataMode != AppDataMode.private) {
+      return true;
+    }
+
+    final userProfile = await ref
+        .read(userProfileProvider.notifier)
+        .loadPrivateProfile();
+    if (!mounted) return false;
+
+    final shouldPrompt = shouldPromptForStartupName(
+      authState: authState,
+      userProfile: userProfile,
+    );
+    if (!shouldPrompt) {
+      return true;
+    }
+
+    return _showNameDialog(isPrivateMode: true);
   }
 
   void _checkTutorial() {
     final hasSeenTutorial = ref.read(tutorialProvider);
-    if (!hasSeenTutorial && mounted && _isBiometricAuthenticated) {
-      _showWelcomeScreen();
+    if (!hasSeenTutorial &&
+        mounted &&
+        _isBiometricAuthenticated &&
+        !_isNameDialogOpen &&
+        !_isWelcomeDialogOpen &&
+        !_isDashboardTutorialShowing) {
+      unawaited(_showWelcomeScreen());
     }
   }
 
-  void _showWelcomeScreen() {
-    showGeneralDialog(
-      context: context,
-      barrierDismissible: false,
-      barrierColor: Colors.black,
-      transitionDuration: const Duration(milliseconds: 500),
-      pageBuilder: (context, animation, secondaryAnimation) {
-        return Scaffold(
-          backgroundColor: Colors.black,
-          body: FadeTransition(
-            opacity: animation,
-            child: SafeArea(
-              child: Padding(
-                padding: const EdgeInsets.all(32.0),
-                child: Column(
-                  mainAxisAlignment: MainAxisAlignment.center,
-                  crossAxisAlignment: CrossAxisAlignment.stretch,
-                  children: [
-                    const Spacer(),
-                    Container(
-                      padding: const EdgeInsets.all(20),
-                      decoration: BoxDecoration(
-                        color: Theme.of(
-                          context,
-                        ).colorScheme.primary.withValues(alpha: 0.1),
-                        shape: BoxShape.circle,
-                      ),
-                      child: Icon(
-                        LucideIcons.sparkles,
-                        size: 48,
-                        color: Theme.of(context).colorScheme.primary,
-                      ),
-                    ),
-                    const SizedBox(height: 40),
-                    Text(
-                      context.l10n.translate("Benvenuto in Evolve"),
-                      textAlign: TextAlign.center,
-                      style: const TextStyle(
-                        fontFamily: 'Inter',
-                        fontSize: 28,
-                        fontWeight: FontWeight.w800,
-                        color: Colors.white,
-                        letterSpacing: -0.5,
-                        height: 1.2,
-                      ),
-                    ),
-                    const SizedBox(height: 16),
-                    Text(
-                      context.l10n.translate(
-                        "Potrebbe essere uno STEP di NON RITORNO... Prima di iniziare però bisogna fare un tour per mostrarti come sfruttare al massimo l'applicazione.",
-                      ),
-                      textAlign: TextAlign.center,
-                      style: TextStyle(
-                        fontFamily: 'Inter',
-                        fontSize: 16,
-                        color: Colors.white70,
-                        height: 1.5,
-                      ),
-                    ),
-                    const Spacer(),
-                    GestureDetector(
-                      onTap: () {
-                        ref.hapticMedium();
-                        Navigator.pop(context);
-                        _scheduleTutorialStart();
-                      },
-                      child: Container(
-                        width: double.infinity,
-                        height: 56,
-                        decoration: BoxDecoration(
-                          color: Theme.of(context).colorScheme.primary,
-                          borderRadius: BorderRadius.circular(16),
-                          boxShadow: [
-                            BoxShadow(
+  Future<void> _showWelcomeScreen() async {
+    if (_isWelcomeDialogOpen || _isDashboardTutorialShowing || !mounted) return;
+
+    _isWelcomeDialogOpen = true;
+    bool shouldStartTutorial = false;
+    try {
+      shouldStartTutorial =
+          await showGeneralDialog<bool>(
+            context: context,
+            barrierDismissible: false,
+            barrierColor: Colors.black,
+            transitionDuration: const Duration(milliseconds: 500),
+            pageBuilder: (context, animation, secondaryAnimation) {
+              return Scaffold(
+                backgroundColor: Colors.black,
+                body: FadeTransition(
+                  opacity: animation,
+                  child: SafeArea(
+                    child: Padding(
+                      padding: const EdgeInsets.all(32.0),
+                      child: Column(
+                        mainAxisAlignment: MainAxisAlignment.center,
+                        crossAxisAlignment: CrossAxisAlignment.stretch,
+                        children: [
+                          const Spacer(),
+                          Container(
+                            padding: const EdgeInsets.all(20),
+                            decoration: BoxDecoration(
                               color: Theme.of(
                                 context,
-                              ).colorScheme.primary.withValues(alpha: 0.3),
-                              blurRadius: 15,
-                              offset: const Offset(0, 5),
+                              ).colorScheme.primary.withValues(alpha: 0.1),
+                              shape: BoxShape.circle,
                             ),
-                          ],
-                        ),
-                        child: Center(
-                          child: Text(
-                            context.l10n.translate('Inizia il Tour'),
-                            style: TextStyle(
-                              color:
-                                  Theme.of(
-                                        context,
-                                      ).colorScheme.primary.computeLuminance() >
-                                      0.5
-                                  ? Colors.black
-                                  : Colors.white,
-                              fontSize: 16,
-                              fontWeight: FontWeight.w700,
-                              letterSpacing: -0.2,
+                            child: Icon(
+                              LucideIcons.sparkles,
+                              size: 48,
+                              color: Theme.of(context).colorScheme.primary,
                             ),
                           ),
-                        ),
+                          const SizedBox(height: 40),
+                          Text(
+                            context.l10n.translate("Benvenuto in Evolve"),
+                            textAlign: TextAlign.center,
+                            style: const TextStyle(
+                              fontFamily: 'Inter',
+                              fontSize: 28,
+                              fontWeight: FontWeight.w800,
+                              color: Colors.white,
+                              letterSpacing: -0.5,
+                              height: 1.2,
+                            ),
+                          ),
+                          const SizedBox(height: 16),
+                          Text(
+                            context.l10n.translate(
+                              "Potrebbe essere uno STEP di NON RITORNO... Prima di iniziare però bisogna fare un tour per mostrarti come sfruttare al massimo l'applicazione.",
+                            ),
+                            textAlign: TextAlign.center,
+                            style: TextStyle(
+                              fontFamily: 'Inter',
+                              fontSize: 16,
+                              color: Colors.white70,
+                              height: 1.5,
+                            ),
+                          ),
+                          const Spacer(),
+                          GestureDetector(
+                            onTap: () {
+                              ref.hapticMedium();
+                              Navigator.pop(context, true);
+                            },
+                            child: Container(
+                              width: double.infinity,
+                              height: 56,
+                              decoration: BoxDecoration(
+                                color: Theme.of(context).colorScheme.primary,
+                                borderRadius: BorderRadius.circular(16),
+                                boxShadow: [
+                                  BoxShadow(
+                                    color: Theme.of(context).colorScheme.primary
+                                        .withValues(alpha: 0.3),
+                                    blurRadius: 15,
+                                    offset: const Offset(0, 5),
+                                  ),
+                                ],
+                              ),
+                              child: Center(
+                                child: Text(
+                                  context.l10n.translate('Inizia il Tour'),
+                                  style: TextStyle(
+                                    color:
+                                        Theme.of(context).colorScheme.primary
+                                                .computeLuminance() >
+                                            0.5
+                                        ? Colors.black
+                                        : Colors.white,
+                                    fontSize: 16,
+                                    fontWeight: FontWeight.w700,
+                                    letterSpacing: -0.2,
+                                  ),
+                                ),
+                              ),
+                            ),
+                          ),
+                          const SizedBox(height: 20),
+                        ],
                       ),
                     ),
-                    const SizedBox(height: 20),
-                  ],
+                  ),
                 ),
-              ),
-            ),
-          ),
-        );
-      },
-    );
+              );
+            },
+          ) ??
+          false;
+    } finally {
+      _isWelcomeDialogOpen = false;
+    }
+
+    if (shouldStartTutorial && mounted) {
+      _scheduleTutorialStart();
+    }
   }
 
   void _scheduleTutorialStart() {
-    Future.delayed(const Duration(milliseconds: 350), () {
-      if (!mounted) return;
+    _dashboardTutorialStartTimer?.cancel();
+    _dashboardTutorialStartTimer = Timer(const Duration(milliseconds: 350), () {
+      if (!mounted || _isNameDialogOpen) return;
       WidgetsBinding.instance.addPostFrameCallback((_) {
-        if (mounted) {
+        if (mounted && !_isNameDialogOpen) {
           _showTutorial();
         }
       });
@@ -494,8 +556,43 @@ class _HomeScreenState extends ConsumerState<HomeScreen>
     );
   }
 
+  bool _canStartDashboardTutorial() {
+    if (!mounted ||
+        _isNameDialogOpen ||
+        _isWelcomeDialogOpen ||
+        _isDashboardTutorialShowing) {
+      return false;
+    }
+
+    final isCurrentRoute = ModalRoute.of(context)?.isCurrent ?? true;
+    if (!isCurrentRoute) return false;
+
+    return [
+      _checkInKey,
+      _aiChatKey,
+      _manageHabitsKey,
+      _viewTabKey,
+      _calendarBoxKey,
+      _goalsNavKey,
+    ].every((key) => key.currentContext != null);
+  }
+
+  void _completeDashboardTutorial() {
+    ref.read(tutorialProvider.notifier).setTutorialSeen(true);
+  }
+
+  void _clearDashboardTutorialState({bool removeOverlay = false}) {
+    _dashboardTutorialStartTimer?.cancel();
+    if (removeOverlay) {
+      _dashboardTutorial?.removeOverlayEntry();
+    }
+    _dashboardTutorial = null;
+    _isDashboardTutorialShowing = false;
+  }
+
   void _showTutorial() {
-    TutorialCoachMark? tutorial;
+    if (!_canStartDashboardTutorial()) return;
+
     List<TargetFocus> targets = [
       TargetFocus(
         identify: "Daily Check-in",
@@ -616,8 +713,8 @@ class _HomeScreenState extends ConsumerState<HomeScreen>
                 isLast: true,
                 nextButtonText: "Vai agli Obiettivi",
                 onNextPressed: () {
+                  _completeDashboardTutorial();
                   controller.skip();
-                  ref.read(tutorialProvider.notifier).setTutorialSeen(true);
                   _onItemTapped(2); // Change tab to MacroGoalsScreen
                 },
               );
@@ -627,7 +724,7 @@ class _HomeScreenState extends ConsumerState<HomeScreen>
       ),
     ];
 
-    tutorial = TutorialCoachMark(
+    final tutorial = TutorialCoachMark(
       targets: targets,
       colorShadow: Colors.black,
       hideSkip: true,
@@ -637,16 +734,21 @@ class _HomeScreenState extends ConsumerState<HomeScreen>
       unFocusAnimationDuration: Duration.zero,
       pulseEnable: false,
       onFinish: () {
-        ref.read(tutorialProvider.notifier).setTutorialSeen(true);
+        _completeDashboardTutorial();
+        _clearDashboardTutorialState();
       },
       onSkip: () {
-        ref.read(tutorialProvider.notifier).setTutorialSeen(true);
+        _completeDashboardTutorial();
+        _clearDashboardTutorialState();
         return true;
       },
     );
+    _dashboardTutorial = tutorial;
+    _isDashboardTutorialShowing = true;
     try {
       tutorial.show(context: context);
     } catch (e, stack) {
+      _clearDashboardTutorialState();
       AppLogger.warning(
         '[Tutorial] Unable to start dashboard tutorial',
         e,
@@ -687,207 +789,231 @@ class _HomeScreenState extends ConsumerState<HomeScreen>
 
   @override
   void dispose() {
+    _dashboardTutorialStartTimer?.cancel();
+    _dashboardTutorial?.removeOverlayEntry();
     _pageController.dispose();
     _fadeController.dispose();
     super.dispose();
   }
 
-  void _checkProfileName() {
-    final authState = ref.read(authProvider);
-    final provider = authState.user?.appMetadata['provider'] as String?;
-    if (provider == 'apple') {
-      // Don't show name dialog to comply with Apple's Sign in with Apple requirements!
-      return;
-    }
+  Future<bool> _showNameDialog({required bool isPrivateMode}) async {
+    if (_isNameDialogOpen || !mounted) return false;
 
-    final userProfile = ref.read(userProfileProvider);
-    if (userProfile.firstName == null || userProfile.firstName!.isEmpty) {
-      _showNameDialog();
+    _isNameDialogOpen = true;
+    final controller = TextEditingController();
+    try {
+      final didSave = await showDialog<bool>(
+        context: context,
+        barrierDismissible: false,
+        builder: (context) {
+          return PopScope(
+            canPop: false,
+            child: BackdropFilter(
+              filter: ImageFilter.blur(sigmaX: 10, sigmaY: 10),
+              child: Dialog(
+                backgroundColor: Colors.transparent,
+                elevation: 0,
+                child: Container(
+                  padding: const EdgeInsets.all(28),
+                  decoration: BoxDecoration(
+                    color: context.appColors.card.withValues(alpha: 0.95),
+                    borderRadius: BorderRadius.circular(24),
+                    border: Border.all(
+                      color: context.appColors.border.withValues(alpha: 0.5),
+                      width: 1.5,
+                    ),
+                    boxShadow: [
+                      BoxShadow(
+                        color: Colors.black.withValues(alpha: 0.1),
+                        blurRadius: 20,
+                        spreadRadius: 5,
+                      ),
+                    ],
+                  ),
+                  child: Column(
+                    mainAxisSize: MainAxisSize.min,
+                    children: [
+                      // Icon
+                      Container(
+                        padding: const EdgeInsets.all(16),
+                        decoration: BoxDecoration(
+                          color: Theme.of(
+                            context,
+                          ).colorScheme.primary.withValues(alpha: 0.1),
+                          shape: BoxShape.circle,
+                        ),
+                        child: Icon(
+                          Icons.person_outline,
+                          size: 32,
+                          color: Theme.of(context).colorScheme.primary,
+                        ),
+                      ),
+                      const SizedBox(height: 24),
+
+                      Text(
+                        context.l10n.translate('Benvenuto in Evolve!'),
+                        style: TextStyle(
+                          fontFamily: 'Inter',
+                          fontSize: 22,
+                          fontWeight: FontWeight.w800,
+                          color: context.appColors.foreground,
+                          letterSpacing: -0.5,
+                        ),
+                      ),
+                      const SizedBox(height: 8),
+                      Text(
+                        context.l10n.translate(
+                          'Per iniziare, come possiamo chiamarti?',
+                        ),
+                        textAlign: TextAlign.center,
+                        style: TextStyle(
+                          fontFamily: 'Inter',
+                          fontSize: 14,
+                          color: context.appColors.mutedForeground,
+                          fontWeight: FontWeight.w500,
+                        ),
+                      ),
+                      const SizedBox(height: 24),
+
+                      TextField(
+                        controller: controller,
+                        decoration: InputDecoration(
+                          labelText: context.l10n.translate('Il tuo nome'),
+                          labelStyle: TextStyle(
+                            color: context.appColors.mutedForeground,
+                            fontSize: 14,
+                          ),
+                          floatingLabelStyle: TextStyle(
+                            color: Theme.of(context).colorScheme.primary,
+                          ),
+                          filled: true,
+                          fillColor: context.appColors.background.withValues(
+                            alpha: 0.5,
+                          ),
+                          contentPadding: const EdgeInsets.symmetric(
+                            horizontal: 16,
+                            vertical: 16,
+                          ),
+                          enabledBorder: OutlineInputBorder(
+                            borderRadius: BorderRadius.circular(14),
+                            borderSide: BorderSide(
+                              color: context.appColors.border.withValues(
+                                alpha: 0.5,
+                              ),
+                            ),
+                          ),
+                          focusedBorder: OutlineInputBorder(
+                            borderRadius: BorderRadius.circular(14),
+                            borderSide: BorderSide(
+                              color: Theme.of(context).colorScheme.primary,
+                              width: 1.5,
+                            ),
+                          ),
+                        ),
+                        style: TextStyle(
+                          color: context.appColors.foreground,
+                          fontFamily: 'Inter',
+                        ),
+                      ),
+                      const SizedBox(height: 24),
+
+                      // Action Button
+                      GestureDetector(
+                        onTap: () async {
+                          final name = controller.text.trim();
+                          if (name.isNotEmpty) {
+                            ref.hapticMedium();
+                            final success = await _saveProfileName(
+                              name,
+                              isPrivateMode: isPrivateMode,
+                            );
+                            if (!context.mounted) return;
+                            if (success) {
+                              Navigator.pop(context, true);
+                            } else {
+                              ScaffoldMessenger.of(context).showSnackBar(
+                                SnackBar(
+                                  content: Text(
+                                    context.l10n.translate(
+                                      'Errore durante il salvataggio. Riprova.',
+                                    ),
+                                  ),
+                                ),
+                              );
+                            }
+                          }
+                        },
+                        child: Container(
+                          width: double.infinity,
+                          height: 54,
+                          decoration: BoxDecoration(
+                            color: Theme.of(context).colorScheme.primary,
+                            borderRadius: BorderRadius.circular(14),
+                            boxShadow: [
+                              BoxShadow(
+                                color: Theme.of(
+                                  context,
+                                ).colorScheme.primary.withValues(alpha: 0.3),
+                                blurRadius: 10,
+                                offset: const Offset(0, 4),
+                              ),
+                            ],
+                          ),
+                          child: Center(
+                            child: Text(
+                              context.l10n.translate('Inizia ora'),
+                              style: TextStyle(
+                                color:
+                                    Theme.of(context).colorScheme.primary
+                                            .computeLuminance() >
+                                        0.5
+                                    ? Colors.black
+                                    : Colors.white,
+                                fontSize: 16,
+                                fontWeight: FontWeight.w700,
+                                letterSpacing: -0.2,
+                              ),
+                            ),
+                          ),
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+              ),
+            ),
+          );
+        },
+      );
+
+      return didSave ?? false;
+    } finally {
+      controller.dispose();
+      _isNameDialogOpen = false;
     }
   }
 
-  void _showNameDialog() {
-    final controller = TextEditingController();
-    showDialog(
-      context: context,
-      barrierDismissible: false, // User must enter a name
-      builder: (context) {
-        return BackdropFilter(
-          filter: ImageFilter.blur(sigmaX: 10, sigmaY: 10),
-          child: Dialog(
-            backgroundColor: Colors.transparent,
-            elevation: 0,
-            child: Container(
-              padding: const EdgeInsets.all(28),
-              decoration: BoxDecoration(
-                color: context.appColors.card.withValues(alpha: 0.95),
-                borderRadius: BorderRadius.circular(24),
-                border: Border.all(
-                  color: context.appColors.border.withValues(alpha: 0.5),
-                  width: 1.5,
-                ),
-                boxShadow: [
-                  BoxShadow(
-                    color: Colors.black.withValues(alpha: 0.1),
-                    blurRadius: 20,
-                    spreadRadius: 5,
-                  ),
-                ],
-              ),
-              child: Column(
-                mainAxisSize: MainAxisSize.min,
-                children: [
-                  // Icon
-                  Container(
-                    padding: const EdgeInsets.all(16),
-                    decoration: BoxDecoration(
-                      color: Theme.of(
-                        context,
-                      ).colorScheme.primary.withValues(alpha: 0.1),
-                      shape: BoxShape.circle,
-                    ),
-                    child: Icon(
-                      Icons.person_outline,
-                      size: 32,
-                      color: Theme.of(context).colorScheme.primary,
-                    ),
-                  ),
-                  const SizedBox(height: 24),
-
-                  Text(
-                    context.l10n.translate('Benvenuto in Evolve!'),
-                    style: TextStyle(
-                      fontFamily: 'Inter',
-                      fontSize: 22,
-                      fontWeight: FontWeight.w800,
-                      color: context.appColors.foreground,
-                      letterSpacing: -0.5,
-                    ),
-                  ),
-                  const SizedBox(height: 8),
-                  Text(
-                    context.l10n.translate(
-                      'Per iniziare, come possiamo chiamarti?',
-                    ),
-                    textAlign: TextAlign.center,
-                    style: TextStyle(
-                      fontFamily: 'Inter',
-                      fontSize: 14,
-                      color: context.appColors.mutedForeground,
-                      fontWeight: FontWeight.w500,
-                    ),
-                  ),
-                  const SizedBox(height: 24),
-
-                  TextField(
-                    controller: controller,
-                    decoration: InputDecoration(
-                      labelText: context.l10n.translate('Il tuo nome'),
-                      labelStyle: TextStyle(
-                        color: context.appColors.mutedForeground,
-                        fontSize: 14,
-                      ),
-                      floatingLabelStyle: TextStyle(
-                        color: Theme.of(context).colorScheme.primary,
-                      ),
-                      filled: true,
-                      fillColor: context.appColors.background.withValues(
-                        alpha: 0.5,
-                      ),
-                      contentPadding: const EdgeInsets.symmetric(
-                        horizontal: 16,
-                        vertical: 16,
-                      ),
-                      enabledBorder: OutlineInputBorder(
-                        borderRadius: BorderRadius.circular(14),
-                        borderSide: BorderSide(
-                          color: context.appColors.border.withValues(
-                            alpha: 0.5,
-                          ),
-                        ),
-                      ),
-                      focusedBorder: OutlineInputBorder(
-                        borderRadius: BorderRadius.circular(14),
-                        borderSide: BorderSide(
-                          color: Theme.of(context).colorScheme.primary,
-                          width: 1.5,
-                        ),
-                      ),
-                    ),
-                    style: TextStyle(
-                      color: context.appColors.foreground,
-                      fontFamily: 'Inter',
-                    ),
-                  ),
-                  const SizedBox(height: 24),
-
-                  // Action Button
-                  GestureDetector(
-                    onTap: () async {
-                      final name = controller.text.trim();
-                      if (name.isNotEmpty) {
-                        ref.hapticMedium();
-                        final success = await ref
-                            .read(authProvider.notifier)
-                            .updateProfileName(name);
-                        if (!context.mounted) return;
-                        if (success) {
-                          Navigator.pop(context);
-                        } else {
-                          ScaffoldMessenger.of(context).showSnackBar(
-                            SnackBar(
-                              content: Text(
-                                context.l10n.translate(
-                                  'Errore durante il salvataggio. Riprova.',
-                                ),
-                              ),
-                            ),
-                          );
-                        }
-                      }
-                    },
-                    child: Container(
-                      width: double.infinity,
-                      height: 54,
-                      decoration: BoxDecoration(
-                        color: Theme.of(context).colorScheme.primary,
-                        borderRadius: BorderRadius.circular(14),
-                        boxShadow: [
-                          BoxShadow(
-                            color: Theme.of(
-                              context,
-                            ).colorScheme.primary.withValues(alpha: 0.3),
-                            blurRadius: 10,
-                            offset: const Offset(0, 4),
-                          ),
-                        ],
-                      ),
-                      child: Center(
-                        child: Text(
-                          context.l10n.translate('Inizia ora'),
-                          style: TextStyle(
-                            color:
-                                Theme.of(
-                                      context,
-                                    ).colorScheme.primary.computeLuminance() >
-                                    0.5
-                                ? Colors.black
-                                : Colors.white,
-                            fontSize: 16,
-                            fontWeight: FontWeight.w700,
-                            letterSpacing: -0.2,
-                          ),
-                        ),
-                      ),
-                    ),
-                  ),
-                ],
-              ),
-            ),
-          ),
+  Future<bool> _saveProfileName(
+    String name, {
+    required bool isPrivateMode,
+  }) async {
+    if (isPrivateMode) {
+      try {
+        await ref
+            .read(userProfileProvider.notifier)
+            .updatePrivateProfile(fullName: name);
+        return true;
+      } catch (e, stack) {
+        AppLogger.error(
+          '[Profile] Private profile name update error',
+          e,
+          stack,
         );
-      },
-    );
+        return false;
+      }
+    }
+
+    return ref.read(authProvider.notifier).updateProfileName(name);
   }
 
   void _onItemTapped(int index) {
@@ -907,29 +1033,27 @@ class _HomeScreenState extends ConsumerState<HomeScreen>
   @override
   Widget build(BuildContext context) {
     final currentView = ref.watch(calendarViewProvider);
-    final biometricLockAsync = ref.watch(biometricLockProvider);
+    final isLocked = ref.watch(
+      settingsProvider.select((settings) => settings.biometricLock),
+    );
 
     // Auto-authenticate when lock is active
-    ref.listen(biometricLockProvider, (prev, next) {
-      next.whenData((isLocked) {
-        if (isLocked && !_isBiometricAuthenticated) {
-          _authenticate();
-        }
-      });
+    ref.listen<bool>(settingsProvider.select((s) => s.biometricLock), (
+      prev,
+      next,
+    ) {
+      if (next && !_isBiometricAuthenticated) {
+        _authenticate();
+      }
     });
 
     // Listen for tutorial reset
     ref.listen<bool>(tutorialProvider, (previous, next) {
       if (next == false && mounted && _isBiometricAuthenticated) {
-        _showWelcomeScreen();
+        _clearDashboardTutorialState(removeOverlay: true);
+        _runStartupOnboardingFlow();
       }
     });
-
-    if (biometricLockAsync.isLoading) {
-      return const Scaffold(body: Center(child: CircularProgressIndicator()));
-    }
-
-    final isLocked = biometricLockAsync.value ?? false;
 
     if (isLocked && !_isBiometricAuthenticated) {
       return Scaffold(
@@ -1201,6 +1325,7 @@ class _HomeScreenState extends ConsumerState<HomeScreen>
     switch (index) {
       case 0:
         return StatisticsScreen(
+          isActive: _selectedNavIndex == 0,
           onFinishTutorial: () {
             _showEndTutorialScreen();
           },
@@ -1209,6 +1334,7 @@ class _HomeScreenState extends ConsumerState<HomeScreen>
         return _HomeTabWrapper(child: _buildHomeBody(currentView));
       case 2:
         return MacroGoalsScreen(
+          isActive: _selectedNavIndex == 2,
           statsNavKey: _statsNavKey,
           onFinishTutorial: () {
             _onItemTapped(0); // Move to Stats

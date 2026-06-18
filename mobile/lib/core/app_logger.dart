@@ -16,6 +16,12 @@ import 'privacy_utils.dart';
 /// }
 /// ```
 class AppLogger {
+  static bool externalReportingDisabled = false;
+
+  static void setExternalReportingDisabled(bool disabled) {
+    externalReportingDisabled = disabled;
+  }
+
   /// Logga un errore con contesto opzionale.
   /// [message] — descrizione leggibile (es. '[Goals] Sync error').
   /// [error] — l'eccezione catturata.
@@ -31,7 +37,7 @@ class AppLogger {
     debugPrint('${PrivacyUtils.sanitizeString(message)}: $error');
 
     // In release, invia a Sentry
-    if (kReleaseMode) {
+    if (kReleaseMode && !externalReportingDisabled) {
       Sentry.captureException(
         error,
         stackTrace: stackTrace,
@@ -48,26 +54,37 @@ class AppLogger {
 
   /// Logga un messaggio informativo (breadcrumb) senza errore.
   /// Utile per tracciare azioni dell'utente prima di un crash.
-  static void info(String message, {String? category, Map<String, dynamic>? extras}) {
+  static void info(
+    String message, {
+    String? category,
+    Map<String, dynamic>? extras,
+  }) {
     final sanitizedMessage = PrivacyUtils.sanitizeString(message);
     debugPrint('[Info] $sanitizedMessage');
 
-    if (kReleaseMode) {
-      Sentry.addBreadcrumb(Breadcrumb(
-        message: sanitizedMessage,
-        category: category ?? 'app',
-        level: SentryLevel.info,
-        data: PrivacyUtils.sanitizeMap(extras),
-      ));
+    if (kReleaseMode && !externalReportingDisabled) {
+      Sentry.addBreadcrumb(
+        Breadcrumb(
+          message: sanitizedMessage,
+          category: category ?? 'app',
+          level: SentryLevel.info,
+          data: PrivacyUtils.sanitizeMap(extras),
+        ),
+      );
     }
   }
 
   /// Logga un warning (non bloccante ma sospetto).
-  static void warning(String message, [dynamic error, StackTrace? stackTrace, Map<String, dynamic>? extras]) {
+  static void warning(
+    String message, [
+    dynamic error,
+    StackTrace? stackTrace,
+    Map<String, dynamic>? extras,
+  ]) {
     final sanitizedMessage = PrivacyUtils.sanitizeString(message);
     debugPrint('[Warning] $sanitizedMessage: $error');
 
-    if (kReleaseMode) {
+    if (kReleaseMode && !externalReportingDisabled) {
       Sentry.captureMessage(
         sanitizedMessage,
         level: SentryLevel.warning,

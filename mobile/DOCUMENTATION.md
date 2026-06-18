@@ -1796,3 +1796,39 @@
 - [2026-05-27 08:45 CEST]: App Store Release Version Bump
   - *Details*: Updated the Flutter app version from `1.0.2+6` to `1.0.3+7` so the next archive can be uploaded as a new store update without reusing the previous build number.
   - *Tech Notes*: Changed `pubspec.yaml` `version` only. Flutter maps `1.0.3` to iOS `CFBundleShortVersionString` / Android `versionName` and `7` to iOS `CFBundleVersion` / Android `versionCode` through the generated Flutter build settings.
+
+## [2026-06-17 21:47 CEST]: Private Mode Production Plan
+
+*Details*: Added a detailed production implementation plan for the new Private mode, preserving the existing Supabase account behavior while defining a separate local-only data space and a later iCloud sync phase.
+
+*Tech Notes*: Created `PRIVATE_MODE_PRODUCTION_PLAN.md` with locked product decisions, Phase 1 local encrypted database/provider-routing work, Phase 2 iCloud/CloudKit sync architecture, schema parity notes from the Supabase introspection, privacy constraints, subscription/Sentry/AI handling, and verification gates. No application code was changed in this step.
+
+## [2026-06-17 22:12 CEST]: Private Mode Phase 1 Local Storage Implementation
+
+*Details*: Implemented the app-level Private mode path while keeping the existing Supabase login/account behavior untouched. Users can now choose Private mode from the login screen after the existing consent/onboarding flow, use the app with local-only data, keep a separate local profile, use all features without subscription gating, export/delete private data, and return to the login screen without migrating or mixing Supabase data.
+
+*Tech Notes*: Added `AppDataMode` persistence, router refresh handling for Supabase vs Private access, Sentry suppression in Private mode, encrypted local SQLite storage via `sqflite_sqlcipher`, local owner/encryption key storage via secure storage, and provider routing for habits, habit logs/statistics, macro goals, custom macro-goal categories, moods, settings, and profile data. A saved Private-mode cold start now skips Supabase initialization entirely; Supabase is initialized lazily only when the user explicitly returns to the account/login path. Added private AI external-provider consent before sending chat context, local notification action support for Private mode, iOS backup-exclusion hook for the local private database directory, and Android SQLCipher ProGuard keep rules. Added `sqflite_sqlcipher`, `path_provider`, `path`, and `uuid` dependencies. iCloud/CloudKit sync remains intentionally deferred to Phase 2 and is represented by a no-op sync boundary. Updated `mobile_schema.sql` to reflect the verified production Supabase schema deltas used by the local mirror.
+
+## [2026-06-18 08:23 CEST]: Private Mode Production-Readiness Audit Fixes
+
+*Details*: Audited the Private mode implementation for cold-start privacy, local database retry behavior, reset cleanup, notification edge cases, UI feature gating, and native platform integration. Fixed the issues found so Private mode remains local-only on cold start, does not mute/hide normal app features, and cleans up private artifacts more reliably.
+
+*Tech Notes*: Disabled external reporting before opening the private database during mode switch, restored the previous reporting state on private startup failure, reset the SQLCipher open future after failed opens so retries work, stopped duplicate-keychain recovery from clearing unrelated secure storage, deleted copied private avatar files during private data deletion, cancelled pending local notifications before deleting private data, initialized background notification logging with the saved active mode, made Private settings initialize from local defaults rather than shared Supabase-mode preferences, preserved custom macro-goal category IDs during reschedule, and registered the iOS backup-exclusion MethodChannel from `SceneDelegate` as well as `AppDelegate`. Verified with `flutter analyze`, `flutter test`, `flutter build ios --no-codesign`, `flutter build apk --debug`, and `git diff --check`.
+
+## [2026-06-18 08:52 CEST]: Fix - Private Mode Name Setup Gates Tutorial
+
+*Details*: Fixed the Private mode startup race where the first-run name dialog and tutorial/welcome flow could appear at the same time. The dashboard startup now waits for profile setup to complete successfully before allowing tutorial onboarding to start.
+
+*Tech Notes*: Added an awaitable private-profile load path in `user_provider.dart`, introduced `UserProfile.requiresNameSetup()` to treat blank profiles and the old `"Private User"` placeholder as incomplete private setup, removed the default placeholder from new private profile rows, and changed `dashboard_screen.dart` to run a single gated startup flow. The name dialog now saves through local private profile storage in Private mode and still uses Supabase auth metadata in account mode. Added `test/user_profile_test.dart`. Verified with `flutter test test/user_profile_test.dart`, `flutter analyze`, `flutter test`, and `flutter build ios --no-codesign`.
+
+## [2026-06-18 13:46 CEST]: Tutorial Production-Readiness Hardening
+
+*Details*: Audited and hardened the complete onboarding tutorial flow across dashboard, goals, and statistics so login/account mode and Private mode cannot interfere with each other and retained pages cannot start tutorial overlays while inactive.
+
+*Tech Notes*: Made tutorial completion state mode-aware in `tutorial_provider.dart` with Supabase legacy-key fallback and isolated Private-mode keys. Added active-page gating, single-overlay guards, timer cleanup, mounted target checks, and guarded `TutorialCoachMark.show()` calls in `dashboard_screen.dart`, `macro_goals_screen.dart`, and `statistics_screen.dart`. The dashboard welcome dialog is now awaited before scheduling the first coachmark, goals/stats continuation tutorials only start when their page is active, and stats tutorial cards now use the same responsive constrained layout pattern as the other tutorial cards. Added `test/tutorial_provider_test.dart`. Verified with `flutter test test/tutorial_provider_test.dart test/user_profile_test.dart`, `flutter analyze`, `flutter test`, and `flutter build ios --no-codesign`.
+
+## [2026-06-18 14:04 CEST]: Fix - Name Prompt Restricted to Private Mode
+
+*Details*: Fixed the startup/login regression where the name prompt could appear before the user chose Login or Private mode. The name setup prompt is now exclusively part of Private mode setup and cannot be triggered by an unauthenticated or Supabase-mode startup frame.
+
+*Tech Notes*: Added `shouldPromptForStartupName()` in `user_provider.dart` and updated `dashboard_screen.dart` so startup onboarding stops immediately when `authState.canAccessApp` is false, skips name setup in Supabase mode, and only loads/checks the local private profile when `AppDataMode.private` is active. Added regression coverage in `test/user_profile_test.dart` for unauthenticated, Supabase, and Private-mode prompt eligibility. Verified with `flutter test test/user_profile_test.dart test/tutorial_provider_test.dart`, `flutter analyze`, `flutter test`, and `flutter build ios --no-codesign`.

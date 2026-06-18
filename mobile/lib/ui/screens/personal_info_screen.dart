@@ -6,6 +6,7 @@ import 'package:lucide_icons_flutter/lucide_icons.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 import '../../core/theme.dart';
 import '../../providers/user_provider.dart';
+import '../../core/data_mode.dart';
 import '../../core/localization.dart';
 import '../../core/app_logger.dart';
 
@@ -14,16 +15,17 @@ class PersonalInfoScreen extends ConsumerStatefulWidget {
 
   static Route route() {
     return PageRouteBuilder(
-      pageBuilder: (context, animation, secondaryAnimation) => const PersonalInfoScreen(),
+      pageBuilder: (context, animation, secondaryAnimation) =>
+          const PersonalInfoScreen(),
       transitionsBuilder: (context, animation, secondaryAnimation, child) {
         const begin = Offset(1.0, 0.0);
         const end = Offset.zero;
         const curve = Curves.easeOutCubic;
-        var tween = Tween(begin: begin, end: end).chain(CurveTween(curve: curve));
-        return SlideTransition(
-          position: animation.drive(tween),
-          child: child,
-        );
+        var tween = Tween(
+          begin: begin,
+          end: end,
+        ).chain(CurveTween(curve: curve));
+        return SlideTransition(position: animation.drive(tween), child: child);
       },
       transitionDuration: const Duration(milliseconds: 400),
     );
@@ -70,42 +72,91 @@ class _PersonalInfoScreenState extends ConsumerState<PersonalInfoScreen> {
       final fullName = '$firstName $lastName'.trim();
 
       try {
+        if (ref.read(activeDataModeProvider) == AppDataMode.private) {
+          await ref
+              .read(userProfileProvider.notifier)
+              .updatePrivateProfile(
+                fullName: fullName,
+                dateOfBirth: _dobController.text.trim().isEmpty
+                    ? null
+                    : _dobController.text.trim(),
+                clearDateOfBirth: _dobController.text.trim().isEmpty,
+              );
+
+          if (mounted) {
+            HapticFeedback.mediumImpact();
+            ScaffoldMessenger.of(context).showSnackBar(
+              SnackBar(
+                content: Text(
+                  context.l10n.translate('Informazioni salvate con successo'),
+                ),
+                backgroundColor: AppColors.success.withValues(alpha: 0.8),
+                behavior: SnackBarBehavior.floating,
+                shape: RoundedRectangleBorder(
+                  borderRadius: BorderRadius.circular(10),
+                ),
+              ),
+            );
+            Navigator.pop(context);
+          }
+          return;
+        }
+
         // Update Supabase Auth metadata
         final supabase = Supabase.instance.client;
-        await supabase.auth.updateUser(UserAttributes(
-          data: {
-            'full_name': fullName,
-            'date_of_birth': _dobController.text.trim().isEmpty ? null : _dobController.text.trim(),
-          },
-        ));
+        await supabase.auth.updateUser(
+          UserAttributes(
+            data: {
+              'full_name': fullName,
+              'date_of_birth': _dobController.text.trim().isEmpty
+                  ? null
+                  : _dobController.text.trim(),
+            },
+          ),
+        );
 
         // Update profiles table
         final user = supabase.auth.currentUser;
         if (user != null) {
-          await supabase.from('profiles').update({
-            'full_name': fullName,
-            'date_of_birth': _dobController.text.trim().isEmpty ? null : _dobController.text.trim(),
-          }).eq('id', user.id);
+          await supabase
+              .from('profiles')
+              .update({
+                'full_name': fullName,
+                'date_of_birth': _dobController.text.trim().isEmpty
+                    ? null
+                    : _dobController.text.trim(),
+              })
+              .eq('id', user.id);
         }
 
         if (mounted) {
           HapticFeedback.mediumImpact();
           ScaffoldMessenger.of(context).showSnackBar(
             SnackBar(
-              content: Text(context.l10n.translate('Informazioni salvate con successo')),
+              content: Text(
+                context.l10n.translate('Informazioni salvate con successo'),
+              ),
               backgroundColor: AppColors.success.withValues(alpha: 0.8),
               behavior: SnackBarBehavior.floating,
-              shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
+              shape: RoundedRectangleBorder(
+                borderRadius: BorderRadius.circular(10),
+              ),
             ),
           );
           Navigator.pop(context);
         }
       } catch (e, stack) {
-        AppLogger.error('Errore durante il salvataggio delle info personali', e, stack);
+        AppLogger.error(
+          'Errore durante il salvataggio delle info personali',
+          e,
+          stack,
+        );
         if (mounted) {
           ScaffoldMessenger.of(context).showSnackBar(
             SnackBar(
-              content: Text(context.l10n.translate('Errore durante il salvataggio.')),
+              content: Text(
+                context.l10n.translate('Errore durante il salvataggio.'),
+              ),
               backgroundColor: AppColors.destructive,
             ),
           );
@@ -116,13 +167,19 @@ class _PersonalInfoScreenState extends ConsumerState<PersonalInfoScreen> {
 
   @override
   Widget build(BuildContext context) {
+    final isPrivateMode =
+        ref.watch(activeDataModeProvider) == AppDataMode.private;
+
     return Scaffold(
       backgroundColor: context.appColors.background,
       appBar: AppBar(
         backgroundColor: context.appColors.background,
         elevation: 0,
         leading: IconButton(
-          icon: Icon(LucideIcons.chevronLeft, color: context.appColors.foreground),
+          icon: Icon(
+            LucideIcons.chevronLeft,
+            color: context.appColors.foreground,
+          ),
           onPressed: () => Navigator.pop(context),
         ),
         title: Text(
@@ -156,13 +213,17 @@ class _PersonalInfoScreenState extends ConsumerState<PersonalInfoScreen> {
               _buildTextField(
                 label: context.l10n.translate('Nome').toUpperCase(),
                 controller: _firstNameController,
-                validator: (v) => v!.isEmpty ? context.l10n.translate('Campo obbligatorio') : null,
+                validator: (v) => v!.isEmpty
+                    ? context.l10n.translate('Campo obbligatorio')
+                    : null,
               ),
               const SizedBox(height: 20),
               _buildTextField(
                 label: context.l10n.translate('Cognome').toUpperCase(),
                 controller: _lastNameController,
-                validator: (v) => v!.isEmpty ? context.l10n.translate('Campo obbligatorio') : null,
+                validator: (v) => v!.isEmpty
+                    ? context.l10n.translate('Campo obbligatorio')
+                    : null,
               ),
               const SizedBox(height: 20),
               _buildTextField(
@@ -170,8 +231,13 @@ class _PersonalInfoScreenState extends ConsumerState<PersonalInfoScreen> {
                 controller: _emailController,
                 keyboardType: TextInputType.emailAddress,
                 validator: (v) {
-                  if (v!.isEmpty) return context.l10n.translate('Campo obbligatorio');
-                  if (!v.contains('@')) return context.l10n.translate('Inserisci un\'email valida');
+                  if (isPrivateMode && (v == null || v.isEmpty)) return null;
+                  if (v!.isEmpty) {
+                    return context.l10n.translate('Campo obbligatorio');
+                  }
+                  if (!v.contains('@')) {
+                    return context.l10n.translate('Inserisci un\'email valida');
+                  }
                   return null;
                 },
               ),
@@ -189,7 +255,13 @@ class _PersonalInfoScreenState extends ConsumerState<PersonalInfoScreen> {
                   onPressed: _save,
                   style: ElevatedButton.styleFrom(
                     backgroundColor: Theme.of(context).colorScheme.primary,
-                    foregroundColor: Theme.of(context).colorScheme.primary.computeLuminance() > 0.5 ? Colors.black : Colors.white,
+                    foregroundColor:
+                        Theme.of(
+                              context,
+                            ).colorScheme.primary.computeLuminance() >
+                            0.5
+                        ? Colors.black
+                        : Colors.white,
                     shape: RoundedRectangleBorder(
                       borderRadius: BorderRadius.circular(16),
                     ),
@@ -242,7 +314,10 @@ class _PersonalInfoScreenState extends ConsumerState<PersonalInfoScreen> {
           decoration: InputDecoration(
             filled: true,
             fillColor: context.appColors.card.withValues(alpha: 0.4),
-            contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 16),
+            contentPadding: const EdgeInsets.symmetric(
+              horizontal: 16,
+              vertical: 16,
+            ),
             enabledBorder: OutlineInputBorder(
               borderRadius: BorderRadius.circular(14),
               borderSide: BorderSide(
@@ -256,7 +331,11 @@ class _PersonalInfoScreenState extends ConsumerState<PersonalInfoScreen> {
                 width: 1.5,
               ),
             ),
-            suffixIcon: Icon(LucideIcons.calendar, color: context.appColors.mutedForeground, size: 18),
+            suffixIcon: Icon(
+              LucideIcons.calendar,
+              color: context.appColors.mutedForeground,
+              size: 18,
+            ),
           ),
         ),
       ],
@@ -278,14 +357,16 @@ class _PersonalInfoScreenState extends ConsumerState<PersonalInfoScreen> {
                 mainAxisAlignment: MainAxisAlignment.spaceBetween,
                 children: [
                   CupertinoButton(
-                    child: Text( context.l10n.translate('Annulla')),
+                    child: Text(context.l10n.translate('Annulla')),
                     onPressed: () => Navigator.of(context).pop(),
                   ),
                   CupertinoButton(
                     child: Text(context.l10n.translate('Fatto')),
                     onPressed: () {
                       _selectedDate ??= DateTime(2000, 1, 1);
-                      _dobController.text = _selectedDate!.toIso8601String().substring(0, 10);
+                      _dobController.text = _selectedDate!
+                          .toIso8601String()
+                          .substring(0, 10);
                       Navigator.of(context).pop();
                     },
                   ),
@@ -339,7 +420,10 @@ class _PersonalInfoScreenState extends ConsumerState<PersonalInfoScreen> {
           decoration: InputDecoration(
             filled: true,
             fillColor: context.appColors.card.withValues(alpha: 0.4),
-            contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 16),
+            contentPadding: const EdgeInsets.symmetric(
+              horizontal: 16,
+              vertical: 16,
+            ),
             enabledBorder: OutlineInputBorder(
               borderRadius: BorderRadius.circular(14),
               borderSide: BorderSide(
@@ -355,9 +439,7 @@ class _PersonalInfoScreenState extends ConsumerState<PersonalInfoScreen> {
             ),
             errorBorder: OutlineInputBorder(
               borderRadius: BorderRadius.circular(14),
-              borderSide: const BorderSide(
-                color: AppColors.destructive,
-              ),
+              borderSide: const BorderSide(color: AppColors.destructive),
             ),
             focusedErrorBorder: OutlineInputBorder(
               borderRadius: BorderRadius.circular(14),

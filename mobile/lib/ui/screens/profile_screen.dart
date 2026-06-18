@@ -6,7 +6,10 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import 'package:image_picker/image_picker.dart';
 import 'package:lucide_icons_flutter/lucide_icons.dart';
+import 'package:path/path.dart' as p;
+import 'package:path_provider/path_provider.dart';
 import '../../core/theme.dart';
+import '../../core/data_mode.dart';
 import '../../providers/user_provider.dart';
 import '../../providers/auth_provider.dart';
 import '../../providers/settings_provider.dart';
@@ -40,8 +43,23 @@ class _ProfileScreenState extends ConsumerState<ProfileScreen> {
       );
 
       if (image != null) {
+        var selectedFile = File(image.path);
+        if (ref.read(activeDataModeProvider) == AppDataMode.private) {
+          final supportDir = await getApplicationSupportDirectory();
+          final avatarDir = Directory(
+            p.join(supportDir.path, 'private_profile'),
+          );
+          await avatarDir.create(recursive: true);
+          final avatarFile = File(
+            p.join(avatarDir.path, 'avatar${p.extension(image.path)}'),
+          );
+          selectedFile = await selectedFile.copy(avatarFile.path);
+          await ref
+              .read(userProfileProvider.notifier)
+              .updatePrivateAvatar(selectedFile.path);
+        }
         setState(() {
-          _profileImage = File(image.path);
+          _profileImage = selectedFile;
         });
         ref.hapticMedium();
       }
@@ -73,7 +91,7 @@ class _ProfileScreenState extends ConsumerState<ProfileScreen> {
                     color: Colors.black.withValues(alpha: 0.2),
                     blurRadius: 20,
                     spreadRadius: 5,
-                  )
+                  ),
                 ],
               ),
               child: Column(
@@ -85,7 +103,9 @@ class _ProfileScreenState extends ConsumerState<ProfileScreen> {
                       Container(
                         padding: const EdgeInsets.all(8),
                         decoration: BoxDecoration(
-                          color: context.appColors.destructive.withValues(alpha: 0.1),
+                          color: context.appColors.destructive.withValues(
+                            alpha: 0.1,
+                          ),
                           borderRadius: BorderRadius.circular(10),
                         ),
                         child: Icon(
@@ -108,7 +128,9 @@ class _ProfileScreenState extends ConsumerState<ProfileScreen> {
                   ),
                   const SizedBox(height: 16),
                   Text(
-                    context.l10n.translate('Sei sicuro di voler uscire dal tuo account? Dovrai reinserire le tue credenziali per accedere nuovamente.'),
+                    context.l10n.translate(
+                      'Sei sicuro di voler uscire dal tuo account? Dovrai reinserire le tue credenziali per accedere nuovamente.',
+                    ),
                     style: TextStyle(
                       fontSize: 13,
                       height: 1.5,
@@ -141,16 +163,21 @@ class _ProfileScreenState extends ConsumerState<ProfileScreen> {
                           }
                         },
                         child: Container(
-                          padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 10),
+                          padding: const EdgeInsets.symmetric(
+                            horizontal: 20,
+                            vertical: 10,
+                          ),
                           decoration: BoxDecoration(
                             color: context.appColors.destructive,
                             borderRadius: BorderRadius.circular(12),
                             boxShadow: [
                               BoxShadow(
-                                color: context.appColors.destructive.withValues(alpha: 0.3),
+                                color: context.appColors.destructive.withValues(
+                                  alpha: 0.3,
+                                ),
                                 blurRadius: 10,
                                 offset: const Offset(0, 2),
-                              )
+                              ),
                             ],
                           ),
                           child: Text(
@@ -176,10 +203,12 @@ class _ProfileScreenState extends ConsumerState<ProfileScreen> {
 
   @override
   Widget build(BuildContext context) {
+    final isPrivateMode =
+        ref.watch(activeDataModeProvider) == AppDataMode.private;
     final userProfile = ref.watch(userProfileProvider);
     final primaryColor = Theme.of(context).colorScheme.primary;
     final settings = ref.watch(settingsProvider);
-    final isPro = settings.isPro;
+    final isPro = settings.isPro && !isPrivateMode;
 
     return Scaffold(
       backgroundColor: context.appColors.background,
@@ -193,7 +222,10 @@ class _ProfileScreenState extends ConsumerState<ProfileScreen> {
             backgroundColor: context.appColors.background,
             elevation: 0,
             leading: IconButton(
-              icon: Icon(LucideIcons.chevronLeft, color: context.appColors.foreground),
+              icon: Icon(
+                LucideIcons.chevronLeft,
+                color: context.appColors.foreground,
+              ),
               onPressed: () => Navigator.pop(context),
             ),
             flexibleSpace: FlexibleSpaceBar(
@@ -224,26 +256,42 @@ class _ProfileScreenState extends ConsumerState<ProfileScreen> {
                                 end: Alignment.bottomRight,
                               ),
                               border: Border.all(
-                                color: isPro ? const Color(0xFFEAB308) : primaryColor.withValues(alpha: 0.2),
+                                color: isPro
+                                    ? const Color(0xFFEAB308)
+                                    : primaryColor.withValues(alpha: 0.2),
                                 width: 2,
                               ),
                             ),
                             child: ClipRRect(
                               borderRadius: BorderRadius.circular(45),
-                                child: _profileImage != null
-                                    ? Image.file(
-                                        _profileImage!,
-                                        fit: BoxFit.cover,
-                                      )
-                                    : userProfile.avatarUrl != null
-                                        ? Image.network(
+                              child: _profileImage != null
+                                  ? Image.file(
+                                      _profileImage!,
+                                      fit: BoxFit.cover,
+                                    )
+                                  : userProfile.avatarUrl != null
+                                  ? (isPrivateMode
+                                        ? Image.file(
+                                            File(userProfile.avatarUrl!),
+                                            fit: BoxFit.cover,
+                                            errorBuilder:
+                                                (
+                                                  context,
+                                                  error,
+                                                  stack,
+                                                ) => Image.asset(
+                                                  'assets/images/default_avatar.png',
+                                                  fit: BoxFit.cover,
+                                                ),
+                                          )
+                                        : Image.network(
                                             userProfile.avatarUrl!,
                                             fit: BoxFit.cover,
-                                          )
-                                        : Image.asset(
-                                            'assets/images/default_avatar.png',
-                                            fit: BoxFit.cover,
-                                          ),
+                                          ))
+                                  : Image.asset(
+                                      'assets/images/default_avatar.png',
+                                      fit: BoxFit.cover,
+                                    ),
                             ),
                           ),
                           Positioned(
@@ -254,7 +302,10 @@ class _ProfileScreenState extends ConsumerState<ProfileScreen> {
                               decoration: BoxDecoration(
                                 color: primaryColor,
                                 shape: BoxShape.circle,
-                                border: Border.all(color: context.appColors.background, width: 2),
+                                border: Border.all(
+                                  color: context.appColors.background,
+                                  width: 2,
+                                ),
                               ),
                               child: Icon(
                                 LucideIcons.camera,
@@ -268,7 +319,7 @@ class _ProfileScreenState extends ConsumerState<ProfileScreen> {
                     ),
                     const SizedBox(height: 16),
                     Text(
-                      '${userProfile.firstName} ${userProfile.lastName}',
+                      userProfile.displayName,
                       style: TextStyle(
                         color: context.appColors.foreground,
                         fontSize: 20,
@@ -280,46 +331,67 @@ class _ProfileScreenState extends ConsumerState<ProfileScreen> {
                     Row(
                       mainAxisAlignment: MainAxisAlignment.center,
                       children: [
-                        Container(
-                          padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 3),
-                          decoration: BoxDecoration(
-                            color: primaryColor.withValues(alpha: 0.1),
-                            borderRadius: BorderRadius.circular(20),
-                            border: Border.all(
-                              color: const Color(0xFF10B981).withValues(alpha: 0.2),
+                        if (!isPrivateMode)
+                          Container(
+                            padding: const EdgeInsets.symmetric(
+                              horizontal: 10,
+                              vertical: 3,
+                            ),
+                            decoration: BoxDecoration(
+                              color: primaryColor.withValues(alpha: 0.1),
+                              borderRadius: BorderRadius.circular(20),
+                              border: Border.all(
+                                color: const Color(
+                                  0xFF10B981,
+                                ).withValues(alpha: 0.2),
+                              ),
+                            ),
+                            child: Row(
+                              mainAxisSize: MainAxisSize.min,
+                              children: [
+                                const Icon(
+                                  LucideIcons.shieldCheck,
+                                  size: 10,
+                                  color: Color(0xFF10B981),
+                                ),
+                                const SizedBox(width: 4),
+                                Text(
+                                  context.l10n.accountVerified,
+                                  style: const TextStyle(
+                                    color: Color(0xFF10B981),
+                                    fontSize: 10,
+                                    fontWeight: FontWeight.w700,
+                                  ),
+                                ),
+                              ],
                             ),
                           ),
-                          child: Row(
-                            mainAxisSize: MainAxisSize.min,
-                            children: [
-                              const Icon(LucideIcons.shieldCheck, size: 10, color: Color(0xFF10B981)),
-                              const SizedBox(width: 4),
-                              Text(
-                                context.l10n.accountVerified,
-                                style: const TextStyle(
-                                  color: Color(0xFF10B981),
-                                  fontSize: 10,
-                                  fontWeight: FontWeight.w700,
-                                ),
-                              ),
-                            ],
-                          ),
-                        ),
                         if (isPro) ...[
                           const SizedBox(width: 8),
                           Container(
-                            padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 3),
+                            padding: const EdgeInsets.symmetric(
+                              horizontal: 10,
+                              vertical: 3,
+                            ),
                             decoration: BoxDecoration(
-                              color: const Color(0xFFEAB308).withValues(alpha: 0.1),
+                              color: const Color(
+                                0xFFEAB308,
+                              ).withValues(alpha: 0.1),
                               borderRadius: BorderRadius.circular(20),
                               border: Border.all(
-                                color: const Color(0xFFEAB308).withValues(alpha: 0.2),
+                                color: const Color(
+                                  0xFFEAB308,
+                                ).withValues(alpha: 0.2),
                               ),
                             ),
                             child: const Row(
                               mainAxisSize: MainAxisSize.min,
                               children: [
-                                Icon(LucideIcons.crown, size: 10, color: Color(0xFFEAB308)),
+                                Icon(
+                                  LucideIcons.crown,
+                                  size: 10,
+                                  color: Color(0xFFEAB308),
+                                ),
                                 SizedBox(width: 4),
                                 Text(
                                   'PRO',
@@ -364,22 +436,25 @@ class _ProfileScreenState extends ConsumerState<ProfileScreen> {
                     Navigator.push(context, PersonalInfoScreen.route());
                   },
                 ),
-                _buildProfileOption(
-                  context: context,
-                  icon: LucideIcons.creditCard,
-                  title: context.l10n.translate('Abbonamento'),
-                  subtitle: settings.isPro
-                      ? context.l10n.manageProPlan
-                      : context.l10n.upgradeToPro,
-                  onTap: () {
-                    Navigator.push(context, SubscriptionScreen.route());
-                  },
-                ),
+                if (!isPrivateMode)
+                  _buildProfileOption(
+                    context: context,
+                    icon: LucideIcons.creditCard,
+                    title: context.l10n.translate('Abbonamento'),
+                    subtitle: settings.isPro
+                        ? context.l10n.manageProPlan
+                        : context.l10n.upgradeToPro,
+                    onTap: () {
+                      Navigator.push(context, SubscriptionScreen.route());
+                    },
+                  ),
                 _buildProfileOption(
                   context: context,
                   icon: LucideIcons.settings,
                   title: context.l10n.translate('Impostazioni App'),
-                  subtitle: context.l10n.translate('Lingua, Tema, Unità di misura'),
+                  subtitle: context.l10n.translate(
+                    'Lingua, Tema, Unità di misura',
+                  ),
                   onTap: () {
                     Navigator.push(context, AppSettingsScreen.route());
                   },
@@ -388,7 +463,9 @@ class _ProfileScreenState extends ConsumerState<ProfileScreen> {
                   context: context,
                   icon: LucideIcons.bell,
                   title: context.l10n.translate('Notifiche'),
-                  subtitle: context.l10n.translate('Promemoria e avvisi di sistema'),
+                  subtitle: context.l10n.translate(
+                    'Promemoria e avvisi di sistema',
+                  ),
                   onTap: () {
                     Navigator.push(context, NotificationSettingsScreen.route());
                   },
@@ -397,7 +474,9 @@ class _ProfileScreenState extends ConsumerState<ProfileScreen> {
                   context: context,
                   icon: LucideIcons.shield,
                   title: context.l10n.translate('Privacy e Sicurezza'),
-                  subtitle: context.l10n.translate('Gestione dati e biometrica'),
+                  subtitle: context.l10n.translate(
+                    'Gestione dati e biometrica',
+                  ),
                   onTap: () {
                     Navigator.push(context, PrivacySettingsScreen.route());
                   },
@@ -417,14 +496,20 @@ class _ProfileScreenState extends ConsumerState<ProfileScreen> {
                   context: context,
                   icon: LucideIcons.info,
                   title: context.l10n.translate('Ripeti Tutorial'),
-                  subtitle: context.l10n.translate('Visualizza di nuovo la guida iniziale'),
+                  subtitle: context.l10n.translate(
+                    'Visualizza di nuovo la guida iniziale',
+                  ),
                   onTap: () async {
                     Navigator.pop(context); // Torna alla home
                     // Piccola attesa per completare la transizione
                     await Future.delayed(const Duration(milliseconds: 300));
                     ref.read(tutorialProvider.notifier).setTutorialSeen(false);
-                    ref.read(goalsTutorialProvider.notifier).setTutorialSeen(false);
-                    ref.read(statsTutorialProvider.notifier).setTutorialSeen(false);
+                    ref
+                        .read(goalsTutorialProvider.notifier)
+                        .setTutorialSeen(false);
+                    ref
+                        .read(statsTutorialProvider.notifier)
+                        .setTutorialSeen(false);
                   },
                 ),
                 const SizedBox(height: 24),
@@ -438,26 +523,61 @@ class _ProfileScreenState extends ConsumerState<ProfileScreen> {
                   ),
                 ),
                 const SizedBox(height: 8),
+                if (!isPrivateMode) ...[
+                  _buildProfileOption(
+                    context: context,
+                    icon: LucideIcons.shieldCheck,
+                    title: context.l10n.translate(
+                      'Usa modalità privata su questo iPhone',
+                    ),
+                    subtitle: context.l10n.translate(
+                      'Passa ai dati locali senza uscire dall’account',
+                    ),
+                    onTap: () async {
+                      ref.hapticMedium();
+                      await ref.read(authProvider.notifier).startPrivateMode();
+                      if (context.mounted) {
+                        Navigator.pop(context);
+                      }
+                    },
+                  ),
+                  const SizedBox(height: 8),
+                ],
                 // Logout Button
                 GestureDetector(
-                  onTap: () {
+                  onTap: () async {
                     ref.hapticLight();
-                    _showLogoutConfirmationDialog(context);
+                    if (isPrivateMode) {
+                      await ref
+                          .read(authProvider.notifier)
+                          .returnToLoginFromPrivateMode();
+                      if (context.mounted) {
+                        context.go('/login');
+                      }
+                    } else {
+                      _showLogoutConfirmationDialog(context);
+                    }
                   },
                   child: Container(
                     width: double.infinity,
                     height: 48,
                     decoration: BoxDecoration(
-                      color: context.appColors.destructive.withValues(alpha: 0.1),
+                      color: context.appColors.destructive.withValues(
+                        alpha: 0.1,
+                      ),
                       borderRadius: BorderRadius.circular(14),
                       border: Border.all(
-                        color: context.appColors.destructive.withValues(alpha: 0.2),
+                        color: context.appColors.destructive.withValues(
+                          alpha: 0.2,
+                        ),
                         width: 1,
                       ),
                     ),
                     child: Center(
                       child: Text(
-                        'Esci',
+                        isPrivateMode
+                            ? context.l10n.translate('Vai al login')
+                            : context.l10n.translate('Esci'),
                         style: TextStyle(
                           color: context.appColors.destructive,
                           fontSize: 15,
@@ -473,7 +593,9 @@ class _ProfileScreenState extends ConsumerState<ProfileScreen> {
                   child: Text(
                     context.l10n.appVersion,
                     style: TextStyle(
-                      color: context.appColors.mutedForeground.withValues(alpha: 0.5),
+                      color: context.appColors.mutedForeground.withValues(
+                        alpha: 0.5,
+                      ),
                       fontSize: 10,
                       fontWeight: FontWeight.w500,
                     ),

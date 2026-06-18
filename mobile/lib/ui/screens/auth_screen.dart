@@ -19,7 +19,8 @@ class AuthScreen extends ConsumerStatefulWidget {
   ConsumerState<AuthScreen> createState() => _AuthScreenState();
 }
 
-class _AuthScreenState extends ConsumerState<AuthScreen> with SingleTickerProviderStateMixin {
+class _AuthScreenState extends ConsumerState<AuthScreen>
+    with SingleTickerProviderStateMixin {
   AuthMode _mode = AuthMode.login;
   final _emailController = TextEditingController();
   final _passwordController = TextEditingController();
@@ -39,13 +40,13 @@ class _AuthScreenState extends ConsumerState<AuthScreen> with SingleTickerProvid
       parent: _animationController,
       curve: Curves.easeOut,
     );
-    _slideAnimation = Tween<Offset>(
-      begin: const Offset(0, 0.1),
-      end: Offset.zero,
-    ).animate(CurvedAnimation(
-      parent: _animationController,
-      curve: Curves.easeOutCubic,
-    ));
+    _slideAnimation =
+        Tween<Offset>(begin: const Offset(0, 0.1), end: Offset.zero).animate(
+          CurvedAnimation(
+            parent: _animationController,
+            curve: Curves.easeOutCubic,
+          ),
+        );
     _animationController.forward();
   }
 
@@ -71,15 +72,13 @@ class _AuthScreenState extends ConsumerState<AuthScreen> with SingleTickerProvid
       bool success;
       final hapticsEnabled = ref.read(settingsProvider).hapticFeedback;
       if (_mode == AuthMode.login) {
-        success = await ref.read(authProvider.notifier).login(
-              _emailController.text,
-              _passwordController.text,
-            );
+        success = await ref
+            .read(authProvider.notifier)
+            .login(_emailController.text, _passwordController.text);
       } else {
-        success = await ref.read(authProvider.notifier).signUp(
-              _emailController.text,
-              _passwordController.text,
-            );
+        success = await ref
+            .read(authProvider.notifier)
+            .signUp(_emailController.text, _passwordController.text);
         // signup potrebbe richiedere conferma email
         if (success && mounted) {
           final error = ref.read(authProvider).error;
@@ -89,7 +88,9 @@ class _AuthScreenState extends ConsumerState<AuthScreen> with SingleTickerProvid
                 content: Text(context.l10n.translate(error)),
                 backgroundColor: const Color(0xFF10B981),
                 behavior: SnackBarBehavior.floating,
-                shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+                shape: RoundedRectangleBorder(
+                  borderRadius: BorderRadius.circular(12),
+                ),
               ),
             );
           }
@@ -109,10 +110,16 @@ class _AuthScreenState extends ConsumerState<AuthScreen> with SingleTickerProvid
     if (email.isEmpty || !email.contains('@')) {
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(
-          content: Text(context.l10n.translate('Inserisci la tua email per reimpostare la password.')),
+          content: Text(
+            context.l10n.translate(
+              'Inserisci la tua email per reimpostare la password.',
+            ),
+          ),
           backgroundColor: AppColors.card,
           behavior: SnackBarBehavior.floating,
-          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+          shape: RoundedRectangleBorder(
+            borderRadius: BorderRadius.circular(12),
+          ),
         ),
       );
       return;
@@ -129,12 +136,21 @@ class _AuthScreenState extends ConsumerState<AuthScreen> with SingleTickerProvid
                     ref.read(authProvider).error ?? 'Errore. Riprova.',
                   ),
           ),
-          backgroundColor: success ? const Color(0xFF10B981) : AppColors.destructive,
+          backgroundColor: success
+              ? const Color(0xFF10B981)
+              : AppColors.destructive,
           behavior: SnackBarBehavior.floating,
-          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+          shape: RoundedRectangleBorder(
+            borderRadius: BorderRadius.circular(12),
+          ),
         ),
       );
     }
+  }
+
+  Future<void> _handlePrivateMode() async {
+    ref.hapticMedium();
+    await ref.read(authProvider.notifier).startPrivateMode();
   }
 
   Future<void> _openUrl(String urlString) async {
@@ -143,10 +159,14 @@ class _AuthScreenState extends ConsumerState<AuthScreen> with SingleTickerProvid
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
-            content: Text(context.l10n.translate('Impossibile aprire il link.')),
+            content: Text(
+              context.l10n.translate('Impossibile aprire il link.'),
+            ),
             backgroundColor: AppColors.destructive,
             behavior: SnackBarBehavior.floating,
-            shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+            shape: RoundedRectangleBorder(
+              borderRadius: BorderRadius.circular(12),
+            ),
           ),
         );
       }
@@ -205,7 +225,10 @@ class _AuthScreenState extends ConsumerState<AuthScreen> with SingleTickerProvid
           SafeArea(
             child: Center(
               child: SingleChildScrollView(
-                padding: EdgeInsets.symmetric(horizontal: 24, vertical: isCompact ? 8 : 24),
+                padding: EdgeInsets.symmetric(
+                  horizontal: 24,
+                  vertical: isCompact ? 8 : 24,
+                ),
                 child: FadeTransition(
                   opacity: _fadeAnimation,
                   child: SlideTransition(
@@ -243,7 +266,8 @@ class _AuthScreenState extends ConsumerState<AuthScreen> with SingleTickerProvid
                                 context.l10n.authLoginMotto,
                                 textAlign: TextAlign.center,
                                 style: GoogleFonts.playfairDisplay(
-                                  color: context.appColors.mutedForeground.withValues(alpha: 0.9),
+                                  color: context.appColors.mutedForeground
+                                      .withValues(alpha: 0.9),
                                   fontSize: isCompact ? 15 : 17,
                                   fontWeight: FontWeight.w600,
                                   fontStyle: FontStyle.italic,
@@ -252,7 +276,9 @@ class _AuthScreenState extends ConsumerState<AuthScreen> with SingleTickerProvid
                               )
                             else
                               Text(
-                                context.l10n.translate('Crea il tuo ecosistema personale.'),
+                                context.l10n.translate(
+                                  'Crea il tuo ecosistema personale.',
+                                ),
                                 textAlign: TextAlign.center,
                                 style: GoogleFonts.inter(
                                   color: context.appColors.mutedForeground,
@@ -276,10 +302,15 @@ class _AuthScreenState extends ConsumerState<AuthScreen> with SingleTickerProvid
                                 keyboardType: TextInputType.emailAddress,
                                 validator: (value) {
                                   if (value == null || value.trim().isEmpty) {
-                                    return context.l10n.translate('Inserisci la tua email.');
+                                    return context.l10n.translate(
+                                      'Inserisci la tua email.',
+                                    );
                                   }
-                                  if (!value.contains('@') || !value.contains('.')) {
-                                    return context.l10n.translate('Email non valida.');
+                                  if (!value.contains('@') ||
+                                      !value.contains('.')) {
+                                    return context.l10n.translate(
+                                      'Email non valida.',
+                                    );
                                   }
                                   return null;
                                 },
@@ -292,10 +323,14 @@ class _AuthScreenState extends ConsumerState<AuthScreen> with SingleTickerProvid
                                 isPassword: true,
                                 validator: (value) {
                                   if (value == null || value.isEmpty) {
-                                    return context.l10n.translate('Inserisci la password.');
+                                    return context.l10n.translate(
+                                      'Inserisci la password.',
+                                    );
                                   }
                                   if (value.length < 6) {
-                                    return context.l10n.translate('Minimo 6 caratteri.');
+                                    return context.l10n.translate(
+                                      'Minimo 6 caratteri.',
+                                    );
                                   }
                                   return null;
                                 },
@@ -306,9 +341,12 @@ class _AuthScreenState extends ConsumerState<AuthScreen> with SingleTickerProvid
                                   child: TextButton(
                                     onPressed: _handleForgotPassword,
                                     child: Text(
-                                      context.l10n.translate('Password dimenticata?'),
+                                      context.l10n.translate(
+                                        'Password dimenticata?',
+                                      ),
                                       style: TextStyle(
-                                        color: context.appColors.mutedForeground,
+                                        color:
+                                            context.appColors.mutedForeground,
                                         fontSize: 12,
                                         fontWeight: FontWeight.w600,
                                       ),
@@ -316,39 +354,54 @@ class _AuthScreenState extends ConsumerState<AuthScreen> with SingleTickerProvid
                                   ),
                                 ),
                               // Error banner da Supabase
-                              Builder(builder: (context) {
-                                final error = ref.watch(authProvider).error;
-                                if (error == null || error.contains('email')) return const SizedBox.shrink();
-                                return Padding(
-                                  padding: const EdgeInsets.only(top: 8),
-                                  child: Container(
-                                    padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 10),
-                                    decoration: BoxDecoration(
-                                      color: AppColors.destructive.withValues(alpha: 0.1),
-                                      borderRadius: BorderRadius.circular(12),
-                                      border: Border.all(
-                                        color: AppColors.destructive.withValues(alpha: 0.3),
+                              Builder(
+                                builder: (context) {
+                                  final error = ref.watch(authProvider).error;
+                                  if (error == null ||
+                                      error.contains('email')) {
+                                    return const SizedBox.shrink();
+                                  }
+                                  return Padding(
+                                    padding: const EdgeInsets.only(top: 8),
+                                    child: Container(
+                                      padding: const EdgeInsets.symmetric(
+                                        horizontal: 14,
+                                        vertical: 10,
                                       ),
-                                    ),
-                                    child: Row(
-                                      children: [
-                                        const Icon(LucideIcons.circleAlert, size: 16, color: AppColors.destructive),
-                                        const SizedBox(width: 8),
-                                        Expanded(
-                                          child: Text(
-                                            context.l10n.translate(error),
-                                            style: const TextStyle(
-                                              color: AppColors.destructive,
-                                              fontSize: 12,
-                                              fontWeight: FontWeight.w500,
+                                      decoration: BoxDecoration(
+                                        color: AppColors.destructive.withValues(
+                                          alpha: 0.1,
+                                        ),
+                                        borderRadius: BorderRadius.circular(12),
+                                        border: Border.all(
+                                          color: AppColors.destructive
+                                              .withValues(alpha: 0.3),
+                                        ),
+                                      ),
+                                      child: Row(
+                                        children: [
+                                          const Icon(
+                                            LucideIcons.circleAlert,
+                                            size: 16,
+                                            color: AppColors.destructive,
+                                          ),
+                                          const SizedBox(width: 8),
+                                          Expanded(
+                                            child: Text(
+                                              context.l10n.translate(error),
+                                              style: const TextStyle(
+                                                color: AppColors.destructive,
+                                                fontSize: 12,
+                                                fontWeight: FontWeight.w500,
+                                              ),
                                             ),
                                           ),
-                                        ),
-                                      ],
+                                        ],
+                                      ),
                                     ),
-                                  ),
-                                );
-                              }),
+                                  );
+                                },
+                              ),
                               SizedBox(height: isCompact ? 10 : 24),
                               _buildSubmitButton(authState.isLoading),
                             ],
@@ -360,20 +413,33 @@ class _AuthScreenState extends ConsumerState<AuthScreen> with SingleTickerProvid
                         // OR Divider
                         Row(
                           children: [
-                            Expanded(child: Divider(color: context.appColors.border, thickness: 1)),
+                            Expanded(
+                              child: Divider(
+                                color: context.appColors.border,
+                                thickness: 1,
+                              ),
+                            ),
                             Padding(
-                              padding: const EdgeInsets.symmetric(horizontal: 16),
+                              padding: const EdgeInsets.symmetric(
+                                horizontal: 16,
+                              ),
                               child: Text(
                                 context.l10n.translate('OPPURE'),
                                 style: GoogleFonts.inter(
-                                  color: context.appColors.mutedForeground.withValues(alpha: 0.5),
+                                  color: context.appColors.mutedForeground
+                                      .withValues(alpha: 0.5),
                                   fontSize: 10,
                                   fontWeight: FontWeight.w800,
                                   letterSpacing: 1.5,
                                 ),
                               ),
                             ),
-                            Expanded(child: Divider(color: context.appColors.border, thickness: 1)),
+                            Expanded(
+                              child: Divider(
+                                color: context.appColors.border,
+                                thickness: 1,
+                              ),
+                            ),
                           ],
                         ),
 
@@ -384,8 +450,12 @@ class _AuthScreenState extends ConsumerState<AuthScreen> with SingleTickerProvid
                           label: context.l10n.translate('Continua con Apple'),
                           icon: LucideIcons.apple,
                           onPressed: () async {
-                            final hapticsEnabled = ref.read(settingsProvider).hapticFeedback;
-                            final success = await ref.read(authProvider.notifier).signInWithApple();
+                            final hapticsEnabled = ref
+                                .read(settingsProvider)
+                                .hapticFeedback;
+                            final success = await ref
+                                .read(authProvider.notifier)
+                                .signInWithApple();
                             if (success) {
                               AppHaptics.mediumImpactWithFlag(hapticsEnabled);
                             }
@@ -394,15 +464,28 @@ class _AuthScreenState extends ConsumerState<AuthScreen> with SingleTickerProvid
                         SizedBox(height: isCompact ? 6 : 10),
                         _buildSocialButton(
                           label: context.l10n.translate('Continua con Google'),
-                          icon: LucideIcons.mail, 
+                          icon: LucideIcons.mail,
                           isGoogle: true,
                           onPressed: () async {
-                            final hapticsEnabled = ref.read(settingsProvider).hapticFeedback;
-                            final success = await ref.read(authProvider.notifier).signInWithGoogle();
+                            final hapticsEnabled = ref
+                                .read(settingsProvider)
+                                .hapticFeedback;
+                            final success = await ref
+                                .read(authProvider.notifier)
+                                .signInWithGoogle();
                             if (success) {
                               AppHaptics.mediumImpactWithFlag(hapticsEnabled);
                             }
                           },
+                        ),
+
+                        SizedBox(height: isCompact ? 6 : 10),
+                        _buildSocialButton(
+                          label: context.l10n.translate(
+                            'Continua privatamente su questo iPhone',
+                          ),
+                          icon: LucideIcons.shieldCheck,
+                          onPressed: _handlePrivateMode,
                         ),
 
                         SizedBox(height: isCompact ? 10 : 24),
@@ -413,9 +496,16 @@ class _AuthScreenState extends ConsumerState<AuthScreen> with SingleTickerProvid
                           children: [
                             Text(
                               _mode == AuthMode.login
-                                  ? context.l10n.translate('Non hai un account?')
-                                  : context.l10n.translate('Hai già un account?'),
-                              style: TextStyle(color: context.appColors.mutedForeground, fontSize: isCompact ? 12 : 14),
+                                  ? context.l10n.translate(
+                                      'Non hai un account?',
+                                    )
+                                  : context.l10n.translate(
+                                      'Hai già un account?',
+                                    ),
+                              style: TextStyle(
+                                color: context.appColors.mutedForeground,
+                                fontSize: isCompact ? 12 : 14,
+                              ),
                             ),
                             TextButton(
                               onPressed: _toggleMode,
@@ -438,9 +528,14 @@ class _AuthScreenState extends ConsumerState<AuthScreen> with SingleTickerProvid
                           mainAxisAlignment: MainAxisAlignment.center,
                           children: [
                             TextButton(
-                              onPressed: () => _openUrl('https://simo-hue.github.io/evolve/privacy.html'),
+                              onPressed: () => _openUrl(
+                                'https://simo-hue.github.io/evolve/privacy.html',
+                              ),
                               style: TextButton.styleFrom(
-                                padding: EdgeInsets.symmetric(horizontal: isCompact ? 4 : 8, vertical: 2),
+                                padding: EdgeInsets.symmetric(
+                                  horizontal: isCompact ? 4 : 8,
+                                  vertical: 2,
+                                ),
                                 minimumSize: Size.zero,
                                 tapTargetSize: MaterialTapTargetSize.shrinkWrap,
                               ),
@@ -461,9 +556,14 @@ class _AuthScreenState extends ConsumerState<AuthScreen> with SingleTickerProvid
                               ),
                             ),
                             TextButton(
-                              onPressed: () => _openUrl('https://simo-hue.github.io/evolve/privacy.html'),
+                              onPressed: () => _openUrl(
+                                'https://simo-hue.github.io/evolve/privacy.html',
+                              ),
                               style: TextButton.styleFrom(
-                                padding: EdgeInsets.symmetric(horizontal: isCompact ? 4 : 8, vertical: 2),
+                                padding: EdgeInsets.symmetric(
+                                  horizontal: isCompact ? 4 : 8,
+                                  vertical: 2,
+                                ),
                                 minimumSize: Size.zero,
                                 tapTargetSize: MaterialTapTargetSize.shrinkWrap,
                               ),
@@ -485,13 +585,15 @@ class _AuthScreenState extends ConsumerState<AuthScreen> with SingleTickerProvid
               ),
             ),
           ),
-          
+
           if (authState.isLoading)
             Positioned.fill(
               child: Container(
                 color: Colors.black.withValues(alpha: 0.5),
                 child: Center(
-                  child: CircularProgressIndicator(color: context.appColors.foreground),
+                  child: CircularProgressIndicator(
+                    color: context.appColors.foreground,
+                  ),
                 ),
               ),
             ),
@@ -512,7 +614,9 @@ class _AuthScreenState extends ConsumerState<AuthScreen> with SingleTickerProvid
       decoration: BoxDecoration(
         color: context.appColors.card.withValues(alpha: 0.4),
         borderRadius: BorderRadius.circular(16),
-        border: Border.all(color: context.appColors.border.withValues(alpha: 0.5)),
+        border: Border.all(
+          color: context.appColors.border.withValues(alpha: 0.5),
+        ),
       ),
       child: TextFormField(
         controller: controller,
@@ -522,11 +626,21 @@ class _AuthScreenState extends ConsumerState<AuthScreen> with SingleTickerProvid
         style: TextStyle(color: context.appColors.foreground, fontSize: 15),
         decoration: InputDecoration(
           labelText: label,
-          labelStyle: TextStyle(color: context.appColors.mutedForeground, fontSize: 14),
-          prefixIcon: Icon(icon, size: 18, color: context.appColors.mutedForeground),
+          labelStyle: TextStyle(
+            color: context.appColors.mutedForeground,
+            fontSize: 14,
+          ),
+          prefixIcon: Icon(
+            icon,
+            size: 18,
+            color: context.appColors.mutedForeground,
+          ),
           border: InputBorder.none,
           isDense: true,
-          contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 10), // Reduced from 12
+          contentPadding: const EdgeInsets.symmetric(
+            horizontal: 16,
+            vertical: 10,
+          ), // Reduced from 12
           floatingLabelBehavior: FloatingLabelBehavior.auto,
         ),
       ),
@@ -536,7 +650,7 @@ class _AuthScreenState extends ConsumerState<AuthScreen> with SingleTickerProvid
   Widget _buildSubmitButton(bool isLoading) {
     final primaryColor = Theme.of(context).colorScheme.primary;
     final isCompact = MediaQuery.sizeOf(context).height < 780;
-    
+
     return GestureDetector(
       onTap: isLoading ? null : _handleSubmit,
       child: Container(
@@ -544,10 +658,7 @@ class _AuthScreenState extends ConsumerState<AuthScreen> with SingleTickerProvid
         height: isCompact ? 46 : 52,
         decoration: BoxDecoration(
           gradient: LinearGradient(
-            colors: [
-              primaryColor,
-              primaryColor.withValues(alpha: 0.8),
-            ],
+            colors: [primaryColor, primaryColor.withValues(alpha: 0.8)],
             begin: Alignment.topLeft,
             end: Alignment.bottomRight,
           ),
@@ -557,7 +668,7 @@ class _AuthScreenState extends ConsumerState<AuthScreen> with SingleTickerProvid
               color: primaryColor.withValues(alpha: 0.3),
               blurRadius: 15,
               offset: const Offset(0, 5),
-            )
+            ),
           ],
         ),
         child: Center(
@@ -566,7 +677,9 @@ class _AuthScreenState extends ConsumerState<AuthScreen> with SingleTickerProvid
                   width: 24,
                   height: 24,
                   child: CircularProgressIndicator(
-                    color: primaryColor.computeLuminance() > 0.5 ? Colors.black : Colors.white,
+                    color: primaryColor.computeLuminance() > 0.5
+                        ? Colors.black
+                        : Colors.white,
                     strokeWidth: 2,
                   ),
                 )
@@ -575,7 +688,9 @@ class _AuthScreenState extends ConsumerState<AuthScreen> with SingleTickerProvid
                       ? context.l10n.translate('Accedi')
                       : context.l10n.translate('Crea Account'),
                   style: TextStyle(
-                    color: primaryColor.computeLuminance() > 0.5 ? Colors.black : Colors.white,
+                    color: primaryColor.computeLuminance() > 0.5
+                        ? Colors.black
+                        : Colors.white,
                     fontSize: 16,
                     fontWeight: FontWeight.w700,
                     letterSpacing: -0.2,

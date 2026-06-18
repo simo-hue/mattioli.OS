@@ -5,12 +5,19 @@ import 'package:share_plus/share_plus.dart';
 import 'dart:convert';
 import '../../providers/goal_provider.dart';
 import '../../providers/macro_goals_provider.dart';
+import '../../providers/macro_goal_categories_provider.dart';
+import '../../providers/macro_goals_stats_provider.dart';
+import '../../providers/mood_provider.dart';
+import '../../providers/user_provider.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:lucide_icons_flutter/lucide_icons.dart';
 import 'package:local_auth/local_auth.dart';
 import 'package:permission_handler/permission_handler.dart';
 import '../../core/theme.dart';
+import '../../core/data_mode.dart';
+import '../../core/private_local_database.dart';
+import '../../core/notifications.dart';
 import '../../providers/settings_provider.dart';
 import '../../providers/consent_provider.dart';
 import '../../core/haptics.dart';
@@ -22,16 +29,17 @@ class PrivacySettingsScreen extends ConsumerWidget {
 
   static Route route() {
     return PageRouteBuilder(
-      pageBuilder: (context, animation, secondaryAnimation) => const PrivacySettingsScreen(),
+      pageBuilder: (context, animation, secondaryAnimation) =>
+          const PrivacySettingsScreen(),
       transitionsBuilder: (context, animation, secondaryAnimation, child) {
         const begin = Offset(1.0, 0.0);
         const end = Offset.zero;
         const curve = Curves.easeOutCubic;
-        var tween = Tween(begin: begin, end: end).chain(CurveTween(curve: curve));
-        return SlideTransition(
-          position: animation.drive(tween),
-          child: child,
-        );
+        var tween = Tween(
+          begin: begin,
+          end: end,
+        ).chain(CurveTween(curve: curve));
+        return SlideTransition(position: animation.drive(tween), child: child);
       },
       transitionDuration: const Duration(milliseconds: 400),
     );
@@ -42,6 +50,8 @@ class PrivacySettingsScreen extends ConsumerWidget {
     final settings = ref.watch(settingsProvider);
     final notifier = ref.read(settingsProvider.notifier);
     final consentState = ref.watch(consentProvider);
+    final isPrivateMode =
+        ref.watch(activeDataModeProvider) == AppDataMode.private;
 
     return Scaffold(
       backgroundColor: context.appColors.background,
@@ -49,7 +59,10 @@ class PrivacySettingsScreen extends ConsumerWidget {
         backgroundColor: context.appColors.background,
         elevation: 0,
         leading: IconButton(
-          icon: Icon(LucideIcons.chevronLeft, color: context.appColors.foreground),
+          icon: Icon(
+            LucideIcons.chevronLeft,
+            color: context.appColors.foreground,
+          ),
           onPressed: () => Navigator.pop(context),
         ),
         title: Text(
@@ -82,47 +95,57 @@ class PrivacySettingsScreen extends ConsumerWidget {
                     final authenticated = await _authenticate(context);
                     if (authenticated) {
                       final currentSettings = ref.read(settingsProvider);
-                      notifier.updateSettings(currentSettings.copyWith(biometricLock: true));
+                      notifier.updateSettings(
+                        currentSettings.copyWith(biometricLock: true),
+                      );
                       ref.hapticLight();
                     }
                   } else {
                     final currentSettings = ref.read(settingsProvider);
-                    notifier.updateSettings(currentSettings.copyWith(biometricLock: false));
+                    notifier.updateSettings(
+                      currentSettings.copyWith(biometricLock: false),
+                    );
                     ref.hapticLight();
                   }
                 },
               ),
-              _buildDivider(context),
-              _buildActionRow(
-                context: context,
-                icon: LucideIcons.keyRound,
-                title: context.l10n.translate('Cambia Password'),
-                onTap: () {
-                  ref.hapticLight();
-                  _showChangePasswordModal(context);
-                },
-              ),
+              if (!isPrivateMode) ...[
+                _buildDivider(context),
+                _buildActionRow(
+                  context: context,
+                  icon: LucideIcons.keyRound,
+                  title: context.l10n.translate('Cambia Password'),
+                  onTap: () {
+                    ref.hapticLight();
+                    _showChangePasswordModal(context);
+                  },
+                ),
+              ],
             ]),
             const SizedBox(height: 32),
             _buildSectionHeader(context, context.l10n.dataManagementHeader),
             _buildSettingsCard(context, [
-              _buildSwitchRow(
-                context: context,
-                ref: ref,
-                icon: LucideIcons.circleAlert,
-                title: context.l10n.translate('Invia Segnalazioni Crash'),
-                subtitle: context.l10n.sentryHelpSubtitle,
-                value: consentState.hasSentryConsent,
-                onChanged: (val) {
-                  ref.read(consentProvider.notifier).setConsent(
-                    acceptedTerms: consentState.hasAcceptedTerms,
-                    sentryConsent: val,
-                    completed: consentState.hasCompletedOnboarding,
-                  );
-                  ref.hapticLight();
-                },
-              ),
-              _buildDivider(context),
+              if (!isPrivateMode) ...[
+                _buildSwitchRow(
+                  context: context,
+                  ref: ref,
+                  icon: LucideIcons.circleAlert,
+                  title: context.l10n.translate('Invia Segnalazioni Crash'),
+                  subtitle: context.l10n.sentryHelpSubtitle,
+                  value: consentState.hasSentryConsent,
+                  onChanged: (val) {
+                    ref
+                        .read(consentProvider.notifier)
+                        .setConsent(
+                          acceptedTerms: consentState.hasAcceptedTerms,
+                          sentryConsent: val,
+                          completed: consentState.hasCompletedOnboarding,
+                        );
+                    ref.hapticLight();
+                  },
+                ),
+                _buildDivider(context),
+              ],
               _buildActionRow(
                 context: context,
                 icon: LucideIcons.download,
@@ -137,7 +160,9 @@ class PrivacySettingsScreen extends ConsumerWidget {
               _buildActionRow(
                 context: context,
                 icon: LucideIcons.trash2,
-                title: context.l10n.translate('Elimina Account & Dati'),
+                title: isPrivateMode
+                    ? context.l10n.translate('Elimina Dati Privati')
+                    : context.l10n.translate('Elimina Account & Dati'),
                 titleColor: AppColors.destructive,
                 onTap: () {
                   ref.hapticHeavy();
@@ -170,7 +195,8 @@ class PrivacySettingsScreen extends ConsumerWidget {
     final LocalAuthentication auth = LocalAuthentication();
     try {
       final bool canAuthenticateWithBiometrics = await auth.canCheckBiometrics;
-      final bool canAuthenticate = canAuthenticateWithBiometrics || await auth.isDeviceSupported();
+      final bool canAuthenticate =
+          canAuthenticateWithBiometrics || await auth.isDeviceSupported();
 
       if (!canAuthenticate) return false;
 
@@ -264,7 +290,9 @@ class PrivacySettingsScreen extends ConsumerWidget {
                     Text(
                       subtitle,
                       style: GoogleFonts.inter(
-                        color: context.appColors.mutedForeground.withValues(alpha: 0.6),
+                        color: context.appColors.mutedForeground.withValues(
+                          alpha: 0.6,
+                        ),
                         fontSize: 12,
                       ),
                     ),
@@ -295,7 +323,7 @@ class PrivacySettingsScreen extends ConsumerWidget {
   }) {
     final primaryColor = Theme.of(context).colorScheme.primary;
     final isDisabled = isLocked;
-    
+
     return Padding(
       padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
       child: Row(
@@ -308,7 +336,13 @@ class PrivacySettingsScreen extends ConsumerWidget {
               borderRadius: BorderRadius.circular(10),
               border: Border.all(color: context.appColors.border),
             ),
-            child: Icon(icon, size: 18, color: isDisabled ? context.appColors.mutedForeground : primaryColor),
+            child: Icon(
+              icon,
+              size: 18,
+              color: isDisabled
+                  ? context.appColors.mutedForeground
+                  : primaryColor,
+            ),
           ),
           const SizedBox(width: 16),
           Expanded(
@@ -321,7 +355,9 @@ class PrivacySettingsScreen extends ConsumerWidget {
                       child: Text(
                         title,
                         style: GoogleFonts.inter(
-                          color: isDisabled ? context.appColors.mutedForeground : context.appColors.foreground,
+                          color: isDisabled
+                              ? context.appColors.mutedForeground
+                              : context.appColors.foreground,
                           fontSize: 15,
                           fontWeight: FontWeight.w600,
                         ),
@@ -331,17 +367,22 @@ class PrivacySettingsScreen extends ConsumerWidget {
                     if (isLocked) ...[
                       const SizedBox(width: 8),
                       Container(
-                        padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
+                        padding: const EdgeInsets.symmetric(
+                          horizontal: 6,
+                          vertical: 2,
+                        ),
                         decoration: BoxDecoration(
                           color: Colors.amber.withValues(alpha: 0.2),
                           borderRadius: BorderRadius.circular(4),
-                          border: Border.all(color: Colors.amber.withValues(alpha: 0.4)),
+                          border: Border.all(
+                            color: Colors.amber.withValues(alpha: 0.4),
+                          ),
                         ),
                         child: Text(
                           'PRO',
                           style: GoogleFonts.inter(
-                            color: Colors.amber, 
-                            fontSize: 9, 
+                            color: Colors.amber,
+                            fontSize: 9,
                             fontWeight: FontWeight.w900,
                           ),
                         ),
@@ -366,7 +407,8 @@ class PrivacySettingsScreen extends ConsumerWidget {
             scale: 0.8,
             child: Switch(
               value: value,
-              onChanged: (val) => onChanged(val), // Always interactive to allow modal trigger
+              onChanged: (val) =>
+                  onChanged(val), // Always interactive to allow modal trigger
               activeTrackColor: primaryColor.withValues(alpha: 0.5),
               activeThumbColor: primaryColor,
               inactiveThumbColor: context.appColors.mutedForeground,
@@ -382,7 +424,7 @@ class PrivacySettingsScreen extends ConsumerWidget {
     final currentPasswordController = TextEditingController();
     final newPasswordController = TextEditingController();
     final confirmPasswordController = TextEditingController();
-    
+
     bool isLoading = false;
     String? errorMessage;
     bool isVerified = false;
@@ -402,20 +444,24 @@ class PrivacySettingsScreen extends ConsumerWidget {
                   decoration: BoxDecoration(
                     color: context.appColors.card.withValues(alpha: 0.95),
                     borderRadius: BorderRadius.circular(24),
-                    border: Border.all(color: context.appColors.border.withValues(alpha: 0.5), width: 1.5),
+                    border: Border.all(
+                      color: context.appColors.border.withValues(alpha: 0.5),
+                      width: 1.5,
+                    ),
                     boxShadow: [
                       BoxShadow(
                         color: Colors.black.withValues(alpha: 0.2),
                         blurRadius: 20,
                         spreadRadius: 5,
-                      )
+                      ),
                     ],
                   ),
                   child: Column(
                     mainAxisSize: MainAxisSize.min,
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
-                      Text( context.l10n.translate('Cambia Password'),
+                      Text(
+                        context.l10n.translate('Cambia Password'),
                         style: GoogleFonts.inter(
                           fontSize: 20,
                           fontWeight: FontWeight.w700,
@@ -424,16 +470,20 @@ class PrivacySettingsScreen extends ConsumerWidget {
                       ),
                       const SizedBox(height: 4),
                       Text(
-                        isVerified 
-                            ? context.l10n.translate('Inserisci la tua nuova password.') 
-                            : context.l10n.translate('Inserisci la tua password attuale per continuare.'),
+                        isVerified
+                            ? context.l10n.translate(
+                                'Inserisci la tua nuova password.',
+                              )
+                            : context.l10n.translate(
+                                'Inserisci la tua password attuale per continuare.',
+                              ),
                         style: GoogleFonts.inter(
                           fontSize: 13,
                           color: context.appColors.mutedForeground,
                         ),
                       ),
                       const SizedBox(height: 20),
-                      
+
                       if (!isVerified) ...[
                         _buildPasswordField(
                           controller: currentPasswordController,
@@ -447,14 +497,16 @@ class PrivacySettingsScreen extends ConsumerWidget {
                           context: context,
                         ),
                         const SizedBox(height: 16),
-                        
+
                         _buildPasswordField(
                           controller: confirmPasswordController,
-                          label: context.l10n.translate('Conferma Nuova Password'),
+                          label: context.l10n.translate(
+                            'Conferma Nuova Password',
+                          ),
                           context: context,
                         ),
                       ],
-                      
+
                       if (errorMessage != null) ...[
                         const SizedBox(height: 12),
                         Text(
@@ -466,14 +518,16 @@ class PrivacySettingsScreen extends ConsumerWidget {
                           ),
                         ),
                       ],
-                      
+
                       const SizedBox(height: 24),
-                      
+
                       Row(
                         mainAxisAlignment: MainAxisAlignment.end,
                         children: [
                           TextButton(
-                            onPressed: isLoading ? null : () => Navigator.pop(context),
+                            onPressed: isLoading
+                                ? null
+                                : () => Navigator.pop(context),
                             child: Text(
                               context.l10n.translate('Annulla'),
                               style: GoogleFonts.inter(
@@ -484,93 +538,152 @@ class PrivacySettingsScreen extends ConsumerWidget {
                           ),
                           const SizedBox(width: 12),
                           GestureDetector(
-                            onTap: isLoading ? null : () async {
-                              if (!isVerified) {
-                                final currentPwd = currentPasswordController.text;
-                                if (currentPwd.isEmpty) {
-                                  setState(() => errorMessage = context.l10n.translate('Inserisci la password attuale.'));
-                                  return;
-                                }
-                                
-                                setState(() {
-                                  isLoading = true;
-                                  errorMessage = null;
-                                });
-                                
-                                try {
-                                  final supabase = Supabase.instance.client;
-                                  final email = supabase.auth.currentUser?.email;
-                                  
-                                  if (email == null) throw Exception(context.l10n.translate('Utente non trovato.'));
-                                  
-                                  await supabase.auth.signInWithPassword(email: email, password: currentPwd);
-                                  
-                                  setState(() {
-                                    isLoading = false;
-                                    isVerified = true;
-                                    errorMessage = null;
-                                  });
-                                } catch (e) {
-                                  setState(() {
-                                    isLoading = false;
-                                    errorMessage = context.l10n.translate('La password attuale non è corretta.');
-                                  });
-                                }
-                              } else {
-                                final newPwd = newPasswordController.text;
-                                final confirmPwd = confirmPasswordController.text;
-                                
-                                if (newPwd.isEmpty || confirmPwd.isEmpty) {
-                                  setState(() => errorMessage = context.l10n.translate('Tutti i campi sono obbligatori.'));
-                                  return;
-                                }
-                                
-                                if (newPwd.length < 8) {
-                                  setState(() => errorMessage = context.l10n.translate('La nuova password deve essere di almeno 8 caratteri.'));
-                                  return;
-                                }
-                                
-                                if (newPwd != confirmPwd) {
-                                  setState(() => errorMessage = context.l10n.translate('Le password non coincidono.'));
-                                  return;
-                                }
-                                
-                                setState(() {
-                                  isLoading = true;
-                                  errorMessage = null;
-                                });
-                                
-                                try {
-                                  final supabase = Supabase.instance.client;
-                                  
-                                  await supabase.auth.updateUser(UserAttributes(password: newPwd));
-                                  
-                                  if (context.mounted) {
-                                    Navigator.pop(context);
-                                    ScaffoldMessenger.of(context).showSnackBar(
-                                      SnackBar(content: Text(context.l10n.translate('Password aggiornata con successo!'))),
-                                    );
-                                  }
-                                } catch (e, stack) {
-                                  AppLogger.error('Errore durante aggiornamento password', e, stack);
-                                  setState(() {
-                                    isLoading = false;
-                                    errorMessage = e.toString().replaceAll('Exception: ', '');
-                                  });
-                                }
-                              }
-                            },
+                            onTap: isLoading
+                                ? null
+                                : () async {
+                                    if (!isVerified) {
+                                      final currentPwd =
+                                          currentPasswordController.text;
+                                      if (currentPwd.isEmpty) {
+                                        setState(
+                                          () => errorMessage = context.l10n
+                                              .translate(
+                                                'Inserisci la password attuale.',
+                                              ),
+                                        );
+                                        return;
+                                      }
+
+                                      setState(() {
+                                        isLoading = true;
+                                        errorMessage = null;
+                                      });
+
+                                      try {
+                                        final supabase =
+                                            Supabase.instance.client;
+                                        final email =
+                                            supabase.auth.currentUser?.email;
+
+                                        if (email == null) {
+                                          throw Exception(
+                                            context.l10n.translate(
+                                              'Utente non trovato.',
+                                            ),
+                                          );
+                                        }
+
+                                        await supabase.auth.signInWithPassword(
+                                          email: email,
+                                          password: currentPwd,
+                                        );
+
+                                        setState(() {
+                                          isLoading = false;
+                                          isVerified = true;
+                                          errorMessage = null;
+                                        });
+                                      } catch (e) {
+                                        setState(() {
+                                          isLoading = false;
+                                          errorMessage = context.l10n.translate(
+                                            'La password attuale non è corretta.',
+                                          );
+                                        });
+                                      }
+                                    } else {
+                                      final newPwd = newPasswordController.text;
+                                      final confirmPwd =
+                                          confirmPasswordController.text;
+
+                                      if (newPwd.isEmpty ||
+                                          confirmPwd.isEmpty) {
+                                        setState(
+                                          () => errorMessage = context.l10n
+                                              .translate(
+                                                'Tutti i campi sono obbligatori.',
+                                              ),
+                                        );
+                                        return;
+                                      }
+
+                                      if (newPwd.length < 8) {
+                                        setState(
+                                          () => errorMessage = context.l10n
+                                              .translate(
+                                                'La nuova password deve essere di almeno 8 caratteri.',
+                                              ),
+                                        );
+                                        return;
+                                      }
+
+                                      if (newPwd != confirmPwd) {
+                                        setState(
+                                          () => errorMessage = context.l10n
+                                              .translate(
+                                                'Le password non coincidono.',
+                                              ),
+                                        );
+                                        return;
+                                      }
+
+                                      setState(() {
+                                        isLoading = true;
+                                        errorMessage = null;
+                                      });
+
+                                      try {
+                                        final supabase =
+                                            Supabase.instance.client;
+
+                                        await supabase.auth.updateUser(
+                                          UserAttributes(password: newPwd),
+                                        );
+
+                                        if (context.mounted) {
+                                          Navigator.pop(context);
+                                          ScaffoldMessenger.of(
+                                            context,
+                                          ).showSnackBar(
+                                            SnackBar(
+                                              content: Text(
+                                                context.l10n.translate(
+                                                  'Password aggiornata con successo!',
+                                                ),
+                                              ),
+                                            ),
+                                          );
+                                        }
+                                      } catch (e, stack) {
+                                        AppLogger.error(
+                                          'Errore durante aggiornamento password',
+                                          e,
+                                          stack,
+                                        );
+                                        setState(() {
+                                          isLoading = false;
+                                          errorMessage = e
+                                              .toString()
+                                              .replaceAll('Exception: ', '');
+                                        });
+                                      }
+                                    }
+                                  },
                             child: Container(
-                              padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 10),
+                              padding: const EdgeInsets.symmetric(
+                                horizontal: 20,
+                                vertical: 10,
+                              ),
                               decoration: BoxDecoration(
                                 color: Theme.of(context).colorScheme.primary,
                                 borderRadius: BorderRadius.circular(10),
                                 boxShadow: [
                                   BoxShadow(
-                                    color: Theme.of(context).colorScheme.primary.withValues(alpha: 0.3),
+                                    color: Theme.of(context).colorScheme.primary
+                                        .withValues(alpha: 0.3),
                                     blurRadius: 8,
                                     offset: const Offset(0, 2),
-                                  )
+                                  ),
                                 ],
                               ),
                               child: isLoading
@@ -579,13 +692,25 @@ class PrivacySettingsScreen extends ConsumerWidget {
                                       height: 20,
                                       child: CircularProgressIndicator(
                                         strokeWidth: 2,
-                                        valueColor: AlwaysStoppedAnimation<Color>(Colors.white),
+                                        valueColor:
+                                            AlwaysStoppedAnimation<Color>(
+                                              Colors.white,
+                                            ),
                                       ),
                                     )
                                   : Text(
-                                      isVerified ? context.l10n.translate('Salva') : context.l10n.translate('Verifica'),
+                                      isVerified
+                                          ? context.l10n.translate('Salva')
+                                          : context.l10n.translate('Verifica'),
                                       style: GoogleFonts.inter(
-                                        color: Theme.of(context).colorScheme.primary.computeLuminance() > 0.5 ? Colors.black : Colors.white,
+                                        color:
+                                            Theme.of(context)
+                                                    .colorScheme
+                                                    .primary
+                                                    .computeLuminance() >
+                                                0.5
+                                            ? Colors.black
+                                            : Colors.white,
                                         fontWeight: FontWeight.w600,
                                       ),
                                     ),
@@ -616,26 +741,60 @@ class PrivacySettingsScreen extends ConsumerWidget {
       enableSuggestions: false,
       decoration: InputDecoration(
         labelText: label,
-        labelStyle: TextStyle(color: context.appColors.mutedForeground, fontSize: 14),
-        floatingLabelStyle: TextStyle(color: Theme.of(context).colorScheme.primary),
+        labelStyle: TextStyle(
+          color: context.appColors.mutedForeground,
+          fontSize: 14,
+        ),
+        floatingLabelStyle: TextStyle(
+          color: Theme.of(context).colorScheme.primary,
+        ),
         filled: true,
         fillColor: context.appColors.background.withValues(alpha: 0.5),
-        contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
+        contentPadding: const EdgeInsets.symmetric(
+          horizontal: 16,
+          vertical: 14,
+        ),
         enabledBorder: OutlineInputBorder(
           borderRadius: BorderRadius.circular(12),
-          borderSide: BorderSide(color: context.appColors.border.withValues(alpha: 0.5)),
+          borderSide: BorderSide(
+            color: context.appColors.border.withValues(alpha: 0.5),
+          ),
         ),
         focusedBorder: OutlineInputBorder(
           borderRadius: BorderRadius.circular(12),
-          borderSide: BorderSide(color: Theme.of(context).colorScheme.primary, width: 1.5),
+          borderSide: BorderSide(
+            color: Theme.of(context).colorScheme.primary,
+            width: 1.5,
+          ),
         ),
       ),
-      style: TextStyle(color: context.appColors.foreground, fontFamily: 'Inter', fontSize: 14),
+      style: TextStyle(
+        color: context.appColors.foreground,
+        fontFamily: 'Inter',
+        fontSize: 14,
+      ),
     );
   }
 
   Future<void> _exportData(BuildContext context, WidgetRef ref) async {
     try {
+      if (ref.read(activeDataModeProvider) == AppDataMode.private) {
+        final shareText = context.l10n.translate(
+          'I miei dati privati esportati da Evolve',
+        );
+        final data = await ref.read(privateLocalDatabaseProvider).exportData();
+        final jsonString = const JsonEncoder.withIndent('  ').convert(data);
+        final file = XFile.fromData(
+          utf8.encode(jsonString),
+          mimeType: 'application/json',
+          name: 'evolve_private_export.json',
+        );
+        await SharePlus.instance.share(
+          ShareParams(files: [file], text: shareText),
+        );
+        return;
+      }
+
       final settings = ref.read(settingsProvider);
       final goals = ref.read(goalsProvider);
       final macroGoals = ref.read(macroGoalsProvider).goals;
@@ -645,7 +804,8 @@ class PrivacySettingsScreen extends ConsumerWidget {
         'exportDate': DateTime.now().toIso8601String(),
         'settings': {
           'themeMode': settings.themeMode,
-          'accentColor': '#${settings.accentColor.toARGB32().toRadixString(16).substring(2)}',
+          'accentColor':
+              '#${settings.accentColor.toARGB32().toRadixString(16).substring(2)}',
           'defaultCalendarView': settings.defaultCalendarView,
           'hapticFeedback': settings.hapticFeedback,
           'language': settings.language,
@@ -692,7 +852,10 @@ class PrivacySettingsScreen extends ConsumerWidget {
       }
     }
   }
+
   void _showDeleteOrResetModal(BuildContext context, WidgetRef ref) {
+    final isPrivateMode =
+        ref.read(activeDataModeProvider) == AppDataMode.private;
     showDialog(
       context: context,
       builder: (context) {
@@ -706,13 +869,16 @@ class PrivacySettingsScreen extends ConsumerWidget {
               decoration: BoxDecoration(
                 color: context.appColors.card.withValues(alpha: 0.95),
                 borderRadius: BorderRadius.circular(24),
-                border: Border.all(color: context.appColors.border.withValues(alpha: 0.5), width: 1.5),
+                border: Border.all(
+                  color: context.appColors.border.withValues(alpha: 0.5),
+                  width: 1.5,
+                ),
                 boxShadow: [
                   BoxShadow(
                     color: Colors.black.withValues(alpha: 0.2),
                     blurRadius: 20,
                     spreadRadius: 5,
-                  )
+                  ),
                 ],
               ),
               child: Column(
@@ -720,7 +886,9 @@ class PrivacySettingsScreen extends ConsumerWidget {
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
                   Text(
-                    context.l10n.translate('Gestione Account e Dati'),
+                    isPrivateMode
+                        ? context.l10n.translate('Gestione Dati Privati')
+                        : context.l10n.translate('Gestione Account e Dati'),
                     style: GoogleFonts.inter(
                       fontSize: 20,
                       fontWeight: FontWeight.w700,
@@ -729,55 +897,94 @@ class PrivacySettingsScreen extends ConsumerWidget {
                   ),
                   const SizedBox(height: 4),
                   Text(
-                    context.l10n.translate('Scegli l\'operazione che desideri effettuare. Entrambe le azioni richiedono conferma.'),
+                    context.l10n.translate(
+                      'Scegli l\'operazione che desideri effettuare. Entrambe le azioni richiedono conferma.',
+                    ),
                     style: GoogleFonts.inter(
                       fontSize: 13,
                       color: context.appColors.mutedForeground,
                     ),
                   ),
                   const SizedBox(height: 24),
-                  
-                  _buildOptionCard(
-                    context: context,
-                    icon: LucideIcons.refreshCw,
-                    title: context.l10n.translate('Resetta i Dati'),
-                    subtitle: context.l10n.translate('Eliminerà abitudini, obiettivi e preferenze, ma manterrà il tuo account attivo.'),
-                    onTap: () {
-                      Navigator.pop(context);
-                      _showConfirmationDialog(
-                        context: context,
-                        title: context.l10n.translate('Conferma Reset Dati'),
-                        message: context.l10n.translate('Sei sicuro di voler eliminare tutti i tuoi dati? Questa azione non può essere annullata.'),
-                        onConfirm: () async {
-                          await _resetData(context, ref);
-                        },
-                      );
-                    },
-                  ),
-                  const SizedBox(height: 16),
-                  
-                  _buildOptionCard(
-                    context: context,
-                    icon: LucideIcons.trash2,
-                    title: context.l10n.translate('Elimina l\'account'),
-                    subtitle: context.l10n.translate('Eliminerà definitivamente il tuo account e tutti i dati associati. Questa azione è irreversibile.'),
-                    titleColor: AppColors.destructive,
-                    onTap: () {
-                      Navigator.pop(context);
-                      _showConfirmationDialog(
-                        context: context,
-                        title: context.l10n.translate('Conferma Eliminazione Account'),
-                        message: context.l10n.translate('Sei sicuro di voler eliminare definitivamente il tuo account? Tutti i tuoi dati andranno persi per sempre.'),
-                        isDestructive: true,
-                        onConfirm: () async {
-                          await _deleteAccount(context, ref);
-                        },
-                      );
-                    },
-                  ),
-                  
+
+                  if (isPrivateMode)
+                    _buildOptionCard(
+                      context: context,
+                      icon: LucideIcons.trash2,
+                      title: context.l10n.translate('Elimina dati privati'),
+                      subtitle: context.l10n.translate(
+                        'Eliminerà definitivamente i dati salvati su questo dispositivo.',
+                      ),
+                      titleColor: AppColors.destructive,
+                      onTap: () {
+                        Navigator.pop(context);
+                        _showConfirmationDialog(
+                          context: context,
+                          title: context.l10n.translate(
+                            'Conferma eliminazione dati privati',
+                          ),
+                          message: context.l10n.translate(
+                            'Sei sicuro di voler eliminare tutti i dati privati? Questa azione non può essere annullata.',
+                          ),
+                          isDestructive: true,
+                          onConfirm: () async {
+                            await _resetData(context, ref);
+                          },
+                        );
+                      },
+                    )
+                  else ...[
+                    _buildOptionCard(
+                      context: context,
+                      icon: LucideIcons.refreshCw,
+                      title: context.l10n.translate('Resetta i Dati'),
+                      subtitle: context.l10n.translate(
+                        'Eliminerà abitudini, obiettivi e preferenze, ma manterrà il tuo account attivo.',
+                      ),
+                      onTap: () {
+                        Navigator.pop(context);
+                        _showConfirmationDialog(
+                          context: context,
+                          title: context.l10n.translate('Conferma Reset Dati'),
+                          message: context.l10n.translate(
+                            'Sei sicuro di voler eliminare tutti i tuoi dati? Questa azione non può essere annullata.',
+                          ),
+                          onConfirm: () async {
+                            await _resetData(context, ref);
+                          },
+                        );
+                      },
+                    ),
+                    const SizedBox(height: 16),
+                    _buildOptionCard(
+                      context: context,
+                      icon: LucideIcons.trash2,
+                      title: context.l10n.translate('Elimina l\'account'),
+                      subtitle: context.l10n.translate(
+                        'Eliminerà definitivamente il tuo account e tutti i dati associati. Questa azione è irreversibile.',
+                      ),
+                      titleColor: AppColors.destructive,
+                      onTap: () {
+                        Navigator.pop(context);
+                        _showConfirmationDialog(
+                          context: context,
+                          title: context.l10n.translate(
+                            'Conferma Eliminazione Account',
+                          ),
+                          message: context.l10n.translate(
+                            'Sei sicuro di voler eliminare definitivamente il tuo account? Tutti i tuoi dati andranno persi per sempre.',
+                          ),
+                          isDestructive: true,
+                          onConfirm: () async {
+                            await _deleteAccount(context, ref);
+                          },
+                        );
+                      },
+                    ),
+                  ],
+
                   const SizedBox(height: 24),
-                  
+
                   Row(
                     mainAxisAlignment: MainAxisAlignment.end,
                     children: [
@@ -817,14 +1024,18 @@ class PrivacySettingsScreen extends ConsumerWidget {
         decoration: BoxDecoration(
           color: context.appColors.background.withValues(alpha: 0.5),
           borderRadius: BorderRadius.circular(16),
-          border: Border.all(color: context.appColors.border.withValues(alpha: 0.5)),
+          border: Border.all(
+            color: context.appColors.border.withValues(alpha: 0.5),
+          ),
         ),
         child: Row(
           children: [
             Container(
               padding: const EdgeInsets.all(10),
               decoration: BoxDecoration(
-                color: (titleColor ?? context.appColors.foreground).withValues(alpha: 0.1),
+                color: (titleColor ?? context.appColors.foreground).withValues(
+                  alpha: 0.1,
+                ),
                 borderRadius: BorderRadius.circular(12),
               ),
               child: Icon(
@@ -888,13 +1099,16 @@ class PrivacySettingsScreen extends ConsumerWidget {
               decoration: BoxDecoration(
                 color: context.appColors.card.withValues(alpha: 0.95),
                 borderRadius: BorderRadius.circular(24),
-                border: Border.all(color: context.appColors.border.withValues(alpha: 0.5), width: 1.5),
+                border: Border.all(
+                  color: context.appColors.border.withValues(alpha: 0.5),
+                  width: 1.5,
+                ),
                 boxShadow: [
                   BoxShadow(
                     color: Colors.black.withValues(alpha: 0.2),
                     blurRadius: 20,
                     spreadRadius: 5,
-                  )
+                  ),
                 ],
               ),
               child: Column(
@@ -906,7 +1120,9 @@ class PrivacySettingsScreen extends ConsumerWidget {
                     style: GoogleFonts.inter(
                       fontSize: 18,
                       fontWeight: FontWeight.w700,
-                      color: isDestructive ? AppColors.destructive : context.appColors.foreground,
+                      color: isDestructive
+                          ? AppColors.destructive
+                          : context.appColors.foreground,
                     ),
                   ),
                   const SizedBox(height: 8),
@@ -938,17 +1154,26 @@ class PrivacySettingsScreen extends ConsumerWidget {
                           onConfirm();
                         },
                         child: Container(
-                          padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+                          padding: const EdgeInsets.symmetric(
+                            horizontal: 16,
+                            vertical: 8,
+                          ),
                           decoration: BoxDecoration(
-                            color: isDestructive ? AppColors.destructive : Theme.of(context).colorScheme.primary,
+                            color: isDestructive
+                                ? AppColors.destructive
+                                : Theme.of(context).colorScheme.primary,
                             borderRadius: BorderRadius.circular(10),
                           ),
                           child: Text(
                             context.l10n.translate('Conferma'),
                             style: GoogleFonts.inter(
-                              color: isDestructive 
-                                  ? Colors.white 
-                                  : (Theme.of(context).colorScheme.primary.computeLuminance() > 0.5 ? Colors.black : Colors.white),
+                              color: isDestructive
+                                  ? Colors.white
+                                  : (Theme.of(context).colorScheme.primary
+                                                .computeLuminance() >
+                                            0.5
+                                        ? Colors.black
+                                        : Colors.white),
                               fontWeight: FontWeight.w600,
                             ),
                           ),
@@ -967,22 +1192,60 @@ class PrivacySettingsScreen extends ConsumerWidget {
 
   Future<void> _resetData(BuildContext context, WidgetRef ref) async {
     try {
+      if (ref.read(activeDataModeProvider) == AppDataMode.private) {
+        await NotificationService().cancelAll();
+        await ref.read(privateLocalDatabaseProvider).deleteAllPrivateData();
+        ref.invalidate(goalsProvider);
+        ref.invalidate(habitLogsProvider);
+        ref.invalidate(habitStatsProvider);
+        ref.invalidate(habitAnalyticsProvider);
+        ref.invalidate(globalCriticalDayProvider);
+        ref.invalidate(globalTrendProvider);
+        ref.invalidate(criticalHabitsProvider);
+        ref.invalidate(bestHabitsProvider);
+        ref.invalidate(habitPerformanceProvider);
+        ref.invalidate(habitAlertsProvider);
+        ref.invalidate(habitYearlyGridProvider);
+        ref.invalidate(habitCorrelationsProvider);
+        ref.invalidate(allHabitCorrelationsProvider);
+        ref.invalidate(macroGoalsProvider);
+        ref.invalidate(macroGoalCategoriesProvider);
+        ref.invalidate(macroGoalsStatsProvider);
+        ref.invalidate(dailyMoodsProvider);
+        ref.invalidate(userProfileProvider);
+        ref.invalidate(settingsProvider);
+        if (context.mounted) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            SnackBar(
+              content: Text(
+                context.l10n.translate('Dati privati eliminati con successo!'),
+              ),
+            ),
+          );
+        }
+        return;
+      }
+
       final supabase = Supabase.instance.client;
       final user = supabase.auth.currentUser;
       if (user == null) throw Exception('Utente non trovato.');
 
       await supabase.from('goals').delete().eq('user_id', user.id);
       await supabase.from('long_term_goals').delete().eq('user_id', user.id);
-      
+
       // Clear local state and cache
       ref.read(goalsProvider.notifier).clearAll();
       ref.read(habitLogsProvider.notifier).clearAll();
       ref.read(macroGoalsProvider.notifier).clearAll();
       ref.read(settingsProvider.notifier).resetToDefaults();
-      
+
       if (context.mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text(context.l10n.translate('Dati resettati con successo!'))),
+          SnackBar(
+            content: Text(
+              context.l10n.translate('Dati resettati con successo!'),
+            ),
+          ),
         );
       }
     } catch (e, stack) {
@@ -1003,12 +1266,16 @@ class PrivacySettingsScreen extends ConsumerWidget {
 
       // Elimina l'utente e tutti i dati associati tramite RPC (security definer)
       await supabase.rpc('delete_user_account');
-      
+
       await supabase.auth.signOut();
-      
+
       if (context.mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text(context.l10n.translate('Account eliminato con successo!'))),
+          SnackBar(
+            content: Text(
+              context.l10n.translate('Account eliminato con successo!'),
+            ),
+          ),
         );
       }
     } catch (e, stack) {

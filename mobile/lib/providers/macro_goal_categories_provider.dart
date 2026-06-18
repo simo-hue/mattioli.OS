@@ -3,6 +3,8 @@ import '../core/localization.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 import '../models/macro_goal.dart';
 import 'auth_provider.dart';
+import '../core/data_mode.dart';
+import '../core/private_local_database.dart';
 import '../core/navigator_key.dart';
 import '../core/app_logger.dart';
 import '../ui/widgets/error_modal.dart';
@@ -10,6 +12,10 @@ import '../ui/widgets/error_modal.dart';
 class MacroGoalCategoriesNotifier extends AsyncNotifier<List<GoalCategory>> {
   @override
   Future<List<GoalCategory>> build() async {
+    if (ref.watch(activeDataModeProvider) == AppDataMode.private) {
+      return ref.read(privateLocalDatabaseProvider).loadMacroGoalCategories();
+    }
+
     final authState = ref.watch(authProvider);
     if (!authState.isLoggedIn || authState.user == null) {
       return [];
@@ -34,6 +40,19 @@ class MacroGoalCategoriesNotifier extends AsyncNotifier<List<GoalCategory>> {
   }
 
   Future<String?> addCategory(String name, String colorHex) async {
+    if (ref.read(activeDataModeProvider) == AppDataMode.private) {
+      try {
+        final id = await ref
+            .read(privateLocalDatabaseProvider)
+            .addMacroGoalCategory(name, colorHex);
+        ref.invalidateSelf();
+        return id;
+      } catch (e, stack) {
+        AppLogger.error('[Categories] Private add error', e, stack);
+        return null;
+      }
+    }
+
     final authState = ref.read(authProvider);
     if (!authState.isLoggedIn || authState.user == null) return null;
 
@@ -72,6 +91,19 @@ class MacroGoalCategoriesNotifier extends AsyncNotifier<List<GoalCategory>> {
   }
 
   Future<bool> updateCategory(String id, String name, String colorHex) async {
+    if (ref.read(activeDataModeProvider) == AppDataMode.private) {
+      try {
+        await ref
+            .read(privateLocalDatabaseProvider)
+            .updateMacroGoalCategory(id, name, colorHex);
+        ref.invalidateSelf();
+        return true;
+      } catch (e, stack) {
+        AppLogger.error('[Categories] Private update error', e, stack);
+        return false;
+      }
+    }
+
     final authState = ref.read(authProvider);
     if (!authState.isLoggedIn || authState.user == null) return false;
 
@@ -104,6 +136,19 @@ class MacroGoalCategoriesNotifier extends AsyncNotifier<List<GoalCategory>> {
   }
 
   Future<bool> deleteCategory(String id) async {
+    if (ref.read(activeDataModeProvider) == AppDataMode.private) {
+      try {
+        await ref
+            .read(privateLocalDatabaseProvider)
+            .archiveMacroGoalCategory(id);
+        ref.invalidateSelf();
+        return true;
+      } catch (e, stack) {
+        AppLogger.error('[Categories] Private archive error', e, stack);
+        return false;
+      }
+    }
+
     final authState = ref.read(authProvider);
     if (!authState.isLoggedIn || authState.user == null) return false;
 

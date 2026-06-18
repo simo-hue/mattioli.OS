@@ -4,6 +4,8 @@ import '../core/notifications.dart';
 import '../core/app_logger.dart';
 import '../core/subscription_service.dart';
 import '../core/secure_storage_utils.dart';
+import '../core/data_mode.dart';
+import '../core/private_local_database.dart';
 import 'shared_prefs_provider.dart';
 import 'auth_provider.dart';
 import 'goal_provider.dart';
@@ -186,15 +188,24 @@ class AppSettingsNotifier extends Notifier<AppSettings> {
 
   @override
   AppSettings build() {
+    final dataMode = ref.watch(activeDataModeProvider);
     // 1. Caricamento sincrono iniziale da SharedPreferences (Offline-First)
-    final state = _loadFromPrefs();
+    final state = dataMode == AppDataMode.private
+        ? _defaultSettings().copyWith(isPro: true)
+        : _loadFromPrefs();
 
-    // Carica le impostazioni sicure in modo asincrono per garantire coerenza UI
-    _loadSecureSettings();
+    if (dataMode == AppDataMode.private) {
+      _loadPrivateSettings();
+    } else {
+      // Carica le impostazioni sicure in modo asincrono per garantire coerenza UI
+      _loadSecureSettings();
+    }
 
     // 2. Ascolta i cambi di autenticazione: se l'utente fa login, sincronizziamo da Supabase e RevenueCat
     ref.listen(authProvider, (previous, next) {
-      if (next.isLoggedIn && next.user != null) {
+      if (next.dataMode == AppDataMode.supabase &&
+          next.isLoggedIn &&
+          next.user != null) {
         _syncFromSupabase(next.user!.id);
         ref.read(subscriptionServiceProvider).init(next.user!.id);
       }
@@ -202,7 +213,9 @@ class AppSettingsNotifier extends Notifier<AppSettings> {
 
     // Sincronizzazione iniziale se già loggato al riavvio dell'app
     final authState = ref.read(authProvider);
-    if (authState.isLoggedIn && authState.user != null) {
+    if (dataMode == AppDataMode.supabase &&
+        authState.isLoggedIn &&
+        authState.user != null) {
       _syncFromSupabase(authState.user!.id);
       ref.read(subscriptionServiceProvider).init(authState.user!.id);
     }
@@ -254,9 +267,30 @@ class AppSettingsNotifier extends Notifier<AppSettings> {
     }
   }
 
+  Future<void> _loadPrivateSettings() async {
+    try {
+      final row = await ref
+          .read(privateLocalDatabaseProvider)
+          .loadSettingsRow();
+      state = _settingsFromPrivateRow(row);
+      _syncNotifications();
+    } catch (e, stack) {
+      AppLogger.error('[Settings] Private settings load error', e, stack);
+      state = state.copyWith(isPro: true);
+    }
+  }
+
   // ── Modificatori ──────────────────────────────────────────────────────────
 
   void resetToDefaults() {
+    if (ref.read(activeDataModeProvider) == AppDataMode.private) {
+      final defaults = _defaultSettings().copyWith(isPro: true);
+      state = defaults;
+      _saveToPrivate(defaults);
+      _syncNotifications();
+      return;
+    }
+
     final prefs = ref.read(sharedPrefsProvider);
     final keys = prefs.getKeys();
     for (final key in keys) {
@@ -282,16 +316,26 @@ class AppSettingsNotifier extends Notifier<AppSettings> {
     }
 
     state = finalSettings;
-    _saveToPrefs(state);
-    _syncToSupabase(state);
+    if (ref.read(activeDataModeProvider) == AppDataMode.private) {
+      state = state.copyWith(isPro: true);
+      _saveToPrivate(state);
+    } else {
+      _saveToPrefs(state);
+      _syncToSupabase(state);
+    }
     _syncNotifications();
   }
 
   void setAccentColor(Color color) {
     final safeColor = _ensureSafeAccentColor(color, state.themeMode);
     state = state.copyWith(accentColor: safeColor);
-    _saveToPrefs(state);
-    _syncToSupabase(state);
+    if (ref.read(activeDataModeProvider) == AppDataMode.private) {
+      state = state.copyWith(isPro: true);
+      _saveToPrivate(state);
+    } else {
+      _saveToPrefs(state);
+      _syncToSupabase(state);
+    }
   }
 
   /// Robust check to prevent "invisible" UI elements (e.g. white accent on white background)
@@ -315,10 +359,16 @@ class AppSettingsNotifier extends Notifier<AppSettings> {
   }
 
   void toggleAi(bool value) {
-    if (state.isPro) {
+    if (state.isPro ||
+        ref.read(activeDataModeProvider) == AppDataMode.private) {
       state = state.copyWith(aiSuggestions: value);
-      _saveToPrefs(state);
-      _syncToSupabase(state);
+      if (ref.read(activeDataModeProvider) == AppDataMode.private) {
+        state = state.copyWith(isPro: true);
+        _saveToPrivate(state);
+      } else {
+        _saveToPrefs(state);
+        _syncToSupabase(state);
+      }
       _syncNotifications();
     }
   }
@@ -370,6 +420,102 @@ class AppSettingsNotifier extends Notifier<AppSettings> {
       eveningReviewTime:
           prefs.getString('notif_evening_review_time') ?? '21:00',
     );
+  }
+
+  AppSettings _defaultSettings() {
+    return AppSettings(
+      themeMode: 'dark',
+      accentColor: premiumAccentColors[0],
+      defaultCalendarView: 'settimana',
+      hapticFeedback: true,
+      language: AppLanguagePreference.system,
+      timeFormat24h: true,
+      aiSuggestions: false,
+      isPro: false,
+      focusMode: false,
+      milestones: true,
+      deepWorkInsights: false,
+      habitReminders: true,
+      goalDeadlines: true,
+      aiInsights: false,
+      weeklyReports: false,
+      eveningReview: true,
+      biometricLock: false,
+      morningBriefTime: '09:00',
+      eveningReviewTime: '21:00',
+    );
+  }
+
+  AppSettings _settingsFromPrivateRow(Map<String, dynamic> row) {
+    Color parseColor(String? hexString) {
+      if (hexString == null || hexString.isEmpty) return premiumAccentColors[0];
+      try {
+        final buffer = StringBuffer();
+        if (hexString.length == 6 || hexString.length == 7) buffer.write('ff');
+        buffer.write(hexString.replaceFirst('#', ''));
+        return Color(int.parse(buffer.toString(), radix: 16));
+      } catch (_) {
+        return premiumAccentColors[0];
+      }
+    }
+
+    bool boolValue(String key, bool fallback) {
+      final value = row[key];
+      if (value is bool) return value;
+      if (value is int) return value == 1;
+      return fallback;
+    }
+
+    return AppSettings(
+      themeMode: row['theme_mode'] as String? ?? 'dark',
+      accentColor: parseColor(row['accent_color'] as String?),
+      defaultCalendarView:
+          row['pref_default_calendar_view'] as String? ?? 'settimana',
+      hapticFeedback: boolValue('pref_haptic_feedback', true),
+      language: AppLanguagePreference.normalize(row['language'] as String?),
+      timeFormat24h: boolValue('pref_time_format_24h', true),
+      aiSuggestions: boolValue('pref_ai_suggestions', false),
+      isPro: true,
+      habitReminders: boolValue('notif_habit_reminders', true),
+      goalDeadlines: boolValue('notif_goal_deadlines', true),
+      aiInsights: boolValue('notif_ai_insights', false),
+      weeklyReports: boolValue('notif_weekly_reports', false),
+      focusMode: boolValue('pref_focus_mode', false),
+      milestones: boolValue('pref_milestones', true),
+      deepWorkInsights: boolValue('pref_deep_work_insights', false),
+      biometricLock: boolValue('biometric_lock', false),
+      eveningReview: boolValue('notif_evening_review', true),
+      morningBriefTime: row['morning_brief_time'] as String? ?? '09:00',
+      eveningReviewTime: row['evening_review_time'] as String? ?? '21:00',
+    );
+  }
+
+  void _saveToPrivate(AppSettings s) {
+    String toHex(Color color) =>
+        '#${color.toARGB32().toRadixString(16).substring(2, 8).toUpperCase()}';
+
+    ref.read(privateLocalDatabaseProvider).updateSettingsRow({
+      'theme_mode': s.themeMode,
+      'accent_color': toHex(s.accentColor),
+      'pref_default_calendar_view': s.defaultCalendarView,
+      'pref_haptic_feedback': s.hapticFeedback ? 1 : 0,
+      'language': AppLanguagePreference.normalize(s.language),
+      'pref_time_format_24h': s.timeFormat24h ? 1 : 0,
+      'pref_ai_suggestions': s.aiSuggestions ? 1 : 0,
+      'pref_focus_mode': s.focusMode ? 1 : 0,
+      'pref_milestones': s.milestones ? 1 : 0,
+      'pref_deep_work_insights': s.deepWorkInsights ? 1 : 0,
+      'notif_habit_reminders': s.habitReminders ? 1 : 0,
+      'notif_goal_deadlines': s.goalDeadlines ? 1 : 0,
+      'notif_ai_insights': s.aiInsights ? 1 : 0,
+      'notif_weekly_reports': s.weeklyReports ? 1 : 0,
+      'notif_evening_review': s.eveningReview ? 1 : 0,
+      'biometric_lock': s.biometricLock ? 1 : 0,
+      'morning_brief_time': s.morningBriefTime,
+      'evening_review_time': s.eveningReviewTime,
+      'is_pro': 1,
+      'sentry_consent': 0,
+    });
   }
 
   void _saveToPrefs(AppSettings s) {

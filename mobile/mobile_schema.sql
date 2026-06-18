@@ -74,12 +74,17 @@ CREATE TABLE IF NOT EXISTS public.profiles (
 
     -- Privacy
     biometric_lock      boolean NOT NULL DEFAULT false,
-    terms_accepted_at   timestamp with time zone,
-    sentry_consent      boolean NOT NULL DEFAULT false,
 
     -- Timestamps
     created_at  timestamp with time zone DEFAULT now() NOT NULL,
-    updated_at  timestamp with time zone DEFAULT now() NOT NULL
+    updated_at  timestamp with time zone DEFAULT now() NOT NULL,
+
+    -- Profilo e notifiche schedulate
+    date_of_birth       date,
+    morning_brief_time  text DEFAULT '09:00',
+    evening_review_time text DEFAULT '21:00',
+    terms_accepted_at   timestamp with time zone,
+    sentry_consent      boolean NOT NULL DEFAULT false
 );
 
 ALTER TABLE public.profiles ENABLE ROW LEVEL SECURITY;
@@ -140,7 +145,8 @@ CREATE TABLE IF NOT EXISTS public.goals (
     end_date        timestamp with time zone,
     display_order   integer,
     created_at      timestamp with time zone DEFAULT now() NOT NULL,
-    updated_at      timestamp with time zone DEFAULT now() NOT NULL
+    updated_at      timestamp with time zone DEFAULT now() NOT NULL,
+    reminder_time   text
 );
 
 ALTER TABLE public.goals ENABLE ROW LEVEL SECURITY;
@@ -173,6 +179,7 @@ CREATE TABLE IF NOT EXISTS public.goal_logs (
     value   numeric,  -- per abitudini misurabili (es. km corsi, pagine lette)
     created_at  timestamp with time zone DEFAULT now() NOT NULL,
     updated_at  timestamp with time zone DEFAULT now() NOT NULL,
+    streak      integer DEFAULT 0,
     -- Un solo log per abitudine per giorno
     CONSTRAINT goal_logs_goal_date_unique UNIQUE (goal_id, date)
 );
@@ -206,6 +213,28 @@ END $$;
 
 
 -- ============================================================
+-- TABLE: macro_goal_categories
+-- Categorie personalizzate dei macro goal.
+-- Le categorie archiviate restano disponibili per storico e sync.
+-- ============================================================
+CREATE TABLE IF NOT EXISTS public.macro_goal_categories (
+    id          uuid DEFAULT gen_random_uuid() NOT NULL PRIMARY KEY,
+    user_id     uuid REFERENCES auth.users(id) ON DELETE CASCADE NOT NULL,
+    name        text NOT NULL,
+    color       text NOT NULL,
+    created_at  timestamp with time zone DEFAULT now() NOT NULL,
+    archived_at timestamp with time zone,
+    CONSTRAINT macro_goal_categories_name_user_unique UNIQUE (user_id, name)
+);
+
+ALTER TABLE public.macro_goal_categories ENABLE ROW LEVEL SECURITY;
+
+CREATE POLICY "Gli utenti possono gestire solo le proprie categorie"
+    ON public.macro_goal_categories FOR ALL
+    USING (auth.uid() = user_id);
+
+
+-- ============================================================
 -- TABLE: long_term_goals  (macro goals)
 -- Specchio esatto del modello MacroGoal in Flutter.
 -- status: 'active' | 'completed' | 'failed'
@@ -224,7 +253,8 @@ CREATE TABLE IF NOT EXISTS public.long_term_goals (
     color       text,
     category_key text,  -- es. 'lavoro', 'salute', 'finanza' ...
     created_at  timestamp with time zone DEFAULT now() NOT NULL,
-    updated_at  timestamp with time zone DEFAULT now() NOT NULL
+    updated_at  timestamp with time zone DEFAULT now() NOT NULL,
+    category_id uuid REFERENCES public.macro_goal_categories(id) ON DELETE SET NULL
 );
 
 ALTER TABLE public.long_term_goals ENABLE ROW LEVEL SECURITY;
@@ -246,14 +276,14 @@ CREATE TRIGGER update_long_term_goals_updated_at
 -- ============================================================
 -- TABLE: daily_moods
 -- Un record per utente per giorno.
--- mood_score e energy_score: scala 1-5
+-- mood_score e energy_score: scala 0-10
 -- ============================================================
 CREATE TABLE IF NOT EXISTS public.daily_moods (
     id           uuid DEFAULT gen_random_uuid() NOT NULL PRIMARY KEY,
     user_id      uuid REFERENCES auth.users(id) ON DELETE CASCADE NOT NULL,
     date         date NOT NULL,
-    mood_score   integer NOT NULL CHECK (mood_score   >= 1 AND mood_score   <= 5),
-    energy_score integer NOT NULL CHECK (energy_score >= 1 AND energy_score <= 5),
+    mood_score   integer NOT NULL CHECK (mood_score   >= 0 AND mood_score   <= 10),
+    energy_score integer NOT NULL CHECK (energy_score >= 0 AND energy_score <= 10),
     created_at   timestamp with time zone DEFAULT now() NOT NULL,
     updated_at   timestamp with time zone DEFAULT now() NOT NULL,
     -- Un solo record mood per utente per giorno
@@ -366,6 +396,11 @@ CREATE INDEX IF NOT EXISTS idx_ltg_user_type_year
 CREATE INDEX IF NOT EXISTS idx_ltg_user_status
     ON public.long_term_goals (user_id, status);
 
+-- Macro goal categories: listing delle categorie attive per utente
+CREATE INDEX IF NOT EXISTS macro_goal_categories_active_idx
+    ON public.macro_goal_categories (user_id, created_at)
+    WHERE archived_at IS NULL;
+
 -- Mood: query per grafico degli ultimi N giorni
 CREATE INDEX IF NOT EXISTS idx_moods_user_date
     ON public.daily_moods (user_id, date DESC);
@@ -391,5 +426,6 @@ CREATE INDEX IF NOT EXISTS idx_ai_insights_lookup
 --   goal_logs
 --   goals
 --   long_term_goals
+--   macro_goal_categories
 --   profiles
 -- ============================================================

@@ -8,6 +8,8 @@ import 'package:url_launcher/url_launcher.dart';
 import 'package:permission_handler/permission_handler.dart';
 import 'package:sentry_flutter/sentry_flutter.dart';
 import '../../core/sentry_config.dart';
+import '../../core/app_logger.dart';
+import '../../core/data_mode.dart';
 import '../../providers/consent_provider.dart';
 import '../../providers/auth_provider.dart';
 import '../../core/theme.dart';
@@ -54,7 +56,11 @@ class _ConsentScreenState extends ConsumerState<ConsentScreen> {
     if (!await launchUrl(url, mode: LaunchMode.externalApplication)) {
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text(context.l10n.translate('Impossibile aprire il link.'))),
+          SnackBar(
+            content: Text(
+              context.l10n.translate('Impossibile aprire il link.'),
+            ),
+          ),
         );
       }
     }
@@ -64,9 +70,7 @@ class _ConsentScreenState extends ConsumerState<ConsentScreen> {
     if (!_acceptedTerms) {
       ref.hapticHeavy();
       ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(
-          content: Text(context.l10n.consentTermsRequired),
-        ),
+        SnackBar(content: Text(context.l10n.consentTermsRequired)),
       );
       return;
     }
@@ -93,7 +97,10 @@ class _ConsentScreenState extends ConsumerState<ConsentScreen> {
     }
 
     // Inizializza Sentry immediatamente se l'utente ha dato il consenso
-    if (_sentryConsent) {
+    final isPrivateMode =
+        ref.read(activeDataModeProvider) == AppDataMode.private;
+    if (_sentryConsent && !isPrivateMode) {
+      AppLogger.setExternalReportingDisabled(false);
       await SentryFlutter.init((options) {
         options.dsn = SentryConfig.dsn;
         options.environment = SentryConfig.environment;
@@ -207,7 +214,9 @@ class _ConsentScreenState extends ConsumerState<ConsentScreen> {
                         // Item 1: Terms & Privacy
                         _buildConsentCard(
                           icon: LucideIcons.fileText,
-                          title: context.l10n.translate('Termini e Privacy Policy'),
+                          title: context.l10n.translate(
+                            'Termini e Privacy Policy',
+                          ),
                           description: context.l10n.termsConsentDescription,
                           trailing: Checkbox(
                             value: _acceptedTerms,

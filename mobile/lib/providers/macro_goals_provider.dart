@@ -8,6 +8,8 @@ import 'shared_prefs_provider.dart';
 import 'auth_provider.dart';
 import '../core/navigator_key.dart';
 import '../core/app_logger.dart';
+import '../core/data_mode.dart';
+import '../core/private_local_database.dart';
 import '../ui/widgets/error_modal.dart';
 
 // ─── State ────────────────────────────────────────────────────────────────────
@@ -41,6 +43,12 @@ class MacroGoalsNotifier extends Notifier<MacroGoalsState> {
 
   @override
   MacroGoalsState build() {
+    final dataMode = ref.watch(activeDataModeProvider);
+    if (dataMode == AppDataMode.private) {
+      _loadFromPrivateStore();
+      return const MacroGoalsState(goals: []);
+    }
+
     // 1. Caricamento sincrono iniziale dalla cache (Offline-First)
     final initialState = _loadFromCache();
 
@@ -62,6 +70,18 @@ class MacroGoalsNotifier extends Notifier<MacroGoalsState> {
     }
 
     return initialState;
+  }
+
+  Future<void> _loadFromPrivateStore() async {
+    try {
+      final goals = await ref
+          .read(privateLocalDatabaseProvider)
+          .loadMacroGoals();
+      state = MacroGoalsState(goals: goals);
+    } catch (e, stack) {
+      AppLogger.error('[MacroGoals] Private load error', e, stack);
+      state = const MacroGoalsState(goals: []);
+    }
   }
 
   // ── Cache Locale ──────────────────────────────────────────────────────────
@@ -90,6 +110,7 @@ class MacroGoalsNotifier extends Notifier<MacroGoalsState> {
   // ── Sync da Supabase ──────────────────────────────────────────────────────
 
   Future<void> _syncFromSupabase() async {
+    if (ref.read(activeDataModeProvider) == AppDataMode.private) return;
     final user = supabase.auth.currentUser;
     if (user == null) return;
 
@@ -118,6 +139,12 @@ class MacroGoalsNotifier extends Notifier<MacroGoalsState> {
     // 1. Aggiornamento ottimistico
     final newGoals = [...state.goals, goal];
     state = state.copyWith(goals: newGoals);
+
+    if (ref.read(activeDataModeProvider) == AppDataMode.private) {
+      await ref.read(privateLocalDatabaseProvider).upsertMacroGoal(goal);
+      return;
+    }
+
     _saveToCache(newGoals);
 
     // 2. Invio al server
@@ -161,6 +188,13 @@ class MacroGoalsNotifier extends Notifier<MacroGoalsState> {
         .map((g) => g.id == id ? g.copyWith(status: status) : g)
         .toList();
     state = state.copyWith(goals: newGoals);
+
+    if (ref.read(activeDataModeProvider) == AppDataMode.private) {
+      final goal = newGoals.firstWhere((g) => g.id == id);
+      await ref.read(privateLocalDatabaseProvider).upsertMacroGoal(goal);
+      return;
+    }
+
     _saveToCache(newGoals);
 
     try {
@@ -187,6 +221,13 @@ class MacroGoalsNotifier extends Notifier<MacroGoalsState> {
         .map((g) => g.id == id ? g.copyWith(title: title) : g)
         .toList();
     state = state.copyWith(goals: newGoals);
+
+    if (ref.read(activeDataModeProvider) == AppDataMode.private) {
+      final goal = newGoals.firstWhere((g) => g.id == id);
+      await ref.read(privateLocalDatabaseProvider).upsertMacroGoal(goal);
+      return;
+    }
+
     _saveToCache(newGoals);
 
     try {
@@ -216,6 +257,13 @@ class MacroGoalsNotifier extends Notifier<MacroGoalsState> {
           : g.copyWith(categoryId: categoryId);
     }).toList();
     state = state.copyWith(goals: newGoals);
+
+    if (ref.read(activeDataModeProvider) == AppDataMode.private) {
+      final goal = newGoals.firstWhere((g) => g.id == id);
+      await ref.read(privateLocalDatabaseProvider).upsertMacroGoal(goal);
+      return;
+    }
+
     _saveToCache(newGoals);
 
     try {
@@ -240,6 +288,12 @@ class MacroGoalsNotifier extends Notifier<MacroGoalsState> {
   Future<void> deleteGoal(String id) async {
     final newGoals = state.goals.where((g) => g.id != id).toList();
     state = state.copyWith(goals: newGoals);
+
+    if (ref.read(activeDataModeProvider) == AppDataMode.private) {
+      await ref.read(privateLocalDatabaseProvider).deleteMacroGoal(id);
+      return;
+    }
+
     _saveToCache(newGoals);
 
     try {
@@ -322,6 +376,7 @@ class MacroGoalsNotifier extends Notifier<MacroGoalsState> {
       month: nextM,
       weekNumber: nextW,
       categoryKey: goal.categoryKey,
+      categoryId: goal.categoryId,
       createdAt: DateTime.now(),
     );
 
@@ -371,7 +426,9 @@ class MacroGoalsNotifier extends Notifier<MacroGoalsState> {
 
   void clearAll() {
     state = const MacroGoalsState(goals: []);
-    _saveToCache([]);
+    if (ref.read(activeDataModeProvider) != AppDataMode.private) {
+      _saveToCache([]);
+    }
   }
 }
 

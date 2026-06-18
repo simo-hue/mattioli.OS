@@ -6,7 +6,10 @@ import 'package:timezone/timezone.dart' as tz;
 import 'package:timezone/data/latest.dart' as tz;
 import 'package:flutter_timezone/flutter_timezone.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
+import 'package:shared_preferences/shared_preferences.dart';
 import '../l10n/generated/app_localizations.dart';
+import 'data_mode.dart';
+import 'private_local_database.dart';
 import 'supabase_config.dart';
 import 'app_logger.dart';
 
@@ -124,14 +127,24 @@ class NotificationService {
   }
 
   Future<void> _markHabitAsDone(String habitId) async {
-    final user = Supabase.instance.client.auth.currentUser;
-    if (user == null) return;
-
     final now = DateTime.now();
     final dateKey =
         '${now.year}-${now.month.toString().padLeft(2, '0')}-${now.day.toString().padLeft(2, '0')}';
 
     try {
+      if (await _isPrivateMode()) {
+        await PrivateLocalDatabase().setHabitLog(
+          goalId: habitId,
+          date: dateKey,
+          status: 'done',
+        );
+        debugPrint('[Notifications] Private habit $habitId marked as done');
+        return;
+      }
+
+      final user = Supabase.instance.client.auth.currentUser;
+      if (user == null) return;
+
       await Supabase.instance.client.from('goal_logs').upsert({
         'user_id': user.id,
         'goal_id': habitId,
@@ -186,14 +199,24 @@ class NotificationService {
   Future<void> _skipHabit(String habitId) async {
     await _notifications.cancel(id: habitId.hashCode);
 
-    final user = Supabase.instance.client.auth.currentUser;
-    if (user == null) return;
-
     final now = DateTime.now();
     final dateKey =
         '${now.year}-${now.month.toString().padLeft(2, '0')}-${now.day.toString().padLeft(2, '0')}';
 
     try {
+      if (await _isPrivateMode()) {
+        await PrivateLocalDatabase().setHabitLog(
+          goalId: habitId,
+          date: dateKey,
+          status: 'missed',
+        );
+        debugPrint('[Notifications] Private habit $habitId marked as missed');
+        return;
+      }
+
+      final user = Supabase.instance.client.auth.currentUser;
+      if (user == null) return;
+
       await Supabase.instance.client.from('goal_logs').upsert({
         'user_id': user.id,
         'goal_id': habitId,
@@ -371,6 +394,11 @@ class NotificationService {
     }
     return scheduledDate;
   }
+
+  Future<bool> _isPrivateMode() async {
+    final prefs = await SharedPreferences.getInstance();
+    return prefs.getString('active_data_mode') == AppDataMode.private.name;
+  }
 }
 
 @pragma('vm:entry-point')
@@ -389,14 +417,21 @@ void notificationTapBackground(NotificationResponse response) async {
     tz.setLocalLocation(tz.getLocation('UTC'));
   }
 
-  // Initialize Supabase if needed
-  try {
-    Supabase.instance.client;
-  } catch (e) {
-    await Supabase.initialize(
-      url: SupabaseConfig.url,
-      anonKey: SupabaseConfig.anonKey,
-    );
+  final prefs = await SharedPreferences.getInstance();
+  final isPrivateMode =
+      prefs.getString('active_data_mode') == AppDataMode.private.name;
+  AppLogger.setExternalReportingDisabled(isPrivateMode);
+
+  if (!isPrivateMode) {
+    // Initialize Supabase if needed
+    try {
+      Supabase.instance.client;
+    } catch (e) {
+      await Supabase.initialize(
+        url: SupabaseConfig.url,
+        anonKey: SupabaseConfig.anonKey,
+      );
+    }
   }
 
   NotificationService()._onNotificationResponse(response);

@@ -18,11 +18,18 @@ import '../../core/haptics.dart';
 import 'package:tutorial_coach_mark/tutorial_coach_mark.dart';
 import '../../providers/tutorial_provider.dart';
 import '../../core/localization.dart';
+import '../../core/app_logger.dart';
 
 class MacroGoalsScreen extends ConsumerStatefulWidget {
+  final bool isActive;
   final VoidCallback? onFinishTutorial;
   final GlobalKey? statsNavKey;
-  const MacroGoalsScreen({super.key, this.onFinishTutorial, this.statsNavKey});
+  const MacroGoalsScreen({
+    super.key,
+    required this.isActive,
+    this.onFinishTutorial,
+    this.statsNavKey,
+  });
 
   @override
   ConsumerState<MacroGoalsScreen> createState() => _MacroGoalsScreenState();
@@ -64,6 +71,19 @@ class _MacroGoalsScreenState extends ConsumerState<MacroGoalsScreen>
   }
 
   @override
+  void didUpdateWidget(covariant MacroGoalsScreen oldWidget) {
+    super.didUpdateWidget(oldWidget);
+    if (!oldWidget.isActive && widget.isActive) {
+      WidgetsBinding.instance.addPostFrameCallback((_) {
+        if (mounted) _checkGoalsTutorial();
+      });
+    }
+    if (oldWidget.isActive && !widget.isActive && _isShowingGoalsTutorial) {
+      _clearGoalsTutorialState(removeOverlay: true);
+    }
+  }
+
+  @override
   void dispose() {
     WidgetsBinding.instance.removeObserver(this);
     _goalsTutorialStartTimer?.cancel();
@@ -91,6 +111,8 @@ class _MacroGoalsScreenState extends ConsumerState<MacroGoalsScreen>
   }
 
   void _checkGoalsTutorial() {
+    if (!widget.isActive) return;
+
     final mainTutorialSeen = ref.read(tutorialProvider);
     final goalsTutorialSeen = ref.read(goalsTutorialProvider);
 
@@ -99,7 +121,7 @@ class _MacroGoalsScreenState extends ConsumerState<MacroGoalsScreen>
       if (_isShowingGoalsTutorial) return;
       _goalsTutorialStartTimer?.cancel();
       _goalsTutorialStartTimer = Timer(_tutorialStartDelay, () {
-        if (mounted) _showGoalsTutorial();
+        if (mounted && widget.isActive) _showGoalsTutorial();
       });
     }
   }
@@ -504,8 +526,25 @@ class _MacroGoalsScreenState extends ConsumerState<MacroGoalsScreen>
     }
   }
 
-  void _clearGoalsTutorialState() {
+  bool _areGoalsTutorialTargetsReady() {
+    return [
+      _planSelectorKey,
+      _addGoalKey,
+      _performanceToggleKey,
+      _tutorialCheckboxKey,
+      _tutorialCategoryKey,
+      _tutorialRescheduleKey,
+      _tutorialEditKey,
+      _tutorialDeleteKey,
+      if (widget.statsNavKey != null) widget.statsNavKey!,
+    ].every((key) => key.currentContext != null);
+  }
+
+  void _clearGoalsTutorialState({bool removeOverlay = false}) {
     _goalsTutorialMetricsTimer?.cancel();
+    if (removeOverlay) {
+      _goalsTutorial?.removeOverlayEntry();
+    }
     _goalsTutorial = null;
     _isShowingGoalsTutorial = false;
     _goalsTutorialIndex = 0;
@@ -519,7 +558,20 @@ class _MacroGoalsScreenState extends ConsumerState<MacroGoalsScreen>
   }
 
   void _showGoalsTutorial({int initialFocus = 0, bool replace = false}) {
+    if (!widget.isActive) return;
     if (_isShowingGoalsTutorial && !replace) return;
+    if (!_areGoalsTutorialTargetsReady()) {
+      AppLogger.warning(
+        '[Tutorial] Goals tutorial targets are not ready; delaying start',
+      );
+      _goalsTutorialStartTimer?.cancel();
+      _goalsTutorialStartTimer = Timer(_tutorialStartDelay, () {
+        if (mounted && widget.isActive) {
+          _showGoalsTutorial(initialFocus: initialFocus);
+        }
+      });
+      return;
+    }
 
     _goalsTutorialStartTimer?.cancel();
     _goalsTutorial?.removeOverlayEntry();
@@ -552,7 +604,12 @@ class _MacroGoalsScreenState extends ConsumerState<MacroGoalsScreen>
     );
 
     _goalsTutorial = tutorial;
-    tutorial.show(context: context);
+    try {
+      tutorial.show(context: context);
+    } catch (e, stack) {
+      _clearGoalsTutorialState();
+      AppLogger.warning('[Tutorial] Unable to start goals tutorial', e, stack);
+    }
   }
 
   @override
@@ -569,11 +626,11 @@ class _MacroGoalsScreenState extends ConsumerState<MacroGoalsScreen>
 
     // Ascolta anche i cambiamenti dello stato del main tutorial (es. se viene resettato)
     ref.listen(tutorialProvider, (prev, next) {
-      if (next == true && !ref.read(goalsTutorialProvider)) {
+      if (next == true && widget.isActive && !ref.read(goalsTutorialProvider)) {
         // Se il tutorial main finisce, controlla se bisogna lanciare questo (es. navigazione dalla tab)
         // Diamo tempo al cambio tab di terminare l'animazione
         Future.delayed(const Duration(milliseconds: 600), () {
-          if (mounted) _checkGoalsTutorial();
+          if (mounted && widget.isActive) _checkGoalsTutorial();
         });
       }
     });

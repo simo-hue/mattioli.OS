@@ -11,27 +11,36 @@ class AppBottomNavBar extends ConsumerWidget {
   final int currentIndex;
   final Function(int) onTap;
   final List<GlobalKey>? navKeys;
+  final bool navigationEnabled;
 
   const AppBottomNavBar({
     super.key,
     required this.currentIndex,
     required this.onTap,
     this.navKeys,
+    this.navigationEnabled = true,
   });
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final bottomPadding = MediaQuery.of(context).padding.bottom;
     final primaryColor = Theme.of(context).colorScheme.primary;
-    
+
     final items = [
-      _NavItem(icon: LucideIcons.activity, label: context.l10n.translate('Statistiche')),
+      _NavItem(
+        icon: LucideIcons.activity,
+        label: context.l10n.translate('Statistiche'),
+      ),
       _NavItem(icon: LucideIcons.house, label: context.l10n.translate('Home')),
-      _NavItem(icon: LucideIcons.chartPie, label: context.l10n.translate('Obiettivi')),
+      _NavItem(
+        icon: LucideIcons.chartPie,
+        label: context.l10n.translate('Obiettivi'),
+      ),
     ];
 
     return GestureDetector(
       onHorizontalDragEnd: (details) {
+        if (!navigationEnabled) return;
         if (details.primaryVelocity != null) {
           if (details.primaryVelocity! > 0) {
             // Swipe right -> Previous page
@@ -64,7 +73,12 @@ class AppBottomNavBar extends ConsumerWidget {
                 ),
                 boxShadow: [
                   BoxShadow(
-                    color: Colors.black.withValues(alpha: context.appColors.background.computeLuminance() > 0.5 ? 0.1 : 0.3),
+                    color: Colors.black.withValues(
+                      alpha:
+                          context.appColors.background.computeLuminance() > 0.5
+                          ? 0.1
+                          : 0.3,
+                    ),
                     blurRadius: 20,
                     offset: const Offset(0, 10),
                   ),
@@ -73,10 +87,9 @@ class AppBottomNavBar extends ConsumerWidget {
               child: LayoutBuilder(
                 builder: (context, constraints) {
                   final itemWidth = constraints.maxWidth / items.length;
-                  
+
                   return Stack(
                     children: [
-  
                       // Bottom "Accent" Bar
                       AnimatedPositioned(
                         duration: const Duration(milliseconds: 500),
@@ -88,7 +101,9 @@ class AppBottomNavBar extends ConsumerWidget {
                           height: 3,
                           decoration: BoxDecoration(
                             color: primaryColor,
-                            borderRadius: const BorderRadius.vertical(top: Radius.circular(100)),
+                            borderRadius: const BorderRadius.vertical(
+                              top: Radius.circular(100),
+                            ),
                             boxShadow: [
                               BoxShadow(
                                 color: primaryColor.withValues(alpha: 0.8),
@@ -100,7 +115,7 @@ class AppBottomNavBar extends ConsumerWidget {
                           ),
                         ),
                       ),
-                      
+
                       // Nav Items
                       SizedBox(
                         height: 68,
@@ -114,10 +129,12 @@ class AppBottomNavBar extends ConsumerWidget {
                               icon: item.icon,
                               label: item.label,
                               isActive: isActive,
-                              onTap: () {
-                                ref.hapticSelection();
-                                onTap(index);
-                              },
+                              onTap: navigationEnabled
+                                  ? () {
+                                      ref.hapticSelection();
+                                      onTap(index);
+                                    }
+                                  : null,
                             );
                           }),
                         ),
@@ -144,7 +161,7 @@ class _NavBarItem extends StatelessWidget {
   final IconData icon;
   final String label;
   final bool isActive;
-  final VoidCallback onTap;
+  final VoidCallback? onTap;
 
   const _NavBarItem({
     super.key,
@@ -157,14 +174,15 @@ class _NavBarItem extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final primaryColor = Theme.of(context).colorScheme.primary;
-    
+    final enabled = onTap != null;
+
     return Expanded(
       child: GestureDetector(
         onTap: onTap,
         behavior: HitTestBehavior.opaque,
         child: AnimatedOpacity(
           duration: const Duration(milliseconds: 200),
-          opacity: isActive ? 1.0 : 0.4,
+          opacity: !enabled ? 0.35 : (isActive ? 1.0 : 0.4),
           child: Column(
             mainAxisAlignment: MainAxisAlignment.center,
             children: [
@@ -172,11 +190,17 @@ class _NavBarItem extends StatelessWidget {
               AnimatedContainer(
                 duration: const Duration(milliseconds: 300),
                 curve: Curves.easeOutBack,
-                transform: Matrix4.translationValues(0.0, isActive ? -4.0 : 0.0, 0.0),
+                transform: Matrix4.translationValues(
+                  0.0,
+                  isActive ? -4.0 : 0.0,
+                  0.0,
+                ),
                 child: Icon(
                   icon,
                   size: 22,
-                  color: isActive ? primaryColor : context.appColors.mutedForeground,
+                  color: isActive
+                      ? primaryColor
+                      : context.appColors.mutedForeground,
                 ),
               ),
               const SizedBox(height: 6),
@@ -185,7 +209,9 @@ class _NavBarItem extends StatelessWidget {
                 style: GoogleFonts.inter(
                   fontSize: 10,
                   fontWeight: isActive ? FontWeight.w700 : FontWeight.w600,
-                  color: isActive ? primaryColor : context.appColors.mutedForeground,
+                  color: isActive
+                      ? primaryColor
+                      : context.appColors.mutedForeground,
                   letterSpacing: -0.2,
                 ),
               ),

@@ -34,11 +34,11 @@ abstract class ModeAwareTutorialNotifier extends Notifier<bool> {
   Future<void> setTutorialSeen(bool seen) async {
     final mode = ref.read(activeDataModeProvider);
     final prefs = ref.read(sharedPrefsProvider);
+    state = seen;
     await prefs.setBool(step.keyFor(mode), seen);
     if (mode == AppDataMode.supabase) {
       await prefs.setBool(step.legacyKey, seen);
     }
-    state = seen;
   }
 }
 

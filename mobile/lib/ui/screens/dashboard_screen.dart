@@ -347,7 +347,7 @@ class _HomeScreenState extends ConsumerState<HomeScreen>
                             .read(calendarViewProvider.notifier)
                             .setView(CalendarView.month);
                         Navigator.pop(context);
-                        _onItemTapped(1); // Go to Home
+                        _onItemTapped(1, bypassTutorialLock: true);
                       },
                       child: Container(
                         width: double.infinity,
@@ -578,7 +578,7 @@ class _HomeScreenState extends ConsumerState<HomeScreen>
   }
 
   void _completeDashboardTutorial() {
-    ref.read(tutorialProvider.notifier).setTutorialSeen(true);
+    unawaited(ref.read(tutorialProvider.notifier).setTutorialSeen(true));
   }
 
   void _clearDashboardTutorialState({bool removeOverlay = false}) {
@@ -588,6 +588,20 @@ class _HomeScreenState extends ConsumerState<HomeScreen>
     }
     _dashboardTutorial = null;
     _isDashboardTutorialShowing = false;
+  }
+
+  void _finishDashboardTutorial({bool advanceToGoals = false}) {
+    if (!mounted) return;
+
+    _clearDashboardTutorialState(removeOverlay: true);
+    _completeDashboardTutorial();
+
+    if (!advanceToGoals) return;
+
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      if (!mounted) return;
+      _onItemTapped(2, bypassTutorialLock: true);
+    });
   }
 
   void _showTutorial() {
@@ -713,9 +727,7 @@ class _HomeScreenState extends ConsumerState<HomeScreen>
                 isLast: true,
                 nextButtonText: "Vai agli Obiettivi",
                 onNextPressed: () {
-                  _completeDashboardTutorial();
-                  controller.skip();
-                  _onItemTapped(2); // Change tab to MacroGoalsScreen
+                  _finishDashboardTutorial(advanceToGoals: true);
                 },
               );
             },
@@ -734,12 +746,10 @@ class _HomeScreenState extends ConsumerState<HomeScreen>
       unFocusAnimationDuration: Duration.zero,
       pulseEnable: false,
       onFinish: () {
-        _completeDashboardTutorial();
-        _clearDashboardTutorialState();
+        _finishDashboardTutorial();
       },
       onSkip: () {
-        _completeDashboardTutorial();
-        _clearDashboardTutorialState();
+        _finishDashboardTutorial();
         return true;
       },
     );
@@ -841,23 +851,41 @@ class _HomeScreenState extends ConsumerState<HomeScreen>
     return ref.read(authProvider.notifier).updateProfileName(name);
   }
 
-  void _onItemTapped(int index) {
+  bool _isTutorialFlowIncomplete() {
+    return !ref.read(tutorialProvider) ||
+        !ref.read(goalsTutorialProvider) ||
+        !ref.read(statsTutorialProvider);
+  }
+
+  void _onItemTapped(int index, {bool bypassTutorialLock = false}) {
+    if (index == _selectedNavIndex) return;
+    if (!bypassTutorialLock && _isTutorialFlowIncomplete()) return;
+
     if ((index - _selectedNavIndex).abs() > 1) {
       _pageController.jumpToPage(index);
+      setState(() => _selectedNavIndex = index);
     } else {
-      _pageController.animateToPage(
-        index,
-        duration: const Duration(milliseconds: 500),
-        curve: Curves.easeOutQuart,
+      unawaited(
+        _pageController.animateToPage(
+          index,
+          duration: const Duration(milliseconds: 500),
+          curve: Curves.easeOutQuart,
+        ),
       );
     }
-    setState(() => _selectedNavIndex = index);
     ref.hapticSelection();
   }
 
   @override
   Widget build(BuildContext context) {
     final currentView = ref.watch(calendarViewProvider);
+    final hasSeenDashboardTutorial = ref.watch(tutorialProvider);
+    final hasSeenGoalsTutorial = ref.watch(goalsTutorialProvider);
+    final hasSeenStatsTutorial = ref.watch(statsTutorialProvider);
+    final isTutorialNavigationLocked =
+        !hasSeenDashboardTutorial ||
+        !hasSeenGoalsTutorial ||
+        !hasSeenStatsTutorial;
     final isLocked = ref.watch(
       settingsProvider.select((settings) => settings.biometricLock),
     );
@@ -959,7 +987,9 @@ class _HomeScreenState extends ConsumerState<HomeScreen>
         onPageChanged: (index) {
           setState(() => _selectedNavIndex = index);
         },
-        physics: const BouncingScrollPhysics(),
+        physics: isTutorialNavigationLocked
+            ? const NeverScrollableScrollPhysics()
+            : const BouncingScrollPhysics(),
         itemBuilder: (context, index) {
           return AnimatedBuilder(
             animation: _pageController,
@@ -986,6 +1016,7 @@ class _HomeScreenState extends ConsumerState<HomeScreen>
       bottomNavigationBar: AppBottomNavBar(
         currentIndex: _selectedNavIndex,
         navKeys: [_statsNavKey, _homeNavKey, _goalsNavKey],
+        navigationEnabled: !isTutorialNavigationLocked,
         onTap: _onItemTapped,
       ),
     );
@@ -1067,68 +1098,89 @@ class _HomeScreenState extends ConsumerState<HomeScreen>
 
     return Container(
       decoration: AppTheme.glassPanelDecoration(context, radius: 14),
-      padding: const EdgeInsets.all(24),
-      child: Column(
-        mainAxisAlignment: MainAxisAlignment.center,
-        children: [
-          Container(
-            width: 80,
-            height: 80,
-            decoration: BoxDecoration(
-              color: primaryColor.withValues(alpha: 0.1),
-              shape: BoxShape.circle,
-            ),
-            child: Icon(LucideIcons.sparkles, size: 40, color: primaryColor),
-          ),
-          const SizedBox(height: 24),
-          Text(
-            context.l10n.translate('La tua tela è vuota'),
-            style: TextStyle(
-              fontFamily: 'Inter',
-              fontSize: 22,
-              fontWeight: FontWeight.w800,
-              color: context.appColors.foreground,
-              letterSpacing: -0.5,
-            ),
-          ),
-          const SizedBox(height: 12),
-          Text(
-            context.l10n.translate(
-              'Crea la tua prima abitudine per iniziare a tracciare i tuoi progressi e costruire la tua routine.',
-            ),
-            textAlign: TextAlign.center,
-            style: TextStyle(
-              fontFamily: 'Inter',
-              fontSize: 14,
-              color: context.appColors.mutedForeground,
-              height: 1.5,
-            ),
-          ),
-          const SizedBox(height: 32),
-          ElevatedButton.icon(
-            key: _addHabitKey,
-            onPressed: () {
-              ref.hapticMedium();
-              HabitManagementModal.show(context);
-            },
-            icon: const Icon(LucideIcons.plus, size: 18),
-            label: Text(
-              context.l10n.translate('Aggiungi Abitudine'),
-              style: const TextStyle(fontWeight: FontWeight.w700),
-            ),
-            style: ElevatedButton.styleFrom(
-              backgroundColor: primaryColor,
-              foregroundColor: primaryColor.computeLuminance() > 0.5
-                  ? Colors.black
-                  : Colors.white,
-              shape: RoundedRectangleBorder(
-                borderRadius: BorderRadius.circular(12),
+      padding: const EdgeInsets.all(20),
+      child: LayoutBuilder(
+        builder: (context, constraints) {
+          final compact = constraints.maxHeight < 280;
+          return SingleChildScrollView(
+            physics: const ClampingScrollPhysics(),
+            child: ConstrainedBox(
+              constraints: BoxConstraints(minHeight: constraints.maxHeight),
+              child: Center(
+                child: Column(
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    Container(
+                      width: compact ? 56 : 80,
+                      height: compact ? 56 : 80,
+                      decoration: BoxDecoration(
+                        color: primaryColor.withValues(alpha: 0.1),
+                        shape: BoxShape.circle,
+                      ),
+                      child: Icon(
+                        LucideIcons.sparkles,
+                        size: compact ? 28 : 40,
+                        color: primaryColor,
+                      ),
+                    ),
+                    SizedBox(height: compact ? 14 : 24),
+                    Text(
+                      context.l10n.translate('La tua tela è vuota'),
+                      textAlign: TextAlign.center,
+                      style: TextStyle(
+                        fontFamily: 'Inter',
+                        fontSize: compact ? 18 : 22,
+                        fontWeight: FontWeight.w800,
+                        color: context.appColors.foreground,
+                        letterSpacing: -0.5,
+                      ),
+                    ),
+                    SizedBox(height: compact ? 8 : 12),
+                    Text(
+                      context.l10n.translate(
+                        'Crea la tua prima abitudine per iniziare a tracciare i tuoi progressi e costruire la tua routine.',
+                      ),
+                      textAlign: TextAlign.center,
+                      style: TextStyle(
+                        fontFamily: 'Inter',
+                        fontSize: compact ? 13 : 14,
+                        color: context.appColors.mutedForeground,
+                        height: 1.4,
+                      ),
+                    ),
+                    SizedBox(height: compact ? 18 : 32),
+                    ElevatedButton.icon(
+                      key: _addHabitKey,
+                      onPressed: () {
+                        ref.hapticMedium();
+                        HabitManagementModal.show(context);
+                      },
+                      icon: const Icon(LucideIcons.plus, size: 18),
+                      label: Text(
+                        context.l10n.translate('Aggiungi Abitudine'),
+                        style: const TextStyle(fontWeight: FontWeight.w700),
+                      ),
+                      style: ElevatedButton.styleFrom(
+                        backgroundColor: primaryColor,
+                        foregroundColor: primaryColor.computeLuminance() > 0.5
+                            ? Colors.black
+                            : Colors.white,
+                        shape: RoundedRectangleBorder(
+                          borderRadius: BorderRadius.circular(12),
+                        ),
+                        padding: const EdgeInsets.symmetric(
+                          horizontal: 24,
+                          vertical: 14,
+                        ),
+                        elevation: 0,
+                      ),
+                    ),
+                  ],
+                ),
               ),
-              padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 14),
-              elevation: 0,
             ),
-          ),
-        ],
+          );
+        },
       ),
     );
   }
@@ -1162,7 +1214,7 @@ class _HomeScreenState extends ConsumerState<HomeScreen>
           isActive: _selectedNavIndex == 2,
           statsNavKey: _statsNavKey,
           onFinishTutorial: () {
-            _onItemTapped(0); // Move to Stats
+            _onItemTapped(0, bypassTutorialLock: true);
           },
         );
       default:

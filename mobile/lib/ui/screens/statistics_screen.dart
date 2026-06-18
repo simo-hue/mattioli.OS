@@ -52,6 +52,7 @@ class _StatisticsScreenState extends ConsumerState<StatisticsScreen>
 
   bool _tutorialTriggered = false;
   bool _isShowingStatsTutorial = false;
+  bool _didFinishStatsTutorial = false;
   Timer? _statsTutorialStartTimer;
   TutorialCoachMark? _statsTutorial;
 
@@ -63,8 +64,8 @@ class _StatisticsScreenState extends ConsumerState<StatisticsScreen>
         if (mounted) _maybeScheduleStatsTutorial();
       });
     }
-    if (oldWidget.isActive && !widget.isActive && _isShowingStatsTutorial) {
-      _clearStatsTutorialState(removeOverlay: true);
+    if (oldWidget.isActive && !widget.isActive) {
+      _clearStatsTutorialState(removeOverlay: _isShowingStatsTutorial);
     }
   }
 
@@ -83,10 +84,7 @@ class _StatisticsScreenState extends ConsumerState<StatisticsScreen>
   }
 
   void _completeStatsTutorial() {
-    ref.read(statsTutorialProvider.notifier).setTutorialSeen(true);
-    if (widget.onFinishTutorial != null) {
-      widget.onFinishTutorial!();
-    }
+    unawaited(ref.read(statsTutorialProvider.notifier).setTutorialSeen(true));
   }
 
   void _clearStatsTutorialState({bool removeOverlay = false}) {
@@ -98,6 +96,21 @@ class _StatisticsScreenState extends ConsumerState<StatisticsScreen>
     _isShowingStatsTutorial = false;
   }
 
+  void _finishStatsTutorial({bool showCompletionDialog = false}) {
+    if (!mounted || _didFinishStatsTutorial) return;
+
+    _didFinishStatsTutorial = true;
+    _clearStatsTutorialState(removeOverlay: true);
+    _completeStatsTutorial();
+
+    if (!showCompletionDialog || widget.onFinishTutorial == null) return;
+
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      if (!mounted) return;
+      widget.onFinishTutorial!();
+    });
+  }
+
   void _maybeScheduleStatsTutorial() {
     if (!widget.isActive || _tutorialTriggered || _isShowingStatsTutorial) {
       return;
@@ -105,20 +118,35 @@ class _StatisticsScreenState extends ConsumerState<StatisticsScreen>
 
     final goalsTutorialSeen = ref.read(goalsTutorialProvider);
     final statsTutorialSeen = ref.read(statsTutorialProvider);
-    if (!goalsTutorialSeen || statsTutorialSeen) return;
+    if (!statsTutorialSeen) {
+      _didFinishStatsTutorial = false;
+    }
+    if (!goalsTutorialSeen || statsTutorialSeen || _didFinishStatsTutorial) {
+      return;
+    }
 
     _tutorialTriggered = true;
     _statsTutorialStartTimer?.cancel();
     _statsTutorialStartTimer = Timer(const Duration(milliseconds: 600), () {
       if (!mounted || !widget.isActive) return;
       WidgetsBinding.instance.addPostFrameCallback((_) {
-        if (mounted && widget.isActive) _showStatsTutorial();
+        if (mounted &&
+            widget.isActive &&
+            ref.read(goalsTutorialProvider) &&
+            !ref.read(statsTutorialProvider)) {
+          _showStatsTutorial();
+        }
       });
     });
   }
 
   void _showStatsTutorial() {
-    if (!widget.isActive || _isShowingStatsTutorial) return;
+    if (!widget.isActive ||
+        _isShowingStatsTutorial ||
+        _didFinishStatsTutorial ||
+        ref.read(statsTutorialProvider)) {
+      return;
+    }
     if (!_areStatsTutorialTargetsReady()) {
       AppLogger.warning(
         '[Tutorial] Stats tutorial targets are not ready; delaying start',
@@ -179,12 +207,10 @@ class _StatisticsScreenState extends ConsumerState<StatisticsScreen>
       unFocusAnimationDuration: Duration.zero,
       pulseEnable: false,
       onFinish: () {
-        _completeStatsTutorial();
-        _clearStatsTutorialState();
+        _finishStatsTutorial(showCompletionDialog: true);
       },
       onSkip: () {
-        _completeStatsTutorial();
-        _clearStatsTutorialState();
+        _finishStatsTutorial(showCompletionDialog: true);
         return true;
       },
     );
@@ -396,7 +422,11 @@ class _StatisticsScreenState extends ConsumerState<StatisticsScreen>
 
     ref.listen(statsTutorialProvider, (previous, next) {
       if (next == false) {
+        _didFinishStatsTutorial = false;
         _tutorialTriggered = false;
+        if (_isShowingStatsTutorial) {
+          _clearStatsTutorialState(removeOverlay: true);
+        }
       }
     });
 

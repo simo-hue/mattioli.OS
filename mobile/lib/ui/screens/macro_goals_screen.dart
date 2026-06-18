@@ -37,15 +37,18 @@ class MacroGoalsScreen extends ConsumerStatefulWidget {
 
 class _MacroGoalsScreenState extends ConsumerState<MacroGoalsScreen>
     with AutomaticKeepAliveClientMixin, WidgetsBindingObserver {
-  static const Duration _tutorialStartDelay = Duration(milliseconds: 400);
+  static const Duration _tutorialStartDelay = Duration(milliseconds: 700);
   static const Duration _tutorialMetricsRestartDelay = Duration(
     milliseconds: 350,
   );
+  static const Duration _tutorialTargetPollDelay = Duration(milliseconds: 80);
+  static const Duration _tutorialTargetMaxWait = Duration(seconds: 2);
   static const int _performanceTutorialIndex = 7;
 
   bool _isForward = true;
   bool _showStats = false;
   bool _isShowingGoalsTutorial = false;
+  bool _didFinishGoalsTutorial = false;
   int _goalsTutorialIndex = 0;
   Timer? _goalsTutorialStartTimer;
   Timer? _goalsTutorialMetricsTimer;
@@ -78,8 +81,8 @@ class _MacroGoalsScreenState extends ConsumerState<MacroGoalsScreen>
         if (mounted) _checkGoalsTutorial();
       });
     }
-    if (oldWidget.isActive && !widget.isActive && _isShowingGoalsTutorial) {
-      _clearGoalsTutorialState(removeOverlay: true);
+    if (oldWidget.isActive && !widget.isActive) {
+      _clearGoalsTutorialState(removeOverlay: _isShowingGoalsTutorial);
     }
   }
 
@@ -95,19 +98,31 @@ class _MacroGoalsScreenState extends ConsumerState<MacroGoalsScreen>
   @override
   void didChangeMetrics() {
     super.didChangeMetrics();
-    if (!_isShowingGoalsTutorial) return;
+    if (!_isShowingGoalsTutorial ||
+        !widget.isActive ||
+        _didFinishGoalsTutorial) {
+      return;
+    }
 
     _goalsTutorialMetricsTimer?.cancel();
     _goalsTutorial?.removeOverlayEntry();
     _goalsTutorial = null;
 
     _goalsTutorialMetricsTimer = Timer(_tutorialMetricsRestartDelay, () {
-      if (!mounted || !_isShowingGoalsTutorial) return;
+      if (!_shouldRunGoalsTutorial() || !_isShowingGoalsTutorial) return;
       WidgetsBinding.instance.addPostFrameCallback((_) {
-        if (!mounted || !_isShowingGoalsTutorial) return;
+        if (!_shouldRunGoalsTutorial() || !_isShowingGoalsTutorial) return;
         _showGoalsTutorial(initialFocus: _goalsTutorialIndex, replace: true);
       });
     });
+  }
+
+  bool _shouldRunGoalsTutorial() {
+    if (!mounted || !widget.isActive || _didFinishGoalsTutorial) return false;
+
+    final mainTutorialSeen = ref.read(tutorialProvider);
+    final goalsTutorialSeen = ref.read(goalsTutorialProvider);
+    return mainTutorialSeen && !goalsTutorialSeen;
   }
 
   void _checkGoalsTutorial() {
@@ -115,13 +130,16 @@ class _MacroGoalsScreenState extends ConsumerState<MacroGoalsScreen>
 
     final mainTutorialSeen = ref.read(tutorialProvider);
     final goalsTutorialSeen = ref.read(goalsTutorialProvider);
+    if (!goalsTutorialSeen) {
+      _didFinishGoalsTutorial = false;
+    }
 
     // Only show if main tutorial is finished but goals tutorial isn't
-    if (mainTutorialSeen && !goalsTutorialSeen) {
+    if (mainTutorialSeen && !goalsTutorialSeen && !_didFinishGoalsTutorial) {
       if (_isShowingGoalsTutorial) return;
       _goalsTutorialStartTimer?.cancel();
       _goalsTutorialStartTimer = Timer(_tutorialStartDelay, () {
-        if (mounted && widget.isActive) _showGoalsTutorial();
+        if (_shouldRunGoalsTutorial()) _showGoalsTutorial();
       });
     }
   }
@@ -500,8 +518,7 @@ class _MacroGoalsScreenState extends ConsumerState<MacroGoalsScreen>
                   isLast: false,
                   nextButtonLabel: "Passa alle Statistiche",
                   onNextPressed: () {
-                    _completeGoalsTutorial();
-                    controller.skip();
+                    _finishGoalsTutorial(advanceToStats: true);
                   },
                 );
               },
@@ -524,23 +541,65 @@ class _MacroGoalsScreenState extends ConsumerState<MacroGoalsScreen>
       setState(() => _showStats = shouldShowStats);
       await WidgetsBinding.instance.endOfFrame;
     }
+    await _waitForGoalsTutorialTarget(target);
   }
 
-  bool _areGoalsTutorialTargetsReady() {
-    return [
-      _planSelectorKey,
-      _addGoalKey,
-      _performanceToggleKey,
-      _tutorialCheckboxKey,
-      _tutorialCategoryKey,
-      _tutorialRescheduleKey,
-      _tutorialEditKey,
-      _tutorialDeleteKey,
-      if (widget.statsNavKey != null) widget.statsNavKey!,
-    ].every((key) => key.currentContext != null);
+  bool _isTutorialTargetReady(GlobalKey key) {
+    final targetContext = key.currentContext;
+    if (targetContext == null) return false;
+
+    final renderObject = targetContext.findRenderObject();
+    if (renderObject is! RenderBox ||
+        !renderObject.attached ||
+        !renderObject.hasSize) {
+      return false;
+    }
+
+    final targetSize = renderObject.size;
+    if (targetSize.width <= 1 || targetSize.height <= 1) return false;
+
+    final targetOffset = renderObject.localToGlobal(Offset.zero);
+    final targetRect = targetOffset & targetSize;
+    final screenSize = MediaQuery.sizeOf(context);
+    const tolerance = 1.0;
+
+    return targetRect.left >= -tolerance &&
+        targetRect.top >= -tolerance &&
+        targetRect.right <= screenSize.width + tolerance &&
+        targetRect.bottom <= screenSize.height + tolerance;
+  }
+
+  bool _isTutorialTargetReadyForFocus(TargetFocus target) {
+    final key = target.keyTarget;
+    if (key == null) return target.targetPosition != null;
+    return _isTutorialTargetReady(key);
+  }
+
+  void _scheduleGoalsTutorialRetry({int initialFocus = 0}) {
+    _goalsTutorialStartTimer?.cancel();
+    _goalsTutorialStartTimer = Timer(_tutorialTargetPollDelay, () {
+      if (_shouldRunGoalsTutorial()) {
+        _showGoalsTutorial(initialFocus: initialFocus);
+      }
+    });
+  }
+
+  Future<void> _waitForGoalsTutorialTarget(TargetFocus target) async {
+    final key = target.keyTarget;
+    if (key == null) return;
+
+    final deadline = DateTime.now().add(_tutorialTargetMaxWait);
+    while (_shouldRunGoalsTutorial()) {
+      await WidgetsBinding.instance.endOfFrame;
+      if (!mounted || !widget.isActive) return;
+      if (_isTutorialTargetReady(key)) return;
+      if (DateTime.now().isAfter(deadline)) return;
+      await Future.delayed(_tutorialTargetPollDelay);
+    }
   }
 
   void _clearGoalsTutorialState({bool removeOverlay = false}) {
+    _goalsTutorialStartTimer?.cancel();
     _goalsTutorialMetricsTimer?.cancel();
     if (removeOverlay) {
       _goalsTutorial?.removeOverlayEntry();
@@ -548,30 +607,31 @@ class _MacroGoalsScreenState extends ConsumerState<MacroGoalsScreen>
     _goalsTutorial = null;
     _isShowingGoalsTutorial = false;
     _goalsTutorialIndex = 0;
+    _showStats = false;
   }
 
   void _completeGoalsTutorial() {
-    ref.read(goalsTutorialProvider.notifier).setTutorialSeen(true);
-    if (widget.onFinishTutorial != null) {
+    unawaited(ref.read(goalsTutorialProvider.notifier).setTutorialSeen(true));
+  }
+
+  void _finishGoalsTutorial({bool advanceToStats = false}) {
+    if (!mounted || _didFinishGoalsTutorial) return;
+
+    _didFinishGoalsTutorial = true;
+    _clearGoalsTutorialState(removeOverlay: true);
+    _completeGoalsTutorial();
+
+    if (!advanceToStats || widget.onFinishTutorial == null) return;
+
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      if (!mounted) return;
       widget.onFinishTutorial!();
-    }
+    });
   }
 
   void _showGoalsTutorial({int initialFocus = 0, bool replace = false}) {
-    if (!widget.isActive) return;
+    if (!_shouldRunGoalsTutorial()) return;
     if (_isShowingGoalsTutorial && !replace) return;
-    if (!_areGoalsTutorialTargetsReady()) {
-      AppLogger.warning(
-        '[Tutorial] Goals tutorial targets are not ready; delaying start',
-      );
-      _goalsTutorialStartTimer?.cancel();
-      _goalsTutorialStartTimer = Timer(_tutorialStartDelay, () {
-        if (mounted && widget.isActive) {
-          _showGoalsTutorial(initialFocus: initialFocus);
-        }
-      });
-      return;
-    }
 
     _goalsTutorialStartTimer?.cancel();
     _goalsTutorial?.removeOverlayEntry();
@@ -579,6 +639,14 @@ class _MacroGoalsScreenState extends ConsumerState<MacroGoalsScreen>
     final resolvedInitialFocus = initialFocus
         .clamp(0, targets.length - 1)
         .toInt();
+    if (!_isTutorialTargetReadyForFocus(targets[resolvedInitialFocus])) {
+      AppLogger.warning(
+        '[Tutorial] Goals tutorial target is not ready; delaying start',
+      );
+      _scheduleGoalsTutorialRetry(initialFocus: resolvedInitialFocus);
+      return;
+    }
+
     _goalsTutorialIndex = resolvedInitialFocus;
     _isShowingGoalsTutorial = true;
 
@@ -594,11 +662,10 @@ class _MacroGoalsScreenState extends ConsumerState<MacroGoalsScreen>
       unFocusAnimationDuration: Duration.zero,
       pulseEnable: false,
       onFinish: () {
-        _completeGoalsTutorial();
-        _clearGoalsTutorialState();
+        _finishGoalsTutorial(advanceToStats: true);
       },
       onSkip: () {
-        _clearGoalsTutorialState();
+        _finishGoalsTutorial(advanceToStats: true);
         return true;
       },
     );
@@ -630,8 +697,17 @@ class _MacroGoalsScreenState extends ConsumerState<MacroGoalsScreen>
         // Se il tutorial main finisce, controlla se bisogna lanciare questo (es. navigazione dalla tab)
         // Diamo tempo al cambio tab di terminare l'animazione
         Future.delayed(const Duration(milliseconds: 600), () {
-          if (mounted && widget.isActive) _checkGoalsTutorial();
+          if (_shouldRunGoalsTutorial()) _checkGoalsTutorial();
         });
+      }
+    });
+
+    ref.listen(goalsTutorialProvider, (previous, next) {
+      if (next == false) {
+        _didFinishGoalsTutorial = false;
+        if (_isShowingGoalsTutorial) {
+          _clearGoalsTutorialState(removeOverlay: true);
+        }
       }
     });
 

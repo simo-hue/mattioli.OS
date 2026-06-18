@@ -59,5 +59,25 @@ void main() {
         expect(container.read(statsTutorialProvider), isFalse);
       },
     );
+
+    test(
+      'updates in-memory tutorial state before persistence completes',
+      () async {
+        SharedPreferences.setMockInitialValues({});
+        final prefs = await SharedPreferences.getInstance();
+        final container = ProviderContainer(
+          overrides: [sharedPrefsProvider.overrideWithValue(prefs)],
+        );
+        addTearDown(container.dispose);
+
+        final write = container
+            .read(goalsTutorialProvider.notifier)
+            .setTutorialSeen(true);
+
+        expect(container.read(goalsTutorialProvider), isTrue);
+        await write;
+        expect(prefs.getBool('has_seen_goals_tutorial_supabase'), isTrue);
+      },
+    );
   });
 }

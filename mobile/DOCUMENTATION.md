@@ -1837,3 +1837,20 @@
 - Updated `lib/ui/screens/dashboard_screen.dart`.
 - Extracted the name prompt UI into `_NamePromptDialog`, a `ConsumerStatefulWidget` that owns and disposes its controller in widget lifecycle methods.
 - No new dependencies, endpoints, migrations, or manual user actions required.
+
+## [2026-06-18 22:43 CEST]: Tutorial Flow State Hardening
+*Details*: Hardened the dashboard, goals, and statistics tutorial handoff so tutorial overlays are removed before page transitions or completion dialogs run. This prevents the Goals tutorial from appearing finished while stale overlay/timer state can continue advancing after unrelated taps.
+*Tech Notes*:
+- Updated `dashboard_screen.dart`, `macro_goals_screen.dart`, `statistics_screen.dart`, and `tutorial_provider.dart`.
+- Goals tutorial cleanup now cancels pending start/restart timers, resets the temporary performance view back to the goals list, and guards duplicate completion.
+- Statistics tutorial completion now clears its overlay before showing the final completion dialog.
+- Tutorial provider state now updates in memory before persistence completes so delayed UI checks cannot reschedule a just-completed step.
+- Added `test/tutorial_provider_test.dart` coverage for immediate in-memory tutorial completion state.
+
+## [2026-06-18 22:54 CEST]: Goals Tutorial Target Readiness Fix
+*Details*: Fixed the Goals tutorial handoff so the first "Tipo di Pianificazione" coachmark waits for the Goals page transition to settle and for the planning type target to have a valid on-screen render box.
+*Tech Notes*:
+- Updated `macro_goals_screen.dart`.
+- Increased the initial Goals tutorial delay to exceed the dashboard `PageView` animation.
+- Replaced broad `currentContext` checks with per-target render-box readiness checks that require attached, sized, visible targets inside the screen bounds.
+- Added per-focus target waiting so later Goals tutorial steps also wait for their target after switching between the goals list and performance view.

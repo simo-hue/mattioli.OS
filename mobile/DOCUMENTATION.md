@@ -1880,3 +1880,12 @@
 - Kept the Goals body absorbed while the tutorial is pending but rendered overlay controls above it so the tutorial remains usable.
 - Added regression coverage that verifies the "Planning Type" popup is visible immediately, surface taps cannot switch to Performance Analysis while pending, and the tutorial advances without delayed coachmark startup.
 - No new dependencies, endpoints, migrations, or manual user actions required.
+
+## [2026-06-19 14:02 CEST]: Statistics Tutorial Immediate Overlay Rewrite
+*Details*: Rewrote the Statistics-page continuation tutorial with the same immediate in-screen overlay pattern used on Goals. The Statistics tutorial now appears on the first active Statistics frame after the Goals tutorial completes, instead of waiting on delayed `TutorialCoachMark` startup.
+*Tech Notes*:
+- Removed Statistics tutorial startup timers, coachmark target polling, and `TutorialCoachMark` overlay usage from `statistics_screen.dart`.
+- Added a Statistics-owned tutorial overlay with highlighted target bounds, a custom scrim painter, explicit previous/next controls, and active-page-only pending state.
+- Absorbed the Statistics page body while the tutorial is pending and added a full-screen scrim hit-test layer so page taps cannot leak through while the popup is visible.
+- Added `test/statistics_tutorial_test.dart` covering immediate first-frame popup visibility, scrim tap handling, and step advancement without delayed coachmark startup.
+- No new dependencies, endpoints, migrations, or manual user actions required.

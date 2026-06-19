@@ -4,7 +4,6 @@ import 'dart:math' as math;
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:lucide_icons_flutter/lucide_icons.dart';
-import 'package:tutorial_coach_mark/tutorial_coach_mark.dart';
 import '../../providers/tutorial_provider.dart';
 import '../../core/theme.dart';
 import '../../models/goal.dart';
@@ -12,7 +11,6 @@ import '../../providers/goal_provider.dart';
 import '../../providers/settings_provider.dart';
 import '../../core/haptics.dart';
 import '../../core/localization.dart';
-import '../../core/app_logger.dart';
 import '../widgets/pro_features_modal.dart';
 import '../widgets/statistics/info_tab_widget.dart';
 import '../widgets/statistics/global_trend_tab_widget.dart';
@@ -50,57 +48,36 @@ class _StatisticsScreenState extends ConsumerState<StatisticsScreen>
   @override
   bool get wantKeepAlive => true;
 
-  bool _tutorialTriggered = false;
-  bool _isShowingStatsTutorial = false;
   bool _didFinishStatsTutorial = false;
-  Timer? _statsTutorialStartTimer;
-  TutorialCoachMark? _statsTutorial;
+  int _statsTutorialIndex = 0;
+  bool _isRefreshingStatsTutorialGeometry = false;
+
+  final GlobalKey _statsTutorialOverlayKey = GlobalKey();
 
   @override
   void didUpdateWidget(covariant StatisticsScreen oldWidget) {
     super.didUpdateWidget(oldWidget);
     if (!oldWidget.isActive && widget.isActive) {
-      WidgetsBinding.instance.addPostFrameCallback((_) {
-        if (mounted) _maybeScheduleStatsTutorial();
-      });
+      setState(() {});
     }
     if (oldWidget.isActive && !widget.isActive) {
-      _clearStatsTutorialState(removeOverlay: _isShowingStatsTutorial);
+      _clearStatsTutorialState();
     }
-  }
-
-  @override
-  void dispose() {
-    _statsTutorialStartTimer?.cancel();
-    _statsTutorial?.removeOverlayEntry();
-    super.dispose();
-  }
-
-  bool _areStatsTutorialTargetsReady() {
-    return [
-      _goalDropdownKey,
-      _tabsKey,
-    ].every((key) => key.currentContext != null);
   }
 
   void _completeStatsTutorial() {
     unawaited(ref.read(statsTutorialProvider.notifier).setTutorialSeen(true));
   }
 
-  void _clearStatsTutorialState({bool removeOverlay = false}) {
-    _statsTutorialStartTimer?.cancel();
-    if (removeOverlay) {
-      _statsTutorial?.removeOverlayEntry();
-    }
-    _statsTutorial = null;
-    _isShowingStatsTutorial = false;
+  void _clearStatsTutorialState() {
+    _statsTutorialIndex = 0;
   }
 
   void _finishStatsTutorial({bool showCompletionDialog = false}) {
     if (!mounted || _didFinishStatsTutorial) return;
 
     _didFinishStatsTutorial = true;
-    _clearStatsTutorialState(removeOverlay: true);
+    _clearStatsTutorialState();
     _completeStatsTutorial();
 
     if (!showCompletionDialog || widget.onFinishTutorial == null) return;
@@ -111,126 +88,179 @@ class _StatisticsScreenState extends ConsumerState<StatisticsScreen>
     });
   }
 
-  void _maybeScheduleStatsTutorial() {
-    if (!widget.isActive || _tutorialTriggered || _isShowingStatsTutorial) {
+  List<_StatsTutorialStep> _buildStatsTutorialSteps() {
+    return [
+      _StatsTutorialStep(
+        targetKey: _goalDropdownKey,
+        title: context.l10n.translate("Filtra per Abitudine"),
+        description: context.l10n.translate(
+          "Da qui puoi selezionare una specifica abitudine per vederne i dettagli, oppure 'Tutti gli Habits' per una panoramica globale.",
+        ),
+      ),
+      _StatsTutorialStep(
+        targetKey: _tabsKey,
+        title: context.l10n.translate("Sezioni Statistiche"),
+        description: context.l10n.translate(
+          "Naviga tra le varie schede per vedere i Trend, gli Alert sulle performance, l'andamento delle Abitudini e il tuo Mood.",
+        ),
+      ),
+    ];
+  }
+
+  int get _statsTutorialStepCount => 2;
+
+  int get _clampedStatsTutorialIndex {
+    return _statsTutorialIndex.clamp(0, _statsTutorialStepCount - 1).toInt();
+  }
+
+  void _goToStatsTutorialStep(int index) {
+    if (index < 0) return;
+    final steps = _buildStatsTutorialSteps();
+    if (index >= steps.length) {
+      _finishStatsTutorial(showCompletionDialog: true);
       return;
     }
 
-    final goalsTutorialSeen = ref.read(goalsTutorialProvider);
-    final statsTutorialSeen = ref.read(statsTutorialProvider);
-    if (!statsTutorialSeen) {
-      _didFinishStatsTutorial = false;
-    }
-    if (!goalsTutorialSeen || statsTutorialSeen || _didFinishStatsTutorial) {
-      return;
-    }
+    setState(() {
+      _statsTutorialIndex = index;
+    });
+    _scheduleStatsTutorialGeometryRefresh();
+  }
 
-    _tutorialTriggered = true;
-    _statsTutorialStartTimer?.cancel();
-    _statsTutorialStartTimer = Timer(const Duration(milliseconds: 600), () {
-      if (!mounted || !widget.isActive) return;
-      WidgetsBinding.instance.addPostFrameCallback((_) {
-        if (mounted &&
-            widget.isActive &&
-            ref.read(goalsTutorialProvider) &&
-            !ref.read(statsTutorialProvider)) {
-          _showStatsTutorial();
-        }
-      });
+  void _scheduleStatsTutorialGeometryRefresh() {
+    if (_isRefreshingStatsTutorialGeometry) return;
+    _isRefreshingStatsTutorialGeometry = true;
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      _isRefreshingStatsTutorialGeometry = false;
+      if (!mounted || !_isStatsTutorialActive) return;
+      setState(() {});
     });
   }
 
-  void _showStatsTutorial() {
-    if (!widget.isActive ||
-        _isShowingStatsTutorial ||
-        _didFinishStatsTutorial ||
-        ref.read(statsTutorialProvider)) {
-      return;
-    }
-    if (!_areStatsTutorialTargetsReady()) {
-      AppLogger.warning(
-        '[Tutorial] Stats tutorial targets are not ready; delaying start',
-      );
-      _tutorialTriggered = false;
-      _maybeScheduleStatsTutorial();
-      return;
+  bool get _isStatsTutorialActive {
+    if (!mounted || !widget.isActive || _didFinishStatsTutorial) return false;
+    return ref.read(goalsTutorialProvider) && !ref.read(statsTutorialProvider);
+  }
+
+  Rect? _targetRectForKey(GlobalKey? targetKey) {
+    final overlayContext = _statsTutorialOverlayKey.currentContext;
+    final targetContext = targetKey?.currentContext;
+    if (overlayContext == null || targetContext == null) return null;
+
+    final overlayObject = overlayContext.findRenderObject();
+    final targetObject = targetContext.findRenderObject();
+    if (overlayObject is! RenderBox ||
+        targetObject is! RenderBox ||
+        !overlayObject.attached ||
+        !targetObject.attached ||
+        !targetObject.hasSize) {
+      return null;
     }
 
-    final targets = [
-      TargetFocus(
-        identify: "Filtro Goal",
-        keyTarget: _goalDropdownKey,
-        enableTargetTab: false,
-        enableOverlayTab: false,
-        contents: [
-          TargetContent(
-            align: ContentAlign.bottom,
-            builder: (context, controller) => _buildTutorialContent(
-              context.l10n.translate("Filtra per Abitudine"),
-              context.l10n.translate(
-                "Da qui puoi selezionare una specifica abitudine per vederne i dettagli, oppure 'Tutti gli Habits' per una panoramica globale.",
-              ),
-              controller,
-              isFirst: true,
-            ),
-          ),
-        ],
-      ),
-      TargetFocus(
-        identify: "Tabs Statistiche",
-        keyTarget: _tabsKey,
-        enableTargetTab: false,
-        enableOverlayTab: false,
-        contents: [
-          TargetContent(
-            align: ContentAlign.bottom,
-            builder: (context, controller) => _buildTutorialContent(
-              context.l10n.translate("Sezioni Statistiche"),
-              context.l10n.translate(
-                "Naviga tra le varie schede per vedere i Trend, gli Alert sulle performance, l'andamento delle Abitudini e il tuo Mood.",
-              ),
-              controller,
-              isLast: true,
-            ),
-          ),
-        ],
-      ),
-    ];
+    final targetSize = targetObject.size;
+    if (targetSize.width <= 1 || targetSize.height <= 1) return null;
 
-    final tutorial = TutorialCoachMark(
-      targets: targets,
-      colorShadow: Colors.black,
-      hideSkip: true,
-      paddingFocus: 10,
-      opacityShadow: 0.85,
-      focusAnimationDuration: const Duration(milliseconds: 400),
-      unFocusAnimationDuration: Duration.zero,
-      pulseEnable: false,
-      onFinish: () {
-        _finishStatsTutorial(showCompletionDialog: true);
-      },
-      onSkip: () {
-        _finishStatsTutorial(showCompletionDialog: true);
-        return true;
-      },
+    final targetOffset = targetObject.localToGlobal(
+      Offset.zero,
+      ancestor: overlayObject,
     );
+    return targetOffset & targetSize;
+  }
 
-    _statsTutorial = tutorial;
-    _isShowingStatsTutorial = true;
-    try {
-      tutorial.show(context: context);
-    } catch (e, stack) {
-      _clearStatsTutorialState();
-      AppLogger.warning('[Tutorial] Unable to start stats tutorial', e, stack);
+  Widget _buildStatsTutorialOverlay() {
+    final steps = _buildStatsTutorialSteps();
+    final index = _clampedStatsTutorialIndex;
+    final step = steps[index];
+    final targetRect = _targetRectForKey(step.targetKey);
+    if (targetRect == null) {
+      _scheduleStatsTutorialGeometryRefresh();
     }
+
+    return Positioned.fill(
+      child: Material(
+        key: _statsTutorialOverlayKey,
+        color: Colors.transparent,
+        child: LayoutBuilder(
+          builder: (context, constraints) {
+            final overlaySize = Size(
+              constraints.maxWidth,
+              constraints.maxHeight,
+            );
+            final showCardAtTop =
+                targetRect != null &&
+                targetRect.center.dy > overlaySize.height * 0.52;
+
+            return Stack(
+              children: [
+                Positioned.fill(
+                  child: CustomPaint(
+                    painter: _StatsTutorialScrimPainter(targetRect),
+                  ),
+                ),
+                Positioned.fill(
+                  child: GestureDetector(
+                    behavior: HitTestBehavior.opaque,
+                    onTap: () {},
+                  ),
+                ),
+                if (targetRect != null)
+                  Positioned.fromRect(
+                    rect: targetRect.inflate(8),
+                    child: IgnorePointer(
+                      child: DecoratedBox(
+                        decoration: BoxDecoration(
+                          borderRadius: BorderRadius.circular(16),
+                          border: Border.all(
+                            color: Theme.of(context).colorScheme.primary,
+                            width: 2,
+                          ),
+                        ),
+                      ),
+                    ),
+                  ),
+                Align(
+                  alignment: showCardAtTop
+                      ? Alignment.topCenter
+                      : Alignment.bottomCenter,
+                  child: Padding(
+                    padding: EdgeInsets.fromLTRB(
+                      20,
+                      MediaQuery.paddingOf(context).top + 16,
+                      20,
+                      MediaQuery.paddingOf(context).bottom + 24,
+                    ),
+                    child: _buildTutorialContent(
+                      step.title,
+                      step.description,
+                      isFirst: index == 0,
+                      isLast: index == steps.length - 1,
+                      onPreviousPressed: () =>
+                          _goToStatsTutorialStep(index - 1),
+                      onNextPressed: () {
+                        if (index == steps.length - 1) {
+                          _finishStatsTutorial(showCompletionDialog: true);
+                          return;
+                        }
+                        _goToStatsTutorialStep(index + 1);
+                      },
+                    ),
+                  ),
+                ),
+              ],
+            );
+          },
+        ),
+      ),
+    );
   }
 
   Widget _buildTutorialContent(
     String title,
-    String description,
-    TutorialCoachMarkController controller, {
+    String description, {
     bool isFirst = false,
     bool isLast = false,
+    required VoidCallback onPreviousPressed,
+    required VoidCallback onNextPressed,
   }) {
     final mediaQuery = MediaQuery.of(context);
     final size = mediaQuery.size;
@@ -246,134 +276,125 @@ class _StatisticsScreenState extends ConsumerState<StatisticsScreen>
         ? math.min(220.0, math.max(160.0, availableHeight - 48.0))
         : math.min(360.0, math.max(220.0, availableHeight - 96.0));
 
-    return Align(
-      alignment: AlignmentDirectional.topStart,
-      child: SizedBox(
-        width: maxWidth,
-        child: ConstrainedBox(
-          constraints: BoxConstraints(maxHeight: maxHeight),
-          child: Container(
-            padding: EdgeInsets.all(isLandscape ? 16 : 22),
-            decoration: BoxDecoration(
-              color: Theme.of(context).colorScheme.surface,
-              borderRadius: BorderRadius.circular(20),
-              border: Border.all(
-                color: Theme.of(
-                  context,
-                ).colorScheme.primary.withValues(alpha: 0.5),
-                width: 1.5,
-              ),
-              boxShadow: [
-                BoxShadow(
-                  color: Colors.black.withValues(alpha: 0.2),
-                  blurRadius: 20,
-                  offset: const Offset(0, 10),
-                ),
-              ],
+    return SizedBox(
+      width: maxWidth,
+      child: ConstrainedBox(
+        constraints: BoxConstraints(maxHeight: maxHeight),
+        child: Container(
+          padding: EdgeInsets.all(isLandscape ? 16 : 22),
+          decoration: BoxDecoration(
+            color: Theme.of(context).colorScheme.surface,
+            borderRadius: BorderRadius.circular(20),
+            border: Border.all(
+              color: Theme.of(
+                context,
+              ).colorScheme.primary.withValues(alpha: 0.5),
+              width: 1.5,
             ),
-            child: SingleChildScrollView(
-              physics: const ClampingScrollPhysics(),
-              child: Column(
-                mainAxisSize: MainAxisSize.min,
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Row(
-                    children: [
-                      Icon(
-                        LucideIcons.info,
-                        color: Theme.of(context).colorScheme.primary,
-                        size: 20,
-                      ),
-                      const SizedBox(width: 8),
-                      Expanded(
-                        child: Text(
-                          title,
-                          maxLines: 2,
-                          overflow: TextOverflow.ellipsis,
-                          style: TextStyle(
-                            fontWeight: FontWeight.w800,
-                            color: Theme.of(context).colorScheme.onSurface,
-                            fontSize: isLandscape ? 17.0 : 18.0,
-                            fontFamily: 'Inter',
-                            letterSpacing: 0,
-                          ),
+            boxShadow: [
+              BoxShadow(
+                color: Colors.black.withValues(alpha: 0.2),
+                blurRadius: 20,
+                offset: const Offset(0, 10),
+              ),
+            ],
+          ),
+          child: SingleChildScrollView(
+            physics: const ClampingScrollPhysics(),
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Row(
+                  children: [
+                    Icon(
+                      LucideIcons.info,
+                      color: Theme.of(context).colorScheme.primary,
+                      size: 20,
+                    ),
+                    const SizedBox(width: 8),
+                    Expanded(
+                      child: Text(
+                        title,
+                        maxLines: 2,
+                        overflow: TextOverflow.ellipsis,
+                        style: TextStyle(
+                          fontWeight: FontWeight.w800,
+                          color: Theme.of(context).colorScheme.onSurface,
+                          fontSize: isLandscape ? 17.0 : 18.0,
+                          fontFamily: 'Inter',
+                          letterSpacing: 0,
                         ),
                       ),
-                    ],
-                  ),
-                  SizedBox(height: isLandscape ? 10.0 : 12.0),
-                  Text(
-                    description,
-                    style: TextStyle(
-                      color: Theme.of(
-                        context,
-                      ).colorScheme.onSurface.withValues(alpha: 0.7),
-                      fontFamily: 'Inter',
-                      fontSize: isLandscape ? 13 : 14,
-                      height: isLandscape ? 1.38 : 1.5,
                     ),
+                  ],
+                ),
+                SizedBox(height: isLandscape ? 10.0 : 12.0),
+                Text(
+                  description,
+                  style: TextStyle(
+                    color: Theme.of(
+                      context,
+                    ).colorScheme.onSurface.withValues(alpha: 0.7),
+                    fontFamily: 'Inter',
+                    fontSize: isLandscape ? 13 : 14,
+                    height: isLandscape ? 1.38 : 1.5,
                   ),
-                  SizedBox(height: isLandscape ? 14.0 : 20.0),
-                  Wrap(
-                    alignment: WrapAlignment.spaceBetween,
-                    crossAxisAlignment: WrapCrossAlignment.center,
-                    spacing: 10,
-                    runSpacing: 8,
-                    children: [
-                      if (!isFirst)
-                        TextButton(
-                          onPressed: () {
-                            ref.hapticSelection();
-                            controller.previous();
-                          },
-                          child: Text(
-                            context.l10n.translate("Indietro"),
-                            style: TextStyle(
-                              color: Theme.of(
-                                context,
-                              ).colorScheme.onSurface.withValues(alpha: 0.5),
-                              fontWeight: FontWeight.bold,
-                            ),
-                          ),
-                        )
-                      else
-                        const SizedBox.shrink(),
-                      ElevatedButton(
+                ),
+                SizedBox(height: isLandscape ? 14.0 : 20.0),
+                Wrap(
+                  alignment: WrapAlignment.spaceBetween,
+                  crossAxisAlignment: WrapCrossAlignment.center,
+                  spacing: 10,
+                  runSpacing: 8,
+                  children: [
+                    if (!isFirst)
+                      TextButton(
                         onPressed: () {
                           ref.hapticSelection();
-                          if (isLast) {
-                            controller.skip();
-                          } else {
-                            controller.next();
-                          }
+                          onPreviousPressed();
                         },
-                        style: ElevatedButton.styleFrom(
-                          backgroundColor: Theme.of(
-                            context,
-                          ).colorScheme.primary,
-                          foregroundColor:
-                              Theme.of(
-                                    context,
-                                  ).colorScheme.primary.computeLuminance() >
-                                  0.5
-                              ? Colors.black
-                              : Colors.white,
-                          shape: RoundedRectangleBorder(
-                            borderRadius: BorderRadius.circular(10),
-                          ),
-                          elevation: 0,
-                        ),
                         child: Text(
-                          isLast
-                              ? context.l10n.translate("Fine")
-                              : context.l10n.translate("Avanti"),
-                          style: const TextStyle(fontWeight: FontWeight.bold),
+                          context.l10n.translate("Indietro"),
+                          style: TextStyle(
+                            color: Theme.of(
+                              context,
+                            ).colorScheme.onSurface.withValues(alpha: 0.5),
+                            fontWeight: FontWeight.bold,
+                          ),
                         ),
+                      )
+                    else
+                      const SizedBox.shrink(),
+                    ElevatedButton(
+                      onPressed: () {
+                        ref.hapticSelection();
+                        onNextPressed();
+                      },
+                      style: ElevatedButton.styleFrom(
+                        backgroundColor: Theme.of(context).colorScheme.primary,
+                        foregroundColor:
+                            Theme.of(
+                                  context,
+                                ).colorScheme.primary.computeLuminance() >
+                                0.5
+                            ? Colors.black
+                            : Colors.white,
+                        shape: RoundedRectangleBorder(
+                          borderRadius: BorderRadius.circular(10),
+                        ),
+                        elevation: 0,
                       ),
-                    ],
-                  ),
-                ],
-              ),
+                      child: Text(
+                        isLast
+                            ? context.l10n.translate("Fine")
+                            : context.l10n.translate("Avanti"),
+                        style: const TextStyle(fontWeight: FontWeight.bold),
+                      ),
+                    ),
+                  ],
+                ),
+              ],
             ),
           ),
         ),
@@ -408,8 +429,8 @@ class _StatisticsScreenState extends ConsumerState<StatisticsScreen>
   Widget build(BuildContext context) {
     super.build(context);
     final goals = ref.watch(goalsProvider);
-    ref.watch(goalsTutorialProvider);
-    ref.watch(statsTutorialProvider);
+    final goalsTutorialSeen = ref.watch(goalsTutorialProvider);
+    final statsTutorialSeen = ref.watch(statsTutorialProvider);
 
     final settings = ref.watch(settingsProvider);
     if (!settings.isPro && _selectedGoalId != null) {
@@ -423,76 +444,84 @@ class _StatisticsScreenState extends ConsumerState<StatisticsScreen>
     ref.listen(statsTutorialProvider, (previous, next) {
       if (next == false) {
         _didFinishStatsTutorial = false;
-        _tutorialTriggered = false;
-        if (_isShowingStatsTutorial) {
-          _clearStatsTutorialState(removeOverlay: true);
-        }
+        _clearStatsTutorialState();
       }
     });
 
-    _maybeScheduleStatsTutorial();
+    final isStatsTutorialPending =
+        widget.isActive &&
+        !_didFinishStatsTutorial &&
+        goalsTutorialSeen &&
+        !statsTutorialSeen;
 
     return Scaffold(
       backgroundColor: Colors.transparent,
-      body: SafeArea(
-        bottom: false,
-        child: SingleChildScrollView(
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              Padding(
-                padding: const EdgeInsets.symmetric(horizontal: 16.0),
+      body: Stack(
+        children: [
+          AbsorbPointer(
+            absorbing: isStatsTutorialPending,
+            child: SafeArea(
+              bottom: false,
+              child: SingleChildScrollView(
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
-                    const SizedBox(height: 12),
-                    Text(
-                      context.l10n.translate('Statistiche'),
-                      style: TextStyle(
-                        fontFamily: 'Inter',
-                        fontSize: 32,
-                        fontWeight: FontWeight.w900,
-                        color: context.appColors.foreground,
-                        letterSpacing: -1.2,
-                        height: 1.1,
+                    Padding(
+                      padding: const EdgeInsets.symmetric(horizontal: 16.0),
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          const SizedBox(height: 12),
+                          Text(
+                            context.l10n.translate('Statistiche'),
+                            style: TextStyle(
+                              fontFamily: 'Inter',
+                              fontSize: 32,
+                              fontWeight: FontWeight.w900,
+                              color: context.appColors.foreground,
+                              letterSpacing: -1.2,
+                              height: 1.1,
+                            ),
+                          ),
+                          const SizedBox(height: 6),
+                          Text(
+                            context.l10n.translate('Panoramica Statistiche'),
+                            style: TextStyle(
+                              fontFamily: 'Inter',
+                              fontSize: 14,
+                              fontWeight: FontWeight.w500,
+                              color: context.appColors.mutedForeground
+                                  .withValues(alpha: 0.7),
+                            ),
+                          ),
+                          const SizedBox(height: 24),
+
+                          Container(
+                            key: _goalDropdownKey,
+                            child: _buildGoalDropdown(goals),
+                          ),
+                          const SizedBox(height: 16),
+
+                          Container(key: _tabsKey, child: _buildTabs()),
+                          const SizedBox(height: 16),
+                        ],
                       ),
                     ),
-                    const SizedBox(height: 6),
-                    Text(
-                      context.l10n.translate('Panoramica Statistiche'),
-                      style: TextStyle(
-                        fontFamily: 'Inter',
-                        fontSize: 14,
-                        fontWeight: FontWeight.w500,
-                        color: context.appColors.mutedForeground.withValues(
-                          alpha: 0.7,
-                        ),
+
+                    Padding(
+                      padding: const EdgeInsets.symmetric(horizontal: 16.0),
+                      child: AnimatedSwitcher(
+                        duration: const Duration(milliseconds: 200),
+                        child: _buildTabContent(),
                       ),
                     ),
-                    const SizedBox(height: 24),
-
-                    Container(
-                      key: _goalDropdownKey,
-                      child: _buildGoalDropdown(goals),
-                    ),
-                    const SizedBox(height: 16),
-
-                    Container(key: _tabsKey, child: _buildTabs()),
-                    const SizedBox(height: 16),
                   ],
                 ),
               ),
-
-              Padding(
-                padding: const EdgeInsets.symmetric(horizontal: 16.0),
-                child: AnimatedSwitcher(
-                  duration: const Duration(milliseconds: 200),
-                  child: _buildTabContent(),
-                ),
-              ),
-            ],
+            ),
           ),
-        ),
+          if (isStatsTutorialPending) _buildStatsTutorialOverlay(),
+        ],
       ),
     );
   }
@@ -829,5 +858,56 @@ class _StatisticsScreenState extends ConsumerState<StatisticsScreen>
         );
       },
     );
+  }
+}
+
+class _StatsTutorialStep {
+  const _StatsTutorialStep({
+    required this.targetKey,
+    required this.title,
+    required this.description,
+  });
+
+  final GlobalKey targetKey;
+  final String title;
+  final String description;
+}
+
+class _StatsTutorialScrimPainter extends CustomPainter {
+  const _StatsTutorialScrimPainter(this.targetRect);
+
+  final Rect? targetRect;
+
+  @override
+  void paint(Canvas canvas, Size size) {
+    final overlayBounds = Offset.zero & size;
+    final scrimPaint = Paint()..color = Colors.black.withValues(alpha: 0.82);
+    final target = targetRect;
+
+    if (target == null) {
+      canvas.drawRect(overlayBounds, scrimPaint);
+      return;
+    }
+
+    final highlightedRect = target.inflate(10).intersect(overlayBounds);
+    if (highlightedRect.isEmpty) {
+      canvas.drawRect(overlayBounds, scrimPaint);
+      return;
+    }
+
+    final overlayPath = Path()..addRect(overlayBounds);
+    final highlightPath = Path()
+      ..addRRect(
+        RRect.fromRectAndRadius(highlightedRect, const Radius.circular(16)),
+      );
+    canvas.drawPath(
+      Path.combine(PathOperation.difference, overlayPath, highlightPath),
+      scrimPaint,
+    );
+  }
+
+  @override
+  bool shouldRepaint(covariant _StatsTutorialScrimPainter oldDelegate) {
+    return oldDelegate.targetRect != targetRect;
   }
 }

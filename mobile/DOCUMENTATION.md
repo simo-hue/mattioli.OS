@@ -1854,3 +1854,29 @@
 - Increased the initial Goals tutorial delay to exceed the dashboard `PageView` animation.
 - Replaced broad `currentContext` checks with per-target render-box readiness checks that require attached, sized, visible targets inside the screen bounds.
 - Added per-focus target waiting so later Goals tutorial steps also wait for their target after switching between the goals list and performance view.
+
+## [2026-06-19 08:24 CEST]: Goals Tutorial Continuation Crash Fix
+*Details*: Fixed the iOS tutorial continuation on the Goals page so the coachmark content reliably appears after the dashboard hands off to Goals, instead of leaving only the dim overlay and later surfacing `Bad state: No element`.
+*Tech Notes*:
+- Updated `macro_goals_screen.dart` so Goals tutorial startup waits for the current target instead of broad `currentContext` checks, reducing startup races during Goals list/performance view transitions.
+- Updated `macro_goals_provider.dart` to ignore tutorial-only fake goal mutations before persistence logic, preventing Private-mode `firstWhere` crashes if an event reaches the ephemeral tutorial goal.
+- Updated deprecated reorder callbacks in `macro_goals_screen.dart` and `habit_management_modal.dart` from `onReorder` to `onReorderItem` for Flutter 3.44 analyzer compatibility.
+- Added `test/macro_goals_tutorial_test.dart` covering the Goals tutorial continuation popup and tutorial-only fake goal mutation safety.
+- Verified with `flutter analyze` and `flutter test`.
+
+## [2026-06-19 08:32 CEST]: Goals Tutorial Startup Interaction Lock
+*Details*: Reviewed the provided `tutorial.mov` recording and fixed the remaining Goals tutorial gap where the user could tap the Goals page while the first coachmark was still starting, causing the UI to switch to Performance Analysis before the "Planning Type" popup appeared.
+*Tech Notes*:
+- Updated `macro_goals_screen.dart` to preflight only the target being shown first instead of requiring every later tutorial target to be ready before step 1 can appear.
+- Wrapped the Goals screen body in an `AbsorbPointer` while the Goals tutorial is pending, preventing taps/swipes on the Goals UI during the short handoff delay; tutorial overlay controls remain interactive because they render above the screen body.
+- Extended `test/macro_goals_tutorial_test.dart` with regression coverage that taps "Performance Analysis" during the startup gap and verifies the app stays on the Goals list until the first popup appears.
+- Verified with `flutter test test/macro_goals_tutorial_test.dart`, `flutter analyze`, and `flutter test`.
+
+## [2026-06-19 13:46 CEST]: Goals Tutorial Immediate Overlay Rewrite
+*Details*: Rewrote the Goals-page continuation tutorial so the first popup is rendered by `MacroGoalsScreen` on the first active Goals frame instead of being scheduled through delayed `TutorialCoachMark` startup. This prevents the user from landing on Goals with a dimmed/locked page and no visible tutorial card.
+*Tech Notes*:
+- Removed the Goals screen dependency on `TutorialCoachMark`, its startup timers, metrics restart logic, and target polling.
+- Added an in-screen tutorial overlay with a custom scrim painter, highlighted target bounds, explicit previous/next controls, and active-page-only pending state.
+- Kept the Goals body absorbed while the tutorial is pending but rendered overlay controls above it so the tutorial remains usable.
+- Added regression coverage that verifies the "Planning Type" popup is visible immediately, surface taps cannot switch to Performance Analysis while pending, and the tutorial advances without delayed coachmark startup.
+- No new dependencies, endpoints, migrations, or manual user actions required.

@@ -15,10 +15,8 @@ import '../widgets/macro_goals/goal_item_widget.dart';
 import '../widgets/macro_goals/add_goal_bar.dart';
 import '../widgets/macro_goals/macro_goals_stats_view.dart';
 import '../../core/haptics.dart';
-import 'package:tutorial_coach_mark/tutorial_coach_mark.dart';
 import '../../providers/tutorial_provider.dart';
 import '../../core/localization.dart';
-import '../../core/app_logger.dart';
 
 class MacroGoalsScreen extends ConsumerStatefulWidget {
   final bool isActive;
@@ -36,24 +34,16 @@ class MacroGoalsScreen extends ConsumerStatefulWidget {
 }
 
 class _MacroGoalsScreenState extends ConsumerState<MacroGoalsScreen>
-    with AutomaticKeepAliveClientMixin, WidgetsBindingObserver {
-  static const Duration _tutorialStartDelay = Duration(milliseconds: 700);
-  static const Duration _tutorialMetricsRestartDelay = Duration(
-    milliseconds: 350,
-  );
-  static const Duration _tutorialTargetPollDelay = Duration(milliseconds: 80);
-  static const Duration _tutorialTargetMaxWait = Duration(seconds: 2);
+    with AutomaticKeepAliveClientMixin {
   static const int _performanceTutorialIndex = 7;
 
   bool _isForward = true;
   bool _showStats = false;
-  bool _isShowingGoalsTutorial = false;
   bool _didFinishGoalsTutorial = false;
   int _goalsTutorialIndex = 0;
-  Timer? _goalsTutorialStartTimer;
-  Timer? _goalsTutorialMetricsTimer;
-  TutorialCoachMark? _goalsTutorial;
+  bool _isRefreshingGoalsTutorialGeometry = false;
 
+  final GlobalKey _goalsTutorialOverlayKey = GlobalKey();
   final GlobalKey _planSelectorKey = GlobalKey();
   final GlobalKey _addGoalKey = GlobalKey();
   final GlobalKey _goalsListKey = GlobalKey();
@@ -65,92 +55,23 @@ class _MacroGoalsScreenState extends ConsumerState<MacroGoalsScreen>
   final GlobalKey _tutorialDeleteKey = GlobalKey();
 
   @override
-  void initState() {
-    super.initState();
-    WidgetsBinding.instance.addObserver(this);
-    WidgetsBinding.instance.addPostFrameCallback((_) {
-      _checkGoalsTutorial();
-    });
-  }
-
-  @override
   void didUpdateWidget(covariant MacroGoalsScreen oldWidget) {
     super.didUpdateWidget(oldWidget);
     if (!oldWidget.isActive && widget.isActive) {
-      WidgetsBinding.instance.addPostFrameCallback((_) {
-        if (mounted) _checkGoalsTutorial();
-      });
+      setState(() {});
     }
     if (oldWidget.isActive && !widget.isActive) {
-      _clearGoalsTutorialState(removeOverlay: _isShowingGoalsTutorial);
-    }
-  }
-
-  @override
-  void dispose() {
-    WidgetsBinding.instance.removeObserver(this);
-    _goalsTutorialStartTimer?.cancel();
-    _goalsTutorialMetricsTimer?.cancel();
-    _goalsTutorial?.removeOverlayEntry();
-    super.dispose();
-  }
-
-  @override
-  void didChangeMetrics() {
-    super.didChangeMetrics();
-    if (!_isShowingGoalsTutorial ||
-        !widget.isActive ||
-        _didFinishGoalsTutorial) {
-      return;
-    }
-
-    _goalsTutorialMetricsTimer?.cancel();
-    _goalsTutorial?.removeOverlayEntry();
-    _goalsTutorial = null;
-
-    _goalsTutorialMetricsTimer = Timer(_tutorialMetricsRestartDelay, () {
-      if (!_shouldRunGoalsTutorial() || !_isShowingGoalsTutorial) return;
-      WidgetsBinding.instance.addPostFrameCallback((_) {
-        if (!_shouldRunGoalsTutorial() || !_isShowingGoalsTutorial) return;
-        _showGoalsTutorial(initialFocus: _goalsTutorialIndex, replace: true);
-      });
-    });
-  }
-
-  bool _shouldRunGoalsTutorial() {
-    if (!mounted || !widget.isActive || _didFinishGoalsTutorial) return false;
-
-    final mainTutorialSeen = ref.read(tutorialProvider);
-    final goalsTutorialSeen = ref.read(goalsTutorialProvider);
-    return mainTutorialSeen && !goalsTutorialSeen;
-  }
-
-  void _checkGoalsTutorial() {
-    if (!widget.isActive) return;
-
-    final mainTutorialSeen = ref.read(tutorialProvider);
-    final goalsTutorialSeen = ref.read(goalsTutorialProvider);
-    if (!goalsTutorialSeen) {
-      _didFinishGoalsTutorial = false;
-    }
-
-    // Only show if main tutorial is finished but goals tutorial isn't
-    if (mainTutorialSeen && !goalsTutorialSeen && !_didFinishGoalsTutorial) {
-      if (_isShowingGoalsTutorial) return;
-      _goalsTutorialStartTimer?.cancel();
-      _goalsTutorialStartTimer = Timer(_tutorialStartDelay, () {
-        if (_shouldRunGoalsTutorial()) _showGoalsTutorial();
-      });
+      _clearGoalsTutorialState();
     }
   }
 
   Widget _buildTutorialContent(
     String title,
-    String description,
-    TutorialCoachMarkController controller, {
+    String description, {
     bool isFirst = false,
     bool isLast = false,
-    VoidCallback? onNextPressed,
+    required VoidCallback onPreviousPressed,
+    required VoidCallback onNextPressed,
     String? nextButtonLabel,
   }) {
     final mediaQuery = MediaQuery.of(context);
@@ -170,138 +91,127 @@ class _MacroGoalsScreenState extends ConsumerState<MacroGoalsScreen>
         ? const EdgeInsets.all(16)
         : const EdgeInsets.all(22);
 
-    return Align(
-      alignment: AlignmentDirectional.topStart,
-      child: SizedBox(
-        width: maxWidth,
-        child: ConstrainedBox(
-          constraints: BoxConstraints(maxHeight: maxHeight),
-          child: Container(
-            padding: cardPadding,
-            decoration: BoxDecoration(
-              color: Theme.of(context).colorScheme.surface,
-              borderRadius: BorderRadius.circular(20),
-              border: Border.all(
-                color: Theme.of(
-                  context,
-                ).colorScheme.primary.withValues(alpha: 0.5),
-                width: 1.5,
-              ),
-              boxShadow: [
-                BoxShadow(
-                  color: Colors.black.withValues(alpha: 0.2),
-                  blurRadius: 20,
-                  offset: const Offset(0, 10),
-                ),
-              ],
+    return SizedBox(
+      width: maxWidth,
+      child: ConstrainedBox(
+        constraints: BoxConstraints(maxHeight: maxHeight),
+        child: Container(
+          padding: cardPadding,
+          decoration: BoxDecoration(
+            color: Theme.of(context).colorScheme.surface,
+            borderRadius: BorderRadius.circular(20),
+            border: Border.all(
+              color: Theme.of(
+                context,
+              ).colorScheme.primary.withValues(alpha: 0.5),
+              width: 1.5,
             ),
-            child: SingleChildScrollView(
-              physics: const ClampingScrollPhysics(),
-              child: Column(
-                mainAxisSize: MainAxisSize.min,
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Row(
-                    children: [
-                      Icon(
-                        LucideIcons.info,
-                        color: Theme.of(context).colorScheme.primary,
-                        size: 20,
-                      ),
-                      const SizedBox(width: 8),
-                      Expanded(
-                        child: Text(
-                          title,
-                          maxLines: 2,
-                          overflow: TextOverflow.ellipsis,
-                          style: TextStyle(
-                            fontWeight: FontWeight.w800,
-                            color: Theme.of(context).colorScheme.onSurface,
-                            fontSize: isLandscape ? 17.0 : 18.0,
-                            fontFamily: 'Inter',
-                            letterSpacing: 0,
-                          ),
+            boxShadow: [
+              BoxShadow(
+                color: Colors.black.withValues(alpha: 0.2),
+                blurRadius: 20,
+                offset: const Offset(0, 10),
+              ),
+            ],
+          ),
+          child: SingleChildScrollView(
+            physics: const ClampingScrollPhysics(),
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Row(
+                  children: [
+                    Icon(
+                      LucideIcons.info,
+                      color: Theme.of(context).colorScheme.primary,
+                      size: 20,
+                    ),
+                    const SizedBox(width: 8),
+                    Expanded(
+                      child: Text(
+                        title,
+                        maxLines: 2,
+                        overflow: TextOverflow.ellipsis,
+                        style: TextStyle(
+                          fontWeight: FontWeight.w800,
+                          color: Theme.of(context).colorScheme.onSurface,
+                          fontSize: isLandscape ? 17.0 : 18.0,
+                          fontFamily: 'Inter',
+                          letterSpacing: 0,
                         ),
                       ),
-                    ],
-                  ),
-                  SizedBox(height: isLandscape ? 10.0 : 12.0),
-                  Text(
-                    description,
-                    style: TextStyle(
-                      color: Theme.of(
-                        context,
-                      ).colorScheme.onSurface.withValues(alpha: 0.7),
-                      fontFamily: 'Inter',
-                      fontSize: isLandscape ? 13 : 14,
-                      height: isLandscape ? 1.38 : 1.5,
                     ),
+                  ],
+                ),
+                SizedBox(height: isLandscape ? 10.0 : 12.0),
+                Text(
+                  description,
+                  style: TextStyle(
+                    color: Theme.of(
+                      context,
+                    ).colorScheme.onSurface.withValues(alpha: 0.7),
+                    fontFamily: 'Inter',
+                    fontSize: isLandscape ? 13 : 14,
+                    height: isLandscape ? 1.38 : 1.5,
                   ),
-                  SizedBox(height: isLandscape ? 14.0 : 20.0),
-                  Wrap(
-                    alignment: WrapAlignment.spaceBetween,
-                    crossAxisAlignment: WrapCrossAlignment.center,
-                    spacing: 10,
-                    runSpacing: 8,
-                    children: [
-                      if (!isFirst)
-                        TextButton(
-                          onPressed: () {
-                            ref.hapticSelection();
-                            controller.previous();
-                          },
-                          child: Text(
-                            context.l10n.translate("Indietro"),
-                            style: TextStyle(
-                              color: Theme.of(
-                                context,
-                              ).colorScheme.onSurface.withValues(alpha: 0.5),
-                              fontWeight: FontWeight.bold,
-                            ),
-                          ),
-                        )
-                      else
-                        const SizedBox.shrink(),
-                      ElevatedButton(
+                ),
+                SizedBox(height: isLandscape ? 14.0 : 20.0),
+                Wrap(
+                  alignment: WrapAlignment.spaceBetween,
+                  crossAxisAlignment: WrapCrossAlignment.center,
+                  spacing: 10,
+                  runSpacing: 8,
+                  children: [
+                    if (!isFirst)
+                      TextButton(
                         onPressed: () {
                           ref.hapticSelection();
-                          if (onNextPressed != null) {
-                            onNextPressed();
-                          } else if (isLast) {
-                            controller.skip();
-                          } else {
-                            controller.next();
-                          }
+                          onPreviousPressed();
                         },
-                        style: ElevatedButton.styleFrom(
-                          backgroundColor: Theme.of(
-                            context,
-                          ).colorScheme.primary,
-                          foregroundColor:
-                              Theme.of(
-                                    context,
-                                  ).colorScheme.primary.computeLuminance() >
-                                  0.5
-                              ? Colors.black
-                              : Colors.white,
-                          shape: RoundedRectangleBorder(
-                            borderRadius: BorderRadius.circular(10),
-                          ),
-                          elevation: 0,
-                        ),
                         child: Text(
-                          nextButtonLabel != null
-                              ? context.l10n.translate(nextButtonLabel)
-                              : (isLast
-                                    ? context.l10n.translate("Fine")
-                                    : context.l10n.translate("Avanti")),
-                          style: const TextStyle(fontWeight: FontWeight.bold),
+                          context.l10n.translate("Indietro"),
+                          style: TextStyle(
+                            color: Theme.of(
+                              context,
+                            ).colorScheme.onSurface.withValues(alpha: 0.5),
+                            fontWeight: FontWeight.bold,
+                          ),
                         ),
+                      )
+                    else
+                      const SizedBox.shrink(),
+                    ElevatedButton(
+                      onPressed: () {
+                        ref.hapticSelection();
+                        onNextPressed();
+                      },
+                      style: ElevatedButton.styleFrom(
+                        backgroundColor: Theme.of(context).colorScheme.primary,
+                        foregroundColor:
+                            Theme.of(
+                                  context,
+                                ).colorScheme.primary.computeLuminance() >
+                                0.5
+                            ? Colors.black
+                            : Colors.white,
+                        shape: RoundedRectangleBorder(
+                          borderRadius: BorderRadius.circular(10),
+                        ),
+                        elevation: 0,
                       ),
-                    ],
-                  ),
-                ],
-              ),
+                      child: Text(
+                        nextButtonLabel != null
+                            ? context.l10n.translate(nextButtonLabel)
+                            : (isLast
+                                  ? context.l10n.translate("Fine")
+                                  : context.l10n.translate("Avanti")),
+                        style: const TextStyle(fontWeight: FontWeight.bold),
+                      ),
+                    ),
+                  ],
+                ),
+              ],
             ),
           ),
         ),
@@ -309,305 +219,228 @@ class _MacroGoalsScreenState extends ConsumerState<MacroGoalsScreen>
     );
   }
 
-  ContentAlign _goalActionTutorialAlign() {
-    final size = MediaQuery.sizeOf(context);
-    return size.width > size.height || size.height < 560
-        ? ContentAlign.top
-        : ContentAlign.bottom;
-  }
-
-  EdgeInsets _tutorialTargetPadding() {
-    final size = MediaQuery.sizeOf(context);
-    final isLandscape = size.width > size.height;
-    return EdgeInsets.symmetric(
-      horizontal: isLandscape ? 16 : 20,
-      vertical: isLandscape ? 8 : 12,
-    );
-  }
-
-  List<TargetFocus> _buildGoalsTutorialTargets() {
-    final goalActionAlign = _goalActionTutorialAlign();
-    final targetPadding = _tutorialTargetPadding();
-
+  List<_GoalsTutorialStep> _buildGoalsTutorialSteps() {
     return [
-      TargetFocus(
-        identify: "Tipo Pianificazione",
-        keyTarget: _planSelectorKey,
-        enableTargetTab: false,
-        enableOverlayTab: false,
-        contents: [
-          TargetContent(
-            align: ContentAlign.bottom,
-            padding: targetPadding,
-            builder: (context, controller) {
-              return _buildTutorialContent(
-                context.l10n.translate("Tipo di Pianificazione"),
-                context.l10n.translate(
-                  "Qui puoi selezionare la visione temporale: Lifetime (per tutta la vita), Annuale, Trimestrale, Mensile o Settimanale.",
-                ),
-                controller,
-                isFirst: true,
-              );
-            },
-          ),
-        ],
+      _GoalsTutorialStep(
+        targetKey: _planSelectorKey,
+        title: context.l10n.translate("Tipo di Pianificazione"),
+        description: context.l10n.translate(
+          "Qui puoi selezionare la visione temporale: Lifetime (per tutta la vita), Annuale, Trimestrale, Mensile o Settimanale.",
+        ),
       ),
-      TargetFocus(
-        identify: "Aggiungi Goal",
-        keyTarget: _addGoalKey,
-        enableTargetTab: false,
-        enableOverlayTab: false,
-        contents: [
-          TargetContent(
-            align: ContentAlign.top,
-            padding: targetPadding,
-            builder: (context, controller) {
-              return _buildTutorialContent(
-                context.l10n.translate("Nuovo Obiettivo"),
-                context.l10n.translate(
-                  "Da qui puoi inserire un nuovo obiettivo. Potrai anche personalizzare le Categorie a tuo piacimento per organizzare tutto al meglio.",
-                ),
-                controller,
-              );
-            },
-          ),
-        ],
+      _GoalsTutorialStep(
+        targetKey: _addGoalKey,
+        title: context.l10n.translate("Nuovo Obiettivo"),
+        description: context.l10n.translate(
+          "Da qui puoi inserire un nuovo obiettivo. Potrai anche personalizzare le Categorie a tuo piacimento per organizzare tutto al meglio.",
+        ),
       ),
-      TargetFocus(
-        identify: "Tutorial Completare",
-        keyTarget: _tutorialCheckboxKey,
-        enableTargetTab: false,
-        enableOverlayTab: false,
-        paddingFocus: 12,
-        contents: [
-          TargetContent(
-            align: goalActionAlign,
-            padding: targetPadding,
-            builder: (context, controller) => _buildTutorialContent(
-              context.l10n.translate("Completare o Fallire"),
-              context.l10n.translate(
-                "Clicca qui per segnare l'obiettivo come completato. Cliccandolo di nuovo verrà segnato come fallito.",
-              ),
-              controller,
-            ),
-          ),
-        ],
+      _GoalsTutorialStep(
+        targetKey: _tutorialCheckboxKey,
+        title: context.l10n.translate("Completare o Fallire"),
+        description: context.l10n.translate(
+          "Clicca qui per segnare l'obiettivo come completato. Cliccandolo di nuovo verrà segnato come fallito.",
+        ),
       ),
-      TargetFocus(
-        identify: "Tutorial Categoria",
-        keyTarget: _tutorialCategoryKey,
-        enableTargetTab: false,
-        enableOverlayTab: false,
-        paddingFocus: 12,
-        contents: [
-          TargetContent(
-            align: goalActionAlign,
-            padding: targetPadding,
-            builder: (context, controller) => _buildTutorialContent(
-              context.l10n.translate("Categoria"),
-              context.l10n.translate(
-                "Usa questo pulsante per assegnare rapidamente una categoria all'obiettivo.",
-              ),
-              controller,
-            ),
-          ),
-        ],
+      _GoalsTutorialStep(
+        targetKey: _tutorialCategoryKey,
+        title: context.l10n.translate("Categoria"),
+        description: context.l10n.translate(
+          "Usa questo pulsante per assegnare rapidamente una categoria all'obiettivo.",
+        ),
       ),
-      TargetFocus(
-        identify: "Tutorial Posticipare",
-        keyTarget: _tutorialRescheduleKey,
-        enableTargetTab: false,
-        enableOverlayTab: false,
-        paddingFocus: 12,
-        contents: [
-          TargetContent(
-            align: goalActionAlign,
-            padding: targetPadding,
-            builder: (context, controller) => _buildTutorialContent(
-              context.l10n.translate("Posticipare"),
-              context.l10n.translate(
-                "Se non hai fatto in tempo o i piani sono cambiati, puoi spostare questo obiettivo alla settimana / mese o anno successivo ( in base a dove hai inserito l'obiettivo).",
-              ),
-              controller,
-            ),
-          ),
-        ],
+      _GoalsTutorialStep(
+        targetKey: _tutorialRescheduleKey,
+        title: context.l10n.translate("Posticipare"),
+        description: context.l10n.translate(
+          "Se non hai fatto in tempo o i piani sono cambiati, puoi spostare questo obiettivo alla settimana / mese o anno successivo ( in base a dove hai inserito l'obiettivo).",
+        ),
       ),
-      TargetFocus(
-        identify: "Tutorial Modifica",
-        keyTarget: _tutorialEditKey,
-        enableTargetTab: false,
-        enableOverlayTab: false,
-        paddingFocus: 12,
-        contents: [
-          TargetContent(
-            align: goalActionAlign,
-            padding: targetPadding,
-            builder: (context, controller) => _buildTutorialContent(
-              context.l10n.translate("Modifica"),
-              context.l10n.translate(
-                "Se devi semplicemente rinominare l'obiettivo, usa la matita.",
-              ),
-              controller,
-            ),
-          ),
-        ],
+      _GoalsTutorialStep(
+        targetKey: _tutorialEditKey,
+        title: context.l10n.translate("Modifica"),
+        description: context.l10n.translate(
+          "Se devi semplicemente rinominare l'obiettivo, usa la matita.",
+        ),
       ),
-      TargetFocus(
-        identify: "Tutorial Elimina",
-        keyTarget: _tutorialDeleteKey,
-        enableTargetTab: false,
-        enableOverlayTab: false,
-        paddingFocus: 12,
-        contents: [
-          TargetContent(
-            align: goalActionAlign,
-            padding: targetPadding,
-            builder: (context, controller) {
-              return _buildTutorialContent(
-                context.l10n.translate("Elimina"),
-                context.l10n.translate(
-                  "Infine, questo pulsante elimina definitivamente l'obiettivo.",
-                ),
-                controller,
-              );
-            },
-          ),
-        ],
+      _GoalsTutorialStep(
+        targetKey: _tutorialDeleteKey,
+        title: context.l10n.translate("Elimina"),
+        description: context.l10n.translate(
+          "Infine, questo pulsante elimina definitivamente l'obiettivo.",
+        ),
       ),
-      TargetFocus(
-        identify: "Analisi Performance",
-        keyTarget: _performanceToggleKey,
-        enableTargetTab: false,
-        enableOverlayTab: false,
-        contents: [
-          TargetContent(
-            align: ContentAlign.bottom,
-            padding: targetPadding,
-            builder: (context, controller) {
-              return _buildTutorialContent(
-                context.l10n.translate("Analisi e Statistiche"),
-                context.l10n.translate(
-                  "Passa a questa scheda per visualizzare grafici e performance dettagliate selezionando l'anno corrente o tutti gli anni.",
-                ),
-                controller,
-                isLast: false,
-                nextButtonLabel: "Continua",
-              );
-            },
-          ),
-        ],
+      _GoalsTutorialStep(
+        targetKey: _performanceToggleKey,
+        showStats: true,
+        title: context.l10n.translate("Analisi e Statistiche"),
+        description: context.l10n.translate(
+          "Passa a questa scheda per visualizzare grafici e performance dettagliate selezionando l'anno corrente o tutti gli anni.",
+        ),
+        nextButtonLabel: widget.statsNavKey == null
+            ? "Passa alle Statistiche"
+            : "Continua",
       ),
       if (widget.statsNavKey != null)
-        TargetFocus(
-          identify: "Tutorial Statistiche Tab",
-          keyTarget: widget.statsNavKey!,
-          enableTargetTab: false,
-          enableOverlayTab: false,
-          contents: [
-            TargetContent(
-              align: ContentAlign.top,
-              padding: targetPadding,
-              builder: (context, controller) {
-                return _buildTutorialContent(
-                  context.l10n.translate("Statistiche Abitudini"),
-                  context.l10n.translate(
-                    "Per vedere le statistiche delle tue abitudini giornaliere, puoi spostarti in questa sezione.",
-                  ),
-                  controller,
-                  isLast: false,
-                  nextButtonLabel: "Passa alle Statistiche",
-                  onNextPressed: () {
-                    _finishGoalsTutorial(advanceToStats: true);
-                  },
-                );
-              },
-            ),
-          ],
+        _GoalsTutorialStep(
+          showStats: true,
+          title: context.l10n.translate("Statistiche Abitudini"),
+          description: context.l10n.translate(
+            "Per vedere le statistiche delle tue abitudini giornaliere, puoi spostarti in questa sezione.",
+          ),
+          nextButtonLabel: "Passa alle Statistiche",
         ),
     ];
   }
 
-  Future<void> _beforeGoalsTutorialFocus(
-    TargetFocus target,
-    List<TargetFocus> targets,
-  ) async {
-    final index = targets.indexOf(target);
-    if (index < 0 || !mounted) return;
+  int get _goalsTutorialStepCount => widget.statsNavKey == null ? 8 : 9;
 
-    _goalsTutorialIndex = index;
-    final shouldShowStats = index >= _performanceTutorialIndex;
-    if (_showStats != shouldShowStats) {
-      setState(() => _showStats = shouldShowStats);
-      await WidgetsBinding.instance.endOfFrame;
-    }
-    await _waitForGoalsTutorialTarget(target);
+  int get _clampedGoalsTutorialIndex {
+    return _goalsTutorialIndex.clamp(0, _goalsTutorialStepCount - 1).toInt();
   }
 
-  bool _isTutorialTargetReady(GlobalKey key) {
-    final targetContext = key.currentContext;
-    if (targetContext == null) return false;
-
-    final renderObject = targetContext.findRenderObject();
-    if (renderObject is! RenderBox ||
-        !renderObject.attached ||
-        !renderObject.hasSize) {
-      return false;
+  void _goToGoalsTutorialStep(int index) {
+    if (index < 0) return;
+    final steps = _buildGoalsTutorialSteps();
+    if (index >= steps.length) {
+      _finishGoalsTutorial(advanceToStats: true);
+      return;
     }
 
-    final targetSize = renderObject.size;
-    if (targetSize.width <= 1 || targetSize.height <= 1) return false;
-
-    final targetOffset = renderObject.localToGlobal(Offset.zero);
-    final targetRect = targetOffset & targetSize;
-    final screenSize = MediaQuery.sizeOf(context);
-    const tolerance = 1.0;
-
-    return targetRect.left >= -tolerance &&
-        targetRect.top >= -tolerance &&
-        targetRect.right <= screenSize.width + tolerance &&
-        targetRect.bottom <= screenSize.height + tolerance;
+    setState(() {
+      _goalsTutorialIndex = index;
+      _showStats = steps[index].showStats;
+    });
+    _scheduleGoalsTutorialGeometryRefresh();
   }
 
-  bool _isTutorialTargetReadyForFocus(TargetFocus target) {
-    final key = target.keyTarget;
-    if (key == null) return target.targetPosition != null;
-    return _isTutorialTargetReady(key);
-  }
-
-  void _scheduleGoalsTutorialRetry({int initialFocus = 0}) {
-    _goalsTutorialStartTimer?.cancel();
-    _goalsTutorialStartTimer = Timer(_tutorialTargetPollDelay, () {
-      if (_shouldRunGoalsTutorial()) {
-        _showGoalsTutorial(initialFocus: initialFocus);
-      }
+  void _scheduleGoalsTutorialGeometryRefresh() {
+    if (_isRefreshingGoalsTutorialGeometry) return;
+    _isRefreshingGoalsTutorialGeometry = true;
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      _isRefreshingGoalsTutorialGeometry = false;
+      if (!mounted || !_isGoalsTutorialActive) return;
+      setState(() {});
     });
   }
 
-  Future<void> _waitForGoalsTutorialTarget(TargetFocus target) async {
-    final key = target.keyTarget;
-    if (key == null) return;
-
-    final deadline = DateTime.now().add(_tutorialTargetMaxWait);
-    while (_shouldRunGoalsTutorial()) {
-      await WidgetsBinding.instance.endOfFrame;
-      if (!mounted || !widget.isActive) return;
-      if (_isTutorialTargetReady(key)) return;
-      if (DateTime.now().isAfter(deadline)) return;
-      await Future.delayed(_tutorialTargetPollDelay);
-    }
+  bool get _isGoalsTutorialActive {
+    if (!mounted || !widget.isActive || _didFinishGoalsTutorial) return false;
+    return ref.read(tutorialProvider) && !ref.read(goalsTutorialProvider);
   }
 
-  void _clearGoalsTutorialState({bool removeOverlay = false}) {
-    _goalsTutorialStartTimer?.cancel();
-    _goalsTutorialMetricsTimer?.cancel();
-    if (removeOverlay) {
-      _goalsTutorial?.removeOverlayEntry();
+  Rect? _targetRectForKey(GlobalKey? targetKey) {
+    final overlayContext = _goalsTutorialOverlayKey.currentContext;
+    final targetContext = targetKey?.currentContext;
+    if (overlayContext == null || targetContext == null) return null;
+
+    final overlayObject = overlayContext.findRenderObject();
+    final targetObject = targetContext.findRenderObject();
+    if (overlayObject is! RenderBox ||
+        targetObject is! RenderBox ||
+        !overlayObject.attached ||
+        !targetObject.attached ||
+        !targetObject.hasSize) {
+      return null;
     }
-    _goalsTutorial = null;
-    _isShowingGoalsTutorial = false;
+
+    final targetSize = targetObject.size;
+    if (targetSize.width <= 1 || targetSize.height <= 1) return null;
+
+    final targetOffset = targetObject.localToGlobal(
+      Offset.zero,
+      ancestor: overlayObject,
+    );
+    return targetOffset & targetSize;
+  }
+
+  void _clearGoalsTutorialState() {
     _goalsTutorialIndex = 0;
     _showStats = false;
+  }
+
+  Widget _buildGoalsTutorialOverlay() {
+    final steps = _buildGoalsTutorialSteps();
+    final index = _clampedGoalsTutorialIndex;
+    final step = steps[index];
+    final targetRect = _targetRectForKey(step.targetKey);
+    if (step.targetKey != null && targetRect == null) {
+      _scheduleGoalsTutorialGeometryRefresh();
+    }
+
+    return Positioned.fill(
+      child: Material(
+        key: _goalsTutorialOverlayKey,
+        color: Colors.transparent,
+        child: LayoutBuilder(
+          builder: (context, constraints) {
+            final overlaySize = Size(
+              constraints.maxWidth,
+              constraints.maxHeight,
+            );
+            final showCardAtTop =
+                targetRect != null &&
+                targetRect.center.dy > overlaySize.height * 0.52;
+
+            return Stack(
+              children: [
+                Positioned.fill(
+                  child: CustomPaint(
+                    painter: _GoalsTutorialScrimPainter(targetRect),
+                  ),
+                ),
+                if (targetRect != null)
+                  Positioned.fromRect(
+                    rect: targetRect.inflate(8),
+                    child: IgnorePointer(
+                      child: DecoratedBox(
+                        decoration: BoxDecoration(
+                          borderRadius: BorderRadius.circular(16),
+                          border: Border.all(
+                            color: Theme.of(context).colorScheme.primary,
+                            width: 2,
+                          ),
+                        ),
+                      ),
+                    ),
+                  ),
+                Align(
+                  alignment: showCardAtTop
+                      ? Alignment.topCenter
+                      : Alignment.bottomCenter,
+                  child: Padding(
+                    padding: EdgeInsets.fromLTRB(
+                      20,
+                      MediaQuery.paddingOf(context).top + 16,
+                      20,
+                      MediaQuery.paddingOf(context).bottom + 24,
+                    ),
+                    child: _buildTutorialContent(
+                      step.title,
+                      step.description,
+                      isFirst: index == 0,
+                      isLast: index == steps.length - 1,
+                      nextButtonLabel: step.nextButtonLabel,
+                      onPreviousPressed: () =>
+                          _goToGoalsTutorialStep(index - 1),
+                      onNextPressed: () {
+                        if (index == steps.length - 1 ||
+                            (index == _performanceTutorialIndex &&
+                                widget.statsNavKey == null)) {
+                          _finishGoalsTutorial(advanceToStats: true);
+                          return;
+                        }
+                        _goToGoalsTutorialStep(index + 1);
+                      },
+                    ),
+                  ),
+                ),
+              ],
+            );
+          },
+        ),
+      ),
+    );
   }
 
   void _completeGoalsTutorial() {
@@ -618,7 +451,7 @@ class _MacroGoalsScreenState extends ConsumerState<MacroGoalsScreen>
     if (!mounted || _didFinishGoalsTutorial) return;
 
     _didFinishGoalsTutorial = true;
-    _clearGoalsTutorialState(removeOverlay: true);
+    _clearGoalsTutorialState();
     _completeGoalsTutorial();
 
     if (!advanceToStats || widget.onFinishTutorial == null) return;
@@ -627,56 +460,6 @@ class _MacroGoalsScreenState extends ConsumerState<MacroGoalsScreen>
       if (!mounted) return;
       widget.onFinishTutorial!();
     });
-  }
-
-  void _showGoalsTutorial({int initialFocus = 0, bool replace = false}) {
-    if (!_shouldRunGoalsTutorial()) return;
-    if (_isShowingGoalsTutorial && !replace) return;
-
-    _goalsTutorialStartTimer?.cancel();
-    _goalsTutorial?.removeOverlayEntry();
-    final targets = _buildGoalsTutorialTargets();
-    final resolvedInitialFocus = initialFocus
-        .clamp(0, targets.length - 1)
-        .toInt();
-    if (!_isTutorialTargetReadyForFocus(targets[resolvedInitialFocus])) {
-      AppLogger.warning(
-        '[Tutorial] Goals tutorial target is not ready; delaying start',
-      );
-      _scheduleGoalsTutorialRetry(initialFocus: resolvedInitialFocus);
-      return;
-    }
-
-    _goalsTutorialIndex = resolvedInitialFocus;
-    _isShowingGoalsTutorial = true;
-
-    final tutorial = TutorialCoachMark(
-      targets: targets,
-      initialFocus: resolvedInitialFocus,
-      beforeFocus: (target) => _beforeGoalsTutorialFocus(target, targets),
-      colorShadow: Colors.black,
-      hideSkip: true,
-      paddingFocus: 10,
-      opacityShadow: 0.85,
-      focusAnimationDuration: const Duration(milliseconds: 400),
-      unFocusAnimationDuration: Duration.zero,
-      pulseEnable: false,
-      onFinish: () {
-        _finishGoalsTutorial(advanceToStats: true);
-      },
-      onSkip: () {
-        _finishGoalsTutorial(advanceToStats: true);
-        return true;
-      },
-    );
-
-    _goalsTutorial = tutorial;
-    try {
-      tutorial.show(context: context);
-    } catch (e, stack) {
-      _clearGoalsTutorialState();
-      AppLogger.warning('[Tutorial] Unable to start goals tutorial', e, stack);
-    }
   }
 
   @override
@@ -691,23 +474,10 @@ class _MacroGoalsScreenState extends ConsumerState<MacroGoalsScreen>
     // Force re-compute on state change
     ref.watch(macroGoalsProvider);
 
-    // Ascolta anche i cambiamenti dello stato del main tutorial (es. se viene resettato)
-    ref.listen(tutorialProvider, (prev, next) {
-      if (next == true && widget.isActive && !ref.read(goalsTutorialProvider)) {
-        // Se il tutorial main finisce, controlla se bisogna lanciare questo (es. navigazione dalla tab)
-        // Diamo tempo al cambio tab di terminare l'animazione
-        Future.delayed(const Duration(milliseconds: 600), () {
-          if (_shouldRunGoalsTutorial()) _checkGoalsTutorial();
-        });
-      }
-    });
-
     ref.listen(goalsTutorialProvider, (previous, next) {
       if (next == false) {
         _didFinishGoalsTutorial = false;
-        if (_isShowingGoalsTutorial) {
-          _clearGoalsTutorialState(removeOverlay: true);
-        }
+        _clearGoalsTutorialState();
       }
     });
 
@@ -723,9 +493,14 @@ class _MacroGoalsScreenState extends ConsumerState<MacroGoalsScreen>
 
     final mainTutorialSeen = ref.watch(tutorialProvider);
     final goalsTutorialSeen = ref.watch(goalsTutorialProvider);
+    final isGoalsTutorialPending =
+        widget.isActive &&
+        !_didFinishGoalsTutorial &&
+        mainTutorialSeen &&
+        !goalsTutorialSeen;
 
     List<MacroGoal> displayGoals = List.from(filteredGoals);
-    if (mainTutorialSeen && !goalsTutorialSeen) {
+    if (isGoalsTutorialPending) {
       displayGoals.insert(
         0,
         MacroGoal(
@@ -744,113 +519,131 @@ class _MacroGoalsScreenState extends ConsumerState<MacroGoalsScreen>
 
     return Scaffold(
       backgroundColor: context.appColors.background,
-      body: SafeArea(
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            // ── Unified Native Header ─────────────────────────────────────
-            _buildUnifiedHeader(context, ref, viewState, primaryColor),
+      body: Stack(
+        children: [
+          AbsorbPointer(
+            absorbing: isGoalsTutorialPending,
+            child: SafeArea(
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  // ── Unified Native Header ─────────────────────────────────────
+                  _buildUnifiedHeader(context, ref, viewState, primaryColor),
 
-            if (_showStats)
-              const Expanded(child: MacroGoalsStatsView())
-            else ...[
-              // ── Native Period Navigator Stepper ───────────────────────────
-              _buildPeriodNavigator(context, ref, viewState),
+                  if (_showStats)
+                    const Expanded(child: MacroGoalsStatsView())
+                  else ...[
+                    // ── Native Period Navigator Stepper ───────────────────────────
+                    _buildPeriodNavigator(context, ref, viewState),
 
-              const SizedBox(height: 16),
+                    const SizedBox(height: 16),
 
-              // ── Goals list ────────────────────────────────────────────────
-              Expanded(
-                child: GestureDetector(
-                  behavior: HitTestBehavior.opaque,
-                  onHorizontalDragEnd: (details) {
-                    if (viewState.selectedType == GoalType.lifetime) return;
-                    const velocityThreshold = 300.0;
-                    final vx = details.primaryVelocity ?? 0.0;
-                    if (vx < -velocityThreshold) {
-                      setState(() => _isForward = true);
-                      ref.read(macroGoalsViewProvider.notifier).nextPeriod();
-                      ref.hapticLight();
-                    } else if (vx > velocityThreshold) {
-                      setState(() => _isForward = false);
-                      ref.read(macroGoalsViewProvider.notifier).prevPeriod();
-                      ref.hapticLight();
-                    }
-                  },
-                  child: AnimatedSwitcher(
-                    duration: const Duration(milliseconds: 450),
-                    switchInCurve: Curves.easeOutQuart,
-                    switchOutCurve: Curves.easeOutQuart,
-                    transitionBuilder: (child, animation) {
-                      final isIncoming =
-                          child.key ==
-                          ValueKey(
-                            '${viewState.selectedType}-${viewState.selectedYear}-${viewState.selectedMonth}-${viewState.selectedWeek}-${viewState.selectedQuarter}',
-                          );
-                      final dir = _isForward ? 1 : -1;
-
-                      return AnimatedBuilder(
-                        animation: animation,
-                        builder: (context, child) {
-                          double pageOffset = 0.0;
-                          if (isIncoming) {
-                            pageOffset = (1.0 - animation.value) * dir;
-                          } else {
-                            pageOffset = (animation.value - 1.0) * dir;
+                    // ── Goals list ────────────────────────────────────────────────
+                    Expanded(
+                      child: GestureDetector(
+                        behavior: HitTestBehavior.opaque,
+                        onHorizontalDragEnd: (details) {
+                          if (viewState.selectedType == GoalType.lifetime) {
+                            return;
                           }
-
-                          final absOffset = pageOffset.abs();
-
-                          // Premium Parallax & Scale Effect (simulating Calendar PageView)
-                          final double scale =
-                              1.0 - (absOffset * 0.05).clamp(0.0, 0.05);
-                          final double opacity = (1.0 - absOffset).clamp(
-                            0.0,
-                            1.0,
-                          );
-
-                          // We use the screen width to simulate the PageView horizontal scroll
-                          final double width = MediaQuery.of(
-                            context,
-                          ).size.width;
-                          final double translation = pageOffset * width;
-
-                          return Transform.scale(
-                            scale: scale,
-                            child: Transform.translate(
-                              offset: Offset(translation, 0),
-                              child: Opacity(opacity: opacity, child: child),
-                            ),
-                          );
+                          const velocityThreshold = 300.0;
+                          final vx = details.primaryVelocity ?? 0.0;
+                          if (vx < -velocityThreshold) {
+                            setState(() => _isForward = true);
+                            ref
+                                .read(macroGoalsViewProvider.notifier)
+                                .nextPeriod();
+                            ref.hapticLight();
+                          } else if (vx > velocityThreshold) {
+                            setState(() => _isForward = false);
+                            ref
+                                .read(macroGoalsViewProvider.notifier)
+                                .prevPeriod();
+                            ref.hapticLight();
+                          }
                         },
-                        child: child,
-                      );
-                    },
-                    child: _GoalsList(
-                      key: ValueKey(
-                        '${viewState.selectedType}-${viewState.selectedYear}-${viewState.selectedMonth}-${viewState.selectedWeek}-${viewState.selectedQuarter}',
+                        child: AnimatedSwitcher(
+                          duration: const Duration(milliseconds: 450),
+                          switchInCurve: Curves.easeOutQuart,
+                          switchOutCurve: Curves.easeOutQuart,
+                          transitionBuilder: (child, animation) {
+                            final isIncoming =
+                                child.key ==
+                                ValueKey(
+                                  '${viewState.selectedType}-${viewState.selectedYear}-${viewState.selectedMonth}-${viewState.selectedWeek}-${viewState.selectedQuarter}',
+                                );
+                            final dir = _isForward ? 1 : -1;
+
+                            return AnimatedBuilder(
+                              animation: animation,
+                              builder: (context, child) {
+                                double pageOffset = 0.0;
+                                if (isIncoming) {
+                                  pageOffset = (1.0 - animation.value) * dir;
+                                } else {
+                                  pageOffset = (animation.value - 1.0) * dir;
+                                }
+
+                                final absOffset = pageOffset.abs();
+
+                                // Premium Parallax & Scale Effect (simulating Calendar PageView)
+                                final double scale =
+                                    1.0 - (absOffset * 0.05).clamp(0.0, 0.05);
+                                final double opacity = (1.0 - absOffset).clamp(
+                                  0.0,
+                                  1.0,
+                                );
+
+                                // We use the screen width to simulate the PageView horizontal scroll
+                                final double width = MediaQuery.of(
+                                  context,
+                                ).size.width;
+                                final double translation = pageOffset * width;
+
+                                return Transform.scale(
+                                  scale: scale,
+                                  child: Transform.translate(
+                                    offset: Offset(translation, 0),
+                                    child: Opacity(
+                                      opacity: opacity,
+                                      child: child,
+                                    ),
+                                  ),
+                                );
+                              },
+                              child: child,
+                            );
+                          },
+                          child: _GoalsList(
+                            key: ValueKey(
+                              '${viewState.selectedType}-${viewState.selectedYear}-${viewState.selectedMonth}-${viewState.selectedWeek}-${viewState.selectedQuarter}',
+                            ),
+                            goals: displayGoals,
+                            viewState: viewState,
+                            emptyStateKey: _goalsListKey,
+                            tutorialCheckboxKey: _tutorialCheckboxKey,
+                            tutorialCategoryKey: _tutorialCategoryKey,
+                            tutorialRescheduleKey: _tutorialRescheduleKey,
+                            tutorialEditKey: _tutorialEditKey,
+                            tutorialDeleteKey: _tutorialDeleteKey,
+                          ),
+                        ),
                       ),
-                      goals: displayGoals,
-                      viewState: viewState,
-                      emptyStateKey: _goalsListKey,
-                      tutorialCheckboxKey: _tutorialCheckboxKey,
-                      tutorialCategoryKey: _tutorialCategoryKey,
-                      tutorialRescheduleKey: _tutorialRescheduleKey,
-                      tutorialEditKey: _tutorialEditKey,
-                      tutorialDeleteKey: _tutorialDeleteKey,
                     ),
-                  ),
-                ),
+                    const SizedBox(height: 12),
+                    Container(
+                      key: _addGoalKey,
+                      child: AddGoalBar(viewState: viewState),
+                    ),
+                    const SizedBox(height: 12),
+                  ],
+                ],
               ),
-              const SizedBox(height: 12),
-              Container(
-                key: _addGoalKey,
-                child: AddGoalBar(viewState: viewState),
-              ),
-              const SizedBox(height: 12),
-            ],
-          ],
-        ),
+            ),
+          ),
+          if (isGoalsTutorialPending && widget.isActive)
+            _buildGoalsTutorialOverlay(),
+        ],
       ),
     );
   }
@@ -1267,6 +1060,61 @@ class _MacroGoalsScreenState extends ConsumerState<MacroGoalsScreen>
   }
 }
 
+class _GoalsTutorialStep {
+  const _GoalsTutorialStep({
+    this.targetKey,
+    this.showStats = false,
+    required this.title,
+    required this.description,
+    this.nextButtonLabel,
+  });
+
+  final GlobalKey? targetKey;
+  final bool showStats;
+  final String title;
+  final String description;
+  final String? nextButtonLabel;
+}
+
+class _GoalsTutorialScrimPainter extends CustomPainter {
+  const _GoalsTutorialScrimPainter(this.targetRect);
+
+  final Rect? targetRect;
+
+  @override
+  void paint(Canvas canvas, Size size) {
+    final overlayBounds = Offset.zero & size;
+    final scrimPaint = Paint()..color = Colors.black.withValues(alpha: 0.82);
+    final target = targetRect;
+
+    if (target == null) {
+      canvas.drawRect(overlayBounds, scrimPaint);
+      return;
+    }
+
+    final highlightedRect = target.inflate(10).intersect(overlayBounds);
+    if (highlightedRect.isEmpty) {
+      canvas.drawRect(overlayBounds, scrimPaint);
+      return;
+    }
+
+    final overlayPath = Path()..addRect(overlayBounds);
+    final highlightPath = Path()
+      ..addRRect(
+        RRect.fromRectAndRadius(highlightedRect, const Radius.circular(16)),
+      );
+    canvas.drawPath(
+      Path.combine(PathOperation.difference, overlayPath, highlightPath),
+      scrimPaint,
+    );
+  }
+
+  @override
+  bool shouldRepaint(covariant _GoalsTutorialScrimPainter oldDelegate) {
+    return oldDelegate.targetRect != targetRect;
+  }
+}
+
 // ─── Goals list ───────────────────────────────────────────────────────────────
 
 class _GoalsList extends ConsumerWidget {
@@ -1342,7 +1190,7 @@ class _GoalsList extends ConsumerWidget {
       proxyDecorator: (child, index, animation) => child,
       buildDefaultDragHandles: false,
       itemCount: items.length,
-      onReorder: (oldIndex, newIndex) {
+      onReorderItem: (oldIndex, newIndex) {
         // Programmatic reordering is handled by the provider state change
       },
       itemBuilder: (context, index) {

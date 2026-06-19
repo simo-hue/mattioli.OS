@@ -40,6 +40,7 @@ class MacroGoalsState {
 
 class MacroGoalsNotifier extends Notifier<MacroGoalsState> {
   static const String _cacheKey = 'macro_goals_cache';
+  static const String _tutorialGoalId = 'tutorial_fake_goal';
 
   @override
   MacroGoalsState build() {
@@ -105,6 +106,21 @@ class MacroGoalsNotifier extends Notifier<MacroGoalsState> {
     final prefs = ref.read(sharedPrefsProvider);
     final jsonList = goals.map((g) => g.toJson()).toList();
     prefs.setString(_cacheKey, jsonEncode(jsonList));
+  }
+
+  MacroGoal? _goalById(String id) {
+    for (final goal in state.goals) {
+      if (goal.id == id) return goal;
+    }
+    return null;
+  }
+
+  bool _shouldIgnoreMissingGoalMutation(String id, String action) {
+    if (_goalById(id) != null) return false;
+    if (id == _tutorialGoalId) return true;
+
+    AppLogger.warning('[MacroGoals] Ignoring $action for missing goal: $id');
+    return true;
   }
 
   // ── Sync da Supabase ──────────────────────────────────────────────────────
@@ -184,6 +200,8 @@ class MacroGoalsNotifier extends Notifier<MacroGoalsState> {
   }
 
   Future<void> updateStatus(String id, GoalStatus status) async {
+    if (_shouldIgnoreMissingGoalMutation(id, 'status update')) return;
+
     final newGoals = state.goals
         .map((g) => g.id == id ? g.copyWith(status: status) : g)
         .toList();
@@ -217,6 +235,8 @@ class MacroGoalsNotifier extends Notifier<MacroGoalsState> {
   }
 
   Future<void> updateTitle(String id, String title) async {
+    if (_shouldIgnoreMissingGoalMutation(id, 'title update')) return;
+
     final newGoals = state.goals
         .map((g) => g.id == id ? g.copyWith(title: title) : g)
         .toList();
@@ -250,6 +270,8 @@ class MacroGoalsNotifier extends Notifier<MacroGoalsState> {
   }
 
   Future<void> updateCategory(String id, String? categoryId) async {
+    if (_shouldIgnoreMissingGoalMutation(id, 'category update')) return;
+
     final newGoals = state.goals.map((g) {
       if (g.id != id) return g;
       return categoryId == null
@@ -286,6 +308,8 @@ class MacroGoalsNotifier extends Notifier<MacroGoalsState> {
   }
 
   Future<void> deleteGoal(String id) async {
+    if (_shouldIgnoreMissingGoalMutation(id, 'delete')) return;
+
     final newGoals = state.goals.where((g) => g.id != id).toList();
     state = state.copyWith(goals: newGoals);
 
@@ -313,6 +337,8 @@ class MacroGoalsNotifier extends Notifier<MacroGoalsState> {
   }
 
   Future<void> rescheduleGoal(MacroGoal goal) async {
+    if (_shouldIgnoreMissingGoalMutation(goal.id, 'reschedule')) return;
+
     // 1. Mark current as failed
     await updateStatus(goal.id, GoalStatus.failed);
 

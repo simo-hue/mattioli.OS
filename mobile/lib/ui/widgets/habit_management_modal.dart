@@ -864,7 +864,7 @@ class _HabitManagementModalState extends ConsumerState<HabitManagementModal> {
           ),
           SliverReorderableList(
             itemCount: habits.length,
-            onReorder: (oldIndex, newIndex) {
+            onReorderItem: (oldIndex, newIndex) {
               ref.read(goalsProvider.notifier).reorder(oldIndex, newIndex);
               HapticFeedback.lightImpact();
             },

@@ -582,3 +582,36 @@
 - [2026-06-17]: Android Folder Regeneration and Publishing Prep
   - *Details*: Regenerated the Android folder, configured release signing, and modified MainActivity for local_auth.
   - *Tech Notes*: Keystore generated in android/app/upload-keystore.jks. Passwords stored in key.properties. Both ignored in .gitignore. Successfully built the release appbundle.
+
+- [2026-06-19 14:34]: **Version Increment for Publication**
+  - *Details*: Incremented the version numbers across the project's components in preparation for an update publication.
+  - *Tech Notes*:
+    - Mobile app (`mobile/pubspec.yaml`): Incremented version from `1.0.3+7` to `1.0.4+8`.
+    - Desktop app (`desktop/pubspec.yaml`): Incremented version from `1.0.0+1` to `1.0.1+2`.
+    - Web app (`package.json`): Incremented version from `0.0.0` to `0.0.1`.
+
+- [2026-06-19 22:20]: **App Store Connect Localization Automation**
+  - *Details*: Configured Fastlane to automatically populate missing App Store Connect fields (What's New in This Version) for all supported languages.
+  - *Tech Notes*:
+    - Created localized folders under `mobile/ios/fastlane/metadata/` for 16 target languages (fr-FR, ko, es-MX, etc.).
+    - Executed `fastlane deliver` with `--app_version "1.0.4"` and `--force` to propagate default release notes ("UI improvements") bypassing interactive blocks and version ambiguity.
+    - Updated `mobile/ios/fastlane/Fastfile` with custom ruby scripts as fallbacks for Spaceship API usage.
+
+- [2026-06-20 14:17]: **Automated Global Metadata Translation**
+  - *Details*: Fully automated the translation of the app's metadata (Name, Subtitle, Promotional Text, Description, Keywords) into 16+ languages required by App Store Connect to resolve missing localization errors. Explicitly set "release_notes.txt" to "UI improvements" across all languages as requested.
+  - *Tech Notes*:
+    - Created and executed a Python script (`translate_all.py`) utilizing `deep-translator` via Google Translate API to dynamically generate localized text files for each language directory in `fastlane/metadata/`.
+    - Handled URL configurations globally, ensuring correct `support_url.txt`, `marketing_url.txt`, and `privacy_url.txt` properties without breaking format schemas.
+    - Handled an edge case for Hebrew translation code (`iw` instead of `he`).
+
+- [2026-06-20 14:34]: **App Store Connect Metadata Translation & Upload**
+  - *Details*: Successfully downloaded current App Store Connect metadata to resolve name uniqueness conflicts, translated the release notes ("UI improvements") to 38 localized languages using Google Translate, and successfully uploaded the localized release notes to App Store Connect via Fastlane.
+  - *Tech Notes*: Downloaded true metadata using `fastlane deliver download_metadata`. Translated `release_notes.txt` iteratively with `deep_translator` for all locales in `fastlane/metadata`. Uploaded securely without duplicate name conflicts via `fastlane deliver --force`.
+
+- [2026-06-20 14:39]: **App Store Connect Metadata Critical Fixes (404 URLs)**
+  - *Details*: Fixed broken Support and Marketing URLs across all 38 localized languages before App Review submission. The old URLs pointed to \`wealth-compass\` which returned HTTP 404s, guaranteeing a rejection.
+  - *Tech Notes*: Updated \`support_url.txt\` to \`https://simo-hue.github.io/evolve/#faq\` and \`marketing_url.txt\` to \`https://simo-hue.github.io/evolve/\`. Uploaded via \`fastlane deliver\`.
+
+- [2026-06-20 15:10]: App Store Connect Metadata Push
+  - *Details*: Uploaded release notes ("UI improvements") across 38 localized languages for Evolve. Cleaned up the local Fastlane setup.
+  - *Tech Notes*: Removed corrupted metadata folder pointing to dummy app. Generated and executed temporary Deliverfile to selectively push release notes via Fastlane without overriding App Info fields. Cleaned up all temporary python scripts and Fastlane artifacts.

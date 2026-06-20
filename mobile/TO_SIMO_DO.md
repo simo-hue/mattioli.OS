@@ -58,3 +58,10 @@
 - [ ] Before the next iOS release, confirm App Store Connect export-compliance answers for the new SQLCipher-based local database encryption. The app uses encryption for local private data protection, so keep `ITSAppUsesNonExemptEncryption` aligned with Apple's current compliance guidance.
 
 ---
+---
+
+## 🍏 Pubblicazione iOS (App Store Connect)
+- [ ] Incrementa versione e build number in `pubspec.yaml` (es. `1.0.0+2`).
+- [ ] Esegui `flutter clean`, `flutter pub get`, e poi genera l'IPA con `flutter build ipa --release`.
+- [ ] Apri Xcode, vai su **Product > Archive**, quindi clicca **Distribute App** e seleziona **App Store Connect > Upload**.
+- [ ] Per tutti i dettagli su Privacy, Review Settings (bypass per l'Apple Reviewer) e acquisti In-App, fai sempre riferimento al file [app_store_connect_guide.md](app_store_connect_guide.md).

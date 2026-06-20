@@ -1,0 +1,42 @@
+require 'spaceship'
+
+default_platform(:ios)
+
+platform :ios do
+  desc "Aggiorna 'What's New in This Version' per tutte le lingue"
+  lane :update_notes do
+    Spaceship::ConnectAPI.login("mattioli.simone.10@gmail.com")
+    app = Spaceship::ConnectAPI::App.find("com.simo.evolve")
+    version = app.get_edit_app_store_version
+    
+    if version.nil?
+      UI.user_error!("Nessuna versione in stato editabile trovata!")
+    end
+    
+    UI.success("Trovata versione in modifica: #{version.version_string}")
+    required_locales = ["fr", "vi", "ko", "en-AU", "es-MX", "id", "en-CA", "de", "sk", "sv", "da", "fr-CA", "pt-PT", "he", "el", "en-GB"]
+    UI.message("Lingue da aggiornare in base allo screenshot: #{required_locales.join(', ')}")
+    
+    existing_locs = version.get_app_store_version_localizations
+    existing_locales = existing_locs.map(&:locale)
+    
+    required_locales.each do |locale|
+      if existing_locales.include?(locale)
+        UI.message("Aggiorno lingua esistente: #{locale}...")
+        loc = existing_locs.find { |l| l.locale == locale }
+        loc.update(attributes: { whatsNew: "UI improvements" })
+      else
+        UI.message("Creo nuova localizzazione per versione: #{locale}...")
+        Spaceship::ConnectAPI.post_app_store_version_localization(
+          app_store_version_id: version.id,
+          attributes: {
+            locale: locale,
+            whatsNew: "UI improvements"
+          }
+        )
+      end
+    end
+    
+    UI.success("Completato! Tutte le lingue richieste sono state aggiornate.")
+  end
+end

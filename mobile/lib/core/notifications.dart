@@ -1,12 +1,15 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_local_notifications/flutter_local_notifications.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:timezone/timezone.dart' as tz;
 import 'package:timezone/data/latest.dart' as tz;
 import 'package:flutter_timezone/flutter_timezone.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import '../i18n/translations.g.dart';
+import '../providers/goal_provider.dart';
 import 'data_mode.dart';
+import 'navigator_key.dart';
 import 'private_local_database.dart';
 import 'secure_local_storage.dart';
 import 'supabase_config.dart';
@@ -124,14 +127,31 @@ class NotificationService {
 
     if (response.actionId == 'action_done') {
       await _markHabitAsDone(habitId);
+      _refreshHabitProvidersAfterWrite();
     } else if (response.actionId == 'action_snooze') {
+      // Snooze only reschedules a notification — no data write, no refresh.
       await _snoozeHabit(
         habitId,
         parts.length > 2 ? parts[2] : t.notifications.habitFallbackTitle,
       );
     } else if (response.actionId == 'action_skip') {
       await _skipHabit(habitId);
+      _refreshHabitProvidersAfterWrite();
     }
+  }
+
+  /// After a notification-driven habit write, refresh the in-memory providers
+  /// so the foreground dashboard reflects the change immediately rather than
+  /// staying stale until the next rebuild. Mirrors the invalidation
+  /// `goal_provider.cycleStatus` performs. Runs only when a foreground UI
+  /// exists: in the background isolate and on a cold-start tap the global
+  /// navigator context is null, so this no-ops and the providers load fresh.
+  void _refreshHabitProvidersAfterWrite() {
+    final context = navigatorKey.currentContext;
+    if (context == null || !context.mounted) return;
+    final container = ProviderScope.containerOf(context, listen: false);
+    container.invalidate(habitLogsProvider);
+    container.invalidate(habitStatsProvider);
   }
 
   Future<void> _markHabitAsDone(String habitId) async {

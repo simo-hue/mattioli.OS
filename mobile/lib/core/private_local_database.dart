@@ -115,6 +115,14 @@ class PrivateLocalDatabase {
   Future<void> _excludeFromBackup(File file) async {
     if (!Platform.isIOS && !Platform.isMacOS) return;
     try {
+      // Exclude the whole Application Support directory rather than the single
+      // .db file. This is intentional: it also covers SQLite's -wal/-shm
+      // sidecars (which may not exist yet when this runs) and the
+      // `private_profile` avatar folder — i.e. exactly the private data we must
+      // keep out of iCloud/iTunes backups while sync is off. Only Private-mode
+      // data lives here, so nothing else is affected. Moving the DB into a
+      // dedicated subfolder would orphan existing installs' databases, so the
+      // path is kept stable.
       final directory = file.parent;
       await directory.create(recursive: true);
       await _platform.invokeMethod<void>('excludeFromBackup', {
@@ -279,6 +287,12 @@ CREATE TABLE daily_moods (
 )
 ''');
 
+    // NOTE: goal_category_settings mirrors the cloud table for schema parity
+    // and future iCloud-sync completeness, but the mobile app does not currently
+    // read or write its `mappings` (no provider touches it — category data lives
+    // in macro_goal_categories). It is seeded once in _ensureProfile and wiped by
+    // deleteAllPrivateData. Kept intentionally; if the cloud feature is ever
+    // wired into mobile, the storage is already here.
     await db.execute('''
 CREATE TABLE goal_category_settings (
   id TEXT PRIMARY KEY,

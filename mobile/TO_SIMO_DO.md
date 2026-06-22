@@ -56,3 +56,11 @@
 ## 2026-06-18 - App Store encryption/export compliance check
 
 - [ ] Before the next iOS release, confirm App Store Connect export-compliance answers for the new SQLCipher-based local database encryption. The app uses encryption for local private data protection, so keep `ITSAppUsesNonExemptEncryption` aligned with Apple's current compliance guidance.
+
+---
+
+## 2026-06-23 - Phase 6 data-correctness follow-ups
+
+- [ ] **Cloud `get_best_habits` timeframe-token bug (latent, pre-existing).** The app passes `'timeframe_week_short' | 'timeframe_month_short' | 'timeframe_year_short' | 'timeframe_all'` (see `global_trend_tab_widget.dart`), but the SQL filters on `'week' | 'month' | 'year' | 'all'`. None match, so cloud returns rate=0 for every habit and orders only by streak. Private Mode now replicates this exactly for parity. To actually fix: either map the tokens in the Dart call site (`bestHabitsProvider`) or update the SQL `WHEN` clauses — then update `migrations/20260622_add_get_best_habits.sql` and the parity logic in `lib/core/private_analytics.dart` (`computeBestHabits`) together so both backends stay in sync. (No action needed for this release if current behaviour is acceptable.)
+- [ ] **Pre-existing schema drift, informational.** `profiles` and `macro_goal_categories` are referenced via `.from(...)` but have no `CREATE TABLE` in `schema.sql` (they live only in prod / are Supabase-managed). They're allowlisted in `test/schema_drift_test.dart` so the guard stays green. Consider capturing them into `schema.sql`/`migrations/` in a later pass for completeness.
+- No DB apply step required: the new `migrations/20260622_add_*.sql` were dumped FROM production, so they already exist live.

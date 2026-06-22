@@ -365,6 +365,40 @@ final goalsProvider = NotifierProvider<GoalsNotifier, List<Goal>>(
 
 typedef HabitLogsMap = Map<String, Map<String, String>>;
 
+/// Page size for the windowed `goal_logs` sync. A single unbounded PostgREST
+/// `select` is capped by the project's `db-max-rows`, which would silently
+/// truncate the heatmap/yearly views for users with long histories, so the full
+/// history is fetched in ranges instead.
+const int kGoalLogsSyncPageSize = 1000;
+
+/// Fetches a single page of `{id, goal_id, date, status}` rows. Abstracted so
+/// the pagination loop can be unit-tested without a live Supabase client.
+typedef GoalLogPageFetcher =
+    Future<List<Map<String, dynamic>>> Function(int offset, int limit);
+
+/// Folds every page returned by [fetchPage] into a [HabitLogsMap], requesting
+/// successive ranges until a short (final) page is returned. Keeping this pure
+/// makes the paging behaviour deterministic and testable.
+Future<HabitLogsMap> fetchGoalLogsPaginated(
+  GoalLogPageFetcher fetchPage, {
+  int pageSize = kGoalLogsSyncPageSize,
+}) async {
+  final HabitLogsMap logs = {};
+  var offset = 0;
+  while (true) {
+    final page = await fetchPage(offset, pageSize);
+    for (final row in page) {
+      final date = row['date'] as String; // YYYY-MM-DD
+      final goalId = row['goal_id'] as String;
+      final status = row['status'] as String;
+      (logs[date] ??= <String, String>{})[goalId] = status;
+    }
+    if (page.length < pageSize) break;
+    offset += pageSize;
+  }
+  return logs;
+}
+
 class HabitLogsNotifier extends Notifier<HabitLogsMap> {
   static const String _cacheKey = 'goal_logs_cache';
 
@@ -436,25 +470,19 @@ class HabitLogsNotifier extends Notifier<HabitLogsMap> {
     if (user == null) return;
 
     try {
-      // Per ottimizzare, potremmo scaricare solo gli ultimi X giorni,
-      // ma per ora sincronizziamo tutto per la heatmap.
-      final response = await supabase
-          .from('goal_logs')
-          .select('id, goal_id, date, status')
-          .eq('user_id', user.id);
-
-      final HabitLogsMap newLogs = {};
-
-      for (final row in response) {
-        final date = row['date'] as String; // YYYY-MM-DD
-        final goalId = row['goal_id'] as String;
-        final status = row['status'] as String;
-
-        if (!newLogs.containsKey(date)) {
-          newLogs[date] = {};
-        }
-        newLogs[date]![goalId] = status;
-      }
+      // Fetch the full history in deterministically-ordered pages so the
+      // heatmap / yearly views stay complete past PostgREST's per-request row
+      // cap. The id tiebreaker guarantees a stable total order across pages.
+      final newLogs = await fetchGoalLogsPaginated((offset, limit) async {
+        final page = await supabase
+            .from('goal_logs')
+            .select('id, goal_id, date, status')
+            .eq('user_id', user.id)
+            .order('date', ascending: true)
+            .order('id', ascending: true)
+            .range(offset, offset + limit - 1);
+        return List<Map<String, dynamic>>.from(page);
+      });
 
       state = newLogs;
       _saveToCache(newLogs);

@@ -13,6 +13,7 @@ import '../models/goal.dart';
 import '../models/macro_goal.dart';
 import '../models/daily_mood.dart';
 import 'app_logger.dart';
+import 'private_analytics.dart';
 import 'secure_storage_utils.dart';
 
 final privateLocalDatabaseProvider = Provider<PrivateLocalDatabase>((ref) {
@@ -83,11 +84,12 @@ class PrivateLocalDatabase {
     final db = await openDatabase(
       dbPath,
       password: password,
-      version: 1,
+      version: 2,
       onConfigure: (db) async {
         await db.execute('PRAGMA foreign_keys = ON');
       },
       onCreate: _createSchema,
+      onUpgrade: _onUpgrade,
     );
     _db = db;
     await _ensureProfile(db);
@@ -125,6 +127,66 @@ class PrivateLocalDatabase {
       }
     } catch (e, stack) {
       AppLogger.warning('[PrivateDB] backup exclusion marker failed', e, stack);
+    }
+  }
+
+  /// DDL for `long_term_goals`. Shared between [_createSchema] and the v2
+  /// upgrade so the CHECK constraints can't drift between fresh installs and
+  /// migrated databases.
+  static const String _longTermGoalsTableDdl = '''
+CREATE TABLE long_term_goals (
+  id TEXT PRIMARY KEY,
+  user_id TEXT NOT NULL REFERENCES profiles(id) ON DELETE CASCADE,
+  title TEXT NOT NULL,
+  status TEXT NOT NULL DEFAULT 'active'
+    CHECK (status IN ('active', 'completed', 'failed')),
+  type TEXT NOT NULL
+    CHECK (type IN ('lifetime', 'annual', 'quarterly', 'monthly', 'weekly')),
+  year INTEGER,
+  month INTEGER CHECK (month >= 1 AND month <= 12),
+  -- week_number is a week-of-month index (the app emits 1..6 via weeksInMonth).
+  -- The 1..53 bound matches cloud schema.sql to avoid cross-backend CHECK drift.
+  week_number INTEGER CHECK (week_number >= 1 AND week_number <= 53),
+  quarter INTEGER CHECK (quarter >= 1 AND quarter <= 4),
+  -- color is legacy/vestigial: macro goals derive their color from their
+  -- category (GoalCategory.color); the app never writes this column.
+  color TEXT,
+  category_key TEXT,
+  created_at TEXT NOT NULL,
+  updated_at TEXT NOT NULL,
+  category_id TEXT REFERENCES macro_goal_categories(id) ON DELETE SET NULL
+)
+''';
+
+  static const List<String> _longTermGoalsIndexes = [
+    'CREATE INDEX idx_ltg_user_type_year ON long_term_goals (user_id, type, year)',
+    'CREATE INDEX idx_ltg_user_status ON long_term_goals (user_id, status)',
+  ];
+
+  Future<void> _onUpgrade(Database db, int oldVersion, int newVersion) async {
+    // v2: widen long_term_goals.week_number CHECK from 1..6 to 1..53 to match
+    // cloud schema.sql. SQLite can't ALTER a CHECK constraint, so rebuild the
+    // table. Nothing references long_term_goals via FK, so a rename/copy/drop is
+    // safe; existing rows (week-of-month, always <= 6) all satisfy the new bound.
+    if (oldVersion < 2) {
+      await db.execute(
+        'ALTER TABLE long_term_goals RENAME TO long_term_goals_old',
+      );
+      await db.execute(_longTermGoalsTableDdl);
+      await db.execute('''
+INSERT INTO long_term_goals (
+  id, user_id, title, status, type, year, month, week_number, quarter,
+  color, category_key, created_at, updated_at, category_id
+)
+SELECT
+  id, user_id, title, status, type, year, month, week_number, quarter,
+  color, category_key, created_at, updated_at, category_id
+FROM long_term_goals_old
+''');
+      await db.execute('DROP TABLE long_term_goals_old');
+      for (final ddl in _longTermGoalsIndexes) {
+        await db.execute(ddl);
+      }
     }
   }
 
@@ -201,26 +263,7 @@ CREATE TABLE goal_logs (
 )
 ''');
 
-    await db.execute('''
-CREATE TABLE long_term_goals (
-  id TEXT PRIMARY KEY,
-  user_id TEXT NOT NULL REFERENCES profiles(id) ON DELETE CASCADE,
-  title TEXT NOT NULL,
-  status TEXT NOT NULL DEFAULT 'active'
-    CHECK (status IN ('active', 'completed', 'failed')),
-  type TEXT NOT NULL
-    CHECK (type IN ('lifetime', 'annual', 'quarterly', 'monthly', 'weekly')),
-  year INTEGER,
-  month INTEGER CHECK (month >= 1 AND month <= 12),
-  week_number INTEGER CHECK (week_number >= 1 AND week_number <= 6),
-  quarter INTEGER CHECK (quarter >= 1 AND quarter <= 4),
-  color TEXT,
-  category_key TEXT,
-  created_at TEXT NOT NULL,
-  updated_at TEXT NOT NULL,
-  category_id TEXT REFERENCES macro_goal_categories(id) ON DELETE SET NULL
-)
-''');
+    await db.execute(_longTermGoalsTableDdl);
 
     await db.execute('''
 CREATE TABLE daily_moods (
@@ -263,12 +306,9 @@ CREATE TABLE macro_goal_categories (
     await db.execute(
       'CREATE INDEX idx_goal_logs_user_date ON goal_logs (user_id, date DESC)',
     );
-    await db.execute(
-      'CREATE INDEX idx_ltg_user_type_year ON long_term_goals (user_id, type, year)',
-    );
-    await db.execute(
-      'CREATE INDEX idx_ltg_user_status ON long_term_goals (user_id, status)',
-    );
+    for (final ddl in _longTermGoalsIndexes) {
+      await db.execute(ddl);
+    }
     await db.execute(
       'CREATE INDEX idx_moods_user_date ON daily_moods (user_id, date DESC)',
     );
@@ -672,218 +712,136 @@ CREATE TABLE macro_goal_categories (
     }
   }
 
-  Future<List<Map<String, dynamic>>> habitStats() async {
+  /// Loads `goal_logs` (optionally for a single [goalId]) as normalised entries,
+  /// including the signed `streak`, for the parity computations.
+  Future<List<HabitLogEntry>> _loadLogEntries({String? goalId}) async {
     final db = await _database();
     final owner = await ownerId();
-    final rows = await db.rawQuery(
-      '''
-SELECT
-  g.id AS goal_id,
-  COUNT(l.id) AS total,
-  SUM(CASE WHEN l.status = 'done' THEN 1 ELSE 0 END) AS done,
-  SUM(CASE WHEN l.status = 'missed' THEN 1 ELSE 0 END) AS missed,
-  MAX(COALESCE(l.streak, 0)) AS streak
-FROM goals g
-LEFT JOIN goal_logs l ON l.goal_id = g.id
-WHERE g.user_id = ?
-GROUP BY g.id
-''',
-      [owner],
+    final rows = await db.query(
+      'goal_logs',
+      columns: ['goal_id', 'date', 'status', 'streak'],
+      where: goalId == null ? 'user_id = ?' : 'user_id = ? AND goal_id = ?',
+      whereArgs: goalId == null ? [owner] : [owner, goalId],
     );
-    return rows.map((row) {
-      final total = (row['total'] as num?)?.toInt() ?? 0;
-      final done = (row['done'] as num?)?.toInt() ?? 0;
-      return {
-        ...row,
-        'completion_rate': total == 0 ? 0 : (done / total * 100).round(),
-      };
-    }).toList();
-  }
-
-  Future<Map<String, Map<String, dynamic>>> habitAnalytics() async {
-    final logs = await loadHabitLogs();
-    final result = <String, Map<String, dynamic>>{};
-    final missedByGoalDow = <String, Map<int, int>>{};
-
-    logs.forEach((dateStr, habits) {
-      final parsed = DateTime.tryParse(dateStr);
-      if (parsed == null) return;
-      final dow = parsed.weekday;
-      habits.forEach((goalId, status) {
-        if (status == 'missed') {
-          missedByGoalDow
-              .putIfAbsent(goalId, () => <int, int>{})
-              .update(dow, (v) => v + 1, ifAbsent: () => 1);
-        }
-      });
-    });
-
-    for (final entry in missedByGoalDow.entries) {
-      var worstDow = 1;
-      var worstCount = -1;
-      for (final dowEntry in entry.value.entries) {
-        if (dowEntry.value > worstCount) {
-          worstDow = dowEntry.key;
-          worstCount = dowEntry.value;
-        }
-      }
-      result[entry.key] = {
-        'goal_id': entry.key,
-        'worst_dow': worstDow,
-        'avg_recovery_days': 0,
-      };
+    final entries = <HabitLogEntry>[];
+    for (final row in rows) {
+      final date = DateTime.tryParse(row['date'] as String);
+      if (date == null) continue;
+      entries.add(HabitLogEntry(
+        goalId: row['goal_id'] as String,
+        date: date,
+        status: row['status'] as String,
+        streak: (row['streak'] as num?)?.toInt() ?? 0,
+      ));
     }
-    return result;
+    return entries;
   }
 
-  Future<String> globalCriticalDay() async {
-    final logs = await loadHabitLogs();
-    final counts = <int, int>{};
-    logs.forEach((dateStr, habits) {
-      final parsed = DateTime.tryParse(dateStr);
-      if (parsed == null) return;
-      final missed = habits.values.where((status) => status == 'missed').length;
-      if (missed > 0) {
-        counts.update(
-          parsed.weekday,
-          (v) => v + missed,
-          ifAbsent: () => missed,
-        );
-      }
-    });
-    if (counts.isEmpty) return 'N/A';
-    final worst = counts.entries.reduce((a, b) => a.value >= b.value ? a : b);
-    return [
-      'Monday',
-      'Tuesday',
-      'Wednesday',
-      'Thursday',
-      'Friday',
-      'Saturday',
-      'Sunday',
-    ][worst.key - 1];
+  Map<String, List<HabitLogEntry>> _groupByGoal(List<HabitLogEntry> entries) {
+    final map = <String, List<HabitLogEntry>>{};
+    for (final e in entries) {
+      (map[e.goalId] ??= <HabitLogEntry>[]).add(e);
+    }
+    return map;
   }
 
-  Future<List<Map<String, dynamic>>> globalTrend(String timeframe) async {
-    final logs = await loadHabitLogs();
-    final days = switch (timeframe) {
-      '7d' || '7D' => 7,
-      '30d' || '30D' => 30,
-      '90d' || '90D' => 90,
-      _ => 30,
-    };
+  List<GoalInput> _goalInputs(List<Goal> goals) => [
+        for (final g in goals)
+          GoalInput(
+            id: g.id,
+            startDate: g.startDate,
+            endDate: g.endDate,
+            frequencyDays: g.frequencyDays,
+          ),
+      ];
+
+  // Mirrors the cloud `habit_stats` view.
+  Future<List<Map<String, dynamic>>> habitStats() async {
+    final owner = await ownerId();
+    final goals = await loadGoals();
+    final byGoal = _groupByGoal(await _loadLogEntries());
     final today = DateTime.now();
-    final result = <Map<String, dynamic>>[];
-    for (var i = days - 1; i >= 0; i--) {
-      final date = DateTime(
-        today.year,
-        today.month,
-        today.day,
-      ).subtract(Duration(days: i));
-      final key = _dateKey(date);
-      final statuses = logs[key]?.values.toList() ?? const <String>[];
-      final done = statuses.where((s) => s == 'done').length;
-      final total = statuses.length;
-      result.add({
-        'point_index': days - 1 - i,
-        'date': key,
-        'rate': total == 0 ? 0 : done / total * 100,
-      });
-    }
-    return result;
+    return [
+      for (final g in goals)
+        computeHabitStatsRow(
+          goalId: g.id,
+          userId: owner,
+          title: g.title,
+          startDate: g.startDate,
+          logs: byGoal[g.id] ?? const [],
+          today: today,
+        ),
+    ];
   }
 
+  // Mirrors the cloud `get_habit_analytics` RPC (one row per goal).
+  Future<Map<String, Map<String, dynamic>>> habitAnalytics() async {
+    final goals = await loadGoals();
+    final byGoal = _groupByGoal(await _loadLogEntries());
+    return {
+      for (final g in goals)
+        g.id: computeAnalyticsRow(goalId: g.id, logs: byGoal[g.id] ?? const []),
+    };
+  }
+
+  // Mirrors the cloud `get_global_critical_day` RPC.
+  Future<String> globalCriticalDay() async {
+    return computeGlobalCriticalDay(await _loadLogEntries());
+  }
+
+  // Mirrors the cloud `get_global_trend` RPC.
+  Future<List<Map<String, dynamic>>> globalTrend(String timeframe) async {
+    final goals = await loadGoals();
+    final logs = await loadHabitLogs();
+    return computeGlobalTrend(
+      goals: _goalInputs(goals),
+      logs: logs,
+      timeframe: timeframe,
+      today: DateTime.now(),
+    );
+  }
+
+  // Mirrors the cloud `get_critical_habits` RPC.
   Future<List<Map<String, dynamic>>> criticalHabits() async {
-    final stats = await habitStats();
-    stats.sort((a, b) {
-      final aRate = (a['completion_rate'] as num?) ?? 0;
-      final bRate = (b['completion_rate'] as num?) ?? 0;
-      return aRate.compareTo(bRate);
-    });
-    return stats.take(5).map((row) {
-      final rate = (row['completion_rate'] as num?) ?? 0;
-      return {
-        'goal_id': row['goal_id'],
-        'drop': 100 - rate,
-        'neg_streak': row['missed'] ?? 0,
-      };
-    }).toList();
+    final goals = await loadGoals();
+    final byGoal = _groupByGoal(await _loadLogEntries());
+    return computeCriticalHabits(
+      goals: _goalInputs(goals),
+      logsByGoal: byGoal,
+      today: DateTime.now(),
+    );
   }
 
+  // Mirrors the cloud `get_best_habits` RPC.
   Future<List<Map<String, dynamic>>> bestHabits(String timeframe) async {
-    final stats = await habitStats();
-    stats.sort((a, b) {
-      final aRate = (a['completion_rate'] as num?) ?? 0;
-      final bRate = (b['completion_rate'] as num?) ?? 0;
-      return bRate.compareTo(aRate);
-    });
-    return stats.take(5).map((row) {
-      return {
-        'goal_id': row['goal_id'],
-        'rate': row['completion_rate'] ?? 0,
-        'streak': row['streak'] ?? 0,
-      };
-    }).toList();
+    final goals = await loadGoals();
+    final byGoal = _groupByGoal(await _loadLogEntries());
+    return computeBestHabits(
+      goals: _goalInputs(goals),
+      logsByGoal: byGoal,
+      timeframe: timeframe,
+      today: DateTime.now(),
+    );
   }
 
+  // Mirrors the cloud `get_habit_performance_by_day` RPC (ISODOW day_index).
   Future<List<Map<String, dynamic>>> habitPerformanceByDay(
     String goalId,
   ) async {
-    final db = await _database();
-    return db.rawQuery(
-      '''
-SELECT
-  CAST(strftime('%w', date) AS INTEGER) AS day_index,
-  SUM(CASE WHEN status = 'done' THEN 1 ELSE 0 END) AS done_count,
-  COUNT(*) AS total_count
-FROM goal_logs
-WHERE goal_id = ?
-GROUP BY day_index
-ORDER BY day_index ASC
-''',
-      [goalId],
-    );
+    return computePerformanceByDay(await _loadLogEntries(goalId: goalId));
   }
 
+  // Mirrors the cloud `get_habit_alerts` RPC.
   Future<Map<String, dynamic>> habitAlerts(String goalId) async {
-    final db = await _database();
-    final rows = await db.query(
-      'goal_logs',
-      where: 'goal_id = ? AND status = ?',
-      whereArgs: [goalId, 'missed'],
-      orderBy: 'date ASC',
-    );
-    return {
-      'worst_negative_days': rows.length,
-      'worst_negative_start': rows.isEmpty ? null : rows.first['date'],
-      'broken_streaks': <Map<String, dynamic>>[],
-    };
+    return computeHabitAlerts(await _loadLogEntries(goalId: goalId));
   }
 
+  // Mirrors the cloud `get_habit_yearly_grid` RPC (done=1, missed=2, 365 days).
   Future<List<int>> habitYearlyGrid(String goalId) async {
-    final db = await _database();
-    final year = DateTime.now().year;
-    final rows = await db.query(
-      'goal_logs',
-      columns: ['date', 'status'],
-      where: 'goal_id = ? AND date >= ? AND date <= ?',
-      whereArgs: [goalId, '$year-01-01', '$year-12-31'],
+    return computeYearlyGrid(
+      await _loadLogEntries(goalId: goalId),
+      DateTime.now(),
     );
-    final byDate = {
-      for (final row in rows) row['date'] as String: row['status'] as String,
-    };
-    final start = DateTime(year, 1, 1);
-    final end = DateTime(year, 12, 31);
-    final result = <int>[];
-    for (var d = start; !d.isAfter(end); d = d.add(const Duration(days: 1))) {
-      result.add(switch (byDate[_dateKey(d)]) {
-        'done' => 1,
-        'missed' => -1,
-        'skipped' => 0,
-        _ => 0,
-      });
-    }
-    return result;
   }
 
   Future<List<Map<String, dynamic>>> habitCorrelations(

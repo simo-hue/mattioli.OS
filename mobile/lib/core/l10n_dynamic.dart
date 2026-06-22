@@ -9,29 +9,36 @@ String tWeekday(BuildContext c, String? day) {
   final w = c.t.common.weekdays;
   switch ((day ?? '').toLowerCase()) {
     case 'monday':
+    case 'mon':
     case 'lunedì':
     case 'lunedi':
       return w.monday;
     case 'tuesday':
+    case 'tue':
     case 'martedì':
     case 'martedi':
       return w.tuesday;
     case 'wednesday':
+    case 'wed':
     case 'mercoledì':
     case 'mercoledi':
       return w.wednesday;
     case 'thursday':
+    case 'thu':
     case 'giovedì':
     case 'giovedi':
       return w.thursday;
     case 'friday':
+    case 'fri':
     case 'venerdì':
     case 'venerdi':
       return w.friday;
     case 'saturday':
+    case 'sat':
     case 'sabato':
       return w.saturday;
     case 'sunday':
+    case 'sun':
     case 'domenica':
       return w.sunday;
     default:

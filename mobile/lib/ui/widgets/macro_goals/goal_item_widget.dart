@@ -325,87 +325,102 @@ class _GoalItemWidgetState extends ConsumerState<GoalItemWidget>
       );
     }
 
+    final a11yStatus = isCompleted
+        ? context.t.a11y.statusCompleted
+        : isFailed
+        ? context.t.a11y.statusFailed
+        : context.t.a11y.statusActive;
+
     return AnimatedScale(
       duration: const Duration(milliseconds: 300),
       scale: _isPressed ? 0.98 : 1.0,
       curve: Curves.easeOutBack,
       child: Padding(
         padding: const EdgeInsets.only(bottom: 6),
-        child: GestureDetector(
-          onTapDown: (_) => setState(() => _isPressed = true),
-          onTapUp: (_) => setState(() => _isPressed = false),
-          onTapCancel: () => setState(() => _isPressed = false),
-          onTap: _cycleStatus,
-          child: AnimatedContainer(
-            duration: const Duration(milliseconds: 250),
-            padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
-            decoration: BoxDecoration(
-              color: bgColor,
-              borderRadius: BorderRadius.circular(14),
-              border: Border.all(color: borderColor, width: 1),
-            ),
-            child: Row(
-              children: [
-                // Checkbox
-                Container(key: widget.checkboxKey, child: checkbox()),
-                const SizedBox(width: 12),
+        child: Semantics(
+          button: true,
+          container: true,
+          excludeSemantics: true,
+          label: '${goal.title}, $a11yStatus',
+          hint: context.t.a11y.toggleHint,
+          child: GestureDetector(
+            onTapDown: (_) => setState(() => _isPressed = true),
+            onTapUp: (_) => setState(() => _isPressed = false),
+            onTapCancel: () => setState(() => _isPressed = false),
+            onTap: _cycleStatus,
+            child: AnimatedContainer(
+              duration: const Duration(milliseconds: 250),
+              padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
+              decoration: BoxDecoration(
+                color: bgColor,
+                borderRadius: BorderRadius.circular(14),
+                border: Border.all(color: borderColor, width: 1),
+              ),
+              child: Row(
+                children: [
+                  // Checkbox
+                  Container(key: widget.checkboxKey, child: checkbox()),
+                  const SizedBox(width: 12),
 
-                // Category dot (if set)
-                if (catColor != null && isActive) ...[
-                  Container(
-                    width: 6,
-                    height: 6,
-                    decoration: BoxDecoration(
-                      color: catColor,
-                      shape: BoxShape.circle,
+                  // Category dot (if set)
+                  if (catColor != null && isActive) ...[
+                    Container(
+                      width: 6,
+                      height: 6,
+                      decoration: BoxDecoration(
+                        color: catColor,
+                        shape: BoxShape.circle,
+                      ),
+                    ),
+                    const SizedBox(width: 8),
+                  ],
+
+                  // Title
+                  Expanded(
+                    child: Text(
+                      goal.title,
+                      style: GoogleFonts.inter(
+                        fontSize: 14,
+                        fontWeight: FontWeight.w500,
+                        color: isCompleted
+                            ? Theme.of(
+                                context,
+                              ).colorScheme.primary.withValues(alpha: 0.7)
+                            : isFailed
+                            ? context.appColors.destructive.withValues(
+                                alpha: 0.7,
+                              )
+                            : context.appColors.foreground,
+                        decoration: (isCompleted || isFailed)
+                            ? TextDecoration.lineThrough
+                            : TextDecoration.none,
+                        decorationColor: isCompleted
+                            ? Theme.of(
+                                context,
+                              ).colorScheme.primary.withValues(alpha: 0.5)
+                            : context.appColors.destructive.withValues(
+                                alpha: 0.5,
+                              ),
+                      ),
                     ),
                   ),
+
                   const SizedBox(width: 8),
-                ],
 
-                // Title
-                Expanded(
-                  child: Text(
-                    goal.title,
-                    style: GoogleFonts.inter(
-                      fontSize: 14,
-                      fontWeight: FontWeight.w500,
-                      color: isCompleted
-                          ? Theme.of(
-                              context,
-                            ).colorScheme.primary.withValues(alpha: 0.7)
-                          : isFailed
-                          ? context.appColors.destructive.withValues(alpha: 0.7)
-                          : context.appColors.foreground,
-                      decoration: (isCompleted || isFailed)
-                          ? TextDecoration.lineThrough
-                          : TextDecoration.none,
-                      decorationColor: isCompleted
-                          ? Theme.of(
-                              context,
-                            ).colorScheme.primary.withValues(alpha: 0.5)
-                          : context.appColors.destructive.withValues(
-                              alpha: 0.5,
-                            ),
-                    ),
+                  // ── Action buttons (swipe-reveal via long-press or always shown) ─
+                  _ActionButtons(
+                    catColor: catColor,
+                    onCategory: _showCategorySheet,
+                    onReschedule: _reschedule,
+                    onEdit: _showEditDialog,
+                    onDelete: _showDeleteConfirm,
+                    categoryKey: widget.categoryKey,
+                    rescheduleKey: widget.rescheduleKey,
+                    editKey: widget.editKey,
+                    deleteKey: widget.deleteKey,
                   ),
-                ),
-
-                const SizedBox(width: 8),
-
-                // ── Action buttons (swipe-reveal via long-press or always shown) ─
-                _ActionButtons(
-                  catColor: catColor,
-                  onCategory: _showCategorySheet,
-                  onReschedule: _reschedule,
-                  onEdit: _showEditDialog,
-                  onDelete: _showDeleteConfirm,
-                  categoryKey: widget.categoryKey,
-                  rescheduleKey: widget.rescheduleKey,
-                  editKey: widget.editKey,
-                  deleteKey: widget.deleteKey,
-                ),
-              ],
+                ],
+              ),
             ),
           ),
         ),

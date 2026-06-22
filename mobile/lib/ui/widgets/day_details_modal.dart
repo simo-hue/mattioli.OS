@@ -55,7 +55,9 @@ class DayDetailsModal extends ConsumerWidget {
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
                   Text(
-                    DateFormat.MMMMd(LocaleSettings.currentLocale.languageCode).format(date),
+                    DateFormat.MMMMd(
+                      LocaleSettings.currentLocale.languageCode,
+                    ).format(date),
                     style: const TextStyle(
                       fontFamily: 'Inter',
                       fontSize: 24,
@@ -255,55 +257,68 @@ class GoalLogCard extends ConsumerWidget {
       hasStrikethrough = true;
     }
 
-    return GestureDetector(
-      onTap: () {
-        ref.hapticLight();
-        onTap();
-      },
-      child: AnimatedContainer(
-        duration: const Duration(milliseconds: 200),
-        padding: const EdgeInsets.all(12),
-        decoration: BoxDecoration(
-          color: cardColor,
-          borderRadius: BorderRadius.circular(16),
-          border: Border.all(color: borderColor, width: 1.5),
-        ),
-        child: Row(
-          children: [
-            Container(
-              width: 44,
-              height: 44,
-              decoration: BoxDecoration(
-                color: iconBgColor,
-                borderRadius: BorderRadius.circular(12),
+    final a11yStatus = status == 'done'
+        ? context.t.a11y.statusDone
+        : status == 'missed'
+        ? context.t.a11y.statusMissed
+        : context.t.a11y.statusPending;
+
+    return Semantics(
+      button: true,
+      container: true,
+      excludeSemantics: true,
+      label: '${habit.title}, $a11yStatus',
+      hint: context.t.a11y.toggleHint,
+      child: GestureDetector(
+        onTap: () {
+          ref.hapticLight();
+          onTap();
+        },
+        child: AnimatedContainer(
+          duration: const Duration(milliseconds: 200),
+          padding: const EdgeInsets.all(12),
+          decoration: BoxDecoration(
+            color: cardColor,
+            borderRadius: BorderRadius.circular(16),
+            border: Border.all(color: borderColor, width: 1.5),
+          ),
+          child: Row(
+            children: [
+              Container(
+                width: 44,
+                height: 44,
+                decoration: BoxDecoration(
+                  color: iconBgColor,
+                  borderRadius: BorderRadius.circular(12),
+                ),
+                child: Icon(icon, color: iconColor, size: 20),
               ),
-              child: Icon(icon, color: iconColor, size: 20),
-            ),
-            const SizedBox(width: 14),
-            Expanded(
-              child: Text(
-                habit.title,
-                style: TextStyle(
-                  fontFamily: 'Inter',
-                  fontSize: 17,
-                  fontWeight: FontWeight.w600,
-                  color: textColor,
-                  decoration: hasStrikethrough
-                      ? TextDecoration.lineThrough
-                      : null,
-                  decorationColor: const Color(
-                    0xFFEF4444,
-                  ).withValues(alpha: 0.5),
-                  decorationThickness: 2,
+              const SizedBox(width: 14),
+              Expanded(
+                child: Text(
+                  habit.title,
+                  style: TextStyle(
+                    fontFamily: 'Inter',
+                    fontSize: 17,
+                    fontWeight: FontWeight.w600,
+                    color: textColor,
+                    decoration: hasStrikethrough
+                        ? TextDecoration.lineThrough
+                        : null,
+                    decorationColor: const Color(
+                      0xFFEF4444,
+                    ).withValues(alpha: 0.5),
+                    decorationThickness: 2,
+                  ),
                 ),
               ),
-            ),
-            StreakBadge(
-              streak: streak,
-              isMissed: status == 'missed',
-              isDone: status == 'done',
-            ),
-          ],
+              StreakBadge(
+                streak: streak,
+                isMissed: status == 'missed',
+                isDone: status == 'done',
+              ),
+            ],
+          ),
         ),
       ),
     );

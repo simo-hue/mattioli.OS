@@ -131,7 +131,9 @@ class _GlobalTrendTabWidgetState extends ConsumerState<GlobalTrendTabWidget> {
         final now = DateTime.now();
         final List<double> rates = List.filled(12, 100.0);
         final List<String> monthLabels = [];
-        final monthFormatter = DateFormat.MMM(LocaleSettings.currentLocale.languageCode);
+        final monthFormatter = DateFormat.MMM(
+          LocaleSettings.currentLocale.languageCode,
+        );
 
         for (int i = 11; i >= 0; i--) {
           final date = DateTime(now.year, now.month - i, 1);
@@ -165,7 +167,11 @@ class _GlobalTrendTabWidgetState extends ConsumerState<GlobalTrendTabWidget> {
 
           final date = DateTime.parse(item['date'] as String);
           if (_chartTimeframe == 'timeframe_week_short') {
-            dates.add(DateFormat.E(LocaleSettings.currentLocale.languageCode).format(date));
+            dates.add(
+              DateFormat.E(
+                LocaleSettings.currentLocale.languageCode,
+              ).format(date),
+            );
           } else {
             dates.add(
               '${date.day.toString().padLeft(2, '0')}/${date.month.toString().padLeft(2, '0')}',
@@ -283,137 +289,142 @@ class _GlobalTrendTabWidgetState extends ConsumerState<GlobalTrendTabWidget> {
           const SizedBox(height: 32),
           SizedBox(
             height: 180,
-            child: LineChart(
-              LineChartData(
-                gridData: FlGridData(
-                  show: true,
-                  drawVerticalLine: false,
-                  horizontalInterval: 20,
-                  getDrawingHorizontalLine: (value) => FlLine(
-                    color: context.appColors.border.withValues(alpha: 0.1),
-                    strokeWidth: 1,
-                  ),
-                ),
-                titlesData: FlTitlesData(
-                  show: true,
-                  rightTitles: const AxisTitles(
-                    sideTitles: SideTitles(showTitles: false),
-                  ),
-                  topTitles: const AxisTitles(
-                    sideTitles: SideTitles(showTitles: false),
-                  ),
-                  leftTitles: AxisTitles(
-                    sideTitles: SideTitles(
-                      showTitles: true,
-                      reservedSize: 40,
-                      interval: 25,
-                      getTitlesWidget: (value, meta) {
-                        return SideTitleWidget(
-                          axisSide: meta.axisSide,
-                          child: Text(
-                            '${value.toInt()}%',
-                            style: TextStyle(
-                              color: context.appColors.mutedForeground,
-                              fontSize: 10,
-                              fontWeight: FontWeight.w700,
-                            ),
-                          ),
-                        );
-                      },
+            child: Semantics(
+              label: context.t.a11y.chartLabel,
+              child: LineChart(
+                LineChartData(
+                  gridData: FlGridData(
+                    show: true,
+                    drawVerticalLine: false,
+                    horizontalInterval: 20,
+                    getDrawingHorizontalLine: (value) => FlLine(
+                      color: context.appColors.border.withValues(alpha: 0.1),
+                      strokeWidth: 1,
                     ),
                   ),
-                  bottomTitles: AxisTitles(
-                    sideTitles: SideTitles(
-                      showTitles: true,
-                      reservedSize: 32,
-                      interval: _chartTimeframe == 'timeframe_week_short'
-                          ? 1
-                          : _chartTimeframe == 'timeframe_month_short'
-                          ? 6
-                          : 3,
-                      getTitlesWidget: (value, meta) {
-                        if (value.toInt() < dates.length &&
-                            value.toInt() >= 0) {
-                          final String label = dates[value.toInt()];
+                  titlesData: FlTitlesData(
+                    show: true,
+                    rightTitles: const AxisTitles(
+                      sideTitles: SideTitles(showTitles: false),
+                    ),
+                    topTitles: const AxisTitles(
+                      sideTitles: SideTitles(showTitles: false),
+                    ),
+                    leftTitles: AxisTitles(
+                      sideTitles: SideTitles(
+                        showTitles: true,
+                        reservedSize: 40,
+                        interval: 25,
+                        getTitlesWidget: (value, meta) {
                           return SideTitleWidget(
                             axisSide: meta.axisSide,
-                            space: 8,
                             child: Text(
-                              label,
+                              '${value.toInt()}%',
                               style: TextStyle(
                                 color: context.appColors.mutedForeground,
                                 fontSize: 10,
-                                fontWeight: FontWeight.w600,
+                                fontWeight: FontWeight.w700,
                               ),
                             ),
                           );
-                        }
-                        return const SizedBox();
+                        },
+                      ),
+                    ),
+                    bottomTitles: AxisTitles(
+                      sideTitles: SideTitles(
+                        showTitles: true,
+                        reservedSize: 32,
+                        interval: _chartTimeframe == 'timeframe_week_short'
+                            ? 1
+                            : _chartTimeframe == 'timeframe_month_short'
+                            ? 6
+                            : 3,
+                        getTitlesWidget: (value, meta) {
+                          if (value.toInt() < dates.length &&
+                              value.toInt() >= 0) {
+                            final String label = dates[value.toInt()];
+                            return SideTitleWidget(
+                              axisSide: meta.axisSide,
+                              space: 8,
+                              child: Text(
+                                label,
+                                style: TextStyle(
+                                  color: context.appColors.mutedForeground,
+                                  fontSize: 10,
+                                  fontWeight: FontWeight.w600,
+                                ),
+                              ),
+                            );
+                          }
+                          return const SizedBox();
+                        },
+                      ),
+                    ),
+                  ),
+                  borderData: FlBorderData(show: false),
+                  minX: 0,
+                  maxX: maxX,
+                  minY: 0,
+                  maxY: 100,
+                  lineBarsData: [
+                    LineChartBarData(
+                      spots: spots,
+                      isCurved: true,
+                      curveSmoothness: 0.35,
+                      color: Theme.of(context).colorScheme.primary,
+                      barWidth: 4,
+                      isStrokeCapRound: true,
+                      dotData: FlDotData(
+                        show: _chartTimeframe == 'timeframe_week_short',
+                        getDotPainter: (spot, percent, barData, index) =>
+                            FlDotCirclePainter(
+                              radius: 3,
+                              color: Colors.white,
+                              strokeWidth: 2,
+                              strokeColor: Theme.of(
+                                context,
+                              ).colorScheme.primary,
+                            ),
+                      ),
+                      belowBarData: BarAreaData(
+                        show: true,
+                        gradient: LinearGradient(
+                          colors: [
+                            Theme.of(
+                              context,
+                            ).colorScheme.primary.withValues(alpha: 0.2),
+                            Theme.of(
+                              context,
+                            ).colorScheme.primary.withValues(alpha: 0.0),
+                          ],
+                          begin: Alignment.topCenter,
+                          end: Alignment.bottomCenter,
+                        ),
+                      ),
+                    ),
+                  ],
+                  lineTouchData: LineTouchData(
+                    touchTooltipData: LineTouchTooltipData(
+                      getTooltipColor: (touchedSpot) =>
+                          context.appColors.card.withValues(alpha: 0.9),
+                      tooltipRoundedRadius: 8,
+                      getTooltipItems: (List<LineBarSpot> touchedBarSpots) {
+                        return touchedBarSpots.map((barSpot) {
+                          return LineTooltipItem(
+                            '${barSpot.y.toStringAsFixed(1)}%',
+                            TextStyle(
+                              color: context.appColors.foreground,
+                              fontWeight: FontWeight.bold,
+                              fontSize: 12,
+                            ),
+                          );
+                        }).toList();
                       },
                     ),
                   ),
                 ),
-                borderData: FlBorderData(show: false),
-                minX: 0,
-                maxX: maxX,
-                minY: 0,
-                maxY: 100,
-                lineBarsData: [
-                  LineChartBarData(
-                    spots: spots,
-                    isCurved: true,
-                    curveSmoothness: 0.35,
-                    color: Theme.of(context).colorScheme.primary,
-                    barWidth: 4,
-                    isStrokeCapRound: true,
-                    dotData: FlDotData(
-                      show: _chartTimeframe == 'timeframe_week_short',
-                      getDotPainter: (spot, percent, barData, index) =>
-                          FlDotCirclePainter(
-                            radius: 3,
-                            color: Colors.white,
-                            strokeWidth: 2,
-                            strokeColor: Theme.of(context).colorScheme.primary,
-                          ),
-                    ),
-                    belowBarData: BarAreaData(
-                      show: true,
-                      gradient: LinearGradient(
-                        colors: [
-                          Theme.of(
-                            context,
-                          ).colorScheme.primary.withValues(alpha: 0.2),
-                          Theme.of(
-                            context,
-                          ).colorScheme.primary.withValues(alpha: 0.0),
-                        ],
-                        begin: Alignment.topCenter,
-                        end: Alignment.bottomCenter,
-                      ),
-                    ),
-                  ),
-                ],
-                lineTouchData: LineTouchData(
-                  touchTooltipData: LineTouchTooltipData(
-                    getTooltipColor: (touchedSpot) =>
-                        context.appColors.card.withValues(alpha: 0.9),
-                    tooltipRoundedRadius: 8,
-                    getTooltipItems: (List<LineBarSpot> touchedBarSpots) {
-                      return touchedBarSpots.map((barSpot) {
-                        return LineTooltipItem(
-                          '${barSpot.y.toStringAsFixed(1)}%',
-                          TextStyle(
-                            color: context.appColors.foreground,
-                            fontWeight: FontWeight.bold,
-                            fontSize: 12,
-                          ),
-                        );
-                      }).toList();
-                    },
-                  ),
-                ),
+                duration: const Duration(milliseconds: 350),
               ),
-              duration: const Duration(milliseconds: 350),
             ),
           ),
         ],
@@ -578,10 +589,9 @@ class _MiglioriAbitudiniSectionState
                   title: habit.title,
                   rate: '${(rate * 100).toStringAsFixed(0)}%',
                   color: const Color(0xFF10B981),
-                  streak:
-                      '${item['streak']} ${context.t.common.days}',
-                  desc: context.t.statistics.habitCompletionPeriodDescription(rate: 
-                    (rate * 100).toStringAsFixed(0),
+                  streak: '${item['streak']} ${context.t.common.days}',
+                  desc: context.t.statistics.habitCompletionPeriodDescription(
+                    rate: (rate * 100).toStringAsFixed(0),
                   ),
                 );
               }).toList();
@@ -868,8 +878,8 @@ class _AbitudiniCriticheSectionState
                       ? const Color(0xFFEF4444)
                       : const Color(0xFFF97316),
                   streak: '$negStreak ${context.t.common.days}',
-                  desc: context.t.statistics.habitLostConsistencyDescription(drop: 
-                    drop.toStringAsFixed(0),
+                  desc: context.t.statistics.habitLostConsistencyDescription(
+                    drop: drop.toStringAsFixed(0),
                   ),
                 );
               }).toList();

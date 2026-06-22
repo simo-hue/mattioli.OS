@@ -91,10 +91,7 @@ class LifeViewWidget extends ConsumerWidget {
                   value: '$livedMonths',
                   label: context.t.habits.monthsLived,
                 ),
-                _StatItem(
-                  value: '$age',
-                  label: context.t.habits.currentAge,
-                ),
+                _StatItem(value: '$age', label: context.t.habits.currentAge),
                 _StatItem(
                   value: '$remainingMonths',
                   label: context.t.habits.remaining,
@@ -109,15 +106,21 @@ class LifeViewWidget extends ConsumerWidget {
             child: RepaintBoundary(
               child: LayoutBuilder(
                 builder: (context, constraints) {
-                  return CustomPaint(
-                    size: Size(constraints.maxWidth, constraints.maxHeight),
-                    painter: _LifeGridPainter(
-                      totalMonths: totalMonths,
-                      livedMonths: livedMonths,
-                      currentMonth: livedMonths,
-                      accentColor: Theme.of(context).colorScheme.primary,
-                      borderColor: context.appColors.border,
-                      foregroundColor: context.appColors.foreground,
+                  return Semantics(
+                    label: context.t.a11y.lifeGridLabel(
+                      lived: livedMonths,
+                      total: totalMonths,
+                    ),
+                    child: CustomPaint(
+                      size: Size(constraints.maxWidth, constraints.maxHeight),
+                      painter: _LifeGridPainter(
+                        totalMonths: totalMonths,
+                        livedMonths: livedMonths,
+                        currentMonth: livedMonths,
+                        accentColor: Theme.of(context).colorScheme.primary,
+                        borderColor: context.appColors.border,
+                        foregroundColor: context.appColors.foreground,
+                      ),
                     ),
                   );
                 },

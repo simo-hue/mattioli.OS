@@ -968,5 +968,18 @@
     "goToStats": "Zu den Statistiken",
     "goToGoals": "Zu den Zielen",
     "continueLabel": "Weiter"
+  },
+  "a11y": {
+    "statusDone": "erledigt",
+    "statusMissed": "verpasst",
+    "statusPending": "zu erledigen",
+    "statusCompleted": "abgeschlossen",
+    "statusFailed": "nicht abgeschlossen",
+    "statusActive": "in Bearbeitung",
+    "toggleHint": "Zweimal tippen, um den Status zu ändern",
+    "chartLabel": "Diagramm",
+    "heatmapLabel": "Aktivitäts-Heatmap der Gewohnheiten",
+    "yearlyGridLabel": "Jährliches Aktivitätsraster",
+    "lifeGridLabel": "Leben in Monaten: {lived} von {total} gelebt"
   }
 }

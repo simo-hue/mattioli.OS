@@ -255,126 +255,129 @@ class _GlobalMoodTabWidgetState extends ConsumerState<GlobalMoodTabWidget> {
           const SizedBox(height: 24),
           SizedBox(
             height: 200,
-            child: LineChart(
-              LineChartData(
-                gridData: FlGridData(
-                  show: true,
-                  drawVerticalLine: false,
-                  getDrawingHorizontalLine: (value) => FlLine(
-                    color: context.appColors.border.withValues(alpha: 0.5),
-                    strokeWidth: 1,
+            child: Semantics(
+              label: context.t.a11y.chartLabel,
+              child: LineChart(
+                LineChartData(
+                  gridData: FlGridData(
+                    show: true,
+                    drawVerticalLine: false,
+                    getDrawingHorizontalLine: (value) => FlLine(
+                      color: context.appColors.border.withValues(alpha: 0.5),
+                      strokeWidth: 1,
+                    ),
                   ),
-                ),
-                titlesData: FlTitlesData(
-                  show: true,
-                  rightTitles: const AxisTitles(
-                    sideTitles: SideTitles(showTitles: false),
-                  ),
-                  topTitles: const AxisTitles(
-                    sideTitles: SideTitles(showTitles: false),
-                  ),
-                  bottomTitles: AxisTitles(
-                    sideTitles: SideTitles(
-                      showTitles: true,
-                      reservedSize: 30,
-                      interval: chartWindow.labelInterval,
-                      getTitlesWidget: (value, meta) {
-                        if (value < 0 ||
-                            value > (chartWindow.dayCount - 1).toDouble()) {
-                          return const SizedBox.shrink();
-                        }
-                        final date = chartWindow.dateAt(value);
-                        return Padding(
-                          padding: const EdgeInsets.only(top: 8.0),
-                          child: Text(
-                            '${date.day}/${date.month}',
+                  titlesData: FlTitlesData(
+                    show: true,
+                    rightTitles: const AxisTitles(
+                      sideTitles: SideTitles(showTitles: false),
+                    ),
+                    topTitles: const AxisTitles(
+                      sideTitles: SideTitles(showTitles: false),
+                    ),
+                    bottomTitles: AxisTitles(
+                      sideTitles: SideTitles(
+                        showTitles: true,
+                        reservedSize: 30,
+                        interval: chartWindow.labelInterval,
+                        getTitlesWidget: (value, meta) {
+                          if (value < 0 ||
+                              value > (chartWindow.dayCount - 1).toDouble()) {
+                            return const SizedBox.shrink();
+                          }
+                          final date = chartWindow.dateAt(value);
+                          return Padding(
+                            padding: const EdgeInsets.only(top: 8.0),
+                            child: Text(
+                              '${date.day}/${date.month}',
+                              style: TextStyle(
+                                color: context.appColors.mutedForeground,
+                                fontWeight: FontWeight.w600,
+                                fontSize: 10,
+                              ),
+                            ),
+                          );
+                        },
+                      ),
+                    ),
+                    leftTitles: AxisTitles(
+                      sideTitles: SideTitles(
+                        showTitles: true,
+                        interval: 20,
+                        getTitlesWidget: (value, meta) {
+                          return Text(
+                            '${value.toInt()}',
                             style: TextStyle(
                               color: context.appColors.mutedForeground,
                               fontWeight: FontWeight.w600,
                               fontSize: 10,
                             ),
-                          ),
-                        );
+                          );
+                        },
+                        reservedSize: 30,
+                      ),
+                    ),
+                  ),
+                  borderData: FlBorderData(show: false),
+                  minX: chartWindow.minX,
+                  maxX: chartWindow.maxX,
+                  minY: 0,
+                  maxY: 100,
+                  lineBarsData: [
+                    LineChartBarData(
+                      spots: moodSpots,
+                      isCurved: true,
+                      color: const Color(0xFFFBBF24),
+                      barWidth: 3,
+                      isStrokeCapRound: true,
+                      dotData: FlDotData(
+                        show: hasMoodData && moodSpots.length <= 7,
+                      ),
+                      belowBarData: BarAreaData(
+                        show: true,
+                        color: const Color(0xFFFBBF24).withValues(alpha: 0.05),
+                      ),
+                    ),
+                    LineChartBarData(
+                      spots: energySpots,
+                      isCurved: true,
+                      color: const Color(0xFF06B6D4),
+                      barWidth: 3,
+                      isStrokeCapRound: true,
+                      dotData: FlDotData(
+                        show: hasMoodData && energySpots.length <= 7,
+                      ),
+                      belowBarData: BarAreaData(
+                        show: true,
+                        color: const Color(0xFF06B6D4).withValues(alpha: 0.05),
+                      ),
+                    ),
+                  ],
+                  lineTouchData: LineTouchData(
+                    touchTooltipData: LineTouchTooltipData(
+                      getTooltipColor: (touchedSpot) =>
+                          context.appColors.card.withValues(alpha: 0.9),
+                      tooltipRoundedRadius: 8,
+                      getTooltipItems: (List<LineBarSpot> touchedBarSpots) {
+                        return touchedBarSpots.map((barSpot) {
+                          final isMood = barSpot.barIndex == 0;
+                          return LineTooltipItem(
+                            '${isMood ? context.t.statistics.mood : context.t.statistics.energy}: ${barSpot.y.toInt()}',
+                            TextStyle(
+                              color: isMood
+                                  ? const Color(0xFFFBBF24)
+                                  : const Color(0xFF06B6D4),
+                              fontWeight: FontWeight.bold,
+                              fontSize: 12,
+                            ),
+                          );
+                        }).toList();
                       },
                     ),
                   ),
-                  leftTitles: AxisTitles(
-                    sideTitles: SideTitles(
-                      showTitles: true,
-                      interval: 20,
-                      getTitlesWidget: (value, meta) {
-                        return Text(
-                          '${value.toInt()}',
-                          style: TextStyle(
-                            color: context.appColors.mutedForeground,
-                            fontWeight: FontWeight.w600,
-                            fontSize: 10,
-                          ),
-                        );
-                      },
-                      reservedSize: 30,
-                    ),
-                  ),
                 ),
-                borderData: FlBorderData(show: false),
-                minX: chartWindow.minX,
-                maxX: chartWindow.maxX,
-                minY: 0,
-                maxY: 100,
-                lineBarsData: [
-                  LineChartBarData(
-                    spots: moodSpots,
-                    isCurved: true,
-                    color: const Color(0xFFFBBF24),
-                    barWidth: 3,
-                    isStrokeCapRound: true,
-                    dotData: FlDotData(
-                      show: hasMoodData && moodSpots.length <= 7,
-                    ),
-                    belowBarData: BarAreaData(
-                      show: true,
-                      color: const Color(0xFFFBBF24).withValues(alpha: 0.05),
-                    ),
-                  ),
-                  LineChartBarData(
-                    spots: energySpots,
-                    isCurved: true,
-                    color: const Color(0xFF06B6D4),
-                    barWidth: 3,
-                    isStrokeCapRound: true,
-                    dotData: FlDotData(
-                      show: hasMoodData && energySpots.length <= 7,
-                    ),
-                    belowBarData: BarAreaData(
-                      show: true,
-                      color: const Color(0xFF06B6D4).withValues(alpha: 0.05),
-                    ),
-                  ),
-                ],
-                lineTouchData: LineTouchData(
-                  touchTooltipData: LineTouchTooltipData(
-                    getTooltipColor: (touchedSpot) =>
-                        context.appColors.card.withValues(alpha: 0.9),
-                    tooltipRoundedRadius: 8,
-                    getTooltipItems: (List<LineBarSpot> touchedBarSpots) {
-                      return touchedBarSpots.map((barSpot) {
-                        final isMood = barSpot.barIndex == 0;
-                        return LineTooltipItem(
-                          '${isMood ? context.t.statistics.mood : context.t.statistics.energy}: ${barSpot.y.toInt()}',
-                          TextStyle(
-                            color: isMood
-                                ? const Color(0xFFFBBF24)
-                                : const Color(0xFF06B6D4),
-                            fontWeight: FontWeight.bold,
-                            fontSize: 12,
-                          ),
-                        );
-                      }).toList();
-                    },
-                  ),
-                ),
+                duration: const Duration(milliseconds: 350),
               ),
-              duration: const Duration(milliseconds: 350),
             ),
           ),
         ],

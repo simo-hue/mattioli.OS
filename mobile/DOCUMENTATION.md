@@ -2073,3 +2073,14 @@
 - **Notification plumbing in the settings test**: building `settingsProvider` runs `_syncNotifications` → `NotificationService` → `flutter_local_notifications`, whose static platform `instance` is an unset `late` field in unit tests (throws `LateInitializationError`). Fix: a no-op `FlutterLocalNotificationsPlatform` via `MockPlatformInterfaceMixin` (overriding only `cancelAll`), `debugDefaultTargetPlatformOverride = TargetPlatform.iOS` (the iOS facade branch uses null-safe `?.`, so scheduling no-ops; the Android branch uses a hard `!`), and `tz.initializeTimeZones()` + `setLocalLocation(tz.UTC)` so `_nextInstanceOfTime` resolves `tz.local`.
 - **New dev dependency**: `plugin_platform_interface: ^2.1.8` added to `dev_dependencies` (was already transitive via `flutter_local_notifications`; same locked version 2.1.8, no version churn) so the test may use `MockPlatformInterfaceMixin` without tripping `depend_on_referenced_packages`.
 - No production code changed. No new endpoints/migrations/localization strings.
+
+## [2026-06-23]: Private Mode discovery backlog — session wrap-up
+*Details*: Completed every in-code item from PRIVATE_MODE_DISCOVERY.md across focused, individually-tested commits. Test suite 77 → 110, all green; `flutter analyze` clean throughout. Remaining items are manual/external only.
+*Tech Notes*:
+- **Fixed & committed**: P0 mood scale (`70bd70c`); P1 macro rollback (`391ffd3`), notification streak (`ee6777e`), notification provider-refresh (`5782ad9`); P2 schema/backup docs (`6cd09be`), cloud export parity (`f1507af`); P3 AI consent copy + P4 localized strings (`7c5efda`); P5 tests — AuthState/data-mode (`102c056`), no-Supabase-call guard + `PrivateDataStore` interface (`d84fdcf`), settings separation + shared fake (`2fec42a`).
+- **New testability seam**: `lib/core/private_data_store.dart` (`PrivateDataStore`, 37 methods) implemented by `PrivateLocalDatabase`; `privateLocalDatabaseProvider` retyped to it. Enables fake-backed provider tests.
+- **Deferred (manual/external, see TO_SIMO_DO.md)**: AI API key (5.9); Arabic + RTL pass + native QA (5.11); Phase 2 iCloud/CloudKit (needs Apple provisioning); optional DB-integration tests for delete/notification routing.
+- One dev dependency promoted (`plugin_platform_interface`, transitive→direct dev, same version) for notification mocking in tests. No other new deps/endpoints/migrations.
+
+## Current Status
+Phase 1 Private Mode is feature-complete, localized (en/it/es/de), and regression-guarded (110 tests). Immediate next step if resumed: the manual items in TO_SIMO_DO.md (AI key / Arabic RTL / Phase 2 CloudKit), none of which are code-only.

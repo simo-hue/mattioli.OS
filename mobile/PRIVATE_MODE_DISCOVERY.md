@@ -162,3 +162,30 @@ Missing (plan "Automated Test Plan"): **mode-router redirect**, **"no Supabase c
 
 - **AI:** supply `OpenRouterConfig.apiKey` securely (e.g. `--dart-define`) if AI is to function (5.9).
 - **Phase 2:** Apple Developer CloudKit container + iCloud/Keychain-sharing entitlements must be provisioned before any sync code can run.
+
+---
+
+## 9. Resolution status — updated 2026-06-23
+
+All in-code findings have been fixed, tested (`flutter analyze` clean; `flutter test` 110/110 green), and committed. Test suite grew 77 → 110.
+
+| Item | Status | Commit |
+| --- | --- | --- |
+| P0 5.1 — mood scale 0–100 → 0–10 (classifier + both charts) | ✅ Fixed | `70bd70c` |
+| P1 5.2 — macro-goal private CRUD rollback/error handling | ✅ Fixed | `391ffd3` |
+| P1 5.3 — notification habit-write computes streak | ✅ Fixed | `ee6777e` |
+| P1 5.4 — refresh providers after notification Done/Skip | ✅ Fixed (invalidate-from-handler) | `5782ad9` |
+| P2 5.5 — `goal_category_settings` vestigial | ✅ Documented (kept for parity) | `6cd09be` |
+| P2 5.6 — cloud export parity (logs/moods/categories/profile) | ✅ Fixed | `f1507af` |
+| P2 5.7 — backup-exclusion scope | ✅ Documented (intentional; path kept stable) | `6cd09be` |
+| P3 5.8 — AI consent copy (display name always sent) | ✅ Fixed | `7c5efda` |
+| P3 5.9 — AI inert (empty API key) | ⛔ Manual — see TO_SIMO_DO.md | — |
+| P4 5.10 — hardcoded strings localized (en/it/es/de) | ✅ Fixed | `7c5efda` |
+| P4 5.11 — Arabic + RTL | ⛔ Deferred by design (RTL pass + native QA) — TO_SIMO_DO.md | — |
+| P5 — mode-router / AuthState gating tests | ✅ Added | `102c056` |
+| P5 — no-Supabase-call in Private CRUD (+ PrivateDataStore interface) | ✅ Added | `d84fdcf` |
+| P5 — settings separation (+ shared test fake) | ✅ Added | `2fec42a` |
+| P5 — delete-private-data / notification-routing tests | ⛔ Deferred (needs DB-integration infra) — TO_SIMO_DO.md | — |
+| Phase 2 — iCloud/CloudKit sync | ⛔ Not started (needs Apple provisioning) — TO_SIMO_DO.md | — |
+
+**Net:** Phase 1 Private Mode is feature-complete and regression-guarded. Remaining items are manual/external (AI key, Arabic RTL + QA, CloudKit provisioning) or optional future test infrastructure.

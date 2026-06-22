@@ -15,6 +15,7 @@ import '../models/daily_mood.dart';
 import 'app_logger.dart';
 import 'private_analytics.dart';
 import 'secure_storage_utils.dart';
+import 'streak_utils.dart';
 
 final privateLocalDatabaseProvider = Provider<PrivateLocalDatabase>((ref) {
   return PrivateLocalDatabase();
@@ -425,6 +426,44 @@ CREATE TABLE macro_goal_categories (
       'updated_at': now,
       'streak': streak,
     }, conflictAlgorithm: ConflictAlgorithm.replace);
+  }
+
+  /// Sets a habit log and computes its signed [computeStreak] from the full
+  /// persisted history plus the goal's start date, so a Done/Skip triggered
+  /// from a notification stores the same streak the foreground toggle would
+  /// (parity with `goal_provider.cycleStatus`). Safe to call from the
+  /// notification background isolate — it only touches the local DB.
+  Future<void> setHabitLogWithStreak({
+    required String goalId,
+    required String date,
+    required String status,
+  }) async {
+    final logs = await loadHabitLogs();
+    // Apply the new status in-memory so computeStreak sees the toggled day.
+    (logs[date] ??= <String, String>{})[goalId] = status;
+
+    Goal? goal;
+    for (final g in await loadGoals()) {
+      if (g.id == goalId) {
+        goal = g;
+        break;
+      }
+    }
+
+    final parsedDate = DateTime.tryParse(date) ?? DateTime.now();
+    final streak = computeStreak(
+      habitId: goalId,
+      date: parsedDate,
+      logs: logs,
+      startDate: goal?.startDate ?? parsedDate,
+    );
+
+    await setHabitLog(
+      goalId: goalId,
+      date: date,
+      status: status,
+      streak: streak,
+    );
   }
 
   Future<void> deleteHabitLog({

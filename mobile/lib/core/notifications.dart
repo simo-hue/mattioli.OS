@@ -197,7 +197,9 @@ class NotificationService {
 
     if (await _isPrivateMode()) {
       try {
-        await PrivateLocalDatabase().setHabitLog(
+        // Compute the streak from history so a notification Done/Skip matches
+        // the foreground toggle (Private analytics read the stored streak).
+        await PrivateLocalDatabase().setHabitLogWithStreak(
           goalId: habitId,
           date: dateKey,
           status: status,

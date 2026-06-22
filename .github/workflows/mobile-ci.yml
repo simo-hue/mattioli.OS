@@ -1,0 +1,44 @@
+name: Mobile CI
+
+# Gate the Flutter app on a green analyzer + passing tests.
+# Scoped to changes under mobile/ so it doesn't run on web-only commits.
+on:
+  push:
+    branches: [main, master]
+    paths: ['mobile/**', '.github/workflows/mobile-ci.yml']
+  pull_request:
+    paths: ['mobile/**', '.github/workflows/mobile-ci.yml']
+
+jobs:
+  analyze-and-test:
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: mobile
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Set up Flutter
+        uses: subosito/flutter-action@v2
+        with:
+          channel: stable
+          cache: true
+
+      - name: Provide config files (real configs are git-ignored)
+        run: |
+          for f in lib/core/*.dart.example; do
+            cp -n "$f" "${f%.example}"
+          done
+
+      - name: Install dependencies
+        run: flutter pub get
+
+      - name: Generate localizations (slang outputs are git-ignored)
+        run: dart run slang
+
+      - name: Analyze (fail on any issue, including info-level lints)
+        run: flutter analyze --fatal-infos --fatal-warnings
+
+      - name: Test
+        run: flutter test

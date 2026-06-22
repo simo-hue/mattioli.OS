@@ -1,3 +1,4 @@
+import 'dart:async';
 import 'package:flutter/material.dart';
 import 'package:lucide_icons_flutter/lucide_icons.dart';
 import 'package:google_fonts/google_fonts.dart';
@@ -26,7 +27,7 @@ class SubscriptionScreen extends ConsumerStatefulWidget {
         const begin = Offset(1.0, 0.0);
         const end = Offset.zero;
         const curve = Curves.easeOutCubic;
-        var tween = Tween(
+        final tween = Tween(
           begin: begin,
           end: end,
         ).chain(CurveTween(curve: curve));
@@ -121,31 +122,37 @@ class _SubscriptionScreenState extends ConsumerState<SubscriptionScreen> {
       if (!mounted) return;
 
       if (result.isProActive) {
-        SubscriptionAlertModal.show(
-          context,
-          title: context.t.subscription.status.restored,
-          message: context.t.subscription.status.restoredMessage,
-          type: SubscriptionAlertType.success,
-          ref: ref,
+        unawaited(
+          SubscriptionAlertModal.show(
+            context,
+            title: context.t.subscription.status.restored,
+            message: context.t.subscription.status.restoredMessage,
+            type: SubscriptionAlertType.success,
+            ref: ref,
+          ),
         );
       } else {
-        SubscriptionAlertModal.show(
-          context,
-          title: context.t.subscription.errors.noPurchaseTitle,
-          message: context.t.subscription.errors.noActiveSubscription,
-          type: SubscriptionAlertType.warning,
-          ref: ref,
+        unawaited(
+          SubscriptionAlertModal.show(
+            context,
+            title: context.t.subscription.errors.noPurchaseTitle,
+            message: context.t.subscription.errors.noActiveSubscription,
+            type: SubscriptionAlertType.warning,
+            ref: ref,
+          ),
         );
       }
     } catch (e) {
       if (!mounted) return;
-      SubscriptionAlertModal.show(
-        context,
-        title: context.t.subscription.errors.restoreFailedTitle,
-        message: _restoreErrorMessage(e),
-        type: SubscriptionAlertType.error,
-        details: e.toString(),
-        ref: ref,
+      unawaited(
+        SubscriptionAlertModal.show(
+          context,
+          title: context.t.subscription.errors.restoreFailedTitle,
+          message: _restoreErrorMessage(e),
+          type: SubscriptionAlertType.error,
+          details: e.toString(),
+          ref: ref,
+        ),
       );
     } finally {
       if (mounted) {
@@ -170,12 +177,14 @@ class _SubscriptionScreenState extends ConsumerState<SubscriptionScreen> {
       if (result.isProActive) {
         _showSuccessDialog(context);
       } else {
-        SubscriptionAlertModal.show(
-          context,
-          title: context.t.subscription.status.processing,
-          message: context.t.subscription.errors.purchaseRegisteredNotActive,
-          type: SubscriptionAlertType.warning,
-          ref: ref,
+        unawaited(
+          SubscriptionAlertModal.show(
+            context,
+            title: context.t.subscription.status.processing,
+            message: context.t.subscription.errors.purchaseRegisteredNotActive,
+            type: SubscriptionAlertType.warning,
+            ref: ref,
+          ),
         );
       }
     } catch (e) {
@@ -185,13 +194,15 @@ class _SubscriptionScreenState extends ConsumerState<SubscriptionScreen> {
         return;
       }
 
-      SubscriptionAlertModal.show(
-        context,
-        title: context.t.subscription.errors.purchaseFailedTitle,
-        message: _purchaseErrorMessage(e),
-        type: SubscriptionAlertType.error,
-        details: e.toString(),
-        ref: ref,
+      unawaited(
+        SubscriptionAlertModal.show(
+          context,
+          title: context.t.subscription.errors.purchaseFailedTitle,
+          message: _purchaseErrorMessage(e),
+          type: SubscriptionAlertType.error,
+          details: e.toString(),
+          ref: ref,
+        ),
       );
     } finally {
       if (mounted) {
@@ -214,21 +225,27 @@ class _SubscriptionScreenState extends ConsumerState<SubscriptionScreen> {
 
       final errorCode = SubscriptionService.purchasesErrorCode(error);
       return switch (errorCode) {
-        PurchasesErrorCode.productAlreadyPurchasedError => context.t.subscription.errors.alreadyPurchased,
-        PurchasesErrorCode.purchaseNotAllowedError => context.t.subscription.errors.purchasesNotAllowed,
+        PurchasesErrorCode.productAlreadyPurchasedError =>
+          context.t.subscription.errors.alreadyPurchased,
+        PurchasesErrorCode.purchaseNotAllowedError =>
+          context.t.subscription.errors.purchasesNotAllowed,
         PurchasesErrorCode.productNotAvailableForPurchaseError =>
           context.t.subscription.errors.planUnavailable,
-        PurchasesErrorCode.paymentPendingError => context.t.subscription.errors.paymentPending,
+        PurchasesErrorCode.paymentPendingError =>
+          context.t.subscription.errors.paymentPending,
         PurchasesErrorCode.networkError ||
         PurchasesErrorCode.offlineConnectionError ||
-        PurchasesErrorCode.apiEndpointBlocked => context.t.subscription.errors.connectionUnavailable,
+        PurchasesErrorCode.apiEndpointBlocked =>
+          context.t.subscription.errors.connectionUnavailable,
         PurchasesErrorCode.configurationError ||
         PurchasesErrorCode.invalidCredentialsError ||
         PurchasesErrorCode.invalidReceiptError ||
-        PurchasesErrorCode.missingReceiptFileError => context.t.subscription.errors.invalidConfig,
+        PurchasesErrorCode.missingReceiptFileError =>
+          context.t.subscription.errors.invalidConfig,
         PurchasesErrorCode.receiptAlreadyInUseError ||
         PurchasesErrorCode.receiptInUseByOtherSubscriberError ||
-        PurchasesErrorCode.purchaseBelongsToOtherUser => context.t.subscription.errors.linkedToAnotherAccount,
+        PurchasesErrorCode.purchaseBelongsToOtherUser =>
+          context.t.subscription.errors.linkedToAnotherAccount,
         PurchasesErrorCode.operationAlreadyInProgressError =>
           context.t.subscription.errors.purchaseInProgress,
         _ => context.t.subscription.errors.purchaseFailedMessage,
@@ -246,17 +263,21 @@ class _SubscriptionScreenState extends ConsumerState<SubscriptionScreen> {
 
       final errorCode = SubscriptionService.purchasesErrorCode(error);
       return switch (errorCode) {
-        PurchasesErrorCode.purchaseCancelledError => context.t.subscription.status.restoreCancelled,
+        PurchasesErrorCode.purchaseCancelledError =>
+          context.t.subscription.status.restoreCancelled,
         PurchasesErrorCode.networkError ||
         PurchasesErrorCode.offlineConnectionError ||
-        PurchasesErrorCode.apiEndpointBlocked => context.t.subscription.errors.connectionUnavailable,
+        PurchasesErrorCode.apiEndpointBlocked =>
+          context.t.subscription.errors.connectionUnavailable,
         PurchasesErrorCode.receiptAlreadyInUseError ||
         PurchasesErrorCode.receiptInUseByOtherSubscriberError ||
-        PurchasesErrorCode.purchaseBelongsToOtherUser => context.t.subscription.errors.linkedToAnotherAccount,
+        PurchasesErrorCode.purchaseBelongsToOtherUser =>
+          context.t.subscription.errors.linkedToAnotherAccount,
         PurchasesErrorCode.configurationError ||
         PurchasesErrorCode.invalidCredentialsError ||
         PurchasesErrorCode.invalidReceiptError ||
-        PurchasesErrorCode.missingReceiptFileError => context.t.subscription.errors.invalidConfig,
+        PurchasesErrorCode.missingReceiptFileError =>
+          context.t.subscription.errors.invalidConfig,
         PurchasesErrorCode.operationAlreadyInProgressError =>
           context.t.subscription.errors.restoreInProgress,
         _ => context.t.subscription.errors.restoreFailedMessage,
@@ -559,12 +580,14 @@ class _SubscriptionScreenState extends ConsumerState<SubscriptionScreen> {
 
               if (!context.mounted) return;
               setState(() => _isLoading = false);
-              SubscriptionAlertModal.show(
-                context,
-                title: context.t.subscription.errors.connectionTitle,
-                message: context.t.subscription.errors.serviceUnreachable,
-                type: SubscriptionAlertType.error,
-                ref: ref,
+              unawaited(
+                SubscriptionAlertModal.show(
+                  context,
+                  title: context.t.subscription.errors.connectionTitle,
+                  message: context.t.subscription.errors.serviceUnreachable,
+                  type: SubscriptionAlertType.error,
+                  ref: ref,
+                ),
               );
             },
             child: Container(
@@ -893,7 +916,10 @@ class _SubscriptionScreenState extends ConsumerState<SubscriptionScreen> {
 
   Widget _buildSubscriptionDetails(BuildContext context) {
     final nextRenewal = DateTime.now().add(const Duration(days: 30));
-    final dateFormat = DateFormat('dd MMMM yyyy', LocaleSettings.currentLocale.languageCode);
+    final dateFormat = DateFormat(
+      'dd MMMM yyyy',
+      LocaleSettings.currentLocale.languageCode,
+    );
 
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,

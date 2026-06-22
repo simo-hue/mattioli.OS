@@ -1,3 +1,4 @@
+import 'dart:async';
 import 'dart:convert';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
@@ -108,10 +109,12 @@ class GoalsNotifier extends Notifier<List<Goal>> {
     if (ref.read(activeDataModeProvider) == AppDataMode.private) {
       await ref.read(privateLocalDatabaseProvider).upsertGoal(habit);
       if (habit.reminderTime != null) {
-        NotificationService().scheduleHabitReminder(
-          habit.id,
-          habit.title,
-          habit.reminderTime,
+        unawaited(
+          NotificationService().scheduleHabitReminder(
+            habit.id,
+            habit.title,
+            habit.reminderTime,
+          ),
         );
       }
       return;
@@ -142,10 +145,12 @@ class GoalsNotifier extends Notifier<List<Goal>> {
 
       // Schedula promemoria se presente
       if (realGoal.reminderTime != null) {
-        NotificationService().scheduleHabitReminder(
-          realGoal.id,
-          realGoal.title,
-          realGoal.reminderTime,
+        unawaited(
+          NotificationService().scheduleHabitReminder(
+            realGoal.id,
+            realGoal.title,
+            realGoal.reminderTime,
+          ),
         );
       }
     } catch (e, stack) {
@@ -170,12 +175,14 @@ class GoalsNotifier extends Notifier<List<Goal>> {
 
     if (ref.read(activeDataModeProvider) == AppDataMode.private) {
       await ref.read(privateLocalDatabaseProvider).upsertGoal(updatedHabit);
-      NotificationService().cancelHabitReminder(updatedHabit.id);
+      unawaited(NotificationService().cancelHabitReminder(updatedHabit.id));
       if (updatedHabit.reminderTime != null) {
-        NotificationService().scheduleHabitReminder(
-          updatedHabit.id,
-          updatedHabit.title,
-          updatedHabit.reminderTime,
+        unawaited(
+          NotificationService().scheduleHabitReminder(
+            updatedHabit.id,
+            updatedHabit.title,
+            updatedHabit.reminderTime,
+          ),
         );
       }
       return;
@@ -189,12 +196,14 @@ class GoalsNotifier extends Notifier<List<Goal>> {
       await supabase.from('goals').update(payload).eq('id', updatedHabit.id);
 
       // Schedula promemoria
-      NotificationService().cancelHabitReminder(updatedHabit.id);
+      unawaited(NotificationService().cancelHabitReminder(updatedHabit.id));
       if (updatedHabit.reminderTime != null) {
-        NotificationService().scheduleHabitReminder(
-          updatedHabit.id,
-          updatedHabit.title,
-          updatedHabit.reminderTime,
+        unawaited(
+          NotificationService().scheduleHabitReminder(
+            updatedHabit.id,
+            updatedHabit.title,
+            updatedHabit.reminderTime,
+          ),
         );
       }
     } catch (e, stack) {
@@ -217,7 +226,7 @@ class GoalsNotifier extends Notifier<List<Goal>> {
 
     if (ref.read(activeDataModeProvider) == AppDataMode.private) {
       await ref.read(privateLocalDatabaseProvider).deleteGoal(id);
-      NotificationService().cancelHabitReminder(id);
+      unawaited(NotificationService().cancelHabitReminder(id));
       return;
     }
 
@@ -226,7 +235,7 @@ class GoalsNotifier extends Notifier<List<Goal>> {
     try {
       await supabase.from('goals').delete().eq('id', id);
       // Cancella promemoria
-      NotificationService().cancelHabitReminder(id);
+      unawaited(NotificationService().cancelHabitReminder(id));
     } catch (e, stack) {
       AppLogger.error('[Goals] Delete error', e, stack);
       final context = navigatorKey.currentContext;

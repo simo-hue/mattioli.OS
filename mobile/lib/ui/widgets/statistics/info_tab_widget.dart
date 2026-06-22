@@ -1341,7 +1341,7 @@ class _AttivitaRecenteSection extends ConsumerWidget {
       builder: (context, constraints) {
         final availableWidth = constraints.maxWidth;
         const spacing = 4.0;
-        final totalSpacing = spacing * (numCols - 1);
+        const totalSpacing = spacing * (numCols - 1);
         final size = ((availableWidth - totalSpacing) / numCols).clamp(
           6.0,
           14.0,

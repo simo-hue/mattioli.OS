@@ -268,7 +268,7 @@ class _MacroGoalsStatsViewState extends ConsumerState<MacroGoalsStatsView> {
     final mostProdCount = stats['most_productive_count'] as int? ?? 0;
 
     final yearProgression = stats['year_progression'] as List<dynamic>? ?? [];
-    List<int> sortedYears = [];
+    final List<int> sortedYears = [];
     for (var item in yearProgression) {
       if (item is Map<String, dynamic>) {
         final y = item['year'] as int?;
@@ -360,7 +360,7 @@ class _MacroGoalsStatsViewState extends ConsumerState<MacroGoalsStatsView> {
   // ─── Component Builders ───────────────────────────────────────────────────
 
   Widget _buildYearSelector(List<int> years) {
-    String displayLabel = _selectedYear == 'all'
+    final String displayLabel = _selectedYear == 'all'
         ? context.t.macroGoals.allYears
         : _selectedYear;
 
@@ -717,8 +717,8 @@ class _MacroGoalsStatsViewState extends ConsumerState<MacroGoalsStatsView> {
   // ─── Chart Widgets ────────────────────────────────────────────────────────
 
   Widget _buildAreaChartCard(List<dynamic> stats) {
-    List<FlSpot> totalSpots = [];
-    List<FlSpot> compSpots = [];
+    final List<FlSpot> totalSpots = [];
+    final List<FlSpot> compSpots = [];
 
     double maxTotal = 0;
 
@@ -763,10 +763,10 @@ class _MacroGoalsStatsViewState extends ConsumerState<MacroGoalsStatsView> {
             ),
             titlesData: FlTitlesData(
               show: true,
-              rightTitles: AxisTitles(
+              rightTitles: const AxisTitles(
                 sideTitles: SideTitles(showTitles: false),
               ),
-              topTitles: AxisTitles(sideTitles: SideTitles(showTitles: false)),
+              topTitles: const AxisTitles(sideTitles: SideTitles(showTitles: false)),
               bottomTitles: AxisTitles(
                 sideTitles: SideTitles(
                   showTitles: true,
@@ -815,7 +815,7 @@ class _MacroGoalsStatsViewState extends ConsumerState<MacroGoalsStatsView> {
                 color: const Color(0xFF818CF8), // Indigo
                 barWidth: 2,
                 isStrokeCapRound: true,
-                dotData: FlDotData(show: false),
+                dotData: const FlDotData(show: false),
                 belowBarData: BarAreaData(
                   show: true,
                   color: const Color(0xFF818CF8).withValues(alpha: 0.15),
@@ -827,7 +827,7 @@ class _MacroGoalsStatsViewState extends ConsumerState<MacroGoalsStatsView> {
                 color: const Color(0xFF10B981),
                 barWidth: 2,
                 isStrokeCapRound: true,
-                dotData: FlDotData(show: false),
+                dotData: const FlDotData(show: false),
                 belowBarData: BarAreaData(
                   show: true,
                   color: const Color(0xFF10B981).withValues(alpha: 0.15),
@@ -874,8 +874,8 @@ class _MacroGoalsStatsViewState extends ConsumerState<MacroGoalsStatsView> {
       );
     }
 
-    List<RadarEntry> entries = [];
-    List<String> labels = [];
+    final List<RadarEntry> entries = [];
+    final List<String> labels = [];
 
     for (var item in stats) {
       if (item is Map<String, dynamic>) {
@@ -957,7 +957,7 @@ class _MacroGoalsStatsViewState extends ConsumerState<MacroGoalsStatsView> {
     }
 
     // Extract totals and completed per quarter
-    List<BarChartGroupData> groups = [];
+    final List<BarChartGroupData> groups = [];
     double maxY = 0;
 
     // Create a map for quick lookup
@@ -1006,7 +1006,7 @@ class _MacroGoalsStatsViewState extends ConsumerState<MacroGoalsStatsView> {
         height: 150,
         child: BarChart(
           BarChartData(
-            gridData: FlGridData(show: false),
+            gridData: const FlGridData(show: false),
             titlesData: FlTitlesData(
               rightTitles: const AxisTitles(
                 sideTitles: SideTitles(showTitles: false),
@@ -1048,7 +1048,7 @@ class _MacroGoalsStatsViewState extends ConsumerState<MacroGoalsStatsView> {
       );
     }
 
-    List<BarChartGroupData> barGroups = [];
+    final List<BarChartGroupData> barGroups = [];
     double maxY = 0;
 
     // Create a map for quick lookup
@@ -1231,7 +1231,7 @@ class _MacroGoalsStatsViewState extends ConsumerState<MacroGoalsStatsView> {
       );
     }
 
-    List<PieChartSectionData> sections = [];
+    final List<PieChartSectionData> sections = [];
     int totalCount = 0;
 
     for (var item in stats) {
@@ -1380,7 +1380,7 @@ class _MacroGoalsStatsViewState extends ConsumerState<MacroGoalsStatsView> {
   Widget _buildGlobalYearProgressionCard(List<dynamic> stats) {
     if (stats.isEmpty) return const SizedBox();
 
-    List<BarChartGroupData> groups = [];
+    final List<BarChartGroupData> groups = [];
     double maxTot = 0;
 
     for (var item in stats) {
@@ -1619,7 +1619,7 @@ class _MacroGoalsStatsViewState extends ConsumerState<MacroGoalsStatsView> {
       _goalTypeLabel('annual'): (stats['annual'] as num?)?.toInt() ?? 0,
       _goalTypeLabel('lifetime'): (stats['lifetime'] as num?)?.toInt() ?? 0,
     };
-    int maxV = counts.values.fold(0, (p, c) => math.max(p, c));
+    final int maxV = counts.values.fold(0, (p, c) => math.max(p, c));
     return _buildCardBase(
       title: context.t.macroGoals.typeDistribution,
       subtitle: context.t.macroGoals.breakdownOfGoalsByTimeHorizon,
@@ -1693,7 +1693,7 @@ class _MacroGoalsStatsViewState extends ConsumerState<MacroGoalsStatsView> {
   }
 
   Widget _buildQuarterSeasonalityCard(List<dynamic> stats) {
-    List<BarChartGroupData> groups = [];
+    final List<BarChartGroupData> groups = [];
     double maxX = 0;
 
     // Create a map for quick lookup
@@ -1863,7 +1863,7 @@ class _MacroGoalsStatsViewState extends ConsumerState<MacroGoalsStatsView> {
   }
 
   Widget _buildGlobalMonthlyHistCard(List<dynamic> stats) {
-    List<FlSpot> spots = [];
+    final List<FlSpot> spots = [];
 
     // Create a map for quick lookup
     final Map<int, double> dataMap = {};
@@ -2015,7 +2015,7 @@ class _MacroGoalsStatsViewState extends ConsumerState<MacroGoalsStatsView> {
     List<GoalCategory> categories,
   ) {
     if (stats.isEmpty) return const SizedBox();
-    List<BarChartGroupData> groups = [];
+    final List<BarChartGroupData> groups = [];
     double maxY = 0;
 
     // Categories to show in evolution
@@ -2028,7 +2028,7 @@ class _MacroGoalsStatsViewState extends ConsumerState<MacroGoalsStatsView> {
       final cats = item['categories'] as Map<String, dynamic>? ?? {};
 
       double totalForYear = 0;
-      List<BarChartRodStackItem> stacks = [];
+      final List<BarChartRodStackItem> stacks = [];
       double curr = 0;
 
       for (var c in limitedCategories) {
@@ -2110,7 +2110,7 @@ class _MacroGoalsStatsViewState extends ConsumerState<MacroGoalsStatsView> {
                       final cats =
                           item['categories'] as Map<String, dynamic>? ?? {};
 
-                      List<TextSpan> categorySpans = [];
+                      final List<TextSpan> categorySpans = [];
                       for (var c in limitedCategories) {
                         final count = (cats[c.key] as num?)?.toInt() ?? 0;
                         if (count > 0) {

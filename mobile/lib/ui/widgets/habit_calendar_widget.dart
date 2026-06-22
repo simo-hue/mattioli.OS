@@ -144,7 +144,7 @@ class _HabitCalendarWidgetState extends ConsumerState<HabitCalendarWidget> {
     final month = date.month;
 
     // First day of month, 0=Mon 6=Sun
-    int startDayOfWeek = DateTime(year, month, 1).weekday - 1; // Mon=0
+    final int startDayOfWeek = DateTime(year, month, 1).weekday - 1; // Mon=0
     final daysInMonth = DateTime(year, month + 1, 0).day;
     final totalSlots = startDayOfWeek + daysInMonth;
     final numRows = (totalSlots / 7).ceil();
@@ -243,7 +243,7 @@ class _HabitCalendarWidgetState extends ConsumerState<HabitCalendarWidget> {
                     final day = slot - startDayOfWeek + 1;
 
                     if (day < 1 || day > daysInMonth) {
-                      return Expanded(child: _EmptyCell(hasContent: false));
+                      return const Expanded(child: _EmptyCell(hasContent: false));
                     }
 
                     final dateKey = _dateKey(year, month, day);
@@ -266,7 +266,7 @@ class _HabitCalendarWidgetState extends ConsumerState<HabitCalendarWidget> {
                     final hasActivity =
                         (completedCount + missedCount) > 0;
 
-                    double completionPct = totalHabits > 0
+                    final double completionPct = totalHabits > 0
                         ? completedCount / totalHabits
                         : 0.0;
 
@@ -420,7 +420,7 @@ class _DayCell extends StatelessWidget {
               boxShadow: hasActivity && completionPct == 1.0
                   ? [
                       BoxShadow(
-                        color: HSLColor.fromAHSL(1.0, 142, 0.8, 0.4)
+                        color: const HSLColor.fromAHSL(1.0, 142, 0.8, 0.4)
                             .toColor()
                             .withValues(alpha: 0.15),
                         blurRadius: 8,

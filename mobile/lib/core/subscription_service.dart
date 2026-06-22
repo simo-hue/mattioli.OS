@@ -93,7 +93,7 @@ class SubscriptionService {
       _syncLocalStatus(loginResult.customerInfo, source: 'revenuecat-login');
     } else {
       // Configure purchases_flutter with the static API key and current user's identifier
-      PurchasesConfiguration configuration = PurchasesConfiguration(
+      final PurchasesConfiguration configuration = PurchasesConfiguration(
         RevenueCatConfig.apiKey,
       )..appUserID = userUuid;
       await Purchases.configure(configuration);
@@ -114,7 +114,7 @@ class SubscriptionService {
   /// Returns `true` if the user has the 'Evolve Pro' entitlement active.
   Future<bool> checkAndSyncStatus() async {
     try {
-      CustomerInfo customerInfo = await Purchases.getCustomerInfo();
+      final CustomerInfo customerInfo = await Purchases.getCustomerInfo();
       final accessStatus = _syncLocalStatus(
         customerInfo,
         source: 'revenuecat-check',

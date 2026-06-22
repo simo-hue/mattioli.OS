@@ -506,7 +506,7 @@ class _MiglioramentoCard extends StatelessWidget {
 
               Text(
                 '$successRate ${context.t.statistics.succ}',
-                style: TextStyle(
+                style: const TextStyle(
                   fontFamily: 'Inter',
                   fontSize: 11,
                   fontWeight: FontWeight.w600,
@@ -519,7 +519,7 @@ class _MiglioramentoCard extends StatelessWidget {
           Row(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              Icon(LucideIcons.circleAlert, size: 14, color: Color(0xFFEF4444)),
+              const Icon(LucideIcons.circleAlert, size: 14, color: Color(0xFFEF4444)),
               const SizedBox(width: 8),
               Expanded(
                 child: Column(
@@ -527,7 +527,7 @@ class _MiglioramentoCard extends StatelessWidget {
                   children: [
                     Text(
                       context.t.statistics.blackDay,
-                      style: TextStyle(
+                      style: const TextStyle(
                         fontFamily: 'Inter',
                         fontSize: 10,
                         fontWeight: FontWeight.w800,
@@ -559,7 +559,7 @@ class _MiglioramentoCard extends StatelessWidget {
                             ),
                             TextSpan(
                               text: dayCompletion,
-                              style: TextStyle(
+                              style: const TextStyle(
                                 color: Color(0xFFEF4444),
                                 fontWeight: FontWeight.w700,
                               ),
@@ -628,7 +628,7 @@ class _AnalisiFallimentiSectionState extends State<_AnalisiFallimentiSection> {
       children: [
         Row(
           children: [
-            Icon(LucideIcons.chartBar, size: 16, color: Color(0xFFF97316)),
+            const Icon(LucideIcons.chartBar, size: 16, color: Color(0xFFF97316)),
             const SizedBox(width: 8),
             Text(
               context.t.statistics.failureAnalysis,
@@ -746,12 +746,12 @@ class _FailureDetailCard extends StatelessWidget {
               _StatMiniItem(
                 label: context.t.statistics.worstStreak,
                 value: worstStreak,
-                color: Color(0xFFEF4444),
+                color: const Color(0xFFEF4444),
               ),
               _StatMiniItem(
                 label: context.t.statistics.frequency,
                 value: frequency,
-                color: Color(0xFFF97316),
+                color: const Color(0xFFF97316),
               ),
             ],
           ),
@@ -1205,7 +1205,7 @@ class _PerformanceComparisonCard extends StatelessWidget {
                 ),
                 child: Text(
                   context.t.statistics.attention,
-                  style: TextStyle(
+                  style: const TextStyle(
                     fontFamily: 'Inter',
                     fontSize: 10,
                     fontWeight: FontWeight.w800,
@@ -1227,7 +1227,7 @@ class _PerformanceComparisonCard extends StatelessWidget {
             label: context.t.statistics.worst,
             value: '$worst ${context.t.statistics.daysShortUnit}',
             progress: 0.9,
-            color: Color(0xFFEF4444),
+            color: const Color(0xFFEF4444),
           ),
           const Spacer(),
           RichText(

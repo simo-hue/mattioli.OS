@@ -129,7 +129,7 @@ extension AppThemeX on BuildContext {
 }
 
 class AppTheme {
-  static final AppColorsExtension darkColors = const AppColorsExtension(
+  static const AppColorsExtension darkColors = AppColorsExtension(
     background: AppColors.background,
     card: AppColors.card,
     cardElevated: AppColors.cardElevated,
@@ -146,7 +146,7 @@ class AppTheme {
     primaryTint: AppColors.primaryTint,
   );
 
-  static final AppColorsExtension lightColors = const AppColorsExtension(
+  static const AppColorsExtension lightColors = AppColorsExtension(
     background: AppColors.lightBackground,
     card: AppColors.lightCard,
     cardElevated: AppColors.lightCardElevated,

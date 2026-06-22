@@ -231,7 +231,7 @@ class _MonthBarsPainter extends CustomPainter {
   @override
   void paint(Canvas canvas, Size size) {
     const double barSpacing = 1.5;
-    final double totalSpacing = barSpacing * 30;
+    const double totalSpacing = barSpacing * 30;
     final double barWidth = (size.width - totalSpacing) / 31;
     
     final Paint futurePaint = Paint()..color = foregroundColor.withValues(alpha: 0.05);

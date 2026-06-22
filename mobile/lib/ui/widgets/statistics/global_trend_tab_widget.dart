@@ -565,7 +565,7 @@ class _MiglioriAbitudiniSectionState
                 _MiglioreCard(
                   title: context.t.statistics.everythingIsGreat,
                   rate: '100%',
-                  color: Color(0xFF10B981),
+                  color: const Color(0xFF10B981),
                   streak: '0 ${context.t.common.days}',
                   desc: context.t.statistics.allHabitsStableDescription,
                 ),
@@ -850,7 +850,7 @@ class _AbitudiniCriticheSectionState
                   title: context.t.statistics.everythingIsGreat,
                   drop: '0%',
                   trend: 'trending_up',
-                  color: Color(0xFF10B981),
+                  color: const Color(0xFF10B981),
                   streak: '0 ${context.t.common.days}',
                   desc: context.t.statistics.allHabitsStableDescription,
                 ),

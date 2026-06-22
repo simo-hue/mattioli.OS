@@ -1,3 +1,4 @@
+import 'dart:async';
 import 'package:flutter/material.dart';
 import 'package:flutter/cupertino.dart';
 import 'package:flutter/services.dart';
@@ -21,7 +22,7 @@ class PersonalInfoScreen extends ConsumerStatefulWidget {
         const begin = Offset(1.0, 0.0);
         const end = Offset.zero;
         const curve = Curves.easeOutCubic;
-        var tween = Tween(
+        final tween = Tween(
           begin: begin,
           end: end,
         ).chain(CurveTween(curve: curve));
@@ -84,12 +85,10 @@ class _PersonalInfoScreenState extends ConsumerState<PersonalInfoScreen> {
               );
 
           if (mounted) {
-            HapticFeedback.mediumImpact();
+            unawaited(HapticFeedback.mediumImpact());
             ScaffoldMessenger.of(context).showSnackBar(
               SnackBar(
-                content: Text(
-                  context.t.profile.personalInfo.saveSuccess,
-                ),
+                content: Text(context.t.profile.personalInfo.saveSuccess),
                 backgroundColor: AppColors.success.withValues(alpha: 0.8),
                 behavior: SnackBarBehavior.floating,
                 shape: RoundedRectangleBorder(
@@ -130,12 +129,10 @@ class _PersonalInfoScreenState extends ConsumerState<PersonalInfoScreen> {
         }
 
         if (mounted) {
-          HapticFeedback.mediumImpact();
+          unawaited(HapticFeedback.mediumImpact());
           ScaffoldMessenger.of(context).showSnackBar(
             SnackBar(
-              content: Text(
-                context.t.profile.personalInfo.saveSuccess,
-              ),
+              content: Text(context.t.profile.personalInfo.saveSuccess),
               backgroundColor: AppColors.success.withValues(alpha: 0.8),
               behavior: SnackBarBehavior.floating,
               shape: RoundedRectangleBorder(
@@ -154,9 +151,7 @@ class _PersonalInfoScreenState extends ConsumerState<PersonalInfoScreen> {
         if (mounted) {
           ScaffoldMessenger.of(context).showSnackBar(
             SnackBar(
-              content: Text(
-                context.t.profile.personalInfo.saveError,
-              ),
+              content: Text(context.t.profile.personalInfo.saveError),
               backgroundColor: AppColors.destructive,
             ),
           );

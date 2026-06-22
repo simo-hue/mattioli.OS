@@ -479,7 +479,7 @@ class _MacroGoalsScreenState extends ConsumerState<MacroGoalsScreen>
         mainTutorialSeen &&
         !goalsTutorialSeen;
 
-    List<MacroGoal> displayGoals = List.from(filteredGoals);
+    final List<MacroGoal> displayGoals = List.from(filteredGoals);
     if (isGoalsTutorialPending) {
       displayGoals.insert(
         0,

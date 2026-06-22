@@ -744,20 +744,20 @@ class _HabitManagementModalState extends ConsumerState<HabitManagementModal> {
                                 width: 1,
                               ),
                             ),
-                            child: Row(
+                            child: const Row(
                               children: [
-                                const Icon(
+                                Icon(
                                   LucideIcons.lock,
                                   color: Color(0xFFEAB308),
                                   size: 16,
                                 ),
-                                const SizedBox(width: 10),
+                                SizedBox(width: 10),
                                 Expanded(
                                   child: Text(
                                     'Hai riempito gli slot abitudini gratuite (5/5). Sblocca slot illimitati con Evolve Pro.',
                                     style: TextStyle(
                                       fontFamily: 'Inter',
-                                      color: const Color(0xFFEAB308),
+                                      color: Color(0xFFEAB308),
                                       fontSize: 12,
                                       fontWeight: FontWeight.w600,
                                       height: 1.3,

@@ -198,7 +198,7 @@ class _HomeScreenState extends ConsumerState<HomeScreen>
                           Text(
                             context.t.tutorial.welcomeDesc,
                             textAlign: TextAlign.center,
-                            style: TextStyle(
+                            style: const TextStyle(
                               fontFamily: 'Inter',
                               fontSize: 16,
                               color: Colors.white70,
@@ -325,7 +325,7 @@ class _HomeScreenState extends ConsumerState<HomeScreen>
                     Text(
                       context.t.tutorial.theJourneyStartsNowGiveYour,
                       textAlign: TextAlign.center,
-                      style: TextStyle(
+                      style: const TextStyle(
                         fontFamily: 'Inter',
                         fontSize: 16,
                         color: Colors.white70,
@@ -601,7 +601,7 @@ class _HomeScreenState extends ConsumerState<HomeScreen>
   void _showTutorial() {
     if (!_canStartDashboardTutorial()) return;
 
-    List<TargetFocus> targets = [
+    final List<TargetFocus> targets = [
       TargetFocus(
         identify: "Daily Check-in",
         keyTarget: _checkInKey,

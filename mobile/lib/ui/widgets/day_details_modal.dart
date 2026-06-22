@@ -65,7 +65,7 @@ class DayDetailsModal extends ConsumerWidget {
                   ),
                   Text(
                     context.t.habits.yourProgressForToday,
-                    style: TextStyle(
+                    style: const TextStyle(
                       fontFamily: 'Inter',
                       fontSize: 14,
                       color: AppColors.mutedForeground,
@@ -97,7 +97,7 @@ class DayDetailsModal extends ConsumerWidget {
                         const SizedBox(height: 16),
                         Text(
                           context.t.habits.noHabit,
-                          style: TextStyle(
+                          style: const TextStyle(
                             fontFamily: 'Inter',
                             fontSize: 18,
                             fontWeight: FontWeight.w700,
@@ -108,7 +108,7 @@ class DayDetailsModal extends ConsumerWidget {
                         Text(
                           context.t.habits.thereAreNoHabitsForThis,
                           textAlign: TextAlign.center,
-                          style: TextStyle(
+                          style: const TextStyle(
                             fontFamily: 'Inter',
                             fontSize: 14,
                             color: AppColors.mutedForeground,

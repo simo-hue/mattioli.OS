@@ -1,3 +1,4 @@
+import 'dart:async';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
@@ -220,7 +221,7 @@ class _AIChatScreenState extends ConsumerState<AIChatScreen> {
     if (!await _ensurePrivateAiConsent()) return;
     if (!mounted) return;
 
-    HapticFeedback.mediumImpact();
+    unawaited(HapticFeedback.mediumImpact());
 
     setState(() {
       _messages.add(
@@ -285,9 +286,7 @@ class _AIChatScreenState extends ConsumerState<AIChatScreen> {
         // Avvisa l'utente in modo esplicito
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
-            content: Text(
-              context.t.ai.connectionIssues,
-            ),
+            content: Text(context.t.ai.connectionIssues),
             backgroundColor: Colors.redAccent,
             behavior: SnackBarBehavior.floating,
             shape: RoundedRectangleBorder(
@@ -354,7 +353,8 @@ class _AIChatScreenState extends ConsumerState<AIChatScreen> {
     final habits = ref.read(goalsProvider);
     final habitLogs = ref.read(habitLogsProvider);
     final userName =
-        ref.read(userProfileProvider).firstName ?? context.t.ai.prompts.defaultUserName;
+        ref.read(userProfileProvider).firstName ??
+        context.t.ai.prompts.defaultUserName;
 
     final activeGoals = goals
         .where((g) => g.status == GoalStatus.active)
@@ -383,10 +383,18 @@ class _AIChatScreenState extends ConsumerState<AIChatScreen> {
     }
 
     if (_shareHabits) {
-      contextBlock.writeln(context.t.ai.prompts.habitsToday(completed: todayDone, total: todayTotal));
+      contextBlock.writeln(
+        context.t.ai.prompts.habitsToday(
+          completed: todayDone,
+          total: todayTotal,
+        ),
+      );
     }
 
-    return context.t.ai.prompts.coachSystemPrompt(userName: userName, contextBlock: contextBlock.toString());
+    return context.t.ai.prompts.coachSystemPrompt(
+      userName: userName,
+      contextBlock: contextBlock.toString(),
+    );
   }
 
   List<String> _getDynamicSuggestions() {
@@ -517,9 +525,9 @@ class _AIChatScreenState extends ConsumerState<AIChatScreen> {
             Container(
               width: 36,
               height: 36,
-              decoration: BoxDecoration(
+              decoration: const BoxDecoration(
                 shape: BoxShape.circle,
-                gradient: const LinearGradient(
+                gradient: LinearGradient(
                   colors: [
                     Color(0xFF8B5CF6),
                     Color(0xFF6366F1),
@@ -710,9 +718,9 @@ class _AIChatScreenState extends ConsumerState<AIChatScreen> {
                       Container(
                         width: 40,
                         height: 40,
-                        decoration: BoxDecoration(
+                        decoration: const BoxDecoration(
                           shape: BoxShape.circle,
-                          gradient: const LinearGradient(
+                          gradient: LinearGradient(
                             colors: [Color(0xFF8B5CF6), Color(0xFF6366F1)],
                           ),
                         ),
@@ -875,7 +883,7 @@ class _AIChatScreenState extends ConsumerState<AIChatScreen> {
 
         // Rimuovi l'emoji iniziale se presente (tutto ciò che precede il primo spazio)
         String cleanText = text;
-        int firstSpace = text.indexOf(' ');
+        final int firstSpace = text.indexOf(' ');
         if (firstSpace != -1) {
           cleanText = text.substring(firstSpace + 1);
         }

@@ -1,3 +1,4 @@
+import 'dart:async';
 import 'dart:io';
 import 'dart:ui' show ImageFilter;
 import 'package:flutter/material.dart';
@@ -493,13 +494,21 @@ class _ProfileScreenState extends ConsumerState<ProfileScreen> {
                     Navigator.pop(context); // Torna alla home
                     // Piccola attesa per completare la transizione
                     await Future.delayed(const Duration(milliseconds: 300));
-                    ref.read(tutorialProvider.notifier).setTutorialSeen(false);
-                    ref
-                        .read(goalsTutorialProvider.notifier)
-                        .setTutorialSeen(false);
-                    ref
-                        .read(statsTutorialProvider.notifier)
-                        .setTutorialSeen(false);
+                    unawaited(
+                      ref
+                          .read(tutorialProvider.notifier)
+                          .setTutorialSeen(false),
+                    );
+                    unawaited(
+                      ref
+                          .read(goalsTutorialProvider.notifier)
+                          .setTutorialSeen(false),
+                    );
+                    unawaited(
+                      ref
+                          .read(statsTutorialProvider.notifier)
+                          .setTutorialSeen(false),
+                    );
                   },
                 ),
                 const SizedBox(height: 24),

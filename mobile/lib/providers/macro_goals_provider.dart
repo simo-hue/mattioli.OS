@@ -533,10 +533,10 @@ class MacroGoalsViewNotifier extends Notifier<MacroGoalsViewState> {
 
   void nextPeriod() {
     final s = state;
-    int y = s.selectedYear;
-    int q = s.selectedQuarter;
-    int m = s.selectedMonth;
-    int w = s.selectedWeek;
+    final int y = s.selectedYear;
+    final int q = s.selectedQuarter;
+    final int m = s.selectedMonth;
+    final int w = s.selectedWeek;
 
     switch (s.selectedType) {
       case GoalType.lifetime:
@@ -579,10 +579,10 @@ class MacroGoalsViewNotifier extends Notifier<MacroGoalsViewState> {
 
   void prevPeriod() {
     final s = state;
-    int y = s.selectedYear;
-    int q = s.selectedQuarter;
-    int m = s.selectedMonth;
-    int w = s.selectedWeek;
+    final int y = s.selectedYear;
+    final int q = s.selectedQuarter;
+    final int m = s.selectedMonth;
+    final int w = s.selectedWeek;
 
     switch (s.selectedType) {
       case GoalType.lifetime:

@@ -33,7 +33,7 @@ class HabitMoodTabWidget extends ConsumerWidget {
       children: [
         _TopMetricsGrid(correlation: correlation),
         const SizedBox(height: 12),
-        if (correlation.resilience > 50) _ResilienteBadge(),
+        if (correlation.resilience > 50) const _ResilienteBadge(),
         const SizedBox(height: 24),
         _CompletatoVsMancatoCard(correlation: correlation),
         const SizedBox(height: 16),

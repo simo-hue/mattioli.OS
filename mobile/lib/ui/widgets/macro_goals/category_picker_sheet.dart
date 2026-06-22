@@ -1,3 +1,4 @@
+import 'dart:async';
 import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
@@ -166,9 +167,9 @@ Future<void> showMacroGoalCategoryPicker({
                           // don't touch the now-disposed Consumer ref.
                           final categoryId =
                               await _showCategoryEditorDialogSafe(
-                            context: callerContext,
-                            notifier: categoriesNotifier,
-                          );
+                                context: callerContext,
+                                notifier: categoriesNotifier,
+                              );
                           if (categoryId != null) {
                             onSelected(categoryId);
                           }
@@ -451,17 +452,22 @@ Future<String?> _showCategoryEditorDialogSafe({
                           final colorHex = _colorToHex(selectedColor);
                           String? categoryId;
                           if (isEditing) {
-                            final updated = await notifier
-                                .updateCategory(category.key, name, colorHex);
+                            final updated = await notifier.updateCategory(
+                              category.key,
+                              name,
+                              colorHex,
+                            );
                             categoryId = updated ? category.key : null;
                           } else {
-                            categoryId = await notifier
-                                .addCategory(name, colorHex);
+                            categoryId = await notifier.addCategory(
+                              name,
+                              colorHex,
+                            );
                           }
 
                           if (categoryId != null && dialogContext.mounted) {
                             Navigator.pop(dialogContext, categoryId);
-                            HapticFeedback.mediumImpact();
+                            unawaited(HapticFeedback.mediumImpact());
                           }
                         },
                         style: ElevatedButton.styleFrom(
@@ -559,10 +565,12 @@ Future<bool> _showDeleteCategoryDialog({
       content: Text(
         linkedGoalsCount > 0
             ? context.t.macroGoals.categoryUnavailableLinked
-                .replaceFirst('label', category.label)
-                .replaceFirst('count', linkedGoalsCount.toString())
-            : context.t.macroGoals.categoryUnavailableArchived
-                .replaceFirst('label', category.label),
+                  .replaceFirst('label', category.label)
+                  .replaceFirst('count', linkedGoalsCount.toString())
+            : context.t.macroGoals.categoryUnavailableArchived.replaceFirst(
+                'label',
+                category.label,
+              ),
         style: GoogleFonts.inter(
           color: context.appColors.mutedForeground,
           fontSize: 13,
@@ -585,7 +593,7 @@ Future<bool> _showDeleteCategoryDialog({
               Navigator.pop(dialogContext, success);
             }
             if (success) {
-              HapticFeedback.mediumImpact();
+              unawaited(HapticFeedback.mediumImpact());
             }
           },
           child: Text(

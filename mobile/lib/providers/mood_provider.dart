@@ -151,10 +151,13 @@ class MoodCorrelation {
   });
 }
 
-final moodCorrelationProvider = Provider<List<MoodCorrelation>>((ref) {
-  final moods = ref.watch(dailyMoodsProvider);
-  final logs = ref.watch(habitLogsProvider);
-
+/// Pure computation behind [moodCorrelationProvider]. Extracted so the
+/// 0–10-scale mood banding (high >= 6, low < 4, 4–5 neutral) can be unit
+/// tested without standing up Riverpod or the data stores.
+List<MoodCorrelation> computeMoodCorrelations({
+  required DailyMoodsMap moods,
+  required HabitLogsMap logs,
+}) {
   final habitCorrelations = <String, Map<String, dynamic>>{};
 
   logs.forEach((dateStr, habits) {
@@ -260,4 +263,11 @@ final moodCorrelationProvider = Provider<List<MoodCorrelation>>((ref) {
   });
 
   return result;
-});
+}
+
+final moodCorrelationProvider = Provider<List<MoodCorrelation>>(
+  (ref) => computeMoodCorrelations(
+    moods: ref.watch(dailyMoodsProvider),
+    logs: ref.watch(habitLogsProvider),
+  ),
+);

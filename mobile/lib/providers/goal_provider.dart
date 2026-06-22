@@ -11,6 +11,7 @@ import '../core/app_logger.dart';
 import '../core/secure_storage_utils.dart';
 import '../core/data_mode.dart';
 import '../core/private_local_database.dart';
+import '../core/streak_utils.dart';
 import '../ui/widgets/error_modal.dart';
 import '../i18n/translations.g.dart';
 
@@ -81,6 +82,19 @@ class GoalsNotifier extends Notifier<List<Goal>> {
     );
   }
 
+  /// Surface a persistence failure to the user (strings via the global `t`).
+  void _showGoalError(String title, String message, Object error) {
+    final context = navigatorKey.currentContext;
+    if (context != null && context.mounted) {
+      ErrorModal.show(
+        context,
+        title: title,
+        message: message,
+        details: error.toString(),
+      );
+    }
+  }
+
   Future<void> _syncFromSupabase() async {
     if (ref.read(activeDataModeProvider) == AppDataMode.private) return;
     final user = supabase.auth.currentUser;
@@ -103,18 +117,30 @@ class GoalsNotifier extends Notifier<List<Goal>> {
   }
 
   Future<void> addHabit(Goal habit) async {
+    // Snapshot for optimistic rollback if persistence fails.
+    final previousGoals = state;
     final newGoals = [...state, habit];
     state = newGoals;
 
     if (ref.read(activeDataModeProvider) == AppDataMode.private) {
-      await ref.read(privateLocalDatabaseProvider).upsertGoal(habit);
-      if (habit.reminderTime != null) {
-        unawaited(
-          NotificationService().scheduleHabitReminder(
-            habit.id,
-            habit.title,
-            habit.reminderTime,
-          ),
+      try {
+        await ref.read(privateLocalDatabaseProvider).upsertGoal(habit);
+        if (habit.reminderTime != null) {
+          unawaited(
+            NotificationService().scheduleHabitReminder(
+              habit.id,
+              habit.title,
+              habit.reminderTime,
+            ),
+          );
+        }
+      } catch (e, stack) {
+        AppLogger.error('[Goals] Private insert error', e, stack);
+        state = previousGoals;
+        _showGoalError(
+          t.common.errorDuringSaving,
+          t.common.habitSaveFailed,
+          e,
         );
       }
       return;
@@ -155,34 +181,45 @@ class GoalsNotifier extends Notifier<List<Goal>> {
       }
     } catch (e, stack) {
       AppLogger.error('[Goals] Insert error', e, stack);
-      final context = navigatorKey.currentContext;
-      if (context != null && context.mounted) {
-        ErrorModal.show(
-          context,
-          title: context.t.common.errorDuringSaving,
-          message: context.t.common.habitSaveFailed,
-          details: e.toString(),
-        );
-      }
+      // Remove the optimistic (temp-id) ghost row on failure.
+      state = previousGoals;
+      _saveToCache(previousGoals);
+      _showGoalError(
+        t.common.errorDuringSaving,
+        t.common.habitSaveFailed,
+        e,
+      );
     }
   }
 
   Future<void> updateHabit(Goal updatedHabit) async {
+    // Snapshot for optimistic rollback if persistence fails.
+    final previousGoals = state;
     final newGoals = state
         .map((h) => h.id == updatedHabit.id ? updatedHabit : h)
         .toList();
     state = newGoals;
 
     if (ref.read(activeDataModeProvider) == AppDataMode.private) {
-      await ref.read(privateLocalDatabaseProvider).upsertGoal(updatedHabit);
-      unawaited(NotificationService().cancelHabitReminder(updatedHabit.id));
-      if (updatedHabit.reminderTime != null) {
-        unawaited(
-          NotificationService().scheduleHabitReminder(
-            updatedHabit.id,
-            updatedHabit.title,
-            updatedHabit.reminderTime,
-          ),
+      try {
+        await ref.read(privateLocalDatabaseProvider).upsertGoal(updatedHabit);
+        unawaited(NotificationService().cancelHabitReminder(updatedHabit.id));
+        if (updatedHabit.reminderTime != null) {
+          unawaited(
+            NotificationService().scheduleHabitReminder(
+              updatedHabit.id,
+              updatedHabit.title,
+              updatedHabit.reminderTime,
+            ),
+          );
+        }
+      } catch (e, stack) {
+        AppLogger.error('[Goals] Private update error', e, stack);
+        state = previousGoals;
+        _showGoalError(
+          t.common.errorDuringUpdate,
+          t.common.habitUpdateFailed,
+          e,
         );
       }
       return;
@@ -208,25 +245,35 @@ class GoalsNotifier extends Notifier<List<Goal>> {
       }
     } catch (e, stack) {
       AppLogger.error('[Goals] Update error', e, stack);
-      final context = navigatorKey.currentContext;
-      if (context != null && context.mounted) {
-        ErrorModal.show(
-          context,
-          title: context.t.common.errorDuringUpdate,
-          message: context.t.common.habitUpdateFailed,
-          details: e.toString(),
-        );
-      }
+      state = previousGoals;
+      _saveToCache(previousGoals);
+      _showGoalError(
+        t.common.errorDuringUpdate,
+        t.common.habitUpdateFailed,
+        e,
+      );
     }
   }
 
   Future<void> deleteHabit(String id) async {
+    // Snapshot for optimistic rollback if persistence fails.
+    final previousGoals = state;
     final newGoals = state.where((h) => h.id != id).toList();
     state = newGoals;
 
     if (ref.read(activeDataModeProvider) == AppDataMode.private) {
-      await ref.read(privateLocalDatabaseProvider).deleteGoal(id);
-      unawaited(NotificationService().cancelHabitReminder(id));
+      try {
+        await ref.read(privateLocalDatabaseProvider).deleteGoal(id);
+        unawaited(NotificationService().cancelHabitReminder(id));
+      } catch (e, stack) {
+        AppLogger.error('[Goals] Private delete error', e, stack);
+        state = previousGoals;
+        _showGoalError(
+          t.common.errorDuringDeletion,
+          t.common.habitDeleteFailed,
+          e,
+        );
+      }
       return;
     }
 
@@ -238,19 +285,20 @@ class GoalsNotifier extends Notifier<List<Goal>> {
       unawaited(NotificationService().cancelHabitReminder(id));
     } catch (e, stack) {
       AppLogger.error('[Goals] Delete error', e, stack);
-      final context = navigatorKey.currentContext;
-      if (context != null && context.mounted) {
-        ErrorModal.show(
-          context,
-          title: context.t.common.errorDuringDeletion,
-          message: context.t.common.habitDeleteFailed,
-          details: e.toString(),
-        );
-      }
+      // Restore the habit that failed to delete.
+      state = previousGoals;
+      _saveToCache(previousGoals);
+      _showGoalError(
+        t.common.errorDuringDeletion,
+        t.common.habitDeleteFailed,
+        e,
+      );
     }
   }
 
   Future<void> reorder(int oldIndex, int newIndex) async {
+    // Snapshot for optimistic rollback if persistence fails.
+    final previousGoals = state;
     final list = List<Goal>.from(state);
     if (newIndex > oldIndex) newIndex -= 1;
     final item = list.removeAt(oldIndex);
@@ -264,9 +312,19 @@ class GoalsNotifier extends Notifier<List<Goal>> {
     state = list;
 
     if (ref.read(activeDataModeProvider) == AppDataMode.private) {
-      final db = ref.read(privateLocalDatabaseProvider);
-      for (final goal in list) {
-        await db.upsertGoal(goal);
+      try {
+        final db = ref.read(privateLocalDatabaseProvider);
+        for (final goal in list) {
+          await db.upsertGoal(goal);
+        }
+      } catch (e, stack) {
+        AppLogger.error('[Goals] Private reorder error', e, stack);
+        state = previousGoals;
+        _showGoalError(
+          t.common.errorDuringUpdate,
+          t.common.habitUpdateFailed,
+          e,
+        );
       }
       return;
     }
@@ -281,6 +339,13 @@ class GoalsNotifier extends Notifier<List<Goal>> {
       await supabase.from('goals').upsert(updates);
     } catch (e, stack) {
       AppLogger.error('[Goals] Reorder error', e, stack);
+      state = previousGoals;
+      _saveToCache(previousGoals);
+      _showGoalError(
+        t.common.errorDuringUpdate,
+        t.common.habitUpdateFailed,
+        e,
+      );
     }
   }
 
@@ -407,6 +472,9 @@ class HabitLogsNotifier extends Notifier<HabitLogsMap> {
     final dateKey =
         '${date.year}-${date.month.toString().padLeft(2, '0')}-${date.day.toString().padLeft(2, '0')}';
 
+    // Snapshot for optimistic rollback if the persistence layer fails.
+    final previousState = state;
+
     final newState = Map<String, Map<String, String>>.from(state);
     final dayLogs = Map<String, String>.from(newState[dateKey] ?? {});
 
@@ -421,46 +489,6 @@ class HabitLogsNotifier extends Notifier<HabitLogsMap> {
       nextStatus = null; // rimosso
     }
 
-    // Get previous streak
-    int prevStreak = 0;
-    if (!isPrivateMode) {
-      try {
-        final lastLogResponse = await supabase
-            .from('goal_logs')
-            .select('streak, date')
-            .eq('goal_id', habitId)
-            .eq('user_id', user!.id)
-            .order('date', ascending: false)
-            .limit(1)
-            .maybeSingle();
-
-        if (lastLogResponse != null) {
-          final lastDateStr = lastLogResponse['date'] as String;
-          final lastStreak = lastLogResponse['streak'] as int? ?? 0;
-
-          final lastDate = DateTime.parse(lastDateStr);
-          final diffDays = date.difference(lastDate).inDays;
-
-          if (diffDays == 1) {
-            prevStreak = lastStreak;
-          } else {
-            // Non consecutivo. Per ora azzeriamo lo streak se non è il giorno dopo.
-            // Si potrebbe affinare controllando la frequenza dell'abitudine.
-            prevStreak = 0;
-          }
-        }
-      } catch (e, stack) {
-        AppLogger.error('[HabitLogs] Error getting previous streak', e, stack);
-      }
-    }
-
-    int newStreak = 0;
-    if (nextStatus == 'done') {
-      newStreak = prevStreak >= 0 ? prevStreak + 1 : 1;
-    } else if (nextStatus == 'missed') {
-      newStreak = prevStreak > 0 ? -1 : prevStreak - 1;
-    }
-
     if (nextStatus != null) {
       dayLogs[habitId] = nextStatus;
     } else {
@@ -470,22 +498,52 @@ class HabitLogsNotifier extends Notifier<HabitLogsMap> {
     newState[dateKey] = dayLogs;
     state = newState;
 
+    // Deterministic streak for the toggled day, computed from the full ordered
+    // log history (shared with the web app + Private Mode). See streak_utils.dart.
+    final goal = ref
+        .read(goalsProvider)
+        .where((g) => g.id == habitId)
+        .firstOrNull;
+    final newStreak = nextStatus == null
+        ? 0
+        : computeStreak(
+            habitId: habitId,
+            date: date,
+            logs: newState,
+            startDate: goal?.startDate ?? date,
+          );
+
     if (isPrivateMode) {
-      if (nextStatus != null) {
-        await ref
-            .read(privateLocalDatabaseProvider)
-            .setHabitLog(
-              goalId: habitId,
-              date: dateKey,
-              status: nextStatus,
-              streak: newStreak,
-            );
-      } else {
-        await ref
-            .read(privateLocalDatabaseProvider)
-            .deleteHabitLog(goalId: habitId, date: dateKey);
+      try {
+        if (nextStatus != null) {
+          await ref
+              .read(privateLocalDatabaseProvider)
+              .setHabitLog(
+                goalId: habitId,
+                date: dateKey,
+                status: nextStatus,
+                streak: newStreak,
+              );
+        } else {
+          await ref
+              .read(privateLocalDatabaseProvider)
+              .deleteHabitLog(goalId: habitId, date: dateKey);
+        }
+        ref.invalidate(habitStatsProvider);
+      } catch (e, stack) {
+        AppLogger.error('[HabitLogs] cycleStatus (private) error', e, stack);
+        // Revert the optimistic update so UI and local DB stay in sync.
+        state = previousState;
+        final context = navigatorKey.currentContext;
+        if (context != null && context.mounted) {
+          ErrorModal.show(
+            context,
+            title: context.t.common.errorUpdatingState,
+            message: context.t.common.habitStatusSaveFailed,
+            details: e.toString(),
+          );
+        }
       }
-      ref.invalidate(habitStatsProvider);
       return;
     }
 
@@ -511,6 +569,9 @@ class HabitLogsNotifier extends Notifier<HabitLogsMap> {
       ref.invalidate(habitStatsProvider);
     } catch (e, stack) {
       AppLogger.error('[HabitLogs] cycleStatus error', e, stack);
+      // Revert the optimistic update so UI and cache match the server.
+      state = previousState;
+      _saveToCache(previousState);
       final context = navigatorKey.currentContext;
       if (context != null && context.mounted) {
         ErrorModal.show(

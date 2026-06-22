@@ -5,6 +5,7 @@ import 'package:lucide_icons_flutter/lucide_icons.dart';
 import '../../core/theme.dart';
 import '../../models/goal.dart';
 import '../../providers/goal_provider.dart';
+import '../../core/streak_utils.dart';
 import '../../core/haptics.dart';
 import 'habit_management_modal.dart';
 import '../../i18n/translations.g.dart';
@@ -156,59 +157,14 @@ class DayDetailsModal extends ConsumerWidget {
                       final habit = activeHabits[index];
                       final status = dayRecord[habit.id];
 
-                      // Calculate streak
-                      int streak = 0;
-                      DateTime checkDate = date;
-                      final today = DateTime(
-                        DateTime.now().year,
-                        DateTime.now().month,
-                        DateTime.now().day,
+                      // Signed streak via the shared, deterministic helper
+                      // (same logic as cloud + Private Mode + the web app).
+                      final streak = computeStreak(
+                        habitId: habit.id,
+                        date: date,
+                        logs: logs,
+                        startDate: habit.startDate,
                       );
-
-                      bool isNegative = false;
-                      while (true) {
-                        final dk =
-                            '${checkDate.year}-${checkDate.month.toString().padLeft(2, '0')}-${checkDate.day.toString().padLeft(2, '0')}';
-                        final dl = logs[dk] ?? {};
-                        final s = dl[habit.id];
-
-                        if (s == 'done') {
-                          if (isNegative) break;
-                          streak++;
-                        } else if (s == 'missed') {
-                          if (streak > 0) break;
-                          isNegative = true;
-                          streak--;
-                        } else {
-                          if (habit.isActiveOn(checkDate)) {
-                            final checkDateMidnight = DateTime(
-                              checkDate.year,
-                              checkDate.month,
-                              checkDate.day,
-                            );
-                            if (checkDateMidnight.isBefore(today)) {
-                              break;
-                            }
-                          }
-                        }
-
-                        // Condizione di uscita per evitare loop infiniti!
-                        final startMidnight = DateTime(
-                          habit.startDate.year,
-                          habit.startDate.month,
-                          habit.startDate.day,
-                        );
-                        final checkDateMidnight = DateTime(
-                          checkDate.year,
-                          checkDate.month,
-                          checkDate.day,
-                        );
-                        if (checkDateMidnight.isBefore(startMidnight)) {
-                          break;
-                        }
-
-                        checkDate = checkDate.subtract(const Duration(days: 1));
-                      }
 
                       return GoalLogCard(
                         habit: habit,

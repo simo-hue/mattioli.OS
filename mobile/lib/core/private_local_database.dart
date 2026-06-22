@@ -14,14 +14,15 @@ import '../models/macro_goal.dart';
 import '../models/daily_mood.dart';
 import 'app_logger.dart';
 import 'private_analytics.dart';
+import 'private_data_store.dart';
 import 'secure_storage_utils.dart';
 import 'streak_utils.dart';
 
-final privateLocalDatabaseProvider = Provider<PrivateLocalDatabase>((ref) {
+final privateLocalDatabaseProvider = Provider<PrivateDataStore>((ref) {
   return PrivateLocalDatabase();
 });
 
-class PrivateLocalDatabase {
+class PrivateLocalDatabase implements PrivateDataStore {
   PrivateLocalDatabase._();
 
   static final PrivateLocalDatabase _instance = PrivateLocalDatabase._();
@@ -38,6 +39,7 @@ class PrivateLocalDatabase {
   Future<Database>? _opening;
   String? _ownerId;
 
+  @override
   Future<String> ownerId() async {
     final existing =
         _ownerId ?? await SecureStorageUtils.readDeviceLocal(_ownerIdKey);
@@ -56,6 +58,7 @@ class PrivateLocalDatabase {
     return id;
   }
 
+  @override
   Future<void> ensureReady() async {
     final db = await _database();
     await _ensureProfile(db);
@@ -356,6 +359,7 @@ CREATE TABLE macro_goal_categories (
     }, conflictAlgorithm: ConflictAlgorithm.ignore);
   }
 
+  @override
   Future<List<Goal>> loadGoals() async {
     final db = await _database();
     final owner = await ownerId();
@@ -368,6 +372,7 @@ CREATE TABLE macro_goal_categories (
     return rows.map(_goalFromRow).toList();
   }
 
+  @override
   Future<void> upsertGoal(Goal goal) async {
     final db = await _database();
     final owner = await ownerId();
@@ -389,11 +394,13 @@ CREATE TABLE macro_goal_categories (
     }, conflictAlgorithm: ConflictAlgorithm.replace);
   }
 
+  @override
   Future<void> deleteGoal(String id) async {
     final db = await _database();
     await db.delete('goals', where: 'id = ?', whereArgs: [id]);
   }
 
+  @override
   Future<Map<String, Map<String, String>>> loadHabitLogs() async {
     final db = await _database();
     final owner = await ownerId();
@@ -412,6 +419,7 @@ CREATE TABLE macro_goal_categories (
     return result;
   }
 
+  @override
   Future<void> setHabitLog({
     required String goalId,
     required String date,
@@ -480,6 +488,7 @@ CREATE TABLE macro_goal_categories (
     );
   }
 
+  @override
   Future<void> deleteHabitLog({
     required String goalId,
     required String date,
@@ -492,6 +501,7 @@ CREATE TABLE macro_goal_categories (
     );
   }
 
+  @override
   Future<List<MacroGoal>> loadMacroGoals() async {
     final db = await _database();
     final owner = await ownerId();
@@ -504,6 +514,7 @@ CREATE TABLE macro_goal_categories (
     return rows.map(_macroGoalFromRow).toList();
   }
 
+  @override
   Future<void> upsertMacroGoal(MacroGoal goal) async {
     final db = await _database();
     final owner = await ownerId();
@@ -534,11 +545,13 @@ CREATE TABLE macro_goal_categories (
     }, conflictAlgorithm: ConflictAlgorithm.replace);
   }
 
+  @override
   Future<void> deleteMacroGoal(String id) async {
     final db = await _database();
     await db.delete('long_term_goals', where: 'id = ?', whereArgs: [id]);
   }
 
+  @override
   Future<List<GoalCategory>> loadMacroGoalCategories({
     bool includeArchived = false,
   }) async {
@@ -555,6 +568,7 @@ CREATE TABLE macro_goal_categories (
     return rows.map((row) => GoalCategory.fromJson(row)).toList();
   }
 
+  @override
   Future<String> addMacroGoalCategory(String name, String colorHex) async {
     final db = await _database();
     final owner = await ownerId();
@@ -570,6 +584,7 @@ CREATE TABLE macro_goal_categories (
     return id;
   }
 
+  @override
   Future<void> updateMacroGoalCategory(
     String id,
     String name,
@@ -584,6 +599,7 @@ CREATE TABLE macro_goal_categories (
     );
   }
 
+  @override
   Future<void> archiveMacroGoalCategory(String id) async {
     final db = await _database();
     await db.update(
@@ -594,6 +610,7 @@ CREATE TABLE macro_goal_categories (
     );
   }
 
+  @override
   Future<Map<String, DailyMood>> loadDailyMoods() async {
     final db = await _database();
     final owner = await ownerId();
@@ -607,6 +624,7 @@ CREATE TABLE macro_goal_categories (
     };
   }
 
+  @override
   Future<DailyMood> saveMood(DateTime date, int mood, int energy) async {
     final db = await _database();
     final owner = await ownerId();
@@ -638,6 +656,7 @@ CREATE TABLE macro_goal_categories (
     return _dailyMoodFromRow(row);
   }
 
+  @override
   Future<Map<String, dynamic>> loadProfileRow() async {
     final db = await _database();
     final owner = await ownerId();
@@ -654,6 +673,7 @@ CREATE TABLE macro_goal_categories (
     return rows.first;
   }
 
+  @override
   Future<void> updateProfile({
     String? fullName,
     String? avatarUrl,
@@ -671,8 +691,10 @@ CREATE TABLE macro_goal_categories (
     await db.update('profiles', values, where: 'id = ?', whereArgs: [owner]);
   }
 
+  @override
   Future<Map<String, dynamic>> loadSettingsRow() => loadProfileRow();
 
+  @override
   Future<void> updateSettingsRow(Map<String, Object?> values) async {
     final db = await _database();
     final owner = await ownerId();
@@ -684,15 +706,18 @@ CREATE TABLE macro_goal_categories (
     );
   }
 
+  @override
   Future<bool> hasPrivateAiExternalConsent() async {
     final row = await loadProfileRow();
     return row['private_ai_external_consent'] == 1;
   }
 
+  @override
   Future<void> setPrivateAiExternalConsent(bool value) async {
     await updateSettingsRow({'private_ai_external_consent': value ? 1 : 0});
   }
 
+  @override
   Future<Map<String, dynamic>> exportData() async {
     return {
       'exportDate': DateTime.now().toIso8601String(),
@@ -726,6 +751,7 @@ CREATE TABLE macro_goal_categories (
     };
   }
 
+  @override
   Future<void> deleteAllPrivateData() async {
     final db = await _database();
     final profileRow = await loadProfileRow();
@@ -809,6 +835,7 @@ CREATE TABLE macro_goal_categories (
       ];
 
   // Mirrors the cloud `habit_stats` view.
+  @override
   Future<List<Map<String, dynamic>>> habitStats() async {
     final owner = await ownerId();
     final goals = await loadGoals();
@@ -828,6 +855,7 @@ CREATE TABLE macro_goal_categories (
   }
 
   // Mirrors the cloud `get_habit_analytics` RPC (one row per goal).
+  @override
   Future<Map<String, Map<String, dynamic>>> habitAnalytics() async {
     final goals = await loadGoals();
     final byGoal = _groupByGoal(await _loadLogEntries());
@@ -838,11 +866,13 @@ CREATE TABLE macro_goal_categories (
   }
 
   // Mirrors the cloud `get_global_critical_day` RPC.
+  @override
   Future<String> globalCriticalDay() async {
     return computeGlobalCriticalDay(await _loadLogEntries());
   }
 
   // Mirrors the cloud `get_global_trend` RPC.
+  @override
   Future<List<Map<String, dynamic>>> globalTrend(String timeframe) async {
     final goals = await loadGoals();
     final logs = await loadHabitLogs();
@@ -855,6 +885,7 @@ CREATE TABLE macro_goal_categories (
   }
 
   // Mirrors the cloud `get_critical_habits` RPC.
+  @override
   Future<List<Map<String, dynamic>>> criticalHabits() async {
     final goals = await loadGoals();
     final byGoal = _groupByGoal(await _loadLogEntries());
@@ -866,6 +897,7 @@ CREATE TABLE macro_goal_categories (
   }
 
   // Mirrors the cloud `get_best_habits` RPC.
+  @override
   Future<List<Map<String, dynamic>>> bestHabits(String timeframe) async {
     final goals = await loadGoals();
     final byGoal = _groupByGoal(await _loadLogEntries());
@@ -878,6 +910,7 @@ CREATE TABLE macro_goal_categories (
   }
 
   // Mirrors the cloud `get_habit_performance_by_day` RPC (ISODOW day_index).
+  @override
   Future<List<Map<String, dynamic>>> habitPerformanceByDay(
     String goalId,
   ) async {
@@ -885,11 +918,13 @@ CREATE TABLE macro_goal_categories (
   }
 
   // Mirrors the cloud `get_habit_alerts` RPC.
+  @override
   Future<Map<String, dynamic>> habitAlerts(String goalId) async {
     return computeHabitAlerts(await _loadLogEntries(goalId: goalId));
   }
 
   // Mirrors the cloud `get_habit_yearly_grid` RPC (done=1, missed=2, 365 days).
+  @override
   Future<List<int>> habitYearlyGrid(String goalId) async {
     return computeYearlyGrid(
       await _loadLogEntries(goalId: goalId),
@@ -897,6 +932,7 @@ CREATE TABLE macro_goal_categories (
     );
   }
 
+  @override
   Future<List<Map<String, dynamic>>> habitCorrelations(
     String targetGoalId,
   ) async {
@@ -925,6 +961,7 @@ CREATE TABLE macro_goal_categories (
     }).toList();
   }
 
+  @override
   Future<List<Map<String, dynamic>>> allHabitCorrelations() async {
     final goals = await loadGoals();
     final result = <Map<String, dynamic>>[];
@@ -941,6 +978,7 @@ CREATE TABLE macro_goal_categories (
     return result;
   }
 
+  @override
   Future<Map<String, dynamic>> macroGoalsStats(String year) async {
     final goals = await loadMacroGoals();
     final filtered = year == 'all'

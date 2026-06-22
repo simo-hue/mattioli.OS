@@ -7,6 +7,7 @@ import 'package:flutter/services.dart';
 import 'package:purchases_flutter/purchases_flutter.dart';
 import 'package:url_launcher/url_launcher.dart';
 import 'package:intl/intl.dart';
+import '../../core/app_logger.dart';
 import 'dart:ui';
 
 import '../../core/theme.dart';
@@ -97,8 +98,8 @@ class _SubscriptionScreenState extends ConsumerState<SubscriptionScreen> {
           }
         });
       }
-    } catch (e) {
-      debugPrint('Secondary product fetch failed: $e');
+    } catch (e, stack) {
+      AppLogger.error('[Subscription] Secondary product fetch failed', e, stack);
     }
 
     if (mounted) {

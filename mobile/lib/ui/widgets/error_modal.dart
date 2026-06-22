@@ -1,3 +1,4 @@
+import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:lucide_icons_flutter/lucide_icons.dart';
 import 'package:google_fonts/google_fonts.dart';
@@ -123,7 +124,11 @@ class ErrorModal extends ConsumerWidget {
                         height: 1.5,
                       ),
                     ),
-                    if (details != null) ...[
+                    // Raw error text is technical and may leak internals, so
+                    // only ever show it in debug builds. Release users see just
+                    // the title + message; the error is still reported to
+                    // Sentry by the call site's AppLogger.error (SEC-7).
+                    if (kDebugMode && details != null) ...[
                       const SizedBox(height: 24),
                       Container(
                         width: double.infinity,

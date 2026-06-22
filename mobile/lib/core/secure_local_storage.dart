@@ -47,7 +47,6 @@ class SecureLocalStorage extends LocalStorage {
         supabasePersistSessionKey,
         persistSessionString,
         context: 'SecureLocalStorage.persistSession',
-        clearAllOnDuplicateFailure: true,
       );
     } catch (e, stack) {
       AppLogger.error(

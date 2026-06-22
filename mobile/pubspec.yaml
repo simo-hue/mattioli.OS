@@ -66,6 +66,9 @@ dependencies:
   path_provider: ^2.1.6
   path: ^1.9.1
   uuid: ^4.5.3
+  # App version metadata for Sentry release/dist (SEC-3). Already in the tree
+  # transitively via sentry_flutter; pinned here as a direct dependency.
+  package_info_plus: ^9.0.1
 
   # Localization (type-safe, nested, context-free `t`). Replaces the legacy
   # gen_l10n `translate()` shim — see LOCALIZATION_PLAN.md.

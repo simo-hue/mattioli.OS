@@ -10,7 +10,7 @@ import 'dart:async';
 import 'dart:ui';
 import 'core/theme.dart';
 import 'core/supabase_config.dart';
-import 'core/sentry_config.dart';
+import 'core/sentry_service.dart';
 import 'providers/shared_prefs_provider.dart';
 import 'providers/settings_provider.dart';
 import 'providers/auth_provider.dart';
@@ -191,15 +191,13 @@ void main() async {
   await LocaleSettings.setLocale(_appLocaleFor(prefs.getString('pref_language')));
 
   if (hasSentryConsent && !startsInPrivateMode) {
+    final info = await SentryService.releaseInfo();
     await SentryFlutter.init((options) {
-      options.dsn = SentryConfig.dsn;
-      options.environment = SentryConfig.environment;
-      options.tracesSampleRate = SentryConfig.tracesSampleRate;
-      options.reportPackages = true;
-      options.debug = false;
-      options.beforeSend = (event, hint) {
-        return SentryConfig.sanitizeEvent(event);
-      };
+      SentryService.configure(
+        options,
+        release: info.release,
+        dist: info.dist,
+      );
     }, appRunner: startApp);
   } else {
     startApp();

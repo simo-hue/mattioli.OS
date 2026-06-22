@@ -33,8 +33,11 @@ class AppLogger {
     StackTrace? stackTrace,
     Map<String, dynamic>? extras,
   ]) {
-    // Sempre stampa in console durante lo sviluppo
-    debugPrint('${PrivacyUtils.sanitizeString(message)}: $error');
+    // Console output only in debug — never leak raw error text to device logs
+    // in release builds (SEC-8).
+    if (kDebugMode) {
+      debugPrint('${PrivacyUtils.sanitizeString(message)}: $error');
+    }
 
     // In release, invia a Sentry
     if (kReleaseMode && !externalReportingDisabled) {
@@ -60,7 +63,7 @@ class AppLogger {
     Map<String, dynamic>? extras,
   }) {
     final sanitizedMessage = PrivacyUtils.sanitizeString(message);
-    debugPrint('[Info] $sanitizedMessage');
+    if (kDebugMode) debugPrint('[Info] $sanitizedMessage');
 
     if (kReleaseMode && !externalReportingDisabled) {
       Sentry.addBreadcrumb(
@@ -82,7 +85,7 @@ class AppLogger {
     Map<String, dynamic>? extras,
   ]) {
     final sanitizedMessage = PrivacyUtils.sanitizeString(message);
-    debugPrint('[Warning] $sanitizedMessage: $error');
+    if (kDebugMode) debugPrint('[Warning] $sanitizedMessage: $error');
 
     if (kReleaseMode && !externalReportingDisabled) {
       Sentry.captureMessage(

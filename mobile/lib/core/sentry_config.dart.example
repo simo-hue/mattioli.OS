@@ -14,7 +14,7 @@ class SentryConfig {
   static const String environment = 'production';
 
   /// Percentuale di transazioni da campionare per il performance monitoring.
-  /// 1.0 = 100% delle transazioni (consigliato in fase iniziale).
-  /// In produzione con traffico elevato, abbassare a 0.2-0.5.
-  static const double tracesSampleRate = 1.0;
+  /// 1.0 = 100% delle transazioni (utile solo per debug locale).
+  /// In produzione tieni un valore basso per contenere volume e costi: 0.2 = 20%.
+  static const double tracesSampleRate = 0.2;
 }

@@ -37,14 +37,15 @@ class PrivateLocalDatabase {
   String? _ownerId;
 
   Future<String> ownerId() async {
-    final existing = _ownerId ?? await SecureStorageUtils.read(_ownerIdKey);
+    final existing =
+        _ownerId ?? await SecureStorageUtils.readDeviceLocal(_ownerIdKey);
     if (existing != null && existing.isNotEmpty) {
       _ownerId = existing;
       return existing;
     }
 
     final id = _uuid.v4();
-    await SecureStorageUtils.write(
+    await SecureStorageUtils.writeDeviceLocal(
       _ownerIdKey,
       id,
       context: '[PrivateDB] owner id',
@@ -94,13 +95,13 @@ class PrivateLocalDatabase {
   }
 
   Future<String> _databasePassword() async {
-    final existing = await SecureStorageUtils.read(_dbPasswordKey);
+    final existing = await SecureStorageUtils.readDeviceLocal(_dbPasswordKey);
     if (existing != null && existing.length >= 32) return existing;
 
     final random = Random.secure();
     final bytes = List<int>.generate(48, (_) => random.nextInt(256));
     final password = base64UrlEncode(bytes);
-    await SecureStorageUtils.write(
+    await SecureStorageUtils.writeDeviceLocal(
       _dbPasswordKey,
       password,
       context: '[PrivateDB] password',

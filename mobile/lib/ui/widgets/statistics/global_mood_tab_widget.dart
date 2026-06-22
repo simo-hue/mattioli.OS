@@ -303,7 +303,7 @@ class _GlobalMoodTabWidgetState extends ConsumerState<GlobalMoodTabWidget> {
                     leftTitles: AxisTitles(
                       sideTitles: SideTitles(
                         showTitles: true,
-                        interval: 20,
+                        interval: 2,
                         getTitlesWidget: (value, meta) {
                           return Text(
                             '${value.toInt()}',
@@ -322,7 +322,7 @@ class _GlobalMoodTabWidgetState extends ConsumerState<GlobalMoodTabWidget> {
                   minX: chartWindow.minX,
                   maxX: chartWindow.maxX,
                   minY: 0,
-                  maxY: 100,
+                  maxY: 10,
                   lineBarsData: [
                     LineChartBarData(
                       spots: moodSpots,

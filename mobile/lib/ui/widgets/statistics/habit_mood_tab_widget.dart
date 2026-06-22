@@ -75,13 +75,13 @@ class _TopMetricsGrid extends StatelessWidget {
           title: context.t.statistics.avgMood,
           value: correlation.avgMoodDone.toStringAsFixed(1),
           subtitle: context.t.statistics.onCompletedDays,
-          isRed: correlation.avgMoodDone < 40,
+          isRed: correlation.avgMoodDone < 4,
         ),
         _MetricCard(
           title: context.t.statistics.avgEnergy,
           value: correlation.avgEnergyDone.toStringAsFixed(1),
           subtitle: context.t.statistics.onCompletedDays,
-          isRed: correlation.avgEnergyDone < 40,
+          isRed: correlation.avgEnergyDone < 4,
         ),
       ],
     );
@@ -221,8 +221,8 @@ class _CompletatoVsMancatoCard extends StatelessWidget {
                 Column(
                   mainAxisAlignment: MainAxisAlignment.spaceBetween,
                   children: [
-                    Text('100', style: TextStyle(fontSize: 10, color: context.appColors.mutedForeground)),
-                    Text('50', style: TextStyle(fontSize: 10, color: context.appColors.mutedForeground)),
+                    Text('10', style: TextStyle(fontSize: 10, color: context.appColors.mutedForeground)),
+                    Text('5', style: TextStyle(fontSize: 10, color: context.appColors.mutedForeground)),
                     Text('0', style: TextStyle(fontSize: 10, color: context.appColors.mutedForeground)),
                   ],
                 ),
@@ -275,9 +275,9 @@ class _CompletatoVsMancatoCard extends StatelessWidget {
   }
 
   Widget _buildBarGroup(BuildContext context, String label, double moodValue, double energiaValue) {
-    // max is 100
-    final double moodPct = moodValue / 100.0;
-    final double energiaPct = energiaValue / 100.0;
+    // Mood/energy averages are on a 0–10 scale.
+    final double moodPct = moodValue / 10.0;
+    final double energiaPct = energiaValue / 10.0;
 
     return Column(
       mainAxisAlignment: MainAxisAlignment.end,

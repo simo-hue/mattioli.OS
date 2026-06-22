@@ -160,8 +160,12 @@ final moodCorrelationProvider = Provider<List<MoodCorrelation>>((ref) {
   logs.forEach((dateStr, habits) {
     if (moods.containsKey(dateStr)) {
       final mood = moods[dateStr]!;
-      final isHighMood = mood.moodScore >= 60;
-      final isLowMood = mood.moodScore < 40;
+      // Mood/energy are stored on a 0–10 scale (see the daily check-in slider
+      // min:0/max:10 and the daily_moods CHECK). High = upper band (>= 6),
+      // low = lower band (< 4), 4–5 is neutral — the 0–10 analogue of the
+      // legacy 60/40 split this code used when the scale was 0–100.
+      final isHighMood = mood.moodScore >= 6;
+      final isLowMood = mood.moodScore < 4;
 
       habits.forEach((goalId, status) {
         if (!habitCorrelations.containsKey(goalId)) {

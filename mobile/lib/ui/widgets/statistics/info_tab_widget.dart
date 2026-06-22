@@ -2,9 +2,10 @@ import 'package:flutter/material.dart';
 import 'package:lucide_icons_flutter/lucide_icons.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../../core/theme.dart';
-import '../../../core/localization.dart';
 import '../../../providers/goal_provider.dart';
 import '../../../models/goal.dart';
+import '../../../i18n/translations.g.dart';
+import '../../../core/l10n_dynamic.dart';
 
 class InfoTabWidget extends ConsumerWidget {
   const InfoTabWidget({super.key});
@@ -94,7 +95,7 @@ class InfoTabWidget extends ConsumerWidget {
           loading: () => const Center(child: CircularProgressIndicator()),
           error: (err, stack) => Center(
             child: Text(
-              '${context.l10n.translate('Errore')}: $err',
+              '${context.t.common.status.error}: $err',
               style: TextStyle(color: context.appColors.mutedForeground),
             ),
           ),
@@ -103,7 +104,7 @@ class InfoTabWidget extends ConsumerWidget {
       loading: () => const Center(child: CircularProgressIndicator()),
       error: (err, stack) => Center(
         child: Text(
-          '${context.l10n.translate('Errore')}: $err',
+          '${context.t.common.status.error}: $err',
           style: TextStyle(color: context.appColors.mutedForeground),
         ),
       ),
@@ -131,7 +132,7 @@ class InfoTabWidget extends ConsumerWidget {
           ),
           const SizedBox(height: 24),
           Text(
-            context.l10n.statsCollectingFirstData,
+            context.t.statistics.statsCollectingFirstData,
             style: TextStyle(
               fontFamily: 'Inter',
               fontSize: 20,
@@ -184,30 +185,30 @@ class _TopStatsGrid extends StatelessWidget {
       children: [
         _StatCard(
           icon: LucideIcons.target,
-          title: context.l10n.translate('Completamento'),
+          title: context.t.statistics.completion,
           value: completion,
-          subtitle: context.l10n.translate('Globale'),
+          subtitle: context.t.statistics.globalTxt,
           accentColor: Theme.of(context).colorScheme.primary,
         ),
         _StatCard(
           icon: LucideIcons.flame,
-          title: context.l10n.translate('Miglior Serie'),
+          title: context.t.statistics.bestStreak,
           value: bestStreak,
-          subtitle: context.l10n.translate('Giorni'),
+          subtitle: context.t.statistics.days,
           accentColor: Theme.of(context).colorScheme.primary,
         ),
         _StatCard(
           icon: LucideIcons.trophy,
-          title: context.l10n.translate('Top Performer'),
+          title: context.t.statistics.topPerformer,
           value: topPerformer,
-          subtitle: '$topPerformerRate ${context.l10n.translate('Rate')}',
+          subtitle: '$topPerformerRate ${context.t.statistics.rate}',
           accentColor: Theme.of(context).colorScheme.primary,
         ),
         _StatCard(
           icon: LucideIcons.triangleAlert,
-          title: context.l10n.translate('Giorno Critico'),
-          value: context.l10n.translate(criticalDay),
-          subtitle: context.l10n.translate('Focus richiesto'),
+          title: context.t.statistics.criticalDay,
+          value: tWeekday(context, criticalDay),
+          subtitle: context.t.statistics.focusRequired,
           accentColor: const Color(0xFFEF4444),
         ),
       ],
@@ -378,7 +379,7 @@ class _TopHabitCorrelationsSectionState
                 ),
                 const SizedBox(width: 8),
                 Text(
-                  context.l10n.translate('Abitudini Chiave'),
+                  context.t.statistics.keyHabits,
                   style: TextStyle(
                     fontFamily: 'Inter',
                     fontSize: 14,
@@ -390,9 +391,7 @@ class _TopHabitCorrelationsSectionState
             ),
             const SizedBox(height: 4),
             Text(
-              context.l10n.translate(
-                'Abitudini che influenzano positivamente molte altre',
-              ),
+              context.t.statistics.habitsThatPositivelyInfluenceManyOthers,
               style: TextStyle(
                 fontFamily: 'Inter',
                 fontSize: 11,
@@ -455,7 +454,7 @@ class _TopHabitCorrelationsSectionState
       loading: () => const Center(child: CircularProgressIndicator()),
       error: (err, stack) => Center(
         child: Text(
-          '${context.l10n.translate('Errore')}: $err',
+          '${context.t.common.status.error}: $err',
           style: TextStyle(color: context.appColors.mutedForeground),
         ),
       ),
@@ -617,7 +616,7 @@ class _AbitudineChiaveCard extends StatelessWidget {
                   borderRadius: BorderRadius.circular(8),
                 ),
                 child: Text(
-                  context.l10n.translate('Alto Impatto'),
+                  context.t.statistics.highImpact,
                   style: TextStyle(
                     fontFamily: 'Inter',
                     fontSize: 10,
@@ -628,7 +627,7 @@ class _AbitudineChiaveCard extends StatelessWidget {
               ),
               const SizedBox(width: 10),
               Text(
-                '${correlations.length + extraConnections} ${context.l10n.translate('connessioni')}',
+                '${correlations.length + extraConnections} ${context.t.statistics.connections}',
                 style: TextStyle(
                   fontFamily: 'Inter',
                   fontSize: 11,
@@ -672,7 +671,7 @@ class _AbitudineChiaveCard extends StatelessWidget {
           const SizedBox(height: 8),
           Center(
             child: Text(
-              context.l10n.additionalConnections(extraConnections),
+              context.t.statistics.additionalConnections(count: extraConnections),
               style: TextStyle(
                 fontFamily: 'Inter',
                 fontSize: 10,
@@ -696,7 +695,7 @@ class _AbitudineChiaveCard extends StatelessWidget {
                   ),
                   const SizedBox(width: 6),
                   Text(
-                    context.l10n.translate('Media Impatto'),
+                    context.t.statistics.avgImpact,
                     style: TextStyle(
                       fontFamily: 'Inter',
                       fontSize: 12,
@@ -803,8 +802,8 @@ class _CorrelationsSectionState extends ConsumerState<_CorrelationsSection> {
 
           return _CorrelazioneDetailCard(
             tag: widget.isPositive
-                ? context.l10n.positiveCorrelation
-                : context.l10n.negativeCorrelation,
+                ? context.t.statistics.positiveCorrelation
+                : context.t.statistics.negativeCorrelation,
             tagColor: widget.isPositive
                 ? const Color(0xFF10B981)
                 : const Color(0xFFEF4444),
@@ -816,16 +815,8 @@ class _CorrelationsSectionState extends ConsumerState<_CorrelationsSection> {
             cooccorrenza: '$percentage%',
             giorni: '$togetherCount',
             desc: widget.isPositive
-                ? context.l10n.habitPositiveCorrelationDescription(
-                    currentGoal.title,
-                    percentage,
-                    otherGoal.title,
-                  )
-                : context.l10n.habitNegativeCorrelationDescription(
-                    currentGoal.title,
-                    percentage,
-                    otherGoal.title,
-                  ),
+                ? context.t.statistics.habitPositiveCorrelationDescription(currentGoal: currentGoal.title, percentage: percentage, otherGoal: otherGoal.title)
+                : context.t.statistics.habitNegativeCorrelationDescription(currentGoal: currentGoal.title, percentage: percentage, otherGoal: otherGoal.title),
           );
         }).toList();
 
@@ -846,8 +837,8 @@ class _CorrelationsSectionState extends ConsumerState<_CorrelationsSection> {
                 const SizedBox(width: 8),
                 Text(
                   widget.isPositive
-                      ? context.l10n.translate('Correlazioni Positive')
-                      : context.l10n.translate('Correlazioni Negative'),
+                      ? context.t.statistics.positiveCorrelations
+                      : context.t.statistics.negativeCorrelations,
                   style: TextStyle(
                     fontFamily: 'Inter',
                     fontSize: 14,
@@ -860,10 +851,8 @@ class _CorrelationsSectionState extends ConsumerState<_CorrelationsSection> {
             const SizedBox(height: 4),
             Text(
               widget.isPositive
-                  ? context.l10n.translate('Abitudini che tendi a fare insieme')
-                  : context.l10n.translate(
-                      'Abitudini che tendi a non fare insieme',
-                    ),
+                  ? context.t.statistics.habitsDoneTogether
+                  : context.t.statistics.habitsNotDoneTogether,
               style: TextStyle(
                 fontFamily: 'Inter',
                 fontSize: 11,
@@ -924,7 +913,7 @@ class _CorrelationsSectionState extends ConsumerState<_CorrelationsSection> {
       loading: () => const Center(child: CircularProgressIndicator()),
       error: (err, stack) => Center(
         child: Text(
-          '${context.l10n.translate('Errore')}: $err',
+          '${context.t.common.status.error}: $err',
           style: TextStyle(color: context.appColors.mutedForeground),
         ),
       ),
@@ -1072,7 +1061,7 @@ class _CorrelazioneDetailCard extends StatelessWidget {
             children: [
               Expanded(
                 child: _DetailBox(
-                  title: context.l10n.translate('Coefficiente'),
+                  title: context.t.statistics.coefficient,
                   value: coef,
                   valueColor: tagColor,
                 ),
@@ -1080,14 +1069,14 @@ class _CorrelazioneDetailCard extends StatelessWidget {
               const SizedBox(width: 8),
               Expanded(
                 child: _DetailBox(
-                  title: context.l10n.translate('Co-occorrenza'),
+                  title: context.t.statistics.coOccurrence,
                   value: cooccorrenza,
                 ),
               ),
               const SizedBox(width: 8),
               Expanded(
                 child: _DetailBox(
-                  title: context.l10n.translate('Giorni'),
+                  title: context.t.statistics.days,
                   value: giorni,
                 ),
               ),
@@ -1203,7 +1192,7 @@ class _AttivitaRecenteSection extends ConsumerWidget {
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
                       Text(
-                        context.l10n.translate('Attività Recente'),
+                        context.t.statistics.recentActivity,
                         style: TextStyle(
                           fontFamily: 'Inter',
                           fontSize: 16,
@@ -1213,9 +1202,7 @@ class _AttivitaRecenteSection extends ConsumerWidget {
                         ),
                       ),
                       Text(
-                        context.l10n.translate(
-                          'La tua costanza negli ultimi mesi',
-                        ),
+                        context.t.statistics.consistencyRecentMonths,
                         style: TextStyle(
                           fontFamily: 'Inter',
                           fontSize: 11,
@@ -1240,7 +1227,7 @@ class _AttivitaRecenteSection extends ConsumerWidget {
             mainAxisAlignment: MainAxisAlignment.end,
             children: [
               Text(
-                context.l10n.translate('Meno'),
+                context.t.statistics.less,
                 style: TextStyle(
                   fontFamily: 'Inter',
                   fontSize: 10,
@@ -1260,7 +1247,7 @@ class _AttivitaRecenteSection extends ConsumerWidget {
               _buildDot(context, 4, accentColor),
               const SizedBox(width: 8),
               Text(
-                context.l10n.translate('Più'),
+                context.t.statistics.more,
                 style: TextStyle(
                   fontFamily: 'Inter',
                   fontSize: 10,

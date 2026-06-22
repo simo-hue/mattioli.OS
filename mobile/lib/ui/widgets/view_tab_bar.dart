@@ -3,7 +3,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../core/theme.dart';
 import '../../providers/goal_provider.dart';
 import '../../core/haptics.dart';
-import '../../core/localization.dart';
+import '../../i18n/translations.g.dart';
 
 class ViewTabBar extends ConsumerWidget {
   const ViewTabBar({super.key});
@@ -13,10 +13,10 @@ class ViewTabBar extends ConsumerWidget {
     final currentView = ref.watch(calendarViewProvider);
 
     final tabs = [
-      _TabItem(view: CalendarView.month, label: context.l10n.translate('Mese')),
-      _TabItem(view: CalendarView.week, label: context.l10n.translate('Settimana')),
-      _TabItem(view: CalendarView.year, label: context.l10n.translate('Anno')),
-      _TabItem(view: CalendarView.vita, label: context.l10n.translate('Vita')),
+      _TabItem(view: CalendarView.month, label: context.t.common.calendarView.month),
+      _TabItem(view: CalendarView.week, label: context.t.common.calendarView.week),
+      _TabItem(view: CalendarView.year, label: context.t.common.calendarView.year),
+      _TabItem(view: CalendarView.vita, label: context.t.common.calendarView.life),
     ];
 
     return Container(

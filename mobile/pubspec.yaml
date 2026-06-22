@@ -16,7 +16,7 @@ publish_to: 'none' # Remove this line if you wish to publish to pub.dev
 # https://developer.apple.com/library/archive/documentation/General/Reference/InfoPlistKeyReference/Articles/CoreFoundationKeys.html
 # In Windows, build-name is used as the major, minor, and patch parts
 # of the product and file versions while build-number is used as the build suffix.
-version: 1.0.4+8
+version: 1.0.5+9
 
 environment:
   sdk: ^3.11.5
@@ -67,9 +67,19 @@ dependencies:
   path: ^1.9.1
   uuid: ^4.5.3
 
+  # Localization (type-safe, nested, context-free `t`). Replaces the legacy
+  # gen_l10n `translate()` shim — see LOCALIZATION_PLAN.md.
+  # NOTE: version ranges were not resolvable offline; run `flutter pub get`
+  # (or `flutter pub add slang slang_flutter dev:slang_build_runner`) to pin
+  # the current compatible versions.
+  slang: ^4.0.0
+  slang_flutter: ^4.0.0
+
 dev_dependencies:
   flutter_test:
     sdk: flutter
+
+  slang_build_runner: ^4.0.0
 
   # The "flutter_lints" package below contains a set of recommended lints to
   # encourage good coding practices. The lint set provided by the package is
@@ -87,7 +97,6 @@ dependency_overrides:
 
 # The following section is specific to Flutter packages.
 flutter:
-  generate: true
 
   # The following line ensures that the Material Icons font is
   # included with your application, so that you can use the icons in

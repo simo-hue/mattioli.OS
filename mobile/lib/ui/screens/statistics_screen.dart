@@ -10,7 +10,6 @@ import '../../models/goal.dart';
 import '../../providers/goal_provider.dart';
 import '../../providers/settings_provider.dart';
 import '../../core/haptics.dart';
-import '../../core/localization.dart';
 import '../widgets/pro_features_modal.dart';
 import '../widgets/statistics/info_tab_widget.dart';
 import '../widgets/statistics/global_trend_tab_widget.dart';
@@ -22,6 +21,8 @@ import '../widgets/statistics/habit_mood_tab_widget.dart';
 import '../widgets/statistics/global_alerts_tab_widget.dart';
 import '../widgets/statistics/global_habits_tab_widget.dart';
 import '../widgets/statistics/global_mood_tab_widget.dart';
+import '../../i18n/translations.g.dart';
+import '../../core/l10n_dynamic.dart';
 
 class StatisticsScreen extends ConsumerStatefulWidget {
   final bool isActive;
@@ -92,17 +93,13 @@ class _StatisticsScreenState extends ConsumerState<StatisticsScreen>
     return [
       _StatsTutorialStep(
         targetKey: _goalDropdownKey,
-        title: context.l10n.translate("Filtra per Abitudine"),
-        description: context.l10n.translate(
-          "Da qui puoi selezionare una specifica abitudine per vederne i dettagli, oppure 'Tutti gli Habits' per una panoramica globale.",
-        ),
+        title: context.t.tutorial.filterByHabit,
+        description: context.t.tutorial.filterHabitDesc,
       ),
       _StatsTutorialStep(
         targetKey: _tabsKey,
-        title: context.l10n.translate("Sezioni Statistiche"),
-        description: context.l10n.translate(
-          "Naviga tra le varie schede per vedere i Trend, gli Alert sulle performance, l'andamento delle Abitudini e il tuo Mood.",
-        ),
+        title: context.t.tutorial.statisticsSections,
+        description: context.t.tutorial.statsSectionsDesc,
       ),
     ];
   }
@@ -355,7 +352,7 @@ class _StatisticsScreenState extends ConsumerState<StatisticsScreen>
                           onPreviousPressed();
                         },
                         child: Text(
-                          context.l10n.translate("Indietro"),
+                          context.t.tutorial.back,
                           style: TextStyle(
                             color: Theme.of(
                               context,
@@ -387,8 +384,8 @@ class _StatisticsScreenState extends ConsumerState<StatisticsScreen>
                       ),
                       child: Text(
                         isLast
-                            ? context.l10n.translate("Fine")
-                            : context.l10n.translate("Avanti"),
+                            ? context.t.tutorial.finish
+                            : context.t.tutorial.next,
                         style: const TextStyle(fontWeight: FontWeight.bold),
                       ),
                     ),
@@ -473,7 +470,7 @@ class _StatisticsScreenState extends ConsumerState<StatisticsScreen>
                         children: [
                           const SizedBox(height: 12),
                           Text(
-                            context.l10n.translate('Statistiche'),
+                            context.t.statistics.statistics,
                             style: TextStyle(
                               fontFamily: 'Inter',
                               fontSize: 32,
@@ -485,7 +482,7 @@ class _StatisticsScreenState extends ConsumerState<StatisticsScreen>
                           ),
                           const SizedBox(height: 6),
                           Text(
-                            context.l10n.translate('Panoramica Statistiche'),
+                            context.t.statistics.statisticsOverview,
                             style: TextStyle(
                               fontFamily: 'Inter',
                               fontSize: 14,
@@ -527,7 +524,7 @@ class _StatisticsScreenState extends ConsumerState<StatisticsScreen>
   }
 
   Widget _buildGoalDropdown(List<Goal> goals) {
-    String displayTitle = context.l10n.translate('Tutti gli Habits');
+    String displayTitle = context.t.statistics.allHabits;
     Color displayColor = context.appColors.foreground;
 
     if (_selectedGoalId != null) {
@@ -646,7 +643,7 @@ class _StatisticsScreenState extends ConsumerState<StatisticsScreen>
                 ),
                 alignment: Alignment.center,
                 child: Text(
-                  context.l10n.translate(tab),
+                  tStatTab(context, tab),
                   style: TextStyle(
                     fontFamily: 'Inter',
                     fontSize: 11,
@@ -684,7 +681,7 @@ class _StatisticsScreenState extends ConsumerState<StatisticsScreen>
           return Center(
             key: ValueKey(_selectedTab),
             child: Text(
-              '${context.l10n.translate(_selectedTab)} - ${context.l10n.translate('Coming Soon')}',
+              '${tStatTab(context, _selectedTab)} - ${context.t.statistics.comingSoon}',
               style: TextStyle(color: context.appColors.mutedForeground),
             ),
           );
@@ -720,7 +717,7 @@ class _StatisticsScreenState extends ConsumerState<StatisticsScreen>
           return Center(
             key: ValueKey('$_selectedTab$_selectedGoalId'),
             child: Text(
-              '${context.l10n.translate(_selectedTab)} - ${context.l10n.translate('Coming Soon')}',
+              '${tStatTab(context, _selectedTab)} - ${context.t.statistics.comingSoon}',
               style: TextStyle(color: context.appColors.mutedForeground),
             ),
           );
@@ -747,7 +744,7 @@ class _StatisticsScreenState extends ConsumerState<StatisticsScreen>
               mainAxisSize: MainAxisSize.min,
               children: [
                 Text(
-                  context.l10n.translate('SELEZIONA HABIT'),
+                  context.t.statistics.selectHabit,
                   style: TextStyle(
                     fontFamily: 'Inter',
                     fontSize: 10,
@@ -773,7 +770,7 @@ class _StatisticsScreenState extends ConsumerState<StatisticsScreen>
                     ),
                   ),
                   title: Text(
-                    context.l10n.translate('Tutti gli Habits'),
+                    context.t.statistics.allHabits,
                     style: TextStyle(
                       fontFamily: 'Inter',
                       fontSize: 16,

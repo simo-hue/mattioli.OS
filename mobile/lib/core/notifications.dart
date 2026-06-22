@@ -1,5 +1,3 @@
-import 'dart:ui' as ui;
-
 import 'package:flutter/material.dart';
 import 'package:flutter_local_notifications/flutter_local_notifications.dart';
 import 'package:timezone/timezone.dart' as tz;
@@ -7,7 +5,7 @@ import 'package:timezone/data/latest.dart' as tz;
 import 'package:flutter_timezone/flutter_timezone.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 import 'package:shared_preferences/shared_preferences.dart';
-import '../l10n/generated/app_localizations.dart';
+import '../i18n/translations.g.dart';
 import 'data_mode.dart';
 import 'private_local_database.dart';
 import 'supabase_config.dart';
@@ -20,15 +18,6 @@ class NotificationService {
 
   final FlutterLocalNotificationsPlugin _notifications =
       FlutterLocalNotificationsPlugin();
-
-  AppLocalizations get _l10n {
-    final locale = ui.PlatformDispatcher.instance.locale;
-    try {
-      return lookupAppLocalizations(locale);
-    } catch (_) {
-      return lookupAppLocalizations(const ui.Locale('en'));
-    }
-  }
 
   Future<void> init() async {
     try {
@@ -54,22 +43,21 @@ class NotificationService {
           AndroidInitializationSettings('@mipmap/ic_launcher');
 
       // Define iOS category with actions
-      final l10n = _l10n;
       final List<DarwinNotificationCategory> darwinCategories = [
         DarwinNotificationCategory(
           'habit_actions',
           actions: <DarwinNotificationAction>[
             DarwinNotificationAction.plain(
               'action_done',
-              l10n.notificationActionDone,
+              t.notifications.actionDone,
             ),
             DarwinNotificationAction.plain(
               'action_snooze',
-              l10n.notificationActionSnooze,
+              t.notifications.actionSnooze,
             ),
             DarwinNotificationAction.plain(
               'action_skip',
-              l10n.notificationActionSkip,
+              t.notifications.actionSkip,
             ),
           ],
           options: <DarwinNotificationCategoryOption>{
@@ -160,22 +148,21 @@ class NotificationService {
   Future<void> _snoozeHabit(String habitId, String title) async {
     final now = DateTime.now();
     final scheduledDate = now.add(const Duration(minutes: 10));
-    final l10n = _l10n;
 
     final AndroidNotificationDetails
     androidDetails = AndroidNotificationDetails(
       'habit_reminders',
-      l10n.notificationHabitChannelName,
-      channelDescription: l10n.notificationHabitChannelDescription,
+      t.notifications.habitChannelName,
+      channelDescription: t.notifications.habitChannelDescription,
       importance: Importance.max,
       priority: Priority.high,
       actions: <AndroidNotificationAction>[
-        AndroidNotificationAction('action_done', l10n.notificationActionDone),
+        AndroidNotificationAction('action_done', t.notifications.actionDone),
         AndroidNotificationAction(
           'action_snooze',
-          l10n.notificationActionSnooze,
+          t.notifications.actionSnooze,
         ),
-        AndroidNotificationAction('action_skip', l10n.notificationActionSkip),
+        AndroidNotificationAction('action_skip', t.notifications.actionSkip),
       ],
     );
 
@@ -187,7 +174,7 @@ class NotificationService {
     await _notifications.zonedSchedule(
       id: habitId.hashCode + 1000,
       title: 'Evolve • $title',
-      body: _getHabitMessage(title, l10n),
+      body: _getHabitMessage(title),
       scheduledDate: tz.TZDateTime.from(scheduledDate, tz.local),
       notificationDetails: platformDetails,
       androidScheduleMode: AndroidScheduleMode.exactAllowWhileIdle,
@@ -245,13 +232,12 @@ class NotificationService {
     final parts = timeStr.split(':');
     final hour = int.parse(parts[0]);
     final minute = int.parse(parts[1]);
-    final l10n = _l10n;
 
     final AndroidNotificationDetails androidDetails =
         AndroidNotificationDetails(
           'habit_reminders',
-          l10n.notificationHabitChannelName,
-          channelDescription: l10n.notificationDailyHabitChannelDescription,
+          t.notifications.habitChannelName,
+          channelDescription: t.notifications.dailyHabitChannelDescription,
           importance: Importance.max,
           priority: Priority.high,
         );
@@ -263,8 +249,8 @@ class NotificationService {
 
     await _notifications.zonedSchedule(
       id: 0,
-      title: 'Evolve • ${l10n.morningBrief}',
-      body: l10n.notificationMorningBriefBody,
+      title: 'Evolve • ${t.notifications.morningBrief}',
+      body: t.notifications.morningBriefBody,
       scheduledDate: _nextInstanceOfTime(hour, minute),
       notificationDetails: platformDetails,
       androidScheduleMode: AndroidScheduleMode.exactAllowWhileIdle,
@@ -276,12 +262,11 @@ class NotificationService {
     final parts = timeStr.split(':');
     final hour = int.parse(parts[0]);
     final minute = int.parse(parts[1]);
-    final l10n = _l10n;
 
     final NotificationDetails platformDetails = NotificationDetails(
       android: AndroidNotificationDetails(
         'system_reviews',
-        l10n.notificationSystemReviewsChannelName,
+        t.notifications.systemReviewsChannelName,
         importance: Importance.low,
       ),
       iOS: const DarwinNotificationDetails(),
@@ -289,8 +274,8 @@ class NotificationService {
 
     await _notifications.zonedSchedule(
       id: 1,
-      title: 'Evolve • ${l10n.reviewSerale}',
-      body: l10n.notificationEveningReviewBody,
+      title: 'Evolve • ${t.notifications.eveningReview}',
+      body: t.notifications.eveningReviewBody,
       scheduledDate: _nextInstanceOfTime(hour, minute),
       notificationDetails: platformDetails,
       androidScheduleMode: AndroidScheduleMode.exactAllowWhileIdle,
@@ -308,22 +293,21 @@ class NotificationService {
     final parts = reminderTime.split(':');
     final hour = int.parse(parts[0]);
     final minute = int.parse(parts[1]);
-    final l10n = _l10n;
 
     final AndroidNotificationDetails
     androidDetails = AndroidNotificationDetails(
       'habit_reminders',
-      l10n.notificationHabitChannelName,
-      channelDescription: l10n.notificationSpecificHabitChannelDescription,
+      t.notifications.habitChannelName,
+      channelDescription: t.notifications.specificHabitChannelDescription,
       importance: Importance.max,
       priority: Priority.high,
       actions: <AndroidNotificationAction>[
-        AndroidNotificationAction('action_done', l10n.notificationActionDone),
+        AndroidNotificationAction('action_done', t.notifications.actionDone),
         AndroidNotificationAction(
           'action_snooze',
-          l10n.notificationActionSnooze,
+          t.notifications.actionSnooze,
         ),
-        AndroidNotificationAction('action_skip', l10n.notificationActionSkip),
+        AndroidNotificationAction('action_skip', t.notifications.actionSkip),
       ],
     );
 
@@ -337,7 +321,7 @@ class NotificationService {
     await _notifications.zonedSchedule(
       id: notificationId,
       title: 'Evolve • $title',
-      body: _getHabitMessage(title, l10n),
+      body: _getHabitMessage(title),
       scheduledDate: _nextInstanceOfTime(hour, minute),
       notificationDetails: platformDetails,
       androidScheduleMode: AndroidScheduleMode.exactAllowWhileIdle,
@@ -354,23 +338,23 @@ class NotificationService {
     await _notifications.cancelAll();
   }
 
-  String _getHabitMessage(String title, AppLocalizations l10n) {
+  String _getHabitMessage(String title) {
     final messages = [
-      l10n.habitReminderMessage1(title),
-      l10n.habitReminderMessage2(title),
-      l10n.habitReminderMessage3(title),
-      l10n.habitReminderMessage4(title),
-      l10n.habitReminderMessage5(title),
-      l10n.habitReminderMessage6(title),
-      l10n.habitReminderMessage7(title),
-      l10n.habitReminderMessage8(title),
-      l10n.habitReminderMessage9(title),
-      l10n.habitReminderMessage10(title),
-      l10n.habitReminderMessage11(title),
-      l10n.habitReminderMessage12(title),
-      l10n.habitReminderMessage13(title),
-      l10n.habitReminderMessage14(title),
-      l10n.habitReminderMessage15(title),
+      t.notifications.habitReminderMessage1(title: title),
+      t.notifications.habitReminderMessage2(title: title),
+      t.notifications.habitReminderMessage3(title: title),
+      t.notifications.habitReminderMessage4(title: title),
+      t.notifications.habitReminderMessage5(title: title),
+      t.notifications.habitReminderMessage6(title: title),
+      t.notifications.habitReminderMessage7(title: title),
+      t.notifications.habitReminderMessage8(title: title),
+      t.notifications.habitReminderMessage9(title: title),
+      t.notifications.habitReminderMessage10(title: title),
+      t.notifications.habitReminderMessage11(title: title),
+      t.notifications.habitReminderMessage12(title: title),
+      t.notifications.habitReminderMessage13(title: title),
+      t.notifications.habitReminderMessage14(title: title),
+      t.notifications.habitReminderMessage15(title: title),
     ];
 
     final index =

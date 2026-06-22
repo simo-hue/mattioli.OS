@@ -16,7 +16,7 @@ import '../../../providers/macro_goals_provider.dart';
 import '../../../providers/macro_goals_stats_provider.dart';
 import '../../../providers/macro_goal_categories_provider.dart';
 import '../pro_features_modal.dart';
-import '../../../core/localization.dart';
+import '../../../i18n/translations.g.dart';
 
 class MacroGoalsStatsView extends ConsumerStatefulWidget {
   const MacroGoalsStatsView({super.key});
@@ -32,15 +32,15 @@ class _MacroGoalsStatsViewState extends ConsumerState<MacroGoalsStatsView> {
   String _goalTypeLabel(String type) {
     switch (type) {
       case 'lifetime':
-        return context.l10n.goalTypeLifetime;
+        return context.t.macroGoals.types.lifetime;
       case 'annual':
-        return context.l10n.goalTypeAnnual;
+        return context.t.macroGoals.types.annual;
       case 'quarterly':
-        return context.l10n.goalTypeQuarterly;
+        return context.t.macroGoals.types.quarterly;
       case 'monthly':
-        return context.l10n.goalTypeMonthly;
+        return context.t.macroGoals.types.monthly;
       case 'weekly':
-        return context.l10n.goalTypeWeekly;
+        return context.t.macroGoals.types.weekly;
       default:
         return 'N/A';
     }
@@ -49,8 +49,8 @@ class _MacroGoalsStatsViewState extends ConsumerState<MacroGoalsStatsView> {
   String _monthLabel(int month, {bool abbreviated = false}) {
     if (month < 1 || month > 12) return '';
     final formatter = abbreviated
-        ? DateFormat.MMM(context.l10n.localeName)
-        : DateFormat.MMMM(context.l10n.localeName);
+        ? DateFormat.MMM(LocaleSettings.currentLocale.languageCode)
+        : DateFormat.MMMM(LocaleSettings.currentLocale.languageCode);
     return formatter.format(DateTime(2000, month));
   }
 
@@ -119,7 +119,7 @@ class _MacroGoalsStatsViewState extends ConsumerState<MacroGoalsStatsView> {
         height: 300,
         child: Center(
           child: Text(
-            '${context.l10n.translate('Errore')}: $err',
+            '${context.t.common.status.error}: $err',
             style: TextStyle(color: context.appColors.mutedForeground),
           ),
         ),
@@ -160,10 +160,10 @@ class _MacroGoalsStatsViewState extends ConsumerState<MacroGoalsStatsView> {
         children: [
           Expanded(
             child: _buildHighlightCard(
-              title: context.l10n.translate('Punto di Forza'),
+              title: context.t.macroGoals.strength,
               value: bestCategory,
               subtitle:
-                  '$bestCatRate% ${context.l10n.translate('di completamento')}',
+                  '$bestCatRate% ${context.t.common.ofCompletion}',
               icon: LucideIcons.zap,
               color: const Color(0xFFA855F7),
             ),
@@ -171,12 +171,12 @@ class _MacroGoalsStatsViewState extends ConsumerState<MacroGoalsStatsView> {
           const SizedBox(width: 12),
           Expanded(
             child: _buildHighlightCard(
-              title: context.l10n.translate('Mese Migliore'),
+              title: context.t.macroGoals.bestMonth,
               value: (bestMonthIdx != null && bestMonthIdx > 0)
                   ? _monthLabel(bestMonthIdx, abbreviated: true)
-                  : context.l10n.translate('Nessuno'),
+                  : context.t.common.none,
               subtitle:
-                  '$bestMonthRate% ${context.l10n.translate('di successo')}',
+                  '$bestMonthRate% ${context.t.macroGoals.successRate2}',
               icon: LucideIcons.trophy,
               color: const Color(0xFFF59E0B),
             ),
@@ -185,9 +185,9 @@ class _MacroGoalsStatsViewState extends ConsumerState<MacroGoalsStatsView> {
       ),
       const SizedBox(height: 12),
       _buildHighlightCard(
-        title: context.l10n.translate('Tipologia Efficace'),
+        title: context.t.macroGoals.effectiveType,
         value: bestTypeLabel,
-        subtitle: '$bestTypeRate% ${context.l10n.translate('di successo')}',
+        subtitle: '$bestTypeRate% ${context.t.macroGoals.successRate2}',
         icon: LucideIcons.brainCircuit,
         color: Theme.of(context).colorScheme.primary,
         fullWidth: true,
@@ -197,7 +197,7 @@ class _MacroGoalsStatsViewState extends ConsumerState<MacroGoalsStatsView> {
         children: [
           Expanded(
             child: _buildKpiCard(
-              context.l10n.translate('Totale'),
+              context.t.common.total,
               '$totalGoals',
               LucideIcons.target,
             ),
@@ -205,7 +205,7 @@ class _MacroGoalsStatsViewState extends ConsumerState<MacroGoalsStatsView> {
           const SizedBox(width: 8),
           Expanded(
             child: _buildKpiCard(
-              context.l10n.translate('Completati'),
+              context.t.common.completed,
               '$completedGoals',
               LucideIcons.circleCheck,
               color: const Color(0xFF10B981),
@@ -218,7 +218,7 @@ class _MacroGoalsStatsViewState extends ConsumerState<MacroGoalsStatsView> {
         children: [
           Expanded(
             child: _buildKpiCard(
-              context.l10n.translate('Successo'),
+              context.t.macroGoals.success2,
               '$successRate%',
               LucideIcons.trophy,
               color: const Color(0xFFFBBF24),
@@ -227,8 +227,8 @@ class _MacroGoalsStatsViewState extends ConsumerState<MacroGoalsStatsView> {
           const SizedBox(width: 8),
           Expanded(
             child: _buildKpiCard(
-              context.l10n.translate('Trend'),
-              context.l10n.translate(trendPositive ? 'Crescita' : 'Calo'),
+              context.t.macroGoals.trend,
+              (trendPositive ? context.t.statistics.growth : context.t.statistics.decline),
               trendPositive ? LucideIcons.trendingUp : LucideIcons.trendingDown,
               color: const Color(0xFF60A5FA),
             ),
@@ -282,10 +282,10 @@ class _MacroGoalsStatsViewState extends ConsumerState<MacroGoalsStatsView> {
         children: [
           Expanded(
             child: _buildHighlightCard(
-              title: context.l10n.translate('Totale Storico'),
+              title: context.t.macroGoals.historicalTotal,
               value: '$total',
               subtitle:
-                  '${context.l10n.translate('dal')} ${sortedYears.isNotEmpty ? sortedYears.first : '-'}',
+                  '${context.t.macroGoals.from_} ${sortedYears.isNotEmpty ? sortedYears.first : '-'}',
               icon: LucideIcons.target,
               color: const Color(0xFF6366F1),
             ),
@@ -293,10 +293,10 @@ class _MacroGoalsStatsViewState extends ConsumerState<MacroGoalsStatsView> {
           const SizedBox(width: 12),
           Expanded(
             child: _buildHighlightCard(
-              title: context.l10n.translate('Successo Globale'),
+              title: context.t.macroGoals.globalSuccess,
               value: '$succ%',
               subtitle:
-                  '$comp ${context.l10n.translate('obiettivi completati')}',
+                  '$comp ${context.t.macroGoals.completedGoals}',
               icon: LucideIcons.trophy,
               color: const Color(0xFF10B981),
             ),
@@ -308,10 +308,10 @@ class _MacroGoalsStatsViewState extends ConsumerState<MacroGoalsStatsView> {
         children: [
           Expanded(
             child: _buildHighlightCard(
-              title: context.l10n.translate('Anno Migliore'),
+              title: context.t.macroGoals.bestYear,
               value: bestYear != null ? '$bestYear' : 'N/A',
               subtitle:
-                  '$bestYearRate% ${context.l10n.translate('completamento')}',
+                  '$bestYearRate% ${context.t.macroGoals.completion}',
               icon: LucideIcons.calendar,
               color: const Color(0xFFD97706),
             ),
@@ -319,10 +319,10 @@ class _MacroGoalsStatsViewState extends ConsumerState<MacroGoalsStatsView> {
           const SizedBox(width: 12),
           Expanded(
             child: _buildHighlightCard(
-              title: context.l10n.translate('Anno Più Produttivo'),
+              title: context.t.macroGoals.mostProductiveYear,
               value: mostProdYear != null ? '$mostProdYear' : 'N/A',
               subtitle:
-                  '$mostProdCount ${context.l10n.translate('obiettivi totali')}',
+                  '$mostProdCount ${context.t.macroGoals.totalGoals}',
               icon: LucideIcons.activity,
               color: const Color(0xFF06B6D4),
             ),
@@ -361,7 +361,7 @@ class _MacroGoalsStatsViewState extends ConsumerState<MacroGoalsStatsView> {
 
   Widget _buildYearSelector(List<int> years) {
     String displayLabel = _selectedYear == 'all'
-        ? context.l10n.allYears
+        ? context.t.macroGoals.allYears
         : _selectedYear;
 
     return GestureDetector(
@@ -440,7 +440,7 @@ class _MacroGoalsStatsViewState extends ConsumerState<MacroGoalsStatsView> {
               child: Align(
                 alignment: Alignment.center,
                 child: Text(
-                  context.l10n.selectYearHeader,
+                  context.t.macroGoals.selectYearHeader,
                   style: TextStyle(
                     fontFamily: 'Inter',
                     fontWeight: FontWeight.w800,
@@ -460,7 +460,7 @@ class _MacroGoalsStatsViewState extends ConsumerState<MacroGoalsStatsView> {
                     : context.appColors.mutedForeground.withValues(alpha: 0.6),
               ),
               title: Text(
-                context.l10n.allYears,
+                context.t.macroGoals.allYears,
                 style: TextStyle(
                   fontFamily: 'Inter',
                   fontSize: 16,
@@ -739,10 +739,8 @@ class _MacroGoalsStatsViewState extends ConsumerState<MacroGoalsStatsView> {
     final double maxY = math.max(10.0, maxTotal * 1.2);
 
     return _buildCardBase(
-      title: context.l10n.translate('🚀 Velocità di Esecuzione (Cumulativa)'),
-      subtitle: context.l10n.translate(
-        'Confronto tra obiettivi pianificati e completati nel tempo',
-      ),
+      title: context.t.macroGoals.executionSpeedCumulative,
+      subtitle: context.t.macroGoals.comparisonOfPlannedVsCompletedGoals,
       child: SizedBox(
         height: 220,
         child: LineChart(
@@ -846,13 +844,13 @@ class _MacroGoalsStatsViewState extends ConsumerState<MacroGoalsStatsView> {
     final categories = ref.watch(macroGoalCategoriesProvider).value ?? [];
     if (stats.isEmpty) {
       return _buildCardBase(
-        title: context.l10n.translate('🎯 Performance Categorie'),
-        subtitle: context.l10n.translate('Tasso di successo'),
+        title: context.t.macroGoals.categoryPerformance,
+        subtitle: context.t.macroGoals.successRate,
         child: SizedBox(
           height: 200,
           child: Center(
             child: Text(
-              context.l10n.translate('Nessun dato'),
+              context.t.macroGoals.noData,
               style: TextStyle(color: context.appColors.mutedForeground),
             ),
           ),
@@ -862,15 +860,13 @@ class _MacroGoalsStatsViewState extends ConsumerState<MacroGoalsStatsView> {
 
     if (stats.length < 3) {
       return _buildCardBase(
-        title: context.l10n.translate('🎯 Performance Categorie'),
-        subtitle: context.l10n.translate('Tasso di successo'),
+        title: context.t.macroGoals.categoryPerformance,
+        subtitle: context.t.macroGoals.successRate,
         child: SizedBox(
           height: 200,
           child: Center(
             child: Text(
-              context.l10n.translate(
-                'Dati insufficienti (servono almeno 3 categorie)',
-              ),
+              context.t.macroGoals.insufficientDataAtLeast3Categories,
               style: TextStyle(color: context.appColors.mutedForeground),
             ),
           ),
@@ -898,8 +894,8 @@ class _MacroGoalsStatsViewState extends ConsumerState<MacroGoalsStatsView> {
     }
 
     return _buildCardBase(
-      title: context.l10n.translate('🎯 Performance Categorie'),
-      subtitle: context.l10n.translate('Tasso di successo per categoria'),
+      title: context.t.macroGoals.categoryPerformance,
+      subtitle: context.t.macroGoals.successRateByCategory,
       child: SizedBox(
         height: 240,
         child: RadarChart(
@@ -946,13 +942,13 @@ class _MacroGoalsStatsViewState extends ConsumerState<MacroGoalsStatsView> {
   Widget _buildQuarterlyBarCard(List<dynamic> stats) {
     if (stats.isEmpty) {
       return _buildCardBase(
-        title: context.l10n.translate('Attività Trim.'),
-        subtitle: context.l10n.translate('Q1 - Q4'),
+        title: context.t.macroGoals.quarterlyActivity,
+        subtitle: context.t.macroGoals.q1Q4,
         child: SizedBox(
           height: 150,
           child: Center(
             child: Text(
-              context.l10n.translate('Nessun dato'),
+              context.t.macroGoals.noData,
               style: TextStyle(color: context.appColors.mutedForeground),
             ),
           ),
@@ -1004,8 +1000,8 @@ class _MacroGoalsStatsViewState extends ConsumerState<MacroGoalsStatsView> {
     }
 
     return _buildCardBase(
-      title: context.l10n.translate('Attività Trim.'),
-      subtitle: context.l10n.translate('In Q1-Q4'),
+      title: context.t.macroGoals.quarterlyActivity,
+      subtitle: context.t.macroGoals.inQ1Q4,
       child: SizedBox(
         height: 150,
         child: BarChart(
@@ -1046,8 +1042,8 @@ class _MacroGoalsStatsViewState extends ConsumerState<MacroGoalsStatsView> {
   Widget _buildMonthlyComposedCard(List<dynamic> stats) {
     if (stats.isEmpty) {
       return _buildCardBase(
-        title: context.l10n.translate('Attività Mensile'),
-        subtitle: context.l10n.translate('Totale/Completati'),
+        title: context.t.macroGoals.monthlyActivity,
+        subtitle: context.t.macroGoals.totalCompleted,
         child: const SizedBox(height: 150),
       );
     }
@@ -1111,8 +1107,8 @@ class _MacroGoalsStatsViewState extends ConsumerState<MacroGoalsStatsView> {
     }
 
     return _buildCardBase(
-      title: context.l10n.translate('Completamenti'),
-      subtitle: context.l10n.translate('Mensili'),
+      title: context.t.macroGoals.completions,
+      subtitle: context.t.macroGoals.monthly,
       child: SizedBox(
         height: 180,
         child: BarChart(
@@ -1135,14 +1131,14 @@ class _MacroGoalsStatsViewState extends ConsumerState<MacroGoalsStatsView> {
                     ),
                     children: [
                       TextSpan(
-                        text: '${context.l10n.translate('Totali: ')}$tot\n',
+                        text: '${context.t.macroGoals.total}$tot\n',
                         style: GoogleFonts.inter(
                           color: const Color(0xFF6366F1),
                           fontSize: 10,
                         ),
                       ),
                       TextSpan(
-                        text: '${context.l10n.translate('Completati: ')}$comp',
+                        text: '${context.t.macroGoals.completed2}$comp',
                         style: GoogleFonts.inter(
                           color: Theme.of(context).colorScheme.primary,
                           fontSize: 10,
@@ -1221,13 +1217,13 @@ class _MacroGoalsStatsViewState extends ConsumerState<MacroGoalsStatsView> {
   ) {
     if (stats.isEmpty) {
       return _buildCardBase(
-        title: context.l10n.translate('Distribuzione'),
+        title: context.t.macroGoals.distribution,
         subtitle: '',
         child: SizedBox(
           height: 200,
           child: Center(
             child: Text(
-              context.l10n.translate('Nessun dato'),
+              context.t.macroGoals.noData,
               style: TextStyle(color: context.appColors.mutedForeground),
             ),
           ),
@@ -1270,10 +1266,8 @@ class _MacroGoalsStatsViewState extends ConsumerState<MacroGoalsStatsView> {
     }
 
     return _buildCardBase(
-      title: context.l10n.translate('🎯 Distribuzione Categorie'),
-      subtitle: context.l10n.translate(
-        'Ripartizione degli obiettivi per area di focus',
-      ),
+      title: context.t.macroGoals.categoryDistribution,
+      subtitle: context.t.macroGoals.breakdownOfGoalsByFocusArea,
       child: Column(
         children: [
           SizedBox(
@@ -1300,7 +1294,7 @@ class _MacroGoalsStatsViewState extends ConsumerState<MacroGoalsStatsView> {
                       ),
                     ),
                     Text(
-                      context.l10n.translate('obiettivi'),
+                      context.t.macroGoals.goals,
                       style: GoogleFonts.inter(
                         fontSize: 12,
                         color: context.appColors.mutedForeground,
@@ -1448,10 +1442,8 @@ class _MacroGoalsStatsViewState extends ConsumerState<MacroGoalsStatsView> {
     }
 
     return _buildCardBase(
-      title: context.l10n.translate('📈 Progressione Annuale'),
-      subtitle: context.l10n.translate(
-        'Confronto anno per anno del volume di obiettivi e completamenti',
-      ),
+      title: context.t.macroGoals.annualProgression,
+      subtitle: context.t.macroGoals.yearOverYearComparisonOfGoals,
       child: Column(
         children: [
           SizedBox(
@@ -1484,7 +1476,7 @@ class _MacroGoalsStatsViewState extends ConsumerState<MacroGoalsStatsView> {
                         ),
                         children: [
                           TextSpan(
-                            text: '${context.l10n.translate('Attivi: ')}$act\n',
+                            text: '${context.t.macroGoals.active}$act\n',
                             style: GoogleFonts.inter(
                               color: const Color(0xFF3B82F6),
                               fontSize: 11,
@@ -1492,7 +1484,7 @@ class _MacroGoalsStatsViewState extends ConsumerState<MacroGoalsStatsView> {
                           ),
                           TextSpan(
                             text:
-                                '${context.l10n.translate('Falliti: ')}$fail\n',
+                                '${context.t.macroGoals.failed2}$fail\n',
                             style: GoogleFonts.inter(
                               color: const Color(0xFFEF4444),
                               fontSize: 11,
@@ -1500,7 +1492,7 @@ class _MacroGoalsStatsViewState extends ConsumerState<MacroGoalsStatsView> {
                           ),
                           TextSpan(
                             text:
-                                '${context.l10n.translate('Completati: ')}$comp',
+                                '${context.t.macroGoals.completed2}$comp',
                             style: GoogleFonts.inter(
                               color: const Color(0xFF10B981),
                               fontSize: 11,
@@ -1629,10 +1621,8 @@ class _MacroGoalsStatsViewState extends ConsumerState<MacroGoalsStatsView> {
     };
     int maxV = counts.values.fold(0, (p, c) => math.max(p, c));
     return _buildCardBase(
-      title: context.l10n.translate('🔮 Distribuzione Tipologie'),
-      subtitle: context.l10n.translate(
-        'Ripartizione degli obiettivi per orizzonte temporale',
-      ),
+      title: context.t.macroGoals.typeDistribution,
+      subtitle: context.t.macroGoals.breakdownOfGoalsByTimeHorizon,
       child: Column(
         children: counts.entries
             .map(
@@ -1764,8 +1754,8 @@ class _MacroGoalsStatsViewState extends ConsumerState<MacroGoalsStatsView> {
       );
     }
     return _buildCardBase(
-      title: context.l10n.translate('🎂 Stagionalità'),
-      subtitle: context.l10n.translate('Performance Trimestrale aggregata'),
+      title: context.t.macroGoals.seasonality,
+      subtitle: context.t.macroGoals.aggregatedQuarterlyPerformance,
       child: Column(
         children: [
           SizedBox(
@@ -1783,7 +1773,7 @@ class _MacroGoalsStatsViewState extends ConsumerState<MacroGoalsStatsView> {
                       final fail = (item?['failed'] as num?)?.toInt() ?? 0;
                       final comp = (item?['completed'] as num?)?.toInt() ?? 0;
                       return BarTooltipItem(
-                        '${context.l10n.quarterNumber(q)}\n',
+                        '${context.t.macroGoals.quarterNumber(quarter: q)}\n',
                         GoogleFonts.inter(
                           color: context.appColors.foreground,
                           fontWeight: FontWeight.bold,
@@ -1791,7 +1781,7 @@ class _MacroGoalsStatsViewState extends ConsumerState<MacroGoalsStatsView> {
                         ),
                         children: [
                           TextSpan(
-                            text: '${context.l10n.translate('Attivi: ')}$act\n',
+                            text: '${context.t.macroGoals.active}$act\n',
                             style: GoogleFonts.inter(
                               color: const Color(0xFF3B82F6),
                               fontSize: 10,
@@ -1799,7 +1789,7 @@ class _MacroGoalsStatsViewState extends ConsumerState<MacroGoalsStatsView> {
                           ),
                           TextSpan(
                             text:
-                                '${context.l10n.translate('Falliti: ')}$fail\n',
+                                '${context.t.macroGoals.failed2}$fail\n',
                             style: GoogleFonts.inter(
                               color: const Color(0xFFD97706),
                               fontSize: 10,
@@ -1807,7 +1797,7 @@ class _MacroGoalsStatsViewState extends ConsumerState<MacroGoalsStatsView> {
                           ),
                           TextSpan(
                             text:
-                                '${context.l10n.translate('Completati: ')}$comp',
+                                '${context.t.macroGoals.completed2}$comp',
                             style: GoogleFonts.inter(
                               color: const Color(0xFF10B981),
                               fontSize: 10,
@@ -1893,8 +1883,8 @@ class _MacroGoalsStatsViewState extends ConsumerState<MacroGoalsStatsView> {
     }
 
     return _buildCardBase(
-      title: context.l10n.translate('📈 Mensile (Storico)'),
-      subtitle: context.l10n.translate('Successo medio per mese'),
+      title: context.t.macroGoals.monthlyHistorical,
+      subtitle: context.t.macroGoals.averageSuccessPerMonth,
       child: SizedBox(
         height: 180,
         child: LineChart(
@@ -1914,7 +1904,7 @@ class _MacroGoalsStatsViewState extends ConsumerState<MacroGoalsStatsView> {
                       children: [
                         TextSpan(
                           text:
-                              '${s.y.round()}%${context.l10n.translate(' successo')}',
+                              '${s.y.round()}%${context.t.macroGoals.success}',
                           style: GoogleFonts.inter(
                             color: const Color(0xFF10B981),
                             fontWeight: FontWeight.bold,
@@ -2099,10 +2089,8 @@ class _MacroGoalsStatsViewState extends ConsumerState<MacroGoalsStatsView> {
     }
 
     return _buildCardBase(
-      title: context.l10n.translate('📈 Evoluzione Interessi'),
-      subtitle: context.l10n.translate(
-        'Composizione delle aree di focus negli anni',
-      ),
+      title: context.t.macroGoals.interestEvolution,
+      subtitle: context.t.macroGoals.compositionOfFocusAreasOverThe,
       child: Column(
         children: [
           SizedBox(

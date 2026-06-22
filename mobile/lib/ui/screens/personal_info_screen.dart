@@ -7,8 +7,8 @@ import 'package:supabase_flutter/supabase_flutter.dart';
 import '../../core/theme.dart';
 import '../../providers/user_provider.dart';
 import '../../core/data_mode.dart';
-import '../../core/localization.dart';
 import '../../core/app_logger.dart';
+import '../../i18n/translations.g.dart';
 
 class PersonalInfoScreen extends ConsumerStatefulWidget {
   const PersonalInfoScreen({super.key});
@@ -88,7 +88,7 @@ class _PersonalInfoScreenState extends ConsumerState<PersonalInfoScreen> {
             ScaffoldMessenger.of(context).showSnackBar(
               SnackBar(
                 content: Text(
-                  context.l10n.translate('Informazioni salvate con successo'),
+                  context.t.profile.personalInfo.saveSuccess,
                 ),
                 backgroundColor: AppColors.success.withValues(alpha: 0.8),
                 behavior: SnackBarBehavior.floating,
@@ -134,7 +134,7 @@ class _PersonalInfoScreenState extends ConsumerState<PersonalInfoScreen> {
           ScaffoldMessenger.of(context).showSnackBar(
             SnackBar(
               content: Text(
-                context.l10n.translate('Informazioni salvate con successo'),
+                context.t.profile.personalInfo.saveSuccess,
               ),
               backgroundColor: AppColors.success.withValues(alpha: 0.8),
               behavior: SnackBarBehavior.floating,
@@ -155,7 +155,7 @@ class _PersonalInfoScreenState extends ConsumerState<PersonalInfoScreen> {
           ScaffoldMessenger.of(context).showSnackBar(
             SnackBar(
               content: Text(
-                context.l10n.translate('Errore durante il salvataggio.'),
+                context.t.profile.personalInfo.saveError,
               ),
               backgroundColor: AppColors.destructive,
             ),
@@ -183,7 +183,7 @@ class _PersonalInfoScreenState extends ConsumerState<PersonalInfoScreen> {
           onPressed: () => Navigator.pop(context),
         ),
         title: Text(
-          context.l10n.translate('Informazioni Personali'),
+          context.t.profile.personalInfoTitle,
           style: TextStyle(
             color: context.appColors.foreground,
             fontSize: 18,
@@ -201,7 +201,7 @@ class _PersonalInfoScreenState extends ConsumerState<PersonalInfoScreen> {
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
               Text(
-                context.l10n.yourDataHeader,
+                context.t.profile.yourDataHeader,
                 style: TextStyle(
                   fontSize: 11,
                   fontWeight: FontWeight.w800,
@@ -211,39 +211,39 @@ class _PersonalInfoScreenState extends ConsumerState<PersonalInfoScreen> {
               ),
               const SizedBox(height: 16),
               _buildTextField(
-                label: context.l10n.translate('Nome').toUpperCase(),
+                label: context.t.profile.personalInfo.firstName.toUpperCase(),
                 controller: _firstNameController,
                 validator: (v) => v!.isEmpty
-                    ? context.l10n.translate('Campo obbligatorio')
+                    ? context.t.profile.personalInfo.requiredField
                     : null,
               ),
               const SizedBox(height: 20),
               _buildTextField(
-                label: context.l10n.translate('Cognome').toUpperCase(),
+                label: context.t.profile.personalInfo.lastName.toUpperCase(),
                 controller: _lastNameController,
                 validator: (v) => v!.isEmpty
-                    ? context.l10n.translate('Campo obbligatorio')
+                    ? context.t.profile.personalInfo.requiredField
                     : null,
               ),
               const SizedBox(height: 20),
               _buildTextField(
-                label: context.l10n.translate('Email').toUpperCase(),
+                label: context.t.common.email.toUpperCase(),
                 controller: _emailController,
                 keyboardType: TextInputType.emailAddress,
                 validator: (v) {
                   if (isPrivateMode && (v == null || v.isEmpty)) return null;
                   if (v!.isEmpty) {
-                    return context.l10n.translate('Campo obbligatorio');
+                    return context.t.profile.personalInfo.requiredField;
                   }
                   if (!v.contains('@')) {
-                    return context.l10n.translate('Inserisci un\'email valida');
+                    return context.t.profile.personalInfo.invalidEmail;
                   }
                   return null;
                 },
               ),
               const SizedBox(height: 20),
               _buildDateField(
-                label: context.l10n.translate('DATA DI NASCITA'),
+                label: context.t.profile.personalInfo.dateOfBirth,
                 controller: _dobController,
                 onTap: _showDatePicker,
               ),
@@ -268,7 +268,7 @@ class _PersonalInfoScreenState extends ConsumerState<PersonalInfoScreen> {
                     elevation: 0,
                   ),
                   child: Text(
-                    context.l10n.translate('Salva'),
+                    context.t.common.actions.save,
                     style: const TextStyle(
                       fontSize: 16,
                       fontWeight: FontWeight.w800,
@@ -357,11 +357,11 @@ class _PersonalInfoScreenState extends ConsumerState<PersonalInfoScreen> {
                 mainAxisAlignment: MainAxisAlignment.spaceBetween,
                 children: [
                   CupertinoButton(
-                    child: Text(context.l10n.translate('Annulla')),
+                    child: Text(context.t.common.actions.cancel),
                     onPressed: () => Navigator.of(context).pop(),
                   ),
                   CupertinoButton(
-                    child: Text(context.l10n.translate('Fatto')),
+                    child: Text(context.t.common.actions.done),
                     onPressed: () {
                       _selectedDate ??= DateTime(2000, 1, 1);
                       _dobController.text = _selectedDate!

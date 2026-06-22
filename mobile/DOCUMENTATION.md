@@ -1,5 +1,11 @@
 # DOCUMENTATION.md
 
+## [2026-06-22 21:00]: Release - Version Bump
+*Details*: Incremented application version for a new release.
+*Tech Notes*:
+- Bumped version in `pubspec.yaml` from `1.0.4+8` to `1.0.5+9`.
+
+
 ## [2026-05-06 18:11]: UI - Bottom Nav Bar Cleanup
 *Details*: Removed the colored background gradient (selection fill) from the dynamic island bottom navigation bar for a cleaner, more minimal appearance.
 *Tech Notes*:
@@ -1889,3 +1895,124 @@
 - Absorbed the Statistics page body while the tutorial is pending and added a full-screen scrim hit-test layer so page taps cannot leak through while the popup is visible.
 - Added `test/statistics_tutorial_test.dart` covering immediate first-frame popup visibility, scrim tap handling, and step advancement without delayed coachmark startup.
 - No new dependencies, endpoints, migrations, or manual user actions required.
+
+## [2026-06-22 14:30 CEST]: Localization migration to slang — Phase 0 (bootstrap)
+*Details*: Began replacing the legacy runtime `translate()` shim (641 Italian-keyed `case`s in `lib/core/localization.dart`, 675 call sites, silent Italian fallback on any miss) with a type-safe **slang** localization layer. Phase 0 is purely additive — the new system is installed alongside the untouched `gen_l10n` system, so there is no behavior change yet. Full plan and per-phase recipe in `LOCALIZATION_PLAN.md`. Architecture agreed via design review: slang, English source-of-truth + fallback, semantic nested keys, in-repo AI-assisted translation (preserve existing copy), phased-by-feature migration, Arabic/RTL deferred.
+*Tech Notes*:
+- Added `tool/arb_to_slang.py`: lossless ARB→slang-JSON crosswalk converter (drops `@meta`, preserves `{placeholders}` and key order, verifies cross-locale parity). Ran it: generated `lib/i18n/{en,it,es,de,ar}.i18n.json`, **771 keys each, parity verified, all valid JSON**.
+- Added `slang.yaml` (base_locale `en`, `fallback_strategy: base_locale`, brace interpolation, Flutter integration, global `t`).
+- New dependencies (in `pubspec.yaml`): `slang`, `slang_flutter`, `slang_build_runner` (`^4.0.0`; versions to be pinned by `flutter pub get`).
+- `.gitignore`: ignores generated `lib/i18n/translations.g.dart`.
+- **Manual actions required** (Flutter SDK unavailable in the build env): `flutter pub get`, then `dart run slang` (codegen), then the integration micro-step. Logged in `TO_SIMO_DO.md`.
+- Endpoints/migrations: none.
+
+## [2026-06-22 15:10 CEST]: Localization — slang integration + Arabic deferral
+*Details*: Wired the generated slang layer into the app (after the user ran `flutter pub get` + `dart run slang`) and deferred Arabic until the RTL pass. Still additive for the existing screens — every screen renders via the old `context.l10n` system; only the locale plumbing changed and Arabic is no longer offered (it was already shipping with broken RTL). `t.*` is now available app-wide for the per-feature migration (Phases 1..N).
+*Tech Notes*:
+- `lib/main.dart`: imported `i18n/translations.g.dart`; wrapped the app in `TranslationProvider`; set the initial locale from `pref_language` in `main()`; added a `ref.listen` on `settings.language` → `LocaleSettings.setLocale(...)`; switched `MaterialApp.locale` to `TranslationProvider.of(context).flutterLocale` and `supportedLocales` to `AppLocaleUtils.supportedLocales`; removed the now-redundant `_resolveAppLocale` (replaced by `_appLocaleFor`, which maps the app's language preference → `AppLocale`, with "system" → device locale and legacy `ar` → base `en`).
+- **Arabic deferred** (bulletproof): excluded `ar` from slang input (`tool/arb_to_slang.py` `LOCALES` now `en/it/es/de`), deleted `lib/i18n/ar.i18n.json`, and removed the Arabic option from the language picker (`app_settings_screen.dart`). Arabic source preserved at `lib/l10n/app_ar.arb`; re-enable after the RTL pass.
+- **Verification still required** (no Flutter SDK here): re-run `dart run slang` (regenerates 4 locales, drops `ar` from `AppLocale`) then `flutter analyze` / `flutter test`. Logged in `TO_SIMO_DO.md`.
+- No new dependencies, endpoints, or migrations.
+
+## [2026-06-22 15:40 CEST]: Localization — Phase 1 (`settings` namespace migrated to slang)
+*Details*: Migrated the App Settings screen off the legacy `context.l10n.translate(...)` shim onto type-safe slang `context.t.settings.*`. First real per-feature slice; only **settings-exclusive** keys were migrated — shared atoms (`Annulla`, calendar views `Anno/Mese/Settimana/Vita`, `Impostazioni App`, `Verifica`) intentionally stay on the old system until the `common` phase. Also fixed a latent bug: `PROSSIMAMENTE` had no shim case (it rendered literally to all languages) — now a proper `settings.comingSoon` with EN/IT/ES/DE.
+*Tech Notes*:
+- `lib/i18n/{en,it,es,de}.i18n.json`: scripted restructure — moved 21 flat keys into a nested `settings` tree (`sections`, `appearance`, `calendar`, `experience`, `units`, `language`, `confirmDialog`) + added `settings.comingSoon`. 22 keys per locale, parity verified.
+- `lib/ui/screens/app_settings_screen.dart`: added `i18n/translations.g.dart` import; **24 call sites** rewritten to `context.t.settings.*` (15 `translate('…')` + 7 language getters). 16 `context.l10n.` shared-atom sites intentionally left.
+- `tool/arb_to_slang.py`: added a guard — the bootstrap converter now ABORTS if a target JSON already has nested namespaces, so it can't flatten/clobber migrated work.
+- **Shim/ARB untouched** — deletion of now-dead exclusive cases is deferred to the final demolition (a `case` is only safe to delete once every screen is migrated). No behavior change for other screens.
+- **Verification required** (no Flutter SDK here): `dart run slang && flutter analyze && flutter test`.
+- No new dependencies, endpoints, or migrations.
+
+## [2026-06-22 16:10 CEST]: Localization — Phase 2 (`common` namespace, app-wide shared atoms)
+*Details*: Migrated the cross-cutting shared atoms (the 12 strings used in ≥3 files) onto `context.t.common.*` across the whole UI, including the shared-atom call sites Phase 1 left in the settings screen. Scope = generic UI vocabulary only; domain words (`Energia`, `Obiettivi`, `Completato`) and count-words (`giorni`, needs plurals) stay for their feature/plural phases.
+*Tech Notes*:
+- `lib/i18n/{en,it,es,de}.i18n.json`: moved 12 flat keys into `common` → `actions` (save/cancel/confirm/delete/done/gotIt/verify), `status.error`, `calendarView` (year/month/week/life). 12 keys/locale, parity verified.
+- Call sites: **69 replacements across 22 files** (`context.l10n.translate('…')` → `context.t.common.*`), 0 left on the old system. Added the slang import to 21 files (correct relative depth per directory; all paths verified to resolve; no duplicates).
+- Removed a now-unused `core/localization.dart` import from `view_tab_bar.dart`.
+- Shim/ARBs still untouched (dead cases swept at the final demolition).
+- **Verification required** (no Flutter SDK here): `dart run slang && flutter analyze && flutter test`.
+- No new dependencies, endpoints, or migrations.
+
+## [2026-06-22 16:45 CEST]: Localization — Phase 3 (`auth` namespace) + fixes audit I18N-2
+*Details*: Migrated the auth screen to `context.t.auth.*` and — the high-value part — fixed audit finding **I18N-2**: `auth_provider.dart` returned **hardcoded Italian** error messages to users of every language. Notably the localized keys already existed (e.g. `authNetworkRetry`) and the provider simply never used them. Now all auth errors are localized; 8 previously-missing ones (Google/Apple token+auth, private-mode start, rate-limit, signups-disabled, generic) were added with EN/IT/ES/DE.
+*Tech Notes*:
+- `lib/i18n/{en,it,es,de}.i18n.json`: built the `auth` namespace — moved 19 existing keys (8 error keys + 3 getters + 8 screen strings) into `auth.*`/`auth.errors.*` and added 8 new error keys. 27 keys/locale, parity verified. `auth.errors.generic` carries a `{message}` placeholder.
+- `lib/ui/screens/auth_screen.dart`: 12 call sites → `context.t.auth.*` (shared `Email`/link-error deferred to `common`).
+- `lib/providers/auth_provider.dart`: **first non-widget migration** — uses the **global `t`** (a provider has no `BuildContext`). 21 hardcoded Italian literals → `t.auth.errors.*`, including `t.auth.errors.generic(message: supabaseMessage)`. Verified no Italian error literals remain; added `../i18n/translations.g.dart` import; confirmed no local `t` shadowing.
+- Shim/ARBs still untouched (dead cases swept at final demolition).
+- **Verification required** (no Flutter SDK here): `dart run slang && flutter analyze && flutter test`.
+- No new dependencies, endpoints, or migrations.
+
+## [2026-06-22 17:15 CEST]: Localization — Phase 4 (`profile` namespace, account cluster)
+*Details*: Migrated the account cluster — `profile_screen.dart` + `personal_info_screen.dart` — to `context.t.profile.*` (with `profile.personalInfo.*` for the form). Fixed another latent bug: `Vai al login` had no shim case (rendered Italian to everyone) — added as `profile.goToLogin` with EN/IT/ES/DE.
+*Tech Notes*:
+- `lib/i18n/{en,it,es,de}.i18n.json`: moved 17 existing keys into `profile.*` (account headers, logout, pro-plan, version) and `profile.personalInfo.*` (first/last name, DOB, validation, save messages); added `profile.goToLogin`. 18 keys/locale, parity verified.
+- Call sites: 22 replacements across the 2 files → `context.t.profile.*`. The escaped-apostrophe string (`Inserisci un\'email valida`) was migrated via a manual edit to avoid script-escaping issues. Shared strings (`Email`, `Notifiche`, `Privacy e Sicurezza`, `Abbonamento`, `Impostazioni App`) deferred to their phases.
+- Shim/ARBs still untouched (dead cases swept at final demolition).
+- **Verification required** (no Flutter SDK here): `dart run slang && flutter analyze && flutter test`.
+- No new dependencies, endpoints, or migrations.
+
+## [2026-06-22 18:00 CEST]: Localization — Phase 5 (`notifications` + `privacy`) + multi-line scan gap found
+*Details*: Migrated the two settings sub-screens. `notification_settings_screen` → `t.notifications.*` (7 keys). `privacy_settings_screen` → `t.privacy.*` (**45 keys**), a large screen with many multi-line dialog strings. Fixed 8 more untranslated latent bugs (private-data delete/reset/manage messages, etc.). **Important process finding**: the per-phase scan regex required `translate('…')` on one line, so **multi-line-formatted `translate(\n '…',\n)` calls were silently skipped** — including ~16 in this screen. Fixed here with a multi-line + trailing-comma-aware regex; the per-phase recipe is updated to use it.
+*Tech Notes*:
+- `privacy`: 41 existing keys moved + 8 new across `lib/i18n/{en,it,es,de}.i18n.json` (errors prefixes under `privacy.errors.*`); 45 keys/locale, parity verified. `notifications`: 7 keys.
+- Call sites: notification_settings (8) + privacy_settings (46, incl. the 17 multi-line ones via `re.sub`) → `context.t.*`. Only shared `Notifiche`/`Privacy e Sicurezza` remain (deferred to `common`).
+- ⚠️ **Known gap (to sweep next)**: the same multi-line miss left stragglers in earlier "done" screens — `auth_screen` (~10 exclusive), `profile_screen` (~7), `app_settings_screen` (~3). They are safe (still served by the shim) but those screens are **not fully migrated** until swept. The final-demolition `grep translate( == 0` check will also catch them.
+- **Verification required** (no Flutter SDK here): `dart run slang && flutter analyze && flutter test`.
+- No new dependencies, endpoints, or migrations.
+
+## [2026-06-22 18:20 CEST]: Localization — straggler sweep (settings/auth/profile completed)
+*Details*: Closed the multi-line gap from Phase 5 by sweeping the missed literals in the three earlier screens, using the multi-line-aware regex. `settings` +3, `auth` +10 (+`auth.continuePrivately` new), `profile` +7 (+`profile.privateModeSubtitle`, `profile.usePrivateModeOnDevice` new). Those screens are now fully migrated except genuinely-shared atoms (→ `common`).
+*Tech Notes*:
+- JSON: settings now 25, auth 37, profile 25 keys/locale — parity verified. 3 new keys added (EN/IT/ES/DE).
+- Call sites: 20 multi-line literals → `context.t.*` via `re.subn`. All swept files balanced.
+- One special case left on the shim intentionally: `translate('language')` (settings, line ~924) returns the **runtime locale name**, so it's dynamic — to be refactored at demolition, not mapped to a static key.
+- **Verification required** (no Flutter SDK here): `dart run slang && flutter analyze && flutter test`.
+- No new dependencies, endpoints, or migrations.
+
+## [2026-06-22 18:35 CEST]: Localization — Phase 6 (`consent` namespace)
+*Details*: Migrated `consent_screen.dart` (GDPR onboarding) to `context.t.consent.*`. Reused `t.auth.readPrivacyPolicy` (already in the `auth` namespace) rather than duplicating.
+*Tech Notes*:
+- `consent`: 6 keys/locale (system notifications, terms & privacy, onboarding title/subtitle, terms description/required), parity verified. Added the slang import to the file.
+- 7 call sites → `context.t.*` (multi-line-aware). Only shared `Impossibile aprire il link.` remains (→ `common`). Balanced.
+- **Verification required** (no Flutter SDK here): `dart run slang && flutter analyze && flutter test`.
+- No new dependencies, endpoints, or migrations.
+
+## [2026-06-22 19:10 CEST]: Localization — Phases 7-8 (`subscription`, `ai`) + toolchain now local
+*Details*: `flutter`/`dart` became available at `/opt/homebrew/bin`, so verification (`dart run slang && flutter analyze && flutter test`) now runs after every phase (all green, 35 tests). Migrated the paywall and AI Coach screens.
+*Tech Notes*:
+- **`subscription`** (`subscription_screen`): 59 keys → `t.subscription.*` grouped into `errors`/`features`/`plans`/`status`/`actions` + titles; 73 call sites (incl. many multi-line dialog/error strings). `localeName` getter left on the shim (dynamic runtime locale).
+- **`ai`** (`ai_chat_screen`): 33 keys → `t.ai.*` (incl. 20 `ai.suggestions.*` prompt chips) + 3 new keys fixing untranslated private-mode AI-consent strings; 36 sites. 12 dynamic `translate(var)` calls remain on the shim (deferred to demolition refactor).
+- Both screens parity-verified, balanced, analyze clean, tests green.
+- No new dependencies, endpoints, or migrations.
+
+## [2026-06-22 19:55 CEST]: Localization — Phases 9-10 (`macroGoals` cluster, `statistics` cluster partial)
+*Details*: Migrated the two biggest feature clusters. Introduced auto-generated **English** keys (camelCase of the English value) for large screens to keep velocity while honoring the semantic-English standard.
+*Tech Notes*:
+- **`macroGoals`** (5 files, 104 sites): 73 literals + 12 getters → `t.macroGoals.*` (`types.*` for goal types). Fixed `quarterNumber` positional→named (`quarter:`) and removed 2 now-unused localization imports.
+- **`statistics`** (11 files, 139 sites, partial): 96 existing-key literals + 11 plain getters + 6 single-param method getters → `t.statistics.*`. Namespace named `statistics` to avoid the existing flat `stats` key. **Deferred:** 33 untranslated MISSING strings (need authored EN/IT/ES/DE), the 2 three-param correlation method getters (manual named-arg), ~9 dynamic `translate(var)`.
+- Both clusters: analyze clean, all 35 tests green (verified locally — `flutter`/`dart` now on PATH).
+- No new dependencies, endpoints, or migrations.
+
+## [2026-06-22 21:00 CEST]: Localization — 🎯 ALL static strings migrated (habits, common sweep, missing-strings, methods)
+*Details*: Finished the static migration. `grep "context.l10n.translate(\s*'"` → **0**. Added a reusable migrator (`tool/migrate_cluster.py`) and ran it across the rest.
+*Tech Notes*:
+- **`habits`** cluster (dashboard + 5 widgets, 49 sites); **misc** widgets → `subscription`/`habits`/`common`; **providers** (goal/macro_goals/categories) → `common` (work via `navigatorKey` context).
+- **`common` sweep**: the 15 keyed shared atoms (Email, Notifiche, Obiettivi, Abitudini, Statistiche, weekday usages, …) migrated app-wide (27 sites).
+- **34 missing strings** authored (EN/IT/ES/DE) and migrated — latent untranslated bugs incl. **day names** (`common.weekdays.*`), mood labels, correlation/alert descriptions.
+- **2 three-param correlation methods** → `t.statistics.*` with positional→named args. Removed all now-unused `core/localization.dart` imports (both quote styles).
+- **Remaining (blocks shim deletion):** 78 dynamic `translate(<var>)` + 12 `localeName`/`language` runtime-value calls — to be refactored before final demolition. The shim still serves these, so the app is fully functional/shippable.
+- Every step verified: analyze clean, 35 tests green.
+- No new dependencies, endpoints, or migrations.
+
+## [2026-06-22 22:30 CEST]: Localization — 🎉 FINAL DEMOLITION (gen_l10n + shim removed, 100% slang)
+*Details*: Completed the migration. Refactored the last dynamic calls and the two service files (no `BuildContext`), then physically deleted the legacy localization system. The app is now 100% on type-safe slang.
+*Tech Notes*:
+- **Dynamic calls** refactored: 52 double-quoted static literals + 13 authored tutorial descriptions + 34 authored "missing" strings (day names, etc.); value-maps via `lib/core/l10n_dynamic.dart` (weekday/month/tab/sort); `language`/`localeName` → `LocaleSettings.currentLocale.languageCode`; `message.text`/`error` no-op translations removed.
+- **Service files** (`notifications.dart`, `openrouter_service.dart`): migrated off `lookupAppLocalizations`/gen_l10n getters to the **global `t`** (`t.notifications.*`, `t.ai.openRouter.*`); dropped the `_l10n`/`_fallbackL10n` infra and `AppLocalizations` params; updated the `ai_chat` caller.
+- **Final stragglers** (multi-line `context.l10n\n.translate`/getters, captured `final l10n = context.l10n`): privacy password errors → `privacy.*`, category warnings → `macroGoals.*`, correlation methods → `statistics.*`, AI prompt builders → `ai.prompts.*` (with named args).
+- **Delegates repointed**: `main.dart` + 2 tests now use `GlobalMaterialLocalizations.delegates` (flutter_localizations) + `AppLocaleUtils.supportedLocales`.
+- **DELETED**: `lib/core/localization.dart`, `lib/l10n/generated/`, `l10n.yaml`, `lib/l10n/app_{en,it,es,de}.arb`, and `generate: true` in pubspec. **Kept** `lib/l10n/app_ar.arb` (Arabic source, for re-enabling after the RTL pass).
+- **Result**: 0 `context.l10n` usages, `flutter analyze` clean, `flutter test` 35/35 green, `flutter pub get` OK.
+- No new runtime dependencies, endpoints, or migrations.

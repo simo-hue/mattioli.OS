@@ -12,6 +12,7 @@ import '../core/app_logger.dart';
 import '../core/data_mode.dart';
 import '../core/private_local_database.dart';
 import '../core/secure_local_storage.dart';
+import '../i18n/translations.g.dart';
 
 // Accesso globale al client Supabase. Keep this as a getter so Private-mode
 // cold starts can skip Supabase.initialize until the user explicitly returns
@@ -192,7 +193,7 @@ class AuthNotifier extends Notifier<AuthState> with ChangeNotifier {
       if (response.session == null) {
         state = state.copyWith(
           isLoading: false,
-          error: 'Accesso non riuscito. Controlla email e password.',
+          error: t.auth.errors.accessFailed,
         );
         return false;
       }
@@ -207,7 +208,7 @@ class AuthNotifier extends Notifier<AuthState> with ChangeNotifier {
       AppLogger.error('[Auth] Login network error', e, stack);
       state = state.copyWith(
         isLoading: false,
-        error: 'Errore di rete. Riprova.',
+        error: t.auth.errors.network,
       );
       return false;
     }
@@ -238,7 +239,7 @@ class AuthNotifier extends Notifier<AuthState> with ChangeNotifier {
       // e l'utente riceve un'email. Restituiamo true comunque.
       if (response.user == null) {
         state = state.copyWith(
-          error: 'Controlla la tua email per confermare la registrazione.',
+          error: t.auth.errors.confirmRegistration,
         );
       }
       return true;
@@ -249,7 +250,7 @@ class AuthNotifier extends Notifier<AuthState> with ChangeNotifier {
       AppLogger.error('[Auth] Sign up network error', e, stack);
       state = state.copyWith(
         isLoading: false,
-        error: 'Errore di rete. Riprova.',
+        error: t.auth.errors.network,
       );
       return false;
     }
@@ -271,7 +272,7 @@ class AuthNotifier extends Notifier<AuthState> with ChangeNotifier {
       AppLogger.error('[Auth] Reset password network error', e, stack);
       state = state.copyWith(
         isLoading: false,
-        error: 'Errore di rete. Riprova.',
+        error: t.auth.errors.network,
       );
       return false;
     }
@@ -306,7 +307,7 @@ class AuthNotifier extends Notifier<AuthState> with ChangeNotifier {
       AppLogger.setExternalReportingDisabled(previousMode.isPrivate);
       state = state.copyWith(
         isLoading: false,
-        error: 'Impossibile avviare la modalità privata.',
+        error: t.auth.errors.privateModeStart,
       );
     }
   }
@@ -346,7 +347,7 @@ class AuthNotifier extends Notifier<AuthState> with ChangeNotifier {
       if (idToken == null || accessToken == null) {
         state = state.copyWith(
           isLoading: false,
-          error: 'Errore nel recupero dei token di Google.',
+          error: t.auth.errors.googleToken,
         );
         return false;
       }
@@ -368,7 +369,7 @@ class AuthNotifier extends Notifier<AuthState> with ChangeNotifier {
       AppLogger.error('[Google Auth] Error', e, stack);
       state = state.copyWith(
         isLoading: false,
-        error: 'Errore di autenticazione con Google.',
+        error: t.auth.errors.googleAuth,
       );
       return false;
     }
@@ -395,7 +396,7 @@ class AuthNotifier extends Notifier<AuthState> with ChangeNotifier {
       if (idToken == null) {
         state = state.copyWith(
           isLoading: false,
-          error: 'Errore nel recupero del token di Apple.',
+          error: t.auth.errors.appleToken,
         );
         return false;
       }
@@ -437,7 +438,7 @@ class AuthNotifier extends Notifier<AuthState> with ChangeNotifier {
       }
       state = state.copyWith(
         isLoading: false,
-        error: 'Errore di autenticazione con Apple.',
+        error: t.auth.errors.appleAuth,
       );
       return false;
     } on AuthException catch (e) {
@@ -447,7 +448,7 @@ class AuthNotifier extends Notifier<AuthState> with ChangeNotifier {
       AppLogger.error('[Apple Auth] Error', e, stack);
       state = state.copyWith(
         isLoading: false,
-        error: 'Errore di autenticazione con Apple.',
+        error: t.auth.errors.appleAuth,
       );
       return false;
     }
@@ -472,7 +473,7 @@ class AuthNotifier extends Notifier<AuthState> with ChangeNotifier {
       }
       state = state.copyWith(
         isLoading: false,
-        error: 'Impossibile aggiornare il profilo.',
+        error: t.auth.errors.updateProfileFailed,
       );
       return false;
     } on AuthException catch (e) {
@@ -482,7 +483,7 @@ class AuthNotifier extends Notifier<AuthState> with ChangeNotifier {
       AppLogger.error('[Auth] Update profile name network error', e, stack);
       state = state.copyWith(
         isLoading: false,
-        error: 'Errore di rete. Riprova.',
+        error: t.auth.errors.network,
       );
       return false;
     }
@@ -510,7 +511,7 @@ class AuthNotifier extends Notifier<AuthState> with ChangeNotifier {
       AppLogger.error('[Auth] Update consent in DB error', e, stack);
       state = state.copyWith(
         isLoading: false,
-        error: 'Errore di rete. Riprova.',
+        error: t.auth.errors.network,
       );
       return false;
     }
@@ -522,25 +523,25 @@ class AuthNotifier extends Notifier<AuthState> with ChangeNotifier {
     final msg = supabaseMessage.toLowerCase();
     if (msg.contains('invalid login credentials') ||
         msg.contains('invalid_credentials')) {
-      return 'Email o password errata.';
+      return t.auth.errors.invalidCredentials;
     }
     if (msg.contains('email not confirmed')) {
-      return 'Controlla la tua email e clicca il link di conferma.';
+      return t.auth.errors.emailNotConfirmed;
     }
     if (msg.contains('user already registered') ||
         msg.contains('already registered')) {
-      return 'Esiste già un account con questa email. Prova ad accedere.';
+      return t.auth.errors.accountExists;
     }
     if (msg.contains('password should be at least')) {
-      return 'La password deve essere di almeno 6 caratteri.';
+      return t.auth.errors.passwordMinSix;
     }
     if (msg.contains('rate limit')) {
-      return 'Troppi tentativi. Attendi qualche minuto e riprova.';
+      return t.auth.errors.rateLimited;
     }
     if (msg.contains('signups not allowed for this instance')) {
-      return 'Le registrazioni sono disabilitate per questa istanza. Abilita "Enable Signups" nella dashboard di Supabase.';
+      return t.auth.errors.signupsDisabled;
     }
-    return 'Si è verificato un errore: $supabaseMessage';
+    return t.auth.errors.generic(message: supabaseMessage);
   }
 }
 

@@ -1,4 +1,3 @@
-import '../../core/localization.dart';
 import 'dart:io';
 import 'dart:ui' show ImageFilter;
 import 'package:flutter/material.dart';
@@ -21,6 +20,7 @@ import 'subscription_screen.dart';
 import '../../core/haptics.dart';
 import '../../core/app_logger.dart';
 import '../../providers/tutorial_provider.dart';
+import '../../i18n/translations.g.dart';
 
 class ProfileScreen extends ConsumerStatefulWidget {
   const ProfileScreen({super.key});
@@ -116,7 +116,7 @@ class _ProfileScreenState extends ConsumerState<ProfileScreen> {
                       ),
                       const SizedBox(width: 12),
                       Text(
-                        context.l10n.translate('Conferma Uscita'),
+                        context.t.profile.confirmLogout,
                         style: TextStyle(
                           fontSize: 18,
                           fontWeight: FontWeight.w800,
@@ -128,9 +128,7 @@ class _ProfileScreenState extends ConsumerState<ProfileScreen> {
                   ),
                   const SizedBox(height: 16),
                   Text(
-                    context.l10n.translate(
-                      'Sei sicuro di voler uscire dal tuo account? Dovrai reinserire le tue credenziali per accedere nuovamente.',
-                    ),
+                    context.t.profile.confirmLogoutMessage,
                     style: TextStyle(
                       fontSize: 13,
                       height: 1.5,
@@ -144,7 +142,7 @@ class _ProfileScreenState extends ConsumerState<ProfileScreen> {
                       TextButton(
                         onPressed: () => Navigator.pop(dialogContext),
                         child: Text(
-                          context.l10n.translate('Annulla'),
+                          context.t.common.actions.cancel,
                           style: TextStyle(
                             color: context.appColors.mutedForeground,
                             fontSize: 14,
@@ -181,7 +179,7 @@ class _ProfileScreenState extends ConsumerState<ProfileScreen> {
                             ],
                           ),
                           child: Text(
-                            context.l10n.translate('Esci'),
+                            context.t.profile.logout,
                             style: const TextStyle(
                               color: Colors.white,
                               fontSize: 14,
@@ -356,7 +354,7 @@ class _ProfileScreenState extends ConsumerState<ProfileScreen> {
                                 ),
                                 const SizedBox(width: 4),
                                 Text(
-                                  context.l10n.accountVerified,
+                                  context.t.profile.accountVerified,
                                   style: const TextStyle(
                                     color: Color(0xFF10B981),
                                     fontSize: 10,
@@ -418,7 +416,7 @@ class _ProfileScreenState extends ConsumerState<ProfileScreen> {
             sliver: SliverList(
               delegate: SliverChildListDelegate([
                 Text(
-                  context.l10n.accountSettingsHeader,
+                  context.t.profile.accountSettingsHeader,
                   style: TextStyle(
                     fontSize: 10,
                     fontWeight: FontWeight.w800,
@@ -430,7 +428,7 @@ class _ProfileScreenState extends ConsumerState<ProfileScreen> {
                 _buildProfileOption(
                   context: context,
                   icon: LucideIcons.user,
-                  title: context.l10n.translate('Informazioni Personali'),
+                  title: context.t.profile.personalInfoTitle,
                   subtitle: userProfile.email ?? '',
                   onTap: () {
                     Navigator.push(context, PersonalInfoScreen.route());
@@ -440,10 +438,10 @@ class _ProfileScreenState extends ConsumerState<ProfileScreen> {
                   _buildProfileOption(
                     context: context,
                     icon: LucideIcons.creditCard,
-                    title: context.l10n.translate('Abbonamento'),
+                    title: context.t.common.subscription,
                     subtitle: settings.isPro
-                        ? context.l10n.manageProPlan
-                        : context.l10n.upgradeToPro,
+                        ? context.t.profile.manageProPlan
+                        : context.t.profile.upgradeToPro,
                     onTap: () {
                       Navigator.push(context, SubscriptionScreen.route());
                     },
@@ -451,10 +449,8 @@ class _ProfileScreenState extends ConsumerState<ProfileScreen> {
                 _buildProfileOption(
                   context: context,
                   icon: LucideIcons.settings,
-                  title: context.l10n.translate('Impostazioni App'),
-                  subtitle: context.l10n.translate(
-                    'Lingua, Tema, Unità di misura',
-                  ),
+                  title: context.t.common.appSettings,
+                  subtitle: context.t.profile.appSettingsSubtitle,
                   onTap: () {
                     Navigator.push(context, AppSettingsScreen.route());
                   },
@@ -462,10 +458,8 @@ class _ProfileScreenState extends ConsumerState<ProfileScreen> {
                 _buildProfileOption(
                   context: context,
                   icon: LucideIcons.bell,
-                  title: context.l10n.translate('Notifiche'),
-                  subtitle: context.l10n.translate(
-                    'Promemoria e avvisi di sistema',
-                  ),
+                  title: context.t.common.notifications,
+                  subtitle: context.t.profile.notificationsSubtitle,
                   onTap: () {
                     Navigator.push(context, NotificationSettingsScreen.route());
                   },
@@ -473,10 +467,8 @@ class _ProfileScreenState extends ConsumerState<ProfileScreen> {
                 _buildProfileOption(
                   context: context,
                   icon: LucideIcons.shield,
-                  title: context.l10n.translate('Privacy e Sicurezza'),
-                  subtitle: context.l10n.translate(
-                    'Gestione dati e biometrica',
-                  ),
+                  title: context.t.common.privacySecurity,
+                  subtitle: context.t.profile.privacySubtitle,
                   onTap: () {
                     Navigator.push(context, PrivacySettingsScreen.route());
                   },
@@ -495,10 +487,8 @@ class _ProfileScreenState extends ConsumerState<ProfileScreen> {
                 _buildProfileOption(
                   context: context,
                   icon: LucideIcons.info,
-                  title: context.l10n.translate('Ripeti Tutorial'),
-                  subtitle: context.l10n.translate(
-                    'Visualizza di nuovo la guida iniziale',
-                  ),
+                  title: context.t.profile.repeatTutorial,
+                  subtitle: context.t.profile.viewGuideAgain,
                   onTap: () async {
                     Navigator.pop(context); // Torna alla home
                     // Piccola attesa per completare la transizione
@@ -527,12 +517,8 @@ class _ProfileScreenState extends ConsumerState<ProfileScreen> {
                   _buildProfileOption(
                     context: context,
                     icon: LucideIcons.shieldCheck,
-                    title: context.l10n.translate(
-                      'Usa modalità privata su questo iPhone',
-                    ),
-                    subtitle: context.l10n.translate(
-                      'Passa ai dati locali senza uscire dall’account',
-                    ),
+                    title: context.t.profile.usePrivateModeOnDevice,
+                    subtitle: context.t.profile.privateModeSubtitle,
                     onTap: () async {
                       ref.hapticMedium();
                       await ref.read(authProvider.notifier).startPrivateMode();
@@ -576,8 +562,8 @@ class _ProfileScreenState extends ConsumerState<ProfileScreen> {
                     child: Center(
                       child: Text(
                         isPrivateMode
-                            ? context.l10n.translate('Vai al login')
-                            : context.l10n.translate('Esci'),
+                            ? context.t.profile.goToLogin
+                            : context.t.profile.logout,
                         style: TextStyle(
                           color: context.appColors.destructive,
                           fontSize: 15,
@@ -591,7 +577,7 @@ class _ProfileScreenState extends ConsumerState<ProfileScreen> {
                 const SizedBox(height: 16),
                 Center(
                   child: Text(
-                    context.l10n.appVersion,
+                    context.t.profile.appVersion,
                     style: TextStyle(
                       color: context.appColors.mutedForeground.withValues(
                         alpha: 0.5,

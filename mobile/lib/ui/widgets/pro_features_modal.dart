@@ -1,4 +1,3 @@
-import "../../core/localization.dart";
 import 'package:flutter/material.dart';
 import 'package:lucide_icons_flutter/lucide_icons.dart';
 import 'package:google_fonts/google_fonts.dart';
@@ -6,6 +5,7 @@ import '../../core/theme.dart';
 import '../../core/haptics.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../screens/subscription_screen.dart';
+import '../../i18n/translations.g.dart';
 
 class ProFeaturesModal extends ConsumerWidget {
   const ProFeaturesModal({super.key});
@@ -74,7 +74,7 @@ class ProFeaturesModal extends ConsumerWidget {
           const SizedBox(height: 24),
           
           Text(
-            context.l10n.translate('Sblocca Evolve Pro'),
+            context.t.common.unlockEvolvePro,
             style: GoogleFonts.inter(
               color: context.appColors.foreground,
               fontSize: 24,
@@ -84,7 +84,7 @@ class ProFeaturesModal extends ConsumerWidget {
           ),
           const SizedBox(height: 8),
           Text(
-            context.l10n.translate('Porta il tuo sistema di abitudini al livello successivo'),
+            context.t.subscription.takeYourHabitSystemToThe,
             textAlign: TextAlign.center,
             style: GoogleFonts.inter(
               color: context.appColors.mutedForeground,
@@ -98,29 +98,29 @@ class ProFeaturesModal extends ConsumerWidget {
           _buildFeatureItem(
             context: context,
             icon: LucideIcons.brainCircuit,
-            title: context.l10n.translate('AI Coach Personalizzato'),
-            description: context.l10n.translate('Analisi avanzata dei trend e suggerimenti intelligenti generati dall\'AI.'),
+            title: context.t.subscription.personalizedAiCoach,
+            description: context.t.subscription.advancedTrendAnalysisAndSmartAi,
           ),
           const SizedBox(height: 20),
           _buildFeatureItem(
             context: context,
             icon: LucideIcons.cloud,
-            title: context.l10n.translate('Statistiche Specifiche Per Abitudine'),
-            description: context.l10n.translate('Informazioni chiave per aumentare la tua produttività.'),
+            title: context.t.subscription.habitSpecificStatistics,
+            description: context.t.subscription.keyInsightsToBoostYourProductivity,
           ),
           const SizedBox(height: 20),
           _buildFeatureItem(
             context: context,
             icon: LucideIcons.trendingUp,
-            title: context.l10n.translate('Metriche Avanzate Obiettivi'),
-            description: context.l10n.translate('Visualizza grafici dettagliati e statistiche di performance profonde per ogni anno.'),
+            title: context.t.subscription.advancedGoalMetrics,
+            description: context.t.subscription.viewDetailedChartsAndDeepPerformance,
           ),
           const SizedBox(height: 20),
           _buildFeatureItem(
             context: context,
             icon: LucideIcons.infinity,
-            title: context.l10n.translate('Abitudini Illimitate'),
-            description: context.l10n.translate('Crea e traccia tutti gli habits che desideri senza alcun limite.'),
+            title: context.t.subscription.unlimitedHabits,
+            description: context.t.subscription.createAndTrackAllTheHabits,
           ),
           
           const SizedBox(height: 40),
@@ -155,7 +155,7 @@ class ProFeaturesModal extends ConsumerWidget {
               ),
               child: Center(
                 child: Text(
-                  context.l10n.translate('Ottieni Pro a €4,99 / mese'),
+                  context.t.subscription.getProAt499Month,
                   style: const TextStyle(
                     color: Colors.black,
                     fontSize: 16,
@@ -170,7 +170,7 @@ class ProFeaturesModal extends ConsumerWidget {
           TextButton(
             onPressed: () => Navigator.pop(context),
             child: Text(
-              context.l10n.translate('Forse più tardi'),
+              context.t.subscription.maybeLater,
               style: GoogleFonts.inter(
                 color: context.appColors.mutedForeground,
                 fontSize: 13,

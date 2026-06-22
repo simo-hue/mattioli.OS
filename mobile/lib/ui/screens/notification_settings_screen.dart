@@ -6,9 +6,9 @@ import 'package:lucide_icons_flutter/lucide_icons.dart';
 import '../../core/theme.dart';
 import '../../providers/settings_provider.dart';
 import '../../core/haptics.dart';
-import '../../core/localization.dart';
 import '../../core/notifications.dart';
 import '../../core/time_formatting.dart';
+import '../../i18n/translations.g.dart';
 
 class NotificationSettingsScreen extends ConsumerWidget {
   const NotificationSettingsScreen({super.key});
@@ -49,7 +49,7 @@ class NotificationSettingsScreen extends ConsumerWidget {
           onPressed: () => Navigator.pop(context),
         ),
         title: Text(
-          context.l10n.translate('Notifiche'),
+          context.t.common.notifications,
           style: TextStyle(
             color: context.appColors.foreground,
             fontSize: 18,
@@ -66,15 +66,15 @@ class NotificationSettingsScreen extends ConsumerWidget {
           children: [
             _buildSectionHeader(
               context,
-              context.l10n.operationalRemindersHeader,
+              context.t.notifications.operationalRemindersHeader,
             ),
             _buildSettingsCard(context, [
               _buildSwitchRow(
                 context: context,
                 ref: ref,
                 icon: LucideIcons.calendarCheck,
-                title: context.l10n.translate('Promemoria Abitudini'),
-                subtitle: context.l10n.translate('Morning Brief'),
+                title: context.t.notifications.habitReminders,
+                subtitle: context.t.notifications.morningBrief,
                 value: settings.habitReminders,
                 onChanged: (val) {
                   if (val) NotificationService().requestPermissions();
@@ -88,7 +88,7 @@ class NotificationSettingsScreen extends ConsumerWidget {
               if (settings.habitReminders)
                 _buildTimePickerRow(
                   context: context,
-                  title: context.l10n.translate('Orario Morning Brief'),
+                  title: context.t.notifications.morningBriefTime,
                   time: AppTimeFormatting.formatStoredTime(
                     settings.morningBriefTime,
                     use24hFormat: settings.timeFormat24h,
@@ -113,8 +113,8 @@ class NotificationSettingsScreen extends ConsumerWidget {
                 context: context,
                 ref: ref,
                 icon: LucideIcons.bellRing,
-                title: context.l10n.translate('Review Serale'),
-                subtitle: context.l10n.translate('Review Serale'),
+                title: context.t.notifications.eveningReview,
+                subtitle: context.t.notifications.eveningReview,
                 value: settings.eveningReview,
                 onChanged: (val) {
                   if (val) NotificationService().requestPermissions();
@@ -128,7 +128,7 @@ class NotificationSettingsScreen extends ConsumerWidget {
               if (settings.eveningReview)
                 _buildTimePickerRow(
                   context: context,
-                  title: context.l10n.translate('Orario Review Serale'),
+                  title: context.t.notifications.eveningReviewTime,
                   time: AppTimeFormatting.formatStoredTime(
                     settings.eveningReviewTime,
                     use24hFormat: settings.timeFormat24h,
@@ -383,7 +383,7 @@ class NotificationSettingsScreen extends ConsumerWidget {
                       GestureDetector(
                         onTap: () => Navigator.pop(modalContext),
                         child: Text(
-                          context.l10n.translate('Annulla'),
+                          context.t.common.actions.cancel,
                           style: GoogleFonts.inter(
                             color: context.appColors.mutedForeground,
                             fontSize: 16,
@@ -392,7 +392,7 @@ class NotificationSettingsScreen extends ConsumerWidget {
                         ),
                       ),
                       Text(
-                        context.l10n.translate('Seleziona Orario'),
+                        context.t.notifications.selectTime,
                         style: GoogleFonts.inter(
                           color: context.appColors.foreground,
                           fontSize: 16,
@@ -405,7 +405,7 @@ class NotificationSettingsScreen extends ConsumerWidget {
                           Navigator.pop(modalContext);
                         },
                         child: Text(
-                          context.l10n.translate('Fatto'),
+                          context.t.common.actions.done,
                           style: GoogleFonts.inter(
                             color: Theme.of(context).colorScheme.primary,
                             fontSize: 16,

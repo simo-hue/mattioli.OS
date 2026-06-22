@@ -5,7 +5,7 @@ import 'package:google_fonts/google_fonts.dart';
 import 'package:lucide_icons_flutter/lucide_icons.dart';
 import '../../core/theme.dart';
 import '../../core/haptics.dart';
-import '../../core/localization.dart';
+import '../../i18n/translations.g.dart';
 
 class AppBottomNavBar extends ConsumerWidget {
   final int currentIndex;
@@ -29,12 +29,12 @@ class AppBottomNavBar extends ConsumerWidget {
     final items = [
       _NavItem(
         icon: LucideIcons.activity,
-        label: context.l10n.translate('Statistiche'),
+        label: context.t.habits.statistics,
       ),
-      _NavItem(icon: LucideIcons.house, label: context.l10n.translate('Home')),
+      _NavItem(icon: LucideIcons.house, label: context.t.habits.home),
       _NavItem(
         icon: LucideIcons.chartPie,
-        label: context.l10n.translate('Obiettivi'),
+        label: context.t.common.goals,
       ),
     ];
 

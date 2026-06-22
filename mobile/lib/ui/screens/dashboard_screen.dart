@@ -8,7 +8,6 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:local_auth/local_auth.dart';
 import '../../providers/settings_provider.dart';
 
-import '../../core/localization.dart';
 
 import '../../core/theme.dart';
 import '../../providers/goal_provider.dart';
@@ -31,6 +30,7 @@ import '../../core/haptics.dart';
 import 'package:tutorial_coach_mark/tutorial_coach_mark.dart';
 import '../../providers/tutorial_provider.dart';
 import '../../core/app_logger.dart';
+import '../../i18n/translations.g.dart';
 
 class HomeScreen extends ConsumerStatefulWidget {
   const HomeScreen({super.key});
@@ -183,7 +183,7 @@ class _HomeScreenState extends ConsumerState<HomeScreen>
                           ),
                           const SizedBox(height: 40),
                           Text(
-                            context.l10n.translate("Benvenuto in Evolve"),
+                            context.t.tutorial.welcomeToEvolve,
                             textAlign: TextAlign.center,
                             style: const TextStyle(
                               fontFamily: 'Inter',
@@ -196,9 +196,7 @@ class _HomeScreenState extends ConsumerState<HomeScreen>
                           ),
                           const SizedBox(height: 16),
                           Text(
-                            context.l10n.translate(
-                              "Potrebbe essere uno STEP di NON RITORNO... Prima di iniziare però bisogna fare un tour per mostrarti come sfruttare al massimo l'applicazione.",
-                            ),
+                            context.t.tutorial.welcomeDesc,
                             textAlign: TextAlign.center,
                             style: TextStyle(
                               fontFamily: 'Inter',
@@ -230,7 +228,7 @@ class _HomeScreenState extends ConsumerState<HomeScreen>
                               ),
                               child: Center(
                                 child: Text(
-                                  context.l10n.translate('Inizia il Tour'),
+                                  context.t.habits.startTour,
                                   style: TextStyle(
                                     color:
                                         Theme.of(context).colorScheme.primary
@@ -312,7 +310,7 @@ class _HomeScreenState extends ConsumerState<HomeScreen>
                     ),
                     const SizedBox(height: 40),
                     Text(
-                      context.l10n.translate("Sei pronto!"),
+                      context.t.tutorial.youAreReady,
                       textAlign: TextAlign.center,
                       style: const TextStyle(
                         fontFamily: 'Inter',
@@ -325,9 +323,7 @@ class _HomeScreenState extends ConsumerState<HomeScreen>
                     ),
                     const SizedBox(height: 16),
                     Text(
-                      context.l10n.translate(
-                        "Il viaggio inizia ora. Dai il massimo!",
-                      ),
+                      context.t.tutorial.theJourneyStartsNowGiveYour,
                       textAlign: TextAlign.center,
                       style: TextStyle(
                         fontFamily: 'Inter',
@@ -367,7 +363,7 @@ class _HomeScreenState extends ConsumerState<HomeScreen>
                         ),
                         child: Center(
                           child: Text(
-                            context.l10n.translate('Inizia'),
+                            context.t.habits.start,
                             style: TextStyle(
                               color:
                                   Theme.of(
@@ -500,7 +496,7 @@ class _HomeScreenState extends ConsumerState<HomeScreen>
                             controller.previous();
                           },
                           child: Text(
-                            context.l10n.translate("Indietro"),
+                            context.t.tutorial.back,
                             style: TextStyle(
                               color: context.appColors.mutedForeground,
                               fontWeight: FontWeight.bold,
@@ -537,11 +533,9 @@ class _HomeScreenState extends ConsumerState<HomeScreen>
                           elevation: 0,
                         ),
                         child: Text(
-                          nextButtonText != null
-                              ? context.l10n.translate(nextButtonText)
-                              : (isLast
-                                    ? context.l10n.translate("Fine")
-                                    : context.l10n.translate("Avanti")),
+                          nextButtonText ?? (isLast
+                                    ? context.t.tutorial.finish
+                                    : context.t.tutorial.next),
                           style: const TextStyle(fontWeight: FontWeight.bold),
                         ),
                       ),
@@ -618,10 +612,8 @@ class _HomeScreenState extends ConsumerState<HomeScreen>
             align: ContentAlign.bottom,
             builder: (context, controller) {
               return _buildTutorialContent(
-                context.l10n.translate("Daily Check-in"),
-                context.l10n.translate(
-                  "Qui puoi registrare il tuo stato d'animo quotidiano per tracciare il tuo benessere nel tempo e soprattutto correlarlo con il completamento dei tuoi obiettivi.",
-                ),
+                context.t.tutorial.dailyCheckIn,
+                context.t.tutorial.dailyCheckinDesc,
                 controller,
                 isFirst: true,
               );
@@ -639,10 +631,8 @@ class _HomeScreenState extends ConsumerState<HomeScreen>
             align: ContentAlign.bottom,
             builder: (context, controller) {
               return _buildTutorialContent(
-                context.l10n.translate("AI Chat"),
-                context.l10n.translate(
-                  "Il tuo assistente personale. Chiedi consigli sulle tue abitudini. Lui è il tuo coach.",
-                ),
+                context.t.tutorial.aiChat,
+                context.t.tutorial.yourPersonalAiAssistantAskFor,
                 controller,
               );
             },
@@ -659,10 +649,8 @@ class _HomeScreenState extends ConsumerState<HomeScreen>
             align: ContentAlign.bottom,
             builder: (context, controller) {
               return _buildTutorialContent(
-                context.l10n.translate("Gestione Abitudini"),
-                context.l10n.translate(
-                  "Aggiungi, modifica o elimina le tue abitudini quotidiane che vuoi rispettare in modo semplice e veloce.",
-                ),
+                context.t.tutorial.manageHabits,
+                context.t.tutorial.addEditOrDeleteDailyHabits,
                 controller,
               );
             },
@@ -679,10 +667,8 @@ class _HomeScreenState extends ConsumerState<HomeScreen>
             align: ContentAlign.bottom,
             builder: (context, controller) {
               return _buildTutorialContent(
-                context.l10n.translate("Viste Calendario"),
-                context.l10n.translate(
-                  "Naviga tra le diverse visualizzazioni per vedere i tuoi progressi con varie alternative.",
-                ),
+                context.t.tutorial.calendarViews,
+                context.t.tutorial.navigateBetweenDifferentViewsToSee,
                 controller,
               );
             },
@@ -699,10 +685,8 @@ class _HomeScreenState extends ConsumerState<HomeScreen>
             align: ContentAlign.top,
             builder: (context, controller) {
               return _buildTutorialContent(
-                context.l10n.translate("Calendario"),
-                context.l10n.translate(
-                  "Basta cliccare su un giorno per visualizzare le abitudini giornaliere e spuntarle.",
-                ),
+                context.t.tutorial.calendar,
+                context.t.tutorial.simplyClickOnADayTo,
                 controller,
               );
             },
@@ -719,13 +703,11 @@ class _HomeScreenState extends ConsumerState<HomeScreen>
             align: ContentAlign.top,
             builder: (context, controller) {
               return _buildTutorialContent(
-                context.l10n.translate("Passiamo agli Obiettivi"),
-                context.l10n.translate(
-                  "La pagina dove puoi gestire i tuoi obiettivi a lungo termine e le relative performance.",
-                ),
+                context.t.tutorial.movingToGoals,
+                context.t.tutorial.goalsPageDesc,
                 controller,
                 isLast: true,
-                nextButtonText: "Vai agli Obiettivi",
+                nextButtonText: context.t.tutorial.goToGoals,
                 onNextPressed: () {
                   _finishDashboardTutorial(advanceToGoals: true);
                 },
@@ -922,7 +904,7 @@ class _HomeScreenState extends ConsumerState<HomeScreen>
               ),
               const SizedBox(height: 24),
               Text(
-                context.l10n.translate('App Bloccata'),
+                context.t.habits.appLocked,
                 style: TextStyle(
                   fontFamily: 'Inter',
                   fontSize: 22,
@@ -932,9 +914,7 @@ class _HomeScreenState extends ConsumerState<HomeScreen>
               ),
               const SizedBox(height: 8),
               Text(
-                context.l10n.translate(
-                  'Sblocca con i dati biometrici per continuare',
-                ),
+                context.t.habits.unlockWithBiometricsToContinue,
                 style: TextStyle(
                   fontFamily: 'Inter',
                   fontSize: 14,
@@ -954,7 +934,7 @@ class _HomeScreenState extends ConsumerState<HomeScreen>
                     borderRadius: BorderRadius.circular(12),
                   ),
                   child: Text(
-                    context.l10n.translate('Riprova'),
+                    context.t.habits.retry,
                     style: TextStyle(
                       color:
                           Theme.of(
@@ -1125,7 +1105,7 @@ class _HomeScreenState extends ConsumerState<HomeScreen>
                     ),
                     SizedBox(height: compact ? 14 : 24),
                     Text(
-                      context.l10n.translate('La tua tela è vuota'),
+                      context.t.habits.yourCanvasIsEmpty,
                       textAlign: TextAlign.center,
                       style: TextStyle(
                         fontFamily: 'Inter',
@@ -1137,9 +1117,7 @@ class _HomeScreenState extends ConsumerState<HomeScreen>
                     ),
                     SizedBox(height: compact ? 8 : 12),
                     Text(
-                      context.l10n.translate(
-                        'Crea la tua prima abitudine per iniziare a tracciare i tuoi progressi e costruire la tua routine.',
-                      ),
+                      context.t.habits.createYourFirstHabitToStart,
                       textAlign: TextAlign.center,
                       style: TextStyle(
                         fontFamily: 'Inter',
@@ -1157,7 +1135,7 @@ class _HomeScreenState extends ConsumerState<HomeScreen>
                       },
                       icon: const Icon(LucideIcons.plus, size: 18),
                       label: Text(
-                        context.l10n.translate('Aggiungi Abitudine'),
+                        context.t.habits.addHabit,
                         style: const TextStyle(fontWeight: FontWeight.w700),
                       ),
                       style: ElevatedButton.styleFrom(
@@ -1263,7 +1241,7 @@ class _NamePromptDialogState extends ConsumerState<_NamePromptDialog> {
     ScaffoldMessenger.of(context).showSnackBar(
       SnackBar(
         content: Text(
-          context.l10n.translate('Errore durante il salvataggio. Riprova.'),
+          context.t.habits.errorSavingPleaseTryAgain,
         ),
       ),
     );
@@ -1316,7 +1294,7 @@ class _NamePromptDialogState extends ConsumerState<_NamePromptDialog> {
                 const SizedBox(height: 24),
 
                 Text(
-                  context.l10n.translate('Benvenuto in Evolve!'),
+                  context.t.habits.welcomeToEvolve,
                   style: TextStyle(
                     fontFamily: 'Inter',
                     fontSize: 22,
@@ -1327,9 +1305,7 @@ class _NamePromptDialogState extends ConsumerState<_NamePromptDialog> {
                 ),
                 const SizedBox(height: 8),
                 Text(
-                  context.l10n.translate(
-                    'Per iniziare, come possiamo chiamarti?',
-                  ),
+                  context.t.habits.toStartWhatShouldWeCall,
                   textAlign: TextAlign.center,
                   style: TextStyle(
                     fontFamily: 'Inter',
@@ -1343,7 +1319,7 @@ class _NamePromptDialogState extends ConsumerState<_NamePromptDialog> {
                 TextField(
                   controller: _controller,
                   decoration: InputDecoration(
-                    labelText: context.l10n.translate('Il tuo nome'),
+                    labelText: context.t.habits.yourName,
                     labelStyle: TextStyle(
                       color: context.appColors.mutedForeground,
                       fontSize: 14,
@@ -1401,7 +1377,7 @@ class _NamePromptDialogState extends ConsumerState<_NamePromptDialog> {
                     ),
                     child: Center(
                       child: Text(
-                        context.l10n.translate('Inizia ora'),
+                        context.t.habits.startNow,
                         style: TextStyle(
                           color:
                               Theme.of(
@@ -1452,9 +1428,9 @@ class _AppBar extends ConsumerWidget {
 
   String _getGreeting(BuildContext context) {
     final hour = DateTime.now().hour;
-    if (hour < 12) return context.l10n.translate('Buongiorno');
-    if (hour < 18) return context.l10n.translate('Buon pomeriggio');
-    return context.l10n.translate('Buonasera');
+    if (hour < 12) return context.t.habits.goodMorning;
+    if (hour < 18) return context.t.habits.goodAfternoon;
+    return context.t.habits.goodEvening;
   }
 
   @override
@@ -1463,7 +1439,7 @@ class _AppBar extends ConsumerWidget {
     final greeting = _getGreeting(context);
     final formattedDate = DateFormat(
       'EEEE, d MMMM',
-      context.l10n.localeName,
+      LocaleSettings.currentLocale.languageCode,
     ).format(DateTime.now());
 
     // Capitalize first letter of date

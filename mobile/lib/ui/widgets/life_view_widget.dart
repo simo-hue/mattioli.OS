@@ -2,7 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../core/theme.dart';
 import '../../providers/user_provider.dart';
-import '../../core/localization.dart';
+import '../../i18n/translations.g.dart';
 
 class LifeViewWidget extends ConsumerWidget {
   const LifeViewWidget({super.key});
@@ -44,7 +44,7 @@ class LifeViewWidget extends ConsumerWidget {
         children: [
           // Title
           Text(
-            context.l10n.productiveLifeTitle,
+            context.t.habits.productiveLifeTitle,
             style: TextStyle(
               fontFamily: 'Inter',
               fontSize: 20,
@@ -62,12 +62,12 @@ class LifeViewWidget extends ConsumerWidget {
             children: [
               _LegendItem(
                 color: Colors.blue.withValues(alpha: 0.4),
-                label: context.l10n.translate('Pre-tracking'),
+                label: context.t.habits.preTracking,
               ),
               const SizedBox(width: 16),
               _LegendItem(
                 color: const Color(0xFF10B981),
-                label: context.l10n.translate('Attuale'),
+                label: context.t.habits.current,
               ),
             ],
           ),
@@ -89,15 +89,15 @@ class LifeViewWidget extends ConsumerWidget {
               children: [
                 _StatItem(
                   value: '$livedMonths',
-                  label: context.l10n.translate('MESI VISSUTI'),
+                  label: context.t.habits.monthsLived,
                 ),
                 _StatItem(
                   value: '$age',
-                  label: context.l10n.translate('ETÀ ATTUALE'),
+                  label: context.t.habits.currentAge,
                 ),
                 _StatItem(
                   value: '$remainingMonths',
-                  label: context.l10n.translate('RIMANENTI'),
+                  label: context.t.habits.remaining,
                 ),
               ],
             ),
@@ -130,7 +130,7 @@ class LifeViewWidget extends ConsumerWidget {
             mainAxisAlignment: MainAxisAlignment.spaceBetween,
             children: [
               Text(
-                context.l10n.translate('nascita'),
+                context.t.habits.birth,
                 style: TextStyle(
                   fontSize: 10,
                   fontWeight: FontWeight.w600,
@@ -141,7 +141,7 @@ class LifeViewWidget extends ConsumerWidget {
                 ),
               ),
               Text(
-                context.l10n.translate('85 anni'),
+                context.t.habits.k85Years,
                 style: TextStyle(
                   fontSize: 10,
                   fontWeight: FontWeight.w600,

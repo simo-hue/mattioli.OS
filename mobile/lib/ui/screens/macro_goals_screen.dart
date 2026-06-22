@@ -16,7 +16,7 @@ import '../widgets/macro_goals/add_goal_bar.dart';
 import '../widgets/macro_goals/macro_goals_stats_view.dart';
 import '../../core/haptics.dart';
 import '../../providers/tutorial_provider.dart';
-import '../../core/localization.dart';
+import '../../i18n/translations.g.dart';
 
 class MacroGoalsScreen extends ConsumerStatefulWidget {
   final bool isActive;
@@ -170,7 +170,7 @@ class _MacroGoalsScreenState extends ConsumerState<MacroGoalsScreen>
                           onPreviousPressed();
                         },
                         child: Text(
-                          context.l10n.translate("Indietro"),
+                          context.t.tutorial.back,
                           style: TextStyle(
                             color: Theme.of(
                               context,
@@ -201,11 +201,9 @@ class _MacroGoalsScreenState extends ConsumerState<MacroGoalsScreen>
                         elevation: 0,
                       ),
                       child: Text(
-                        nextButtonLabel != null
-                            ? context.l10n.translate(nextButtonLabel)
-                            : (isLast
-                                  ? context.l10n.translate("Fine")
-                                  : context.l10n.translate("Avanti")),
+                        nextButtonLabel ?? (isLast
+                                  ? context.t.tutorial.finish
+                                  : context.t.tutorial.next),
                         style: const TextStyle(fontWeight: FontWeight.bold),
                       ),
                     ),
@@ -223,72 +221,54 @@ class _MacroGoalsScreenState extends ConsumerState<MacroGoalsScreen>
     return [
       _GoalsTutorialStep(
         targetKey: _planSelectorKey,
-        title: context.l10n.translate("Tipo di Pianificazione"),
-        description: context.l10n.translate(
-          "Qui puoi selezionare la visione temporale: Lifetime (per tutta la vita), Annuale, Trimestrale, Mensile o Settimanale.",
-        ),
+        title: context.t.tutorial.planningType,
+        description: context.t.tutorial.hereYouCanSelectTheTime,
       ),
       _GoalsTutorialStep(
         targetKey: _addGoalKey,
-        title: context.l10n.translate("Nuovo Obiettivo"),
-        description: context.l10n.translate(
-          "Da qui puoi inserire un nuovo obiettivo. Potrai anche personalizzare le Categorie a tuo piacimento per organizzare tutto al meglio.",
-        ),
+        title: context.t.tutorial.newGoal,
+        description: context.t.tutorial.fromHereYouCanInsertA,
       ),
       _GoalsTutorialStep(
         targetKey: _tutorialCheckboxKey,
-        title: context.l10n.translate("Completare o Fallire"),
-        description: context.l10n.translate(
-          "Clicca qui per segnare l'obiettivo come completato. Cliccandolo di nuovo verrà segnato come fallito.",
-        ),
+        title: context.t.tutorial.completeOrFail,
+        description: context.t.tutorial.markGoalDesc,
       ),
       _GoalsTutorialStep(
         targetKey: _tutorialCategoryKey,
-        title: context.l10n.translate("Categoria"),
-        description: context.l10n.translate(
-          "Usa questo pulsante per assegnare rapidamente una categoria all'obiettivo.",
-        ),
+        title: context.t.tutorial.category,
+        description: context.t.tutorial.assignCategoryDesc,
       ),
       _GoalsTutorialStep(
         targetKey: _tutorialRescheduleKey,
-        title: context.l10n.translate("Posticipare"),
-        description: context.l10n.translate(
-          "Se non hai fatto in tempo o i piani sono cambiati, puoi spostare questo obiettivo alla settimana / mese o anno successivo ( in base a dove hai inserito l'obiettivo).",
-        ),
+        title: context.t.tutorial.reschedule,
+        description: context.t.tutorial.rescheduleGoalDesc,
       ),
       _GoalsTutorialStep(
         targetKey: _tutorialEditKey,
-        title: context.l10n.translate("Modifica"),
-        description: context.l10n.translate(
-          "Se devi semplicemente rinominare l'obiettivo, usa la matita.",
-        ),
+        title: context.t.tutorial.edit,
+        description: context.t.tutorial.editGoalDesc,
       ),
       _GoalsTutorialStep(
         targetKey: _tutorialDeleteKey,
-        title: context.l10n.translate("Elimina"),
-        description: context.l10n.translate(
-          "Infine, questo pulsante elimina definitivamente l'obiettivo.",
-        ),
+        title: context.t.tutorial.delete,
+        description: context.t.tutorial.deleteGoalDesc,
       ),
       _GoalsTutorialStep(
         targetKey: _performanceToggleKey,
         showStats: true,
-        title: context.l10n.translate("Analisi e Statistiche"),
-        description: context.l10n.translate(
-          "Passa a questa scheda per visualizzare grafici e performance dettagliate selezionando l'anno corrente o tutti gli anni.",
-        ),
+        title: context.t.tutorial.analysisStats,
+        description: context.t.tutorial.analyticsTabDesc,
         nextButtonLabel: widget.statsNavKey == null
-            ? "Passa alle Statistiche"
-            : "Continua",
+            ? context.t.tutorial.goToStats
+            : context.t.tutorial.continueLabel,
       ),
       if (widget.statsNavKey != null)
         _GoalsTutorialStep(
           showStats: true,
-          title: context.l10n.translate("Statistiche Abitudini"),
-          description: context.l10n.translate(
-            "Per vedere le statistiche delle tue abitudini giornaliere, puoi spostarti in questa sezione.",
-          ),
-          nextButtonLabel: "Passa alle Statistiche",
+          title: context.t.tutorial.habitStatistics,
+          description: context.t.tutorial.toViewStatisticsForYourDaily,
+          nextButtonLabel: context.t.tutorial.goToStats,
         ),
     ];
   }
@@ -505,7 +485,7 @@ class _MacroGoalsScreenState extends ConsumerState<MacroGoalsScreen>
         0,
         MacroGoal(
           id: 'tutorial_fake_goal',
-          title: context.l10n.translate('Obiettivo Tutorial'),
+          title: context.t.macroGoals.tutorialGoal,
           status: GoalStatus.active,
           type: viewState.selectedType,
           year: viewState.selectedYear,
@@ -663,7 +643,7 @@ class _MacroGoalsScreenState extends ConsumerState<MacroGoalsScreen>
             mainAxisAlignment: MainAxisAlignment.spaceBetween,
             children: [
               Text(
-                context.l10n.translate('Obiettivi'),
+                context.t.common.goals,
                 style: GoogleFonts.inter(
                   fontSize: 28,
                   fontWeight: FontWeight.w700,
@@ -741,8 +721,8 @@ class _MacroGoalsScreenState extends ConsumerState<MacroGoalsScreen>
       ),
       child: Row(
         children: [
-          _buildToggleItem(false, context.l10n.translate('I miei obiettivi')),
-          _buildToggleItem(true, context.l10n.translate('Analisi Performance')),
+          _buildToggleItem(false, context.t.macroGoals.myGoals),
+          _buildToggleItem(true, context.t.macroGoals.performanceAnalysis),
         ],
       ),
     );
@@ -834,7 +814,7 @@ class _MacroGoalsScreenState extends ConsumerState<MacroGoalsScreen>
               child: Align(
                 alignment: Alignment.center,
                 child: Text(
-                  context.l10n.planningTypeHeader,
+                  context.t.macroGoals.planningTypeHeader,
                   style: TextStyle(
                     fontFamily: 'Inter',
                     fontWeight: FontWeight.w800,
@@ -894,7 +874,7 @@ class _MacroGoalsScreenState extends ConsumerState<MacroGoalsScreen>
       return Padding(
         padding: const EdgeInsets.fromLTRB(16, 6, 16, 8),
         child: Text(
-          context.l10n.lifetimeGoalsDescription,
+          context.t.macroGoals.lifetimeGoalsDescription,
           style: GoogleFonts.inter(
             fontSize: 14,
             color: context.appColors.mutedForeground,
@@ -917,7 +897,7 @@ class _MacroGoalsScreenState extends ConsumerState<MacroGoalsScreen>
       case GoalType.monthly:
         periodTitle = _capitalizeFirst(
           DateFormat.yMMMM(
-            context.l10n.localeName,
+            LocaleSettings.currentLocale.languageCode,
           ).format(DateTime(vs.selectedYear, vs.selectedMonth)),
         );
         highlightColor = const Color(0xFF60A5FA); // blue
@@ -1005,15 +985,15 @@ class _MacroGoalsScreenState extends ConsumerState<MacroGoalsScreen>
   String _goalTypeLabel(BuildContext context, GoalType type) {
     switch (type) {
       case GoalType.lifetime:
-        return context.l10n.goalTypeLifetime;
+        return context.t.macroGoals.types.lifetime;
       case GoalType.annual:
-        return context.l10n.goalTypeAnnual;
+        return context.t.macroGoals.types.annual;
       case GoalType.quarterly:
-        return context.l10n.goalTypeQuarterly;
+        return context.t.macroGoals.types.quarterly;
       case GoalType.monthly:
-        return context.l10n.goalTypeMonthly;
+        return context.t.macroGoals.types.monthly;
       case GoalType.weekly:
-        return context.l10n.goalTypeWeekly;
+        return context.t.macroGoals.types.weekly;
     }
   }
 
@@ -1024,7 +1004,7 @@ class _MacroGoalsScreenState extends ConsumerState<MacroGoalsScreen>
     int week,
   ) {
     final range = logicalWeekRange(year, month, week);
-    final locale = context.l10n.localeName;
+    final locale = LocaleSettings.currentLocale.languageCode;
     final monthFormat = DateFormat.MMMM(locale);
     final startMonth = monthFormat.format(range.start);
     final endMonth = monthFormat.format(range.end);
@@ -1157,7 +1137,7 @@ class _GoalsList extends ConsumerWidget {
                 ),
                 const SizedBox(height: 16),
                 Text(
-                  context.l10n.emptyGoalsTitle,
+                  context.t.macroGoals.emptyGoalsTitle,
                   textAlign: TextAlign.center,
                   style: GoogleFonts.inter(
                     fontSize: 15,
@@ -1167,7 +1147,7 @@ class _GoalsList extends ConsumerWidget {
                 ),
                 const SizedBox(height: 4),
                 Text(
-                  context.l10n.emptyGoalsSubtitle,
+                  context.t.macroGoals.emptyGoalsSubtitle,
                   textAlign: TextAlign.center,
                   style: GoogleFonts.inter(
                     fontSize: 13,
@@ -1221,8 +1201,8 @@ class _GoalsList extends ConsumerWidget {
 
   Widget _buildSectionHeader(BuildContext context, GoalStatus status, Key key) {
     final label = status == GoalStatus.completed
-        ? context.l10n.translate('COMPLETATI')
-        : context.l10n.translate('FALLITI');
+        ? context.t.macroGoals.completed
+        : context.t.macroGoals.failed;
     final color = status == GoalStatus.completed
         ? const Color(0xFF10B981).withValues(alpha: 0.7)
         : context.appColors.destructive.withValues(alpha: 0.7);

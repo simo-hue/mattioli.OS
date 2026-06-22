@@ -7,7 +7,7 @@ import 'package:google_fonts/google_fonts.dart';
 import '../../core/theme.dart';
 import '../../providers/settings_provider.dart';
 import '../../core/haptics.dart';
-import '../../core/localization.dart';
+import '../../i18n/translations.g.dart';
 import '../widgets/pro_features_modal.dart';
 
 class AppSettingsScreen extends ConsumerWidget {
@@ -48,7 +48,7 @@ class AppSettingsScreen extends ConsumerWidget {
           onPressed: () => Navigator.pop(context),
         ),
         title: Text(
-          context.l10n.translate('Impostazioni App'),
+          context.t.common.appSettings,
           style: TextStyle(
             color: colors.foreground,
             fontSize: 18,
@@ -65,13 +65,13 @@ class AppSettingsScreen extends ConsumerWidget {
           children: [
             _buildSectionHeader(
               context,
-              context.l10n.translate('ASPETTO & VISUAL'),
+              context.t.settings.sections.appearance,
             ),
             _buildSettingsCard(context, [
               _buildSwitchRow(
                 context: context,
                 icon: LucideIcons.moon,
-                title: context.l10n.translate('Modalità Scura'),
+                title: context.t.settings.appearance.darkMode,
                 value: settings.themeMode == 'dark',
                 onChanged: (val) {
                   final currentSettings = ref.read(settingsProvider);
@@ -85,7 +85,7 @@ class AppSettingsScreen extends ConsumerWidget {
               _buildActionRow(
                 context: context,
                 icon: LucideIcons.palette,
-                title: context.l10n.translate('Colore Accento'),
+                title: context.t.settings.appearance.accentColor,
                 trailing: Container(
                   width: 24,
                   height: 24,
@@ -114,26 +114,26 @@ class AppSettingsScreen extends ConsumerWidget {
             const SizedBox(height: 32),
             _buildSectionHeader(
               context,
-              context.l10n.translate('CALENDARIO & DASHBOARD'),
+              context.t.settings.sections.calendar,
             ),
             _buildSettingsCard(context, [
               _buildActionRow(
                 context: context,
                 icon: LucideIcons.calendar,
-                title: context.l10n.translate('Vista Predefinita'),
+                title: context.t.settings.calendar.defaultView,
                 trailingText: (() {
                   final v = settings.defaultCalendarView.toLowerCase();
                   if (v == 'week' || v == 'settimana') {
-                    return context.l10n.translate('Settimana');
+                    return context.t.common.calendarView.week;
                   }
                   if (v == 'month' || v == 'mese') {
-                    return context.l10n.translate('Mese');
+                    return context.t.common.calendarView.month;
                   }
                   if (v == 'year' || v == 'anno') {
-                    return context.l10n.translate('Anno');
+                    return context.t.common.calendarView.year;
                   }
-                  if (v == 'vita') return context.l10n.translate('Vita');
-                  return context.l10n.translate('Settimana');
+                  if (v == 'vita') return context.t.common.calendarView.life;
+                  return context.t.common.calendarView.week;
                 })().toUpperCase(),
                 onTap: () {
                   ref.hapticLight();
@@ -162,7 +162,7 @@ class AppSettingsScreen extends ConsumerWidget {
                           ),
                           const SizedBox(height: 24),
                           Text(
-                            context.l10n.translate('Vista Predefinita'),
+                            context.t.settings.calendar.defaultView,
                             style: TextStyle(
                               color: context.appColors.foreground,
                               fontSize: 18,
@@ -173,28 +173,28 @@ class AppSettingsScreen extends ConsumerWidget {
                           _buildViewOption(
                             context,
                             ref,
-                            context.l10n.translate('Mese'),
+                            context.t.common.calendarView.month,
                             'mese',
                             settings.defaultCalendarView,
                           ),
                           _buildViewOption(
                             context,
                             ref,
-                            context.l10n.translate('Settimana'),
+                            context.t.common.calendarView.week,
                             'settimana',
                             settings.defaultCalendarView,
                           ),
                           _buildViewOption(
                             context,
                             ref,
-                            context.l10n.translate('Anno'),
+                            context.t.common.calendarView.year,
                             'anno',
                             settings.defaultCalendarView,
                           ),
                           _buildViewOption(
                             context,
                             ref,
-                            context.l10n.translate('Vita'),
+                            context.t.common.calendarView.life,
                             'vita',
                             settings.defaultCalendarView,
                           ),
@@ -209,13 +209,13 @@ class AppSettingsScreen extends ConsumerWidget {
             const SizedBox(height: 32),
             _buildSectionHeader(
               context,
-              context.l10n.translate('ESPERIENZA UTENTE'),
+              context.t.settings.sections.experience,
             ),
             _buildSettingsCard(context, [
               _buildSwitchRow(
                 context: context,
                 icon: LucideIcons.vibrate,
-                title: context.l10n.translate('Feedback Aptico'),
+                title: context.t.settings.experience.hapticFeedback,
                 value: settings.hapticFeedback,
                 onChanged: (val) {
                   final currentSettings = ref.read(settingsProvider);
@@ -229,13 +229,13 @@ class AppSettingsScreen extends ConsumerWidget {
             const SizedBox(height: 32),
             _buildSectionHeader(
               context,
-              context.l10n.translate('UNITÀ E LINGUA'),
+              context.t.settings.sections.unitsLanguage,
             ),
             _buildSettingsCard(context, [
               _buildActionRow(
                 context: context,
                 icon: LucideIcons.languages,
-                title: context.l10n.translate('Lingua'),
+                title: context.t.settings.language.title,
                 trailingText: _languagePreferenceLabel(
                   context,
                   settings.language,
@@ -249,7 +249,7 @@ class AppSettingsScreen extends ConsumerWidget {
               _buildSwitchRow(
                 context: context,
                 icon: LucideIcons.clock,
-                title: context.l10n.translate('Formato 24h'),
+                title: context.t.settings.units.timeFormat24h,
                 value: settings.timeFormat24h,
                 onChanged: (val) {
                   final currentSettings = ref.read(settingsProvider);
@@ -386,7 +386,7 @@ class AppSettingsScreen extends ConsumerWidget {
                           ),
                         ),
                         child: Text(
-                          context.l10n.translate('PROSSIMAMENTE'),
+                          context.t.settings.comingSoon,
                           style: GoogleFonts.inter(
                             color: primaryColor,
                             fontSize: 9,
@@ -525,7 +525,7 @@ class AppSettingsScreen extends ConsumerWidget {
             ),
             const SizedBox(height: 24),
             Text(
-              context.l10n.translate('Colore Accento'),
+              context.t.settings.appearance.accentColor,
               style: TextStyle(
                 color: context.appColors.foreground,
                 fontSize: 20,
@@ -535,9 +535,7 @@ class AppSettingsScreen extends ConsumerWidget {
             ),
             const SizedBox(height: 8),
             Text(
-              context.l10n.translate(
-                'Scegli una tonalità premium o creane una tua',
-              ),
+              context.t.settings.appearance.accentColorSubtitle,
               style: TextStyle(
                 color: context.appColors.mutedForeground,
                 fontSize: 14,
@@ -694,7 +692,7 @@ class AppSettingsScreen extends ConsumerWidget {
               ),
               title: Row(
                 children: [
-                  Text(context.l10n.translate('Colore Personalizzato')),
+                  Text(context.t.settings.appearance.customColor),
                   const Spacer(),
                   if (isTooDark)
                     Icon(
@@ -738,9 +736,7 @@ class AppSettingsScreen extends ConsumerWidget {
                             const SizedBox(width: 8),
                             Expanded(
                               child: Text(
-                                context.l10n.translate(
-                                  'Colore troppo scuro per la visibilità in Dark Mode.',
-                                ),
+                                context.t.settings.appearance.colorTooDark,
                                 style: TextStyle(
                                   color: context.appColors.destructive,
                                   fontSize: 11,
@@ -759,7 +755,7 @@ class AppSettingsScreen extends ConsumerWidget {
                 TextButton(
                   onPressed: () => Navigator.pop(dialogContext),
                   child: Text(
-                    context.l10n.translate('Annulla'),
+                    context.t.common.actions.cancel,
                     style: TextStyle(color: context.appColors.mutedForeground),
                   ),
                 ),
@@ -784,7 +780,7 @@ class AppSettingsScreen extends ConsumerWidget {
                       borderRadius: BorderRadius.circular(12),
                     ),
                   ),
-                  child: Text(context.l10n.translate('Verifica')),
+                  child: Text(context.t.common.actions.verify),
                 ),
               ],
             );
@@ -879,18 +875,18 @@ class AppSettingsScreen extends ConsumerWidget {
   String _languagePreferenceLabel(BuildContext context, String language) {
     switch (AppLanguagePreference.normalize(language)) {
       case AppLanguagePreference.italian:
-        return context.l10n.italianLanguage;
+        return context.t.settings.language.italian;
       case AppLanguagePreference.english:
-        return context.l10n.englishLanguage;
+        return context.t.settings.language.english;
       case AppLanguagePreference.spanish:
-        return context.l10n.spanishLanguage;
+        return context.t.settings.language.spanish;
       case AppLanguagePreference.german:
-        return context.l10n.germanLanguage;
+        return context.t.settings.language.german;
       case AppLanguagePreference.arabic:
-        return context.l10n.arabicLanguage;
+        return context.t.settings.language.arabic;
       case AppLanguagePreference.system:
       default:
-        return context.l10n.systemLanguage;
+        return context.t.settings.language.system;
     }
   }
 
@@ -924,7 +920,7 @@ class AppSettingsScreen extends ConsumerWidget {
             ),
             const SizedBox(height: 24),
             Text(
-              context.l10n.translate('language'),
+              context.t.common.language,
               style: TextStyle(
                 color: context.appColors.foreground,
                 fontSize: 18,
@@ -937,7 +933,7 @@ class AppSettingsScreen extends ConsumerWidget {
               ref,
               AppLanguagePreference.system,
               currentPreference,
-              subtitle: context.l10n.followSystemLanguageDescription,
+              subtitle: context.t.settings.language.systemDescription,
             ),
             _buildLanguageOption(
               context,
@@ -963,12 +959,7 @@ class AppSettingsScreen extends ConsumerWidget {
               AppLanguagePreference.german,
               currentPreference,
             ),
-            _buildLanguageOption(
-              context,
-              ref,
-              AppLanguagePreference.arabic,
-              currentPreference,
-            ),
+            // Arabic is deferred until the RTL pass lands (see LOCALIZATION_PLAN.md).
             const SizedBox(height: 40),
           ],
         ),
@@ -1075,7 +1066,7 @@ class _ValidationDialog extends StatelessWidget {
           ),
           const SizedBox(height: 24),
           Text(
-            context.l10n.translate('Verifica Visibilità'),
+            context.t.settings.appearance.verifyVisibility,
             style: TextStyle(
               color: context.appColors.foreground,
               fontSize: 22,
@@ -1084,9 +1075,7 @@ class _ValidationDialog extends StatelessWidget {
           ),
           const SizedBox(height: 12),
           Text(
-            context.l10n.translate(
-              'Riesci a leggere chiaramente questo testo e a vedere il pulsante qui sotto?',
-            ),
+            context.t.settings.appearance.visibilityCheckPrompt,
             textAlign: TextAlign.center,
             style: TextStyle(
               color: context.appColors.mutedForeground.withValues(alpha: 0.8),
@@ -1116,7 +1105,7 @@ class _ValidationDialog extends StatelessWidget {
               ),
               child: Center(
                 child: Text(
-                  context.l10n.translate('SI, CONFERMA'),
+                  context.t.settings.confirmDialog.confirm,
                   style: TextStyle(
                     color: testColor.computeLuminance() > 0.5
                         ? Colors.black
@@ -1132,7 +1121,7 @@ class _ValidationDialog extends StatelessWidget {
           TextButton(
             onPressed: () => Navigator.pop(context),
             child: Text(
-              context.l10n.translate('NO, TORNA INDIETRO'),
+              context.t.settings.confirmDialog.goBack,
               style: TextStyle(
                 color: testColor.withValues(alpha: 0.6),
                 fontSize: 12,

@@ -52,3 +52,7 @@ lib/core/openrouter_config.dart
 # Keystore and Play Store related
 *.jks
 key.properties
+
+# slang generated translations (regenerate with `dart run slang`)
+# covers the main file + per-locale parts (translations_en.g.dart, …)
+lib/i18n/translations*.g.dart

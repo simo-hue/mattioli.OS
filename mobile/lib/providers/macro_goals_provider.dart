@@ -1,6 +1,5 @@
 import 'dart:convert';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import '../core/localization.dart';
 
 import '../models/macro_goal.dart';
 import '../core/macro_goal_calendar.dart';
@@ -11,6 +10,7 @@ import '../core/app_logger.dart';
 import '../core/data_mode.dart';
 import '../core/private_local_database.dart';
 import '../ui/widgets/error_modal.dart';
+import '../i18n/translations.g.dart';
 
 // ─── State ────────────────────────────────────────────────────────────────────
 
@@ -191,8 +191,8 @@ class MacroGoalsNotifier extends Notifier<MacroGoalsState> {
       if (context != null && context.mounted) {
         ErrorModal.show(
           context,
-          title: context.l10n.translate('Errore durante il salvataggio'),
-          message: context.l10n.macroGoalSaveFailed,
+          title: context.t.common.errorDuringSaving,
+          message: context.t.common.macroGoalSaveFailed,
           details: e.toString(),
         );
       }
@@ -226,8 +226,8 @@ class MacroGoalsNotifier extends Notifier<MacroGoalsState> {
       if (context != null && context.mounted) {
         ErrorModal.show(
           context,
-          title: context.l10n.translate('Errore durante l\'aggiornamento'),
-          message: context.l10n.macroGoalStatusSaveFailed,
+          title: context.t.common.errorDuringUpdate,
+          message: context.t.common.macroGoalStatusSaveFailed,
           details: e.toString(),
         );
       }
@@ -261,8 +261,8 @@ class MacroGoalsNotifier extends Notifier<MacroGoalsState> {
       if (context != null && context.mounted) {
         ErrorModal.show(
           context,
-          title: context.l10n.translate('Errore durante l\'aggiornamento'),
-          message: context.l10n.macroGoalTitleSaveFailed,
+          title: context.t.common.errorDuringUpdate,
+          message: context.t.common.macroGoalTitleSaveFailed,
           details: e.toString(),
         );
       }
@@ -299,8 +299,8 @@ class MacroGoalsNotifier extends Notifier<MacroGoalsState> {
       if (context != null && context.mounted) {
         ErrorModal.show(
           context,
-          title: context.l10n.translate('Errore durante l\'aggiornamento'),
-          message: context.l10n.macroGoalCategorySaveFailed,
+          title: context.t.common.errorDuringUpdate,
+          message: context.t.common.macroGoalCategorySaveFailed,
           details: e.toString(),
         );
       }
@@ -328,8 +328,8 @@ class MacroGoalsNotifier extends Notifier<MacroGoalsState> {
       if (context != null && context.mounted) {
         ErrorModal.show(
           context,
-          title: context.l10n.macroGoalDeleteErrorTitle,
-          message: context.l10n.macroGoalDeleteFailed,
+          title: context.t.common.macroGoalDeleteErrorTitle,
+          message: context.t.common.macroGoalDeleteFailed,
           details: e.toString(),
         );
       }

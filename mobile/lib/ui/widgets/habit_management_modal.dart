@@ -7,12 +7,12 @@ import 'package:lucide_icons_flutter/lucide_icons.dart';
 import 'package:flutter_colorpicker/flutter_colorpicker.dart';
 import '../../core/theme.dart';
 import '../../core/haptics.dart';
-import '../../core/localization.dart';
 import '../../core/time_formatting.dart';
 import '../../models/goal.dart';
 import '../../providers/goal_provider.dart';
 import '../../providers/settings_provider.dart';
 import '../screens/subscription_screen.dart';
+import '../../i18n/translations.g.dart';
 
 class HabitManagementModal extends ConsumerStatefulWidget {
   const HabitManagementModal({super.key});
@@ -151,7 +151,7 @@ class _HabitManagementModalState extends ConsumerState<HabitManagementModal> {
                 children: [
                   CupertinoButton(
                     child: Text(
-                      context.l10n.translate('Annulla'),
+                      context.t.common.actions.cancel,
                       style: TextStyle(
                         color: context.appColors.mutedForeground,
                       ),
@@ -160,7 +160,7 @@ class _HabitManagementModalState extends ConsumerState<HabitManagementModal> {
                   ),
                   CupertinoButton(
                     child: Text(
-                      context.l10n.translate('Conferma'),
+                      context.t.common.actions.confirm,
                       style: TextStyle(
                         color: Theme.of(context).colorScheme.primary,
                       ),
@@ -225,7 +225,7 @@ class _HabitManagementModalState extends ConsumerState<HabitManagementModal> {
                 children: [
                   CupertinoButton(
                     child: Text(
-                      context.l10n.translate('Annulla'),
+                      context.t.common.actions.cancel,
                       style: TextStyle(
                         color: context.appColors.mutedForeground,
                       ),
@@ -234,7 +234,7 @@ class _HabitManagementModalState extends ConsumerState<HabitManagementModal> {
                   ),
                   CupertinoButton(
                     child: Text(
-                      context.l10n.translate('Conferma'),
+                      context.t.common.actions.confirm,
                       style: TextStyle(
                         color: Theme.of(context).colorScheme.primary,
                       ),
@@ -300,7 +300,7 @@ class _HabitManagementModalState extends ConsumerState<HabitManagementModal> {
                   ),
                   const SizedBox(height: 16),
                   Text(
-                    context.l10n.translate('Elimina Abitudine'),
+                    context.t.habits.deleteHabit,
                     style: TextStyle(
                       fontFamily: 'Inter',
                       fontSize: 18,
@@ -310,7 +310,7 @@ class _HabitManagementModalState extends ConsumerState<HabitManagementModal> {
                   ),
                   const SizedBox(height: 8),
                   Text(
-                    '${context.l10n.translate('Sei sicuro di voler eliminare')} "${habit.title}"?',
+                    '${context.t.habits.areYouSureYouWantTo} "${habit.title}"?',
                     textAlign: TextAlign.center,
                     style: TextStyle(
                       fontFamily: 'Inter',
@@ -325,7 +325,7 @@ class _HabitManagementModalState extends ConsumerState<HabitManagementModal> {
                         child: CupertinoButton(
                           padding: EdgeInsets.zero,
                           child: Text(
-                            context.l10n.translate('Annulla'),
+                            context.t.common.actions.cancel,
                             style: TextStyle(
                               color: context.appColors.mutedForeground,
                             ),
@@ -352,7 +352,7 @@ class _HabitManagementModalState extends ConsumerState<HabitManagementModal> {
                             elevation: 0,
                           ),
                           child: Text(
-                            context.l10n.translate('Elimina'),
+                            context.t.common.actions.delete,
                             style: const TextStyle(fontWeight: FontWeight.w600),
                           ),
                         ),
@@ -396,7 +396,7 @@ class _HabitManagementModalState extends ConsumerState<HabitManagementModal> {
                   children: [
                     const SizedBox(width: 40),
                     Text(
-                      context.l10n.translate('Gestione Abitudini'),
+                      context.t.habits.manageHabits,
                       style: TextStyle(
                         fontFamily: 'Inter',
                         fontSize: 20,
@@ -416,7 +416,7 @@ class _HabitManagementModalState extends ConsumerState<HabitManagementModal> {
                   ],
                 ),
                 Text(
-                  context.l10n.translate('Trascina per riordinare'),
+                  context.t.habits.dragToReorder,
                   textAlign: TextAlign.center,
                   style: TextStyle(
                     fontFamily: 'Inter',
@@ -460,8 +460,8 @@ class _HabitManagementModalState extends ConsumerState<HabitManagementModal> {
                           const SizedBox(width: 10),
                           Text(
                             _editingHabit != null
-                                ? context.l10n.translate('Modifica Abitudine')
-                                : context.l10n.translate('Aggiungi Abitudine'),
+                                ? context.t.habits.editHabit
+                                : context.t.habits.addHabit,
                             style: TextStyle(
                               fontWeight: FontWeight.w600,
                               fontSize: 15,
@@ -472,7 +472,7 @@ class _HabitManagementModalState extends ConsumerState<HabitManagementModal> {
                       ),
                       const SizedBox(height: 16),
                       Text(
-                        context.l10n.translate('Nome Abitudine').toUpperCase(),
+                        context.t.habits.habitName.toUpperCase(),
                         style: TextStyle(
                           fontSize: 10,
                           fontWeight: FontWeight.w600,
@@ -488,9 +488,7 @@ class _HabitManagementModalState extends ConsumerState<HabitManagementModal> {
                           fontSize: 15,
                         ),
                         decoration: InputDecoration(
-                          hintText: context.l10n.translate(
-                            'Es. Bere acqua, Leggere...',
-                          ),
+                          hintText: context.t.habits.eGDrinkWaterRead,
                           hintStyle: TextStyle(
                             color: context.appColors.mutedForeground.withValues(
                               alpha: 0.5,
@@ -520,7 +518,7 @@ class _HabitManagementModalState extends ConsumerState<HabitManagementModal> {
                       ),
                       const SizedBox(height: 16),
                       Text(
-                        context.l10n.translate('Colore').toUpperCase(),
+                        context.t.habits.color.toUpperCase(),
                         style: TextStyle(
                           fontSize: 10,
                           fontWeight: FontWeight.w600,
@@ -600,7 +598,7 @@ class _HabitManagementModalState extends ConsumerState<HabitManagementModal> {
                       ),
                       const SizedBox(height: 16),
                       Text(
-                        context.l10n.translate('Promemoria').toUpperCase(),
+                        context.t.habits.reminder.toUpperCase(),
                         style: TextStyle(
                           fontSize: 10,
                           fontWeight: FontWeight.w600,
@@ -632,7 +630,7 @@ class _HabitManagementModalState extends ConsumerState<HabitManagementModal> {
                                         _reminderTime!,
                                         use24hFormat: settings.timeFormat24h,
                                       )
-                                    : context.l10n.translate('Nessuno'),
+                                    : context.t.common.none,
                                 style: TextStyle(
                                   color: _reminderTime != null
                                       ? context.appColors.foreground
@@ -685,7 +683,7 @@ class _HabitManagementModalState extends ConsumerState<HabitManagementModal> {
                                   ),
                                 ),
                                 child: Text(
-                                  context.l10n.translate('Annulla'),
+                                  context.t.common.actions.cancel,
                                   style: TextStyle(
                                     color: context.appColors.mutedForeground,
                                     fontWeight: FontWeight.w600,
@@ -714,7 +712,7 @@ class _HabitManagementModalState extends ConsumerState<HabitManagementModal> {
                                   ),
                                 ),
                                 child: Text(
-                                  context.l10n.translate('Aggiorna'),
+                                  context.t.habits.update,
                                   style: TextStyle(
                                     fontWeight: FontWeight.w600,
                                     color:
@@ -817,12 +815,8 @@ class _HabitManagementModalState extends ConsumerState<HabitManagementModal> {
                                 ],
                                 Text(
                                   (!isPro && currentHabitsCount >= 5)
-                                      ? context.l10n.translate(
-                                          'Sblocca Evolve Pro',
-                                        )
-                                      : context.l10n.translate(
-                                          'Aggiungi Abitudine',
-                                        ),
+                                      ? context.t.common.unlockEvolvePro
+                                      : context.t.habits.addHabit,
                                   style: TextStyle(
                                     fontFamily: 'Inter',
                                     fontWeight: FontWeight.w700,
@@ -849,7 +843,7 @@ class _HabitManagementModalState extends ConsumerState<HabitManagementModal> {
                 Align(
                   alignment: Alignment.centerLeft,
                   child: Text(
-                    context.l10n.translate('Abitudini'),
+                    context.t.common.habits,
                     style: const TextStyle(
                       fontFamily: 'Inter',
                       fontSize: 16,

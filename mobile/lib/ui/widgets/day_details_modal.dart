@@ -7,7 +7,7 @@ import '../../models/goal.dart';
 import '../../providers/goal_provider.dart';
 import '../../core/haptics.dart';
 import 'habit_management_modal.dart';
-import '../../core/localization.dart';
+import '../../i18n/translations.g.dart';
 
 class DayDetailsModal extends ConsumerWidget {
   final DateTime date;
@@ -54,7 +54,7 @@ class DayDetailsModal extends ConsumerWidget {
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
                   Text(
-                    DateFormat.MMMMd(context.l10n.localeName).format(date),
+                    DateFormat.MMMMd(LocaleSettings.currentLocale.languageCode).format(date),
                     style: const TextStyle(
                       fontFamily: 'Inter',
                       fontSize: 24,
@@ -64,7 +64,7 @@ class DayDetailsModal extends ConsumerWidget {
                     ),
                   ),
                   Text(
-                    context.l10n.translate('I tuoi progressi per oggi'),
+                    context.t.habits.yourProgressForToday,
                     style: TextStyle(
                       fontFamily: 'Inter',
                       fontSize: 14,
@@ -96,7 +96,7 @@ class DayDetailsModal extends ConsumerWidget {
                         ),
                         const SizedBox(height: 16),
                         Text(
-                          context.l10n.translate('Nessuna abitudine'),
+                          context.t.habits.noHabit,
                           style: TextStyle(
                             fontFamily: 'Inter',
                             fontSize: 18,
@@ -106,9 +106,7 @@ class DayDetailsModal extends ConsumerWidget {
                         ),
                         const SizedBox(height: 8),
                         Text(
-                          context.l10n.translate(
-                            'Non ci sono abitudini per questo giorno.\nInizia a crearne una!',
-                          ),
+                          context.t.habits.thereAreNoHabitsForThis,
                           textAlign: TextAlign.center,
                           style: TextStyle(
                             fontFamily: 'Inter',
@@ -123,7 +121,7 @@ class DayDetailsModal extends ConsumerWidget {
                             HabitManagementModal.show(context);
                           },
                           icon: const Icon(LucideIcons.plus, size: 16),
-                          label: Text(context.l10n.translate('Crea Abitudine')),
+                          label: Text(context.t.habits.createHabit),
                           style: ElevatedButton.styleFrom(
                             backgroundColor: Theme.of(
                               context,
@@ -235,9 +233,7 @@ class DayDetailsModal extends ConsumerWidget {
                             ScaffoldMessenger.of(context).showSnackBar(
                               SnackBar(
                                 content: Text(
-                                  context.l10n.translate(
-                                    'Puoi modificare solo oggi e ieri!',
-                                  ),
+                                  context.t.habits.youCanOnlyEditTodayAnd,
                                 ),
                                 backgroundColor: Colors.redAccent,
                               ),

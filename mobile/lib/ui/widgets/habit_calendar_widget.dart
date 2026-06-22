@@ -6,14 +6,11 @@ import '../../models/goal.dart';
 import '../../providers/goal_provider.dart';
 import 'day_details_modal.dart';
 import '../../core/haptics.dart';
-import '../../core/localization.dart';
+import '../../core/l10n_dynamic.dart';
+import '../../i18n/translations.g.dart';
 
 // Keys for localization
 const _kDayKeys = ['mon', 'tue', 'wed', 'thu', 'fri', 'sat', 'sun'];
-const _kMonthKeys = [
-  'january', 'february', 'march', 'april', 'may', 'june',
-  'july', 'august', 'september', 'october', 'november', 'december',
-];
 
 class HabitCalendarWidget extends ConsumerStatefulWidget {
   const HabitCalendarWidget({super.key});
@@ -167,7 +164,7 @@ class _HabitCalendarWidgetState extends ConsumerState<HabitCalendarWidget> {
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
                     Text(
-                      context.l10n.translate(_kMonthKeys[month - 1]),
+                      context.t.common.months[month - 1],
                       style: TextStyle(
                         fontFamily: 'Inter',
                         fontSize: 22,
@@ -216,7 +213,7 @@ class _HabitCalendarWidgetState extends ConsumerState<HabitCalendarWidget> {
               return Expanded(
                 child: Center(
                   child: Text(
-                    context.l10n.translate(key),
+                    tWeekdayShort(context, key),
                     style: TextStyle(
                       fontFamily: 'Inter',
                       fontSize: 9,

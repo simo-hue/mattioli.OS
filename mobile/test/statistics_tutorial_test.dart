@@ -3,10 +3,11 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:mattioli_os/core/theme.dart';
-import 'package:mattioli_os/l10n/generated/app_localizations.dart';
+import 'package:flutter_localizations/flutter_localizations.dart';
 import 'package:mattioli_os/providers/auth_provider.dart';
 import 'package:mattioli_os/providers/shared_prefs_provider.dart';
 import 'package:mattioli_os/ui/screens/statistics_screen.dart';
+import 'package:mattioli_os/i18n/translations.g.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
 class _UnauthenticatedAuthNotifier extends AuthNotifier {
@@ -30,13 +31,15 @@ Future<void> _pumpStatisticsTutorialScreen(WidgetTester tester) async {
         sharedPrefsProvider.overrideWithValue(prefs),
         authProvider.overrideWith(_UnauthenticatedAuthNotifier.new),
       ],
-      child: MaterialApp(
-        theme: AppTheme.darkTheme(null),
-        localizationsDelegates: AppLocalizations.localizationsDelegates,
-        supportedLocales: AppLocalizations.supportedLocales,
-        locale: const Locale('en'),
-        home: const Scaffold(
-          body: StatisticsScreen(isActive: true, onFinishTutorial: null),
+      child: TranslationProvider(
+        child: MaterialApp(
+          theme: AppTheme.darkTheme(null),
+          localizationsDelegates: GlobalMaterialLocalizations.delegates,
+          supportedLocales: AppLocaleUtils.supportedLocales,
+          locale: const Locale('en'),
+          home: const Scaffold(
+            body: StatisticsScreen(isActive: true, onFinishTutorial: null),
+          ),
         ),
       ),
     ),
@@ -48,6 +51,7 @@ void main() {
 
   setUp(() {
     GoogleFonts.config.allowRuntimeFetching = false;
+    LocaleSettings.setLocaleSync(AppLocale.en);
   });
 
   testWidgets('statistics tutorial popup is visible on the first frame', (

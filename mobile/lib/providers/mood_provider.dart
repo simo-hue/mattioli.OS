@@ -7,8 +7,8 @@ import '../core/data_mode.dart';
 import '../core/private_local_database.dart';
 import '../core/navigator_key.dart';
 import '../core/app_logger.dart';
-import '../core/localization.dart';
 import '../ui/widgets/error_modal.dart';
+import '../i18n/translations.g.dart';
 
 SupabaseClient get supabase => Supabase.instance.client;
 
@@ -114,8 +114,8 @@ class DailyMoodsNotifier extends Notifier<DailyMoodsMap> {
       if (context != null && context.mounted) {
         ErrorModal.show(
           context,
-          title: context.l10n.moodSaveErrorTitle,
-          message: context.l10n.moodSaveFailed,
+          title: context.t.common.moodSaveErrorTitle,
+          message: context.t.common.moodSaveFailed,
           details: e.toString(),
         );
       }

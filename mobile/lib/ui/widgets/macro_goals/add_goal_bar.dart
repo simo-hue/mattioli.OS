@@ -1,4 +1,3 @@
-import '../../../core/localization.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
@@ -12,6 +11,7 @@ import '../../../providers/macro_goal_categories_provider.dart';
 import '../../../providers/settings_provider.dart';
 import 'category_picker_sheet.dart';
 import '../pro_features_modal.dart';
+import '../../../i18n/translations.g.dart';
 
 class AddGoalBar extends ConsumerStatefulWidget {
   final MacroGoalsViewState viewState;
@@ -29,15 +29,15 @@ class _AddGoalBarState extends ConsumerState<AddGoalBar> {
   String get _placeholder {
     switch (widget.viewState.selectedType) {
       case GoalType.lifetime:
-        return context.l10n.translate('Aggiungi obiettivo lifetime...');
+        return context.t.macroGoals.addLifetimeGoal;
       case GoalType.annual:
-        return context.l10n.translate('Aggiungi obiettivo annuale...');
+        return context.t.macroGoals.addAnnualGoal;
       case GoalType.quarterly:
-        return context.l10n.translate('Aggiungi obiettivo trimestrale...');
+        return context.t.macroGoals.addQuarterlyGoal;
       case GoalType.monthly:
-        return context.l10n.translate('Aggiungi obiettivo mensile...');
+        return context.t.macroGoals.addMonthlyGoal;
       case GoalType.weekly:
-        return context.l10n.translate('Aggiungi obiettivo settimanale...');
+        return context.t.macroGoals.addWeeklyGoal;
     }
   }
 
@@ -89,7 +89,7 @@ class _AddGoalBarState extends ConsumerState<AddGoalBar> {
     showMacroGoalCategoryPicker(
       context: context,
       ref: ref,
-      title: context.l10n.translate('Scegli categoria'),
+      title: context.t.macroGoals.chooseCategory,
       noneLabel: 'Default',
       noneSelected: _selectedCategory == null,
       selectedCategoryId: _selectedCategory,
@@ -155,7 +155,7 @@ class _AddGoalBarState extends ConsumerState<AddGoalBar> {
                   ),
                   border: InputBorder.none,
                   hintText: isLimitReached
-                      ? context.l10n.translate('Limite di 100 obiettivi raggiunto!')
+                      ? context.t.macroGoals.limitOf100GoalsReached
                       : _placeholder,
                   hintStyle: GoogleFonts.inter(
                     fontSize: 13,

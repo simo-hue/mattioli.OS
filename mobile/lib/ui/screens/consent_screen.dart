@@ -1,4 +1,3 @@
-import '../../core/localization.dart';
 import 'dart:ui';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
@@ -14,6 +13,7 @@ import '../../providers/consent_provider.dart';
 import '../../providers/auth_provider.dart';
 import '../../core/theme.dart';
 import '../../core/haptics.dart';
+import '../../i18n/translations.g.dart';
 
 class ConsentScreen extends ConsumerStatefulWidget {
   const ConsentScreen({super.key});
@@ -58,7 +58,7 @@ class _ConsentScreenState extends ConsumerState<ConsentScreen> {
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
             content: Text(
-              context.l10n.translate('Impossibile aprire il link.'),
+              context.t.common.unableToOpenTheLink,
             ),
           ),
         );
@@ -70,7 +70,7 @@ class _ConsentScreenState extends ConsumerState<ConsentScreen> {
     if (!_acceptedTerms) {
       ref.hapticHeavy();
       ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text(context.l10n.consentTermsRequired)),
+        SnackBar(content: Text(context.t.consent.termsRequired)),
       );
       return;
     }
@@ -183,7 +183,7 @@ class _ConsentScreenState extends ConsumerState<ConsentScreen> {
                       ),
                       const SizedBox(height: 24),
                       Text(
-                        context.l10n.privacyOnboardingTitle,
+                        context.t.consent.onboardingTitle,
                         textAlign: TextAlign.center,
                         style: GoogleFonts.inter(
                           color: context.appColors.foreground,
@@ -194,7 +194,7 @@ class _ConsentScreenState extends ConsumerState<ConsentScreen> {
                       ),
                       const SizedBox(height: 12),
                       Text(
-                        context.l10n.privacyOnboardingSubtitle,
+                        context.t.consent.onboardingSubtitle,
                         textAlign: TextAlign.center,
                         style: GoogleFonts.inter(
                           color: context.appColors.mutedForeground,
@@ -214,10 +214,8 @@ class _ConsentScreenState extends ConsumerState<ConsentScreen> {
                         // Item 1: Terms & Privacy
                         _buildConsentCard(
                           icon: LucideIcons.fileText,
-                          title: context.l10n.translate(
-                            'Termini e Privacy Policy',
-                          ),
-                          description: context.l10n.termsConsentDescription,
+                          title: context.t.consent.termsAndPrivacy,
+                          description: context.t.consent.termsDescription,
                           trailing: Checkbox(
                             value: _acceptedTerms,
                             onChanged: (val) {
@@ -236,7 +234,7 @@ class _ConsentScreenState extends ConsumerState<ConsentScreen> {
                                 'https://simo-hue.github.io/evolve/privacy.html',
                               ),
                               child: Text(
-                                context.l10n.readPrivacyPolicy,
+                                context.t.auth.readPrivacyPolicy,
                                 style: TextStyle(
                                   color: primaryColor,
                                   fontSize: 12,
@@ -251,7 +249,7 @@ class _ConsentScreenState extends ConsumerState<ConsentScreen> {
                         // Item 3: Notifications
                         _buildConsentCard(
                           icon: LucideIcons.bell,
-                          title: context.l10n.translate('Notifiche di Sistema'),
+                          title: context.t.consent.systemNotifications,
                           description:
                               'Ricevi promemoria per le tue abitudini e report settimanali.',
                           trailing: _notificationsAllowed

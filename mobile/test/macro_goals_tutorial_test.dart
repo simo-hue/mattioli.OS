@@ -3,13 +3,14 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:mattioli_os/core/theme.dart';
-import 'package:mattioli_os/l10n/generated/app_localizations.dart';
+import 'package:flutter_localizations/flutter_localizations.dart';
 import 'package:mattioli_os/models/macro_goal.dart';
 import 'package:mattioli_os/providers/auth_provider.dart';
 import 'package:mattioli_os/providers/macro_goals_provider.dart';
 import 'package:mattioli_os/providers/macro_goals_stats_provider.dart';
 import 'package:mattioli_os/providers/shared_prefs_provider.dart';
 import 'package:mattioli_os/ui/screens/macro_goals_screen.dart';
+import 'package:mattioli_os/i18n/translations.g.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
 class _UnauthenticatedAuthNotifier extends AuthNotifier {
@@ -58,23 +59,25 @@ Future<void> _pumpGoalsTutorialScreen(WidgetTester tester) async {
           return _emptyStats();
         }),
       ],
-      child: MaterialApp(
-        theme: AppTheme.darkTheme(null),
-        localizationsDelegates: AppLocalizations.localizationsDelegates,
-        supportedLocales: AppLocalizations.supportedLocales,
-        locale: const Locale('en'),
-        home: Scaffold(
-          body: Column(
-            children: [
-              Expanded(
-                child: MacroGoalsScreen(
-                  isActive: true,
-                  statsNavKey: statsNavKey,
-                  onFinishTutorial: () {},
+      child: TranslationProvider(
+        child: MaterialApp(
+          theme: AppTheme.darkTheme(null),
+          localizationsDelegates: GlobalMaterialLocalizations.delegates,
+          supportedLocales: AppLocaleUtils.supportedLocales,
+          locale: const Locale('en'),
+          home: Scaffold(
+            body: Column(
+              children: [
+                Expanded(
+                  child: MacroGoalsScreen(
+                    isActive: true,
+                    statsNavKey: statsNavKey,
+                    onFinishTutorial: () {},
+                  ),
                 ),
-              ),
-              SizedBox(key: statsNavKey, height: 72, width: 120),
-            ],
+                SizedBox(key: statsNavKey, height: 72, width: 120),
+              ],
+            ),
           ),
         ),
       ),
@@ -91,6 +94,7 @@ void main() {
 
   setUp(() {
     GoogleFonts.config.allowRuntimeFetching = false;
+    LocaleSettings.setLocaleSync(AppLocale.en);
   });
 
   testWidgets('goals tutorial popup is visible on the first Goals frame', (

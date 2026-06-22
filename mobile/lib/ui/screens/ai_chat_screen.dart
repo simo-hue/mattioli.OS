@@ -1,4 +1,3 @@
-import '../../core/localization.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
@@ -17,6 +16,7 @@ import '../../models/chat_message.dart';
 import '../../providers/goal_provider.dart';
 import '../../providers/macro_goals_provider.dart';
 import '../../providers/user_provider.dart';
+import '../../i18n/translations.g.dart';
 
 class AIChatScreen extends ConsumerStatefulWidget {
   const AIChatScreen({super.key});
@@ -47,9 +47,7 @@ class _AIChatScreenState extends ConsumerState<AIChatScreen> {
   void _addInitialMessages() {
     _messages.add(
       ChatMessage(
-        text: context.l10n.translate(
-          "Ciao! Sono il tuo Coach di Disciplina. Come posso aiutarti oggi?",
-        ),
+        text: context.t.tutorial.helloIMYourDisciplineCoach,
         isUser: false,
         timestamp: DateTime.now().subtract(const Duration(minutes: 1)),
       ),
@@ -77,7 +75,7 @@ class _AIChatScreenState extends ConsumerState<AIChatScreen> {
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
                   Text(
-                    context.l10n.translate("Contesto dell'AI"),
+                    context.t.tutorial.aiContextTitle,
                     style: TextStyle(
                       fontSize: 18,
                       fontWeight: FontWeight.bold,
@@ -86,9 +84,7 @@ class _AIChatScreenState extends ConsumerState<AIChatScreen> {
                   ),
                   const SizedBox(height: 8),
                   Text(
-                    context.l10n.translate(
-                      "Scegli quali informazioni condividere con l'assistente per personalizzare le risposte.",
-                    ),
+                    context.t.tutorial.aiContextDesc,
                     style: TextStyle(
                       fontSize: 13,
                       color: colors.mutedForeground,
@@ -96,10 +92,8 @@ class _AIChatScreenState extends ConsumerState<AIChatScreen> {
                   ),
                   const SizedBox(height: 16),
                   _buildContextSwitch(
-                    title: context.l10n.translate('Abitudini giornaliere'),
-                    subtitle: context.l10n.translate(
-                      'Stato di completamento di oggi',
-                    ),
+                    title: context.t.ai.dailyHabits,
+                    subtitle: context.t.ai.todayCompletion,
                     value: _shareHabits,
                     onChanged: (val) {
                       setDialogState(() => _shareHabits = val);
@@ -108,10 +102,8 @@ class _AIChatScreenState extends ConsumerState<AIChatScreen> {
                   ),
                   const SizedBox(height: 12),
                   _buildContextSwitch(
-                    title: context.l10n.translate('Macro obiettivi'),
-                    subtitle: context.l10n.translate(
-                      'Lista degli obiettivi attivi e completati',
-                    ),
+                    title: context.t.ai.macroGoals,
+                    subtitle: context.t.ai.activeCompletedGoals,
                     value: _shareGoals,
                     onChanged: (val) {
                       setDialogState(() => _shareGoals = val);
@@ -134,7 +126,7 @@ class _AIChatScreenState extends ConsumerState<AIChatScreen> {
                         ),
                         padding: const EdgeInsets.symmetric(vertical: 12),
                       ),
-                      child: Text(context.l10n.translate('Salva')),
+                      child: Text(context.t.common.actions.save),
                     ),
                   ),
                 ],
@@ -251,7 +243,6 @@ class _AIChatScreenState extends ConsumerState<AIChatScreen> {
     final stream = OpenRouterService.generateStreamResponse(
       _messages.sublist(0, assistantMessageIndex),
       systemPrompt: _getSystemPrompt(),
-      l10n: context.l10n,
     );
 
     bool receivedFirstToken = false;
@@ -284,7 +275,7 @@ class _AIChatScreenState extends ConsumerState<AIChatScreen> {
           _isTyping = false;
           _messages[assistantMessageIndex] = ChatMessage(
             text:
-                '${_messages[assistantMessageIndex].text}\n\n${context.l10n.aiStreamingInlineError}',
+                '${_messages[assistantMessageIndex].text}\n\n${context.t.ai.streamingError}',
             isUser: false,
             timestamp: _messages[assistantMessageIndex].timestamp,
           );
@@ -295,9 +286,7 @@ class _AIChatScreenState extends ConsumerState<AIChatScreen> {
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
             content: Text(
-              context.l10n.translate(
-                'Problemi di connessione con il Coach. Riprova più tardi.',
-              ),
+              context.t.ai.connectionIssues,
             ),
             backgroundColor: Colors.redAccent,
             behavior: SnackBarBehavior.floating,
@@ -332,23 +321,21 @@ class _AIChatScreenState extends ConsumerState<AIChatScreen> {
         return AlertDialog(
           backgroundColor: context.appColors.card,
           title: Text(
-            context.l10n.translate('Consenso AI in modalità privata'),
+            context.t.ai.privateConsentTitle,
             style: TextStyle(color: context.appColors.foreground),
           ),
           content: Text(
-            context.l10n.translate(
-              'Per usare il Coach AI, il messaggio e il contesto selezionato vengono inviati al provider AI esterno. Il database privato resta sul dispositivo.',
-            ),
+            context.t.ai.privateConsentBody,
             style: TextStyle(color: context.appColors.mutedForeground),
           ),
           actions: [
             TextButton(
               onPressed: () => Navigator.pop(dialogContext, false),
-              child: Text(context.l10n.translate('Annulla')),
+              child: Text(context.t.common.actions.cancel),
             ),
             TextButton(
               onPressed: () => Navigator.pop(dialogContext, true),
-              child: Text(context.l10n.translate('Accetto')),
+              child: Text(context.t.ai.accept),
             ),
           ],
         );
@@ -363,12 +350,11 @@ class _AIChatScreenState extends ConsumerState<AIChatScreen> {
   }
 
   String _getSystemPrompt() {
-    final l10n = context.l10n;
     final goals = ref.read(macroGoalsProvider).goals;
     final habits = ref.read(goalsProvider);
     final habitLogs = ref.read(habitLogsProvider);
     final userName =
-        ref.read(userProfileProvider).firstName ?? l10n.aiPromptDefaultUserName;
+        ref.read(userProfileProvider).firstName ?? context.t.ai.prompts.defaultUserName;
 
     final activeGoals = goals
         .where((g) => g.status == GoalStatus.active)
@@ -383,24 +369,24 @@ class _AIChatScreenState extends ConsumerState<AIChatScreen> {
 
     final goalsList = activeGoals.isNotEmpty
         ? activeGoals.map((g) => '  • ${g.title}').join('\n')
-        : '  • ${l10n.aiPromptNoActiveGoals}';
+        : '  • ${context.t.ai.prompts.noActiveGoals}';
 
     final contextBlock = StringBuffer()
-      ..writeln(l10n.aiPromptContextHeader)
-      ..writeln(l10n.aiPromptUserName(userName));
+      ..writeln(context.t.ai.prompts.contextHeader)
+      ..writeln(context.t.ai.prompts.userName(userName: userName));
 
     if (_shareGoals) {
       contextBlock
-        ..writeln(l10n.aiPromptActiveGoals(activeGoals.length))
+        ..writeln(context.t.ai.prompts.activeGoals(count: activeGoals.length))
         ..writeln(goalsList)
-        ..writeln(l10n.aiPromptCompletedGoals(completedGoals));
+        ..writeln(context.t.ai.prompts.completedGoals(count: completedGoals));
     }
 
     if (_shareHabits) {
-      contextBlock.writeln(l10n.aiPromptHabitsToday(todayDone, todayTotal));
+      contextBlock.writeln(context.t.ai.prompts.habitsToday(completed: todayDone, total: todayTotal));
     }
 
-    return l10n.aiCoachSystemPrompt(userName, contextBlock.toString());
+    return context.t.ai.prompts.coachSystemPrompt(userName: userName, contextBlock: contextBlock.toString());
   }
 
   List<String> _getDynamicSuggestions() {
@@ -411,18 +397,18 @@ class _AIChatScreenState extends ConsumerState<AIChatScreen> {
     // 1. Suggerimenti basati sull'orario (Generici)
     if (hour >= 5 && hour < 12) {
       pool.addAll([
-        context.l10n.aiSuggestionMorningBoost,
-        context.l10n.aiSuggestionAvoidDistractions,
+        context.t.ai.suggestions.morningBoost,
+        context.t.ai.suggestions.avoidDistractions,
       ]);
     } else if (hour >= 12 && hour < 18) {
       pool.addAll([
-        context.l10n.aiSuggestionLowEnergy,
-        context.l10n.aiSuggestionStayFocused,
+        context.t.ai.suggestions.lowEnergy,
+        context.t.ai.suggestions.stayFocused,
       ]);
     } else {
       pool.addAll([
-        context.l10n.aiSuggestionPrepareTomorrow,
-        context.l10n.aiSuggestionDisciplineReflection,
+        context.t.ai.suggestions.prepareTomorrow,
+        context.t.ai.suggestions.disciplineReflection,
       ]);
     }
 
@@ -442,45 +428,45 @@ class _AIChatScreenState extends ConsumerState<AIChatScreen> {
     if (_shareGoals && !_shareHabits) {
       // SOLO OBIETTIVI
       if (activeGoals.isNotEmpty) {
-        pool.add(context.l10n.aiSuggestionAnalyzeActiveGoals);
+        pool.add(context.t.ai.suggestions.analyzeActiveGoals);
       }
       pool.addAll([
-        context.l10n.aiSuggestionPlanMacroGoals,
-        context.l10n.aiSuggestionGoalObstacles,
-        context.l10n.aiSuggestionReachMilestones,
+        context.t.ai.suggestions.planMacroGoals,
+        context.t.ai.suggestions.goalObstacles,
+        context.t.ai.suggestions.reachMilestones,
       ]);
     } else if (!_shareGoals && _shareHabits) {
       // SOLO ABITUDINI
       pool.addAll([
-        context.l10n.aiSuggestionConsistencyStatus,
-        context.l10n.aiSuggestionWeeklyStats,
-        context.l10n.aiSuggestionPlanDay,
+        context.t.ai.suggestions.consistencyStatus,
+        context.t.ai.suggestions.weeklyStats,
+        context.t.ai.suggestions.planDay,
       ]);
 
       if (todayTotal > 0) {
         final pct = (todayDone / todayTotal) * 100;
         if (pct == 100) {
-          pool.add(context.l10n.aiSuggestionRaiseBar);
+          pool.add(context.t.ai.suggestions.raiseBar);
         } else if (pct < 30 && hour > 14) {
-          pool.add(context.l10n.aiSuggestionRecoverProcrastination);
+          pool.add(context.t.ai.suggestions.recoverProcrastination);
         }
       }
     } else if (_shareGoals && _shareHabits) {
       // ENTRAMBI
       if (activeGoals.isNotEmpty) {
-        pool.add(context.l10n.aiSuggestionAnalyzeActiveGoals);
+        pool.add(context.t.ai.suggestions.analyzeActiveGoals);
       }
       pool.addAll([
-        context.l10n.aiSuggestionConsistencyStatus,
-        context.l10n.aiSuggestionConnectHabitsGoals,
-        context.l10n.aiSuggestionReviewGoalsHabits,
+        context.t.ai.suggestions.consistencyStatus,
+        context.t.ai.suggestions.connectHabitsGoals,
+        context.t.ai.suggestions.reviewGoalsHabits,
       ]);
     } else {
       // NESSUNO (Fallback - Anche se l'utente non può inviare messaggi in questo stato, i suggerimenti mostrano l'errore)
       pool.addAll([
-        context.l10n.aiSuggestionDisciplineAdvice,
-        context.l10n.aiSuggestionCreateNewHabit,
-        context.l10n.aiSuggestionAvoidDistractions,
+        context.t.ai.suggestions.disciplineAdvice,
+        context.t.ai.suggestions.createNewHabit,
+        context.t.ai.suggestions.avoidDistractions,
       ]);
     }
 
@@ -558,7 +544,7 @@ class _AIChatScreenState extends ConsumerState<AIChatScreen> {
             Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                Text(context.l10n.translate('AI Coach')),
+                Text(context.t.ai.coach),
                 Row(
                   children: [
                     Container(
@@ -571,7 +557,7 @@ class _AIChatScreenState extends ConsumerState<AIChatScreen> {
                     ),
                     const SizedBox(width: 4),
                     Text(
-                      "${context.l10n.translate('Online per')} ${userProfile.displayName}",
+                      "${context.t.ai.onlineFor} ${userProfile.displayName}",
                       style: TextStyle(
                         fontSize: 11,
                         fontWeight: FontWeight.w400,
@@ -614,7 +600,7 @@ class _AIChatScreenState extends ConsumerState<AIChatScreen> {
                             crossAxisAlignment: CrossAxisAlignment.start,
                             children: [
                               Text(
-                                context.l10n.translate("Elimina chat"),
+                                context.t.tutorial.deleteChat,
                                 style: TextStyle(
                                   fontSize: 18,
                                   fontWeight: FontWeight.w700,
@@ -623,9 +609,7 @@ class _AIChatScreenState extends ConsumerState<AIChatScreen> {
                               ),
                               const SizedBox(height: 12),
                               Text(
-                                context.l10n.translate(
-                                  "Sei sicuro di voler eliminare tutti i messaggi? Questa azione non può essere annullata.",
-                                ),
+                                context.t.tutorial.areYouSureYouWantTo,
                                 style: TextStyle(
                                   fontSize: 14,
                                   color: colors.mutedForeground,
@@ -638,7 +622,7 @@ class _AIChatScreenState extends ConsumerState<AIChatScreen> {
                                   TextButton(
                                     onPressed: () => Navigator.pop(context),
                                     child: Text(
-                                      context.l10n.translate("Annulla"),
+                                      context.t.tutorial.cancel,
                                       style: TextStyle(
                                         color: colors.foreground,
                                       ),
@@ -661,7 +645,7 @@ class _AIChatScreenState extends ConsumerState<AIChatScreen> {
                                       ),
                                     ),
                                     child: Text(
-                                      context.l10n.translate('Elimina'),
+                                      context.t.common.actions.delete,
                                     ),
                                   ),
                                 ],
@@ -675,7 +659,7 @@ class _AIChatScreenState extends ConsumerState<AIChatScreen> {
                 );
               },
 
-              tooltip: context.l10n.translate('Nuova chat'),
+              tooltip: context.t.ai.newChat,
             ),
           IconButton(
             icon: Icon(
@@ -684,7 +668,7 @@ class _AIChatScreenState extends ConsumerState<AIChatScreen> {
               color: colors.mutedForeground,
             ),
             onPressed: _showSettingsDialog,
-            tooltip: context.l10n.translate('Impostazioni contesto'),
+            tooltip: context.t.ai.contextSettings,
           ),
         ],
       ),
@@ -744,7 +728,7 @@ class _AIChatScreenState extends ConsumerState<AIChatScreen> {
                           crossAxisAlignment: CrossAxisAlignment.start,
                           children: [
                             Text(
-                              context.l10n.translate("Coach Virtuale"),
+                              context.t.tutorial.virtualCoach,
                               style: TextStyle(
                                 color: colors.foreground,
                                 fontSize: 15,
@@ -753,9 +737,7 @@ class _AIChatScreenState extends ConsumerState<AIChatScreen> {
                             ),
                             const SizedBox(height: 2),
                             Text(
-                              context.l10n.translate(
-                                "Pronto ad aiutarti a mantenere la disciplina.",
-                              ),
+                              context.t.tutorial.readyToHelpYouStayDisciplined,
                               style: TextStyle(
                                 color: colors.mutedForeground,
                                 fontSize: 12,
@@ -785,7 +767,7 @@ class _AIChatScreenState extends ConsumerState<AIChatScreen> {
                     child: Row(
                       children: [
                         Text(
-                          context.l10n.translate("Suggerimenti"),
+                          context.t.tutorial.suggestions,
                           style: TextStyle(
                             color: colors.mutedForeground,
                             fontSize: 12,
@@ -837,9 +819,7 @@ class _AIChatScreenState extends ConsumerState<AIChatScreen> {
                         controller: _controller,
                         style: TextStyle(color: colors.foreground),
                         decoration: InputDecoration(
-                          hintText: context.l10n.translate(
-                            'Fai una domanda...',
-                          ),
+                          hintText: context.t.ai.ask,
                           hintStyle: TextStyle(color: colors.mutedForeground),
                           border: InputBorder.none,
                           contentPadding: const EdgeInsets.symmetric(
@@ -911,9 +891,7 @@ class _AIChatScreenState extends ConsumerState<AIChatScreen> {
             );
             _messages.add(
               ChatMessage(
-                text: context.l10n.translate(
-                  "Per favore, seleziona almeno un contesto (abitudini o obiettivi) nelle impostazioni per poter parlare con il Coach.",
-                ),
+                text: context.t.tutorial.pleaseSelectAtLeastOneContext,
                 isUser: false,
                 timestamp: DateTime.now().add(
                   const Duration(milliseconds: 100),
@@ -962,7 +940,7 @@ class _AIChatScreenState extends ConsumerState<AIChatScreen> {
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
             content: Text(
-              context.l10n.translate("Messaggio copiato"),
+              context.t.tutorial.messageCopied,
               style: TextStyle(color: colors.foreground),
             ),
             backgroundColor: colors.cardElevated,
@@ -999,7 +977,7 @@ class _AIChatScreenState extends ConsumerState<AIChatScreen> {
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
             MarkdownBody(
-              data: context.l10n.translate(message.text),
+              data: message.text,
               styleSheet: MarkdownStyleSheet.fromTheme(Theme.of(context))
                   .copyWith(
                     p: TextStyle(

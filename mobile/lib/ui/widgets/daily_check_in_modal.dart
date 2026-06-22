@@ -3,8 +3,8 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:lucide_icons_flutter/lucide_icons.dart';
 import '../../core/theme.dart';
 import '../../core/haptics.dart';
-import '../../core/localization.dart';
 import '../../providers/mood_provider.dart';
+import '../../i18n/translations.g.dart';
 
 class DailyCheckInModal extends ConsumerStatefulWidget {
   const DailyCheckInModal({super.key});
@@ -87,7 +87,7 @@ class _DailyCheckInModalState extends ConsumerState<DailyCheckInModal> {
 
           // Header
           Text(
-            context.l10n.translate('Check-in Giornaliero'),
+            context.t.habits.dailyCheckIn,
             style: TextStyle(
               fontFamily: 'Inter',
               fontSize: 22,
@@ -98,7 +98,7 @@ class _DailyCheckInModalState extends ConsumerState<DailyCheckInModal> {
           ),
           const SizedBox(height: 4),
           Text(
-            context.l10n.translate('Traccia il tuo umore ed energia.'),
+            context.t.habits.trackYourMoodAndEnergy,
             style: TextStyle(
               fontFamily: 'Inter',
               fontSize: 14,
@@ -119,7 +119,7 @@ class _DailyCheckInModalState extends ConsumerState<DailyCheckInModal> {
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
                 Text(
-                  context.l10n.translate('Check-in Giornaliero'),
+                  context.t.habits.dailyCheckIn,
                   style: TextStyle(
                     fontFamily: 'Inter',
                     fontSize: 18,
@@ -131,7 +131,7 @@ class _DailyCheckInModalState extends ConsumerState<DailyCheckInModal> {
 
                 // Mood Section
                 _buildSliderSection(
-                  label: context.l10n.translate('Umore'),
+                  label: context.t.habits.mood,
                   icon: LucideIcons.heart,
                   value: _mood,
                   emoji: _getMoodEmoji(_mood.round()),
@@ -142,7 +142,7 @@ class _DailyCheckInModalState extends ConsumerState<DailyCheckInModal> {
 
                 // Energy Section
                 _buildSliderSection(
-                  label: context.l10n.translate('Energia'),
+                  label: context.t.habits.energy,
                   icon: LucideIcons.zap,
                   value: _energy,
                   emoji: _getEnergyEmoji(_energy.round()),
@@ -181,8 +181,8 @@ class _DailyCheckInModalState extends ConsumerState<DailyCheckInModal> {
                         const SizedBox(width: 10),
                         Text(
                           isFirstTime
-                              ? context.l10n.translate('Inserisci')
-                              : context.l10n.translate('Aggiorna'),
+                              ? context.t.habits.enter
+                              : context.t.habits.update,
                           style: const TextStyle(
                             fontSize: 15,
                             fontWeight: FontWeight.w600,

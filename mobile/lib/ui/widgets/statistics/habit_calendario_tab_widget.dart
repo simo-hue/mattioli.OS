@@ -2,8 +2,8 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:lucide_icons_flutter/lucide_icons.dart';
 import '../../../core/theme.dart';
-import '../../../core/localization.dart';
 import '../../../providers/goal_provider.dart';
+import '../../../i18n/translations.g.dart';
 
 class HabitCalendarioTabWidget extends ConsumerWidget {
   final String goalId;
@@ -32,7 +32,7 @@ class HabitCalendarioTabWidget extends ConsumerWidget {
       ),
       error: (err, stack) => SizedBox(
         height: 200,
-        child: Center(child: Text('${context.l10n.translate('Errore')}: $err', style: TextStyle(color: context.appColors.mutedForeground))),
+        child: Center(child: Text('${context.t.common.status.error}: $err', style: TextStyle(color: context.appColors.mutedForeground))),
       ),
     );
   }
@@ -59,7 +59,7 @@ class _CalendarioAnnualeCard extends StatelessWidget {
               Icon(LucideIcons.calendar, size: 16, color: context.appColors.foreground),
               const SizedBox(width: 8),
               Text(
-                context.l10n.translate('Calendario Annuale'),
+                context.t.statistics.annualCalendar,
                 style: TextStyle(
                   fontFamily: 'Inter',
                   fontSize: 14,
@@ -110,11 +110,11 @@ class _CalendarioAnnualeCard extends StatelessWidget {
           
           Row(
             children: [
-              _buildLegendItem(context, const Color(0xFF10B981), context.l10n.translate('Completato')),
+              _buildLegendItem(context, const Color(0xFF10B981), context.t.statistics.completed2),
               const SizedBox(width: 12),
-              _buildLegendItem(context, const Color(0xFFEF4444), context.l10n.translate('Mancato')),
+              _buildLegendItem(context, const Color(0xFFEF4444), context.t.statistics.missed2),
               const SizedBox(width: 12),
-              _buildLegendItem(context, context.appColors.muted.withValues(alpha: 0.5), context.l10n.translate('Non tracciato')),
+              _buildLegendItem(context, context.appColors.muted.withValues(alpha: 0.5), context.t.statistics.notTracked),
             ],
           ),
         ],
@@ -169,9 +169,9 @@ class _CalendarioStatsCard extends StatelessWidget {
       child: Row(
         mainAxisAlignment: MainAxisAlignment.spaceAround,
         children: [
-          _buildStatItem(context, '$completed', context.l10n.translate('Completati'), const Color(0xFF10B981)),
-          _buildStatItem(context, '$missed', context.l10n.translate('Mancati'), const Color(0xFFEF4444)),
-          _buildStatItem(context, '$rate%', context.l10n.translate('Tasso'), Theme.of(context).colorScheme.primary),
+          _buildStatItem(context, '$completed', context.t.statistics.completed, const Color(0xFF10B981)),
+          _buildStatItem(context, '$missed', context.t.statistics.missed, const Color(0xFFEF4444)),
+          _buildStatItem(context, '$rate%', context.t.statistics.rate, Theme.of(context).colorScheme.primary),
         ],
       ),
     );

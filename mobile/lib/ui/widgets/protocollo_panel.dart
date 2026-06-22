@@ -3,12 +3,12 @@ import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:lucide_icons_flutter/lucide_icons.dart';
 import '../../core/theme.dart';
-import '../../core/localization.dart';
 import '../../providers/settings_provider.dart';
 import '../screens/ai_chat_screen.dart';
 import 'daily_check_in_modal.dart';
 import 'habit_management_modal.dart';
 import 'pro_features_modal.dart';
+import '../../i18n/translations.g.dart';
 
 /// "Protocollo" command panel matching the PWA sidebar card
 class ProtocolloPanel extends ConsumerWidget {
@@ -64,8 +64,8 @@ class ProtocolloPanel extends ConsumerWidget {
               child: _ActionTile(
                 key: checkInKey,
                 icon: LucideIcons.heartPulse,
-                label: context.l10n.translate('Daily Check-in'),
-                subtitle: context.l10n.translate('Stato d\'animo'),
+                label: context.t.habits.dailyCheckIn,
+                subtitle: context.t.habits.mood,
                 color: const Color(0xFFEF4444),
                 onTap: () => DailyCheckInModal.show(context),
               ),
@@ -77,8 +77,8 @@ class ProtocolloPanel extends ConsumerWidget {
               child: _ActionTile(
                 key: aiChatKey,
                 icon: LucideIcons.sparkles,
-                label: context.l10n.translate('AI Chat'),
-                subtitle: context.l10n.translate('Obiettivi'),
+                label: context.t.habits.aiChat,
+                subtitle: context.t.common.goals,
                 color: const Color(0xFF8B5CF6),
                 onTap: () {
                   final settings = ref.read(settingsProvider);
@@ -97,8 +97,8 @@ class ProtocolloPanel extends ConsumerWidget {
               child: _ActionTile(
                 key: manageHabitsKey,
                 icon: LucideIcons.listTodo,
-                label: context.l10n.translate('Gestione'),
-                subtitle: context.l10n.translate('Abitudini'),
+                label: context.t.habits.manager,
+                subtitle: context.t.common.habits,
                 color: Theme.of(context).colorScheme.primary,
                 onTap: () => HabitManagementModal.show(context),
               ),

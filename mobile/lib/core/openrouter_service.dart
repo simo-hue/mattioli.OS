@@ -1,36 +1,24 @@
 import 'dart:convert';
 import 'dart:async';
 import 'dart:io';
-import 'dart:ui' as ui;
 import 'package:http/http.dart' as http;
 
-import '../l10n/generated/app_localizations.dart';
+import '../i18n/translations.g.dart';
 import '../models/chat_message.dart';
 import 'openrouter_config.dart';
 import 'app_logger.dart';
 
 class OpenRouterService {
-  static AppLocalizations get _fallbackL10n {
-    final locale = ui.PlatformDispatcher.instance.locale;
-    try {
-      return lookupAppLocalizations(locale);
-    } catch (_) {
-      return lookupAppLocalizations(const ui.Locale('en'));
-    }
-  }
-
   /// Genera una risposta dall'LLM tramite Open Router.
   /// Prende in input lo storico dei messaggi per mantenere il contesto.
   static Future<String> generateResponse(
     List<ChatMessage> history, {
     String? systemPrompt,
-    AppLocalizations? l10n,
   }) async {
-    final translations = l10n ?? _fallbackL10n;
     // Verifica se la chiave API è stata inserita
     if (OpenRouterConfig.apiKey == 'YOUR_OPENROUTER_API_KEY' ||
         OpenRouterConfig.apiKey.isEmpty) {
-      return translations.openRouterApiKeyMissingFull;
+      return t.ai.openRouter.apiKeyMissingFull;
     }
 
     final url = Uri.parse('${OpenRouterConfig.baseUrl}/chat/completions');
@@ -42,7 +30,7 @@ class OpenRouterService {
 
     // Usiamo il system prompt fornito o quello di default
     final finalSystemPrompt =
-        systemPrompt ?? translations.openRouterDefaultSystemPrompt;
+        systemPrompt ?? t.ai.openRouter.defaultSystemPrompt;
 
     messages.insert(0, {'role': 'system', 'content': finalSystemPrompt});
 
@@ -79,23 +67,21 @@ class OpenRouterService {
           null,
           null,
         );
-        return translations.openRouterCommunicationError(response.statusCode);
+        return t.ai.openRouter.communicationError(code: response.statusCode);
       }
     } catch (e, stack) {
       AppLogger.error('[OpenRouter] Eccezione durante la chiamata', e, stack);
-      return translations.openRouterConnectionError;
+      return t.ai.openRouter.connectionError;
     }
   }
 
   static Stream<String> generateStreamResponse(
     List<ChatMessage> history, {
     String? systemPrompt,
-    AppLocalizations? l10n,
   }) async* {
-    final translations = l10n ?? _fallbackL10n;
     if (OpenRouterConfig.apiKey == 'YOUR_OPENROUTER_API_KEY' ||
         OpenRouterConfig.apiKey.isEmpty) {
-      yield translations.openRouterApiKeyMissingShort;
+      yield t.ai.openRouter.apiKeyMissingShort;
       return;
     }
 
@@ -105,14 +91,14 @@ class OpenRouterService {
         'openrouter.ai',
       ).timeout(const Duration(seconds: 5));
       if (result.isEmpty || result[0].rawAddress.isEmpty) {
-        yield translations.openRouterNoInternet;
+        yield t.ai.openRouter.noInternet;
         return;
       }
     } on SocketException catch (_) {
-      yield translations.openRouterNoInternet;
+      yield t.ai.openRouter.noInternet;
       return;
     } on TimeoutException catch (_) {
-      yield translations.openRouterConnectionCheckTimeout;
+      yield t.ai.openRouter.connectionCheckTimeout;
       return;
     }
 
@@ -123,7 +109,7 @@ class OpenRouterService {
     }).toList();
 
     final finalSystemPrompt =
-        systemPrompt ?? translations.openRouterDefaultSystemPrompt;
+        systemPrompt ?? t.ai.openRouter.defaultSystemPrompt;
 
     messages.insert(0, {'role': 'system', 'content': finalSystemPrompt});
 
@@ -156,9 +142,9 @@ class OpenRouterService {
         );
 
         if (response.statusCode == 400) {
-          yield translations.openRouterContextTooLong;
+          yield t.ai.openRouter.contextTooLong;
         } else {
-          yield translations.openRouterApiError(response.statusCode);
+          yield t.ai.openRouter.apiError(code: response.statusCode);
         }
         client.close();
         return;
@@ -195,10 +181,10 @@ class OpenRouterService {
       }
     } on TimeoutException catch (e, stack) {
       AppLogger.error('[OpenRouter] Timeout streaming', e, stack);
-      yield translations.openRouterServerTimeout;
+      yield t.ai.openRouter.serverTimeout;
     } catch (e, stack) {
       AppLogger.error('[OpenRouter] Eccezione streaming', e, stack);
-      yield translations.openRouterConnectionErrorShort;
+      yield t.ai.openRouter.connectionErrorShort;
     } finally {
       client.close();
     }

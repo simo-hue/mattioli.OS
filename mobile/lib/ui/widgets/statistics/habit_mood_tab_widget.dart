@@ -2,8 +2,8 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:lucide_icons_flutter/lucide_icons.dart';
 import '../../../core/theme.dart';
-import '../../../core/localization.dart';
 import '../../../providers/mood_provider.dart';
+import '../../../i18n/translations.g.dart';
 
 class HabitMoodTabWidget extends ConsumerWidget {
   final String goalId;
@@ -62,25 +62,25 @@ class _TopMetricsGrid extends StatelessWidget {
       childAspectRatio: 1.8,
       children: [
         _MetricCard(
-          title: context.l10n.translate('Correlazione Mood'),
+          title: context.t.statistics.moodCorrelation,
           value: '${correlation.sensitivity}%',
-          subtitle: correlation.sensitivity > 10 ? context.l10n.translate('positiva') : context.l10n.translate('neutra'),
+          subtitle: correlation.sensitivity > 10 ? context.t.statistics.positive : context.t.statistics.neutral,
         ),
         _MetricCard(
-          title: context.l10n.translate('Resilienza'),
+          title: context.t.statistics.resilience,
           value: '${correlation.resilience}%',
-          subtitle: correlation.resilience > 50 ? context.l10n.translate('alta') : context.l10n.translate('bassa'),
+          subtitle: correlation.resilience > 50 ? context.t.statistics.high : context.t.statistics.low,
         ),
         _MetricCard(
-          title: context.l10n.translate('Mood Medio (✓)'),
+          title: context.t.statistics.avgMood,
           value: correlation.avgMoodDone.toStringAsFixed(1),
-          subtitle: context.l10n.translate('nei giorni completati'),
+          subtitle: context.t.statistics.onCompletedDays,
           isRed: correlation.avgMoodDone < 40,
         ),
         _MetricCard(
-          title: context.l10n.translate('Energia Media (✓)'),
+          title: context.t.statistics.avgEnergy,
           value: correlation.avgEnergyDone.toStringAsFixed(1),
-          subtitle: context.l10n.translate('nei giorni completati'),
+          subtitle: context.t.statistics.onCompletedDays,
           isRed: correlation.avgEnergyDone < 40,
         ),
       ],
@@ -172,7 +172,7 @@ class _ResilienteBadge extends StatelessWidget {
           Icon(LucideIcons.activity, size: 14, color: Theme.of(context).colorScheme.primary),
           const SizedBox(width: 6),
           Text(
-            context.l10n.translate('Resiliente'),
+            context.t.statistics.resilient,
             style: TextStyle(
               fontFamily: 'Inter',
               fontSize: 12,
@@ -204,7 +204,7 @@ class _CompletatoVsMancatoCard extends StatelessWidget {
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           Text(
-            context.l10n.translate('Completato vs Mancato'),
+            context.t.statistics.completedVsMissed,
             style: TextStyle(
               fontFamily: 'Inter',
               fontSize: 16,
@@ -240,9 +240,9 @@ class _CompletatoVsMancatoCard extends StatelessWidget {
                       Row(
                         crossAxisAlignment: CrossAxisAlignment.end,
                         children: [
-                          Expanded(child: _buildBarGroup(context, context.l10n.translate('Completato'), correlation.avgMoodDone, correlation.avgEnergyDone)),
+                          Expanded(child: _buildBarGroup(context, context.t.statistics.completed2, correlation.avgMoodDone, correlation.avgEnergyDone)),
                           const SizedBox(width: 16),
-                          Expanded(child: _buildBarGroup(context, context.l10n.translate('Mancato'), correlation.avgMoodMissed, correlation.avgEnergyMissed)),
+                          Expanded(child: _buildBarGroup(context, context.t.statistics.missed2, correlation.avgMoodMissed, correlation.avgEnergyMissed)),
                         ],
                       ),
                     ],
@@ -256,9 +256,9 @@ class _CompletatoVsMancatoCard extends StatelessWidget {
           Row(
             mainAxisAlignment: MainAxisAlignment.center,
             children: [
-              _buildLegendItem(context, const Color(0xFF10B981), context.l10n.translate('Umore')),
+              _buildLegendItem(context, const Color(0xFF10B981), context.t.statistics.mood2),
               const SizedBox(width: 16),
-              _buildLegendItem(context, const Color(0xFFF59E0B), context.l10n.translate('Energia')),
+              _buildLegendItem(context, const Color(0xFFF59E0B), context.t.statistics.energy),
             ],
           ),
         ],
@@ -364,7 +364,7 @@ class _PerformancePerLivelloCard extends StatelessWidget {
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           Text(
-            context.l10n.translate('Performance per Livello'),
+            context.t.statistics.performancePerLevel,
             style: TextStyle(
               fontFamily: 'Inter',
               fontSize: 16,
@@ -373,9 +373,9 @@ class _PerformancePerLivelloCard extends StatelessWidget {
             ),
           ),
           const SizedBox(height: 20),
-          _buildLevelRow(context, context.l10n.translate('Con Mood Alto'), correlation.highMoodPct, const Color(0xFF10B981)),
+          _buildLevelRow(context, context.t.statistics.withHighMood, correlation.highMoodPct, const Color(0xFF10B981)),
           const SizedBox(height: 16),
-          _buildLevelRow(context, context.l10n.translate('Con Mood Basso'), correlation.lowMoodPct, const Color(0xFFEF4444)),
+          _buildLevelRow(context, context.t.statistics.withLowMood, correlation.lowMoodPct, const Color(0xFFEF4444)),
         ],
       ),
     );
@@ -410,7 +410,7 @@ class _FooterInfo extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Text(
-      context.l10n.translate('L\'analisi mostra come la tua costanza è influenzata dal tuo stato d\'animo ed energia.'),
+      context.t.statistics.moodEnergyAnalysis,
       style: TextStyle(
         fontFamily: 'Inter',
         fontSize: 11,

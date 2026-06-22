@@ -2,9 +2,9 @@ import 'package:flutter/material.dart';
 import 'package:lucide_icons_flutter/lucide_icons.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../../core/theme.dart';
-import '../../../core/localization.dart';
 import '../../../providers/goal_provider.dart';
 import '../../../models/goal.dart';
+import '../../../i18n/translations.g.dart';
 
 class HabitStats {
   final int currentStreak;
@@ -118,7 +118,7 @@ class HabitOverviewTabWidget extends ConsumerWidget {
               loading: () => const Center(child: CircularProgressIndicator()),
               error: (err, stack) => Center(
                 child: Text(
-                  '${context.l10n.translate('Errore')}: $err',
+                  '${context.t.common.status.error}: $err',
                   style: TextStyle(color: context.appColors.mutedForeground),
                 ),
               ),
@@ -127,7 +127,7 @@ class HabitOverviewTabWidget extends ConsumerWidget {
           loading: () => const Center(child: CircularProgressIndicator()),
           error: (err, stack) => Center(
             child: Text(
-              '${context.l10n.translate('Errore')}: $err',
+              '${context.t.common.status.error}: $err',
               style: TextStyle(color: context.appColors.mutedForeground),
             ),
           ),
@@ -136,7 +136,7 @@ class HabitOverviewTabWidget extends ConsumerWidget {
       loading: () => const Center(child: CircularProgressIndicator()),
       error: (err, stack) => Center(
         child: Text(
-          '${context.l10n.translate('Errore')}: $err',
+          '${context.t.common.status.error}: $err',
           style: TextStyle(color: context.appColors.mutedForeground),
         ),
       ),
@@ -159,28 +159,28 @@ class _TopStatsGrid extends StatelessWidget {
       childAspectRatio: 1.8,
       children: [
         _StatCard(
-          title: context.l10n.translate('SERIE ATTUALE'),
+          title: context.t.statistics.currentStreak,
           value: '${stats.currentStreak}',
-          subtitle: context.l10n.translate('giorni'),
+          subtitle: context.t.common.days,
           valueColor: const Color(0xFFEF4444), // Red
         ),
         _StatCard(
-          title: context.l10n.translate('RECORD'),
+          title: context.t.statistics.record,
           value: '${stats.bestStreak}',
-          subtitle: context.l10n.translate('giorni'),
+          subtitle: context.t.common.days,
           valueColor: const Color(0xFFEAB308), // Yellow
         ),
         _StatCard(
-          title: context.l10n.translate('COMPLETAMENTO'),
+          title: context.t.statistics.completation,
           value: '${stats.completionRate}%',
           subtitle:
-              '${stats.totalCompletions}/${stats.totalActiveDays} ${context.l10n.daysShortUnit}',
+              '${stats.totalCompletions}/${stats.totalActiveDays} ${context.t.statistics.daysShortUnit}',
           valueColor: context.appColors.foreground,
         ),
         _StatCard(
-          title: context.l10n.translate('MANCATI'),
+          title: context.t.statistics.missed,
           value: '${stats.missedDays}',
-          subtitle: context.l10n.translate('giorni'),
+          subtitle: context.t.common.days,
           valueColor: const Color(0xFFEF4444), // Red
         ),
       ],
@@ -267,7 +267,7 @@ class _TrendUltimi30Giorni extends StatelessWidget {
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           Text(
-            context.l10n.translate('Trend Ultimi 30 Giorni'),
+            context.t.statistics.last30DaysTrend,
             style: TextStyle(
               fontFamily: 'Inter',
               fontSize: 16,
@@ -324,7 +324,7 @@ class _TrendUltimi30Giorni extends StatelessWidget {
                   ),
                   const SizedBox(width: 6),
                   Text(
-                    context.l10n.translate('Completato'),
+                    context.t.statistics.completed2,
                     style: TextStyle(
                       fontFamily: 'Inter',
                       fontSize: 11,
@@ -346,7 +346,7 @@ class _TrendUltimi30Giorni extends StatelessWidget {
                   ),
                   const SizedBox(width: 6),
                   Text(
-                    context.l10n.translate('Non completato'),
+                    context.t.statistics.notCompleted,
                     style: TextStyle(
                       fontFamily: 'Inter',
                       fontSize: 11,
@@ -368,7 +368,7 @@ class _TrendUltimi30Giorni extends StatelessWidget {
                   ),
                   const SizedBox(width: 6),
                   Text(
-                    context.l10n.translate('Saltato'),
+                    context.t.statistics.skipped,
                     style: TextStyle(
                       fontFamily: 'Inter',
                       fontSize: 11,
@@ -439,7 +439,7 @@ class _CorrelazioniSectionState extends State<_CorrelazioniSection> {
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
         Text(
-          '${context.l10n.translate('Correlazioni con')} "${widget.currentGoalTitle}"',
+          '${context.t.statistics.correlationsWith} "${widget.currentGoalTitle}"',
           style: TextStyle(
             fontFamily: 'Inter',
             fontSize: 18,
@@ -449,9 +449,7 @@ class _CorrelazioniSectionState extends State<_CorrelazioniSection> {
         ),
         const SizedBox(height: 4),
         Text(
-          context.l10n.translate(
-            'Come questa abitudine si relaziona con le altre',
-          ),
+          context.t.statistics.howThisHabitRelatesToOthers,
           style: TextStyle(
             fontFamily: 'Inter',
             fontSize: 12,
@@ -470,7 +468,7 @@ class _CorrelazioniSectionState extends State<_CorrelazioniSection> {
             ),
             const SizedBox(width: 8),
             Text(
-              context.l10n.translate('Correlazioni Positive'),
+              context.t.statistics.positiveCorrelations,
               style: const TextStyle(
                 fontFamily: 'Inter',
                 fontSize: 14,
@@ -486,9 +484,7 @@ class _CorrelazioniSectionState extends State<_CorrelazioniSection> {
           child: displayPositives.isEmpty
               ? Center(
                   child: Text(
-                    context.l10n.translate(
-                      'Nessuna correlazione positiva significativa',
-                    ),
+                    context.t.statistics.noSignificantPositiveCorrelation,
                     style: TextStyle(color: context.appColors.mutedForeground),
                   ),
                 )
@@ -503,19 +499,14 @@ class _CorrelazioniSectionState extends State<_CorrelazioniSection> {
                       _CorrelazioneCard(
                         habitName: goal.title,
                         habitColor: goal.color,
-                        strengthText: context.l10n.strongCorrelationStrength(
+                        strengthText: context.t.statistics.strongCorrelationStrength(value: 
                           '+${(c['percentage'] / 100).toStringAsFixed(2)}',
                         ),
                         strengthColor: const Color(0xFF10B981),
-                        subtitle: context.l10n.habitTogetherPercent(
+                        subtitle: context.t.statistics.habitTogetherPercent(percentage: 
                           c['percentage'] as int,
                         ),
-                        description: context.l10n
-                            .habitPositiveCorrelationDescription(
-                              widget.currentGoalTitle,
-                              c['percentage'] as int,
-                              goal.title,
-                            ),
+                        description: context.t.statistics.habitPositiveCorrelationDescription(currentGoal: widget.currentGoalTitle, percentage: c['percentage'] as int, otherGoal: goal.title),
                         borderColor: const Color(0xFF10B981),
                       ),
                     );
@@ -542,7 +533,7 @@ class _CorrelazioniSectionState extends State<_CorrelazioniSection> {
             ),
             const SizedBox(width: 8),
             Text(
-              context.l10n.translate('Correlazioni Negative'),
+              context.t.statistics.negativeCorrelations,
               style: const TextStyle(
                 fontFamily: 'Inter',
                 fontSize: 14,
@@ -558,9 +549,7 @@ class _CorrelazioniSectionState extends State<_CorrelazioniSection> {
           child: displayNegatives.isEmpty
               ? Center(
                   child: Text(
-                    context.l10n.translate(
-                      'Nessuna correlazione negativa significativa',
-                    ),
+                    context.t.statistics.noSignificantNegativeCorrelation,
                     style: TextStyle(color: context.appColors.mutedForeground),
                   ),
                 )
@@ -575,19 +564,14 @@ class _CorrelazioniSectionState extends State<_CorrelazioniSection> {
                       _CorrelazioneCard(
                         habitName: goal.title,
                         habitColor: goal.color,
-                        strengthText: context.l10n.weakCorrelationStrength(
+                        strengthText: context.t.statistics.weakCorrelationStrength(value: 
                           '+${(c['percentage'] / 100).toStringAsFixed(2)}',
                         ),
                         strengthColor: const Color(0xFFEF4444),
-                        subtitle: context.l10n.habitTogetherPercent(
+                        subtitle: context.t.statistics.habitTogetherPercent(percentage: 
                           c['percentage'] as int,
                         ),
-                        description: context.l10n
-                            .habitNegativeCorrelationDescription(
-                              widget.currentGoalTitle,
-                              c['percentage'] as int,
-                              goal.title,
-                            ),
+                        description: context.t.statistics.habitNegativeCorrelationDescription(currentGoal: widget.currentGoalTitle, percentage: c['percentage'] as int, otherGoal: goal.title),
                         borderColor: const Color(0xFFEF4444),
                       ),
                     );

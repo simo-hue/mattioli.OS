@@ -1,4 +1,3 @@
-import '../../../core/localization.dart';
 import 'dart:async';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
@@ -13,6 +12,7 @@ import '../../../core/haptics.dart';
 import '../../../providers/settings_provider.dart';
 import 'category_picker_sheet.dart';
 import '../pro_features_modal.dart';
+import '../../../i18n/translations.g.dart';
 
 class GoalItemWidget extends ConsumerStatefulWidget {
   final MacroGoal goal;
@@ -114,7 +114,7 @@ class _GoalItemWidgetState extends ConsumerState<GoalItemWidget>
         backgroundColor: context.appColors.card,
         shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
         title: Text(
-          context.l10n.translate('Modifica Obiettivo'),
+          context.t.macroGoals.editGoal,
           style: GoogleFonts.inter(
             color: context.appColors.foreground,
             fontWeight: FontWeight.w600,
@@ -129,7 +129,7 @@ class _GoalItemWidgetState extends ConsumerState<GoalItemWidget>
             fontSize: 14,
           ),
           decoration: InputDecoration(
-            hintText: context.l10n.translate('Titolo obiettivo...'),
+            hintText: context.t.macroGoals.goalTitle,
             hintStyle: GoogleFonts.inter(
               color: context.appColors.mutedForeground,
             ),
@@ -154,7 +154,7 @@ class _GoalItemWidgetState extends ConsumerState<GoalItemWidget>
           TextButton(
             onPressed: () => Navigator.pop(context),
             child: Text(
-              context.l10n.translate('Annulla'),
+              context.t.common.actions.cancel,
               style: GoogleFonts.inter(
                 color: context.appColors.mutedForeground,
               ),
@@ -171,7 +171,7 @@ class _GoalItemWidgetState extends ConsumerState<GoalItemWidget>
               Navigator.pop(context);
             },
             child: Text(
-              context.l10n.translate('Salva'),
+              context.t.common.actions.save,
               style: GoogleFonts.inter(
                 color: context.appColors.foreground,
                 fontWeight: FontWeight.w600,
@@ -190,7 +190,7 @@ class _GoalItemWidgetState extends ConsumerState<GoalItemWidget>
         backgroundColor: context.appColors.card,
         shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
         title: Text(
-          context.l10n.translate('Eliminare obiettivo?'),
+          context.t.macroGoals.deleteGoal,
           style: GoogleFonts.inter(
             color: context.appColors.foreground,
             fontWeight: FontWeight.w600,
@@ -198,7 +198,7 @@ class _GoalItemWidgetState extends ConsumerState<GoalItemWidget>
           ),
         ),
         content: Text(
-          context.l10n.translate('Questa azione non può essere annullata.'),
+          context.t.macroGoals.thisActionCannotBeUndone,
           style: GoogleFonts.inter(
             color: context.appColors.mutedForeground,
             fontSize: 13,
@@ -208,7 +208,7 @@ class _GoalItemWidgetState extends ConsumerState<GoalItemWidget>
           TextButton(
             onPressed: () => Navigator.pop(context),
             child: Text(
-              context.l10n.translate('Annulla'),
+              context.t.common.actions.cancel,
               style: GoogleFonts.inter(
                 color: context.appColors.mutedForeground,
               ),
@@ -220,7 +220,7 @@ class _GoalItemWidgetState extends ConsumerState<GoalItemWidget>
               _delete();
             },
             child: Text(
-              context.l10n.translate('Elimina'),
+              context.t.common.actions.delete,
               style: GoogleFonts.inter(
                 color: context.appColors.destructive,
                 fontWeight: FontWeight.w600,
@@ -236,8 +236,8 @@ class _GoalItemWidgetState extends ConsumerState<GoalItemWidget>
     showMacroGoalCategoryPicker(
       context: context,
       ref: ref,
-      title: context.l10n.translate('Cambia categoria'),
-      noneLabel: context.l10n.translate('Nessuna'),
+      title: context.t.macroGoals.changeCategory,
+      noneLabel: context.t.macroGoals.none,
       noneSelected:
           widget.goal.categoryId == null && widget.goal.categoryKey == null,
       selectedCategoryId: widget.goal.categoryId,

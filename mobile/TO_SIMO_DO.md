@@ -58,10 +58,13 @@
 - [ ] Before the next iOS release, confirm App Store Connect export-compliance answers for the new SQLCipher-based local database encryption. The app uses encryption for local private data protection, so keep `ITSAppUsesNonExemptEncryption` aligned with Apple's current compliance guidance.
 
 ---
----
 
-## 🍏 Pubblicazione iOS (App Store Connect)
-- [ ] Incrementa versione e build number in `pubspec.yaml` (es. `1.0.0+2`).
-- [ ] Esegui `flutter clean`, `flutter pub get`, e poi genera l'IPA con `flutter build ipa --release`.
-- [ ] Apri Xcode, vai su **Product > Archive**, quindi clicca **Distribute App** e seleziona **App Store Connect > Upload**.
-- [ ] Per tutti i dettagli su Privacy, Review Settings (bypass per l'Apple Reviewer) e acquisti In-App, fai sempre riferimento al file [app_store_connect_guide.md](app_store_connect_guide.md).
+## 2026-06-22 - Migrazione Localizzazione a slang (Phase 0)
+
+Vedi `LOCALIZATION_PLAN.md` per il piano completo. La Phase 0 è puramente additiva (il vecchio sistema resta intatto), ma richiede questi passi manuali perché l'SDK Flutter non era disponibile nell'ambiente:
+
+- [x] **Risolvere le dipendenze**: `flutter pub get` (fatto — `pubspec.lock` aggiornato).
+- [x] **Generare il codice slang** (prima passata): `dart run slang`.
+- [x] **Integrazione slang**: app avvolta in `TranslationProvider`, locale guidato da slang (`settings.language` → `LocaleSettings`), Arabic differito (escluso dall'input slang + rimosso dal picker; sorgente preservata in `lib/l10n/app_ar.arb`). Fatto in `lib/main.dart` + `app_settings_screen.dart` + `tool/arb_to_slang.py`.
+- [ ] **⚠️ RI-GENERARE + VERIFICARE** (necessario: ho cambiato l'input slang escludendo `ar`): da `mobile/` esegui di nuovo `dart run slang` (rigenera 4 locale, rimuove `ar` da `AppLocale`), poi `flutter analyze` e `flutter test`. Se `analyze` segnala qualcosa su `TranslationProvider.of(context).flutterLocale` o sulle API `LocaleSettings`/`AppLocaleUtils`, segnalamelo: dipende dalla versione esatta di slang e lo adatto.
+- [ ] **Workflow traduzioni**: l'inglese (`lib/i18n/en.i18n.json`) è la sorgente di verità; traduci con AI dall'inglese SOLO chiavi nuove/mancanti, preservando le copie umane esistenti (specialmente la voce italiana di notifiche/AI).

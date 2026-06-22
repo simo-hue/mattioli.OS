@@ -2,9 +2,9 @@ import 'package:flutter/material.dart';
 import 'package:lucide_icons_flutter/lucide_icons.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../../core/theme.dart';
-import '../../../core/localization.dart';
 import '../../../providers/goal_provider.dart';
 import '../../../models/goal.dart';
+import '../../../i18n/translations.g.dart';
 
 class MiglioramentoData {
   final String title;
@@ -111,9 +111,7 @@ class GlobalAlertsTabWidget extends ConsumerWidget {
                 child: Padding(
                   padding: const EdgeInsets.all(32.0),
                   child: Text(
-                    context.l10n.translate(
-                      'Nessun dato sufficiente per generare alert.',
-                    ),
+                    context.t.statistics.noDataForAlerts,
                     style: TextStyle(color: context.appColors.mutedForeground),
                   ),
                 ),
@@ -145,7 +143,7 @@ class GlobalAlertsTabWidget extends ConsumerWidget {
           loading: () => const Center(child: CircularProgressIndicator()),
           error: (err, stack) => Center(
             child: Text(
-              '${context.l10n.translate('Errore')}: $err',
+              '${context.t.common.status.error}: $err',
               style: TextStyle(color: context.appColors.mutedForeground),
             ),
           ),
@@ -154,7 +152,7 @@ class GlobalAlertsTabWidget extends ConsumerWidget {
       loading: () => const Center(child: CircularProgressIndicator()),
       error: (err, stack) => Center(
         child: Text(
-          '${context.l10n.translate('Errore')}: $err',
+          '${context.t.common.status.error}: $err',
           style: TextStyle(color: context.appColors.mutedForeground),
         ),
       ),
@@ -200,19 +198,19 @@ class GlobalAlertsTabWidget extends ConsumerWidget {
   String _getDayName(int dow, BuildContext context) {
     switch (dow) {
       case 1:
-        return context.l10n.translate('Lunedì');
+        return context.t.common.weekdays.monday;
       case 2:
-        return context.l10n.translate('Martedì');
+        return context.t.common.weekdays.tuesday;
       case 3:
-        return context.l10n.translate('Mercoledì');
+        return context.t.common.weekdays.wednesday;
       case 4:
-        return context.l10n.translate('Giovedì');
+        return context.t.common.weekdays.thursday;
       case 5:
-        return context.l10n.translate('Venerdì');
+        return context.t.common.weekdays.friday;
       case 6:
-        return context.l10n.translate('Sabato');
+        return context.t.common.weekdays.saturday;
       case 7:
-        return context.l10n.translate('Domenica');
+        return context.t.common.weekdays.sunday;
       default:
         return '';
     }
@@ -246,8 +244,8 @@ class GlobalAlertsTabWidget extends ConsumerWidget {
         FallimentiData(
           title: goal.title,
           worstStreak:
-              '${stat['worst_streak'] ?? 0} ${context.l10n.daysShortUnit}',
-          frequency: '~$freq/${context.l10n.perMonthUnit}',
+              '${stat['worst_streak'] ?? 0} ${context.t.statistics.daysShortUnit}',
+          frequency: '~$freq/${context.t.statistics.perMonthUnit}',
           color: goal.color,
         ),
       );
@@ -276,7 +274,7 @@ class GlobalAlertsTabWidget extends ConsumerWidget {
       items.add(
         RecuperoData(
           title: goal.title,
-          time: '${avgRecovery.round()} ${context.l10n.daysShortUnit}',
+          time: '${avgRecovery.round()} ${context.t.statistics.daysShortUnit}',
           color: goal.color,
           progress: progress.clamp(0.0, 1.0),
         ),
@@ -290,7 +288,7 @@ class GlobalAlertsTabWidget extends ConsumerWidget {
         : 0;
 
     return RecuperoSectionData(
-      avgGlobalRecovery: '$avgGlobal ${context.l10n.translate('giorni')}',
+      avgGlobalRecovery: '$avgGlobal ${context.t.common.days}',
       items: items.take(3).toList(),
     );
   }
@@ -379,7 +377,7 @@ class _AreeMiglioramentoSectionState extends State<_AreeMiglioramentoSection> {
             ),
             const SizedBox(width: 8),
             Text(
-              context.l10n.translate('Aree di Miglioramento'),
+              context.t.statistics.improvementAreas,
               style: TextStyle(
                 fontFamily: 'Inter',
                 fontSize: 14,
@@ -391,7 +389,7 @@ class _AreeMiglioramentoSectionState extends State<_AreeMiglioramentoSection> {
         ),
         const SizedBox(height: 4),
         Text(
-          context.l10n.translate('Abitudini che richiedono più attenzione.'),
+          context.t.statistics.habitsRequiringMoreAttention,
           style: TextStyle(
             fontFamily: 'Inter',
             fontSize: 11,
@@ -507,7 +505,7 @@ class _MiglioramentoCard extends StatelessWidget {
               ),
 
               Text(
-                '$successRate ${context.l10n.translate('succ.')}',
+                '$successRate ${context.t.statistics.succ}',
                 style: TextStyle(
                   fontFamily: 'Inter',
                   fontSize: 11,
@@ -528,7 +526,7 @@ class _MiglioramentoCard extends StatelessWidget {
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
                     Text(
-                      context.l10n.translate('GIORNO NERO'),
+                      context.t.statistics.blackDay,
                       style: TextStyle(
                         fontFamily: 'Inter',
                         fontSize: 10,
@@ -557,7 +555,7 @@ class _MiglioramentoCard extends StatelessWidget {
                           ),
                           children: [
                             TextSpan(
-                              text: '${context.l10n.translate('Solo')} ',
+                              text: '${context.t.statistics.onlyLabel} ',
                             ),
                             TextSpan(
                               text: dayCompletion,
@@ -568,7 +566,7 @@ class _MiglioramentoCard extends StatelessWidget {
                             ),
                             TextSpan(
                               text:
-                                  ' ${context.l10n.translate('di completamento')}',
+                                  ' ${context.t.statistics.ofCompletion}',
                             ),
                           ],
                         ),
@@ -633,7 +631,7 @@ class _AnalisiFallimentiSectionState extends State<_AnalisiFallimentiSection> {
             Icon(LucideIcons.chartBar, size: 16, color: Color(0xFFF97316)),
             const SizedBox(width: 8),
             Text(
-              context.l10n.translate('Analisi Fallimenti'),
+              context.t.statistics.failureAnalysis,
               style: TextStyle(
                 fontFamily: 'Inter',
                 fontSize: 14,
@@ -645,9 +643,7 @@ class _AnalisiFallimentiSectionState extends State<_AnalisiFallimentiSection> {
         ),
         const SizedBox(height: 4),
         Text(
-          context.l10n.translate(
-            'Frequenza e pattern dei tuoi giorni mancati.',
-          ),
+          context.t.statistics.missedDaysPattern,
           style: TextStyle(
             fontFamily: 'Inter',
             fontSize: 11,
@@ -748,12 +744,12 @@ class _FailureDetailCard extends StatelessWidget {
             mainAxisAlignment: MainAxisAlignment.spaceBetween,
             children: [
               _StatMiniItem(
-                label: context.l10n.translate('WORST STREAK'),
+                label: context.t.statistics.worstStreak,
                 value: worstStreak,
                 color: Color(0xFFEF4444),
               ),
               _StatMiniItem(
-                label: context.l10n.translate('FREQUENZA'),
+                label: context.t.statistics.frequency,
                 value: frequency,
                 color: Color(0xFFF97316),
               ),
@@ -817,7 +813,7 @@ class _PatternRecuperoSectionState extends State<_PatternRecuperoSection> {
             ),
             const SizedBox(width: 8),
             Text(
-              context.l10n.translate('Pattern di Recupero'),
+              context.t.statistics.recoveryPatterns,
               style: TextStyle(
                 fontFamily: 'Inter',
                 fontSize: 14,
@@ -829,9 +825,7 @@ class _PatternRecuperoSectionState extends State<_PatternRecuperoSection> {
         ),
         const SizedBox(height: 4),
         Text(
-          context.l10n.translate(
-            'Quanto velocemente torni in carreggiata dopo un errore.',
-          ),
+          context.t.statistics.recoverySpeed,
           style: TextStyle(
             fontFamily: 'Inter',
             fontSize: 11,
@@ -852,7 +846,7 @@ class _PatternRecuperoSectionState extends State<_PatternRecuperoSection> {
             mainAxisAlignment: MainAxisAlignment.spaceBetween,
             children: [
               Text(
-                context.l10n.translate('Tempo Medio Recupero'),
+                context.t.statistics.avgRecoveryTime,
                 style: TextStyle(
                   fontFamily: 'Inter',
                   fontSize: 12,
@@ -1089,7 +1083,7 @@ class _ConfrontoPerformanceSectionState
             ),
             const SizedBox(width: 8),
             Text(
-              context.l10n.translate('Confronto Performance'),
+              context.t.statistics.performanceComparison,
               style: TextStyle(
                 fontFamily: 'Inter',
                 fontSize: 14,
@@ -1101,9 +1095,7 @@ class _ConfrontoPerformanceSectionState
         ),
         const SizedBox(height: 4),
         Text(
-          context.l10n.translate(
-            'Compara le tue migliori performance con le peggiori.',
-          ),
+          context.t.statistics.compareBestWorst,
           style: TextStyle(
             fontFamily: 'Inter',
             fontSize: 11,
@@ -1212,7 +1204,7 @@ class _PerformanceComparisonCard extends StatelessWidget {
                   borderRadius: BorderRadius.circular(6),
                 ),
                 child: Text(
-                  context.l10n.translate('Attenzione'),
+                  context.t.statistics.attention,
                   style: TextStyle(
                     fontFamily: 'Inter',
                     fontSize: 10,
@@ -1225,15 +1217,15 @@ class _PerformanceComparisonCard extends StatelessWidget {
           ),
           const Spacer(),
           _PerformanceBar(
-            label: context.l10n.translate('BEST'),
-            value: '$best ${context.l10n.daysShortUnit}',
+            label: context.t.statistics.best,
+            value: '$best ${context.t.statistics.daysShortUnit}',
             progress: 0.3,
             color: Theme.of(context).colorScheme.primary,
           ),
           const SizedBox(height: 16),
           _PerformanceBar(
-            label: context.l10n.translate('WORST'),
-            value: '$worst ${context.l10n.daysShortUnit}',
+            label: context.t.statistics.worst,
+            value: '$worst ${context.t.statistics.daysShortUnit}',
             progress: 0.9,
             color: Color(0xFFEF4444),
           ),
@@ -1246,7 +1238,7 @@ class _PerformanceComparisonCard extends StatelessWidget {
                 color: context.appColors.mutedForeground,
               ),
               children: [
-                TextSpan(text: context.l10n.translate('Gap: ')),
+                TextSpan(text: context.t.statistics.gap),
                 TextSpan(
                   text: '${(gap * 100).toInt()}%',
                   style: TextStyle(

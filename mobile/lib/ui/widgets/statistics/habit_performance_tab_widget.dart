@@ -2,8 +2,9 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:lucide_icons_flutter/lucide_icons.dart';
 import '../../../core/theme.dart';
-import '../../../core/localization.dart';
 import '../../../providers/goal_provider.dart';
+import '../../../i18n/translations.g.dart';
+import '../../../core/l10n_dynamic.dart';
 
 class HabitPerformanceTabWidget extends ConsumerWidget {
   final String goalId;
@@ -73,7 +74,7 @@ class HabitPerformanceTabWidget extends ConsumerWidget {
       ),
       error: (err, stack) => SizedBox(
         height: 200,
-        child: Center(child: Text('${context.l10n.translate('Errore')}: $err', style: TextStyle(color: context.appColors.mutedForeground))),
+        child: Center(child: Text('${context.t.common.status.error}: $err', style: TextStyle(color: context.appColors.mutedForeground))),
       ),
     );
   }
@@ -96,7 +97,7 @@ class _PerformanceChartCard extends StatelessWidget {
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           Text(
-            context.l10n.translate('Performance per Giorno'),
+            context.t.statistics.performancePerDay,
             style: TextStyle(
               fontFamily: 'Inter',
               fontSize: 18,
@@ -129,7 +130,7 @@ class _PerformanceChartCard extends StatelessWidget {
         child: Column(
           children: [
             Text(
-              context.l10n.translate(day),
+              tWeekday(context, day),
               style: TextStyle(
                 fontFamily: 'Inter',
                 fontSize: 12,
@@ -194,7 +195,7 @@ class _GiornoForteCard extends StatelessWidget {
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
                 Text(
-                  '${context.l10n.translate('Giorno più forte')}: ${context.l10n.translate(data['day'])}',
+                  '${context.t.statistics.strongestDay}: ${tWeekday(context, data['day'])}',
                   style: TextStyle(
                     fontFamily: 'Inter',
                     fontSize: 15,
@@ -204,7 +205,7 @@ class _GiornoForteCard extends StatelessWidget {
                 ),
                 const SizedBox(height: 2),
                 Text(
-                  '${context.l10n.translate('Ben fatto! % di completamento').replaceFirst('done', data['pct'].toString())} (${data['done']}/${data['total']})',
+                  '${context.t.statistics.wellDoneCompletion.replaceFirst('done', data['pct'].toString())} (${data['done']}/${data['total']})',
                   style: TextStyle(
                     fontFamily: 'Inter',
                     fontSize: 13,
@@ -243,7 +244,7 @@ class _GiornoDeboleCard extends StatelessWidget {
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
                 Text(
-                  '${context.l10n.translate('Giorno più debole')}: ${context.l10n.translate(data['day'])}',
+                  '${context.t.statistics.weakestDay}: ${tWeekday(context, data['day'])}',
                   style: TextStyle(
                     fontFamily: 'Inter',
                     fontSize: 15,
@@ -253,7 +254,7 @@ class _GiornoDeboleCard extends StatelessWidget {
                 ),
                 const SizedBox(height: 2),
                 Text(
-                  '${context.l10n.translate('Solo % di completamento').replaceFirst('done', data['pct'].toString())} (${data['done']}/${data['total']})',
+                  '${context.t.statistics.onlyCompletion.replaceFirst('done', data['pct'].toString())} (${data['done']}/${data['total']})',
                   style: TextStyle(
                     fontFamily: 'Inter',
                     fontSize: 13,

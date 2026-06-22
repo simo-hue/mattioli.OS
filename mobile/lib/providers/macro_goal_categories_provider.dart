@@ -1,5 +1,4 @@
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import '../core/localization.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 import '../models/macro_goal.dart';
 import 'auth_provider.dart';
@@ -8,6 +7,7 @@ import '../core/private_local_database.dart';
 import '../core/navigator_key.dart';
 import '../core/app_logger.dart';
 import '../ui/widgets/error_modal.dart';
+import '../i18n/translations.g.dart';
 
 class MacroGoalCategoriesNotifier extends AsyncNotifier<List<GoalCategory>> {
   @override
@@ -79,10 +79,8 @@ class MacroGoalCategoriesNotifier extends AsyncNotifier<List<GoalCategory>> {
       if (context != null && context.mounted) {
         ErrorModal.show(
           context,
-          title: context.l10n.translate(
-            'Errore durante la creazione della categoria',
-          ),
-          message: context.l10n.categoryCreateFailed,
+          title: context.t.common.errorCreatingCategory,
+          message: context.t.common.categoryCreateFailed,
           details: e.toString(),
         );
       }
@@ -124,10 +122,8 @@ class MacroGoalCategoriesNotifier extends AsyncNotifier<List<GoalCategory>> {
       if (context != null && context.mounted) {
         ErrorModal.show(
           context,
-          title: context.l10n.translate(
-            'Errore durante la modifica della categoria',
-          ),
-          message: context.l10n.categoryUpdateFailed,
+          title: context.t.common.errorEditingCategory,
+          message: context.t.common.categoryUpdateFailed,
           details: e.toString(),
         );
       }
@@ -170,8 +166,8 @@ class MacroGoalCategoriesNotifier extends AsyncNotifier<List<GoalCategory>> {
       if (context != null && context.mounted) {
         ErrorModal.show(
           context,
-          title: context.l10n.categoryArchiveErrorTitle,
-          message: context.l10n.categoryArchiveFailed,
+          title: context.t.common.categoryArchiveErrorTitle,
+          message: context.t.common.categoryArchiveFailed,
           details: e.toString(),
         );
       }

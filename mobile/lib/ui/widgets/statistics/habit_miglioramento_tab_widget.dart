@@ -2,8 +2,8 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:lucide_icons_flutter/lucide_icons.dart';
 import '../../../core/theme.dart';
-import '../../../core/localization.dart';
 import '../../../providers/goal_provider.dart';
+import '../../../i18n/translations.g.dart';
 
 class AlertData {
   final Map<String, dynamic> worstNegative;
@@ -56,7 +56,7 @@ class HabitMiglioramentoTabWidget extends ConsumerWidget {
       ),
       error: (err, stack) => SizedBox(
         height: 200,
-        child: Center(child: Text('${context.l10n.translate('Errore')}: $err', style: TextStyle(color: context.appColors.mutedForeground))),
+        child: Center(child: Text('${context.t.common.status.error}: $err', style: TextStyle(color: context.appColors.mutedForeground))),
       ),
     );
   }
@@ -73,7 +73,7 @@ class _SerieNegativaCard extends StatelessWidget {
     
     String dateStr = '';
     if (startDate != null) {
-      dateStr = '${context.l10n.translate('Iniziata il')} ${startDate.day} ${startDate.month} ${startDate.year}';
+      dateStr = '${context.t.statistics.startedOn} ${startDate.day} ${startDate.month} ${startDate.year}';
     }
 
     return Container(
@@ -91,7 +91,7 @@ class _SerieNegativaCard extends StatelessWidget {
               const Icon(LucideIcons.trendingDown, size: 20, color: Color(0xFFEF4444)),
               const SizedBox(width: 8),
               Text(
-                context.l10n.translate('Serie Negativa Peggiore'),
+                context.t.statistics.worstNegativeStreak,
                 style: TextStyle(
                   fontFamily: 'Inter',
                   fontSize: 16,
@@ -121,7 +121,7 @@ class _SerieNegativaCard extends StatelessWidget {
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
                     Text(
-                      context.l10n.translate('giorni consecutivi mancati'),
+                      context.t.statistics.missedConsecutiveDays,
                       style: TextStyle(
                         fontFamily: 'Inter',
                         fontSize: 15,
@@ -167,7 +167,7 @@ class _StreakInterrottiCard extends StatelessWidget {
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           Text(
-            context.l10n.translate('Streak Interrotti'),
+            context.t.statistics.brokenStreaks,
             style: TextStyle(
               fontFamily: 'Inter',
               fontSize: 16,
@@ -178,7 +178,7 @@ class _StreakInterrottiCard extends StatelessWidget {
           const SizedBox(height: 16),
           if (streaks.isEmpty)
             Text(
-              context.l10n.translate('Nessun streak interrotto registrato'),
+              context.t.statistics.noBrokenStreaks,
               style: TextStyle(
                 fontFamily: 'Inter',
                 fontSize: 14,
@@ -231,7 +231,7 @@ class _StreakInterrottiCard extends StatelessWidget {
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
                 Text(
-                  context.l10n.translate('Streak di count giorni interrotto').replaceFirst('count', days.toString()),
+                  context.t.statistics.streakOfCountDaysBroken.replaceFirst('count', days.toString()),
                   style: TextStyle(
                     fontFamily: 'Inter',
                     fontSize: 15,

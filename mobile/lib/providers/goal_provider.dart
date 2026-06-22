@@ -1,6 +1,5 @@
 import 'dart:convert';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import '../core/localization.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 import '../models/goal.dart';
 import 'auth_provider.dart';
@@ -12,6 +11,7 @@ import '../core/secure_storage_utils.dart';
 import '../core/data_mode.dart';
 import '../core/private_local_database.dart';
 import '../ui/widgets/error_modal.dart';
+import '../i18n/translations.g.dart';
 
 final initialGoalsProvider = Provider<String>((ref) => '[]');
 final initialLogsProvider = Provider<String>((ref) => '{}');
@@ -154,8 +154,8 @@ class GoalsNotifier extends Notifier<List<Goal>> {
       if (context != null && context.mounted) {
         ErrorModal.show(
           context,
-          title: context.l10n.translate('Errore durante il salvataggio'),
-          message: context.l10n.habitSaveFailed,
+          title: context.t.common.errorDuringSaving,
+          message: context.t.common.habitSaveFailed,
           details: e.toString(),
         );
       }
@@ -203,8 +203,8 @@ class GoalsNotifier extends Notifier<List<Goal>> {
       if (context != null && context.mounted) {
         ErrorModal.show(
           context,
-          title: context.l10n.translate('Errore durante l\'aggiornamento'),
-          message: context.l10n.habitUpdateFailed,
+          title: context.t.common.errorDuringUpdate,
+          message: context.t.common.habitUpdateFailed,
           details: e.toString(),
         );
       }
@@ -233,8 +233,8 @@ class GoalsNotifier extends Notifier<List<Goal>> {
       if (context != null && context.mounted) {
         ErrorModal.show(
           context,
-          title: context.l10n.translate('Errore durante l\'eliminazione'),
-          message: context.l10n.habitDeleteFailed,
+          title: context.t.common.errorDuringDeletion,
+          message: context.t.common.habitDeleteFailed,
           details: e.toString(),
         );
       }
@@ -506,10 +506,8 @@ class HabitLogsNotifier extends Notifier<HabitLogsMap> {
       if (context != null && context.mounted) {
         ErrorModal.show(
           context,
-          title: context.l10n.translate(
-            'Errore durante l\'aggiornamento dello stato',
-          ),
-          message: context.l10n.habitStatusSaveFailed,
+          title: context.t.common.errorUpdatingState,
+          message: context.t.common.habitStatusSaveFailed,
           details: e.toString(),
         );
       }

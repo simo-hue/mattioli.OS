@@ -1,4 +1,3 @@
-import '../../../core/localization.dart';
 import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
@@ -11,6 +10,7 @@ import '../../../core/theme.dart';
 import '../../../models/macro_goal.dart';
 import '../../../providers/macro_goal_categories_provider.dart';
 import '../../../providers/macro_goals_provider.dart';
+import '../../../i18n/translations.g.dart';
 
 Future<void> showMacroGoalCategoryPicker({
   required BuildContext context,
@@ -153,7 +153,7 @@ Future<void> showMacroGoalCategoryPicker({
                           size: 20,
                         ),
                         title: Text(
-                          context.l10n.translate('Crea nuova categoria'),
+                          context.t.macroGoals.createNewCategory,
                           style: GoogleFonts.inter(
                             fontSize: 13,
                             color: Theme.of(context).colorScheme.primary,
@@ -240,7 +240,7 @@ class _CategoryListTile extends StatelessWidget {
             ),
           IconButton(
             visualDensity: VisualDensity.compact,
-            tooltip: context.l10n.translate('Modifica categoria'),
+            tooltip: context.t.macroGoals.editCategory,
             icon: Icon(
               LucideIcons.pencil,
               size: 17,
@@ -250,7 +250,7 @@ class _CategoryListTile extends StatelessWidget {
           ),
           IconButton(
             visualDensity: VisualDensity.compact,
-            tooltip: context.l10n.translate('Archivia categoria'),
+            tooltip: context.t.macroGoals.archiveCategory,
             icon: Icon(
               LucideIcons.trash2,
               size: 17,
@@ -326,8 +326,8 @@ Future<String?> _showCategoryEditorDialogSafe({
                 children: [
                   Text(
                     isEditing
-                        ? context.l10n.translate('Modifica categoria')
-                        : context.l10n.translate('Crea nuova categoria'),
+                        ? context.t.macroGoals.editCategory
+                        : context.t.macroGoals.createNewCategory,
                     style: GoogleFonts.inter(
                       fontSize: 18,
                       fontWeight: FontWeight.w600,
@@ -357,7 +357,7 @@ Future<String?> _showCategoryEditorDialogSafe({
                           vertical: 12,
                         ),
                         border: InputBorder.none,
-                        hintText: context.l10n.translate('Nome categoria...'),
+                        hintText: context.t.macroGoals.categoryName,
                         hintStyle: GoogleFonts.inter(
                           fontSize: 14,
                           color: context.appColors.mutedForeground,
@@ -367,7 +367,7 @@ Future<String?> _showCategoryEditorDialogSafe({
                   ),
                   const SizedBox(height: 20),
                   Text(
-                    context.l10n.translate('Scegli colore'),
+                    context.t.macroGoals.chooseColor,
                     style: GoogleFonts.inter(
                       fontSize: 14,
                       fontWeight: FontWeight.w500,
@@ -434,7 +434,7 @@ Future<String?> _showCategoryEditorDialogSafe({
                       TextButton(
                         onPressed: () => Navigator.pop(dialogContext),
                         child: Text(
-                          context.l10n.translate('Annulla'),
+                          context.t.common.actions.cancel,
                           style: GoogleFonts.inter(
                             fontSize: 14,
                             color: context.appColors.mutedForeground,
@@ -480,8 +480,8 @@ Future<String?> _showCategoryEditorDialogSafe({
                         ),
                         child: Text(
                           isEditing
-                              ? context.l10n.translate('Salva')
-                              : context.l10n.translate('Crea'),
+                              ? context.t.common.actions.save
+                              : context.t.macroGoals.create,
                           style: GoogleFonts.inter(
                             fontSize: 14,
                             fontWeight: FontWeight.w600,
@@ -549,7 +549,7 @@ Future<bool> _showDeleteCategoryDialog({
       backgroundColor: context.appColors.card,
       shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
       title: Text(
-        context.l10n.translate('Archiviare categoria?'),
+        context.t.macroGoals.archiveCategory2,
         style: GoogleFonts.inter(
           color: context.appColors.foreground,
           fontWeight: FontWeight.w600,
@@ -558,16 +558,10 @@ Future<bool> _showDeleteCategoryDialog({
       ),
       content: Text(
         linkedGoalsCount > 0
-            ? context.l10n
-                .translate(
-                  'La categoria "label" non sarà più disponibile per nuovi obiettivi, ma resterà collegata a count obiettivi storici e alle statistiche.',
-                )
+            ? context.t.macroGoals.categoryUnavailableLinked
                 .replaceFirst('label', category.label)
                 .replaceFirst('count', linkedGoalsCount.toString())
-            : context.l10n
-                .translate(
-                  'La categoria "label" non sarà più disponibile per nuovi obiettivi, ma resterà nello storico.',
-                )
+            : context.t.macroGoals.categoryUnavailableArchived
                 .replaceFirst('label', category.label),
         style: GoogleFonts.inter(
           color: context.appColors.mutedForeground,
@@ -578,7 +572,7 @@ Future<bool> _showDeleteCategoryDialog({
         TextButton(
           onPressed: () => Navigator.pop(dialogContext, false),
           child: Text(
-            context.l10n.translate('Annulla'),
+            context.t.common.actions.cancel,
             style: GoogleFonts.inter(color: context.appColors.mutedForeground),
           ),
         ),
@@ -595,7 +589,7 @@ Future<bool> _showDeleteCategoryDialog({
             }
           },
           child: Text(
-            context.l10n.translate('Archivia'),
+            context.t.macroGoals.archive,
             style: GoogleFonts.inter(
               color: context.appColors.destructive,
               fontWeight: FontWeight.w600,
@@ -628,14 +622,14 @@ void _showColorPickerDialog(
               children: [
                 CupertinoButton(
                   child: Text(
-                    context.l10n.translate('Annulla'),
+                    context.t.common.actions.cancel,
                     style: TextStyle(color: context.appColors.mutedForeground),
                   ),
                   onPressed: () => Navigator.pop(context),
                 ),
                 CupertinoButton(
                   child: Text(
-                    context.l10n.translate('Conferma'),
+                    context.t.common.actions.confirm,
                     style: TextStyle(
                       color: Theme.of(context).colorScheme.primary,
                     ),

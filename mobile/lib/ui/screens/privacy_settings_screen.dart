@@ -21,8 +21,8 @@ import '../../core/notifications.dart';
 import '../../providers/settings_provider.dart';
 import '../../providers/consent_provider.dart';
 import '../../core/haptics.dart';
-import '../../core/localization.dart';
 import '../../core/app_logger.dart';
+import '../../i18n/translations.g.dart';
 
 class PrivacySettingsScreen extends ConsumerWidget {
   const PrivacySettingsScreen({super.key});
@@ -66,7 +66,7 @@ class PrivacySettingsScreen extends ConsumerWidget {
           onPressed: () => Navigator.pop(context),
         ),
         title: Text(
-          context.l10n.translate('Privacy e Sicurezza'),
+          context.t.common.privacySecurity,
           style: TextStyle(
             color: context.appColors.foreground,
             fontSize: 18,
@@ -81,14 +81,14 @@ class PrivacySettingsScreen extends ConsumerWidget {
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            _buildSectionHeader(context, context.l10n.accessProtectionHeader),
+            _buildSectionHeader(context, context.t.privacy.accessProtectionHeader),
             _buildSettingsCard(context, [
               _buildSwitchRow(
                 context: context,
                 ref: ref,
                 icon: LucideIcons.shield,
-                title: context.l10n.translate('Blocco Biometrico'),
-                subtitle: context.l10n.translate('FaceID / TouchID'),
+                title: context.t.privacy.biometricLock,
+                subtitle: context.t.privacy.faceIdTouchId,
                 value: settings.biometricLock,
                 onChanged: (val) async {
                   if (val) {
@@ -114,7 +114,7 @@ class PrivacySettingsScreen extends ConsumerWidget {
                 _buildActionRow(
                   context: context,
                   icon: LucideIcons.keyRound,
-                  title: context.l10n.translate('Cambia Password'),
+                  title: context.t.privacy.changePassword,
                   onTap: () {
                     ref.hapticLight();
                     _showChangePasswordModal(context);
@@ -123,15 +123,15 @@ class PrivacySettingsScreen extends ConsumerWidget {
               ],
             ]),
             const SizedBox(height: 32),
-            _buildSectionHeader(context, context.l10n.dataManagementHeader),
+            _buildSectionHeader(context, context.t.privacy.dataManagementHeader),
             _buildSettingsCard(context, [
               if (!isPrivateMode) ...[
                 _buildSwitchRow(
                   context: context,
                   ref: ref,
                   icon: LucideIcons.circleAlert,
-                  title: context.l10n.translate('Invia Segnalazioni Crash'),
-                  subtitle: context.l10n.sentryHelpSubtitle,
+                  title: context.t.privacy.sendCrashReports,
+                  subtitle: context.t.privacy.sentryHelpSubtitle,
                   value: consentState.hasSentryConsent,
                   onChanged: (val) {
                     ref
@@ -149,8 +149,8 @@ class PrivacySettingsScreen extends ConsumerWidget {
               _buildActionRow(
                 context: context,
                 icon: LucideIcons.download,
-                title: context.l10n.translate('Esporta Dati'),
-                subtitle: context.l10n.translate('Formato JSON / CSV'),
+                title: context.t.privacy.exportData,
+                subtitle: context.t.privacy.jsonCsvFormat,
                 onTap: () {
                   ref.hapticMedium();
                   _exportData(context, ref);
@@ -161,8 +161,8 @@ class PrivacySettingsScreen extends ConsumerWidget {
                 context: context,
                 icon: LucideIcons.trash2,
                 title: isPrivateMode
-                    ? context.l10n.translate('Elimina Dati Privati')
-                    : context.l10n.translate('Elimina Account & Dati'),
+                    ? context.t.privacy.deletePrivateData
+                    : context.t.privacy.deleteAccountData,
                 titleColor: AppColors.destructive,
                 onTap: () {
                   ref.hapticHeavy();
@@ -171,13 +171,13 @@ class PrivacySettingsScreen extends ConsumerWidget {
               ),
             ]),
             const SizedBox(height: 32),
-            _buildSectionHeader(context, context.l10n.systemPermissionsHeader),
+            _buildSectionHeader(context, context.t.privacy.systemPermissionsHeader),
             _buildSettingsCard(context, [
               _buildActionRow(
                 context: context,
                 icon: LucideIcons.settings2,
-                title: context.l10n.translate('Gestione Permessi'),
-                subtitle: context.l10n.translate('Notifiche, Calendario, etc.'),
+                title: context.t.privacy.permissionsManagement,
+                subtitle: context.t.privacy.permissionsSubtitle,
                 onTap: () async {
                   ref.hapticLight();
                   await openAppSettings();
@@ -461,7 +461,7 @@ class PrivacySettingsScreen extends ConsumerWidget {
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
                       Text(
-                        context.l10n.translate('Cambia Password'),
+                        context.t.privacy.changePassword,
                         style: GoogleFonts.inter(
                           fontSize: 20,
                           fontWeight: FontWeight.w700,
@@ -471,12 +471,8 @@ class PrivacySettingsScreen extends ConsumerWidget {
                       const SizedBox(height: 4),
                       Text(
                         isVerified
-                            ? context.l10n.translate(
-                                'Inserisci la tua nuova password.',
-                              )
-                            : context.l10n.translate(
-                                'Inserisci la tua password attuale per continuare.',
-                              ),
+                            ? context.t.privacy.enterNewPassword
+                            : context.t.privacy.enterCurrentPassword,
                         style: GoogleFonts.inter(
                           fontSize: 13,
                           color: context.appColors.mutedForeground,
@@ -487,22 +483,20 @@ class PrivacySettingsScreen extends ConsumerWidget {
                       if (!isVerified) ...[
                         _buildPasswordField(
                           controller: currentPasswordController,
-                          label: context.l10n.translate('Password Attuale'),
+                          label: context.t.privacy.currentPassword,
                           context: context,
                         ),
                       ] else ...[
                         _buildPasswordField(
                           controller: newPasswordController,
-                          label: context.l10n.translate('Nuova Password'),
+                          label: context.t.privacy.newPassword,
                           context: context,
                         ),
                         const SizedBox(height: 16),
 
                         _buildPasswordField(
                           controller: confirmPasswordController,
-                          label: context.l10n.translate(
-                            'Conferma Nuova Password',
-                          ),
+                          label: context.t.privacy.confirmNewPassword,
                           context: context,
                         ),
                       ],
@@ -529,7 +523,7 @@ class PrivacySettingsScreen extends ConsumerWidget {
                                 ? null
                                 : () => Navigator.pop(context),
                             child: Text(
-                              context.l10n.translate('Annulla'),
+                              context.t.common.actions.cancel,
                               style: GoogleFonts.inter(
                                 color: context.appColors.mutedForeground,
                                 fontWeight: FontWeight.w600,
@@ -546,10 +540,7 @@ class PrivacySettingsScreen extends ConsumerWidget {
                                           currentPasswordController.text;
                                       if (currentPwd.isEmpty) {
                                         setState(
-                                          () => errorMessage = context.l10n
-                                              .translate(
-                                                'Inserisci la password attuale.',
-                                              ),
+                                          () => errorMessage = context.t.privacy.currentPasswordRequired,
                                         );
                                         return;
                                       }
@@ -567,9 +558,7 @@ class PrivacySettingsScreen extends ConsumerWidget {
 
                                         if (email == null) {
                                           throw Exception(
-                                            context.l10n.translate(
-                                              'Utente non trovato.',
-                                            ),
+                                            context.t.privacy.userNotFound,
                                           );
                                         }
 
@@ -586,9 +575,7 @@ class PrivacySettingsScreen extends ConsumerWidget {
                                       } catch (e) {
                                         setState(() {
                                           isLoading = false;
-                                          errorMessage = context.l10n.translate(
-                                            'La password attuale non è corretta.',
-                                          );
+                                          errorMessage = context.t.privacy.currentPasswordIncorrect;
                                         });
                                       }
                                     } else {
@@ -599,30 +586,21 @@ class PrivacySettingsScreen extends ConsumerWidget {
                                       if (newPwd.isEmpty ||
                                           confirmPwd.isEmpty) {
                                         setState(
-                                          () => errorMessage = context.l10n
-                                              .translate(
-                                                'Tutti i campi sono obbligatori.',
-                                              ),
+                                          () => errorMessage = context.t.privacy.allFieldsRequired,
                                         );
                                         return;
                                       }
 
                                       if (newPwd.length < 8) {
                                         setState(
-                                          () => errorMessage = context.l10n
-                                              .translate(
-                                                'La nuova password deve essere di almeno 8 caratteri.',
-                                              ),
+                                          () => errorMessage = context.t.privacy.newPasswordMin8,
                                         );
                                         return;
                                       }
 
                                       if (newPwd != confirmPwd) {
                                         setState(
-                                          () => errorMessage = context.l10n
-                                              .translate(
-                                                'Le password non coincidono.',
-                                              ),
+                                          () => errorMessage = context.t.privacy.passwordsDontMatch,
                                         );
                                         return;
                                       }
@@ -647,9 +625,7 @@ class PrivacySettingsScreen extends ConsumerWidget {
                                           ).showSnackBar(
                                             SnackBar(
                                               content: Text(
-                                                context.l10n.translate(
-                                                  'Password aggiornata con successo!',
-                                                ),
+                                                context.t.privacy.passwordUpdated,
                                               ),
                                             ),
                                           );
@@ -700,8 +676,8 @@ class PrivacySettingsScreen extends ConsumerWidget {
                                     )
                                   : Text(
                                       isVerified
-                                          ? context.l10n.translate('Salva')
-                                          : context.l10n.translate('Verifica'),
+                                          ? context.t.common.actions.save
+                                          : context.t.common.actions.verify,
                                       style: GoogleFonts.inter(
                                         color:
                                             Theme.of(context)
@@ -779,9 +755,7 @@ class PrivacySettingsScreen extends ConsumerWidget {
   Future<void> _exportData(BuildContext context, WidgetRef ref) async {
     try {
       if (ref.read(activeDataModeProvider) == AppDataMode.private) {
-        final shareText = context.l10n.translate(
-          'I miei dati privati esportati da Evolve',
-        );
+        final shareText = context.t.privacy.exportedPrivateDataTitle;
         final data = await ref.read(privateLocalDatabaseProvider).exportData();
         final jsonString = const JsonEncoder.withIndent('  ').convert(data);
         final file = XFile.fromData(
@@ -840,14 +814,14 @@ class PrivacySettingsScreen extends ConsumerWidget {
       await SharePlus.instance.share(
         ShareParams(
           files: [file],
-          text: context.l10n.translate('I miei dati esportati da Growth'),
+          text: context.t.privacy.exportedDataTitle,
         ),
       );
     } catch (e, stack) {
       AppLogger.error('Error exporting data', e, stack);
       if (context.mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text('${context.l10n.exportErrorPrefix}$e')),
+          SnackBar(content: Text('${context.t.privacy.errors.exportPrefix}$e')),
         );
       }
     }
@@ -887,8 +861,8 @@ class PrivacySettingsScreen extends ConsumerWidget {
                 children: [
                   Text(
                     isPrivateMode
-                        ? context.l10n.translate('Gestione Dati Privati')
-                        : context.l10n.translate('Gestione Account e Dati'),
+                        ? context.t.privacy.privateDataManagement
+                        : context.t.privacy.accountDataManagement,
                     style: GoogleFonts.inter(
                       fontSize: 20,
                       fontWeight: FontWeight.w700,
@@ -897,9 +871,7 @@ class PrivacySettingsScreen extends ConsumerWidget {
                   ),
                   const SizedBox(height: 4),
                   Text(
-                    context.l10n.translate(
-                      'Scegli l\'operazione che desideri effettuare. Entrambe le azioni richiedono conferma.',
-                    ),
+                    context.t.privacy.chooseOperation,
                     style: GoogleFonts.inter(
                       fontSize: 13,
                       color: context.appColors.mutedForeground,
@@ -911,21 +883,15 @@ class PrivacySettingsScreen extends ConsumerWidget {
                     _buildOptionCard(
                       context: context,
                       icon: LucideIcons.trash2,
-                      title: context.l10n.translate('Elimina dati privati'),
-                      subtitle: context.l10n.translate(
-                        'Eliminerà definitivamente i dati salvati su questo dispositivo.',
-                      ),
+                      title: context.t.privacy.deletePrivateDataAction,
+                      subtitle: context.t.privacy.privateDataDescription,
                       titleColor: AppColors.destructive,
                       onTap: () {
                         Navigator.pop(context);
                         _showConfirmationDialog(
                           context: context,
-                          title: context.l10n.translate(
-                            'Conferma eliminazione dati privati',
-                          ),
-                          message: context.l10n.translate(
-                            'Sei sicuro di voler eliminare tutti i dati privati? Questa azione non può essere annullata.',
-                          ),
+                          title: context.t.privacy.confirmPrivateDataDeletion,
+                          message: context.t.privacy.confirmPrivateDataResetMessage,
                           isDestructive: true,
                           onConfirm: () async {
                             await _resetData(context, ref);
@@ -937,18 +903,14 @@ class PrivacySettingsScreen extends ConsumerWidget {
                     _buildOptionCard(
                       context: context,
                       icon: LucideIcons.refreshCw,
-                      title: context.l10n.translate('Resetta i Dati'),
-                      subtitle: context.l10n.translate(
-                        'Eliminerà abitudini, obiettivi e preferenze, ma manterrà il tuo account attivo.',
-                      ),
+                      title: context.t.privacy.resetData,
+                      subtitle: context.t.privacy.resetDataDescription,
                       onTap: () {
                         Navigator.pop(context);
                         _showConfirmationDialog(
                           context: context,
-                          title: context.l10n.translate('Conferma Reset Dati'),
-                          message: context.l10n.translate(
-                            'Sei sicuro di voler eliminare tutti i tuoi dati? Questa azione non può essere annullata.',
-                          ),
+                          title: context.t.privacy.confirmDataReset,
+                          message: context.t.privacy.confirmResetMessage,
                           onConfirm: () async {
                             await _resetData(context, ref);
                           },
@@ -959,21 +921,15 @@ class PrivacySettingsScreen extends ConsumerWidget {
                     _buildOptionCard(
                       context: context,
                       icon: LucideIcons.trash2,
-                      title: context.l10n.translate('Elimina l\'account'),
-                      subtitle: context.l10n.translate(
-                        'Eliminerà definitivamente il tuo account e tutti i dati associati. Questa azione è irreversibile.',
-                      ),
+                      title: context.t.privacy.deleteAccount,
+                      subtitle: context.t.privacy.deleteAccountDescription,
                       titleColor: AppColors.destructive,
                       onTap: () {
                         Navigator.pop(context);
                         _showConfirmationDialog(
                           context: context,
-                          title: context.l10n.translate(
-                            'Conferma Eliminazione Account',
-                          ),
-                          message: context.l10n.translate(
-                            'Sei sicuro di voler eliminare definitivamente il tuo account? Tutti i tuoi dati andranno persi per sempre.',
-                          ),
+                          title: context.t.privacy.confirmAccountDeletion,
+                          message: context.t.privacy.confirmDeleteAccountMessage,
                           isDestructive: true,
                           onConfirm: () async {
                             await _deleteAccount(context, ref);
@@ -991,7 +947,7 @@ class PrivacySettingsScreen extends ConsumerWidget {
                       TextButton(
                         onPressed: () => Navigator.pop(context),
                         child: Text(
-                          context.l10n.translate('Annulla'),
+                          context.t.common.actions.cancel,
                           style: GoogleFonts.inter(
                             color: context.appColors.mutedForeground,
                             fontWeight: FontWeight.w600,
@@ -1140,7 +1096,7 @@ class PrivacySettingsScreen extends ConsumerWidget {
                       TextButton(
                         onPressed: () => Navigator.pop(context),
                         child: Text(
-                          context.l10n.translate('Annulla'),
+                          context.t.common.actions.cancel,
                           style: GoogleFonts.inter(
                             color: context.appColors.mutedForeground,
                             fontWeight: FontWeight.w600,
@@ -1165,7 +1121,7 @@ class PrivacySettingsScreen extends ConsumerWidget {
                             borderRadius: BorderRadius.circular(10),
                           ),
                           child: Text(
-                            context.l10n.translate('Conferma'),
+                            context.t.common.actions.confirm,
                             style: GoogleFonts.inter(
                               color: isDestructive
                                   ? Colors.white
@@ -1218,7 +1174,7 @@ class PrivacySettingsScreen extends ConsumerWidget {
           ScaffoldMessenger.of(context).showSnackBar(
             SnackBar(
               content: Text(
-                context.l10n.translate('Dati privati eliminati con successo!'),
+                context.t.privacy.privateDataDeletedSuccess,
               ),
             ),
           );
@@ -1243,7 +1199,7 @@ class PrivacySettingsScreen extends ConsumerWidget {
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
             content: Text(
-              context.l10n.translate('Dati resettati con successo!'),
+              context.t.privacy.dataResetSuccess,
             ),
           ),
         );
@@ -1252,7 +1208,7 @@ class PrivacySettingsScreen extends ConsumerWidget {
       AppLogger.error('Errore durante reset dati', e, stack);
       if (context.mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text('${context.l10n.resetErrorPrefix}$e')),
+          SnackBar(content: Text('${context.t.privacy.errors.resetPrefix}$e')),
         );
       }
     }
@@ -1273,7 +1229,7 @@ class PrivacySettingsScreen extends ConsumerWidget {
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
             content: Text(
-              context.l10n.translate('Account eliminato con successo!'),
+              context.t.privacy.accountDeletedSuccess,
             ),
           ),
         );
@@ -1282,7 +1238,7 @@ class PrivacySettingsScreen extends ConsumerWidget {
       AppLogger.error('Errore durante eliminazione account', e, stack);
       if (context.mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text('${context.l10n.deleteErrorPrefix}$e')),
+          SnackBar(content: Text('${context.t.privacy.errors.deletePrefix}$e')),
         );
       }
     }

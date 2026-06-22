@@ -1,4 +1,3 @@
-import '../../core/localization.dart';
 import 'package:flutter/material.dart';
 import 'package:lucide_icons_flutter/lucide_icons.dart';
 import 'package:google_fonts/google_fonts.dart';
@@ -14,6 +13,7 @@ import '../../core/haptics.dart';
 import '../../core/subscription_service.dart';
 import '../../providers/settings_provider.dart';
 import '../widgets/subscription_alert_modal.dart';
+import '../../i18n/translations.g.dart';
 
 class SubscriptionScreen extends ConsumerStatefulWidget {
   const SubscriptionScreen({super.key});
@@ -123,20 +123,16 @@ class _SubscriptionScreenState extends ConsumerState<SubscriptionScreen> {
       if (result.isProActive) {
         SubscriptionAlertModal.show(
           context,
-          title: context.l10n.translate('Acquisti Ripristinati!'),
-          message: context.l10n.translate(
-            'L\'accesso Pro è stato ripristinato con successo su questo dispositivo. Divertiti!',
-          ),
+          title: context.t.subscription.status.restored,
+          message: context.t.subscription.status.restoredMessage,
           type: SubscriptionAlertType.success,
           ref: ref,
         );
       } else {
         SubscriptionAlertModal.show(
           context,
-          title: context.l10n.translate('Nessun Acquisto Trovato'),
-          message: context.l10n.translate(
-            'Nessun abbonamento Evolve Pro attivo è stato trovato su questo Apple ID. Assicurati di usare lo stesso Apple ID dell\'acquisto.',
-          ),
+          title: context.t.subscription.errors.noPurchaseTitle,
+          message: context.t.subscription.errors.noActiveSubscription,
           type: SubscriptionAlertType.warning,
           ref: ref,
         );
@@ -145,7 +141,7 @@ class _SubscriptionScreenState extends ConsumerState<SubscriptionScreen> {
       if (!mounted) return;
       SubscriptionAlertModal.show(
         context,
-        title: context.l10n.translate('Ripristino Fallito'),
+        title: context.t.subscription.errors.restoreFailedTitle,
         message: _restoreErrorMessage(e),
         type: SubscriptionAlertType.error,
         details: e.toString(),
@@ -176,10 +172,8 @@ class _SubscriptionScreenState extends ConsumerState<SubscriptionScreen> {
       } else {
         SubscriptionAlertModal.show(
           context,
-          title: context.l10n.translate('Abbonamento in Elaborazione'),
-          message: context.l10n.translate(
-            'L\'acquisto è registrato, ma l\'abbonamento Pro non risulta ancora attivo. Attendi qualche secondo e usa Ripristina acquisti.',
-          ),
+          title: context.t.subscription.status.processing,
+          message: context.t.subscription.errors.purchaseRegisteredNotActive,
           type: SubscriptionAlertType.warning,
           ref: ref,
         );
@@ -193,7 +187,7 @@ class _SubscriptionScreenState extends ConsumerState<SubscriptionScreen> {
 
       SubscriptionAlertModal.show(
         context,
-        title: context.l10n.translate('Acquisto Fallito'),
+        title: context.t.subscription.errors.purchaseFailedTitle,
         message: _purchaseErrorMessage(e),
         type: SubscriptionAlertType.error,
         details: e.toString(),
@@ -215,99 +209,61 @@ class _SubscriptionScreenState extends ConsumerState<SubscriptionScreen> {
   String _purchaseErrorMessage(Object error) {
     if (error is PlatformException) {
       if (_isPaidAppsAgreementError(error)) {
-        return context.l10n.translate(
-          'Contratto Paid Apps non attivo. L\'Account Holder deve accettare l\'accordo Paid Apps in App Store Connect.',
-        );
+        return context.t.subscription.errors.paidAppsAgreement;
       }
 
       final errorCode = SubscriptionService.purchasesErrorCode(error);
       return switch (errorCode) {
-        PurchasesErrorCode.productAlreadyPurchasedError => context.l10n.translate(
-          'Questo abbonamento risulta già acquistato. Usa Ripristina acquisti per riattivare l\'accesso Pro.',
-        ),
-        PurchasesErrorCode.purchaseNotAllowedError => context.l10n.translate(
-          'Gli acquisti in-app non sono consentiti su questo dispositivo o account Apple.',
-        ),
+        PurchasesErrorCode.productAlreadyPurchasedError => context.t.subscription.errors.alreadyPurchased,
+        PurchasesErrorCode.purchaseNotAllowedError => context.t.subscription.errors.purchasesNotAllowed,
         PurchasesErrorCode.productNotAvailableForPurchaseError =>
-          context.l10n.translate(
-            'Il piano selezionato non è disponibile per l\'acquisto. Riprova più tardi.',
-          ),
-        PurchasesErrorCode.paymentPendingError => context.l10n.translate(
-          'Il pagamento è in sospeso. L\'accesso Pro verrà attivato quando Apple confermerà la transazione.',
-        ),
+          context.t.subscription.errors.planUnavailable,
+        PurchasesErrorCode.paymentPendingError => context.t.subscription.errors.paymentPending,
         PurchasesErrorCode.networkError ||
         PurchasesErrorCode.offlineConnectionError ||
-        PurchasesErrorCode.apiEndpointBlocked => context.l10n.translate(
-          'Connessione non disponibile. Controlla la rete e riprova.',
-        ),
+        PurchasesErrorCode.apiEndpointBlocked => context.t.subscription.errors.connectionUnavailable,
         PurchasesErrorCode.configurationError ||
         PurchasesErrorCode.invalidCredentialsError ||
         PurchasesErrorCode.invalidReceiptError ||
-        PurchasesErrorCode.missingReceiptFileError => context.l10n.translate(
-          'Configurazione acquisti non valida. Verifica App Store Connect e RevenueCat prima di inviare la build.',
-        ),
+        PurchasesErrorCode.missingReceiptFileError => context.t.subscription.errors.invalidConfig,
         PurchasesErrorCode.receiptAlreadyInUseError ||
         PurchasesErrorCode.receiptInUseByOtherSubscriberError ||
-        PurchasesErrorCode.purchaseBelongsToOtherUser => context.l10n.translate(
-          'Questo acquisto è già collegato a un altro account Evolve. Accedi con quell\'account o contatta il supporto.',
-        ),
+        PurchasesErrorCode.purchaseBelongsToOtherUser => context.t.subscription.errors.linkedToAnotherAccount,
         PurchasesErrorCode.operationAlreadyInProgressError =>
-          context.l10n.translate(
-            'Un\'operazione di acquisto è già in corso. Attendi qualche secondo.',
-          ),
-        _ => context.l10n.translate(
-          'Non siamo riusciti a completare l\'acquisto. Riprova tra poco.',
-        ),
+          context.t.subscription.errors.purchaseInProgress,
+        _ => context.t.subscription.errors.purchaseFailedMessage,
       };
     }
 
-    return context.l10n.translate(
-      'Non siamo riusciti a completare l\'acquisto. Riprova tra poco.',
-    );
+    return context.t.subscription.errors.purchaseFailedMessage;
   }
 
   String _restoreErrorMessage(Object error) {
     if (error is PlatformException) {
       if (_isPaidAppsAgreementError(error)) {
-        return context.l10n.translate(
-          'Contratto Paid Apps non attivo. L\'Account Holder deve accettare l\'accordo Paid Apps in App Store Connect.',
-        );
+        return context.t.subscription.errors.paidAppsAgreement;
       }
 
       final errorCode = SubscriptionService.purchasesErrorCode(error);
       return switch (errorCode) {
-        PurchasesErrorCode.purchaseCancelledError => context.l10n.translate(
-          'Ripristino annullato.',
-        ),
+        PurchasesErrorCode.purchaseCancelledError => context.t.subscription.status.restoreCancelled,
         PurchasesErrorCode.networkError ||
         PurchasesErrorCode.offlineConnectionError ||
-        PurchasesErrorCode.apiEndpointBlocked => context.l10n.translate(
-          'Connessione non disponibile. Controlla la rete e riprova.',
-        ),
+        PurchasesErrorCode.apiEndpointBlocked => context.t.subscription.errors.connectionUnavailable,
         PurchasesErrorCode.receiptAlreadyInUseError ||
         PurchasesErrorCode.receiptInUseByOtherSubscriberError ||
-        PurchasesErrorCode.purchaseBelongsToOtherUser => context.l10n.translate(
-          'Questo acquisto è già collegato a un altro account Evolve. Accedi con quell\'account o contatta il supporto.',
-        ),
+        PurchasesErrorCode.purchaseBelongsToOtherUser => context.t.subscription.errors.linkedToAnotherAccount,
         PurchasesErrorCode.configurationError ||
         PurchasesErrorCode.invalidCredentialsError ||
         PurchasesErrorCode.invalidReceiptError ||
-        PurchasesErrorCode.missingReceiptFileError => context.l10n.translate(
-          'Configurazione acquisti non valida. Verifica App Store Connect e RevenueCat prima di inviare la build.',
-        ),
+        PurchasesErrorCode.missingReceiptFileError => context.t.subscription.errors.invalidConfig,
         PurchasesErrorCode.operationAlreadyInProgressError =>
-          context.l10n.translate(
-            'Un ripristino è già in corso. Attendi qualche secondo.',
-          ),
-        _ => context.l10n.translate(
-          'Non siamo riusciti a ripristinare gli acquisti. Riprova tra poco.',
-        ),
+          context.t.subscription.errors.restoreInProgress,
+        _ => context.t.subscription.errors.restoreFailedMessage,
       };
     }
 
-    return context.l10n.translate(
-      'Non siamo riusciti a ripristinare gli acquisti. Riprova tra poco.',
-    );
+    return context.t.subscription.errors.restoreFailedMessage;
   }
 
   bool _isPaidAppsAgreementError(PlatformException error) {
@@ -339,7 +295,7 @@ class _SubscriptionScreenState extends ConsumerState<SubscriptionScreen> {
               onPressed: () => Navigator.pop(context),
             ),
             title: Text(
-              context.l10n.translate('Abbonamento'),
+              context.t.common.subscription,
               style: TextStyle(
                 color: context.appColors.foreground,
                 fontSize: 18,
@@ -425,7 +381,7 @@ class _SubscriptionScreenState extends ConsumerState<SubscriptionScreen> {
           ),
           const SizedBox(height: 16),
           Text(
-            context.l10n.translate('Passa a Evolve Pro'),
+            context.t.subscription.upgradeTitle,
             style: GoogleFonts.inter(
               fontSize: 22,
               fontWeight: FontWeight.w800,
@@ -434,9 +390,7 @@ class _SubscriptionScreenState extends ConsumerState<SubscriptionScreen> {
           ),
           const SizedBox(height: 8),
           Text(
-            context.l10n.translate(
-              'Sblocca tutte le funzionalità e accelera la tua crescita.',
-            ),
+            context.t.subscription.upgradeSubtitle,
             textAlign: TextAlign.center,
             style: GoogleFonts.inter(
               fontSize: 14,
@@ -453,7 +407,7 @@ class _SubscriptionScreenState extends ConsumerState<SubscriptionScreen> {
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
         Text(
-          context.l10n.translate('COSA INCLUDE IL PIANO PRO'),
+          context.t.subscription.featuresHeader,
           style: GoogleFonts.inter(
             fontSize: 12,
             fontWeight: FontWeight.w700,
@@ -466,34 +420,28 @@ class _SubscriptionScreenState extends ConsumerState<SubscriptionScreen> {
           context,
           LucideIcons.brainCircuit,
           'AI Coach Personalizzato',
-          context.l10n.translate(
-            'Suggerimenti intelligenti basati sui tuoi dati.',
-          ),
+          context.t.subscription.features.smartSuggestions,
         ),
         const SizedBox(height: 16),
         _buildFeatureRow(
           context,
           LucideIcons.trendingUp,
-          context.l10n.translate('Statistiche Avanzate'),
-          context.l10n.translate('Grafici profondi e analisi dei trend.'),
+          context.t.subscription.features.advancedStats,
+          context.t.subscription.features.deepCharts,
         ),
         const SizedBox(height: 16),
         _buildFeatureRow(
           context,
           LucideIcons.infinity,
           'Abitudini Illimitate',
-          context.l10n.translate(
-            'Crea tutti gli habits che desideri senza limiti.',
-          ),
+          context.t.subscription.features.unlimitedHabits,
         ),
         const SizedBox(height: 16),
         _buildFeatureRow(
           context,
           LucideIcons.target,
-          context.l10n.translate('Obiettivi Illimitati'),
-          context.l10n.translate(
-            'Crea tutti i tuoi macro obiettivi senza limiti.',
-          ),
+          context.t.subscription.features.unlimitedGoals,
+          context.t.subscription.features.unlimitedMacroGoals,
         ),
       ],
     );
@@ -550,7 +498,7 @@ class _SubscriptionScreenState extends ConsumerState<SubscriptionScreen> {
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           Text(
-            context.l10n.translate('SCEGLI IL TUO PIANO'),
+            context.t.subscription.choosePlanHeader,
             style: GoogleFonts.inter(
               fontSize: 12,
               fontWeight: FontWeight.w700,
@@ -560,9 +508,9 @@ class _SubscriptionScreenState extends ConsumerState<SubscriptionScreen> {
           ),
           const SizedBox(height: 12),
           _buildMockPlanCard(
-            context.l10n.translate('Mensile'),
+            context.t.subscription.plans.monthly,
             _mockMonthlyPrice,
-            context.l10n.translate('Disdici quando vuoi'),
+            context.t.subscription.plans.cancelAnytime,
             _selectedMockPackage == 'monthly',
             onTap: () {
               setState(() => _selectedMockPackage = 'monthly');
@@ -570,9 +518,9 @@ class _SubscriptionScreenState extends ConsumerState<SubscriptionScreen> {
           ),
           const SizedBox(height: 12),
           _buildMockPlanCard(
-            context.l10n.translate('Annuale'),
+            context.t.subscription.plans.annual,
             _mockYearlyPrice,
-            context.l10n.translate('Risparmia oltre il 40%'),
+            context.t.subscription.plans.savings,
             _selectedMockPackage == 'yearly',
             isBestValue: true,
             onTap: () {
@@ -613,10 +561,8 @@ class _SubscriptionScreenState extends ConsumerState<SubscriptionScreen> {
               setState(() => _isLoading = false);
               SubscriptionAlertModal.show(
                 context,
-                title: context.l10n.translate('Errore Connessione'),
-                message: context.l10n.translate(
-                  'Il servizio acquisti non è raggiungibile. Verifica la tua connessione e riprova.',
-                ),
+                title: context.t.subscription.errors.connectionTitle,
+                message: context.t.subscription.errors.serviceUnreachable,
                 type: SubscriptionAlertType.error,
                 ref: ref,
               );
@@ -641,7 +587,7 @@ class _SubscriptionScreenState extends ConsumerState<SubscriptionScreen> {
               ),
               child: Center(
                 child: Text(
-                  context.l10n.translate('Attiva Abbonamento'),
+                  context.t.subscription.actions.activate,
                   style: const TextStyle(
                     color: Colors.black,
                     fontSize: 16,
@@ -659,7 +605,7 @@ class _SubscriptionScreenState extends ConsumerState<SubscriptionScreen> {
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
         Text(
-          context.l10n.translate('SCEGLI IL TUO PIANO'),
+          context.t.subscription.choosePlanHeader,
           style: GoogleFonts.inter(
             fontSize: 12,
             fontWeight: FontWeight.w700,
@@ -671,15 +617,15 @@ class _SubscriptionScreenState extends ConsumerState<SubscriptionScreen> {
         if (_monthlyPackage != null)
           _buildPlanCard(
             _monthlyPackage!,
-            context.l10n.translate('Mensile'),
-            context.l10n.translate('Disdici quando vuoi'),
+            context.t.subscription.plans.monthly,
+            context.t.subscription.plans.cancelAnytime,
           ),
         if (_yearlyPackage != null) ...[
           const SizedBox(height: 12),
           _buildPlanCard(
             _yearlyPackage!,
-            context.l10n.translate('Annuale'),
-            context.l10n.translate('Risparmia oltre il 40%'),
+            context.t.subscription.plans.annual,
+            context.t.subscription.plans.savings,
             isBestValue: true,
           ),
         ],
@@ -706,7 +652,7 @@ class _SubscriptionScreenState extends ConsumerState<SubscriptionScreen> {
             ),
             child: Center(
               child: Text(
-                context.l10n.translate('Attiva Abbonamento'),
+                context.t.subscription.actions.activate,
                 style: const TextStyle(
                   color: Colors.black,
                   fontSize: 16,
@@ -791,7 +737,7 @@ class _SubscriptionScreenState extends ConsumerState<SubscriptionScreen> {
                     children: [
                       Flexible(
                         child: Text(
-                          '${context.l10n.translate('Evolve Pro')} ${context.l10n.translate(title)}',
+                          '${context.t.subscription.proName} $title',
                           overflow: TextOverflow.ellipsis,
                           style: GoogleFonts.inter(
                             fontSize: 15,
@@ -835,7 +781,7 @@ class _SubscriptionScreenState extends ConsumerState<SubscriptionScreen> {
         TextButton.icon(
           onPressed: _isLoading ? null : _restorePurchases,
           icon: const Icon(LucideIcons.refreshCcw, size: 16),
-          label: Text(context.l10n.translate('Ripristina acquisti')),
+          label: Text(context.t.subscription.actions.restore),
           style: TextButton.styleFrom(
             foregroundColor: Colors.amber,
             textStyle: GoogleFonts.inter(
@@ -846,9 +792,7 @@ class _SubscriptionScreenState extends ConsumerState<SubscriptionScreen> {
         ),
         const SizedBox(height: 8),
         Text(
-          context.l10n.translate(
-            'L\'abbonamento si rinnova automaticamente a meno che l\'autorinnovamento non venga disattivato nelle impostazioni dell\'account Apple almeno 24 ore prima della scadenza.',
-          ),
+          context.t.subscription.renewalDisclaimer,
           textAlign: TextAlign.center,
           style: GoogleFonts.inter(
             fontSize: 11,
@@ -865,7 +809,7 @@ class _SubscriptionScreenState extends ConsumerState<SubscriptionScreen> {
                 Uri.parse('https://simo-hue.github.io/evolve/privacy.html'),
               ),
               child: Text(
-                context.l10n.translate('Privacy Policy'),
+                context.t.subscription.privacyPolicy,
                 style: GoogleFonts.inter(
                   fontSize: 12,
                   color: Colors.amber,
@@ -885,7 +829,7 @@ class _SubscriptionScreenState extends ConsumerState<SubscriptionScreen> {
                 ),
               ),
               child: Text(
-                context.l10n.translate('Termini d\'Uso (EULA)'),
+                context.t.subscription.termsEula,
                 style: GoogleFonts.inter(
                   fontSize: 12,
                   color: Colors.amber,
@@ -926,7 +870,7 @@ class _SubscriptionScreenState extends ConsumerState<SubscriptionScreen> {
           ),
           const SizedBox(height: 16),
           Text(
-            context.l10n.translate('Sei un utente Pro!'),
+            context.t.subscription.youArePro,
             style: GoogleFonts.inter(
               fontSize: 22,
               fontWeight: FontWeight.w800,
@@ -935,9 +879,7 @@ class _SubscriptionScreenState extends ConsumerState<SubscriptionScreen> {
           ),
           const SizedBox(height: 8),
           Text(
-            context.l10n.translate(
-              'Grazie per sostenere lo sviluppo di Evolve.',
-            ),
+            context.t.subscription.thankYou,
             textAlign: TextAlign.center,
             style: GoogleFonts.inter(
               fontSize: 14,
@@ -951,13 +893,13 @@ class _SubscriptionScreenState extends ConsumerState<SubscriptionScreen> {
 
   Widget _buildSubscriptionDetails(BuildContext context) {
     final nextRenewal = DateTime.now().add(const Duration(days: 30));
-    final dateFormat = DateFormat('dd MMMM yyyy', context.l10n.localeName);
+    final dateFormat = DateFormat('dd MMMM yyyy', LocaleSettings.currentLocale.languageCode);
 
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
         Text(
-          context.l10n.translate('DETTAGLI ABBONAMENTO'),
+          context.t.subscription.detailsHeader,
           style: GoogleFonts.inter(
             fontSize: 12,
             fontWeight: FontWeight.w700,
@@ -977,27 +919,27 @@ class _SubscriptionScreenState extends ConsumerState<SubscriptionScreen> {
             children: [
               _buildDetailRow(
                 context,
-                context.l10n.translate('Piano'),
-                context.l10n.translate('Evolve Pro Attivo'),
+                context.t.subscription.plans.label,
+                context.t.subscription.proActiveName,
               ),
               const Divider(height: 32),
               _buildDetailRow(
                 context,
-                context.l10n.translate('Stato'),
-                context.l10n.translate('Attivo'),
+                context.t.subscription.status.label,
+                context.t.subscription.status.active,
                 valueColor: Colors.green,
               ),
               const Divider(height: 32),
               _buildDetailRow(
                 context,
-                context.l10n.translate('Prossimo Rinnovo'),
+                context.t.subscription.nextRenewal,
                 dateFormat.format(nextRenewal),
               ),
               const Divider(height: 32),
               _buildDetailRow(
                 context,
-                context.l10n.translate('Metodo di Pagamento'),
-                context.l10n.translate('Apple Pay / App Store'),
+                context.t.subscription.paymentMethod,
+                context.t.subscription.paymentMethodValue,
               ),
             ],
           ),
@@ -1053,7 +995,7 @@ class _SubscriptionScreenState extends ConsumerState<SubscriptionScreen> {
             ),
             child: Center(
               child: Text(
-                context.l10n.translate('Gestisci Abbonamento'),
+                context.t.subscription.actions.manage,
                 style: TextStyle(
                   color: context.appColors.foreground,
                   fontSize: 16,
@@ -1081,7 +1023,7 @@ class _SubscriptionScreenState extends ConsumerState<SubscriptionScreen> {
             ),
             child: Center(
               child: Text(
-                context.l10n.translate('Disdici Abbonamento'),
+                context.t.subscription.actions.cancel,
                 style: const TextStyle(
                   color: AppColors.destructive,
                   fontSize: 16,
@@ -1144,7 +1086,7 @@ class _SubscriptionScreenState extends ConsumerState<SubscriptionScreen> {
                 ),
                 const SizedBox(height: 24),
                 Text(
-                  context.l10n.translate('Benvenuto in Evolve Pro!'),
+                  context.t.subscription.welcomeTitle,
                   textAlign: TextAlign.center,
                   style: GoogleFonts.inter(
                     fontSize: 22,
@@ -1155,9 +1097,7 @@ class _SubscriptionScreenState extends ConsumerState<SubscriptionScreen> {
                 ),
                 const SizedBox(height: 12),
                 Text(
-                  context.l10n.translate(
-                    'La tua iscrizione è attiva. Ora hai accesso completo ed illimitato all\'AI Coach personalizzato, alle statistiche avanzate dei trend e a tutti gli strumenti di crescita personale di Evolve.',
-                  ),
+                  context.t.subscription.activeFullMessage,
                   textAlign: TextAlign.center,
                   style: GoogleFonts.inter(
                     fontSize: 14,
@@ -1195,7 +1135,7 @@ class _SubscriptionScreenState extends ConsumerState<SubscriptionScreen> {
                     ),
                     child: Center(
                       child: Text(
-                        context.l10n.translate('Inizia il tuo Percorso'),
+                        context.t.common.startYourJourney,
                         style: const TextStyle(
                           color: Colors.black,
                           fontSize: 15,
@@ -1255,7 +1195,7 @@ class _SubscriptionScreenState extends ConsumerState<SubscriptionScreen> {
                 ),
                 const SizedBox(height: 24),
                 Text(
-                  context.l10n.translate('Gestisci Abbonamento'),
+                  context.t.subscription.actions.manage,
                   style: TextStyle(
                     fontFamily: 'Inter',
                     fontSize: 20,
@@ -1266,9 +1206,7 @@ class _SubscriptionScreenState extends ConsumerState<SubscriptionScreen> {
                 ),
                 const SizedBox(height: 8),
                 Text(
-                  context.l10n.translate(
-                    'Per modificare, aggiornare o disdire il tuo abbonamento Pro, verrai indirizzato al portale ufficiale di RevenueCat o del tuo Account Apple.',
-                  ),
+                  context.t.subscription.manageDisclaimer,
                   textAlign: TextAlign.center,
                   style: TextStyle(
                     fontFamily: 'Inter',
@@ -1292,7 +1230,7 @@ class _SubscriptionScreenState extends ConsumerState<SubscriptionScreen> {
                           ),
                           child: Center(
                             child: Text(
-                              context.l10n.translate('Annulla'),
+                              context.t.common.actions.cancel,
                               style: TextStyle(
                                 color: context.appColors.foreground,
                                 fontSize: 14,
@@ -1331,7 +1269,7 @@ class _SubscriptionScreenState extends ConsumerState<SubscriptionScreen> {
                           ),
                           child: Center(
                             child: Text(
-                              context.l10n.translate('Continua'),
+                              context.t.subscription.continueButton,
                               style: const TextStyle(
                                 color: Colors.white,
                                 fontSize: 14,
@@ -1421,7 +1359,7 @@ class _SubscriptionScreenState extends ConsumerState<SubscriptionScreen> {
                     children: [
                       Flexible(
                         child: Text(
-                          '${context.l10n.translate('Evolve Pro')} ${context.l10n.translate(title)}',
+                          '${context.t.subscription.proName} $title',
                           overflow: TextOverflow.ellipsis,
                           style: GoogleFonts.inter(
                             fontSize: 15,

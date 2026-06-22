@@ -24,8 +24,9 @@ import 'package:intl/date_symbol_data_local.dart';
 import 'core/app_logger.dart';
 import 'core/secure_local_storage.dart';
 import 'core/secure_storage_utils.dart';
-import 'core/localization.dart';
+import 'package:flutter_localizations/flutter_localizations.dart';
 import 'core/data_mode.dart';
+import 'i18n/translations.g.dart';
 
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
@@ -172,10 +173,15 @@ void main() async {
           initialGoalsProvider.overrideWithValue(goalsJson!),
           initialLogsProvider.overrideWithValue(logsJson!),
         ],
-        child: const EvolveApp(),
+        child: TranslationProvider(child: const EvolveApp()),
       ),
     );
   }
+
+  // Apply the saved app language to slang before the first frame is built.
+  // (Private mode stores language in its local DB; the settings listener in
+  // EvolveApp re-syncs once those settings load.)
+  await LocaleSettings.setLocale(_appLocaleFor(prefs.getString('pref_language')));
 
   if (hasSentryConsent && !startsInPrivateMode) {
     await SentryFlutter.init((options) {
@@ -265,6 +271,16 @@ class EvolveApp extends ConsumerWidget {
     final settings = ref.watch(settingsProvider);
     final router = ref.watch(routerProvider);
 
+    // Keep slang's active locale in sync with the user's language preference
+    // (covers the private-mode case where settings load asynchronously, and any
+    // runtime language change). slang drives the app locale; MaterialApp follows.
+    ref.listen<String>(settingsProvider.select((s) => s.language), (_, next) {
+      final target = _appLocaleFor(next);
+      if (LocaleSettings.currentLocale != target) {
+        LocaleSettings.setLocale(target);
+      }
+    });
+
     return MaterialApp.router(
       title: 'Evolve',
       theme: AppTheme.lightTheme(settings.accentColor),
@@ -272,10 +288,9 @@ class EvolveApp extends ConsumerWidget {
       themeMode: settings.themeMode == 'dark'
           ? ThemeMode.dark
           : ThemeMode.light,
-      locale: settings.localeOverride,
-      localizationsDelegates: AppLocalizations.localizationsDelegates,
-      supportedLocales: AppLocalizations.supportedLocales,
-      localeListResolutionCallback: _resolveAppLocale,
+      locale: TranslationProvider.of(context).flutterLocale,
+      localizationsDelegates: GlobalMaterialLocalizations.delegates,
+      supportedLocales: AppLocaleUtils.supportedLocales,
       routerConfig: router,
       debugShowCheckedModeBanner: false,
       builder: (context, child) {
@@ -295,20 +310,16 @@ class EvolveApp extends ConsumerWidget {
   }
 }
 
-Locale _resolveAppLocale(
-  List<Locale>? preferredLocales,
-  Iterable<Locale> supportedLocales,
-) {
-  final primaryLocale = preferredLocales == null || preferredLocales.isEmpty
-      ? null
-      : preferredLocales.first;
-  if (primaryLocale != null) {
-    for (final supportedLocale in supportedLocales) {
-      if (supportedLocale.languageCode == primaryLocale.languageCode) {
-        return supportedLocale;
-      }
-    }
+/// Maps the app's stored language preference to a slang [AppLocale].
+/// "System" follows the device locale (clamped to a shipped locale); any
+/// unsupported/deferred code (e.g. legacy 'ar', deferred until the RTL pass)
+/// resolves to the base locale (English).
+AppLocale _appLocaleFor(String? language) {
+  final override = AppLanguagePreference.localeOverrideFor(
+    language ?? AppLanguagePreference.system,
+  );
+  if (override == null) {
+    return AppLocaleUtils.findDeviceLocale();
   }
-
-  return const Locale('en');
+  return AppLocaleUtils.parse(override.languageCode);
 }

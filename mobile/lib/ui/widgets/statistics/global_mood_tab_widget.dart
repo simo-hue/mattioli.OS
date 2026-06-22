@@ -4,10 +4,10 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:lucide_icons_flutter/lucide_icons.dart';
 import 'package:fl_chart/fl_chart.dart';
 import '../../../core/theme.dart';
-import '../../../core/localization.dart';
 import '../../../providers/mood_provider.dart';
 import '../../../providers/goal_provider.dart';
 import '../../../models/goal.dart';
+import '../../../i18n/translations.g.dart';
 
 class MoodChartWindow {
   final DateTime startDate;
@@ -106,7 +106,7 @@ class _GlobalMoodTabWidgetState extends ConsumerState<GlobalMoodTabWidget> {
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
         Text(
-          context.l10n.translate('Mood & Energia'),
+          context.t.statistics.moodEnergy,
           style: TextStyle(
             fontFamily: 'Inter',
             fontSize: 20,
@@ -115,7 +115,7 @@ class _GlobalMoodTabWidgetState extends ConsumerState<GlobalMoodTabWidget> {
           ),
         ),
         Text(
-          context.l10n.translate('Analisi del benessere psicofisico.'),
+          context.t.statistics.psychophysicalWellBeingAnalysis,
           style: TextStyle(
             fontFamily: 'Inter',
             fontSize: 12,
@@ -243,11 +243,11 @@ class _GlobalMoodTabWidgetState extends ConsumerState<GlobalMoodTabWidget> {
             mainAxisAlignment: MainAxisAlignment.spaceBetween,
             children: [
               _buildChartLegendItem(
-                context.l10n.translate('Mood'),
+                context.t.statistics.mood,
                 const Color(0xFFFBBF24),
               ),
               _buildChartLegendItem(
-                context.l10n.translate('Energia'),
+                context.t.statistics.energy,
                 const Color(0xFF06B6D4),
               ),
             ],
@@ -360,7 +360,7 @@ class _GlobalMoodTabWidgetState extends ConsumerState<GlobalMoodTabWidget> {
                       return touchedBarSpots.map((barSpot) {
                         final isMood = barSpot.barIndex == 0;
                         return LineTooltipItem(
-                          '${isMood ? context.l10n.translate('Mood') : context.l10n.translate('Energia')}: ${barSpot.y.toInt()}',
+                          '${isMood ? context.t.statistics.mood : context.t.statistics.energy}: ${barSpot.y.toInt()}',
                           TextStyle(
                             color: isMood
                                 ? const Color(0xFFFBBF24)
@@ -434,7 +434,7 @@ class _MoodSensitiveSection extends StatelessWidget {
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
         Text(
-          context.l10n.translate('Abitudini Sensibili al Mood'),
+          context.t.statistics.moodSensitiveHabits,
           style: TextStyle(
             fontFamily: 'Inter',
             fontSize: 16,
@@ -445,9 +445,7 @@ class _MoodSensitiveSection extends StatelessWidget {
         const SizedBox(height: 12),
         if (topSensitive.isEmpty)
           Text(
-            context.l10n.translate(
-              'Non ci sono abbastanza dati per calcolare la sensibilità.',
-            ),
+            context.t.statistics.notEnoughDataToCalculateSensitivity,
             style: TextStyle(
               fontFamily: 'Inter',
               fontSize: 12,
@@ -461,7 +459,7 @@ class _MoodSensitiveSection extends StatelessWidget {
               (g) => g.id == c.goalId,
               orElse: () => Goal(
                 id: c.goalId,
-                title: context.l10n.unknownHabit,
+                title: context.t.statistics.unknownHabit,
                 color: Colors.grey,
                 startDate: DateTime.now(),
               ),
@@ -520,7 +518,7 @@ class _MoodSensitiveSection extends StatelessWidget {
                   Row(
                     children: [
                       Text(
-                        '${context.l10n.translate('Sensibilità')}: ',
+                        '${context.t.statistics.sensitivity}: ',
                         style: TextStyle(
                           fontFamily: 'Inter',
                           fontSize: 11,
@@ -576,7 +574,7 @@ class _ResilientHabitsSection extends StatelessWidget {
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
         Text(
-          context.l10n.translate('Abitudini Resilienti'),
+          context.t.statistics.resilientHabits,
           style: TextStyle(
             fontFamily: 'Inter',
             fontSize: 16,
@@ -586,9 +584,7 @@ class _ResilientHabitsSection extends StatelessWidget {
         ),
         const SizedBox(height: 4),
         Text(
-          context.l10n.translate(
-            'Abitudini che mantieni anche quando il mood è basso.',
-          ),
+          context.t.statistics.habitsYouKeepEvenWhenYour,
           style: TextStyle(
             fontFamily: 'Inter',
             fontSize: 11,
@@ -598,9 +594,7 @@ class _ResilientHabitsSection extends StatelessWidget {
         const SizedBox(height: 16),
         if (topResilient.isEmpty)
           Text(
-            context.l10n.translate(
-              'Non ci sono abbastanza dati per calcolare la resilienza.',
-            ),
+            context.t.statistics.notEnoughDataToCalculateResilience,
             style: TextStyle(
               fontFamily: 'Inter',
               fontSize: 12,
@@ -615,7 +609,7 @@ class _ResilientHabitsSection extends StatelessWidget {
                 (g) => g.id == c.goalId,
                 orElse: () => Goal(
                   id: c.goalId,
-                  title: context.l10n.unknownHabit,
+                  title: context.t.statistics.unknownHabit,
                   color: Colors.grey,
                   startDate: DateTime.now(),
                 ),
@@ -689,7 +683,7 @@ class _ResilientHabitsSection extends StatelessWidget {
             ),
           ),
           Text(
-            context.l10n.translate('Resilienza'),
+            context.t.statistics.resilience,
             style: TextStyle(
               fontFamily: 'Inter',
               fontSize: 10,
@@ -726,7 +720,7 @@ class _CorrelazioneMoodSection extends StatelessWidget {
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           Text(
-            context.l10n.translate('Analisi di Correlazione'),
+            context.t.statistics.correlationAnalysis,
             style: TextStyle(
               fontFamily: 'Inter',
               fontSize: 16,
@@ -737,9 +731,7 @@ class _CorrelazioneMoodSection extends StatelessWidget {
           const SizedBox(height: 20),
           if (topCorrelations.isEmpty)
             Text(
-              context.l10n.translate(
-                'Non ci sono abbastanza dati per l\'analisi di correlazione.',
-              ),
+              context.t.statistics.notEnoughDataForCorrelationAnalysis,
               style: TextStyle(
                 fontFamily: 'Inter',
                 fontSize: 12,
@@ -752,7 +744,7 @@ class _CorrelazioneMoodSection extends StatelessWidget {
                 (g) => g.id == c.goalId,
                 orElse: () => Goal(
                   id: c.goalId,
-                  title: context.l10n.unknownHabit,
+                  title: context.t.statistics.unknownHabit,
                   color: Colors.grey,
                   startDate: DateTime.now(),
                 ),
@@ -795,14 +787,14 @@ class _CorrelazioneMoodSection extends StatelessWidget {
               Row(
                 children: [
                   _MoodStatMini(
-                    label: context.l10n.translate('MOOD BASSO'),
+                    label: context.t.statistics.lowMood,
                     value: '$lowVal%',
                     icon: LucideIcons.frown,
                     small: true,
                   ),
                   const SizedBox(width: 12),
                   _MoodStatMini(
-                    label: context.l10n.translate('MOOD ALTO'),
+                    label: context.t.statistics.highMood,
                     value: '$highVal%',
                     icon: LucideIcons.smile,
                     small: true,

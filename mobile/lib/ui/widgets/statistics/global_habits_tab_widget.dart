@@ -4,12 +4,13 @@ import 'package:lucide_icons_flutter/lucide_icons.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../../../core/theme.dart';
-import '../../../core/localization.dart';
 import '../../../providers/goal_provider.dart';
 import '../../../providers/settings_provider.dart';
 import '../../../models/goal.dart';
 import '../../../core/haptics.dart';
 import '../pro_features_modal.dart';
+import '../../../i18n/translations.g.dart';
+import '../../../core/l10n_dynamic.dart';
 
 class GlobalHabitsTabWidget extends ConsumerStatefulWidget {
   final Function(String?)? onGoalSelected;
@@ -86,7 +87,7 @@ class _GlobalHabitsTabWidgetState extends ConsumerState<GlobalHabitsTabWidget> {
               mainAxisAlignment: MainAxisAlignment.spaceBetween,
               children: [
                 Text(
-                  context.l10n.translate('Dettagli Abitudini'),
+                  context.t.statistics.habitDetails,
                   style: TextStyle(
                     fontFamily: 'Inter',
                     fontSize: 18,
@@ -101,7 +102,7 @@ class _GlobalHabitsTabWidgetState extends ConsumerState<GlobalHabitsTabWidget> {
             sortedHabits.isEmpty
                 ? Center(
                     child: Text(
-                      context.l10n.translate('Nessuna abitudine trovata'),
+                      context.t.statistics.noHabitsFound,
                       style: TextStyle(
                         color: context.appColors.mutedForeground,
                       ),
@@ -127,7 +128,7 @@ class _GlobalHabitsTabWidgetState extends ConsumerState<GlobalHabitsTabWidget> {
       loading: () => const Center(child: CircularProgressIndicator()),
       error: (err, stack) => Center(
         child: Text(
-          '${context.l10n.translate('Errore')}: $err',
+          '${context.t.common.status.error}: $err',
           style: TextStyle(color: context.appColors.mutedForeground),
         ),
       ),
@@ -168,7 +169,7 @@ class _GlobalHabitsTabWidgetState extends ConsumerState<GlobalHabitsTabWidget> {
             ),
             const SizedBox(width: 8),
             Text(
-              context.l10n.translate(_sortBy).replaceAll('_', ' '),
+              tSortBy(context, _sortBy),
               style: TextStyle(
                 fontFamily: 'Inter',
                 fontSize: 12,
@@ -222,7 +223,7 @@ class _GlobalHabitsTabWidgetState extends ConsumerState<GlobalHabitsTabWidget> {
               child: Align(
                 alignment: Alignment.center,
                 child: Text(
-                  context.l10n.translate('Ordina per'),
+                  context.t.statistics.sortBy,
                   style: TextStyle(
                     fontFamily: 'Inter',
                     fontSize: 10,
@@ -248,7 +249,7 @@ class _GlobalHabitsTabWidgetState extends ConsumerState<GlobalHabitsTabWidget> {
                         ),
                 ),
                 title: Text(
-                  context.l10n.translate(opt.val).replaceAll('_', ' '),
+                  tSortBy(context, opt.val),
                   style: TextStyle(
                     fontFamily: 'Inter',
                     fontSize: 16,
@@ -406,27 +407,27 @@ class _HabitDetailCard extends ConsumerWidget {
                 children: [
                   _buildStatColumn(
                     context,
-                    context.l10n.translate('BEST'),
-                    '${habit['best']}${context.l10n.daysShortUnit}',
+                    context.t.statistics.best,
+                    '${habit['best']}${context.t.statistics.daysShortUnit}',
                     icon: LucideIcons.trophy,
                     iconColor: const Color(0xFFEAB308),
                   ),
                   _buildStatColumn(
                     context,
-                    context.l10n.translate('WORST'),
-                    '${habit['worst']}${context.l10n.daysShortUnit}',
+                    context.t.statistics.worst,
+                    '${habit['worst']}${context.t.statistics.daysShortUnit}',
                     icon: LucideIcons.trendingDown,
                     iconColor: const Color(0xFFEF4444),
                     isDanger: true,
                   ),
                   _buildStatColumn(
                     context,
-                    context.l10n.streakCompactLabel,
-                    '${habit['serie']}${context.l10n.daysShortUnit}',
+                    context.t.statistics.streakCompactLabel,
+                    '${habit['serie']}${context.t.statistics.daysShortUnit}',
                   ),
                   _buildStatColumn(
                     context,
-                    context.l10n.rateCompactLabel,
+                    context.t.statistics.rateCompactLabel,
                     '${habit['rate']}%',
                     isBold: true,
                   ),

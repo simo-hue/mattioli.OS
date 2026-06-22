@@ -1,0 +1,30 @@
+# slang configuration — see LOCALIZATION_PLAN.md for the full migration plan.
+#
+# Regenerate after editing any lib/i18n/*.i18n.json:
+#   dart run slang
+# (or `dart run slang watch` while editing)
+
+base_locale: en                 # English is the source-of-truth + fallback
+fallback_strategy: base_locale  # a missing key shows English, never blank / a stray language
+
+input_directory: lib/i18n
+input_file_pattern: .i18n.json
+output_directory: lib/i18n
+output_file_name: translations.g.dart
+
+# `{name}` placeholders in the JSON map 1:1 to the ARB source we converted from.
+string_interpolation: braces
+
+# Generates the Flutter `TranslationProvider`, `context` extensions and the
+# global `t` accessor. Locale is driven from the user's settings via
+# `LocaleSettings` (see the integration step in LOCALIZATION_PLAN.md).
+flutter_integration: true
+translate_var: t
+enum_name: AppLocale
+locale_handling: true
+
+# NOTE: Phase 0 imports keys flat (1:1 with the old ARB names). The semantic
+# nesting (`t.settings.appearance.darkMode`) is introduced per-feature in
+# Phases 1..N by restructuring these JSON files — no config change needed, since
+# slang derives nesting from the JSON object structure. `namespaces` stays off
+# (single nested file per locale).

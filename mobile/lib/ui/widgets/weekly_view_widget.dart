@@ -6,7 +6,7 @@ import '../../core/theme.dart';
 import '../../providers/goal_provider.dart';
 import 'day_details_modal.dart';
 import '../../core/haptics.dart';
-import '../../core/localization.dart';
+import '../../i18n/translations.g.dart';
 
 class WeeklyViewWidget extends ConsumerStatefulWidget {
   const WeeklyViewWidget({super.key});
@@ -47,8 +47,8 @@ class _WeeklyViewWidgetState extends ConsumerState<WeeklyViewWidget> {
 
   String _formatDateRange(BuildContext context) {
     final end = _currentWeekStart.add(const Duration(days: 6));
-    final fullMonthFormatter = DateFormat.MMMM(context.l10n.localeName);
-    final shortMonthFormatter = DateFormat.MMM(context.l10n.localeName);
+    final fullMonthFormatter = DateFormat.MMMM(LocaleSettings.currentLocale.languageCode);
+    final shortMonthFormatter = DateFormat.MMM(LocaleSettings.currentLocale.languageCode);
     if (_currentWeekStart.month == end.month) {
       return '${_currentWeekStart.day} - ${end.day} ${fullMonthFormatter.format(_currentWeekStart)}';
     }
@@ -156,7 +156,7 @@ class _WeeklyViewWidgetState extends ConsumerState<WeeklyViewWidget> {
                       children: [
                         Text(
                           DateFormat.E(
-                            context.l10n.localeName,
+                            LocaleSettings.currentLocale.languageCode,
                           ).format(dayDate).toUpperCase(),
                           style: TextStyle(
                             fontFamily: 'Inter',

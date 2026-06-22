@@ -8,7 +8,7 @@ import '../../core/theme.dart';
 import '../../providers/auth_provider.dart';
 import '../../providers/settings_provider.dart';
 import '../../core/haptics.dart';
-import '../../core/localization.dart';
+import '../../i18n/translations.g.dart';
 
 enum AuthMode { login, signup }
 
@@ -85,7 +85,7 @@ class _AuthScreenState extends ConsumerState<AuthScreen>
           if (error != null && error.contains('email')) {
             ScaffoldMessenger.of(context).showSnackBar(
               SnackBar(
-                content: Text(context.l10n.translate(error)),
+                content: Text(error),
                 backgroundColor: const Color(0xFF10B981),
                 behavior: SnackBarBehavior.floating,
                 shape: RoundedRectangleBorder(
@@ -111,9 +111,7 @@ class _AuthScreenState extends ConsumerState<AuthScreen>
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(
           content: Text(
-            context.l10n.translate(
-              'Inserisci la tua email per reimpostare la password.',
-            ),
+            context.t.auth.resetPasswordPrompt,
           ),
           backgroundColor: AppColors.card,
           behavior: SnackBarBehavior.floating,
@@ -131,10 +129,8 @@ class _AuthScreenState extends ConsumerState<AuthScreen>
         SnackBar(
           content: Text(
             success
-                ? context.l10n.passwordResetEmailSent
-                : context.l10n.translate(
-                    ref.read(authProvider).error ?? 'Errore. Riprova.',
-                  ),
+                ? context.t.auth.passwordResetEmailSent
+                : ref.read(authProvider).error ?? context.t.common.status.error,
           ),
           backgroundColor: success
               ? const Color(0xFF10B981)
@@ -160,7 +156,7 @@ class _AuthScreenState extends ConsumerState<AuthScreen>
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
             content: Text(
-              context.l10n.translate('Impossibile aprire il link.'),
+              context.t.common.unableToOpenTheLink,
             ),
             backgroundColor: AppColors.destructive,
             behavior: SnackBarBehavior.floating,
@@ -263,7 +259,7 @@ class _AuthScreenState extends ConsumerState<AuthScreen>
                             SizedBox(height: isCompact ? 4 : 8),
                             if (_mode == AuthMode.login)
                               Text(
-                                context.l10n.authLoginMotto,
+                                context.t.auth.loginMotto,
                                 textAlign: TextAlign.center,
                                 style: GoogleFonts.playfairDisplay(
                                   color: context.appColors.mutedForeground
@@ -276,9 +272,7 @@ class _AuthScreenState extends ConsumerState<AuthScreen>
                               )
                             else
                               Text(
-                                context.l10n.translate(
-                                  'Crea il tuo ecosistema personale.',
-                                ),
+                                context.t.auth.tagline,
                                 textAlign: TextAlign.center,
                                 style: GoogleFonts.inter(
                                   color: context.appColors.mutedForeground,
@@ -297,20 +291,16 @@ class _AuthScreenState extends ConsumerState<AuthScreen>
                             children: [
                               _buildTextField(
                                 controller: _emailController,
-                                label: context.l10n.translate('Email'),
+                                label: context.t.common.email,
                                 icon: LucideIcons.mail,
                                 keyboardType: TextInputType.emailAddress,
                                 validator: (value) {
                                   if (value == null || value.trim().isEmpty) {
-                                    return context.l10n.translate(
-                                      'Inserisci la tua email.',
-                                    );
+                                    return context.t.auth.errors.enterEmail;
                                   }
                                   if (!value.contains('@') ||
                                       !value.contains('.')) {
-                                    return context.l10n.translate(
-                                      'Email non valida.',
-                                    );
+                                    return context.t.auth.errors.invalidEmail;
                                   }
                                   return null;
                                 },
@@ -318,19 +308,15 @@ class _AuthScreenState extends ConsumerState<AuthScreen>
                               SizedBox(height: isCompact ? 6 : 12),
                               _buildTextField(
                                 controller: _passwordController,
-                                label: context.l10n.translate('Password'),
+                                label: context.t.auth.password,
                                 icon: LucideIcons.lock,
                                 isPassword: true,
                                 validator: (value) {
                                   if (value == null || value.isEmpty) {
-                                    return context.l10n.translate(
-                                      'Inserisci la password.',
-                                    );
+                                    return context.t.auth.errors.enterPassword;
                                   }
                                   if (value.length < 6) {
-                                    return context.l10n.translate(
-                                      'Minimo 6 caratteri.',
-                                    );
+                                    return context.t.auth.errors.minSixChars;
                                   }
                                   return null;
                                 },
@@ -341,9 +327,7 @@ class _AuthScreenState extends ConsumerState<AuthScreen>
                                   child: TextButton(
                                     onPressed: _handleForgotPassword,
                                     child: Text(
-                                      context.l10n.translate(
-                                        'Password dimenticata?',
-                                      ),
+                                      context.t.auth.forgotPassword,
                                       style: TextStyle(
                                         color:
                                             context.appColors.mutedForeground,
@@ -388,7 +372,7 @@ class _AuthScreenState extends ConsumerState<AuthScreen>
                                           const SizedBox(width: 8),
                                           Expanded(
                                             child: Text(
-                                              context.l10n.translate(error),
+                                              error,
                                               style: const TextStyle(
                                                 color: AppColors.destructive,
                                                 fontSize: 12,
@@ -424,7 +408,7 @@ class _AuthScreenState extends ConsumerState<AuthScreen>
                                 horizontal: 16,
                               ),
                               child: Text(
-                                context.l10n.translate('OPPURE'),
+                                context.t.auth.or,
                                 style: GoogleFonts.inter(
                                   color: context.appColors.mutedForeground
                                       .withValues(alpha: 0.5),
@@ -447,7 +431,7 @@ class _AuthScreenState extends ConsumerState<AuthScreen>
 
                         // Social Logins
                         _buildSocialButton(
-                          label: context.l10n.translate('Continua con Apple'),
+                          label: context.t.auth.continueWithApple,
                           icon: LucideIcons.apple,
                           onPressed: () async {
                             final hapticsEnabled = ref
@@ -463,7 +447,7 @@ class _AuthScreenState extends ConsumerState<AuthScreen>
                         ),
                         SizedBox(height: isCompact ? 6 : 10),
                         _buildSocialButton(
-                          label: context.l10n.translate('Continua con Google'),
+                          label: context.t.auth.continueWithGoogle,
                           icon: LucideIcons.mail,
                           isGoogle: true,
                           onPressed: () async {
@@ -481,9 +465,7 @@ class _AuthScreenState extends ConsumerState<AuthScreen>
 
                         SizedBox(height: isCompact ? 6 : 10),
                         _buildSocialButton(
-                          label: context.l10n.translate(
-                            'Continua privatamente su questo iPhone',
-                          ),
+                          label: context.t.auth.continuePrivately,
                           icon: LucideIcons.shieldCheck,
                           onPressed: _handlePrivateMode,
                         ),
@@ -496,12 +478,8 @@ class _AuthScreenState extends ConsumerState<AuthScreen>
                           children: [
                             Text(
                               _mode == AuthMode.login
-                                  ? context.l10n.translate(
-                                      'Non hai un account?',
-                                    )
-                                  : context.l10n.translate(
-                                      'Hai già un account?',
-                                    ),
+                                  ? context.t.auth.noAccount
+                                  : context.t.auth.haveAccount,
                               style: TextStyle(
                                 color: context.appColors.mutedForeground,
                                 fontSize: isCompact ? 12 : 14,
@@ -511,8 +489,8 @@ class _AuthScreenState extends ConsumerState<AuthScreen>
                               onPressed: _toggleMode,
                               child: Text(
                                 _mode == AuthMode.login
-                                    ? context.l10n.translate('Registrati')
-                                    : context.l10n.translate('Accedi'),
+                                    ? context.t.auth.register
+                                    : context.t.auth.signIn,
                                 style: TextStyle(
                                   color: primaryColor,
                                   fontWeight: FontWeight.w700,
@@ -540,7 +518,7 @@ class _AuthScreenState extends ConsumerState<AuthScreen>
                                 tapTargetSize: MaterialTapTargetSize.shrinkWrap,
                               ),
                               child: Text(
-                                context.l10n.readPrivacyPolicy,
+                                context.t.auth.readPrivacyPolicy,
                                 style: TextStyle(
                                   color: context.appColors.mutedForeground,
                                   fontSize: isCompact ? 10 : 12,
@@ -568,7 +546,7 @@ class _AuthScreenState extends ConsumerState<AuthScreen>
                                 tapTargetSize: MaterialTapTargetSize.shrinkWrap,
                               ),
                               child: Text(
-                                context.l10n.translate('Termini di Servizio'),
+                                context.t.auth.termsOfService,
                                 style: TextStyle(
                                   color: context.appColors.mutedForeground,
                                   fontSize: isCompact ? 10 : 12,
@@ -685,8 +663,8 @@ class _AuthScreenState extends ConsumerState<AuthScreen>
                 )
               : Text(
                   _mode == AuthMode.login
-                      ? context.l10n.translate('Accedi')
-                      : context.l10n.translate('Crea Account'),
+                      ? context.t.auth.signIn
+                      : context.t.auth.createAccount,
                   style: TextStyle(
                     color: primaryColor.computeLuminance() > 0.5
                         ? Colors.black

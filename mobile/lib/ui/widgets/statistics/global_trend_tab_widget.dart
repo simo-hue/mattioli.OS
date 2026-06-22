@@ -5,9 +5,9 @@ import 'package:lucide_icons_flutter/lucide_icons.dart';
 import 'package:fl_chart/fl_chart.dart';
 import 'package:intl/intl.dart';
 import '../../../core/theme.dart';
-import '../../../core/localization.dart';
 import '../../../models/goal.dart';
 import '../../../providers/goal_provider.dart';
+import '../../../i18n/translations.g.dart';
 
 class GlobalTrendTabWidget extends ConsumerStatefulWidget {
   const GlobalTrendTabWidget({super.key});
@@ -49,7 +49,7 @@ class _GlobalTrendTabWidgetState extends ConsumerState<GlobalTrendTabWidget> {
             height: 300,
             alignment: Alignment.center,
             child: Text(
-              '${context.l10n.translate('Errore')}: $err',
+              '${context.t.common.status.error}: $err',
               style: TextStyle(color: context.appColors.mutedForeground),
             ),
           ),
@@ -98,7 +98,7 @@ class _GlobalTrendTabWidgetState extends ConsumerState<GlobalTrendTabWidget> {
         );
       }
       maxX = spots.isNotEmpty ? (spots.length - 1).toDouble() : 0;
-      title = context.l10n.translate('Totale');
+      title = context.t.statistics.total;
       percentage = spots.isNotEmpty
           ? '${(spots.map((e) => e.y).reduce((a, b) => a + b) / spots.length).toStringAsFixed(1)}%'
           : '100%';
@@ -131,7 +131,7 @@ class _GlobalTrendTabWidgetState extends ConsumerState<GlobalTrendTabWidget> {
         final now = DateTime.now();
         final List<double> rates = List.filled(12, 100.0);
         final List<String> monthLabels = [];
-        final monthFormatter = DateFormat.MMM(context.l10n.localeName);
+        final monthFormatter = DateFormat.MMM(LocaleSettings.currentLocale.languageCode);
 
         for (int i = 11; i >= 0; i--) {
           final date = DateTime(now.year, now.month - i, 1);
@@ -165,7 +165,7 @@ class _GlobalTrendTabWidgetState extends ConsumerState<GlobalTrendTabWidget> {
 
           final date = DateTime.parse(item['date'] as String);
           if (_chartTimeframe == 'timeframe_week_short') {
-            dates.add(DateFormat.E(context.l10n.localeName).format(date));
+            dates.add(DateFormat.E(LocaleSettings.currentLocale.languageCode).format(date));
           } else {
             dates.add(
               '${date.day.toString().padLeft(2, '0')}/${date.month.toString().padLeft(2, '0')}',
@@ -176,10 +176,10 @@ class _GlobalTrendTabWidgetState extends ConsumerState<GlobalTrendTabWidget> {
         maxX = displayData.isNotEmpty ? (displayData.length - 1).toDouble() : 0;
       }
       title = _chartTimeframe == 'timeframe_week_short'
-          ? context.l10n.translate('Trend Settimanale')
+          ? context.t.statistics.weeklyTrend
           : _chartTimeframe == 'timeframe_month_short'
-          ? context.l10n.translate('Trend Mensile')
-          : context.l10n.translate('Trend Annuale');
+          ? context.t.statistics.monthlyTrend
+          : context.t.statistics.yearlyTrend;
     }
 
     return Container(
@@ -193,7 +193,7 @@ class _GlobalTrendTabWidgetState extends ConsumerState<GlobalTrendTabWidget> {
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
               Text(
-                context.l10n.translate('Performance Evolution'),
+                context.t.statistics.performanceEvolution,
                 style: TextStyle(
                   fontFamily: 'Inter',
                   fontSize: 20,
@@ -204,7 +204,7 @@ class _GlobalTrendTabWidgetState extends ConsumerState<GlobalTrendTabWidget> {
               ),
               Text(
                 _chartTimeframe == 'timeframe_all'
-                    ? context.l10n.translate('Trend Globale')
+                    ? context.t.statistics.globalTrend
                     : title,
                 style: TextStyle(
                   fontFamily: 'Inter',
@@ -432,10 +432,10 @@ class _GlobalTrendTabWidgetState extends ConsumerState<GlobalTrendTabWidget> {
         : 'all';
 
     final Map<String, String> italianLabels = {
-      'week': context.l10n.translate('Settimana'),
-      'month': context.l10n.translate('Mese'),
-      'year': context.l10n.translate('Anno'),
-      'all': context.l10n.translate('Tutto'),
+      'week': context.t.common.calendarView.week,
+      'month': context.t.common.calendarView.month,
+      'year': context.t.common.calendarView.year,
+      'all': context.t.statistics.all,
     };
 
     return Container(
@@ -563,11 +563,11 @@ class _MiglioriAbitudiniSectionState
         final List<Widget> cards = bestHabits.isEmpty
             ? [
                 _MiglioreCard(
-                  title: context.l10n.translate('Tutto alla grande!'),
+                  title: context.t.statistics.everythingIsGreat,
                   rate: '100%',
                   color: Color(0xFF10B981),
-                  streak: '0 ${context.l10n.translate('giorni')}',
-                  desc: context.l10n.allHabitsStableDescription,
+                  streak: '0 ${context.t.common.days}',
+                  desc: context.t.statistics.allHabitsStableDescription,
                 ),
               ]
             : bestHabits.take(3).map((item) {
@@ -579,8 +579,8 @@ class _MiglioriAbitudiniSectionState
                   rate: '${(rate * 100).toStringAsFixed(0)}%',
                   color: const Color(0xFF10B981),
                   streak:
-                      '${item['streak']} ${context.l10n.translate('giorni')}',
-                  desc: context.l10n.habitCompletionPeriodDescription(
+                      '${item['streak']} ${context.t.common.days}',
+                  desc: context.t.statistics.habitCompletionPeriodDescription(rate: 
                     (rate * 100).toStringAsFixed(0),
                   ),
                 );
@@ -598,7 +598,7 @@ class _MiglioriAbitudiniSectionState
                 ),
                 const SizedBox(width: 8),
                 Text(
-                  context.l10n.bestHabitsTitle,
+                  context.t.statistics.bestHabitsTitle,
                   style: TextStyle(
                     fontFamily: 'Inter',
                     fontSize: 14,
@@ -668,7 +668,7 @@ class _MiglioriAbitudiniSectionState
         height: 200,
         child: Center(
           child: Text(
-            '${context.l10n.translate('Errore')}: $err',
+            '${context.t.common.status.error}: $err',
             style: TextStyle(color: context.appColors.mutedForeground),
           ),
         ),
@@ -774,7 +774,7 @@ class _MiglioreCard extends StatelessWidget {
               const Icon(LucideIcons.flame, size: 14, color: Colors.grey),
               const SizedBox(width: 6),
               Text(
-                '${context.l10n.translate('Serie Attuale')}: ',
+                '${context.t.statistics.currentStreak2}: ',
                 style: TextStyle(
                   fontFamily: 'Inter',
                   fontSize: 12,
@@ -847,12 +847,12 @@ class _AbitudiniCriticheSectionState
         final List<Widget> cards = criticalHabits.isEmpty
             ? [
                 _CriticaCard(
-                  title: context.l10n.translate('Tutto alla grande!'),
+                  title: context.t.statistics.everythingIsGreat,
                   drop: '0%',
                   trend: 'trending_up',
                   color: Color(0xFF10B981),
-                  streak: '0 ${context.l10n.translate('giorni')}',
-                  desc: context.l10n.allHabitsStableDescription,
+                  streak: '0 ${context.t.common.days}',
+                  desc: context.t.statistics.allHabitsStableDescription,
                 ),
               ]
             : criticalHabits.take(3).map((item) {
@@ -867,8 +867,8 @@ class _AbitudiniCriticheSectionState
                   color: drop > 30
                       ? const Color(0xFFEF4444)
                       : const Color(0xFFF97316),
-                  streak: '$negStreak ${context.l10n.translate('giorni')}',
-                  desc: context.l10n.habitLostConsistencyDescription(
+                  streak: '$negStreak ${context.t.common.days}',
+                  desc: context.t.statistics.habitLostConsistencyDescription(drop: 
                     drop.toStringAsFixed(0),
                   ),
                 );
@@ -886,7 +886,7 @@ class _AbitudiniCriticheSectionState
                 ),
                 const SizedBox(width: 8),
                 Text(
-                  context.l10n.translate('Abitudini Critiche'),
+                  context.t.statistics.criticalHabits,
                   style: TextStyle(
                     fontFamily: 'Inter',
                     fontSize: 14,
@@ -898,7 +898,7 @@ class _AbitudiniCriticheSectionState
             ),
             const SizedBox(height: 4),
             Text(
-              context.l10n.worseningHabitsDescription,
+              context.t.statistics.worseningHabitsDescription,
               style: TextStyle(
                 fontFamily: 'Inter',
                 fontSize: 11,
@@ -956,7 +956,7 @@ class _AbitudiniCriticheSectionState
         height: 200,
         child: Center(
           child: Text(
-            '${context.l10n.translate('Errore')}: $err',
+            '${context.t.common.status.error}: $err',
             style: TextStyle(color: context.appColors.mutedForeground),
           ),
         ),
@@ -1064,7 +1064,7 @@ class _CriticaCard extends StatelessWidget {
               const Icon(LucideIcons.calendarX, size: 14, color: Colors.grey),
               const SizedBox(width: 6),
               Text(
-                '${context.l10n.translate('Streak Negativa')}: ',
+                '${context.t.statistics.negativeStreak}: ',
                 style: TextStyle(
                   fontFamily: 'Inter',
                   fontSize: 12,

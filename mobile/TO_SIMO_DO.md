@@ -58,10 +58,3 @@
 - [ ] Before the next iOS release, confirm App Store Connect export-compliance answers for the new SQLCipher-based local database encryption. The app uses encryption for local private data protection, so keep `ITSAppUsesNonExemptEncryption` aligned with Apple's current compliance guidance.
 
 ---
-
-## 2026-06-23 - Phase 6 data-correctness follow-ups
-
-- [x] **Cloud `get_best_habits` timeframe-token bug — FIXED 2026-06-23.** The app passed `'timeframe_*'` tokens that the SQL (`'week'/'month'/'year'/'all'`) didn't recognise, so every habit came back rate=0. Fixed in `bestHabitsProvider` via `canonicalBestHabitsTimeframe()`, which maps the UI tokens to the cloud vocabulary before calling either backend (no SQL/migration change; cloud's 7/30/365/lifetime windows kept). Unknown tokens fall back to `'all'`. Tested in `test/best_habits_timeframe_test.dart`.
-  - NOTE for QA: best-habits rates will now show real values online and offline (previously always 0). Verify the "Migliori Abitudini" card on the statistics screen across all four timeframe selections.
-- [ ] **Pre-existing schema drift, informational.** `profiles` and `macro_goal_categories` are referenced via `.from(...)` but have no `CREATE TABLE` in `schema.sql` (they live only in prod / are Supabase-managed). They're allowlisted in `test/schema_drift_test.dart` so the guard stays green. Consider capturing them into `schema.sql`/`migrations/` in a later pass for completeness.
-- No DB apply step required: the new `migrations/20260622_add_*.sql` were dumped FROM production, so they already exist live.

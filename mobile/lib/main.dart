@@ -1,3 +1,4 @@
+import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
@@ -128,16 +129,23 @@ void main() async {
               children: [
                 const Icon(Icons.error_outline, color: Colors.red, size: 48),
                 const SizedBox(height: 16),
-                const Text(
-                  'Ops! Qualcosa è andato storto.',
-                  style: TextStyle(fontSize: 20, fontWeight: FontWeight.bold),
-                ),
-                const SizedBox(height: 8),
                 Text(
-                  details.exception.toString(),
-                  textAlign: TextAlign.center,
-                  style: const TextStyle(color: Colors.grey),
+                  t.common.unexpectedErrorTitle,
+                  style: const TextStyle(
+                    fontSize: 20,
+                    fontWeight: FontWeight.bold,
+                  ),
                 ),
+                // Raw exception text only in debug — don't leak internals to
+                // users in release (SEC-7 / I18N-3).
+                if (kDebugMode) ...[
+                  const SizedBox(height: 8),
+                  Text(
+                    details.exception.toString(),
+                    textAlign: TextAlign.center,
+                    style: const TextStyle(color: Colors.grey),
+                  ),
+                ],
               ],
             ),
           ),
@@ -164,9 +172,8 @@ void main() async {
       if (context != null) {
         ErrorModal.show(
           context,
-          title: 'Si è verificato un errore',
-          message:
-              'L\'applicazione ha riscontrato un problema imprevisto. Abbiamo registrato l\'errore e cercheremo di risolverlo.',
+          title: t.common.unexpectedErrorOccurred,
+          message: t.common.unexpectedErrorMessage,
           details: error.toString(),
         );
       }

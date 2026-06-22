@@ -125,7 +125,10 @@ class NotificationService {
     if (response.actionId == 'action_done') {
       await _markHabitAsDone(habitId);
     } else if (response.actionId == 'action_snooze') {
-      await _snoozeHabit(habitId, parts.length > 2 ? parts[2] : 'Abitudine');
+      await _snoozeHabit(
+        habitId,
+        parts.length > 2 ? parts[2] : t.notifications.habitFallbackTitle,
+      );
     } else if (response.actionId == 'action_skip') {
       await _skipHabit(habitId);
     }

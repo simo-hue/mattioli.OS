@@ -2053,3 +2053,13 @@
 - **Localization debt**: hardcoded IT strings in `consent_screen`/`privacy_settings`/`profile_screen`; Arabic still deferred.
 - **Test gaps** (per plan): no mode-router, no "no-Supabase-call in Private CRUD", no settings-separation/delete-private-data/notification-routing tests.
 - `flutter analyze` clean. No code modified in this pass.
+
+## [2026-06-23]: Private Mode discovery fixes — P0 + all P1
+*Details*: Implemented the correctness/robustness fixes from `PRIVATE_MODE_DISCOVERY.md`, one commit per item. All verified with `flutter analyze` (clean) and `flutter test` (77/77 green).
+*Tech Notes*:
+- **P0 mood scale** (`70bd70c`): mood/energy are stored 0–10 but the correlation classifier (`mood_provider.dart`) and the mood stat charts still used 0–100 thresholds. Fixed: classifier `>=6`/`<4`; `habit_mood_tab` avg bars `/10` + `10/5/0` axis + avg-red `<4`; `global_mood_tab` line chart `maxY:10`/`interval:2`. Percentage values (sensitivity/resilience/*Pct) left as 0–100.
+- **P1/5.2 macro rollback** (`391ffd3`): the 5 Private-mode macro-goal CRUD branches now snapshot state and roll back + show `ErrorModal` on a local write failure (new `_showMacroGoalError`, mirrors `goal_provider`). Reuses existing `t.common.*` strings.
+- **P1/5.3 notification streak** (`ee6777e`): new `PrivateLocalDatabase.setHabitLogWithStreak` computes the signed `computeStreak` from history + the goal's start date so a notification Done/Skip stores the same streak as the foreground toggle (Private analytics read the stored streak). Notification path now uses it.
+- **P1/5.4 provider refresh** (`5782ad9`): after a notification Done/Skip write, the handler invalidates `habitLogsProvider` + `habitStatsProvider` via `ProviderScope.containerOf(navigatorKey.currentContext)` (chosen approach: invalidate-from-handler). No-ops in the background isolate / cold start. Introduces a tolerated notifications↔goal_provider import cycle (lazy providers).
+- No new dependencies, endpoints, or migrations. No new localization strings.
+- **Remaining from discovery**: P2 (dead `goal_category_settings`, cloud export parity, backup-exclusion scope), P3 (AI consent copy, AI inert/needs key), P4 (localization debt, Arabic), P5 (test gaps). Several are decisions/product calls rather than clear bugs.

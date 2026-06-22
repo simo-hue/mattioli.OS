@@ -199,7 +199,7 @@ void main() {
       expect(res.first['streak'], 2); // 2 done after last non-done
     });
 
-    test('unmatched timeframe token -> rate 0 (parity with cloud bug)', () {
+    test('defensive: unrecognised token -> empty window, rate 0', () {
       final res = computeBestHabits(
         goals: [GoalInput(id: 'g1', startDate: d(1, 1))],
         logsByGoal: {

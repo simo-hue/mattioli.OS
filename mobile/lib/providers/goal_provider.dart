@@ -729,14 +729,28 @@ final criticalHabitsProvider = FutureProvider<List<Map<String, dynamic>>>((
   return List<Map<String, dynamic>>.from(response);
 });
 
+/// The cloud `get_best_habits` RPC (and its Private mirror) filter on the tokens
+/// `week` | `month` | `year` | `all`. The statistics UI shares the trend chart's
+/// `timeframe_*_short` / `timeframe_all` vocabulary, which those functions don't
+/// recognise — so without this mapping every habit comes back with rate 0.
+/// Unknown tokens fall back to `all` (lifetime) rather than silently zeroing.
+String canonicalBestHabitsTimeframe(String timeframe) => switch (timeframe) {
+  'timeframe_week_short' || 'week' => 'week',
+  'timeframe_month_short' || 'month' => 'month',
+  'timeframe_year_short' || 'year' => 'year',
+  _ => 'all', // 'timeframe_all', 'all', and any unrecognised token
+};
+
 final bestHabitsProvider =
     FutureProvider.family<List<Map<String, dynamic>>, String>((
       ref,
       timeframe,
     ) async {
       ref.keepAlive();
+      // Canonicalise once so both backends receive a token the functions accept.
+      final canonical = canonicalBestHabitsTimeframe(timeframe);
       if (ref.watch(activeDataModeProvider) == AppDataMode.private) {
-        return ref.read(privateLocalDatabaseProvider).bestHabits(timeframe);
+        return ref.read(privateLocalDatabaseProvider).bestHabits(canonical);
       }
 
       final user = Supabase.instance.client.auth.currentUser;
@@ -744,7 +758,7 @@ final bestHabitsProvider =
 
       final response = await Supabase.instance.client.rpc(
         'get_best_habits',
-        params: {'p_user_id': user.id, 'p_timeframe': timeframe},
+        params: {'p_user_id': user.id, 'p_timeframe': canonical},
       );
 
       return List<Map<String, dynamic>>.from(response);

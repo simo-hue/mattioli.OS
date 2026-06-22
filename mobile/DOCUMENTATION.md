@@ -2026,3 +2026,12 @@
 - **DATA-4 (Private analytics parity)**: new `lib/core/private_analytics.dart` holds pure reimplementations of all 9 analytics objects, matching the captured SQL (habit_stats fields & rate=completions×100/active-days; yearly grid done=1/missed=2/365d; ISODOW day_index; longest-missed-run + gaps-and-islands broken_streaks; done-rate worst_dow + avg_recovery_days; lowest-rate critical-day token; this/last-week critical drop; windowed best-habits). `private_local_database.dart` methods now delegate to them. Fixed `tWeekday` to also localise the `'mon'..'sun'` tokens both backends emit. Tests: `test/private_analytics_test.dart` (19 cases).
 - **Baseline**: `flutter analyze --fatal-infos` clean; `flutter test` 74/74 green (was 48).
 - No new dependencies or endpoints. Migrations are archival (captured FROM prod — already live; no apply step needed).
+
+## [2026-06-23]: Fix get_best_habits timeframe-token mismatch + RPC param audit
+*Details*: Resolved the latent best-habits bug where the statistics UI passed the trend chart's `timeframe_*` tokens to `get_best_habits`, whose filter only knows `week/month/year/all` — so every habit returned rate=0 both online and in Private Mode. Also audited every other `.rpc()` call for the same class of value-contract mismatch.
+*Tech Notes*:
+- **Fix**: new pure `canonicalBestHabitsTimeframe()` in `goal_provider.dart` maps `timeframe_week_short→week`, `_month_short→month`, `_year_short→year`, `timeframe_all/unknown→all` (idempotent; canonical tokens pass through). Applied once at the top of `bestHabitsProvider`, so both the cloud RPC and Private `bestHabits()` receive a recognised token. No SQL/migration change — cloud's existing 7/30/365/lifetime windows are the contract.
+- **Private parity**: `computeBestHabits` unchanged; its `_ => -1` empty-window branch is now defensive-only (provider guarantees canonical input). Stale "parity with cloud bug" comment rewritten.
+- **RPC param/value audit**: swept all `.rpc()` sites. Param **names** all match the captured SQL. Only enum-ish **values** are `p_timeframe` (get_global_trend ✓ uses `timeframe_*`; get_best_habits ✗ = this bug) and `p_year` (`all` or year string ✓). `get_best_habits` was the sole offender.
+- **Tests**: `test/best_habits_timeframe_test.dart` (mapper); reframed the Private defensive-token test. `flutter analyze --fatal-infos` clean; `flutter test` 77/77 green.
+- No new dependencies, endpoints, or migrations.

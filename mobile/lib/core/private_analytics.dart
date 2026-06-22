@@ -333,11 +333,11 @@ List<Map<String, dynamic>> computeCriticalHabits({
 /// Top-5 goals by completion rate within [timeframe] ('week'|'month'|'year'|
 /// 'all'), then by current positive streak. Each: {goal_id, rate, streak}.
 ///
-/// NOTE: mirrors the cloud function's exact filter. The app currently passes
-/// 'timeframe_*_short' tokens (see global_trend_tab_widget) which match none of
-/// the cloud windows, so the cloud yields rate=0 for all and orders by streak;
-/// we replicate that to stay byte-for-byte at parity. The token mismatch is a
-/// known upstream issue tracked in TO_SIMO_DO.md.
+/// Mirrors the cloud function's exact filter. Callers must pass a canonical
+/// token; `bestHabitsProvider` canonicalises the UI's 'timeframe_*' vocabulary
+/// via `canonicalBestHabitsTimeframe` before this runs. The `_ => -1` branch
+/// below is therefore defensive only: an unrecognised token yields an empty
+/// window (rate 0) instead of throwing.
 List<Map<String, dynamic>> computeBestHabits({
   required List<GoalInput> goals,
   required Map<String, List<HabitLogEntry>> logsByGoal,

@@ -8,6 +8,7 @@ import 'package:shared_preferences/shared_preferences.dart';
 import '../i18n/translations.g.dart';
 import 'data_mode.dart';
 import 'private_local_database.dart';
+import 'secure_local_storage.dart';
 import 'supabase_config.dart';
 import 'app_logger.dart';
 
@@ -47,10 +48,19 @@ class NotificationService {
         DarwinNotificationCategory(
           'habit_actions',
           actions: <DarwinNotificationAction>[
+            // Done/Skip write to the data store. iOS only guarantees enough
+            // background runtime for a notification action when it's marked
+            // .foreground, so these bring the app forward to persist reliably
+            // (NOTIF-2). The NOTIF-1 queue still covers any background path.
             DarwinNotificationAction.plain(
               'action_done',
               t.notifications.actionDone,
+              options: <DarwinNotificationActionOption>{
+                DarwinNotificationActionOption.foreground,
+              },
             ),
+            // Snooze only reschedules a local notification — no write, so it
+            // stays a background action and doesn't launch the app.
             DarwinNotificationAction.plain(
               'action_snooze',
               t.notifications.actionSnooze,
@@ -58,6 +68,9 @@ class NotificationService {
             DarwinNotificationAction.plain(
               'action_skip',
               t.notifications.actionSkip,
+              options: <DarwinNotificationActionOption>{
+                DarwinNotificationActionOption.foreground,
+              },
             ),
           ],
           options: <DarwinNotificationCategoryOption>{
@@ -68,9 +81,13 @@ class NotificationService {
 
       final DarwinInitializationSettings iosSettings =
           DarwinInitializationSettings(
-            requestAlertPermission: true,
-            requestBadgePermission: true,
-            requestSoundPermission: true,
+            // Defer the permission prompt: don't ask at app launch. Permission
+            // is requested contextually when the user actually enables a
+            // reminder (see requestPermissions() calls in the schedule* methods
+            // and the notification settings toggles) — NOTIF-3.
+            requestAlertPermission: false,
+            requestBadgePermission: false,
+            requestSoundPermission: false,
             notificationCategories: darwinCategories,
           );
 
@@ -115,34 +132,7 @@ class NotificationService {
   }
 
   Future<void> _markHabitAsDone(String habitId) async {
-    final now = DateTime.now();
-    final dateKey =
-        '${now.year}-${now.month.toString().padLeft(2, '0')}-${now.day.toString().padLeft(2, '0')}';
-
-    try {
-      if (await _isPrivateMode()) {
-        await PrivateLocalDatabase().setHabitLog(
-          goalId: habitId,
-          date: dateKey,
-          status: 'done',
-        );
-        debugPrint('[Notifications] Private habit $habitId marked as done');
-        return;
-      }
-
-      final user = Supabase.instance.client.auth.currentUser;
-      if (user == null) return;
-
-      await Supabase.instance.client.from('goal_logs').upsert({
-        'user_id': user.id,
-        'goal_id': habitId,
-        'date': dateKey,
-        'status': 'done',
-      }, onConflict: 'goal_id, date');
-      debugPrint('[Notifications] Habit $habitId marked as done');
-    } catch (e, stack) {
-      AppLogger.error('[Notifications] Error marking habit as done', e, stack);
-    }
+    await _writeHabitLogFromNotification(habitId, 'done');
   }
 
   Future<void> _snoozeHabit(String habitId, String title) async {
@@ -185,38 +175,120 @@ class NotificationService {
 
   Future<void> _skipHabit(String habitId) async {
     await _notifications.cancel(id: habitId.hashCode);
+    await _writeHabitLogFromNotification(habitId, 'missed');
+  }
 
+  /// Persist a habit log triggered by a notification action.
+  ///
+  /// Private Mode writes locally (always available). Cloud mode writes to
+  /// Supabase; if there's no restored session yet (cold background isolate) or
+  /// the write fails (e.g. offline), the action is queued and replayed on the
+  /// next foreground via [replayPendingHabitLogs] (NOTIF-1).
+  Future<void> _writeHabitLogFromNotification(
+    String habitId,
+    String status,
+  ) async {
     final now = DateTime.now();
     final dateKey =
         '${now.year}-${now.month.toString().padLeft(2, '0')}-${now.day.toString().padLeft(2, '0')}';
 
-    try {
-      if (await _isPrivateMode()) {
+    if (await _isPrivateMode()) {
+      try {
         await PrivateLocalDatabase().setHabitLog(
           goalId: habitId,
           date: dateKey,
-          status: 'missed',
+          status: status,
         );
-        debugPrint('[Notifications] Private habit $habitId marked as missed');
-        return;
+        debugPrint('[Notifications] Private habit $habitId set to $status');
+      } catch (e, stack) {
+        AppLogger.error(
+          '[Notifications] Error writing private habit log',
+          e,
+          stack,
+        );
       }
+      return;
+    }
 
-      final user = Supabase.instance.client.auth.currentUser;
-      if (user == null) return;
+    final user = Supabase.instance.client.auth.currentUser;
+    if (user == null) {
+      // No restored session yet — queue and replay when the app foregrounds.
+      await _enqueuePendingLog(habitId, dateKey, status);
+      return;
+    }
 
+    try {
       await Supabase.instance.client.from('goal_logs').upsert({
         'user_id': user.id,
         'goal_id': habitId,
         'date': dateKey,
-        'status': 'missed',
+        'status': status,
       }, onConflict: 'goal_id, date');
-      debugPrint('[Notifications] Habit $habitId marked as missed/skipped');
+      debugPrint('[Notifications] Habit $habitId set to $status');
     } catch (e, stack) {
-      AppLogger.error(
-        '[Notifications] Error marking habit as missed',
-        e,
-        stack,
+      AppLogger.error('[Notifications] Error writing habit log', e, stack);
+      await _enqueuePendingLog(habitId, dateKey, status);
+    }
+  }
+
+  static const String _pendingLogsKey = 'pending_habit_logs';
+
+  /// Queue a cloud habit-log action that couldn't be written, encoded as
+  /// `goalId|date|status`. The latest action for a given (goalId, date) wins.
+  Future<void> _enqueuePendingLog(
+    String habitId,
+    String date,
+    String status,
+  ) async {
+    try {
+      final prefs = await SharedPreferences.getInstance();
+      final existing = prefs.getStringList(_pendingLogsKey) ?? <String>[];
+      final deduped = existing.where((e) {
+        final parts = e.split('|');
+        return !(parts.length >= 2 && parts[0] == habitId && parts[1] == date);
+      }).toList();
+      deduped.add('$habitId|$date|$status');
+      await prefs.setStringList(_pendingLogsKey, deduped);
+      debugPrint('[Notifications] Queued pending log $habitId/$date=$status');
+    } catch (e, stack) {
+      AppLogger.error('[Notifications] Failed to queue pending log', e, stack);
+    }
+  }
+
+  /// Replay queued habit-log actions accumulated while the app was terminated
+  /// or offline. Safe to call on every foreground: no-ops when the queue is
+  /// empty or there's still no session. Entries that fail are kept for retry.
+  Future<void> replayPendingHabitLogs() async {
+    try {
+      final prefs = await SharedPreferences.getInstance();
+      final pending = prefs.getStringList(_pendingLogsKey);
+      if (pending == null || pending.isEmpty) return;
+
+      final user = Supabase.instance.client.auth.currentUser;
+      if (user == null) return; // no session yet; retry next foreground
+
+      final remaining = <String>[];
+      for (final entry in pending) {
+        final parts = entry.split('|');
+        if (parts.length < 3) continue; // drop malformed entries
+        try {
+          await Supabase.instance.client.from('goal_logs').upsert({
+            'user_id': user.id,
+            'goal_id': parts[0],
+            'date': parts[1],
+            'status': parts[2],
+          }, onConflict: 'goal_id, date');
+        } catch (e, stack) {
+          AppLogger.error('[Notifications] Replay failed, will retry', e, stack);
+          remaining.add(entry);
+        }
+      }
+      await prefs.setStringList(_pendingLogsKey, remaining);
+      debugPrint(
+        '[Notifications] Replayed pending logs; ${remaining.length} remaining',
       );
+    } catch (e, stack) {
+      AppLogger.error('[Notifications] replayPendingHabitLogs error', e, stack);
     }
   }
 
@@ -229,6 +301,7 @@ class NotificationService {
   }
 
   Future<void> scheduleDailyHabitReminder({String timeStr = '09:00'}) async {
+    await requestPermissions();
     final parts = timeStr.split(':');
     final hour = int.parse(parts[0]);
     final minute = int.parse(parts[1]);
@@ -259,6 +332,7 @@ class NotificationService {
   }
 
   Future<void> scheduleEveningReview({String timeStr = '21:00'}) async {
+    await requestPermissions();
     final parts = timeStr.split(':');
     final hour = int.parse(parts[0]);
     final minute = int.parse(parts[1]);
@@ -290,6 +364,9 @@ class NotificationService {
   ) async {
     if (reminderTime == null) return;
 
+    // The user is enabling a reminder — request permission now (NOTIF-3).
+    await requestPermissions();
+
     final parts = reminderTime.split(':');
     final hour = int.parse(parts[0]);
     final minute = int.parse(parts[1]);
@@ -318,6 +395,16 @@ class NotificationService {
 
     final notificationId = id.hashCode;
 
+    // Respect the iOS 64 pending-notification cap (NOTIF-4): if there's no
+    // headroom and this reminder isn't already scheduled, skip rather than let
+    // iOS silently drop it.
+    if (!await _canSchedule(notificationId)) {
+      AppLogger.warning(
+        '[Notifications] iOS pending cap reached; skipping reminder for $id',
+      );
+      return;
+    }
+
     await _notifications.zonedSchedule(
       id: notificationId,
       title: 'Evolve • $title',
@@ -328,6 +415,20 @@ class NotificationService {
       matchDateTimeComponents: DateTimeComponents.time,
       payload: 'habit|$id|$title',
     );
+  }
+
+  /// iOS silently drops scheduled notifications beyond 64 pending (NOTIF-4).
+  /// Allow scheduling when there's headroom, or when [id] is already pending
+  /// (a re-schedule replaces in place and doesn't grow the count). Fails open.
+  Future<bool> _canSchedule(int id) async {
+    try {
+      final pending = await _notifications.pendingNotificationRequests();
+      if (pending.any((p) => p.id == id)) return true;
+      return pending.length < 64;
+    } catch (e, stack) {
+      AppLogger.error('[Notifications] pending-cap check failed', e, stack);
+      return true;
+    }
   }
 
   Future<void> cancelHabitReminder(String id) async {
@@ -407,13 +508,19 @@ void notificationTapBackground(NotificationResponse response) async {
   AppLogger.setExternalReportingDisabled(isPrivateMode);
 
   if (!isPrivateMode) {
-    // Initialize Supabase if needed
+    // Initialize Supabase if needed. Crucially, use SecureLocalStorage so the
+    // persisted auth session is restored in this background isolate — without
+    // it currentUser is null and Done/Skip silently no-op when the app is
+    // terminated (NOTIF-1). Must mirror main.dart's initialization.
     try {
       Supabase.instance.client;
     } catch (e) {
       await Supabase.initialize(
         url: SupabaseConfig.url,
         anonKey: SupabaseConfig.anonKey,
+        authOptions: FlutterAuthClientOptions(
+          localStorage: SecureLocalStorage(),
+        ),
       );
     }
   }

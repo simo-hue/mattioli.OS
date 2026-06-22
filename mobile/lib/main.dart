@@ -6,6 +6,7 @@ import 'package:supabase_flutter/supabase_flutter.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'providers/goal_provider.dart';
 import 'package:sentry_flutter/sentry_flutter.dart';
+import 'dart:async';
 import 'dart:ui';
 import 'core/theme.dart';
 import 'core/supabase_config.dart';
@@ -47,7 +48,13 @@ void main() async {
       anonKey: SupabaseConfig.anonKey,
       authOptions: FlutterAuthClientOptions(localStorage: SecureLocalStorage()),
     );
+    // Cold-start foreground: flush any habit-log actions queued by notification
+    // taps while the app was terminated/offline (NOTIF-1). Non-blocking.
+    unawaited(NotificationService().replayPendingHabitLogs());
   }
+
+  // Warm-resume foreground: replay the same queue. No-ops when empty.
+  WidgetsBinding.instance.addObserver(_NotificationReplayObserver());
 
   // ── Notifications init ───────────────────────────────────────────────────
   try {
@@ -263,6 +270,18 @@ final routerProvider = Provider<GoRouter>((ref) {
 });
 
 // ── App ──────────────────────────────────────────────────────────────────────
+/// Replays notification-queued habit logs whenever the app returns to the
+/// foreground (NOTIF-1). [NotificationService.replayPendingHabitLogs] cheaply
+/// no-ops when the queue is empty, so this is safe on every resume.
+class _NotificationReplayObserver with WidgetsBindingObserver {
+  @override
+  void didChangeAppLifecycleState(AppLifecycleState state) {
+    if (state == AppLifecycleState.resumed) {
+      unawaited(NotificationService().replayPendingHabitLogs());
+    }
+  }
+}
+
 class EvolveApp extends ConsumerWidget {
   const EvolveApp({super.key});
 

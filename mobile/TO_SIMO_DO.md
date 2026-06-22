@@ -56,5 +56,3 @@
 ## 2026-06-18 - App Store encryption/export compliance check
 
 - [ ] Before the next iOS release, confirm App Store Connect export-compliance answers for the new SQLCipher-based local database encryption. The app uses encryption for local private data protection, so keep `ITSAppUsesNonExemptEncryption` aligned with Apple's current compliance guidance.
-
----

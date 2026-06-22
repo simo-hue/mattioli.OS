@@ -773,10 +773,24 @@ class PrivacySettingsScreen extends ConsumerWidget {
       final settings = ref.read(settingsProvider);
       final goals = ref.read(goalsProvider);
       final macroGoals = ref.read(macroGoalsProvider).goals;
+      final habitLogs = ref.read(habitLogsProvider);
+      final moods = ref.read(dailyMoodsProvider);
+      final categories =
+          ref.read(macroGoalCategoriesProvider).value ?? const [];
+      final profile = ref.read(userProfileProvider);
+
+      String colorToHex(Color c) =>
+          '#${c.toARGB32().toRadixString(16).substring(2)}';
 
       // Construct JSON
       final data = {
         'exportDate': DateTime.now().toIso8601String(),
+        'profile': {
+          'firstName': profile.firstName,
+          'lastName': profile.lastName,
+          'email': profile.email,
+          'dateOfBirth': profile.dateOfBirth,
+        },
         'settings': {
           'themeMode': settings.themeMode,
           'accentColor':
@@ -800,7 +814,28 @@ class PrivacySettingsScreen extends ConsumerWidget {
           'eveningReviewTime': settings.eveningReviewTime,
         },
         'habits': goals.map((g) => g.toJson()).toList(),
+        'habitLogs': habitLogs,
         'macroGoals': macroGoals.map((g) => g.toJson()).toList(),
+        'macroGoalCategories': categories
+            .map(
+              (c) => {
+                'id': c.key,
+                'name': c.label,
+                'color': colorToHex(c.color),
+                if (c.archivedAt != null)
+                  'archived_at': c.archivedAt!.toIso8601String(),
+              },
+            )
+            .toList(),
+        'dailyMoods': moods.map(
+          (key, value) => MapEntry(key, {
+            'id': value.id,
+            'user_id': value.userId,
+            'date': value.date,
+            'mood_score': value.moodScore,
+            'energy_score': value.energyScore,
+          }),
+        ),
       };
 
       final jsonString = const JsonEncoder.withIndent('  ').convert(data);

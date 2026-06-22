@@ -34,3 +34,22 @@ CREATE TABLE public.profiles (
     PRIMARY KEY (id),
     CHECK ((theme_mode = ANY (ARRAY['dark'::text, 'light'::text, 'system'::text])))
 );
+
+-- Row Level Security (captured from prod; policies imply RLS is enabled).
+ALTER TABLE public.profiles ENABLE ROW LEVEL SECURITY;
+
+CREATE POLICY "L'utente può aggiornare il proprio profilo" ON public.profiles AS PERMISSIVE FOR UPDATE TO authenticated
+  USING ((auth.uid() = id))
+  WITH CHECK ((auth.uid() = id));
+
+CREATE POLICY "L'utente può leggere il proprio profilo" ON public.profiles AS PERMISSIVE FOR SELECT TO authenticated
+  USING ((auth.uid() = id));
+
+CREATE POLICY "profiles: insert own" ON public.profiles AS PERMISSIVE FOR INSERT TO public
+  WITH CHECK ((auth.uid() = id));
+
+CREATE POLICY "profiles: select own" ON public.profiles AS PERMISSIVE FOR SELECT TO public
+  USING ((auth.uid() = id));
+
+CREATE POLICY "profiles: update own" ON public.profiles AS PERMISSIVE FOR UPDATE TO public
+  USING ((auth.uid() = id));

@@ -17,3 +17,9 @@ CREATE TABLE public.macro_goal_categories (
 CREATE INDEX macro_goal_categories_active_idx
     ON public.macro_goal_categories USING btree (user_id, created_at)
     WHERE (archived_at IS NULL);
+
+-- Row Level Security (captured from prod; policies imply RLS is enabled).
+ALTER TABLE public.macro_goal_categories ENABLE ROW LEVEL SECURITY;
+
+CREATE POLICY "Gli utenti possono gestire solo le proprie categorie" ON public.macro_goal_categories AS PERMISSIVE FOR ALL TO authenticated
+  USING ((auth.uid() = user_id));

@@ -220,7 +220,8 @@
       "delete": "Delete",
       "done": "Done",
       "gotIt": "Got it",
-      "verify": "Verify"
+      "verify": "Verify",
+      "enable": "Enable"
     },
     "status": {
       "error": "Error"
@@ -358,6 +359,8 @@
     "manageProPlan": "Manage your Pro plan",
     "upgradeToPro": "Upgrade to Pro",
     "yourDataHeader": "YOUR DATA",
+    "helpHeader": "HELP",
+    "systemHeader": "SYSTEM",
     "personalInfo": {
       "firstName": "First Name",
       "lastName": "Last Name",
@@ -413,6 +416,8 @@
   },
   "privacy": {
     "biometricLock": "Biometric Lock",
+    "biometricAuthReason": "Authenticate to enable app protection.",
+    "biometricUnlockReason": "Unlock the app to continue.",
     "faceIdTouchId": "Face ID / Touch ID",
     "changePassword": "Change Password",
     "currentPassword": "Current Password",
@@ -470,7 +475,9 @@
     "termsRequired": "You must accept the Terms and Privacy Policy to continue.",
     "onboardingSubtitle": "To provide a safe and personalized experience, we need a few confirmations.",
     "onboardingTitle": "Your Privacy Matters",
-    "termsDescription": "I confirm that I have read and accept the Terms of Service and Privacy Policy. I also confirm that I am at least 14 years old."
+    "termsDescription": "I confirm that I have read and accept the Terms of Service and Privacy Policy. I also confirm that I am at least 14 years old.",
+    "notificationsDescription": "Receive reminders for your habits and weekly reports.",
+    "continueButton": "Continue"
   },
   "subscription": {
     "featuresHeader": "WHAT THE PRO PLAN INCLUDES",
@@ -589,7 +596,7 @@
     },
     "accept": "Accept",
     "privateConsentTitle": "AI Consent in Private Mode",
-    "privateConsentBody": "To use the AI Coach, your message and the selected context are sent to the external AI provider. Your private database stays on the device.",
+    "privateConsentBody": "To use the AI Coach, your message, your display name, and any selected context are sent to the external AI provider. Your private database stays on the device.",
     "openRouter": {
       "apiKeyMissingFull": "⚠️ Error: OpenRouter API key is not configured.\n\nPlease add your API key in `lib/core/openrouter_config.dart`.",
       "apiKeyMissingShort": "⚠️ Error: OpenRouter API key is not configured.",

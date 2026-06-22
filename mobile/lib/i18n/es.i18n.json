@@ -220,7 +220,8 @@
       "delete": "Eliminar",
       "done": "Hecho",
       "gotIt": "Entendido",
-      "verify": "Verificar"
+      "verify": "Verificar",
+      "enable": "Activar"
     },
     "status": {
       "error": "Error"
@@ -358,6 +359,8 @@
     "manageProPlan": "Gestionar plan PRO",
     "upgradeToPro": "Actualizar a PRO",
     "yourDataHeader": "Tus datos",
+    "helpHeader": "AYUDA",
+    "systemHeader": "SISTEMA",
     "personalInfo": {
       "firstName": "Nombre",
       "lastName": "Apellido",
@@ -413,6 +416,8 @@
   },
   "privacy": {
     "biometricLock": "Bloqueo biométrico",
+    "biometricAuthReason": "Autentícate para activar la protección de la app.",
+    "biometricUnlockReason": "Desbloquea la app para continuar.",
     "faceIdTouchId": "Face ID / Touch ID",
     "changePassword": "Cambiar contraseña",
     "currentPassword": "Contraseña actual",
@@ -470,7 +475,9 @@
     "termsRequired": "Debes aceptar los términos y la política de privacidad para continuar.",
     "onboardingSubtitle": "Para ofrecer una experiencia segura y personalizada, necesitamos algunas confirmaciones.",
     "onboardingTitle": "Tu privacidad importa",
-    "termsDescription": "Confirmo que he leído y acepto los Términos de servicio y la Política de privacidad. También confirmo que tengo al menos 14 años."
+    "termsDescription": "Confirmo que he leído y acepto los Términos de servicio y la Política de privacidad. También confirmo que tengo al menos 14 años.",
+    "notificationsDescription": "Recibe recordatorios para tus hábitos e informes semanales.",
+    "continueButton": "Continuar"
   },
   "subscription": {
     "featuresHeader": "Qué incluye el plan PRO",
@@ -589,7 +596,7 @@
     },
     "accept": "Acepto",
     "privateConsentTitle": "Consentimiento de IA en modo privado",
-    "privateConsentBody": "Para usar el Coach de IA, tu mensaje y el contexto seleccionado se envían al proveedor de IA externo. Tu base de datos privada permanece en el dispositivo.",
+    "privateConsentBody": "Para usar el Coach de IA, tu mensaje, tu nombre y cualquier contexto seleccionado se envían al proveedor de IA externo. Tu base de datos privada permanece en el dispositivo.",
     "openRouter": {
       "apiKeyMissingFull": "⚠️ Error: la clave API de OpenRouter no está configurada.\n\nAñade tu clave API en `lib/core/openrouter_config.dart`.",
       "apiKeyMissingShort": "⚠️ Error: la clave API de OpenRouter no está configurada.",

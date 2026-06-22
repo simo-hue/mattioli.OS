@@ -250,8 +250,7 @@ class _ConsentScreenState extends ConsumerState<ConsentScreen> {
                         _buildConsentCard(
                           icon: LucideIcons.bell,
                           title: context.t.consent.systemNotifications,
-                          description:
-                              'Ricevi promemoria per le tue abitudini e report settimanali.',
+                          description: context.t.consent.notificationsDescription,
                           trailing: _notificationsAllowed
                               ? const Icon(
                                   Icons.check_circle,
@@ -274,9 +273,9 @@ class _ConsentScreenState extends ConsumerState<ConsentScreen> {
                                       vertical: 8,
                                     ),
                                   ),
-                                  child: const Text(
-                                    'Abilita',
-                                    style: TextStyle(
+                                  child: Text(
+                                    context.t.common.actions.enable,
+                                    style: const TextStyle(
                                       fontSize: 12,
                                       fontWeight: FontWeight.bold,
                                     ),
@@ -333,7 +332,7 @@ class _ConsentScreenState extends ConsumerState<ConsentScreen> {
                                   ),
                                 )
                               : Text(
-                                  'Continua',
+                                  context.t.consent.continueButton,
                                   style: TextStyle(
                                     color: buttonTextColor,
                                     fontSize: 16,

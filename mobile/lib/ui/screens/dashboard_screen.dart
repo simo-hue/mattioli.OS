@@ -751,6 +751,7 @@ class _HomeScreenState extends ConsumerState<HomeScreen>
 
   Future<void> _authenticate() async {
     final LocalAuthentication auth = LocalAuthentication();
+    final String unlockReason = context.t.privacy.biometricUnlockReason;
     try {
       final bool canAuthenticateWithBiometrics = await auth.canCheckBiometrics;
       final bool canAuthenticate =
@@ -764,7 +765,7 @@ class _HomeScreenState extends ConsumerState<HomeScreen>
       }
 
       final bool didAuthenticate = await auth.authenticate(
-        localizedReason: 'Sblocca l\'app per continuare',
+        localizedReason: unlockReason,
         biometricOnly: true,
         persistAcrossBackgrounding: true,
       );

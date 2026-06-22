@@ -220,7 +220,8 @@
       "delete": "Elimina",
       "done": "Fatto",
       "gotIt": "Ho capito",
-      "verify": "Verifica"
+      "verify": "Verifica",
+      "enable": "Abilita"
     },
     "status": {
       "error": "Errore"
@@ -358,6 +359,8 @@
     "manageProPlan": "Gestisci il tuo piano Pro",
     "upgradeToPro": "Passa a Pro",
     "yourDataHeader": "I TUOI DATI",
+    "helpHeader": "AIUTO",
+    "systemHeader": "SISTEMA",
     "personalInfo": {
       "firstName": "Nome",
       "lastName": "Cognome",
@@ -413,6 +416,8 @@
   },
   "privacy": {
     "biometricLock": "Blocco Biometrico",
+    "biometricAuthReason": "Autenticati per abilitare la protezione dell'app.",
+    "biometricUnlockReason": "Sblocca l'app per continuare.",
     "faceIdTouchId": "FaceID / TouchID",
     "changePassword": "Cambia Password",
     "currentPassword": "Password Attuale",
@@ -470,7 +475,9 @@
     "termsRequired": "Devi accettare i Termini e la Privacy Policy per continuare.",
     "onboardingSubtitle": "Per garantirti un'esperienza sicura e personalizzata, abbiamo bisogno di alcune conferme.",
     "onboardingTitle": "La tua Privacy è Importante",
-    "termsDescription": "Dichiaro di aver letto e accettato i Termini di Servizio e la Privacy Policy. Confermo di avere almeno 14 anni."
+    "termsDescription": "Dichiaro di aver letto e accettato i Termini di Servizio e la Privacy Policy. Confermo di avere almeno 14 anni.",
+    "notificationsDescription": "Ricevi promemoria per le tue abitudini e report settimanali.",
+    "continueButton": "Continua"
   },
   "subscription": {
     "featuresHeader": "COSA INCLUDE IL PIANO PRO",
@@ -589,7 +596,7 @@
     },
     "accept": "Accetto",
     "privateConsentTitle": "Consenso AI in modalità privata",
-    "privateConsentBody": "Per usare il Coach AI, il messaggio e il contesto selezionato vengono inviati al provider AI esterno. Il database privato resta sul dispositivo.",
+    "privateConsentBody": "Per usare il Coach AI, il tuo messaggio, il tuo nome e l'eventuale contesto selezionato vengono inviati al provider AI esterno. Il tuo database privato resta sul dispositivo.",
     "openRouter": {
       "apiKeyMissingFull": "⚠️ Errore: chiave API di OpenRouter non configurata.\n\nInserisci la chiave API nel file `lib/core/openrouter_config.dart`.",
       "apiKeyMissingShort": "⚠️ Errore: chiave API di OpenRouter non configurata.",

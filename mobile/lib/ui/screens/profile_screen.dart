@@ -476,7 +476,7 @@ class _ProfileScreenState extends ConsumerState<ProfileScreen> {
                 ),
                 const SizedBox(height: 24),
                 Text(
-                  'AIUTO',
+                  context.t.profile.helpHeader,
                   style: TextStyle(
                     fontSize: 10,
                     fontWeight: FontWeight.w800,
@@ -513,7 +513,7 @@ class _ProfileScreenState extends ConsumerState<ProfileScreen> {
                 ),
                 const SizedBox(height: 24),
                 Text(
-                  'SISTEMA',
+                  context.t.profile.systemHeader,
                   style: TextStyle(
                     fontSize: 10,
                     fontWeight: FontWeight.w800,

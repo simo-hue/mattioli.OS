@@ -220,7 +220,8 @@
       "delete": "Löschen",
       "done": "Fertig",
       "gotIt": "Verstanden",
-      "verify": "Prüfen"
+      "verify": "Prüfen",
+      "enable": "Aktivieren"
     },
     "status": {
       "error": "Fehler"
@@ -358,6 +359,8 @@
     "manageProPlan": "PRO-Plan verwalten",
     "upgradeToPro": "Auf PRO upgraden",
     "yourDataHeader": "Deine Daten",
+    "helpHeader": "HILFE",
+    "systemHeader": "SYSTEM",
     "personalInfo": {
       "firstName": "Vorname",
       "lastName": "Nachname",
@@ -413,6 +416,8 @@
   },
   "privacy": {
     "biometricLock": "Biometrische Sperre",
+    "biometricAuthReason": "Authentifiziere dich, um den App-Schutz zu aktivieren.",
+    "biometricUnlockReason": "Entsperre die App, um fortzufahren.",
     "faceIdTouchId": "Face ID / Touch ID",
     "changePassword": "Passwort ändern",
     "currentPassword": "Aktuelles Passwort",
@@ -470,7 +475,9 @@
     "termsRequired": "Du musst die Bedingungen und die Datenschutzerklärung akzeptieren, um fortzufahren.",
     "onboardingSubtitle": "Für eine sichere und personalisierte Erfahrung benötigen wir einige Bestätigungen.",
     "onboardingTitle": "Deine Privatsphäre ist wichtig",
-    "termsDescription": "Ich bestätige, dass ich die Nutzungsbedingungen und Datenschutzbestimmungen gelesen habe und diese akzeptiere. Außerdem bestätige ich, dass ich mindestens 14 Jahre alt bin."
+    "termsDescription": "Ich bestätige, dass ich die Nutzungsbedingungen und Datenschutzbestimmungen gelesen habe und diese akzeptiere. Außerdem bestätige ich, dass ich mindestens 14 Jahre alt bin.",
+    "notificationsDescription": "Erhalte Erinnerungen für deine Gewohnheiten und wöchentliche Berichte.",
+    "continueButton": "Weiter"
   },
   "subscription": {
     "featuresHeader": "Was der PRO-Plan enthält",
@@ -589,7 +596,7 @@
     },
     "accept": "Ich akzeptiere",
     "privateConsentTitle": "KI-Zustimmung im privaten Modus",
-    "privateConsentBody": "Um den KI-Coach zu nutzen, werden deine Nachricht und der ausgewählte Kontext an den externen KI-Anbieter gesendet. Deine private Datenbank bleibt auf dem Gerät.",
+    "privateConsentBody": "Um den KI-Coach zu nutzen, werden deine Nachricht, dein Anzeigename und der ausgewählte Kontext an den externen KI-Anbieter gesendet. Deine private Datenbank bleibt auf dem Gerät.",
     "openRouter": {
       "apiKeyMissingFull": "⚠️ Fehler: Der OpenRouter-API-Schlüssel ist nicht konfiguriert.\n\nFüge deinen API-Schlüssel in `lib/core/openrouter_config.dart` hinzu.",
       "apiKeyMissingShort": "⚠️ Fehler: Der OpenRouter-API-Schlüssel ist nicht konfiguriert.",

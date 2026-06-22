@@ -193,6 +193,7 @@ class PrivacySettingsScreen extends ConsumerWidget {
 
   Future<bool> _authenticate(BuildContext context) async {
     final LocalAuthentication auth = LocalAuthentication();
+    final String authReason = context.t.privacy.biometricAuthReason;
     try {
       final bool canAuthenticateWithBiometrics = await auth.canCheckBiometrics;
       final bool canAuthenticate =
@@ -201,7 +202,7 @@ class PrivacySettingsScreen extends ConsumerWidget {
       if (!canAuthenticate) return false;
 
       return await auth.authenticate(
-        localizedReason: 'Autenticati per abilitare la protezione dell\'app',
+        localizedReason: authReason,
         biometricOnly: true,
         persistAcrossBackgrounding: true,
       );

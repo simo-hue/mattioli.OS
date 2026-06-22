@@ -2035,3 +2035,11 @@
 - **RPC param/value audit**: swept all `.rpc()` sites. Param **names** all match the captured SQL. Only enum-ish **values** are `p_timeframe` (get_global_trend ✓ uses `timeframe_*`; get_best_habits ✗ = this bug) and `p_year` (`all` or year string ✓). `get_best_habits` was the sole offender.
 - **Tests**: `test/best_habits_timeframe_test.dart` (mapper); reframed the Private defensive-token test. `flutter analyze --fatal-infos` clean; `flutter test` 77/77 green.
 - No new dependencies, endpoints, or migrations.
+
+## [2026-06-23]: Close last schema drift — capture profiles + macro_goal_categories
+*Details*: The two remaining base tables the app reads via `from(...)` (`profiles`, `macro_goal_categories`) lived only in prod and were merely allowlisted in the drift guard. Captured their real DDL from the production catalog and strengthened the guard so it now verifies them for real.
+*Tech Notes*:
+- New `migrations/20260623_add_profiles.sql` and `..._add_macro_goal_categories.sql`, reconstructed from `pg_attribute`/`pg_constraint`/`pg_indexes` (columns, defaults, PK/FK/UNIQUE/CHECK, plus the partial `macro_goal_categories_active_idx`).
+- `schema_drift_test.dart`: the second check now requires every `from()` target to have a `CREATE TABLE` **or** `CREATE VIEW` (was: non-allowlisted targets must be a VIEW). The `allowlistedBaseTables` set is replaced by an empty `allowlistedExternalTables` escape hatch — every table/view the app touches now has a definition in the repo, so nothing is skipped.
+- `flutter analyze --fatal-infos` clean; `flutter test` 77/77 green (drift guard stricter, same count).
+- No app-code or runtime changes; migrations are archival (captured FROM prod).

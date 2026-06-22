@@ -4,31 +4,27 @@ import 'package:flutter_test/flutter_test.dart';
 
 /// DATA-3 drift guard.
 ///
-/// The app calls Supabase RPCs and views that live only in the production DB.
-/// Their definitions were captured into `../migrations/` (see the 20260622_*
-/// files). This test fails CI whenever the app references a `.rpc('name')` or a
-/// non-table view via `.from('name')` that has no matching `CREATE FUNCTION` /
-/// `CREATE VIEW` anywhere in `schema.sql` or `migrations/*.sql`, so future schema
-/// drift cannot land silently.
+/// The app calls Supabase RPCs and reads tables/views that live only in the
+/// production DB. Their definitions were captured into `../migrations/` (see the
+/// 20260622_* / 20260623_* files) and `schema.sql`. This test fails CI whenever
+/// the app references a `.rpc('name')` with no `CREATE FUNCTION`, or a
+/// `.from('name')` target with no `CREATE TABLE`/`CREATE VIEW`, anywhere in
+/// `schema.sql` or `migrations/*.sql`, so future schema drift cannot land
+/// silently.
 ///
 /// Existence-only by design: it asserts a definition exists, not that argument
-/// signatures match (verified by hand when the definitions were captured).
+/// signatures or columns match (verified by hand when the definitions were
+/// captured).
 void main() {
-  // Base tables are defined out of band (Supabase-managed or web app schema) and
-  // are intentionally NOT required to have a definition in this repo. Any other
-  // `.from('x')` target is treated as a view that MUST be backed by a CREATE VIEW.
-  const allowlistedBaseTables = <String>{
-    'goals',
-    'goal_logs',
-    'long_term_goals',
-    'macro_goal_categories',
-    'daily_moods',
-    'profiles',
-  };
+  // Escape hatch for `.from('x')` targets that are genuinely external and cannot
+  // be captured into this repo (e.g. Supabase-managed schemas). Empty today —
+  // every table/view the app touches now has a definition. Add a name here only
+  // with a comment justifying why it can't be captured.
+  const allowlistedExternalTables = <String>{};
 
   late final String haystack;
   late final Set<String> rpcNames;
-  late final Set<String> viewNames;
+  late final Set<String> relationNames;
 
   setUpAll(() {
     final repoRoot = _findRepoRoot();
@@ -51,7 +47,7 @@ void main() {
       }
     }
     rpcNames = rpcs;
-    viewNames = froms.difference(allowlistedBaseTables);
+    relationNames = froms.difference(allowlistedExternalTables);
 
     // 2. Build the SQL haystack: schema.sql + every migration.
     final buffer = StringBuffer();
@@ -85,21 +81,26 @@ void main() {
             'schema.sql/migrations (schema drift): $missing');
   });
 
-  test('every non-table view referenced via from() has a CREATE VIEW', () {
+  test('every from() target has a CREATE TABLE or CREATE VIEW', () {
+    expect(relationNames, isNotEmpty,
+        reason: 'expected to discover from() call sites');
     final missing = <String>[];
-    for (final name in viewNames) {
+    for (final name in relationNames) {
+      final escaped = RegExp.escape(name);
       final re = RegExp(
-        r'CREATE\s+(OR\s+REPLACE\s+)?(MATERIALIZED\s+)?VIEW\s+(public\.)?' +
-            RegExp.escape(name) +
-            r'\b',
+        r'CREATE\s+(OR\s+REPLACE\s+)?(MATERIALIZED\s+)?(TABLE|VIEW)\s+'
+        r'(IF\s+NOT\s+EXISTS\s+)?(public\.)?'
+        '$escaped'
+        r'\b',
         caseSensitive: false,
       );
       if (!re.hasMatch(haystack)) missing.add(name);
     }
     expect(missing, isEmpty,
-        reason: 'views referenced by the app with no CREATE VIEW in '
-            'schema.sql/migrations (schema drift): $missing. If one of these is '
-            'actually a base table, add it to allowlistedBaseTables.');
+        reason: 'tables/views referenced by the app with no CREATE TABLE/VIEW in '
+            'schema.sql/migrations (schema drift): $missing. Capture the missing '
+            'definition, or if it is genuinely external add it to '
+            'allowlistedExternalTables.');
   });
 }
 

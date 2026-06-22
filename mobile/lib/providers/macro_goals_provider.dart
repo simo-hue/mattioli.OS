@@ -108,6 +108,21 @@ class MacroGoalsNotifier extends Notifier<MacroGoalsState> {
     prefs.setString(_cacheKey, jsonEncode(jsonList));
   }
 
+  /// Surface a Private-mode persistence failure to the user, mirroring the
+  /// Supabase error paths (strings via the global `t`). Used after the caller
+  /// has already rolled the optimistic state back.
+  void _showMacroGoalError(String title, String message, Object error) {
+    final context = navigatorKey.currentContext;
+    if (context != null && context.mounted) {
+      ErrorModal.show(
+        context,
+        title: title,
+        message: message,
+        details: error.toString(),
+      );
+    }
+  }
+
   MacroGoal? _goalById(String id) {
     for (final goal in state.goals) {
       if (goal.id == id) return goal;
@@ -153,11 +168,22 @@ class MacroGoalsNotifier extends Notifier<MacroGoalsState> {
 
   Future<void> addGoal(MacroGoal goal) async {
     // 1. Aggiornamento ottimistico
+    final previousState = state;
     final newGoals = [...state.goals, goal];
     state = state.copyWith(goals: newGoals);
 
     if (ref.read(activeDataModeProvider) == AppDataMode.private) {
-      await ref.read(privateLocalDatabaseProvider).upsertMacroGoal(goal);
+      try {
+        await ref.read(privateLocalDatabaseProvider).upsertMacroGoal(goal);
+      } catch (e, stack) {
+        AppLogger.error('[MacroGoals] Private insert error', e, stack);
+        state = previousState;
+        _showMacroGoalError(
+          t.common.errorDuringSaving,
+          t.common.macroGoalSaveFailed,
+          e,
+        );
+      }
       return;
     }
 
@@ -202,14 +228,25 @@ class MacroGoalsNotifier extends Notifier<MacroGoalsState> {
   Future<void> updateStatus(String id, GoalStatus status) async {
     if (_shouldIgnoreMissingGoalMutation(id, 'status update')) return;
 
+    final previousState = state;
     final newGoals = state.goals
         .map((g) => g.id == id ? g.copyWith(status: status) : g)
         .toList();
     state = state.copyWith(goals: newGoals);
 
     if (ref.read(activeDataModeProvider) == AppDataMode.private) {
-      final goal = newGoals.firstWhere((g) => g.id == id);
-      await ref.read(privateLocalDatabaseProvider).upsertMacroGoal(goal);
+      try {
+        final goal = newGoals.firstWhere((g) => g.id == id);
+        await ref.read(privateLocalDatabaseProvider).upsertMacroGoal(goal);
+      } catch (e, stack) {
+        AppLogger.error('[MacroGoals] Private update status error', e, stack);
+        state = previousState;
+        _showMacroGoalError(
+          t.common.errorDuringUpdate,
+          t.common.macroGoalStatusSaveFailed,
+          e,
+        );
+      }
       return;
     }
 
@@ -237,14 +274,25 @@ class MacroGoalsNotifier extends Notifier<MacroGoalsState> {
   Future<void> updateTitle(String id, String title) async {
     if (_shouldIgnoreMissingGoalMutation(id, 'title update')) return;
 
+    final previousState = state;
     final newGoals = state.goals
         .map((g) => g.id == id ? g.copyWith(title: title) : g)
         .toList();
     state = state.copyWith(goals: newGoals);
 
     if (ref.read(activeDataModeProvider) == AppDataMode.private) {
-      final goal = newGoals.firstWhere((g) => g.id == id);
-      await ref.read(privateLocalDatabaseProvider).upsertMacroGoal(goal);
+      try {
+        final goal = newGoals.firstWhere((g) => g.id == id);
+        await ref.read(privateLocalDatabaseProvider).upsertMacroGoal(goal);
+      } catch (e, stack) {
+        AppLogger.error('[MacroGoals] Private update title error', e, stack);
+        state = previousState;
+        _showMacroGoalError(
+          t.common.errorDuringUpdate,
+          t.common.macroGoalTitleSaveFailed,
+          e,
+        );
+      }
       return;
     }
 
@@ -272,6 +320,7 @@ class MacroGoalsNotifier extends Notifier<MacroGoalsState> {
   Future<void> updateCategory(String id, String? categoryId) async {
     if (_shouldIgnoreMissingGoalMutation(id, 'category update')) return;
 
+    final previousState = state;
     final newGoals = state.goals.map((g) {
       if (g.id != id) return g;
       return categoryId == null
@@ -281,8 +330,18 @@ class MacroGoalsNotifier extends Notifier<MacroGoalsState> {
     state = state.copyWith(goals: newGoals);
 
     if (ref.read(activeDataModeProvider) == AppDataMode.private) {
-      final goal = newGoals.firstWhere((g) => g.id == id);
-      await ref.read(privateLocalDatabaseProvider).upsertMacroGoal(goal);
+      try {
+        final goal = newGoals.firstWhere((g) => g.id == id);
+        await ref.read(privateLocalDatabaseProvider).upsertMacroGoal(goal);
+      } catch (e, stack) {
+        AppLogger.error('[MacroGoals] Private update category error', e, stack);
+        state = previousState;
+        _showMacroGoalError(
+          t.common.errorDuringUpdate,
+          t.common.macroGoalCategorySaveFailed,
+          e,
+        );
+      }
       return;
     }
 
@@ -310,11 +369,22 @@ class MacroGoalsNotifier extends Notifier<MacroGoalsState> {
   Future<void> deleteGoal(String id) async {
     if (_shouldIgnoreMissingGoalMutation(id, 'delete')) return;
 
+    final previousState = state;
     final newGoals = state.goals.where((g) => g.id != id).toList();
     state = state.copyWith(goals: newGoals);
 
     if (ref.read(activeDataModeProvider) == AppDataMode.private) {
-      await ref.read(privateLocalDatabaseProvider).deleteMacroGoal(id);
+      try {
+        await ref.read(privateLocalDatabaseProvider).deleteMacroGoal(id);
+      } catch (e, stack) {
+        AppLogger.error('[MacroGoals] Private delete error', e, stack);
+        state = previousState;
+        _showMacroGoalError(
+          t.common.macroGoalDeleteErrorTitle,
+          t.common.macroGoalDeleteFailed,
+          e,
+        );
+      }
       return;
     }
 

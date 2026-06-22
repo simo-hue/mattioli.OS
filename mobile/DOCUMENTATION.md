@@ -2043,3 +2043,13 @@
 - `schema_drift_test.dart`: the second check now requires every `from()` target to have a `CREATE TABLE` **or** `CREATE VIEW` (was: non-allowlisted targets must be a VIEW). The `allowlistedBaseTables` set is replaced by an empty `allowlistedExternalTables` escape hatch — every table/view the app touches now has a definition in the repo, so nothing is skipped.
 - `flutter analyze --fatal-infos` clean; `flutter test` 77/77 green (drift guard stricter, same count).
 - No app-code or runtime changes; migrations are archival (captured FROM prod).
+
+## [2026-06-23]: Private Mode — full implementation discovery & audit (no code change)
+*Details*: Deep read of every privacy-related path (core, all mode-aware providers, every touched screen/widget, iOS native bridge, entitlements, tests) cross-checked against `PRIVATE_MODE_PRODUCTION_PLAN.md`. Findings captured in the new `PRIVATE_MODE_DISCOVERY.md`. Conclusion: Phase 1 (local encrypted Private Mode) is ~95% complete and production-shaped; Phase 2 (iCloud/CloudKit) is intentionally not started.
+*Tech Notes*:
+- **Verified privacy boundary** holds end-to-end: no Supabase init/calls, no RevenueCat, no Sentry, no paywall UI in Private Mode (incl. the notification background isolate). SQLCipher DB + device-local Keychain key; backup-excluded; biometric lock enforced.
+- **Bugs found**: P0 mood-scale mismatch in `mood_provider.dart:163-164` (0–100 thresholds vs 0–10 data) breaks mood↔habit correlation in *both* modes; P1 macro-goal private CRUD lacks rollback/error handling (`macro_goals_provider.dart`); P1 notification habit-write stores `streak=0` + doesn't refresh providers in Private Mode (`notifications.dart:200`).
+- **Hygiene/parity**: `goal_category_settings` is dead schema (created/seeded/deleted, never read); cloud export less complete than private export; `excludeFromBackup` scopes the whole ApplicationSupport dir; AI prompt always includes display name (consent-gated); `OpenRouterConfig.apiKey` empty so AI is inert.
+- **Localization debt**: hardcoded IT strings in `consent_screen`/`privacy_settings`/`profile_screen`; Arabic still deferred.
+- **Test gaps** (per plan): no mode-router, no "no-Supabase-call in Private CRUD", no settings-separation/delete-private-data/notification-routing tests.
+- `flutter analyze` clean. No code modified in this pass.

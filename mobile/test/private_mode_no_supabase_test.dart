@@ -16,9 +16,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
-import 'package:mattioli_os/core/private_data_store.dart';
 import 'package:mattioli_os/core/private_local_database.dart';
-import 'package:mattioli_os/models/daily_mood.dart';
 import 'package:mattioli_os/models/goal.dart';
 import 'package:mattioli_os/models/macro_goal.dart';
 import 'package:mattioli_os/providers/goal_provider.dart';
@@ -28,186 +26,7 @@ import 'package:mattioli_os/providers/mood_provider.dart';
 import 'package:mattioli_os/providers/shared_prefs_provider.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
-/// A [PrivateDataStore] that records the CRUD calls the test exercises and
-/// returns empties for the loads each provider performs while building. Any
-/// method the test does not drive throws [UnimplementedError] — reaching one
-/// would mean the test wandered off the intended path.
-class _FakePrivateDataStore implements PrivateDataStore {
-  final List<String> calls = <String>[];
-
-  // ── Reads the providers perform on build / refresh ──────────────────────
-  @override
-  Future<List<Goal>> loadGoals() async => <Goal>[];
-
-  @override
-  Future<Map<String, Map<String, String>>> loadHabitLogs() async =>
-      <String, Map<String, String>>{};
-
-  @override
-  Future<List<MacroGoal>> loadMacroGoals() async => <MacroGoal>[];
-
-  @override
-  Future<List<GoalCategory>> loadMacroGoalCategories({
-    bool includeArchived = false,
-  }) async =>
-      <GoalCategory>[];
-
-  @override
-  Future<Map<String, DailyMood>> loadDailyMoods() async =>
-      <String, DailyMood>{};
-
-  @override
-  Future<String> ownerId() async => 'fake';
-
-  // ── Writes the test asserts on ──────────────────────────────────────────
-  @override
-  Future<void> upsertGoal(Goal goal) async {
-    calls.add('upsertGoal');
-  }
-
-  @override
-  Future<void> setHabitLog({
-    required String goalId,
-    required String date,
-    required String status,
-    int streak = 0,
-  }) async {
-    calls.add('setHabitLog');
-  }
-
-  @override
-  Future<void> upsertMacroGoal(MacroGoal goal) async {
-    calls.add('upsertMacroGoal');
-  }
-
-  @override
-  Future<DailyMood> saveMood(DateTime date, int mood, int energy) async {
-    calls.add('saveMood');
-    return DailyMood(
-      id: 'fake',
-      userId: 'fake',
-      date:
-          '${date.year}-${date.month.toString().padLeft(2, '0')}-${date.day.toString().padLeft(2, '0')}',
-      moodScore: mood,
-      energyScore: energy,
-    );
-  }
-
-  @override
-  Future<String> addMacroGoalCategory(String name, String colorHex) async {
-    calls.add('addMacroGoalCategory');
-    return 'fake-category-id';
-  }
-
-  // ── Everything else is out of scope for this test ───────────────────────
-  @override
-  Future<void> ensureReady() => throw UnimplementedError();
-
-  @override
-  Future<void> deleteGoal(String id) => throw UnimplementedError();
-
-  @override
-  Future<void> deleteHabitLog({
-    required String goalId,
-    required String date,
-  }) =>
-      throw UnimplementedError();
-
-  @override
-  Future<void> deleteMacroGoal(String id) => throw UnimplementedError();
-
-  @override
-  Future<void> updateMacroGoalCategory(
-    String id,
-    String name,
-    String colorHex,
-  ) =>
-      throw UnimplementedError();
-
-  @override
-  Future<void> archiveMacroGoalCategory(String id) =>
-      throw UnimplementedError();
-
-  @override
-  Future<Map<String, dynamic>> loadProfileRow() async =>
-      <String, dynamic>{'id': 'fake'};
-
-  @override
-  Future<void> updateProfile({
-    String? fullName,
-    String? avatarUrl,
-    String? dateOfBirth,
-    bool clearDateOfBirth = false,
-  }) =>
-      throw UnimplementedError();
-
-  @override
-  Future<Map<String, dynamic>> loadSettingsRow() async =>
-      <String, dynamic>{'id': 'fake'};
-
-  @override
-  Future<void> updateSettingsRow(Map<String, Object?> values) =>
-      throw UnimplementedError();
-
-  @override
-  Future<bool> hasPrivateAiExternalConsent() => throw UnimplementedError();
-
-  @override
-  Future<void> setPrivateAiExternalConsent(bool value) =>
-      throw UnimplementedError();
-
-  @override
-  Future<Map<String, dynamic>> exportData() => throw UnimplementedError();
-
-  @override
-  Future<void> deleteAllPrivateData() => throw UnimplementedError();
-
-  @override
-  Future<List<Map<String, dynamic>>> habitStats() => throw UnimplementedError();
-
-  @override
-  Future<Map<String, Map<String, dynamic>>> habitAnalytics() =>
-      throw UnimplementedError();
-
-  @override
-  Future<String> globalCriticalDay() => throw UnimplementedError();
-
-  @override
-  Future<List<Map<String, dynamic>>> globalTrend(String timeframe) =>
-      throw UnimplementedError();
-
-  @override
-  Future<List<Map<String, dynamic>>> criticalHabits() =>
-      throw UnimplementedError();
-
-  @override
-  Future<List<Map<String, dynamic>>> bestHabits(String timeframe) =>
-      throw UnimplementedError();
-
-  @override
-  Future<List<Map<String, dynamic>>> habitPerformanceByDay(String goalId) =>
-      throw UnimplementedError();
-
-  @override
-  Future<Map<String, dynamic>> habitAlerts(String goalId) =>
-      throw UnimplementedError();
-
-  @override
-  Future<List<int>> habitYearlyGrid(String goalId) =>
-      throw UnimplementedError();
-
-  @override
-  Future<List<Map<String, dynamic>>> habitCorrelations(String targetGoalId) =>
-      throw UnimplementedError();
-
-  @override
-  Future<List<Map<String, dynamic>>> allHabitCorrelations() =>
-      throw UnimplementedError();
-
-  @override
-  Future<Map<String, dynamic>> macroGoalsStats(String year) =>
-      throw UnimplementedError();
-}
+import 'support/fake_private_data_store.dart';
 
 Goal _sampleGoal() => Goal(
       id: 'g1',
@@ -230,10 +49,10 @@ MacroGoal _sampleMacroGoal() => MacroGoal(
 void main() {
   TestWidgetsFlutterBinding.ensureInitialized();
 
-  Future<(ProviderContainer, _FakePrivateDataStore)> privateContainer() async {
+  Future<(ProviderContainer, FakePrivateDataStore)> privateContainer() async {
     SharedPreferences.setMockInitialValues({'active_data_mode': 'private'});
     final prefs = await SharedPreferences.getInstance();
-    final fake = _FakePrivateDataStore();
+    final fake = FakePrivateDataStore();
     final container = ProviderContainer(
       overrides: [
         sharedPrefsProvider.overrideWithValue(prefs),

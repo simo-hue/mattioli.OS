@@ -56,3 +56,9 @@
 ## 2026-06-18 - App Store encryption/export compliance check
 
 - [ ] Before the next iOS release, confirm App Store Connect export-compliance answers for the new SQLCipher-based local database encryption. The app uses encryption for local private data protection, so keep `ITSAppUsesNonExemptEncryption` aligned with Apple's current compliance guidance.
+
+---
+
+## 2026-06-23 - Run flutter pub get after pulling test-infra changes
+
+- [ ] `pubspec.yaml` gained a new dev dependency `plugin_platform_interface: ^2.1.8` (used by `test/settings_separation_test.dart`). It was already transitively present, so `pubspec.lock` only changed that entry to `direct dev` (same version). Run `flutter pub get` after pulling so your local `.dart_tool` package config is regenerated; otherwise the new test may fail to resolve the import.

@@ -9,6 +9,7 @@ import '../../core/theme.dart';
 import '../../providers/user_provider.dart';
 import '../../core/data_mode.dart';
 import '../../core/app_logger.dart';
+import '../../core/rtl.dart';
 import '../../i18n/translations.g.dart';
 
 class PersonalInfoScreen extends ConsumerStatefulWidget {
@@ -171,8 +172,9 @@ class _PersonalInfoScreenState extends ConsumerState<PersonalInfoScreen> {
         backgroundColor: context.appColors.background,
         elevation: 0,
         leading: IconButton(
-          icon: Icon(
+          icon: DirectionalIcon(
             LucideIcons.chevronLeft,
+            LucideIcons.chevronRight,
             color: context.appColors.foreground,
           ),
           onPressed: () => Navigator.pop(context),

@@ -138,9 +138,9 @@ class _ConsentScreenState extends ConsumerState<ConsentScreen> {
       body: Stack(
         children: [
           // Background Gradient Orbs
-          Positioned(
+          PositionedDirectional(
             top: -100,
-            right: -50,
+            end: -50,
             child: Container(
               width: 300,
               height: 300,

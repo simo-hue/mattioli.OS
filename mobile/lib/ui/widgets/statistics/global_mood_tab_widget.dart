@@ -8,6 +8,7 @@ import '../../../providers/mood_provider.dart';
 import '../../../providers/goal_provider.dart';
 import '../../../models/goal.dart';
 import '../../../i18n/translations.g.dart';
+import '../../../core/rtl.dart';
 
 class MoodChartWindow {
   final DateTime startDate;
@@ -542,8 +543,9 @@ class _MoodSensitiveSection extends StatelessWidget {
                 ],
               ),
             ),
-            Icon(
+            DirectionalIcon(
               LucideIcons.chevronRight,
+              LucideIcons.chevronLeft,
               size: 16,
               color: context.appColors.mutedForeground,
             ),

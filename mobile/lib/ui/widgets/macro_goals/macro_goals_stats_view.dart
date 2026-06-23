@@ -1651,7 +1651,7 @@ class _MacroGoalsStatsViewState extends ConsumerState<MacroGoalsStatsView> {
                             ),
                           ),
                           FractionallySizedBox(
-                            alignment: Alignment.centerLeft,
+                            alignment: AlignmentDirectional.centerStart,
                             widthFactor: maxV == 0 ? 0 : e.value / maxV,
                             child: Container(
                               height: 18,

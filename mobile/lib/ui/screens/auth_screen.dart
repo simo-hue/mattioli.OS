@@ -185,9 +185,9 @@ class _AuthScreenState extends ConsumerState<AuthScreen>
       body: Stack(
         children: [
           // Background Gradient Orbs
-          Positioned(
+          PositionedDirectional(
             top: -100,
-            right: -50,
+            end: -50,
             child: Container(
               width: 300,
               height: 300,
@@ -201,9 +201,9 @@ class _AuthScreenState extends ConsumerState<AuthScreen>
               ),
             ),
           ),
-          Positioned(
+          PositionedDirectional(
             bottom: -50,
-            left: -50,
+            start: -50,
             child: Container(
               width: 250,
               height: 250,
@@ -323,7 +323,7 @@ class _AuthScreenState extends ConsumerState<AuthScreen>
                               ),
                               if (_mode == AuthMode.login)
                                 Align(
-                                  alignment: Alignment.centerRight,
+                                  alignment: AlignmentDirectional.centerEnd,
                                   child: TextButton(
                                     onPressed: _handleForgotPassword,
                                     child: Text(

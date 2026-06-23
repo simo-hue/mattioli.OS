@@ -841,7 +841,7 @@ class _HabitManagementModalState extends ConsumerState<HabitManagementModal> {
 
                 // Habits List Section Header
                 Align(
-                  alignment: Alignment.centerLeft,
+                  alignment: AlignmentDirectional.centerStart,
                   child: Text(
                     context.t.common.habits,
                     style: const TextStyle(

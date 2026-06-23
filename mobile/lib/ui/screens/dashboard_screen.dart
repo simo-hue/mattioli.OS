@@ -1008,9 +1008,9 @@ class _HomeScreenState extends ConsumerState<HomeScreen>
     final primaryColor = Theme.of(context).colorScheme.primary;
     return Stack(
       children: [
-        Positioned(
+        PositionedDirectional(
           top: -100,
-          left: -80,
+          start: -80,
           child: Container(
             width: 300,
             height: 300,

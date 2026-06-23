@@ -91,10 +91,10 @@ class AppBottomNavBar extends ConsumerWidget {
                   return Stack(
                     children: [
                       // Bottom "Accent" Bar
-                      AnimatedPositioned(
+                      AnimatedPositionedDirectional(
                         duration: const Duration(milliseconds: 500),
                         curve: Curves.easeOutQuart,
-                        left: itemWidth * currentIndex + (itemWidth * 0.15),
+                        start: itemWidth * currentIndex + (itemWidth * 0.15),
                         bottom: 0,
                         child: Container(
                           width: itemWidth * 0.7,

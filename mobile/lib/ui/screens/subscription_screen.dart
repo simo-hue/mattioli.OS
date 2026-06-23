@@ -8,6 +8,7 @@ import 'package:purchases_flutter/purchases_flutter.dart';
 import 'package:url_launcher/url_launcher.dart';
 import 'package:intl/intl.dart';
 import '../../core/app_logger.dart';
+import '../../core/rtl.dart';
 import 'dart:ui';
 
 import '../../core/theme.dart';
@@ -310,8 +311,9 @@ class _SubscriptionScreenState extends ConsumerState<SubscriptionScreen> {
             backgroundColor: context.appColors.background,
             elevation: 0,
             leading: IconButton(
-              icon: Icon(
+              icon: DirectionalIcon(
                 LucideIcons.chevronLeft,
+                LucideIcons.chevronRight,
                 color: context.appColors.foreground,
               ),
               onPressed: () => Navigator.pop(context),

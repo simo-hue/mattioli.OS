@@ -7,6 +7,7 @@ import 'package:google_fonts/google_fonts.dart';
 import '../../core/theme.dart';
 import '../../providers/settings_provider.dart';
 import '../../core/haptics.dart';
+import '../../core/rtl.dart';
 import '../../i18n/translations.g.dart';
 import '../widgets/pro_features_modal.dart';
 
@@ -44,7 +45,11 @@ class AppSettingsScreen extends ConsumerWidget {
         backgroundColor: colors.background,
         elevation: 0,
         leading: IconButton(
-          icon: Icon(LucideIcons.chevronLeft, color: colors.foreground),
+          icon: DirectionalIcon(
+            LucideIcons.chevronLeft,
+            LucideIcons.chevronRight,
+            color: colors.foreground,
+          ),
           onPressed: () => Navigator.pop(context),
         ),
         title: Text(
@@ -269,7 +274,7 @@ class AppSettingsScreen extends ConsumerWidget {
 
   Widget _buildSectionHeader(BuildContext context, String title) {
     return Padding(
-      padding: const EdgeInsets.only(left: 4, bottom: 12),
+      padding: const EdgeInsetsDirectional.only(start: 4, bottom: 12),
       child: Text(
         title,
         style: TextStyle(
@@ -475,8 +480,9 @@ class AppSettingsScreen extends ConsumerWidget {
               ),
             trailing ?? const SizedBox.shrink(),
             const SizedBox(width: 4),
-            Icon(
+            DirectionalIcon(
               LucideIcons.chevronRight,
+              LucideIcons.chevronLeft,
               size: 16,
               color: context.appColors.mutedForeground,
             ),
@@ -959,7 +965,12 @@ class AppSettingsScreen extends ConsumerWidget {
               AppLanguagePreference.german,
               currentPreference,
             ),
-            // Arabic is deferred until the RTL pass lands (see LOCALIZATION_PLAN.md).
+            _buildLanguageOption(
+              context,
+              ref,
+              AppLanguagePreference.arabic,
+              currentPreference,
+            ),
             const SizedBox(height: 40),
           ],
         ),

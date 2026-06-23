@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'dart:ui';
+import '../../core/rtl.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 import 'package:share_plus/share_plus.dart';
 import 'dart:convert';
@@ -59,8 +60,9 @@ class PrivacySettingsScreen extends ConsumerWidget {
         backgroundColor: context.appColors.background,
         elevation: 0,
         leading: IconButton(
-          icon: Icon(
+          icon: DirectionalIcon(
             LucideIcons.chevronLeft,
+            LucideIcons.chevronRight,
             color: context.appColors.foreground,
           ),
           onPressed: () => Navigator.pop(context),
@@ -214,7 +216,7 @@ class PrivacySettingsScreen extends ConsumerWidget {
 
   Widget _buildSectionHeader(BuildContext context, String title) {
     return Padding(
-      padding: const EdgeInsets.only(left: 4, bottom: 12),
+      padding: const EdgeInsetsDirectional.only(start: 4, bottom: 12),
       child: Text(
         title.toUpperCase(),
         style: GoogleFonts.inter(
@@ -301,8 +303,9 @@ class PrivacySettingsScreen extends ConsumerWidget {
                 ],
               ),
             ),
-            const Icon(
+            const DirectionalIcon(
               LucideIcons.chevronRight,
+              LucideIcons.chevronLeft,
               color: AppColors.mutedForeground,
               size: 16,
             ),
@@ -1060,8 +1063,9 @@ class PrivacySettingsScreen extends ConsumerWidget {
                 ],
               ),
             ),
-            Icon(
+            DirectionalIcon(
               LucideIcons.chevronRight,
+              LucideIcons.chevronLeft,
               color: context.appColors.mutedForeground,
               size: 16,
             ),

@@ -155,9 +155,9 @@ class _ActionTile extends StatelessWidget {
         child: Stack(
           children: [
             // Subtle gradient glow in the corner
-            Positioned(
+            PositionedDirectional(
               top: -20,
-              right: -20,
+              end: -20,
               child: Container(
                 width: 60,
                 height: 60,

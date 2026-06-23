@@ -6,6 +6,7 @@ import '../../../providers/goal_provider.dart';
 import '../../../models/goal.dart';
 import '../../../i18n/translations.g.dart';
 import '../../../core/l10n_dynamic.dart';
+import '../../../core/rtl.dart';
 
 class InfoTabWidget extends ConsumerWidget {
   const InfoTabWidget({super.key});
@@ -250,8 +251,8 @@ class _StatCard extends StatelessWidget {
       child: Stack(
         children: [
           // Subtler Gradient Glow
-          Positioned(
-            right: -20,
+          PositionedDirectional(
+            end: -20,
             bottom: -20,
             child: Container(
               width: 100,
@@ -1086,8 +1087,9 @@ class _CorrelazioneDetailCard extends StatelessWidget {
           Row(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              const Icon(
+              const DirectionalIcon(
                 LucideIcons.chevronRight,
+                LucideIcons.chevronLeft,
                 size: 14,
                 color: Colors.grey,
               ),

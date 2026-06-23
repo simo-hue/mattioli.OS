@@ -8,6 +8,7 @@ import '../../core/openrouter_service.dart';
 import '../../core/app_logger.dart';
 import '../../core/data_mode.dart';
 import '../../core/private_local_database.dart';
+import '../../core/rtl.dart';
 import 'package:flutter_markdown/flutter_markdown.dart';
 
 import 'dart:ui';
@@ -185,7 +186,9 @@ class _AIChatScreenState extends ConsumerState<AIChatScreen> {
             ),
             child: AnimatedAlign(
               duration: const Duration(milliseconds: 200),
-              alignment: value ? Alignment.centerRight : Alignment.centerLeft,
+              alignment: value
+                  ? AlignmentDirectional.centerEnd
+                  : AlignmentDirectional.centerStart,
               child: Container(
                 width: 20,
                 height: 20,
@@ -787,7 +790,11 @@ class _AIChatScreenState extends ConsumerState<AIChatScreen> {
                         Icon(
                           _showPrompts
                               ? LucideIcons.chevronDown
-                              : LucideIcons.chevronRight,
+                              : directionalIcon(
+                                  context,
+                                  LucideIcons.chevronRight,
+                                  LucideIcons.chevronLeft,
+                                ),
                           size: 14,
                           color: colors.mutedForeground,
                         ),
@@ -1020,7 +1027,7 @@ class _AIChatScreenState extends ConsumerState<AIChatScreen> {
 
     if (isUser) {
       return Align(
-        alignment: Alignment.centerRight,
+        alignment: AlignmentDirectional.centerEnd,
         child: Padding(
           padding: const EdgeInsets.only(bottom: 12),
           child: bubble,
@@ -1037,7 +1044,7 @@ class _AIChatScreenState extends ConsumerState<AIChatScreen> {
           Container(
             width: 28,
             height: 28,
-            margin: const EdgeInsets.only(right: 8),
+            margin: const EdgeInsetsDirectional.only(end: 8),
             decoration: const BoxDecoration(
               shape: BoxShape.circle,
               gradient: LinearGradient(
@@ -1058,7 +1065,7 @@ class _AIChatScreenState extends ConsumerState<AIChatScreen> {
 
   Widget _buildTypingIndicator(AppColorsExtension colors) {
     return Align(
-      alignment: Alignment.centerLeft,
+      alignment: AlignmentDirectional.centerStart,
       child: Container(
         margin: const EdgeInsets.only(bottom: 16),
         padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),

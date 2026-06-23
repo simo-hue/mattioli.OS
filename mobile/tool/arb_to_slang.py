@@ -27,11 +27,13 @@ import json
 import sys
 from pathlib import Path
 
-# Locales to import into slang. Arabic is intentionally EXCLUDED until the RTL
-# pass lands (see LOCALIZATION_PLAN.md "Deferred"): keeping it out of slang's
-# input is the bulletproof way to guarantee the broken-RTL build can never ship.
-# The Arabic source stays preserved on disk as lib/l10n/app_ar.arb; re-enabling
-# is `LOCALES += ["ar"]` here, then regenerate, then do the RTL work.
+# Locales handled by this one-time Phase-0 bootstrap (flat ARB -> flat slang JSON).
+# Arabic is NOT listed here on purpose: by the time `ar` was re-enabled, the slang
+# JSON had already moved to hand-maintained *nested* namespaces (Phases 1..N), so
+# this flat bootstrap is obsolete for it — it would write flat keys and, in any
+# case, the guard in main() now aborts because the targets are nested. Arabic is
+# therefore authored directly as the nested lib/i18n/ar.i18n.json (same as the
+# other locales today); slang auto-discovers it. Do NOT add "ar" here.
 LOCALES = ["en", "it", "es", "de"]
 
 MOBILE_ROOT = Path(__file__).resolve().parent.parent

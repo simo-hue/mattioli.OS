@@ -10,6 +10,7 @@ import 'package:path/path.dart' as p;
 import 'package:path_provider/path_provider.dart';
 import '../../core/theme.dart';
 import '../../core/data_mode.dart';
+import '../../core/rtl.dart';
 import '../../providers/user_provider.dart';
 import '../../providers/auth_provider.dart';
 import '../../providers/settings_provider.dart';
@@ -221,8 +222,9 @@ class _ProfileScreenState extends ConsumerState<ProfileScreen> {
             backgroundColor: context.appColors.background,
             elevation: 0,
             leading: IconButton(
-              icon: Icon(
+              icon: DirectionalIcon(
                 LucideIcons.chevronLeft,
+                LucideIcons.chevronRight,
                 color: context.appColors.foreground,
               ),
               onPressed: () => Navigator.pop(context),
@@ -293,9 +295,9 @@ class _ProfileScreenState extends ConsumerState<ProfileScreen> {
                                     ),
                             ),
                           ),
-                          Positioned(
+                          PositionedDirectional(
                             bottom: 0,
-                            right: 0,
+                            end: 0,
                             child: Container(
                               padding: const EdgeInsets.all(6),
                               decoration: BoxDecoration(
@@ -651,8 +653,9 @@ class _ProfileScreenState extends ConsumerState<ProfileScreen> {
             fontWeight: FontWeight.w500,
           ),
         ),
-        trailing: Icon(
+        trailing: DirectionalIcon(
           LucideIcons.chevronRight,
+          LucideIcons.chevronLeft,
           size: 18,
           color: context.appColors.mutedForeground,
         ),

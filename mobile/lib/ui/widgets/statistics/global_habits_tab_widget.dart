@@ -386,7 +386,7 @@ class _HabitDetailCard extends ConsumerWidget {
                       borderRadius: BorderRadius.circular(2),
                     ),
                     child: FractionallySizedBox(
-                      alignment: Alignment.centerLeft,
+                      alignment: AlignmentDirectional.centerStart,
                       widthFactor: (habit['rate'] as int) / 100,
                       child: Container(
                         decoration: BoxDecoration(

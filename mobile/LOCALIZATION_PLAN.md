@@ -125,8 +125,13 @@ Surgical **plurals** (`giorni`/counts), locale-aware **NumberFormat/DateFormat**
 - New/missing IT/ES/DE values are AI-translated **from English** and reviewed. Existing human copy (esp. Italian voice in notifications/AI prompts) is **preserved**, never round-tripped.
 - `slang analyze` keeps locales in lockstep.
 
-## ⏸ Deferred (tracked, not forgotten)
-**Arabic + RTL.** Re-enable `ar` only after an RTL pass: physical `Alignment.centerLeft/Right` → `AlignmentDirectional.*Start/End`, `EdgeInsets.only(left/right)` → `EdgeInsetsDirectional.only(start/end)` (~16 files), mirror the 17 Lucide directional icons under RTL, fix 8 `Positioned`, then VoiceOver/visual QA in Arabic. `app_ar.arb` stays on disk (slang input excludes it); re-enabling = add `ar` to `tool/arb_to_slang.py` `LOCALES`, regenerate, restore the picker option, then the RTL work.
+## ✅ Arabic + RTL — re-enabled in code (2026-06-23)
+**Done & green** (`dart run slang` + `flutter analyze` + `flutter test` 110/110 + `slang analyze` → `ar: 0 missing`):
+- Precise MSA Arabic authored directly as nested `lib/i18n/ar.i18n.json` (908 leaves, full parity with `en`). The old "add `ar` to `tool/arb_to_slang.py` LOCALES + regenerate" route is **obsolete** — that bootstrap emits flat keys and aborts on the now-nested JSON; slang auto-discovers `ar.i18n.json` like every other locale. Legacy flat `app_ar.arb` stays on disk until the final demolition.
+- Picker option restored; `AppLocale.ar` + `AppLocaleUtils.supportedLocales` include Arabic; `main.dart` `_appLocaleFor` resolves `ar`.
+- Structural RTL pass: content `Alignment`/`EdgeInsets.only` → `*Directional`, all 8 `Positioned` → `PositionedDirectional`, 17 directional chevrons mirrored via `lib/core/rtl.dart` (`DirectionalIcon`/`directionalIcon`). LTR-invariant by construction.
+
+**Still deferred to a human + device** (see TO_SIMO_DO.md): native-Arabic + VoiceOver visual QA; human translation review; and confirming the 3 intentionally-skipped physical spots in RTL (decorative gradients; the year/week slide-transition direction; `fl_chart` axis layout incl. `macro_goals_stats_view.dart:1528`).
 
 ## ✅ Definition of done
 `grep "l10n.translate(" lib` → 0 · shim + `gen_l10n` deleted · `slang analyze` green (no missing keys; gaps fall back to English) · pseudolocale clean · existing IT/ES/DE copy preserved · semantic nested keys throughout · app compiles, tests pass, and ships at every phase.

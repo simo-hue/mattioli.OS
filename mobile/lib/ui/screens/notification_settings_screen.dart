@@ -8,6 +8,7 @@ import '../../providers/settings_provider.dart';
 import '../../core/haptics.dart';
 import '../../core/notifications.dart';
 import '../../core/time_formatting.dart';
+import '../../core/rtl.dart';
 import '../../i18n/translations.g.dart';
 
 class NotificationSettingsScreen extends ConsumerWidget {
@@ -43,7 +44,11 @@ class NotificationSettingsScreen extends ConsumerWidget {
         elevation: 0,
         leading: IconButton(
           icon: Icon(
-            LucideIcons.chevronLeft,
+            directionalIcon(
+              context,
+              LucideIcons.chevronLeft,
+              LucideIcons.chevronRight,
+            ),
             color: context.appColors.foreground,
           ),
           onPressed: () => Navigator.pop(context),
@@ -158,7 +163,7 @@ class NotificationSettingsScreen extends ConsumerWidget {
 
   Widget _buildSectionHeader(BuildContext context, String title) {
     return Padding(
-      padding: const EdgeInsets.only(left: 4, bottom: 12),
+      padding: const EdgeInsetsDirectional.only(start: 4, bottom: 12),
       child: Text(
         title.toUpperCase(),
         style: GoogleFonts.inter(
@@ -198,7 +203,12 @@ class NotificationSettingsScreen extends ConsumerWidget {
     required VoidCallback onTap,
   }) {
     return Padding(
-      padding: const EdgeInsets.only(left: 16, right: 16, bottom: 12, top: 4),
+      padding: const EdgeInsetsDirectional.only(
+        start: 16,
+        end: 16,
+        bottom: 12,
+        top: 4,
+      ),
       child: Row(
         children: [
           const SizedBox(width: 54), // Allinea con il testo dello switch row

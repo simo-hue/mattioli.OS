@@ -336,8 +336,8 @@ class EvolveApp extends ConsumerWidget {
 
 /// Maps the app's stored language preference to a slang [AppLocale].
 /// "System" follows the device locale (clamped to a shipped locale); any
-/// unsupported/deferred code (e.g. legacy 'ar', deferred until the RTL pass)
-/// resolves to the base locale (English).
+/// code with no shipped translation resolves to the base locale (English) via
+/// slang's `parse` fallback.
 AppLocale _appLocaleFor(String? language) {
   final override = AppLanguagePreference.localeOverrideFor(
     language ?? AppLanguagePreference.system,

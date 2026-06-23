@@ -69,6 +69,14 @@
 
 These are the items from PRIVATE_MODE_DISCOVERY.md that CANNOT be completed in code alone (all in-code fixes are done & committed):
 
-- [ ] **Arabic + RTL (5.11)** — deferred by design (see LOCALIZATION_PLAN.md). Re-enabling `ar` requires: add `ar` to `tool/arb_to_slang.py` LOCALES + regenerate, restore the language-picker option, then the RTL pass (physical `Alignment`/`EdgeInsets` → `*Directional`, mirror directional icons, fix `Positioned`), and native-Arabic + VoiceOver visual QA on device. Source is preserved at `lib/l10n/app_ar.arb`. Needs human translation review + device QA.
+- [x] **Arabic + RTL (5.11) — re-enabled in code (2026-06-23).** Done & verified (`dart run slang` + `flutter analyze` + `flutter test` all green, `slang analyze` → `ar: 0 missing`):
+  - Precise MSA Arabic authored as nested `lib/i18n/ar.i18n.json` (908 leaves, full key/placeholder parity with `en`). NOTE: the old `tool/arb_to_slang.py` "add `ar` + regenerate" path is now obsolete — the slang JSON is hand-maintained nested namespaces, so `ar` is authored directly like the other locales (slang auto-discovers it). The legacy flat `lib/l10n/app_ar.arb` is left in place (removed in the plan's final demolition with the other ARBs).
+  - Language picker option restored (`app_settings_screen.dart`); `AppLocale.ar` + `AppLocaleUtils.supportedLocales` now include Arabic; `main.dart` `_appLocaleFor` resolves `ar` correctly.
+  - RTL pass: physical `EdgeInsets.only`/`Alignment`(content)/`Positioned` → `*Directional`; 17 directional chevrons mirrored via new `lib/core/rtl.dart` (`DirectionalIcon` / `directionalIcon`).
+
+  **Still needs a human + a device (cannot be done in code):**
+  - [ ] **Native-Arabic + VoiceOver visual QA on device** for every screen (the inherent RTL sign-off).
+  - [ ] **Human translation review** of `lib/i18n/ar.i18n.json` (MSA quality/terminology; brand terms `Evolve`/`Pro`/`AI` kept in Latin by design).
+  - [ ] **Verify the 3 intentionally-skipped physical spots in RTL** and convert if QA shows they should mirror: decorative gradients (`begin/end: topLeft/bottomRight`, cosmetic); the year/week slide-transition direction (`yearly_view_widget.dart:70-71`, `weekly_view_widget.dart:97-101`, logic-driven by `_slideDirection`); and `fl_chart` RTL layout incl. the y-axis label padding at `macro_goals_stats_view.dart:1528`.
 - [ ] **Phase 2 — iCloud/CloudKit sync** — not started (intentional). Before any sync code can run/test: create & configure the CloudKit container in the Apple Developer portal, add the iCloud + (if used) Keychain-sharing entitlements to the iOS target, and plan two-device testing. The Dart `PrivateSyncService` is a no-op placeholder ready for the native bridge.
 - [ ] **Optional future test infra** — delete-private-data and notification-action routing tests need either a real SQLCipher DB in tests (add `sqflite_common_ffi` + verify sqlcipher ffi support) or making `NotificationService`'s store injectable. Deferred (lower value; the no-Supabase-call + settings-separation guards already cover the core promise).

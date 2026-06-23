@@ -9,6 +9,7 @@ import 'package:lucide_icons_flutter/lucide_icons.dart';
 
 import '../../core/macro_goal_calendar.dart';
 import '../../core/theme.dart';
+import '../../core/rtl.dart';
 import '../../models/macro_goal.dart';
 import '../../providers/macro_goals_provider.dart';
 import '../widgets/macro_goals/goal_item_widget.dart';
@@ -934,7 +935,11 @@ class _MacroGoalsScreenState extends ConsumerState<MacroGoalsScreen>
                 color: context.appColors.card.withValues(alpha: 0.8),
               ),
               child: Icon(
-                LucideIcons.chevronLeft,
+                directionalIcon(
+                  context,
+                  LucideIcons.chevronLeft,
+                  LucideIcons.chevronRight,
+                ),
                 size: 20,
                 color: context.appColors.foreground,
               ),
@@ -971,7 +976,11 @@ class _MacroGoalsScreenState extends ConsumerState<MacroGoalsScreen>
                 color: context.appColors.card.withValues(alpha: 0.8),
               ),
               child: Icon(
-                LucideIcons.chevronRight,
+                directionalIcon(
+                  context,
+                  LucideIcons.chevronRight,
+                  LucideIcons.chevronLeft,
+                ),
                 size: 20,
                 color: context.appColors.foreground,
               ),

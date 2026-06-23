@@ -7,6 +7,7 @@ import '../../providers/goal_provider.dart';
 import 'day_details_modal.dart';
 import '../../core/haptics.dart';
 import '../../core/l10n_dynamic.dart';
+import '../../core/rtl.dart';
 import '../../i18n/translations.g.dart';
 
 // Keys for localization
@@ -190,12 +191,20 @@ class _HabitCalendarWidgetState extends ConsumerState<HabitCalendarWidget> {
               Row(
                 children: [
                   _NavButton(
-                    icon: LucideIcons.chevronLeft,
+                    icon: directionalIcon(
+                      context,
+                      LucideIcons.chevronLeft,
+                      LucideIcons.chevronRight,
+                    ),
                     onTap: _goToPrev,
                   ),
                   const SizedBox(width: 4),
                   _NavButton(
-                    icon: LucideIcons.chevronRight,
+                    icon: directionalIcon(
+                      context,
+                      LucideIcons.chevronRight,
+                      LucideIcons.chevronLeft,
+                    ),
                     onTap: _goToNext,
                   ),
                 ],

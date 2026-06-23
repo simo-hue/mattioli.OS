@@ -86,6 +86,11 @@ dev_dependencies:
   # may use MockPlatformInterfaceMixin to stub the notifications platform.
   plugin_platform_interface: ^2.1.8
 
+  # In-memory FFI SQLite for unit-testing the Private DB schema + migrations
+  # (PrivateDbSchema) without a device. Encryption (SQLCipher) is orthogonal to
+  # schema correctness, so these tests open an unencrypted FFI database.
+  sqflite_common_ffi: ^2.3.3
+
   slang_build_runner: ^4.0.0
 
   # The "flutter_lints" package below contains a set of recommended lints to

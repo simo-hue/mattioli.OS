@@ -15,6 +15,7 @@ import '../models/daily_mood.dart';
 import 'app_logger.dart';
 import 'private_analytics.dart';
 import 'private_data_store.dart';
+import 'private_db_schema.dart';
 import 'secure_storage_utils.dart';
 import 'streak_utils.dart';
 
@@ -88,12 +89,12 @@ class PrivateLocalDatabase implements PrivateDataStore {
     final db = await openDatabase(
       dbPath,
       password: password,
-      version: 2,
+      version: PrivateDbSchema.version,
       onConfigure: (db) async {
         await db.execute('PRAGMA foreign_keys = ON');
       },
-      onCreate: _createSchema,
-      onUpgrade: _onUpgrade,
+      onCreate: PrivateDbSchema.onCreate,
+      onUpgrade: PrivateDbSchema.onUpgrade,
     );
     _db = db;
     await _ensureProfile(db);
@@ -140,199 +141,6 @@ class PrivateLocalDatabase implements PrivateDataStore {
     } catch (e, stack) {
       AppLogger.warning('[PrivateDB] backup exclusion marker failed', e, stack);
     }
-  }
-
-  /// DDL for `long_term_goals`. Shared between [_createSchema] and the v2
-  /// upgrade so the CHECK constraints can't drift between fresh installs and
-  /// migrated databases.
-  static const String _longTermGoalsTableDdl = '''
-CREATE TABLE long_term_goals (
-  id TEXT PRIMARY KEY,
-  user_id TEXT NOT NULL REFERENCES profiles(id) ON DELETE CASCADE,
-  title TEXT NOT NULL,
-  status TEXT NOT NULL DEFAULT 'active'
-    CHECK (status IN ('active', 'completed', 'failed')),
-  type TEXT NOT NULL
-    CHECK (type IN ('lifetime', 'annual', 'quarterly', 'monthly', 'weekly')),
-  year INTEGER,
-  month INTEGER CHECK (month >= 1 AND month <= 12),
-  -- week_number is a week-of-month index (the app emits 1..6 via weeksInMonth).
-  -- The 1..53 bound matches cloud schema.sql to avoid cross-backend CHECK drift.
-  week_number INTEGER CHECK (week_number >= 1 AND week_number <= 53),
-  quarter INTEGER CHECK (quarter >= 1 AND quarter <= 4),
-  -- color is legacy/vestigial: macro goals derive their color from their
-  -- category (GoalCategory.color); the app never writes this column.
-  color TEXT,
-  category_key TEXT,
-  created_at TEXT NOT NULL,
-  updated_at TEXT NOT NULL,
-  category_id TEXT REFERENCES macro_goal_categories(id) ON DELETE SET NULL
-)
-''';
-
-  static const List<String> _longTermGoalsIndexes = [
-    'CREATE INDEX idx_ltg_user_type_year ON long_term_goals (user_id, type, year)',
-    'CREATE INDEX idx_ltg_user_status ON long_term_goals (user_id, status)',
-  ];
-
-  Future<void> _onUpgrade(Database db, int oldVersion, int newVersion) async {
-    // v2: widen long_term_goals.week_number CHECK from 1..6 to 1..53 to match
-    // cloud schema.sql. SQLite can't ALTER a CHECK constraint, so rebuild the
-    // table. Nothing references long_term_goals via FK, so a rename/copy/drop is
-    // safe; existing rows (week-of-month, always <= 6) all satisfy the new bound.
-    if (oldVersion < 2) {
-      await db.execute(
-        'ALTER TABLE long_term_goals RENAME TO long_term_goals_old',
-      );
-      await db.execute(_longTermGoalsTableDdl);
-      await db.execute('''
-INSERT INTO long_term_goals (
-  id, user_id, title, status, type, year, month, week_number, quarter,
-  color, category_key, created_at, updated_at, category_id
-)
-SELECT
-  id, user_id, title, status, type, year, month, week_number, quarter,
-  color, category_key, created_at, updated_at, category_id
-FROM long_term_goals_old
-''');
-      await db.execute('DROP TABLE long_term_goals_old');
-      for (final ddl in _longTermGoalsIndexes) {
-        await db.execute(ddl);
-      }
-    }
-  }
-
-  Future<void> _createSchema(Database db, int version) async {
-    await db.execute('''
-CREATE TABLE profiles (
-  id TEXT PRIMARY KEY,
-  username TEXT,
-  full_name TEXT,
-  avatar_url TEXT,
-  language TEXT NOT NULL DEFAULT 'it',
-  theme_mode TEXT NOT NULL DEFAULT 'dark'
-    CHECK (theme_mode IN ('dark', 'light', 'system')),
-  accent_color TEXT NOT NULL DEFAULT '#FFFFFF',
-  pref_glass_effects INTEGER NOT NULL DEFAULT 1,
-  pref_default_calendar_view TEXT NOT NULL DEFAULT 'settimana',
-  pref_start_week_on_monday INTEGER NOT NULL DEFAULT 1,
-  pref_show_weekend INTEGER NOT NULL DEFAULT 1,
-  pref_haptic_feedback INTEGER NOT NULL DEFAULT 1,
-  pref_time_format_24h INTEGER NOT NULL DEFAULT 1,
-  pref_ai_suggestions INTEGER NOT NULL DEFAULT 0,
-  pref_focus_mode INTEGER NOT NULL DEFAULT 0,
-  pref_milestones INTEGER NOT NULL DEFAULT 1,
-  pref_deep_work_insights INTEGER NOT NULL DEFAULT 0,
-  is_pro INTEGER NOT NULL DEFAULT 1,
-  pro_expires_at TEXT,
-  notif_habit_reminders INTEGER NOT NULL DEFAULT 1,
-  notif_goal_deadlines INTEGER NOT NULL DEFAULT 1,
-  notif_ai_insights INTEGER NOT NULL DEFAULT 0,
-  notif_weekly_reports INTEGER NOT NULL DEFAULT 0,
-  notif_evening_review INTEGER NOT NULL DEFAULT 1,
-  biometric_lock INTEGER NOT NULL DEFAULT 0,
-  created_at TEXT NOT NULL,
-  updated_at TEXT NOT NULL,
-  date_of_birth TEXT,
-  morning_brief_time TEXT DEFAULT '09:00',
-  evening_review_time TEXT DEFAULT '21:00',
-  terms_accepted_at TEXT,
-  sentry_consent INTEGER NOT NULL DEFAULT 0,
-  private_ai_external_consent INTEGER NOT NULL DEFAULT 0
-)
-''');
-
-    await db.execute('''
-CREATE TABLE goals (
-  id TEXT PRIMARY KEY,
-  user_id TEXT NOT NULL REFERENCES profiles(id) ON DELETE CASCADE,
-  title TEXT NOT NULL,
-  description TEXT,
-  color TEXT NOT NULL,
-  icon TEXT,
-  frequency_days TEXT,
-  start_date TEXT NOT NULL,
-  end_date TEXT,
-  display_order INTEGER,
-  created_at TEXT NOT NULL,
-  updated_at TEXT NOT NULL,
-  reminder_time TEXT
-)
-''');
-
-    await db.execute('''
-CREATE TABLE goal_logs (
-  id TEXT PRIMARY KEY,
-  user_id TEXT NOT NULL REFERENCES profiles(id) ON DELETE CASCADE,
-  goal_id TEXT NOT NULL REFERENCES goals(id) ON DELETE CASCADE,
-  date TEXT NOT NULL,
-  status TEXT NOT NULL CHECK (status IN ('done', 'missed', 'skipped')),
-  value REAL,
-  created_at TEXT NOT NULL,
-  updated_at TEXT NOT NULL,
-  streak INTEGER DEFAULT 0,
-  UNIQUE(goal_id, date)
-)
-''');
-
-    await db.execute(_longTermGoalsTableDdl);
-
-    await db.execute('''
-CREATE TABLE daily_moods (
-  id TEXT PRIMARY KEY,
-  user_id TEXT NOT NULL REFERENCES profiles(id) ON DELETE CASCADE,
-  date TEXT NOT NULL,
-  mood_score INTEGER NOT NULL CHECK (mood_score >= 0 AND mood_score <= 10),
-  energy_score INTEGER NOT NULL CHECK (energy_score >= 0 AND energy_score <= 10),
-  created_at TEXT NOT NULL,
-  updated_at TEXT NOT NULL,
-  UNIQUE(user_id, date)
-)
-''');
-
-    // NOTE: goal_category_settings mirrors the cloud table for schema parity
-    // and future iCloud-sync completeness, but the mobile app does not currently
-    // read or write its `mappings` (no provider touches it — category data lives
-    // in macro_goal_categories). It is seeded once in _ensureProfile and wiped by
-    // deleteAllPrivateData. Kept intentionally; if the cloud feature is ever
-    // wired into mobile, the storage is already here.
-    await db.execute('''
-CREATE TABLE goal_category_settings (
-  id TEXT PRIMARY KEY,
-  user_id TEXT NOT NULL REFERENCES profiles(id) ON DELETE CASCADE UNIQUE,
-  mappings TEXT NOT NULL DEFAULT '{}',
-  created_at TEXT NOT NULL,
-  updated_at TEXT NOT NULL
-)
-''');
-
-    await db.execute('''
-CREATE TABLE macro_goal_categories (
-  id TEXT PRIMARY KEY,
-  user_id TEXT NOT NULL REFERENCES profiles(id) ON DELETE CASCADE,
-  name TEXT NOT NULL,
-  color TEXT NOT NULL,
-  created_at TEXT NOT NULL,
-  archived_at TEXT,
-  UNIQUE(user_id, name)
-)
-''');
-
-    await db.execute(
-      'CREATE INDEX idx_goals_user_order ON goals (user_id, display_order)',
-    );
-    await db.execute(
-      'CREATE INDEX idx_goal_logs_user_date ON goal_logs (user_id, date DESC)',
-    );
-    for (final ddl in _longTermGoalsIndexes) {
-      await db.execute(ddl);
-    }
-    await db.execute(
-      'CREATE INDEX idx_moods_user_date ON daily_moods (user_id, date DESC)',
-    );
-    await db.execute(
-      'CREATE INDEX macro_goal_categories_active_idx ON macro_goal_categories (user_id, created_at) WHERE archived_at IS NULL',
-    );
   }
 
   Future<void> _ensureProfile(Database db) async {
@@ -580,6 +388,7 @@ CREATE TABLE macro_goal_categories (
       'name': name,
       'color': colorHex,
       'created_at': now,
+      'updated_at': now,
     });
     return id;
   }
@@ -593,7 +402,7 @@ CREATE TABLE macro_goal_categories (
     final db = await _database();
     await db.update(
       'macro_goal_categories',
-      {'name': name, 'color': colorHex},
+      {'name': name, 'color': colorHex, 'updated_at': _now()},
       where: 'id = ?',
       whereArgs: [id],
     );
@@ -602,9 +411,10 @@ CREATE TABLE macro_goal_categories (
   @override
   Future<void> archiveMacroGoalCategory(String id) async {
     final db = await _database();
+    final now = _now();
     await db.update(
       'macro_goal_categories',
-      {'archived_at': _now()},
+      {'archived_at': now, 'updated_at': now},
       where: 'id = ?',
       whereArgs: [id],
     );

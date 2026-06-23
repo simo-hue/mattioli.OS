@@ -28,6 +28,7 @@ import 'core/secure_local_storage.dart';
 import 'core/secure_storage_utils.dart';
 import 'package:flutter_localizations/flutter_localizations.dart';
 import 'core/data_mode.dart';
+import 'core/private_sync_service.dart';
 import 'i18n/translations.g.dart';
 
 void main() async {
@@ -287,11 +288,41 @@ class _NotificationReplayObserver with WidgetsBindingObserver {
   }
 }
 
-class EvolveApp extends ConsumerWidget {
+class EvolveApp extends ConsumerStatefulWidget {
   const EvolveApp({super.key});
 
   @override
-  Widget build(BuildContext context, WidgetRef ref) {
+  ConsumerState<EvolveApp> createState() => _EvolveAppState();
+}
+
+class _EvolveAppState extends ConsumerState<EvolveApp>
+    with WidgetsBindingObserver {
+  @override
+  void initState() {
+    super.initState();
+    WidgetsBinding.instance.addObserver(this);
+  }
+
+  @override
+  void dispose() {
+    WidgetsBinding.instance.removeObserver(this);
+    super.dispose();
+  }
+
+  @override
+  void didChangeAppLifecycleState(AppLifecycleState state) {
+    // Foreground sync trigger: on resume, pull/push private data. Gated to
+    // Private mode so it never opens the private DB or calls CloudKit in
+    // Supabase mode; the service itself is a no-op on Android and when sync is
+    // disabled. Fire-and-forget — failures never affect the UI.
+    if (state == AppLifecycleState.resumed &&
+        ref.read(activeDataModeProvider) == AppDataMode.private) {
+      unawaited(ref.read(privateSyncServiceProvider).syncNow());
+    }
+  }
+
+  @override
+  Widget build(BuildContext context) {
     final settings = ref.watch(settingsProvider);
     final router = ref.watch(routerProvider);
 

@@ -81,11 +81,29 @@ class CloudKitPrivateSyncService implements PrivateSyncService {
 
   @override
   Future<PrivateSyncStatus> syncNow() async {
+    final store = await storeProvider();
+    // Honor a queued full-reset wipe even when sync is disabled (it's cleanup).
+    if (await store.pendingZoneWipe()) {
+      // The engine's wipe path doesn't use the key (it's gone after a reset).
+      await (await _engine(store)).syncNow(await keys.readKey() ?? crypto.generateKey());
+      return status();
+    }
     if (!await enabledStore.isEnabled()) return status();
     final key = await keys.readKey();
     if (key == null) return status(); // key not in iCloud Keychain yet
-    final store = await storeProvider();
     await (await _engine(store)).syncNow(key);
+    return status();
+  }
+
+  @override
+  Future<PrivateSyncStatus> requestFullReset() async {
+    final store = await storeProvider();
+    await store.setPendingZoneWipe(true);
+    await enabledStore.setEnabled(false);
+    await keys.deleteAll(); // remove shared key + owner from iCloud Keychain
+    // Attempt the cloud wipe now; if offline it stays queued (pending_zone_wipe)
+    // and a later syncNow completes it.
+    await syncNow();
     return status();
   }
 }

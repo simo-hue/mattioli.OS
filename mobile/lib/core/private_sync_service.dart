@@ -40,6 +40,12 @@ abstract class PrivateSyncService {
   Future<PrivateSyncStatus> enable();
   Future<PrivateSyncStatus> disable();
   Future<PrivateSyncStatus> syncNow();
+
+  /// Full reset for "delete private data": wipe the CloudKit zone, delete the
+  /// shared key + canonical owner from iCloud Keychain, and turn sync off
+  /// (offline → queued and finished on the next sync). The LOCAL wipe is done
+  /// separately by [PrivateLocalDatabase.deleteAllPrivateData].
+  Future<PrivateSyncStatus> requestFullReset();
 }
 
 /// Used on Android (sync is iOS-only) and anywhere sync isn't wired.
@@ -60,6 +66,10 @@ class NoOpPrivateSyncService implements PrivateSyncService {
 
   @override
   Future<PrivateSyncStatus> syncNow() async =>
+      const PrivateSyncStatus.localOnly();
+
+  @override
+  Future<PrivateSyncStatus> requestFullReset() async =>
       const PrivateSyncStatus.localOnly();
 }
 

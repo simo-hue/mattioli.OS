@@ -140,4 +140,67 @@ void main() {
     expect(cloud.records.containsKey('goals:g1'), isTrue);
     await db.close();
   });
+
+  CloudKitPrivateSyncService serviceWith(
+    Database db,
+    FakeCloudKitBridge cloud,
+    _FakeEnabled enabled,
+    _FakeSecretStore secrets,
+  ) =>
+      CloudKitPrivateSyncService(
+        bridge: cloud,
+        keys: SyncKeyStore(secrets, crypto: crypto),
+        crypto: crypto,
+        storeProvider: () async => SyncLocalStore(db),
+        ownerProvider: () async => 'owner',
+        enabledStore: enabled,
+      );
+
+  test('requestFullReset wipes cloud + keys and disables (online)', () async {
+    final db = await openFreshV3();
+    await seed(db);
+    final cloud = FakeCloudKitBridge();
+    final enabled = _FakeEnabled();
+    final secrets = _FakeSecretStore();
+    final svc = serviceWith(db, cloud, enabled, secrets);
+
+    await svc.enable();
+    expect(secrets.values, isNotEmpty); // key + owner published
+
+    await svc.requestFullReset();
+
+    expect(enabled.value, isFalse);
+    expect(secrets.values, isEmpty); // key + owner removed from Keychain
+    expect(cloud.zoneDeleted, isTrue);
+    expect(cloud.records, isEmpty);
+    expect(await SyncLocalStore(db).pendingZoneWipe(), isFalse); // completed
+    await db.close();
+  });
+
+  test('requestFullReset queues the wipe when offline, finishes later',
+      () async {
+    final db = await openFreshV3();
+    await seed(db);
+    final cloud = FakeCloudKitBridge();
+    final enabled = _FakeEnabled();
+    final secrets = _FakeSecretStore();
+    final svc = serviceWith(db, cloud, enabled, secrets);
+
+    await svc.enable();
+    cloud.status = CloudAccountStatus.noAccount; // go offline
+
+    await svc.requestFullReset();
+    expect(enabled.value, isFalse);
+    expect(secrets.values, isEmpty); // keys removed regardless of connectivity
+    expect(cloud.zoneDeleted, isFalse); // couldn't reach iCloud
+    expect(await SyncLocalStore(db).pendingZoneWipe(), isTrue); // queued
+
+    // Back online: the next syncNow completes the queued wipe even though
+    // sync is disabled.
+    cloud.status = CloudAccountStatus.available;
+    await svc.syncNow();
+    expect(cloud.zoneDeleted, isTrue);
+    expect(await SyncLocalStore(db).pendingZoneWipe(), isFalse);
+    await db.close();
+  });
 }

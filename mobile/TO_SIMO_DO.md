@@ -23,3 +23,32 @@ These are the items from PRIVATE_MODE_DISCOVERY.md that CANNOT be completed in c
   - [ ] **Verify the 3 intentionally-skipped physical spots in RTL** and convert if QA shows they should mirror: decorative gradients (`begin/end: topLeft/bottomRight`, cosmetic); the year/week slide-transition direction (`yearly_view_widget.dart:70-71`, `weekly_view_widget.dart:97-101`, logic-driven by `_slideDirection`); and `fl_chart` RTL layout incl. the y-axis label padding at `macro_goals_stats_view.dart:1528`.
 - [ ] **Phase 2 — iCloud/CloudKit sync** — not started (intentional). Before any sync code can run/test: create & configure the CloudKit container in the Apple Developer portal, add the iCloud + (if used) Keychain-sharing entitlements to the iOS target, and plan two-device testing. The Dart `PrivateSyncService` is a no-op placeholder ready for the native bridge.
 - [ ] **Optional future test infra** — delete-private-data and notification-action routing tests need either a real SQLCipher DB in tests (add `sqflite_common_ffi` + verify sqlcipher ffi support) or making `NotificationService`'s store injectable. Deferred (lower value; the no-Supabase-call + settings-separation guards already cover the core promise).
+
+---
+
+## 2026-06-23 - iCloud Sync (Private Mode Phase 2): manual Apple steps
+
+The full Dart sync stack + native Swift bridge are implemented and unit-tested
+(see ICLOUD_SYNC_PLAN.md). These steps require your Apple account / a device and
+CANNOT be done from code:
+
+- [ ] In the Apple Developer portal / Xcode (Runner target → Signing &
+      Capabilities): add the **iCloud** capability with **CloudKit** and create/
+      select the container **`iCloud.com.simo.evolve`** (already referenced in
+      `ios/Runner/Runner.entitlements`). Without the provisioned container a
+      signed build will fail.
+- [ ] First run on a device: the CloudKit **schema auto-creates in Development**
+      (record type `PrivateRecord`, zone `PrivateZone`). Then **promote the
+      schema to Production** in the CloudKit Dashboard before App Store release.
+- [ ] **Two-device QA** (the parts unit tests can't cover): enable on a fresh
+      2nd device (pulls all); both-had-data merge; offline edits converge;
+      delete-private-data wipes iCloud and doesn't resurrect; iCloud signed-out
+      shows status but never blocks local mode; confirm CloudKit Dashboard shows
+      only opaque encrypted `payload` blobs.
+- [ ] Update **App Store privacy** answers (data now syncs to the user's own
+      iCloud; still no third-party servers) and re-confirm
+      `ITSAppUsesNonExemptEncryption`.
+- [ ] Remaining in-app wiring before release (tracked for the next coding pass):
+      the iCloud settings UI, the foreground/after-write sync triggers, wiring
+      `requestFullReset()` into the delete-private-data flow, and avatar CKAsset
+      sync. The engine/service/bridge they depend on are done.

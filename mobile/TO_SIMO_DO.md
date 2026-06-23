@@ -48,7 +48,7 @@ CANNOT be done from code:
 - [ ] Update **App Store privacy** answers (data now syncs to the user's own
       iCloud; still no third-party servers) and re-confirm
       `ITSAppUsesNonExemptEncryption`.
-- [ ] Remaining in-app wiring before release (tracked for the next coding pass):
-      the iCloud settings UI, the foreground/after-write sync triggers, wiring
-      `requestFullReset()` into the delete-private-data flow, and avatar CKAsset
-      sync. The engine/service/bridge they depend on are done.
+- [ ] Remaining in-app refinements (not blocking; the settings UI, foreground
+      sync, manual "Sync now", UI-refresh-after-pull, and delete-reset wiring are
+      DONE): the debounced **after-write** sync trigger and **avatar CKAsset**
+      sync. The engine/service/bridge/UI they build on are complete.

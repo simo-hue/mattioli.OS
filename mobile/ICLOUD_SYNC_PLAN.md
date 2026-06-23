@@ -310,3 +310,29 @@ Steps 1–3 are **fully code-side and need no Apple provisioning** — the natur
 - Settings UI: extend `privacy_settings_screen.dart` vs a dedicated `icloud_sync_screen.dart` (lean: dedicated screen for the status/errors surface).
 - Whether to add `sqflite_common_ffi` (dev) now for DB-backed migration/integration tests (recommended at Step 1).
 - First-sync progress UX for large datasets (spinner vs progress count).
+
+---
+
+## 18. Implementation status — updated 2026-06-23
+
+The full Dart sync stack + native bridge + UI are implemented and unit-tested
+(160 tests; `flutter analyze` clean; `flutter build ios --no-codesign` green).
+
+| Step | Status | Commit |
+| --- | --- | --- |
+| 1 — schema v3 (`sync_state`/`sync_meta` + triggers) | ✅ | `48c678a` |
+| 2 — AES-256-GCM `SyncCrypto` + `SyncKeyStore` | ✅ | `c187b54` |
+| 3 — `SyncEngine` core (push/pull/LWW/tombstone) | ✅ | `8614296` |
+| 3b — enable flow + cross-device identity merge | ✅ | `47ecba3` |
+| 4a — `MethodChannelCloudKitBridge` (Dart) | ✅ | `68c8483` |
+| 5a — real `PrivateSyncService` wiring | ✅ | `cf5b1e9` |
+| 6 — full-reset (delete) capability | ✅ | `cba4abc` |
+| 4b — native Swift CloudKit bridge + entitlements | ✅ (compiles; device QA pending) | `acce20d` |
+| 5b — iCloud Sync settings UI + delete wiring | ✅ | `9aab0c5` |
+| 7 — foreground sync trigger | ✅ | `9dacd5d` |
+| — refresh providers after a pull | ✅ | `92fb560` |
+
+**Remaining (refinements / external):**
+- **After-write debounced trigger** — sync a few seconds after a private edit while the app is open. Foreground + manual "Sync now" already cover the dominant cases. Loop-safe design: hook the private write methods (not provider rebuilds), coalesce via a debouncer.
+- **Avatar CKAsset sync (3c)** — cosmetic; the only encrypted-binary path. Dart logic is testable; the CKAsset wrapping is already handled by the Swift bridge (`asset` field) and the Dart contract carries `assetPath`.
+- **Device QA + Apple provisioning** — see TO_SIMO_DO.md (CloudKit container/capability, schema → Production, two-device matrix, App Store privacy).

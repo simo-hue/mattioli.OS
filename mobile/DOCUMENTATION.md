@@ -2094,3 +2094,17 @@
 
 ## Current Status
 Phase 1 Private Mode is feature-complete, localized (en/it/es/de/**ar**), and regression-guarded (110 tests). Arabic translations + the structural RTL pass are done in code and green; the only remaining Arabic work is human/device-gated (native-Arabic + VoiceOver visual QA, human translation review, and confirming the 3 intentionally-skipped physical spots) — see TO_SIMO_DO.md. Other immediate next steps if resumed: the remaining manual items in TO_SIMO_DO.md (AI key / Phase 2 CloudKit), none of which are code-only.
+
+## [2026-06-23]: iCloud Sync (Private Mode Phase 2) — implementation
+*Details*: Implemented end-to-end, opt-in, E2E-encrypted iCloud sync of the private data space, feature-by-feature per ICLOUD_SYNC_PLAN.md. 11 commits, 160 unit tests (all green), `flutter analyze` clean, `flutter build ios --no-codesign` succeeds. Live CloudKit + two-device QA require the provisioned container/device (TO_SIMO_DO.md).
+*Tech Notes*:
+- **Schema v3** (`48c678a`): `sync_state`/`sync_meta` + per-table triggers (dirty/tombstone); `macro_goal_categories.updated_at`; DDL extracted to testable `PrivateDbSchema`; tested via `sqflite_common_ffi`.
+- **Crypto/keys** (`c187b54`): AES-256-GCM (`SyncCrypto`, pointycastle); `SyncKeyStore` holds the 256-bit key + canonical owner in the iCloud Keychain (`flutter_secure_storage` synchronizable), separate from the device-local DB key. Pure E2E, no backdoor.
+- **Engine** (`8614296`,`47ecba3`): `SyncEngine` push/pull over a `CloudKitBridge` abstraction; per-record LWW on device edit-time + future-skew guard; tombstones; FK-safe apply; account-unavailable + pending-zone-wipe handling; `enable()` does key/owner adoption + `reKeyOwner` identity merge (union per-row, LWW singletons).
+- **Bridges** (`68c8483`,`acce20d`): Dart `MethodChannelCloudKitBridge` (mock-channel tested) + native Swift CloudKit bridge over `CKContainer iCloud.com.simo.evolve` (private DB, custom `PrivateZone`, generic `PrivateRecord`, change-token delta fetch, `.ifServerRecordUnchanged` conflicts, CKAsset avatars) inlined in AppDelegate.swift; iCloud entitlements added.
+- **Service/UI** (`cf5b1e9`,`6cd…`,`9aab0c5`): `CloudKitPrivateSyncService` (status/enable/disable/syncNow/requestFullReset; per-device enabled flag in prefs); dedicated `IcloudSyncScreen` (enable + disclosure, Sync now, status, last-synced), iOS+private-gated entry in privacy settings, localized en/it/es/de; delete-private-data wired to `requestFullReset`.
+- **Triggers/refresh** (`9dacd5d`,`92fb560`): foreground sync on resume (private-gated); after a pull, `invalidatePrivateDataProviders` refreshes the cached UI providers.
+- Deps promoted transitive→direct: `sqflite_common_ffi` (dev), `pointycastle`.
+
+## Current Status
+iCloud Sync core is implemented, unit-tested (160), and iOS-compiling. Remaining: after-write debounced trigger + avatar CKAsset sync (refinements), and Apple provisioning + two-device device QA (manual, TO_SIMO_DO.md). Local Private Mode (Phase 1) remains complete.

@@ -1,0 +1,193 @@
+import 'dart:typed_data';
+
+import 'cloudkit_bridge.dart';
+import 'sync_crypto.dart';
+import 'sync_local_store.dart';
+
+class SyncResult {
+  final int pushed;
+  final int applied;
+  final int skipped;
+  final bool wiped;
+
+  /// Set when sync didn't run because iCloud isn't available; local mode is
+  /// unaffected.
+  final CloudAccountStatus? blockedBy;
+
+  const SyncResult({
+    this.pushed = 0,
+    this.applied = 0,
+    this.skipped = 0,
+    this.wiped = false,
+    this.blockedBy,
+  });
+
+  bool get ran => blockedBy == null;
+}
+
+/// The Dart-side sync brain: pushes dirty rows, pulls remote changes, resolves
+/// conflicts by last-write-wins on edit time, and applies tombstones — all over
+/// an abstract [CloudKitBridge] (real on device, fake in tests). Re-key/identity
+/// merge and avatar assets are layered on in later steps.
+class SyncEngine {
+  final SyncLocalStore store;
+  final CloudKitBridge bridge;
+  final SyncCrypto crypto;
+
+  SyncEngine({
+    required this.store,
+    required this.bridge,
+    required this.crypto,
+  });
+
+  /// FK-safe apply order: parents before children (profiles → goals/categories →
+  /// logs/macro-goals/moods). Applied across the whole pulled batch.
+  static const Map<String, int> _applyPriority = {
+    'profiles': 0,
+    'goals': 1,
+    'macro_goal_categories': 1,
+    'goal_category_settings': 1,
+    'goal_logs': 2,
+    'long_term_goals': 2,
+    'daily_moods': 2,
+  };
+
+  /// Reject timestamps more than this far in the future (clock-skew guard, Q10).
+  static const int _maxFutureSkewMs = 5 * 60 * 1000;
+
+  Future<SyncResult> syncNow(Uint8List key) async {
+    final status = await bridge.accountStatus();
+    if (status != CloudAccountStatus.available) {
+      return SyncResult(blockedBy: status);
+    }
+
+    // A queued full-reset wins over everything: wipe the cloud zone, then stop.
+    if (await store.pendingZoneWipe()) {
+      await bridge.deleteZone();
+      await store.setPendingZoneWipe(false);
+      await store.setChangeToken(null);
+      return const SyncResult(wiped: true);
+    }
+
+    await bridge.ensureZone();
+    final pushed = await _push(key);
+    final pull = await _pull(key);
+    await store.setLastFullSync(_nowIso());
+    return SyncResult(pushed: pushed, applied: pull.$1, skipped: pull.$2);
+  }
+
+  Future<int> _push(Uint8List key) async {
+    final entries = await store.dirtyEntries();
+    if (entries.isEmpty) return 0;
+
+    final records = <CloudRecord>[];
+    for (final e in entries) {
+      if (e.deleted) {
+        records.add(_tombstone(e.recordName, e.tableName, e.updatedAt));
+        continue;
+      }
+      final row = await store.readRow(e.tableName, e.rowId);
+      if (row == null) {
+        // Row vanished under us — push a tombstone instead.
+        records.add(_tombstone(e.recordName, e.tableName, e.updatedAt));
+        continue;
+      }
+      records.add(CloudRecord(
+        recordName: e.recordName,
+        tableName: e.tableName,
+        updatedAtMs: _ms((row['updated_at'] as String?) ?? e.updatedAt),
+        deleted: false,
+        payload: crypto.encryptJson(Map<String, dynamic>.from(row), key),
+      ));
+    }
+
+    final outcome = await bridge.saveRecords(records);
+    final at = _nowIso();
+    for (final rn in outcome.saved) {
+      await store.markSynced(rn, at);
+    }
+    for (final err in outcome.errors) {
+      await store.markError(err.recordName, err.code);
+    }
+    // Conflicts (server has a newer version) are intentionally left dirty: the
+    // pull below fetches the newer record and LWW-applies it, clearing dirty.
+    return outcome.saved.length;
+  }
+
+  Future<(int, int)> _pull(Uint8List key) async {
+    // Collect all changed records across pages, then apply FK-safely.
+    final all = <CloudRecord>[];
+    String? token = await store.changeToken();
+    while (true) {
+      final out = await bridge.fetchChanges(token);
+      all.addAll(out.records);
+      token = out.newToken;
+      if (!out.moreComing) break;
+    }
+    all.sort((a, b) => (_applyPriority[a.tableName] ?? 9)
+        .compareTo(_applyPriority[b.tableName] ?? 9));
+
+    var applied = 0;
+    var skipped = 0;
+    for (final rec in all) {
+      if (await _applyRemote(rec, key)) {
+        applied++;
+      } else {
+        skipped++;
+      }
+    }
+    await store.setChangeToken(token);
+    return (applied, skipped);
+  }
+
+  Future<bool> _applyRemote(CloudRecord rec, Uint8List key) async {
+    final nowMs = DateTime.now().toUtc().millisecondsSinceEpoch;
+    if (rec.updatedAtMs > nowMs + _maxFutureSkewMs) {
+      return false; // implausibly-future timestamp — ignore (clock-skew guard)
+    }
+    final local = await store.stateOf(rec.recordName);
+    final localMs = local == null ? -1 : _ms(local.updatedAt);
+    // Strict >: equal timestamps keep the local copy. Exact-millisecond
+    // conflicts on the same record are vanishingly rare for a single user.
+    if (rec.updatedAtMs <= localMs) return false;
+
+    final rowId = rec.recordName.substring(rec.tableName.length + 1);
+    try {
+      if (rec.deleted) {
+        await store.applyDelete(
+          rec.tableName,
+          rowId,
+          rec.recordName,
+          _iso(rec.updatedAtMs),
+          _nowIso(),
+        );
+      } else {
+        final row = crypto.decryptJson(rec.payload!, key);
+        await store.applyUpsert(
+          rec.tableName,
+          rec.recordName,
+          Map<String, Object?>.from(row),
+          _nowIso(),
+        );
+      }
+      return true;
+    } catch (e) {
+      await store.markError(rec.recordName, e.toString());
+      return false;
+    }
+  }
+
+  CloudRecord _tombstone(String recordName, String tableName, String updatedAt) =>
+      CloudRecord(
+        recordName: recordName,
+        tableName: tableName,
+        updatedAtMs: _ms(updatedAt),
+        deleted: true,
+        payload: Uint8List(0),
+      );
+
+  int _ms(String iso) => DateTime.tryParse(iso)?.millisecondsSinceEpoch ?? 0;
+  String _iso(int ms) =>
+      DateTime.fromMillisecondsSinceEpoch(ms, isUtc: true).toIso8601String();
+  String _nowIso() => DateTime.now().toUtc().toIso8601String();
+}

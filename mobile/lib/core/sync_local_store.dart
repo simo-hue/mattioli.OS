@@ -144,6 +144,17 @@ class SyncLocalStore {
         where: 'id = 1',
       );
 
+  Future<DateTime?> lastFullSync() async {
+    final r = await _db.query(
+      PrivateDbSchema.syncMetaTable,
+      columns: ['last_full_sync_at'],
+      where: 'id = 1',
+      limit: 1,
+    );
+    final s = r.isEmpty ? null : r.first['last_full_sync_at'] as String?;
+    return s == null ? null : DateTime.tryParse(s);
+  }
+
   Future<bool> pendingZoneWipe() async {
     final r = await _db.query(
       PrivateDbSchema.syncMetaTable,

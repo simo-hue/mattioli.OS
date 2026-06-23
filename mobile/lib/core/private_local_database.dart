@@ -18,6 +18,7 @@ import 'private_data_store.dart';
 import 'private_db_schema.dart';
 import 'secure_storage_utils.dart';
 import 'streak_utils.dart';
+import 'sync_local_store.dart';
 
 final privateLocalDatabaseProvider = Provider<PrivateDataStore>((ref) {
   return PrivateLocalDatabase();
@@ -64,6 +65,10 @@ class PrivateLocalDatabase implements PrivateDataStore {
     final db = await _database();
     await _ensureProfile(db);
   }
+
+  /// A [SyncLocalStore] over the opened private database, for the iCloud sync
+  /// engine. Opens the DB if needed.
+  Future<SyncLocalStore> syncStore() async => SyncLocalStore(await _database());
 
   Future<Database> _database() {
     final opened = _db;

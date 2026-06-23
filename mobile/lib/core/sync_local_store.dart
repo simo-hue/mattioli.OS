@@ -160,6 +160,56 @@ class SyncLocalStore {
         where: 'id = 1',
       );
 
+  /// Unify this device's owner id onto the canonical sync-owner (shared via the
+  /// iCloud Keychain) when a second device enables sync. Re-points every row's
+  /// `user_id` and the single `profiles` row to [canonicalOwner] so the per-row
+  /// data unions and the singletons converge under one identity.
+  ///
+  /// Enable-time only: it clears + rebuilds `sync_state` (everything dirty for
+  /// the first upload), so it must not run while real tombstones are pending.
+  Future<void> reKeyOwner(String localOwner, String canonicalOwner) async {
+    if (localOwner == canonicalOwner) return;
+
+    // FK must be toggled OUTSIDE a transaction (it's a no-op once BEGIN runs).
+    // Re-keying a referenced primary key (profiles.id) needs it off.
+    await _db.execute('PRAGMA foreign_keys = OFF');
+    try {
+      await _db.transaction((txn) async {
+        final canonicalExists = (await txn.query(
+          'profiles',
+          where: 'id = ?',
+          whereArgs: [canonicalOwner],
+          limit: 1,
+        ))
+            .isNotEmpty;
+        if (canonicalExists) {
+          // The canonical profile already arrived (pulled) — drop the local one.
+          await txn.delete('profiles', where: 'id = ?', whereArgs: [localOwner]);
+        } else {
+          await txn.update('profiles', {'id': canonicalOwner},
+              where: 'id = ?', whereArgs: [localOwner]);
+        }
+        for (final t in PrivateDbSchema.syncedTables) {
+          if (t == 'profiles') continue;
+          await txn.update(t, {'user_id': canonicalOwner},
+              where: 'user_id = ?', whereArgs: [localOwner]);
+        }
+      });
+    } finally {
+      await _db.execute('PRAGMA foreign_keys = ON');
+    }
+
+    // Owner-keyed record_names (profiles:<owner>) changed; the simplest correct
+    // rebuild is to drop sync_state and re-mark everything dirty for upload.
+    await _db.delete(PrivateDbSchema.syncStateTable);
+    await markAllDirty();
+  }
+
+  /// Returns the FK violations reported by `PRAGMA foreign_key_check` (empty ⇒
+  /// integrity intact). Used to assert the re-key migration is clean.
+  Future<List<Map<String, Object?>>> foreignKeyCheck() =>
+      _db.rawQuery('PRAGMA foreign_key_check');
+
   /// Backfill `sync_state` for rows that pre-date sync (first enable marks all
   /// existing local data dirty so it uploads on the first sync).
   Future<void> markAllDirty() async {

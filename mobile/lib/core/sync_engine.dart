@@ -2,6 +2,7 @@ import 'dart:typed_data';
 
 import 'cloudkit_bridge.dart';
 import 'sync_crypto.dart';
+import 'sync_key_store.dart';
 import 'sync_local_store.dart';
 
 class SyncResult {
@@ -54,6 +55,30 @@ class SyncEngine {
 
   /// Reject timestamps more than this far in the future (clock-skew guard, Q10).
   static const int _maxFutureSkewMs = 5 * 60 * 1000;
+
+  /// Turn sync on for this device: obtain the shared E2E key, establish/adopt
+  /// the canonical owner (re-keying local data to it on a second device so
+  /// everything unions under one identity), mark existing data for upload, then
+  /// run the first sync. Returns [SyncResult.blockedBy] if iCloud is unavailable.
+  Future<SyncResult> enable({
+    required SyncKeyStore keys,
+    required String localOwner,
+  }) async {
+    final status = await bridge.accountStatus();
+    if (status != CloudAccountStatus.available) {
+      return SyncResult(blockedBy: status);
+    }
+    final key = await keys.getOrCreateKey();
+    final canonical = await keys.getOrSetCanonicalOwner(localOwner);
+    if (canonical != localOwner) {
+      // Second device: unify identity (also clears+rebuilds sync_state dirty).
+      await store.reKeyOwner(localOwner, canonical);
+    } else {
+      // First device: upload the data that pre-dates sync.
+      await store.markAllDirty();
+    }
+    return syncNow(key);
+  }
 
   Future<SyncResult> syncNow(Uint8List key) async {
     final status = await bridge.accountStatus();

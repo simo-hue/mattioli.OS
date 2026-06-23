@@ -51,7 +51,9 @@ class CloudKitPrivateSyncService implements PrivateSyncService {
       SyncEngine(store: store, bridge: bridge, crypto: crypto);
 
   @override
-  Future<PrivateSyncStatus> status() async {
+  Future<PrivateSyncStatus> status() => _status();
+
+  Future<PrivateSyncStatus> _status({int appliedChanges = 0}) async {
     final enabled = await enabledStore.isEnabled();
     final account = await bridge.accountStatus();
     final store = await storeProvider();
@@ -60,6 +62,7 @@ class CloudKitPrivateSyncService implements PrivateSyncService {
       isEnabled: enabled,
       lastSyncedAt: await store.lastFullSync(),
       account: account,
+      appliedChanges: appliedChanges,
     );
   }
 
@@ -69,7 +72,7 @@ class CloudKitPrivateSyncService implements PrivateSyncService {
     final engine = await _engine(store);
     final res = await engine.enable(keys: keys, localOwner: await ownerProvider());
     if (res.ran) await enabledStore.setEnabled(true);
-    return status();
+    return _status(appliedChanges: res.applied);
   }
 
   @override
@@ -85,14 +88,15 @@ class CloudKitPrivateSyncService implements PrivateSyncService {
     // Honor a queued full-reset wipe even when sync is disabled (it's cleanup).
     if (await store.pendingZoneWipe()) {
       // The engine's wipe path doesn't use the key (it's gone after a reset).
-      await (await _engine(store)).syncNow(await keys.readKey() ?? crypto.generateKey());
-      return status();
+      final r = await (await _engine(store))
+          .syncNow(await keys.readKey() ?? crypto.generateKey());
+      return _status(appliedChanges: r.applied);
     }
     if (!await enabledStore.isEnabled()) return status();
     final key = await keys.readKey();
     if (key == null) return status(); // key not in iCloud Keychain yet
-    await (await _engine(store)).syncNow(key);
-    return status();
+    final r = await (await _engine(store)).syncNow(key);
+    return _status(appliedChanges: r.applied);
   }
 
   @override

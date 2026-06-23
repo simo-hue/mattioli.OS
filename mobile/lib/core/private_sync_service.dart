@@ -19,12 +19,18 @@ class PrivateSyncStatus {
   final CloudAccountStatus? account;
   final String? message;
 
+  /// How many remote records the just-finished sync applied locally. Lets a
+  /// caller know whether to refresh the in-memory data providers (>0). 0 for
+  /// status() / no-op.
+  final int appliedChanges;
+
   const PrivateSyncStatus({
     required this.isAvailable,
     required this.isEnabled,
     this.lastSyncedAt,
     this.account,
     this.message,
+    this.appliedChanges = 0,
   });
 
   const PrivateSyncStatus.localOnly()
@@ -32,7 +38,8 @@ class PrivateSyncStatus {
         isEnabled = false,
         lastSyncedAt = null,
         account = null,
-        message = 'iCloud sync is not available on this platform.';
+        message = 'iCloud sync is not available on this platform.',
+        appliedChanges = 0;
 }
 
 abstract class PrivateSyncService {

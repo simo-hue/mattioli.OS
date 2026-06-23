@@ -29,6 +29,7 @@ import 'core/secure_storage_utils.dart';
 import 'package:flutter_localizations/flutter_localizations.dart';
 import 'core/data_mode.dart';
 import 'core/private_sync_service.dart';
+import 'providers/sync_refresh.dart';
 import 'i18n/translations.g.dart';
 
 void main() async {
@@ -317,7 +318,16 @@ class _EvolveAppState extends ConsumerState<EvolveApp>
     // disabled. Fire-and-forget — failures never affect the UI.
     if (state == AppLifecycleState.resumed &&
         ref.read(activeDataModeProvider) == AppDataMode.private) {
-      unawaited(ref.read(privateSyncServiceProvider).syncNow());
+      unawaited(_syncOnResume());
+    }
+  }
+
+  Future<void> _syncOnResume() async {
+    final status = await ref.read(privateSyncServiceProvider).syncNow();
+    // If the sync pulled remote changes, refresh the cached providers so the UI
+    // shows them (the engine writes straight to the local DB).
+    if (mounted && status.appliedChanges > 0) {
+      invalidatePrivateDataProviders(ref);
     }
   }
 

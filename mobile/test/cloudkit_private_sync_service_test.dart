@@ -177,6 +177,26 @@ void main() {
     await db.close();
   });
 
+  test('syncNow reports appliedChanges when it pulls remote records', () async {
+    final cloud = FakeCloudKitBridge();
+    final secrets = _FakeSecretStore(); // shared iCloud Keychain (same key+owner)
+    final dbA = await openFreshV3();
+    await seed(dbA); // profile 'owner' + goal g1
+    final dbB = await openFreshV3();
+    // B needs the FK target before it can apply A's goal.
+    await dbB.insert('profiles',
+        {'id': 'owner', 'created_at': t(1), 'updated_at': t(1)});
+
+    await serviceWith(dbA, cloud, _FakeEnabled(), secrets).enable();
+    final stB = await serviceWith(dbB, cloud, _FakeEnabled(), secrets).enable();
+
+    expect(stB.appliedChanges, greaterThan(0)); // pulled A's records
+    expect(await dbB.query('goals', where: 'id = ?', whereArgs: ['g1']),
+        hasLength(1));
+    await dbA.close();
+    await dbB.close();
+  });
+
   test('requestFullReset queues the wipe when offline, finishes later',
       () async {
     final db = await openFreshV3();

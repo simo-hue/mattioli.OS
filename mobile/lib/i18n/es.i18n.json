@@ -469,6 +469,22 @@
     "newPasswordMin8": "La nueva contraseña debe tener al menos 8 caracteres.",
     "passwordsDontMatch": "Las contraseñas no coinciden"
   },
+  "icloudSync": {
+    "title": "Sincronización de iCloud",
+    "entrySubtitle": "Sincroniza tus datos privados entre tus dispositivos Apple",
+    "enableTitle": "Activar sincronización de iCloud",
+    "syncNow": "Sincronizar ahora",
+    "disclosureTitle": "Cifrado de extremo a extremo",
+    "disclosureBody": "Tus datos privados se sincronizan únicamente a través de tu propia cuenta de iCloud, con cifrado de extremo a extremo, nunca a través de nuestros servidores. La clave de cifrado reside en tu Llavero de iCloud; si desactivas el Llavero de iCloud, los datos sincronizados no podrán recuperarse.",
+    "disclosureAccept": "Activar",
+    "statusIdle": "Actualizado",
+    "statusSyncing": "Sincronizando…",
+    "statusOff": "Sincronización desactivada",
+    "statusNoAccount": "Inicia sesión en iCloud para sincronizar",
+    "statusUnavailable": "iCloud no está disponible ahora",
+    "lastSyncedNever": "Nunca sincronizado",
+    "lastSyncedAt": "Última sincronización {time}"
+  },
   "consent": {
     "systemNotifications": "Notificaciones del sistema",
     "termsAndPrivacy": "Términos y Política de privacidad",

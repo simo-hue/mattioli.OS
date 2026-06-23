@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'dart:ui';
+import 'dart:io';
 import '../../core/rtl.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 import 'package:share_plus/share_plus.dart';
@@ -18,7 +19,9 @@ import 'package:permission_handler/permission_handler.dart';
 import '../../core/theme.dart';
 import '../../core/data_mode.dart';
 import '../../core/private_local_database.dart';
+import '../../core/private_sync_service.dart';
 import '../../core/notifications.dart';
+import 'icloud_sync_screen.dart';
 import '../../providers/settings_provider.dart';
 import '../../providers/consent_provider.dart';
 import '../../core/haptics.dart';
@@ -158,6 +161,19 @@ class PrivacySettingsScreen extends ConsumerWidget {
                   _exportData(context, ref);
                 },
               ),
+              if (isPrivateMode && Platform.isIOS) ...[
+                _buildDivider(context),
+                _buildActionRow(
+                  context: context,
+                  icon: LucideIcons.cloud,
+                  title: context.t.icloudSync.title,
+                  subtitle: context.t.icloudSync.entrySubtitle,
+                  onTap: () {
+                    ref.hapticLight();
+                    Navigator.push(context, IcloudSyncScreen.route());
+                  },
+                ),
+              ],
               _buildDivider(context),
               _buildActionRow(
                 context: context,
@@ -1190,6 +1206,13 @@ class PrivacySettingsScreen extends ConsumerWidget {
     try {
       if (ref.read(activeDataModeProvider) == AppDataMode.private) {
         await NotificationService().cancelAll();
+        // Wipe the iCloud zone + encryption keys when sync was on. Best-effort:
+        // a failure here must never block the local data wipe below.
+        try {
+          await ref.read(privateSyncServiceProvider).requestFullReset();
+        } catch (e, stack) {
+          AppLogger.error('iCloud full reset failed during delete', e, stack);
+        }
         await ref.read(privateLocalDatabaseProvider).deleteAllPrivateData();
         ref.invalidate(goalsProvider);
         ref.invalidate(habitLogsProvider);

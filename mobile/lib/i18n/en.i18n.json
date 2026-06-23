@@ -469,6 +469,22 @@
     "newPasswordMin8": "The new password must be at least 8 characters.",
     "passwordsDontMatch": "Passwords do not match."
   },
+  "icloudSync": {
+    "title": "iCloud Sync",
+    "entrySubtitle": "Sync your private data across your Apple devices",
+    "enableTitle": "Enable iCloud Sync",
+    "syncNow": "Sync now",
+    "disclosureTitle": "End-to-end encrypted",
+    "disclosureBody": "Your private data syncs only through your own iCloud account, end-to-end encrypted — never through our servers. The encryption key lives in your iCloud Keychain; if you turn iCloud Keychain off, synced data can't be recovered.",
+    "disclosureAccept": "Enable",
+    "statusIdle": "Up to date",
+    "statusSyncing": "Syncing…",
+    "statusOff": "Sync is off",
+    "statusNoAccount": "Sign in to iCloud to sync",
+    "statusUnavailable": "iCloud is unavailable right now",
+    "lastSyncedNever": "Never synced",
+    "lastSyncedAt": "Last synced {time}"
+  },
   "consent": {
     "systemNotifications": "System Notifications",
     "termsAndPrivacy": "Terms and Privacy Policy",

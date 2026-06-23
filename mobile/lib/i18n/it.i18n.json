@@ -469,6 +469,22 @@
     "newPasswordMin8": "La nuova password deve essere di almeno 8 caratteri.",
     "passwordsDontMatch": "Le password non coincidono."
   },
+  "icloudSync": {
+    "title": "Sincronizzazione iCloud",
+    "entrySubtitle": "Sincronizza i tuoi dati privati tra i tuoi dispositivi Apple",
+    "enableTitle": "Abilita sincronizzazione iCloud",
+    "syncNow": "Sincronizza ora",
+    "disclosureTitle": "Crittografia end-to-end",
+    "disclosureBody": "I tuoi dati privati si sincronizzano solo tramite il tuo account iCloud, con crittografia end-to-end — mai attraverso i nostri server. La chiave di crittografia risiede nel tuo Portachiavi iCloud; se disattivi il Portachiavi iCloud, i dati sincronizzati non potranno essere recuperati.",
+    "disclosureAccept": "Abilita",
+    "statusIdle": "Aggiornato",
+    "statusSyncing": "Sincronizzazione…",
+    "statusOff": "Sincronizzazione disattivata",
+    "statusNoAccount": "Accedi a iCloud per sincronizzare",
+    "statusUnavailable": "iCloud non è disponibile al momento",
+    "lastSyncedNever": "Mai sincronizzato",
+    "lastSyncedAt": "Ultima sincronizzazione {time}"
+  },
   "consent": {
     "systemNotifications": "Notifiche di Sistema",
     "termsAndPrivacy": "Termini e Privacy Policy",

@@ -26,6 +26,21 @@ class SecureStorageUtils {
     ),
   );
 
+  /// Storage for the iCloud-sync secrets (CloudKit payload encryption key +
+  /// canonical sync-owner id). `synchronizable: true` sets kSecAttrSynchronizable
+  /// so iOS syncs these items through the user's iCloud Keychain to their other
+  /// Apple devices — which is exactly how a second device obtains the E2E key.
+  /// Deliberately the OPPOSITE of [_deviceLocalStorage]: this is the only secret
+  /// allowed to leave the device, and only via the user's own iCloud Keychain.
+  /// iOS-only behavior; Android uses the same encrypted store (sync is iOS-only).
+  static const FlutterSecureStorage _syncedStorage = FlutterSecureStorage(
+    aOptions: _aOptions,
+    iOptions: IOSOptions(
+      accessibility: KeychainAccessibility.first_unlock,
+      synchronizable: true,
+    ),
+  );
+
   static Future<String?> read(String key) {
     return storage.read(key: key);
   }
@@ -33,6 +48,11 @@ class SecureStorageUtils {
   /// Read a Private-Mode device-local secret (see [_deviceLocalStorage]).
   static Future<String?> readDeviceLocal(String key) {
     return _deviceLocalStorage.read(key: key);
+  }
+
+  /// Read an iCloud-synced sync secret (see [_syncedStorage]).
+  static Future<String?> readSynced(String key) {
+    return _syncedStorage.read(key: key);
   }
 
   static Future<bool> containsKey(String key) {
@@ -46,6 +66,11 @@ class SecureStorageUtils {
   /// Delete a Private-Mode device-local secret (see [_deviceLocalStorage]).
   static Future<void> deleteDeviceLocal(String key) {
     return _deviceLocalStorage.delete(key: key);
+  }
+
+  /// Delete an iCloud-synced sync secret (see [_syncedStorage]).
+  static Future<void> deleteSynced(String key) {
+    return _syncedStorage.delete(key: key);
   }
 
   static Future<void> write(
@@ -63,6 +88,15 @@ class SecureStorageUtils {
     String context = 'SecureStorage',
   }) {
     return _writeTo(_deviceLocalStorage, key, value, context);
+  }
+
+  /// Write an iCloud-synced sync secret (see [_syncedStorage]).
+  static Future<void> writeSynced(
+    String key,
+    String value, {
+    String context = 'SecureStorage',
+  }) {
+    return _writeTo(_syncedStorage, key, value, context);
   }
 
   static Future<void> _writeTo(

@@ -1,3 +1,5 @@
+import 'dart:async';
+
 import 'package:shared_preferences/shared_preferences.dart';
 
 import 'cloudkit_bridge.dart';
@@ -37,6 +39,10 @@ class CloudKitPrivateSyncService implements PrivateSyncService {
   final SyncCrypto crypto;
   final Future<SyncLocalStore> Function() storeProvider;
   final Future<String> Function() ownerProvider;
+
+  /// Persists the canonical sync-owner as this device's owner id after a
+  /// second-device merge re-keys local rows onto it (see [enable]).
+  final Future<void> Function(String canonicalOwner) ownerWriter;
   final SyncEnabledStore enabledStore;
 
   CloudKitPrivateSyncService({
@@ -45,11 +51,36 @@ class CloudKitPrivateSyncService implements PrivateSyncService {
     required this.crypto,
     required this.storeProvider,
     required this.ownerProvider,
+    required this.ownerWriter,
     required this.enabledStore,
   });
 
   Future<SyncEngine> _engine(SyncLocalStore store) async =>
       SyncEngine(store: store, bridge: bridge, crypto: crypto);
+
+  /// Tail of the in-flight operation chain. Each mutating op links onto it so
+  /// only ONE runs at a time. Without this, the foreground-resume syncNow and a
+  /// user-tapped syncNow (or an enable) could run concurrently against the same
+  /// store and double-push / interleave token writes. Reads ([status]) stay off
+  /// the lock so the UI never blocks on an in-progress sync.
+  Future<void> _tail = Future<void>.value();
+
+  Future<T> _runExclusive<T>(Future<T> Function() action) {
+    final completer = Completer<T>();
+    final prev = _tail;
+    // Next op waits for this one to settle (ignore errors so one failure doesn't
+    // poison the whole chain).
+    _tail = completer.future.then<void>((_) {}, onError: (_) {});
+    () async {
+      await prev;
+      try {
+        completer.complete(await action());
+      } catch (e, st) {
+        completer.completeError(e, st);
+      }
+    }();
+    return completer.future;
+  }
 
   @override
   Future<PrivateSyncStatus> status() => _status();
@@ -68,15 +99,27 @@ class CloudKitPrivateSyncService implements PrivateSyncService {
   }
 
   @override
-  Future<PrivateSyncStatus> enable() async {
+  Future<PrivateSyncStatus> enable() => _runExclusive(_enable);
+
+  Future<PrivateSyncStatus> _enable() async {
     try {
       AppLogger.info('[CloudKit] Enabling sync...');
       final store = await storeProvider();
       final engine = await _engine(store);
-      final res = await engine.enable(keys: keys, localOwner: await ownerProvider());
+      final localOwner = await ownerProvider();
+      final res = await engine.enable(keys: keys, localOwner: localOwner);
       if (res.ran) {
         await enabledStore.setEnabled(true);
         AppLogger.info('[CloudKit] Sync enabled successfully');
+        
+        // On a second device the engine re-keyed every local row onto the
+        // canonical sync-owner. Persist it as THIS device's owner id too, or
+        // ownerId() would keep returning the old device-local id and every data
+        // query (which filters by owner) would miss the re-keyed rows.
+        final canonical = await keys.readCanonicalOwner();
+        if (canonical != null && canonical.isNotEmpty && canonical != localOwner) {
+          await ownerWriter(canonical);
+        }
       } else {
         AppLogger.info('[CloudKit] Sync enable skipped (blocked by: ${res.blockedBy})');
       }
@@ -88,21 +131,23 @@ class CloudKitPrivateSyncService implements PrivateSyncService {
   }
 
   @override
-  Future<PrivateSyncStatus> disable() async {
-    try {
-      AppLogger.info('[CloudKit] Disabling sync...');
-      // Stop syncing; leave the CloudKit data + key intact (re-enable resumes).
-      await enabledStore.setEnabled(false);
-      AppLogger.info('[CloudKit] Sync disabled successfully');
-      return status();
-    } catch (e, stack) {
-      AppLogger.error('[CloudKit] Failed to disable sync', e, stack);
-      rethrow;
-    }
-  }
+  Future<PrivateSyncStatus> disable() => _runExclusive(() async {
+        try {
+          AppLogger.info('[CloudKit] Disabling sync...');
+          // Stop syncing; leave the CloudKit data + key intact (re-enable resumes).
+          await enabledStore.setEnabled(false);
+          AppLogger.info('[CloudKit] Sync disabled successfully');
+          return _status();
+        } catch (e, stack) {
+          AppLogger.error('[CloudKit] Failed to disable sync', e, stack);
+          rethrow;
+        }
+      });
 
   @override
-  Future<PrivateSyncStatus> syncNow() async {
+  Future<PrivateSyncStatus> syncNow() => _runExclusive(_syncNow);
+
+  Future<PrivateSyncStatus> _syncNow() async {
     try {
       final store = await storeProvider();
       // Honor a queued full-reset wipe even when sync is disabled (it's cleanup).
@@ -133,20 +178,21 @@ class CloudKitPrivateSyncService implements PrivateSyncService {
   }
 
   @override
-  Future<PrivateSyncStatus> requestFullReset() async {
-    try {
-      AppLogger.info('[CloudKit] Requesting full reset...');
-      final store = await storeProvider();
-      await store.setPendingZoneWipe(true);
-      await enabledStore.setEnabled(false);
-      await keys.deleteAll(); // remove shared key + owner from iCloud Keychain
-      // Attempt the cloud wipe now; if offline it stays queued (pending_zone_wipe)
-      // and a later syncNow completes it.
-      await syncNow();
-      return status();
-    } catch (e, stack) {
-      AppLogger.error('[CloudKit] Request full reset failed', e, stack);
-      rethrow;
-    }
-  }
+  Future<PrivateSyncStatus> requestFullReset() => _runExclusive(() async {
+        try {
+          AppLogger.info('[CloudKit] Requesting full reset...');
+          final store = await storeProvider();
+          await store.setPendingZoneWipe(true);
+          await enabledStore.setEnabled(false);
+          await keys.deleteAll(); // remove shared key + owner from iCloud Keychain
+          // Attempt the cloud wipe now; if offline it stays queued
+          // (pending_zone_wipe) and a later syncNow completes it. Call the
+          // un-locked _syncNow directly — we already hold the lock.
+          await _syncNow();
+          return _status();
+        } catch (e, stack) {
+          AppLogger.error('[CloudKit] Request full reset failed', e, stack);
+          rethrow;
+        }
+      });
 }

@@ -103,6 +103,58 @@ void main() {
       await db.close();
     });
 
+    // Mirrors PrivateLocalDatabase.deleteAllPrivateData's sync-bookkeeping
+    // reset (#6/#7). The class itself needs SQLCipher + path_provider (a
+    // device), so this locks the SQL contract it relies on: a full local wipe
+    // clears sync_state + the delta token, but MUST preserve pending_zone_wipe
+    // so the queued cloud-zone wipe still runs on the next sync.
+    test('#6/#7 full wipe clears sync_state + token but keeps pending_zone_wipe',
+        () async {
+      final db = await openFreshV3();
+      await seedProfile(db, 'owner');
+      await db.insert('goals', {
+        'id': 'g1',
+        'user_id': 'owner',
+        'title': 'Read',
+        'color': '#FFFFFF',
+        'start_date': now,
+        'created_at': now,
+        'updated_at': now,
+      });
+      // requestFullReset (runs first) queued the cloud wipe + left a stale token.
+      await db.update(
+        PrivateDbSchema.syncMetaTable,
+        {
+          'server_change_token': 'tok-123',
+          'last_full_sync_at': now,
+          'pending_zone_wipe': 1,
+        },
+        where: 'id = 1',
+      );
+
+      // --- the exact statements deleteAllPrivateData runs ---
+      await db.delete('goals'); // fires the tombstone trigger
+      await db.delete('profiles');
+      await seedProfile(db, 'owner'); // _ensureProfile re-queues a profile row
+      // sanity: at this point sync_state is non-empty (tombstones + new profile)
+      expect(await db.query(PrivateDbSchema.syncStateTable), isNotEmpty);
+      await db.delete(PrivateDbSchema.syncStateTable);
+      await db.update(
+        PrivateDbSchema.syncMetaTable,
+        {'server_change_token': null, 'last_full_sync_at': null},
+        where: 'id = 1',
+      );
+      // ------------------------------------------------------
+
+      expect(await db.query(PrivateDbSchema.syncStateTable), isEmpty);
+      final meta =
+          (await db.query(PrivateDbSchema.syncMetaTable, where: 'id = 1')).first;
+      expect(meta['server_change_token'], isNull);
+      expect(meta['last_full_sync_at'], isNull);
+      expect(meta['pending_zone_wipe'], 1, reason: 'queued cloud wipe preserved');
+      await db.close();
+    });
+
     test('category insert without updated_at is COALESCEd in sync_state',
         () async {
       final db = await openFreshV3();

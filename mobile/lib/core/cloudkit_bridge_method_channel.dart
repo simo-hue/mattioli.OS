@@ -13,19 +13,39 @@ class MethodChannelCloudKitBridge implements CloudKitBridge {
 
   @override
   Future<CloudAccountStatus> accountStatus() async {
-    final raw = await channel.invokeMethod<String>('accountStatus');
-    return _statusFromString(raw);
+    // If the native channel isn't registered (e.g. a lifecycle regression where
+    // neither AppDelegate nor SceneDelegate wired it up), degrade to
+    // couldNotDetermine instead of throwing. The engine treats that as "iCloud
+    // unavailable" and no-ops, so local Private mode keeps working. This is the
+    // single gate the engine checks before every sync, so it's the one call
+    // that must never throw on a missing plugin.
+    try {
+      final raw = await channel.invokeMethod<String>('accountStatus');
+      return _statusFromString(raw);
+    } on MissingPluginException {
+      return CloudAccountStatus.couldNotDetermine;
+    }
   }
 
   @override
-  Future<void> ensureZone() => channel.invokeMethod<void>('ensureZone');
+  Future<void> ensureZone() async {
+    try {
+      await channel.invokeMethod<void>('ensureZone');
+    } on MissingPluginException {
+      // No-op: the account gate already short-circuits sync when the channel is
+      // missing; this just keeps a stray call from crashing.
+    }
+  }
 
   @override
   Future<SaveOutcome> saveRecords(List<CloudRecord> records) async {
     final res = await channel.invokeMapMethod<String, dynamic>('saveRecords', {
       'records': [for (final r in records) _encodeRecord(r)],
-    });
-    if (res == null) return const SaveOutcome();
+    }).catchError(
+      (_) => <String, dynamic>{}, // missing plugin → nothing saved
+      test: (e) => e is MissingPluginException,
+    );
+    if (res == null || res.isEmpty) return const SaveOutcome();
     return SaveOutcome(
       saved: _stringList(res['saved']),
       conflicts: [
@@ -47,8 +67,11 @@ class MethodChannelCloudKitBridge implements CloudKitBridge {
     final res = await channel.invokeMapMethod<String, dynamic>(
       'fetchChanges',
       {'token': token},
+    ).catchError(
+      (_) => <String, dynamic>{}, // missing plugin → no remote changes
+      test: (e) => e is MissingPluginException,
     );
-    if (res == null) return const FetchOutcome();
+    if (res == null || res.isEmpty) return const FetchOutcome();
     return FetchOutcome(
       records: [for (final r in _mapList(res['records'])) _decodeRecord(r)],
       newToken: res['newToken'] as String?,
@@ -57,11 +80,23 @@ class MethodChannelCloudKitBridge implements CloudKitBridge {
   }
 
   @override
-  Future<void> deleteRecords(List<String> recordNames) =>
-      channel.invokeMethod<void>('deleteRecords', {'recordNames': recordNames});
+  Future<void> deleteRecords(List<String> recordNames) async {
+    try {
+      await channel
+          .invokeMethod<void>('deleteRecords', {'recordNames': recordNames});
+    } on MissingPluginException {
+      // No-op (see [accountStatus]).
+    }
+  }
 
   @override
-  Future<void> deleteZone() => channel.invokeMethod<void>('deleteZone');
+  Future<void> deleteZone() async {
+    try {
+      await channel.invokeMethod<void>('deleteZone');
+    } on MissingPluginException {
+      // No-op (see [accountStatus]).
+    }
+  }
 
   // ── (de)serialization ──────────────────────────────────────────────────────
 

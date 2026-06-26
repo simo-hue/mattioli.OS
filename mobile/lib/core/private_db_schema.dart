@@ -32,6 +32,15 @@ class PrivateDbSchema {
   static const String syncStateTable = 'sync_state';
   static const String syncMetaTable = 'sync_meta';
 
+  /// Columns whose values are device-local and MUST NOT cross the sync boundary.
+  /// `profiles.avatar_url` is a local filesystem path to the cached avatar — the
+  /// image itself rides along as a CloudKit asset, but the path is meaningless
+  /// (and different) on another device. The engine strips these from the push
+  /// payload and the local store preserves the existing local value on apply.
+  static const Map<String, List<String>> localOnlyColumns = {
+    'profiles': ['avatar_url'],
+  };
+
   // ── sqflite open callbacks ────────────────────────────────────────────────
 
   static Future<void> onCreate(Database db, int version) async {

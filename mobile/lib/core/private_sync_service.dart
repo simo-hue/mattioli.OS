@@ -90,6 +90,7 @@ final privateSyncServiceProvider = Provider<PrivateSyncService>((ref) {
     crypto: SyncCrypto(),
     storeProvider: () => PrivateLocalDatabase().syncStore(),
     ownerProvider: () => PrivateLocalDatabase().ownerId(),
+    ownerWriter: (id) => PrivateLocalDatabase().adoptOwner(id),
     enabledStore: PrefsSyncEnabledStore(prefs),
   );
 });

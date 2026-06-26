@@ -156,7 +156,13 @@ enum CloudKitSyncBridge {
     }
     let toSave: [CKRecord] = rawRecords.map { encodeToRecord($0) }
     let op = CKModifyRecordsOperation(recordsToSave: toSave, recordIDsToDelete: nil)
-    op.savePolicy = .ifServerRecordUnchanged
+    // .allKeys (overwrite), NOT .ifServerRecordUnchanged: each push builds a
+    // fresh CKRecord with no server change tag, so .ifServerRecordUnchanged
+    // would reject EVERY update to an already-synced record as
+    // serverRecordChanged and the edit would never propagate. The Dart engine
+    // does authoritative last-write-wins itself (pull-before-push + updatedAt),
+    // so server-side change-tag gating is both redundant and harmful here.
+    op.savePolicy = .allKeys
 
     var saved: [String] = []
     var conflicts: [[String: Any]] = []

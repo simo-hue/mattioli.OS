@@ -1,6 +1,7 @@
 import 'dart:typed_data';
 
 import 'cloudkit_bridge.dart';
+import 'private_db_schema.dart';
 import 'sync_crypto.dart';
 import 'sync_key_store.dart';
 import 'sync_local_store.dart';
@@ -96,8 +97,14 @@ class SyncEngine {
     }
 
     await bridge.ensureZone();
-    final pushed = await _push(key);
+    // Pull BEFORE push: a newer remote record overwrites the local copy and
+    // clears its dirty flag, so a stale local edit is never pushed over it. With
+    // the native savePolicy of `.allKeys` (overwrite), this ordering is what
+    // enforces last-write-wins — pushing first could clobber a newer cloud
+    // record. It also gives a freshly-enabled second device the canonical data
+    // before it uploads its own.
     final pull = await _pull(key);
+    final pushed = await _push(key);
     await store.setLastFullSync(_nowIso());
     return SyncResult(pushed: pushed, applied: pull.$1, skipped: pull.$2);
   }
@@ -118,12 +125,18 @@ class SyncEngine {
         records.add(_tombstone(e.recordName, e.tableName, e.updatedAt));
         continue;
       }
+      final data = Map<String, dynamic>.from(row);
+      // Drop device-local columns (e.g. profiles.avatar_url, a local file path)
+      // so they never overwrite another device's local value.
+      for (final col in PrivateDbSchema.localOnlyColumns[e.tableName] ?? const []) {
+        data.remove(col);
+      }
       records.add(CloudRecord(
         recordName: e.recordName,
         tableName: e.tableName,
         updatedAtMs: _ms((row['updated_at'] as String?) ?? e.updatedAt),
         deleted: false,
-        payload: crypto.encryptJson(Map<String, dynamic>.from(row), key),
+        payload: crypto.encryptJson(data, key),
       ));
     }
 
@@ -149,7 +162,8 @@ class SyncEngine {
   Future<(int, int)> _pull(Uint8List key) async {
     // Collect all changed records across pages, then apply FK-safely.
     final all = <CloudRecord>[];
-    String? token = await store.changeToken();
+    final originalToken = await store.changeToken();
+    String? token = originalToken;
     while (true) {
       final out = await bridge.fetchChanges(token);
       all.addAll(out.records);
@@ -161,22 +175,32 @@ class SyncEngine {
 
     var applied = 0;
     var skipped = 0;
+    var deferredFutureRecord = false;
+    final nowMs = DateTime.now().toUtc().millisecondsSinceEpoch;
     for (final rec in all) {
+      if (rec.updatedAtMs > nowMs + _maxFutureSkewMs) {
+        // Clock-skew guard: another device's clock is ahead of ours. DEFER this
+        // record rather than dropping it — see the token handling below.
+        deferredFutureRecord = true;
+        skipped++;
+        continue;
+      }
       if (await _applyRemote(rec, key)) {
         applied++;
       } else {
         skipped++;
       }
     }
-    await store.setChangeToken(token);
+    // Only advance the change token if nothing was deferred. A future-skewed
+    // record must be re-fetched on a later sync (once our clock catches up),
+    // so we hold the token at its pre-fetch value instead of stepping past the
+    // record and losing it forever. Re-applying the already-applied records on
+    // the next pull is harmless (LWW skips them).
+    await store.setChangeToken(deferredFutureRecord ? originalToken : token);
     return (applied, skipped);
   }
 
   Future<bool> _applyRemote(CloudRecord rec, Uint8List key) async {
-    final nowMs = DateTime.now().toUtc().millisecondsSinceEpoch;
-    if (rec.updatedAtMs > nowMs + _maxFutureSkewMs) {
-      return false; // implausibly-future timestamp — ignore (clock-skew guard)
-    }
     final local = await store.stateOf(rec.recordName);
     final localMs = local == null ? -1 : _ms(local.updatedAt);
     // Strict >: equal timestamps keep the local copy. Exact-millisecond

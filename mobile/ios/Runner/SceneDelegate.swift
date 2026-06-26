@@ -11,6 +11,12 @@ class SceneDelegate: FlutterSceneDelegate {
 
     if let controller = window?.rootViewController as? FlutterViewController {
       AppDelegate.registerPrivateStorageChannel(controller.binaryMessenger)
+      // Must also register here: with a SceneDelegate configured, the
+      // FlutterViewController is created per-scene, so AppDelegate's
+      // didFinishLaunching never sees a rootViewController and the
+      // `evolve/cloudkit` channel would otherwise be missing — every CloudKit
+      // call from Dart would throw MissingPluginException.
+      CloudKitSyncBridge.register(controller.binaryMessenger)
     }
   }
 }

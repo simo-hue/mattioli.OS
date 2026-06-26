@@ -79,21 +79,53 @@ class SyncLocalStore {
       );
 
   /// Apply a pulled upsert: write the row, then clear dirty in the same txn.
+  ///
+  /// FK is toggled OFF for the write (outside the txn — it's a no-op once BEGIN
+  /// runs, same as [reKeyOwner]). `ConflictAlgorithm.replace` is `INSERT OR
+  /// REPLACE`, which DELETEs any conflicting row before inserting; with FK ON
+  /// that delete cascades, so applying a pulled parent row (e.g. `profiles`)
+  /// would wipe every child (`goals`/`goal_logs`/…) AND emit child tombstones
+  /// that then push deletes to the cloud. With FK OFF the REPLACE re-inserts the
+  /// same primary key without cascading, so children survive. The pull applies
+  /// rows in FK-safe parent→child order, so disabling enforcement here is safe.
   Future<void> applyUpsert(
     String table,
     String recordName,
     Map<String, Object?> row,
     String at,
   ) async {
-    await _db.transaction((txn) async {
-      await txn.insert(table, row, conflictAlgorithm: ConflictAlgorithm.replace);
-      await txn.update(
-        PrivateDbSchema.syncStateTable,
-        {'dirty': 0, 'deleted': 0, 'last_synced_at': at, 'last_error': null},
-        where: 'record_name = ?',
-        whereArgs: [recordName],
-      );
-    });
+    await _db.execute('PRAGMA foreign_keys = OFF');
+    try {
+      await _db.transaction((txn) async {
+        // Device-local columns (e.g. profiles.avatar_url) are stripped from the
+        // payload on push, so the pulled row lacks them; a plain REPLACE would
+        // therefore NULL them out. Carry the existing local value forward.
+        final localOnly = PrivateDbSchema.localOnlyColumns[table];
+        if (localOnly != null && localOnly.isNotEmpty) {
+          final existing = await txn.query(
+            table,
+            columns: localOnly,
+            where: 'id = ?',
+            whereArgs: [row['id']],
+            limit: 1,
+          );
+          final current = existing.isEmpty ? const {} : existing.first;
+          for (final col in localOnly) {
+            row[col] = current[col];
+          }
+        }
+        await txn.insert(table, row,
+            conflictAlgorithm: ConflictAlgorithm.replace);
+        await txn.update(
+          PrivateDbSchema.syncStateTable,
+          {'dirty': 0, 'deleted': 0, 'last_synced_at': at, 'last_error': null},
+          where: 'record_name = ?',
+          whereArgs: [recordName],
+        );
+      });
+    } finally {
+      await _db.execute('PRAGMA foreign_keys = ON');
+    }
   }
 
   /// Apply a pulled tombstone: delete the row, then stamp the tombstone with the

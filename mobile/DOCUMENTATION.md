@@ -2164,3 +2164,44 @@ iCloud Sync core is implemented, unit-tested (160), and iOS-compiling. Remaining
 *Details*: Fixed a UI bug in the 'Best Habits' (Abitudini Migliori) widget on the Global Trend tab where the completion rate percentage was being multiplied by 100 incorrectly, displaying 10000% instead of 100%.
 *Tech Notes*: 
 - Modified `lib/ui/widgets/statistics/global_trend_tab_widget.dart` to remove the extraneous `* 100` from the rate calculation since the underlying provider already returns it as a percentage.
+---
+
+- **[2026-06-26]: iCloud Sync & Privacy — 11-bug fix pass**
+  - *Details*: Implemented all 11 findings from `ICLOUD_SYNC_PRIVACY_BUGS.md`
+    (8 code-fixed, #10/#11/identity-edge documented as accepted limitations).
+    Work delivered in two batches (data-loss bugs first, verified, then the
+    rest) on branch `fix/icloud-sync-privacy-bugs`.
+  - *Tech Notes*:
+    - **#1 (CRITICAL, data loss)**: `SyncLocalStore.applyUpsert` now runs the
+      `INSERT OR REPLACE` with `PRAGMA foreign_keys = OFF` (toggled outside the
+      txn, mirroring `reKeyOwner`), so applying a pulled parent (`profiles`)
+      no longer cascade-deletes children and queues spurious child tombstones.
+    - **#2**: new `PrivateLocalDatabase.adoptOwner(canonical)` writes the
+      device-local owner keychain key + cache; `CloudKitPrivateSyncService`
+      gained an injected `ownerWriter` and calls it after `enable()` when the
+      canonical sync-owner differs from the local owner (second-device merge).
+    - **#3**: `SceneDelegate.scene(willConnectTo:)` now calls
+      `CloudKitSyncBridge.register`; `MethodChannelCloudKitBridge` catches
+      `MissingPluginException` (accountStatus → `couldNotDetermine`, mutating
+      calls → no-op, fetch/save → empty outcome).
+    - **#4**: native `CKModifyRecordsOperation.savePolicy = .allKeys` (was
+      `.ifServerRecordUnchanged`, which rejected every edit to an existing
+      record); `SyncEngine.syncNow` reordered to **pull-then-push** so the
+      client-side `updatedAt` LWW stays authoritative and a stale local edit
+      can't clobber a newer cloud record.
+    - **#5**: `_runExclusive` in-flight `Future` chain serializes
+      `enable`/`syncNow`/`disable`/`requestFullReset` (private un-locked
+      `_enable`/`_syncNow` bodies avoid re-entrant deadlock).
+    - **#6/#7**: `deleteAllPrivateData` now `DELETE`s `sync_state` and nulls
+      `server_change_token`/`last_full_sync_at`, but **preserves**
+      `pending_zone_wipe` so a queued offline cloud wipe still runs.
+    - **#8**: `PrivateDbSchema.localOnlyColumns = {profiles: [avatar_url]}` —
+      the engine strips these from the push payload and the store preserves the
+      existing local value on apply (avatar path is device-local).
+    - **#9**: `_pull` defers future-skewed records and holds the change token at
+      its pre-fetch value (was advancing past them → permanent drop).
+    - **Tests**: regression tests added for #1, #2, #5, #6/#7, #8, #9
+      (sync_engine_test, cloudkit_private_sync_service_test,
+      private_db_schema_test). All sync/privacy suites green; `flutter analyze`
+      clean on the 7 changed lib files.
+    - **No new dependencies. No new endpoints.** Native change is iOS-only.

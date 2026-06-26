@@ -55,3 +55,28 @@ CANNOT be done from code:
 
 ### 2026-07-01: Fix Statistics for imported data
 The backup import service now correctly calculates streaks. If your statistics page is still showing 0 for past data, you will need to **re-import your backup** or manually trigger a recalculation on the local database for historical logs.
+---
+
+## iCloud Sync / Privacy bug-fix pass (2026-06-26, branch `fix/icloud-sync-privacy-bugs`)
+
+Manual actions required for the fixes landed this session (see `ICLOUD_SYNC_PRIVACY_BUGS.md` for full status table):
+
+- [ ] **On-device verify #3 (CloudKit channel under Scene lifecycle).** The fix
+      registers `CloudKitSyncBridge` in `SceneDelegate.scene(willConnectTo:)`.
+      This cannot be unit-tested — run on a real device/simulator and confirm
+      `accountStatus` returns a real value (no `MissingPluginException`) and a
+      first sync works. The Dart bridge now degrades gracefully if the channel
+      is ever missing, so a regression would show as "sync unavailable" rather
+      than a crash.
+- [ ] **#11 disclosure copy (product, not code).** "Delete private data" only
+      wipes the originating device's iCloud copy; another enabled device will
+      resurrect the data on its next sync. The settings/reset disclosure must
+      tell the user to run delete on **each** device. Confirm the copy before
+      release.
+- [ ] **(Pre-existing, not from this work) Full `flutter test` is blocked
+      locally** by two missing files that this environment doesn't generate:
+      `lib/core/sentry_config.dart` (git-ignored secret) and
+      `lib/i18n/translations.g.dart` (code-gen output). 16 non-sync suites fail
+      to *load* because of them. All iCloud-sync/privacy suites compile and pass.
+      Run `dart run slang` (or your i18n codegen) and provide `sentry_config.dart`
+      to exercise the full suite.

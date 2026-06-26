@@ -60,6 +60,19 @@ class PrivateLocalDatabase implements PrivateDataStore {
     return id;
   }
 
+  /// Persist [canonical] as this device's owner id after the sync engine
+  /// re-keyed all local rows onto the canonical sync-owner (second-device
+  /// merge). Without this, [ownerId] keeps returning the old device-local id
+  /// and every owner-filtered query misses the re-keyed rows.
+  Future<void> adoptOwner(String canonical) async {
+    await SecureStorageUtils.writeDeviceLocal(
+      _ownerIdKey,
+      canonical,
+      context: '[PrivateDB] adopt canonical owner',
+    );
+    _ownerId = canonical;
+  }
+
   @override
   Future<void> ensureReady() async {
     final db = await _database();
@@ -581,6 +594,20 @@ class PrivateLocalDatabase implements PrivateDataStore {
     });
     await _deletePrivateProfileFiles(profileRow['avatar_url'] as String?);
     await _ensureProfile(db);
+
+    // Reset sync bookkeeping after the wipe. The domain deletes above each fired
+    // a tombstone trigger, and _ensureProfile re-queued a fresh profile — drop
+    // ALL of sync_state so a future re-enable starts from a clean slate, and
+    // clear the delta-fetch token + last-full-sync. PRESERVE pending_zone_wipe:
+    // requestFullReset (called just before this) queued the cloud-zone wipe and
+    // a later syncNow must still carry it out; clearing it here would orphan the
+    // user's data in iCloud forever.
+    await db.delete(PrivateDbSchema.syncStateTable);
+    await db.update(
+      PrivateDbSchema.syncMetaTable,
+      {'server_change_token': null, 'last_full_sync_at': null},
+      where: 'id = 1',
+    );
   }
 
   @override

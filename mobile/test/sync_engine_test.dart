@@ -135,6 +135,43 @@ void main() {
       await dbB.close();
     });
 
+    test('#1 applying a pulled parent (profiles) does not cascade-delete '
+        'children', () async {
+      final cloud = FakeCloudKitBridge();
+      final dbA = await openFreshV3();
+      final dbB = await openFreshV3();
+      await seedOwner(dbA);
+      await seedOwner(dbB);
+      final a = engine(dbA, cloud);
+      final b = engine(dbB, cloud);
+
+      // Both devices end up with goal g1 (a child of profiles), synced + clean.
+      await insertGoal(dbA, 'g1', title: 'keepme', at: t(10));
+      await a.syncNow(key);
+      await b.syncNow(key);
+      expect((await readGoal(dbB, 'g1'))!['title'], 'keepme');
+
+      // A edits its profile -> pushes a fresh profiles:owner record.
+      await dbA.update('profiles', {'updated_at': t(30)},
+          where: 'id = ?', whereArgs: ['owner']);
+      await a.syncNow(key);
+
+      // B pulls the profile upsert. With FK ON, INSERT OR REPLACE on profiles
+      // would DELETE the old row first and cascade-wipe g1 (and queue a
+      // tombstone that pushes the delete back to the cloud). The FK-off apply
+      // must keep the child intact and unqueued.
+      await b.syncNow(key);
+
+      expect(await readGoal(dbB, 'g1'), isNotNull,
+          reason: 'child goal must survive a pulled parent upsert');
+      expect((await readGoal(dbB, 'g1'))!['title'], 'keepme');
+      final st = (await syncRow(dbB, 'goals:g1'))!;
+      expect(st['deleted'], 0, reason: 'no spurious child tombstone');
+      expect(st['dirty'], 0, reason: 'child not re-queued for push');
+      await dbA.close();
+      await dbB.close();
+    });
+
     test('LWW: a newer remote edit overwrites an older local edit', () async {
       final cloud = FakeCloudKitBridge();
       final dbA = await openFreshV3();
@@ -152,7 +189,7 @@ void main() {
       await a.syncNow(key); // cloud g1@30
 
       await updateGoal(dbB, 'g1', title: 'vB', at: t(20)); // older
-      await b.syncNow(key); // push@20 -> conflict; pull@30 -> applied
+      await b.syncNow(key); // pull@30 applied (clears dirty) -> push: nothing
 
       expect((await readGoal(dbB, 'g1'))!['title'], 'vA');
       expect((await syncRow(dbB, 'goals:g1'))!['dirty'], 0);
@@ -206,6 +243,45 @@ void main() {
       await dbA.close();
       await dbB.close();
     });
+
+    test('#8 avatar_url is stripped on push and the local value is preserved',
+        () async {
+      final cloud = FakeCloudKitBridge();
+      final dbA = await openFreshV3();
+      final dbB = await openFreshV3();
+      await seedOwner(dbA);
+      await seedOwner(dbB);
+      final a = engine(dbA, cloud);
+      final b = engine(dbB, cloud);
+
+      // Each device caches its avatar at a DIFFERENT local path.
+      await dbA.update('profiles', {'avatar_url': '/A/avatar.jpg'},
+          where: 'id = ?', whereArgs: ['owner']);
+      await dbB.update('profiles', {'avatar_url': '/B/avatar.jpg'},
+          where: 'id = ?', whereArgs: ['owner']);
+      await dbA.update(PrivateDbSchema.syncStateTable, {'dirty': 0});
+      await dbB.update(PrivateDbSchema.syncStateTable, {'dirty': 0});
+
+      // A edits a real synced field and pushes.
+      await dbA.update('profiles', {'full_name': 'Alice', 'updated_at': t(30)},
+          where: 'id = ?', whereArgs: ['owner']);
+      await a.syncNow(key);
+
+      // The encrypted wire payload must NOT carry the device-local path.
+      final decoded = crypto.decryptJson(cloud.records['profiles:owner']!.payload!, key);
+      expect(decoded.containsKey('avatar_url'), isFalse);
+      expect(decoded['full_name'], 'Alice');
+
+      // B pulls the edit but keeps its OWN avatar path.
+      await b.syncNow(key);
+      final bProfile =
+          (await dbB.query('profiles', where: 'id = ?', whereArgs: ['owner']))
+              .first;
+      expect(bProfile['full_name'], 'Alice');
+      expect(bProfile['avatar_url'], '/B/avatar.jpg');
+      await dbA.close();
+      await dbB.close();
+    });
   });
 
   group('guards', () {
@@ -255,6 +331,19 @@ void main() {
       final res = await engine(dbB, cloud).syncNow(key);
       expect(res.applied, 0); // skipped as bogus-future
       expect(await readGoal(dbB, 'g1'), isNull);
+      // #9: the record was DEFERRED, not dropped — the change token must NOT
+      // have advanced past it, so a later sync (once clocks agree) re-fetches
+      // and applies it instead of losing it forever.
+      expect(await SyncLocalStore(dbB).changeToken(), isNull);
+
+      // A non-skewed record in the SAME zone still gets applied, and STILL the
+      // token is held (so the deferred future record keeps being re-fetched).
+      await insertGoal(dbA, 'g2', title: 'ok', at: t(20));
+      await engine(dbA, cloud).syncNow(key);
+      final res2 = await engine(dbB, cloud).syncNow(key);
+      expect(res2.applied, 1); // g2 applied
+      expect((await readGoal(dbB, 'g2'))!['title'], 'ok');
+      expect(await SyncLocalStore(dbB).changeToken(), isNull); // still deferring g1
       await dbA.close();
       await dbB.close();
     });

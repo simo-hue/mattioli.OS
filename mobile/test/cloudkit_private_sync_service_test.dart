@@ -27,6 +27,25 @@ class _FakeEnabled implements SyncEnabledStore {
   Future<void> setEnabled(bool v) async => value = v;
 }
 
+/// Wraps the fake cloud and records the maximum number of overlapping
+/// fetchChanges calls — 1 proves the service serialized concurrent syncs.
+class _ConcurrencyProbeBridge extends FakeCloudKitBridge {
+  int _inFlight = 0;
+  int maxInFlight = 0;
+
+  @override
+  Future<FetchOutcome> fetchChanges(String? token) async {
+    _inFlight++;
+    if (_inFlight > maxInFlight) maxInFlight = _inFlight;
+    await Future<void>.delayed(Duration.zero); // yield, let any racer interleave
+    try {
+      return await super.fetchChanges(token);
+    } finally {
+      _inFlight--;
+    }
+  }
+}
+
 void main() {
   setUpAll(() {
     sqfliteFfiInit();
@@ -73,6 +92,7 @@ void main() {
         crypto: crypto,
         storeProvider: () async => SyncLocalStore(db),
         ownerProvider: () async => 'owner',
+        ownerWriter: (_) async {},
         enabledStore: enabled,
       );
 
@@ -153,6 +173,7 @@ void main() {
         crypto: crypto,
         storeProvider: () async => SyncLocalStore(db),
         ownerProvider: () async => 'owner',
+        ownerWriter: (_) async {},
         enabledStore: enabled,
       );
 
@@ -195,6 +216,78 @@ void main() {
         hasLength(1));
     await dbA.close();
     await dbB.close();
+  });
+
+  test('#2 second device adopts the canonical owner id after enable', () async {
+    final cloud = FakeCloudKitBridge();
+    final secrets = _FakeSecretStore(); // shared iCloud Keychain (key + owner)
+
+    // Device A publishes the canonical owner 'ownerA'.
+    final dbA = await openFreshV3();
+    await dbA.insert('profiles',
+        {'id': 'ownerA', 'created_at': t(1), 'updated_at': t(1)});
+    await CloudKitPrivateSyncService(
+      bridge: cloud,
+      keys: SyncKeyStore(secrets, crypto: crypto),
+      crypto: crypto,
+      storeProvider: () async => SyncLocalStore(dbA),
+      ownerProvider: () async => 'ownerA',
+      ownerWriter: (_) async {},
+      enabledStore: _FakeEnabled(),
+    ).enable();
+
+    // Device B starts with a DIFFERENT local owner 'ownerB' + its own goal.
+    final dbB = await openFreshV3();
+    await dbB.insert('profiles',
+        {'id': 'ownerB', 'created_at': t(1), 'updated_at': t(1)});
+    await dbB.insert('goals', {
+      'id': 'gB',
+      'user_id': 'ownerB',
+      'title': 'B-goal',
+      'color': '#000000',
+      'start_date': t(2),
+      'created_at': t(2),
+      'updated_at': t(2),
+    });
+
+    String? adopted;
+    await CloudKitPrivateSyncService(
+      bridge: cloud,
+      keys: SyncKeyStore(secrets, crypto: crypto),
+      crypto: crypto,
+      storeProvider: () async => SyncLocalStore(dbB),
+      ownerProvider: () async => 'ownerB',
+      ownerWriter: (id) async => adopted = id,
+      enabledStore: _FakeEnabled(),
+    ).enable();
+
+    // The service persisted the canonical owner as THIS device's owner...
+    expect(adopted, 'ownerA');
+    // ...and the engine re-keyed B's local rows onto it (no 'ownerB' left).
+    final ids = (await dbB.query('profiles')).map((r) => r['id']).toList();
+    expect(ids, contains('ownerA'));
+    expect(ids, isNot(contains('ownerB')));
+    final gB = await dbB.query('goals', where: 'id = ?', whereArgs: ['gB']);
+    expect(gB.single['user_id'], 'ownerA');
+    await dbA.close();
+    await dbB.close();
+  });
+
+  test('#5 concurrent syncNow calls are serialized (never overlap)', () async {
+    final db = await openFreshV3();
+    await seed(db);
+    final cloud = _ConcurrencyProbeBridge();
+    final enabled = _FakeEnabled();
+    final secrets = _FakeSecretStore();
+    final svc = serviceWith(db, cloud, enabled, secrets);
+    await svc.enable(); // establishes the key + enabled flag
+
+    // Fire two syncs without awaiting the first — the in-flight lock must run
+    // them back-to-back, not concurrently.
+    await Future.wait([svc.syncNow(), svc.syncNow()]);
+
+    expect(cloud.maxInFlight, 1, reason: 'syncs must not run concurrently');
+    await db.close();
   });
 
   test('requestFullReset queues the wipe when offline, finishes later',

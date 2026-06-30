@@ -10,7 +10,7 @@ class SceneDelegate: FlutterSceneDelegate {
     super.scene(scene, willConnectTo: session, options: connectionOptions)
 
     if let controller = window?.rootViewController as? FlutterViewController {
-      AppDelegate.registerPrivateStorageChannel(controller)
+      AppDelegate.registerPrivateStorageChannel(controller.binaryMessenger)
     }
   }
 }

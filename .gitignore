@@ -26,3 +26,7 @@ dist-ssr
 FROM_NOTION
 scripts/generate-sql-*.ts
 supabase/migrations/*_import_notion_goals_*.sql
+
+# ---
+
+mobile/back_up_template/*

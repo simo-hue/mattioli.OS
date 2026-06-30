@@ -624,45 +624,48 @@ class _ProfileScreenState extends ConsumerState<ProfileScreen> {
           width: 1,
         ),
       ),
-      child: ListTile(
-        contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 2),
-        leading: Container(
-          width: 36,
-          height: 36,
-          decoration: BoxDecoration(
-            color: context.appColors.card,
-            borderRadius: BorderRadius.circular(10),
-            border: Border.all(color: context.appColors.border),
+      child: Material(
+        color: Colors.transparent,
+        child: ListTile(
+          contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 2),
+          leading: Container(
+            width: 36,
+            height: 36,
+            decoration: BoxDecoration(
+              color: context.appColors.card,
+              borderRadius: BorderRadius.circular(10),
+              border: Border.all(color: context.appColors.border),
+            ),
+            child: Icon(icon, size: 18, color: primaryColor),
           ),
-          child: Icon(icon, size: 18, color: primaryColor),
-        ),
-        title: Text(
-          title,
-          style: TextStyle(
-            color: context.appColors.foreground,
-            fontSize: 15,
-            fontWeight: FontWeight.w700,
-            letterSpacing: -0.2,
+          title: Text(
+            title,
+            style: TextStyle(
+              color: context.appColors.foreground,
+              fontSize: 15,
+              fontWeight: FontWeight.w700,
+              letterSpacing: -0.2,
+            ),
           ),
-        ),
-        subtitle: Text(
-          subtitle,
-          style: TextStyle(
-            color: context.appColors.mutedForeground.withValues(alpha: 0.8),
-            fontSize: 12,
-            fontWeight: FontWeight.w500,
+          subtitle: Text(
+            subtitle,
+            style: TextStyle(
+              color: context.appColors.mutedForeground.withValues(alpha: 0.8),
+              fontSize: 12,
+              fontWeight: FontWeight.w500,
+            ),
           ),
+          trailing: DirectionalIcon(
+            LucideIcons.chevronRight,
+            LucideIcons.chevronLeft,
+            size: 18,
+            color: context.appColors.mutedForeground,
+          ),
+          onTap: () {
+            ref.hapticLight();
+            onTap();
+          },
         ),
-        trailing: DirectionalIcon(
-          LucideIcons.chevronRight,
-          LucideIcons.chevronLeft,
-          size: 18,
-          color: context.appColors.mutedForeground,
-        ),
-        onTap: () {
-          ref.hapticLight();
-          onTap();
-        },
       ),
     );
   }

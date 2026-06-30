@@ -8,9 +8,9 @@ import UIKit
     _ application: UIApplication,
     didFinishLaunchingWithOptions launchOptions: [UIApplication.LaunchOptionsKey: Any]?
   ) -> Bool {
-    if let controller = window?.rootViewController as? FlutterViewController {
-      Self.registerPrivateStorageChannel(controller)
-      CloudKitSyncBridge.register(controller)
+    if let registrar = self.registrar(forPlugin: "EvolvePlugin") {
+      Self.registerPrivateStorageChannel(registrar.messenger())
+      CloudKitSyncBridge.register(registrar.messenger())
     }
     return super.application(application, didFinishLaunchingWithOptions: launchOptions)
   }
@@ -19,10 +19,10 @@ import UIKit
     GeneratedPluginRegistrant.register(with: engineBridge.pluginRegistry)
   }
 
-  static func registerPrivateStorageChannel(_ controller: FlutterViewController) {
+  static func registerPrivateStorageChannel(_ messenger: FlutterBinaryMessenger) {
     let channel = FlutterMethodChannel(
       name: "evolve/private_storage",
-      binaryMessenger: controller.binaryMessenger
+      binaryMessenger: messenger
     )
     channel.setMethodCallHandler { call, result in
       guard call.method == "excludeFromBackup" else {
@@ -69,10 +69,10 @@ enum CloudKitSyncBridge {
   static let zoneName = "PrivateZone"
   static let recordType = "PrivateRecord"
 
-  static func register(_ controller: FlutterViewController) {
+  static func register(_ messenger: FlutterBinaryMessenger) {
     let channel = FlutterMethodChannel(
       name: "evolve/cloudkit",
-      binaryMessenger: controller.binaryMessenger
+      binaryMessenger: messenger
     )
     channel.setMethodCallHandler { call, result in
       handle(call, result)

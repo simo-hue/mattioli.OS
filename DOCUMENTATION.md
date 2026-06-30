@@ -2,6 +2,19 @@
 
 ## Recent Changes
 
+- [2026-06-30 22:21]: **App Version Increment**
+  - *Details*: Incremented the app version from `1.0.5+9` to `1.0.6+10` in `pubspec.yaml` in preparation for the App Store release.
+  - *Tech Notes*: Only `pubspec.yaml` was modified as iOS picks up the `FLUTTER_BUILD_NAME` and `FLUTTER_BUILD_NUMBER` automatically.
+
+- [2026-06-30 20:13]: **Mattioli.OS Web Backup Import Feature**
+  - *Details*: Implemented a feature allowing users to import their web backup ZIP files directly into the iOS mobile app. The data accurately maps web formats (goals, long term goals, categories, and moods) into the mobile SQLite or Supabase database and handles edge cases like color transformations.
+  - *Tech Notes*:
+    - Added `BackupImportService` in `lib/core/backup_import_service.dart` to parse ZIP contents using the `archive` package and apply HSL to Hex color conversion.
+    - Updated `PrivateLocalDatabase` and `PrivateDataStore` to implement `importData` method with `db.transaction`.
+    - Added a comprehensive preview dialog in `PrivacySettingsScreen` providing the user with Replace or Merge conflict options.
+    - Added `file_picker` to enable native iOS file selection.
+    - Updated UI Strings across 5 languages inside `lib/i18n/*.i18n.json` using `slang`.
+
 - [2026-04-27 12:15]: **Meticulous Global Accent Color Refactor**
   - *Details*: Performed a comprehensive audit and refactor of the entire Flutter application to ensure 100% visual coherence with the selected Accent Color. Replaced all hardcoded "Success Green" (0xFF10B981) and "Productivity Purple" (0xFF8B5CF6) with dynamic `Theme.of(context).colorScheme.primary`.
   - *Tech Notes*: 

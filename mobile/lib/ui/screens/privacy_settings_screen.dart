@@ -4,7 +4,9 @@ import 'dart:io';
 import '../../core/rtl.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 import 'package:share_plus/share_plus.dart';
+import 'package:file_picker/file_picker.dart';
 import 'dart:convert';
+import '../../core/backup_import_service.dart';
 import '../../providers/goal_provider.dart';
 import '../../providers/macro_goals_provider.dart';
 import '../../providers/macro_goal_categories_provider.dart';
@@ -159,6 +161,17 @@ class PrivacySettingsScreen extends ConsumerWidget {
                 onTap: () {
                   ref.hapticMedium();
                   _exportData(context, ref);
+                },
+              ),
+              _buildDivider(context),
+              _buildActionRow(
+                context: context,
+                icon: LucideIcons.upload,
+                title: context.t.privacy.importData,
+                subtitle: context.t.privacy.importDataSubtitle,
+                onTap: () {
+                  ref.hapticMedium();
+                  _importData(context, ref);
                 },
               ),
               if (isPrivateMode && Platform.isIOS) ...[
@@ -877,6 +890,161 @@ class PrivacySettingsScreen extends ConsumerWidget {
       if (context.mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(content: Text('${context.t.privacy.errors.exportPrefix}$e')),
+        );
+      }
+    }
+  }
+
+  Future<void> _importData(BuildContext context, WidgetRef ref) async {
+    try {
+      final result = await FilePicker.pickFiles(
+        type: FileType.custom,
+        allowedExtensions: ['zip'],
+      );
+
+      if (result == null || result.files.isEmpty) return;
+      final path = result.files.single.path;
+      if (path == null) return;
+
+      final isPrivateMode = ref.read(activeDataModeProvider) == AppDataMode.private;
+      final privateStore = ref.read(privateLocalDatabaseProvider);
+      final supabase = Supabase.instance.client;
+      final importService = BackupImportService(privateStore, supabase);
+
+      // 1. Preview
+      final preview = await importService.parseZipPreview(path);
+
+      if (!context.mounted) return;
+
+      // 2. Ask for Replace/Merge
+      bool replaceExisting = true;
+      final confirm = await showDialog<bool>(
+        context: context,
+        builder: (ctx) {
+          return StatefulBuilder(
+            builder: (context, setState) {
+              return AlertDialog(
+                backgroundColor: context.appColors.background,
+                title: Text(
+                  context.t.privacy.importPreviewTitle,
+                  style: GoogleFonts.outfit(
+                    color: context.appColors.foreground,
+                    fontWeight: FontWeight.w600,
+                  ),
+                ),
+                content: SingleChildScrollView(
+                  child: Column(
+                    mainAxisSize: MainAxisSize.min,
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Text(context.t.privacy.importPreviewHabits(count: preview.habitsCount), style: TextStyle(color: context.appColors.foreground)),
+                      Text(context.t.privacy.importPreviewLogs(count: preview.logsCount), style: TextStyle(color: context.appColors.foreground)),
+                      Text(context.t.privacy.importPreviewMacroGoals(count: preview.macroGoalsCount), style: TextStyle(color: context.appColors.foreground)),
+                      Text(context.t.privacy.importPreviewCategories(count: preview.categoriesCount), style: TextStyle(color: context.appColors.foreground)),
+                      Text(context.t.privacy.importPreviewMoods(count: preview.moodsCount), style: TextStyle(color: context.appColors.foreground)),
+                      const SizedBox(height: 24),
+                      RadioListTile<bool>(
+                        title: Text(context.t.privacy.importModeReplace, style: TextStyle(color: context.appColors.foreground)),
+                        subtitle: Text(context.t.privacy.importModeReplaceDesc, style: TextStyle(color: context.appColors.mutedForeground, fontSize: 12)),
+                        value: true,
+                        groupValue: replaceExisting,
+                        activeColor: Theme.of(context).colorScheme.primary,
+                        onChanged: (val) => setState(() => replaceExisting = val!),
+                      ),
+                      RadioListTile<bool>(
+                        title: Text(context.t.privacy.importModeMerge, style: TextStyle(color: context.appColors.foreground)),
+                        subtitle: Text(context.t.privacy.importModeMergeDesc, style: TextStyle(color: context.appColors.mutedForeground, fontSize: 12)),
+                        value: false,
+                        groupValue: replaceExisting,
+                        activeColor: Theme.of(context).colorScheme.primary,
+                        onChanged: (val) => setState(() => replaceExisting = val!),
+                      ),
+                    ],
+                  ),
+                ),
+                actions: [
+                  TextButton(
+                    onPressed: () => Navigator.pop(ctx, false),
+                    child: Text(
+                      context.t.common.actions.cancel,
+                      style: TextStyle(color: context.appColors.mutedForeground),
+                    ),
+                  ),
+                  FilledButton(
+                    onPressed: () => Navigator.pop(ctx, true),
+                    style: FilledButton.styleFrom(
+                      backgroundColor: Theme.of(context).colorScheme.primary,
+                      foregroundColor: Theme.of(context).colorScheme.primary.computeLuminance() > 0.5 ? Colors.black : Colors.white,
+                    ),
+                    child: Text(
+                      context.t.privacy.importConfirm,
+                      style: const TextStyle(fontWeight: FontWeight.w600),
+                    ),
+                  ),
+                ],
+              );
+            },
+          );
+        },
+      );
+
+      if (confirm != true) return;
+      if (!context.mounted) return;
+
+      showDialog(
+        context: context,
+        barrierDismissible: false,
+        builder: (ctx) => Center(
+          child: Container(
+            padding: const EdgeInsets.all(24),
+            decoration: BoxDecoration(
+              color: context.appColors.background,
+              borderRadius: BorderRadius.circular(16),
+            ),
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                const CircularProgressIndicator(),
+                const SizedBox(height: 16),
+                Text(context.t.privacy.importInProgress, style: TextStyle(color: context.appColors.foreground)),
+              ],
+            ),
+          ),
+        ),
+      );
+
+      // 3. Execute
+      await importService.executeImport(
+        rawData: preview.rawData,
+        replaceExisting: replaceExisting,
+        isPrivateMode: isPrivateMode,
+      );
+
+      // 4. Refresh Providers
+      ref.invalidate(goalsProvider);
+      ref.invalidate(habitLogsProvider);
+      ref.invalidate(macroGoalsProvider);
+      ref.invalidate(macroGoalCategoriesProvider);
+      ref.invalidate(dailyMoodsProvider);
+
+      if (context.mounted) {
+        Navigator.pop(context); // Close progress
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text(context.t.privacy.importSuccess),
+            backgroundColor: AppColors.success,
+          ),
+        );
+      }
+    } catch (e, stack) {
+      AppLogger.error('Import failed', e, stack);
+      if (context.mounted) {
+        Navigator.pop(context); // Close progress if open
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text(context.t.privacy.importError(error: e.toString())),
+            backgroundColor: AppColors.destructive,
+          ),
         );
       }
     }

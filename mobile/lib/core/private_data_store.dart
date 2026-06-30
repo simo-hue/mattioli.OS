@@ -83,6 +83,11 @@ abstract interface class PrivateDataStore {
 
   Future<Map<String, dynamic>> exportData();
 
+  Future<void> importData({
+    required Map<String, dynamic> backupData,
+    required bool replaceExisting,
+  });
+
   Future<void> deleteAllPrivateData();
 
   Future<List<Map<String, dynamic>>> habitStats();

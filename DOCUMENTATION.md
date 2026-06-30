@@ -644,3 +644,7 @@ NEXT ACTION: Ensure device is running the latest built version of the codebase.
 - [2026-06-30 21:08:00]: Fixed Private Mode Import Crash
   - *Details*: Resolved `Supabase.instance` initialization assertion error when importing data while offline.
   - *Tech Notes*: `BackupImportService` now accepts a nullable `SupabaseClient?`. In `privacy_settings_screen.dart`, we explicitly pass `null` instead of calling `Supabase.instance.client` when `activeDataModeProvider` is in `AppDataMode.private`.
+
+- [2026-06-30 23:25]: App Store Connect Metadata Translation Update
+  - *Details*: Added translated 'What's new' text ('Funzionalità di Import per utenti di Mattioli.OS') for App Store Connect metadata.
+  - *Tech Notes*: Updated Fastfile to explicitly set FASTLANE_ITC_TEAM_ID, map correct locales (fr-FR, de-DE), and automatically upload translations directly to App Store Connect via Spaceship::ConnectAPI.

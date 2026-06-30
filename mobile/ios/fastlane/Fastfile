@@ -5,6 +5,7 @@ default_platform(:ios)
 platform :ios do
   desc "Aggiorna 'What's New in This Version' per tutte le lingue"
   lane :update_notes do
+    ENV['FASTLANE_ITC_TEAM_ID'] = "128920131"
     Spaceship::ConnectAPI.login("mattioli.simone.10@gmail.com")
     app = Spaceship::ConnectAPI::App.find("com.simo.evolve")
     version = app.get_edit_app_store_version
@@ -14,24 +15,50 @@ platform :ios do
     end
     
     UI.success("Trovata versione in modifica: #{version.version_string}")
-    required_locales = ["fr", "vi", "ko", "en-AU", "es-MX", "id", "en-CA", "de", "sk", "sv", "da", "fr-CA", "pt-PT", "he", "el", "en-GB"]
-    UI.message("Lingue da aggiornare in base allo screenshot: #{required_locales.join(', ')}")
+    required_locales = ["fr-FR", "vi", "ko", "en-AU", "es-MX", "id", "en-CA", "de-DE", "sk", "sv", "da", "fr-CA", "pt-PT", "he", "el", "en-GB"]
     
     existing_locs = version.get_app_store_version_localizations
     existing_locales = existing_locs.map(&:locale)
     
-    required_locales.each do |locale|
+    all_locales = (required_locales + existing_locales).uniq
+    UI.message("Lingue da aggiornare: #{all_locales.join(', ')}")
+    
+    translations = {
+      "it" => "Funzionalità di Import per utenti di Mattioli.OS",
+      "en" => "Import functionality for Mattioli.OS users",
+      "fr" => "Fonctionnalité d'importation pour les utilisateurs de Mattioli.OS",
+      "vi" => "Chức năng nhập cho người dùng Mattioli.OS",
+      "ko" => "Mattioli.OS 사용자를 위한 가져오기 기능",
+      "es" => "Funcionalidad de importación para usuarios de Mattioli.OS",
+      "id" => "Fungsionalitas impor untuk pengguna Mattioli.OS",
+      "de" => "Importfunktion für Mattioli.OS-Benutzer",
+      "sk" => "Funkcia importu pre používateľov Mattioli.OS",
+      "sv" => "Importfunktion för användare av Mattioli.OS",
+      "da" => "Importfunktion for Mattioli.OS-brugere",
+      "pt" => "Funcionalidade de importação para usuários do Mattioli.OS",
+      "he" => "פונקציונליות ייבוא עבור משתמשי Mattioli.OS",
+      "el" => "Λειτουργία εισαγωγής για χρήστες Mattioli.OS",
+      "zh" => "Mattioli.OS用户的导入功能",
+      "ja" => "Mattioli.OSユーザー向けのインポート機能",
+      "ru" => "Функция импорта для пользователей Mattioli.OS",
+      "ar" => "وظيفة الاستيراد لمستخدمي Mattioli.OS"
+    }
+    
+    all_locales.each do |locale|
+      lang_code = locale.split('-').first
+      localized_whats_new = translations[lang_code] || translations["en"]
+      
       if existing_locales.include?(locale)
-        UI.message("Aggiorno lingua esistente: #{locale}...")
+        UI.message("Aggiorno lingua esistente: #{locale} con testo: #{localized_whats_new}...")
         loc = existing_locs.find { |l| l.locale == locale }
-        loc.update(attributes: { whatsNew: "UI improvements" })
+        loc.update(attributes: { whatsNew: localized_whats_new })
       else
-        UI.message("Creo nuova localizzazione per versione: #{locale}...")
+        UI.message("Creo nuova localizzazione per versione: #{locale} con testo: #{localized_whats_new}...")
         Spaceship::ConnectAPI.post_app_store_version_localization(
           app_store_version_id: version.id,
           attributes: {
             locale: locale,
-            whatsNew: "UI improvements"
+            whatsNew: localized_whats_new
           }
         )
       end

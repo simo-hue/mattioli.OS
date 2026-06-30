@@ -23,6 +23,7 @@ import '../../core/data_mode.dart';
 import '../../core/private_local_database.dart';
 import '../../core/private_sync_service.dart';
 import '../../core/notifications.dart';
+import '../widgets/animations/pulsing_sync_animation.dart';
 import 'icloud_sync_screen.dart';
 import '../../providers/settings_provider.dart';
 import '../../providers/consent_provider.dart';
@@ -908,7 +909,7 @@ class PrivacySettingsScreen extends ConsumerWidget {
 
       final isPrivateMode = ref.read(activeDataModeProvider) == AppDataMode.private;
       final privateStore = ref.read(privateLocalDatabaseProvider);
-      final supabase = Supabase.instance.client;
+      final supabase = isPrivateMode ? null : Supabase.instance.client;
       final importService = BackupImportService(privateStore, supabase);
 
       // 1. Preview
@@ -996,17 +997,34 @@ class PrivacySettingsScreen extends ConsumerWidget {
         barrierDismissible: false,
         builder: (ctx) => Center(
           child: Container(
-            padding: const EdgeInsets.all(24),
+            padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 32),
             decoration: BoxDecoration(
               color: context.appColors.background,
-              borderRadius: BorderRadius.circular(16),
+              borderRadius: BorderRadius.circular(24),
             ),
             child: Column(
               mainAxisSize: MainAxisSize.min,
               children: [
-                const CircularProgressIndicator(),
-                const SizedBox(height: 16),
-                Text(context.t.privacy.importInProgress, style: TextStyle(color: context.appColors.foreground)),
+                const PulsingSyncAnimation(size: 140),
+                const SizedBox(height: 24),
+                Text(
+                  context.t.privacy.importInProgress,
+                  style: TextStyle(
+                    color: context.appColors.foreground,
+                    fontFamily: 'Inter',
+                    fontSize: 18,
+                    fontWeight: FontWeight.w600,
+                  ),
+                ),
+                const SizedBox(height: 8),
+                Text(
+                  "This might take a few seconds...",
+                  style: TextStyle(
+                    color: context.appColors.mutedForeground,
+                    fontFamily: 'Inter',
+                    fontSize: 14,
+                  ),
+                ),
               ],
             ),
           ),
@@ -1014,7 +1032,7 @@ class PrivacySettingsScreen extends ConsumerWidget {
       );
 
       // 3. Execute
-      await importService.executeImport(
+      final importResult = await importService.executeImport(
         rawData: preview.rawData,
         replaceExisting: replaceExisting,
         isPrivateMode: isPrivateMode,
@@ -1029,10 +1047,60 @@ class PrivacySettingsScreen extends ConsumerWidget {
 
       if (context.mounted) {
         Navigator.pop(context); // Close progress
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(
-            content: Text(context.t.privacy.importSuccess),
-            backgroundColor: AppColors.success,
+        
+        await showDialog(
+          context: context,
+          builder: (ctx) => AlertDialog(
+            backgroundColor: ctx.appColors.card,
+            shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(24)),
+            title: Row(
+              children: [
+                Icon(LucideIcons.check, color: AppColors.success, size: 28),
+                const SizedBox(width: 12),
+                Expanded(
+                  child: Text(
+                    'Import Completed',
+                    style: TextStyle(
+                      fontFamily: 'Inter',
+                      fontSize: 20,
+                      fontWeight: FontWeight.w700,
+                      color: ctx.appColors.foreground,
+                    ),
+                  ),
+                ),
+              ],
+            ),
+            content: Column(
+              mainAxisSize: MainAxisSize.min,
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(
+                  'Your data has been successfully imported. Here is the summary:',
+                  style: TextStyle(
+                    fontFamily: 'Inter',
+                    color: ctx.appColors.mutedForeground,
+                  ),
+                ),
+                const SizedBox(height: 16),
+                _buildSummaryRow(ctx, LucideIcons.check, '${importResult.habitsCount} Habits'),
+                _buildSummaryRow(ctx, LucideIcons.history, '${importResult.logsCount} Habit Logs'),
+                _buildSummaryRow(ctx, LucideIcons.target, '${importResult.macroGoalsCount} Macro Goals'),
+                _buildSummaryRow(ctx, LucideIcons.folder, '${importResult.categoriesCount} Categories'),
+                _buildSummaryRow(ctx, LucideIcons.smile, '${importResult.moodsCount} Mood Logs'),
+              ],
+            ),
+            actions: [
+              FilledButton(
+                onPressed: () => Navigator.pop(ctx),
+                style: FilledButton.styleFrom(
+                  backgroundColor: Theme.of(ctx).colorScheme.primary,
+                  foregroundColor: Theme.of(ctx).colorScheme.primary.computeLuminance() > 0.5 ? Colors.black : Colors.white,
+                  shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+                  padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 12),
+                ),
+                child: const Text('Awesome!', style: TextStyle(fontWeight: FontWeight.w600)),
+              ),
+            ],
           ),
         );
       }
@@ -1040,14 +1108,73 @@ class PrivacySettingsScreen extends ConsumerWidget {
       AppLogger.error('Import failed', e, stack);
       if (context.mounted) {
         Navigator.pop(context); // Close progress if open
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(
-            content: Text(context.t.privacy.importError(error: e.toString())),
-            backgroundColor: AppColors.destructive,
+        
+        await showDialog(
+          context: context,
+          builder: (ctx) => AlertDialog(
+            backgroundColor: ctx.appColors.card,
+            shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(24)),
+            title: Row(
+              children: [
+                Icon(LucideIcons.info, color: AppColors.destructive, size: 28),
+                const SizedBox(width: 12),
+                Expanded(
+                  child: Text(
+                    'Import Failed',
+                    style: TextStyle(
+                      fontFamily: 'Inter',
+                      fontSize: 20,
+                      fontWeight: FontWeight.w700,
+                      color: ctx.appColors.foreground,
+                    ),
+                  ),
+                ),
+              ],
+            ),
+            content: Text(
+              e.toString(),
+              style: TextStyle(
+                fontFamily: 'Inter',
+                color: ctx.appColors.mutedForeground,
+              ),
+            ),
+            actions: [
+              FilledButton(
+                onPressed: () => Navigator.pop(ctx),
+                style: FilledButton.styleFrom(
+                  backgroundColor: ctx.appColors.card,
+                  foregroundColor: ctx.appColors.foreground,
+                  shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+                  side: BorderSide(color: ctx.appColors.border),
+                  padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 12),
+                ),
+                child: const Text('Close', style: TextStyle(fontWeight: FontWeight.w600)),
+              ),
+            ],
           ),
         );
       }
     }
+  }
+
+  Widget _buildSummaryRow(BuildContext context, IconData icon, String text) {
+    return Padding(
+      padding: const EdgeInsets.symmetric(vertical: 4),
+      child: Row(
+        children: [
+          Icon(icon, size: 16, color: Theme.of(context).colorScheme.primary),
+          const SizedBox(width: 12),
+          Text(
+            text,
+            style: TextStyle(
+              fontFamily: 'Inter',
+              fontWeight: FontWeight.w500,
+              color: context.appColors.foreground,
+            ),
+          ),
+        ],
+      ),
+    );
   }
 
   void _showDeleteOrResetModal(BuildContext context, WidgetRef ref) {

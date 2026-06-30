@@ -26,9 +26,25 @@ class BackupImportPreview {
   });
 }
 
+class BackupImportResult {
+  final int habitsCount;
+  final int logsCount;
+  final int macroGoalsCount;
+  final int categoriesCount;
+  final int moodsCount;
+
+  const BackupImportResult({
+    required this.habitsCount,
+    required this.logsCount,
+    required this.macroGoalsCount,
+    required this.categoriesCount,
+    required this.moodsCount,
+  });
+}
+
 class BackupImportService {
   final PrivateDataStore _privateStore;
-  final SupabaseClient _supabase;
+  final SupabaseClient? _supabase;
   final _uuid = const Uuid();
 
   BackupImportService(this._privateStore, this._supabase);
@@ -77,7 +93,7 @@ class BackupImportService {
     );
   }
 
-  Future<void> executeImport({
+  Future<BackupImportResult> executeImport({
     required Map<String, dynamic> rawData,
     required bool replaceExisting,
     required bool isPrivateMode,
@@ -92,6 +108,14 @@ class BackupImportService {
     } else {
       await _executeCloudImport(processedData, replaceExisting);
     }
+
+    return BackupImportResult(
+      habitsCount: (processedData['goals'] as List?)?.length ?? 0,
+      logsCount: (processedData['goal_logs'] as List?)?.length ?? 0,
+      macroGoalsCount: (processedData['long_term_goals'] as List?)?.length ?? 0,
+      categoriesCount: (processedData['macro_goal_categories'] as List?)?.length ?? 0,
+      moodsCount: (processedData['daily_moods'] as List?)?.length ?? 0,
+    );
   }
 
   Map<String, dynamic> _processData(Map<String, dynamic> rawData, bool replaceExisting) {
@@ -234,8 +258,12 @@ class BackupImportService {
     };
   }
 
-  Future<void> _executeCloudImport(Map<String, dynamic> data, bool replaceExisting) async {
-    final userId = _supabase.auth.currentUser?.id;
+  Future<void> _executeCloudImport(
+      Map<String, dynamic> data, bool replaceExisting) async {
+    final client = _supabase;
+    if (client == null) throw Exception("Supabase is not initialized but cloud import was requested.");
+
+    final userId = client.auth.currentUser?.id;
     if (userId == null) throw Exception('Not logged in to cloud');
 
     // Add user_id to all rows
@@ -259,11 +287,11 @@ class BackupImportService {
 
     if (replaceExisting) {
       // In replace mode we first delete existing records
-      await _supabase.from('goal_logs').delete().eq('user_id', userId);
-      await _supabase.from('daily_moods').delete().eq('user_id', userId);
-      await _supabase.from('long_term_goals').delete().eq('user_id', userId);
-      await _supabase.from('macro_goal_categories').delete().eq('user_id', userId);
-      await _supabase.from('goals').delete().eq('user_id', userId);
+      await client.from('goal_logs').delete().eq('user_id', userId);
+      await client.from('daily_moods').delete().eq('user_id', userId);
+      await client.from('long_term_goals').delete().eq('user_id', userId);
+      await client.from('macro_goal_categories').delete().eq('user_id', userId);
+      await client.from('goals').delete().eq('user_id', userId);
     }
 
     // Helper to chunk inserts for supabase (max 1000 per request)
@@ -273,7 +301,7 @@ class BackupImportService {
       const chunkSize = 500;
       for (var i = 0; i < rows.length; i += chunkSize) {
         final chunk = rows.sublist(i, i + chunkSize > rows.length ? rows.length : i + chunkSize);
-        await _supabase.from(table).upsert(chunk, onConflict: 'id', ignoreDuplicates: !replaceExisting);
+        await client.from(table).upsert(chunk, onConflict: 'id', ignoreDuplicates: !replaceExisting);
       }
     }
 

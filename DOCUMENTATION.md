@@ -628,3 +628,19 @@
 - [2026-06-20 15:10]: App Store Connect Metadata Push
   - *Details*: Uploaded release notes ("UI improvements") across 38 localized languages for Evolve. Cleaned up the local Fastlane setup.
   - *Tech Notes*: Removed corrupted metadata folder pointing to dummy app. Generated and executed temporary Deliverfile to selectively push release notes via Fastlane without overriding App Info fields. Cleaned up all temporary python scripts and Fastlane artifacts.
+
+- [2026-06-30]: **Mattioli.OS Web Backup Import**
+  - *Details*: Implemented a feature in the iOS app to import ZIP backups exported from the Mattioli.OS web platform.
+  - *Tech Notes*: Added  and  dependencies. Created  to parse the web JSON structure and remap colors (HSL to hex). Executed data migration locally using SQLCipher transactions, and patched Supabase schema mismatches (e.g., removing  from ). Handled custom UI styling and  warnings in .
+
+- [2026-06-30]: **Mattioli.OS Web Backup Import**
+  - *Details*: Implemented a feature in the iOS app to import ZIP backups exported from the Mattioli.OS web platform.
+  - *Tech Notes*: Added `archive` and `file_picker` dependencies. Created `BackupImportService` to parse the web JSON structure and remap colors (HSL to hex). Executed data migration locally using SQLCipher transactions, and patched Supabase schema mismatches (e.g., removing `updated_at` from `macro_goal_categories`). Handled custom UI styling and `ListTile` warnings in `profile_screen.dart`.
+
+---
+STATUS: COMPLETED
+NEXT ACTION: Ensure device is running the latest built version of the codebase.
+
+- [2026-06-30 21:08:00]: Fixed Private Mode Import Crash
+  - *Details*: Resolved `Supabase.instance` initialization assertion error when importing data while offline.
+  - *Tech Notes*: `BackupImportService` now accepts a nullable `SupabaseClient?`. In `privacy_settings_screen.dart`, we explicitly pass `null` instead of calling `Supabase.instance.client` when `activeDataModeProvider` is in `AppDataMode.private`.

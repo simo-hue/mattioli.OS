@@ -172,6 +172,14 @@ class FakePrivateDataStore implements PrivateDataStore {
 
   // ── Import / export / wipe ──────────────────────────────────────────────
   @override
+  Future<void> importData({
+    required Map<String, dynamic> backupData,
+    bool replaceExisting = false,
+  }) async {
+    calls.add('importData');
+  }
+
+  @override
   Future<Map<String, dynamic>> exportData() async => <String, dynamic>{};
 
   @override

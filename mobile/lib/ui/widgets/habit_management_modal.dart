@@ -370,7 +370,8 @@ class _HabitManagementModalState extends ConsumerState<HabitManagementModal> {
 
   @override
   Widget build(BuildContext context) {
-    final habits = ref.watch(goalsProvider);
+    final now = DateTime.now();
+    final habits = ref.watch(goalsProvider).where((g) => g.isActiveOn(now)).toList();
     final bottomPadding = MediaQuery.of(context).viewInsets.bottom;
     final settings = ref.watch(settingsProvider);
     final isPro = settings.isPro;

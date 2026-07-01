@@ -13,6 +13,7 @@ import '../../providers/macro_goal_categories_provider.dart';
 import '../../providers/macro_goals_stats_provider.dart';
 import '../../providers/mood_provider.dart';
 import '../../providers/user_provider.dart';
+import '../../providers/sync_refresh.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:lucide_icons_flutter/lucide_icons.dart';
@@ -996,36 +997,39 @@ class PrivacySettingsScreen extends ConsumerWidget {
         context: context,
         barrierDismissible: false,
         builder: (ctx) => Center(
-          child: Container(
-            padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 32),
-            decoration: BoxDecoration(
-              color: context.appColors.background,
-              borderRadius: BorderRadius.circular(24),
-            ),
-            child: Column(
-              mainAxisSize: MainAxisSize.min,
-              children: [
-                const PulsingSyncAnimation(size: 140),
-                const SizedBox(height: 24),
-                Text(
-                  context.t.privacy.importInProgress,
-                  style: TextStyle(
-                    color: context.appColors.foreground,
-                    fontFamily: 'Inter',
-                    fontSize: 18,
-                    fontWeight: FontWeight.w600,
+          child: Material(
+            type: MaterialType.transparency,
+            child: Container(
+              padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 32),
+              decoration: BoxDecoration(
+                color: context.appColors.background,
+                borderRadius: BorderRadius.circular(24),
+              ),
+              child: Column(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  const PulsingSyncAnimation(size: 140),
+                  const SizedBox(height: 24),
+                  Text(
+                    context.t.privacy.importInProgress,
+                    style: TextStyle(
+                      color: context.appColors.foreground,
+                      fontFamily: 'Inter',
+                      fontSize: 18,
+                      fontWeight: FontWeight.w600,
+                    ),
                   ),
-                ),
-                const SizedBox(height: 8),
-                Text(
-                  "This might take a few seconds...",
-                  style: TextStyle(
-                    color: context.appColors.mutedForeground,
-                    fontFamily: 'Inter',
-                    fontSize: 14,
+                  const SizedBox(height: 8),
+                  Text(
+                    context.t.privacy.importWaitMessage,
+                    style: TextStyle(
+                      color: context.appColors.mutedForeground,
+                      fontFamily: 'Inter',
+                      fontSize: 14,
+                    ),
                   ),
-                ),
-              ],
+                ],
+              ),
             ),
           ),
         ),
@@ -1039,11 +1043,17 @@ class PrivacySettingsScreen extends ConsumerWidget {
       );
 
       // 4. Refresh Providers
-      ref.invalidate(goalsProvider);
-      ref.invalidate(habitLogsProvider);
-      ref.invalidate(macroGoalsProvider);
-      ref.invalidate(macroGoalCategoriesProvider);
-      ref.invalidate(dailyMoodsProvider);
+      invalidatePrivateDataProviders(ref);
+
+      // 5. Resync notifications after goals have had a moment to load from the DB
+      Future.delayed(const Duration(seconds: 1), () {
+        // Use a persistent container reference if we don't have context, or just read from the active ref
+        try {
+          ref.read(settingsProvider.notifier).syncNotifications();
+        } catch (e) {
+          AppLogger.error('Failed to sync notifications after import', e);
+        }
+      });
 
       if (context.mounted) {
         Navigator.pop(context); // Close progress

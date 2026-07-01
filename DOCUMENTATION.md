@@ -648,3 +648,14 @@ NEXT ACTION: Ensure device is running the latest built version of the codebase.
 - [2026-06-30 23:25]: App Store Connect Metadata Translation Update
   - *Details*: Added translated 'What's new' text ('Funzionalità di Import per utenti di Mattioli.OS') for App Store Connect metadata.
   - *Tech Notes*: Updated Fastfile to explicitly set FASTLANE_ITC_TEAM_ID, map correct locales (fr-FR, de-DE), and automatically upload translations directly to App Store Connect via Spaceship::ConnectAPI.
+
+- [2026-07-01]: App Version Increment
+  - *Details*: Incremented the version in pubspec.yaml for the upcoming mobile app App Store release.
+  - *Tech Notes*: Updated mobile/pubspec.yaml version from 1.0.6+10 to 1.0.7+11.
+
+- [2026-07-01]: Settings Page Version Text Update
+  - *Details*: Updated the hardcoded app version text shown in the Settings page from 1.0.0 to 1.0.7.
+  - *Tech Notes*: Modified `appVersion` string in all 5 localized `i18n.json` files and ran `dart run slang` to regenerate `.g.dart` translations.
+- [2026-07-01]: Fixed Import Dialog UI and Translations
+  - *Details*: Fixed the yellow underline styling issue in the import loading dialog and added translations for the "This might take a few seconds..." text.
+  - *Tech Notes*: Wrapped the `showDialog` container in `privacy_settings_screen.dart` with a `Material(type: MaterialType.transparency)` widget to remove the yellow double-underline default text style fallback. Added the `importWaitMessage` key to all `i18n.json` files and ran `dart run slang` to generate localized strings.

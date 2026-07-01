@@ -403,7 +403,7 @@ class _TopHabitCorrelationsSectionState
 
             // Carousel
             SizedBox(
-              height: 280, // Height for habit cards
+              height: 320, // Height for habit cards
               child: PageView.builder(
                 controller: _pageController,
                 itemCount: widget.goalIds.length,
@@ -565,10 +565,11 @@ class _AbitudineChiaveCard extends StatelessWidget {
           ),
         ],
       ),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Row(
+      child: SingleChildScrollView(
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Row(
             children: [
               Container(
                 width: 10,
@@ -718,6 +719,7 @@ class _AbitudineChiaveCard extends StatelessWidget {
             ],
           ),
         ],
+        ),
       ),
     );
   }

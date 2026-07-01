@@ -273,7 +273,7 @@ class AppSettingsNotifier extends Notifier<AppSettings> {
           .read(privateLocalDatabaseProvider)
           .loadSettingsRow();
       state = _settingsFromPrivateRow(row);
-      _syncNotifications();
+      syncNotifications();
     } catch (e, stack) {
       AppLogger.error('[Settings] Private settings load error', e, stack);
       state = state.copyWith(isPro: true);
@@ -287,7 +287,7 @@ class AppSettingsNotifier extends Notifier<AppSettings> {
       final defaults = _defaultSettings().copyWith(isPro: true);
       state = defaults;
       _saveToPrivate(defaults);
-      _syncNotifications();
+      syncNotifications();
       return;
     }
 
@@ -323,7 +323,7 @@ class AppSettingsNotifier extends Notifier<AppSettings> {
       _saveToPrefs(state);
       _syncToSupabase(state);
     }
-    _syncNotifications();
+    syncNotifications();
   }
 
   void setAccentColor(Color color) {
@@ -369,7 +369,7 @@ class AppSettingsNotifier extends Notifier<AppSettings> {
         _saveToPrefs(state);
         _syncToSupabase(state);
       }
-      _syncNotifications();
+      syncNotifications();
     }
   }
 
@@ -685,7 +685,7 @@ class AppSettingsNotifier extends Notifier<AppSettings> {
 
   // ── Notifiche ─────────────────────────────────────────────────────────────
 
-  void _syncNotifications() {
+  void syncNotifications() {
     _notificationService.cancelAll().then((_) {
       if (state.focusMode) return;
 

@@ -2113,3 +2113,18 @@ iCloud Sync core is implemented, unit-tested (160), and iOS-compiling. Remaining
 *Details*: Fixed a bug where the habit selector bottom sheet on the statistics page was not scrollable, preventing access to all habits if the user had many.
 *Tech Notes*:
 - Wrapped the main `Column` in `_showGoalSelector` (`lib/ui/screens/statistics_screen.dart`) within a `SingleChildScrollView` to allow vertical scrolling.
+
+## [2026-07-01 08:21]: Bugfix - Statistics Refresh on Import
+*Details*: Fixed a bug where the statistics page did not update its metrics after importing data from a backup zip.
+*Tech Notes*:
+- Modified `lib/ui/screens/privacy_settings_screen.dart` to use the `invalidatePrivateDataProviders(ref)` helper from `lib/providers/sync_refresh.dart` during `_importData`.
+- This ensures that in addition to the base data providers (goals, logs, etc.), all derived statistics and analytics providers are invalidated and forced to recalculate with the newly imported data, rather than showing stale cached values.
+
+## [2026-07-01 08:26]: Bugfix - Reschedule Notifications on Import
+*Details*: Fixed a bug where local notifications (reminders) for imported habits were not scheduled until the app was restarted.
+*Tech Notes*:
+- Exposed `syncNotifications()` in `lib/providers/settings_provider.dart` (renamed from private `_syncNotifications`).
+- Modified `lib/ui/screens/privacy_settings_screen.dart` to wait 1 second after invalidating providers, and then call `ref.read(settingsProvider.notifier).syncNotifications()` to reschedule notifications for the newly loaded habits.
+- [2026-07-01 08:31]: Fixed Statistics Page UI Overflow
+  - *Details*: Fixed a UI issue where the 'Key Habits' ("Abitudini Chiave") card in the statistics page would overflow by 2.0 pixels at the bottom.
+  - *Tech Notes*: Increased the height of the `PageView` container in `lib/ui/widgets/statistics/info_tab_widget.dart` from 280 to 320. Additionally, wrapped the `Column` inside `_AbitudineChiaveCard` with a `SingleChildScrollView` to provide a fallback scrolling mechanism for users with larger text scaling settings.

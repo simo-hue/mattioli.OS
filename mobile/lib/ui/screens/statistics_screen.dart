@@ -740,11 +740,12 @@ class _StatisticsScreenState extends ConsumerState<StatisticsScreen>
         return SafeArea(
           child: Padding(
             padding: const EdgeInsets.symmetric(vertical: 24),
-            child: Column(
-              mainAxisSize: MainAxisSize.min,
-              children: [
-                Text(
-                  context.t.statistics.selectHabit,
+            child: SingleChildScrollView(
+              child: Column(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  Text(
+                    context.t.statistics.selectHabit,
                   style: TextStyle(
                     fontFamily: 'Inter',
                     fontSize: 10,
@@ -849,7 +850,8 @@ class _StatisticsScreenState extends ConsumerState<StatisticsScreen>
                   );
                 }),
                 const SizedBox(height: 8),
-              ],
+                ],
+              ),
             ),
           ),
         );

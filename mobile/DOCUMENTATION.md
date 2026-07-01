@@ -2108,3 +2108,8 @@ Phase 1 Private Mode is feature-complete, localized (en/it/es/de/**ar**), and re
 
 ## Current Status
 iCloud Sync core is implemented, unit-tested (160), and iOS-compiling. Remaining: after-write debounced trigger + avatar CKAsset sync (refinements), and Apple provisioning + two-device device QA (manual, TO_SIMO_DO.md). Local Private Mode (Phase 1) remains complete.
+
+## [2026-07-01 08:08]: Bugfix - Scrollable Habit Selector in Statistics
+*Details*: Fixed a bug where the habit selector bottom sheet on the statistics page was not scrollable, preventing access to all habits if the user had many.
+*Tech Notes*:
+- Wrapped the main `Column` in `_showGoalSelector` (`lib/ui/screens/statistics_screen.dart`) within a `SingleChildScrollView` to allow vertical scrolling.

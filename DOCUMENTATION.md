@@ -659,3 +659,7 @@ NEXT ACTION: Ensure device is running the latest built version of the codebase.
 - [2026-07-01]: Fixed Import Dialog UI and Translations
   - *Details*: Fixed the yellow underline styling issue in the import loading dialog and added translations for the "This might take a few seconds..." text.
   - *Tech Notes*: Wrapped the `showDialog` container in `privacy_settings_screen.dart` with a `Material(type: MaterialType.transparency)` widget to remove the yellow double-underline default text style fallback. Added the `importWaitMessage` key to all `i18n.json` files and ran `dart run slang` to generate localized strings.
+
+- [2026-07-01]: App Store Connect Metadata Translation Update (Miglioramento Grafico)
+  - *Details*: Added translated 'Miglioramento Grafico' text for App Store Connect metadata 'What's new' field.
+  - *Tech Notes*: Updated `ios/fastlane/Fastfile` to include 'Miglioramento Grafico' mapped to its correct localized translations.

@@ -355,7 +355,7 @@
     "repeatTutorial": "Repeat Tutorial",
     "accountSettingsHeader": "ACCOUNT SETTINGS",
     "accountVerified": "Verified Account",
-    "appVersion": "Version 1.0.7",
+    "appVersion": "Version {version}",
     "manageProPlan": "Manage your Pro plan",
     "upgradeToPro": "Upgrade to Pro",
     "yourDataHeader": "YOUR DATA",

@@ -2128,3 +2128,14 @@ iCloud Sync core is implemented, unit-tested (160), and iOS-compiling. Remaining
 - [2026-07-01 08:31]: Fixed Statistics Page UI Overflow
   - *Details*: Fixed a UI issue where the 'Key Habits' ("Abitudini Chiave") card in the statistics page would overflow by 2.0 pixels at the bottom.
   - *Tech Notes*: Increased the height of the `PageView` container in `lib/ui/widgets/statistics/info_tab_widget.dart` from 280 to 320. Additionally, wrapped the `Column` inside `_AbitudineChiaveCard` with a `SingleChildScrollView` to provide a fallback scrolling mechanism for users with larger text scaling settings.
+
+## [2026-07-01 08:34]: Fix - Fixed Statistics by Computing Streaks on Import
+*Details*: Fixed a bug where imported backup logs had `streak: 0` hardcoded, causing statistics to be broken (best, worst, current streak). The `BackupImportService` now sorts the logs chronologically per goal and accurately calculates the running streak for every log.
+*Tech Notes*: 
+- Modified `lib/core/backup_import_service.dart`
+- Used `computeStreak` from `lib/core/streak_utils.dart` to calculate streaks accurately during backup import.
+
+## [2026-07-01 08:37]: Fix - Fixed Best Habits 10000% Bug
+*Details*: Fixed a UI bug in the 'Best Habits' (Abitudini Migliori) widget on the Global Trend tab where the completion rate percentage was being multiplied by 100 incorrectly, displaying 10000% instead of 100%.
+*Tech Notes*: 
+- Modified `lib/ui/widgets/statistics/global_trend_tab_widget.dart` to remove the extraneous `* 100` from the rate calculation since the underlying provider already returns it as a percentage.

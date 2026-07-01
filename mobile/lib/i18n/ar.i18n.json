@@ -355,7 +355,7 @@
     "repeatTutorial": "إعادة الجولة التعليمية",
     "accountSettingsHeader": "إعدادات الحساب",
     "accountVerified": "حساب موثّق",
-    "appVersion": "الإصدار 1.0.7",
+    "appVersion": "الإصدار {version}",
     "manageProPlan": "إدارة خطة Pro الخاصة بك",
     "upgradeToPro": "الترقية إلى Pro",
     "yourDataHeader": "بياناتك",

@@ -52,3 +52,6 @@ CANNOT be done from code:
       sync, manual "Sync now", UI-refresh-after-pull, and delete-reset wiring are
       DONE): the debounced **after-write** sync trigger and **avatar CKAsset**
       sync. The engine/service/bridge/UI they build on are complete.
+
+### 2026-07-01: Fix Statistics for imported data
+The backup import service now correctly calculates streaks. If your statistics page is still showing 0 for past data, you will need to **re-import your backup** or manually trigger a recalculation on the local database for historical logs.

@@ -587,11 +587,11 @@ class _MiglioriAbitudiniSectionState
 
                 return _MiglioreCard(
                   title: habit.title,
-                  rate: '${(rate * 100).toStringAsFixed(0)}%',
+                  rate: '${rate.toStringAsFixed(0)}%',
                   color: const Color(0xFF10B981),
                   streak: '${item['streak']} ${context.t.common.days}',
                   desc: context.t.statistics.habitCompletionPeriodDescription(
-                    rate: (rate * 100).toStringAsFixed(0),
+                    rate: rate.toStringAsFixed(0),
                   ),
                 );
               }).toList();

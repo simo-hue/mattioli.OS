@@ -7,6 +7,7 @@ import 'package:uuid/uuid.dart';
 
 import 'private_data_store.dart';
 import 'app_logger.dart';
+import 'streak_utils.dart';
 
 class BackupImportPreview {
   final int habitsCount;
@@ -187,22 +188,66 @@ class BackupImportService {
     }
 
     // 3. Process Goal Logs
-    final processedLogs = <Map<String, dynamic>>[];
-    for (final l in (rawData['goal_logs'] as List?) ?? []) {
-      final oldLogId = l['id'] as String;
-      final oldGoalId = l['goal_id'] as String;
-      final newLogId = replaceExisting ? oldLogId : _uuid.v4();
+    final rawLogs = (rawData['goal_logs'] as List?) ?? [];
+    final logsByGoal = <String, List<Map<String, dynamic>>>{};
+    for (final l in rawLogs) {
+      final newGoalId = mapId(l['goal_id'] as String);
+      logsByGoal.putIfAbsent(newGoalId, () => []).add(l);
+    }
 
-      processedLogs.add({
-        'id': newLogId,
-        'goal_id': mapId(oldGoalId), // maps to new goal id
-        'date': l['date'],
-        'status': l['status'],
-        'value': l['value'],
-        'created_at': l['created_at'],
-        'updated_at': l['updated_at'],
-        'streak': 0, // default
+    final processedLogs = <Map<String, dynamic>>[];
+    for (final entry in logsByGoal.entries) {
+      final newGoalId = entry.key;
+      final logs = entry.value;
+
+      final matchedGoal = processedGoals.firstWhere(
+        (g) => g['id'] == newGoalId,
+        orElse: () => <String, dynamic>{},
+      );
+      final startDateStr = matchedGoal['start_date'] as String?;
+      final startDate = startDateStr != null
+          ? (DateTime.tryParse(startDateStr) ?? DateTime(2000))
+          : DateTime(2000);
+
+      logs.sort((a, b) {
+        final dateA = DateTime.tryParse(a['date'] as String) ?? DateTime(2000);
+        final dateB = DateTime.tryParse(b['date'] as String) ?? DateTime(2000);
+        return dateA.compareTo(dateB);
       });
+
+      final streakLogsMap = <String, Map<String, String>>{};
+
+      for (final l in logs) {
+        final oldLogId = l['id'] as String;
+        final newLogId = replaceExisting ? oldLogId : _uuid.v4();
+        final dateStr = l['date'] as String;
+        final status = l['status'] as String;
+
+        int streak = 0;
+        final parsedDate = DateTime.tryParse(dateStr);
+        if (parsedDate != null) {
+          final dateKey = '${parsedDate.year}-${parsedDate.month.toString().padLeft(2, '0')}-${parsedDate.day.toString().padLeft(2, '0')}';
+          streakLogsMap.putIfAbsent(dateKey, () => {})[newGoalId] = status;
+
+          streak = computeStreak(
+            habitId: newGoalId,
+            date: parsedDate,
+            logs: streakLogsMap,
+            startDate: startDate,
+          );
+        }
+
+        processedLogs.add({
+          'id': newLogId,
+          'goal_id': newGoalId,
+          'date': dateStr,
+          'status': status,
+          'value': l['value'],
+          'created_at': l['created_at'],
+          'updated_at': l['updated_at'],
+          'streak': streak,
+        });
+      }
     }
 
     // 4. Process Macro Goals

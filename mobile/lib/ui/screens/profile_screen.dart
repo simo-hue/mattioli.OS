@@ -8,6 +8,7 @@ import 'package:image_picker/image_picker.dart';
 import 'package:lucide_icons_flutter/lucide_icons.dart';
 import 'package:path/path.dart' as p;
 import 'package:path_provider/path_provider.dart';
+import 'package:package_info_plus/package_info_plus.dart';
 import '../../core/theme.dart';
 import '../../core/data_mode.dart';
 import '../../core/rtl.dart';
@@ -34,6 +35,26 @@ class ProfileScreen extends ConsumerStatefulWidget {
 class _ProfileScreenState extends ConsumerState<ProfileScreen> {
   File? _profileImage;
   final ImagePicker _picker = ImagePicker();
+  String? _appVersion;
+
+  @override
+  void initState() {
+    super.initState();
+    _loadAppVersion();
+  }
+
+  Future<void> _loadAppVersion() async {
+    try {
+      final info = await PackageInfo.fromPlatform();
+      if (mounted) {
+        setState(() {
+          _appVersion = info.version;
+        });
+      }
+    } catch (e) {
+      // Ignore
+    }
+  }
 
   Future<void> _pickImage() async {
     try {
@@ -588,7 +609,9 @@ class _ProfileScreenState extends ConsumerState<ProfileScreen> {
                 const SizedBox(height: 16),
                 Center(
                   child: Text(
-                    context.t.profile.appVersion,
+                    _appVersion != null 
+                        ? context.t.profile.appVersion(version: _appVersion!)
+                        : '',
                     style: TextStyle(
                       color: context.appColors.mutedForeground.withValues(
                         alpha: 0.5,

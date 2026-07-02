@@ -6,6 +6,7 @@ import 'sync_crypto.dart';
 import 'sync_engine.dart';
 import 'sync_key_store.dart';
 import 'sync_local_store.dart';
+import 'app_logger.dart';
 
 /// Per-device "sync enabled" flag (sync is an opt-in, per-device choice — it is
 /// NOT shared via iCloud Keychain).
@@ -68,46 +69,84 @@ class CloudKitPrivateSyncService implements PrivateSyncService {
 
   @override
   Future<PrivateSyncStatus> enable() async {
-    final store = await storeProvider();
-    final engine = await _engine(store);
-    final res = await engine.enable(keys: keys, localOwner: await ownerProvider());
-    if (res.ran) await enabledStore.setEnabled(true);
-    return _status(appliedChanges: res.applied);
+    try {
+      AppLogger.info('[CloudKit] Enabling sync...');
+      final store = await storeProvider();
+      final engine = await _engine(store);
+      final res = await engine.enable(keys: keys, localOwner: await ownerProvider());
+      if (res.ran) {
+        await enabledStore.setEnabled(true);
+        AppLogger.info('[CloudKit] Sync enabled successfully');
+      } else {
+        AppLogger.info('[CloudKit] Sync enable skipped (blocked by: ${res.blockedBy})');
+      }
+      return _status(appliedChanges: res.applied);
+    } catch (e, stack) {
+      AppLogger.error('[CloudKit] Failed to enable sync', e, stack);
+      rethrow;
+    }
   }
 
   @override
   Future<PrivateSyncStatus> disable() async {
-    // Stop syncing; leave the CloudKit data + key intact (re-enable resumes).
-    await enabledStore.setEnabled(false);
-    return status();
+    try {
+      AppLogger.info('[CloudKit] Disabling sync...');
+      // Stop syncing; leave the CloudKit data + key intact (re-enable resumes).
+      await enabledStore.setEnabled(false);
+      AppLogger.info('[CloudKit] Sync disabled successfully');
+      return status();
+    } catch (e, stack) {
+      AppLogger.error('[CloudKit] Failed to disable sync', e, stack);
+      rethrow;
+    }
   }
 
   @override
   Future<PrivateSyncStatus> syncNow() async {
-    final store = await storeProvider();
-    // Honor a queued full-reset wipe even when sync is disabled (it's cleanup).
-    if (await store.pendingZoneWipe()) {
-      // The engine's wipe path doesn't use the key (it's gone after a reset).
-      final r = await (await _engine(store))
-          .syncNow(await keys.readKey() ?? crypto.generateKey());
+    try {
+      final store = await storeProvider();
+      // Honor a queued full-reset wipe even when sync is disabled (it's cleanup).
+      if (await store.pendingZoneWipe()) {
+        AppLogger.info('[CloudKit] Executing pending zone wipe...');
+        // The engine's wipe path doesn't use the key (it's gone after a reset).
+        final r = await (await _engine(store))
+            .syncNow(await keys.readKey() ?? crypto.generateKey());
+        AppLogger.info('[CloudKit] Zone wipe completed');
+        return _status(appliedChanges: r.applied);
+      }
+      if (!await enabledStore.isEnabled()) return status();
+      final key = await keys.readKey();
+      if (key == null) return status(); // key not in iCloud Keychain yet
+      
+      AppLogger.info('[CloudKit] Sync starting...');
+      final r = await (await _engine(store)).syncNow(key);
+      AppLogger.info('[CloudKit] Sync finished', extras: {
+        'pushed': r.pushed,
+        'applied': r.applied,
+        'skipped': r.skipped,
+      });
       return _status(appliedChanges: r.applied);
+    } catch (e, stack) {
+      AppLogger.error('[CloudKit] Sync failed', e, stack);
+      rethrow;
     }
-    if (!await enabledStore.isEnabled()) return status();
-    final key = await keys.readKey();
-    if (key == null) return status(); // key not in iCloud Keychain yet
-    final r = await (await _engine(store)).syncNow(key);
-    return _status(appliedChanges: r.applied);
   }
 
   @override
   Future<PrivateSyncStatus> requestFullReset() async {
-    final store = await storeProvider();
-    await store.setPendingZoneWipe(true);
-    await enabledStore.setEnabled(false);
-    await keys.deleteAll(); // remove shared key + owner from iCloud Keychain
-    // Attempt the cloud wipe now; if offline it stays queued (pending_zone_wipe)
-    // and a later syncNow completes it.
-    await syncNow();
-    return status();
+    try {
+      AppLogger.info('[CloudKit] Requesting full reset...');
+      final store = await storeProvider();
+      await store.setPendingZoneWipe(true);
+      await enabledStore.setEnabled(false);
+      await keys.deleteAll(); // remove shared key + owner from iCloud Keychain
+      // Attempt the cloud wipe now; if offline it stays queued (pending_zone_wipe)
+      // and a later syncNow completes it.
+      await syncNow();
+      return status();
+    } catch (e, stack) {
+      AppLogger.error('[CloudKit] Request full reset failed', e, stack);
+      rethrow;
+    }
   }
 }

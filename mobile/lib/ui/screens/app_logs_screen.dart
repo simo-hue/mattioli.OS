@@ -1,7 +1,10 @@
+import 'dart:io';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:lucide_icons_flutter/lucide_icons.dart';
+import 'package:path_provider/path_provider.dart';
+import 'package:share_plus/share_plus.dart';
 import '../../core/app_logger.dart';
 import '../../core/theme.dart';
 import '../../core/rtl.dart';
@@ -75,9 +78,8 @@ class _AppLogsScreenState extends State<AppLogsScreen> {
     return logs;
   }
 
-  void _copyAllLogs() {
-    final logs = _filteredLogs;
-    if (logs.isEmpty) return;
+  String _formatLogs(List<LogEntry> logs) {
+    if (logs.isEmpty) return 'No logs available.';
 
     final buffer = StringBuffer();
     buffer.writeln('=== App Logs Export ===');
@@ -101,8 +103,12 @@ class _AppLogsScreenState extends State<AppLogsScreen> {
       }
       buffer.writeln('');
     }
+    return buffer.toString();
+  }
 
-    Clipboard.setData(ClipboardData(text: buffer.toString()));
+  void _copyAllLogs() {
+    final text = _formatLogs(AppLogger.logs);
+    Clipboard.setData(ClipboardData(text: text));
     if (mounted) {
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(
@@ -114,6 +120,22 @@ class _AppLogsScreenState extends State<AppLogsScreen> {
         ),
       );
     }
+  }
+
+  Future<void> _shareLogs() async {
+    final text = _formatLogs(AppLogger.logs);
+    final tempDir = await getTemporaryDirectory();
+    final file = File('${tempDir.path}/mattioli_logs_${DateTime.now().millisecondsSinceEpoch}.txt');
+    await file.writeAsString(text);
+    
+    if (!mounted) return;
+    final box = context.findRenderObject() as RenderBox?;
+    // ignore: deprecated_member_use
+    await Share.shareXFiles(
+      [XFile(file.path)],
+      text: 'Exported App Logs',
+      sharePositionOrigin: box != null ? box.localToGlobal(Offset.zero) & box.size : null,
+    );
   }
 
   void _confirmClearLogs() {
@@ -218,6 +240,19 @@ class _AppLogsScreenState extends State<AppLogsScreen> {
             ),
             itemBuilder: (context) => [
               PopupMenuItem(
+                value: 'share',
+                child: Row(
+                  children: [
+                    Icon(LucideIcons.share, size: 16, color: colors.foreground),
+                    const SizedBox(width: 10),
+                    Text(
+                      'Share Logs File',
+                      style: TextStyle(color: colors.foreground, fontSize: 14),
+                    ),
+                  ],
+                ),
+              ),
+              PopupMenuItem(
                 value: 'copy',
                 child: Row(
                   children: [
@@ -245,6 +280,7 @@ class _AppLogsScreenState extends State<AppLogsScreen> {
               ),
             ],
             onSelected: (value) {
+              if (value == 'share') _shareLogs();
               if (value == 'copy') _copyAllLogs();
               if (value == 'clear') _confirmClearLogs();
             },

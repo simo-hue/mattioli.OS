@@ -1,4 +1,10 @@
+import 'dart:async';
+import 'dart:convert';
+import 'dart:io';
+
 import 'package:flutter/foundation.dart';
+import 'package:flutter/widgets.dart';
+import 'package:path_provider/path_provider.dart';
 import 'package:sentry_flutter/sentry_flutter.dart';
 import 'privacy_utils.dart';
 
@@ -42,6 +48,29 @@ class LogEntry {
 
   static String _pad(int n) => n.toString().padLeft(2, '0');
   static String _pad3(int n) => n.toString().padLeft(3, '0');
+
+  Map<String, dynamic> toJson() => {
+        'timestamp': timestamp.toIso8601String(),
+        'level': level.name,
+        'message': message,
+        'error': error,
+        'stackTrace': stackTrace,
+        'extras': extras,
+      };
+
+  factory LogEntry.fromJson(Map<String, dynamic> json) {
+    return LogEntry(
+      timestamp: DateTime.parse(json['timestamp'] as String),
+      level: AppLogLevel.values.firstWhere(
+        (e) => e.name == json['level'],
+        orElse: () => AppLogLevel.info,
+      ),
+      message: json['message'] as String,
+      error: json['error'] as String?,
+      stackTrace: json['stackTrace'] as String?,
+      extras: json['extras'] as Map<String, dynamic>?,
+    );
+  }
 }
 
 /// Helper centralizzato per il reporting degli errori.
@@ -66,6 +95,56 @@ class AppLogger {
 
   /// In-memory ring buffer of recent log entries.
   static final List<LogEntry> _logs = [];
+
+  static Timer? _saveTimer;
+  static bool _isLoading = false;
+
+  static Future<File> get _logFile async {
+    final dir = await getApplicationDocumentsDirectory();
+    return File('${dir.path}/app_logs.json');
+  }
+
+  /// Loads persisted logs from the local filesystem.
+  /// Should be called once during app startup in main.dart.
+  static Future<void> loadLogs() async {
+    if (_isLoading) return;
+    _isLoading = true;
+    try {
+      final file = await _logFile;
+      if (await file.exists()) {
+        final content = await file.readAsString();
+        final List<dynamic> decoded = jsonDecode(content);
+        _logs.clear();
+        for (final item in decoded) {
+          try {
+            _logs.add(LogEntry.fromJson(item as Map<String, dynamic>));
+          } catch (_) {
+            // Skip malformed entries safely
+          }
+        }
+        _notifyListeners();
+      }
+    } catch (e) {
+      if (kDebugMode) debugPrint('[AppLogger] Failed to load persisted logs: $e');
+    } finally {
+      _isLoading = false;
+    }
+  }
+
+  static void _scheduleSave() {
+    _saveTimer?.cancel();
+    _saveTimer = Timer(const Duration(seconds: 2), () async {
+      try {
+        final file = await _logFile;
+        // Make a copy to avoid concurrent modification errors during JSON encoding
+        final logsCopy = _logs.toList();
+        final serialized = jsonEncode(logsCopy.map((e) => e.toJson()).toList());
+        await file.writeAsString(serialized);
+      } catch (e) {
+        if (kDebugMode) debugPrint('[AppLogger] Failed to persist logs: $e');
+      }
+    });
+  }
 
   /// Listeners notified when a new log entry is added.
   static final List<VoidCallback> _listeners = [];
@@ -104,12 +183,14 @@ class AppLogger {
       _logs.removeAt(0);
     }
     _notifyListeners();
+    _scheduleSave();
   }
 
   /// Clear all stored log entries.
   static void clearLogs() {
     _logs.clear();
     _notifyListeners();
+    _scheduleSave();
   }
 
   static void setExternalReportingDisabled(bool disabled) {
@@ -227,3 +308,29 @@ class AppLogger {
     }
   }
 }
+
+/// A NavigatorObserver that logs all navigation events (push, pop, replace)
+/// to the AppLogger as Info-level breadcrumbs.
+class AppLoggerNavigatorObserver extends NavigatorObserver {
+  @override
+  void didPush(Route<dynamic> route, Route<dynamic>? previousRoute) {
+    if (route.settings.name != null) {
+      AppLogger.info('[Nav] Pushed ${route.settings.name}', category: 'navigation');
+    }
+  }
+
+  @override
+  void didPop(Route<dynamic> route, Route<dynamic>? previousRoute) {
+    if (previousRoute?.settings.name != null) {
+      AppLogger.info('[Nav] Popped to ${previousRoute?.settings.name}', category: 'navigation');
+    }
+  }
+
+  @override
+  void didReplace({Route<dynamic>? newRoute, Route<dynamic>? oldRoute}) {
+    if (newRoute?.settings.name != null) {
+      AppLogger.info('[Nav] Replaced with ${newRoute?.settings.name}', category: 'navigation');
+    }
+  }
+}
+

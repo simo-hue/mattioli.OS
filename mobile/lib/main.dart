@@ -35,6 +35,9 @@ import 'i18n/translations.g.dart';
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
   await SystemChrome.setPreferredOrientations([DeviceOrientation.portraitUp]);
+  
+  // ── Load persisted App Logs ───────────────────────────────────────────────
+  await AppLogger.loadLogs();
 
   await initializeDateFormatting();
 
@@ -165,10 +168,12 @@ void main() async {
         return true;
       }
 
-      // Invia l'errore a Sentry (se inizializzato)
-      if (!AppLogger.externalReportingDisabled) {
-        Sentry.captureException(error, stackTrace: stack);
-      }
+      // Registra l'errore globalmente (App Logs + Sentry se abilitato)
+      AppLogger.error(
+        '[System] Unhandled global exception',
+        error,
+        stack,
+      );
 
       final context = navigatorKey.currentContext;
       if (context != null) {
@@ -238,9 +243,10 @@ final routerProvider = Provider<GoRouter>((ref) {
     initialLocation: '/',
     debugLogDiagnostics: false,
     refreshListenable: Listenable.merge([authNotifier, dataModeNotifier]),
-    observers: dataMode == AppDataMode.private
-        ? const []
-        : [SentryNavigatorObserver()],
+    observers: [
+      AppLoggerNavigatorObserver(),
+      if (dataMode != AppDataMode.private) SentryNavigatorObserver(),
+    ],
     routes: [
       GoRoute(path: '/', builder: (context, state) => const HomeScreen()),
       GoRoute(path: '/login', builder: (context, state) => const AuthScreen()),
@@ -312,6 +318,8 @@ class _EvolveAppState extends ConsumerState<EvolveApp>
 
   @override
   void didChangeAppLifecycleState(AppLifecycleState state) {
+    AppLogger.info('[AppLifecycle] State changed to ${state.name}', category: 'lifecycle');
+    
     // Foreground sync trigger: on resume, pull/push private data. Gated to
     // Private mode so it never opens the private DB or calls CloudKit in
     // Supabase mode; the service itself is a no-op on Android and when sync is

@@ -4,6 +4,7 @@ import 'cloudkit_bridge.dart';
 import 'sync_crypto.dart';
 import 'sync_key_store.dart';
 import 'sync_local_store.dart';
+import 'app_logger.dart';
 
 class SyncResult {
   final int pushed;
@@ -133,6 +134,12 @@ class SyncEngine {
     }
     for (final err in outcome.errors) {
       await store.markError(err.recordName, err.code);
+      AppLogger.error(
+        '[CloudKit] Record push failed',
+        err.code,
+        null,
+        {'recordName': err.recordName},
+      );
     }
     // Conflicts (server has a newer version) are intentionally left dirty: the
     // pull below fetches the newer record and LWW-applies it, clearing dirty.
@@ -196,8 +203,14 @@ class SyncEngine {
         );
       }
       return true;
-    } catch (e) {
+    } catch (e, stack) {
       await store.markError(rec.recordName, e.toString());
+      AppLogger.error(
+        '[CloudKit] Record apply failed',
+        e,
+        stack,
+        {'recordName': rec.recordName, 'tableName': rec.tableName},
+      );
       return false;
     }
   }

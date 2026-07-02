@@ -3,11 +3,15 @@
 ## [2026-07-02 12:33]: Feature - In-App Log Viewer (App Logs Screen)
 *Details*: Added a full in-app log viewer accessible from the Profile → System section. The feature captures all errors, warnings, and info-level logs in an in-memory ring buffer (500 entries max) and presents them in a developer-console–style UI with JetBrains Mono monospace font, color-coded severity badges, filterable chips, full-text search, and expandable detail sheets with selectable text for stack traces. Designed for technical users to diagnose issues without external tools.
 *Tech Notes*:
-- **Modified**: `lib/core/app_logger.dart` — Added `LogEntry` model, `LogLevel` enum, in-memory `_logs` ring buffer (500 max), listener system for reactive UI updates, and `clearLogs()`. All existing Sentry integration preserved unchanged.
+- **Modified**: `lib/core/app_logger.dart` — Renamed `LogLevel` to `AppLogLevel` to avoid conflicts, added `LogEntry` model, in-memory `_logs` ring buffer (500 max), listener system for reactive UI updates, and `clearLogs()`. All existing Sentry integration preserved unchanged.
 - **New**: `lib/ui/screens/app_logs_screen.dart` — Full log viewer screen with: filter chips (All/Errors/Warnings/Info) with live counts, search bar (JetBrains Mono), log cards with level badges + timestamps, expandable detail bottom sheet (message, error, extras, stack trace all selectable), copy-to-clipboard (single entry or all filtered), clear logs with confirmation dialog.
 - **Modified**: `lib/ui/screens/profile_screen.dart` — Added "App Logs" menu item in the System section with `LucideIcons.scrollText` icon.
 - **i18n**: Added `appLogs` section to all 5 language files (EN, IT, DE, ES, AR) with 16 keys each, then regenerated with `dart run slang`.
-- No new dependencies added.
+- **Global Error Handling**: Modified `lib/main.dart` `PlatformDispatcher.instance.onError` to route all unhandled global exceptions into `AppLogger.error` so they appear in the UI.
+- **iCloud Sync Logging**: Modified `lib/core/cloudkit_private_sync_service.dart` and `lib/core/sync_engine.dart` to emit detailed `AppLogger.info` events for sync lifecycles and `AppLogger.error` for both top-level sync failures and individual record apply/push failures.
+- **Log Persistence**: Added local file persistence to `AppLogger` (`app_logs.json`) using `path_provider`. The buffer is written asynchronously with a 2-second debounce (`Timer`) to prevent UI stutter during heavy logging. Logs are loaded synchronously early in `main.dart` so they survive app crashes and restarts.
+- **Navigation & Lifecycle Breadcrumbs**: Attached `AppLoggerNavigatorObserver` to `GoRouter` and added lifecycle logging to `WidgetsBindingObserver` in `main.dart` so users can see exactly what screens were navigated and when the app was backgrounded/foregrounded leading up to an error.
+- **Share Logs via File**: Added a Share icon to the `AppLogsScreen` top menu that exports all 500 logs as a plain text file (`.txt`) and opens the native iOS share sheet (using `share_plus`), making it easy to email or AirDrop logs to developers.
 
 ## [2026-07-02 12:20]: UI - Mood Check-In Pulsing Glow Animation & Checkmark Badge
 *Details*: Added a heartbeat-style pulsing red glow animation to the daily mood check-in tile on the dashboard when the user hasn't logged their mood for the day. When mood is logged, the glow stops instantly and a green checkmark badge appears in the top-right corner of the tile.

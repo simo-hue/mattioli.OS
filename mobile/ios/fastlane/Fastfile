@@ -24,24 +24,24 @@ platform :ios do
     UI.message("Lingue da aggiornare: #{all_locales.join(', ')}")
     
     translations = {
-      "it" => "Funzionalità di Import per utenti di Mattioli.OS\nMiglioramento Grafico",
-      "en" => "Import functionality for Mattioli.OS users\nGraphic Improvements",
-      "fr" => "Fonctionnalité d'importation pour les utilisateurs de Mattioli.OS\nAméliorations Graphiques",
-      "vi" => "Chức năng nhập cho người dùng Mattioli.OS\nCải Tiến Đồ Họa",
-      "ko" => "Mattioli.OS 사용자를 위한 가져오기 기능\n그래픽 개선",
-      "es" => "Funcionalidad de importación para usuarios de Mattioli.OS\nMejoras Gráficas",
-      "id" => "Fungsionalitas impor untuk pengguna Mattioli.OS\nPeningkatan Grafis",
-      "de" => "Importfunktion für Mattioli.OS-Benutzer\nGrafische Verbesserungen",
-      "sk" => "Funkcia importu pre používateľov Mattioli.OS\nGrafické Vylepšenia",
-      "sv" => "Importfunktion för användare av Mattioli.OS\nGrafiska Förbättringar",
-      "da" => "Importfunktion for Mattioli.OS-brugere\nGrafiske Forbedringer",
-      "pt" => "Funcionalidade de importação para usuários do Mattioli.OS\nMelhorias Gráficas",
-      "he" => "פונקציונליות ייבוא עבור משתמשי Mattioli.OS\nשיפורים גרפיים",
-      "el" => "Λειτουργία εισαγωγής για χρήστες Mattioli.OS\nΓραφικές Βελτιώσεις",
-      "zh" => "Mattioli.OS用户的导入功能\n图形改进",
-      "ja" => "Mattioli.OSユーザー向けのインポート機能\nグラフィックの改善",
-      "ru" => "Функция импорта для пользователей Mattioli.OS\nГрафические Улучшения",
-      "ar" => "وظيفة الاستيراد لمستخدمي Mattioli.OS\nتحسينات رسومية"
+      "it" => "Logs nelle impostazioni",
+      "en" => "Logs in settings",
+      "fr" => "Logs dans les paramètres",
+      "vi" => "Nhật ký trong cài đặt",
+      "ko" => "설정의 로그",
+      "es" => "Registros en los ajustes",
+      "id" => "Log di pengaturan",
+      "de" => "Protokolle in den Einstellungen",
+      "sk" => "Denníky v nastaveniach",
+      "sv" => "Loggar i inställningar",
+      "da" => "Logfiler i indstillinger",
+      "pt" => "Logs nas configurações",
+      "he" => "יומנים בהגדרות",
+      "el" => "Αρχεία καταγραφής στις ρυθμίσεις",
+      "zh" => "设置中的日志",
+      "ja" => "設定のログ",
+      "ru" => "Журналы в настройках",
+      "ar" => "السجلات في الإعدادات"
     }
     
     all_locales.each do |locale|

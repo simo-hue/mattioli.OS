@@ -663,3 +663,11 @@ NEXT ACTION: Ensure device is running the latest built version of the codebase.
 - [2026-07-01]: App Store Connect Metadata Translation Update (Miglioramento Grafico)
   - *Details*: Added translated 'Miglioramento Grafico' text for App Store Connect metadata 'What's new' field.
   - *Tech Notes*: Updated `ios/fastlane/Fastfile` to include 'Miglioramento Grafico' mapped to its correct localized translations.
+
+- [2026-07-02]: App Version Increment
+  - *Details*: Incremented the version in pubspec.yaml for the upcoming mobile app App Store release.
+  - *Tech Notes*: Updated `mobile/pubspec.yaml` version from 1.0.7+11 to 1.0.8+12.
+
+- [2026-07-02]: App Store Connect 'What's New' Update
+  - *Details*: Updated 'What's new in this version' to "Logs nelle impostazioni" across all supported App Store languages using Fastlane.
+  - *Tech Notes*: Edited the translations dictionary in `ios/fastlane/Fastfile` and executed `fastlane update_notes`.

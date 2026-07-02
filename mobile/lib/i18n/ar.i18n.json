@@ -1007,5 +1007,26 @@
     "heatmapLabel": "خريطة حرارية لنشاط العادات",
     "yearlyGridLabel": "شبكة النشاط السنوية",
     "lifeGridLabel": "الحياة بالأشهر: {lived} من {total} مُعاشة"
+  },
+  "appLogs": {
+    "title": "سجلات التطبيق",
+    "menuSubtitle": "عرض الأخطاء والتحذيرات والسجلات التقنية",
+    "filterAll": "الكل",
+    "filterErrors": "أخطاء",
+    "filterWarnings": "تحذيرات",
+    "filterInfo": "معلومات",
+    "searchPlaceholder": "البحث في السجلات...",
+    "copyAll": "نسخ جميع السجلات",
+    "clearLogsTitle": "مسح السجلات",
+    "clearLogsConfirm": "هل أنت متأكد من رغبتك في مسح جميع إدخالات السجل؟ لا يمكن التراجع عن هذا الإجراء.",
+    "clearLogsAction": "مسح الكل",
+    "copiedToClipboard": "تم نسخ السجلات إلى الحافظة",
+    "stackTraceAvailable": "انقر لعرض تتبع المكدس",
+    "emptyTitle": "لا توجد سجلات",
+    "emptySubtitle": "ستظهر السجلات هنا أثناء تشغيل التطبيق",
+    "detailMessage": "الرسالة",
+    "detailError": "الخطأ",
+    "detailExtras": "سياق إضافي",
+    "detailStackTrace": "تتبع المكدس"
   }
 }

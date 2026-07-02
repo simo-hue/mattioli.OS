@@ -1023,5 +1023,26 @@
     "heatmapLabel": "Habit activity heatmap",
     "yearlyGridLabel": "Yearly activity grid",
     "lifeGridLabel": "Life in months: {lived} of {total} lived"
+  },
+  "appLogs": {
+    "title": "App Logs",
+    "menuSubtitle": "View errors, warnings and technical logs",
+    "filterAll": "All",
+    "filterErrors": "Errors",
+    "filterWarnings": "Warnings",
+    "filterInfo": "Info",
+    "searchPlaceholder": "Search logs...",
+    "copyAll": "Copy All Logs",
+    "clearLogsTitle": "Clear Logs",
+    "clearLogsConfirm": "Are you sure you want to clear all log entries? This action cannot be undone.",
+    "clearLogsAction": "Clear All",
+    "copiedToClipboard": "Logs copied to clipboard",
+    "stackTraceAvailable": "Tap to view stack trace",
+    "emptyTitle": "No Logs Yet",
+    "emptySubtitle": "Logs will appear here as the app runs",
+    "detailMessage": "MESSAGE",
+    "detailError": "ERROR",
+    "detailExtras": "ADDITIONAL CONTEXT",
+    "detailStackTrace": "STACK TRACE"
   }
 }

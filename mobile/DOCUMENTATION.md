@@ -1,5 +1,14 @@
 # DOCUMENTATION.md
 
+## [2026-07-02 12:33]: Feature - In-App Log Viewer (App Logs Screen)
+*Details*: Added a full in-app log viewer accessible from the Profile → System section. The feature captures all errors, warnings, and info-level logs in an in-memory ring buffer (500 entries max) and presents them in a developer-console–style UI with JetBrains Mono monospace font, color-coded severity badges, filterable chips, full-text search, and expandable detail sheets with selectable text for stack traces. Designed for technical users to diagnose issues without external tools.
+*Tech Notes*:
+- **Modified**: `lib/core/app_logger.dart` — Added `LogEntry` model, `LogLevel` enum, in-memory `_logs` ring buffer (500 max), listener system for reactive UI updates, and `clearLogs()`. All existing Sentry integration preserved unchanged.
+- **New**: `lib/ui/screens/app_logs_screen.dart` — Full log viewer screen with: filter chips (All/Errors/Warnings/Info) with live counts, search bar (JetBrains Mono), log cards with level badges + timestamps, expandable detail bottom sheet (message, error, extras, stack trace all selectable), copy-to-clipboard (single entry or all filtered), clear logs with confirmation dialog.
+- **Modified**: `lib/ui/screens/profile_screen.dart` — Added "App Logs" menu item in the System section with `LucideIcons.scrollText` icon.
+- **i18n**: Added `appLogs` section to all 5 language files (EN, IT, DE, ES, AR) with 16 keys each, then regenerated with `dart run slang`.
+- No new dependencies added.
+
 ## [2026-07-02 12:20]: UI - Mood Check-In Pulsing Glow Animation & Checkmark Badge
 *Details*: Added a heartbeat-style pulsing red glow animation to the daily mood check-in tile on the dashboard when the user hasn't logged their mood for the day. When mood is logged, the glow stops instantly and a green checkmark badge appears in the top-right corner of the tile.
 *Tech Notes*:

@@ -20,6 +20,7 @@ import 'app_settings_screen.dart';
 import 'notification_settings_screen.dart';
 import 'privacy_settings_screen.dart';
 import 'subscription_screen.dart';
+import 'app_logs_screen.dart';
 import '../../core/haptics.dart';
 import '../../core/app_logger.dart';
 import '../../providers/tutorial_provider.dart';
@@ -545,6 +546,15 @@ class _ProfileScreenState extends ConsumerState<ProfileScreen> {
                   ),
                 ),
                 const SizedBox(height: 8),
+                _buildProfileOption(
+                  context: context,
+                  icon: LucideIcons.scrollText,
+                  title: context.t.appLogs.title,
+                  subtitle: context.t.appLogs.menuSubtitle,
+                  onTap: () {
+                    Navigator.push(context, AppLogsScreen.route());
+                  },
+                ),
                 if (!isPrivateMode) ...[
                   _buildProfileOption(
                     context: context,

@@ -1023,5 +1023,26 @@
     "heatmapLabel": "Mapa de actividad de hábitos",
     "yearlyGridLabel": "Cuadrícula de actividad anual",
     "lifeGridLabel": "Vida en meses: {lived} de {total} vividos"
+  },
+  "appLogs": {
+    "title": "Registros de la App",
+    "menuSubtitle": "Ver errores, advertencias y registros técnicos",
+    "filterAll": "Todo",
+    "filterErrors": "Errores",
+    "filterWarnings": "Advertencias",
+    "filterInfo": "Info",
+    "searchPlaceholder": "Buscar en registros...",
+    "copyAll": "Copiar Todos los Registros",
+    "clearLogsTitle": "Borrar Registros",
+    "clearLogsConfirm": "¿Estás seguro de que deseas borrar todas las entradas del registro? Esta acción no se puede deshacer.",
+    "clearLogsAction": "Borrar Todo",
+    "copiedToClipboard": "Registros copiados al portapapeles",
+    "stackTraceAvailable": "Toca para ver el stack trace",
+    "emptyTitle": "Sin Registros",
+    "emptySubtitle": "Los registros aparecerán aquí mientras la app se ejecuta",
+    "detailMessage": "MENSAJE",
+    "detailError": "ERROR",
+    "detailExtras": "CONTEXTO ADICIONAL",
+    "detailStackTrace": "STACK TRACE"
   }
 }

@@ -1023,5 +1023,26 @@
     "heatmapLabel": "Mappa di attività delle abitudini",
     "yearlyGridLabel": "Griglia di attività annuale",
     "lifeGridLabel": "Vita in mesi: {lived} di {total} vissuti"
+  },
+  "appLogs": {
+    "title": "Log App",
+    "menuSubtitle": "Visualizza errori, avvisi e log tecnici",
+    "filterAll": "Tutti",
+    "filterErrors": "Errori",
+    "filterWarnings": "Avvisi",
+    "filterInfo": "Info",
+    "searchPlaceholder": "Cerca nei log...",
+    "copyAll": "Copia Tutti i Log",
+    "clearLogsTitle": "Cancella Log",
+    "clearLogsConfirm": "Sei sicuro di voler cancellare tutte le voci di log? Questa azione non può essere annullata.",
+    "clearLogsAction": "Cancella Tutto",
+    "copiedToClipboard": "Log copiati negli appunti",
+    "stackTraceAvailable": "Tocca per visualizzare lo stack trace",
+    "emptyTitle": "Nessun Log",
+    "emptySubtitle": "I log appariranno qui durante l'uso dell'app",
+    "detailMessage": "MESSAGGIO",
+    "detailError": "ERRORE",
+    "detailExtras": "CONTESTO AGGIUNTIVO",
+    "detailStackTrace": "STACK TRACE"
   }
 }

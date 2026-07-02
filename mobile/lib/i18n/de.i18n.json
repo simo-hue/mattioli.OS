@@ -1023,5 +1023,26 @@
     "heatmapLabel": "Aktivitäts-Heatmap der Gewohnheiten",
     "yearlyGridLabel": "Jährliches Aktivitätsraster",
     "lifeGridLabel": "Leben in Monaten: {lived} von {total} gelebt"
+  },
+  "appLogs": {
+    "title": "App-Protokolle",
+    "menuSubtitle": "Fehler, Warnungen und technische Protokolle anzeigen",
+    "filterAll": "Alle",
+    "filterErrors": "Fehler",
+    "filterWarnings": "Warnungen",
+    "filterInfo": "Info",
+    "searchPlaceholder": "Protokolle durchsuchen...",
+    "copyAll": "Alle Protokolle kopieren",
+    "clearLogsTitle": "Protokolle löschen",
+    "clearLogsConfirm": "Möchten Sie wirklich alle Protokolleinträge löschen? Diese Aktion kann nicht rückgängig gemacht werden.",
+    "clearLogsAction": "Alle löschen",
+    "copiedToClipboard": "Protokolle in die Zwischenablage kopiert",
+    "stackTraceAvailable": "Tippen für Stack-Trace",
+    "emptyTitle": "Keine Protokolle",
+    "emptySubtitle": "Protokolle werden hier angezeigt, während die App läuft",
+    "detailMessage": "NACHRICHT",
+    "detailError": "FEHLER",
+    "detailExtras": "ZUSÄTZLICHER KONTEXT",
+    "detailStackTrace": "STACK-TRACE"
   }
 }

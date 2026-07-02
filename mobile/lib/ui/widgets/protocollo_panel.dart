@@ -4,6 +4,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:lucide_icons_flutter/lucide_icons.dart';
 import '../../core/theme.dart';
 import '../../providers/settings_provider.dart';
+import '../../providers/mood_provider.dart';
 import '../screens/ai_chat_screen.dart';
 import 'daily_check_in_modal.dart';
 import 'habit_management_modal.dart';
@@ -25,6 +26,13 @@ class ProtocolloPanel extends ConsumerWidget {
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
+    // Detect whether today's mood has been logged
+    final moods = ref.watch(dailyMoodsProvider);
+    final today = DateTime.now();
+    final dateKey =
+        '${today.year}-${today.month.toString().padLeft(2, '0')}-${today.day.toString().padLeft(2, '0')}';
+    final hasLoggedToday = moods.containsKey(dateKey);
+
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
@@ -67,6 +75,8 @@ class ProtocolloPanel extends ConsumerWidget {
                 label: context.t.habits.dailyCheckIn,
                 subtitle: context.t.habits.mood,
                 color: const Color(0xFFEF4444),
+                showPulse: !hasLoggedToday,
+                showCheckBadge: hasLoggedToday,
                 onTap: () => DailyCheckInModal.show(context),
               ),
             ),
@@ -111,12 +121,14 @@ class ProtocolloPanel extends ConsumerWidget {
   }
 }
 
-class _ActionTile extends StatelessWidget {
+class _ActionTile extends StatefulWidget {
   final IconData icon;
   final String label;
   final String subtitle;
   final Color color;
   final VoidCallback onTap;
+  final bool showPulse;
+  final bool showCheckBadge;
 
   const _ActionTile({
     super.key,
@@ -125,14 +137,99 @@ class _ActionTile extends StatelessWidget {
     required this.subtitle,
     required this.color,
     required this.onTap,
+    this.showPulse = false,
+    this.showCheckBadge = false,
   });
 
   @override
+  State<_ActionTile> createState() => _ActionTileState();
+}
+
+class _ActionTileState extends State<_ActionTile>
+    with SingleTickerProviderStateMixin {
+  AnimationController? _pulseController;
+  Animation<double>? _pulseAnimation;
+
+  @override
+  void initState() {
+    super.initState();
+    if (widget.showPulse) {
+      _startPulse();
+    }
+  }
+
+  @override
+  void didUpdateWidget(covariant _ActionTile oldWidget) {
+    super.didUpdateWidget(oldWidget);
+    if (widget.showPulse && !oldWidget.showPulse) {
+      _startPulse();
+    } else if (!widget.showPulse && oldWidget.showPulse) {
+      _stopPulse();
+    }
+  }
+
+  void _startPulse() {
+    _pulseController?.dispose();
+    _pulseController = AnimationController(
+      vsync: this,
+      duration: const Duration(milliseconds: 2000),
+    );
+    _pulseAnimation = CurvedAnimation(
+      parent: _pulseController!,
+      curve: Curves.easeInOut,
+    );
+    _pulseController!.repeat(reverse: true);
+  }
+
+  void _stopPulse() {
+    _pulseController?.stop();
+    _pulseController?.dispose();
+    _pulseController = null;
+    _pulseAnimation = null;
+  }
+
+  @override
+  void dispose() {
+    _pulseController?.dispose();
+    super.dispose();
+  }
+
+  @override
   Widget build(BuildContext context) {
+    Widget tile = _buildTileContent(context);
+
+    // Wrap with animated glow when pulsing
+    if (widget.showPulse && _pulseAnimation != null) {
+      tile = AnimatedBuilder(
+        animation: _pulseAnimation!,
+        builder: (context, child) {
+          final value = _pulseAnimation!.value;
+          return Container(
+            decoration: BoxDecoration(
+              borderRadius: BorderRadius.circular(20),
+              boxShadow: [
+                BoxShadow(
+                  color: widget.color.withValues(alpha: value * 0.40),
+                  blurRadius: value * 16,
+                  spreadRadius: value * 3,
+                ),
+              ],
+            ),
+            child: child,
+          );
+        },
+        child: tile,
+      );
+    }
+
+    return tile;
+  }
+
+  Widget _buildTileContent(BuildContext context) {
     return GestureDetector(
       onTap: () {
         HapticFeedback.lightImpact();
-        onTap();
+        widget.onTap();
       },
       child: Container(
         height: 100,
@@ -165,7 +262,7 @@ class _ActionTile extends StatelessWidget {
                   shape: BoxShape.circle,
                   gradient: RadialGradient(
                     colors: [
-                      color.withValues(alpha: 0.15),
+                      widget.color.withValues(alpha: 0.15),
                       Colors.transparent,
                     ],
                   ),
@@ -181,20 +278,20 @@ class _ActionTile extends StatelessWidget {
                   Container(
                     padding: const EdgeInsets.all(8),
                     decoration: BoxDecoration(
-                      color: color.withValues(alpha: 0.1),
+                      color: widget.color.withValues(alpha: 0.1),
                       borderRadius: BorderRadius.circular(10),
                     ),
                     child: Icon(
-                      icon,
+                      widget.icon,
                       size: 18,
-                      color: color,
+                      color: widget.color,
                     ),
                   ),
                   Column(
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
                       Text(
-                        label,
+                        widget.label,
                         style: TextStyle(
                           fontSize: 13,
                           fontWeight: FontWeight.w700,
@@ -203,11 +300,12 @@ class _ActionTile extends StatelessWidget {
                         ),
                       ),
                       Text(
-                        subtitle,
+                        widget.subtitle,
                         style: TextStyle(
                           fontSize: 10,
                           fontWeight: FontWeight.w500,
-                          color: context.appColors.mutedForeground.withValues(alpha: 0.8),
+                          color: context.appColors.mutedForeground
+                              .withValues(alpha: 0.8),
                         ),
                       ),
                     ],
@@ -215,6 +313,32 @@ class _ActionTile extends StatelessWidget {
                 ],
               ),
             ),
+            // Green checkmark badge when mood is logged
+            if (widget.showCheckBadge)
+              Positioned(
+                top: 6,
+                right: 6,
+                child: Container(
+                  width: 18,
+                  height: 18,
+                  decoration: BoxDecoration(
+                    color: const Color(0xFF22C55E),
+                    shape: BoxShape.circle,
+                    boxShadow: [
+                      BoxShadow(
+                        color: const Color(0xFF22C55E).withValues(alpha: 0.3),
+                        blurRadius: 4,
+                        spreadRadius: 1,
+                      ),
+                    ],
+                  ),
+                  child: const Icon(
+                    LucideIcons.check,
+                    size: 10,
+                    color: Colors.white,
+                  ),
+                ),
+              ),
           ],
         ),
       ),

@@ -1,5 +1,17 @@
 # DOCUMENTATION.md
 
+## [2026-07-02 12:20]: UI - Mood Check-In Pulsing Glow Animation & Checkmark Badge
+*Details*: Added a heartbeat-style pulsing red glow animation to the daily mood check-in tile on the dashboard when the user hasn't logged their mood for the day. When mood is logged, the glow stops instantly and a green checkmark badge appears in the top-right corner of the tile.
+*Tech Notes*:
+- Modified `lib/ui/widgets/protocollo_panel.dart` only (single-file change).
+- `ProtocolloPanel` now watches `dailyMoodsProvider` to reactively detect today's mood status.
+- `_ActionTile` converted from `StatelessWidget` to `StatefulWidget` with `SingleTickerProviderStateMixin`.
+- New parameters: `showPulse` (animated red `BoxShadow`, ~2s cycle with `Curves.easeInOut`) and `showCheckBadge` (18px green circle with white checkmark).
+- Animation starts/stops via `didUpdateWidget` — no manual lifecycle management needed from callers.
+- No changes to `daily_check_in_modal.dart` or `dashboard_screen.dart`; state flows reactively through Riverpod.
+
+---
+
 ## [2026-06-22 21:00]: Release - Version Bump
 *Details*: Incremented application version for a new release.
 *Tech Notes*:

@@ -462,6 +462,32 @@ class DesktopPrivateDb {
         'updated_at': m['updated_at'] ?? now,
       }, conflictAlgorithm: ConflictAlgorithm.ignore);
     }
+
+    // Restore the profile (name / date of birth / settings) onto the owner row.
+    // sanitizeSettings filters to known columns, coerces bools, forces the
+    // Private-mode invariants (is_pro=1 / sentry_consent=0), and drops the
+    // local-path avatar_url — so an import can never smuggle in a foreign id,
+    // entitlement, or broken avatar path.
+    //
+    // Wrapped so a single out-of-domain value from a foreign/older client (e.g.
+    // an unknown theme_mode failing the CHECK) can't roll back the whole import,
+    // honoring the same row-level resilience as the data inserts above.
+    final profile = backupData['profile'];
+    if (profile is Map) {
+      final sanitized = sanitizeSettings(Map<String, dynamic>.from(profile));
+      if (sanitized.isNotEmpty) {
+        try {
+          await txn.update(
+            'profiles',
+            {...sanitized, 'updated_at': now},
+            where: 'id = ?',
+            whereArgs: [owner],
+          );
+        } catch (error, stack) {
+          AppLogger.error('Skipped invalid profile on import', error, stack);
+        }
+      }
+    }
   }
 
   // ---------------------------------------------------------------------------

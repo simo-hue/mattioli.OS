@@ -580,49 +580,38 @@ class _SettingsPageState extends ConsumerState<SettingsPage> {
       );
       return;
     }
-    final snapshot = ref.read(dashboardControllerProvider);
+    // Cloud mode: emit a full, lossless snapshot of the user's Supabase rows in
+    // the same native DB-row shape as the Private-mode export, so the exact same
+    // importer round-trips it (categories + goals + logs + macro goals + moods +
+    // profile). Read straight from the tables — the in-memory dashboard snapshot
+    // is lossy (no log ids/streaks, no category list).
+    final client = Supabase.instance.client;
+    final userId = client.auth.currentUser?.id;
+    if (userId == null) {
+      if (!mounted) return;
+      _showGate(t.settingsPage.exportDoneTitle, t.settingsPage.operationFailed);
+      return;
+    }
+    Future<List<Map<String, dynamic>>> rows(String table) async {
+      final res = await client.from(table).select().eq('user_id', userId);
+      return List<Map<String, dynamic>>.from(res);
+    }
+
+    final profileRow = await client
+        .from('profiles')
+        .select()
+        .eq('id', userId)
+        .maybeSingle();
+
     final json = const JsonEncoder.withIndent('  ').convert({
       'exportDate': DateTime.now().toIso8601String(),
-      'source': 'evolve-desktop-supabase-cache',
-      'settings': {
-        'themeMode': _darkMode ? 'dark' : 'light',
-        'accentColor': dashboardColorToHex(_accent),
-        'defaultCalendarView': _calendarProfileValue(_calendarView),
-        'language': _languageProfileValue(_language),
-        'timeFormat24h': _timeFormat24h,
-        'habitReminders': _habitReminders,
-        'goalDeadlines': _goalDeadlines,
-        'aiInsights': _aiInsights,
-        'weeklyReports': _weeklyReport,
-        'eveningReview': _eveningReview,
-        'biometricLock': ref.read(desktopBiometricControllerProvider).enabled,
-        'morningBriefTime': _morningTime,
-        'eveningReviewTime': _eveningTime,
-      },
-      'habits': [
-        for (final habit in snapshot.habits)
-          {
-            'id': habit.id,
-            'title': habit.title,
-            'category': habit.category,
-            'weekly_progress': habit.weeklyProgress,
-            'reminder_time': habit.reminderTime,
-          },
-      ],
-      'goals': [
-        for (final goal in snapshot.goals)
-          {
-            'id': goal.id,
-            'title': goal.title,
-            'state': goal.state.name,
-            'type': goal.type.name,
-          },
-      ],
-      'habitLogs': snapshot.habitLogs,
-      'moods': {
-        for (final entry in snapshot.moods.entries)
-          entry.key: entry.value.toJson(),
-      },
+      'mode': 'cloud',
+      'profile': profileRow,
+      'goals': await rows('goals'),
+      'goal_logs': await rows('goal_logs'),
+      'long_term_goals': await rows('long_term_goals'),
+      'daily_moods': await rows('daily_moods'),
+      'macro_goal_categories': await rows('macro_goal_categories'),
     });
     if (Platform.isLinux) {
       await Clipboard.setData(ClipboardData(text: json));
@@ -907,7 +896,7 @@ class _SettingsPageState extends ConsumerState<SettingsPage> {
     try {
       final result = await FilePicker.platform.pickFiles(
         type: FileType.custom,
-        allowedExtensions: ['zip'],
+        allowedExtensions: ['zip', 'json'],
       );
 
       if (result == null || result.files.isEmpty) return;
@@ -916,19 +905,15 @@ class _SettingsPageState extends ConsumerState<SettingsPage> {
 
       final isPrivateMode =
           ref.read(activeDesktopDataModeProvider) == DesktopDataMode.private;
-      if (!isPrivateMode) {
-        _showGate(
-          t.settingsPage.importDataGateTitle,
-          t.settingsPage.importPrivateOnly,
-        );
-        return;
-      }
 
       final privateStore = DesktopPrivateDb.instance;
-      final importService = DesktopBackupImportService(privateStore, null);
+      final importService = DesktopBackupImportService(
+        privateStore,
+        isPrivateMode ? null : Supabase.instance.client,
+      );
 
-      // 1. Preview
-      final preview = await importService.parseZipPreview(path);
+      // 1. Preview (accepts both the web `.zip` and native `.json` backups).
+      final preview = await importService.parsePreview(path);
 
       if (!mounted) return;
 
@@ -1086,7 +1071,7 @@ class _SettingsPageState extends ConsumerState<SettingsPage> {
       await importService.executeImport(
         rawData: preview.rawData,
         replaceExisting: replaceExisting,
-        isPrivateMode: true,
+        isPrivateMode: isPrivateMode,
       );
 
       if (!mounted) return;
@@ -1099,8 +1084,10 @@ class _SettingsPageState extends ConsumerState<SettingsPage> {
         ),
       );
 
-      // Refresh dashboard
+      // Refresh dashboard + category/profile providers so imported data shows.
       ref.invalidate(dashboardControllerProvider);
+      ref.invalidate(desktopGoalCategoriesControllerProvider);
+      if (isPrivateMode) ref.invalidate(privateProfileProvider);
     } catch (e, st) {
       AppLogger.error('Errore durante importData', e, st);
       if (!mounted) return;

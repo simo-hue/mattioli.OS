@@ -132,6 +132,24 @@ class PrivateDashboardRepository extends DashboardRepository {
   }
 
   @override
+  Future<void> reorderHabits(List<DashboardHabit> habits) async {
+    // Update only `display_order` (never the whole row) so a reorder can't reset
+    // start_date/frequency and only bumps the sync-relevant timestamp.
+    final db = await DesktopPrivateDb.instance.database;
+    final now = _now();
+    final batch = db.batch();
+    for (var i = 0; i < habits.length; i++) {
+      batch.update(
+        'goals',
+        {'display_order': i, 'updated_at': now},
+        where: 'id = ?',
+        whereArgs: [habits[i].id],
+      );
+    }
+    await batch.commit(noResult: true);
+  }
+
+  @override
   Future<String?> setHabitStatus({
     required String habitId,
     required DateTime date,

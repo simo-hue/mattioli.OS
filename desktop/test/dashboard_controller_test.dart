@@ -202,6 +202,41 @@ void main() {
     );
   });
 
+  test('reorderHabits moves a habit and reassigns display order', () async {
+    DashboardHabit habit(String id, int order) => DashboardHabit(
+      id: id,
+      title: id,
+      category: 'Cat',
+      color: EvolveColors.primaryStrong,
+      streak: 0,
+      weeklyProgress: const [false, false, false, false, false, false, false],
+      state: HabitState.pending,
+      displayOrder: order,
+    );
+    final snapshot = DashboardSnapshot(
+      habits: [habit('a', 0), habit('b', 1), habit('c', 2)],
+      goals: const [],
+      trend: const [],
+      checkIn: const DailyCheckIn(),
+    );
+    final repository = _TestDashboardRepository(snapshot);
+    final container = ProviderContainer(
+      overrides: [dashboardRepositoryProvider.overrideWithValue(repository)],
+    );
+    addTearDown(container.dispose);
+    final controller = container.read(dashboardControllerProvider.notifier);
+
+    // Move 'a' (index 0) to the end (onReorderItem target index 2).
+    await controller.reorderHabits(0, 2);
+
+    final habits = container.read(dashboardControllerProvider).habits;
+    expect(habits.map((h) => h.id).toList(), ['b', 'c', 'a']);
+    // display_order reassigned to the new positions.
+    expect(habits.map((h) => h.displayOrder).toList(), [0, 1, 2]);
+    // Persisted to the repository in the new order.
+    expect(repository.lastReorder?.map((h) => h.id).toList(), ['b', 'c', 'a']);
+  });
+
   test('historical completion uses stored logs without synthetic fallback', () {
     final loggedDate = DateTime(2025, 1, 10);
     final missingDate = DateTime(2025, 1, 11);
@@ -509,12 +544,20 @@ class _TestDashboardRepository extends DashboardRepository {
 
   DashboardSnapshot _snapshot;
 
+  /// Records the last order persisted via [reorderHabits].
+  List<DashboardHabit>? lastReorder;
+
   @override
   DashboardSnapshot load() => _snapshot;
 
   @override
   Future<void> save(DashboardSnapshot snapshot) async {
     _snapshot = snapshot;
+  }
+
+  @override
+  Future<void> reorderHabits(List<DashboardHabit> habits) async {
+    lastReorder = habits;
   }
 
   @override

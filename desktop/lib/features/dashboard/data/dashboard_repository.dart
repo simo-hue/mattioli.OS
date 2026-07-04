@@ -28,6 +28,9 @@ abstract class DashboardRepository {
 
   Future<void> deleteHabit(String id) async {}
 
+  /// Persists the `display_order` of each habit to its position in [habits].
+  Future<void> reorderHabits(List<DashboardHabit> habits) async {}
+
   Future<String?> setHabitStatus({
     required String habitId,
     required DateTime date,
@@ -123,6 +126,14 @@ class _PrivateRepositoryProxy extends DashboardRepository {
   }
 
   @override
+  Future<void> reorderHabits(List<DashboardHabit> habits) async {
+    _inner ??= PrivateDashboardRepository(
+      ownerId: await DesktopPrivateDb.instance.ownerId,
+    );
+    await _inner!.reorderHabits(habits);
+  }
+
+  @override
   Future<String?> setHabitStatus({
     required String habitId,
     required DateTime date,
@@ -197,6 +208,9 @@ class UnavailableDashboardRepository extends DashboardRepository {
 
   @override
   Future<void> deleteHabit(String id) => _requireSession();
+
+  @override
+  Future<void> reorderHabits(List<DashboardHabit> habits) => _requireSession();
 
   @override
   Future<String?> setHabitStatus({
@@ -319,6 +333,23 @@ class SupabaseDashboardRepository extends DashboardRepository {
       _PendingMutation.delete('goals', {'id': id}),
       () => _client.from('goals').delete().eq('id', id),
     );
+  }
+
+  @override
+  Future<void> reorderHabits(List<DashboardHabit> habits) async {
+    if (habits.isEmpty) return;
+    // One atomic batch upsert of just {id, display_order} (these are existing
+    // rows, so PostgREST takes the ON CONFLICT (id) DO UPDATE path). Mirrors the
+    // mobile client against the same Supabase backend. A SINGLE request is
+    // deliberate: N separate updates could half-apply on a mid-loop failure and
+    // corrupt the persisted order. Not routed through the single-row offline
+    // queue — a failed offline reorder simply keeps the local order until the
+    // user reorders again (a cheap, idempotent action).
+    final updates = [
+      for (var i = 0; i < habits.length; i++)
+        {'id': habits[i].id, 'display_order': i},
+    ];
+    await _client.from('goals').upsert(updates, onConflict: 'id');
   }
 
   @override

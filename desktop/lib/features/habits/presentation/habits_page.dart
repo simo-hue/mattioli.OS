@@ -87,6 +87,9 @@ class _HabitsPageState extends ConsumerState<HabitsPage> {
                   .toggleHabit(id),
               onEdit: _openHabitEditor,
               onDelete: _deleteHabit,
+              onReorder: (oldIndex, newIndex) => ref
+                  .read(dashboardControllerProvider.notifier)
+                  .reorderHabits(oldIndex, newIndex),
             )
           else
             _CalendarPanel(
@@ -268,15 +271,18 @@ class _ProtocolPanel extends StatelessWidget {
     required this.onToggle,
     required this.onEdit,
     required this.onDelete,
+    required this.onReorder,
   });
 
   final DashboardSnapshot snapshot;
   final ValueChanged<String> onToggle;
   final ValueChanged<DashboardHabit> onEdit;
   final ValueChanged<DashboardHabit> onDelete;
+  final void Function(int oldIndex, int newIndex) onReorder;
 
   @override
   Widget build(BuildContext context) {
+    final habits = snapshot.habits;
     return EvolvePanel(
       padding: EdgeInsets.zero,
       child: Column(
@@ -294,13 +300,31 @@ class _ProtocolPanel extends StatelessWidget {
           ),
           const Divider(height: 1),
           const _HabitHeader(),
-          for (final habit in snapshot.habits)
-            _HabitRow(
-              habit: habit,
-              onToggle: () => onToggle(habit.id),
-              onEdit: () => onEdit(habit),
-              onDelete: () => onDelete(habit),
-            ),
+          ReorderableListView.builder(
+            shrinkWrap: true,
+            physics: const NeverScrollableScrollPhysics(),
+            buildDefaultDragHandles: false,
+            itemCount: habits.length,
+            onReorderItem: onReorder,
+            itemBuilder: (context, index) {
+              final habit = habits[index];
+              return _HabitRow(
+                key: ValueKey(habit.id),
+                habit: habit,
+                onToggle: () => onToggle(habit.id),
+                onEdit: () => onEdit(habit),
+                onDelete: () => onDelete(habit),
+                dragHandle: ReorderableDragStartListener(
+                  index: index,
+                  child: Icon(
+                    Icons.drag_indicator,
+                    size: 18,
+                    color: context.evolveColors.subtle,
+                  ),
+                ),
+              );
+            },
+          ),
         ],
       ),
     );
@@ -316,6 +340,7 @@ class _HabitHeader extends StatelessWidget {
       padding: const EdgeInsets.symmetric(horizontal: 18, vertical: 11),
       child: Row(
         children: [
+          const SizedBox(width: 24),
           const SizedBox(width: 32),
           Expanded(child: _ColumnLabel(t.habitsPage.colHabit)),
           SizedBox(width: 100, child: _ColumnLabel(t.habitsPage.colStreak)),
@@ -353,9 +378,12 @@ class _HabitRow extends StatelessWidget {
     required this.onToggle,
     required this.onEdit,
     required this.onDelete,
+    this.dragHandle,
+    super.key,
   });
 
   final DashboardHabit habit;
+  final Widget? dragHandle;
   final VoidCallback onToggle;
   final VoidCallback onEdit;
   final VoidCallback onDelete;
@@ -370,6 +398,15 @@ class _HabitRow extends StatelessWidget {
           padding: const EdgeInsets.symmetric(horizontal: 18, vertical: 12),
           child: Row(
             children: [
+              SizedBox(
+                width: 24,
+                child: dragHandle == null
+                    ? null
+                    : MouseRegion(
+                        cursor: SystemMouseCursors.grab,
+                        child: dragHandle,
+                      ),
+              ),
               SizedBox(
                 width: 32,
                 child: IconButton(

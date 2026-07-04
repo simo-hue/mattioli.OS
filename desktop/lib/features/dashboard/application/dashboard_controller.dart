@@ -185,6 +185,31 @@ class DashboardController extends Notifier<DashboardSnapshot> {
     await _syncRemote(() => _repository.deleteHabit(id));
   }
 
+  /// Drag-to-reorder: move the habit at [oldIndex] to [newIndex], reassign every
+  /// habit's `displayOrder` to its new position, and persist the new order to
+  /// the active repository (cloud batch or private DB). Optimistic + local-first
+  /// like the other mutations (a remote failure keeps the local order and flags
+  /// the sync warning via [_syncRemote]).
+  Future<void> reorderHabits(int oldIndex, int newIndex) async {
+    final habits = List<DashboardHabit>.from(state.habits);
+    if (oldIndex < 0 || oldIndex >= habits.length) return;
+    // `onReorderItem` already adjusts newIndex for the removed item, so it is the
+    // final target index (0..length-1) — no extra decrement needed.
+    newIndex = newIndex.clamp(0, habits.length - 1);
+    if (newIndex == oldIndex) return;
+
+    final moved = habits.removeAt(oldIndex);
+    habits.insert(newIndex, moved);
+    final reordered = [
+      for (var i = 0; i < habits.length; i++)
+        habits[i].copyWith(displayOrder: i),
+    ];
+
+    state = state.copyWith(habits: reordered);
+    await _saveLocal();
+    await _syncRemote(() => _repository.reorderHabits(reordered));
+  }
+
   /// Re-schedule the OS daily notifications after a habit add/edit/delete so a
   /// habit's reminder is (un)registered immediately, rather than only after the
   /// user re-saves the Settings page. Reads the user's notification prefs;

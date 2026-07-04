@@ -79,6 +79,7 @@ class TranslationsEs extends Translations with BaseTranslations<AppLocale, Trans
 	@override late final _Translations$subscriptionCtrl$es subscriptionCtrl = _Translations$subscriptionCtrl$es._(_root);
 	@override late final _Translations$authCtrl$es authCtrl = _Translations$authCtrl$es._(_root);
 	@override late final _Translations$proModal$es proModal = _Translations$proModal$es._(_root);
+	@override late final _Translations$tutorial$es tutorial = _Translations$tutorial$es._(_root);
 }
 
 // Path: auth
@@ -1059,6 +1060,28 @@ class _Translations$proModal$es extends Translations$proModal$en {
 	@override String get viewPlans => 'Ver planes Pro';
 }
 
+// Path: tutorial
+class _Translations$tutorial$es extends Translations$tutorial$en {
+	_Translations$tutorial$es._(TranslationsEs root) : this._root = root, super.internal(root);
+
+	final TranslationsEs _root; // ignore: unused_field
+
+	// Translations
+	@override String get back => 'Atrás';
+	@override String get next => 'Siguiente';
+	@override String get finish => 'Finalizar';
+	@override String get dailyCheckIn => 'Check-in diario';
+	@override String get dailyCheckinDesc => 'Aquí puedes registrar tu estado de ánimo diario para seguir tu bienestar y correlacionarlo con el cumplimiento de tus objetivos.';
+	@override String get manageHabits => 'Gestión de hábitos';
+	@override String get addEditOrDeleteDailyHabits => 'Añade, edita o elimina hábitos diarios que quieras mantener de forma rápida y sencilla.';
+	@override String get movingToGoals => 'Pasemos a los objetivos';
+	@override String get goalsPageDesc => 'La página donde puedes gestionar tus objetivos a largo plazo y su rendimiento.';
+	@override String get filterByHabit => 'Filtrar por hábito';
+	@override String get filterHabitDesc => 'Desde aquí puedes seleccionar un hábito específico para ver sus detalles, o \'Todos los hábitos\' para una visión global.';
+	@override String get statisticsSections => 'Secciones de estadísticas';
+	@override String get statsSectionsDesc => 'Navega entre las pestañas para ver Tendencias, Alertas de rendimiento, la evolución de tus Hábitos y tu Estado de ánimo.';
+}
+
 // Path: common.actions
 class _Translations$common$actions$es extends Translations$common$actions$en {
 	_Translations$common$actions$es._(TranslationsEs root) : this._root = root, super.internal(root);
@@ -1849,6 +1872,19 @@ extension on TranslationsEs {
 			'proModal.unlimitedDesc' => 'Crea y rastrea todos los hábitos que quieras sin límites.',
 			'proModal.maybeLater' => 'Quizá más tarde',
 			'proModal.viewPlans' => 'Ver planes Pro',
+			'tutorial.back' => 'Atrás',
+			'tutorial.next' => 'Siguiente',
+			'tutorial.finish' => 'Finalizar',
+			'tutorial.dailyCheckIn' => 'Check-in diario',
+			'tutorial.dailyCheckinDesc' => 'Aquí puedes registrar tu estado de ánimo diario para seguir tu bienestar y correlacionarlo con el cumplimiento de tus objetivos.',
+			'tutorial.manageHabits' => 'Gestión de hábitos',
+			'tutorial.addEditOrDeleteDailyHabits' => 'Añade, edita o elimina hábitos diarios que quieras mantener de forma rápida y sencilla.',
+			'tutorial.movingToGoals' => 'Pasemos a los objetivos',
+			'tutorial.goalsPageDesc' => 'La página donde puedes gestionar tus objetivos a largo plazo y su rendimiento.',
+			'tutorial.filterByHabit' => 'Filtrar por hábito',
+			'tutorial.filterHabitDesc' => 'Desde aquí puedes seleccionar un hábito específico para ver sus detalles, o \'Todos los hábitos\' para una visión global.',
+			'tutorial.statisticsSections' => 'Secciones de estadísticas',
+			'tutorial.statsSectionsDesc' => 'Navega entre las pestañas para ver Tendencias, Alertas de rendimiento, la evolución de tus Hábitos y tu Estado de ánimo.',
 			_ => null,
 		};
 	}

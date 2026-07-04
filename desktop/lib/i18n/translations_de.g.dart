@@ -79,6 +79,7 @@ class TranslationsDe extends Translations with BaseTranslations<AppLocale, Trans
 	@override late final _Translations$subscriptionCtrl$de subscriptionCtrl = _Translations$subscriptionCtrl$de._(_root);
 	@override late final _Translations$authCtrl$de authCtrl = _Translations$authCtrl$de._(_root);
 	@override late final _Translations$proModal$de proModal = _Translations$proModal$de._(_root);
+	@override late final _Translations$tutorial$de tutorial = _Translations$tutorial$de._(_root);
 }
 
 // Path: auth
@@ -1059,6 +1060,28 @@ class _Translations$proModal$de extends Translations$proModal$en {
 	@override String get viewPlans => 'Pro-Abos ansehen';
 }
 
+// Path: tutorial
+class _Translations$tutorial$de extends Translations$tutorial$en {
+	_Translations$tutorial$de._(TranslationsDe root) : this._root = root, super.internal(root);
+
+	final TranslationsDe _root; // ignore: unused_field
+
+	// Translations
+	@override String get back => 'Zurück';
+	@override String get next => 'Weiter';
+	@override String get finish => 'Fertig';
+	@override String get dailyCheckIn => 'Täglicher Check-in';
+	@override String get dailyCheckinDesc => 'Hier kannst du deine tägliche Stimmung festhalten, um dein Wohlbefinden zu verfolgen und mit dem Erreichen deiner Ziele zu verknüpfen.';
+	@override String get manageHabits => 'Gewohnheiten verwalten';
+	@override String get addEditOrDeleteDailyHabits => 'Fügen Sie schnell und einfach tägliche Gewohnheiten hinzu, bearbeiten oder löschen Sie sie.';
+	@override String get movingToGoals => 'Weiter zu den Zielen';
+	@override String get goalsPageDesc => 'Die Seite, auf der du deine langfristigen Ziele und deren Leistung verwaltest.';
+	@override String get filterByHabit => 'Nach Gewohnheit filtern';
+	@override String get filterHabitDesc => 'Von hier aus kannst du eine bestimmte Gewohnheit für Details auswählen oder \'Alle Gewohnheiten\' für einen Gesamtüberblick.';
+	@override String get statisticsSections => 'Statistikbereiche';
+	@override String get statsSectionsDesc => 'Navigiere zwischen den Tabs, um Trends, Leistungs-Warnungen, den Verlauf deiner Gewohnheiten und deine Stimmung zu sehen.';
+}
+
 // Path: common.actions
 class _Translations$common$actions$de extends Translations$common$actions$en {
 	_Translations$common$actions$de._(TranslationsDe root) : this._root = root, super.internal(root);
@@ -1849,6 +1872,19 @@ extension on TranslationsDe {
 			'proModal.unlimitedDesc' => 'Erstellen und verfolgen Sie alle gewünschten Gewohnheiten ohne Einschränkungen.',
 			'proModal.maybeLater' => 'Vielleicht später',
 			'proModal.viewPlans' => 'Pro-Abos ansehen',
+			'tutorial.back' => 'Zurück',
+			'tutorial.next' => 'Weiter',
+			'tutorial.finish' => 'Fertig',
+			'tutorial.dailyCheckIn' => 'Täglicher Check-in',
+			'tutorial.dailyCheckinDesc' => 'Hier kannst du deine tägliche Stimmung festhalten, um dein Wohlbefinden zu verfolgen und mit dem Erreichen deiner Ziele zu verknüpfen.',
+			'tutorial.manageHabits' => 'Gewohnheiten verwalten',
+			'tutorial.addEditOrDeleteDailyHabits' => 'Fügen Sie schnell und einfach tägliche Gewohnheiten hinzu, bearbeiten oder löschen Sie sie.',
+			'tutorial.movingToGoals' => 'Weiter zu den Zielen',
+			'tutorial.goalsPageDesc' => 'Die Seite, auf der du deine langfristigen Ziele und deren Leistung verwaltest.',
+			'tutorial.filterByHabit' => 'Nach Gewohnheit filtern',
+			'tutorial.filterHabitDesc' => 'Von hier aus kannst du eine bestimmte Gewohnheit für Details auswählen oder \'Alle Gewohnheiten\' für einen Gesamtüberblick.',
+			'tutorial.statisticsSections' => 'Statistikbereiche',
+			'tutorial.statsSectionsDesc' => 'Navigiere zwischen den Tabs, um Trends, Leistungs-Warnungen, den Verlauf deiner Gewohnheiten und deine Stimmung zu sehen.',
 			_ => null,
 		};
 	}

@@ -790,5 +790,20 @@
     "unlimitedDesc": "Erstellen und verfolgen Sie alle gewünschten Gewohnheiten ohne Einschränkungen.",
     "maybeLater": "Vielleicht später",
     "viewPlans": "Pro-Abos ansehen"
+  },
+  "tutorial": {
+    "back": "Zurück",
+    "next": "Weiter",
+    "finish": "Fertig",
+    "dailyCheckIn": "Täglicher Check-in",
+    "dailyCheckinDesc": "Hier kannst du deine tägliche Stimmung festhalten, um dein Wohlbefinden zu verfolgen und mit dem Erreichen deiner Ziele zu verknüpfen.",
+    "manageHabits": "Gewohnheiten verwalten",
+    "addEditOrDeleteDailyHabits": "Fügen Sie schnell und einfach tägliche Gewohnheiten hinzu, bearbeiten oder löschen Sie sie.",
+    "movingToGoals": "Weiter zu den Zielen",
+    "goalsPageDesc": "Die Seite, auf der du deine langfristigen Ziele und deren Leistung verwaltest.",
+    "filterByHabit": "Nach Gewohnheit filtern",
+    "filterHabitDesc": "Von hier aus kannst du eine bestimmte Gewohnheit für Details auswählen oder 'Alle Gewohnheiten' für einen Gesamtüberblick.",
+    "statisticsSections": "Statistikbereiche",
+    "statsSectionsDesc": "Navigiere zwischen den Tabs, um Trends, Leistungs-Warnungen, den Verlauf deiner Gewohnheiten und deine Stimmung zu sehen."
   }
 }

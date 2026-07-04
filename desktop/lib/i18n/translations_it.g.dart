@@ -79,6 +79,7 @@ class TranslationsIt extends Translations with BaseTranslations<AppLocale, Trans
 	@override late final _Translations$subscriptionCtrl$it subscriptionCtrl = _Translations$subscriptionCtrl$it._(_root);
 	@override late final _Translations$authCtrl$it authCtrl = _Translations$authCtrl$it._(_root);
 	@override late final _Translations$proModal$it proModal = _Translations$proModal$it._(_root);
+	@override late final _Translations$tutorial$it tutorial = _Translations$tutorial$it._(_root);
 }
 
 // Path: auth
@@ -1059,6 +1060,28 @@ class _Translations$proModal$it extends Translations$proModal$en {
 	@override String get viewPlans => 'Vedi i piani Pro';
 }
 
+// Path: tutorial
+class _Translations$tutorial$it extends Translations$tutorial$en {
+	_Translations$tutorial$it._(TranslationsIt root) : this._root = root, super.internal(root);
+
+	final TranslationsIt _root; // ignore: unused_field
+
+	// Translations
+	@override String get back => 'Indietro';
+	@override String get next => 'Avanti';
+	@override String get finish => 'Fine';
+	@override String get dailyCheckIn => 'Daily Check-in';
+	@override String get dailyCheckinDesc => 'Qui puoi registrare il tuo stato d\'animo quotidiano per tracciare il tuo benessere nel tempo e soprattutto correlarlo con il completamento dei tuoi obiettivi.';
+	@override String get manageHabits => 'Gestione Abitudini';
+	@override String get addEditOrDeleteDailyHabits => 'Aggiungi, modifica o elimina le tue abitudini quotidiane che vuoi rispettare in modo semplice e veloce.';
+	@override String get movingToGoals => 'Passiamo agli Obiettivi';
+	@override String get goalsPageDesc => 'La pagina dove puoi gestire i tuoi obiettivi a lungo termine e le relative performance.';
+	@override String get filterByHabit => 'Filtra per Abitudine';
+	@override String get filterHabitDesc => 'Da qui puoi selezionare una specifica abitudine per vederne i dettagli, oppure \'Tutti gli Habits\' per una panoramica globale.';
+	@override String get statisticsSections => 'Sezioni Statistiche';
+	@override String get statsSectionsDesc => 'Naviga tra le varie schede per vedere i Trend, gli Alert sulle performance, l\'andamento delle Abitudini e il tuo Mood.';
+}
+
 // Path: common.actions
 class _Translations$common$actions$it extends Translations$common$actions$en {
 	_Translations$common$actions$it._(TranslationsIt root) : this._root = root, super.internal(root);
@@ -1849,6 +1872,19 @@ extension on TranslationsIt {
 			'proModal.unlimitedDesc' => 'Crea e traccia tutti gli habits che desideri senza alcun limite.',
 			'proModal.maybeLater' => 'Forse più tardi',
 			'proModal.viewPlans' => 'Vedi i piani Pro',
+			'tutorial.back' => 'Indietro',
+			'tutorial.next' => 'Avanti',
+			'tutorial.finish' => 'Fine',
+			'tutorial.dailyCheckIn' => 'Daily Check-in',
+			'tutorial.dailyCheckinDesc' => 'Qui puoi registrare il tuo stato d\'animo quotidiano per tracciare il tuo benessere nel tempo e soprattutto correlarlo con il completamento dei tuoi obiettivi.',
+			'tutorial.manageHabits' => 'Gestione Abitudini',
+			'tutorial.addEditOrDeleteDailyHabits' => 'Aggiungi, modifica o elimina le tue abitudini quotidiane che vuoi rispettare in modo semplice e veloce.',
+			'tutorial.movingToGoals' => 'Passiamo agli Obiettivi',
+			'tutorial.goalsPageDesc' => 'La pagina dove puoi gestire i tuoi obiettivi a lungo termine e le relative performance.',
+			'tutorial.filterByHabit' => 'Filtra per Abitudine',
+			'tutorial.filterHabitDesc' => 'Da qui puoi selezionare una specifica abitudine per vederne i dettagli, oppure \'Tutti gli Habits\' per una panoramica globale.',
+			'tutorial.statisticsSections' => 'Sezioni Statistiche',
+			'tutorial.statsSectionsDesc' => 'Naviga tra le varie schede per vedere i Trend, gli Alert sulle performance, l\'andamento delle Abitudini e il tuo Mood.',
 			_ => null,
 		};
 	}

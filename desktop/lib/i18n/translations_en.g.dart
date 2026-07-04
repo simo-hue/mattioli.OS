@@ -97,6 +97,7 @@ class Translations with BaseTranslations<AppLocale, Translations> {
 	late final Translations$subscriptionCtrl$en subscriptionCtrl = Translations$subscriptionCtrl$en.internal(_root);
 	late final Translations$authCtrl$en authCtrl = Translations$authCtrl$en.internal(_root);
 	late final Translations$proModal$en proModal = Translations$proModal$en.internal(_root);
+	late final Translations$tutorial$en tutorial = Translations$tutorial$en.internal(_root);
 }
 
 // Path: auth
@@ -2368,6 +2369,54 @@ class Translations$proModal$en {
 	String get viewPlans => 'View Pro plans';
 }
 
+// Path: tutorial
+class Translations$tutorial$en {
+	Translations$tutorial$en.internal(this._root);
+
+	final Translations _root; // ignore: unused_field
+
+	// Translations
+
+	/// en: 'Back'
+	String get back => 'Back';
+
+	/// en: 'Next'
+	String get next => 'Next';
+
+	/// en: 'Finish'
+	String get finish => 'Finish';
+
+	/// en: 'Daily Check-in'
+	String get dailyCheckIn => 'Daily Check-in';
+
+	/// en: 'Here you can record your daily mood to track your wellbeing over time and, above all, correlate it with completing your goals.'
+	String get dailyCheckinDesc => 'Here you can record your daily mood to track your wellbeing over time and, above all, correlate it with completing your goals.';
+
+	/// en: 'Manage Habits'
+	String get manageHabits => 'Manage Habits';
+
+	/// en: 'Add, edit or delete daily habits you want to maintain quickly and easily.'
+	String get addEditOrDeleteDailyHabits => 'Add, edit or delete daily habits you want to maintain quickly and easily.';
+
+	/// en: 'Moving to Goals'
+	String get movingToGoals => 'Moving to Goals';
+
+	/// en: 'The page where you can manage your long-term goals and their performance.'
+	String get goalsPageDesc => 'The page where you can manage your long-term goals and their performance.';
+
+	/// en: 'Filter by Habit'
+	String get filterByHabit => 'Filter by Habit';
+
+	/// en: 'From here you can select a specific habit to see its details, or 'All Habits' for a global overview.'
+	String get filterHabitDesc => 'From here you can select a specific habit to see its details, or \'All Habits\' for a global overview.';
+
+	/// en: 'Statistics Sections'
+	String get statisticsSections => 'Statistics Sections';
+
+	/// en: 'Navigate between the tabs to see Trends, performance Alerts, your Habits progress, and your Mood.'
+	String get statsSectionsDesc => 'Navigate between the tabs to see Trends, performance Alerts, your Habits progress, and your Mood.';
+}
+
 // Path: common.actions
 class Translations$common$actions$en {
 	Translations$common$actions$en.internal(this._root);
@@ -3208,6 +3257,19 @@ extension on Translations {
 			'proModal.unlimitedDesc' => 'Create and track all the habits you want without any limits.',
 			'proModal.maybeLater' => 'Maybe later',
 			'proModal.viewPlans' => 'View Pro plans',
+			'tutorial.back' => 'Back',
+			'tutorial.next' => 'Next',
+			'tutorial.finish' => 'Finish',
+			'tutorial.dailyCheckIn' => 'Daily Check-in',
+			'tutorial.dailyCheckinDesc' => 'Here you can record your daily mood to track your wellbeing over time and, above all, correlate it with completing your goals.',
+			'tutorial.manageHabits' => 'Manage Habits',
+			'tutorial.addEditOrDeleteDailyHabits' => 'Add, edit or delete daily habits you want to maintain quickly and easily.',
+			'tutorial.movingToGoals' => 'Moving to Goals',
+			'tutorial.goalsPageDesc' => 'The page where you can manage your long-term goals and their performance.',
+			'tutorial.filterByHabit' => 'Filter by Habit',
+			'tutorial.filterHabitDesc' => 'From here you can select a specific habit to see its details, or \'All Habits\' for a global overview.',
+			'tutorial.statisticsSections' => 'Statistics Sections',
+			'tutorial.statsSectionsDesc' => 'Navigate between the tabs to see Trends, performance Alerts, your Habits progress, and your Mood.',
 			_ => null,
 		};
 	}

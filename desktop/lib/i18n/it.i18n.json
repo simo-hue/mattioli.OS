@@ -790,5 +790,20 @@
     "unlimitedDesc": "Crea e traccia tutti gli habits che desideri senza alcun limite.",
     "maybeLater": "Forse più tardi",
     "viewPlans": "Vedi i piani Pro"
+  },
+  "tutorial": {
+    "back": "Indietro",
+    "next": "Avanti",
+    "finish": "Fine",
+    "dailyCheckIn": "Daily Check-in",
+    "dailyCheckinDesc": "Qui puoi registrare il tuo stato d'animo quotidiano per tracciare il tuo benessere nel tempo e soprattutto correlarlo con il completamento dei tuoi obiettivi.",
+    "manageHabits": "Gestione Abitudini",
+    "addEditOrDeleteDailyHabits": "Aggiungi, modifica o elimina le tue abitudini quotidiane che vuoi rispettare in modo semplice e veloce.",
+    "movingToGoals": "Passiamo agli Obiettivi",
+    "goalsPageDesc": "La pagina dove puoi gestire i tuoi obiettivi a lungo termine e le relative performance.",
+    "filterByHabit": "Filtra per Abitudine",
+    "filterHabitDesc": "Da qui puoi selezionare una specifica abitudine per vederne i dettagli, oppure 'Tutti gli Habits' per una panoramica globale.",
+    "statisticsSections": "Sezioni Statistiche",
+    "statsSectionsDesc": "Naviga tra le varie schede per vedere i Trend, gli Alert sulle performance, l'andamento delle Abitudini e il tuo Mood."
   }
 }

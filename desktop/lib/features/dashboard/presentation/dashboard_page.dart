@@ -12,6 +12,7 @@ import 'package:evolve_desktop/core/tutorial_provider.dart';
 import 'package:evolve_desktop/features/dashboard/application/dashboard_controller.dart';
 import 'package:evolve_desktop/features/dashboard/domain/dashboard_models.dart';
 import 'package:evolve_desktop/i18n/translations.g.dart';
+import 'package:evolve_desktop/shared/widgets/coach_tutorial.dart';
 import 'package:evolve_desktop/shared/widgets/desktop_page.dart';
 import 'package:evolve_desktop/shared/widgets/evolve_dialog.dart';
 import 'package:evolve_desktop/shared/widgets/evolve_panel.dart';
@@ -31,6 +32,14 @@ class _DashboardPageState extends ConsumerState<DashboardPage> {
   bool _isRunningStartupOnboardingFlow = false;
   bool _isNameDialogOpen = false;
   bool _isWelcomeDialogOpen = false;
+
+  // Coach-mark onboarding tour (starts after the welcome dialog on first run).
+  bool _showTour = false;
+  bool _didFinishTour = false;
+  int _tourIndex = 0;
+  final _checkInKey = GlobalKey();
+  final _habitsKey = GlobalKey();
+  final _focusGoalsKey = GlobalKey();
 
   @override
   void initState() {
@@ -118,8 +127,13 @@ class _DashboardPageState extends ConsumerState<DashboardPage> {
                 width: double.infinity,
                 child: FilledButton(
                   onPressed: () {
-                    ref.read(tutorialProvider.notifier).setTutorialSeen(true);
                     Navigator.pop(context);
+                    if (mounted) {
+                      setState(() {
+                        _tourIndex = 0;
+                        _showTour = true;
+                      });
+                    }
                   },
                   child: Text(t.dashboard.welcomeStart),
                 ),
@@ -142,7 +156,7 @@ class _DashboardPageState extends ConsumerState<DashboardPage> {
         ? ref.watch(privateProfileProvider).value?.fullName
         : null;
 
-    return DesktopPage(
+    final page = DesktopPage(
       title: user != null
           ? _greeting(user.userMetadata, user.email)
           : _greeting(
@@ -165,14 +179,23 @@ class _DashboardPageState extends ConsumerState<DashboardPage> {
                     weeklyMomentum: snapshot.weeklyMomentum,
                   ),
                   const SizedBox(height: 18),
-                  _HabitPanel(snapshot: snapshot),
+                  KeyedSubtree(
+                    key: _habitsKey,
+                    child: _HabitPanel(snapshot: snapshot),
+                  ),
                 ],
               );
               final secondary = Column(
                 children: [
-                  _CheckInPanel(checkIn: snapshot.checkIn),
+                  KeyedSubtree(
+                    key: _checkInKey,
+                    child: _CheckInPanel(checkIn: snapshot.checkIn),
+                  ),
                   const SizedBox(height: 18),
-                  _FocusGoalsPanel(goals: snapshot.goals),
+                  KeyedSubtree(
+                    key: _focusGoalsKey,
+                    child: _FocusGoalsPanel(goals: snapshot.goals),
+                  ),
                   const SizedBox(height: 18),
                   _WeeklyReviewPanel(snapshot: snapshot),
                 ],
@@ -197,6 +220,49 @@ class _DashboardPageState extends ConsumerState<DashboardPage> {
         ],
       ),
     );
+
+    return Stack(
+      children: [
+        page,
+        if (_showTour && !_didFinishTour)
+          CoachTutorialOverlay(
+            steps: _dashboardTourSteps(),
+            index: _tourIndex,
+            onIndexChanged: (i) => setState(() => _tourIndex = i),
+            onFinish: _finishDashboardTour,
+            backLabel: t.tutorial.back,
+            nextLabel: t.tutorial.next,
+            finishLabel: t.tutorial.finish,
+          ),
+      ],
+    );
+  }
+
+  List<CoachStep> _dashboardTourSteps() => [
+    CoachStep(
+      targetKey: _checkInKey,
+      title: t.tutorial.dailyCheckIn,
+      description: t.tutorial.dailyCheckinDesc,
+    ),
+    CoachStep(
+      targetKey: _habitsKey,
+      title: t.tutorial.manageHabits,
+      description: t.tutorial.addEditOrDeleteDailyHabits,
+    ),
+    CoachStep(
+      targetKey: _focusGoalsKey,
+      title: t.tutorial.movingToGoals,
+      description: t.tutorial.goalsPageDesc,
+    ),
+  ];
+
+  void _finishDashboardTour() {
+    if (!mounted || _didFinishTour) return;
+    setState(() {
+      _didFinishTour = true;
+      _showTour = false;
+    });
+    ref.read(tutorialProvider.notifier).setTutorialSeen(true);
   }
 }
 

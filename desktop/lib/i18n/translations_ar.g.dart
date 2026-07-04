@@ -79,6 +79,7 @@ class TranslationsAr extends Translations with BaseTranslations<AppLocale, Trans
 	@override late final _Translations$subscriptionCtrl$ar subscriptionCtrl = _Translations$subscriptionCtrl$ar._(_root);
 	@override late final _Translations$authCtrl$ar authCtrl = _Translations$authCtrl$ar._(_root);
 	@override late final _Translations$proModal$ar proModal = _Translations$proModal$ar._(_root);
+	@override late final _Translations$tutorial$ar tutorial = _Translations$tutorial$ar._(_root);
 }
 
 // Path: auth
@@ -1059,6 +1060,28 @@ class _Translations$proModal$ar extends Translations$proModal$en {
 	@override String get viewPlans => 'عرض خطط Pro';
 }
 
+// Path: tutorial
+class _Translations$tutorial$ar extends Translations$tutorial$en {
+	_Translations$tutorial$ar._(TranslationsAr root) : this._root = root, super.internal(root);
+
+	final TranslationsAr _root; // ignore: unused_field
+
+	// Translations
+	@override String get back => 'رجوع';
+	@override String get next => 'التالي';
+	@override String get finish => 'إنهاء';
+	@override String get dailyCheckIn => 'تسجيل الوصول اليومي';
+	@override String get dailyCheckinDesc => 'هنا يمكنك تسجيل مزاجك اليومي لتتبّع رفاهيتك بمرور الوقت، وقبل كل شيء ربطها بإكمال أهدافك.';
+	@override String get manageHabits => 'إدارة العادات';
+	@override String get addEditOrDeleteDailyHabits => 'أضف عاداتك اليومية التي تريد المواظبة عليها أو عدّلها أو احذفها بسرعة وسهولة.';
+	@override String get movingToGoals => 'الانتقال إلى الأهداف';
+	@override String get goalsPageDesc => 'الصفحة التي يمكنك فيها إدارة أهدافك طويلة المدى وأدائها.';
+	@override String get filterByHabit => 'التصفية حسب العادة';
+	@override String get filterHabitDesc => 'من هنا يمكنك اختيار عادة معيّنة لعرض تفاصيلها، أو "كل العادات" للحصول على نظرة عامة شاملة.';
+	@override String get statisticsSections => 'أقسام الإحصاءات';
+	@override String get statsSectionsDesc => 'تنقّل بين التبويبات لعرض الاتجاهات وتنبيهات الأداء وتقدّم عاداتك ومزاجك.';
+}
+
 // Path: common.actions
 class _Translations$common$actions$ar extends Translations$common$actions$en {
 	_Translations$common$actions$ar._(TranslationsAr root) : this._root = root, super.internal(root);
@@ -1849,6 +1872,19 @@ extension on TranslationsAr {
 			'proModal.unlimitedDesc' => 'أنشئ وتتبّع كل العادات التي تريدها دون أي حدود.',
 			'proModal.maybeLater' => 'ربما لاحقاً',
 			'proModal.viewPlans' => 'عرض خطط Pro',
+			'tutorial.back' => 'رجوع',
+			'tutorial.next' => 'التالي',
+			'tutorial.finish' => 'إنهاء',
+			'tutorial.dailyCheckIn' => 'تسجيل الوصول اليومي',
+			'tutorial.dailyCheckinDesc' => 'هنا يمكنك تسجيل مزاجك اليومي لتتبّع رفاهيتك بمرور الوقت، وقبل كل شيء ربطها بإكمال أهدافك.',
+			'tutorial.manageHabits' => 'إدارة العادات',
+			'tutorial.addEditOrDeleteDailyHabits' => 'أضف عاداتك اليومية التي تريد المواظبة عليها أو عدّلها أو احذفها بسرعة وسهولة.',
+			'tutorial.movingToGoals' => 'الانتقال إلى الأهداف',
+			'tutorial.goalsPageDesc' => 'الصفحة التي يمكنك فيها إدارة أهدافك طويلة المدى وأدائها.',
+			'tutorial.filterByHabit' => 'التصفية حسب العادة',
+			'tutorial.filterHabitDesc' => 'من هنا يمكنك اختيار عادة معيّنة لعرض تفاصيلها، أو "كل العادات" للحصول على نظرة عامة شاملة.',
+			'tutorial.statisticsSections' => 'أقسام الإحصاءات',
+			'tutorial.statsSectionsDesc' => 'تنقّل بين التبويبات لعرض الاتجاهات وتنبيهات الأداء وتقدّم عاداتك ومزاجك.',
 			_ => null,
 		};
 	}

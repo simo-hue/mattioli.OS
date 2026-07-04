@@ -790,5 +790,20 @@
     "unlimitedDesc": "Create and track all the habits you want without any limits.",
     "maybeLater": "Maybe later",
     "viewPlans": "View Pro plans"
+  },
+  "tutorial": {
+    "back": "Back",
+    "next": "Next",
+    "finish": "Finish",
+    "dailyCheckIn": "Daily Check-in",
+    "dailyCheckinDesc": "Here you can record your daily mood to track your wellbeing over time and, above all, correlate it with completing your goals.",
+    "manageHabits": "Manage Habits",
+    "addEditOrDeleteDailyHabits": "Add, edit or delete daily habits you want to maintain quickly and easily.",
+    "movingToGoals": "Moving to Goals",
+    "goalsPageDesc": "The page where you can manage your long-term goals and their performance.",
+    "filterByHabit": "Filter by Habit",
+    "filterHabitDesc": "From here you can select a specific habit to see its details, or 'All Habits' for a global overview.",
+    "statisticsSections": "Statistics Sections",
+    "statsSectionsDesc": "Navigate between the tabs to see Trends, performance Alerts, your Habits progress, and your Mood."
   }
 }

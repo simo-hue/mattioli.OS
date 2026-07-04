@@ -4,7 +4,9 @@ import 'package:evolve_desktop/features/dashboard/domain/dashboard_models.dart';
 import 'package:evolve_desktop/features/statistics/data/private_analytics.dart'
     show MoodCorrelation, kIsoDowTokens;
 import 'package:evolve_desktop/features/statistics/data/statistics_rpc_providers.dart';
+import 'package:evolve_desktop/core/tutorial_provider.dart';
 import 'package:evolve_desktop/i18n/translations.g.dart';
+import 'package:evolve_desktop/shared/widgets/coach_tutorial.dart';
 import 'package:evolve_desktop/shared/widgets/desktop_page.dart';
 import 'package:evolve_desktop/shared/widgets/evolve_panel.dart';
 import 'package:flutter/material.dart';
@@ -50,6 +52,49 @@ class _StatisticsPageState extends ConsumerState<StatisticsPage> {
   _TrendTimeframe _trendTimeframe = _TrendTimeframe.week;
   String? _habitId;
 
+  // First-run coach-mark tour (wires the previously-dead statsTutorialProvider).
+  bool _showTour = false;
+  bool _didFinishTour = false;
+  int _tourIndex = 0;
+  final _filterKey = GlobalKey();
+  final _tabsKey = GlobalKey();
+
+  @override
+  void initState() {
+    super.initState();
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      if (!mounted || _didFinishTour) return;
+      if (!ref.read(statsTutorialProvider)) {
+        setState(() {
+          _tourIndex = 0;
+          _showTour = true;
+        });
+      }
+    });
+  }
+
+  List<CoachStep> _statsTourSteps() => [
+    CoachStep(
+      targetKey: _filterKey,
+      title: t.tutorial.filterByHabit,
+      description: t.tutorial.filterHabitDesc,
+    ),
+    CoachStep(
+      targetKey: _tabsKey,
+      title: t.tutorial.statisticsSections,
+      description: t.tutorial.statsSectionsDesc,
+    ),
+  ];
+
+  void _finishStatsTour() {
+    if (!mounted || _didFinishTour) return;
+    setState(() {
+      _didFinishTour = true;
+      _showTour = false;
+    });
+    ref.read(statsTutorialProvider.notifier).setTutorialSeen(true);
+  }
+
   @override
   Widget build(BuildContext context) {
     final snapshot = ref.watch(dashboardControllerProvider);
@@ -60,7 +105,7 @@ class _StatisticsPageState extends ConsumerState<StatisticsPage> {
             orElse: () => snapshot.habits.first,
           );
 
-    return DesktopPage(
+    final page = DesktopPage(
       title: t.stats.title,
       subtitle: t.stats.pageSubtitle,
       trailing: StatusPill(
@@ -70,29 +115,38 @@ class _StatisticsPageState extends ConsumerState<StatisticsPage> {
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          _AnalyticsToolbar(
-            scope: _scope,
-            habits: snapshot.habits,
-            selectedHabit: selectedHabit,
-            onScopeChanged: (scope) => setState(() => _scope = scope),
-            onHabitChanged: (id) => setState(() => _habitId = id),
+          KeyedSubtree(
+            key: _filterKey,
+            child: _AnalyticsToolbar(
+              scope: _scope,
+              habits: snapshot.habits,
+              selectedHabit: selectedHabit,
+              onScopeChanged: (scope) => setState(() => _scope = scope),
+              onHabitChanged: (id) => setState(() => _habitId = id),
+            ),
           ),
           const SizedBox(height: 14),
           if (_scope == _AnalyticsScope.global) ...[
-            _TabSelector<_GlobalTab>(
-              selected: _globalTab,
-              values: _GlobalTab.values,
-              labelFor: _globalTabLabel,
-              onChanged: (tab) => setState(() => _globalTab = tab),
+            KeyedSubtree(
+              key: _tabsKey,
+              child: _TabSelector<_GlobalTab>(
+                selected: _globalTab,
+                values: _GlobalTab.values,
+                labelFor: _globalTabLabel,
+                onChanged: (tab) => setState(() => _globalTab = tab),
+              ),
             ),
             const SizedBox(height: 14),
             _globalContent(snapshot),
           ] else ...[
-            _TabSelector<_HabitTab>(
-              selected: _habitTab,
-              values: _HabitTab.values,
-              labelFor: _habitTabLabel,
-              onChanged: (tab) => setState(() => _habitTab = tab),
+            KeyedSubtree(
+              key: _tabsKey,
+              child: _TabSelector<_HabitTab>(
+                selected: _habitTab,
+                values: _HabitTab.values,
+                labelFor: _habitTabLabel,
+                onChanged: (tab) => setState(() => _habitTab = tab),
+              ),
             ),
             const SizedBox(height: 14),
             if (selectedHabit == null)
@@ -102,6 +156,22 @@ class _StatisticsPageState extends ConsumerState<StatisticsPage> {
           ],
         ],
       ),
+    );
+
+    return Stack(
+      children: [
+        page,
+        if (_showTour && !_didFinishTour)
+          CoachTutorialOverlay(
+            steps: _statsTourSteps(),
+            index: _tourIndex,
+            onIndexChanged: (i) => setState(() => _tourIndex = i),
+            onFinish: _finishStatsTour,
+            backLabel: t.tutorial.back,
+            nextLabel: t.tutorial.next,
+            finishLabel: t.tutorial.finish,
+          ),
+      ],
     );
   }
 

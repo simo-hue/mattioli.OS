@@ -1,3 +1,4 @@
+import 'package:evolve_desktop/i18n/translations.g.dart';
 import 'package:flutter/material.dart';
 
 enum HabitState { pending, completed }
@@ -453,41 +454,42 @@ String dashboardGoalDueLabel({
   int? weekNumber,
 }) {
   return switch (type) {
-    GoalType.lifetime => 'Obiettivo di vita',
-    GoalType.annual => year?.toString() ?? 'Obiettivo annuale',
+    GoalType.lifetime => t.dueLabel.lifetime,
+    GoalType.annual => year?.toString() ?? t.dueLabel.annual,
     GoalType.quarterly =>
-      quarter == null ? 'Trimestre' : 'Q$quarter ${year ?? ''}',
-    GoalType.monthly => month == null ? 'Mese' : '$month/${year ?? ''}',
+      quarter == null ? t.dueLabel.quarter : 'Q$quarter ${year ?? ''}',
+    GoalType.monthly =>
+      month == null ? t.common.calendarView.month : '$month/${year ?? ''}',
     GoalType.weekly =>
       weekNumber == null
-          ? 'Settimana'
-          : 'Settimana $weekNumber, ${month ?? ''}/${year ?? ''}',
+          ? t.common.calendarView.week
+          : '${t.common.calendarView.week} $weekNumber, ${month ?? ''}/${year ?? ''}',
   };
 }
 
 extension GoalStateLabel on GoalState {
   String get label => switch (this) {
-    GoalState.active => 'In corso',
-    GoalState.completed => 'Completato',
-    GoalState.failed => 'Non completato',
+    GoalState.active => t.goalState.active,
+    GoalState.completed => t.statistics.completed2,
+    GoalState.failed => t.statistics.notCompleted,
   };
 }
 
 extension GoalTypeLabel on GoalType {
   String get label => switch (this) {
-    GoalType.lifetime => 'Vita',
-    GoalType.annual => 'Annuale',
-    GoalType.quarterly => 'Trimestrale',
-    GoalType.monthly => 'Mensile',
-    GoalType.weekly => 'Settimanale',
+    GoalType.lifetime => t.common.calendarView.life,
+    GoalType.annual => t.macroGoals.types.annual,
+    GoalType.quarterly => t.macroGoals.types.quarterly,
+    GoalType.monthly => t.macroGoals.types.monthly,
+    GoalType.weekly => t.macroGoals.types.weekly,
   };
 }
 
 extension CalendarViewModeLabel on CalendarViewMode {
   String get label => switch (this) {
-    CalendarViewMode.month => 'Mese',
-    CalendarViewMode.week => 'Settimana',
-    CalendarViewMode.year => 'Anno',
-    CalendarViewMode.life => 'Vita',
+    CalendarViewMode.month => t.common.calendarView.month,
+    CalendarViewMode.week => t.common.calendarView.week,
+    CalendarViewMode.year => t.common.calendarView.year,
+    CalendarViewMode.life => t.common.calendarView.life,
   };
 }

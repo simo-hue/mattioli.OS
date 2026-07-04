@@ -2,8 +2,13 @@ import 'package:evolve_desktop/app/theme/evolve_theme.dart';
 import 'package:evolve_desktop/shared/widgets/evolve_dialog.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
+import 'package:evolve_desktop/i18n/translations.g.dart';
 
 void main() {
+  // These tests assert on the Italian UI copy, so pin the slang locale to
+  // Italian (base locale is English). `setLocale` is async — slang lazy-loads
+  // the deferred locale library.
+  setUp(() => LocaleSettings.setLocale(AppLocale.it));
   testWidgets('modern desktop dialog opens and closes from its header', (
     tester,
   ) async {

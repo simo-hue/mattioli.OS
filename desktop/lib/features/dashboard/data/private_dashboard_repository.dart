@@ -2,6 +2,7 @@ import 'dart:convert';
 
 import 'package:evolve_desktop/core/app_logger.dart';
 import 'package:evolve_desktop/core/desktop_private_db.dart';
+import 'package:evolve_desktop/core/streak_utils.dart';
 import 'package:evolve_desktop/features/dashboard/data/dashboard_repository.dart';
 import 'package:evolve_desktop/features/dashboard/domain/dashboard_models.dart';
 import 'package:sqflite_sqlcipher/sqflite.dart';
@@ -154,33 +155,121 @@ class PrivateDashboardRepository extends DashboardRepository {
     }
 
     final now = _now();
-    final streak = _computeNextStreak(habitId, date, nextStatus);
-    await db.insert('goal_logs', {
-      'id': _uuid.v4(),
-      'user_id': ownerId,
-      'goal_id': habitId,
-      'date': dateKey,
-      'status': nextStatus,
-      'streak': streak,
-      'created_at': now,
-      'updated_at': now,
-    }, conflictAlgorithm: ConflictAlgorithm.replace);
+    final streak = await _streakFor(db, habitId, date, nextStatus);
+
+    // Upsert by (goal_id, date) with an explicit update-or-insert rather than
+    // INSERT OR REPLACE: on a UNIQUE conflict OR REPLACE does DELETE+INSERT,
+    // which fires the AFTER-DELETE sync-tombstone trigger and would leave the
+    // record marked deleted for a future iCloud push. Update keeps only the
+    // AFTER-UPDATE (dirty) trigger.
+    final existing = await db.query(
+      'goal_logs',
+      columns: ['id'],
+      where: 'goal_id = ? AND date = ?',
+      whereArgs: [habitId, dateKey],
+      limit: 1,
+    );
+    if (existing.isNotEmpty) {
+      await db.update(
+        'goal_logs',
+        {'status': nextStatus, 'streak': streak, 'updated_at': now},
+        where: 'goal_id = ? AND date = ?',
+        whereArgs: [habitId, dateKey],
+      );
+    } else {
+      await db.insert('goal_logs', {
+        'id': _uuid.v4(),
+        'user_id': ownerId,
+        'goal_id': habitId,
+        'date': dateKey,
+        'status': nextStatus,
+        'streak': streak,
+        'created_at': now,
+        'updated_at': now,
+      });
+    }
     return nextStatus;
+  }
+
+  /// Signed streak for [habitId] as of [date], computed with the shared
+  /// [computeStreak] over the habit's full log history (with [nextStatus]
+  /// applied for [date]) — the same algorithm the analytics and dashboard use,
+  /// so the stored `streak` column stays consistent.
+  Future<int> _streakFor(
+    Database db,
+    String habitId,
+    DateTime date,
+    String nextStatus,
+  ) async {
+    final rows = await db.query(
+      'goal_logs',
+      columns: ['date', 'status'],
+      where: 'goal_id = ?',
+      whereArgs: [habitId],
+    );
+    final logs = <String, Map<String, String>>{};
+    for (final r in rows) {
+      logs.putIfAbsent(r['date'] as String, () => {})[habitId] =
+          r['status'] as String;
+    }
+    logs.putIfAbsent(dashboardDateKey(date), () => {})[habitId] = nextStatus;
+    final startRows = await db.query(
+      'goals',
+      columns: ['start_date'],
+      where: 'id = ?',
+      whereArgs: [habitId],
+      limit: 1,
+    );
+    final startDate =
+        DateTime.tryParse(
+          startRows.isNotEmpty
+              ? (startRows.first['start_date'] as String? ?? '')
+              : '',
+        ) ??
+        date;
+    return computeStreak(
+      habitId: habitId,
+      date: date,
+      logs: logs,
+      startDate: startDate,
+    );
   }
 
   @override
   Future<void> saveCheckIn(DateTime date, DailyCheckIn checkIn) async {
     final db = await DesktopPrivateDb.instance.database;
     final now = _now();
-    await db.insert('daily_moods', {
-      'id': _uuid.v4(),
-      'user_id': ownerId,
-      'date': dashboardDateKey(date),
-      'mood_score': checkIn.mood ?? 0,
-      'energy_score': checkIn.energy ?? 0,
-      'created_at': now,
-      'updated_at': now,
-    }, conflictAlgorithm: ConflictAlgorithm.replace);
+    final dateKey = dashboardDateKey(date);
+    // Upsert by (user_id, date) without INSERT OR REPLACE (see setHabitStatus).
+    final existing = await db.query(
+      'daily_moods',
+      columns: ['id'],
+      where: 'user_id = ? AND date = ?',
+      whereArgs: [ownerId, dateKey],
+      limit: 1,
+    );
+    if (existing.isNotEmpty) {
+      await db.update(
+        'daily_moods',
+        {
+          'mood_score': checkIn.mood ?? 0,
+          'energy_score': checkIn.energy ?? 0,
+          'updated_at': now,
+        },
+        where: 'user_id = ? AND date = ?',
+        whereArgs: [ownerId, dateKey],
+      );
+    } else {
+      await db.insert('daily_moods', {
+        'id': _uuid.v4(),
+        'user_id': ownerId,
+        'date': dateKey,
+        'mood_score': checkIn.mood ?? 0,
+        'energy_score': checkIn.energy ?? 0,
+        'created_at': now,
+        'updated_at': now,
+      });
+    }
   }
 
   @override
@@ -319,7 +408,12 @@ class PrivateDashboardRepository extends DashboardRepository {
       title: row['title'] as String,
       category: row['description'] as String? ?? 'Generale',
       color: dashboardColorFromHex(row['color'] as String?),
-      streak: _latestStreak(id, logs),
+      streak: computeStreak(
+        habitId: id,
+        date: now,
+        logs: logs,
+        startDate: DateTime.tryParse(row['start_date'] as String? ?? '') ?? now,
+      ),
       weeklyProgress: [
         for (var day = 0; day < 7; day++)
           logs[dashboardDateKey(monday.add(Duration(days: day)))]?[id] ==
@@ -337,36 +431,5 @@ class PrivateDashboardRepository extends DashboardRepository {
       reminderTime: row['reminder_time'] as String?,
       isActive: true,
     );
-  }
-
-  int _latestStreak(String habitId, Map<String, Map<String, String>> logs) {
-    // Walk backward from today to find current streak.
-    var streak = 0;
-    var date = DateTime.now();
-    for (var i = 0; i < 365; i++) {
-      final key = dashboardDateKey(date);
-      final status = logs[key]?[habitId];
-      if (status == 'done') {
-        streak++;
-        date = date.subtract(const Duration(days: 1));
-      } else {
-        break;
-      }
-    }
-    return streak;
-  }
-
-  int _computeNextStreak(String habitId, DateTime date, String nextStatus) {
-    if (nextStatus != 'done') return 0;
-    final previousDate = date.subtract(const Duration(days: 1));
-    final previousKey = dashboardDateKey(previousDate);
-    final previousStatus = _snapshot.habitLogs[previousKey]?[habitId];
-    final currentStreak =
-        _snapshot.habits
-            .where((h) => h.id == habitId)
-            .map((h) => h.streak)
-            .firstOrNull ??
-        0;
-    return previousStatus == 'done' ? currentStreak + 1 : 1;
   }
 }

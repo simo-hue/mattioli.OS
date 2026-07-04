@@ -4,6 +4,8 @@ import 'package:evolve_desktop/core/app_bootstrap.dart';
 import 'package:evolve_desktop/features/auth/application/auth_controller.dart';
 import 'package:evolve_desktop/features/dashboard/application/dashboard_controller.dart';
 import 'package:evolve_desktop/features/dashboard/domain/dashboard_models.dart';
+import 'package:evolve_desktop/i18n/translations.g.dart';
+import 'package:evolve_desktop/core/rtl.dart';
 import 'package:evolve_desktop/shared/widgets/desktop_page.dart';
 import 'package:evolve_desktop/shared/widgets/evolve_dialog.dart';
 import 'package:evolve_desktop/shared/widgets/evolve_panel.dart';
@@ -43,11 +45,10 @@ class _HabitsPageState extends ConsumerState<HabitsPage> {
     final snapshot = ref.watch(dashboardControllerProvider);
 
     return DesktopPage(
-      title: 'Abitudini',
-      subtitle:
-          'Costruisci il protocollo quotidiano e osserva la consistenza nel tempo.',
+      title: t.common.habits,
+      subtitle: t.habitsPage.subtitle,
       trailing: PageActionButton(
-        label: 'Nuova abitudine',
+        label: t.habitsPage.newHabit,
         icon: Icons.add_rounded,
         primary: true,
         onPressed: () => _openHabitEditor(),
@@ -57,18 +58,18 @@ class _HabitsPageState extends ConsumerState<HabitsPage> {
           _Summary(snapshot: snapshot),
           const SizedBox(height: 18),
           Align(
-            alignment: Alignment.centerLeft,
+            alignment: AlignmentDirectional.centerStart,
             child: SegmentedButton<_HabitSurface>(
-              segments: const [
+              segments: [
                 ButtonSegment(
                   value: _HabitSurface.protocol,
                   icon: Icon(Icons.fact_check_outlined),
-                  label: Text('Protocollo'),
+                  label: Text(t.habitsPage.tabProtocol),
                 ),
                 ButtonSegment(
                   value: _HabitSurface.calendar,
                   icon: Icon(Icons.calendar_month_outlined),
-                  label: Text('Calendario'),
+                  label: Text(t.habitsPage.tabCalendar),
                 ),
               ],
               selected: {_surface},
@@ -146,16 +147,16 @@ class _HabitsPageState extends ConsumerState<HabitsPage> {
       builder: (context) => EvolveAlertDialog(
         icon: Icons.delete_outline_rounded,
         iconColor: EvolveColors.rose,
-        title: const Text('Elimina abitudine'),
-        content: Text('Vuoi rimuovere "${habit.title}" dal protocollo?'),
+        title: Text(t.habitsPage.deleteHabitTitle),
+        content: Text(t.habitsPage.deleteHabitConfirm(title: habit.title)),
         actions: [
           TextButton(
             onPressed: () => Navigator.pop(context, false),
-            child: const Text('Annulla'),
+            child: Text(t.common.actions.cancel),
           ),
           FilledButton(
             onPressed: () => Navigator.pop(context, true),
-            child: const Text('Elimina'),
+            child: Text(t.common.actions.delete),
           ),
         ],
       ),
@@ -183,7 +184,7 @@ class _Summary extends StatelessWidget {
       children: [
         Expanded(
           child: _SummaryCard(
-            label: 'Protocollo attivo',
+            label: t.habitsPage.activeProtocol,
             value: '${snapshot.totalHabits}',
             icon: Icons.event_available_outlined,
             color: context.evolveAccent,
@@ -192,7 +193,7 @@ class _Summary extends StatelessWidget {
         const SizedBox(width: 14),
         Expanded(
           child: _SummaryCard(
-            label: 'Completate oggi',
+            label: t.habitsPage.completedToday,
             value: '${snapshot.completedHabits}',
             icon: Icons.check_circle_outline_rounded,
             color: EvolveColors.cyan,
@@ -201,8 +202,8 @@ class _Summary extends StatelessWidget {
         const SizedBox(width: 14),
         Expanded(
           child: _SummaryCard(
-            label: 'Serie migliore',
-            value: '${snapshot.bestStreak} gg',
+            label: t.stats.bestStreakLabel,
+            value: t.dashboard.streakDaysShort(n: snapshot.bestStreak),
             icon: Icons.local_fire_department_outlined,
             color: EvolveColors.amber,
           ),
@@ -280,13 +281,13 @@ class _ProtocolPanel extends StatelessWidget {
       padding: EdgeInsets.zero,
       child: Column(
         children: [
-          const Padding(
-            padding: EdgeInsets.fromLTRB(18, 18, 18, 14),
+          Padding(
+            padding: const EdgeInsets.fromLTRB(18, 18, 18, 14),
             child: SectionHeading(
-              title: 'Protocollo quotidiano',
-              subtitle: 'Panoramica settimanale, reminder e azioni rapide',
+              title: t.habitsPage.dailyProtocol,
+              subtitle: t.habitsPage.protocolSubtitle,
               trailing: StatusPill(
-                label: 'Settimana corrente',
+                label: t.stats.currentWeek,
                 icon: Icons.calendar_today_outlined,
               ),
             ),
@@ -311,16 +312,16 @@ class _HabitHeader extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return const Padding(
-      padding: EdgeInsets.symmetric(horizontal: 18, vertical: 11),
+    return Padding(
+      padding: const EdgeInsets.symmetric(horizontal: 18, vertical: 11),
       child: Row(
         children: [
-          SizedBox(width: 32),
-          Expanded(child: _ColumnLabel('ABITUDINE')),
-          SizedBox(width: 100, child: _ColumnLabel('SERIE')),
-          SizedBox(width: 200, child: _ColumnLabel('ULTIMI 7 GIORNI')),
-          SizedBox(width: 105, child: _ColumnLabel('REMINDER')),
-          SizedBox(width: 84),
+          const SizedBox(width: 32),
+          Expanded(child: _ColumnLabel(t.habitsPage.colHabit)),
+          SizedBox(width: 100, child: _ColumnLabel(t.habitsPage.colStreak)),
+          SizedBox(width: 200, child: _ColumnLabel(t.habitsPage.colLast7Days)),
+          SizedBox(width: 105, child: _ColumnLabel(t.habitsPage.colReminder)),
+          const SizedBox(width: 84),
         ],
       ),
     );
@@ -405,7 +406,7 @@ class _HabitRow extends StatelessWidget {
               SizedBox(
                 width: 100,
                 child: Text(
-                  '${habit.streak} giorni',
+                  t.habitsPage.streakDays(n: habit.streak),
                   style: const TextStyle(
                     color: EvolveColors.amber,
                     fontSize: 12,
@@ -421,7 +422,7 @@ class _HabitRow extends StatelessWidget {
                       Container(
                         width: 18,
                         height: 18,
-                        margin: const EdgeInsets.only(right: 8),
+                        margin: const EdgeInsetsDirectional.only(end: 8),
                         decoration: BoxDecoration(
                           color: done
                               ? habit.color.withValues(alpha: 0.86)
@@ -435,7 +436,7 @@ class _HabitRow extends StatelessWidget {
               SizedBox(
                 width: 105,
                 child: Text(
-                  habit.reminderTime ?? 'Nessuno',
+                  habit.reminderTime ?? t.common.none,
                   style: Theme.of(context).textTheme.bodySmall,
                 ),
               ),
@@ -444,7 +445,7 @@ class _HabitRow extends StatelessWidget {
                 child: Row(
                   children: [
                     IconButton(
-                      tooltip: 'Modifica',
+                      tooltip: t.common.actions.edit,
                       visualDensity: VisualDensity.compact,
                       constraints: const BoxConstraints.tightFor(
                         width: 36,
@@ -455,7 +456,7 @@ class _HabitRow extends StatelessWidget {
                       icon: const Icon(Icons.edit_outlined, size: 17),
                     ),
                     IconButton(
-                      tooltip: 'Elimina',
+                      tooltip: t.common.actions.delete,
                       visualDensity: VisualDensity.compact,
                       constraints: const BoxConstraints.tightFor(
                         width: 36,
@@ -518,17 +519,26 @@ class _CalendarPanel extends StatelessWidget {
                 ),
               ),
               if (view != CalendarViewMode.life) ...[
-                OutlinedButton(onPressed: onToday, child: const Text('Oggi')),
+                OutlinedButton(
+                  onPressed: onToday,
+                  child: Text(t.habitsPage.today),
+                ),
                 const SizedBox(width: 8),
                 IconButton(
-                  tooltip: 'Periodo precedente',
+                  tooltip: t.habitsPage.prevPeriod,
                   onPressed: onPrevious,
-                  icon: const Icon(Icons.chevron_left_rounded),
+                  icon: const DirectionalIcon(
+                    Icons.chevron_left_rounded,
+                    Icons.chevron_right_rounded,
+                  ),
                 ),
                 IconButton(
-                  tooltip: 'Periodo successivo',
+                  tooltip: t.habitsPage.nextPeriod,
                   onPressed: onNext,
-                  icon: const Icon(Icons.chevron_right_rounded),
+                  icon: const DirectionalIcon(
+                    Icons.chevron_right_rounded,
+                    Icons.chevron_left_rounded,
+                  ),
                 ),
               ],
             ],
@@ -582,7 +592,7 @@ class _MonthCalendar extends StatelessWidget {
       children: [
         Row(
           children: [
-            for (final day in ['LUN', 'MAR', 'MER', 'GIO', 'VEN', 'SAB', 'DOM'])
+            for (final day in t.habitsPage.weekdayAbbrevUpper)
               Expanded(child: Center(child: _ColumnLabel(day))),
           ],
         ),
@@ -737,7 +747,7 @@ class _DayCell extends StatelessWidget {
             const Spacer(),
             Text(
               indicators.isEmpty
-                  ? 'Nessuna abitudine'
+                  ? t.stats.noHabit
                   : '${(completion * 100).round()}%',
               style: Theme.of(context).textTheme.bodySmall,
             ),
@@ -777,7 +787,7 @@ class _YearCalendar extends StatelessWidget {
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
                       Text(
-                        _months[month - 1],
+                        t.common.months[month - 1],
                         style: Theme.of(context).textTheme.titleMedium,
                       ),
                       const SizedBox(height: 10),
@@ -851,28 +861,30 @@ class _LifeCalendar extends ConsumerWidget {
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          const SectionHeading(
-            title: 'Vista vita',
-            subtitle:
-                'Una cella rappresenta un mese del percorso fino a 85 anni.',
+          SectionHeading(
+            title: t.habitsPage.lifeView,
+            subtitle: t.habitsPage.lifeViewSubtitle,
           ),
           const SizedBox(height: 16),
           Row(
             children: [
               Expanded(
                 child: _LifeMetric(
-                  label: 'Mesi vissuti',
+                  label: t.habitsPage.monthsLived,
                   value: '$livedMonths',
                 ),
               ),
               const SizedBox(width: 10),
               Expanded(
-                child: _LifeMetric(label: 'Eta attuale', value: '$age'),
+                child: _LifeMetric(
+                  label: t.habitsPage.currentAge,
+                  value: '$age',
+                ),
               ),
               const SizedBox(width: 10),
               Expanded(
                 child: _LifeMetric(
-                  label: 'Mesi rimanenti',
+                  label: t.habitsPage.monthsRemaining,
                   value: '$remainingMonths',
                 ),
               ),
@@ -941,8 +953,13 @@ class _DayDetailsDialog extends ConsumerWidget {
     return EvolveAlertDialog(
       maxWidth: 560,
       icon: Icons.calendar_today_outlined,
-      title: Text('Dettaglio ${date.day} ${_months[date.month - 1]}'),
-      subtitle: 'Aggiorna lo stato delle abitudini per questo giorno.',
+      title: Text(
+        t.habitsPage.dayDetail(
+          day: date.day,
+          month: t.common.months[date.month - 1],
+        ),
+      ),
+      subtitle: t.habitsPage.dayDetailSubtitle,
       content: Column(
         mainAxisSize: MainAxisSize.min,
         children: [
@@ -967,7 +984,7 @@ class _DayDetailsDialog extends ConsumerWidget {
       actions: [
         FilledButton(
           onPressed: () => Navigator.pop(context),
-          child: const Text('Chiudi'),
+          child: Text(t.habitsPage.close),
         ),
       ],
     );
@@ -1021,7 +1038,7 @@ class _HabitEditorDialogState extends State<_HabitEditorDialog> {
     return EvolveAlertDialog(
       icon: Icons.event_repeat_rounded,
       title: Text(
-        widget.habit == null ? 'Nuova abitudine' : 'Modifica abitudine',
+        widget.habit == null ? t.habitsPage.newHabit : t.habitsPage.editHabit,
       ),
       content: SizedBox(
         width: 430,
@@ -1032,15 +1049,18 @@ class _HabitEditorDialogState extends State<_HabitEditorDialog> {
             TextField(
               controller: _title,
               autofocus: true,
-              decoration: const InputDecoration(labelText: 'Titolo'),
+              decoration: InputDecoration(labelText: t.form.title),
             ),
             const SizedBox(height: 12),
             DropdownButtonFormField<String>(
               initialValue: _category,
-              decoration: const InputDecoration(labelText: 'Categoria'),
+              decoration: InputDecoration(labelText: t.form.category),
               items: [
                 for (final value in _habitCategories)
-                  DropdownMenuItem(value: value, child: Text(value)),
+                  DropdownMenuItem(
+                    value: value,
+                    child: Text(_localizedHabitCategory(value)),
+                  ),
               ],
               onChanged: (value) {
                 if (value != null) setState(() => _category = value);
@@ -1049,13 +1069,30 @@ class _HabitEditorDialogState extends State<_HabitEditorDialog> {
             const SizedBox(height: 12),
             TextField(
               controller: _reminder,
-              decoration: const InputDecoration(
-                labelText: 'Promemoria opzionale',
-                hintText: 'es. 08:30',
+              readOnly: true,
+              decoration: InputDecoration(
+                labelText: t.habitsPage.optionalReminder,
+                hintText: t.habitsPage.reminderHint,
+                suffixIcon: _reminder.text.trim().isEmpty
+                    ? const Icon(Icons.schedule_outlined, size: 18)
+                    : IconButton(
+                        icon: const Icon(Icons.clear, size: 18),
+                        onPressed: () => setState(() => _reminder.clear()),
+                      ),
               ),
+              onTap: () async {
+                final picked = await showTimePicker(
+                  context: context,
+                  initialTime:
+                      _parseReminderTime(_reminder.text) ?? TimeOfDay.now(),
+                );
+                if (picked != null) {
+                  setState(() => _reminder.text = _formatReminderTime(picked));
+                }
+              },
             ),
             const SizedBox(height: 16),
-            Text('Colore', style: Theme.of(context).textTheme.titleMedium),
+            Text(t.form.color, style: Theme.of(context).textTheme.titleMedium),
             const SizedBox(height: 8),
             Wrap(
               spacing: 9,
@@ -1087,7 +1124,7 @@ class _HabitEditorDialogState extends State<_HabitEditorDialog> {
       actions: [
         TextButton(
           onPressed: () => Navigator.pop(context),
-          child: const Text('Annulla'),
+          child: Text(t.common.actions.cancel),
         ),
         FilledButton(
           onPressed: () {
@@ -1105,12 +1142,31 @@ class _HabitEditorDialogState extends State<_HabitEditorDialog> {
               ),
             );
           },
-          child: const Text('Salva'),
+          child: Text(t.common.actions.save),
         ),
       ],
     );
   }
 }
+
+/// Parses a stored `HH:mm` reminder string into a [TimeOfDay] (null if empty
+/// or malformed), so the time picker can open on the current value.
+TimeOfDay? _parseReminderTime(String value) {
+  final parts = value.trim().split(':');
+  if (parts.length != 2) return null;
+  final hour = int.tryParse(parts[0]);
+  final minute = int.tryParse(parts[1]);
+  if (hour == null || minute == null) return null;
+  if (hour < 0 || hour > 23 || minute < 0 || minute > 59) return null;
+  return TimeOfDay(hour: hour, minute: minute);
+}
+
+/// Formats a [TimeOfDay] as a normalized 24-hour `HH:mm` string — the format
+/// the notification scheduler ([_nextInstance]) expects, independent of the
+/// picker's 12/24h display.
+String _formatReminderTime(TimeOfDay time) =>
+    '${time.hour.toString().padLeft(2, '0')}:'
+    '${time.minute.toString().padLeft(2, '0')}';
 
 class _HabitDraft {
   const _HabitDraft({
@@ -1160,9 +1216,9 @@ String _habitStatusLabel(
   DashboardHabit habit,
 ) {
   return switch (_habitStatus(snapshot, habitId, date, habit)) {
-    'done' => '${habit.category} · Completata',
-    'missed' => '${habit.category} · Saltata',
-    _ => '${habit.category} · Non registrata',
+    'done' => t.habitsPage.statusDone(category: habit.category),
+    'missed' => t.habitsPage.statusSkipped(category: habit.category),
+    _ => t.habitsPage.statusUnrecorded(category: habit.category),
   };
 }
 
@@ -1175,28 +1231,19 @@ bool _canEditDate(DateTime date) {
 }
 
 String _periodLabel(DateTime anchor, CalendarViewMode view) => switch (view) {
-  CalendarViewMode.month => '${_months[anchor.month - 1]} ${anchor.year}',
-  CalendarViewMode.week =>
-    'Settimana del ${anchor.day} ${_months[anchor.month - 1]}',
+  CalendarViewMode.month =>
+    '${t.common.months[anchor.month - 1]} ${anchor.year}',
+  CalendarViewMode.week => t.habitsPage.weekOf(
+    day: anchor.day,
+    month: t.common.months[anchor.month - 1],
+  ),
   CalendarViewMode.year => '${anchor.year}',
-  CalendarViewMode.life => 'Settimane del tuo percorso',
+  CalendarViewMode.life => t.habitsPage.lifeWeeks,
 };
 
-const _months = [
-  'Gennaio',
-  'Febbraio',
-  'Marzo',
-  'Aprile',
-  'Maggio',
-  'Giugno',
-  'Luglio',
-  'Agosto',
-  'Settembre',
-  'Ottobre',
-  'Novembre',
-  'Dicembre',
-];
-
+// Preset category identifiers are kept stable (Italian) so they remain the
+// values stored in the DB and match existing rows; only the displayed label is
+// localized via [_localizedHabitCategory].
 const _habitCategories = [
   'Benessere',
   'Produttivita',
@@ -1204,6 +1251,15 @@ const _habitCategories = [
   'Salute',
   'Mindfulness',
 ];
+
+String _localizedHabitCategory(String value) => switch (value) {
+  'Benessere' => t.habitsPage.catWellness,
+  'Produttivita' => t.habitsPage.catProductivity,
+  'Formazione' => t.habitsPage.catEducation,
+  'Salute' => t.habitsPage.catHealth,
+  'Mindfulness' => t.habitsPage.catMindfulness,
+  _ => value,
+};
 
 const _habitColors = [
   EvolveColors.primaryStrong,

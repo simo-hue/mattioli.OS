@@ -8,6 +8,7 @@ import 'package:evolve_desktop/features/habits/presentation/habits_page.dart';
 import 'package:evolve_desktop/features/settings/presentation/settings_page.dart';
 import 'package:evolve_desktop/features/shell/application/navigation_controller.dart';
 import 'package:evolve_desktop/features/statistics/presentation/statistics_page.dart';
+import 'package:evolve_desktop/i18n/translations.g.dart';
 import 'package:evolve_desktop/shared/widgets/evolve_dialog.dart';
 import 'package:evolve_desktop/shared/widgets/evolve_panel.dart';
 import 'package:flutter/material.dart';
@@ -162,7 +163,7 @@ class _BrandMark extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Padding(
-      padding: EdgeInsets.fromLTRB(collapsed ? 18 : 20, 20, 12, 10),
+      padding: EdgeInsetsDirectional.fromSTEB(collapsed ? 18 : 20, 20, 12, 10),
       child: Row(
         children: [
           Container(
@@ -300,10 +301,10 @@ class _TopBar extends ConsumerWidget {
           children: [
             StatusPill(
               label: syncPending
-                  ? 'Sync in attesa'
+                  ? t.shell.syncPending
                   : dashboard.isRefreshing
-                  ? 'Sincronizzazione'
-                  : 'Sincronizzato',
+                  ? t.shell.syncing
+                  : t.shell.synced,
               color: syncPending ? EvolveColors.amber : context.evolveAccent,
               icon: syncPending
                   ? Icons.cloud_off_outlined
@@ -311,7 +312,7 @@ class _TopBar extends ConsumerWidget {
             ),
             const SizedBox(width: 8),
             IconButton(
-              tooltip: 'Sincronizza',
+              tooltip: t.shell.syncTooltip,
               onPressed: dashboard.isRefreshing
                   ? null
                   : ref.read(dashboardControllerProvider.notifier).refresh,
@@ -346,7 +347,7 @@ class _TopBar extends ConsumerWidget {
                       SizedBox(width: 8),
                       Expanded(
                         child: Text(
-                          'Cerca o naviga',
+                          t.shell.searchHint,
                           style: TextStyle(
                             color: context.evolveColors.muted,
                             fontSize: 12,
@@ -417,11 +418,11 @@ class _CommandPalette extends ConsumerWidget {
         child: Column(
           mainAxisSize: MainAxisSize.min,
           children: [
-            const TextField(
+            TextField(
               autofocus: true,
               decoration: InputDecoration(
-                prefixIcon: Icon(Icons.search_rounded, size: 19),
-                hintText: 'Cerca una sezione...',
+                prefixIcon: const Icon(Icons.search_rounded, size: 19),
+                hintText: t.shell.searchSectionHint,
               ),
             ),
             const SizedBox(height: 10),

@@ -33,8 +33,7 @@ class _AiCoachPageState extends ConsumerState<AiCoachPage> {
     super.initState();
     _messages.add(
       ChatMessage(
-        text:
-            'Ciao! Sono Evolve AI Coach. Sono qui per aiutarti a ottimizzare il tuo protocollo e raggiungere i tuoi obiettivi. Come posso esserti utile oggi?',
+        text: t.aiCoach.greeting,
         isUser: false,
         timestamp: DateTime.now(),
       ),
@@ -94,6 +93,10 @@ class _AiCoachPageState extends ConsumerState<AiCoachPage> {
   }
 
   void _sendMessage() async {
+    // Guard against concurrent sends: the chat TextField's onSubmitted is not
+    // gated like the FAB, so pressing Enter mid-stream could start a second
+    // run that captures an overlapping responseIndex and corrupts bubbles.
+    if (_isTyping) return;
     final text = _controller.text.trim();
     if (text.isEmpty) return;
 
@@ -112,33 +115,33 @@ class _AiCoachPageState extends ConsumerState<AiCoachPage> {
 
     // Inietta contesto se abilitato
     final snapshot = ref.read(dashboardControllerProvider);
-    String contextPrompt =
-        "Sei Evolve AI Coach, un assistente virtuale per la disciplina personale.\n";
+    String contextPrompt = "${t.aiCoach.systemPersona}\n";
 
     if (_shareHabits) {
-      contextPrompt += "\nABITUDINI ATTIVE:\n";
+      contextPrompt += "\n${t.aiCoach.habitsHeader}\n";
       final habits = snapshot.habits;
       if (habits.isEmpty) {
-        contextPrompt += "- Nessuna abitudine attiva.\n";
+        contextPrompt += "- ${t.aiCoach.noActiveHabits}\n";
       } else {
         for (final h in habits) {
           final done = snapshot.habitStatusFor(h.id, DateTime.now()) == 'done';
           contextPrompt +=
-              "- ${h.title} (Completata oggi: $done, Streak: ${h.streak})\n";
+              "- ${t.aiCoach.habitLine(title: h.title, done: done, streak: h.streak)}\n";
         }
       }
     }
 
     if (_shareGoals) {
-      contextPrompt += "\nOBIETTIVI:\n";
+      contextPrompt += "\n${t.aiCoach.goalsHeader}\n";
       final goals = snapshot.goals
           .where((g) => g.state == GoalState.active)
           .toList();
       if (goals.isEmpty) {
-        contextPrompt += "- Nessun obiettivo a lungo termine attivo.\n";
+        contextPrompt += "- ${t.aiCoach.noActiveGoals}\n";
       } else {
         for (final g in goals) {
-          contextPrompt += "- ${g.title} (Scadenza: ${g.dueLabel})\n";
+          contextPrompt +=
+              "- ${t.aiCoach.goalLine(title: g.title, due: g.dueLabel)}\n";
         }
       }
     }
@@ -159,23 +162,48 @@ class _AiCoachPageState extends ConsumerState<AiCoachPage> {
 
     String currentResponse = '';
 
-    await for (final chunk in stream) {
+    try {
+      await for (final chunk in stream) {
+        if (!mounted) return;
+        currentResponse += chunk;
+        setState(() {
+          _messages[responseIndex] = ChatMessage(
+            text: currentResponse,
+            isUser: false,
+            timestamp: DateTime.now(),
+          );
+        });
+        _scrollToBottom();
+      }
+
       if (!mounted) return;
-      currentResponse += chunk;
+      _scrollToBottom();
+    } catch (_) {
+      if (!mounted) return;
+      // Surface the failure both in the current assistant bubble and via a
+      // SnackBar so the user is never left staring at an empty/partial reply.
+      final errorText = t.ai.openRouter.connectionErrorShort;
       setState(() {
         _messages[responseIndex] = ChatMessage(
-          text: currentResponse,
+          text: currentResponse.isEmpty
+              ? errorText
+              : '$currentResponse\n\n$errorText',
           isUser: false,
           timestamp: DateTime.now(),
         );
       });
-      _scrollToBottom();
+      ScaffoldMessenger.of(
+        context,
+      ).showSnackBar(SnackBar(content: Text(errorText)));
+    } finally {
+      // Always release the typing lock so the input/FAB are re-enabled even
+      // if the stream threw.
+      if (mounted) {
+        setState(() {
+          _isTyping = false;
+        });
+      }
     }
-
-    setState(() {
-      _isTyping = false;
-    });
-    _scrollToBottom();
   }
 
   void _scrollToBottom() {
@@ -197,7 +225,7 @@ class _AiCoachPageState extends ConsumerState<AiCoachPage> {
         builder: (context, setDialogState) => AlertDialog(
           backgroundColor: context.evolveColors.background,
           title: Text(
-            'Contesto AI',
+            t.aiCoach.contextTitle,
             style: TextStyle(
               color: context.evolveColors.foreground,
               fontWeight: FontWeight.w600,
@@ -208,7 +236,7 @@ class _AiCoachPageState extends ConsumerState<AiCoachPage> {
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
               Text(
-                'Scegli quali dati condividere con il Coach AI per ricevere consigli personalizzati.',
+                t.aiCoach.contextBody,
                 style: TextStyle(
                   color: context.evolveColors.foreground.withValues(alpha: 0.7),
                 ),
@@ -216,11 +244,11 @@ class _AiCoachPageState extends ConsumerState<AiCoachPage> {
               const SizedBox(height: 24),
               SwitchListTile(
                 title: Text(
-                  'Abitudini Quotidiane',
+                  t.ai.dailyHabits,
                   style: TextStyle(color: context.evolveColors.foreground),
                 ),
                 subtitle: Text(
-                  'Condivide le abitudini attive, le serie e lo stato di completamento di oggi.',
+                  t.aiCoach.shareHabitsDesc,
                   style: TextStyle(
                     color: context.evolveColors.foreground.withValues(
                       alpha: 0.5,
@@ -237,11 +265,11 @@ class _AiCoachPageState extends ConsumerState<AiCoachPage> {
               ),
               SwitchListTile(
                 title: Text(
-                  'Obiettivi Macro',
+                  t.ai.macroGoals,
                   style: TextStyle(color: context.evolveColors.foreground),
                 ),
                 subtitle: Text(
-                  'Condivide i tuoi obiettivi attivi a lungo termine.',
+                  t.aiCoach.shareGoalsDesc,
                   style: TextStyle(
                     color: context.evolveColors.foreground.withValues(
                       alpha: 0.5,
@@ -261,7 +289,7 @@ class _AiCoachPageState extends ConsumerState<AiCoachPage> {
           actions: [
             FilledButton(
               onPressed: () => Navigator.pop(context),
-              child: const Text('Salva e Chiudi'),
+              child: Text(t.aiCoach.saveClose),
             ),
           ],
         ),
@@ -272,11 +300,10 @@ class _AiCoachPageState extends ConsumerState<AiCoachPage> {
   @override
   Widget build(BuildContext context) {
     return DesktopPage(
-      title: 'AI Coach',
-      subtitle:
-          'Ragiona sui pattern con un coach contestuale basato sui dati del percorso.',
+      title: t.ai.coach,
+      subtitle: t.aiCoach.subtitle,
       trailing: PageActionButton(
-        label: 'Contesto',
+        label: t.aiCoach.contextButton,
         icon: Icons.tune_rounded,
         onPressed: _showSettingsDialog,
       ),
@@ -303,9 +330,9 @@ class _AiCoachPageState extends ConsumerState<AiCoachPage> {
                     vertical: 8,
                   ),
                   child: Align(
-                    alignment: Alignment.centerLeft,
+                    alignment: AlignmentDirectional.centerStart,
                     child: Text(
-                      'AI Coach sta scrivendo...',
+                      t.aiCoach.typing,
                       style: TextStyle(
                         color: context.evolveColors.muted,
                         fontSize: 12,
@@ -333,7 +360,7 @@ class _AiCoachPageState extends ConsumerState<AiCoachPage> {
                           color: context.evolveColors.foreground,
                         ),
                         decoration: InputDecoration(
-                          hintText: 'Chiedi consigli al tuo Coach...',
+                          hintText: t.aiCoach.inputHint,
                           hintStyle: TextStyle(
                             color: context.evolveColors.muted,
                           ),

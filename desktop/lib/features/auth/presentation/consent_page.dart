@@ -1,5 +1,6 @@
 import 'package:evolve_desktop/app/theme/evolve_theme.dart';
 import 'package:evolve_desktop/features/auth/application/consent_controller.dart';
+import 'package:evolve_desktop/i18n/translations.g.dart';
 import 'package:evolve_desktop/shared/widgets/evolve_panel.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
@@ -37,13 +38,12 @@ class _DesktopConsentPageState extends ConsumerState<DesktopConsentPage> {
                   ),
                   const SizedBox(height: 20),
                   Text(
-                    'La tua privacy e importante',
+                    t.consent.onboardingTitle,
                     style: Theme.of(context).textTheme.headlineMedium,
                   ),
                   const SizedBox(height: 8),
                   Text(
-                    'Prima di usare Evolve Desktop conferma termini, privacy '
-                    'policy e trattamento dei dati necessari alla sincronizzazione.',
+                    t.consentPage.subtitle,
                     style: Theme.of(context).textTheme.bodyMedium,
                   ),
                   const SizedBox(height: 20),
@@ -52,30 +52,26 @@ class _DesktopConsentPageState extends ConsumerState<DesktopConsentPage> {
                     value: _acceptedTerms,
                     onChanged: (value) =>
                         setState(() => _acceptedTerms = value ?? false),
-                    title: const Text('Accetto termini e privacy policy'),
-                    subtitle: const Text(
-                      'Confermo di aver letto i documenti e di avere almeno 14 anni.',
-                    ),
+                    title: Text(t.consentPage.acceptTerms),
+                    subtitle: Text(t.consentPage.termsSubtitle),
                   ),
                   SwitchListTile(
                     contentPadding: EdgeInsets.zero,
                     value: _sentryConsent,
                     onChanged: (value) =>
                         setState(() => _sentryConsent = value),
-                    title: const Text('Diagnostica crash'),
-                    subtitle: const Text(
-                      'Consenti l’invio di segnalazioni tecniche anonimizzate.',
-                    ),
+                    title: Text(t.consentPage.crashDiagnostics),
+                    subtitle: Text(t.consentPage.crashSubtitle),
                   ),
                   const SizedBox(height: 8),
                   TextButton.icon(
                     onPressed: _openPrivacyPolicy,
                     icon: const Icon(Icons.open_in_new_rounded, size: 16),
-                    label: const Text('Apri la privacy policy'),
+                    label: Text(t.consentPage.openPrivacy),
                   ),
                   const SizedBox(height: 20),
                   Align(
-                    alignment: Alignment.centerRight,
+                    alignment: AlignmentDirectional.centerEnd,
                     child: FilledButton(
                       onPressed: _acceptedTerms && !_isSaving
                           ? _continue
@@ -85,7 +81,7 @@ class _DesktopConsentPageState extends ConsumerState<DesktopConsentPage> {
                               dimension: 18,
                               child: CircularProgressIndicator(strokeWidth: 2),
                             )
-                          : const Text('Continua'),
+                          : Text(t.consent.continueButton),
                     ),
                   ),
                 ],

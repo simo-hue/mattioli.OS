@@ -588,6 +588,160 @@ List<Map<String, dynamic>> computeAllHabitCorrelations(
   return result;
 }
 
+// ─── mood correlations (per-habit mood/energy sensitivity) ───────────────────
+
+/// One habit's mood/energy correlation, mirroring mobile's `MoodCorrelation`
+/// (`mattioli_os` `lib/providers/mood_provider.dart`). Percentages are ints;
+/// avg mood/energy are on the 0–10 check-in scale.
+class MoodCorrelation {
+  final String goalId;
+  final int lowMoodPct;
+  final int highMoodPct;
+  final int sensitivity;
+  final int resilience;
+  final double avgMoodDone;
+  final double avgEnergyDone;
+  final double avgMoodMissed;
+  final double avgEnergyMissed;
+
+  const MoodCorrelation({
+    required this.goalId,
+    required this.lowMoodPct,
+    required this.highMoodPct,
+    required this.sensitivity,
+    required this.resilience,
+    required this.avgMoodDone,
+    required this.avgEnergyDone,
+    required this.avgMoodMissed,
+    required this.avgEnergyMissed,
+  });
+}
+
+/// A single day's mood/energy check-in, normalised for the correlation engine.
+/// Mood/energy are on a 0–10 scale (matching the daily check-in slider and the
+/// `daily_moods` columns). Missing values are treated as 0, mirroring how the
+/// private store persists them.
+class MoodEntry {
+  final int moodScore;
+  final int energyScore;
+
+  const MoodEntry({required this.moodScore, required this.energyScore});
+}
+
+/// Ported verbatim from mobile's `computeMoodCorrelations`
+/// (`lib/providers/mood_provider.dart`). For each habit, computes low-vs-high
+/// mood completion %, sensitivity (high − low), resilience (low-mood %), and the
+/// average mood/energy on done vs missed days. [moodsByDate] and [logsByDate]
+/// are both keyed by dateKey (`YYYY-MM-DD`).
+///
+/// The 0–10 banding: high = mood ≥ 6, low = mood < 4, 4–5 neutral — identical to
+/// mobile so both clients produce the same numbers.
+List<MoodCorrelation> computeMoodCorrelations({
+  required Map<String, MoodEntry> moodsByDate,
+  required Map<String, Map<String, String>> logsByDate,
+}) {
+  final habitCorrelations = <String, Map<String, num>>{};
+
+  logsByDate.forEach((dateStr, habits) {
+    final mood = moodsByDate[dateStr];
+    if (mood == null) return;
+    final isHighMood = mood.moodScore >= 6;
+    final isLowMood = mood.moodScore < 4;
+
+    habits.forEach((goalId, status) {
+      final data = habitCorrelations.putIfAbsent(
+        goalId,
+        () => {
+          'high_done': 0,
+          'high_total': 0,
+          'low_done': 0,
+          'low_total': 0,
+          'mood_done_sum': 0,
+          'mood_done_count': 0,
+          'energy_done_sum': 0,
+          'energy_done_count': 0,
+          'mood_missed_sum': 0,
+          'mood_missed_count': 0,
+          'energy_missed_sum': 0,
+          'energy_missed_count': 0,
+        },
+      );
+
+      if (isHighMood) {
+        data['high_total'] = data['high_total']! + 1;
+        if (status == 'done') data['high_done'] = data['high_done']! + 1;
+      } else if (isLowMood) {
+        data['low_total'] = data['low_total']! + 1;
+        if (status == 'done') data['low_done'] = data['low_done']! + 1;
+      }
+
+      if (status == 'done') {
+        data['mood_done_sum'] = data['mood_done_sum']! + mood.moodScore;
+        data['mood_done_count'] = data['mood_done_count']! + 1;
+        data['energy_done_sum'] = data['energy_done_sum']! + mood.energyScore;
+        data['energy_done_count'] = data['energy_done_count']! + 1;
+      } else if (status == 'missed') {
+        data['mood_missed_sum'] = data['mood_missed_sum']! + mood.moodScore;
+        data['mood_missed_count'] = data['mood_missed_count']! + 1;
+        data['energy_missed_sum'] =
+            data['energy_missed_sum']! + mood.energyScore;
+        data['energy_missed_count'] = data['energy_missed_count']! + 1;
+      }
+    });
+  });
+
+  final result = <MoodCorrelation>[];
+
+  habitCorrelations.forEach((goalId, data) {
+    final highTotal = data['high_total']!;
+    final lowTotal = data['low_total']!;
+
+    final highPct = highTotal > 0
+        ? (data['high_done']! / highTotal * 100).round()
+        : 0;
+    final lowPct = lowTotal > 0
+        ? (data['low_done']! / lowTotal * 100).round()
+        : 0;
+
+    final sensitivity = highPct - lowPct;
+    final resilience = lowPct;
+
+    final moodDoneCount = data['mood_done_count']!;
+    final energyDoneCount = data['energy_done_count']!;
+    final moodMissedCount = data['mood_missed_count']!;
+    final energyMissedCount = data['energy_missed_count']!;
+
+    final avgMoodDone = moodDoneCount > 0
+        ? data['mood_done_sum']! / moodDoneCount
+        : 0.0;
+    final avgEnergyDone = energyDoneCount > 0
+        ? data['energy_done_sum']! / energyDoneCount
+        : 0.0;
+    final avgMoodMissed = moodMissedCount > 0
+        ? data['mood_missed_sum']! / moodMissedCount
+        : 0.0;
+    final avgEnergyMissed = energyMissedCount > 0
+        ? data['energy_missed_sum']! / energyMissedCount
+        : 0.0;
+
+    result.add(
+      MoodCorrelation(
+        goalId: goalId,
+        lowMoodPct: lowPct,
+        highMoodPct: highPct,
+        sensitivity: sensitivity,
+        resilience: resilience,
+        avgMoodDone: avgMoodDone.toDouble(),
+        avgEnergyDone: avgEnergyDone.toDouble(),
+        avgMoodMissed: avgMoodMissed.toDouble(),
+        avgEnergyMissed: avgEnergyMissed.toDouble(),
+      ),
+    );
+  });
+
+  return result;
+}
+
 // ─── get_macro_goals_stats ───────────────────────────────────────────────────
 
 /// The subset of a macro goal (`long_term_goals` row) the macro stats need.

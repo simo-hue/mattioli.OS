@@ -6,8 +6,13 @@ import 'package:evolve_desktop/features/dashboard/data/dashboard_repository.dart
 import 'package:evolve_desktop/features/dashboard/domain/dashboard_models.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
+import 'package:evolve_desktop/i18n/translations.g.dart';
 
 void main() {
+  // These tests assert on the Italian UI copy, so pin the slang locale to
+  // Italian (base locale is English). `setLocale` is async — slang lazy-loads
+  // the deferred locale library.
+  setUp(() => LocaleSettings.setLocale(AppLocale.it));
   test('toggling a habit updates the desktop dashboard snapshot', () async {
     final container = _testContainer(snapshot: _singleHabitSnapshot());
     addTearDown(container.dispose);

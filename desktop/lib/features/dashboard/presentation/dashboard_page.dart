@@ -104,14 +104,12 @@ class _DashboardPageState extends ConsumerState<DashboardPage> {
         barrierDismissible: false,
         builder: (context) => EvolveAlertDialog(
           icon: Icons.auto_awesome,
-          title: const Text('Benvenuto in Evolve'),
-          subtitle: 'Inizia il tuo percorso di crescita personale.',
+          title: Text(t.dashboard.welcomeTitle),
+          subtitle: t.dashboard.welcomeSubtitle,
           content: Column(
             mainAxisSize: MainAxisSize.min,
             children: [
-              const Text(
-                'Questa applicazione ti aiuta a costruire buone abitudini e raggiungere i tuoi obiettivi a lungo termine.',
-              ),
+              Text(t.dashboard.welcomeBody),
               const SizedBox(height: 24),
               SizedBox(
                 width: double.infinity,
@@ -120,7 +118,7 @@ class _DashboardPageState extends ConsumerState<DashboardPage> {
                     ref.read(tutorialProvider.notifier).setTutorialSeen(true);
                     Navigator.pop(context);
                   },
-                  child: const Text('Inizia'),
+                  child: Text(t.dashboard.welcomeStart),
                 ),
               ),
             ],
@@ -148,8 +146,7 @@ class _DashboardPageState extends ConsumerState<DashboardPage> {
               privateName != null ? {'full_name': privateName} : null,
               null,
             ),
-      subtitle:
-          'Mantieni il ritmo. Ogni piccola azione consolida la persona che stai costruendo.',
+      subtitle: t.dashboard.subtitle,
       trailing: _TodayLabel(date: DateTime.now()),
       child: Column(
         children: [
@@ -207,29 +204,8 @@ class _TodayLabel extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    const months = [
-      'gennaio',
-      'febbraio',
-      'marzo',
-      'aprile',
-      'maggio',
-      'giugno',
-      'luglio',
-      'agosto',
-      'settembre',
-      'ottobre',
-      'novembre',
-      'dicembre',
-    ];
-    const weekdays = [
-      'Lunedi',
-      'Martedi',
-      'Mercoledi',
-      'Giovedi',
-      'Venerdi',
-      'Sabato',
-      'Domenica',
-    ];
+    final months = t.common.months;
+    final weekdays = t.common.weekdaysLong;
 
     return Padding(
       padding: const EdgeInsets.only(top: 9),
@@ -261,35 +237,38 @@ class _MetricGrid extends StatelessWidget {
           children: [
             _MetricCard(
               width: cardWidth,
-              label: 'Completamento oggi',
+              label: t.dashboard.completionToday,
               value: '${(snapshot.completionRate * 100).round()}%',
-              detail:
-                  '${snapshot.completedHabits}/${snapshot.totalHabits} abitudini',
+              detail: t.dashboard.habitsCount(
+                done: snapshot.completedHabits,
+                total: snapshot.totalHabits,
+              ),
               color: context.evolveAccent,
               icon: Icons.bolt_rounded,
             ),
             _MetricCard(
               width: cardWidth,
-              label: 'Migliore serie',
+              label: t.dashboard.bestStreak,
               value: '${snapshot.bestStreak}',
-              detail: 'giorni consecutivi',
+              detail: t.dashboard.consecutiveDays,
               color: EvolveColors.amber,
               icon: Icons.local_fire_department_outlined,
             ),
             _MetricCard(
               width: cardWidth,
-              label: 'Obiettivi attivi',
+              label: t.dashboard.activeGoals,
               value: '${snapshot.activeGoals}',
-              detail:
-                  '${(snapshot.averageGoalProgress * 100).round()}% progresso medio',
+              detail: t.dashboard.avgProgress(
+                pct: (snapshot.averageGoalProgress * 100).round(),
+              ),
               color: EvolveColors.cyan,
               icon: Icons.flag_outlined,
             ),
             _MetricCard(
               width: cardWidth,
-              label: 'Momentum',
+              label: t.dashboard.momentum,
               value: _signedPercentage(snapshot.weeklyMomentum),
-              detail: 'rispetto alla scorsa settimana',
+              detail: t.dashboard.vsLastWeek,
               color: EvolveColors.violet,
               icon: Icons.trending_up_rounded,
             ),
@@ -373,10 +352,12 @@ class _TrendPanel extends StatelessWidget {
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           SectionHeading(
-            title: 'Andamento settimanale',
-            subtitle: 'Percentuale di completamento delle tue abitudini',
+            title: t.dashboard.weeklyTrend,
+            subtitle: t.dashboard.weeklyTrendSubtitle,
             trailing: StatusPill(
-              label: '${_signedPercentage(weeklyMomentum)} questa settimana',
+              label: t.dashboard.thisWeekPill(
+                value: _signedPercentage(weeklyMomentum),
+              ),
               color: context.evolveAccent,
               icon: Icons.north_east_rounded,
             ),
@@ -520,12 +501,14 @@ class _HabitPanel extends ConsumerWidget {
       child: Column(
         children: [
           SectionHeading(
-            title: 'Protocollo di oggi',
-            subtitle: 'Completa le azioni essenziali prima di aggiungere altro',
+            title: t.dashboard.todayProtocol,
+            subtitle: t.dashboard.todayProtocolSubtitle,
             trailing: Row(
               mainAxisSize: MainAxisSize.min,
               children: [
-                StatusPill(label: '${snapshot.totalHabits} azioni'),
+                StatusPill(
+                  label: t.dashboard.actionsCount(count: snapshot.totalHabits),
+                ),
                 const SizedBox(width: 8),
                 IconButton(
                   onPressed: () => showEvolveDialog<void>(
@@ -533,7 +516,7 @@ class _HabitPanel extends ConsumerWidget {
                     builder: (context) => const CreateHabitDialog(),
                   ),
                   icon: const Icon(Icons.add_rounded, size: 20),
-                  tooltip: 'Nuova Abitudine',
+                  tooltip: t.createHabit.title,
                   style: IconButton.styleFrom(
                     backgroundColor: context.evolveColors.border.withValues(
                       alpha: 0.3,
@@ -549,7 +532,7 @@ class _HabitPanel extends ConsumerWidget {
               padding: const EdgeInsets.symmetric(vertical: 24),
               child: Center(
                 child: Text(
-                  'Il tuo canvas è vuoto. Crea la tua prima abitudine.',
+                  t.dashboard.emptyHabits,
                   style: TextStyle(
                     color: context.evolveColors.foreground.withValues(
                       alpha: 0.5,
@@ -639,7 +622,7 @@ class _HabitRow extends StatelessWidget {
               Container(
                 width: 8,
                 height: 8,
-                margin: const EdgeInsets.only(left: 5),
+                margin: const EdgeInsetsDirectional.only(start: 5),
                 decoration: BoxDecoration(
                   color: completed
                       ? habit.color
@@ -651,7 +634,7 @@ class _HabitRow extends StatelessWidget {
             SizedBox(
               width: 54,
               child: Text(
-                '${habit.streak} gg',
+                t.dashboard.streakDaysShort(n: habit.streak),
                 textAlign: TextAlign.right,
                 style: const TextStyle(
                   color: EvolveColors.amber,
@@ -682,14 +665,19 @@ class _CheckInPanel extends StatelessWidget {
           Icon(Icons.spa_outlined, size: 23, color: context.evolveAccent),
           const SizedBox(height: 14),
           Text(
-            checkIn.isComplete ? 'Check-in registrato' : 'Come ti senti oggi?',
+            checkIn.isComplete
+                ? t.dashboard.checkInDone
+                : t.dashboard.checkInPrompt,
             style: Theme.of(context).textTheme.titleLarge,
           ),
           const SizedBox(height: 6),
           Text(
             checkIn.isComplete
-                ? 'Umore ${checkIn.mood}/10 · Energia ${checkIn.energy}/10'
-                : 'Registra umore ed energia per migliorare le analisi dei tuoi pattern.',
+                ? t.dashboard.moodEnergyValue(
+                    mood: checkIn.mood!,
+                    energy: checkIn.energy!,
+                  )
+                : t.dashboard.checkInHint,
             style: Theme.of(context).textTheme.bodySmall,
           ),
           const SizedBox(height: 16),
@@ -698,10 +686,12 @@ class _CheckInPanel extends StatelessWidget {
             child: FilledButton(
               onPressed: () => showEvolveDialog<void>(
                 context: context,
-                builder: (context) => const _DailyCheckInDialog(),
+                builder: (context) => _DailyCheckInDialog(checkIn: checkIn),
               ),
               child: Text(
-                checkIn.isComplete ? 'Aggiorna check-in' : 'Fai il check-in',
+                checkIn.isComplete
+                    ? t.dashboard.updateCheckIn
+                    : t.dashboard.doCheckIn,
               ),
             ),
           ),
@@ -712,7 +702,9 @@ class _CheckInPanel extends StatelessWidget {
 }
 
 class _DailyCheckInDialog extends ConsumerStatefulWidget {
-  const _DailyCheckInDialog();
+  const _DailyCheckInDialog({required this.checkIn});
+
+  final DailyCheckIn checkIn;
 
   @override
   ConsumerState<_DailyCheckInDialog> createState() =>
@@ -720,29 +712,37 @@ class _DailyCheckInDialog extends ConsumerStatefulWidget {
 }
 
 class _DailyCheckInDialogState extends ConsumerState<_DailyCheckInDialog> {
-  double _mood = 7;
-  double _energy = 6;
+  late double _mood;
+  late double _energy;
+
+  @override
+  void initState() {
+    super.initState();
+    // Seed the sliders from today's already-saved check-in so "Update
+    // check-in" reflects the user's current mood/energy instead of resetting.
+    _mood = (widget.checkIn.mood ?? 7).toDouble();
+    _energy = (widget.checkIn.energy ?? 6).toDouble();
+  }
 
   @override
   Widget build(BuildContext context) {
     return EvolveAlertDialog(
       maxWidth: 420,
       icon: Icons.spa_outlined,
-      title: const Text('Check-in quotidiano'),
-      subtitle:
-          'Una rilevazione rapida aiuta Evolve a leggere meglio i tuoi pattern.',
+      title: Text(t.dashboard.dailyCheckIn),
+      subtitle: t.dashboard.dailyCheckInSubtitle,
       content: Column(
         mainAxisSize: MainAxisSize.min,
         children: [
           _CheckInSlider(
-            label: 'Umore',
+            label: t.dashboard.mood,
             value: _mood,
             color: EvolveColors.violet,
             onChanged: (value) => setState(() => _mood = value),
           ),
           const SizedBox(height: 14),
           _CheckInSlider(
-            label: 'Energia',
+            label: t.dashboard.energy,
             value: _energy,
             color: EvolveColors.amber,
             onChanged: (value) => setState(() => _energy = value),
@@ -752,7 +752,7 @@ class _DailyCheckInDialogState extends ConsumerState<_DailyCheckInDialog> {
       actions: [
         TextButton(
           onPressed: () => Navigator.pop(context),
-          child: const Text('Annulla'),
+          child: Text(t.common.actions.cancel),
         ),
         FilledButton(
           onPressed: () async {
@@ -761,7 +761,7 @@ class _DailyCheckInDialogState extends ConsumerState<_DailyCheckInDialog> {
                 .updateCheckIn(mood: _mood.round(), energy: _energy.round());
             if (context.mounted) Navigator.pop(context);
           },
-          child: const Text('Registra'),
+          child: Text(t.dashboard.record),
         ),
       ],
     );
@@ -823,19 +823,15 @@ class _FocusGoalsPanel extends ConsumerWidget {
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           SectionHeading(
-            title: 'Obiettivi in focus',
-            subtitle: 'Priorita correnti',
+            title: t.dashboard.focusGoals,
+            subtitle: t.dashboard.currentPriorities,
             trailing: Builder(
               builder: (context) => IconButton(
                 onPressed: () {
                   final isPro = ref.read(desktopIsProProvider);
                   if (!isPro && goals.length >= 100) {
                     ScaffoldMessenger.of(context).showSnackBar(
-                      const SnackBar(
-                        content: Text(
-                          'Limite di 100 obiettivi raggiunto. Passa a Pro per crearne altri.',
-                        ),
-                      ),
+                      SnackBar(content: Text(t.dashboard.goalLimitReached)),
                     );
                     return;
                   }
@@ -845,7 +841,7 @@ class _FocusGoalsPanel extends ConsumerWidget {
                   );
                 },
                 icon: const Icon(Icons.add_rounded, size: 20),
-                tooltip: 'Nuovo Obiettivo',
+                tooltip: t.createGoal.title,
                 style: IconButton.styleFrom(
                   backgroundColor: context.evolveColors.border.withValues(
                     alpha: 0.3,
@@ -860,7 +856,7 @@ class _FocusGoalsPanel extends ConsumerWidget {
               padding: const EdgeInsets.symmetric(vertical: 24),
               child: Center(
                 child: Text(
-                  'Nessun obiettivo in focus. Aggiungine uno.',
+                  t.dashboard.emptyFocusGoals,
                   style: TextStyle(
                     color: context.evolveColors.foreground.withValues(
                       alpha: 0.5,
@@ -949,15 +945,17 @@ class _WeeklyReviewPanel extends StatelessWidget {
               children: [
                 Text(
                   completion == 0
-                      ? 'Settimana da avviare'
+                      ? t.dashboard.weekToStart
                       : momentum >= 0
-                      ? 'Settimana in crescita'
-                      : 'Settimana da recuperare',
+                      ? t.dashboard.weekGrowing
+                      : t.dashboard.weekToRecover,
                   style: Theme.of(context).textTheme.titleMedium,
                 ),
                 const SizedBox(height: 4),
                 Text(
-                  '${_signedPercentage(momentum)} rispetto alla settimana precedente.',
+                  t.dashboard.vsPreviousWeek(
+                    value: _signedPercentage(momentum),
+                  ),
                   style: Theme.of(context).textTheme.bodySmall,
                 ),
               ],
@@ -1045,7 +1043,9 @@ String _greeting(Map<String, dynamic>? metadata, String? email) {
   final name = fullName?.isNotEmpty ?? false
       ? fullName!.split(RegExp(r'\s+')).first
       : email?.split('@').first;
-  return name == null || name.isEmpty ? 'Buongiorno' : 'Buongiorno, $name';
+  return name == null || name.isEmpty
+      ? t.dashboard.goodMorning
+      : '${t.dashboard.goodMorning}, $name';
 }
 
 String _signedPercentage(double value) {

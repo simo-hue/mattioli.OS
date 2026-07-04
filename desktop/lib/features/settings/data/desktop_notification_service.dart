@@ -2,6 +2,7 @@ import 'dart:async';
 import 'dart:io';
 
 import 'package:evolve_desktop/core/app_logger.dart';
+import 'package:evolve_desktop/i18n/translations.g.dart';
 import 'package:evolve_desktop/core/desktop_private_db.dart';
 import 'package:evolve_desktop/features/dashboard/domain/dashboard_models.dart';
 import 'package:flutter_local_notifications/flutter_local_notifications.dart';
@@ -27,11 +28,11 @@ class DesktopNotificationService {
   bool get canScheduleDaily => Platform.isMacOS || Platform.isWindows;
 
   String get platformSummary {
-    if (Platform.isMacOS) return 'Scheduling giornaliero attivo su macOS.';
+    if (Platform.isMacOS) return t.notif.macScheduling;
     if (Platform.isWindows) {
-      return 'Windows pianifica la prossima occorrenza a ogni avvio.';
+      return t.notif.windowsScheduling;
     }
-    return 'Linux mostra notifiche immediate, ma non supporta lo scheduling.';
+    return t.notif.linuxImmediate;
   }
 
   Future<void> init() async {
@@ -50,9 +51,12 @@ class DesktopNotificationService {
       final habitCategory = DarwinNotificationCategory(
         _habitCategoryId,
         actions: [
-          DarwinNotificationAction.plain('done', 'Fatto'),
-          DarwinNotificationAction.plain('skip', 'Salta'),
-          DarwinNotificationAction.plain('snooze', 'Posticipa'),
+          DarwinNotificationAction.plain('done', t.notifications.actionDone),
+          DarwinNotificationAction.plain('skip', t.notifications.actionSkip),
+          DarwinNotificationAction.plain(
+            'snooze',
+            t.notifications.actionSnooze,
+          ),
         ],
       );
       final darwin = DarwinInitializationSettings(
@@ -61,8 +65,8 @@ class DesktopNotificationService {
         requestSoundPermission: false,
         notificationCategories: [habitCategory],
       );
-      const linux = LinuxInitializationSettings(
-        defaultActionName: 'Apri Evolve',
+      final linux = LinuxInitializationSettings(
+        defaultActionName: t.notif.openEvolve,
       );
       const windows = WindowsInitializationSettings(
         appName: 'Evolve',
@@ -116,8 +120,8 @@ class DesktopNotificationService {
       await _scheduleDaily(
         id: 0,
         time: morningBriefTime,
-        title: 'Evolve - Morning Brief',
-        body: 'Rivedi le abitudini di oggi e scegli da dove iniziare.',
+        title: 'Evolve - ${t.notifications.morningBrief}',
+        body: t.notif.morningBody,
       );
       for (final habit in habits) {
         final reminderTime = habit.reminderTime;
@@ -126,7 +130,7 @@ class DesktopNotificationService {
           id: habit.id.hashCode,
           time: reminderTime,
           title: 'Evolve - ${habit.title}',
-          body: 'E il momento di completare la tua abitudine.',
+          body: t.notif.habitReminderBody,
           payload: 'habit|${habit.id}|${habit.title}',
           categoryId: _habitCategoryId,
         );
@@ -137,8 +141,8 @@ class DesktopNotificationService {
       await _scheduleDaily(
         id: 1,
         time: eveningReviewTime,
-        title: 'Evolve - Review serale',
-        body: 'Consolida la giornata e aggiorna i progressi.',
+        title: 'Evolve - ${t.notifications.eveningReview}',
+        body: t.notif.eveningBody,
       );
     }
   }
@@ -162,7 +166,9 @@ class DesktopNotificationService {
         windows: const WindowsNotificationDetails(),
       ),
       androidScheduleMode: AndroidScheduleMode.inexactAllowWhileIdle,
-      matchDateTimeComponents: Platform.isMacOS
+      // Recur daily at the same time on macOS AND Windows. (Linux has no
+      // scheduling and fires immediately — disclosed in [platformSummary].)
+      matchDateTimeComponents: Platform.isMacOS || Platform.isWindows
           ? DateTimeComponents.time
           : null,
       payload: payload,

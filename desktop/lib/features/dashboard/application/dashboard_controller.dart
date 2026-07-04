@@ -1,9 +1,13 @@
 import 'dart:async';
 import 'dart:math';
 
+import 'package:evolve_desktop/core/app_bootstrap.dart';
 import 'package:evolve_desktop/core/app_logger.dart';
+import 'package:evolve_desktop/core/streak_utils.dart';
+import 'package:evolve_desktop/i18n/translations.g.dart';
 import 'package:evolve_desktop/core/macro_goal_calendar.dart';
 import 'package:evolve_desktop/features/dashboard/data/dashboard_repository.dart';
+import 'package:evolve_desktop/features/settings/data/desktop_notification_service.dart';
 import 'package:evolve_desktop/features/dashboard/domain/dashboard_models.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
@@ -38,7 +42,7 @@ class DashboardController extends Notifier<DashboardSnapshot> {
           : null;
       state = (cachedSnapshot ?? state).copyWith(
         isRefreshing: false,
-        errorMessage: 'Sincronizzazione non riuscita. Dati locali mantenuti.',
+        errorMessage: t.sync.syncFailed,
       );
     }
   }
@@ -72,6 +76,19 @@ class DashboardController extends Notifier<DashboardSnapshot> {
     } else {
       dayLogs[id] = nextStatus;
     }
+    // Deterministic streak for the toggled day, derived from the full ordered
+    // log history via the shared `computeStreak` (same helper the persistence
+    // layer / mobile use). Mirrors mobile's `cycleStatus`: 0 when the day is
+    // un-completed, otherwise the signed streak over the updated logs.
+    final habit = state.habits.firstWhere((habit) => habit.id == id);
+    final nextStreak = nextStatus == null
+        ? 0
+        : computeStreak(
+            habitId: id,
+            date: date,
+            logs: logs,
+            startDate: habit.startDate ?? date,
+          );
     final habits = [
       for (final habit in state.habits)
         if (habit.id == id)
@@ -80,6 +97,7 @@ class DashboardController extends Notifier<DashboardSnapshot> {
             weekdayIndex,
             _isToday(date),
             nextStatus == 'done',
+            nextStreak,
           )
         else
           habit,
@@ -114,6 +132,7 @@ class DashboardController extends Notifier<DashboardSnapshot> {
     );
     state = state.copyWith(habits: [...state.habits, draft]);
     await _saveLocal();
+    _rescheduleNotifications();
     try {
       final habit = await _repository.createHabit(draft);
       state = state.copyWith(
@@ -150,6 +169,7 @@ class DashboardController extends Notifier<DashboardSnapshot> {
     ];
     state = state.copyWith(habits: habits);
     await _saveLocal();
+    _rescheduleNotifications();
     await _syncRemote(
       () =>
           _repository.updateHabit(habits.firstWhere((habit) => habit.id == id)),
@@ -161,7 +181,33 @@ class DashboardController extends Notifier<DashboardSnapshot> {
       habits: state.habits.where((habit) => habit.id != id).toList(),
     );
     await _saveLocal();
+    _rescheduleNotifications();
     await _syncRemote(() => _repository.deleteHabit(id));
+  }
+
+  /// Re-schedule the OS daily notifications after a habit add/edit/delete so a
+  /// habit's reminder is (un)registered immediately, rather than only after the
+  /// user re-saves the Settings page. Reads the user's notification prefs;
+  /// fire-and-forget so it never blocks the mutation.
+  void _rescheduleNotifications() {
+    final prefs = ref.read(sharedPreferencesProvider);
+    unawaited(
+      DesktopNotificationService.instance
+          .sync(
+            habitReminders: prefs?.getBool('notif_habit_reminders') ?? true,
+            eveningReview: prefs?.getBool('notif_evening_review') ?? true,
+            morningBriefTime:
+                prefs?.getString('notif_morning_brief_time') ?? '09:00',
+            eveningReviewTime:
+                prefs?.getString('notif_evening_review_time') ?? '21:00',
+            habits: state.habits,
+          )
+          .catchError((Object error, StackTrace stack) {
+            // Rescheduling is best-effort; a platform/plugin failure must never
+            // break the habit mutation (or a test without notification channels).
+            AppLogger.error('Failed to reschedule notifications', error, stack);
+          }),
+    );
   }
 
   Future<void> updateCheckIn({required int mood, required int energy}) async {
@@ -334,10 +380,7 @@ class DashboardController extends Notifier<DashboardSnapshot> {
 
   void _recordSyncError(String message, Object error, StackTrace stack) {
     AppLogger.error(message, error, stack);
-    state = state.copyWith(
-      errorMessage:
-          'Modifica salvata localmente. Sincronizzazione da riprovare.',
-    );
+    state = state.copyWith(errorMessage: t.sync.editSavedLocally);
   }
 
   String? _nextHabitStatus(String? currentStatus) {
@@ -367,6 +410,7 @@ class DashboardController extends Notifier<DashboardSnapshot> {
     int weekdayIndex,
     bool updateToday,
     bool completed,
+    int streak,
   ) {
     final progress = [...habit.weeklyProgress];
     progress[weekdayIndex] = completed;
@@ -376,9 +420,7 @@ class DashboardController extends Notifier<DashboardSnapshot> {
       state: updateToday
           ? (completed ? HabitState.completed : HabitState.pending)
           : habit.state,
-      streak: completed
-          ? habit.streak + 1
-          : (habit.streak > 0 ? habit.streak - 1 : 0),
+      streak: streak,
     );
   }
 

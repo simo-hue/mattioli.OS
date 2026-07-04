@@ -1,6 +1,6 @@
 import 'package:evolve_desktop/app/theme/evolve_theme.dart';
 import 'package:evolve_desktop/features/dashboard/application/dashboard_controller.dart';
-import 'package:evolve_desktop/features/dashboard/domain/dashboard_models.dart';
+import 'package:evolve_desktop/i18n/translations.g.dart';
 import 'package:evolve_desktop/shared/widgets/evolve_dialog.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
@@ -14,7 +14,9 @@ class CreateHabitDialog extends ConsumerStatefulWidget {
 
 class _CreateHabitDialogState extends ConsumerState<CreateHabitDialog> {
   final _titleController = TextEditingController();
-  final _categoryController = TextEditingController(text: 'Generale');
+  final _categoryController = TextEditingController(
+    text: t.createHabit.defaultCategory,
+  );
   Color _selectedColor = EvolveColors.cyan;
   final List<int> _selectedDays = [1, 2, 3, 4, 5, 6, 7];
   bool _isLoading = false;
@@ -51,13 +53,15 @@ class _CreateHabitDialogState extends ConsumerState<CreateHabitDialog> {
     if (title.isEmpty) return;
 
     setState(() => _isLoading = true);
-    
+
     try {
-      await ref.read(dashboardControllerProvider.notifier).addHabit(
-        title: title,
-        category: _categoryController.text.trim(),
-        color: _selectedColor,
-      );
+      await ref
+          .read(dashboardControllerProvider.notifier)
+          .addHabit(
+            title: title,
+            category: _categoryController.text.trim(),
+            color: _selectedColor,
+          );
       if (mounted) Navigator.pop(context);
     } catch (e) {
       // Error is logged in controller
@@ -67,22 +71,22 @@ class _CreateHabitDialogState extends ConsumerState<CreateHabitDialog> {
 
   @override
   Widget build(BuildContext context) {
-    const days = ['L', 'M', 'M', 'G', 'V', 'S', 'D'];
+    final days = t.common.weekdayInitials;
 
     return EvolveAlertDialog(
       maxWidth: 480,
       icon: Icons.add_task_rounded,
-      title: const Text('Nuova Abitudine'),
-      subtitle: 'Definisci la tua nuova abitudine.',
+      title: Text(t.createHabit.title),
+      subtitle: t.createHabit.subtitle,
       content: Column(
         mainAxisSize: MainAxisSize.min,
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           TextField(
             controller: _titleController,
-            decoration: const InputDecoration(
-              labelText: 'Titolo',
-              hintText: 'es. Meditazione',
+            decoration: InputDecoration(
+              labelText: t.form.title,
+              hintText: t.createHabit.titleHint,
             ),
             autofocus: true,
             textInputAction: TextInputAction.next,
@@ -90,15 +94,15 @@ class _CreateHabitDialogState extends ConsumerState<CreateHabitDialog> {
           const SizedBox(height: 16),
           TextField(
             controller: _categoryController,
-            decoration: const InputDecoration(
-              labelText: 'Categoria',
-              hintText: 'es. Benessere',
+            decoration: InputDecoration(
+              labelText: t.form.category,
+              hintText: t.createHabit.categoryHint,
             ),
             textInputAction: TextInputAction.done,
             onSubmitted: (_) => _save(),
           ),
           const SizedBox(height: 24),
-          Text('Colore', style: Theme.of(context).textTheme.titleSmall),
+          Text(t.form.color, style: Theme.of(context).textTheme.titleSmall),
           const SizedBox(height: 8),
           Wrap(
             spacing: 8,
@@ -113,7 +117,10 @@ class _CreateHabitDialogState extends ConsumerState<CreateHabitDialog> {
                     color: color,
                     shape: BoxShape.circle,
                     border: isSelected
-                        ? Border.all(color: context.evolveColors.foreground, width: 2)
+                        ? Border.all(
+                            color: context.evolveColors.foreground,
+                            width: 2,
+                          )
                         : null,
                   ),
                 ),
@@ -121,7 +128,10 @@ class _CreateHabitDialogState extends ConsumerState<CreateHabitDialog> {
             }).toList(),
           ),
           const SizedBox(height: 24),
-          Text('Frequenza settimanale', style: Theme.of(context).textTheme.titleSmall),
+          Text(
+            t.createHabit.weeklyFrequency,
+            style: Theme.of(context).textTheme.titleSmall,
+          ),
           const SizedBox(height: 8),
           Row(
             mainAxisAlignment: MainAxisAlignment.spaceBetween,
@@ -137,13 +147,17 @@ class _CreateHabitDialogState extends ConsumerState<CreateHabitDialog> {
                   height: 36,
                   alignment: Alignment.center,
                   decoration: BoxDecoration(
-                    color: isSelected ? context.evolveAccent : context.evolveColors.panelRaised,
+                    color: isSelected
+                        ? context.evolveAccent
+                        : context.evolveColors.panelRaised,
                     borderRadius: BorderRadius.circular(8),
                   ),
                   child: Text(
                     days[index],
                     style: TextStyle(
-                      color: isSelected ? Colors.black : context.evolveColors.foreground,
+                      color: isSelected
+                          ? Colors.black
+                          : context.evolveColors.foreground,
                       fontWeight: FontWeight.w600,
                     ),
                   ),
@@ -156,13 +170,16 @@ class _CreateHabitDialogState extends ConsumerState<CreateHabitDialog> {
       actions: [
         TextButton(
           onPressed: _isLoading ? null : () => Navigator.pop(context),
-          child: const Text('Annulla'),
+          child: Text(t.common.actions.cancel),
         ),
         FilledButton(
           onPressed: _isLoading ? null : _save,
-          child: _isLoading 
-            ? const SizedBox.square(dimension: 16, child: CircularProgressIndicator(strokeWidth: 2))
-            : const Text('Aggiungi'),
+          child: _isLoading
+              ? const SizedBox.square(
+                  dimension: 16,
+                  child: CircularProgressIndicator(strokeWidth: 2),
+                )
+              : Text(t.form.add),
         ),
       ],
     );

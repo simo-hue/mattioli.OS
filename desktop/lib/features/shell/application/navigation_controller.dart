@@ -1,3 +1,4 @@
+import 'package:evolve_desktop/i18n/translations.g.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
@@ -10,12 +11,12 @@ enum DesktopSection {
   settings;
 
   String get label => switch (this) {
-    overview => 'Panoramica',
-    habits => 'Abitudini',
-    insights => 'Statistiche',
-    goals => 'Obiettivi',
-    coach => 'AI Coach',
-    settings => 'Impostazioni',
+    overview => t.nav.overview,
+    habits => t.nav.habits,
+    insights => t.nav.insights,
+    goals => t.nav.goals,
+    coach => t.nav.coach,
+    settings => t.nav.settings,
   };
 
   String get shortcut => switch (this) {

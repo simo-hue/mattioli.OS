@@ -16,6 +16,7 @@ class PrivateAnalyticsData {
   final List<GoalInput> goals;
   final Map<String, DateTime> startDates; // goalId -> start_date
   final Map<String, String?> titles; // goalId -> title
+  final Map<String, MoodEntry> moodsByDate; // dateKey -> mood/energy (0–10)
 
   const PrivateAnalyticsData({
     required this.allLogs,
@@ -24,6 +25,7 @@ class PrivateAnalyticsData {
     required this.goals,
     required this.startDates,
     required this.titles,
+    this.moodsByDate = const {},
   });
 
   static const empty = PrivateAnalyticsData(
@@ -33,6 +35,7 @@ class PrivateAnalyticsData {
     goals: [],
     startDates: {},
     titles: {},
+    moodsByDate: {},
   );
 }
 
@@ -56,6 +59,11 @@ final privateAnalyticsDataProvider = FutureProvider<PrivateAnalyticsData>((
       where: 'user_id = ?',
       whereArgs: [ownerId],
       orderBy: 'date ASC',
+    );
+    final moodRows = await db.query(
+      'daily_moods',
+      where: 'user_id = ?',
+      whereArgs: [ownerId],
     );
 
     final allLogs = <HabitLogEntry>[];
@@ -100,6 +108,16 @@ final privateAnalyticsDataProvider = FutureProvider<PrivateAnalyticsData>((
       titles[id] = r['title'] as String?;
     }
 
+    final moodsByDate = <String, MoodEntry>{};
+    for (final r in moodRows) {
+      final rawDate = r['date'] as String?;
+      if (rawDate == null || rawDate.isEmpty) continue;
+      moodsByDate[rawDate] = MoodEntry(
+        moodScore: (r['mood_score'] as int?) ?? 0,
+        energyScore: (r['energy_score'] as int?) ?? 0,
+      );
+    }
+
     return PrivateAnalyticsData(
       allLogs: allLogs,
       logsByGoal: logsByGoal,
@@ -107,6 +125,7 @@ final privateAnalyticsDataProvider = FutureProvider<PrivateAnalyticsData>((
       goals: goals,
       startDates: startDates,
       titles: titles,
+      moodsByDate: moodsByDate,
     );
   } catch (error, stack) {
     AppLogger.error('Unable to load private analytics data', error, stack);

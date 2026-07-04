@@ -4,6 +4,9 @@ import 'package:evolve_desktop/core/macro_goal_calendar.dart';
 import 'package:evolve_desktop/features/dashboard/application/dashboard_controller.dart';
 import 'package:evolve_desktop/features/dashboard/domain/dashboard_models.dart';
 import 'package:evolve_desktop/features/goals/application/goal_categories_controller.dart';
+import 'package:evolve_desktop/features/settings/application/desktop_subscription_controller.dart';
+import 'package:evolve_desktop/i18n/translations.g.dart';
+import 'package:evolve_desktop/core/rtl.dart';
 import 'package:evolve_desktop/shared/widgets/desktop_page.dart';
 import 'package:evolve_desktop/shared/widgets/evolve_dialog.dart';
 import 'goals_stats_view.dart';
@@ -99,7 +102,7 @@ class _GoalsPageState extends ConsumerState<GoalsPage> {
       activeGoals = [
         DashboardGoal(
           id: 'tutorial_fake_goal',
-          title: 'Obiettivo di esempio',
+          title: t.goalsPage.sampleGoal,
           category: 'Tutorial',
           color: Colors.blueAccent,
           state: GoalState.active,
@@ -111,101 +114,102 @@ class _GoalsPageState extends ConsumerState<GoalsPage> {
           month: _selectedMonth,
           weekNumber: _selectedWeek,
           progress: 0,
-        )
+        ),
       ];
     }
 
     return DesktopPage(
-      title: 'Macro Obiettivi',
-      subtitle: 'Pianificazione a lungo termine.',
+      title: t.goalsPage.title,
+      subtitle: t.goalsPage.subtitle,
       child: Stack(
         children: [
           DecoratedBox(
-        decoration: BoxDecoration(
-          color: context.evolveColors.panel.withValues(alpha: 0.7),
-          borderRadius: BorderRadius.circular(22),
-          border: Border.all(color: context.evolveColors.border),
-        ),
-        child: Padding(
-          padding: const EdgeInsets.fromLTRB(32, 28, 32, 32),
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.stretch,
-            children: [
-              _GoalToolbar(
-                statsToggleKey: _performanceToggleKey,
-                selectedType: _selectedType,
-                showStats: _showStats,
-                onTypeChanged: (type) => setState(() {
-                  _selectedType = type;
-                  _showStats = false;
-                }),
-                onShowStats: () => setState(() => _showStats = true),
+            decoration: BoxDecoration(
+              color: context.evolveColors.panel.withValues(alpha: 0.7),
+              borderRadius: BorderRadius.circular(22),
+              border: Border.all(color: context.evolveColors.border),
+            ),
+            child: Padding(
+              padding: const EdgeInsets.fromLTRB(32, 28, 32, 32),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.stretch,
+                children: [
+                  _GoalToolbar(
+                    statsToggleKey: _performanceToggleKey,
+                    selectedType: _selectedType,
+                    showStats: _showStats,
+                    onTypeChanged: (type) => setState(() {
+                      _selectedType = type;
+                      _showStats = false;
+                    }),
+                    onShowStats: () => setState(() => _showStats = true),
+                  ),
+                  const SizedBox(height: 30),
+                  _GoalPeriodBar(
+                    key: _planSelectorKey,
+                    selectedType: _selectedType,
+                    selectedYear: _selectedYear,
+                    selectedQuarter: _selectedQuarter,
+                    selectedMonth: _selectedMonth,
+                    selectedWeek: _selectedWeek,
+                    onYearChanged: (year) => setState(() {
+                      _selectedYear = year;
+                      _selectedWeek = _selectedWeek.clamp(
+                        1,
+                        logicalWeeksInMonth(_selectedYear, _selectedMonth),
+                      );
+                    }),
+                    onQuarterChanged: (quarter) =>
+                        setState(() => _selectedQuarter = quarter),
+                    onMonthChanged: (month) => setState(() {
+                      _selectedMonth = month;
+                      _selectedWeek = 1;
+                    }),
+                    onWeekChanged: (week) =>
+                        setState(() => _selectedWeek = week),
+                    onPrevious: () => _movePeriod(-1),
+                    onNext: () => _movePeriod(1),
+                    onManageCategories: _openCategoryManager,
+                  ),
+                  const SizedBox(height: 30),
+                  if (_showStats)
+                    const Padding(
+                      padding: EdgeInsets.only(top: 24),
+                      child: GoalsStatsView(),
+                    )
+                  else
+                    _GoalBoard(
+                      periodTitle: _periodTitle,
+                      periodSubtitle: _periodSubtitle,
+                      quickGoalController: _quickGoalController,
+                      quickGoalCategory: _quickGoalCategory,
+                      addGoalKey: _addGoalKey,
+                      tutorialCheckboxKey: _tutorialCheckboxKey,
+                      tutorialCategoryKey: _tutorialCategoryKey,
+                      tutorialRescheduleKey: _tutorialRescheduleKey,
+                      tutorialEditKey: _tutorialEditKey,
+                      tutorialDeleteKey: _tutorialDeleteKey,
+                      categories: _availableCategories,
+                      activeGoals: activeGoals,
+                      completedGoals: completedGoals,
+                      failedGoals: failedGoals,
+                      onQuickCategoryChanged: (category) =>
+                          setState(() => _quickGoalCategory = category),
+                      onQuickSubmit: _submitQuickGoal,
+                      onToggleStatus: _cycleGoalStatus,
+                      onEdit: _openGoalEditorFor,
+                      onReschedule: (goal) => ref
+                          .read(dashboardControllerProvider.notifier)
+                          .rescheduleGoal(goal.id),
+                      onDelete: (goal) => ref
+                          .read(dashboardControllerProvider.notifier)
+                          .deleteGoal(goal.id),
+                      quickGoalHint: _quickGoalHint,
+                    ),
+                ],
               ),
-              const SizedBox(height: 30),
-              _GoalPeriodBar(
-                key: _planSelectorKey,
-                selectedType: _selectedType,
-                selectedYear: _selectedYear,
-                selectedQuarter: _selectedQuarter,
-                selectedMonth: _selectedMonth,
-                selectedWeek: _selectedWeek,
-                onYearChanged: (year) => setState(() {
-                  _selectedYear = year;
-                  _selectedWeek = _selectedWeek.clamp(
-                    1,
-                    logicalWeeksInMonth(_selectedYear, _selectedMonth),
-                  );
-                }),
-                onQuarterChanged: (quarter) =>
-                    setState(() => _selectedQuarter = quarter),
-                onMonthChanged: (month) => setState(() {
-                  _selectedMonth = month;
-                  _selectedWeek = 1;
-                }),
-                onWeekChanged: (week) => setState(() => _selectedWeek = week),
-                onPrevious: () => _movePeriod(-1),
-                onNext: () => _movePeriod(1),
-                onManageCategories: _openCategoryManager,
-              ),
-              const SizedBox(height: 30),
-              if (_showStats)
-                const Padding(
-                  padding: EdgeInsets.only(top: 24),
-                  child: GoalsStatsView(),
-                )
-              else
-                _GoalBoard(
-                  periodTitle: _periodTitle,
-                  periodSubtitle: _periodSubtitle,
-                  quickGoalController: _quickGoalController,
-                  quickGoalCategory: _quickGoalCategory,
-                  addGoalKey: _addGoalKey,
-                  tutorialCheckboxKey: _tutorialCheckboxKey,
-                  tutorialCategoryKey: _tutorialCategoryKey,
-                  tutorialRescheduleKey: _tutorialRescheduleKey,
-                  tutorialEditKey: _tutorialEditKey,
-                  tutorialDeleteKey: _tutorialDeleteKey,
-                  categories: _availableCategories,
-                  activeGoals: activeGoals,
-                  completedGoals: completedGoals,
-                  failedGoals: failedGoals,
-                  onQuickCategoryChanged: (category) =>
-                      setState(() => _quickGoalCategory = category),
-                  onQuickSubmit: _submitQuickGoal,
-                  onToggleStatus: _cycleGoalStatus,
-                  onEdit: _openGoalEditorFor,
-                  onReschedule: (goal) => ref
-                      .read(dashboardControllerProvider.notifier)
-                      .rescheduleGoal(goal.id),
-                  onDelete: (goal) => ref
-                      .read(dashboardControllerProvider.notifier)
-                      .deleteGoal(goal.id),
-                  quickGoalHint: _quickGoalHint,
-                ),
-            ],
+            ),
           ),
-        ),
-      ),
           if (showTutorial) _buildGoalsTutorialOverlay(),
         ],
       ),
@@ -214,42 +218,48 @@ class _GoalsPageState extends ConsumerState<GoalsPage> {
 
   String get _periodLabel {
     return switch (_selectedType) {
-      GoalType.lifetime => 'Obiettivi di vita',
+      GoalType.lifetime => t.goalsPage.periodLifetime,
       GoalType.annual => '$_selectedYear',
       GoalType.quarterly => 'Q$_selectedQuarter $_selectedYear',
-      GoalType.monthly => '${_months[_selectedMonth - 1]} $_selectedYear',
-      GoalType.weekly =>
-        'Settimana $_selectedWeek, ${_months[_selectedMonth - 1]} $_selectedYear',
+      GoalType.monthly =>
+        '${t.common.months[_selectedMonth - 1]} $_selectedYear',
+      GoalType.weekly => t.goalsPage.weekPeriodLabel(
+        week: _selectedWeek,
+        month: t.common.months[_selectedMonth - 1],
+        year: _selectedYear,
+      ),
     };
   }
 
   String get _periodTitle {
     return switch (_selectedType) {
-      GoalType.lifetime => 'Lifetime',
+      GoalType.lifetime => t.macroGoals.types.lifetime,
       GoalType.annual => '$_selectedYear',
-      GoalType.quarterly => 'Trimestre $_selectedQuarter',
-      GoalType.monthly => _months[_selectedMonth - 1],
-      GoalType.weekly => 'Settimana $_selectedWeek',
+      GoalType.quarterly => t.macroGoals.quarterNumber(
+        quarter: _selectedQuarter,
+      ),
+      GoalType.monthly => t.common.months[_selectedMonth - 1],
+      GoalType.weekly => '${t.common.calendarView.week} $_selectedWeek',
     };
   }
 
   String get _periodSubtitle {
     return switch (_selectedType) {
-      GoalType.lifetime => 'Obiettivi Lifetime',
-      GoalType.annual => 'Obiettivi Annuali',
-      GoalType.quarterly => 'Obiettivi Trimestrali',
-      GoalType.monthly => 'Obiettivi Mensili',
-      GoalType.weekly => 'Obiettivi Settimanali',
+      GoalType.lifetime => t.goalsPage.subtitleLifetime,
+      GoalType.annual => t.goalsPage.subtitleAnnual,
+      GoalType.quarterly => t.goalsPage.subtitleQuarterly,
+      GoalType.monthly => t.goalsPage.subtitleMonthly,
+      GoalType.weekly => t.goalsPage.subtitleWeekly,
     };
   }
 
   String get _quickGoalHint {
     return switch (_selectedType) {
-      GoalType.lifetime => 'Aggiungi macro obiettivo lifetime...',
-      GoalType.annual => 'Aggiungi obiettivo annuale...',
-      GoalType.quarterly => 'Aggiungi obiettivo trimestrale...',
-      GoalType.monthly => 'Aggiungi obiettivo mensile...',
-      GoalType.weekly => 'Aggiungi obiettivo settimanale...',
+      GoalType.lifetime => t.macroGoals.addLifetimeGoal,
+      GoalType.annual => t.macroGoals.addAnnualGoal,
+      GoalType.quarterly => t.macroGoals.addQuarterlyGoal,
+      GoalType.monthly => t.macroGoals.addMonthlyGoal,
+      GoalType.weekly => t.macroGoals.addWeeklyGoal,
     };
   }
 
@@ -324,6 +334,15 @@ class _GoalsPageState extends ConsumerState<GoalsPage> {
     final title = _quickGoalController.text.trim();
     if (title.isEmpty) return;
 
+    final isPro = ref.read(desktopIsProProvider);
+    final totalGoals = ref.read(dashboardControllerProvider).goals.length;
+    if (!isPro && totalGoals >= 100) {
+      ScaffoldMessenger.of(
+        context,
+      ).showSnackBar(SnackBar(content: Text(t.dashboard.goalLimitReached)));
+      return;
+    }
+
     final category = _quickGoalCategory;
     await ref
         .read(dashboardControllerProvider.notifier)
@@ -346,6 +365,9 @@ class _GoalsPageState extends ConsumerState<GoalsPage> {
     DashboardGoal goal,
     GoalState finalState,
   ) async {
+    // The tutorial injects a synthetic goal that has no backing entry in the
+    // controller; toggling it would throw a StateError. Ignore interactions.
+    if (goal.id == 'tutorial_fake_goal') return;
     await ref
         .read(dashboardControllerProvider.notifier)
         .updateGoalState(goal.id, finalState);
@@ -358,7 +380,6 @@ class _GoalsPageState extends ConsumerState<GoalsPage> {
       context: context,
       builder: (context) => _GoalEditorDialog(
         categories: categories,
-        initialType: goal.type,
         goal: goal,
         initialCategory: category,
       ),
@@ -382,7 +403,7 @@ class _GoalsPageState extends ConsumerState<GoalsPage> {
         builder: (context, setDialogState) {
           return EvolveAlertDialog(
             icon: Icons.category_outlined,
-            title: const Text('Categorie obiettivi'),
+            title: Text(t.goalsPage.categoriesTitle),
             content: SizedBox(
               width: 420,
               child: Column(
@@ -395,14 +416,14 @@ class _GoalsPageState extends ConsumerState<GoalsPage> {
                         radius: 7,
                         backgroundColor: category.color,
                       ),
-                      title: Text(category.label),
+                      title: Text(_categoryLabel(category)),
                       trailing: category.isDefault
-                          ? const StatusPill(label: 'Predefinita')
+                          ? StatusPill(label: t.goalsPage.defaultPill)
                           : Row(
                               mainAxisSize: MainAxisSize.min,
                               children: [
                                 IconButton(
-                                  tooltip: 'Modifica categoria',
+                                  tooltip: t.goalsPage.editCategory,
                                   onPressed: () async {
                                     await _editCategory(category);
                                     setDialogState(() {});
@@ -410,7 +431,7 @@ class _GoalsPageState extends ConsumerState<GoalsPage> {
                                   icon: const Icon(Icons.edit_outlined),
                                 ),
                                 IconButton(
-                                  tooltip: 'Archivia categoria',
+                                  tooltip: t.goalsPage.archiveCategory,
                                   onPressed: () {
                                     _archiveCategory(category);
                                     setDialogState(() {});
@@ -439,9 +460,7 @@ class _GoalsPageState extends ConsumerState<GoalsPage> {
                   } catch (_) {
                     if (!context.mounted) return;
                     ScaffoldMessenger.of(context).showSnackBar(
-                      const SnackBar(
-                        content: Text('Creazione categoria non riuscita.'),
-                      ),
+                      SnackBar(content: Text(t.goalsPage.categoryCreateFailed)),
                     );
                     return;
                   }
@@ -459,11 +478,11 @@ class _GoalsPageState extends ConsumerState<GoalsPage> {
                   setDialogState(() {});
                 },
                 icon: const Icon(Icons.add_rounded),
-                label: const Text('Aggiungi categoria'),
+                label: Text(t.goalsPage.addCategory),
               ),
               FilledButton(
                 onPressed: () => Navigator.pop(context),
-                child: const Text('Chiudi'),
+                child: Text(t.habitsPage.close),
               ),
             ],
           );
@@ -506,7 +525,7 @@ class _GoalsPageState extends ConsumerState<GoalsPage> {
       if (!mounted) return;
       setState(() => _archivedCategoryIds.remove(id));
       ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('Archivio categoria non riuscito.')),
+        SnackBar(content: Text(t.goalsPage.categoryArchiveFailed)),
       );
     }
   }
@@ -526,9 +545,9 @@ class _GoalsPageState extends ConsumerState<GoalsPage> {
             .updateCategory(id, updated.label, updated.color);
       } catch (_) {
         if (!mounted) return;
-        ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(content: Text('Modifica categoria non riuscita.')),
-        );
+        ScaffoldMessenger.of(
+          context,
+        ).showSnackBar(SnackBar(content: Text(t.goalsPage.categoryEditFailed)));
         return;
       }
     }
@@ -578,7 +597,7 @@ class _GoalsPageState extends ConsumerState<GoalsPage> {
     final index = _goalsTutorialIndex.clamp(0, steps.length - 1).toInt();
     final step = steps[index];
     final targetRect = _targetRectForKey(step.targetKey);
-    
+
     if (step.targetKey != null && targetRect == null) {
       _scheduleGoalsTutorialGeometryRefresh();
     }
@@ -593,7 +612,9 @@ class _GoalsPageState extends ConsumerState<GoalsPage> {
               constraints.maxWidth,
               constraints.maxHeight,
             );
-            final showCardAtTop = targetRect != null && targetRect.center.dy > overlaySize.height * 0.52;
+            final showCardAtTop =
+                targetRect != null &&
+                targetRect.center.dy > overlaySize.height * 0.52;
 
             return Stack(
               children: [
@@ -618,16 +639,22 @@ class _GoalsPageState extends ConsumerState<GoalsPage> {
                     ),
                   ),
                 Align(
-                  alignment: showCardAtTop ? Alignment.topCenter : Alignment.bottomCenter,
+                  alignment: showCardAtTop
+                      ? Alignment.topCenter
+                      : Alignment.bottomCenter,
                   child: Padding(
-                    padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 40),
+                    padding: const EdgeInsets.symmetric(
+                      horizontal: 20,
+                      vertical: 40,
+                    ),
                     child: _buildTutorialContent(
                       step.title,
                       step.description,
                       isFirst: index == 0,
                       isLast: index == steps.length - 1,
                       nextButtonLabel: step.nextButtonLabel,
-                      onPreviousPressed: () => _goToGoalsTutorialStep(index - 1),
+                      onPreviousPressed: () =>
+                          _goToGoalsTutorialStep(index - 1),
                       onNextPressed: () {
                         if (index == steps.length - 1) {
                           _finishGoalsTutorial();
@@ -732,14 +759,15 @@ class _GoalsPageState extends ConsumerState<GoalsPage> {
                   if (!isFirst)
                     TextButton(
                       onPressed: onPreviousPressed,
-                      child: const Text('Indietro'),
+                      child: Text(t.goalsPage.back),
                     )
                   else
                     const SizedBox.shrink(),
                   FilledButton(
                     onPressed: onNextPressed,
                     child: Text(
-                      nextButtonLabel ?? (isLast ? 'Fine' : 'Avanti'),
+                      nextButtonLabel ??
+                          (isLast ? t.goalsPage.finish : t.goalsPage.next),
                     ),
                   ),
                 ],
@@ -755,45 +783,45 @@ class _GoalsPageState extends ConsumerState<GoalsPage> {
     return [
       _GoalsTutorialStep(
         targetKey: _planSelectorKey,
-        title: 'Tipo di pianificazione',
-        description: 'Qui puoi selezionare l\'orizzonte temporale dei tuoi obiettivi.',
+        title: t.goalsPage.tutPlanningTitle,
+        description: t.goalsPage.tutPlanningDesc,
       ),
       _GoalsTutorialStep(
         targetKey: _addGoalKey,
-        title: 'Nuovo obiettivo',
-        description: 'Da qui puoi inserire rapidamente un nuovo obiettivo.',
+        title: t.goalsPage.newGoal,
+        description: t.goalsPage.tutNewGoalDesc,
       ),
       _GoalsTutorialStep(
         targetKey: _tutorialCheckboxKey,
-        title: 'Completa o fallisci',
-        description: 'Segna l\'obiettivo come completato o fallito con un semplice clic.',
+        title: t.goalsPage.tutCompleteTitle,
+        description: t.goalsPage.tutCompleteDesc,
       ),
       _GoalsTutorialStep(
         targetKey: _tutorialCategoryKey,
-        title: 'Categoria',
-        description: 'Gestisci le categorie e associale ai tuoi obiettivi.',
+        title: t.form.category,
+        description: t.goalsPage.tutCategoryDesc,
       ),
       _GoalsTutorialStep(
         targetKey: _tutorialRescheduleKey,
-        title: 'Riprogramma',
-        description: 'Sposta l\'obiettivo al periodo successivo se non sei riuscito a completarlo.',
+        title: t.goalsPage.tutRescheduleTitle,
+        description: t.goalsPage.tutRescheduleDesc,
       ),
       _GoalsTutorialStep(
         targetKey: _tutorialEditKey,
-        title: 'Modifica',
-        description: 'Modifica i dettagli del tuo obiettivo.',
+        title: t.common.actions.edit,
+        description: t.goalsPage.tutEditDesc,
       ),
       _GoalsTutorialStep(
         targetKey: _tutorialDeleteKey,
-        title: 'Elimina',
-        description: 'Elimina un obiettivo se non è più rilevante.',
+        title: t.common.actions.delete,
+        description: t.goalsPage.tutDeleteDesc,
       ),
       _GoalsTutorialStep(
         targetKey: _performanceToggleKey,
         showStats: true,
-        title: 'Analisi e statistiche',
-        description: 'Passa alla vista statistiche per analizzare il tuo rendimento nel tempo.',
-        nextButtonLabel: 'Fine',
+        title: t.goalsPage.tutStatsTitle,
+        description: t.goalsPage.tutStatsDesc,
+        nextButtonLabel: t.goalsPage.finish,
       ),
     ];
   }
@@ -830,33 +858,33 @@ class _GoalToolbar extends StatelessWidget {
           child: Row(
             children: [
               _GoalModeTab(
-                label: 'Lifetime',
+                label: t.macroGoals.types.lifetime,
                 active: !showStats && selectedType == GoalType.lifetime,
                 onTap: () => onTypeChanged(GoalType.lifetime),
               ),
               _GoalModeTab(
-                label: 'Annuale',
+                label: t.macroGoals.types.annual,
                 active: !showStats && selectedType == GoalType.annual,
                 onTap: () => onTypeChanged(GoalType.annual),
               ),
               _GoalModeTab(
-                label: 'Trimestrale',
+                label: t.macroGoals.types.quarterly,
                 active: !showStats && selectedType == GoalType.quarterly,
                 onTap: () => onTypeChanged(GoalType.quarterly),
               ),
               _GoalModeTab(
-                label: 'Mensile',
+                label: t.macroGoals.types.monthly,
                 active: !showStats && selectedType == GoalType.monthly,
                 onTap: () => onTypeChanged(GoalType.monthly),
               ),
               _GoalModeTab(
-                label: 'Settimanale',
+                label: t.macroGoals.types.weekly,
                 active: !showStats && selectedType == GoalType.weekly,
                 onTap: () => onTypeChanged(GoalType.weekly),
               ),
               _GoalModeTab(
                 key: statsToggleKey,
-                label: 'Stats',
+                label: t.goalsPage.statsTab,
                 icon: Icons.pie_chart_outline_rounded,
                 active: showStats,
                 onTap: onShowStats,
@@ -999,7 +1027,7 @@ class _GoalPeriodBar extends StatelessWidget {
               _PeriodDropdown(
                 value: selectedMonth,
                 values: [for (var month = 1; month <= 12; month++) month],
-                labelFor: (value) => _months[value - 1],
+                labelFor: (value) => t.common.months[value - 1],
                 onChanged: onMonthChanged,
               ),
             ],
@@ -1015,32 +1043,40 @@ class _GoalPeriodBar extends StatelessWidget {
                   )
                     week,
                 ],
-                labelFor: (value) => 'Settimana $value',
+                labelFor: (value) => '${t.common.calendarView.week} $value',
                 onChanged: onWeekChanged,
               ),
             ],
           ] else
             Text(
-              'Visione completa',
+              t.goalsPage.fullView,
               style: Theme.of(context).textTheme.titleMedium,
             ),
           const Spacer(),
           if (showPeriod) ...[
             _ToolbarIconButton(
-              tooltip: 'Periodo precedente',
-              icon: Icons.keyboard_arrow_left_rounded,
+              tooltip: t.habitsPage.prevPeriod,
+              icon: directionalIcon(
+                context,
+                Icons.keyboard_arrow_left_rounded,
+                Icons.keyboard_arrow_right_rounded,
+              ),
               onPressed: onPrevious,
             ),
             const SizedBox(width: 8),
             _ToolbarIconButton(
-              tooltip: 'Periodo successivo',
-              icon: Icons.keyboard_arrow_right_rounded,
+              tooltip: t.habitsPage.nextPeriod,
+              icon: directionalIcon(
+                context,
+                Icons.keyboard_arrow_right_rounded,
+                Icons.keyboard_arrow_left_rounded,
+              ),
               onPressed: onNext,
             ),
             const SizedBox(width: 12),
           ],
           _ToolbarIconButton(
-            tooltip: 'Categorie',
+            tooltip: t.goalsPage.categoriesTooltip,
             icon: Icons.tune_rounded,
             onPressed: onManageCategories,
           ),
@@ -1245,7 +1281,10 @@ class _GoalBoard extends StatelessWidget {
             ),
         if (completedGoals.isNotEmpty) ...[
           const SizedBox(height: 22),
-          const _StatusDivider(label: 'COMPLETATI', color: Color(0xFF10B981)),
+          _StatusDivider(
+            label: t.macroGoals.completed,
+            color: const Color(0xFF10B981),
+          ),
           const SizedBox(height: 12),
           for (final goal in completedGoals)
             Padding(
@@ -1262,7 +1301,7 @@ class _GoalBoard extends StatelessWidget {
         ],
         if (failedGoals.isNotEmpty) ...[
           const SizedBox(height: 22),
-          const _StatusDivider(label: 'FALLITI', color: EvolveColors.rose),
+          _StatusDivider(label: t.macroGoals.failed, color: EvolveColors.rose),
           const SizedBox(height: 12),
           for (final goal in failedGoals)
             Padding(
@@ -1357,7 +1396,7 @@ class _QuickCategoryButton extends StatelessWidget {
     return PopupMenuButton<_GoalCategory?>(
       onSelected: onCategoryChanged,
       itemBuilder: (context) => [
-        const PopupMenuItem(value: null, child: Text('Default')),
+        PopupMenuItem(value: null, child: Text(t.goalsPage.defaultCategory)),
         for (final item in categories)
           PopupMenuItem(
             value: item,
@@ -1365,7 +1404,7 @@ class _QuickCategoryButton extends StatelessWidget {
               children: [
                 CircleAvatar(radius: 5, backgroundColor: item.color),
                 const SizedBox(width: 10),
-                Text(item.label),
+                Text(_categoryLabel(item)),
               ],
             ),
           ),
@@ -1408,9 +1447,7 @@ class _GoalEmptyState extends StatelessWidget {
           ),
           const SizedBox(width: 12),
           Text(
-            hasAnyGoal
-                ? 'Nessun obiettivo attivo in questo periodo.'
-                : 'Aggiungi il primo obiettivo per questo periodo.',
+            hasAnyGoal ? t.goalsPage.emptyActive : t.goalsPage.emptyAdd,
             style: Theme.of(context).textTheme.bodyMedium,
           ),
         ],
@@ -1513,7 +1550,10 @@ class _GoalItemState extends State<_GoalItem> {
         children: [
           Container(
             key: widget.checkboxKey,
-            child: _GoalCheckButton(state: currentState, onPressed: _cycleStatus),
+            child: _GoalCheckButton(
+              state: currentState,
+              onPressed: _cycleStatus,
+            ),
           ),
           const SizedBox(width: 16),
           if (!completed && !failed) ...[
@@ -1540,22 +1580,22 @@ class _GoalItemState extends State<_GoalItem> {
             ),
           ),
           const SizedBox(width: 16),
-          if (failed && goal.type != GoalType.lifetime)
+          if (goal.type != GoalType.lifetime)
             IconButton(
               key: widget.rescheduleKey,
-              tooltip: 'Riprogramma al periodo successivo',
+              tooltip: t.goalsPage.rescheduleTooltip,
               onPressed: () => widget.onReschedule(goal),
               icon: const Icon(Icons.next_plan_outlined, size: 20),
             ),
           IconButton(
             key: widget.editKey,
-            tooltip: 'Modifica',
+            tooltip: t.common.actions.edit,
             onPressed: () => widget.onEdit(goal),
             icon: const Icon(Icons.edit_outlined, size: 20),
           ),
           IconButton(
             key: widget.deleteKey,
-            tooltip: 'Elimina',
+            tooltip: t.common.actions.delete,
             onPressed: () => widget.onDelete(goal),
             icon: const Icon(Icons.delete_outline, size: 20),
           ),
@@ -1634,13 +1674,11 @@ class _StatusDivider extends StatelessWidget {
 class _GoalEditorDialog extends StatefulWidget {
   const _GoalEditorDialog({
     required this.categories,
-    required this.initialType,
     this.goal,
     this.initialCategory,
   });
 
   final List<_GoalCategory> categories;
-  final GoalType initialType;
   final DashboardGoal? goal;
   final _GoalCategory? initialCategory;
 
@@ -1650,14 +1688,12 @@ class _GoalEditorDialog extends StatefulWidget {
 
 class _GoalEditorDialogState extends State<_GoalEditorDialog> {
   final _title = TextEditingController();
-  late GoalType _type;
   late _GoalCategory _category;
 
   @override
   void initState() {
     super.initState();
     _title.text = widget.goal?.title ?? '';
-    _type = widget.initialType;
     _category =
         widget.categories
             .where((item) => item == widget.initialCategory)
@@ -1676,7 +1712,7 @@ class _GoalEditorDialogState extends State<_GoalEditorDialog> {
     return EvolveAlertDialog(
       icon: Icons.flag_outlined,
       title: Text(
-        widget.goal == null ? 'Nuovo obiettivo' : 'Modifica obiettivo',
+        widget.goal == null ? t.goalsPage.newGoal : t.goalsPage.editGoal,
       ),
       content: SizedBox(
         width: 430,
@@ -1686,29 +1722,17 @@ class _GoalEditorDialogState extends State<_GoalEditorDialog> {
             TextField(
               controller: _title,
               autofocus: true,
-              decoration: const InputDecoration(labelText: 'Titolo'),
-            ),
-            const SizedBox(height: 12),
-            DropdownButtonFormField<GoalType>(
-              initialValue: _type,
-              decoration: const InputDecoration(labelText: 'Orizzonte'),
-              items: [
-                for (final type in GoalType.values)
-                  DropdownMenuItem(value: type, child: Text(type.label)),
-              ],
-              onChanged: (value) {
-                if (value != null) setState(() => _type = value);
-              },
+              decoration: InputDecoration(labelText: t.form.title),
             ),
             const SizedBox(height: 12),
             DropdownButtonFormField<_GoalCategory>(
               initialValue: _category,
-              decoration: const InputDecoration(labelText: 'Categoria'),
+              decoration: InputDecoration(labelText: t.form.category),
               items: [
                 for (final category in widget.categories)
                   DropdownMenuItem(
                     value: category,
-                    child: Text(category.label),
+                    child: Text(_categoryLabel(category)),
                   ),
               ],
               onChanged: (value) {
@@ -1721,7 +1745,7 @@ class _GoalEditorDialogState extends State<_GoalEditorDialog> {
       actions: [
         TextButton(
           onPressed: () => Navigator.pop(context),
-          child: const Text('Annulla'),
+          child: Text(t.common.actions.cancel),
         ),
         FilledButton(
           onPressed: () {
@@ -1729,15 +1753,12 @@ class _GoalEditorDialogState extends State<_GoalEditorDialog> {
             if (title.isEmpty) return;
             Navigator.pop(
               context,
-              _GoalDraft(
-                title: title,
-                category: _category,
-                type: _type,
-                dueLabel: _dueLabelFor(_type),
-              ),
+              _GoalDraft(title: title, category: _category),
             );
           },
-          child: Text(widget.goal == null ? 'Crea' : 'Salva'),
+          child: Text(
+            widget.goal == null ? t.macroGoals.create : t.common.actions.save,
+          ),
         ),
       ],
     );
@@ -1775,7 +1796,9 @@ class _CategoryEditorDialogState extends State<_CategoryEditorDialog> {
     return EvolveAlertDialog(
       icon: Icons.palette_outlined,
       title: Text(
-        widget.category == null ? 'Nuova categoria' : 'Modifica categoria',
+        widget.category == null
+            ? t.goalsPage.newCategory
+            : t.goalsPage.editCategory,
       ),
       content: SizedBox(
         width: 380,
@@ -1786,7 +1809,7 @@ class _CategoryEditorDialogState extends State<_CategoryEditorDialog> {
             TextField(
               controller: _name,
               autofocus: true,
-              decoration: const InputDecoration(labelText: 'Nome'),
+              decoration: InputDecoration(labelText: t.goalsPage.nameLabel),
             ),
             const SizedBox(height: 14),
             Wrap(
@@ -1811,7 +1834,7 @@ class _CategoryEditorDialogState extends State<_CategoryEditorDialog> {
       actions: [
         TextButton(
           onPressed: () => Navigator.pop(context),
-          child: const Text('Annulla'),
+          child: Text(t.common.actions.cancel),
         ),
         FilledButton(
           onPressed: () {
@@ -1821,7 +1844,9 @@ class _CategoryEditorDialogState extends State<_CategoryEditorDialog> {
               _GoalCategory(label: _name.text.trim(), color: _color),
             );
           },
-          child: Text(widget.category == null ? 'Aggiungi' : 'Salva'),
+          child: Text(
+            widget.category == null ? t.form.add : t.common.actions.save,
+          ),
         ),
       ],
     );
@@ -1829,17 +1854,10 @@ class _CategoryEditorDialogState extends State<_CategoryEditorDialog> {
 }
 
 class _GoalDraft {
-  const _GoalDraft({
-    required this.title,
-    required this.category,
-    required this.type,
-    required this.dueLabel,
-  });
+  const _GoalDraft({required this.title, required this.category});
 
   final String title;
   final _GoalCategory category;
-  final GoalType type;
-  final String dueLabel;
 }
 
 class _GoalCategory {
@@ -1873,12 +1891,18 @@ class _GoalCategory {
   }
 }
 
-String _dueLabelFor(GoalType type) => switch (type) {
-  GoalType.lifetime => 'Obiettivo di vita',
-  GoalType.annual => 'Obiettivo annuale',
-  GoalType.quarterly => 'Trimestre corrente',
-  GoalType.monthly => 'Mese corrente',
-  GoalType.weekly => 'Settimana corrente',
+// Default category identifiers stay stable (Italian `key`) so they keep
+// matching stored data and the color map; only the label is localized.
+String _categoryLabel(_GoalCategory category) => switch (category.key) {
+  'lavoro' => t.lavoro,
+  'salute' => t.salute,
+  'finanza' => t.finanza,
+  'relazioni' => t.relazioni,
+  'formazione' => t.formazione,
+  'hobby' => t.hobby,
+  'spirituale' => t.spirituale,
+  'altro' => t.altro,
+  _ => category.label,
 };
 
 const _goalColors = [
@@ -1958,21 +1982,6 @@ _GoalCategory _categoryForGoal(
     color: goal.color,
   );
 }
-
-const _months = [
-  'Gennaio',
-  'Febbraio',
-  'Marzo',
-  'Aprile',
-  'Maggio',
-  'Giugno',
-  'Luglio',
-  'Agosto',
-  'Settembre',
-  'Ottobre',
-  'Novembre',
-  'Dicembre',
-];
 
 class _GoalsTutorialStep {
   const _GoalsTutorialStep({

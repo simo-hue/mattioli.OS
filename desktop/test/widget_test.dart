@@ -3,12 +3,18 @@ import 'package:evolve_desktop/app/theme/desktop_appearance_controller.dart';
 import 'package:evolve_desktop/app/theme/evolve_theme.dart';
 import 'package:evolve_desktop/core/app_bootstrap.dart';
 import 'package:evolve_desktop/features/shell/presentation/desktop_shell.dart';
+import 'package:evolve_desktop/i18n/translations.g.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
 void main() {
+  // These tests assert on the Italian UI copy, so pin the slang locale to
+  // Italian (base locale is English). The global `t` accessor reads this.
+  // `setLocale` is async because slang lazy-loads the deferred locale library.
+  setUp(() => LocaleSettings.setLocale(AppLocale.it));
+
   testWidgets('desktop app reports unavailable Supabase initialization', (
     tester,
   ) async {

@@ -33,6 +33,7 @@ import 'package:supabase_flutter/supabase_flutter.dart';
 import 'package:evolve_desktop/features/auth/application/desktop_profile_controller.dart';
 import 'package:evolve_desktop/features/goals/application/goal_categories_controller.dart';
 import 'package:evolve_desktop/i18n/translations.g.dart';
+import 'package:evolve_desktop/core/rtl.dart';
 import 'package:path_provider/path_provider.dart';
 import 'package:path/path.dart' as p;
 
@@ -114,9 +115,8 @@ class _SettingsPageState extends ConsumerState<SettingsPage> {
     }).toList();
 
     return DesktopPage(
-      title: 'Impostazioni',
-      subtitle:
-          'Gestisci profilo, comportamento desktop, privacy e piano Evolve.',
+      title: t.settingsPage.pageTitle,
+      subtitle: t.settingsPage.pageSubtitle,
       child: EvolvePanel(
         padding: EdgeInsets.zero,
         child: Row(
@@ -165,9 +165,9 @@ class _SettingsPageState extends ConsumerState<SettingsPage> {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        const _SettingsHeading(
-          title: 'Profilo',
-          subtitle: 'Informazioni personali e stato sincronizzazione',
+        _SettingsHeading(
+          title: t.settingsPage.profileLabel,
+          subtitle: t.settingsPage.profileSubtitle,
         ),
         const SizedBox(height: 17),
         _ProfileCard(
@@ -184,66 +184,66 @@ class _SettingsPageState extends ConsumerState<SettingsPage> {
         ),
         const SizedBox(height: 16),
         _SettingsGroup(
-          title: 'Account e onboarding',
+          title: t.settingsPage.accountAndOnboarding,
           children: [
             _InfoRow(
-              label: 'Account',
+              label: t.settingsPage.account,
               value: isPrivateMode
-                  ? 'Modalità Privata'
-                  : auth.user?.email ?? 'Sessione non disponibile',
+                  ? t.settingsPage.privateMode
+                  : auth.user?.email ?? t.settingsPage.sessionUnavailable,
             ),
             _InfoRow(
-              label: 'Repository dati',
+              label: t.settingsPage.dataRepository,
               value: isPrivateMode
-                  ? 'Database locale crittografato'
-                  : 'Supabase con cache cifrata',
+                  ? t.settingsPage.encryptedLocalDatabase
+                  : t.settingsPage.supabaseWithEncryptedCache,
             ),
             if (!isPrivateMode) ...[
               _ActionRow(
                 icon: Icons.badge_outlined,
-                title: 'Informazioni personali',
-                detail: 'Nome, cognome, email e data di nascita',
+                title: t.settingsPage.personalInfo,
+                detail: t.settingsPage.personalInfoDetail,
                 onTap: auth.isLoggedIn
                     ? () => showEvolveDialog<void>(
                         context: context,
                         builder: (context) => const _PersonalInfoDialog(),
                       )
                     : () => _showGate(
-                        'Profilo',
-                        'Richiede una sessione Supabase attiva.',
+                        t.settingsPage.gateProfile,
+                        t.settingsPage.gateRequiresActiveSession,
                       ),
               ),
               _ActionRow(
                 icon: Icons.photo_camera_outlined,
-                title: 'Aggiorna avatar',
-                detail: 'Scegli un immagine locale per il profilo desktop.',
+                title: t.settingsPage.updateAvatar,
+                detail: t.settingsPage.updateAvatarDetail,
                 onTap: _pickAvatar,
               ),
               _ActionRow(
                 icon: Icons.fact_check_outlined,
-                title: 'Rivedi consenso iniziale',
-                detail: 'Termini, privacy, notifiche e crash reporting',
+                title: t.settingsPage.reviewInitialConsent,
+                detail: t.settingsPage.reviewInitialConsentDetail,
                 onTap: _reviewConsent,
               ),
               _ActionRow(
                 icon: Icons.logout_rounded,
-                title: 'Esci dall\'account',
+                title: t.settingsPage.signOut,
                 detail: auth.isLoggedIn
-                    ? 'Chiudi la sessione su questo dispositivo'
-                    : 'Disponibile con una sessione Supabase attiva',
+                    ? t.settingsPage.signOutDetailActive
+                    : t.settingsPage.availableWithActiveSession,
                 destructive: true,
                 onTap: auth.isLoggedIn
                     ? () => _confirmSignOut()
                     : () => _showGate(
-                        'Logout',
-                        'Richiede una sessione Supabase attiva.',
+                        t.settingsPage.gateLogout,
+                        t.settingsPage.gateRequiresActiveSession,
                       ),
               ),
             ] else ...[
               _ActionRow(
                 icon: Icons.login_outlined,
-                title: 'Vai al Login',
-                detail: 'Sospendi la modalità privata e accedi a Supabase.',
+                title: t.settingsPage.goToLogin,
+                detail: t.settingsPage.goToLoginDetail,
                 onTap: () {
                   ref.read(desktopAuthControllerProvider.notifier).goToLogin();
                 },
@@ -259,17 +259,17 @@ class _SettingsPageState extends ConsumerState<SettingsPage> {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        const _SettingsHeading(
-          title: 'Aspetto e applicazione',
-          subtitle: 'Preferenze locali adattate al desktop',
+        _SettingsHeading(
+          title: t.settingsPage.appearanceTitle,
+          subtitle: t.settingsPage.appearanceSubtitle,
         ),
         const SizedBox(height: 17),
         _SettingsGroup(
-          title: 'Aspetto e visual',
+          title: t.settingsPage.appearanceAndVisual,
           children: [
             _SwitchRow(
-              label: 'Modalita scura',
-              detail: 'Usa il tema scuro in bianco e nero.',
+              label: t.settingsPage.darkMode,
+              detail: t.settingsPage.darkModeDetail,
               value: _darkMode,
               onChanged: (value) {
                 ref
@@ -288,11 +288,11 @@ class _SettingsPageState extends ConsumerState<SettingsPage> {
         ),
         const SizedBox(height: 16),
         _SettingsGroup(
-          title: 'Calendario, esperienza e lingua',
+          title: t.settingsPage.calendarExperienceLanguage,
           children: [
             _ColorRow(
-              label: 'Colore accento',
-              detail: 'Palette estesa riservata a Evolve Pro.',
+              label: t.settingsPage.accentColor,
+              detail: t.settingsPage.accentColorDetail,
               selected: _accent,
               onChanged: (color) {
                 ref
@@ -310,7 +310,7 @@ class _SettingsPageState extends ConsumerState<SettingsPage> {
               },
             ),
             _SelectRow(
-              label: 'Vista calendario predefinita',
+              label: t.settingsPage.defaultCalendarView,
               value: _calendarView,
               options: const ['Mese', 'Settimana', 'Anno', 'Vita'],
               onChanged: (value) => _setString(
@@ -322,7 +322,7 @@ class _SettingsPageState extends ConsumerState<SettingsPage> {
               ),
             ),
             _SelectRow(
-              label: 'Lingua',
+              label: t.settingsPage.language,
               value: _language,
               options: const [
                 'Sistema',
@@ -346,8 +346,8 @@ class _SettingsPageState extends ConsumerState<SettingsPage> {
               ),
             ),
             _SwitchRow(
-              label: 'Formato 24h',
-              detail: 'Usa orari come 20:30 invece di 8:30 PM.',
+              label: t.settingsPage.timeFormat24h,
+              detail: t.settingsPage.timeFormat24hDetail,
               value: _timeFormat24h,
               onChanged: (value) => _setBool(
                 'pref_time_format_24h',
@@ -357,9 +357,8 @@ class _SettingsPageState extends ConsumerState<SettingsPage> {
               ),
             ),
             _SwitchRow(
-              label: 'Feedback aptico',
-              detail:
-                  'Il desktop conserva la preferenza ma non genera vibrazioni.',
+              label: t.settingsPage.hapticFeedback,
+              detail: t.settingsPage.hapticFeedbackDetail,
               value:
                   ref
                       .read(sharedPreferencesProvider)
@@ -374,8 +373,8 @@ class _SettingsPageState extends ConsumerState<SettingsPage> {
             ),
             _ActionRow(
               icon: Icons.restart_alt_rounded,
-              title: 'Ripristina tutorial',
-              detail: 'Riapre i walkthrough di dashboard e obiettivi.',
+              title: t.settingsPage.resetTutorial,
+              detail: t.settingsPage.resetTutorialDetail,
               onTap: _resetTutorials,
             ),
           ],
@@ -388,17 +387,17 @@ class _SettingsPageState extends ConsumerState<SettingsPage> {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        const _SettingsHeading(
-          title: 'Notifiche',
-          subtitle: 'Promemoria operativi del client desktop',
+        _SettingsHeading(
+          title: t.settingsPage.notifications,
+          subtitle: t.settingsPage.notificationsSubtitle,
         ),
         const SizedBox(height: 17),
         _SettingsGroup(
-          title: 'Promemoria operativi',
+          title: t.settingsPage.operationalReminders,
           children: [
             _SwitchRow(
-              label: 'Promemoria abitudini',
-              detail: 'Invia il morning briefing giornaliero.',
+              label: t.settingsPage.habitReminders,
+              detail: t.settingsPage.habitRemindersDetail,
               value: _habitReminders,
               onChanged: (value) => _setNotificationBool(
                 key: 'notif_habit_reminders',
@@ -410,7 +409,7 @@ class _SettingsPageState extends ConsumerState<SettingsPage> {
             ),
             if (_habitReminders)
               _TimeRow(
-                label: 'Orario morning brief',
+                label: t.settingsPage.morningBriefTime,
                 value: _morningTime,
                 use24hFormat: _timeFormat24h,
                 onChanged: (value) => _setNotificationString(
@@ -421,8 +420,8 @@ class _SettingsPageState extends ConsumerState<SettingsPage> {
                 ),
               ),
             _SwitchRow(
-              label: 'Review serale',
-              detail: 'Ricorda di consolidare la giornata.',
+              label: t.settingsPage.eveningReview,
+              detail: t.settingsPage.eveningReviewDetail,
               value: _eveningReview,
               onChanged: (value) => _setNotificationBool(
                 key: 'notif_evening_review',
@@ -434,7 +433,7 @@ class _SettingsPageState extends ConsumerState<SettingsPage> {
             ),
             if (_eveningReview)
               _TimeRow(
-                label: 'Orario review serale',
+                label: t.settingsPage.eveningReviewTime,
                 value: _eveningTime,
                 use24hFormat: _timeFormat24h,
                 onChanged: (value) => _setNotificationString(
@@ -446,15 +445,15 @@ class _SettingsPageState extends ConsumerState<SettingsPage> {
               ),
             _ActionRow(
               icon: Icons.notifications_active_outlined,
-              title: 'Richiedi permessi notifiche',
-              detail: 'Apre il prompt nativo sul target supportato.',
+              title: t.settingsPage.requestNotificationPermissions,
+              detail: t.settingsPage.requestNotificationPermissionsDetail,
               onTap: _requestNotificationPermissions,
             ),
           ],
         ),
         const SizedBox(height: 16),
         _PlatformNote(
-          title: 'Delivery nativo per sistema operativo',
+          title: t.settingsPage.nativeDeliveryTitle,
           detail: DesktopNotificationService.instance.platformSummary,
         ),
       ],
@@ -468,81 +467,79 @@ class _SettingsPageState extends ConsumerState<SettingsPage> {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        const _SettingsHeading(
-          title: 'Privacy e sicurezza',
-          subtitle: 'Protezione accesso, consensi e gestione dati',
+        _SettingsHeading(
+          title: t.settingsPage.privacyTitle,
+          subtitle: t.settingsPage.privacySubtitle,
         ),
         const SizedBox(height: 17),
         _SettingsGroup(
-          title: 'Protezione accesso',
+          title: t.settingsPage.accessProtection,
           children: [
             _SwitchRow(
-              label: 'Blocco biometrico',
-              detail:
-                  'Disponibile con adapter nativo su macOS e Windows; non supportato su Linux.',
+              label: t.settingsPage.biometricLock,
+              detail: t.settingsPage.biometricLockDetail,
               value: biometric.enabled,
               onChanged: _setBiometricLock,
             ),
             if (!isPrivateMode)
               _ActionRow(
                 icon: Icons.key_outlined,
-                title: 'Cambia password',
-                detail: 'Aggiornamento credenziali tramite Supabase Auth.',
+                title: t.settingsPage.changePassword,
+                detail: t.settingsPage.changePasswordDetail,
                 onTap: ref.watch(desktopAuthControllerProvider).isLoggedIn
                     ? () => showEvolveDialog<void>(
                         context: context,
                         builder: (context) => const _ChangePasswordDialog(),
                       )
                     : () => _showGate(
-                        'Cambio password',
-                        'Richiede una sessione Supabase attiva.',
+                        t.settingsPage.gateChangePassword,
+                        t.settingsPage.gateRequiresActiveSession,
                       ),
               ),
           ],
         ),
         const SizedBox(height: 16),
         _SettingsGroup(
-          title: 'Dati e consensi',
+          title: t.settingsPage.dataAndConsents,
           children: [
             if (!isPrivateMode)
               _SwitchRow(
-                label: 'Invia segnalazioni crash',
-                detail: 'Consenso separato per Sentry.',
+                label: t.settingsPage.sendCrashReports,
+                detail: t.settingsPage.sendCrashReportsDetail,
                 value: _crashReports,
                 onChanged: _setCrashReportingConsent,
               ),
             _ActionRow(
               icon: Icons.download_outlined,
-              title: 'Esporta dati',
-              detail: 'Condivide un export JSON completo dei dati disponibili.',
+              title: t.settingsPage.exportData,
+              detail: t.settingsPage.exportDataDetail,
               onTap: _exportData,
             ),
             _ActionRow(
               icon: Icons.upload_outlined,
-              title: 'Importa dati',
-              detail: 'Ripristina un backup (formato .zip) di Evolve.',
+              title: t.settingsPage.importData,
+              detail: t.settingsPage.importDataDetail,
               onTap: _importData,
             ),
             _ActionRow(
               icon: Icons.settings_outlined,
-              title: 'Gestione permessi di sistema',
-              detail: 'Notifiche, calendario e sicurezza.',
+              title: t.settingsPage.systemPermissionsManagement,
+              detail: t.settingsPage.systemPermissionsManagementDetail,
               onTap: _openSystemPermissions,
             ),
             if (isPrivateMode)
               _ActionRow(
                 icon: Icons.delete_forever_outlined,
-                title: 'Elimina dati privati',
-                detail:
-                    'Cancella definitivamente il database locale crittografato.',
+                title: t.settingsPage.deletePrivateData,
+                detail: t.settingsPage.deletePrivateDataDetail,
                 destructive: true,
                 onTap: _deletePrivateData,
               )
             else
               _ActionRow(
                 icon: Icons.delete_forever_outlined,
-                title: 'Elimina account e dati',
-                detail: 'Operazione irreversibile protetta da conferma.',
+                title: t.settingsPage.deleteAccountAndData,
+                detail: t.settingsPage.deleteAccountAndDataDetail,
                 destructive: true,
                 onTap: _showDeleteOrResetDialog,
               ),
@@ -570,7 +567,7 @@ class _SettingsPageState extends ConsumerState<SettingsPage> {
               ),
             ],
             fileNameOverrides: const ['evolve_private_export.json'],
-            text: 'I miei dati privati esportati da Evolve',
+            text: t.settingsPage.exportPrivateShareText,
           ),
         );
       }
@@ -636,16 +633,16 @@ class _SettingsPageState extends ConsumerState<SettingsPage> {
             XFile.fromData(utf8.encode(json), mimeType: 'application/json'),
           ],
           fileNameOverrides: const ['mattioli_os_export.json'],
-          text: 'I miei dati esportati da Evolve',
+          text: t.settingsPage.exportShareText,
         ),
       );
     }
     if (!mounted) return;
     _showGate(
-      'Export completato',
+      t.settingsPage.exportDoneTitle,
       Platform.isLinux
-          ? 'Il JSON e negli appunti: Linux non supporta la condivisione file.'
-          : 'Il JSON e stato inviato al selettore di condivisione.',
+          ? t.settingsPage.exportDoneClipboard
+          : t.settingsPage.exportDoneShare,
     );
   }
 
@@ -679,16 +676,18 @@ class _SettingsPageState extends ConsumerState<SettingsPage> {
     } catch (error, stack) {
       AppLogger.error('Unable to pick desktop avatar', error, stack);
       if (mounted) {
-        _showGate('Avatar', 'Selezione immagine non riuscita.');
+        _showGate(
+          t.settingsPage.avatarGateTitle,
+          t.settingsPage.avatarPickFailed,
+        );
       }
     }
   }
 
   Future<void> _confirmSignOut() async {
     final confirmed = await _confirm(
-      title: 'Conferma uscita',
-      message:
-          'Sei sicuro di voler uscire? Dovrai reinserire le credenziali per accedere nuovamente.',
+      title: t.settingsPage.confirmSignOutTitle,
+      message: t.settingsPage.confirmSignOutMessage,
       destructive: true,
     );
     if (confirmed) await _signOut();
@@ -701,7 +700,10 @@ class _SettingsPageState extends ConsumerState<SettingsPage> {
     if (!mounted) return;
     if (!changed) {
       final message = ref.read(desktopBiometricControllerProvider).errorMessage;
-      _showGate('Blocco biometrico', message ?? 'Attivazione annullata.');
+      _showGate(
+        t.settingsPage.biometricLock,
+        message ?? t.settingsPage.biometricActivationCancelled,
+      );
     }
   }
 
@@ -710,10 +712,10 @@ class _SettingsPageState extends ConsumerState<SettingsPage> {
         .requestPermissions();
     if (!mounted) return;
     _showGate(
-      'Permessi notifiche',
+      t.settingsPage.notificationPermissionsTitle,
       granted
-          ? 'Permessi disponibili per questo sistema.'
-          : 'Permesso non concesso. Puoi modificarlo dalle impostazioni di sistema.',
+          ? t.settingsPage.notificationPermissionsGranted
+          : t.settingsPage.notificationPermissionsDenied,
     );
   }
 
@@ -757,7 +759,10 @@ class _SettingsPageState extends ConsumerState<SettingsPage> {
     } catch (error, stack) {
       AppLogger.error('Unable to open system permissions', error, stack);
       if (mounted) {
-        _showGate('Permessi di sistema', 'Impossibile aprire le impostazioni.');
+        _showGate(
+          t.settingsPage.systemPermissionsTitle,
+          t.settingsPage.systemPermissionsOpenFailed,
+        );
       }
     }
   }
@@ -770,8 +775,8 @@ class _SettingsPageState extends ConsumerState<SettingsPage> {
     ]);
     if (mounted) {
       _showGate(
-        'Tutorial ripristinati',
-        'Le guide verranno mostrate nuovamente nelle relative sezioni.',
+        t.settingsPage.tutorialResetTitle,
+        t.settingsPage.tutorialResetMessage,
       );
     }
   }
@@ -781,22 +786,20 @@ class _SettingsPageState extends ConsumerState<SettingsPage> {
       context: context,
       builder: (context) => EvolveAlertDialog(
         icon: Icons.manage_accounts_outlined,
-        title: const Text('Gestione account e dati'),
-        content: const Text(
-          'Scegli se eliminare i dati mantenendo attivo l account oppure cancellare definitivamente l account.',
-        ),
+        title: Text(t.settingsPage.accountDataManagementTitle),
+        content: Text(t.settingsPage.accountDataManagementContent),
         actions: [
           TextButton(
             onPressed: () => Navigator.pop(context),
-            child: const Text('Annulla'),
+            child: Text(t.settingsPage.cancel),
           ),
           OutlinedButton(
             onPressed: () => Navigator.pop(context, 'reset'),
-            child: const Text('Resetta i dati'),
+            child: Text(t.settingsPage.resetDataAction),
           ),
           FilledButton(
             onPressed: () => Navigator.pop(context, 'delete'),
-            child: const Text('Elimina account'),
+            child: Text(t.settingsPage.deleteAccountAction),
           ),
         ],
       ),
@@ -804,9 +807,8 @@ class _SettingsPageState extends ConsumerState<SettingsPage> {
     if (!mounted || action == null) return;
     if (action == 'reset') {
       final confirmed = await _confirm(
-        title: 'Conferma reset dati',
-        message:
-            'Verranno eliminate abitudini, obiettivi e preferenze. L account restera attivo. Questa azione non puo essere annullata.',
+        title: t.settingsPage.confirmResetDataTitle,
+        message: t.settingsPage.confirmResetDataMessage,
         destructive: true,
       );
       if (confirmed) await _resetData();
@@ -814,9 +816,8 @@ class _SettingsPageState extends ConsumerState<SettingsPage> {
     }
 
     final confirmed = await _confirm(
-      title: 'Conferma eliminazione account',
-      message:
-          'L account e tutti i dati associati verranno eliminati definitivamente. Questa azione e irreversibile.',
+      title: t.settingsPage.confirmDeleteAccountTitle,
+      message: t.settingsPage.confirmDeleteAccountMessage,
       destructive: true,
     );
     if (confirmed) await _deleteAccount();
@@ -839,14 +840,14 @@ class _SettingsPageState extends ConsumerState<SettingsPage> {
             actions: [
               TextButton(
                 onPressed: () => Navigator.pop(context, false),
-                child: const Text('Annulla'),
+                child: Text(t.settingsPage.cancel),
               ),
               FilledButton(
                 onPressed: () => Navigator.pop(context, true),
                 style: destructive
                     ? FilledButton.styleFrom(backgroundColor: EvolveColors.rose)
                     : null,
-                child: const Text('Conferma'),
+                child: Text(t.settingsPage.confirm),
               ),
             ],
           ),
@@ -858,24 +859,47 @@ class _SettingsPageState extends ConsumerState<SettingsPage> {
     try {
       await ref.read(dashboardControllerProvider.notifier).resetData();
       await _resetSettingsToDefaults();
-      if (mounted) _showGate('Reset dati', 'Dati eliminati con successo.');
+      if (mounted) {
+        _showGate(
+          t.settingsPage.resetDataTitle,
+          t.settingsPage.resetDataSuccess,
+        );
+      }
     } catch (error, stack) {
       AppLogger.error('Unable to reset desktop data', error, stack);
-      if (mounted) _showGate('Reset dati', 'Operazione non riuscita.');
+      if (mounted) {
+        _showGate(
+          t.settingsPage.resetDataTitle,
+          t.settingsPage.operationFailed,
+        );
+      }
     }
   }
 
   Future<void> _deleteAccount() async {
     if (!ref.read(desktopAuthControllerProvider).isLoggedIn) {
-      _showGate('Elimina account', 'Richiede una sessione Supabase attiva.');
+      _showGate(
+        t.settingsPage.deleteAccountGateTitle,
+        t.settingsPage.gateRequiresActiveSession,
+      );
       return;
     }
     try {
       await ref.read(desktopAuthControllerProvider.notifier).deleteAccount();
-      if (mounted) _showGate('Elimina account', 'Account eliminato.');
+      if (mounted) {
+        _showGate(
+          t.settingsPage.deleteAccountGateTitle,
+          t.settingsPage.accountDeleted,
+        );
+      }
     } catch (error, stack) {
       AppLogger.error('Unable to delete desktop account', error, stack);
-      if (mounted) _showGate('Elimina account', 'Operazione non riuscita.');
+      if (mounted) {
+        _showGate(
+          t.settingsPage.deleteAccountGateTitle,
+          t.settingsPage.operationFailed,
+        );
+      }
     }
   }
 
@@ -894,8 +918,8 @@ class _SettingsPageState extends ConsumerState<SettingsPage> {
           ref.read(activeDesktopDataModeProvider) == DesktopDataMode.private;
       if (!isPrivateMode) {
         _showGate(
-          'Importa dati',
-          'La funzione di importazione è attualmente disponibile solo in Modalità Privata (Locale).',
+          t.settingsPage.importDataGateTitle,
+          t.settingsPage.importPrivateOnly,
         );
         return;
       }
@@ -918,7 +942,7 @@ class _SettingsPageState extends ConsumerState<SettingsPage> {
               return AlertDialog(
                 backgroundColor: context.evolveColors.background,
                 title: Text(
-                  'Riepilogo Importazione',
+                  t.settingsPage.importSummaryTitle,
                   style: TextStyle(
                     color: context.evolveColors.foreground,
                     fontWeight: FontWeight.w600,
@@ -930,31 +954,31 @@ class _SettingsPageState extends ConsumerState<SettingsPage> {
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
                       Text(
-                        '• ${preview.habitsCount} Abitudini',
+                        '• ${t.settingsPage.importHabitsCount(count: preview.habitsCount)}',
                         style: TextStyle(
                           color: context.evolveColors.foreground,
                         ),
                       ),
                       Text(
-                        '• ${preview.logsCount} Check-in (Log)',
+                        '• ${t.settingsPage.importLogsCount(count: preview.logsCount)}',
                         style: TextStyle(
                           color: context.evolveColors.foreground,
                         ),
                       ),
                       Text(
-                        '• ${preview.macroGoalsCount} Obiettivi Macro',
+                        '• ${t.settingsPage.importMacroGoalsCount(count: preview.macroGoalsCount)}',
                         style: TextStyle(
                           color: context.evolveColors.foreground,
                         ),
                       ),
                       Text(
-                        '• ${preview.categoriesCount} Categorie',
+                        '• ${t.settingsPage.importCategoriesCount(count: preview.categoriesCount)}',
                         style: TextStyle(
                           color: context.evolveColors.foreground,
                         ),
                       ),
                       Text(
-                        '• ${preview.moodsCount} Registrazioni Umore',
+                        '• ${t.settingsPage.importMoodsCount(count: preview.moodsCount)}',
                         style: TextStyle(
                           color: context.evolveColors.foreground,
                         ),
@@ -962,13 +986,13 @@ class _SettingsPageState extends ConsumerState<SettingsPage> {
                       const SizedBox(height: 24),
                       RadioListTile<bool>(
                         title: Text(
-                          'Sostituisci i dati attuali',
+                          t.settingsPage.importReplaceTitle,
                           style: TextStyle(
                             color: context.evolveColors.foreground,
                           ),
                         ),
                         subtitle: Text(
-                          'Elimina tutti i dati locali esistenti prima di importare. (Consigliato)',
+                          t.settingsPage.importReplaceSubtitle,
                           style: TextStyle(
                             color: context.evolveColors.foreground.withValues(
                               alpha: 0.5,
@@ -984,13 +1008,13 @@ class _SettingsPageState extends ConsumerState<SettingsPage> {
                       ),
                       RadioListTile<bool>(
                         title: Text(
-                          'Unisci ai dati attuali',
+                          t.settingsPage.importMergeTitle,
                           style: TextStyle(
                             color: context.evolveColors.foreground,
                           ),
                         ),
                         subtitle: Text(
-                          'Aggiunge i dati importati senza eliminare nulla. Potrebbe causare duplicati.',
+                          t.settingsPage.importMergeSubtitle,
                           style: TextStyle(
                             color: context.evolveColors.foreground.withValues(
                               alpha: 0.5,
@@ -1011,7 +1035,7 @@ class _SettingsPageState extends ConsumerState<SettingsPage> {
                   TextButton(
                     onPressed: () => Navigator.pop(ctx, false),
                     child: Text(
-                      'Annulla',
+                      t.settingsPage.cancel,
                       style: TextStyle(
                         color: context.evolveColors.foreground.withValues(
                           alpha: 0.5,
@@ -1021,7 +1045,7 @@ class _SettingsPageState extends ConsumerState<SettingsPage> {
                   ),
                   FilledButton(
                     onPressed: () => Navigator.pop(ctx, true),
-                    child: const Text('Conferma Importazione'),
+                    child: Text(t.settingsPage.importConfirmButton),
                   ),
                 ],
               );
@@ -1046,12 +1070,12 @@ class _SettingsPageState extends ConsumerState<SettingsPage> {
                 color: context.evolveColors.background,
                 borderRadius: BorderRadius.circular(16),
               ),
-              child: const Column(
+              child: Column(
                 mainAxisSize: MainAxisSize.min,
                 children: [
-                  CircularProgressIndicator(),
-                  SizedBox(height: 16),
-                  Text('Importazione in corso...'),
+                  const CircularProgressIndicator(),
+                  const SizedBox(height: 16),
+                  Text(t.settingsPage.importInProgress),
                 ],
               ),
             ),
@@ -1070,7 +1094,7 @@ class _SettingsPageState extends ConsumerState<SettingsPage> {
 
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(
-          content: Text('Importazione completata con successo!'),
+          content: Text(t.settingsPage.importSuccess),
           backgroundColor: Colors.green,
         ),
       );
@@ -1085,7 +1109,7 @@ class _SettingsPageState extends ConsumerState<SettingsPage> {
 
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(
-          content: Text('Errore durante importazione: $e'),
+          content: Text(t.settingsPage.importError(error: e)),
           backgroundColor: Colors.red,
         ),
       );
@@ -1444,7 +1468,7 @@ class _SettingsGroup extends StatelessWidget {
           Padding(
             padding: const EdgeInsets.fromLTRB(15, 13, 15, 9),
             child: Align(
-              alignment: Alignment.centerLeft,
+              alignment: AlignmentDirectional.centerStart,
               child: Text(
                 title.toUpperCase(),
                 style: Theme.of(context).textTheme.bodySmall?.copyWith(
@@ -1619,7 +1643,7 @@ class _ColorRow extends StatelessWidget {
               children: [
                 for (final color in colors)
                   Tooltip(
-                    message: 'Usa accento ${_toHex(color)}',
+                    message: t.settingsPage.useAccent(hex: _toHex(color)),
                     child: InkWell(
                       onTap: () => onChanged(color),
                       customBorder: const CircleBorder(),
@@ -1637,7 +1661,7 @@ class _ColorRow extends StatelessWidget {
                     ),
                   ),
                 Tooltip(
-                  message: 'Colore personalizzato',
+                  message: t.settingsPage.customColor,
                   child: InkWell(
                     onTap: () => _showFullColorPicker(context),
                     customBorder: const CircleBorder(),
@@ -1666,7 +1690,7 @@ class _ColorRow extends StatelessWidget {
       context: context,
       builder: (context) => EvolveAlertDialog(
         icon: Icons.palette_outlined,
-        title: const Text('Colore accento'),
+        title: Text(t.settingsPage.accentColor),
         content: SingleChildScrollView(
           child: ColorPicker(
             pickerColor: color,
@@ -1678,11 +1702,11 @@ class _ColorRow extends StatelessWidget {
         actions: [
           TextButton(
             onPressed: () => Navigator.pop(context),
-            child: const Text('Annulla'),
+            child: Text(t.settingsPage.cancel),
           ),
           FilledButton(
             onPressed: () => Navigator.pop(context, color),
-            child: const Text('Applica'),
+            child: Text(t.settingsPage.applyAction),
           ),
         ],
       ),
@@ -1736,8 +1760,9 @@ class _ActionRow extends StatelessWidget {
             Expanded(
               child: _RowCopy(label: title, detail: detail, color: color),
             ),
-            Icon(
+            DirectionalIcon(
               Icons.chevron_right_rounded,
+              Icons.chevron_left_rounded,
               color: context.evolveColors.subtle,
             ),
           ],
@@ -1863,10 +1888,11 @@ class _ProfileCard extends StatelessWidget {
               children: [
                 Text(
                   isPrivateMode
-                      ? 'Modalità Privata'
+                      ? t.settingsPage.privateMode
                       : fullName?.isNotEmpty ?? false
                       ? fullName!
-                      : user?.email?.split('@').first ?? 'Profilo',
+                      : user?.email?.split('@').first ??
+                            t.settingsPage.profileFallback,
                   style: TextStyle(
                     color: context.evolveColors.foreground,
                     fontSize: 15,
@@ -1876,8 +1902,8 @@ class _ProfileCard extends StatelessWidget {
                 SizedBox(height: 4),
                 Text(
                   isPrivateMode
-                      ? 'I tuoi dati sono protetti e salvati unicamente su questo dispositivo.'
-                      : user?.email ?? 'Sessione non disponibile',
+                      ? t.settingsPage.privateModeDataProtected
+                      : user?.email ?? t.settingsPage.sessionUnavailable,
                   style: TextStyle(
                     color: context.evolveColors.subtle,
                     fontSize: 12,
@@ -1894,7 +1920,9 @@ class _ProfileCard extends StatelessWidget {
             )
           else
             StatusPill(
-              label: user == null ? 'Non autenticato' : 'Verificato',
+              label: user == null
+                  ? t.settingsPage.notAuthenticated
+                  : t.settingsPage.verified,
               color: user == null ? EvolveColors.amber : context.evolveAccent,
               icon: user == null
                   ? Icons.lock_outline_rounded
@@ -1948,28 +1976,30 @@ class _SubscriptionSettingsState extends ConsumerState<_SubscriptionSettings> {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        const _SettingsHeading(
-          title: 'Evolve Pro',
-          subtitle: 'Piano, ripristino acquisti e gestione abbonamento',
+        _SettingsHeading(
+          title: t.settingsPage.proTitle,
+          subtitle: t.settingsPage.proSubtitle,
         ),
         const SizedBox(height: 17),
         _PlatformNote(
           title: subscription.isSupportedPlatform
-              ? 'RevenueCat macOS'
-              : 'Canale commerciale richiesto',
+              ? t.settingsPage.revenueCatMacos
+              : t.settingsPage.commercialChannelRequired,
           detail: subscription.isSupportedPlatform
               ? subscription.isConfigured
-                    ? 'Offerte e stato entitlement vengono letti da RevenueCat.'
-                    : 'Configura la public key RevenueCat del client desktop.'
-              : 'RevenueCat Flutter non espone acquisti in-app su Windows e Linux.',
+                    ? t.settingsPage.revenueCatOffersRead
+                    : t.settingsPage.revenueCatConfigureKey
+              : t.settingsPage.revenueCatNotSupported,
         ),
         const SizedBox(height: 16),
         Row(
           children: [
             Expanded(
               child: _PlanCard(
-                title: 'Mensile',
-                price: monthly?.storeProduct.priceString ?? 'Mensile',
+                title: t.settingsPage.planMonthly,
+                price:
+                    monthly?.storeProduct.priceString ??
+                    t.settingsPage.planMonthly,
                 selected: _plan == 'monthly',
                 onTap: () => setState(() => _plan = 'monthly'),
               ),
@@ -1977,9 +2007,11 @@ class _SubscriptionSettingsState extends ConsumerState<_SubscriptionSettings> {
             const SizedBox(width: 14),
             Expanded(
               child: _PlanCard(
-                title: 'Annuale',
-                price: yearly?.storeProduct.priceString ?? 'Annuale',
-                detail: 'Miglior valore',
+                title: t.settingsPage.planAnnual,
+                price:
+                    yearly?.storeProduct.priceString ??
+                    t.settingsPage.planAnnual,
+                detail: t.settingsPage.bestValue,
                 selected: _plan == 'yearly',
                 onTap: () => setState(() => _plan = 'yearly'),
               ),
@@ -1988,14 +2020,14 @@ class _SubscriptionSettingsState extends ConsumerState<_SubscriptionSettings> {
         ),
         const SizedBox(height: 16),
         _SettingsGroup(
-          title: 'Gestione piano',
+          title: t.settingsPage.planManagement,
           children: [
             _ActionRow(
               icon: Icons.workspace_premium_outlined,
-              title: 'Attiva Evolve Pro',
+              title: t.settingsPage.activateEvolvePro,
               detail: subscription.isPro
-                  ? 'Entitlement Evolve Pro attivo.'
-                  : 'Avvia il checkout StoreKit nativo su macOS.',
+                  ? t.settingsPage.activateEvolveProActive
+                  : t.settingsPage.activateEvolveProStart,
               onTap: subscription.isLoading
                   ? () {}
                   : () {
@@ -2021,8 +2053,8 @@ class _SubscriptionSettingsState extends ConsumerState<_SubscriptionSettings> {
             ),
             _ActionRow(
               icon: Icons.restore_rounded,
-              title: 'Ripristina acquisti',
-              detail: 'Recupera lo stato entitlement dal provider.',
+              title: t.settingsPage.restorePurchases,
+              detail: t.settingsPage.restorePurchasesDetail,
               onTap: () => unawaited(
                 ref
                     .read(desktopSubscriptionControllerProvider.notifier)
@@ -2031,8 +2063,8 @@ class _SubscriptionSettingsState extends ConsumerState<_SubscriptionSettings> {
             ),
             _ActionRow(
               icon: Icons.manage_accounts_outlined,
-              title: 'Gestisci abbonamento',
-              detail: 'Apre la gestione abbonamenti dell account Apple.',
+              title: t.settingsPage.manageSubscription,
+              detail: t.settingsPage.manageSubscriptionDetail,
               onTap: () => unawaited(
                 ref
                     .read(desktopSubscriptionControllerProvider.notifier)
@@ -2152,7 +2184,7 @@ class _PersonalInfoDialogState extends ConsumerState<_PersonalInfoDialog> {
     final email = ref.watch(desktopAuthControllerProvider).user?.email;
     return EvolveAlertDialog(
       icon: Icons.person_outline_rounded,
-      title: const Text('Informazioni personali'),
+      title: Text(t.settingsPage.personalInfo),
       content: SizedBox(
         width: 460,
         child: Column(
@@ -2160,24 +2192,24 @@ class _PersonalInfoDialogState extends ConsumerState<_PersonalInfoDialog> {
           children: [
             TextField(
               controller: _nameController,
-              decoration: const InputDecoration(labelText: 'Nome completo'),
+              decoration: InputDecoration(labelText: t.settingsPage.fullName),
             ),
             if (!isPrivate) ...[
               const SizedBox(height: 10),
               TextField(
                 readOnly: true,
                 decoration: InputDecoration(
-                  labelText: 'Email',
-                  hintText: email ?? 'Sessione non disponibile',
+                  labelText: t.settingsPage.email,
+                  hintText: email ?? t.settingsPage.sessionUnavailable,
                 ),
               ),
             ],
             const SizedBox(height: 10),
             TextField(
               controller: _birthDateController,
-              decoration: const InputDecoration(
-                labelText: 'Data di nascita',
-                hintText: 'AAAA-MM-GG',
+              decoration: InputDecoration(
+                labelText: t.settingsPage.dateOfBirth,
+                hintText: t.settingsPage.dateOfBirthHint,
               ),
             ),
           ],
@@ -2186,7 +2218,7 @@ class _PersonalInfoDialogState extends ConsumerState<_PersonalInfoDialog> {
       actions: [
         TextButton(
           onPressed: () => Navigator.pop(context),
-          child: const Text('Annulla'),
+          child: Text(t.settingsPage.cancel),
         ),
         FilledButton(
           onPressed: _isSaving ? null : _save,
@@ -2195,7 +2227,7 @@ class _PersonalInfoDialogState extends ConsumerState<_PersonalInfoDialog> {
                   dimension: 18,
                   child: CircularProgressIndicator(strokeWidth: 2),
                 )
-              : const Text('Salva'),
+              : Text(t.settingsPage.save),
         ),
       ],
     );
@@ -2254,7 +2286,7 @@ class _ChangePasswordDialogState extends ConsumerState<_ChangePasswordDialog> {
   Widget build(BuildContext context) {
     return EvolveAlertDialog(
       icon: Icons.lock_reset_rounded,
-      title: const Text('Cambia password'),
+      title: Text(t.settingsPage.changePassword),
       content: SizedBox(
         width: 470,
         child: Column(
@@ -2263,20 +2295,24 @@ class _ChangePasswordDialogState extends ConsumerState<_ChangePasswordDialog> {
             TextField(
               controller: _currentController,
               obscureText: true,
-              decoration: const InputDecoration(labelText: 'Password attuale'),
+              decoration: InputDecoration(
+                labelText: t.settingsPage.currentPassword,
+              ),
             ),
             const SizedBox(height: 10),
             TextField(
               controller: _newController,
               obscureText: true,
-              decoration: const InputDecoration(labelText: 'Nuova password'),
+              decoration: InputDecoration(
+                labelText: t.settingsPage.newPassword,
+              ),
             ),
             const SizedBox(height: 10),
             TextField(
               controller: _confirmController,
               obscureText: true,
-              decoration: const InputDecoration(
-                labelText: 'Conferma nuova password',
+              decoration: InputDecoration(
+                labelText: t.settingsPage.confirmNewPassword,
               ),
             ),
             if (_error != null) ...[
@@ -2289,7 +2325,7 @@ class _ChangePasswordDialogState extends ConsumerState<_ChangePasswordDialog> {
       actions: [
         TextButton(
           onPressed: () => Navigator.pop(context),
-          child: const Text('Annulla'),
+          child: Text(t.settingsPage.cancel),
         ),
         FilledButton(
           onPressed: _isSaving ? null : _save,
@@ -2298,7 +2334,7 @@ class _ChangePasswordDialogState extends ConsumerState<_ChangePasswordDialog> {
                   dimension: 18,
                   child: CircularProgressIndicator(strokeWidth: 2),
                 )
-              : const Text('Aggiorna password'),
+              : Text(t.settingsPage.updatePassword),
         ),
       ],
     );
@@ -2306,17 +2342,15 @@ class _ChangePasswordDialogState extends ConsumerState<_ChangePasswordDialog> {
 
   Future<void> _save() async {
     if (_currentController.text.isEmpty) {
-      setState(() => _error = 'Inserisci la password attuale.');
+      setState(() => _error = t.settingsPage.enterCurrentPassword);
       return;
     }
     if (_newController.text.length < 8) {
-      setState(
-        () => _error = 'La nuova password deve avere almeno 8 caratteri.',
-      );
+      setState(() => _error = t.settingsPage.newPasswordMinLength);
       return;
     }
     if (_newController.text != _confirmController.text) {
-      setState(() => _error = 'Le password non coincidono.');
+      setState(() => _error = t.settingsPage.passwordsDontMatch);
       return;
     }
     setState(() {
@@ -2335,7 +2369,7 @@ class _ChangePasswordDialogState extends ConsumerState<_ChangePasswordDialog> {
       if (mounted) {
         setState(() {
           _isSaving = false;
-          _error = 'Aggiornamento non riuscito. Verifica la password attuale.';
+          _error = t.settingsPage.passwordUpdateFailed;
         });
       }
     }
@@ -2344,11 +2378,11 @@ class _ChangePasswordDialogState extends ConsumerState<_ChangePasswordDialog> {
 
 extension on _SettingsSection {
   String get label => switch (this) {
-    _SettingsSection.profile => 'Profilo',
-    _SettingsSection.appearance => 'Applicazione',
-    _SettingsSection.notifications => 'Notifiche',
-    _SettingsSection.privacy => 'Privacy',
-    _SettingsSection.subscription => 'Abbonamento',
+    _SettingsSection.profile => t.settingsPage.profileLabel,
+    _SettingsSection.appearance => t.settingsPage.sectionApplication,
+    _SettingsSection.notifications => t.settingsPage.notifications,
+    _SettingsSection.privacy => t.settingsPage.sectionPrivacy,
+    _SettingsSection.subscription => t.settingsPage.subscription,
   };
 
   IconData get icon => switch (this) {

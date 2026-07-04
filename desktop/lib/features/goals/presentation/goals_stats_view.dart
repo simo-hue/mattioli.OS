@@ -10,6 +10,7 @@ import 'dart:math' as math;
 
 import 'package:evolve_desktop/app/theme/evolve_theme.dart';
 import 'package:flutter/services.dart';
+import 'package:evolve_desktop/i18n/translations.g.dart';
 import 'package:evolve_desktop/features/dashboard/domain/dashboard_models.dart';
 import 'package:evolve_desktop/features/settings/application/desktop_subscription_controller.dart';
 import 'package:evolve_desktop/features/dashboard/application/dashboard_controller.dart';
@@ -87,7 +88,7 @@ class _GoalsStatsViewState extends ConsumerState<GoalsStatsView> {
                 mainAxisAlignment: MainAxisAlignment.spaceBetween,
                 children: [
                   Text(
-                    'Performance',
+                    t.stats.tabPerformance,
                     style: TextStyle(
                       fontFamily: 'Inter',
                       fontSize: 22,
@@ -117,7 +118,7 @@ class _GoalsStatsViewState extends ConsumerState<GoalsStatsView> {
         height: 300,
         child: Center(
           child: Text(
-            '${'Errore'}: $err',
+            '${t.common.status.error}: $err',
             style: TextStyle(color: context.evolveColors.muted),
           ),
         ),
@@ -161,9 +162,9 @@ class _GoalsStatsViewState extends ConsumerState<GoalsStatsView> {
         children: [
           Expanded(
             child: _buildHighlightCard(
-              title: 'Punto di forza',
+              title: t.macroGoals.strength,
               value: bestCategory,
-              subtitle: '$bestCatRate% ${'di completamento'}',
+              subtitle: '$bestCatRate% ${t.statistics.ofCompletion}',
               icon: LucideIcons.zap,
               color: const Color(0xFFA855F7),
             ),
@@ -171,11 +172,11 @@ class _GoalsStatsViewState extends ConsumerState<GoalsStatsView> {
           const SizedBox(width: 12),
           Expanded(
             child: _buildHighlightCard(
-              title: 'Mese migliore',
+              title: t.macroGoals.bestMonth,
               value: (bestMonthIdx != null && bestMonthIdx > 0)
                   ? _monthLabel(bestMonthIdx, abbreviated: true)
-                  : 'Nessuno',
-              subtitle: '$bestMonthRate% ${'success rate'}',
+                  : t.common.none,
+              subtitle: '$bestMonthRate% ${t.macroGoals.successRate2}',
               icon: LucideIcons.trophy,
               color: const Color(0xFFF59E0B),
             ),
@@ -184,9 +185,9 @@ class _GoalsStatsViewState extends ConsumerState<GoalsStatsView> {
       ),
       const SizedBox(height: 12),
       _buildHighlightCard(
-        title: 'Tipo più efficace',
+        title: t.macroGoals.effectiveType,
         value: bestTypeLabel,
-        subtitle: '$bestTypeRate% ${'success rate'}',
+        subtitle: '$bestTypeRate% ${t.macroGoals.successRate2}',
         icon: LucideIcons.brainCircuit,
         color: Theme.of(context).colorScheme.primary,
         fullWidth: true,
@@ -195,12 +196,16 @@ class _GoalsStatsViewState extends ConsumerState<GoalsStatsView> {
       Row(
         children: [
           Expanded(
-            child: _buildKpiCard('Totale', '$totalGoals', LucideIcons.target),
+            child: _buildKpiCard(
+              t.common.total,
+              '$totalGoals',
+              LucideIcons.target,
+            ),
           ),
           const SizedBox(width: 8),
           Expanded(
             child: _buildKpiCard(
-              'Completati',
+              t.common.completed,
               '$completedGoals',
               LucideIcons.circleCheck,
               color: const Color(0xFF10B981),
@@ -213,7 +218,7 @@ class _GoalsStatsViewState extends ConsumerState<GoalsStatsView> {
         children: [
           Expanded(
             child: _buildKpiCard(
-              'Successo',
+              t.macroGoals.success2,
               '$successRate%',
               LucideIcons.trophy,
               color: const Color(0xFFFBBF24),
@@ -222,8 +227,8 @@ class _GoalsStatsViewState extends ConsumerState<GoalsStatsView> {
           const SizedBox(width: 8),
           Expanded(
             child: _buildKpiCard(
-              'Trend',
-              (trendPositive ? 'Crescita' : 'Declino'),
+              t.stats.tabTrend,
+              (trendPositive ? t.statistics.growth : t.statistics.decline),
               trendPositive ? LucideIcons.trendingUp : LucideIcons.trendingDown,
               color: const Color(0xFF60A5FA),
             ),
@@ -278,10 +283,10 @@ class _GoalsStatsViewState extends ConsumerState<GoalsStatsView> {
         children: [
           Expanded(
             child: _buildHighlightCard(
-              title: 'Totale Storico',
+              title: t.macroGoals.historicalTotal,
               value: '$total',
               subtitle:
-                  '${'Dal'} ${sortedYears.isNotEmpty ? sortedYears.first : '-'}',
+                  '${t.macroGoals.from_} ${sortedYears.isNotEmpty ? sortedYears.first : '-'}',
               icon: LucideIcons.target,
               color: const Color(0xFF6366F1),
             ),
@@ -289,9 +294,9 @@ class _GoalsStatsViewState extends ConsumerState<GoalsStatsView> {
           const SizedBox(width: 12),
           Expanded(
             child: _buildHighlightCard(
-              title: 'Successo Globale',
+              title: t.macroGoals.globalSuccess,
               value: '$succ%',
-              subtitle: '$comp ${'obiettivi completati'}',
+              subtitle: '$comp ${t.macroGoals.completedGoals}',
               icon: LucideIcons.trophy,
               color: const Color(0xFF10B981),
             ),
@@ -303,7 +308,7 @@ class _GoalsStatsViewState extends ConsumerState<GoalsStatsView> {
         children: [
           Expanded(
             child: _buildHighlightCard(
-              title: 'Anno Migliore',
+              title: t.macroGoals.bestYear,
               value: bestYear != null ? '$bestYear' : 'N/A',
               subtitle: '$bestYearRate% ${'completamento'}',
               icon: LucideIcons.calendar,
@@ -313,9 +318,9 @@ class _GoalsStatsViewState extends ConsumerState<GoalsStatsView> {
           const SizedBox(width: 12),
           Expanded(
             child: _buildHighlightCard(
-              title: 'Anno Più Produttivo',
+              title: t.macroGoals.mostProductiveYear,
               value: mostProdYear != null ? '$mostProdYear' : 'N/A',
-              subtitle: '$mostProdCount ${'obiettivi totali'}',
+              subtitle: '$mostProdCount ${t.macroGoals.totalGoals}',
               icon: LucideIcons.activity,
               color: const Color(0xFF06B6D4),
             ),
@@ -354,7 +359,7 @@ class _GoalsStatsViewState extends ConsumerState<GoalsStatsView> {
 
   Widget _buildYearSelector(List<int> years) {
     final String displayLabel = _selectedYear == 'all'
-        ? 'Tutti gli anni'
+        ? t.macroGoals.allYears
         : _selectedYear;
 
     return GestureDetector(
@@ -432,7 +437,7 @@ class _GoalsStatsViewState extends ConsumerState<GoalsStatsView> {
               child: Align(
                 alignment: Alignment.center,
                 child: Text(
-                  'Seleziona Anno',
+                  t.macroGoals.selectYearHeader,
                   style: TextStyle(
                     fontFamily: 'Inter',
                     fontWeight: FontWeight.w800,
@@ -452,7 +457,7 @@ class _GoalsStatsViewState extends ConsumerState<GoalsStatsView> {
                     : context.evolveColors.muted.withValues(alpha: 0.6),
               ),
               title: Text(
-                'Tutti gli anni',
+                t.macroGoals.allYears,
                 style: TextStyle(
                   fontFamily: 'Inter',
                   fontSize: 16,
@@ -514,7 +519,7 @@ class _GoalsStatsViewState extends ConsumerState<GoalsStatsView> {
                     Navigator.pop(context);
 
                     ScaffoldMessenger.of(context).showSnackBar(
-                      const SnackBar(content: Text('Funzione Pro richiesta')),
+                      SnackBar(content: Text(t.goalsStats.proRequired)),
                     );
                     if (mounted) {
                       setState(() => _selectedYear = 'all');
@@ -1114,7 +1119,7 @@ class _GoalsStatsViewState extends ConsumerState<GoalsStatsView> {
     }
 
     return _buildCardBase(
-      title: 'Completamenti',
+      title: t.macroGoals.completions,
       subtitle: '',
       child: SizedBox(
         height: 180,
@@ -1557,7 +1562,7 @@ class _GoalsStatsViewState extends ConsumerState<GoalsStatsView> {
                       showTitles: true,
                       reservedSize: 32,
                       getTitlesWidget: (v, _) => Padding(
-                        padding: const EdgeInsets.only(right: 8),
+                        padding: const EdgeInsetsDirectional.only(end: 8),
                         child: Text(
                           v.toInt().toString(),
                           style: TextStyle(
@@ -1604,9 +1609,9 @@ class _GoalsStatsViewState extends ConsumerState<GoalsStatsView> {
           ),
           const SizedBox(height: 16),
           _buildLegend([
-            _LegendItem('Attivi', const Color(0xFF3B82F6)),
-            _LegendItem('Falliti', const Color(0xFFEF4444)),
-            _LegendItem('Completati', const Color(0xFF10B981)),
+            _LegendItem(t.goalsStats.active, const Color(0xFF3B82F6)),
+            _LegendItem(t.goalsStats.failed, const Color(0xFFEF4444)),
+            _LegendItem(t.common.completed, const Color(0xFF10B981)),
           ]),
         ],
       ),
@@ -1791,7 +1796,7 @@ class _GoalsStatsViewState extends ConsumerState<GoalsStatsView> {
       );
     }
     return _buildCardBase(
-      title: 'Stagionalità',
+      title: t.goalsStats.seasonality,
       subtitle: '',
       child: Column(
         children: [
@@ -1893,9 +1898,9 @@ class _GoalsStatsViewState extends ConsumerState<GoalsStatsView> {
           ),
           const SizedBox(height: 12),
           _buildLegend([
-            _LegendItem('Attivi', const Color(0xFF3B82F6)),
-            _LegendItem('Falliti', const Color(0xFFD97706)),
-            _LegendItem('Compl.', const Color(0xFF10B981)),
+            _LegendItem(t.goalsStats.active, const Color(0xFF3B82F6)),
+            _LegendItem(t.goalsStats.failed, const Color(0xFFD97706)),
+            _LegendItem(t.goalsStats.complAbbr, const Color(0xFF10B981)),
           ]),
         ],
       ),
@@ -2132,7 +2137,7 @@ class _GoalsStatsViewState extends ConsumerState<GoalsStatsView> {
     }
 
     return _buildCardBase(
-      title: 'Evoluzione Interessi',
+      title: t.goalsStats.interestEvolution,
       subtitle: '',
       child: Column(
         children: [

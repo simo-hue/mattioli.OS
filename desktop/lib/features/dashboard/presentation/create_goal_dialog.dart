@@ -1,6 +1,8 @@
 import 'package:evolve_desktop/app/theme/evolve_theme.dart';
+import 'package:evolve_desktop/core/macro_goal_calendar.dart';
 import 'package:evolve_desktop/features/dashboard/application/dashboard_controller.dart';
 import 'package:evolve_desktop/features/dashboard/domain/dashboard_models.dart';
+import 'package:evolve_desktop/i18n/translations.g.dart';
 import 'package:evolve_desktop/shared/widgets/evolve_dialog.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
@@ -14,7 +16,9 @@ class CreateGoalDialog extends ConsumerStatefulWidget {
 
 class _CreateGoalDialogState extends ConsumerState<CreateGoalDialog> {
   final _titleController = TextEditingController();
-  final _categoryController = TextEditingController(text: 'Obiettivo');
+  final _categoryController = TextEditingController(
+    text: t.createGoal.defaultCategory,
+  );
   Color _selectedColor = EvolveColors.amber;
   GoalType _selectedType = GoalType.monthly;
   bool _isLoading = false;
@@ -37,17 +41,16 @@ class _CreateGoalDialogState extends ConsumerState<CreateGoalDialog> {
     final now = DateTime.now();
     switch (type) {
       case GoalType.lifetime:
-        return 'Tutta la vita';
+        return t.createGoal.dueLifetime;
       case GoalType.annual:
-        return 'Entro il ${now.year}';
+        return t.createGoal.dueByYear(year: now.year);
       case GoalType.quarterly:
         final q = (now.month / 3).ceil();
         return 'Q$q ${now.year}';
       case GoalType.monthly:
-        const months = ['Gen', 'Feb', 'Mar', 'Apr', 'Mag', 'Giu', 'Lug', 'Ago', 'Set', 'Ott', 'Nov', 'Dic'];
-        return '${months[now.month - 1]} ${now.year}';
+        return '${t.common.months[now.month - 1]} ${now.year}';
       case GoalType.weekly:
-        return 'Questa settimana';
+        return t.createGoal.thisWeek;
     }
   }
 
@@ -66,22 +69,24 @@ class _CreateGoalDialogState extends ConsumerState<CreateGoalDialog> {
     if (_selectedType == GoalType.quarterly) quarter = (now.month / 3).ceil();
     if (_selectedType == GoalType.monthly) month = now.month;
     if (_selectedType == GoalType.weekly) {
-      final dayOfYear = int.parse(now.difference(DateTime(now.year, 1, 1)).inDays.toString());
-      weekNumber = ((dayOfYear - now.weekday + 10) / 7).floor();
+      month = now.month;
+      weekNumber = logicalWeekOfMonth(now);
     }
 
     try {
-      await ref.read(dashboardControllerProvider.notifier).addGoal(
-        title: title,
-        category: _categoryController.text.trim(),
-        color: _selectedColor,
-        type: _selectedType,
-        dueLabel: _getDueLabelFor(_selectedType),
-        year: year,
-        quarter: quarter,
-        month: month,
-        weekNumber: weekNumber,
-      );
+      await ref
+          .read(dashboardControllerProvider.notifier)
+          .addGoal(
+            title: title,
+            category: _categoryController.text.trim(),
+            color: _selectedColor,
+            type: _selectedType,
+            dueLabel: _getDueLabelFor(_selectedType),
+            year: year,
+            quarter: quarter,
+            month: month,
+            weekNumber: weekNumber,
+          );
       if (mounted) Navigator.pop(context);
     } catch (e) {
       if (mounted) setState(() => _isLoading = false);
@@ -93,17 +98,17 @@ class _CreateGoalDialogState extends ConsumerState<CreateGoalDialog> {
     return EvolveAlertDialog(
       maxWidth: 480,
       icon: Icons.emoji_events_outlined,
-      title: const Text('Nuovo Obiettivo'),
-      subtitle: 'Definisci il tuo prossimo traguardo.',
+      title: Text(t.createGoal.title),
+      subtitle: t.createGoal.subtitle,
       content: Column(
         mainAxisSize: MainAxisSize.min,
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           TextField(
             controller: _titleController,
-            decoration: const InputDecoration(
-              labelText: 'Titolo',
-              hintText: 'es. Lanciare il nuovo prodotto',
+            decoration: InputDecoration(
+              labelText: t.form.title,
+              hintText: t.createGoal.titleHint,
             ),
             autofocus: true,
             textInputAction: TextInputAction.next,
@@ -111,34 +116,55 @@ class _CreateGoalDialogState extends ConsumerState<CreateGoalDialog> {
           const SizedBox(height: 16),
           TextField(
             controller: _categoryController,
-            decoration: const InputDecoration(
-              labelText: 'Categoria',
-              hintText: 'es. Lavoro',
+            decoration: InputDecoration(
+              labelText: t.form.category,
+              hintText: t.createGoal.categoryHint,
             ),
             textInputAction: TextInputAction.done,
             onSubmitted: (_) => _save(),
           ),
           const SizedBox(height: 24),
-          Text('Timeline', style: Theme.of(context).textTheme.titleSmall),
+          Text(
+            t.createGoal.timeline,
+            style: Theme.of(context).textTheme.titleSmall,
+          ),
           const SizedBox(height: 8),
           DropdownButtonFormField<GoalType>(
             value: _selectedType,
             decoration: const InputDecoration(
-              contentPadding: EdgeInsets.symmetric(horizontal: 12, vertical: 12),
+              contentPadding: EdgeInsets.symmetric(
+                horizontal: 12,
+                vertical: 12,
+              ),
             ),
-            items: const [
-              DropdownMenuItem(value: GoalType.weekly, child: Text('Questa Settimana')),
-              DropdownMenuItem(value: GoalType.monthly, child: Text('Questo Mese')),
-              DropdownMenuItem(value: GoalType.quarterly, child: Text('Questo Trimestre')),
-              DropdownMenuItem(value: GoalType.annual, child: Text('Quest\'Anno')),
-              DropdownMenuItem(value: GoalType.lifetime, child: Text('Lungo termine (Lifetime)')),
+            items: [
+              DropdownMenuItem(
+                value: GoalType.weekly,
+                child: Text(t.createGoal.thisWeek),
+              ),
+              DropdownMenuItem(
+                value: GoalType.monthly,
+                child: Text(t.createGoal.thisMonth),
+              ),
+              DropdownMenuItem(
+                value: GoalType.quarterly,
+                child: Text(t.createGoal.thisQuarter),
+              ),
+              DropdownMenuItem(
+                value: GoalType.annual,
+                child: Text(t.createGoal.thisYear),
+              ),
+              DropdownMenuItem(
+                value: GoalType.lifetime,
+                child: Text(t.createGoal.longTerm),
+              ),
             ],
             onChanged: (val) {
               if (val != null) setState(() => _selectedType = val);
             },
           ),
           const SizedBox(height: 24),
-          Text('Colore', style: Theme.of(context).textTheme.titleSmall),
+          Text(t.form.color, style: Theme.of(context).textTheme.titleSmall),
           const SizedBox(height: 8),
           Wrap(
             spacing: 8,
@@ -153,7 +179,10 @@ class _CreateGoalDialogState extends ConsumerState<CreateGoalDialog> {
                     color: color,
                     shape: BoxShape.circle,
                     border: isSelected
-                        ? Border.all(color: context.evolveColors.foreground, width: 2)
+                        ? Border.all(
+                            color: context.evolveColors.foreground,
+                            width: 2,
+                          )
                         : null,
                   ),
                 ),
@@ -165,13 +194,16 @@ class _CreateGoalDialogState extends ConsumerState<CreateGoalDialog> {
       actions: [
         TextButton(
           onPressed: _isLoading ? null : () => Navigator.pop(context),
-          child: const Text('Annulla'),
+          child: Text(t.common.actions.cancel),
         ),
         FilledButton(
           onPressed: _isLoading ? null : _save,
-          child: _isLoading 
-            ? const SizedBox.square(dimension: 16, child: CircularProgressIndicator(strokeWidth: 2))
-            : const Text('Aggiungi'),
+          child: _isLoading
+              ? const SizedBox.square(
+                  dimension: 16,
+                  child: CircularProgressIndicator(strokeWidth: 2),
+                )
+              : Text(t.form.add),
         ),
       ],
     );

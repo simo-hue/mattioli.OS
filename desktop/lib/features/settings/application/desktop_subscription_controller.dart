@@ -2,6 +2,7 @@ import 'dart:async';
 import 'dart:io';
 
 import 'package:evolve_desktop/core/app_logger.dart';
+import 'package:evolve_desktop/i18n/translations.g.dart';
 import 'package:evolve_desktop/core/app_bootstrap.dart';
 import 'package:evolve_desktop/core/desktop_data_mode.dart';
 import 'package:evolve_desktop/core/desktop_revenuecat_config.dart';
@@ -112,7 +113,7 @@ class DesktopSubscriptionController extends Notifier<DesktopSubscriptionState> {
       AppLogger.error('Unable to refresh RevenueCat offerings', error, stack);
       state = state.copyWith(
         isLoading: false,
-        message: 'Impossibile caricare le offerte RevenueCat.',
+        message: t.subscriptionCtrl.loadOffersFailed,
       );
     }
   }
@@ -130,8 +131,8 @@ class DesktopSubscriptionController extends Notifier<DesktopSubscriptionState> {
         isLoading: false,
         isPro: isPro,
         message: isPro
-            ? 'Evolve Pro attivato.'
-            : 'Acquisto completato: sincronizzazione entitlement in corso.',
+            ? t.subscriptionCtrl.proActivated
+            : t.subscriptionCtrl.purchaseComplete,
       );
       await _persistProStatus(isPro);
       return isPro;
@@ -139,7 +140,7 @@ class DesktopSubscriptionController extends Notifier<DesktopSubscriptionState> {
       AppLogger.error('RevenueCat purchase failed', error, stack);
       state = state.copyWith(
         isLoading: false,
-        message: 'Acquisto non completato.',
+        message: t.subscriptionCtrl.purchaseIncomplete,
       );
       return false;
     }
@@ -156,8 +157,8 @@ class DesktopSubscriptionController extends Notifier<DesktopSubscriptionState> {
         isLoading: false,
         isPro: isPro,
         message: isPro
-            ? 'Acquisti ripristinati.'
-            : 'Nessun abbonamento Pro attivo trovato.',
+            ? t.subscriptionCtrl.purchasesRestored
+            : t.subscriptionCtrl.noActiveSub,
       );
       await _persistProStatus(isPro);
       return isPro;
@@ -165,7 +166,7 @@ class DesktopSubscriptionController extends Notifier<DesktopSubscriptionState> {
       AppLogger.error('RevenueCat restore failed', error, stack);
       state = state.copyWith(
         isLoading: false,
-        message: 'Ripristino acquisti non riuscito.',
+        message: t.subscriptionCtrl.restoreFailed,
       );
       return false;
     }
@@ -174,27 +175,21 @@ class DesktopSubscriptionController extends Notifier<DesktopSubscriptionState> {
   Future<void> manageSubscription() async {
     final uri = Uri.parse('https://apps.apple.com/account/subscriptions');
     if (!await launchUrl(uri, mode: LaunchMode.externalApplication)) {
-      state = state.copyWith(
-        message: 'Impossibile aprire la gestione abbonamenti Apple.',
-      );
+      state = state.copyWith(message: t.subscriptionCtrl.cantOpenApple);
     }
   }
 
   bool _canUseRevenueCat() {
     if (!state.isSupportedPlatform) {
-      state = state.copyWith(
-        message: 'Gli acquisti in-app sono disponibili nel client macOS.',
-      );
+      state = state.copyWith(message: t.subscriptionCtrl.macOnly);
       return false;
     }
     if (!state.isConfigured) {
-      state = state.copyWith(
-        message: 'Configura la public key RevenueCat del client desktop.',
-      );
+      state = state.copyWith(message: t.subscriptionCtrl.configKey);
       return false;
     }
     if (ref.read(desktopAuthControllerProvider).user == null) {
-      state = state.copyWith(message: 'Accedi prima di gestire Evolve Pro.');
+      state = state.copyWith(message: t.subscriptionCtrl.loginFirst);
       return false;
     }
     return true;

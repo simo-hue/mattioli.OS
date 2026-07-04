@@ -1,7 +1,10 @@
 import 'package:evolve_desktop/app/theme/evolve_theme.dart';
 import 'package:evolve_desktop/features/dashboard/application/dashboard_controller.dart';
 import 'package:evolve_desktop/features/dashboard/domain/dashboard_models.dart';
+import 'package:evolve_desktop/features/statistics/data/private_analytics.dart'
+    show MoodCorrelation, kIsoDowTokens;
 import 'package:evolve_desktop/features/statistics/data/statistics_rpc_providers.dart';
+import 'package:evolve_desktop/i18n/translations.g.dart';
 import 'package:evolve_desktop/shared/widgets/desktop_page.dart';
 import 'package:evolve_desktop/shared/widgets/evolve_panel.dart';
 import 'package:flutter/material.dart';
@@ -12,6 +15,26 @@ enum _AnalyticsScope { global, habit }
 enum _GlobalTab { info, trend, alerts, habits, mood }
 
 enum _HabitTab { overview, calendar, performance, improvement, mood }
+
+/// UI timeframe options for the Global Trend chart. Each maps to the cloud/local
+/// `timeframe_*` vocabulary consumed by [globalTrendRpcProvider] and
+/// [bestHabitsRpcProvider].
+enum _TrendTimeframe {
+  week('timeframe_week_short'),
+  month('timeframe_month_short'),
+  year('timeframe_year_short'),
+  all('timeframe_all');
+
+  const _TrendTimeframe(this.token);
+  final String token;
+}
+
+String _trendTimeframeLabel(_TrendTimeframe value) => switch (value) {
+  _TrendTimeframe.week => t.stats.timeframeWeek,
+  _TrendTimeframe.month => t.stats.timeframeMonth,
+  _TrendTimeframe.year => t.stats.timeframeYear,
+  _TrendTimeframe.all => t.stats.timeframeAll,
+};
 
 class StatisticsPage extends ConsumerStatefulWidget {
   const StatisticsPage({super.key});
@@ -24,6 +47,7 @@ class _StatisticsPageState extends ConsumerState<StatisticsPage> {
   _AnalyticsScope _scope = _AnalyticsScope.global;
   _GlobalTab _globalTab = _GlobalTab.info;
   _HabitTab _habitTab = _HabitTab.overview;
+  _TrendTimeframe _trendTimeframe = _TrendTimeframe.week;
   String? _habitId;
 
   @override
@@ -37,11 +61,10 @@ class _StatisticsPageState extends ConsumerState<StatisticsPage> {
           );
 
     return DesktopPage(
-      title: 'Statistiche',
-      subtitle:
-          'Identifica i pattern che sostengono la crescita e intervieni sulle aree critiche.',
-      trailing: const StatusPill(
-        label: 'Ultimi 30 giorni',
+      title: t.stats.title,
+      subtitle: t.stats.pageSubtitle,
+      trailing: StatusPill(
+        label: t.stats.last30Days,
         icon: Icons.date_range_outlined,
       ),
       child: Column(
@@ -84,7 +107,11 @@ class _StatisticsPageState extends ConsumerState<StatisticsPage> {
 
   Widget _globalContent(DashboardSnapshot snapshot) => switch (_globalTab) {
     _GlobalTab.info => _GlobalInfo(snapshot: snapshot),
-    _GlobalTab.trend => _GlobalTrend(snapshot: snapshot),
+    _GlobalTab.trend => _GlobalTrend(
+      snapshot: snapshot,
+      timeframe: _trendTimeframe,
+      onTimeframeChanged: (value) => setState(() => _trendTimeframe = value),
+    ),
     _GlobalTab.alerts => _GlobalAlerts(snapshot: snapshot),
     _GlobalTab.habits => _GlobalHabits(snapshot: snapshot),
     _GlobalTab.mood => _GlobalMood(snapshot: snapshot),
@@ -128,16 +155,16 @@ class _AnalyticsToolbar extends StatelessWidget {
       child: Row(
         children: [
           SegmentedButton<_AnalyticsScope>(
-            segments: const [
+            segments: [
               ButtonSegment(
                 value: _AnalyticsScope.global,
-                icon: Icon(Icons.public_outlined),
-                label: Text('Globale'),
+                icon: const Icon(Icons.public_outlined),
+                label: Text(t.stats.global),
               ),
               ButtonSegment(
                 value: _AnalyticsScope.habit,
-                icon: Icon(Icons.track_changes_outlined),
-                label: Text('Singola abitudine'),
+                icon: const Icon(Icons.track_changes_outlined),
+                label: Text(t.stats.singleHabit),
               ),
             ],
             selected: {scope},
@@ -152,7 +179,7 @@ class _AnalyticsToolbar extends StatelessWidget {
             ),
             const SizedBox(width: 10),
             if (selectedHabit == null)
-              const Text('Nessuna abitudine')
+              Text(t.stats.noHabit)
             else
               DropdownButton<String>(
                 value: selectedHabit!.id,
@@ -216,18 +243,20 @@ class _GlobalInfo extends ConsumerWidget {
           children: [
             Expanded(
               child: _Metric(
-                label: 'Completamento oggi',
+                label: t.stats.completionToday,
                 value: '${(snapshot.completionRate * 100).round()}%',
-                detail:
-                    '${snapshot.completedHabits}/${snapshot.totalHabits} azioni',
+                detail: t.stats.actionsFraction(
+                  done: snapshot.completedHabits,
+                  total: snapshot.totalHabits,
+                ),
                 color: context.evolveAccent,
               ),
             ),
             const SizedBox(width: 14),
             Expanded(
               child: _Metric(
-                label: 'Serie migliore',
-                value: '${snapshot.bestStreak} gg',
+                label: t.stats.bestStreakLabel,
+                value: t.dashboard.streakDaysShort(n: snapshot.bestStreak),
                 detail: _bestHabit(snapshot),
                 color: EvolveColors.amber,
               ),
@@ -235,9 +264,9 @@ class _GlobalInfo extends ConsumerWidget {
             const SizedBox(width: 14),
             Expanded(
               child: _Metric(
-                label: 'Giorno critico',
-                value: criticalDay,
-                detail: 'Completa prima le priorita',
+                label: t.stats.criticalDay,
+                value: _criticalDayLabel(criticalDay),
+                detail: t.stats.completePrioritiesFirst,
                 color: EvolveColors.rose,
               ),
             ),
@@ -247,8 +276,8 @@ class _GlobalInfo extends ConsumerWidget {
         LayoutBuilder(
           builder: (context, constraints) {
             final heatmap = _HeatmapPanel(
-              title: 'Attivita recente',
-              subtitle: 'Intensita di completamento negli ultimi 90 giorni',
+              title: t.stats.recentActivity,
+              subtitle: t.stats.recentActivitySubtitle,
               values: _activityValues(snapshot, 90),
             );
             final correlations = _CorrelationPanel(snapshot: snapshot);
@@ -273,28 +302,44 @@ class _GlobalInfo extends ConsumerWidget {
 }
 
 class _GlobalTrend extends ConsumerWidget {
-  const _GlobalTrend({required this.snapshot});
+  const _GlobalTrend({
+    required this.snapshot,
+    required this.timeframe,
+    required this.onTimeframeChanged,
+  });
 
   final DashboardSnapshot snapshot;
+  final _TrendTimeframe timeframe;
+  final ValueChanged<_TrendTimeframe> onTimeframeChanged;
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
-    final rpcTrend = ref
-        .watch(globalTrendRpcProvider('timeframe_week_short'))
-        .value;
-    final trend = _rpcTrendPoints(rpcTrend ?? const [], snapshot.trend);
+    final rpcTrend = ref.watch(globalTrendRpcProvider(timeframe.token)).value;
+    final trend = _rpcTrendPoints(
+      rpcTrend ?? const [],
+      snapshot.trend,
+      timeframe,
+    );
+    final best = ref.watch(bestHabitsRpcProvider(timeframe.token)).value;
+    final critical = ref.watch(criticalHabitsRpcProvider).value;
     return EvolvePanel(
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           SectionHeading(
-            title: 'Trend globale',
-            subtitle: 'Confronto temporale del protocollo',
+            title: t.stats.trendGlobal,
+            subtitle: t.stats.trendGlobalSubtitle,
             trailing: StatusPill(
-              label:
-                  '${(_trendDelta(trend) * 100).round()}% vs giorno precedente',
+              label: t.stats.vsPrevDay(
+                value: (_trendDelta(trend) * 100).round(),
+              ),
               icon: Icons.trending_up_rounded,
             ),
+          ),
+          const SizedBox(height: 16),
+          _TrendTimeframeSelector(
+            selected: timeframe,
+            onChanged: onTimeframeChanged,
           ),
           const SizedBox(height: 22),
           SizedBox(
@@ -315,7 +360,7 @@ class _GlobalTrend extends ConsumerWidget {
                             child: Align(
                               alignment: Alignment.bottomCenter,
                               child: FractionallySizedBox(
-                                heightFactor: point.value,
+                                heightFactor: point.value.clamp(0.0, 1.0),
                                 child: Container(
                                   decoration: BoxDecoration(
                                     color: context.evolveAccent,
@@ -339,16 +384,24 @@ class _GlobalTrend extends ConsumerWidget {
             children: [
               Expanded(
                 child: _InlineInsight(
-                  title: 'Abitudine migliore',
-                  value: _bestHabit(snapshot),
+                  title: t.stats.bestHabit,
+                  value: _resolveHabitTitle(
+                    snapshot,
+                    best?.firstOrNull?['goal_id'] as String?,
+                    fallback: _bestHabit(snapshot),
+                  ),
                   color: context.evolveAccent,
                 ),
               ),
-              SizedBox(width: 12),
+              const SizedBox(width: 12),
               Expanded(
                 child: _InlineInsight(
-                  title: 'Area critica',
-                  value: _criticalHabit(snapshot),
+                  title: t.stats.criticalArea,
+                  value: _resolveHabitTitle(
+                    snapshot,
+                    critical?.firstOrNull?['goal_id'] as String?,
+                    fallback: _criticalHabit(snapshot),
+                  ),
                   color: EvolveColors.rose,
                 ),
               ),
@@ -360,42 +413,147 @@ class _GlobalTrend extends ConsumerWidget {
   }
 }
 
-class _GlobalAlerts extends StatelessWidget {
+class _TrendTimeframeSelector extends StatelessWidget {
+  const _TrendTimeframeSelector({
+    required this.selected,
+    required this.onChanged,
+  });
+
+  final _TrendTimeframe selected;
+  final ValueChanged<_TrendTimeframe> onChanged;
+
+  @override
+  Widget build(BuildContext context) {
+    return Wrap(
+      spacing: 8,
+      runSpacing: 8,
+      children: [
+        for (final value in _TrendTimeframe.values)
+          ChoiceChip(
+            label: Text(_trendTimeframeLabel(value)),
+            selected: value == selected,
+            onSelected: (_) => onChanged(value),
+          ),
+      ],
+    );
+  }
+}
+
+class _GlobalAlerts extends ConsumerWidget {
   const _GlobalAlerts({required this.snapshot});
 
   final DashboardSnapshot snapshot;
 
   @override
-  Widget build(BuildContext context) {
-    final criticalHabit = _criticalHabit(snapshot);
-    final activeGoal = snapshot.goals
-        .where((goal) => goal.state == GoalState.active)
-        .firstOrNull;
+  Widget build(BuildContext context, WidgetRef ref) {
+    final stats = ref.watch(habitStatsRpcProvider).value ?? const [];
+    final analytics =
+        ref.watch(habitAnalyticsRpcProvider).value ??
+        const <String, Map<String, dynamic>>{};
+
+    final improvement = _improvementAreas(snapshot, stats, analytics);
+    final failures = _failureAnalysis(snapshot, stats);
+    final recovery = _recoveryPatterns(snapshot, analytics);
+
+    if (improvement.isEmpty && failures.isEmpty && recovery.isEmpty) {
+      return EvolvePanel(
+        child: Text(
+          t.statistics.noDataForAlerts,
+          style: Theme.of(context).textTheme.bodyMedium,
+        ),
+      );
+    }
+
     return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        _AlertCard(
-          title: 'Serie a rischio',
-          detail: '$criticalHabit richiede attenzione nei prossimi check-in.',
-          color: EvolveColors.rose,
-          icon: Icons.warning_amber_rounded,
+        if (improvement.isNotEmpty) ...[
+          _AlertsSection(
+            icon: Icons.track_changes_outlined,
+            title: t.statistics.improvementAreas,
+            subtitle: t.statistics.habitsRequiringMoreAttention,
+            children: [
+              for (final area in improvement)
+                _AlertCard(
+                  title: area.title,
+                  detail: t.stats.blackDayDetail(day: area.day),
+                  color: EvolveColors.rose,
+                  icon: Icons.error_outline,
+                  trailing: t.stats.successRate(rate: area.rate),
+                ),
+            ],
+          ),
+          const SizedBox(height: 18),
+        ],
+        if (failures.isNotEmpty) ...[
+          _AlertsSection(
+            icon: Icons.bar_chart_outlined,
+            title: t.statistics.failureAnalysis,
+            subtitle: t.statistics.missedDaysPattern,
+            children: [
+              for (final failure in failures)
+                _AlertCard(
+                  title: failure.title,
+                  detail: t.stats.failureDetail(
+                    streak: failure.worstStreak,
+                    frequency: failure.frequency,
+                  ),
+                  color: EvolveColors.amber,
+                  icon: Icons.trending_down_rounded,
+                ),
+            ],
+          ),
+          const SizedBox(height: 18),
+        ],
+        if (recovery.isNotEmpty)
+          _AlertsSection(
+            icon: Icons.calendar_month_outlined,
+            title: t.statistics.recoveryPatterns,
+            subtitle: t.statistics.recoverySpeed,
+            children: [
+              for (final item in recovery)
+                _AlertCard(
+                  title: item.title,
+                  detail: t.stats.recoveryDetail(days: item.days),
+                  color: context.evolveAccent,
+                  icon: Icons.schedule_outlined,
+                ),
+            ],
+          ),
+      ],
+    );
+  }
+}
+
+class _AlertsSection extends StatelessWidget {
+  const _AlertsSection({
+    required this.icon,
+    required this.title,
+    required this.subtitle,
+    required this.children,
+  });
+
+  final IconData icon;
+  final String title;
+  final String subtitle;
+  final List<Widget> children;
+
+  @override
+  Widget build(BuildContext context) {
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Row(
+          children: [
+            Icon(icon, size: 18, color: context.evolveColors.muted),
+            const SizedBox(width: 8),
+            Text(title, style: Theme.of(context).textTheme.titleMedium),
+          ],
         ),
-        SizedBox(height: 12),
-        _AlertCard(
-          title: 'Pattern da consolidare',
-          detail:
-              'Controlla i giorni con umore basso e mantieni il protocollo essenziale.',
-          color: EvolveColors.violet,
-          icon: Icons.auto_awesome_outlined,
-        ),
-        SizedBox(height: 12),
-        _AlertCard(
-          title: 'Obiettivo in scadenza',
-          detail: activeGoal == null
-              ? 'Nessun obiettivo attivo richiede un intervento.'
-              : '${activeGoal.title}: ${activeGoal.dueLabel}.',
-          color: EvolveColors.amber,
-          icon: Icons.flag_outlined,
-        ),
+        const SizedBox(height: 2),
+        Text(subtitle, style: Theme.of(context).textTheme.bodySmall),
+        const SizedBox(height: 12),
+        for (final child in children) ...[child, const SizedBox(height: 10)],
       ],
     );
   }
@@ -412,10 +570,9 @@ class _GlobalHabits extends StatelessWidget {
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          const SectionHeading(
-            title: 'Performance per abitudine',
-            subtitle:
-                'Classifica calcolata dai log sincronizzati per consistenza settimanale',
+          SectionHeading(
+            title: t.stats.performancePerHabit,
+            subtitle: t.stats.performancePerHabitSubtitle,
           ),
           const SizedBox(height: 15),
           for (final habit in snapshot.habits) ...[
@@ -444,27 +601,27 @@ class _GlobalMood extends StatelessWidget {
           children: [
             Expanded(
               child: _Metric(
-                label: 'Umore medio',
+                label: t.stats.avgMood,
                 value: '${averageMood.toStringAsFixed(1)}/10',
-                detail: '${moods.length} check-in disponibili',
+                detail: t.stats.checkInsAvailable(count: moods.length),
                 color: EvolveColors.violet,
               ),
             ),
             SizedBox(width: 14),
             Expanded(
               child: _Metric(
-                label: 'Energia media',
+                label: t.stats.avgEnergy,
                 value: '${averageEnergy.toStringAsFixed(1)}/10',
-                detail: '${moods.length} check-in disponibili',
+                detail: t.stats.checkInsAvailable(count: moods.length),
                 color: EvolveColors.amber,
               ),
             ),
             SizedBox(width: 14),
             Expanded(
               child: _Metric(
-                label: 'Abitudine resiliente',
+                label: t.stats.resilientHabit,
                 value: _bestHabit(snapshot),
-                detail: 'Completata anche nei giorni difficili',
+                detail: t.stats.completedEvenHardDays,
                 color: context.evolveAccent,
               ),
             ),
@@ -472,8 +629,8 @@ class _GlobalMood extends StatelessWidget {
         ),
         const SizedBox(height: 18),
         _HeatmapPanel(
-          title: 'Umore ed energia',
-          subtitle: 'Media dei check-in disponibili negli ultimi 90 giorni',
+          title: t.stats.moodEnergy,
+          subtitle: t.stats.moodEnergySubtitle,
           color: EvolveColors.violet,
           values: _moodValues(snapshot, 90),
         ),
@@ -482,49 +639,159 @@ class _GlobalMood extends StatelessWidget {
   }
 }
 
-class _HabitOverview extends StatelessWidget {
+class _HabitOverview extends ConsumerWidget {
   const _HabitOverview({required this.habit, required this.snapshot});
 
   final DashboardHabit habit;
   final DashboardSnapshot snapshot;
 
   @override
-  Widget build(BuildContext context) {
-    final completion = _habitCompletion(snapshot, habit.id);
+  Widget build(BuildContext context, WidgetRef ref) {
+    final stats = ref.watch(habitStatsRpcProvider).value ?? const [];
+    final stat = stats.where((s) => s['goal_id'] == habit.id).firstOrNull ?? {};
+    final grid = ref.watch(habitYearlyGridRpcProvider(habit.id)).value;
+    final last30 = grid == null
+        ? const <int>[]
+        : (grid.length >= 30 ? grid.sublist(grid.length - 30) : grid);
+
+    final completionRate = (stat['rate'] as num?)?.round() ?? 0;
+    final currentStreak =
+        (stat['current_streak'] as num?)?.toInt() ?? habit.streak;
+    final totalCompletions = (stat['total_completions'] as num?)?.toInt() ?? 0;
+    final totalActiveDays = (stat['total_active_days'] as num?)?.toInt() ?? 1;
+    final missedDays = (stat['missed_days'] as num?)?.toInt() ?? 0;
+
     return Column(
       children: [
         Row(
           children: [
             Expanded(
               child: _Metric(
-                label: 'Completamento',
-                value: '${(completion * 100).round()}%',
-                detail: 'Settimana corrente',
+                label: t.stats.completion,
+                value: '$completionRate%',
+                detail: t.stats.actionsFraction(
+                  done: totalCompletions,
+                  total: totalActiveDays,
+                ),
                 color: habit.color,
               ),
             ),
             const SizedBox(width: 14),
             Expanded(
               child: _Metric(
-                label: 'Serie corrente',
-                value: '${habit.streak} gg',
-                detail: 'Serie sincronizzata dai log disponibili',
+                label: t.stats.currentStreak,
+                value: t.dashboard.streakDaysShort(n: currentStreak),
+                detail: t.stats.currentStreakDetail,
                 color: EvolveColors.amber,
               ),
             ),
             const SizedBox(width: 14),
             Expanded(
               child: _Metric(
-                label: 'Trend 30 giorni',
-                value: '${(completion * 100).round()}%',
-                detail: 'Completamento negli ultimi 30 giorni',
-                color: context.evolveAccent,
+                label: t.statistics.missed,
+                value: '$missedDays',
+                detail: t.stats.trend30Detail,
+                color: EvolveColors.rose,
               ),
             ),
           ],
         ),
         const SizedBox(height: 18),
-        _CorrelationPanel(snapshot: snapshot),
+        _Last30DaysGrid(statuses: last30),
+        const SizedBox(height: 18),
+        _HabitCorrelationsPanel(habit: habit, snapshot: snapshot),
+      ],
+    );
+  }
+}
+
+/// The last-30-day pass/fail grid (done=green, missed=red, other=grey),
+/// mirroring mobile's `_TrendUltimi30Giorni`. Fed from the yearly-grid slice.
+class _Last30DaysGrid extends StatelessWidget {
+  const _Last30DaysGrid({required this.statuses});
+
+  final List<int> statuses;
+
+  @override
+  Widget build(BuildContext context) {
+    return EvolvePanel(
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          SectionHeading(
+            title: t.stats.last30DaysTrend,
+            subtitle: t.stats.trend30Detail,
+          ),
+          const SizedBox(height: 16),
+          if (statuses.isEmpty)
+            Text(
+              t.stats.moreLogsNeeded,
+              style: Theme.of(context).textTheme.bodySmall,
+            )
+          else ...[
+            Wrap(
+              spacing: 6,
+              runSpacing: 6,
+              children: [
+                for (final status in statuses)
+                  Container(
+                    width: 16,
+                    height: 16,
+                    decoration: BoxDecoration(
+                      color: switch (status) {
+                        1 => const Color(0xFF10B981),
+                        2 => EvolveColors.rose,
+                        _ => context.evolveColors.panelSoft,
+                      },
+                      borderRadius: BorderRadius.circular(4),
+                    ),
+                  ),
+              ],
+            ),
+            const SizedBox(height: 14),
+            Wrap(
+              spacing: 16,
+              runSpacing: 8,
+              children: [
+                _GridLegend(
+                  color: const Color(0xFF10B981),
+                  label: t.statistics.completed2,
+                ),
+                _GridLegend(
+                  color: EvolveColors.rose,
+                  label: t.statistics.notCompleted,
+                ),
+                _GridLegend(
+                  color: context.evolveColors.panelSoft,
+                  label: t.statistics.skipped,
+                ),
+              ],
+            ),
+          ],
+        ],
+      ),
+    );
+  }
+}
+
+class _GridLegend extends StatelessWidget {
+  const _GridLegend({required this.color, required this.label});
+
+  final Color color;
+  final String label;
+
+  @override
+  Widget build(BuildContext context) {
+    return Row(
+      mainAxisSize: MainAxisSize.min,
+      children: [
+        Container(
+          width: 10,
+          height: 10,
+          decoration: BoxDecoration(color: color, shape: BoxShape.circle),
+        ),
+        const SizedBox(width: 6),
+        Text(label, style: Theme.of(context).textTheme.bodySmall),
       ],
     );
   }
@@ -540,12 +807,111 @@ class _HabitCalendar extends ConsumerWidget {
   Widget build(BuildContext context, WidgetRef ref) {
     final yearlyGrid = ref.watch(habitYearlyGridRpcProvider(habit.id)).value;
     return _HeatmapPanel(
-      title: 'Calendario annuale',
-      subtitle: 'Distribuzione dei completamenti di ${habit.title}',
+      title: t.stats.yearlyCalendar,
+      subtitle: t.stats.yearlyCalendarSubtitle(habit: habit.title),
       color: habit.color,
       values: yearlyGrid == null || yearlyGrid.isEmpty
           ? _habitActivityValues(snapshot, habit.id, 280)
           : yearlyGrid.map((status) => status == 1 ? 1.0 : 0.0).toList(),
+    );
+  }
+}
+
+/// Real per-habit co-completion correlations from [habitCorrelationsRpcProvider]
+/// (mirrors mobile's `_CorrelazioniSection`): positive (>= 50%) and negative
+/// (< 50%) partners, each resolved to its habit title.
+class _HabitCorrelationsPanel extends ConsumerWidget {
+  const _HabitCorrelationsPanel({required this.habit, required this.snapshot});
+
+  final DashboardHabit habit;
+  final DashboardSnapshot snapshot;
+
+  @override
+  Widget build(BuildContext context, WidgetRef ref) {
+    final rows =
+        ref.watch(habitCorrelationsRpcProvider(habit.id)).value ?? const [];
+    final resolved = <({String title, int percentage})>[];
+    for (final row in rows) {
+      final otherId = row['goal_id'] as String?;
+      if (otherId == null) continue;
+      final title = _habitTitleFor(snapshot, otherId);
+      if (title == null) continue;
+      resolved.add((
+        title: title,
+        percentage: (row['percentage'] as num?)?.toInt() ?? 0,
+      ));
+    }
+    final positives = resolved.where((c) => c.percentage >= 50).toList()
+      ..sort((a, b) => b.percentage.compareTo(a.percentage));
+    final negatives = resolved.where((c) => c.percentage < 50).toList()
+      ..sort((a, b) => a.percentage.compareTo(b.percentage));
+
+    return EvolvePanel(
+      color: const Color(0xFF151522),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          const Icon(Icons.hub_outlined, color: EvolveColors.violet),
+          const SizedBox(height: 13),
+          SectionHeading(
+            title: t.statistics.correlationsWith,
+            subtitle: t.statistics.howThisHabitRelatesToOthers,
+          ),
+          const SizedBox(height: 16),
+          if (resolved.isEmpty)
+            Text(
+              t.stats.moreLogsNeeded,
+              style: Theme.of(context).textTheme.bodySmall,
+            )
+          else ...[
+            Text(
+              t.statistics.positiveCorrelations,
+              style: const TextStyle(
+                color: Color(0xFF10B981),
+                fontWeight: FontWeight.w700,
+              ),
+            ),
+            const SizedBox(height: 10),
+            if (positives.isEmpty)
+              Text(
+                t.statistics.noSignificantPositiveCorrelation,
+                style: Theme.of(context).textTheme.bodySmall,
+              )
+            else
+              for (final c in positives.take(3)) ...[
+                _InlineInsight(
+                  title: c.title,
+                  value: t.stats.togetherProbability(percentage: c.percentage),
+                  color: const Color(0xFF10B981),
+                ),
+                const SizedBox(height: 8),
+              ],
+            const SizedBox(height: 14),
+            Text(
+              t.statistics.negativeCorrelations,
+              style: const TextStyle(
+                color: EvolveColors.rose,
+                fontWeight: FontWeight.w700,
+              ),
+            ),
+            const SizedBox(height: 10),
+            if (negatives.isEmpty)
+              Text(
+                t.statistics.noSignificantNegativeCorrelation,
+                style: Theme.of(context).textTheme.bodySmall,
+              )
+            else
+              for (final c in negatives.take(3)) ...[
+                _InlineInsight(
+                  title: c.title,
+                  value: t.stats.togetherProbability(percentage: c.percentage),
+                  color: EvolveColors.rose,
+                ),
+                const SizedBox(height: 8),
+              ],
+          ],
+        ],
+      ),
     );
   }
 }
@@ -561,51 +927,115 @@ class _HabitPerformance extends ConsumerWidget {
     const labels = ['Lun', 'Mar', 'Mer', 'Gio', 'Ven', 'Sab', 'Dom'];
     final rpc =
         ref.watch(habitPerformanceRpcProvider(habit.id)).value ?? const [];
-    return EvolvePanel(
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          const SectionHeading(
-            title: 'Performance per giorno',
-            subtitle: 'Giorni forti e giorni deboli della settimana',
-          ),
-          const SizedBox(height: 18),
-          for (var index = 0; index < labels.length; index++) ...[
-            Row(
-              children: [
-                SizedBox(width: 44, child: Text(labels[index])),
-                Expanded(
-                  child: LinearProgressIndicator(
-                    value: _rpcWeekdayCompletion(
-                      rpc,
-                      index + 1,
-                      fallback: _habitWeekdayCompletion(
-                        snapshot,
-                        habit.id,
-                        index + 1,
+    final extremes = _weekdayExtremes(rpc);
+
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        EvolvePanel(
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              SectionHeading(
+                title: t.stats.performancePerDay,
+                subtitle: t.stats.performancePerDaySubtitle,
+              ),
+              const SizedBox(height: 18),
+              for (var index = 0; index < labels.length; index++) ...[
+                Row(
+                  children: [
+                    SizedBox(width: 44, child: Text(labels[index])),
+                    Expanded(
+                      child: LinearProgressIndicator(
+                        value: _rpcWeekdayCompletion(
+                          rpc,
+                          index + 1,
+                          fallback: _habitWeekdayCompletion(
+                            snapshot,
+                            habit.id,
+                            index + 1,
+                          ),
+                        ),
+                        minHeight: 7,
+                        color: habit.color,
+                        backgroundColor: context.evolveColors.panelSoft,
+                        borderRadius: BorderRadius.circular(8),
                       ),
                     ),
-                    minHeight: 7,
-                    color: habit.color,
-                    backgroundColor: context.evolveColors.panelSoft,
-                    borderRadius: BorderRadius.circular(8),
-                  ),
+                    const SizedBox(width: 12),
+                    SizedBox(
+                      width: 36,
+                      child: Text(
+                        '${(_rpcWeekdayCompletion(rpc, index + 1, fallback: _habitWeekdayCompletion(snapshot, habit.id, index + 1)) * 100).round()}%',
+                      ),
+                    ),
+                  ],
                 ),
-                const SizedBox(width: 12),
-                SizedBox(
-                  width: 36,
-                  child: Text(
-                    '${(_rpcWeekdayCompletion(rpc, index + 1, fallback: _habitWeekdayCompletion(snapshot, habit.id, index + 1)) * 100).round()}%',
-                  ),
-                ),
+                if (index < labels.length - 1) const SizedBox(height: 14),
               ],
+            ],
+          ),
+        ),
+        if (extremes.strongest != null) ...[
+          const SizedBox(height: 12),
+          _AlertCard(
+            title:
+                '${t.statistics.strongestDay}: ${_weekdayName(extremes.strongest!.dow)}',
+            detail: t.stats.strongestDayDetail(
+              pct: extremes.strongest!.pct,
+              done: extremes.strongest!.done,
+              total: extremes.strongest!.total,
             ),
-            if (index < labels.length - 1) const SizedBox(height: 14),
-          ],
+            color: context.evolveAccent,
+            icon: Icons.emoji_events_outlined,
+          ),
         ],
-      ),
+        if (extremes.weakest != null) ...[
+          const SizedBox(height: 12),
+          _AlertCard(
+            title:
+                '${t.statistics.weakestDay}: ${_weekdayName(extremes.weakest!.dow)}',
+            detail: t.stats.weakestDayDetail(
+              pct: extremes.weakest!.pct,
+              done: extremes.weakest!.done,
+              total: extremes.weakest!.total,
+            ),
+            color: EvolveColors.rose,
+            icon: Icons.warning_amber_rounded,
+          ),
+        ],
+      ],
     );
   }
+}
+
+typedef _DayPerf = ({int dow, int pct, int done, int total});
+
+/// Strongest/weakest weekday from performance-by-day rows. Mirrors mobile's
+/// `HabitPerformanceTabWidget` (strongest = highest pct, weakest = lowest;
+/// weakest suppressed when it ties the strongest).
+({_DayPerf? strongest, _DayPerf? weakest}) _weekdayExtremes(
+  List<Map<String, dynamic>> rows,
+) {
+  final active = <_DayPerf>[];
+  for (final row in rows) {
+    final total = (row['total_count'] as num?)?.toInt() ?? 0;
+    if (total <= 0) continue;
+    final done = (row['done_count'] as num?)?.toInt() ?? 0;
+    active.add((
+      dow: (row['day_index'] as num?)?.toInt() ?? 1,
+      pct: (done / total * 100).round(),
+      done: done,
+      total: total,
+    ));
+  }
+  if (active.isEmpty) return (strongest: null, weakest: null);
+  final strongest = active.reduce((a, b) => a.pct >= b.pct ? a : b);
+  final weakest = active.reduce((a, b) => a.pct <= b.pct ? a : b);
+  return (
+    strongest: strongest,
+    weakest: strongest.pct == weakest.pct ? null : weakest,
+  );
 }
 
 class _HabitImprovement extends ConsumerWidget {
@@ -619,68 +1049,444 @@ class _HabitImprovement extends ConsumerWidget {
     final alert = ref.watch(habitAlertsRpcProvider(habit.id)).value ?? const {};
     final worstNegativeDays =
         (alert['worst_negative_days'] as num?)?.toInt() ?? 0;
+    final worstStart = DateTime.tryParse(
+      alert['worst_negative_start'] as String? ?? '',
+    );
+    final broken = <({int days, DateTime date})>[];
+    for (final raw in (alert['broken_streaks'] as List? ?? const [])) {
+      if (raw is! Map) continue;
+      final date = DateTime.tryParse(raw['date'] as String? ?? '');
+      if (date == null) continue;
+      broken.add((days: (raw['days'] as num?)?.toInt() ?? 0, date: date));
+    }
+
     return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        _AlertCard(
-          title: 'Proteggi la serie di ${habit.streak} giorni',
-          detail: worstNegativeDays == 0
-              ? 'Mantieni la stessa fascia oraria per ridurre la frizione nei giorni piu intensi.'
-              : 'La peggiore sequenza negativa e durata $worstNegativeDays giorni.',
-          color: EvolveColors.amber,
-          icon: Icons.local_fire_department_outlined,
+        EvolvePanel(
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Row(
+                children: [
+                  const Icon(
+                    Icons.trending_down_rounded,
+                    color: EvolveColors.rose,
+                    size: 20,
+                  ),
+                  const SizedBox(width: 8),
+                  Text(
+                    t.statistics.worstNegativeStreak,
+                    style: Theme.of(context).textTheme.titleMedium,
+                  ),
+                ],
+              ),
+              const SizedBox(height: 14),
+              Row(
+                crossAxisAlignment: CrossAxisAlignment.center,
+                children: [
+                  Text(
+                    '$worstNegativeDays',
+                    style: const TextStyle(
+                      color: EvolveColors.rose,
+                      fontSize: 44,
+                      fontWeight: FontWeight.w800,
+                      height: 1,
+                    ),
+                  ),
+                  const SizedBox(width: 16),
+                  Expanded(
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Text(
+                          t.statistics.missedConsecutiveDays,
+                          style: Theme.of(context).textTheme.bodyMedium,
+                        ),
+                        if (worstStart != null) ...[
+                          const SizedBox(height: 2),
+                          Text(
+                            '${t.statistics.startedOn} ${_shortDate(worstStart)}',
+                            style: Theme.of(context).textTheme.bodySmall,
+                          ),
+                        ],
+                      ],
+                    ),
+                  ),
+                ],
+              ),
+            ],
+          ),
         ),
-        const SizedBox(height: 12),
-        _AlertCard(
-          title: 'Leva positiva rilevata',
-          detail:
-              '${_bestHabit(snapshot)} mantiene la migliore regolarita recente.',
-          color: context.evolveAccent,
-          icon: Icons.trending_up_rounded,
+        const SizedBox(height: 16),
+        EvolvePanel(
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Text(
+                t.statistics.brokenStreaks,
+                style: Theme.of(context).textTheme.titleMedium,
+              ),
+              const SizedBox(height: 14),
+              if (broken.isEmpty)
+                Text(
+                  t.statistics.noBrokenStreaks,
+                  style: Theme.of(context).textTheme.bodySmall,
+                )
+              else
+                for (final b in broken) ...[
+                  Row(
+                    children: [
+                      Container(
+                        width: 40,
+                        height: 40,
+                        alignment: Alignment.center,
+                        decoration: BoxDecoration(
+                          color: EvolveColors.rose.withValues(alpha: 0.12),
+                          shape: BoxShape.circle,
+                        ),
+                        child: Text(
+                          '${b.days}',
+                          style: const TextStyle(
+                            color: EvolveColors.rose,
+                            fontWeight: FontWeight.w700,
+                          ),
+                        ),
+                      ),
+                      const SizedBox(width: 14),
+                      Expanded(
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            Text(
+                              t.stats.brokenStreakItem(days: b.days),
+                              style: Theme.of(context).textTheme.bodyMedium,
+                            ),
+                            const SizedBox(height: 2),
+                            Text(
+                              _shortDate(b.date),
+                              style: Theme.of(context).textTheme.bodySmall,
+                            ),
+                          ],
+                        ),
+                      ),
+                    ],
+                  ),
+                  const SizedBox(height: 12),
+                ],
+            ],
+          ),
         ),
       ],
     );
   }
 }
 
-class _HabitMood extends StatelessWidget {
+String _shortDate(DateTime date) => '${date.day}/${date.month}/${date.year}';
+
+class _HabitMood extends ConsumerWidget {
   const _HabitMood({required this.habit, required this.snapshot});
 
   final DashboardHabit habit;
   final DashboardSnapshot snapshot;
 
   @override
-  Widget build(BuildContext context) {
+  Widget build(BuildContext context, WidgetRef ref) {
+    final correlations =
+        ref.watch(moodCorrelationsRpcProvider).value ?? const [];
+    final correlation = correlations
+        .where((c) => c.goalId == habit.id)
+        .firstOrNull;
+
+    if (correlation == null) {
+      return EvolvePanel(
+        child: Text(
+          t.stats.moreLogsNeeded,
+          style: Theme.of(context).textTheme.bodyMedium,
+        ),
+      );
+    }
+
     return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
       children: [
         Row(
           children: [
             Expanded(
               child: _Metric(
-                label: 'Sensibilita all\'umore',
-                value:
-                    '${(_habitLowMoodCompletion(snapshot, habit.id) * 100).round()}%',
-                detail: '${habit.title} risente dei giorni difficili',
+                label: t.statistics.moodCorrelation,
+                value: '${correlation.sensitivity}%',
+                detail: correlation.sensitivity > 10
+                    ? t.statistics.positive
+                    : t.statistics.neutral,
                 color: EvolveColors.violet,
               ),
             ),
             const SizedBox(width: 14),
             Expanded(
               child: _Metric(
-                label: 'Resilienza',
-                value:
-                    '${(_habitLowEnergyCompletion(snapshot, habit.id) * 100).round()}%',
-                detail: 'Completamento con energia bassa',
+                label: t.stats.resilience,
+                value: '${correlation.resilience}%',
+                detail: correlation.resilience > 50
+                    ? t.statistics.high
+                    : t.statistics.low,
                 color: context.evolveAccent,
               ),
             ),
           ],
         ),
+        const SizedBox(height: 14),
+        Row(
+          children: [
+            Expanded(
+              child: _Metric(
+                label: t.statistics.avgMood,
+                value: correlation.avgMoodDone.toStringAsFixed(1),
+                detail: t.statistics.onCompletedDays,
+                color: correlation.avgMoodDone < 4
+                    ? EvolveColors.rose
+                    : context.evolveAccent,
+              ),
+            ),
+            const SizedBox(width: 14),
+            Expanded(
+              child: _Metric(
+                label: t.statistics.avgEnergy,
+                value: correlation.avgEnergyDone.toStringAsFixed(1),
+                detail: t.statistics.onCompletedDays,
+                color: correlation.avgEnergyDone < 4
+                    ? EvolveColors.rose
+                    : EvolveColors.amber,
+              ),
+            ),
+          ],
+        ),
+        if (correlation.resilience > 50) ...[
+          const SizedBox(height: 12),
+          Row(
+            children: [
+              const Icon(
+                Icons.bolt_outlined,
+                size: 16,
+                color: EvolveColors.violet,
+              ),
+              const SizedBox(width: 6),
+              Text(
+                t.statistics.resilient,
+                style: const TextStyle(
+                  color: EvolveColors.violet,
+                  fontWeight: FontWeight.w600,
+                ),
+              ),
+            ],
+          ),
+        ],
         const SizedBox(height: 18),
-        _HeatmapPanel(
-          title: 'Correlazione umore-output',
-          subtitle: 'Completamenti disponibili nei giorni con check-in',
-          color: EvolveColors.violet,
-          values: _habitMoodValues(snapshot, habit.id, 90),
+        _CompletedVsMissedPanel(correlation: correlation),
+        const SizedBox(height: 16),
+        _PerformancePerLevelPanel(correlation: correlation),
+        const SizedBox(height: 16),
+        Text(
+          t.statistics.moodEnergyAnalysis,
+          style: Theme.of(context).textTheme.bodySmall,
+          textAlign: TextAlign.center,
+        ),
+      ],
+    );
+  }
+}
+
+/// Completed-vs-missed average mood/energy bars (0–10 scale), mirroring mobile's
+/// `_CompletatoVsMancatoCard`.
+class _CompletedVsMissedPanel extends StatelessWidget {
+  const _CompletedVsMissedPanel({required this.correlation});
+
+  final MoodCorrelation correlation;
+
+  @override
+  Widget build(BuildContext context) {
+    return EvolvePanel(
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Text(
+            t.statistics.completedVsMissed,
+            style: Theme.of(context).textTheme.titleMedium,
+          ),
+          const SizedBox(height: 20),
+          SizedBox(
+            height: 160,
+            child: Row(
+              crossAxisAlignment: CrossAxisAlignment.end,
+              children: [
+                Expanded(
+                  child: _MoodBarGroup(
+                    label: t.statistics.completed2,
+                    mood: correlation.avgMoodDone,
+                    energy: correlation.avgEnergyDone,
+                  ),
+                ),
+                const SizedBox(width: 16),
+                Expanded(
+                  child: _MoodBarGroup(
+                    label: t.statistics.missed2,
+                    mood: correlation.avgMoodMissed,
+                    energy: correlation.avgEnergyMissed,
+                  ),
+                ),
+              ],
+            ),
+          ),
+          const SizedBox(height: 16),
+          Row(
+            mainAxisAlignment: MainAxisAlignment.center,
+            children: [
+              _GridLegend(
+                color: const Color(0xFF10B981),
+                label: t.statistics.mood2,
+              ),
+              const SizedBox(width: 16),
+              _GridLegend(
+                color: EvolveColors.amber,
+                label: t.statistics.energy,
+              ),
+            ],
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+class _MoodBarGroup extends StatelessWidget {
+  const _MoodBarGroup({
+    required this.label,
+    required this.mood,
+    required this.energy,
+  });
+
+  final String label;
+  final double mood;
+  final double energy;
+
+  @override
+  Widget build(BuildContext context) {
+    return Column(
+      mainAxisAlignment: MainAxisAlignment.end,
+      children: [
+        Expanded(
+          child: Row(
+            crossAxisAlignment: CrossAxisAlignment.end,
+            children: [
+              Expanded(
+                child: FractionallySizedBox(
+                  heightFactor: (mood / 10).clamp(0.0, 1.0),
+                  alignment: Alignment.bottomCenter,
+                  child: Container(
+                    decoration: const BoxDecoration(
+                      color: Color(0xFF10B981),
+                      borderRadius: BorderRadius.vertical(
+                        top: Radius.circular(4),
+                      ),
+                    ),
+                  ),
+                ),
+              ),
+              const SizedBox(width: 4),
+              Expanded(
+                child: FractionallySizedBox(
+                  heightFactor: (energy / 10).clamp(0.0, 1.0),
+                  alignment: Alignment.bottomCenter,
+                  child: Container(
+                    decoration: const BoxDecoration(
+                      color: EvolveColors.amber,
+                      borderRadius: BorderRadius.vertical(
+                        top: Radius.circular(4),
+                      ),
+                    ),
+                  ),
+                ),
+              ),
+            ],
+          ),
+        ),
+        const SizedBox(height: 8),
+        Text(label, style: Theme.of(context).textTheme.bodySmall),
+      ],
+    );
+  }
+}
+
+/// Completion % with high vs low mood, mirroring mobile's
+/// `_PerformancePerLivelloCard`.
+class _PerformancePerLevelPanel extends StatelessWidget {
+  const _PerformancePerLevelPanel({required this.correlation});
+
+  final MoodCorrelation correlation;
+
+  @override
+  Widget build(BuildContext context) {
+    return EvolvePanel(
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Text(
+            t.statistics.performancePerLevel,
+            style: Theme.of(context).textTheme.titleMedium,
+          ),
+          const SizedBox(height: 18),
+          _LevelBar(
+            label: t.statistics.withHighMood,
+            percentage: correlation.highMoodPct,
+            color: const Color(0xFF10B981),
+          ),
+          const SizedBox(height: 16),
+          _LevelBar(
+            label: t.statistics.withLowMood,
+            percentage: correlation.lowMoodPct,
+            color: EvolveColors.rose,
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+class _LevelBar extends StatelessWidget {
+  const _LevelBar({
+    required this.label,
+    required this.percentage,
+    required this.color,
+  });
+
+  final String label;
+  final int percentage;
+  final Color color;
+
+  @override
+  Widget build(BuildContext context) {
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Row(
+          mainAxisAlignment: MainAxisAlignment.spaceBetween,
+          children: [
+            Text(label, style: Theme.of(context).textTheme.bodyMedium),
+            Text(
+              '$percentage%',
+              style: TextStyle(color: color, fontWeight: FontWeight.w700),
+            ),
+          ],
+        ),
+        const SizedBox(height: 8),
+        ClipRRect(
+          borderRadius: BorderRadius.circular(3),
+          child: LinearProgressIndicator(
+            value: (percentage / 100).clamp(0.0, 1.0),
+            minHeight: 6,
+            color: color,
+            backgroundColor: context.evolveColors.panelSoft,
+          ),
         ),
       ],
     );
@@ -774,14 +1580,30 @@ class _HeatmapPanel extends StatelessWidget {
   }
 }
 
-class _CorrelationPanel extends StatelessWidget {
+class _CorrelationPanel extends ConsumerWidget {
   const _CorrelationPanel({required this.snapshot});
 
   final DashboardSnapshot snapshot;
 
   @override
-  Widget build(BuildContext context) {
-    final correlations = _habitCorrelations(snapshot);
+  Widget build(BuildContext context, WidgetRef ref) {
+    final rows = ref.watch(allHabitCorrelationsRpcProvider).value ?? const [];
+    // Resolve goal ids to titles and keep the strongest co-completion pairs.
+    final correlations = <({String label, int percentage})>[];
+    for (final row in rows) {
+      final sourceId = row['goal_id'] as String?;
+      final otherId = row['other_goal_id'] as String?;
+      if (sourceId == null || otherId == null) continue;
+      final source = _habitTitleFor(snapshot, sourceId);
+      final other = _habitTitleFor(snapshot, otherId);
+      if (source == null || other == null) continue;
+      correlations.add((
+        label: '$source -> $other',
+        percentage: (row['percentage'] as num?)?.toInt() ?? 0,
+      ));
+    }
+    correlations.sort((a, b) => b.percentage.compareTo(a.percentage));
+
     return EvolvePanel(
       color: const Color(0xFF151522),
       child: Column(
@@ -789,18 +1611,18 @@ class _CorrelationPanel extends StatelessWidget {
         children: [
           const Icon(Icons.hub_outlined, color: EvolveColors.violet),
           const SizedBox(height: 13),
-          const SectionHeading(
-            title: 'Correlazioni chiave',
-            subtitle: 'Pattern che influenzano maggiormente il protocollo',
+          SectionHeading(
+            title: t.stats.keyCorrelations,
+            subtitle: t.stats.keyCorrelationsSubtitle,
           ),
           const SizedBox(height: 16),
           if (correlations.isEmpty)
-            const Text('Servono piu log per calcolare correlazioni utili.')
+            Text(t.stats.moreLogsNeeded)
           else
             for (final correlation in correlations.take(2)) ...[
               _InlineInsight(
                 title: correlation.label,
-                value: '${(correlation.value * 100).round()}%',
+                value: '${correlation.percentage}%',
                 color: context.evolveAccent,
               ),
               const SizedBox(height: 10),
@@ -850,12 +1672,14 @@ class _AlertCard extends StatelessWidget {
     required this.detail,
     required this.color,
     required this.icon,
+    this.trailing,
   });
 
   final String title;
   final String detail;
   final Color color;
   final IconData icon;
+  final String? trailing;
 
   @override
   Widget build(BuildContext context) {
@@ -874,6 +1698,13 @@ class _AlertCard extends StatelessWidget {
               ],
             ),
           ),
+          if (trailing != null) ...[
+            const SizedBox(width: 12),
+            Text(
+              trailing!,
+              style: TextStyle(color: color, fontWeight: FontWeight.w800),
+            ),
+          ],
         ],
       ),
     );
@@ -909,7 +1740,10 @@ class _HabitPerformanceRow extends StatelessWidget {
         ),
         const SizedBox(width: 12),
         SizedBox(width: 34, child: Text('$done/7')),
-        SizedBox(width: 72, child: Text('${habit.streak} gg')),
+        SizedBox(
+          width: 72,
+          child: Text(t.dashboard.streakDaysShort(n: habit.streak)),
+        ),
       ],
     );
   }
@@ -922,7 +1756,7 @@ class _EmptyHabitAnalytics extends StatelessWidget {
   Widget build(BuildContext context) {
     return EvolvePanel(
       child: Text(
-        'Crea almeno un\'abitudine per visualizzare l\'analisi granulare.',
+        t.stats.createHabitForAnalysis,
         style: Theme.of(context).textTheme.bodyMedium,
       ),
     );
@@ -954,20 +1788,6 @@ List<double> _habitActivityValues(
   ];
 }
 
-List<double> _habitMoodValues(
-  DashboardSnapshot snapshot,
-  String habitId,
-  int count,
-) {
-  return [
-    for (final date in _lastDays(count))
-      if (snapshot.moods.containsKey(dashboardDateKey(date)))
-        snapshot.habitStatusFor(habitId, date) == 'done' ? 1 : 0
-      else
-        0,
-  ];
-}
-
 Iterable<DateTime> _lastDays(int count) sync* {
   final now = DateTime.now();
   final today = DateTime(now.year, now.month, now.day);
@@ -990,20 +1810,175 @@ double _habitCompletion(DashboardSnapshot snapshot, String habitId) {
 List<TrendPoint> _rpcTrendPoints(
   List<Map<String, dynamic>> rows,
   List<TrendPoint> fallback,
+  _TrendTimeframe timeframe,
 ) {
   if (rows.isEmpty) return fallback;
+  // The engine returns denser series for month/year/all; keep the last N points
+  // so the bar chart stays readable (weekly = 7, otherwise ~14 buckets).
+  final maxBars = switch (timeframe) {
+    _TrendTimeframe.week => 7,
+    _ => 14,
+  };
+  final visible = rows.length > maxBars
+      ? rows.sublist(rows.length - maxBars)
+      : rows;
   return [
-    for (final row in rows.take(14))
+    for (final row in visible)
       TrendPoint(
-        label: _trendLabel(row['date'] as String?),
+        label: _trendLabel(row['date'] as String?, timeframe),
         value: ((row['rate'] as num?)?.toDouble() ?? 0).clamp(0, 100) / 100,
       ),
   ];
 }
 
-String _trendLabel(String? rawDate) {
+const List<String> _trendWeekdayTokens = [
+  'Lun',
+  'Mar',
+  'Mer',
+  'Gio',
+  'Ven',
+  'Sab',
+  'Dom',
+];
+
+String _trendLabel(String? rawDate, _TrendTimeframe timeframe) {
   final date = DateTime.tryParse(rawDate ?? '');
-  return date == null ? '-' : '${date.day}/${date.month}';
+  if (date == null) return '-';
+  if (timeframe == _TrendTimeframe.week) {
+    return _trendWeekdayTokens[date.weekday - 1];
+  }
+  return '${date.day}/${date.month}';
+}
+
+/// Resolves a goal_id from an RPC row to a habit title, falling back to a
+/// precomputed string when the id is unknown (e.g. an archived habit).
+String _resolveHabitTitle(
+  DashboardSnapshot snapshot,
+  String? goalId, {
+  required String fallback,
+}) {
+  if (goalId == null) return fallback;
+  final habit = snapshot.habits.where((h) => h.id == goalId).firstOrNull;
+  return habit?.title ?? fallback;
+}
+
+String? _habitTitleFor(DashboardSnapshot snapshot, String goalId) =>
+    snapshot.habits.where((h) => h.id == goalId).firstOrNull?.title;
+
+String _weekdayName(int dow) {
+  if (dow < 1 || dow > 7) return '';
+  return t.common.weekdaysLong[dow - 1];
+}
+
+/// Localizes the critical-day value: `computeGlobalCriticalDay` (and the cloud
+/// RPC) return a 3-letter ISO-dow token (`mon`…`sun`); map it to a localized
+/// weekday name. Any other value (the trend-label fallback) passes through.
+String _criticalDayLabel(String value) {
+  final index = kIsoDowTokens.indexOf(value);
+  return index >= 0 ? _weekdayName(index + 1) : value;
+}
+
+// ─── Global Alerts derivations (mirror mobile global_alerts_tab_widget) ──────
+
+class _ImprovementArea {
+  const _ImprovementArea({
+    required this.title,
+    required this.rate,
+    required this.day,
+  });
+  final String title;
+  final int rate;
+  final String day;
+}
+
+class _FailureItem {
+  const _FailureItem({
+    required this.title,
+    required this.worstStreak,
+    required this.frequency,
+  });
+  final String title;
+  final int worstStreak;
+  final int frequency;
+}
+
+class _RecoveryItem {
+  const _RecoveryItem({required this.title, required this.days});
+  final String title;
+  final int days;
+}
+
+/// Lowest-rate habits and their worst weekday. Mirrors mobile's
+/// `_calculateMiglioramentoData` (bottom-3 by `rate`, worst_dow from analytics).
+List<_ImprovementArea> _improvementAreas(
+  DashboardSnapshot snapshot,
+  List<Map<String, dynamic>> stats,
+  Map<String, Map<String, dynamic>> analytics,
+) {
+  final sorted = [
+    ...stats,
+  ]..sort((a, b) => (a['rate'] as num? ?? 0).compareTo(b['rate'] as num? ?? 0));
+  final result = <_ImprovementArea>[];
+  for (final stat in sorted.take(3)) {
+    final goalId = stat['goal_id'] as String?;
+    if (goalId == null) continue;
+    final title = _habitTitleFor(snapshot, goalId);
+    if (title == null) continue;
+    final worstDow = (analytics[goalId]?['worst_dow'] as num?)?.toInt() ?? 1;
+    result.add(
+      _ImprovementArea(
+        title: title,
+        rate: (stat['rate'] as num? ?? 0).round(),
+        day: _weekdayName(worstDow),
+      ),
+    );
+  }
+  return result;
+}
+
+/// Habits with the worst missed streaks. Mirrors mobile's
+/// `_calculateFallimentiData` (top-3 by `worst_streak`, monthly miss frequency).
+List<_FailureItem> _failureAnalysis(
+  DashboardSnapshot snapshot,
+  List<Map<String, dynamic>> stats,
+) {
+  final sorted = [...stats]
+    ..sort(
+      (a, b) => (b['worst_streak'] as num? ?? 0).compareTo(
+        a['worst_streak'] as num? ?? 0,
+      ),
+    );
+  final result = <_FailureItem>[];
+  for (final stat in sorted.take(3)) {
+    final goalId = stat['goal_id'] as String?;
+    if (goalId == null) continue;
+    final title = _habitTitleFor(snapshot, goalId);
+    if (title == null) continue;
+    final missed = (stat['missed_days'] as num? ?? 0).toInt();
+    final totalDays = (stat['total_active_days'] as num? ?? 1).toInt();
+    final freq = totalDays > 0 ? (missed / totalDays * 30).round() : 0;
+    final worst = (stat['worst_streak'] as num? ?? 0).toInt();
+    if (worst <= 0) continue;
+    result.add(_FailureItem(title: title, worstStreak: worst, frequency: freq));
+  }
+  return result;
+}
+
+/// Average recovery time per habit. Mirrors mobile's `_calculateRecuperoData`
+/// (fastest 3 by `avg_recovery_days` from analytics).
+List<_RecoveryItem> _recoveryPatterns(
+  DashboardSnapshot snapshot,
+  Map<String, Map<String, dynamic>> analytics,
+) {
+  final result = <_RecoveryItem>[];
+  for (final habit in snapshot.habits) {
+    final recovery =
+        (analytics[habit.id]?['avg_recovery_days'] as num?)?.round() ?? 0;
+    if (recovery <= 0) continue;
+    result.add(_RecoveryItem(title: habit.title, days: recovery));
+  }
+  result.sort((a, b) => a.days.compareTo(b.days));
+  return result.take(3).toList();
 }
 
 double _rpcWeekdayCompletion(
@@ -1037,38 +2012,6 @@ double _habitWeekdayCompletion(
   return statuses.where((status) => status == 'done').length / statuses.length;
 }
 
-double _habitLowMoodCompletion(DashboardSnapshot snapshot, String habitId) {
-  return _habitCheckInCompletion(
-    snapshot,
-    habitId,
-    (checkIn) => (checkIn.mood ?? 10) <= 4,
-  );
-}
-
-double _habitLowEnergyCompletion(DashboardSnapshot snapshot, String habitId) {
-  return _habitCheckInCompletion(
-    snapshot,
-    habitId,
-    (checkIn) => (checkIn.energy ?? 10) <= 4,
-  );
-}
-
-double _habitCheckInCompletion(
-  DashboardSnapshot snapshot,
-  String habitId,
-  bool Function(DailyCheckIn checkIn) include,
-) {
-  final dates = snapshot.moods.entries
-      .where((entry) => include(entry.value))
-      .map((entry) => entry.key)
-      .toList();
-  if (dates.isEmpty) return 0;
-  final completed = dates
-      .where((date) => snapshot.habitLogs[date]?[habitId] == 'done')
-      .length;
-  return completed / dates.length;
-}
-
 double _averageCheckIn(
   List<DailyCheckIn> moods,
   int? Function(DailyCheckIn mood) read,
@@ -1079,7 +2022,7 @@ double _averageCheckIn(
 }
 
 String _bestHabit(DashboardSnapshot snapshot) {
-  if (snapshot.habits.isEmpty) return 'Nessun dato';
+  if (snapshot.habits.isEmpty) return t.stats.noData;
   final habits = [...snapshot.habits]
     ..sort(
       (a, b) => _habitCompletion(
@@ -1091,7 +2034,7 @@ String _bestHabit(DashboardSnapshot snapshot) {
 }
 
 String _criticalHabit(DashboardSnapshot snapshot) {
-  if (snapshot.habits.isEmpty) return 'Nessun dato';
+  if (snapshot.habits.isEmpty) return t.stats.noData;
   final habits = [...snapshot.habits]
     ..sort(
       (a, b) => _habitCompletion(
@@ -1103,7 +2046,7 @@ String _criticalHabit(DashboardSnapshot snapshot) {
 }
 
 String _criticalDay(DashboardSnapshot snapshot) {
-  if (snapshot.trend.isEmpty) return 'Nessun dato';
+  if (snapshot.trend.isEmpty) return t.stats.noData;
   final points = [...snapshot.trend]
     ..sort((a, b) => a.value.compareTo(b.value));
   return points.first.label;
@@ -1116,51 +2059,18 @@ double _trendDelta(List<TrendPoint> trend) {
   return current - previous;
 }
 
-List<_HabitCorrelation> _habitCorrelations(DashboardSnapshot snapshot) {
-  final correlations = <_HabitCorrelation>[];
-  for (final source in snapshot.habits) {
-    for (final target in snapshot.habits) {
-      if (source.id == target.id) continue;
-      var sourceDone = 0;
-      var bothDone = 0;
-      for (final logs in snapshot.habitLogs.values) {
-        if (logs[source.id] != 'done') continue;
-        sourceDone++;
-        if (logs[target.id] == 'done') bothDone++;
-      }
-      if (sourceDone > 0) {
-        correlations.add(
-          _HabitCorrelation(
-            label: '${source.title} -> ${target.title}',
-            value: bothDone / sourceDone,
-          ),
-        );
-      }
-    }
-  }
-  correlations.sort((a, b) => b.value.compareTo(a.value));
-  return correlations;
-}
-
-class _HabitCorrelation {
-  const _HabitCorrelation({required this.label, required this.value});
-
-  final String label;
-  final double value;
-}
-
 String _globalTabLabel(_GlobalTab tab) => switch (tab) {
-  _GlobalTab.info => 'Info',
-  _GlobalTab.trend => 'Trend',
-  _GlobalTab.alerts => 'Alert',
-  _GlobalTab.habits => 'Abitudini',
-  _GlobalTab.mood => 'Umore',
+  _GlobalTab.info => t.stats.tabInfo,
+  _GlobalTab.trend => t.stats.tabTrend,
+  _GlobalTab.alerts => t.stats.tabAlerts,
+  _GlobalTab.habits => t.stats.tabHabits,
+  _GlobalTab.mood => t.stats.tabMood,
 };
 
 String _habitTabLabel(_HabitTab tab) => switch (tab) {
-  _HabitTab.overview => 'Overview',
-  _HabitTab.calendar => 'Calendario',
-  _HabitTab.performance => 'Performance',
-  _HabitTab.improvement => 'Miglioramento',
-  _HabitTab.mood => 'Umore',
+  _HabitTab.overview => t.stats.tabOverview,
+  _HabitTab.calendar => t.stats.tabCalendar,
+  _HabitTab.performance => t.stats.tabPerformance,
+  _HabitTab.improvement => t.stats.tabImprovement,
+  _HabitTab.mood => t.stats.tabMood,
 };

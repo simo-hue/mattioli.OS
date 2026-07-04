@@ -5,6 +5,7 @@ import 'package:http/http.dart' as http;
 import 'package:flutter/foundation.dart';
 
 import 'package:evolve_desktop/core/app_logger.dart';
+import 'package:evolve_desktop/i18n/translations.g.dart';
 import '../domain/chat_message.dart';
 import 'openrouter_config.dart';
 
@@ -18,7 +19,7 @@ class OpenRouterService {
     // Verifica se la chiave API è stata inserita
     if (OpenRouterConfig.apiKey == 'YOUR_OPENROUTER_API_KEY' ||
         OpenRouterConfig.apiKey.isEmpty) {
-      return 'Per usare questa funzionalità inserisci la tua API Key di OpenRouter nelle impostazioni (o nel codice).';
+      return t.ai.openRouter.apiKeyMissingFull;
     }
 
     final url = Uri.parse('${OpenRouterConfig.baseUrl}/chat/completions');
@@ -30,7 +31,7 @@ class OpenRouterService {
 
     // Usiamo il system prompt fornito o quello di default
     final finalSystemPrompt =
-        systemPrompt ?? 'Sei Evolve AI Coach, un assistente virtuale per la disciplina personale.';
+        systemPrompt ?? t.ai.openRouter.defaultSystemPrompt;
 
     messages.insert(0, {'role': 'system', 'content': finalSystemPrompt});
 
@@ -41,14 +42,16 @@ class OpenRouterService {
     });
 
     try {
-      debugPrint('[OpenRouter] Invio richiesta a ${OpenRouterConfig.defaultModel}');
+      debugPrint(
+        '[OpenRouter] Invio richiesta a ${OpenRouterConfig.defaultModel}',
+      );
 
       final response = await http.post(
         url,
         headers: {
           'Authorization': 'Bearer ${OpenRouterConfig.apiKey}',
           'Content-Type': 'application/json',
-          'HTTP-Referer': 'https://github.com/simo/mattioli.OS', 
+          'HTTP-Referer': 'https://github.com/simo/mattioli.OS',
           'X-Title': 'Mattioli OS (Desktop)',
         },
         body: body,
@@ -63,11 +66,11 @@ class OpenRouterService {
           '[OpenRouter] Errore API: ${response.statusCode} - ${response.body}',
           Exception('API Error'),
         );
-        return 'Errore di comunicazione col server (Codice ${response.statusCode}). Riprova più tardi.';
+        return t.ai.openRouter.communicationError(code: response.statusCode);
       }
     } catch (e, stack) {
       AppLogger.error('[OpenRouter] Eccezione durante la chiamata', e, stack);
-      return 'Impossibile connettersi a OpenRouter. Controlla la tua connessione internet e riprova.';
+      return t.ai.openRouter.connectionError;
     }
   }
 
@@ -77,23 +80,24 @@ class OpenRouterService {
   }) async* {
     if (OpenRouterConfig.apiKey == 'YOUR_OPENROUTER_API_KEY' ||
         OpenRouterConfig.apiKey.isEmpty) {
-      yield 'Per usare questa funzionalità inserisci la tua API Key di OpenRouter.';
+      yield t.ai.openRouter.apiKeyMissingShort;
       return;
     }
 
     // Verifica preventiva della connessione a internet
     try {
-      final result = await InternetAddress.lookup('openrouter.ai')
-          .timeout(const Duration(seconds: 5));
+      final result = await InternetAddress.lookup(
+        'openrouter.ai',
+      ).timeout(const Duration(seconds: 5));
       if (result.isEmpty || result[0].rawAddress.isEmpty) {
-        yield 'Nessuna connessione a Internet. Riprova quando sei online.';
+        yield t.ai.openRouter.noInternet;
         return;
       }
     } on SocketException catch (_) {
-      yield 'Nessuna connessione a Internet. Riprova quando sei online.';
+      yield t.ai.openRouter.noInternet;
       return;
     } on TimeoutException catch (_) {
-      yield 'La connessione è molto lenta o inattiva. Riprova.';
+      yield t.ai.openRouter.connectionCheckTimeout;
       return;
     }
 
@@ -104,7 +108,7 @@ class OpenRouterService {
     }).toList();
 
     final finalSystemPrompt =
-        systemPrompt ?? 'Sei Evolve AI Coach, un assistente virtuale per la disciplina personale.';
+        systemPrompt ?? t.ai.openRouter.defaultSystemPrompt;
 
     messages.insert(0, {'role': 'system', 'content': finalSystemPrompt});
 
@@ -137,9 +141,9 @@ class OpenRouterService {
         );
 
         if (response.statusCode == 400) {
-          yield 'Errore: Il messaggio è troppo lungo. Prova a semplificare.';
+          yield t.ai.openRouter.contextTooLong;
         } else {
-          yield 'Errore di sistema (Codice ${response.statusCode}).';
+          yield t.ai.openRouter.apiError(code: response.statusCode);
         }
         client.close();
         return;
@@ -170,10 +174,10 @@ class OpenRouterService {
       }
     } on TimeoutException catch (e, stack) {
       AppLogger.error('[OpenRouter] Timeout streaming', e, stack);
-      yield 'Il server ha impiegato troppo tempo a rispondere. Riprova.';
+      yield t.ai.openRouter.serverTimeout;
     } catch (e, stack) {
       AppLogger.error('[OpenRouter] Eccezione streaming', e, stack);
-      yield 'Connessione interrotta inaspettatamente. Riprova.';
+      yield t.ai.openRouter.connectionErrorShort;
     } finally {
       client.close();
     }

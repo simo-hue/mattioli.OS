@@ -4,6 +4,7 @@ import 'dart:math';
 
 import 'package:evolve_desktop/core/app_logger.dart';
 import 'package:evolve_desktop/core/private_db_schema.dart';
+import 'package:evolve_desktop/core/streak_utils.dart';
 import 'package:flutter/foundation.dart';
 import 'package:flutter_secure_storage/flutter_secure_storage.dart';
 import 'package:path/path.dart' as p;
@@ -195,6 +196,12 @@ class DesktopPrivateDb {
 
   /// Writes a habit log from a macOS notification action (Done/Skip), computing
   /// the streak from the stored history so it matches the foreground toggle.
+  ///
+  /// Mirrors mobile's `setHabitLogWithStreak`: it loads the habit's full log
+  /// history into a `{ dayKey: { goalId: status } }` map, applies the new
+  /// [status] for [date] in-memory, and delegates to the shared [computeStreak]
+  /// for BOTH 'done' and 'missed' so the stored streak is the correct signed
+  /// value (positive 🔥 run for 'done', negative 💔 run for 'missed').
   Future<void> setHabitLogFromNotification({
     required String goalId,
     required String status, // 'done' | 'missed'
@@ -206,26 +213,42 @@ class DesktopPrivateDb {
     final dayKey = _dayKey(day);
     final now = _now();
 
-    var streak = 0;
-    if (status == 'done') {
-      final rows = await db.query(
-        'goal_logs',
-        columns: ['date'],
-        where: 'goal_id = ? AND status = ?',
-        whereArgs: [goalId, 'done'],
-      );
-      final doneDates = rows.map((r) => r['date'] as String).toSet();
-      streak = 1; // today counts
-      var cursor = DateTime(
-        day.year,
-        day.month,
-        day.day,
-      ).subtract(const Duration(days: 1));
-      while (doneDates.contains(_dayKey(cursor))) {
-        streak++;
-        cursor = cursor.subtract(const Duration(days: 1));
-      }
+    // Load the existing logs for this habit, keyed the same way computeStreak
+    // reads them (yyyy-MM-dd, matching the stored `date` values), then apply the
+    // new status for `date` so the toggled day is visible to the algorithm.
+    final rows = await db.query(
+      'goal_logs',
+      columns: ['date', 'status'],
+      where: 'goal_id = ?',
+      whereArgs: [goalId],
+    );
+    final logs = <String, Map<String, String>>{};
+    for (final row in rows) {
+      final rowDate = row['date'] as String;
+      logs.putIfAbsent(rowDate, () => <String, String>{})[goalId] =
+          row['status'] as String;
     }
+    (logs[dayKey] ??= <String, String>{})[goalId] = status;
+
+    // Resolve the habit's start_date so the run can't walk before it.
+    final goalRows = await db.query(
+      'goals',
+      columns: ['start_date'],
+      where: 'id = ?',
+      whereArgs: [goalId],
+      limit: 1,
+    );
+    final startDate = goalRows.isEmpty
+        ? DateTime(day.year, day.month, day.day)
+        : DateTime.tryParse(goalRows.first['start_date'] as String? ?? '') ??
+              DateTime(day.year, day.month, day.day);
+
+    final streak = computeStreak(
+      habitId: goalId,
+      date: day,
+      logs: logs,
+      startDate: startDate,
+    );
 
     await db.insert('goal_logs', {
       'id': const Uuid().v4(),
@@ -295,6 +318,13 @@ class DesktopPrivateDb {
 
   /// Inserts backup rows under [owner], coalescing every NOT-NULL column so the
   /// aligned schema is satisfied. Parents are inserted before children.
+  ///
+  /// Import is resilient: a single malformed row is skipped rather than aborting
+  /// the whole transaction (which would roll back an otherwise-valid import).
+  /// In merge mode ([replaceExisting] false), imported categories whose
+  /// `(user_id, name)` collides with an existing row reuse that row instead of
+  /// being silently dropped, and referencing macro goals are remapped to the
+  /// resolved id so no `category_id` is left dangling.
   static Future<void> applyImport(
     DatabaseExecutor txn, {
     required String owner,
@@ -311,11 +341,36 @@ class DesktopPrivateDb {
       await txn.delete('goals');
     }
 
+    // Maps an imported category id to the id actually used in the DB. In merge
+    // mode a name collision resolves to the pre-existing row's id so referencing
+    // macro goals can be remapped (Bug 3); otherwise it is the imported id.
+    final categoryIdRemap = <String, String>{};
+
     for (final cat in _listOf(backupData['macro_goal_categories'])) {
+      final importedId = (cat['id'] as String?) ?? const Uuid().v4();
+      final name = cat['name'] ?? 'Categoria';
+
+      if (!replaceExisting) {
+        // Merge mode: reuse an existing category with the same (user_id, name)
+        // rather than letting the UNIQUE constraint silently drop this row.
+        final existing = await txn.query(
+          'macro_goal_categories',
+          columns: ['id'],
+          where: 'user_id = ? AND name = ?',
+          whereArgs: [owner, name],
+          limit: 1,
+        );
+        if (existing.isNotEmpty) {
+          categoryIdRemap[importedId] = existing.first['id'] as String;
+          continue; // reuse existing; do not insert a duplicate
+        }
+      }
+
+      categoryIdRemap[importedId] = importedId;
       await txn.insert('macro_goal_categories', {
-        'id': cat['id'] ?? const Uuid().v4(),
+        'id': importedId,
         'user_id': owner,
-        'name': cat['name'] ?? 'Categoria',
+        'name': name,
         'color': cat['color'] ?? '#6B7280',
         'created_at': cat['created_at'] ?? now,
         'updated_at': cat['updated_at'] ?? cat['created_at'] ?? now,
@@ -323,9 +378,15 @@ class DesktopPrivateDb {
       }, conflictAlgorithm: ConflictAlgorithm.ignore);
     }
 
+    // Track which goal ids exist so goal_logs referencing a missing/orphan
+    // goal_id can be skipped (the FK would otherwise abort the whole import).
+    final importedGoalIds = <String>{};
+
     for (final g in _listOf(backupData['goals'])) {
+      final goalId = (g['id'] as String?) ?? const Uuid().v4();
+      importedGoalIds.add(goalId);
       await txn.insert('goals', {
-        'id': g['id'] ?? const Uuid().v4(),
+        'id': goalId,
         'user_id': owner,
         'title': g['title'] ?? '',
         'description': g['description'],
@@ -342,11 +403,17 @@ class DesktopPrivateDb {
     }
 
     for (final l in _listOf(backupData['goal_logs'])) {
+      final goalId = l['goal_id'];
+      final date = l['date'];
+      // Skip rows that would violate NOT NULL (goal_id, date) or the goal_id FK
+      // (a goal that is not part of this import) instead of aborting.
+      if (goalId == null || date == null) continue;
+      if (!importedGoalIds.contains(goalId)) continue;
       await txn.insert('goal_logs', {
         'id': l['id'] ?? const Uuid().v4(),
         'user_id': owner,
-        'goal_id': l['goal_id'],
-        'date': l['date'],
+        'goal_id': goalId,
+        'date': date,
         'status': l['status'] ?? 'done',
         'value': l['value'],
         'streak': l['streak'] ?? 0,
@@ -356,6 +423,12 @@ class DesktopPrivateDb {
     }
 
     for (final g in _listOf(backupData['long_term_goals'])) {
+      // Remap the category reference onto the resolved id so merge-mode name
+      // collisions don't leave a dangling category_id (Bug 3).
+      final importedCategoryId = g['category_id'] as String?;
+      final categoryId = importedCategoryId == null
+          ? null
+          : categoryIdRemap[importedCategoryId] ?? importedCategoryId;
       await txn.insert('long_term_goals', {
         'id': g['id'] ?? const Uuid().v4(),
         'user_id': owner,
@@ -367,19 +440,24 @@ class DesktopPrivateDb {
         'week_number': g['week_number'],
         'quarter': g['quarter'],
         'category_key': g['category_key'],
-        'category_id': g['category_id'],
+        'category_id': categoryId,
         'created_at': g['created_at'] ?? now,
         'updated_at': g['updated_at'] ?? now,
       }, conflictAlgorithm: ConflictAlgorithm.ignore);
     }
 
     for (final m in _listOf(backupData['daily_moods'])) {
+      final moodScore = _validScore(m['mood_score']);
+      final energyScore = _validScore(m['energy_score']);
+      // Both scores are NOT NULL with a CHECK (0..10); skip the row if either is
+      // missing or out of range instead of aborting the transaction.
+      if (moodScore == null || energyScore == null) continue;
       await txn.insert('daily_moods', {
         'id': m['id'] ?? const Uuid().v4(),
         'user_id': owner,
         'date': m['date'],
-        'mood_score': m['mood_score'],
-        'energy_score': m['energy_score'],
+        'mood_score': moodScore,
+        'energy_score': energyScore,
         'created_at': m['created_at'] ?? now,
         'updated_at': m['updated_at'] ?? now,
       }, conflictAlgorithm: ConflictAlgorithm.ignore);
@@ -445,6 +523,24 @@ class DesktopPrivateDb {
           .toList();
     }
     return const [];
+  }
+
+  /// Coerces a backup mood/energy score to a valid `daily_moods` value, or null
+  /// when it is missing or outside the schema's CHECK bound (0..10) so the row
+  /// can be skipped instead of aborting the import.
+  static int? _validScore(Object? value) {
+    final int? score;
+    if (value is int) {
+      score = value;
+    } else if (value is num) {
+      score = value.toInt();
+    } else if (value is String) {
+      score = int.tryParse(value);
+    } else {
+      score = null;
+    }
+    if (score == null || score < 0 || score > 10) return null;
+    return score;
   }
 
   /// Frequency days are stored as a JSON-encoded int list. Accepts either an

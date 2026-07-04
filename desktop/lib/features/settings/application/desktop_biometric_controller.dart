@@ -2,6 +2,7 @@ import 'dart:async';
 import 'dart:io';
 
 import 'package:evolve_desktop/core/app_bootstrap.dart';
+import 'package:evolve_desktop/i18n/translations.g.dart';
 import 'package:evolve_desktop/core/app_logger.dart';
 import 'package:evolve_desktop/core/secure_storage_utils.dart';
 import 'package:flutter/material.dart';
@@ -62,9 +63,7 @@ class DesktopBiometricController extends Notifier<DesktopBiometricState> {
 
   Future<bool> setEnabled(bool enabled) async {
     if (enabled) {
-      final authenticated = await unlock(
-        reason: 'Autenticati per abilitare la protezione dell app',
-      );
+      final authenticated = await unlock(reason: t.privacy.biometricAuthReason);
       if (!authenticated) return false;
     }
 
@@ -83,11 +82,9 @@ class DesktopBiometricController extends Notifier<DesktopBiometricState> {
     await _persist(enabled);
   }
 
-  Future<bool> unlock({String reason = 'Sblocca Evolve per continuare'}) async {
+  Future<bool> unlock({String? reason}) async {
     if (!isSupportedPlatform) {
-      state = state.copyWith(
-        errorMessage: 'Il blocco biometrico non e supportato su Linux.',
-      );
+      state = state.copyWith(errorMessage: t.biometricGate.notSupportedLinux);
       return false;
     }
 
@@ -99,19 +96,19 @@ class DesktopBiometricController extends Notifier<DesktopBiometricState> {
       if (!supported) {
         state = state.copyWith(
           isAuthenticating: false,
-          errorMessage: 'Nessun metodo di autenticazione locale disponibile.',
+          errorMessage: t.biometricGate.noLocalAuth,
         );
         return false;
       }
       final authenticated = await _authentication.authenticate(
-        localizedReason: reason,
+        localizedReason: reason ?? t.privacy.biometricUnlockReason,
         biometricOnly: !Platform.isWindows,
         persistAcrossBackgrounding: true,
       );
       state = state.copyWith(
         unlocked: authenticated,
         isAuthenticating: false,
-        errorMessage: authenticated ? null : 'Autenticazione non riuscita.',
+        errorMessage: authenticated ? null : t.biometricGate.authFailed,
         clearError: authenticated,
       );
       return authenticated;
@@ -119,7 +116,7 @@ class DesktopBiometricController extends Notifier<DesktopBiometricState> {
       AppLogger.error('Desktop biometric authentication failed', error, stack);
       state = state.copyWith(
         isAuthenticating: false,
-        errorMessage: 'Autenticazione locale non disponibile.',
+        errorMessage: t.biometricGate.authUnavailable,
       );
       return false;
     }
@@ -178,11 +175,11 @@ class DesktopBiometricGate extends ConsumerWidget {
             const Icon(Icons.lock_outline_rounded, size: 62),
             const SizedBox(height: 18),
             Text(
-              'App bloccata',
+              t.biometricGate.appLocked,
               style: Theme.of(context).textTheme.headlineSmall,
             ),
             const SizedBox(height: 7),
-            const Text('Sblocca con l autenticazione locale per continuare.'),
+            Text(t.biometricGate.unlockPrompt),
             if (biometric.errorMessage != null) ...[
               const SizedBox(height: 9),
               Text(
@@ -199,7 +196,9 @@ class DesktopBiometricGate extends ConsumerWidget {
                         .unlock(),
               icon: const Icon(Icons.fingerprint_rounded),
               label: Text(
-                biometric.isAuthenticating ? 'Verifica...' : 'Sblocca',
+                biometric.isAuthenticating
+                    ? t.biometricGate.verifying
+                    : t.biometricGate.unlock,
               ),
             ),
           ],

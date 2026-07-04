@@ -3,6 +3,7 @@ import 'dart:convert';
 import 'dart:io';
 
 import 'package:evolve_desktop/core/app_bootstrap.dart';
+import 'package:evolve_desktop/i18n/translations.g.dart';
 import 'package:evolve_desktop/core/app_logger.dart';
 import 'package:evolve_desktop/core/desktop_data_mode.dart';
 import 'package:evolve_desktop/core/desktop_supabase_config.dart';
@@ -233,7 +234,7 @@ class DesktopAuthController extends Notifier<DesktopAuthState> {
 
       final idToken = credential.identityToken;
       if (idToken == null) {
-        throw const AuthException('Apple non ha restituito un identity token.');
+        throw AuthException(t.authCtrl.appleNoToken);
       }
 
       await _client.auth.signInWithIdToken(
@@ -269,7 +270,7 @@ class DesktopAuthController extends Notifier<DesktopAuthState> {
       }
       state = state.copyWith(
         isLoading: false,
-        errorMessage: 'Autenticazione Apple non riuscita.',
+        errorMessage: t.authCtrl.appleAuthFailed,
       );
       rethrow;
     } on AuthException catch (error) {
@@ -279,7 +280,7 @@ class DesktopAuthController extends Notifier<DesktopAuthState> {
       AppLogger.error('Desktop Apple auth failed', error, stack);
       state = state.copyWith(
         isLoading: false,
-        errorMessage: 'Autenticazione Apple non riuscita.',
+        errorMessage: t.authCtrl.appleAuthFailed,
       );
       rethrow;
     }
@@ -311,7 +312,7 @@ class DesktopAuthController extends Notifier<DesktopAuthState> {
       );
 
       if (!opened) {
-        throw StateError('Impossibile aprire il browser di sistema.');
+        throw StateError(t.authCtrl.cantOpenBrowser);
       }
 
       final callbackUri = await callbackFuture.timeout(_oauthCallbackTimeout);
@@ -321,7 +322,9 @@ class DesktopAuthController extends Notifier<DesktopAuthState> {
     } on TimeoutException {
       state = state.copyWith(
         isLoading: false,
-        errorMessage: 'Accesso ${_providerName(provider)} non completato.',
+        errorMessage: t.authCtrl.accessNotCompleted(
+          provider: _providerName(provider),
+        ),
       );
       rethrow;
     } on AuthException catch (error) {
@@ -335,7 +338,9 @@ class DesktopAuthController extends Notifier<DesktopAuthState> {
       );
       state = state.copyWith(
         isLoading: false,
-        errorMessage: 'Autenticazione ${_providerName(provider)} non riuscita.',
+        errorMessage: t.authCtrl.providerAuthFailed(
+          provider: _providerName(provider),
+        ),
       );
       rethrow;
     } finally {
@@ -442,7 +447,7 @@ class DesktopAuthController extends Notifier<DesktopAuthState> {
       AppLogger.error('Desktop auth operation failed', error, stack);
       state = state.copyWith(
         isLoading: false,
-        errorMessage: 'Operazione non riuscita. Riprova tra poco.',
+        errorMessage: t.authCtrl.operationFailed,
       );
       rethrow;
     }

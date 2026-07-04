@@ -1,4 +1,5 @@
 import 'package:evolve_desktop/app/theme/evolve_theme.dart';
+import 'package:evolve_desktop/i18n/translations.g.dart';
 import 'package:flutter/material.dart';
 
 Future<T?> showEvolveDialog<T>({
@@ -154,7 +155,7 @@ class EvolveDialogHeader extends StatelessWidget {
   Widget build(BuildContext context) {
     final effectiveIconColor = iconColor ?? context.evolveAccent;
     return Padding(
-      padding: const EdgeInsets.fromLTRB(22, 20, 14, 16),
+      padding: const EdgeInsetsDirectional.fromSTEB(22, 20, 14, 16),
       child: Row(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
@@ -197,7 +198,7 @@ class EvolveDialogHeader extends StatelessWidget {
           if (showCloseButton) ...[
             const SizedBox(width: 10),
             IconButton(
-              tooltip: 'Chiudi',
+              tooltip: t.habitsPage.close,
               onPressed: () => Navigator.pop(context),
               icon: const Icon(Icons.close_rounded, size: 19),
               style: IconButton.styleFrom(
@@ -230,7 +231,7 @@ class EvolveDialogActions extends StatelessWidget {
       child: Padding(
         padding: const EdgeInsets.symmetric(horizontal: 18, vertical: 14),
         child: Align(
-          alignment: Alignment.centerRight,
+          alignment: AlignmentDirectional.centerEnd,
           child: Wrap(
             alignment: WrapAlignment.end,
             spacing: 8,

@@ -54,9 +54,9 @@ class _DesktopAuthPageState extends ConsumerState<DesktopAuthPage> {
                     const SizedBox(height: 16),
                     Text(
                       switch (_mode) {
-                        _AuthMode.signIn => 'Accedi a Evolve',
-                        _AuthMode.signUp => 'Crea il tuo account',
-                        _AuthMode.resetPassword => 'Recupera password',
+                        _AuthMode.signIn => t.auth.signInTitle,
+                        _AuthMode.signUp => t.auth.signUpTitle,
+                        _AuthMode.resetPassword => t.auth.resetTitle,
                       },
                       textAlign: TextAlign.center,
                       style: Theme.of(context).textTheme.headlineSmall,
@@ -65,29 +65,29 @@ class _DesktopAuthPageState extends ConsumerState<DesktopAuthPage> {
                     if (_mode == _AuthMode.signUp) ...[
                       TextFormField(
                         controller: _nameController,
-                        decoration: const InputDecoration(labelText: 'Nome'),
+                        decoration: InputDecoration(
+                          labelText: t.auth.nameLabel,
+                        ),
                       ),
                       const SizedBox(height: 12),
                     ],
                     TextFormField(
                       controller: _emailController,
                       keyboardType: TextInputType.emailAddress,
-                      decoration: const InputDecoration(labelText: 'Email'),
+                      decoration: InputDecoration(labelText: t.auth.emailLabel),
                       validator: (value) => value?.contains('@') ?? false
                           ? null
-                          : 'Inserisci un indirizzo email valido.',
+                          : t.auth.invalidEmail,
                     ),
                     if (_mode != _AuthMode.resetPassword) ...[
                       const SizedBox(height: 12),
                       TextFormField(
                         controller: _passwordController,
                         obscureText: true,
-                        decoration: const InputDecoration(
-                          labelText: 'Password',
-                        ),
+                        decoration: InputDecoration(labelText: t.auth.password),
                         validator: (value) => (value?.length ?? 0) >= 8
                             ? null
-                            : 'Usa almeno 8 caratteri.',
+                            : t.auth.passwordMin8,
                       ),
                     ],
                     if (auth.errorMessage != null) ...[
@@ -107,25 +107,25 @@ class _DesktopAuthPageState extends ConsumerState<DesktopAuthPage> {
                             )
                           : Text(
                               _mode == _AuthMode.resetPassword
-                                  ? 'Invia link di recupero'
+                                  ? t.auth.sendResetLink
                                   : _mode == _AuthMode.signUp
-                                  ? 'Registrati'
-                                  : 'Accedi',
+                                  ? t.auth.register
+                                  : t.auth.signIn,
                             ),
                     ),
                     if (_mode != _AuthMode.resetPassword) ...[
                       const SizedBox(height: 18),
-                      _AuthDivider(label: 'Oppure'),
+                      _AuthDivider(label: t.auth.or),
                       const SizedBox(height: 18),
                       _SocialAuthButton(
                         icon: Icons.apple,
-                        label: 'Continua con Apple',
+                        label: t.auth.continueWithApple,
                         onPressed: auth.isLoading ? null : _signInWithApple,
                       ),
                       const SizedBox(height: 10),
                       _SocialAuthButton(
                         icon: Icons.g_mobiledata_rounded,
-                        label: 'Continua con Google',
+                        label: t.auth.continueWithGoogle,
                         onPressed: auth.isLoading ? null : _signInWithGoogle,
                       ),
                     ],
@@ -134,7 +134,7 @@ class _DesktopAuthPageState extends ConsumerState<DesktopAuthPage> {
                       TextButton(
                         onPressed: () =>
                             setState(() => _mode = _AuthMode.resetPassword),
-                        child: const Text('Password dimenticata?'),
+                        child: Text(t.auth.forgotPassword),
                       ),
                     TextButton(
                       onPressed: () => setState(() {
@@ -144,18 +144,18 @@ class _DesktopAuthPageState extends ConsumerState<DesktopAuthPage> {
                       }),
                       child: Text(
                         _mode == _AuthMode.signUp
-                            ? 'Hai gia un account? Accedi'
-                            : 'Non hai un account? Registrati',
+                            ? '${t.auth.haveAccount} ${t.auth.signIn}'
+                            : '${t.auth.noAccount} ${t.auth.register}',
                       ),
                     ),
                     IconButton(
                       onPressed: _openPrivacyPolicy,
                       icon: const Icon(Icons.privacy_tip_outlined, size: 18),
-                      tooltip: 'Privacy policy',
+                      tooltip: t.auth.readPrivacyPolicy,
                       color: context.evolveColors.subtle,
                     ),
                     const SizedBox(height: 14),
-                    _AuthDivider(label: 'Oppure'),
+                    _AuthDivider(label: t.auth.or),
                     const SizedBox(height: 14),
                     OutlinedButton.icon(
                       onPressed: auth.isLoading ? null : _enterPrivateMode,
@@ -200,12 +200,12 @@ class _DesktopAuthPageState extends ConsumerState<DesktopAuthPage> {
             fullName: _nameController.text,
           );
           if (!mounted || !requiresConfirmation) return;
-          _showMessage('Controlla la tua email per confermare l’account.');
+          _showMessage(t.auth.confirmEmail);
           setState(() => _mode = _AuthMode.signIn);
         case _AuthMode.resetPassword:
           await auth.sendPasswordReset(_emailController.text.trim());
           if (!mounted) return;
-          _showMessage('Link di recupero inviato.');
+          _showMessage(t.auth.resetSent);
           setState(() => _mode = _AuthMode.signIn);
       }
     } catch (_) {}

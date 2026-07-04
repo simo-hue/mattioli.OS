@@ -167,6 +167,105 @@ final allHabitCorrelationsRpcProvider =
       return _listRpc(ref, 'get_all_habit_correlations');
     });
 
+/// The `habit_stats` view, one row per goal. Private mode computes each row
+/// locally via [computeHabitStatsRow]; cloud reads the view directly (mirrors
+/// mobile's `habitStatsProvider`).
+final habitStatsRpcProvider = FutureProvider<List<Map<String, dynamic>>>((
+  ref,
+) async {
+  if (ref.watch(activeDesktopDataModeProvider).isPrivate) {
+    final data = await ref.watch(privateAnalyticsDataProvider.future);
+    final today = DateTime.now();
+    return [
+      for (final g in data.goals)
+        computeHabitStatsRow(
+          goalId: g.id,
+          userId: '',
+          title: data.titles[g.id],
+          startDate: data.startDates[g.id] ?? g.startDate,
+          logs: data.logsByGoal[g.id] ?? const [],
+          today: today,
+        ),
+    ];
+  }
+  final context = _RpcContext.read(ref);
+  if (context == null) return [];
+  try {
+    final response = await context.client
+        .from('habit_stats')
+        .select('*')
+        .eq('user_id', context.userId);
+    return List<Map<String, dynamic>>.from(response as List);
+  } catch (error, stack) {
+    AppLogger.error('Unable to load habit_stats', error, stack);
+    return [];
+  }
+});
+
+/// `get_habit_analytics`: {goal_id: {worst_dow, avg_recovery_days}} for every
+/// goal. Private mode runs [computeAnalyticsRow] per goal; cloud calls the RPC
+/// and re-keys by goal_id (mirrors mobile's `habitAnalyticsProvider`).
+final habitAnalyticsRpcProvider =
+    FutureProvider<Map<String, Map<String, dynamic>>>((ref) async {
+      if (ref.watch(activeDesktopDataModeProvider).isPrivate) {
+        final data = await ref.watch(privateAnalyticsDataProvider.future);
+        return {
+          for (final g in data.goals)
+            g.id: computeAnalyticsRow(
+              goalId: g.id,
+              logs: data.logsByGoal[g.id] ?? const [],
+            ),
+        };
+      }
+      final context = _RpcContext.read(ref);
+      if (context == null) return {};
+      try {
+        final response = await context.client.rpc(
+          'get_habit_analytics',
+          params: {'p_user_id': context.userId},
+        );
+        if (response is! List) return {};
+        final result = <String, Map<String, dynamic>>{};
+        for (final row in response) {
+          final map = Map<String, dynamic>.from(row as Map);
+          result[map['goal_id'] as String] = map;
+        }
+        return result;
+      } catch (error, stack) {
+        AppLogger.error('Unable to load get_habit_analytics RPC', error, stack);
+        return {};
+      }
+    });
+
+/// Per-habit mood/energy correlations. Mirrors mobile's `moodCorrelationProvider`
+/// which is a PURE client-side computation (no cloud RPC exists): both modes run
+/// [computeMoodCorrelations]. Private mode reads moods from the encrypted DB via
+/// [privateAnalyticsDataProvider]; cloud mode reads them from the dashboard
+/// snapshot (populated from `daily_moods`).
+final moodCorrelationsRpcProvider = FutureProvider<List<MoodCorrelation>>((
+  ref,
+) async {
+  if (ref.watch(activeDesktopDataModeProvider).isPrivate) {
+    final data = await ref.watch(privateAnalyticsDataProvider.future);
+    return computeMoodCorrelations(
+      moodsByDate: data.moodsByDate,
+      logsByDate: data.logsByDate,
+    );
+  }
+  final snapshot = ref.watch(dashboardControllerProvider);
+  final moodsByDate = <String, MoodEntry>{
+    for (final entry in snapshot.moods.entries)
+      entry.key: MoodEntry(
+        moodScore: entry.value.mood ?? 0,
+        energyScore: entry.value.energy ?? 0,
+      ),
+  };
+  return computeMoodCorrelations(
+    moodsByDate: moodsByDate,
+    logsByDate: snapshot.habitLogs,
+  );
+});
+
 final macroGoalsStatsRpcProvider =
     FutureProvider.family<Map<String, dynamic>, String>((ref, year) async {
       if (ref.watch(activeDesktopDataModeProvider).isPrivate) {

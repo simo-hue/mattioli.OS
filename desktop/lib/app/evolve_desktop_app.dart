@@ -12,6 +12,22 @@ import 'package:evolve_desktop/features/settings/application/desktop_biometric_c
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_localizations/flutter_localizations.dart';
+import 'package:evolve_desktop/i18n/translations.g.dart';
+
+AppLocale _appLocaleFor(Locale? locale) {
+  switch (locale?.languageCode) {
+    case 'it':
+      return AppLocale.it;
+    case 'es':
+      return AppLocale.es;
+    case 'de':
+      return AppLocale.de;
+    case 'ar':
+      return AppLocale.ar;
+    default:
+      return AppLocale.en;
+  }
+}
 
 class EvolveDesktopApp extends ConsumerWidget {
   const EvolveDesktopApp({super.key});
@@ -24,6 +40,13 @@ class EvolveDesktopApp extends ConsumerWidget {
     final dataMode = ref.watch(activeDesktopDataModeProvider);
     final appearance = ref.watch(desktopAppearanceControllerProvider);
     final locale = ref.watch(desktopLocaleControllerProvider);
+
+    // Keep slang's active locale in sync with the app locale (guarded to avoid
+    // a rebuild loop).
+    final appLocale = _appLocaleFor(locale);
+    if (LocaleSettings.currentLocale != appLocale) {
+      LocaleSettings.setLocale(appLocale);
+    }
 
     // Private mode lets the user bypass Supabase auth entirely.
     final isPrivateMode = dataMode.isPrivate;

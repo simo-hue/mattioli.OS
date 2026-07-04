@@ -1,0 +1,19 @@
+# slang configuration for the desktop client. Mirrors the mobile setup.
+#
+# Regenerate after editing any lib/i18n/*.i18n.json:
+#   dart run slang
+
+base_locale: en
+fallback_strategy: base_locale
+
+input_directory: lib/i18n
+input_file_pattern: .i18n.json
+output_directory: lib/i18n
+output_file_name: translations.g.dart
+
+string_interpolation: braces
+
+flutter_integration: true
+translate_var: t
+enum_name: AppLocale
+locale_handling: true

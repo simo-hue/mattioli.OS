@@ -32,6 +32,7 @@ import 'package:share_plus/share_plus.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 import 'package:evolve_desktop/features/auth/application/desktop_profile_controller.dart';
 import 'package:evolve_desktop/features/goals/application/goal_categories_controller.dart';
+import 'package:evolve_desktop/i18n/translations.g.dart';
 import 'package:path_provider/path_provider.dart';
 import 'package:path/path.dart' as p;
 
@@ -575,10 +576,10 @@ class _SettingsPageState extends ConsumerState<SettingsPage> {
       }
       if (!mounted) return;
       _showGate(
-        'Export completato',
+        t.privateData.exportDoneTitle,
         Platform.isLinux
-            ? 'Il JSON e negli appunti: Linux non supporta la condivisione file.'
-            : 'Il JSON e stato inviato al selettore di condivisione.',
+            ? t.privateData.exportDoneClipboard
+            : t.privateData.exportDoneShare,
       );
       return;
     }
@@ -1093,9 +1094,8 @@ class _SettingsPageState extends ConsumerState<SettingsPage> {
 
   Future<void> _deletePrivateData() async {
     final confirmed = await _confirm(
-      title: 'Elimina dati privati',
-      message:
-          'Sei sicuro di voler eliminare tutto il database locale crittografato? Questa operazione è irreversibile e i dati non potranno essere recuperati.',
+      title: t.privateData.deleteTitle,
+      message: t.privateData.deleteMessage,
       destructive: true,
     );
     if (!confirmed) return;
@@ -1108,12 +1108,12 @@ class _SettingsPageState extends ConsumerState<SettingsPage> {
       ref.invalidate(privateProfileProvider);
       ref.invalidate(desktopGoalCategoriesControllerProvider);
       if (mounted) {
-        _showGate('Elimina dati privati', 'Dati privati eliminati.');
+        _showGate(t.privateData.deleteTitle, t.privateData.deleteSuccess);
       }
     } catch (error, stack) {
       AppLogger.error('Unable to delete private database', error, stack);
       if (mounted) {
-        _showGate('Elimina dati privati', 'Operazione non riuscita.');
+        _showGate(t.privateData.deleteTitle, t.privateData.deleteFailed);
       }
     }
   }
@@ -1294,6 +1294,12 @@ class _SettingsPageState extends ConsumerState<SettingsPage> {
   }
 
   Future<void> _syncProfile(Map<String, dynamic> values) async {
+    // Private mode: persist settings to the encrypted DB profiles row (never
+    // Supabase), keeping them Phase-2-sync-ready.
+    if (ref.read(activeDesktopDataModeProvider).isPrivate) {
+      await DesktopPrivateDb.instance.updateSettings(values);
+      return;
+    }
     final client = ref.read(supabaseClientProvider);
     final user = client?.auth.currentUser;
     if (client == null || user == null) return;

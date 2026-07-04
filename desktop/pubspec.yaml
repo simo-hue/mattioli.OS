@@ -60,6 +60,8 @@ dependencies:
   flutter_markdown: ^0.7.7+1
 
   http: ^1.2.0
+  slang: ^4.0.0
+  slang_flutter: ^4.0.0
 
 dev_dependencies:
   flutter_test:
@@ -68,6 +70,9 @@ dev_dependencies:
   # Runs the Private-Mode schema/DDL + logic against an in-memory database in
   # tests (no SQLCipher/Keychain needed). Version matches mobile.
   sqflite_common_ffi: ^2.3.3
+
+  # slang localization codegen (standalone CLI: `dart run slang`).
+  slang_build_runner: ^4.0.0
 
   # The "flutter_lints" package below contains a set of recommended lints to
   # encourage good coding practices. The lint set provided by the package is

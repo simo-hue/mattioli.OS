@@ -137,6 +137,62 @@ class DesktopPrivateDb {
     );
   }
 
+  /// Settings/preference columns that Private mode persists in the profiles row.
+  static const _settingsColumns = {
+    'username',
+    'full_name',
+    'language',
+    'theme_mode',
+    'accent_color',
+    'pref_glass_effects',
+    'pref_default_calendar_view',
+    'pref_start_week_on_monday',
+    'pref_show_weekend',
+    'pref_haptic_feedback',
+    'pref_time_format_24h',
+    'pref_ai_suggestions',
+    'pref_focus_mode',
+    'pref_milestones',
+    'pref_deep_work_insights',
+    'notif_habit_reminders',
+    'notif_goal_deadlines',
+    'notif_ai_insights',
+    'notif_weekly_reports',
+    'notif_evening_review',
+    'biometric_lock',
+    'morning_brief_time',
+    'evening_review_time',
+    'date_of_birth',
+  };
+
+  /// Pure: filters [values] to known settings columns, coerces bools to 0/1,
+  /// and re-forces `is_pro`/`sentry_consent` (unlocked / never-report). Empty
+  /// when no known keys are present.
+  static Map<String, Object?> sanitizeSettings(Map<String, dynamic> values) {
+    final filtered = <String, Object?>{
+      for (final e in values.entries)
+        if (_settingsColumns.contains(e.key))
+          e.key: e.value is bool ? (e.value == true ? 1 : 0) : e.value,
+    };
+    if (filtered.isEmpty) return const {};
+    return {...filtered, 'is_pro': 1, 'sentry_consent': 0};
+  }
+
+  /// Persists Private-mode settings to the profiles row (the encrypted, Phase-2
+  /// sync-ready store).
+  Future<void> updateSettings(Map<String, dynamic> values) async {
+    final sanitized = sanitizeSettings(values);
+    if (sanitized.isEmpty) return;
+    final db = await database;
+    final owner = await ownerId;
+    await db.update(
+      'profiles',
+      {...sanitized, 'updated_at': _now()},
+      where: 'id = ?',
+      whereArgs: [owner],
+    );
+  }
+
   /// Writes a habit log from a macOS notification action (Done/Skip), computing
   /// the streak from the stored history so it matches the foreground toggle.
   Future<void> setHabitLogFromNotification({

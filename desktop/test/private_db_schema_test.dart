@@ -290,4 +290,53 @@ void main() {
       expect(profiles, hasLength(1)); // re-seeded, app stays usable
     });
   });
+
+  group('private settings (WS6)', () {
+    test('sanitizeSettings filters, coerces bools, forces is_pro/sentry', () {
+      final out = DesktopPrivateDb.sanitizeSettings({
+        'theme_mode': 'light',
+        'pref_time_format_24h': false,
+        'notif_habit_reminders': true,
+        'unknown_key': 'ignored',
+      });
+      expect(out['theme_mode'], 'light');
+      expect(out['pref_time_format_24h'], 0); // bool -> int
+      expect(out['notif_habit_reminders'], 1);
+      expect(out.containsKey('unknown_key'), isFalse); // filtered
+      expect(out['is_pro'], 1); // forced unlocked
+      expect(out['sentry_consent'], 0); // forced off
+    });
+
+    test('sanitizeSettings is empty when no known keys present', () {
+      expect(DesktopPrivateDb.sanitizeSettings({'foo': 'bar'}), isEmpty);
+    });
+
+    test('settings columns persist to the profiles row', () async {
+      final db = await openFresh();
+      addTearDown(db.close);
+      await DesktopPrivateDb.seedProfile(db, owner: owner, now: now);
+
+      final sanitized = DesktopPrivateDb.sanitizeSettings({
+        'theme_mode': 'light',
+        'accent_color': '#123456',
+        'pref_time_format_24h': false,
+      });
+      await db.update(
+        'profiles',
+        {...sanitized, 'updated_at': now},
+        where: 'id = ?',
+        whereArgs: [owner],
+      );
+
+      final row = (await db.query(
+        'profiles',
+        where: 'id = ?',
+        whereArgs: [owner],
+      )).first;
+      expect(row['theme_mode'], 'light');
+      expect(row['accent_color'], '#123456');
+      expect(row['pref_time_format_24h'], 0);
+      expect(row['is_pro'], 1);
+    });
+  });
 }

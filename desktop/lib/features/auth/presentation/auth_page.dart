@@ -1,5 +1,6 @@
 import 'package:evolve_desktop/app/theme/evolve_theme.dart';
 import 'package:evolve_desktop/features/auth/application/auth_controller.dart';
+import 'package:evolve_desktop/i18n/translations.g.dart';
 import 'package:evolve_desktop/shared/widgets/evolve_panel.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
@@ -163,15 +164,11 @@ class _DesktopAuthPageState extends ConsumerState<DesktopAuthPage> {
                         size: 18,
                         color: context.evolveColors.subtle,
                       ),
-                      label: const Text(
-                        'Continua in modalità privata su questo Mac',
-                      ),
+                      label: Text(t.auth.continuePrivately),
                       style: OutlinedButton.styleFrom(
                         alignment: Alignment.center,
                         foregroundColor: context.evolveColors.foreground,
-                        side: BorderSide(
-                          color: context.evolveColors.border,
-                        ),
+                        side: BorderSide(color: context.evolveColors.border),
                         minimumSize: const Size.fromHeight(44),
                       ),
                     ),

@@ -8,6 +8,7 @@ import 'package:evolve_desktop/features/settings/application/desktop_subscriptio
 import 'package:evolve_desktop/core/tutorial_provider.dart';
 import 'package:evolve_desktop/features/dashboard/application/dashboard_controller.dart';
 import 'package:evolve_desktop/features/dashboard/domain/dashboard_models.dart';
+import 'package:evolve_desktop/i18n/translations.g.dart';
 import 'package:evolve_desktop/shared/widgets/desktop_page.dart';
 import 'package:evolve_desktop/shared/widgets/evolve_dialog.dart';
 import 'package:evolve_desktop/shared/widgets/evolve_panel.dart';
@@ -1083,8 +1084,8 @@ class _NamePromptDialogState extends State<_NamePromptDialog> {
       builder: (context, ref, child) {
         return EvolveAlertDialog(
           icon: Icons.person_outline,
-          title: const Text('Come ti chiami?'),
-          subtitle: 'Inserisci il tuo nome per personalizzare la dashboard.',
+          title: Text(t.namePrompt.title),
+          subtitle: t.namePrompt.subtitle,
           content: Column(
             mainAxisSize: MainAxisSize.min,
             children: [
@@ -1092,7 +1093,7 @@ class _NamePromptDialogState extends State<_NamePromptDialog> {
                 controller: _controller,
                 autofocus: true,
                 decoration: InputDecoration(
-                  hintText: 'Es. Simo',
+                  hintText: t.namePrompt.hint,
                   filled: true,
                   fillColor: Theme.of(
                     context,
@@ -1109,7 +1110,7 @@ class _NamePromptDialogState extends State<_NamePromptDialog> {
                 width: double.infinity,
                 child: FilledButton(
                   onPressed: () => _submit(ref),
-                  child: const Text('Salva e continua'),
+                  child: Text(t.namePrompt.save),
                 ),
               ),
             ],

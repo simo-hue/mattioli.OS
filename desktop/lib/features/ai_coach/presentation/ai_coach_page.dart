@@ -1,5 +1,6 @@
 import 'package:evolve_desktop/app/theme/evolve_theme.dart';
 import 'package:evolve_desktop/core/desktop_data_mode.dart';
+import 'package:evolve_desktop/i18n/translations.g.dart';
 import 'package:evolve_desktop/core/desktop_private_db.dart';
 import 'package:evolve_desktop/features/dashboard/application/dashboard_controller.dart';
 import 'package:evolve_desktop/features/dashboard/domain/dashboard_models.dart';
@@ -61,16 +62,14 @@ class _AiCoachPageState extends ConsumerState<AiCoachPage> {
       builder: (context) => AlertDialog(
         backgroundColor: context.evolveColors.background,
         title: Text(
-          'Consenti l\'invio all\'AI',
+          t.privateAi.consentTitle,
           style: TextStyle(
             color: context.evolveColors.foreground,
             fontWeight: FontWeight.w600,
           ),
         ),
         content: Text(
-          'In modalità privata i tuoi dati restano sul dispositivo. Per usare '
-          'l\'AI Coach, le abitudini e gli obiettivi che scegli di condividere '
-          'vengono inviati a un provider AI esterno (OpenRouter). Vuoi procedere?',
+          t.privateAi.consentBody,
           style: TextStyle(
             color: context.evolveColors.foreground.withValues(alpha: 0.7),
           ),
@@ -78,11 +77,11 @@ class _AiCoachPageState extends ConsumerState<AiCoachPage> {
         actions: [
           TextButton(
             onPressed: () => Navigator.pop(context, false),
-            child: const Text('Annulla'),
+            child: Text(t.privateAi.cancel),
           ),
           FilledButton(
             onPressed: () => Navigator.pop(context, true),
-            child: const Text('Accetto'),
+            child: Text(t.privateAi.accept),
           ),
         ],
       ),

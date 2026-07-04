@@ -1,0 +1,26 @@
+{
+  "auth": {
+    "continuePrivately": "Privat auf diesem Mac fortfahren"
+  },
+  "privateAi": {
+    "consentTitle": "Senden an die KI erlauben",
+    "consentBody": "Im privaten Modus bleiben deine Daten auf deinem Gerät. Um den KI-Coach zu nutzen, werden die Gewohnheiten und Ziele, die du teilst, an einen externen KI-Anbieter (OpenRouter) gesendet. Möchtest du fortfahren?",
+    "cancel": "Abbrechen",
+    "accept": "Akzeptieren"
+  },
+  "privateData": {
+    "deleteTitle": "Private Daten löschen",
+    "deleteMessage": "Möchtest du wirklich die gesamte verschlüsselte lokale Datenbank löschen? Dieser Vorgang ist unwiderruflich und die Daten können nicht wiederhergestellt werden.",
+    "deleteSuccess": "Private Daten gelöscht.",
+    "deleteFailed": "Vorgang fehlgeschlagen.",
+    "exportDoneTitle": "Export abgeschlossen",
+    "exportDoneClipboard": "Das JSON ist in der Zwischenablage: Linux unterstützt keine Dateifreigabe.",
+    "exportDoneShare": "Das JSON wurde an die Teilen-Auswahl gesendet."
+  },
+  "namePrompt": {
+    "title": "Wie heißt du?",
+    "subtitle": "Gib deinen Namen ein, um das Dashboard zu personalisieren.",
+    "hint": "z. B. Simo",
+    "save": "Speichern und fortfahren"
+  }
+}

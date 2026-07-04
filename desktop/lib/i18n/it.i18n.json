@@ -1,0 +1,26 @@
+{
+  "auth": {
+    "continuePrivately": "Continua in modalità privata su questo Mac"
+  },
+  "privateAi": {
+    "consentTitle": "Consenti l'invio all'AI",
+    "consentBody": "In modalità privata i tuoi dati restano sul dispositivo. Per usare l'AI Coach, le abitudini e gli obiettivi che scegli di condividere vengono inviati a un provider AI esterno (OpenRouter). Vuoi procedere?",
+    "cancel": "Annulla",
+    "accept": "Accetto"
+  },
+  "privateData": {
+    "deleteTitle": "Elimina dati privati",
+    "deleteMessage": "Sei sicuro di voler eliminare tutto il database locale crittografato? Questa operazione è irreversibile e i dati non potranno essere recuperati.",
+    "deleteSuccess": "Dati privati eliminati.",
+    "deleteFailed": "Operazione non riuscita.",
+    "exportDoneTitle": "Export completato",
+    "exportDoneClipboard": "Il JSON è negli appunti: Linux non supporta la condivisione file.",
+    "exportDoneShare": "Il JSON è stato inviato al selettore di condivisione."
+  },
+  "namePrompt": {
+    "title": "Come ti chiami?",
+    "subtitle": "Inserisci il tuo nome per personalizzare la dashboard.",
+    "hint": "Es. Simo",
+    "save": "Salva e continua"
+  }
+}

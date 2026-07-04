@@ -7,6 +7,7 @@ import 'package:evolve_desktop/core/secure_local_storage.dart';
 import 'package:evolve_desktop/features/dashboard/application/dashboard_controller.dart';
 import 'package:evolve_desktop/features/settings/data/desktop_notification_service.dart';
 import 'package:evolve_desktop/features/statistics/data/private_analytics_source.dart';
+import 'package:evolve_desktop/i18n/translations.g.dart';
 import 'package:flutter/widgets.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:shared_preferences/shared_preferences.dart';
@@ -56,7 +57,7 @@ Future<void> main() async {
   runApp(
     UncontrolledProviderScope(
       container: container,
-      child: const EvolveDesktopApp(),
+      child: TranslationProvider(child: const EvolveDesktopApp()),
     ),
   );
 }

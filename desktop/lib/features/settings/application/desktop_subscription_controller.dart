@@ -3,6 +3,7 @@ import 'dart:io';
 
 import 'package:evolve_desktop/core/app_logger.dart';
 import 'package:evolve_desktop/core/app_bootstrap.dart';
+import 'package:evolve_desktop/core/desktop_data_mode.dart';
 import 'package:evolve_desktop/core/desktop_revenuecat_config.dart';
 import 'package:evolve_desktop/features/auth/application/auth_controller.dart';
 import 'package:flutter/foundation.dart';
@@ -53,6 +54,18 @@ final desktopSubscriptionControllerProvider =
     NotifierProvider<DesktopSubscriptionController, DesktopSubscriptionState>(
       DesktopSubscriptionController.new,
     );
+
+/// Effective Pro entitlement used by feature gates.
+///
+/// In Private mode every feature is unlocked without a subscription (mirrors the
+/// mobile client's forced `isPro`); otherwise it reflects the RevenueCat
+/// entitlement. Feature gates should read THIS provider. Pro badges / paywalls /
+/// upgrade prompts stay gated on `!isPrivateMode` so no monetization UI appears
+/// in Private mode even though it is entitled.
+final desktopIsProProvider = Provider<bool>((ref) {
+  if (ref.watch(activeDesktopDataModeProvider).isPrivate) return true;
+  return ref.watch(desktopSubscriptionControllerProvider).isPro;
+});
 
 class DesktopSubscriptionController extends Notifier<DesktopSubscriptionState> {
   static const entitlementIds = {'Evolve Pro', 'evolve_pro', 'pro'};

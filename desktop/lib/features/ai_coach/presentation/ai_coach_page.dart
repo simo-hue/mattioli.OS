@@ -1,4 +1,6 @@
 import 'package:evolve_desktop/app/theme/evolve_theme.dart';
+import 'package:evolve_desktop/core/desktop_data_mode.dart';
+import 'package:evolve_desktop/core/desktop_private_db.dart';
 import 'package:evolve_desktop/features/dashboard/application/dashboard_controller.dart';
 import 'package:evolve_desktop/features/dashboard/domain/dashboard_models.dart';
 import 'package:evolve_desktop/shared/widgets/desktop_page.dart';
@@ -6,7 +8,6 @@ import 'package:evolve_desktop/shared/widgets/evolve_panel.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_markdown/flutter_markdown.dart';
-
 
 import '../domain/chat_message.dart';
 import '../data/openrouter_service.dart';
@@ -31,7 +32,8 @@ class _AiCoachPageState extends ConsumerState<AiCoachPage> {
     super.initState();
     _messages.add(
       ChatMessage(
-        text: 'Ciao! Sono Evolve AI Coach. Sono qui per aiutarti a ottimizzare il tuo protocollo e raggiungere i tuoi obiettivi. Come posso esserti utile oggi?',
+        text:
+            'Ciao! Sono Evolve AI Coach. Sono qui per aiutarti a ottimizzare il tuo protocollo e raggiungere i tuoi obiettivi. Come posso esserti utile oggi?',
         isUser: false,
         timestamp: DateTime.now(),
       ),
@@ -45,17 +47,65 @@ class _AiCoachPageState extends ConsumerState<AiCoachPage> {
     super.dispose();
   }
 
+  /// In Private mode, never send personal context to the external AI provider
+  /// without explicit, persisted consent (mirrors the mobile client). Returns
+  /// true if the send may proceed.
+  Future<bool> _ensurePrivateAiConsent() async {
+    final isPrivate = ref.read(activeDesktopDataModeProvider).isPrivate;
+    if (!isPrivate) return true;
+    final db = DesktopPrivateDb.instance;
+    if (await db.hasPrivateAiExternalConsent()) return true;
+    if (!mounted) return false;
+    final granted = await showDialog<bool>(
+      context: context,
+      builder: (context) => AlertDialog(
+        backgroundColor: context.evolveColors.background,
+        title: Text(
+          'Consenti l\'invio all\'AI',
+          style: TextStyle(
+            color: context.evolveColors.foreground,
+            fontWeight: FontWeight.w600,
+          ),
+        ),
+        content: Text(
+          'In modalità privata i tuoi dati restano sul dispositivo. Per usare '
+          'l\'AI Coach, le abitudini e gli obiettivi che scegli di condividere '
+          'vengono inviati a un provider AI esterno (OpenRouter). Vuoi procedere?',
+          style: TextStyle(
+            color: context.evolveColors.foreground.withValues(alpha: 0.7),
+          ),
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(context, false),
+            child: const Text('Annulla'),
+          ),
+          FilledButton(
+            onPressed: () => Navigator.pop(context, true),
+            child: const Text('Accetto'),
+          ),
+        ],
+      ),
+    );
+    if (granted == true) {
+      await db.setPrivateAiExternalConsent(true);
+      return true;
+    }
+    return false;
+  }
+
   void _sendMessage() async {
     final text = _controller.text.trim();
     if (text.isEmpty) return;
 
+    // Private mode: require explicit consent before any external AI send.
+    if (!await _ensurePrivateAiConsent()) return;
+
     _controller.clear();
     setState(() {
-      _messages.add(ChatMessage(
-        text: text,
-        isUser: true,
-        timestamp: DateTime.now(),
-      ));
+      _messages.add(
+        ChatMessage(text: text, isUser: true, timestamp: DateTime.now()),
+      );
       _isTyping = true;
     });
 
@@ -63,8 +113,9 @@ class _AiCoachPageState extends ConsumerState<AiCoachPage> {
 
     // Inietta contesto se abilitato
     final snapshot = ref.read(dashboardControllerProvider);
-    String contextPrompt = "Sei Evolve AI Coach, un assistente virtuale per la disciplina personale.\n";
-    
+    String contextPrompt =
+        "Sei Evolve AI Coach, un assistente virtuale per la disciplina personale.\n";
+
     if (_shareHabits) {
       contextPrompt += "\nABITUDINI ATTIVE:\n";
       final habits = snapshot.habits;
@@ -73,14 +124,17 @@ class _AiCoachPageState extends ConsumerState<AiCoachPage> {
       } else {
         for (final h in habits) {
           final done = snapshot.habitStatusFor(h.id, DateTime.now()) == 'done';
-          contextPrompt += "- ${h.title} (Completata oggi: $done, Streak: ${h.streak})\n";
+          contextPrompt +=
+              "- ${h.title} (Completata oggi: $done, Streak: ${h.streak})\n";
         }
       }
     }
 
     if (_shareGoals) {
       contextPrompt += "\nOBIETTIVI:\n";
-      final goals = snapshot.goals.where((g) => g.state == GoalState.active).toList();
+      final goals = snapshot.goals
+          .where((g) => g.state == GoalState.active)
+          .toList();
       if (goals.isEmpty) {
         contextPrompt += "- Nessun obiettivo a lungo termine attivo.\n";
       } else {
@@ -99,11 +153,9 @@ class _AiCoachPageState extends ConsumerState<AiCoachPage> {
     // Placeholder per la risposta
     final responseIndex = _messages.length;
     setState(() {
-      _messages.add(ChatMessage(
-        text: '',
-        isUser: false,
-        timestamp: DateTime.now(),
-      ));
+      _messages.add(
+        ChatMessage(text: '', isUser: false, timestamp: DateTime.now()),
+      );
     });
 
     String currentResponse = '';
@@ -158,12 +210,25 @@ class _AiCoachPageState extends ConsumerState<AiCoachPage> {
             children: [
               Text(
                 'Scegli quali dati condividere con il Coach AI per ricevere consigli personalizzati.',
-                style: TextStyle(color: context.evolveColors.foreground.withValues(alpha: 0.7)),
+                style: TextStyle(
+                  color: context.evolveColors.foreground.withValues(alpha: 0.7),
+                ),
               ),
               const SizedBox(height: 24),
               SwitchListTile(
-                title: Text('Abitudini Quotidiane', style: TextStyle(color: context.evolveColors.foreground)),
-                subtitle: Text('Condivide le abitudini attive, le serie e lo stato di completamento di oggi.', style: TextStyle(color: context.evolveColors.foreground.withValues(alpha: 0.5), fontSize: 12)),
+                title: Text(
+                  'Abitudini Quotidiane',
+                  style: TextStyle(color: context.evolveColors.foreground),
+                ),
+                subtitle: Text(
+                  'Condivide le abitudini attive, le serie e lo stato di completamento di oggi.',
+                  style: TextStyle(
+                    color: context.evolveColors.foreground.withValues(
+                      alpha: 0.5,
+                    ),
+                    fontSize: 12,
+                  ),
+                ),
                 value: _shareHabits,
                 activeThumbColor: Theme.of(context).colorScheme.primary,
                 onChanged: (val) {
@@ -172,8 +237,19 @@ class _AiCoachPageState extends ConsumerState<AiCoachPage> {
                 },
               ),
               SwitchListTile(
-                title: Text('Obiettivi Macro', style: TextStyle(color: context.evolveColors.foreground)),
-                subtitle: Text('Condivide i tuoi obiettivi attivi a lungo termine.', style: TextStyle(color: context.evolveColors.foreground.withValues(alpha: 0.5), fontSize: 12)),
+                title: Text(
+                  'Obiettivi Macro',
+                  style: TextStyle(color: context.evolveColors.foreground),
+                ),
+                subtitle: Text(
+                  'Condivide i tuoi obiettivi attivi a lungo termine.',
+                  style: TextStyle(
+                    color: context.evolveColors.foreground.withValues(
+                      alpha: 0.5,
+                    ),
+                    fontSize: 12,
+                  ),
+                ),
                 value: _shareGoals,
                 activeThumbColor: Theme.of(context).colorScheme.primary,
                 onChanged: (val) {
@@ -198,7 +274,8 @@ class _AiCoachPageState extends ConsumerState<AiCoachPage> {
   Widget build(BuildContext context) {
     return DesktopPage(
       title: 'AI Coach',
-      subtitle: 'Ragiona sui pattern con un coach contestuale basato sui dati del percorso.',
+      subtitle:
+          'Ragiona sui pattern con un coach contestuale basato sui dati del percorso.',
       trailing: PageActionButton(
         label: 'Contesto',
         icon: Icons.tune_rounded,
@@ -222,7 +299,10 @@ class _AiCoachPageState extends ConsumerState<AiCoachPage> {
               ),
               if (_isTyping)
                 Padding(
-                  padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 8),
+                  padding: const EdgeInsets.symmetric(
+                    horizontal: 24,
+                    vertical: 8,
+                  ),
                   child: Align(
                     alignment: Alignment.centerLeft,
                     child: Text(
@@ -236,7 +316,10 @@ class _AiCoachPageState extends ConsumerState<AiCoachPage> {
                   ),
                 ),
               Container(
-                padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 16),
+                padding: const EdgeInsets.symmetric(
+                  horizontal: 24,
+                  vertical: 16,
+                ),
                 decoration: BoxDecoration(
                   border: Border(
                     top: BorderSide(color: context.evolveColors.border),
@@ -247,17 +330,24 @@ class _AiCoachPageState extends ConsumerState<AiCoachPage> {
                     Expanded(
                       child: TextField(
                         controller: _controller,
-                        style: TextStyle(color: context.evolveColors.foreground),
+                        style: TextStyle(
+                          color: context.evolveColors.foreground,
+                        ),
                         decoration: InputDecoration(
                           hintText: 'Chiedi consigli al tuo Coach...',
-                          hintStyle: TextStyle(color: context.evolveColors.muted),
+                          hintStyle: TextStyle(
+                            color: context.evolveColors.muted,
+                          ),
                           filled: true,
                           fillColor: context.evolveColors.background,
                           border: OutlineInputBorder(
                             borderRadius: BorderRadius.circular(24),
                             borderSide: BorderSide.none,
                           ),
-                          contentPadding: const EdgeInsets.symmetric(horizontal: 20, vertical: 14),
+                          contentPadding: const EdgeInsets.symmetric(
+                            horizontal: 20,
+                            vertical: 14,
+                          ),
                         ),
                         onSubmitted: (_) => _sendMessage(),
                       ),
@@ -267,7 +357,10 @@ class _AiCoachPageState extends ConsumerState<AiCoachPage> {
                       elevation: 0,
                       backgroundColor: Theme.of(context).colorScheme.primary,
                       onPressed: _isTyping ? null : _sendMessage,
-                      child: const Icon(Icons.send_rounded, color: Colors.white),
+                      child: const Icon(
+                        Icons.send_rounded,
+                        color: Colors.white,
+                      ),
                     ),
                   ],
                 ),
@@ -288,17 +381,25 @@ class _MessageBubble extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final isUser = message.isUser;
-    
+
     return Padding(
       padding: const EdgeInsets.only(bottom: 16),
       child: Row(
-        mainAxisAlignment: isUser ? MainAxisAlignment.end : MainAxisAlignment.start,
+        mainAxisAlignment: isUser
+            ? MainAxisAlignment.end
+            : MainAxisAlignment.start,
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           if (!isUser) ...[
             CircleAvatar(
-              backgroundColor: Theme.of(context).colorScheme.primary.withValues(alpha: 0.1),
-              child: Icon(Icons.auto_awesome, color: Theme.of(context).colorScheme.primary, size: 20),
+              backgroundColor: Theme.of(
+                context,
+              ).colorScheme.primary.withValues(alpha: 0.1),
+              child: Icon(
+                Icons.auto_awesome,
+                color: Theme.of(context).colorScheme.primary,
+                size: 20,
+              ),
             ),
             const SizedBox(width: 12),
           ],
@@ -306,38 +407,62 @@ class _MessageBubble extends StatelessWidget {
             child: Container(
               padding: const EdgeInsets.all(16),
               decoration: BoxDecoration(
-                color: isUser 
-                    ? Theme.of(context).colorScheme.primary 
+                color: isUser
+                    ? Theme.of(context).colorScheme.primary
                     : context.evolveColors.background,
                 borderRadius: BorderRadius.circular(16).copyWith(
-                  bottomRight: isUser ? const Radius.circular(4) : const Radius.circular(16),
-                  bottomLeft: !isUser ? const Radius.circular(4) : const Radius.circular(16),
+                  bottomRight: isUser
+                      ? const Radius.circular(4)
+                      : const Radius.circular(16),
+                  bottomLeft: !isUser
+                      ? const Radius.circular(4)
+                      : const Radius.circular(16),
                 ),
-                border: isUser ? null : Border.all(color: context.evolveColors.border),
+                border: isUser
+                    ? null
+                    : Border.all(color: context.evolveColors.border),
               ),
-              child: isUser 
-                ? Text(
-                    message.text, 
-                    style: const TextStyle(color: Colors.white),
-                  )
-                : MarkdownBody(
-                    data: message.text,
-                    styleSheet: MarkdownStyleSheet(
-                      p: TextStyle(color: context.evolveColors.foreground),
-                      h1: TextStyle(color: context.evolveColors.foreground, fontWeight: FontWeight.bold),
-                      h2: TextStyle(color: context.evolveColors.foreground, fontWeight: FontWeight.bold),
-                      h3: TextStyle(color: context.evolveColors.foreground, fontWeight: FontWeight.bold),
-                      listBullet: TextStyle(color: context.evolveColors.foreground),
-                      strong: TextStyle(color: context.evolveColors.foreground, fontWeight: FontWeight.bold),
+              child: isUser
+                  ? Text(
+                      message.text,
+                      style: const TextStyle(color: Colors.white),
+                    )
+                  : MarkdownBody(
+                      data: message.text,
+                      styleSheet: MarkdownStyleSheet(
+                        p: TextStyle(color: context.evolveColors.foreground),
+                        h1: TextStyle(
+                          color: context.evolveColors.foreground,
+                          fontWeight: FontWeight.bold,
+                        ),
+                        h2: TextStyle(
+                          color: context.evolveColors.foreground,
+                          fontWeight: FontWeight.bold,
+                        ),
+                        h3: TextStyle(
+                          color: context.evolveColors.foreground,
+                          fontWeight: FontWeight.bold,
+                        ),
+                        listBullet: TextStyle(
+                          color: context.evolveColors.foreground,
+                        ),
+                        strong: TextStyle(
+                          color: context.evolveColors.foreground,
+                          fontWeight: FontWeight.bold,
+                        ),
+                      ),
                     ),
-                  ),
             ),
           ),
           if (isUser) ...[
             const SizedBox(width: 12),
             CircleAvatar(
               backgroundColor: context.evolveColors.background,
-              child: Icon(Icons.person, color: context.evolveColors.foreground, size: 20),
+              child: Icon(
+                Icons.person,
+                color: context.evolveColors.foreground,
+                size: 20,
+              ),
             ),
           ],
         ],

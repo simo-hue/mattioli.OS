@@ -1,10 +1,22 @@
 import 'package:evolve_desktop/core/app_bootstrap.dart';
 import 'package:evolve_desktop/core/app_logger.dart';
+import 'package:evolve_desktop/core/desktop_data_mode.dart';
 import 'package:evolve_desktop/features/auth/application/auth_controller.dart';
+import 'package:evolve_desktop/features/statistics/data/private_analytics.dart';
+import 'package:evolve_desktop/features/statistics/data/private_analytics_source.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 
+// Each provider is mode-aware: in Private mode it computes locally from the
+// encrypted DB via the ported analytics engine (no Supabase call); otherwise it
+// calls the cloud RPC. The private branch returns BEFORE reading any Supabase
+// provider, preserving the "no Supabase in Private mode" boundary.
+
 final globalCriticalDayRpcProvider = FutureProvider<String?>((ref) async {
+  if (ref.watch(activeDesktopDataModeProvider).isPrivate) {
+    final data = await ref.watch(privateAnalyticsDataProvider.future);
+    return computeGlobalCriticalDay(data.allLogs);
+  }
   final context = _RpcContext.read(ref);
   if (context == null) return null;
   try {
@@ -24,6 +36,15 @@ final globalTrendRpcProvider =
       ref,
       timeframe,
     ) async {
+      if (ref.watch(activeDesktopDataModeProvider).isPrivate) {
+        final data = await ref.watch(privateAnalyticsDataProvider.future);
+        return computeGlobalTrend(
+          goals: data.goals,
+          logs: data.logsByDate,
+          timeframe: timeframe,
+          today: DateTime.now(),
+        );
+      }
       return _listRpc(
         ref,
         'get_global_trend',
@@ -33,12 +54,32 @@ final globalTrendRpcProvider =
 
 final criticalHabitsRpcProvider = FutureProvider<List<Map<String, dynamic>>>((
   ref,
-) {
+) async {
+  if (ref.watch(activeDesktopDataModeProvider).isPrivate) {
+    final data = await ref.watch(privateAnalyticsDataProvider.future);
+    return computeCriticalHabits(
+      goals: data.goals,
+      logsByGoal: data.logsByGoal,
+      today: DateTime.now(),
+    );
+  }
   return _listRpc(ref, 'get_critical_habits');
 });
 
 final bestHabitsRpcProvider =
-    FutureProvider.family<List<Map<String, dynamic>>, String>((ref, timeframe) {
+    FutureProvider.family<List<Map<String, dynamic>>, String>((
+      ref,
+      timeframe,
+    ) async {
+      if (ref.watch(activeDesktopDataModeProvider).isPrivate) {
+        final data = await ref.watch(privateAnalyticsDataProvider.future);
+        return computeBestHabits(
+          goals: data.goals,
+          logsByGoal: data.logsByGoal,
+          timeframe: canonicalBestHabitsTimeframe(timeframe),
+          today: DateTime.now(),
+        );
+      }
       return _listRpc(
         ref,
         'get_best_habits',
@@ -47,7 +88,14 @@ final bestHabitsRpcProvider =
     });
 
 final habitPerformanceRpcProvider =
-    FutureProvider.family<List<Map<String, dynamic>>, String>((ref, goalId) {
+    FutureProvider.family<List<Map<String, dynamic>>, String>((
+      ref,
+      goalId,
+    ) async {
+      if (ref.watch(activeDesktopDataModeProvider).isPrivate) {
+        final data = await ref.watch(privateAnalyticsDataProvider.future);
+        return computePerformanceByDay(data.logsByGoal[goalId] ?? const []);
+      }
       return _listRpc(
         ref,
         'get_habit_performance_by_day',
@@ -57,6 +105,10 @@ final habitPerformanceRpcProvider =
 
 final habitAlertsRpcProvider =
     FutureProvider.family<Map<String, dynamic>, String>((ref, goalId) async {
+      if (ref.watch(activeDesktopDataModeProvider).isPrivate) {
+        final data = await ref.watch(privateAnalyticsDataProvider.future);
+        return computeHabitAlerts(data.logsByGoal[goalId] ?? const []);
+      }
       final response = await _listRpc(
         ref,
         'get_habit_alerts',
@@ -69,6 +121,13 @@ final habitYearlyGridRpcProvider = FutureProvider.family<List<int>, String>((
   ref,
   goalId,
 ) async {
+  if (ref.watch(activeDesktopDataModeProvider).isPrivate) {
+    final data = await ref.watch(privateAnalyticsDataProvider.future);
+    return computeYearlyGrid(
+      data.logsByGoal[goalId] ?? const [],
+      DateTime.now(),
+    );
+  }
   final response = await _listRpc(
     ref,
     'get_habit_yearly_grid',
@@ -79,6 +138,9 @@ final habitYearlyGridRpcProvider = FutureProvider.family<List<int>, String>((
       .toList();
 });
 
+// NOTE (WS4b): correlations + macro-goal stats are still RPC-only, so they
+// return empty in Private mode until the inline correlation/macro-stats logic
+// from mobile's private_local_database.dart is ported.
 final habitCorrelationsRpcProvider =
     FutureProvider.family<List<Map<String, dynamic>>, String>((ref, goalId) {
       return _listRpc(

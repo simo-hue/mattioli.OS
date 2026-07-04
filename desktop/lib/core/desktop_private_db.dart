@@ -1,8 +1,9 @@
 import 'dart:convert';
-
+import 'dart:io';
 import 'dart:math';
 
 import 'package:evolve_desktop/core/app_logger.dart';
+import 'package:evolve_desktop/core/private_db_schema.dart';
 import 'package:flutter/foundation.dart';
 import 'package:flutter_secure_storage/flutter_secure_storage.dart';
 import 'package:path/path.dart' as p;
@@ -12,34 +13,44 @@ import 'package:uuid/uuid.dart';
 
 /// Manages the encrypted local SQLite database used by Private mode.
 ///
-/// The database is encrypted at rest via SQLCipher.  The encryption key is
-/// generated once and stored in macOS Keychain through [FlutterSecureStorage].
-/// The owner UUID is also stored in secure storage so that it survives database
-/// resets while remaining stable across restarts.
+/// The schema is [PrivateDbSchema], ported verbatim from the mobile client so
+/// both clients share one source of truth (identical tables/columns/constraints
+/// and the iCloud-sync bookkeeping objects). The database is encrypted at rest
+/// via SQLCipher; the key and the stable owner UUID live in the macOS Keychain
+/// (via [FlutterSecureStorage]) and are device-local — they never leave the
+/// device and are never wiped by "delete private data".
+///
+/// The row-level lifecycle logic (seed / wipe / import) is exposed as static
+/// helpers that operate on any [DatabaseExecutor], so it can be exercised
+/// against an in-memory `sqflite_common_ffi` database in tests.
 class DesktopPrivateDb {
   DesktopPrivateDb._();
 
   static DesktopPrivateDb? _instance;
   Database? _db;
+  Future<Database>? _opening;
 
-  static const _dbFileName = 'evolve_private.db';
+  /// New baseline file name — the pre-alignment mock used `evolve_private.db`.
+  static const _dbFileName = 'evolve_private_v2.db';
   static const _keyStorageKey = 'evolve_private_db_key';
   static const _ownerStorageKey = 'evolve_private_owner_id';
-  static const _currentVersion = 1;
+  static const _avatarDirName = 'private_profile';
 
   static DesktopPrivateDb get instance {
     _instance ??= DesktopPrivateDb._();
     return _instance!;
   }
 
-  /// Returns the open database, initializing it on first call.
+  /// Returns the open database, initializing it on first call. The open is
+  /// serialized so concurrent callers share a single connection.
   Future<Database> get database async {
-    if (_db != null && _db!.isOpen) return _db!;
-    _db = await _open();
-    return _db!;
+    final existing = _db;
+    if (existing != null && existing.isOpen) return existing;
+    return _opening ??= _open().whenComplete(() => _opening = null);
   }
 
-  /// The stable local owner UUID (created once, reused forever).
+  /// The stable local owner UUID (created once, reused forever). Kept in the
+  /// Keychain so it survives a data wipe and stays stable across restarts.
   Future<String> get ownerId async {
     const storage = FlutterSecureStorage();
     var id = await storage.read(key: _ownerStorageKey);
@@ -50,25 +61,227 @@ class DesktopPrivateDb {
     return id;
   }
 
-  /// Closes the database (e.g. before deleting private data).
+  /// Closes the database (e.g. before app shutdown).
   Future<void> close() async {
     await _db?.close();
     _db = null;
   }
 
-  /// Deletes all private data: closes the DB, removes the file, and clears
-  /// the owner UUID so a new identity is created on next entry.
-  Future<void> deleteAll() async {
-    await close();
-    try {
-      final dir = await getApplicationSupportDirectory();
-      final file = p.join(dir.path, _dbFileName);
-      await databaseFactory.deleteDatabase(file);
-    } catch (error, stack) {
-      AppLogger.error('Unable to delete private database', error, stack);
+  // ---------------------------------------------------------------------------
+  // Lifecycle: delete / export / import
+  // ---------------------------------------------------------------------------
+
+  /// Deletes all private data — wipes every user-data row and the avatar files,
+  /// then re-seeds an empty owner profile so the app stays usable **and stays in
+  /// Private mode** (mirrors mobile's `deleteAllPrivateData`). The encryption key
+  /// and owner UUID are intentionally preserved.
+  Future<void> deleteAllPrivateData() async {
+    final db = await database;
+    final owner = await ownerId;
+    await db.transaction((txn) async {
+      await wipeUserData(txn);
+      await seedProfile(txn, owner: owner, now: _now());
+    });
+    await _deletePrivateProfileFiles();
+  }
+
+  /// Exports the entire private data space as a JSON-serializable map.
+  Future<Map<String, dynamic>> exportData() async {
+    final db = await database;
+    final owner = await ownerId;
+    Future<List<Map<String, dynamic>>> rows(String table) =>
+        db.query(table, where: 'user_id = ?', whereArgs: [owner]);
+
+    final profileRows = await db.query(
+      'profiles',
+      where: 'id = ?',
+      whereArgs: [owner],
+    );
+
+    return {
+      'exportDate': _now(),
+      'mode': 'private',
+      'profile': profileRows.isNotEmpty ? profileRows.first : null,
+      'goals': await rows('goals'),
+      'goal_logs': await rows('goal_logs'),
+      'long_term_goals': await rows('long_term_goals'),
+      'daily_moods': await rows('daily_moods'),
+      'macro_goal_categories': await rows('macro_goal_categories'),
+    };
+  }
+
+  /// Whether the user has opted in to sending private context to the external AI
+  /// provider (persisted in the profiles row; false until explicitly granted).
+  Future<bool> hasPrivateAiExternalConsent() async {
+    final db = await database;
+    final owner = await ownerId;
+    final rows = await db.query(
+      'profiles',
+      columns: ['private_ai_external_consent'],
+      where: 'id = ?',
+      whereArgs: [owner],
+      limit: 1,
+    );
+    if (rows.isEmpty) return false;
+    return (rows.first['private_ai_external_consent'] as int? ?? 0) == 1;
+  }
+
+  Future<void> setPrivateAiExternalConsent(bool granted) async {
+    final db = await database;
+    final owner = await ownerId;
+    await db.update(
+      'profiles',
+      {'private_ai_external_consent': granted ? 1 : 0, 'updated_at': _now()},
+      where: 'id = ?',
+      whereArgs: [owner],
+    );
+  }
+
+  Future<void> importData({
+    required Map<String, dynamic> backupData,
+    required bool replaceExisting,
+  }) async {
+    final db = await database;
+    final owner = await ownerId;
+    await db.transaction((txn) async {
+      await applyImport(
+        txn,
+        owner: owner,
+        backupData: backupData,
+        replaceExisting: replaceExisting,
+        now: _now(),
+      );
+    });
+  }
+
+  // ---------------------------------------------------------------------------
+  // Static row-level helpers (testable against any DatabaseExecutor)
+  // ---------------------------------------------------------------------------
+
+  /// Idempotently seeds the owner `profiles` row + the vestigial
+  /// `goal_category_settings` row so profile/settings writes and every
+  /// `user_id` foreign key have a valid parent.
+  static Future<void> seedProfile(
+    DatabaseExecutor db, {
+    required String owner,
+    required String now,
+  }) async {
+    await db.insert('profiles', {
+      'id': owner,
+      'created_at': now,
+      'updated_at': now,
+    }, conflictAlgorithm: ConflictAlgorithm.ignore);
+    await db.insert('goal_category_settings', {
+      'id': const Uuid().v4(),
+      'user_id': owner,
+      'mappings': '{}',
+      'created_at': now,
+      'updated_at': now,
+    }, conflictAlgorithm: ConflictAlgorithm.ignore);
+  }
+
+  /// Deletes every user-data row (children before parents).
+  static Future<void> wipeUserData(DatabaseExecutor txn) async {
+    await txn.delete('goal_logs');
+    await txn.delete('daily_moods');
+    await txn.delete('long_term_goals');
+    await txn.delete('macro_goal_categories');
+    await txn.delete('goals');
+    await txn.delete('goal_category_settings');
+    await txn.delete('profiles');
+  }
+
+  /// Inserts backup rows under [owner], coalescing every NOT-NULL column so the
+  /// aligned schema is satisfied. Parents are inserted before children.
+  static Future<void> applyImport(
+    DatabaseExecutor txn, {
+    required String owner,
+    required Map<String, dynamic> backupData,
+    required bool replaceExisting,
+    required String now,
+  }) async {
+    if (replaceExisting) {
+      // Wipe existing user data (profiles/settings are preserved).
+      await txn.delete('goal_logs');
+      await txn.delete('daily_moods');
+      await txn.delete('long_term_goals');
+      await txn.delete('macro_goal_categories');
+      await txn.delete('goals');
     }
-    const storage = FlutterSecureStorage();
-    await storage.delete(key: _ownerStorageKey);
+
+    for (final cat in _listOf(backupData['macro_goal_categories'])) {
+      await txn.insert('macro_goal_categories', {
+        'id': cat['id'] ?? const Uuid().v4(),
+        'user_id': owner,
+        'name': cat['name'] ?? 'Categoria',
+        'color': cat['color'] ?? '#6B7280',
+        'created_at': cat['created_at'] ?? now,
+        'updated_at': cat['updated_at'] ?? cat['created_at'] ?? now,
+        'archived_at': cat['archived_at'],
+      }, conflictAlgorithm: ConflictAlgorithm.ignore);
+    }
+
+    for (final g in _listOf(backupData['goals'])) {
+      await txn.insert('goals', {
+        'id': g['id'] ?? const Uuid().v4(),
+        'user_id': owner,
+        'title': g['title'] ?? '',
+        'description': g['description'],
+        'icon': g['icon'],
+        'color': g['color'] ?? '#3B82F6',
+        'frequency_days': _encodeFrequency(g['frequency_days']),
+        'start_date': g['start_date'] ?? g['created_at'] ?? now,
+        'end_date': g['end_date'],
+        'display_order': g['display_order'],
+        'reminder_time': g['reminder_time'],
+        'created_at': g['created_at'] ?? now,
+        'updated_at': g['updated_at'] ?? now,
+      }, conflictAlgorithm: ConflictAlgorithm.ignore);
+    }
+
+    for (final l in _listOf(backupData['goal_logs'])) {
+      await txn.insert('goal_logs', {
+        'id': l['id'] ?? const Uuid().v4(),
+        'user_id': owner,
+        'goal_id': l['goal_id'],
+        'date': l['date'],
+        'status': l['status'] ?? 'done',
+        'value': l['value'],
+        'streak': l['streak'] ?? 0,
+        'created_at': l['created_at'] ?? now,
+        'updated_at': l['updated_at'] ?? now,
+      }, conflictAlgorithm: ConflictAlgorithm.ignore);
+    }
+
+    for (final g in _listOf(backupData['long_term_goals'])) {
+      await txn.insert('long_term_goals', {
+        'id': g['id'] ?? const Uuid().v4(),
+        'user_id': owner,
+        'title': g['title'] ?? '',
+        'status': g['status'] ?? 'active',
+        'type': g['type'] ?? 'annual',
+        'year': g['year'],
+        'month': g['month'],
+        'week_number': g['week_number'],
+        'quarter': g['quarter'],
+        'category_key': g['category_key'],
+        'category_id': g['category_id'],
+        'created_at': g['created_at'] ?? now,
+        'updated_at': g['updated_at'] ?? now,
+      }, conflictAlgorithm: ConflictAlgorithm.ignore);
+    }
+
+    for (final m in _listOf(backupData['daily_moods'])) {
+      await txn.insert('daily_moods', {
+        'id': m['id'] ?? const Uuid().v4(),
+        'user_id': owner,
+        'date': m['date'],
+        'mood_score': m['mood_score'],
+        'energy_score': m['energy_score'],
+        'created_at': m['created_at'] ?? now,
+        'updated_at': m['updated_at'] ?? now,
+      }, conflictAlgorithm: ConflictAlgorithm.ignore);
+    }
   }
 
   // ---------------------------------------------------------------------------
@@ -80,296 +293,65 @@ class DesktopPrivateDb {
     final dbPath = p.join(dir.path, _dbFileName);
     final key = await _encryptionKey();
 
-    return openDatabase(
+    final db = await openDatabase(
       dbPath,
-      version: _currentVersion,
+      version: PrivateDbSchema.version,
       password: key,
-      onCreate: _onCreate,
-      onUpgrade: _onUpgrade,
+      onConfigure: PrivateDbSchema.onConfigure,
+      onCreate: PrivateDbSchema.onCreate,
+      onUpgrade: PrivateDbSchema.onUpgrade,
     );
+    await seedProfile(db, owner: await ownerId, now: _now());
+    _db = db;
+    debugPrint('[DesktopPrivateDb] Opened schema v${PrivateDbSchema.version}.');
+    return db;
+  }
+
+  Future<void> _deletePrivateProfileFiles() async {
+    try {
+      final dir = await getApplicationSupportDirectory();
+      final avatarDir = Directory(p.join(dir.path, _avatarDirName));
+      if (await avatarDir.exists()) {
+        await avatarDir.delete(recursive: true);
+      }
+    } catch (error, stack) {
+      AppLogger.error('Unable to delete private profile files', error, stack);
+    }
   }
 
   Future<String> _encryptionKey() async {
     const storage = FlutterSecureStorage();
-    var key = await storage.read(key: _keyStorageKey);
-    if (key == null || key.isEmpty) {
-      key = _generateKey(32);
-      await storage.write(key: _keyStorageKey, value: key);
-    }
+    final existing = await storage.read(key: _keyStorageKey);
+    if (existing != null && existing.length >= 32) return existing;
+    final key = _generateKey();
+    await storage.write(key: _keyStorageKey, value: key);
     return key;
   }
 
-  static String _generateKey(int length) {
-    const chars =
-        'ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789';
+  /// 48 random bytes, base64url-encoded (matches the mobile client).
+  static String _generateKey() {
     final random = Random.secure();
-    return List.generate(
-      length,
-      (_) => chars[random.nextInt(chars.length)],
-    ).join();
+    final bytes = List<int>.generate(48, (_) => random.nextInt(256));
+    return base64UrlEncode(bytes);
   }
 
-  Future<void> _onCreate(Database db, int version) async {
-    final batch = db.batch();
-
-    // ── profiles ─────────────────────────────────────────────────────────────
-    batch.execute('''
-      CREATE TABLE IF NOT EXISTS profiles (
-        id               TEXT PRIMARY KEY,
-        full_name        TEXT,
-        email            TEXT,
-        date_of_birth    TEXT,
-        avatar_path      TEXT,
-        morning_brief_time TEXT DEFAULT '09:00',
-        evening_review_time TEXT DEFAULT '21:00',
-        terms_accepted_at TEXT,
-        sentry_consent   INTEGER DEFAULT 0,
-        created_at       TEXT NOT NULL DEFAULT (datetime('now')),
-        updated_at       TEXT NOT NULL DEFAULT (datetime('now'))
-      )
-    ''');
-
-    // ── goals (habits) ───────────────────────────────────────────────────────
-    batch.execute('''
-      CREATE TABLE IF NOT EXISTS goals (
-        id              TEXT PRIMARY KEY,
-        user_id         TEXT NOT NULL REFERENCES profiles(id),
-        title           TEXT NOT NULL,
-        description     TEXT,
-        icon            TEXT,
-        color           TEXT,
-        frequency_days  TEXT,
-        start_date      TEXT,
-        end_date        TEXT,
-        display_order   INTEGER,
-        reminder_time   TEXT,
-        is_active       INTEGER DEFAULT 1,
-        created_at      TEXT NOT NULL DEFAULT (datetime('now')),
-        updated_at      TEXT NOT NULL DEFAULT (datetime('now'))
-      )
-    ''');
-
-    // ── goal_logs ────────────────────────────────────────────────────────────
-    batch.execute('''
-      CREATE TABLE IF NOT EXISTS goal_logs (
-        id        TEXT PRIMARY KEY,
-        user_id   TEXT NOT NULL REFERENCES profiles(id),
-        goal_id   TEXT NOT NULL REFERENCES goals(id) ON DELETE CASCADE,
-        date      TEXT NOT NULL,
-        status    TEXT NOT NULL DEFAULT 'done',
-        streak    INTEGER DEFAULT 0,
-        created_at TEXT NOT NULL DEFAULT (datetime('now')),
-        updated_at TEXT NOT NULL DEFAULT (datetime('now')),
-        UNIQUE(goal_id, date)
-      )
-    ''');
-
-    // ── long_term_goals (macro goals) ────────────────────────────────────────
-    batch.execute('''
-      CREATE TABLE IF NOT EXISTS long_term_goals (
-        id            TEXT PRIMARY KEY,
-        user_id       TEXT NOT NULL REFERENCES profiles(id),
-        title         TEXT NOT NULL,
-        status        TEXT NOT NULL DEFAULT 'active',
-        type          TEXT NOT NULL DEFAULT 'annual',
-        year          INTEGER,
-        quarter       INTEGER,
-        month         INTEGER,
-        week_number   INTEGER,
-        category_key  TEXT,
-        category_id   TEXT,
-        created_at    TEXT NOT NULL DEFAULT (datetime('now')),
-        updated_at    TEXT NOT NULL DEFAULT (datetime('now'))
-      )
-    ''');
-
-    // ── daily_moods ──────────────────────────────────────────────────────────
-    batch.execute('''
-      CREATE TABLE IF NOT EXISTS daily_moods (
-        id            TEXT PRIMARY KEY,
-        user_id       TEXT NOT NULL REFERENCES profiles(id),
-        date          TEXT NOT NULL,
-        mood_score    INTEGER,
-        energy_score  INTEGER,
-        created_at    TEXT NOT NULL DEFAULT (datetime('now')),
-        updated_at    TEXT NOT NULL DEFAULT (datetime('now')),
-        UNIQUE(user_id, date)
-      )
-    ''');
-
-    // ── macro_goal_categories ────────────────────────────────────────────────
-    batch.execute('''
-      CREATE TABLE IF NOT EXISTS macro_goal_categories (
-        id          TEXT PRIMARY KEY,
-        user_id     TEXT NOT NULL REFERENCES profiles(id),
-        name        TEXT NOT NULL,
-        color       TEXT,
-        archived_at TEXT,
-        created_at  TEXT NOT NULL DEFAULT (datetime('now')),
-        updated_at  TEXT NOT NULL DEFAULT (datetime('now')),
-        UNIQUE(user_id, name)
-      )
-    ''');
-
-    // ── goal_category_settings ───────────────────────────────────────────────
-    batch.execute('''
-      CREATE TABLE IF NOT EXISTS goal_category_settings (
-        id          TEXT PRIMARY KEY,
-        user_id     TEXT NOT NULL REFERENCES profiles(id),
-        category_key TEXT NOT NULL,
-        is_visible  INTEGER DEFAULT 1,
-        sort_order  INTEGER DEFAULT 0,
-        created_at  TEXT NOT NULL DEFAULT (datetime('now')),
-        updated_at  TEXT NOT NULL DEFAULT (datetime('now')),
-        UNIQUE(user_id, category_key)
-      )
-    ''');
-
-    // ── Indexes ──────────────────────────────────────────────────────────────
-    batch.execute(
-      'CREATE INDEX IF NOT EXISTS idx_goals_user ON goals(user_id)',
-    );
-    batch.execute(
-      'CREATE INDEX IF NOT EXISTS idx_goal_logs_user ON goal_logs(user_id)',
-    );
-    batch.execute(
-      'CREATE INDEX IF NOT EXISTS idx_goal_logs_goal_date ON goal_logs(goal_id, date)',
-    );
-    batch.execute(
-      'CREATE INDEX IF NOT EXISTS idx_long_term_goals_user ON long_term_goals(user_id)',
-    );
-    batch.execute(
-      'CREATE INDEX IF NOT EXISTS idx_daily_moods_user_date ON daily_moods(user_id, date)',
-    );
-    batch.execute(
-      'CREATE INDEX IF NOT EXISTS idx_macro_goal_categories_user ON macro_goal_categories(user_id)',
-    );
-
-    await batch.commit(noResult: true);
-
-    debugPrint('[DesktopPrivateDb] Schema v$version created.');
+  static List<Map<String, dynamic>> _listOf(Object? value) {
+    if (value is List) {
+      return value
+          .whereType<Map>()
+          .map((e) => Map<String, dynamic>.from(e))
+          .toList();
+    }
+    return const [];
   }
 
-  Future<void> _onUpgrade(Database db, int oldVersion, int newVersion) async {
-    // Future migrations go here.
-    debugPrint(
-      '[DesktopPrivateDb] Upgraded from v$oldVersion to v$newVersion.',
-    );
+  /// Frequency days are stored as a JSON-encoded int list. Accepts either an
+  /// already-encoded string or a raw list from a backup.
+  static String? _encodeFrequency(Object? value) {
+    if (value == null) return null;
+    if (value is String) return value;
+    return jsonEncode(value);
   }
 
   String _now() => DateTime.now().toUtc().toIso8601String();
-
-  Future<void> importData({
-    required Map<String, dynamic> backupData,
-    required bool replaceExisting,
-  }) async {
-    final db = await database;
-    final now = _now();
-    // Default desktop owner id for local
-    final owner = 'local_user';
-
-    await db.transaction((txn) async {
-      if (replaceExisting) {
-        // Wipe existing user data (except profiles and settings)
-        await txn.delete('goal_logs');
-        await txn.delete('daily_moods');
-        await txn.delete('long_term_goals');
-        await txn.delete('macro_goal_categories');
-        await txn.delete('goals');
-      }
-
-      // Insert Categories
-      if (backupData.containsKey('macro_goal_categories')) {
-        for (final cat in (backupData['macro_goal_categories'] as List).cast<Map<String, dynamic>>()) {
-          final catRow = {
-            'id': cat['id'],
-            'user_id': owner,
-            'name': cat['name'],
-            'color': cat['color'],
-            'created_at': cat['created_at'] ?? now,
-            'archived_at': cat['archived_at'],
-          };
-          await txn.insert('macro_goal_categories', catRow, conflictAlgorithm: ConflictAlgorithm.ignore);
-        }
-      }
-
-      // Insert Goals (Habits)
-      if (backupData.containsKey('goals')) {
-        for (final g in (backupData['goals'] as List).cast<Map<String, dynamic>>()) {
-          final goalRow = {
-            'id': g['id'],
-            'user_id': owner,
-            'title': g['title'],
-            'description': g['description'],
-            'icon': g['icon'],
-            'color': g['color'],
-            'frequency_days': g['frequency_days'] != null ? jsonEncode(g['frequency_days']) : null,
-            'start_date': g['start_date'],
-            'end_date': g['end_date'],
-            'display_order': g['display_order'],
-            'created_at': g['created_at'] ?? now,
-            'updated_at': g['updated_at'] ?? now,
-            'reminder_time': g['reminder_time'],
-          };
-          await txn.insert('goals', goalRow, conflictAlgorithm: ConflictAlgorithm.ignore);
-        }
-      }
-
-      // Insert Goal Logs
-      if (backupData.containsKey('goal_logs')) {
-        for (final l in (backupData['goal_logs'] as List).cast<Map<String, dynamic>>()) {
-          final logRow = {
-            'id': l['id'],
-            'user_id': owner,
-            'goal_id': l['goal_id'],
-            'date': l['date'],
-            'status': l['status'],
-            'value': l['value'],
-            'created_at': l['created_at'] ?? now,
-            'updated_at': l['updated_at'] ?? now,
-            'streak': l['streak'] ?? 0,
-          };
-          await txn.insert('goal_logs', logRow, conflictAlgorithm: ConflictAlgorithm.ignore);
-        }
-      }
-
-      // Insert Macro Goals
-      if (backupData.containsKey('long_term_goals')) {
-        for (final g in (backupData['long_term_goals'] as List).cast<Map<String, dynamic>>()) {
-          final ltgRow = {
-            'id': g['id'],
-            'user_id': owner,
-            'title': g['title'],
-            'status': g['status'],
-            'type': g['type'],
-            'year': g['year'],
-            'month': g['month'],
-            'week_number': g['week_number'],
-            'quarter': g['quarter'],
-            'category_key': g['category_key'],
-            'category_id': g['category_id'],
-            'created_at': g['created_at'] ?? now,
-            'updated_at': g['updated_at'] ?? now,
-          };
-          await txn.insert('long_term_goals', ltgRow, conflictAlgorithm: ConflictAlgorithm.ignore);
-        }
-      }
-
-      // Insert Daily Moods
-      if (backupData.containsKey('daily_moods')) {
-        for (final m in (backupData['daily_moods'] as List).cast<Map<String, dynamic>>()) {
-          final moodRow = {
-            'id': m['id'],
-            'user_id': owner,
-            'date': m['date'],
-            'mood_score': m['mood_score'],
-            'energy_score': m['energy_score'],
-            'created_at': m['created_at'] ?? now,
-            'updated_at': m['updated_at'] ?? now,
-          };
-          await txn.insert('daily_moods', moodRow, conflictAlgorithm: ConflictAlgorithm.ignore);
-        }
-      }
-    });
-  }
 }

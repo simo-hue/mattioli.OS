@@ -200,11 +200,14 @@ class DesktopGoalCategoriesController
       final db = await DesktopPrivateDb.instance.database;
       final ownerId = await DesktopPrivateDb.instance.ownerId;
       final id = _uuid.v4();
+      final now = DateTime.now().toUtc().toIso8601String();
       await db.insert('macro_goal_categories', {
         'id': id,
         'user_id': ownerId,
         'name': label,
         'color': dashboardColorToHex(color),
+        'created_at': now,
+        'updated_at': now,
       });
       ref.invalidateSelf();
       return DesktopGoalCategory(id: id, label: label, color: color);
@@ -255,4 +258,3 @@ class DesktopGoalCategoriesController
     }
   }
 }
-

@@ -31,6 +31,7 @@ import 'package:image_picker/image_picker.dart';
 import 'package:share_plus/share_plus.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 import 'package:evolve_desktop/features/auth/application/desktop_profile_controller.dart';
+import 'package:evolve_desktop/features/goals/application/goal_categories_controller.dart';
 import 'package:path_provider/path_provider.dart';
 import 'package:path/path.dart' as p;
 
@@ -171,10 +172,14 @@ class _SettingsPageState extends ConsumerState<SettingsPage> {
         _ProfileCard(
           user: auth.user,
           image: _profileImage,
-          isPro: isPrivateMode ? false : ref.watch(desktopSubscriptionControllerProvider).isPro,
+          isPro: isPrivateMode
+              ? false
+              : ref.watch(desktopSubscriptionControllerProvider).isPro,
           onPickAvatar: _pickAvatar,
           isPrivateMode: isPrivateMode,
-          privateProfile: isPrivateMode ? ref.watch(privateProfileProvider).value : null,
+          privateProfile: isPrivateMode
+              ? ref.watch(privateProfileProvider).value
+              : null,
         ),
         const SizedBox(height: 16),
         _SettingsGroup(
@@ -182,13 +187,13 @@ class _SettingsPageState extends ConsumerState<SettingsPage> {
           children: [
             _InfoRow(
               label: 'Account',
-              value: isPrivateMode 
+              value: isPrivateMode
                   ? 'Modalità Privata'
                   : auth.user?.email ?? 'Sessione non disponibile',
             ),
             _InfoRow(
               label: 'Repository dati',
-              value: isPrivateMode 
+              value: isPrivateMode
                   ? 'Database locale crittografato'
                   : 'Supabase con cache cifrata',
             ),
@@ -242,7 +247,7 @@ class _SettingsPageState extends ConsumerState<SettingsPage> {
                   ref.read(desktopAuthControllerProvider.notifier).goToLogin();
                 },
               ),
-            ]
+            ],
           ],
         ),
       ],
@@ -527,7 +532,8 @@ class _SettingsPageState extends ConsumerState<SettingsPage> {
               _ActionRow(
                 icon: Icons.delete_forever_outlined,
                 title: 'Elimina dati privati',
-                detail: 'Cancella definitivamente il database locale crittografato.',
+                detail:
+                    'Cancella definitivamente il database locale crittografato.',
                 destructive: true,
                 onTap: _deletePrivateData,
               )
@@ -622,15 +628,19 @@ class _SettingsPageState extends ConsumerState<SettingsPage> {
     try {
       final image = await ImagePicker().pickImage(source: ImageSource.gallery);
       if (image == null || !mounted) return;
-      
+
       final isPrivateMode = ref.read(activeDesktopDataModeProvider).isPrivate;
       if (isPrivateMode) {
         final supportDir = await getApplicationSupportDirectory();
         final avatarDir = Directory(p.join(supportDir.path, 'private_profile'));
         await avatarDir.create(recursive: true);
-        final avatarFile = File(p.join(avatarDir.path, 'avatar${p.extension(image.path)}'));
+        final avatarFile = File(
+          p.join(avatarDir.path, 'avatar${p.extension(image.path)}'),
+        );
         final selectedFile = await File(image.path).copy(avatarFile.path);
-        await ref.read(privateProfileProvider.notifier).updateAvatar(selectedFile.path);
+        await ref
+            .read(privateProfileProvider.notifier)
+            .updateAvatar(selectedFile.path);
         setState(() => _profileImage = selectedFile);
       } else {
         setState(() => _profileImage = File(image.path));
@@ -838,7 +848,6 @@ class _SettingsPageState extends ConsumerState<SettingsPage> {
     }
   }
 
-
   Future<void> _importData() async {
     try {
       final result = await FilePicker.platform.pickFiles(
@@ -850,9 +859,13 @@ class _SettingsPageState extends ConsumerState<SettingsPage> {
       final path = result.files.single.path;
       if (path == null) return;
 
-      final isPrivateMode = ref.read(activeDesktopDataModeProvider) == DesktopDataMode.private;
+      final isPrivateMode =
+          ref.read(activeDesktopDataModeProvider) == DesktopDataMode.private;
       if (!isPrivateMode) {
-        _showGate('Importa dati', 'La funzione di importazione è attualmente disponibile solo in Modalità Privata (Locale).');
+        _showGate(
+          'Importa dati',
+          'La funzione di importazione è attualmente disponibile solo in Modalità Privata (Locale).',
+        );
         return;
       }
 
@@ -885,27 +898,80 @@ class _SettingsPageState extends ConsumerState<SettingsPage> {
                     mainAxisSize: MainAxisSize.min,
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
-                      Text('• ${preview.habitsCount} Abitudini', style: TextStyle(color: context.evolveColors.foreground)),
-                      Text('• ${preview.logsCount} Check-in (Log)', style: TextStyle(color: context.evolveColors.foreground)),
-                      Text('• ${preview.macroGoalsCount} Obiettivi Macro', style: TextStyle(color: context.evolveColors.foreground)),
-                      Text('• ${preview.categoriesCount} Categorie', style: TextStyle(color: context.evolveColors.foreground)),
-                      Text('• ${preview.moodsCount} Registrazioni Umore', style: TextStyle(color: context.evolveColors.foreground)),
+                      Text(
+                        '• ${preview.habitsCount} Abitudini',
+                        style: TextStyle(
+                          color: context.evolveColors.foreground,
+                        ),
+                      ),
+                      Text(
+                        '• ${preview.logsCount} Check-in (Log)',
+                        style: TextStyle(
+                          color: context.evolveColors.foreground,
+                        ),
+                      ),
+                      Text(
+                        '• ${preview.macroGoalsCount} Obiettivi Macro',
+                        style: TextStyle(
+                          color: context.evolveColors.foreground,
+                        ),
+                      ),
+                      Text(
+                        '• ${preview.categoriesCount} Categorie',
+                        style: TextStyle(
+                          color: context.evolveColors.foreground,
+                        ),
+                      ),
+                      Text(
+                        '• ${preview.moodsCount} Registrazioni Umore',
+                        style: TextStyle(
+                          color: context.evolveColors.foreground,
+                        ),
+                      ),
                       const SizedBox(height: 24),
                       RadioListTile<bool>(
-                        title: Text('Sostituisci i dati attuali', style: TextStyle(color: context.evolveColors.foreground)),
-                        subtitle: Text('Elimina tutti i dati locali esistenti prima di importare. (Consigliato)', style: TextStyle(color: context.evolveColors.foreground.withValues(alpha: 0.5), fontSize: 12)),
+                        title: Text(
+                          'Sostituisci i dati attuali',
+                          style: TextStyle(
+                            color: context.evolveColors.foreground,
+                          ),
+                        ),
+                        subtitle: Text(
+                          'Elimina tutti i dati locali esistenti prima di importare. (Consigliato)',
+                          style: TextStyle(
+                            color: context.evolveColors.foreground.withValues(
+                              alpha: 0.5,
+                            ),
+                            fontSize: 12,
+                          ),
+                        ),
                         value: true,
                         groupValue: replaceExisting,
                         activeColor: Theme.of(context).colorScheme.primary,
-                        onChanged: (val) => setState(() => replaceExisting = val!),
+                        onChanged: (val) =>
+                            setState(() => replaceExisting = val!),
                       ),
                       RadioListTile<bool>(
-                        title: Text('Unisci ai dati attuali', style: TextStyle(color: context.evolveColors.foreground)),
-                        subtitle: Text('Aggiunge i dati importati senza eliminare nulla. Potrebbe causare duplicati.', style: TextStyle(color: context.evolveColors.foreground.withValues(alpha: 0.5), fontSize: 12)),
+                        title: Text(
+                          'Unisci ai dati attuali',
+                          style: TextStyle(
+                            color: context.evolveColors.foreground,
+                          ),
+                        ),
+                        subtitle: Text(
+                          'Aggiunge i dati importati senza eliminare nulla. Potrebbe causare duplicati.',
+                          style: TextStyle(
+                            color: context.evolveColors.foreground.withValues(
+                              alpha: 0.5,
+                            ),
+                            fontSize: 12,
+                          ),
+                        ),
                         value: false,
                         groupValue: replaceExisting,
                         activeColor: Theme.of(context).colorScheme.primary,
-                        onChanged: (val) => setState(() => replaceExisting = val!),
+                        onChanged: (val) =>
+                            setState(() => replaceExisting = val!),
                       ),
                     ],
                   ),
@@ -915,7 +981,11 @@ class _SettingsPageState extends ConsumerState<SettingsPage> {
                     onPressed: () => Navigator.pop(ctx, false),
                     child: Text(
                       'Annulla',
-                      style: TextStyle(color: context.evolveColors.foreground.withValues(alpha: 0.5)),
+                      style: TextStyle(
+                        color: context.evolveColors.foreground.withValues(
+                          alpha: 0.5,
+                        ),
+                      ),
                     ),
                   ),
                   FilledButton(
@@ -973,10 +1043,9 @@ class _SettingsPageState extends ConsumerState<SettingsPage> {
           backgroundColor: Colors.green,
         ),
       );
-      
+
       // Refresh dashboard
       ref.invalidate(dashboardControllerProvider);
-
     } catch (e, st) {
       AppLogger.error('Errore durante importData', e, st);
       if (!mounted) return;
@@ -995,18 +1064,26 @@ class _SettingsPageState extends ConsumerState<SettingsPage> {
   Future<void> _deletePrivateData() async {
     final confirmed = await _confirm(
       title: 'Elimina dati privati',
-      message: 'Sei sicuro di voler eliminare tutto il database locale crittografato? Questa operazione è irreversibile e i dati non potranno essere recuperati.',
+      message:
+          'Sei sicuro di voler eliminare tutto il database locale crittografato? Questa operazione è irreversibile e i dati non potranno essere recuperati.',
       destructive: true,
     );
     if (!confirmed) return;
-    
+
     try {
-      await DesktopPrivateDb.instance.deleteAll();
-      await ref.read(dashboardControllerProvider.notifier).resetData();
-      await ref.read(desktopAuthControllerProvider.notifier).goToLogin();
+      // Wipe all private data but stay in Private mode with a fresh, empty
+      // profile (mirrors the mobile client — non-destructive to the mode).
+      await DesktopPrivateDb.instance.deleteAllPrivateData();
+      await ref.read(dashboardControllerProvider.notifier).refresh();
+      ref.invalidate(privateProfileProvider);
+      ref.invalidate(desktopGoalCategoriesControllerProvider);
+      if (mounted) {
+        _showGate('Elimina dati privati', 'Dati privati eliminati.');
+      }
     } catch (error, stack) {
       AppLogger.error('Unable to delete private database', error, stack);
-      if (mounted) _showGate('Elimina dati privati', 'Operazione non riuscita.');
+      if (mounted)
+        _showGate('Elimina dati privati', 'Operazione non riuscita.');
     }
   }
 
@@ -1705,8 +1782,12 @@ class _ProfileCard extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final metadata = user?.userMetadata;
-    final fullName = isPrivateMode ? privateProfile?.fullName : (metadata?['full_name'] as String?)?.trim();
-    final avatarUrl = isPrivateMode ? privateProfile?.avatarPath : metadata?['avatar_url'] as String?;
+    final fullName = isPrivateMode
+        ? privateProfile?.fullName
+        : (metadata?['full_name'] as String?)?.trim();
+    final avatarUrl = isPrivateMode
+        ? privateProfile?.avatarPath
+        : metadata?['avatar_url'] as String?;
     return Container(
       padding: const EdgeInsets.all(16),
       decoration: BoxDecoration(
@@ -1725,7 +1806,10 @@ class _ProfileCard extends StatelessWidget {
               backgroundImage: image != null
                   ? FileImage(image!)
                   : avatarUrl != null
-                  ? (isPrivateMode ? FileImage(File(avatarUrl)) : NetworkImage(avatarUrl)) as ImageProvider
+                  ? (isPrivateMode
+                            ? FileImage(File(avatarUrl))
+                            : NetworkImage(avatarUrl))
+                        as ImageProvider
                   : null,
               child: image == null && avatarUrl == null
                   ? Icon(
@@ -1744,8 +1828,8 @@ class _ProfileCard extends StatelessWidget {
                   isPrivateMode
                       ? 'Modalità Privata'
                       : fullName?.isNotEmpty ?? false
-                          ? fullName!
-                          : user?.email?.split('@').first ?? 'Profilo',
+                      ? fullName!
+                      : user?.email?.split('@').first ?? 'Profilo',
                   style: TextStyle(
                     color: context.evolveColors.foreground,
                     fontSize: 15,
@@ -1754,7 +1838,7 @@ class _ProfileCard extends StatelessWidget {
                 ),
                 SizedBox(height: 4),
                 Text(
-                  isPrivateMode 
+                  isPrivateMode
                       ? 'I tuoi dati sono protetti e salvati unicamente su questo dispositivo.'
                       : user?.email ?? 'Sessione non disponibile',
                   style: TextStyle(

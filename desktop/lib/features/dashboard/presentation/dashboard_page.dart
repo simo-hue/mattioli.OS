@@ -50,7 +50,7 @@ class _DashboardPageState extends ConsumerState<DashboardPage> {
   Future<bool> _ensureProfileNameReady() async {
     final authState = ref.read(desktopAuthControllerProvider);
     if (authState.user != null) return true; // Logged in user
-    
+
     // Privacy mode
     final prefs = ref.read(sharedPreferencesProvider);
     final hasName = prefs?.getString('private_profile_name') != null;
@@ -62,14 +62,16 @@ class _DashboardPageState extends ConsumerState<DashboardPage> {
   Future<bool> _showNameDialog() async {
     if (_isNameDialogOpen || !mounted) return false;
     _isNameDialogOpen = true;
-    
+
     bool result = false;
     try {
-      result = await showEvolveDialog<bool>(
-        context: context,
-        barrierDismissible: false,
-        builder: (context) => const _NamePromptDialog(),
-      ) ?? false;
+      result =
+          await showEvolveDialog<bool>(
+            context: context,
+            barrierDismissible: false,
+            builder: (context) => const _NamePromptDialog(),
+          ) ??
+          false;
     } finally {
       _isNameDialogOpen = false;
     }
@@ -88,7 +90,7 @@ class _DashboardPageState extends ConsumerState<DashboardPage> {
   Future<void> _showWelcomeScreen() async {
     if (_isWelcomeDialogOpen || !mounted) return;
     _isWelcomeDialogOpen = true;
-    
+
     try {
       await showEvolveDialog<bool>(
         context: context,
@@ -100,7 +102,9 @@ class _DashboardPageState extends ConsumerState<DashboardPage> {
           content: Column(
             mainAxisSize: MainAxisSize.min,
             children: [
-              const Text('Questa applicazione ti aiuta a costruire buone abitudini e raggiungere i tuoi obiettivi a lungo termine.'),
+              const Text(
+                'Questa applicazione ti aiuta a costruire buone abitudini e raggiungere i tuoi obiettivi a lungo termine.',
+              ),
               const SizedBox(height: 24),
               SizedBox(
                 width: double.infinity,
@@ -515,7 +519,9 @@ class _HabitPanel extends ConsumerWidget {
                   icon: const Icon(Icons.add_rounded, size: 20),
                   tooltip: 'Nuova Abitudine',
                   style: IconButton.styleFrom(
-                    backgroundColor: context.evolveColors.border.withValues(alpha: 0.3),
+                    backgroundColor: context.evolveColors.border.withValues(
+                      alpha: 0.3,
+                    ),
                   ),
                 ),
               ],
@@ -528,18 +534,23 @@ class _HabitPanel extends ConsumerWidget {
               child: Center(
                 child: Text(
                   'Il tuo canvas è vuoto. Crea la tua prima abitudine.',
-                  style: TextStyle(color: context.evolveColors.foreground.withValues(alpha: 0.5), fontSize: 13),
+                  style: TextStyle(
+                    color: context.evolveColors.foreground.withValues(
+                      alpha: 0.5,
+                    ),
+                    fontSize: 13,
+                  ),
                 ),
               ),
             )
           else
             for (final habit in snapshot.todayHabits)
               _HabitRow(
-              habit: habit,
-              onTap: () => ref
-                  .read(dashboardControllerProvider.notifier)
-                  .toggleHabit(habit.id),
-            ),
+                habit: habit,
+                onTap: () => ref
+                    .read(dashboardControllerProvider.notifier)
+                    .toggleHabit(habit.id),
+              ),
         ],
       ),
     );
@@ -801,10 +812,14 @@ class _FocusGoalsPanel extends ConsumerWidget {
             trailing: Builder(
               builder: (context) => IconButton(
                 onPressed: () {
-                  final isPro = ref.read(desktopSubscriptionControllerProvider).isPro;
+                  final isPro = ref.read(desktopIsProProvider);
                   if (!isPro && goals.length >= 100) {
                     ScaffoldMessenger.of(context).showSnackBar(
-                      const SnackBar(content: Text('Limite di 100 obiettivi raggiunto. Passa a Pro per crearne altri.')),
+                      const SnackBar(
+                        content: Text(
+                          'Limite di 100 obiettivi raggiunto. Passa a Pro per crearne altri.',
+                        ),
+                      ),
                     );
                     return;
                   }
@@ -816,7 +831,9 @@ class _FocusGoalsPanel extends ConsumerWidget {
                 icon: const Icon(Icons.add_rounded, size: 20),
                 tooltip: 'Nuovo Obiettivo',
                 style: IconButton.styleFrom(
-                  backgroundColor: context.evolveColors.border.withValues(alpha: 0.3),
+                  backgroundColor: context.evolveColors.border.withValues(
+                    alpha: 0.3,
+                  ),
                 ),
               ),
             ),
@@ -828,7 +845,12 @@ class _FocusGoalsPanel extends ConsumerWidget {
               child: Center(
                 child: Text(
                   'Nessun obiettivo in focus. Aggiungine uno.',
-                  style: TextStyle(color: context.evolveColors.foreground.withValues(alpha: 0.5), fontSize: 13),
+                  style: TextStyle(
+                    color: context.evolveColors.foreground.withValues(
+                      alpha: 0.5,
+                    ),
+                    fontSize: 13,
+                  ),
                 ),
               ),
             )
@@ -1034,7 +1056,9 @@ class _NamePromptDialogState extends State<_NamePromptDialog> {
   void _submit(WidgetRef ref) {
     final name = _controller.text.trim();
     if (name.isEmpty) return;
-    ref.read(sharedPreferencesProvider)?.setString('private_profile_name', name);
+    ref
+        .read(sharedPreferencesProvider)
+        ?.setString('private_profile_name', name);
     Navigator.pop(context, true);
   }
 
@@ -1055,7 +1079,9 @@ class _NamePromptDialogState extends State<_NamePromptDialog> {
                 decoration: InputDecoration(
                   hintText: 'Es. Simo',
                   filled: true,
-                  fillColor: Theme.of(context).colorScheme.surfaceContainerHighest.withValues(alpha: 0.3),
+                  fillColor: Theme.of(
+                    context,
+                  ).colorScheme.surfaceContainerHighest.withValues(alpha: 0.3),
                   border: OutlineInputBorder(
                     borderRadius: BorderRadius.circular(12),
                     borderSide: BorderSide.none,
@@ -1074,7 +1100,7 @@ class _NamePromptDialogState extends State<_NamePromptDialog> {
             ],
           ),
         );
-      }
+      },
     );
   }
 }

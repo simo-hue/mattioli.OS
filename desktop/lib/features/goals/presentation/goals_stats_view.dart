@@ -16,14 +16,11 @@ import 'package:evolve_desktop/features/dashboard/application/dashboard_controll
 import 'package:evolve_desktop/features/statistics/data/statistics_rpc_providers.dart';
 import 'package:evolve_desktop/features/goals/application/goal_categories_controller.dart';
 
-
-
 class GoalsStatsView extends ConsumerStatefulWidget {
   const GoalsStatsView({super.key});
 
   @override
-  ConsumerState<GoalsStatsView> createState() =>
-      _GoalsStatsViewState();
+  ConsumerState<GoalsStatsView> createState() => _GoalsStatsViewState();
 }
 
 class _GoalsStatsViewState extends ConsumerState<GoalsStatsView> {
@@ -58,8 +55,8 @@ class _GoalsStatsViewState extends ConsumerState<GoalsStatsView> {
   Widget build(BuildContext context) {
     final allGoals = ref.watch(dashboardControllerProvider).goals;
 
-    final settings = ref.watch(desktopSubscriptionControllerProvider);
-    if (!settings.isPro && _selectedYear != 'all') {
+    final isPro = ref.watch(desktopIsProProvider);
+    if (!isPro && _selectedYear != 'all') {
       WidgetsBinding.instance.addPostFrameCallback((_) {
         if (mounted) {
           setState(() => _selectedYear = 'all');
@@ -92,8 +89,8 @@ class _GoalsStatsViewState extends ConsumerState<GoalsStatsView> {
                   Text(
                     'Performance',
                     style: TextStyle(
-fontFamily: 'Inter',
-fontSize: 22,
+                      fontFamily: 'Inter',
+                      fontSize: 22,
                       fontWeight: FontWeight.bold,
                       color: context.evolveColors.foreground,
                       letterSpacing: -0.5,
@@ -129,7 +126,8 @@ fontSize: 22,
   }
 
   List<Widget> _buildSingleYearContent(Map<String, dynamic> stats) {
-    final List<DesktopGoalCategory> categories = ref.watch(desktopGoalCategoriesControllerProvider).value ?? [];
+    final List<DesktopGoalCategory> categories =
+        ref.watch(desktopGoalCategoriesControllerProvider).value ?? [];
     final totalGoals = stats['total_goals'] as int? ?? 0;
     final completedGoals = stats['completed_goals'] as int? ?? 0;
     final successRate = stats['success_rate'] as int? ?? 0;
@@ -142,7 +140,9 @@ fontSize: 22,
           .firstWhere((c) => c.id == bestCategoryKey)
           .label;
     } catch (_) {
-      bestCategory = categories.where((c) => c.id == bestCategoryKey).firstOrNull?.label ?? 'N/A';
+      bestCategory =
+          categories.where((c) => c.id == bestCategoryKey).firstOrNull?.label ??
+          'N/A';
     }
     final bestCatRate = stats['best_category_rate'] as int? ?? 0;
 
@@ -163,8 +163,7 @@ fontSize: 22,
             child: _buildHighlightCard(
               title: 'Punto di forza',
               value: bestCategory,
-              subtitle:
-                  '$bestCatRate% ${'di completamento'}',
+              subtitle: '$bestCatRate% ${'di completamento'}',
               icon: LucideIcons.zap,
               color: const Color(0xFFA855F7),
             ),
@@ -176,8 +175,7 @@ fontSize: 22,
               value: (bestMonthIdx != null && bestMonthIdx > 0)
                   ? _monthLabel(bestMonthIdx, abbreviated: true)
                   : 'Nessuno',
-              subtitle:
-                  '$bestMonthRate% ${'success rate'}',
+              subtitle: '$bestMonthRate% ${'success rate'}',
               icon: LucideIcons.trophy,
               color: const Color(0xFFF59E0B),
             ),
@@ -197,11 +195,7 @@ fontSize: 22,
       Row(
         children: [
           Expanded(
-            child: _buildKpiCard(
-              'Totale',
-              '$totalGoals',
-              LucideIcons.target,
-            ),
+            child: _buildKpiCard('Totale', '$totalGoals', LucideIcons.target),
           ),
           const SizedBox(width: 8),
           Expanded(
@@ -258,7 +252,8 @@ fontSize: 22,
   }
 
   List<Widget> _buildGlobalContent(Map<String, dynamic> stats) {
-    final List<DesktopGoalCategory> categories = ref.watch(desktopGoalCategoriesControllerProvider).value ?? [];
+    final List<DesktopGoalCategory> categories =
+        ref.watch(desktopGoalCategoriesControllerProvider).value ?? [];
     final total = stats['total_goals'] as int? ?? 0;
     final comp = stats['completed_goals'] as int? ?? 0;
     final succ = total > 0 ? (comp / total * 100).round() : 0;
@@ -296,8 +291,7 @@ fontSize: 22,
             child: _buildHighlightCard(
               title: 'Successo Globale',
               value: '$succ%',
-              subtitle:
-                  '$comp ${'obiettivi completati'}',
+              subtitle: '$comp ${'obiettivi completati'}',
               icon: LucideIcons.trophy,
               color: const Color(0xFF10B981),
             ),
@@ -311,8 +305,7 @@ fontSize: 22,
             child: _buildHighlightCard(
               title: 'Anno Migliore',
               value: bestYear != null ? '$bestYear' : 'N/A',
-              subtitle:
-                  '$bestYearRate% ${'completamento'}',
+              subtitle: '$bestYearRate% ${'completamento'}',
               icon: LucideIcons.calendar,
               color: const Color(0xFFD97706),
             ),
@@ -322,8 +315,7 @@ fontSize: 22,
             child: _buildHighlightCard(
               title: 'Anno Più Produttivo',
               value: mostProdYear != null ? '$mostProdYear' : 'N/A',
-              subtitle:
-                  '$mostProdCount ${'obiettivi totali'}',
+              subtitle: '$mostProdCount ${'obiettivi totali'}',
               icon: LucideIcons.activity,
               color: const Color(0xFF06B6D4),
             ),
@@ -412,8 +404,7 @@ fontSize: 22,
   }
 
   void _showYearPicker(List<int> years) {
-    final settings = ref.read(desktopSubscriptionControllerProvider);
-    final isPro = settings.isPro;
+    final isPro = ref.read(desktopIsProProvider);
     final primaryColor = Theme.of(context).colorScheme.primary;
 
     showModalBottomSheet(
@@ -490,9 +481,7 @@ fontSize: 22,
                   size: 20,
                   color: isSel
                       ? primaryColor
-                      : context.evolveColors.muted.withValues(
-                          alpha: 0.6,
-                        ),
+                      : context.evolveColors.muted.withValues(alpha: 0.6),
                 ),
                 title: Text(
                   '$y',
@@ -523,8 +512,10 @@ fontSize: 22,
                 onTap: () {
                   if (!isPro) {
                     Navigator.pop(context);
-                    
-                    ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('Funzione Pro richiesta')));
+
+                    ScaffoldMessenger.of(context).showSnackBar(
+                      const SnackBar(content: Text('Funzione Pro richiesta')),
+                    );
                     if (mounted) {
                       setState(() => _selectedYear = 'all');
                     }
@@ -573,8 +564,8 @@ fontSize: 22,
                 child: Text(
                   title.toUpperCase(),
                   style: TextStyle(
-fontFamily: 'Inter',
-fontSize: 10,
+                    fontFamily: 'Inter',
+                    fontSize: 10,
                     color: color.withValues(alpha: 0.8),
                     fontWeight: FontWeight.w700,
                     letterSpacing: 0.5,
@@ -598,8 +589,8 @@ fontSize: 10,
           Text(
             value,
             style: TextStyle(
-fontFamily: 'Inter',
-fontSize: 24,
+              fontFamily: 'Inter',
+              fontSize: 24,
               color: context.evolveColors.foreground,
               fontWeight: FontWeight.w800,
               letterSpacing: -0.5,
@@ -609,8 +600,8 @@ fontSize: 24,
           Text(
             subtitle,
             style: TextStyle(
-fontFamily: 'Inter',
-fontSize: 11,
+              fontFamily: 'Inter',
+              fontSize: 11,
               color: context.evolveColors.muted,
               fontWeight: FontWeight.w500,
             ),
@@ -643,8 +634,8 @@ fontSize: 11,
                 child: Text(
                   title,
                   style: TextStyle(
-fontFamily: 'Inter',
-fontSize: 11,
+                    fontFamily: 'Inter',
+                    fontSize: 11,
                     color: context.evolveColors.muted,
                     letterSpacing: -0.2,
                   ),
@@ -659,8 +650,8 @@ fontSize: 11,
           Text(
             value,
             style: TextStyle(
-fontFamily: 'Inter',
-fontSize: 18,
+              fontFamily: 'Inter',
+              fontSize: 18,
               color: context.evolveColors.foreground,
               fontWeight: FontWeight.w700,
             ),
@@ -697,8 +688,8 @@ fontSize: 18,
           Text(
             title,
             style: TextStyle(
-fontFamily: 'Inter',
-fontSize: 17,
+              fontFamily: 'Inter',
+              fontSize: 17,
               color: context.evolveColors.foreground,
               fontWeight: FontWeight.w700,
               letterSpacing: -0.4,
@@ -708,8 +699,8 @@ fontSize: 17,
           Text(
             subtitle,
             style: TextStyle(
-fontFamily: 'Inter',
-fontSize: 13,
+              fontFamily: 'Inter',
+              fontSize: 13,
               color: context.evolveColors.muted,
               fontWeight: FontWeight.w400,
             ),
@@ -773,7 +764,9 @@ fontSize: 13,
               rightTitles: const AxisTitles(
                 sideTitles: SideTitles(showTitles: false),
               ),
-              topTitles: const AxisTitles(sideTitles: SideTitles(showTitles: false)),
+              topTitles: const AxisTitles(
+                sideTitles: SideTitles(showTitles: false),
+              ),
               bottomTitles: AxisTitles(
                 sideTitles: SideTitles(
                   showTitles: true,
@@ -785,8 +778,8 @@ fontSize: 13,
                       child: Text(
                         _monthLabel(val.toInt(), abbreviated: true),
                         style: TextStyle(
-fontFamily: 'Inter',
-fontSize: 10,
+                          fontFamily: 'Inter',
+                          fontSize: 10,
                           color: context.evolveColors.muted,
                         ),
                       ),
@@ -803,8 +796,8 @@ fontSize: 10,
                     return Text(
                       val.toInt().toString(),
                       style: TextStyle(
-fontFamily: 'Inter',
-fontSize: 10,
+                        fontFamily: 'Inter',
+                        fontSize: 10,
                         color: context.evolveColors.muted,
                       ),
                     );
@@ -850,7 +843,8 @@ fontSize: 10,
   }
 
   Widget _buildCategoryRadarCard(List<dynamic> stats) {
-    final List<DesktopGoalCategory> categories = ref.watch(desktopGoalCategoriesControllerProvider).value ?? [];
+    final List<DesktopGoalCategory> categories =
+        ref.watch(desktopGoalCategoriesControllerProvider).value ?? [];
     if (stats.isEmpty) {
       return _buildCardBase(
         title: '',
@@ -894,7 +888,9 @@ fontSize: 10,
         try {
           label = categories.firstWhere((c) => c.id == catKey).label;
         } catch (_) {
-          label = categories.where((c) => c.id == catKey).firstOrNull?.label ?? 'N/A';
+          label =
+              categories.where((c) => c.id == catKey).firstOrNull?.label ??
+              'N/A';
         }
 
         entries.add(RadarEntry(value: rate));
@@ -939,8 +935,8 @@ fontSize: 10,
               return const RadarChartTitle(text: '');
             },
             titleTextStyle: TextStyle(
-fontFamily: 'Inter',
-fontSize: 10,
+              fontFamily: 'Inter',
+              fontSize: 10,
               color: context.evolveColors.muted,
             ),
           ),
@@ -1033,8 +1029,8 @@ fontSize: 10,
                   getTitlesWidget: (val, meta) => Text(
                     'Q${val.toInt()}',
                     style: TextStyle(
-fontFamily: 'Inter',
-fontSize: 10,
+                      fontFamily: 'Inter',
+                      fontSize: 10,
                       color: context.evolveColors.muted,
                     ),
                   ),
@@ -1127,7 +1123,7 @@ fontSize: 10,
             barTouchData: BarTouchData(
               touchTooltipData: BarTouchTooltipData(
                 getTooltipColor: (_) => context.evolveColors.panel,
-                
+
                 getTooltipItem: (group, groupIndex, rod, rodIndex) {
                   final m = group.x.toInt();
                   final item = dataMap[m];
@@ -1136,8 +1132,8 @@ fontSize: 10,
                   return BarTooltipItem(
                     '${_monthLabel(m)}\n',
                     TextStyle(
-fontFamily: 'Inter',
-color: context.evolveColors.foreground,
+                      fontFamily: 'Inter',
+                      color: context.evolveColors.foreground,
                       fontWeight: FontWeight.bold,
                       fontSize: 13,
                     ),
@@ -1145,16 +1141,16 @@ color: context.evolveColors.foreground,
                       TextSpan(
                         text: '${''}$tot\n',
                         style: TextStyle(
-fontFamily: 'Inter',
-color: const Color(0xFF6366F1),
+                          fontFamily: 'Inter',
+                          color: const Color(0xFF6366F1),
                           fontSize: 10,
                         ),
                       ),
                       TextSpan(
                         text: '${''}$comp',
                         style: TextStyle(
-fontFamily: 'Inter',
-color: Theme.of(context).colorScheme.primary,
+                          fontFamily: 'Inter',
+                          color: Theme.of(context).colorScheme.primary,
                           fontSize: 10,
                         ),
                       ),
@@ -1187,8 +1183,8 @@ color: Theme.of(context).colorScheme.primary,
                   getTitlesWidget: (v, _) => Text(
                     v.toInt().toString(),
                     style: TextStyle(
-fontFamily: 'Inter',
-fontSize: 10,
+                      fontFamily: 'Inter',
+                      fontSize: 10,
                       color: context.evolveColors.muted,
                     ),
                   ),
@@ -1207,8 +1203,8 @@ fontSize: 10,
                       child: Text(
                         _monthLabel(index, abbreviated: true),
                         style: TextStyle(
-fontFamily: 'Inter',
-fontSize: 10,
+                          fontFamily: 'Inter',
+                          fontSize: 10,
                           color: context.evolveColors.muted,
                           fontWeight: FontWeight.w600,
                         ),
@@ -1266,7 +1262,10 @@ fontSize: 10,
         try {
           color = categories.firstWhere((c) => c.id == catKey).color;
         } catch (_) {
-          color = categories.where((c) => c.id == catKey).firstOrNull?.color ?? Colors.grey ?? Colors.grey;
+          color =
+              categories.where((c) => c.id == catKey).firstOrNull?.color ??
+              Colors.grey ??
+              Colors.grey;
         }
 
         sections.add(
@@ -1304,8 +1303,8 @@ fontSize: 10,
                     Text(
                       '$totalCount',
                       style: TextStyle(
-fontFamily: 'Inter',
-fontSize: 28,
+                        fontFamily: 'Inter',
+                        fontSize: 28,
                         fontWeight: FontWeight.bold,
                         color: context.evolveColors.foreground,
                       ),
@@ -1313,8 +1312,8 @@ fontSize: 28,
                     Text(
                       'obiettivi',
                       style: TextStyle(
-fontFamily: 'Inter',
-fontSize: 12,
+                        fontFamily: 'Inter',
+                        fontSize: 12,
                         color: context.evolveColors.muted,
                       ),
                     ),
@@ -1339,8 +1338,19 @@ fontSize: 12,
                 color = c.color;
                 label = c.label;
               } catch (_) {
-                color = categories.where((c) => c.id == catKey).firstOrNull?.color ?? Colors.grey ?? Colors.grey;
-                label = categories.where((c) => c.id == catKey).firstOrNull?.label ?? 'N/A';
+                color =
+                    categories
+                        .where((c) => c.id == catKey)
+                        .firstOrNull
+                        ?.color ??
+                    Colors.grey ??
+                    Colors.grey;
+                label =
+                    categories
+                        .where((c) => c.id == catKey)
+                        .firstOrNull
+                        ?.label ??
+                    'N/A';
               }
               final perc = totalCount > 0
                   ? (count / totalCount * 100).round()
@@ -1372,8 +1382,8 @@ fontSize: 12,
                       child: Text(
                         label,
                         style: TextStyle(
-fontFamily: 'Inter',
-fontSize: 12,
+                          fontFamily: 'Inter',
+                          fontSize: 12,
                           color: context.evolveColors.foreground,
                         ),
                         maxLines: 1,
@@ -1382,8 +1392,8 @@ fontSize: 12,
                     Text(
                       '$perc%',
                       style: TextStyle(
-fontFamily: 'Inter',
-fontSize: 12,
+                        fontFamily: 'Inter',
+                        fontSize: 12,
                         color: context.evolveColors.muted,
                       ),
                     ),
@@ -1473,7 +1483,7 @@ fontSize: 12,
                 barTouchData: BarTouchData(
                   touchTooltipData: BarTouchTooltipData(
                     getTooltipColor: (_) => context.evolveColors.panel,
-                    
+
                     tooltipPadding: const EdgeInsets.symmetric(
                       horizontal: 12,
                       vertical: 8,
@@ -1490,8 +1500,8 @@ fontSize: 12,
                       return BarTooltipItem(
                         '$y\n',
                         TextStyle(
-fontFamily: 'Inter',
-color: context.evolveColors.foreground,
+                          fontFamily: 'Inter',
+                          color: context.evolveColors.foreground,
                           fontWeight: FontWeight.bold,
                           fontSize: 13,
                         ),
@@ -1499,26 +1509,24 @@ color: context.evolveColors.foreground,
                           TextSpan(
                             text: '${''}$act\n',
                             style: TextStyle(
-fontFamily: 'Inter',
-color: const Color(0xFF3B82F6),
+                              fontFamily: 'Inter',
+                              color: const Color(0xFF3B82F6),
                               fontSize: 11,
                             ),
                           ),
                           TextSpan(
-                            text:
-                                '${''}$fail\n',
+                            text: '${''}$fail\n',
                             style: TextStyle(
-fontFamily: 'Inter',
-color: const Color(0xFFEF4444),
+                              fontFamily: 'Inter',
+                              color: const Color(0xFFEF4444),
                               fontSize: 11,
                             ),
                           ),
                           TextSpan(
-                            text:
-                                '${''}$comp',
+                            text: '${''}$comp',
                             style: TextStyle(
-fontFamily: 'Inter',
-color: const Color(0xFF10B981),
+                              fontFamily: 'Inter',
+                              color: const Color(0xFF10B981),
                               fontSize: 11,
                             ),
                           ),
@@ -1553,8 +1561,8 @@ color: const Color(0xFF10B981),
                         child: Text(
                           v.toInt().toString(),
                           style: TextStyle(
-fontFamily: 'Inter',
-fontSize: 10,
+                            fontFamily: 'Inter',
+                            fontSize: 10,
                             color: context.evolveColors.muted,
                           ),
                         ),
@@ -1576,8 +1584,8 @@ fontSize: 10,
                           child: Text(
                             y?.toString() ?? '',
                             style: TextStyle(
-fontFamily: 'Inter',
-fontSize: 10,
+                              fontFamily: 'Inter',
+                              fontSize: 10,
                               color: context.evolveColors.muted,
                               fontWeight: FontWeight.w600,
                             ),
@@ -1626,8 +1634,8 @@ fontSize: 10,
                 Text(
                   i.label,
                   style: TextStyle(
-fontFamily: 'Inter',
-fontSize: 12,
+                    fontFamily: 'Inter',
+                    fontSize: 12,
                     color: context.evolveColors.muted,
                   ),
                 ),
@@ -1662,8 +1670,8 @@ fontSize: 12,
                       child: Text(
                         e.key,
                         style: TextStyle(
-fontFamily: 'Inter',
-fontSize: 12,
+                          fontFamily: 'Inter',
+                          fontSize: 12,
                           color: context.evolveColors.muted,
                         ),
                       ),
@@ -1704,8 +1712,8 @@ fontSize: 12,
                       child: Text(
                         '${e.value}',
                         style: TextStyle(
-fontFamily: 'Inter',
-fontSize: 12,
+                          fontFamily: 'Inter',
+                          fontSize: 12,
                           color: context.evolveColors.foreground,
                           fontWeight: FontWeight.bold,
                         ),
@@ -1794,7 +1802,7 @@ fontSize: 12,
                 barTouchData: BarTouchData(
                   touchTooltipData: BarTouchTooltipData(
                     getTooltipColor: (_) => context.evolveColors.panel,
-                    
+
                     getTooltipItem: (group, groupIndex, rod, rodIndex) {
                       final q = group.x.toInt();
                       final item = dataMap[q];
@@ -1804,8 +1812,8 @@ fontSize: 12,
                       return BarTooltipItem(
                         'Q$q\n',
                         TextStyle(
-fontFamily: 'Inter',
-color: context.evolveColors.foreground,
+                          fontFamily: 'Inter',
+                          color: context.evolveColors.foreground,
                           fontWeight: FontWeight.bold,
                           fontSize: 13,
                         ),
@@ -1813,26 +1821,24 @@ color: context.evolveColors.foreground,
                           TextSpan(
                             text: '${''}$act\n',
                             style: TextStyle(
-fontFamily: 'Inter',
-color: const Color(0xFF3B82F6),
+                              fontFamily: 'Inter',
+                              color: const Color(0xFF3B82F6),
                               fontSize: 10,
                             ),
                           ),
                           TextSpan(
-                            text:
-                                '${''}$fail\n',
+                            text: '${''}$fail\n',
                             style: TextStyle(
-fontFamily: 'Inter',
-color: const Color(0xFFD97706),
+                              fontFamily: 'Inter',
+                              color: const Color(0xFFD97706),
                               fontSize: 10,
                             ),
                           ),
                           TextSpan(
-                            text:
-                                '${''}$comp',
+                            text: '${''}$comp',
                             style: TextStyle(
-fontFamily: 'Inter',
-color: const Color(0xFF10B981),
+                              fontFamily: 'Inter',
+                              color: const Color(0xFF10B981),
                               fontSize: 10,
                             ),
                           ),
@@ -1869,8 +1875,8 @@ color: const Color(0xFF10B981),
                           child: Text(
                             'Q$index',
                             style: TextStyle(
-fontFamily: 'Inter',
-fontSize: 10,
+                              fontFamily: 'Inter',
+                              fontSize: 10,
                               color: context.evolveColors.muted,
                               fontWeight: FontWeight.w600,
                             ),
@@ -1926,23 +1932,22 @@ fontSize: 10,
             lineTouchData: LineTouchData(
               touchTooltipData: LineTouchTooltipData(
                 getTooltipColor: (_) => context.evolveColors.panel,
-                
+
                 getTooltipItems: (touchedSpots) {
                   return touchedSpots.map((s) {
                     return LineTooltipItem(
                       '${_monthLabel(s.x.toInt())}\n',
                       TextStyle(
-fontFamily: 'Inter',
-color: context.evolveColors.muted,
+                        fontFamily: 'Inter',
+                        color: context.evolveColors.muted,
                         fontSize: 10,
                       ),
                       children: [
                         TextSpan(
-                          text:
-                              '${s.y.round()}%${''}',
+                          text: '${s.y.round()}%${''}',
                           style: TextStyle(
-fontFamily: 'Inter',
-color: const Color(0xFF10B981),
+                            fontFamily: 'Inter',
+                            color: const Color(0xFF10B981),
                             fontWeight: FontWeight.bold,
                             fontSize: 13,
                           ),
@@ -1973,8 +1978,8 @@ color: const Color(0xFF10B981),
                   getTitlesWidget: (v, _) => Text(
                     '${v.toInt()}%',
                     style: TextStyle(
-fontFamily: 'Inter',
-fontSize: 9,
+                      fontFamily: 'Inter',
+                      fontSize: 9,
                       color: context.evolveColors.muted,
                     ),
                   ),
@@ -1992,8 +1997,8 @@ fontSize: 9,
                       child: Text(
                         _monthLabel(idx, abbreviated: true),
                         style: TextStyle(
-fontFamily: 'Inter',
-fontSize: 9,
+                          fontFamily: 'Inter',
+                          fontSize: 9,
                           color: context.evolveColors.muted,
                           fontWeight: FontWeight.w600,
                         ),
@@ -2138,7 +2143,7 @@ fontSize: 9,
                 barTouchData: BarTouchData(
                   touchTooltipData: BarTouchTooltipData(
                     getTooltipColor: (_) => context.evolveColors.panel,
-                    
+
                     tooltipPadding: const EdgeInsets.all(12),
                     getTooltipItem: (group, groupIndex, rod, rodIndex) {
                       final index = group.x.toInt();
@@ -2156,8 +2161,8 @@ fontSize: 9,
                             TextSpan(
                               text: '${c.label}: $count\n',
                               style: TextStyle(
-fontFamily: 'Inter',
-color: c.color,
+                                fontFamily: 'Inter',
+                                color: c.color,
                                 fontSize: 10,
                                 fontWeight: FontWeight.w500,
                               ),
@@ -2169,8 +2174,8 @@ color: c.color,
                       return BarTooltipItem(
                         '$y\n',
                         TextStyle(
-fontFamily: 'Inter',
-color: context.evolveColors.foreground,
+                          fontFamily: 'Inter',
+                          color: context.evolveColors.foreground,
                           fontWeight: FontWeight.bold,
                           fontSize: 14,
                         ),
@@ -2200,8 +2205,8 @@ color: context.evolveColors.foreground,
                       getTitlesWidget: (v, _) => Text(
                         v.toInt().toString(),
                         style: TextStyle(
-fontFamily: 'Inter',
-fontSize: 10,
+                          fontFamily: 'Inter',
+                          fontSize: 10,
                           color: context.evolveColors.muted,
                         ),
                       ),
@@ -2222,8 +2227,8 @@ fontSize: 10,
                           child: Text(
                             y?.toString() ?? '',
                             style: TextStyle(
-fontFamily: 'Inter',
-fontSize: 10,
+                              fontFamily: 'Inter',
+                              fontSize: 10,
                               color: context.evolveColors.muted,
                               fontWeight: FontWeight.w600,
                             ),

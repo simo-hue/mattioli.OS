@@ -9,7 +9,10 @@ import 'package:uuid/uuid.dart';
 
 /// [DashboardRepository] backed by the local encrypted SQLite database.
 ///
-/// All data is stored and read locally — no network calls are made.
+/// All data is stored and read locally — no network calls are made. The schema
+/// is [PrivateDbSchema] (aligned with the mobile client): `created_at` /
+/// `updated_at` are NOT NULL with no default, so every write stamps them
+/// explicitly.
 class PrivateDashboardRepository extends DashboardRepository {
   PrivateDashboardRepository({required this.ownerId});
 
@@ -23,18 +26,34 @@ class PrivateDashboardRepository extends DashboardRepository {
   @override
   DashboardSnapshot load() => _snapshot;
 
+  String _now() => DateTime.now().toUtc().toIso8601String();
+
   @override
   Future<DashboardSnapshot> refresh() async {
     try {
       final db = await DesktopPrivateDb.instance.database;
-      final habitRows =
-          await db.query('goals', where: 'user_id = ?', whereArgs: [ownerId], orderBy: 'display_order ASC, created_at ASC');
-      final logRows =
-          await db.query('goal_logs', where: 'user_id = ?', whereArgs: [ownerId]);
-      final goalRows =
-          await db.query('long_term_goals', where: 'user_id = ?', whereArgs: [ownerId], orderBy: 'created_at ASC');
-      final moodRows =
-          await db.query('daily_moods', where: 'user_id = ?', whereArgs: [ownerId]);
+      final habitRows = await db.query(
+        'goals',
+        where: 'user_id = ?',
+        whereArgs: [ownerId],
+        orderBy: 'display_order ASC, created_at ASC',
+      );
+      final logRows = await db.query(
+        'goal_logs',
+        where: 'user_id = ?',
+        whereArgs: [ownerId],
+      );
+      final goalRows = await db.query(
+        'long_term_goals',
+        where: 'user_id = ?',
+        whereArgs: [ownerId],
+        orderBy: 'created_at ASC',
+      );
+      final moodRows = await db.query(
+        'daily_moods',
+        where: 'user_id = ?',
+        whereArgs: [ownerId],
+      );
 
       _snapshot = _buildSnapshot(
         habitRows: habitRows,
@@ -58,6 +77,7 @@ class PrivateDashboardRepository extends DashboardRepository {
   Future<DashboardHabit> createHabit(DashboardHabit habit) async {
     final db = await DesktopPrivateDb.instance.database;
     final id = habit.id.isEmpty ? _uuid.v4() : habit.id;
+    final now = _now();
     final frequencyDays = habit.frequencyDays != null
         ? jsonEncode(habit.frequencyDays)
         : null;
@@ -69,11 +89,12 @@ class PrivateDashboardRepository extends DashboardRepository {
       'icon': habit.icon,
       'color': dashboardColorToHex(habit.color),
       'frequency_days': frequencyDays,
-      'start_date': habit.startDate?.toIso8601String(),
+      'start_date': (habit.startDate ?? DateTime.now()).toIso8601String(),
       'end_date': habit.endDate?.toIso8601String(),
       'display_order': habit.displayOrder,
       'reminder_time': habit.reminderTime,
-      'is_active': habit.isActive ? 1 : 0,
+      'created_at': now,
+      'updated_at': now,
     });
     return habit.copyWith(id: id);
   }
@@ -92,12 +113,11 @@ class PrivateDashboardRepository extends DashboardRepository {
         'icon': habit.icon,
         'color': dashboardColorToHex(habit.color),
         'frequency_days': frequencyDays,
-        'start_date': habit.startDate?.toIso8601String(),
+        'start_date': (habit.startDate ?? DateTime.now()).toIso8601String(),
         'end_date': habit.endDate?.toIso8601String(),
         'display_order': habit.displayOrder,
         'reminder_time': habit.reminderTime,
-        'is_active': habit.isActive ? 1 : 0,
-        'updated_at': DateTime.now().toUtc().toIso8601String(),
+        'updated_at': _now(),
       },
       where: 'id = ?',
       whereArgs: [habit.id],
@@ -133,42 +153,41 @@ class PrivateDashboardRepository extends DashboardRepository {
       return null;
     }
 
+    final now = _now();
     final streak = _computeNextStreak(habitId, date, nextStatus);
-    await db.insert(
-      'goal_logs',
-      {
-        'id': _uuid.v4(),
-        'user_id': ownerId,
-        'goal_id': habitId,
-        'date': dateKey,
-        'status': nextStatus,
-        'streak': streak,
-      },
-      conflictAlgorithm: ConflictAlgorithm.replace,
-    );
+    await db.insert('goal_logs', {
+      'id': _uuid.v4(),
+      'user_id': ownerId,
+      'goal_id': habitId,
+      'date': dateKey,
+      'status': nextStatus,
+      'streak': streak,
+      'created_at': now,
+      'updated_at': now,
+    }, conflictAlgorithm: ConflictAlgorithm.replace);
     return nextStatus;
   }
 
   @override
   Future<void> saveCheckIn(DateTime date, DailyCheckIn checkIn) async {
     final db = await DesktopPrivateDb.instance.database;
-    await db.insert(
-      'daily_moods',
-      {
-        'id': _uuid.v4(),
-        'user_id': ownerId,
-        'date': dashboardDateKey(date),
-        'mood_score': checkIn.mood,
-        'energy_score': checkIn.energy,
-      },
-      conflictAlgorithm: ConflictAlgorithm.replace,
-    );
+    final now = _now();
+    await db.insert('daily_moods', {
+      'id': _uuid.v4(),
+      'user_id': ownerId,
+      'date': dashboardDateKey(date),
+      'mood_score': checkIn.mood ?? 0,
+      'energy_score': checkIn.energy ?? 0,
+      'created_at': now,
+      'updated_at': now,
+    }, conflictAlgorithm: ConflictAlgorithm.replace);
   }
 
   @override
   Future<DashboardGoal> createGoal(DashboardGoal goal) async {
     final db = await DesktopPrivateDb.instance.database;
     final id = goal.id.isEmpty ? _uuid.v4() : goal.id;
+    final now = _now();
     await db.insert('long_term_goals', {
       'id': id,
       'user_id': ownerId,
@@ -182,6 +201,7 @@ class PrivateDashboardRepository extends DashboardRepository {
       'category_key': goal.category,
       'category_id': goal.categoryId,
       'created_at': (goal.createdAt ?? DateTime.now()).toIso8601String(),
+      'updated_at': now,
     });
     return goal.copyWith(id: id);
   }
@@ -201,7 +221,7 @@ class PrivateDashboardRepository extends DashboardRepository {
         'week_number': goal.weekNumber,
         'category_key': goal.category,
         'category_id': goal.categoryId,
-        'updated_at': DateTime.now().toUtc().toIso8601String(),
+        'updated_at': _now(),
       },
       where: 'id = ?',
       whereArgs: [goal.id],
@@ -223,7 +243,6 @@ class PrivateDashboardRepository extends DashboardRepository {
     batch.delete('long_term_goals');
     batch.delete('daily_moods');
     batch.delete('macro_goal_categories');
-    batch.delete('goal_category_settings');
     await batch.commit(noResult: true);
     _snapshot = DashboardSnapshot.empty;
   }
@@ -246,12 +265,14 @@ class PrivateDashboardRepository extends DashboardRepository {
     }
 
     final now = DateTime.now();
-    final monday = DateTime(now.year, now.month, now.day)
-        .subtract(Duration(days: now.weekday - 1));
+    final monday = DateTime(
+      now.year,
+      now.month,
+      now.day,
+    ).subtract(Duration(days: now.weekday - 1));
 
     final habits = [
-      for (final row in habitRows)
-        _habitFromRow(row, logs, monday, now),
+      for (final row in habitRows) _habitFromRow(row, logs, monday, now),
     ];
 
     final moods = <String, DailyCheckIn>{};
@@ -290,8 +311,7 @@ class PrivateDashboardRepository extends DashboardRepository {
   ) {
     final id = row['id'] as String;
     final frequencyDays = row['frequency_days'] != null
-        ? (jsonDecode(row['frequency_days'] as String) as List)
-              .cast<int>()
+        ? (jsonDecode(row['frequency_days'] as String) as List).cast<int>()
         : null;
 
     return DashboardHabit(
@@ -302,7 +322,8 @@ class PrivateDashboardRepository extends DashboardRepository {
       streak: _latestStreak(id, logs),
       weeklyProgress: [
         for (var day = 0; day < 7; day++)
-          logs[dashboardDateKey(monday.add(Duration(days: day)))]?[id] == 'done',
+          logs[dashboardDateKey(monday.add(Duration(days: day)))]?[id] ==
+              'done',
       ],
       state: logs[dashboardDateKey(now)]?[id] == 'done'
           ? HabitState.completed
@@ -314,7 +335,7 @@ class PrivateDashboardRepository extends DashboardRepository {
       endDate: DateTime.tryParse(row['end_date'] as String? ?? ''),
       displayOrder: row['display_order'] as int?,
       reminderTime: row['reminder_time'] as String?,
-      isActive: (row['is_active'] as int?) != 0,
+      isActive: true,
     );
   }
 
@@ -340,10 +361,12 @@ class PrivateDashboardRepository extends DashboardRepository {
     final previousDate = date.subtract(const Duration(days: 1));
     final previousKey = dashboardDateKey(previousDate);
     final previousStatus = _snapshot.habitLogs[previousKey]?[habitId];
-    final currentStreak = _snapshot.habits
-        .where((h) => h.id == habitId)
-        .map((h) => h.streak)
-        .firstOrNull ?? 0;
+    final currentStreak =
+        _snapshot.habits
+            .where((h) => h.id == habitId)
+            .map((h) => h.streak)
+            .firstOrNull ??
+        0;
     return previousStatus == 'done' ? currentStreak + 1 : 1;
   }
 }

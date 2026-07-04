@@ -515,6 +515,27 @@
       "noInternet": "❌ Errore: nessuna connessione a internet. Verifica la rete.",
       "serverTimeout": "❌ Errore: il server sta impiegando troppo tempo a rispondere. Riprova.",
       "apiError": "❌ Errore API: {code} (verifica Sentry per i dettagli)"
+    },
+    "suggestions": {
+      "morningBoost": "🔥 Dammi la carica per iniziare!",
+      "avoidDistractions": "🧠 Come evitare le distrazioni?",
+      "lowEnergy": "⚡ Ho un calo di energia, cosa faccio?",
+      "stayFocused": "💪 Un consiglio per rimanere focalizzato",
+      "prepareTomorrow": "🛌 Come prepararsi per un domani produttivo?",
+      "disciplineReflection": "📝 Riflessione sulla disciplina di oggi",
+      "analyzeActiveGoals": "🎯 Analizza i miei obiettivi attivi",
+      "planMacroGoals": "🗺️ Come pianificare i miei macro obiettivi?",
+      "goalObstacles": "🛑 Quali ostacoli bloccano i miei obiettivi?",
+      "reachMilestones": "📈 Un consiglio per raggiungere i miei traguardi",
+      "consistencyStatus": "📈 Come sta andando la mia costanza?",
+      "weeklyStats": "📊 Le mie statistiche settimanali",
+      "planDay": "🌅 Pianifica la mia giornata",
+      "raiseBar": "🚀 Come posso alzare l’asticella?",
+      "recoverProcrastination": "🤕 Come recuperare se ho procrastinato?",
+      "connectHabitsGoals": "🔗 Come legare le abitudini agli obiettivi?",
+      "reviewGoalsHabits": "📊 Review di obiettivi e abitudini",
+      "disciplineAdvice": "🔥 Consiglio sulla disciplina",
+      "createNewHabit": "💡 Come creare una nuova abitudine?"
     }
   },
   "aiCoach": {
@@ -534,7 +555,12 @@
     "subtitle": "Ragiona sui pattern con un coach contestuale basato sui dati del percorso.",
     "contextButton": "Contesto",
     "typing": "AI Coach sta scrivendo...",
-    "inputHint": "Chiedi consigli al tuo Coach..."
+    "inputHint": "Chiedi consigli al tuo Coach...",
+    "defaultUserName": "utente",
+    "userNameLine": "- Nome: {userName}",
+    "activeGoalsCount": "- Obiettivi attivi: {count}",
+    "completedGoalsCount": "- Obiettivi completati: {count}",
+    "todayCompletion": "- Abitudini oggi: {completed} completate su {total} totali."
   },
   "settingsPage": {
     "account": "Account",

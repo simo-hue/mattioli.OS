@@ -515,6 +515,27 @@
       "noInternet": "❌ Fehler: Keine Internetverbindung. Prüfe dein Netzwerk.",
       "serverTimeout": "❌ Fehler: Der Server braucht zu lange für die Antwort. Versuche es erneut.",
       "apiError": "❌ API-Fehler: {code} (Details in Sentry prüfen)"
+    },
+    "suggestions": {
+      "morningBoost": "🔥 Gib mir einen Startimpuls!",
+      "avoidDistractions": "🧠 Wie kann ich Ablenkungen vermeiden?",
+      "lowEnergy": "⚡ Meine Energie sinkt. Was soll ich tun?",
+      "stayFocused": "💪 Gib mir einen Tipp, um fokussiert zu bleiben",
+      "prepareTomorrow": "🛌 Wie bereite ich mich auf einen produktiven morgigen Tag vor?",
+      "disciplineReflection": "📝 Reflektiere meine Disziplin heute",
+      "analyzeActiveGoals": "🎯 Analysiere meine aktiven Ziele",
+      "planMacroGoals": "🗺️ Wie sollte ich meine Makroziele planen?",
+      "goalObstacles": "🛑 Welche Hindernisse blockieren meine Ziele?",
+      "reachMilestones": "📈 Gib mir einen Tipp, um meine Meilensteine zu erreichen",
+      "consistencyStatus": "📈 Wie läuft meine Konstanz?",
+      "weeklyStats": "📊 Meine Wochenstatistiken",
+      "planDay": "🌅 Plane meinen Tag",
+      "raiseBar": "🚀 Wie kann ich das Niveau erhöhen?",
+      "recoverProcrastination": "🤕 Wie erhole ich mich nach Prokrastination?",
+      "connectHabitsGoals": "🔗 Wie kann ich Gewohnheiten mit Zielen verbinden?",
+      "reviewGoalsHabits": "📊 Überprüfe meine Ziele und Gewohnheiten",
+      "disciplineAdvice": "🔥 Disziplin-Tipp",
+      "createNewHabit": "💡 Wie kann ich eine neue Gewohnheit aufbauen?"
     }
   },
   "aiCoach": {
@@ -534,7 +555,12 @@
     "subtitle": "Analysiere Muster mit einem kontextbezogenen Coach auf Basis deiner Reisedaten.",
     "contextButton": "Kontext",
     "typing": "AI Coach schreibt...",
-    "inputHint": "Frag deinen Coach um Rat..."
+    "inputHint": "Frag deinen Coach um Rat...",
+    "defaultUserName": "Nutzer",
+    "userNameLine": "- Name: {userName}",
+    "activeGoalsCount": "- Aktive Ziele: {count}",
+    "completedGoalsCount": "- Abgeschlossene Ziele: {count}",
+    "todayCompletion": "- Gewohnheiten heute: {completed} von insgesamt {total} abgeschlossen."
   },
   "settingsPage": {
     "account": "Konto",

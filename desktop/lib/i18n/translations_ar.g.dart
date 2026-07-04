@@ -701,6 +701,7 @@ class _Translations$ai$ar extends Translations$ai$en {
 	@override String get dailyHabits => 'العادات اليومية';
 	@override String get macroGoals => 'الأهداف الكبرى';
 	@override late final _Translations$ai$openRouter$ar openRouter = _Translations$ai$openRouter$ar._(_root);
+	@override late final _Translations$ai$suggestions$ar suggestions = _Translations$ai$suggestions$ar._(_root);
 }
 
 // Path: aiCoach
@@ -727,6 +728,11 @@ class _Translations$aiCoach$ar extends Translations$aiCoach$en {
 	@override String get contextButton => 'السياق';
 	@override String get typing => 'يكتب AI Coach...';
 	@override String get inputHint => 'اطلب النصيحة من مدرّبك...';
+	@override String get defaultUserName => 'المستخدم';
+	@override String userNameLine({required Object userName}) => '- الاسم: ${userName}';
+	@override String activeGoalsCount({required Object count}) => '- الأهداف النشطة: ${count}';
+	@override String completedGoalsCount({required Object count}) => '- الأهداف المكتملة: ${count}';
+	@override String todayCompletion({required Object completed, required Object total}) => '- عادات اليوم: ${completed} مكتملة من أصل ${total}.';
 }
 
 // Path: settingsPage
@@ -1183,6 +1189,34 @@ class _Translations$ai$openRouter$ar extends Translations$ai$openRouter$en {
 	@override String get noInternet => '❌ خطأ: لا يوجد اتصال بالإنترنت. تحقّق من شبكتك.';
 	@override String get serverTimeout => '❌ خطأ: يستغرق الخادم وقتاً طويلاً للرد. حاول مرة أخرى.';
 	@override String apiError({required Object code}) => '❌ خطأ في API: ${code} (راجع Sentry للتفاصيل)';
+}
+
+// Path: ai.suggestions
+class _Translations$ai$suggestions$ar extends Translations$ai$suggestions$en {
+	_Translations$ai$suggestions$ar._(TranslationsAr root) : this._root = root, super.internal(root);
+
+	final TranslationsAr _root; // ignore: unused_field
+
+	// Translations
+	@override String get morningBoost => '🔥 امنحني دفعة للبدء!';
+	@override String get avoidDistractions => '🧠 كيف أتجنّب المشتّتات؟';
+	@override String get lowEnergy => '⚡ طاقتي تتراجع. ماذا أفعل؟';
+	@override String get stayFocused => '💪 امنحني نصيحة واحدة للبقاء مركّزاً';
+	@override String get prepareTomorrow => '🛌 كيف أستعد ليوم غدٍ منتج؟';
+	@override String get disciplineReflection => '📝 تأمّل في انضباط اليوم';
+	@override String get analyzeActiveGoals => '🎯 حلّل أهدافي النشطة';
+	@override String get planMacroGoals => '🗺️ كيف أخطّط لأهدافي الكبرى؟';
+	@override String get goalObstacles => '🛑 ما العقبات التي تعيق أهدافي؟';
+	@override String get reachMilestones => '📈 امنحني نصيحة واحدة لبلوغ مراحل إنجازي';
+	@override String get consistencyStatus => '📈 كيف هو مستوى مواظبتي؟';
+	@override String get weeklyStats => '📊 إحصاءاتي الأسبوعية';
+	@override String get planDay => '🌅 خطّط ليومي';
+	@override String get raiseBar => '🚀 كيف أرفع مستوى طموحي؟';
+	@override String get recoverProcrastination => '🤕 كيف أتعافى بعد التسويف؟';
+	@override String get connectHabitsGoals => '🔗 كيف أربط العادات بالأهداف؟';
+	@override String get reviewGoalsHabits => '📊 راجع أهدافي وعاداتي';
+	@override String get disciplineAdvice => '🔥 نصيحة عن الانضباط';
+	@override String get createNewHabit => '💡 كيف أنشئ عادة جديدة؟';
 }
 
 /// The flat map containing all translations for locale <ar>.
@@ -1653,6 +1687,25 @@ extension on TranslationsAr {
 			'ai.openRouter.noInternet' => '❌ خطأ: لا يوجد اتصال بالإنترنت. تحقّق من شبكتك.',
 			'ai.openRouter.serverTimeout' => '❌ خطأ: يستغرق الخادم وقتاً طويلاً للرد. حاول مرة أخرى.',
 			'ai.openRouter.apiError' => ({required Object code}) => '❌ خطأ في API: ${code} (راجع Sentry للتفاصيل)',
+			'ai.suggestions.morningBoost' => '🔥 امنحني دفعة للبدء!',
+			'ai.suggestions.avoidDistractions' => '🧠 كيف أتجنّب المشتّتات؟',
+			'ai.suggestions.lowEnergy' => '⚡ طاقتي تتراجع. ماذا أفعل؟',
+			'ai.suggestions.stayFocused' => '💪 امنحني نصيحة واحدة للبقاء مركّزاً',
+			'ai.suggestions.prepareTomorrow' => '🛌 كيف أستعد ليوم غدٍ منتج؟',
+			'ai.suggestions.disciplineReflection' => '📝 تأمّل في انضباط اليوم',
+			'ai.suggestions.analyzeActiveGoals' => '🎯 حلّل أهدافي النشطة',
+			'ai.suggestions.planMacroGoals' => '🗺️ كيف أخطّط لأهدافي الكبرى؟',
+			'ai.suggestions.goalObstacles' => '🛑 ما العقبات التي تعيق أهدافي؟',
+			'ai.suggestions.reachMilestones' => '📈 امنحني نصيحة واحدة لبلوغ مراحل إنجازي',
+			'ai.suggestions.consistencyStatus' => '📈 كيف هو مستوى مواظبتي؟',
+			'ai.suggestions.weeklyStats' => '📊 إحصاءاتي الأسبوعية',
+			'ai.suggestions.planDay' => '🌅 خطّط ليومي',
+			'ai.suggestions.raiseBar' => '🚀 كيف أرفع مستوى طموحي؟',
+			'ai.suggestions.recoverProcrastination' => '🤕 كيف أتعافى بعد التسويف؟',
+			'ai.suggestions.connectHabitsGoals' => '🔗 كيف أربط العادات بالأهداف؟',
+			'ai.suggestions.reviewGoalsHabits' => '📊 راجع أهدافي وعاداتي',
+			'ai.suggestions.disciplineAdvice' => '🔥 نصيحة عن الانضباط',
+			'ai.suggestions.createNewHabit' => '💡 كيف أنشئ عادة جديدة؟',
 			'aiCoach.greeting' => 'مرحبًا! أنا Evolve AI Coach. أنا هنا لمساعدتك على تحسين بروتوكولك وتحقيق أهدافك. كيف يمكنني مساعدتك اليوم؟',
 			'aiCoach.systemPersona' => 'أنت Evolve AI Coach، مساعد افتراضي للانضباط الشخصي.',
 			'aiCoach.habitsHeader' => 'العادات النشطة:',
@@ -1670,6 +1723,11 @@ extension on TranslationsAr {
 			'aiCoach.contextButton' => 'السياق',
 			'aiCoach.typing' => 'يكتب AI Coach...',
 			'aiCoach.inputHint' => 'اطلب النصيحة من مدرّبك...',
+			'aiCoach.defaultUserName' => 'المستخدم',
+			'aiCoach.userNameLine' => ({required Object userName}) => '- الاسم: ${userName}',
+			'aiCoach.activeGoalsCount' => ({required Object count}) => '- الأهداف النشطة: ${count}',
+			'aiCoach.completedGoalsCount' => ({required Object count}) => '- الأهداف المكتملة: ${count}',
+			'aiCoach.todayCompletion' => ({required Object completed, required Object total}) => '- عادات اليوم: ${completed} مكتملة من أصل ${total}.',
 			'settingsPage.account' => 'الحساب',
 			'settingsPage.notifications' => 'الإشعارات',
 			'settingsPage.language' => 'اللغة',
@@ -1681,6 +1739,8 @@ extension on TranslationsAr {
 			'settingsPage.restorePurchases' => 'استعادة المشتريات',
 			'settingsPage.deletePrivateData' => 'حذف البيانات الخاصة',
 			'settingsPage.importInProgress' => 'جاري استيراد البيانات...',
+			_ => null,
+		} ?? switch (path) {
 			'settingsPage.passwordsDontMatch' => 'كلمتا المرور غير متطابقتين.',
 			'settingsPage.email' => 'البريد الإلكتروني',
 			'settingsPage.cancel' => 'إلغاء',
@@ -1705,8 +1765,6 @@ extension on TranslationsAr {
 			'settingsPage.signOut' => 'تسجيل الخروج من حسابك',
 			'settingsPage.signOutDetailActive' => 'إغلاق الجلسة على هذا الجهاز',
 			'settingsPage.availableWithActiveSession' => 'متاح مع جلسة Supabase نشطة',
-			_ => null,
-		} ?? switch (path) {
 			'settingsPage.goToLogin' => 'الذهاب إلى تسجيل الدخول',
 			'settingsPage.goToLoginDetail' => 'علّق الوضع الخاص وسجّل الدخول إلى Supabase.',
 			'settingsPage.appearanceTitle' => 'المظهر والتطبيق',

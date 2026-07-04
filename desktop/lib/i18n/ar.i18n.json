@@ -515,6 +515,27 @@
       "noInternet": "❌ خطأ: لا يوجد اتصال بالإنترنت. تحقّق من شبكتك.",
       "serverTimeout": "❌ خطأ: يستغرق الخادم وقتاً طويلاً للرد. حاول مرة أخرى.",
       "apiError": "❌ خطأ في API: {code} (راجع Sentry للتفاصيل)"
+    },
+    "suggestions": {
+      "morningBoost": "🔥 امنحني دفعة للبدء!",
+      "avoidDistractions": "🧠 كيف أتجنّب المشتّتات؟",
+      "lowEnergy": "⚡ طاقتي تتراجع. ماذا أفعل؟",
+      "stayFocused": "💪 امنحني نصيحة واحدة للبقاء مركّزاً",
+      "prepareTomorrow": "🛌 كيف أستعد ليوم غدٍ منتج؟",
+      "disciplineReflection": "📝 تأمّل في انضباط اليوم",
+      "analyzeActiveGoals": "🎯 حلّل أهدافي النشطة",
+      "planMacroGoals": "🗺️ كيف أخطّط لأهدافي الكبرى؟",
+      "goalObstacles": "🛑 ما العقبات التي تعيق أهدافي؟",
+      "reachMilestones": "📈 امنحني نصيحة واحدة لبلوغ مراحل إنجازي",
+      "consistencyStatus": "📈 كيف هو مستوى مواظبتي؟",
+      "weeklyStats": "📊 إحصاءاتي الأسبوعية",
+      "planDay": "🌅 خطّط ليومي",
+      "raiseBar": "🚀 كيف أرفع مستوى طموحي؟",
+      "recoverProcrastination": "🤕 كيف أتعافى بعد التسويف؟",
+      "connectHabitsGoals": "🔗 كيف أربط العادات بالأهداف؟",
+      "reviewGoalsHabits": "📊 راجع أهدافي وعاداتي",
+      "disciplineAdvice": "🔥 نصيحة عن الانضباط",
+      "createNewHabit": "💡 كيف أنشئ عادة جديدة؟"
     }
   },
   "aiCoach": {
@@ -534,7 +555,12 @@
     "subtitle": "حلّل الأنماط مع مدرّب سياقي مبني على بيانات مسارك.",
     "contextButton": "السياق",
     "typing": "يكتب AI Coach...",
-    "inputHint": "اطلب النصيحة من مدرّبك..."
+    "inputHint": "اطلب النصيحة من مدرّبك...",
+    "defaultUserName": "المستخدم",
+    "userNameLine": "- الاسم: {userName}",
+    "activeGoalsCount": "- الأهداف النشطة: {count}",
+    "completedGoalsCount": "- الأهداف المكتملة: {count}",
+    "todayCompletion": "- عادات اليوم: {completed} مكتملة من أصل {total}."
   },
   "settingsPage": {
     "account": "الحساب",

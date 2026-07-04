@@ -701,6 +701,7 @@ class _Translations$ai$es extends Translations$ai$en {
 	@override String get dailyHabits => 'Hábitos diarios';
 	@override String get macroGoals => 'Macroobjetivos';
 	@override late final _Translations$ai$openRouter$es openRouter = _Translations$ai$openRouter$es._(_root);
+	@override late final _Translations$ai$suggestions$es suggestions = _Translations$ai$suggestions$es._(_root);
 }
 
 // Path: aiCoach
@@ -727,6 +728,11 @@ class _Translations$aiCoach$es extends Translations$aiCoach$en {
 	@override String get contextButton => 'Contexto';
 	@override String get typing => 'AI Coach está escribiendo...';
 	@override String get inputHint => 'Pide consejos a tu Coach...';
+	@override String get defaultUserName => 'Usuario';
+	@override String userNameLine({required Object userName}) => '- Nombre: ${userName}';
+	@override String activeGoalsCount({required Object count}) => '- Objetivos activos: ${count}';
+	@override String completedGoalsCount({required Object count}) => '- Objetivos completados: ${count}';
+	@override String todayCompletion({required Object completed, required Object total}) => '- Hábitos de hoy: ${completed} completados de ${total} en total.';
 }
 
 // Path: settingsPage
@@ -1183,6 +1189,34 @@ class _Translations$ai$openRouter$es extends Translations$ai$openRouter$en {
 	@override String get noInternet => '❌ Error: no hay conexión a internet. Revisa tu red.';
 	@override String get serverTimeout => '❌ Error: el servidor tarda demasiado en responder. Inténtalo de nuevo.';
 	@override String apiError({required Object code}) => '❌ Error de API: ${code} (consulta Sentry para más detalles)';
+}
+
+// Path: ai.suggestions
+class _Translations$ai$suggestions$es extends Translations$ai$suggestions$en {
+	_Translations$ai$suggestions$es._(TranslationsEs root) : this._root = root, super.internal(root);
+
+	final TranslationsEs _root; // ignore: unused_field
+
+	// Translations
+	@override String get morningBoost => '🔥 ¡Dame un empujón para empezar!';
+	@override String get avoidDistractions => '🧠 ¿Cómo puedo evitar distracciones?';
+	@override String get lowEnergy => '⚡ Mi energía está bajando. ¿Qué debo hacer?';
+	@override String get stayFocused => '💪 Dame un consejo para mantener el enfoque';
+	@override String get prepareTomorrow => '🛌 ¿Cómo puedo prepararme para un mañana productivo?';
+	@override String get disciplineReflection => '📝 Reflexiona sobre la disciplina de hoy';
+	@override String get analyzeActiveGoals => '🎯 Analiza mis objetivos activos';
+	@override String get planMacroGoals => '🗺️ ¿Cómo debería planificar mis macroobjetivos?';
+	@override String get goalObstacles => '🛑 ¿Qué obstáculos bloquean mis objetivos?';
+	@override String get reachMilestones => '📈 Dame un consejo para alcanzar mis hitos';
+	@override String get consistencyStatus => '📈 ¿Cómo va mi constancia?';
+	@override String get weeklyStats => '📊 Mis estadísticas semanales';
+	@override String get planDay => '🌅 Planifica mi día';
+	@override String get raiseBar => '🚀 ¿Cómo puedo subir el nivel?';
+	@override String get recoverProcrastination => '🤕 ¿Cómo puedo recuperarme después de procrastinar?';
+	@override String get connectHabitsGoals => '🔗 ¿Cómo puedo conectar hábitos y objetivos?';
+	@override String get reviewGoalsHabits => '📊 Revisa mis objetivos y hábitos';
+	@override String get disciplineAdvice => '🔥 Consejo de disciplina';
+	@override String get createNewHabit => '💡 ¿Cómo puedo crear un nuevo hábito?';
 }
 
 /// The flat map containing all translations for locale <es>.
@@ -1653,6 +1687,25 @@ extension on TranslationsEs {
 			'ai.openRouter.noInternet' => '❌ Error: no hay conexión a internet. Revisa tu red.',
 			'ai.openRouter.serverTimeout' => '❌ Error: el servidor tarda demasiado en responder. Inténtalo de nuevo.',
 			'ai.openRouter.apiError' => ({required Object code}) => '❌ Error de API: ${code} (consulta Sentry para más detalles)',
+			'ai.suggestions.morningBoost' => '🔥 ¡Dame un empujón para empezar!',
+			'ai.suggestions.avoidDistractions' => '🧠 ¿Cómo puedo evitar distracciones?',
+			'ai.suggestions.lowEnergy' => '⚡ Mi energía está bajando. ¿Qué debo hacer?',
+			'ai.suggestions.stayFocused' => '💪 Dame un consejo para mantener el enfoque',
+			'ai.suggestions.prepareTomorrow' => '🛌 ¿Cómo puedo prepararme para un mañana productivo?',
+			'ai.suggestions.disciplineReflection' => '📝 Reflexiona sobre la disciplina de hoy',
+			'ai.suggestions.analyzeActiveGoals' => '🎯 Analiza mis objetivos activos',
+			'ai.suggestions.planMacroGoals' => '🗺️ ¿Cómo debería planificar mis macroobjetivos?',
+			'ai.suggestions.goalObstacles' => '🛑 ¿Qué obstáculos bloquean mis objetivos?',
+			'ai.suggestions.reachMilestones' => '📈 Dame un consejo para alcanzar mis hitos',
+			'ai.suggestions.consistencyStatus' => '📈 ¿Cómo va mi constancia?',
+			'ai.suggestions.weeklyStats' => '📊 Mis estadísticas semanales',
+			'ai.suggestions.planDay' => '🌅 Planifica mi día',
+			'ai.suggestions.raiseBar' => '🚀 ¿Cómo puedo subir el nivel?',
+			'ai.suggestions.recoverProcrastination' => '🤕 ¿Cómo puedo recuperarme después de procrastinar?',
+			'ai.suggestions.connectHabitsGoals' => '🔗 ¿Cómo puedo conectar hábitos y objetivos?',
+			'ai.suggestions.reviewGoalsHabits' => '📊 Revisa mis objetivos y hábitos',
+			'ai.suggestions.disciplineAdvice' => '🔥 Consejo de disciplina',
+			'ai.suggestions.createNewHabit' => '💡 ¿Cómo puedo crear un nuevo hábito?',
 			'aiCoach.greeting' => '¡Hola! Soy Evolve AI Coach. Estoy aquí para ayudarte a optimizar tu protocolo y alcanzar tus objetivos. ¿Cómo puedo ayudarte hoy?',
 			'aiCoach.systemPersona' => 'Eres Evolve AI Coach, un asistente virtual para la disciplina personal.',
 			'aiCoach.habitsHeader' => 'HÁBITOS ACTIVOS:',
@@ -1670,6 +1723,11 @@ extension on TranslationsEs {
 			'aiCoach.contextButton' => 'Contexto',
 			'aiCoach.typing' => 'AI Coach está escribiendo...',
 			'aiCoach.inputHint' => 'Pide consejos a tu Coach...',
+			'aiCoach.defaultUserName' => 'Usuario',
+			'aiCoach.userNameLine' => ({required Object userName}) => '- Nombre: ${userName}',
+			'aiCoach.activeGoalsCount' => ({required Object count}) => '- Objetivos activos: ${count}',
+			'aiCoach.completedGoalsCount' => ({required Object count}) => '- Objetivos completados: ${count}',
+			'aiCoach.todayCompletion' => ({required Object completed, required Object total}) => '- Hábitos de hoy: ${completed} completados de ${total} en total.',
 			'settingsPage.account' => 'Cuenta',
 			'settingsPage.notifications' => 'Notificaciones',
 			'settingsPage.language' => 'Idioma',
@@ -1681,6 +1739,8 @@ extension on TranslationsEs {
 			'settingsPage.restorePurchases' => 'Restaurar compras',
 			'settingsPage.deletePrivateData' => 'eliminar datos privados',
 			'settingsPage.importInProgress' => 'Importando datos...',
+			_ => null,
+		} ?? switch (path) {
 			'settingsPage.passwordsDontMatch' => 'Las contraseñas no coinciden',
 			'settingsPage.email' => 'Email',
 			'settingsPage.cancel' => 'Cancelar',
@@ -1705,8 +1765,6 @@ extension on TranslationsEs {
 			'settingsPage.signOut' => 'Cerrar sesión en tu cuenta',
 			'settingsPage.signOutDetailActive' => 'Cierra la sesión en este dispositivo',
 			'settingsPage.availableWithActiveSession' => 'Disponible con una sesión de Supabase activa',
-			_ => null,
-		} ?? switch (path) {
 			'settingsPage.goToLogin' => 'Ir al inicio de sesión',
 			'settingsPage.goToLoginDetail' => 'Suspende el modo privado e inicia sesión en Supabase.',
 			'settingsPage.appearanceTitle' => 'Apariencia y aplicación',

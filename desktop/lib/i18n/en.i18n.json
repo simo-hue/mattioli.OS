@@ -515,6 +515,27 @@
       "noInternet": "❌ Error: No internet connection. Check your network.",
       "serverTimeout": "❌ Error: The server is taking too long to respond. Try again.",
       "apiError": "❌ API error: {code} (check Sentry for details)"
+    },
+    "suggestions": {
+      "morningBoost": "🔥 Give me a boost to get started!",
+      "avoidDistractions": "🧠 How can I avoid distractions?",
+      "lowEnergy": "⚡ My energy is dropping. What should I do?",
+      "stayFocused": "💪 Give me one tip to stay focused",
+      "prepareTomorrow": "🛌 How can I prepare for a productive tomorrow?",
+      "disciplineReflection": "📝 Reflect on today’s discipline",
+      "analyzeActiveGoals": "🎯 Analyze my active goals",
+      "planMacroGoals": "🗺️ How should I plan my macro goals?",
+      "goalObstacles": "🛑 What obstacles are blocking my goals?",
+      "reachMilestones": "📈 Give me one tip to reach my milestones",
+      "consistencyStatus": "📈 How is my consistency going?",
+      "weeklyStats": "📊 My weekly stats",
+      "planDay": "🌅 Plan my day",
+      "raiseBar": "🚀 How can I raise the bar?",
+      "recoverProcrastination": "🤕 How can I recover after procrastinating?",
+      "connectHabitsGoals": "🔗 How can I connect habits to goals?",
+      "reviewGoalsHabits": "📊 Review my goals and habits",
+      "disciplineAdvice": "🔥 Discipline advice",
+      "createNewHabit": "💡 How can I create a new habit?"
     }
   },
   "aiCoach": {
@@ -534,7 +555,12 @@
     "subtitle": "Reason about patterns with a contextual coach based on your journey data.",
     "contextButton": "Context",
     "typing": "AI Coach is typing...",
-    "inputHint": "Ask your Coach for advice..."
+    "inputHint": "Ask your Coach for advice...",
+    "defaultUserName": "user",
+    "userNameLine": "- Name: {userName}",
+    "activeGoalsCount": "- Active goals: {count}",
+    "completedGoalsCount": "- Completed goals: {count}",
+    "todayCompletion": "- Habits today: {completed} completed out of {total} total."
   },
   "settingsPage": {
     "account": "Account",

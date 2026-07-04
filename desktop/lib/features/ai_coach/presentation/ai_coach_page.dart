@@ -2,6 +2,8 @@ import 'package:evolve_desktop/app/theme/evolve_theme.dart';
 import 'package:evolve_desktop/core/desktop_data_mode.dart';
 import 'package:evolve_desktop/i18n/translations.g.dart';
 import 'package:evolve_desktop/core/desktop_private_db.dart';
+import 'package:evolve_desktop/features/auth/application/auth_controller.dart';
+import 'package:evolve_desktop/features/auth/application/desktop_profile_controller.dart';
 import 'package:evolve_desktop/features/dashboard/application/dashboard_controller.dart';
 import 'package:evolve_desktop/features/dashboard/domain/dashboard_models.dart';
 import 'package:evolve_desktop/shared/widgets/desktop_page.dart';
@@ -12,6 +14,76 @@ import 'package:flutter_markdown/flutter_markdown.dart';
 
 import '../domain/chat_message.dart';
 import '../data/openrouter_service.dart';
+
+/// Pure prompt-suggestion selection (time of day + which context switches are
+/// on), extracted for testing. Returns up to four unique suggestions, chosen
+/// deterministically by [messageCount] so they stay stable within a state.
+List<String> buildAiSuggestions({
+  required int hour,
+  required bool shareGoals,
+  required bool shareHabits,
+  required bool hasActiveGoals,
+  required int todayDone,
+  required int todayTotal,
+  required int messageCount,
+}) {
+  final pool = <String>[];
+  if (hour >= 5 && hour < 12) {
+    pool.addAll([
+      t.ai.suggestions.morningBoost,
+      t.ai.suggestions.avoidDistractions,
+    ]);
+  } else if (hour >= 12 && hour < 18) {
+    pool.addAll([t.ai.suggestions.lowEnergy, t.ai.suggestions.stayFocused]);
+  } else {
+    pool.addAll([
+      t.ai.suggestions.prepareTomorrow,
+      t.ai.suggestions.disciplineReflection,
+    ]);
+  }
+
+  if (shareGoals && !shareHabits) {
+    if (hasActiveGoals) pool.add(t.ai.suggestions.analyzeActiveGoals);
+    pool.addAll([
+      t.ai.suggestions.planMacroGoals,
+      t.ai.suggestions.goalObstacles,
+      t.ai.suggestions.reachMilestones,
+    ]);
+  } else if (!shareGoals && shareHabits) {
+    pool.addAll([
+      t.ai.suggestions.consistencyStatus,
+      t.ai.suggestions.weeklyStats,
+      t.ai.suggestions.planDay,
+    ]);
+    if (todayTotal > 0) {
+      final pct = todayDone / todayTotal * 100;
+      if (pct == 100) {
+        pool.add(t.ai.suggestions.raiseBar);
+      } else if (pct < 30 && hour > 14) {
+        pool.add(t.ai.suggestions.recoverProcrastination);
+      }
+    }
+  } else if (shareGoals && shareHabits) {
+    if (hasActiveGoals) pool.add(t.ai.suggestions.analyzeActiveGoals);
+    pool.addAll([
+      t.ai.suggestions.consistencyStatus,
+      t.ai.suggestions.connectHabitsGoals,
+      t.ai.suggestions.reviewGoalsHabits,
+    ]);
+  } else {
+    pool.addAll([
+      t.ai.suggestions.disciplineAdvice,
+      t.ai.suggestions.createNewHabit,
+      t.ai.suggestions.avoidDistractions,
+    ]);
+  }
+
+  final unique = pool.toSet().toList();
+  if (unique.isEmpty) return const [];
+  final count = unique.length < 4 ? unique.length : 4;
+  final offset = messageCount % unique.length;
+  return [for (var i = 0; i < count; i++) unique[(offset + i) % unique.length]];
+}
 
 class AiCoachPage extends ConsumerStatefulWidget {
   const AiCoachPage({super.key});
@@ -115,7 +187,11 @@ class _AiCoachPageState extends ConsumerState<AiCoachPage> {
 
     // Inietta contesto se abilitato
     final snapshot = ref.read(dashboardControllerProvider);
+    final now = DateTime.now();
+    final userName = _userName();
     String contextPrompt = "${t.aiCoach.systemPersona}\n";
+    // Always personalize with the user's name.
+    contextPrompt += "${t.aiCoach.userNameLine(userName: userName)}\n";
 
     if (_shareHabits) {
       contextPrompt += "\n${t.aiCoach.habitsHeader}\n";
@@ -124,11 +200,17 @@ class _AiCoachPageState extends ConsumerState<AiCoachPage> {
         contextPrompt += "- ${t.aiCoach.noActiveHabits}\n";
       } else {
         for (final h in habits) {
-          final done = snapshot.habitStatusFor(h.id, DateTime.now()) == 'done';
+          final done = snapshot.habitStatusFor(h.id, now) == 'done';
           contextPrompt +=
               "- ${t.aiCoach.habitLine(title: h.title, done: done, streak: h.streak)}\n";
         }
       }
+      final activeToday = habits.where((h) => h.isActiveOn(now)).toList();
+      final todayDone = activeToday
+          .where((h) => snapshot.habitStatusFor(h.id, now) == 'done')
+          .length;
+      contextPrompt +=
+          "${t.aiCoach.todayCompletion(completed: todayDone, total: activeToday.length)}\n";
     }
 
     if (_shareGoals) {
@@ -144,11 +226,17 @@ class _AiCoachPageState extends ConsumerState<AiCoachPage> {
               "- ${t.aiCoach.goalLine(title: g.title, due: g.dueLabel)}\n";
         }
       }
+      final completed = snapshot.goals
+          .where((g) => g.state == GoalState.completed)
+          .length;
+      contextPrompt += "${t.aiCoach.activeGoalsCount(count: goals.length)}\n";
+      contextPrompt += "${t.aiCoach.completedGoalsCount(count: completed)}\n";
     }
 
-    // Risposta in streaming
+    // Risposta in streaming — send the FULL conversation (user + assistant
+    // turns) so follow-ups keep context, not just the user's messages.
     final stream = OpenRouterService.generateStreamResponse(
-      _messages.where((m) => m.isUser).toList(),
+      List<ChatMessage>.from(_messages),
       systemPrompt: contextPrompt,
     );
 
@@ -204,6 +292,77 @@ class _AiCoachPageState extends ConsumerState<AiCoachPage> {
         });
       }
     }
+  }
+
+  /// The user's first name (private profile or cloud metadata), for the coach
+  /// context. Falls back to a generic default.
+  String _userName() {
+    final isPrivate = ref.read(activeDesktopDataModeProvider).isPrivate;
+    String? name;
+    if (isPrivate) {
+      name = ref.read(privateProfileProvider).value?.fullName;
+    } else {
+      final meta = ref.read(desktopAuthControllerProvider).user?.userMetadata;
+      name = (meta?['full_name'] ?? meta?['name']) as String?;
+    }
+    final trimmed = name?.trim();
+    if (trimmed == null || trimmed.isEmpty) return t.aiCoach.defaultUserName;
+    return trimmed.split(' ').first;
+  }
+
+  /// Time- and context-aware prompt suggestions (mirrors mobile's
+  /// `_getDynamicSuggestions`). Reads live state, then delegates the selection
+  /// to the pure, testable [buildAiSuggestions].
+  List<String> _dynamicSuggestions() {
+    final now = DateTime.now();
+    final snapshot = ref.read(dashboardControllerProvider);
+    final hasActiveGoals = snapshot.goals.any(
+      (g) => g.state == GoalState.active,
+    );
+    final activeToday = snapshot.habits
+        .where((h) => h.isActiveOn(now))
+        .toList();
+    final todayDone = activeToday
+        .where((h) => snapshot.habitStatusFor(h.id, now) == 'done')
+        .length;
+    return buildAiSuggestions(
+      hour: now.hour,
+      shareGoals: _shareGoals,
+      shareHabits: _shareHabits,
+      hasActiveGoals: hasActiveGoals,
+      todayDone: todayDone,
+      todayTotal: activeToday.length,
+      messageCount: _messages.length,
+    );
+  }
+
+  void _onSuggestionTap(String suggestion) {
+    if (_isTyping) return;
+    _controller.text = suggestion;
+    _sendMessage();
+  }
+
+  Widget _suggestionChip(String text) {
+    return InkWell(
+      onTap: () => _onSuggestionTap(text),
+      borderRadius: BorderRadius.circular(18),
+      child: Container(
+        alignment: Alignment.center,
+        padding: const EdgeInsets.symmetric(horizontal: 14),
+        decoration: BoxDecoration(
+          color: context.evolveColors.panelSoft,
+          borderRadius: BorderRadius.circular(18),
+          border: Border.all(color: context.evolveColors.border),
+        ),
+        child: Text(
+          text,
+          style: TextStyle(
+            color: context.evolveColors.foreground,
+            fontSize: 12,
+          ),
+        ),
+      ),
+    );
   }
 
   void _scrollToBottom() {
@@ -340,6 +499,31 @@ class _AiCoachPageState extends ConsumerState<AiCoachPage> {
                       ),
                     ),
                   ),
+                ),
+              if (!_isTyping)
+                Builder(
+                  builder: (context) {
+                    final suggestions = _dynamicSuggestions();
+                    if (suggestions.isEmpty) return const SizedBox.shrink();
+                    return SizedBox(
+                      height: 44,
+                      child: ListView(
+                        scrollDirection: Axis.horizontal,
+                        padding: const EdgeInsetsDirectional.fromSTEB(
+                          24,
+                          0,
+                          24,
+                          8,
+                        ),
+                        children: [
+                          for (final s in suggestions) ...[
+                            _suggestionChip(s),
+                            const SizedBox(width: 8),
+                          ],
+                        ],
+                      ),
+                    );
+                  },
                 ),
               Container(
                 padding: const EdgeInsets.symmetric(

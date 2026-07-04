@@ -701,6 +701,7 @@ class _Translations$ai$de extends Translations$ai$en {
 	@override String get dailyHabits => 'Tägliche Gewohnheiten';
 	@override String get macroGoals => 'Makroziele';
 	@override late final _Translations$ai$openRouter$de openRouter = _Translations$ai$openRouter$de._(_root);
+	@override late final _Translations$ai$suggestions$de suggestions = _Translations$ai$suggestions$de._(_root);
 }
 
 // Path: aiCoach
@@ -727,6 +728,11 @@ class _Translations$aiCoach$de extends Translations$aiCoach$en {
 	@override String get contextButton => 'Kontext';
 	@override String get typing => 'AI Coach schreibt...';
 	@override String get inputHint => 'Frag deinen Coach um Rat...';
+	@override String get defaultUserName => 'Nutzer';
+	@override String userNameLine({required Object userName}) => '- Name: ${userName}';
+	@override String activeGoalsCount({required Object count}) => '- Aktive Ziele: ${count}';
+	@override String completedGoalsCount({required Object count}) => '- Abgeschlossene Ziele: ${count}';
+	@override String todayCompletion({required Object completed, required Object total}) => '- Gewohnheiten heute: ${completed} von insgesamt ${total} abgeschlossen.';
 }
 
 // Path: settingsPage
@@ -1183,6 +1189,34 @@ class _Translations$ai$openRouter$de extends Translations$ai$openRouter$en {
 	@override String get noInternet => '❌ Fehler: Keine Internetverbindung. Prüfe dein Netzwerk.';
 	@override String get serverTimeout => '❌ Fehler: Der Server braucht zu lange für die Antwort. Versuche es erneut.';
 	@override String apiError({required Object code}) => '❌ API-Fehler: ${code} (Details in Sentry prüfen)';
+}
+
+// Path: ai.suggestions
+class _Translations$ai$suggestions$de extends Translations$ai$suggestions$en {
+	_Translations$ai$suggestions$de._(TranslationsDe root) : this._root = root, super.internal(root);
+
+	final TranslationsDe _root; // ignore: unused_field
+
+	// Translations
+	@override String get morningBoost => '🔥 Gib mir einen Startimpuls!';
+	@override String get avoidDistractions => '🧠 Wie kann ich Ablenkungen vermeiden?';
+	@override String get lowEnergy => '⚡ Meine Energie sinkt. Was soll ich tun?';
+	@override String get stayFocused => '💪 Gib mir einen Tipp, um fokussiert zu bleiben';
+	@override String get prepareTomorrow => '🛌 Wie bereite ich mich auf einen produktiven morgigen Tag vor?';
+	@override String get disciplineReflection => '📝 Reflektiere meine Disziplin heute';
+	@override String get analyzeActiveGoals => '🎯 Analysiere meine aktiven Ziele';
+	@override String get planMacroGoals => '🗺️ Wie sollte ich meine Makroziele planen?';
+	@override String get goalObstacles => '🛑 Welche Hindernisse blockieren meine Ziele?';
+	@override String get reachMilestones => '📈 Gib mir einen Tipp, um meine Meilensteine zu erreichen';
+	@override String get consistencyStatus => '📈 Wie läuft meine Konstanz?';
+	@override String get weeklyStats => '📊 Meine Wochenstatistiken';
+	@override String get planDay => '🌅 Plane meinen Tag';
+	@override String get raiseBar => '🚀 Wie kann ich das Niveau erhöhen?';
+	@override String get recoverProcrastination => '🤕 Wie erhole ich mich nach Prokrastination?';
+	@override String get connectHabitsGoals => '🔗 Wie kann ich Gewohnheiten mit Zielen verbinden?';
+	@override String get reviewGoalsHabits => '📊 Überprüfe meine Ziele und Gewohnheiten';
+	@override String get disciplineAdvice => '🔥 Disziplin-Tipp';
+	@override String get createNewHabit => '💡 Wie kann ich eine neue Gewohnheit aufbauen?';
 }
 
 /// The flat map containing all translations for locale <de>.
@@ -1653,6 +1687,25 @@ extension on TranslationsDe {
 			'ai.openRouter.noInternet' => '❌ Fehler: Keine Internetverbindung. Prüfe dein Netzwerk.',
 			'ai.openRouter.serverTimeout' => '❌ Fehler: Der Server braucht zu lange für die Antwort. Versuche es erneut.',
 			'ai.openRouter.apiError' => ({required Object code}) => '❌ API-Fehler: ${code} (Details in Sentry prüfen)',
+			'ai.suggestions.morningBoost' => '🔥 Gib mir einen Startimpuls!',
+			'ai.suggestions.avoidDistractions' => '🧠 Wie kann ich Ablenkungen vermeiden?',
+			'ai.suggestions.lowEnergy' => '⚡ Meine Energie sinkt. Was soll ich tun?',
+			'ai.suggestions.stayFocused' => '💪 Gib mir einen Tipp, um fokussiert zu bleiben',
+			'ai.suggestions.prepareTomorrow' => '🛌 Wie bereite ich mich auf einen produktiven morgigen Tag vor?',
+			'ai.suggestions.disciplineReflection' => '📝 Reflektiere meine Disziplin heute',
+			'ai.suggestions.analyzeActiveGoals' => '🎯 Analysiere meine aktiven Ziele',
+			'ai.suggestions.planMacroGoals' => '🗺️ Wie sollte ich meine Makroziele planen?',
+			'ai.suggestions.goalObstacles' => '🛑 Welche Hindernisse blockieren meine Ziele?',
+			'ai.suggestions.reachMilestones' => '📈 Gib mir einen Tipp, um meine Meilensteine zu erreichen',
+			'ai.suggestions.consistencyStatus' => '📈 Wie läuft meine Konstanz?',
+			'ai.suggestions.weeklyStats' => '📊 Meine Wochenstatistiken',
+			'ai.suggestions.planDay' => '🌅 Plane meinen Tag',
+			'ai.suggestions.raiseBar' => '🚀 Wie kann ich das Niveau erhöhen?',
+			'ai.suggestions.recoverProcrastination' => '🤕 Wie erhole ich mich nach Prokrastination?',
+			'ai.suggestions.connectHabitsGoals' => '🔗 Wie kann ich Gewohnheiten mit Zielen verbinden?',
+			'ai.suggestions.reviewGoalsHabits' => '📊 Überprüfe meine Ziele und Gewohnheiten',
+			'ai.suggestions.disciplineAdvice' => '🔥 Disziplin-Tipp',
+			'ai.suggestions.createNewHabit' => '💡 Wie kann ich eine neue Gewohnheit aufbauen?',
 			'aiCoach.greeting' => 'Hallo! Ich bin Evolve AI Coach. Ich helfe dir, dein Protokoll zu optimieren und deine Ziele zu erreichen. Wie kann ich dir heute helfen?',
 			'aiCoach.systemPersona' => 'Du bist Evolve AI Coach, ein virtueller Assistent für persönliche Disziplin.',
 			'aiCoach.habitsHeader' => 'AKTIVE GEWOHNHEITEN:',
@@ -1670,6 +1723,11 @@ extension on TranslationsDe {
 			'aiCoach.contextButton' => 'Kontext',
 			'aiCoach.typing' => 'AI Coach schreibt...',
 			'aiCoach.inputHint' => 'Frag deinen Coach um Rat...',
+			'aiCoach.defaultUserName' => 'Nutzer',
+			'aiCoach.userNameLine' => ({required Object userName}) => '- Name: ${userName}',
+			'aiCoach.activeGoalsCount' => ({required Object count}) => '- Aktive Ziele: ${count}',
+			'aiCoach.completedGoalsCount' => ({required Object count}) => '- Abgeschlossene Ziele: ${count}',
+			'aiCoach.todayCompletion' => ({required Object completed, required Object total}) => '- Gewohnheiten heute: ${completed} von insgesamt ${total} abgeschlossen.',
 			'settingsPage.account' => 'Konto',
 			'settingsPage.notifications' => 'Benachrichtigungen',
 			'settingsPage.language' => 'Sprache',
@@ -1681,6 +1739,8 @@ extension on TranslationsDe {
 			'settingsPage.restorePurchases' => 'Käufe wiederherstellen',
 			'settingsPage.deletePrivateData' => 'private Daten löschen',
 			'settingsPage.importInProgress' => 'Daten werden importiert...',
+			_ => null,
+		} ?? switch (path) {
 			'settingsPage.passwordsDontMatch' => 'Die Passwörter stimmen nicht überein',
 			'settingsPage.email' => 'E-Mail',
 			'settingsPage.cancel' => 'Abbrechen',
@@ -1705,8 +1765,6 @@ extension on TranslationsDe {
 			'settingsPage.signOut' => 'Vom Konto abmelden',
 			'settingsPage.signOutDetailActive' => 'Die Sitzung auf diesem Gerät schließen',
 			'settingsPage.availableWithActiveSession' => 'Verfügbar mit einer aktiven Supabase-Sitzung',
-			_ => null,
-		} ?? switch (path) {
 			'settingsPage.goToLogin' => 'Zur Anmeldung',
 			'settingsPage.goToLoginDetail' => 'Setze den privaten Modus aus und melde dich bei Supabase an.',
 			'settingsPage.appearanceTitle' => 'Erscheinungsbild und Anwendung',

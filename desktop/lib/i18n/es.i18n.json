@@ -515,6 +515,27 @@
       "noInternet": "❌ Error: no hay conexión a internet. Revisa tu red.",
       "serverTimeout": "❌ Error: el servidor tarda demasiado en responder. Inténtalo de nuevo.",
       "apiError": "❌ Error de API: {code} (consulta Sentry para más detalles)"
+    },
+    "suggestions": {
+      "morningBoost": "🔥 ¡Dame un empujón para empezar!",
+      "avoidDistractions": "🧠 ¿Cómo puedo evitar distracciones?",
+      "lowEnergy": "⚡ Mi energía está bajando. ¿Qué debo hacer?",
+      "stayFocused": "💪 Dame un consejo para mantener el enfoque",
+      "prepareTomorrow": "🛌 ¿Cómo puedo prepararme para un mañana productivo?",
+      "disciplineReflection": "📝 Reflexiona sobre la disciplina de hoy",
+      "analyzeActiveGoals": "🎯 Analiza mis objetivos activos",
+      "planMacroGoals": "🗺️ ¿Cómo debería planificar mis macroobjetivos?",
+      "goalObstacles": "🛑 ¿Qué obstáculos bloquean mis objetivos?",
+      "reachMilestones": "📈 Dame un consejo para alcanzar mis hitos",
+      "consistencyStatus": "📈 ¿Cómo va mi constancia?",
+      "weeklyStats": "📊 Mis estadísticas semanales",
+      "planDay": "🌅 Planifica mi día",
+      "raiseBar": "🚀 ¿Cómo puedo subir el nivel?",
+      "recoverProcrastination": "🤕 ¿Cómo puedo recuperarme después de procrastinar?",
+      "connectHabitsGoals": "🔗 ¿Cómo puedo conectar hábitos y objetivos?",
+      "reviewGoalsHabits": "📊 Revisa mis objetivos y hábitos",
+      "disciplineAdvice": "🔥 Consejo de disciplina",
+      "createNewHabit": "💡 ¿Cómo puedo crear un nuevo hábito?"
     }
   },
   "aiCoach": {
@@ -534,7 +555,12 @@
     "subtitle": "Razona sobre los patrones con un coach contextual basado en los datos de tu camino.",
     "contextButton": "Contexto",
     "typing": "AI Coach está escribiendo...",
-    "inputHint": "Pide consejos a tu Coach..."
+    "inputHint": "Pide consejos a tu Coach...",
+    "defaultUserName": "Usuario",
+    "userNameLine": "- Nombre: {userName}",
+    "activeGoalsCount": "- Objetivos activos: {count}",
+    "completedGoalsCount": "- Objetivos completados: {count}",
+    "todayCompletion": "- Hábitos de hoy: {completed} completados de {total} en total."
   },
   "settingsPage": {
     "account": "Cuenta",

@@ -195,3 +195,14 @@ Everything from this pass is landed and verified together:
 - **i18n**: added `stats.sortRate`/`sortStreak`/`sortName`/`worstStreakLabel` (5 locales); reused `stats.successRate` (param), `statistics.completed2`/`notCompleted`, `stats.bestStreakLabel`. `dart run slang` regenerated.
 - **Tests**: none added (statistics UI reading existing, already-tested providers); verified via `flutter analyze` + full-suite regression + adversarial review.
 - **Verification**: `flutter analyze lib` → **0 errors** (same 12 pre-existing infos); `flutter test` → **+94 -1** (only the environmental Supabase-config test fails). A 2-lens adversarial review workflow (statistics correctness, regression) returned **zero findings**.
+
+## [2026-07-05]: BACKLOG Item 8 — Cleanup batch (part 1: mechanical fixes)
+*Details*: The first batch of the Item-8 cleanup grab-bag — small, independent correctness/consistency fixes.
+*Tech Notes*:
+- **Reset-to-defaults** (`settings_page._resetSettingsToDefaults`): AI-insights + weekly-reports now reset to **true**, matching the initial-state defaults (they were incorrectly reset to false).
+- **HSL/color import parser** (`desktop_backup_import_service._hslToHex`): a valid `#hex` is preserved, a known **named color token** (red/blue/… palette) maps to hex, an `hsl(...)` string converts, and an unrecognized value is now **returned unchanged instead of silently blue-washed** (both the regex-fail and the catch fell back to `#3B82F6`). Downgraded the failure log from `error` to `warning`.
+- **FK-pragma** (`private_db_schema.onConfigure`): documented that `PRAGMA foreign_keys = ON` is set in `onConfigure` so FKs are enforced for the whole connection (migrations + imports), matching mobile's per-connection intent (the canonical sqflite hook).
+- **`_GoalItem` ValueKey** (`goals_page`): each `_GoalItem` now has `key: ValueKey(goal.id)` (+ `super.key` on the ctor) so its 2-second pending-state timer follows identity across re-sorts instead of flipping the wrong goal.
+- **`DropdownButtonFormField` deprecation** (`create_goal_dialog`): `value:` → `initialValue:` (the other two dropdowns already used `initialValue`); this clears one of the pre-existing analyzer infos (now 11).
+- **Tests**: `test/backup_roundtrip_test.dart` gained a color-normalization test (hex preserved, named token mapped, hsl converted, unknown not blue-washed).
+- **Verification**: `flutter analyze lib` → **0 errors** (11 pre-existing infos now, down from 12); `flutter test` → green except the environmental Supabase-config test.

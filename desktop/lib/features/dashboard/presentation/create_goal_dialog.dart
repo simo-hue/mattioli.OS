@@ -130,7 +130,7 @@ class _CreateGoalDialogState extends ConsumerState<CreateGoalDialog> {
           ),
           const SizedBox(height: 8),
           DropdownButtonFormField<GoalType>(
-            value: _selectedType,
+            initialValue: _selectedType,
             decoration: const InputDecoration(
               contentPadding: EdgeInsets.symmetric(
                 horizontal: 12,

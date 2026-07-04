@@ -50,6 +50,12 @@ class PrivateDbSchema {
 
   static Future<void> onConfigure(Database db) async {
     // Enforce referential integrity (SQLite leaves FKs off by default).
+    //
+    // Set in `onConfigure` (not at open time) so foreign keys are enforced for
+    // the WHOLE connection — including `onCreate`/`onUpgrade` migrations and,
+    // crucially, backup imports (a malformed FK row is rejected/skipped rather
+    // than silently orphaned). This is per-connection, matching the mobile
+    // client's intent; `onConfigure` is simply the canonical sqflite hook for it.
     await db.execute('PRAGMA foreign_keys = ON');
   }
 

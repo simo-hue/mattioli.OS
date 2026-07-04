@@ -1335,6 +1335,7 @@ class _GoalBoard extends StatelessWidget {
             Padding(
               padding: const EdgeInsets.only(bottom: 10),
               child: _GoalItem(
+                key: ValueKey(goal.id),
                 goal: goal,
                 checkboxKey: tutorialCheckboxKey,
                 rescheduleKey: tutorialRescheduleKey,
@@ -1358,6 +1359,7 @@ class _GoalBoard extends StatelessWidget {
             Padding(
               padding: const EdgeInsets.only(bottom: 10),
               child: _GoalItem(
+                key: ValueKey(goal.id),
                 goal: goal,
                 categories: categories,
                 onToggleStatus: onToggleStatus,
@@ -1375,6 +1377,7 @@ class _GoalBoard extends StatelessWidget {
             Padding(
               padding: const EdgeInsets.only(bottom: 10),
               child: _GoalItem(
+                key: ValueKey(goal.id),
                 goal: goal,
                 categories: categories,
                 onToggleStatus: onToggleStatus,
@@ -1544,6 +1547,7 @@ class _GoalEmptyState extends StatelessWidget {
 
 class _GoalItem extends StatefulWidget {
   const _GoalItem({
+    super.key,
     required this.goal,
     this.checkboxKey,
     this.rescheduleKey,

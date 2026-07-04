@@ -415,4 +415,27 @@ void main() {
       },
     );
   });
+
+  group('color normalization', () {
+    String colorOf(String color) {
+      final model = DesktopBackupImportService.modelFromJson({
+        'goals': [
+          {'id': 'g', 'title': 'T', 'color': color, 'start_date': '2026-06-01'},
+        ],
+        'goal_logs': [],
+        'long_term_goals': [],
+        'macro_goal_categories': [],
+        'daily_moods': [],
+      }, replaceExisting: true);
+      return (model['goals'] as List).single['color'] as String;
+    }
+
+    test('hex is preserved, named tokens map, unknowns are not blue-washed', () {
+      expect(colorOf('#12AB34'), '#12AB34'); // valid hex preserved
+      expect(colorOf('red'), '#EF4444'); // named token mapped
+      expect(colorOf('hsl(0 0% 0%)'), '#000000'); // hsl converted
+      // An unrecognized value is preserved, NOT silently turned blue (#3B82F6).
+      expect(colorOf('totally-unknown'), 'totally-unknown');
+    });
+  });
 }

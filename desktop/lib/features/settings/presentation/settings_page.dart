@@ -1159,8 +1159,9 @@ class _SettingsPageState extends ConsumerState<SettingsPage> {
       _timeFormat24h = true;
       _habitReminders = true;
       _goalDeadlines = true;
-      _aiInsights = false;
-      _weeklyReport = false;
+      // Match the initial-state defaults (both ON), not false.
+      _aiInsights = true;
+      _weeklyReport = true;
       _eveningReview = true;
       _morningTime = '09:00';
       _eveningTime = '21:00';

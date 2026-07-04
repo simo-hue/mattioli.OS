@@ -728,14 +728,45 @@ class DesktopBackupImportService {
     }
   }
 
-  // Very basic HSL to Hex (e.g. hsl(187 94% 47%) -> #...)
+  /// Common named color tokens → hex, so a web backup that stored a palette
+  /// name (rather than hsl/hex) keeps its color instead of being blue-washed.
+  static const _namedColorHex = <String, String>{
+    'red': '#EF4444',
+    'orange': '#F97316',
+    'amber': '#F59E0B',
+    'yellow': '#EAB308',
+    'lime': '#84CC16',
+    'green': '#22C55E',
+    'emerald': '#10B981',
+    'teal': '#14B8A6',
+    'cyan': '#06B6D4',
+    'sky': '#0EA5E9',
+    'blue': '#3B82F6',
+    'indigo': '#6366F1',
+    'violet': '#8B5CF6',
+    'purple': '#A855F7',
+    'fuchsia': '#D946EF',
+    'pink': '#EC4899',
+    'rose': '#F43F5E',
+    'slate': '#64748B',
+    'gray': '#6B7280',
+    'grey': '#6B7280',
+  };
+
+  /// Normalizes an imported color. A valid `#hex` is preserved as-is, a known
+  /// named token is mapped to hex, and an `hsl(...)` string is converted. An
+  /// unrecognized value is returned unchanged — never silently blue-washed.
   static String _hslToHex(String hslStr) {
+    final input = hslStr.trim();
+    if (input.startsWith('#')) return input;
+    final named = _namedColorHex[input.toLowerCase()];
+    if (named != null) return named;
     try {
-      if (!hslStr.startsWith('hsl')) return hslStr;
+      if (!input.startsWith('hsl')) return input;
 
       final regex = RegExp(r'hsl\(\s*([\d\.]+)\s+([\d\.]+)%\s+([\d\.]+)%\s*\)');
-      final match = regex.firstMatch(hslStr);
-      if (match == null) return '#3B82F6';
+      final match = regex.firstMatch(input);
+      if (match == null) return input;
 
       final h = double.parse(match.group(1)!);
       final s = double.parse(match.group(2)!) / 100.0;
@@ -781,8 +812,8 @@ class DesktopBackupImportService {
 
       return '#${toHex(rInt)}${toHex(gInt)}${toHex(bInt)}';
     } catch (e) {
-      AppLogger.error('Failed to parse HSL color: $hslStr', e);
-      return '#3B82F6'; // Default blue
+      AppLogger.warning('Failed to parse color: $input', e);
+      return input; // Preserve the original rather than blue-washing it.
     }
   }
 }

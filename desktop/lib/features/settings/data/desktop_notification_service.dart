@@ -1,9 +1,12 @@
+import 'dart:async';
 import 'dart:io';
 
 import 'package:evolve_desktop/core/app_logger.dart';
+import 'package:evolve_desktop/core/desktop_private_db.dart';
 import 'package:evolve_desktop/features/dashboard/domain/dashboard_models.dart';
 import 'package:flutter_local_notifications/flutter_local_notifications.dart';
 import 'package:flutter_timezone/flutter_timezone.dart';
+import 'package:shared_preferences/shared_preferences.dart';
 import 'package:timezone/data/latest.dart' as tz;
 import 'package:timezone/timezone.dart' as tz;
 
@@ -11,6 +14,12 @@ class DesktopNotificationService {
   DesktopNotificationService._();
 
   static final instance = DesktopNotificationService._();
+
+  /// macOS notification category that carries the Done/Skip/Snooze actions.
+  static const _habitCategoryId = 'evolve_habit_actions';
+
+  /// Set by the app so a notification-driven write can refresh the UI providers.
+  static void Function()? onLocalWrite;
 
   final _notifications = FlutterLocalNotificationsPlugin();
   bool _initialized = false;
@@ -36,10 +45,21 @@ class DesktopNotificationService {
         tz.setLocalLocation(tz.getLocation('UTC'));
       }
 
-      const darwin = DarwinInitializationSettings(
+      // macOS actionable-notification category (Done/Skip/Snooze). Only habit
+      // reminders reference it; the morning/evening briefs stay action-less.
+      final habitCategory = DarwinNotificationCategory(
+        _habitCategoryId,
+        actions: [
+          DarwinNotificationAction.plain('done', 'Fatto'),
+          DarwinNotificationAction.plain('skip', 'Salta'),
+          DarwinNotificationAction.plain('snooze', 'Posticipa'),
+        ],
+      );
+      final darwin = DarwinInitializationSettings(
         requestAlertPermission: false,
         requestBadgePermission: false,
         requestSoundPermission: false,
+        notificationCategories: [habitCategory],
       );
       const linux = LinuxInitializationSettings(
         defaultActionName: 'Apri Evolve',
@@ -50,11 +70,12 @@ class DesktopNotificationService {
         guid: 'b989933a-4c53-4c37-843d-7a86cc207bc4',
       );
       await _notifications.initialize(
-        settings: const InitializationSettings(
+        settings: InitializationSettings(
           macOS: darwin,
           linux: linux,
           windows: windows,
         ),
+        onDidReceiveNotificationResponse: _onNotificationResponse,
       );
       _initialized = true;
     } catch (error, stack) {
@@ -107,6 +128,7 @@ class DesktopNotificationService {
           title: 'Evolve - ${habit.title}',
           body: 'E il momento di completare la tua abitudine.',
           payload: 'habit|${habit.id}|${habit.title}',
+          categoryId: _habitCategoryId,
         );
       }
     }
@@ -127,6 +149,7 @@ class DesktopNotificationService {
     required String title,
     required String body,
     String? payload,
+    String? categoryId,
   }) async {
     final scheduledDate = _nextInstance(time);
     await _notifications.zonedSchedule(
@@ -134,9 +157,9 @@ class DesktopNotificationService {
       title: title,
       body: body,
       scheduledDate: scheduledDate,
-      notificationDetails: const NotificationDetails(
-        macOS: DarwinNotificationDetails(),
-        windows: WindowsNotificationDetails(),
+      notificationDetails: NotificationDetails(
+        macOS: DarwinNotificationDetails(categoryIdentifier: categoryId),
+        windows: const WindowsNotificationDetails(),
       ),
       androidScheduleMode: AndroidScheduleMode.inexactAllowWhileIdle,
       matchDateTimeComponents: Platform.isMacOS
@@ -144,6 +167,44 @@ class DesktopNotificationService {
           : null,
       payload: payload,
     );
+  }
+
+  /// Foreground handler for notification actions (macOS Done/Skip). Snooze /
+  /// dismiss carry no write. Runs in the app isolate (the desktop app is a
+  /// long-lived process), so a straight local write + UI refresh is enough.
+  void _onNotificationResponse(NotificationResponse response) {
+    final actionId = response.actionId;
+    final payload = response.payload;
+    if (actionId == null || payload == null) return;
+    final parts = payload.split('|');
+    if (parts.length < 2 || parts.first != 'habit') return;
+    final goalId = parts[1];
+    final status = switch (actionId) {
+      'done' => 'done',
+      'skip' => 'missed',
+      _ => null, // 'snooze' / default -> no write
+    };
+    if (status == null) return;
+    unawaited(_handleHabitAction(goalId, status));
+  }
+
+  Future<void> _handleHabitAction(String goalId, String status) async {
+    try {
+      final prefs = await SharedPreferences.getInstance();
+      final isPrivate = prefs.getString('active_data_mode') == 'private';
+      // Private Mode parity: write the log to the encrypted local DB. Cloud-mode
+      // notification actions are a separate follow-up; keeping Supabase out of
+      // this path preserves the private-mode boundary.
+      if (isPrivate) {
+        await DesktopPrivateDb.instance.setHabitLogFromNotification(
+          goalId: goalId,
+          status: status,
+        );
+        onLocalWrite?.call();
+      }
+    } catch (error, stack) {
+      AppLogger.error('Notification habit action failed', error, stack);
+    }
   }
 
   tz.TZDateTime _nextInstance(String time) {

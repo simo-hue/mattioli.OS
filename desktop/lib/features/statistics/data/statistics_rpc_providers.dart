@@ -2,6 +2,7 @@ import 'package:evolve_desktop/core/app_bootstrap.dart';
 import 'package:evolve_desktop/core/app_logger.dart';
 import 'package:evolve_desktop/core/desktop_data_mode.dart';
 import 'package:evolve_desktop/features/auth/application/auth_controller.dart';
+import 'package:evolve_desktop/features/dashboard/application/dashboard_controller.dart';
 import 'package:evolve_desktop/features/statistics/data/private_analytics.dart';
 import 'package:evolve_desktop/features/statistics/data/private_analytics_source.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
@@ -138,11 +139,15 @@ final habitYearlyGridRpcProvider = FutureProvider.family<List<int>, String>((
       .toList();
 });
 
-// NOTE (WS4b): correlations + macro-goal stats are still RPC-only, so they
-// return empty in Private mode until the inline correlation/macro-stats logic
-// from mobile's private_local_database.dart is ported.
 final habitCorrelationsRpcProvider =
-    FutureProvider.family<List<Map<String, dynamic>>, String>((ref, goalId) {
+    FutureProvider.family<List<Map<String, dynamic>>, String>((
+      ref,
+      goalId,
+    ) async {
+      if (ref.watch(activeDesktopDataModeProvider).isPrivate) {
+        final data = await ref.watch(privateAnalyticsDataProvider.future);
+        return computeHabitCorrelations(goalId, data.logsByDate);
+      }
       return _listRpc(
         ref,
         'get_habit_correlations',
@@ -151,12 +156,36 @@ final habitCorrelationsRpcProvider =
     });
 
 final allHabitCorrelationsRpcProvider =
-    FutureProvider<List<Map<String, dynamic>>>((ref) {
+    FutureProvider<List<Map<String, dynamic>>>((ref) async {
+      if (ref.watch(activeDesktopDataModeProvider).isPrivate) {
+        final data = await ref.watch(privateAnalyticsDataProvider.future);
+        return computeAllHabitCorrelations(
+          data.goals.map((g) => g.id).toList(),
+          data.logsByDate,
+        );
+      }
       return _listRpc(ref, 'get_all_habit_correlations');
     });
 
 final macroGoalsStatsRpcProvider =
     FutureProvider.family<Map<String, dynamic>, String>((ref, year) async {
+      if (ref.watch(activeDesktopDataModeProvider).isPrivate) {
+        final goals = ref.watch(dashboardControllerProvider).goals;
+        final stats = goals
+            .map(
+              (g) => MacroGoalStat(
+                status: g.state.name,
+                type: g.type.name,
+                year: g.year,
+                month: g.month,
+                quarter: g.quarter,
+                categoryId: g.categoryId,
+                categoryKey: g.category.isEmpty ? null : g.category,
+              ),
+            )
+            .toList();
+        return computeMacroGoalsStats(stats, year);
+      }
       final context = _RpcContext.read(ref);
       if (context == null) return {};
       try {

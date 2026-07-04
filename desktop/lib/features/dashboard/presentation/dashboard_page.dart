@@ -2,8 +2,9 @@ import 'dart:math' as math;
 
 import 'package:evolve_desktop/app/theme/evolve_theme.dart';
 import 'package:evolve_desktop/features/auth/application/auth_controller.dart';
+import 'package:evolve_desktop/features/auth/application/desktop_profile_controller.dart';
+import 'package:evolve_desktop/core/desktop_data_mode.dart';
 import 'package:evolve_desktop/features/settings/application/desktop_subscription_controller.dart';
-import 'package:evolve_desktop/core/app_bootstrap.dart';
 import 'package:evolve_desktop/core/tutorial_provider.dart';
 import 'package:evolve_desktop/features/dashboard/application/dashboard_controller.dart';
 import 'package:evolve_desktop/features/dashboard/domain/dashboard_models.dart';
@@ -51,9 +52,14 @@ class _DashboardPageState extends ConsumerState<DashboardPage> {
     final authState = ref.read(desktopAuthControllerProvider);
     if (authState.user != null) return true; // Logged in user
 
-    // Privacy mode
-    final prefs = ref.read(sharedPreferencesProvider);
-    final hasName = prefs?.getString('private_profile_name') != null;
+    // Reachable only with no Supabase user AND not Private mode — a state the
+    // real app never shows the dashboard in (the router gates it behind auth /
+    // private mode). Don't run the name/tutorial onboarding here.
+    if (!ref.read(activeDesktopDataModeProvider).isPrivate) return false;
+
+    // Private mode: the name lives in the encrypted profiles row.
+    final profile = await ref.read(privateProfileProvider.future);
+    final hasName = profile.fullName?.trim().isNotEmpty ?? false;
     if (hasName) return true;
 
     return _showNameDialog();
@@ -129,9 +135,18 @@ class _DashboardPageState extends ConsumerState<DashboardPage> {
   Widget build(BuildContext context) {
     final snapshot = ref.watch(dashboardControllerProvider);
     final user = ref.watch(desktopAuthControllerProvider).user;
+    final isPrivate = ref.watch(activeDesktopDataModeProvider).isPrivate;
+    final privateName = isPrivate
+        ? ref.watch(privateProfileProvider).value?.fullName
+        : null;
 
     return DesktopPage(
-      title: _greeting(user?.userMetadata, user?.email),
+      title: user != null
+          ? _greeting(user.userMetadata, user.email)
+          : _greeting(
+              privateName != null ? {'full_name': privateName} : null,
+              null,
+            ),
       subtitle:
           'Mantieni il ritmo. Ogni piccola azione consolida la persona che stai costruendo.',
       trailing: _TodayLabel(date: DateTime.now()),
@@ -1053,13 +1068,13 @@ class _NamePromptDialogState extends State<_NamePromptDialog> {
     super.dispose();
   }
 
-  void _submit(WidgetRef ref) {
+  Future<void> _submit(WidgetRef ref) async {
     final name = _controller.text.trim();
     if (name.isEmpty) return;
-    ref
-        .read(sharedPreferencesProvider)
-        ?.setString('private_profile_name', name);
-    Navigator.pop(context, true);
+    await ref
+        .read(privateProfileProvider.notifier)
+        .updateProfile(fullName: name);
+    if (mounted) Navigator.pop(context, true);
   }
 
   @override

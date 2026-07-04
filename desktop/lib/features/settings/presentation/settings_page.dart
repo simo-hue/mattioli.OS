@@ -552,6 +552,36 @@ class _SettingsPageState extends ConsumerState<SettingsPage> {
   }
 
   Future<void> _exportData() async {
+    // Private mode: export the full local data space from the encrypted DB
+    // (profile, habits, logs, macro goals, categories, moods).
+    if (ref.read(activeDesktopDataModeProvider).isPrivate) {
+      final payload = await DesktopPrivateDb.instance.exportData();
+      final privateJson = const JsonEncoder.withIndent('  ').convert(payload);
+      if (Platform.isLinux) {
+        await Clipboard.setData(ClipboardData(text: privateJson));
+      } else {
+        await SharePlus.instance.share(
+          ShareParams(
+            files: [
+              XFile.fromData(
+                utf8.encode(privateJson),
+                mimeType: 'application/json',
+              ),
+            ],
+            fileNameOverrides: const ['evolve_private_export.json'],
+            text: 'I miei dati privati esportati da Evolve',
+          ),
+        );
+      }
+      if (!mounted) return;
+      _showGate(
+        'Export completato',
+        Platform.isLinux
+            ? 'Il JSON e negli appunti: Linux non supporta la condivisione file.'
+            : 'Il JSON e stato inviato al selettore di condivisione.',
+      );
+      return;
+    }
     final snapshot = ref.read(dashboardControllerProvider);
     final json = const JsonEncoder.withIndent('  ').convert({
       'exportDate': DateTime.now().toIso8601String(),
@@ -1082,8 +1112,9 @@ class _SettingsPageState extends ConsumerState<SettingsPage> {
       }
     } catch (error, stack) {
       AppLogger.error('Unable to delete private database', error, stack);
-      if (mounted)
+      if (mounted) {
         _showGate('Elimina dati privati', 'Operazione non riuscita.');
+      }
     }
   }
 

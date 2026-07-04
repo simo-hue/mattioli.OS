@@ -137,6 +137,52 @@ class DesktopPrivateDb {
     );
   }
 
+  /// Writes a habit log from a macOS notification action (Done/Skip), computing
+  /// the streak from the stored history so it matches the foreground toggle.
+  Future<void> setHabitLogFromNotification({
+    required String goalId,
+    required String status, // 'done' | 'missed'
+    DateTime? date,
+  }) async {
+    final db = await database;
+    final owner = await ownerId;
+    final day = date ?? DateTime.now();
+    final dayKey = _dayKey(day);
+    final now = _now();
+
+    var streak = 0;
+    if (status == 'done') {
+      final rows = await db.query(
+        'goal_logs',
+        columns: ['date'],
+        where: 'goal_id = ? AND status = ?',
+        whereArgs: [goalId, 'done'],
+      );
+      final doneDates = rows.map((r) => r['date'] as String).toSet();
+      streak = 1; // today counts
+      var cursor = DateTime(
+        day.year,
+        day.month,
+        day.day,
+      ).subtract(const Duration(days: 1));
+      while (doneDates.contains(_dayKey(cursor))) {
+        streak++;
+        cursor = cursor.subtract(const Duration(days: 1));
+      }
+    }
+
+    await db.insert('goal_logs', {
+      'id': const Uuid().v4(),
+      'user_id': owner,
+      'goal_id': goalId,
+      'date': dayKey,
+      'status': status,
+      'streak': streak,
+      'created_at': now,
+      'updated_at': now,
+    }, conflictAlgorithm: ConflictAlgorithm.replace);
+  }
+
   Future<void> importData({
     required Map<String, dynamic> backupData,
     required bool replaceExisting,
@@ -354,4 +400,9 @@ class DesktopPrivateDb {
   }
 
   String _now() => DateTime.now().toUtc().toIso8601String();
+
+  static String _dayKey(DateTime d) =>
+      '${d.year.toString().padLeft(4, '0')}-'
+      '${d.month.toString().padLeft(2, '0')}-'
+      '${d.day.toString().padLeft(2, '0')}';
 }

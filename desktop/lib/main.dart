@@ -4,7 +4,9 @@ import 'package:evolve_desktop/core/desktop_data_mode.dart';
 import 'package:evolve_desktop/core/desktop_supabase_config.dart';
 import 'package:evolve_desktop/core/desktop_sentry_service.dart';
 import 'package:evolve_desktop/core/secure_local_storage.dart';
+import 'package:evolve_desktop/features/dashboard/application/dashboard_controller.dart';
 import 'package:evolve_desktop/features/settings/data/desktop_notification_service.dart';
+import 'package:evolve_desktop/features/statistics/data/private_analytics_source.dart';
 import 'package:flutter/widgets.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:shared_preferences/shared_preferences.dart';
@@ -40,11 +42,20 @@ Future<void> main() async {
     );
   }
 
+  final container = ProviderContainer(
+    overrides: [sharedPreferencesProvider.overrideWithValue(sharedPreferences)],
+  );
+
+  // Refresh the dashboard + statistics after a notification-driven local write
+  // (macOS Done/Skip actions write straight to the encrypted DB).
+  DesktopNotificationService.onLocalWrite = () {
+    container.read(dashboardControllerProvider.notifier).refresh();
+    container.invalidate(privateAnalyticsDataProvider);
+  };
+
   runApp(
-    ProviderScope(
-      overrides: [
-        sharedPreferencesProvider.overrideWithValue(sharedPreferences),
-      ],
+    UncontrolledProviderScope(
+      container: container,
       child: const EvolveDesktopApp(),
     ),
   );

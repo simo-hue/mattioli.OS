@@ -976,6 +976,11 @@ class _Translations$consentPage$ar extends Translations$consentPage$en {
 	@override String get crashDiagnostics => 'تشخيص الأعطال';
 	@override String get crashSubtitle => 'اسمح بإرسال تقارير تقنية مجهّلة الهوية.';
 	@override String get openPrivacy => 'افتح سياسة الخصوصية';
+	@override String get openTerms => 'شروط الخدمة';
+	@override String get notificationsTitle => 'تفعيل الإشعارات';
+	@override String get notificationsSubtitle => 'احصل على تذكيرات العادات والملخصات اليومية.';
+	@override String get enableNotifications => 'تفعيل';
+	@override String get notificationsEnabled => 'مُفعّلة';
 }
 
 // Path: notif
@@ -1937,6 +1942,11 @@ extension on TranslationsAr {
 			'consentPage.crashDiagnostics' => 'تشخيص الأعطال',
 			'consentPage.crashSubtitle' => 'اسمح بإرسال تقارير تقنية مجهّلة الهوية.',
 			'consentPage.openPrivacy' => 'افتح سياسة الخصوصية',
+			'consentPage.openTerms' => 'شروط الخدمة',
+			'consentPage.notificationsTitle' => 'تفعيل الإشعارات',
+			'consentPage.notificationsSubtitle' => 'احصل على تذكيرات العادات والملخصات اليومية.',
+			'consentPage.enableNotifications' => 'تفعيل',
+			'consentPage.notificationsEnabled' => 'مُفعّلة',
 			'notif.macScheduling' => 'الجدولة اليومية مفعّلة على macOS.',
 			'notif.linuxImmediate' => 'يعرض Linux إشعارات فورية لكنه لا يدعم الجدولة.',
 			'notif.openEvolve' => 'افتح Evolve',

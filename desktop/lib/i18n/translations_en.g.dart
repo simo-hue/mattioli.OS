@@ -2225,6 +2225,21 @@ class Translations$consentPage$en {
 
 	/// en: 'Open the privacy policy'
 	String get openPrivacy => 'Open the privacy policy';
+
+	/// en: 'Terms of Service'
+	String get openTerms => 'Terms of Service';
+
+	/// en: 'Enable notifications'
+	String get notificationsTitle => 'Enable notifications';
+
+	/// en: 'Get habit reminders and daily briefs.'
+	String get notificationsSubtitle => 'Get habit reminders and daily briefs.';
+
+	/// en: 'Enable'
+	String get enableNotifications => 'Enable';
+
+	/// en: 'Enabled'
+	String get notificationsEnabled => 'Enabled';
 }
 
 // Path: notif
@@ -3434,6 +3449,11 @@ extension on Translations {
 			'consentPage.crashDiagnostics' => 'Crash diagnostics',
 			'consentPage.crashSubtitle' => 'Allow sending anonymized technical reports.',
 			'consentPage.openPrivacy' => 'Open the privacy policy',
+			'consentPage.openTerms' => 'Terms of Service',
+			'consentPage.notificationsTitle' => 'Enable notifications',
+			'consentPage.notificationsSubtitle' => 'Get habit reminders and daily briefs.',
+			'consentPage.enableNotifications' => 'Enable',
+			'consentPage.notificationsEnabled' => 'Enabled',
 			'notif.macScheduling' => 'Daily scheduling active on macOS.',
 			'notif.linuxImmediate' => 'Linux shows immediate notifications but doesn\'t support scheduling.',
 			'notif.openEvolve' => 'Open Evolve',

@@ -768,7 +768,12 @@
     "termsSubtitle": "أؤكّد أنني قرأت المستندات وأن عمري 14 عامًا على الأقل.",
     "crashDiagnostics": "تشخيص الأعطال",
     "crashSubtitle": "اسمح بإرسال تقارير تقنية مجهّلة الهوية.",
-    "openPrivacy": "افتح سياسة الخصوصية"
+    "openPrivacy": "افتح سياسة الخصوصية",
+    "openTerms": "شروط الخدمة",
+    "notificationsTitle": "تفعيل الإشعارات",
+    "notificationsSubtitle": "احصل على تذكيرات العادات والملخصات اليومية.",
+    "enableNotifications": "تفعيل",
+    "notificationsEnabled": "مُفعّلة"
   },
   "notif": {
     "macScheduling": "الجدولة اليومية مفعّلة على macOS.",

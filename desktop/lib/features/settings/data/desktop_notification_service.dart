@@ -4,8 +4,10 @@ import 'dart:io';
 import 'package:evolve_desktop/core/app_logger.dart';
 import 'package:evolve_desktop/i18n/translations.g.dart';
 import 'package:evolve_desktop/core/desktop_private_db.dart';
+import 'package:evolve_desktop/core/streak_utils.dart';
 import 'package:evolve_desktop/features/dashboard/domain/dashboard_models.dart';
 import 'package:flutter_local_notifications/flutter_local_notifications.dart';
+import 'package:supabase_flutter/supabase_flutter.dart';
 import 'package:flutter_timezone/flutter_timezone.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:timezone/data/latest.dart' as tz;
@@ -198,19 +200,90 @@ class DesktopNotificationService {
     try {
       final prefs = await SharedPreferences.getInstance();
       final isPrivate = prefs.getString('active_data_mode') == 'private';
-      // Private Mode parity: write the log to the encrypted local DB. Cloud-mode
-      // notification actions are a separate follow-up; keeping Supabase out of
-      // this path preserves the private-mode boundary.
       if (isPrivate) {
+        // Private mode: write the log to the encrypted local DB.
         await DesktopPrivateDb.instance.setHabitLogFromNotification(
           goalId: goalId,
           status: status,
         );
-        onLocalWrite?.call();
+      } else {
+        // Cloud mode: write to Supabase. This runs in the foreground/main-isolate
+        // notification callback (the app is running when a desktop notification
+        // action fires), so the authenticated client is available.
+        await _writeCloudHabitLog(goalId, status);
       }
+      onLocalWrite?.call();
     } catch (error, stack) {
       AppLogger.error('Notification habit action failed', error, stack);
     }
+  }
+
+  /// Upserts a habit log to Supabase from a notification action, computing the
+  /// signed streak from the habit's history — the cloud counterpart of
+  /// [DesktopPrivateDb.setHabitLogFromNotification]. No-op if Supabase isn't
+  /// initialized or no user is signed in.
+  Future<void> _writeCloudHabitLog(String goalId, String status) async {
+    final SupabaseClient client;
+    try {
+      client = Supabase.instance.client;
+    } catch (_) {
+      return; // Supabase not initialized (e.g. a background isolate) — skip.
+    }
+    final userId = client.auth.currentUser?.id;
+    if (userId == null) return;
+
+    final now = DateTime.now();
+    final dayKey = dashboardDateKey(now);
+
+    // Load the habit's logs keyed the way computeStreak reads them, then apply
+    // the new status for today so the toggled day is visible to the algorithm.
+    final rows = await client
+        .from('goal_logs')
+        .select('date, status')
+        .eq('user_id', userId)
+        .eq('goal_id', goalId)
+        // Newest first so the recent days the streak walk needs are always
+        // within PostgREST's default row cap.
+        .order('date', ascending: false);
+    final logs = <String, Map<String, String>>{};
+    for (final row in List<Map<String, dynamic>>.from(rows)) {
+      final date = row['date'] as String?;
+      final rowStatus = row['status'] as String?;
+      if (date != null && rowStatus != null) {
+        (logs[date] ??= <String, String>{})[goalId] = rowStatus;
+      }
+    }
+    (logs[dayKey] ??= <String, String>{})[goalId] = status;
+
+    // Resolve the habit's start_date so the run can't walk before it.
+    final goalRows = await client
+        .from('goals')
+        .select('start_date')
+        .eq('id', goalId)
+        .limit(1);
+    final goalList = List<Map<String, dynamic>>.from(goalRows);
+    final startDate =
+        (goalList.isEmpty
+            ? null
+            : DateTime.tryParse(
+                goalList.first['start_date'] as String? ?? '',
+              )) ??
+        DateTime(now.year, now.month, now.day);
+
+    final streak = computeStreak(
+      habitId: goalId,
+      date: now,
+      logs: logs,
+      startDate: startDate,
+    );
+
+    await client.from('goal_logs').upsert({
+      'user_id': userId,
+      'goal_id': goalId,
+      'date': dayKey,
+      'status': status,
+      'streak': streak,
+    }, onConflict: 'goal_id,date');
   }
 
   tz.TZDateTime _nextInstance(String time) {

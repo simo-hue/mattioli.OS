@@ -768,7 +768,12 @@
     "termsSubtitle": "Ich bestätige, dass ich die Dokumente gelesen habe und mindestens 14 Jahre alt bin.",
     "crashDiagnostics": "Absturzdiagnose",
     "crashSubtitle": "Erlaube das Senden anonymisierter technischer Berichte.",
-    "openPrivacy": "Datenschutzrichtlinie öffnen"
+    "openPrivacy": "Datenschutzrichtlinie öffnen",
+    "openTerms": "Nutzungsbedingungen",
+    "notificationsTitle": "Benachrichtigungen aktivieren",
+    "notificationsSubtitle": "Erhalte Gewohnheits-Erinnerungen und Tagesübersichten.",
+    "enableNotifications": "Aktivieren",
+    "notificationsEnabled": "Aktiviert"
   },
   "notif": {
     "macScheduling": "Tägliche Planung auf macOS aktiv.",

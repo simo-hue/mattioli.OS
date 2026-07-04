@@ -976,6 +976,11 @@ class _Translations$consentPage$it extends Translations$consentPage$en {
 	@override String get crashDiagnostics => 'Diagnostica crash';
 	@override String get crashSubtitle => 'Consenti l\'invio di segnalazioni tecniche anonimizzate.';
 	@override String get openPrivacy => 'Apri la privacy policy';
+	@override String get openTerms => 'Termini di servizio';
+	@override String get notificationsTitle => 'Abilita le notifiche';
+	@override String get notificationsSubtitle => 'Ricevi promemoria delle abitudini e riepiloghi giornalieri.';
+	@override String get enableNotifications => 'Abilita';
+	@override String get notificationsEnabled => 'Attive';
 }
 
 // Path: notif
@@ -1937,6 +1942,11 @@ extension on TranslationsIt {
 			'consentPage.crashDiagnostics' => 'Diagnostica crash',
 			'consentPage.crashSubtitle' => 'Consenti l\'invio di segnalazioni tecniche anonimizzate.',
 			'consentPage.openPrivacy' => 'Apri la privacy policy',
+			'consentPage.openTerms' => 'Termini di servizio',
+			'consentPage.notificationsTitle' => 'Abilita le notifiche',
+			'consentPage.notificationsSubtitle' => 'Ricevi promemoria delle abitudini e riepiloghi giornalieri.',
+			'consentPage.enableNotifications' => 'Abilita',
+			'consentPage.notificationsEnabled' => 'Attive',
 			'notif.macScheduling' => 'Scheduling giornaliero attivo su macOS.',
 			'notif.linuxImmediate' => 'Linux mostra notifiche immediate, ma non supporta lo scheduling.',
 			'notif.openEvolve' => 'Apri Evolve',

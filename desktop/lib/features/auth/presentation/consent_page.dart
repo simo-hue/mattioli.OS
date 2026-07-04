@@ -1,5 +1,6 @@
 import 'package:evolve_desktop/app/theme/evolve_theme.dart';
 import 'package:evolve_desktop/features/auth/application/consent_controller.dart';
+import 'package:evolve_desktop/features/settings/data/desktop_notification_service.dart';
 import 'package:evolve_desktop/i18n/translations.g.dart';
 import 'package:evolve_desktop/shared/widgets/evolve_panel.dart';
 import 'package:flutter/material.dart';
@@ -16,6 +17,7 @@ class DesktopConsentPage extends ConsumerStatefulWidget {
 class _DesktopConsentPageState extends ConsumerState<DesktopConsentPage> {
   bool _acceptedTerms = false;
   bool _sentryConsent = true;
+  bool _notificationsAllowed = false;
   bool _isSaving = false;
 
   @override
@@ -63,11 +65,47 @@ class _DesktopConsentPageState extends ConsumerState<DesktopConsentPage> {
                     title: Text(t.consentPage.crashDiagnostics),
                     subtitle: Text(t.consentPage.crashSubtitle),
                   ),
+                  ListTile(
+                    contentPadding: EdgeInsets.zero,
+                    leading: Icon(
+                      Icons.notifications_active_outlined,
+                      color: context.evolveAccent,
+                    ),
+                    title: Text(t.consentPage.notificationsTitle),
+                    subtitle: Text(t.consentPage.notificationsSubtitle),
+                    trailing: _notificationsAllowed
+                        ? Row(
+                            mainAxisSize: MainAxisSize.min,
+                            children: [
+                              const Icon(
+                                Icons.check_circle_rounded,
+                                color: Color(0xFF10B981),
+                                size: 18,
+                              ),
+                              const SizedBox(width: 6),
+                              Text(t.consentPage.notificationsEnabled),
+                            ],
+                          )
+                        : TextButton(
+                            onPressed: _isSaving ? null : _requestNotifications,
+                            child: Text(t.consentPage.enableNotifications),
+                          ),
+                  ),
                   const SizedBox(height: 8),
-                  TextButton.icon(
-                    onPressed: _openPrivacyPolicy,
-                    icon: const Icon(Icons.open_in_new_rounded, size: 16),
-                    label: Text(t.consentPage.openPrivacy),
+                  Wrap(
+                    spacing: 4,
+                    children: [
+                      TextButton.icon(
+                        onPressed: _openTerms,
+                        icon: const Icon(Icons.open_in_new_rounded, size: 16),
+                        label: Text(t.consentPage.openTerms),
+                      ),
+                      TextButton.icon(
+                        onPressed: _openPrivacyPolicy,
+                        icon: const Icon(Icons.open_in_new_rounded, size: 16),
+                        label: Text(t.consentPage.openPrivacy),
+                      ),
+                    ],
                   ),
                   const SizedBox(height: 20),
                   Align(
@@ -90,6 +128,20 @@ class _DesktopConsentPageState extends ConsumerState<DesktopConsentPage> {
           ),
         ),
       ),
+    );
+  }
+
+  Future<void> _requestNotifications() async {
+    final granted = await DesktopNotificationService.instance
+        .requestPermissions();
+    if (mounted) setState(() => _notificationsAllowed = granted);
+  }
+
+  Future<void> _openTerms() async {
+    // The app's single legal page covers terms + privacy (mirrors mobile).
+    await launchUrl(
+      Uri.parse('https://simo-hue.github.io/evolve/privacy.html'),
+      mode: LaunchMode.externalApplication,
     );
   }
 

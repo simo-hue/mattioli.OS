@@ -172,7 +172,12 @@
     "allYears": "All years",
     "selectYearHeader": "SELECT YEAR",
     "completions": "Completions",
-    "success2": "Success"
+    "success2": "Success",
+    "archiveCategory2": "Archive category?",
+    "categoryUnavailableLinked": "The category \"{label}\" will no longer be available for new goals, but stays linked to {count} historical goals and your statistics.",
+    "categoryUnavailableArchived": "The category \"{label}\" will no longer be available for new goals, but stays in your history.",
+    "archive": "Archive",
+    "createNewCategory": "Create new category"
   },
   "statistics": {
     "completed2": "Completed",

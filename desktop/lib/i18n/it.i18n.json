@@ -172,7 +172,12 @@
     "allYears": "Tutti gli anni",
     "selectYearHeader": "SELEZIONA ANNO",
     "completions": "Completamenti",
-    "success2": "Successo"
+    "success2": "Successo",
+    "archiveCategory2": "Archiviare categoria?",
+    "categoryUnavailableLinked": "La categoria \"{label}\" non sarà più disponibile per nuovi obiettivi, ma resterà collegata a {count} obiettivi storici e alle statistiche.",
+    "categoryUnavailableArchived": "La categoria \"{label}\" non sarà più disponibile per nuovi obiettivi, ma resterà nello storico.",
+    "archive": "Archivia",
+    "createNewCategory": "Crea nuova categoria"
   },
   "statistics": {
     "completed2": "Completato",

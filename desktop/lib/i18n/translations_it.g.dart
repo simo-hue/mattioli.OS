@@ -315,6 +315,11 @@ class _Translations$macroGoals$it extends Translations$macroGoals$en {
 	@override String get selectYearHeader => 'SELEZIONA ANNO';
 	@override String get completions => 'Completamenti';
 	@override String get success2 => 'Successo';
+	@override String get archiveCategory2 => 'Archiviare categoria?';
+	@override String categoryUnavailableLinked({required Object label, required Object count}) => 'La categoria "${label}" non sarà più disponibile per nuovi obiettivi, ma resterà collegata a ${count} obiettivi storici e alle statistiche.';
+	@override String categoryUnavailableArchived({required Object label}) => 'La categoria "${label}" non sarà più disponibile per nuovi obiettivi, ma resterà nello storico.';
+	@override String get archive => 'Archivia';
+	@override String get createNewCategory => 'Crea nuova categoria';
 }
 
 // Path: statistics
@@ -1366,6 +1371,11 @@ extension on TranslationsIt {
 			'macroGoals.selectYearHeader' => 'SELEZIONA ANNO',
 			'macroGoals.completions' => 'Completamenti',
 			'macroGoals.success2' => 'Successo',
+			'macroGoals.archiveCategory2' => 'Archiviare categoria?',
+			'macroGoals.categoryUnavailableLinked' => ({required Object label, required Object count}) => 'La categoria "${label}" non sarà più disponibile per nuovi obiettivi, ma resterà collegata a ${count} obiettivi storici e alle statistiche.',
+			'macroGoals.categoryUnavailableArchived' => ({required Object label}) => 'La categoria "${label}" non sarà più disponibile per nuovi obiettivi, ma resterà nello storico.',
+			'macroGoals.archive' => 'Archivia',
+			'macroGoals.createNewCategory' => 'Crea nuova categoria',
 			'statistics.completed2' => 'Completato',
 			'statistics.notCompleted' => 'Non completato',
 			'statistics.ofCompletion' => 'di completamento',
@@ -1734,13 +1744,13 @@ extension on TranslationsIt {
 			'settingsPage.timeFormat24h' => 'Formato 24h',
 			'settingsPage.subscription' => 'Abbonamento',
 			'settingsPage.proName' => 'Evolve Pro',
+			_ => null,
+		} ?? switch (path) {
 			'settingsPage.planMonthly' => 'Mensile',
 			'settingsPage.planAnnual' => 'Annuale',
 			'settingsPage.restorePurchases' => 'Ripristina acquisti',
 			'settingsPage.deletePrivateData' => 'Elimina dati privati',
 			'settingsPage.importInProgress' => 'Importazione in corso...',
-			_ => null,
-		} ?? switch (path) {
 			'settingsPage.passwordsDontMatch' => 'Le password non coincidono.',
 			'settingsPage.email' => 'Email',
 			'settingsPage.cancel' => 'Annulla',

@@ -315,6 +315,11 @@ class _Translations$macroGoals$ar extends Translations$macroGoals$en {
 	@override String get selectYearHeader => 'اختر السنة';
 	@override String get completions => 'الإنجازات';
 	@override String get success2 => 'النجاح';
+	@override String get archiveCategory2 => 'أرشفة الفئة؟';
+	@override String categoryUnavailableLinked({required Object label, required Object count}) => 'لن تعود الفئة "${label}" متاحة للأهداف الجديدة، لكنها ستبقى مرتبطة بـ ${count} أهداف سابقة وبإحصاءاتك.';
+	@override String categoryUnavailableArchived({required Object label}) => 'لن تعود الفئة "${label}" متاحة للأهداف الجديدة، لكنها ستبقى في سجلّك.';
+	@override String get archive => 'أرشفة';
+	@override String get createNewCategory => 'إنشاء فئة جديدة';
 }
 
 // Path: statistics
@@ -1366,6 +1371,11 @@ extension on TranslationsAr {
 			'macroGoals.selectYearHeader' => 'اختر السنة',
 			'macroGoals.completions' => 'الإنجازات',
 			'macroGoals.success2' => 'النجاح',
+			'macroGoals.archiveCategory2' => 'أرشفة الفئة؟',
+			'macroGoals.categoryUnavailableLinked' => ({required Object label, required Object count}) => 'لن تعود الفئة "${label}" متاحة للأهداف الجديدة، لكنها ستبقى مرتبطة بـ ${count} أهداف سابقة وبإحصاءاتك.',
+			'macroGoals.categoryUnavailableArchived' => ({required Object label}) => 'لن تعود الفئة "${label}" متاحة للأهداف الجديدة، لكنها ستبقى في سجلّك.',
+			'macroGoals.archive' => 'أرشفة',
+			'macroGoals.createNewCategory' => 'إنشاء فئة جديدة',
 			'statistics.completed2' => 'مكتمل',
 			'statistics.notCompleted' => 'غير مكتملة',
 			'statistics.ofCompletion' => 'من الإكمال',
@@ -1734,13 +1744,13 @@ extension on TranslationsAr {
 			'settingsPage.timeFormat24h' => 'تنسيق 24 ساعة',
 			'settingsPage.subscription' => 'الاشتراك',
 			'settingsPage.proName' => 'Evolve Pro',
+			_ => null,
+		} ?? switch (path) {
 			'settingsPage.planMonthly' => 'شهري',
 			'settingsPage.planAnnual' => 'سنوي',
 			'settingsPage.restorePurchases' => 'استعادة المشتريات',
 			'settingsPage.deletePrivateData' => 'حذف البيانات الخاصة',
 			'settingsPage.importInProgress' => 'جاري استيراد البيانات...',
-			_ => null,
-		} ?? switch (path) {
 			'settingsPage.passwordsDontMatch' => 'كلمتا المرور غير متطابقتين.',
 			'settingsPage.email' => 'البريد الإلكتروني',
 			'settingsPage.cancel' => 'إلغاء',

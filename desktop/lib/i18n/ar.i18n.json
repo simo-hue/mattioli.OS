@@ -172,7 +172,12 @@
     "allYears": "كل السنوات",
     "selectYearHeader": "اختر السنة",
     "completions": "الإنجازات",
-    "success2": "النجاح"
+    "success2": "النجاح",
+    "archiveCategory2": "أرشفة الفئة؟",
+    "categoryUnavailableLinked": "لن تعود الفئة \"{label}\" متاحة للأهداف الجديدة، لكنها ستبقى مرتبطة بـ {count} أهداف سابقة وبإحصاءاتك.",
+    "categoryUnavailableArchived": "لن تعود الفئة \"{label}\" متاحة للأهداف الجديدة، لكنها ستبقى في سجلّك.",
+    "archive": "أرشفة",
+    "createNewCategory": "إنشاء فئة جديدة"
   },
   "statistics": {
     "completed2": "مكتمل",

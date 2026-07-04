@@ -532,6 +532,21 @@ class Translations$macroGoals$en {
 
 	/// en: 'Success'
 	String get success2 => 'Success';
+
+	/// en: 'Archive category?'
+	String get archiveCategory2 => 'Archive category?';
+
+	/// en: 'The category "{label}" will no longer be available for new goals, but stays linked to {count} historical goals and your statistics.'
+	String categoryUnavailableLinked({required Object label, required Object count}) => 'The category "${label}" will no longer be available for new goals, but stays linked to ${count} historical goals and your statistics.';
+
+	/// en: 'The category "{label}" will no longer be available for new goals, but stays in your history.'
+	String categoryUnavailableArchived({required Object label}) => 'The category "${label}" will no longer be available for new goals, but stays in your history.';
+
+	/// en: 'Archive'
+	String get archive => 'Archive';
+
+	/// en: 'Create new category'
+	String get createNewCategory => 'Create new category';
 }
 
 // Path: statistics
@@ -2845,6 +2860,11 @@ extension on Translations {
 			'macroGoals.selectYearHeader' => 'SELECT YEAR',
 			'macroGoals.completions' => 'Completions',
 			'macroGoals.success2' => 'Success',
+			'macroGoals.archiveCategory2' => 'Archive category?',
+			'macroGoals.categoryUnavailableLinked' => ({required Object label, required Object count}) => 'The category "${label}" will no longer be available for new goals, but stays linked to ${count} historical goals and your statistics.',
+			'macroGoals.categoryUnavailableArchived' => ({required Object label}) => 'The category "${label}" will no longer be available for new goals, but stays in your history.',
+			'macroGoals.archive' => 'Archive',
+			'macroGoals.createNewCategory' => 'Create new category',
 			'statistics.completed2' => 'Completed',
 			'statistics.notCompleted' => 'Not completed',
 			'statistics.ofCompletion' => 'of completion',
@@ -3213,13 +3233,13 @@ extension on Translations {
 			'settingsPage.timeFormat24h' => '24h Format',
 			'settingsPage.subscription' => 'Subscription',
 			'settingsPage.proName' => 'Evolve Pro',
+			_ => null,
+		} ?? switch (path) {
 			'settingsPage.planMonthly' => 'Monthly',
 			'settingsPage.planAnnual' => 'Annual',
 			'settingsPage.restorePurchases' => 'Restore purchases',
 			'settingsPage.deletePrivateData' => 'Delete private data',
 			'settingsPage.importInProgress' => 'Importing data...',
-			_ => null,
-		} ?? switch (path) {
 			'settingsPage.passwordsDontMatch' => 'Passwords do not match.',
 			'settingsPage.email' => 'Email',
 			'settingsPage.cancel' => 'Cancel',

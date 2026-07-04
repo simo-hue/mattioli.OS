@@ -196,6 +196,7 @@ class _GoalsPageState extends ConsumerState<GoalsPage> {
                       failedGoals: failedGoals,
                       onQuickCategoryChanged: (category) =>
                           setState(() => _quickGoalCategory = category),
+                      onCreateCategory: _createCategoryInline,
                       onQuickSubmit: _submitQuickGoal,
                       onToggleStatus: _cycleGoalStatus,
                       onEdit: _openGoalEditorFor,
@@ -431,8 +432,8 @@ class _GoalsPageState extends ConsumerState<GoalsPage> {
                                 ),
                                 IconButton(
                                   tooltip: t.goalsPage.archiveCategory,
-                                  onPressed: () {
-                                    _archiveCategory(category);
+                                  onPressed: () async {
+                                    await _archiveCategory(category);
                                     setDialogState(() {});
                                   },
                                   icon: const Icon(Icons.archive_outlined),
@@ -510,6 +511,41 @@ class _GoalsPageState extends ConsumerState<GoalsPage> {
   }
 
   Future<void> _archiveCategory(_GoalCategory category) async {
+    // Warn how many goals still reference this category before archiving. Soft
+    // archive: linked goals keep their category_id and stay in the history — the
+    // category is only hidden from the picker for NEW goals (mirrors mobile).
+    final linkedCount = ref
+        .read(dashboardControllerProvider)
+        .goals
+        .where((g) => g.categoryId != null && g.categoryId == category.id)
+        .length;
+    final message = linkedCount > 0
+        ? t.macroGoals.categoryUnavailableLinked(
+            label: category.label,
+            count: linkedCount,
+          )
+        : t.macroGoals.categoryUnavailableArchived(label: category.label);
+    final confirmed = await showEvolveDialog<bool>(
+      context: context,
+      builder: (ctx) => EvolveAlertDialog(
+        icon: Icons.archive_outlined,
+        title: Text(t.macroGoals.archiveCategory2),
+        subtitle: message,
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(ctx, false),
+            child: Text(t.common.actions.cancel),
+          ),
+          const SizedBox(width: 8),
+          FilledButton(
+            onPressed: () => Navigator.pop(ctx, true),
+            child: Text(t.macroGoals.archive),
+          ),
+        ],
+      ),
+    );
+    if (confirmed != true) return;
+
     setState(() {
       _categories.remove(category);
       if (category.id != null) _archivedCategoryIds.add(category.id!);
@@ -556,6 +592,36 @@ class _GoalsPageState extends ConsumerState<GoalsPage> {
       if (index != -1) {
         _categories[index] = updated.copyWith(id: id);
       }
+    });
+  }
+
+  /// Creates a category inline from the add-goal picker and auto-selects it for
+  /// the goal being drafted (mirrors mobile's category_picker_sheet).
+  Future<void> _createCategoryInline() async {
+    final draft = await showEvolveDialog<_GoalCategory>(
+      context: context,
+      builder: (context) => const _CategoryEditorDialog(),
+    );
+    if (draft == null || !mounted) return;
+    DesktopGoalCategory? cloud;
+    try {
+      cloud = await ref
+          .read(desktopGoalCategoriesControllerProvider.notifier)
+          .addCategory(draft.label, draft.color);
+    } catch (_) {
+      if (!mounted) return;
+      ScaffoldMessenger.of(
+        context,
+      ).showSnackBar(SnackBar(content: Text(t.goalsPage.categoryCreateFailed)));
+      return;
+    }
+    if (!mounted) return;
+    final created = cloud == null
+        ? draft
+        : _GoalCategory(id: cloud.id, label: cloud.label, color: cloud.color);
+    setState(() {
+      _categories.add(created);
+      _quickGoalCategory = created; // auto-select the new category
     });
   }
 
@@ -1179,6 +1245,7 @@ class _GoalBoard extends StatelessWidget {
     required this.completedGoals,
     required this.failedGoals,
     required this.onQuickCategoryChanged,
+    required this.onCreateCategory,
     required this.onQuickSubmit,
     required this.onToggleStatus,
     required this.onEdit,
@@ -1203,6 +1270,7 @@ class _GoalBoard extends StatelessWidget {
   final List<DashboardGoal> completedGoals;
   final List<DashboardGoal> failedGoals;
   final ValueChanged<_GoalCategory?> onQuickCategoryChanged;
+  final VoidCallback onCreateCategory;
   final VoidCallback onQuickSubmit;
   final void Function(DashboardGoal, GoalState) onToggleStatus;
   final ValueChanged<DashboardGoal> onEdit;
@@ -1255,6 +1323,7 @@ class _GoalBoard extends StatelessWidget {
           selectedCategory: quickGoalCategory,
           categories: categories,
           onCategoryChanged: onQuickCategoryChanged,
+          onCreateCategory: onCreateCategory,
           onSubmit: onQuickSubmit,
           hintText: quickGoalHint,
         ),
@@ -1328,6 +1397,7 @@ class _QuickGoalBar extends StatelessWidget {
     required this.selectedCategory,
     required this.categories,
     required this.onCategoryChanged,
+    required this.onCreateCategory,
     required this.onSubmit,
     required this.hintText,
   });
@@ -1338,6 +1408,7 @@ class _QuickGoalBar extends StatelessWidget {
   final List<_GoalCategory> categories;
   final String hintText;
   final ValueChanged<_GoalCategory?> onCategoryChanged;
+  final VoidCallback onCreateCategory;
   final VoidCallback onSubmit;
 
   @override
@@ -1353,6 +1424,7 @@ class _QuickGoalBar extends StatelessWidget {
                 selectedCategory: selectedCategory,
                 categories: categories,
                 onCategoryChanged: onCategoryChanged,
+                onCreateCategory: onCreateCategory,
               ),
             ),
             const SizedBox(width: 10),
@@ -1383,11 +1455,13 @@ class _QuickCategoryButton extends StatelessWidget {
     required this.selectedCategory,
     required this.categories,
     required this.onCategoryChanged,
+    required this.onCreateCategory,
   });
 
   final _GoalCategory? selectedCategory;
   final List<_GoalCategory> categories;
   final ValueChanged<_GoalCategory?> onCategoryChanged;
+  final VoidCallback onCreateCategory;
 
   @override
   Widget build(BuildContext context) {
@@ -1407,6 +1481,19 @@ class _QuickCategoryButton extends StatelessWidget {
               ],
             ),
           ),
+        const PopupMenuDivider(),
+        PopupMenuItem(
+          // Not a category value — create inline via onTap (fires after close),
+          // which opens the editor and auto-selects the new category.
+          onTap: onCreateCategory,
+          child: Row(
+            children: [
+              Icon(Icons.add_rounded, size: 18, color: context.evolveAccent),
+              const SizedBox(width: 10),
+              Text(t.macroGoals.createNewCategory),
+            ],
+          ),
+        ),
       ],
       child: Container(
         width: 32,

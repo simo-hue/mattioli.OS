@@ -315,6 +315,11 @@ class _Translations$macroGoals$es extends Translations$macroGoals$en {
 	@override String get selectYearHeader => 'Seleccionar año';
 	@override String get completions => 'Completados';
 	@override String get success2 => 'Éxito';
+	@override String get archiveCategory2 => 'Archivar categoría';
+	@override String categoryUnavailableLinked({required Object label, required Object count}) => 'La categoría "${label}" ya no estará disponible para nuevos objetivos, pero seguirá vinculada a ${count} objetivos históricos y a tus estadísticas.';
+	@override String categoryUnavailableArchived({required Object label}) => 'La categoría "${label}" ya no estará disponible para nuevos objetivos, pero permanecerá en tu historial.';
+	@override String get archive => 'Archivar';
+	@override String get createNewCategory => 'Crear nueva categoría';
 }
 
 // Path: statistics
@@ -1366,6 +1371,11 @@ extension on TranslationsEs {
 			'macroGoals.selectYearHeader' => 'Seleccionar año',
 			'macroGoals.completions' => 'Completados',
 			'macroGoals.success2' => 'Éxito',
+			'macroGoals.archiveCategory2' => 'Archivar categoría',
+			'macroGoals.categoryUnavailableLinked' => ({required Object label, required Object count}) => 'La categoría "${label}" ya no estará disponible para nuevos objetivos, pero seguirá vinculada a ${count} objetivos históricos y a tus estadísticas.',
+			'macroGoals.categoryUnavailableArchived' => ({required Object label}) => 'La categoría "${label}" ya no estará disponible para nuevos objetivos, pero permanecerá en tu historial.',
+			'macroGoals.archive' => 'Archivar',
+			'macroGoals.createNewCategory' => 'Crear nueva categoría',
 			'statistics.completed2' => 'Completado',
 			'statistics.notCompleted' => 'No completado',
 			'statistics.ofCompletion' => 'de completitud',
@@ -1734,13 +1744,13 @@ extension on TranslationsEs {
 			'settingsPage.timeFormat24h' => 'Formato 24h',
 			'settingsPage.subscription' => 'Suscripción',
 			'settingsPage.proName' => 'Evolve PRO',
+			_ => null,
+		} ?? switch (path) {
 			'settingsPage.planMonthly' => 'Mensual',
 			'settingsPage.planAnnual' => 'Anual',
 			'settingsPage.restorePurchases' => 'Restaurar compras',
 			'settingsPage.deletePrivateData' => 'eliminar datos privados',
 			'settingsPage.importInProgress' => 'Importando datos...',
-			_ => null,
-		} ?? switch (path) {
 			'settingsPage.passwordsDontMatch' => 'Las contraseñas no coinciden',
 			'settingsPage.email' => 'Email',
 			'settingsPage.cancel' => 'Cancelar',

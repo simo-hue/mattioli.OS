@@ -700,7 +700,12 @@
     "sectionPrivacy": "Privacy",
     "customColor": "Colore personalizzato",
     "applyAction": "Applica",
-    "useAccent": "Usa accento {hex}"
+    "useAccent": "Usa accento {hex}",
+    "proUpsellTitle": "Passa a Evolve Pro",
+    "proUpsellSubtitle": "Sblocca tutte le funzionalità e accelera la tua crescita.",
+    "proWelcomeTitle": "Benvenuto in Evolve Pro!",
+    "proActiveMessage": "La tua iscrizione è attiva. Ora hai accesso completo ed illimitato all'AI Coach personalizzato, alle statistiche avanzate dei trend e a tutti gli strumenti di crescita personale di Evolve.",
+    "proStartJourney": "Inizia il tuo Percorso"
   },
   "consent": {
     "onboardingTitle": "La tua Privacy è Importante",
@@ -770,5 +775,20 @@
     "accessNotCompleted": "Accesso {provider} non completato.",
     "providerAuthFailed": "Autenticazione {provider} non riuscita.",
     "operationFailed": "Operazione non riuscita. Riprova tra poco."
+  },
+  "proModal": {
+    "title": "Sblocca Evolve Pro",
+    "subtitle": "Porta il tuo sistema di abitudini al livello successivo",
+    "featuresHeader": "COSA INCLUDE IL PIANO PRO",
+    "aiCoachTitle": "AI Coach Personalizzato",
+    "aiCoachDesc": "Analisi avanzata dei trend e suggerimenti intelligenti generati dall'AI.",
+    "statsTitle": "Statistiche Specifiche Per Abitudine",
+    "statsDesc": "Informazioni chiave per aumentare la tua produttività.",
+    "metricsTitle": "Metriche Avanzate Obiettivi",
+    "metricsDesc": "Visualizza grafici dettagliati e statistiche di performance profonde per ogni anno.",
+    "unlimitedTitle": "Abitudini Illimitate",
+    "unlimitedDesc": "Crea e traccia tutti gli habits che desideri senza alcun limite.",
+    "maybeLater": "Forse più tardi",
+    "viewPlans": "Vedi i piani Pro"
   }
 }

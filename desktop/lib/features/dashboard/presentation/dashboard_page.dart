@@ -4,7 +4,10 @@ import 'package:evolve_desktop/app/theme/evolve_theme.dart';
 import 'package:evolve_desktop/features/auth/application/auth_controller.dart';
 import 'package:evolve_desktop/features/auth/application/desktop_profile_controller.dart';
 import 'package:evolve_desktop/core/desktop_data_mode.dart';
+import 'dart:async';
+
 import 'package:evolve_desktop/features/settings/application/desktop_subscription_controller.dart';
+import 'package:evolve_desktop/features/settings/presentation/pro_features_modal.dart';
 import 'package:evolve_desktop/core/tutorial_provider.dart';
 import 'package:evolve_desktop/features/dashboard/application/dashboard_controller.dart';
 import 'package:evolve_desktop/features/dashboard/domain/dashboard_models.dart';
@@ -830,9 +833,7 @@ class _FocusGoalsPanel extends ConsumerWidget {
                 onPressed: () {
                   final isPro = ref.read(desktopIsProProvider);
                   if (!isPro && goals.length >= 100) {
-                    ScaffoldMessenger.of(context).showSnackBar(
-                      SnackBar(content: Text(t.dashboard.goalLimitReached)),
-                    );
+                    unawaited(showProFeaturesDialog(context, ref));
                     return;
                   }
                   showEvolveDialog<void>(

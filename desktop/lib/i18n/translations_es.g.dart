@@ -78,6 +78,7 @@ class TranslationsEs extends Translations with BaseTranslations<AppLocale, Trans
 	@override late final _Translations$sync$es sync = _Translations$sync$es._(_root);
 	@override late final _Translations$subscriptionCtrl$es subscriptionCtrl = _Translations$subscriptionCtrl$es._(_root);
 	@override late final _Translations$authCtrl$es authCtrl = _Translations$authCtrl$es._(_root);
+	@override late final _Translations$proModal$es proModal = _Translations$proModal$es._(_root);
 }
 
 // Path: auth
@@ -897,6 +898,11 @@ class _Translations$settingsPage$es extends Translations$settingsPage$en {
 	@override String get customColor => 'Color personalizado';
 	@override String get applyAction => 'Aplicar';
 	@override String useAccent({required Object hex}) => 'Usar acento ${hex}';
+	@override String get proUpsellTitle => 'Pasa a Evolve PRO';
+	@override String get proUpsellSubtitle => 'Desbloquea todas las funciones y acelera tu crecimiento.';
+	@override String get proWelcomeTitle => 'Bienvenido a Evolve PRO';
+	@override String get proActiveMessage => 'Tu suscripción está activa. Ahora tiene acceso completo e ilimitado al Entrenador de IA personalizado, estadísticas de tendencias avanzadas y todas las herramientas de crecimiento personal de Evolve.';
+	@override String get proStartJourney => 'Empieza tu recorrido';
 }
 
 // Path: consent
@@ -1029,6 +1035,28 @@ class _Translations$authCtrl$es extends Translations$authCtrl$en {
 	@override String accessNotCompleted({required Object provider}) => 'Inicio de sesión con ${provider} no completado.';
 	@override String providerAuthFailed({required Object provider}) => 'Error de autenticación de ${provider}.';
 	@override String get operationFailed => 'Operación fallida. Inténtalo de nuevo en breve.';
+}
+
+// Path: proModal
+class _Translations$proModal$es extends Translations$proModal$en {
+	_Translations$proModal$es._(TranslationsEs root) : this._root = root, super.internal(root);
+
+	final TranslationsEs _root; // ignore: unused_field
+
+	// Translations
+	@override String get title => 'Desbloquea Evolve PRO';
+	@override String get subtitle => 'Lleva tu sistema de hábitos al siguiente nivel';
+	@override String get featuresHeader => 'Qué incluye el plan PRO';
+	@override String get aiCoachTitle => 'Coach AI personalizado';
+	@override String get aiCoachDesc => 'Análisis de tendencias avanzado y sugerencias inteligentes generadas por IA.';
+	@override String get statsTitle => 'Estadísticas específicas por hábito';
+	@override String get statsDesc => 'Información clave para aumentar su productividad.';
+	@override String get metricsTitle => 'Métricas avanzadas de objetivos';
+	@override String get metricsDesc => 'Vea gráficos detallados y estadísticas detalladas de rendimiento para cada año.';
+	@override String get unlimitedTitle => 'Hábitos ilimitados';
+	@override String get unlimitedDesc => 'Crea y rastrea todos los hábitos que quieras sin límites.';
+	@override String get maybeLater => 'Quizá más tarde';
+	@override String get viewPlans => 'Ver planes Pro';
 }
 
 // Path: common.actions
@@ -1752,6 +1780,11 @@ extension on TranslationsEs {
 			'settingsPage.customColor' => 'Color personalizado',
 			'settingsPage.applyAction' => 'Aplicar',
 			'settingsPage.useAccent' => ({required Object hex}) => 'Usar acento ${hex}',
+			'settingsPage.proUpsellTitle' => 'Pasa a Evolve PRO',
+			'settingsPage.proUpsellSubtitle' => 'Desbloquea todas las funciones y acelera tu crecimiento.',
+			'settingsPage.proWelcomeTitle' => 'Bienvenido a Evolve PRO',
+			'settingsPage.proActiveMessage' => 'Tu suscripción está activa. Ahora tiene acceso completo e ilimitado al Entrenador de IA personalizado, estadísticas de tendencias avanzadas y todas las herramientas de crecimiento personal de Evolve.',
+			'settingsPage.proStartJourney' => 'Empieza tu recorrido',
 			'consent.onboardingTitle' => 'Tu privacidad importa',
 			'consent.continueButton' => 'Continuar',
 			'notifications.actionDone' => 'Hecho',
@@ -1803,6 +1836,19 @@ extension on TranslationsEs {
 			'authCtrl.accessNotCompleted' => ({required Object provider}) => 'Inicio de sesión con ${provider} no completado.',
 			'authCtrl.providerAuthFailed' => ({required Object provider}) => 'Error de autenticación de ${provider}.',
 			'authCtrl.operationFailed' => 'Operación fallida. Inténtalo de nuevo en breve.',
+			'proModal.title' => 'Desbloquea Evolve PRO',
+			'proModal.subtitle' => 'Lleva tu sistema de hábitos al siguiente nivel',
+			'proModal.featuresHeader' => 'Qué incluye el plan PRO',
+			'proModal.aiCoachTitle' => 'Coach AI personalizado',
+			'proModal.aiCoachDesc' => 'Análisis de tendencias avanzado y sugerencias inteligentes generadas por IA.',
+			'proModal.statsTitle' => 'Estadísticas específicas por hábito',
+			'proModal.statsDesc' => 'Información clave para aumentar su productividad.',
+			'proModal.metricsTitle' => 'Métricas avanzadas de objetivos',
+			'proModal.metricsDesc' => 'Vea gráficos detallados y estadísticas detalladas de rendimiento para cada año.',
+			'proModal.unlimitedTitle' => 'Hábitos ilimitados',
+			'proModal.unlimitedDesc' => 'Crea y rastrea todos los hábitos que quieras sin límites.',
+			'proModal.maybeLater' => 'Quizá más tarde',
+			'proModal.viewPlans' => 'Ver planes Pro',
 			_ => null,
 		};
 	}

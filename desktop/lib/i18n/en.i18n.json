@@ -700,7 +700,12 @@
     "sectionPrivacy": "Privacy",
     "customColor": "Custom color",
     "applyAction": "Apply",
-    "useAccent": "Use accent {hex}"
+    "useAccent": "Use accent {hex}",
+    "proUpsellTitle": "Upgrade to Evolve Pro",
+    "proUpsellSubtitle": "Unlock all features and accelerate your growth.",
+    "proWelcomeTitle": "Welcome to Evolve Pro!",
+    "proActiveMessage": "Your subscription is active. You now have full and unlimited access to the personalized AI Coach, advanced trend statistics, and all Evolve's personal growth tools.",
+    "proStartJourney": "Start your Journey"
   },
   "consent": {
     "onboardingTitle": "Your Privacy Matters",
@@ -770,5 +775,20 @@
     "accessNotCompleted": "{provider} sign-in not completed.",
     "providerAuthFailed": "{provider} authentication failed.",
     "operationFailed": "Operation failed. Try again shortly."
+  },
+  "proModal": {
+    "title": "Unlock Evolve Pro",
+    "subtitle": "Take your habit system to the next level",
+    "featuresHeader": "WHAT THE PRO PLAN INCLUDES",
+    "aiCoachTitle": "Personalized AI Coach",
+    "aiCoachDesc": "Advanced trend analysis and smart AI-generated suggestions.",
+    "statsTitle": "Habit-Specific Statistics",
+    "statsDesc": "Key insights to boost your productivity.",
+    "metricsTitle": "Advanced Goal Metrics",
+    "metricsDesc": "View detailed charts and deep performance stats for each year.",
+    "unlimitedTitle": "Unlimited Habits",
+    "unlimitedDesc": "Create and track all the habits you want without any limits.",
+    "maybeLater": "Maybe later",
+    "viewPlans": "View Pro plans"
   }
 }

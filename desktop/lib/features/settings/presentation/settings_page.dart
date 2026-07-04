@@ -20,6 +20,7 @@ import 'package:evolve_desktop/features/settings/application/desktop_biometric_c
 import 'package:evolve_desktop/features/settings/application/desktop_subscription_controller.dart';
 import 'package:evolve_desktop/features/settings/data/desktop_notification_service.dart';
 import 'package:evolve_desktop/features/settings/data/desktop_system_settings_service.dart';
+import 'package:evolve_desktop/features/settings/presentation/pro_features_modal.dart';
 import 'package:evolve_desktop/shared/widgets/desktop_page.dart';
 import 'package:evolve_desktop/shared/widgets/evolve_dialog.dart';
 import 'package:evolve_desktop/shared/widgets/evolve_panel.dart';
@@ -1968,6 +1969,72 @@ class _SubscriptionSettingsState extends ConsumerState<_SubscriptionSettings> {
           subtitle: t.settingsPage.proSubtitle,
         ),
         const SizedBox(height: 17),
+        if (!subscription.isPro) ...[
+          Container(
+            width: double.infinity,
+            padding: const EdgeInsets.all(20),
+            decoration: BoxDecoration(
+              color: context.evolveColors.panelSoft,
+              borderRadius: BorderRadius.circular(18),
+              border: Border.all(color: context.evolveColors.border),
+            ),
+            child: Column(
+              children: [
+                Container(
+                  padding: const EdgeInsets.all(14),
+                  decoration: BoxDecoration(
+                    shape: BoxShape.circle,
+                    color: proAccent.withValues(alpha: 0.1),
+                    border: Border.all(color: proAccent.withValues(alpha: 0.3)),
+                  ),
+                  child: const Icon(
+                    Icons.auto_awesome,
+                    size: 26,
+                    color: proAccent,
+                  ),
+                ),
+                const SizedBox(height: 14),
+                Text(
+                  t.settingsPage.proUpsellTitle,
+                  textAlign: TextAlign.center,
+                  style: TextStyle(
+                    color: context.evolveColors.foreground,
+                    fontSize: 18,
+                    fontWeight: FontWeight.w800,
+                  ),
+                ),
+                const SizedBox(height: 6),
+                Text(
+                  t.settingsPage.proUpsellSubtitle,
+                  textAlign: TextAlign.center,
+                  style: TextStyle(
+                    color: context.evolveColors.muted,
+                    fontSize: 13,
+                  ),
+                ),
+              ],
+            ),
+          ),
+          const SizedBox(height: 18),
+          Align(
+            alignment: AlignmentDirectional.centerStart,
+            child: Text(
+              t.proModal.featuresHeader,
+              style: TextStyle(
+                color: context.evolveColors.muted,
+                fontSize: 11,
+                fontWeight: FontWeight.w700,
+                letterSpacing: 1.2,
+              ),
+            ),
+          ),
+          const SizedBox(height: 14),
+          for (final feature in proFeatures()) ...[
+            ProFeatureRow(feature: feature),
+            const SizedBox(height: 14),
+          ],
+          const SizedBox(height: 6),
+        ],
         _PlatformNote(
           title: subscription.isSupportedPlatform
               ? t.settingsPage.revenueCatMacos
@@ -2017,25 +2084,22 @@ class _SubscriptionSettingsState extends ConsumerState<_SubscriptionSettings> {
                   : t.settingsPage.activateEvolveProStart,
               onTap: subscription.isLoading
                   ? () {}
-                  : () {
+                  : () async {
                       final package = _plan == 'monthly' ? monthly : yearly;
                       if (package == null) {
-                        unawaited(
-                          ref
-                              .read(
-                                desktopSubscriptionControllerProvider.notifier,
-                              )
-                              .refresh(),
-                        );
-                        return;
-                      }
-                      unawaited(
-                        ref
+                        await ref
                             .read(
                               desktopSubscriptionControllerProvider.notifier,
                             )
-                            .purchase(package),
-                      );
+                            .refresh();
+                        return;
+                      }
+                      final activated = await ref
+                          .read(desktopSubscriptionControllerProvider.notifier)
+                          .purchase(package);
+                      if (activated && mounted) {
+                        _showProSuccessDialog();
+                      }
                     },
             ),
             _ActionRow(
@@ -2065,6 +2129,77 @@ class _SubscriptionSettingsState extends ConsumerState<_SubscriptionSettings> {
           Text(subscription.message!),
         ],
       ],
+    );
+  }
+
+  void _showProSuccessDialog() {
+    showEvolveDialog<void>(
+      context: context,
+      builder: (dialogContext) => EvolveDialog(
+        maxWidth: 420,
+        child: Padding(
+          padding: const EdgeInsets.all(28),
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              Container(
+                padding: const EdgeInsets.all(18),
+                decoration: BoxDecoration(
+                  shape: BoxShape.circle,
+                  color: proAccent.withValues(alpha: 0.1),
+                  border: Border.all(color: proAccent.withValues(alpha: 0.3)),
+                ),
+                child: const Icon(
+                  Icons.auto_awesome,
+                  size: 34,
+                  color: proAccent,
+                ),
+              ),
+              const SizedBox(height: 20),
+              Text(
+                t.settingsPage.proWelcomeTitle,
+                textAlign: TextAlign.center,
+                style: TextStyle(
+                  color: context.evolveColors.foreground,
+                  fontSize: 20,
+                  fontWeight: FontWeight.w800,
+                  letterSpacing: -0.3,
+                ),
+              ),
+              const SizedBox(height: 10),
+              Text(
+                t.settingsPage.proActiveMessage,
+                textAlign: TextAlign.center,
+                style: TextStyle(
+                  color: context.evolveColors.muted,
+                  fontSize: 13,
+                  height: 1.5,
+                ),
+              ),
+              const SizedBox(height: 24),
+              SizedBox(
+                width: double.infinity,
+                child: FilledButton(
+                  style: FilledButton.styleFrom(
+                    backgroundColor: proAccent,
+                    foregroundColor: Colors.black,
+                    padding: const EdgeInsets.symmetric(vertical: 14),
+                    shape: RoundedRectangleBorder(
+                      borderRadius: BorderRadius.circular(14),
+                    ),
+                    textStyle: const TextStyle(
+                      fontSize: 15,
+                      fontWeight: FontWeight.w700,
+                    ),
+                  ),
+                  onPressed: () => Navigator.of(dialogContext).pop(),
+                  child: Text(t.settingsPage.proStartJourney),
+                ),
+              ),
+            ],
+          ),
+        ),
+      ),
     );
   }
 }

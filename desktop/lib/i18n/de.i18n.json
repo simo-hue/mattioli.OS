@@ -700,7 +700,12 @@
     "sectionPrivacy": "Datenschutz",
     "customColor": "Benutzerdefinierte Farbe",
     "applyAction": "Anwenden",
-    "useAccent": "Akzent {hex} verwenden"
+    "useAccent": "Akzent {hex} verwenden",
+    "proUpsellTitle": "Zu Evolve PRO wechseln",
+    "proUpsellSubtitle": "Schalte alle Funktionen frei und beschleunige dein Wachstum.",
+    "proWelcomeTitle": "Willkommen bei Evolve PRO",
+    "proActiveMessage": "Ihr Abonnement ist aktiv. Sie haben jetzt vollständigen und unbegrenzten Zugriff auf den personalisierten AI Coach, erweiterte Trendstatistiken und alle persönlichen Wachstumstools von Evolve.",
+    "proStartJourney": "Starte deinen Weg"
   },
   "consent": {
     "onboardingTitle": "Deine Privatsphäre ist wichtig",
@@ -770,5 +775,20 @@
     "accessNotCompleted": "{provider}-Anmeldung nicht abgeschlossen.",
     "providerAuthFailed": "{provider}-Authentifizierung fehlgeschlagen.",
     "operationFailed": "Vorgang fehlgeschlagen. Versuche es gleich erneut."
+  },
+  "proModal": {
+    "title": "Evolve PRO freischalten",
+    "subtitle": "Bringen Sie Ihr Gewohnheitssystem auf die nächste Stufe",
+    "featuresHeader": "Was der PRO-Plan enthält",
+    "aiCoachTitle": "Personalisierter AI-Coach",
+    "aiCoachDesc": "Erweiterte Trendanalyse und intelligente KI-generierte Vorschläge.",
+    "statsTitle": "Gewohnheitsspezifische Statistiken",
+    "statsDesc": "Wichtige Erkenntnisse zur Steigerung Ihrer Produktivität.",
+    "metricsTitle": "Erweiterte Zielmetriken",
+    "metricsDesc": "Sehen Sie sich detaillierte Diagramme und detaillierte Leistungsstatistiken für jedes Jahr an.",
+    "unlimitedTitle": "Unbegrenzte Gewohnheiten",
+    "unlimitedDesc": "Erstellen und verfolgen Sie alle gewünschten Gewohnheiten ohne Einschränkungen.",
+    "maybeLater": "Vielleicht später",
+    "viewPlans": "Pro-Abos ansehen"
   }
 }

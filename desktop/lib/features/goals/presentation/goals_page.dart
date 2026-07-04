@@ -5,6 +5,7 @@ import 'package:evolve_desktop/features/dashboard/application/dashboard_controll
 import 'package:evolve_desktop/features/dashboard/domain/dashboard_models.dart';
 import 'package:evolve_desktop/features/goals/application/goal_categories_controller.dart';
 import 'package:evolve_desktop/features/settings/application/desktop_subscription_controller.dart';
+import 'package:evolve_desktop/features/settings/presentation/pro_features_modal.dart';
 import 'package:evolve_desktop/i18n/translations.g.dart';
 import 'package:evolve_desktop/core/rtl.dart';
 import 'package:evolve_desktop/shared/widgets/desktop_page.dart';
@@ -337,9 +338,7 @@ class _GoalsPageState extends ConsumerState<GoalsPage> {
     final isPro = ref.read(desktopIsProProvider);
     final totalGoals = ref.read(dashboardControllerProvider).goals.length;
     if (!isPro && totalGoals >= 100) {
-      ScaffoldMessenger.of(
-        context,
-      ).showSnackBar(SnackBar(content: Text(t.dashboard.goalLimitReached)));
+      unawaited(showProFeaturesDialog(context, ref));
       return;
     }
 

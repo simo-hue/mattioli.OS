@@ -96,6 +96,7 @@ class Translations with BaseTranslations<AppLocale, Translations> {
 	late final Translations$sync$en sync = Translations$sync$en.internal(_root);
 	late final Translations$subscriptionCtrl$en subscriptionCtrl = Translations$subscriptionCtrl$en.internal(_root);
 	late final Translations$authCtrl$en authCtrl = Translations$authCtrl$en.internal(_root);
+	late final Translations$proModal$en proModal = Translations$proModal$en.internal(_root);
 }
 
 // Path: auth
@@ -2068,6 +2069,21 @@ class Translations$settingsPage$en {
 
 	/// en: 'Use accent {hex}'
 	String useAccent({required Object hex}) => 'Use accent ${hex}';
+
+	/// en: 'Upgrade to Evolve Pro'
+	String get proUpsellTitle => 'Upgrade to Evolve Pro';
+
+	/// en: 'Unlock all features and accelerate your growth.'
+	String get proUpsellSubtitle => 'Unlock all features and accelerate your growth.';
+
+	/// en: 'Welcome to Evolve Pro!'
+	String get proWelcomeTitle => 'Welcome to Evolve Pro!';
+
+	/// en: 'Your subscription is active. You now have full and unlimited access to the personalized AI Coach, advanced trend statistics, and all Evolve's personal growth tools.'
+	String get proActiveMessage => 'Your subscription is active. You now have full and unlimited access to the personalized AI Coach, advanced trend statistics, and all Evolve\'s personal growth tools.';
+
+	/// en: 'Start your Journey'
+	String get proStartJourney => 'Start your Journey';
 }
 
 // Path: consent
@@ -2302,6 +2318,54 @@ class Translations$authCtrl$en {
 
 	/// en: 'Operation failed. Try again shortly.'
 	String get operationFailed => 'Operation failed. Try again shortly.';
+}
+
+// Path: proModal
+class Translations$proModal$en {
+	Translations$proModal$en.internal(this._root);
+
+	final Translations _root; // ignore: unused_field
+
+	// Translations
+
+	/// en: 'Unlock Evolve Pro'
+	String get title => 'Unlock Evolve Pro';
+
+	/// en: 'Take your habit system to the next level'
+	String get subtitle => 'Take your habit system to the next level';
+
+	/// en: 'WHAT THE PRO PLAN INCLUDES'
+	String get featuresHeader => 'WHAT THE PRO PLAN INCLUDES';
+
+	/// en: 'Personalized AI Coach'
+	String get aiCoachTitle => 'Personalized AI Coach';
+
+	/// en: 'Advanced trend analysis and smart AI-generated suggestions.'
+	String get aiCoachDesc => 'Advanced trend analysis and smart AI-generated suggestions.';
+
+	/// en: 'Habit-Specific Statistics'
+	String get statsTitle => 'Habit-Specific Statistics';
+
+	/// en: 'Key insights to boost your productivity.'
+	String get statsDesc => 'Key insights to boost your productivity.';
+
+	/// en: 'Advanced Goal Metrics'
+	String get metricsTitle => 'Advanced Goal Metrics';
+
+	/// en: 'View detailed charts and deep performance stats for each year.'
+	String get metricsDesc => 'View detailed charts and deep performance stats for each year.';
+
+	/// en: 'Unlimited Habits'
+	String get unlimitedTitle => 'Unlimited Habits';
+
+	/// en: 'Create and track all the habits you want without any limits.'
+	String get unlimitedDesc => 'Create and track all the habits you want without any limits.';
+
+	/// en: 'Maybe later'
+	String get maybeLater => 'Maybe later';
+
+	/// en: 'View Pro plans'
+	String get viewPlans => 'View Pro plans';
 }
 
 // Path: common.actions
@@ -3075,6 +3139,11 @@ extension on Translations {
 			'settingsPage.customColor' => 'Custom color',
 			'settingsPage.applyAction' => 'Apply',
 			'settingsPage.useAccent' => ({required Object hex}) => 'Use accent ${hex}',
+			'settingsPage.proUpsellTitle' => 'Upgrade to Evolve Pro',
+			'settingsPage.proUpsellSubtitle' => 'Unlock all features and accelerate your growth.',
+			'settingsPage.proWelcomeTitle' => 'Welcome to Evolve Pro!',
+			'settingsPage.proActiveMessage' => 'Your subscription is active. You now have full and unlimited access to the personalized AI Coach, advanced trend statistics, and all Evolve\'s personal growth tools.',
+			'settingsPage.proStartJourney' => 'Start your Journey',
 			'consent.onboardingTitle' => 'Your Privacy Matters',
 			'consent.continueButton' => 'Continue',
 			'notifications.actionDone' => 'Done',
@@ -3126,6 +3195,19 @@ extension on Translations {
 			'authCtrl.accessNotCompleted' => ({required Object provider}) => '${provider} sign-in not completed.',
 			'authCtrl.providerAuthFailed' => ({required Object provider}) => '${provider} authentication failed.',
 			'authCtrl.operationFailed' => 'Operation failed. Try again shortly.',
+			'proModal.title' => 'Unlock Evolve Pro',
+			'proModal.subtitle' => 'Take your habit system to the next level',
+			'proModal.featuresHeader' => 'WHAT THE PRO PLAN INCLUDES',
+			'proModal.aiCoachTitle' => 'Personalized AI Coach',
+			'proModal.aiCoachDesc' => 'Advanced trend analysis and smart AI-generated suggestions.',
+			'proModal.statsTitle' => 'Habit-Specific Statistics',
+			'proModal.statsDesc' => 'Key insights to boost your productivity.',
+			'proModal.metricsTitle' => 'Advanced Goal Metrics',
+			'proModal.metricsDesc' => 'View detailed charts and deep performance stats for each year.',
+			'proModal.unlimitedTitle' => 'Unlimited Habits',
+			'proModal.unlimitedDesc' => 'Create and track all the habits you want without any limits.',
+			'proModal.maybeLater' => 'Maybe later',
+			'proModal.viewPlans' => 'View Pro plans',
 			_ => null,
 		};
 	}

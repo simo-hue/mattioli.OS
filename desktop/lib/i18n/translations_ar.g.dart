@@ -78,6 +78,7 @@ class TranslationsAr extends Translations with BaseTranslations<AppLocale, Trans
 	@override late final _Translations$sync$ar sync = _Translations$sync$ar._(_root);
 	@override late final _Translations$subscriptionCtrl$ar subscriptionCtrl = _Translations$subscriptionCtrl$ar._(_root);
 	@override late final _Translations$authCtrl$ar authCtrl = _Translations$authCtrl$ar._(_root);
+	@override late final _Translations$proModal$ar proModal = _Translations$proModal$ar._(_root);
 }
 
 // Path: auth
@@ -897,6 +898,11 @@ class _Translations$settingsPage$ar extends Translations$settingsPage$en {
 	@override String get customColor => 'لون مخصص';
 	@override String get applyAction => 'تطبيق';
 	@override String useAccent({required Object hex}) => 'استخدم التمييز ${hex}';
+	@override String get proUpsellTitle => 'الترقية إلى Evolve Pro';
+	@override String get proUpsellSubtitle => 'افتح جميع الميزات وسرّع نموّك.';
+	@override String get proWelcomeTitle => 'مرحباً بك في Evolve Pro!';
+	@override String get proActiveMessage => 'اشتراكك نشط. أصبح لديك الآن وصول كامل وغير محدود إلى مدرّب AI المخصّص، وإحصاءات الاتجاهات المتقدّمة، وجميع أدوات التطوّر الشخصي في Evolve.';
+	@override String get proStartJourney => 'ابدأ رحلتك';
 }
 
 // Path: consent
@@ -1029,6 +1035,28 @@ class _Translations$authCtrl$ar extends Translations$authCtrl$en {
 	@override String accessNotCompleted({required Object provider}) => 'لم يكتمل تسجيل الدخول عبر ${provider}.';
 	@override String providerAuthFailed({required Object provider}) => 'فشلت مصادقة ${provider}.';
 	@override String get operationFailed => 'فشلت العملية. أعد المحاولة بعد قليل.';
+}
+
+// Path: proModal
+class _Translations$proModal$ar extends Translations$proModal$en {
+	_Translations$proModal$ar._(TranslationsAr root) : this._root = root, super.internal(root);
+
+	final TranslationsAr _root; // ignore: unused_field
+
+	// Translations
+	@override String get title => 'افتح Evolve Pro';
+	@override String get subtitle => 'ارتقِ بنظام عاداتك إلى المستوى التالي';
+	@override String get featuresHeader => 'ما الذي تتضمّنه خطة PRO';
+	@override String get aiCoachTitle => 'مدرّب AI مخصّص';
+	@override String get aiCoachDesc => 'تحليل متقدّم للاتجاهات واقتراحات ذكية مولّدة بواسطة AI.';
+	@override String get statsTitle => 'إحصاءات خاصة بكل عادة';
+	@override String get statsDesc => 'رؤى أساسية لتعزيز إنتاجيتك.';
+	@override String get metricsTitle => 'مقاييس متقدّمة للأهداف';
+	@override String get metricsDesc => 'اعرض رسوماً بيانية مفصّلة وإحصاءات أداء معمّقة لكل سنة.';
+	@override String get unlimitedTitle => 'عادات غير محدودة';
+	@override String get unlimitedDesc => 'أنشئ وتتبّع كل العادات التي تريدها دون أي حدود.';
+	@override String get maybeLater => 'ربما لاحقاً';
+	@override String get viewPlans => 'عرض خطط Pro';
 }
 
 // Path: common.actions
@@ -1752,6 +1780,11 @@ extension on TranslationsAr {
 			'settingsPage.customColor' => 'لون مخصص',
 			'settingsPage.applyAction' => 'تطبيق',
 			'settingsPage.useAccent' => ({required Object hex}) => 'استخدم التمييز ${hex}',
+			'settingsPage.proUpsellTitle' => 'الترقية إلى Evolve Pro',
+			'settingsPage.proUpsellSubtitle' => 'افتح جميع الميزات وسرّع نموّك.',
+			'settingsPage.proWelcomeTitle' => 'مرحباً بك في Evolve Pro!',
+			'settingsPage.proActiveMessage' => 'اشتراكك نشط. أصبح لديك الآن وصول كامل وغير محدود إلى مدرّب AI المخصّص، وإحصاءات الاتجاهات المتقدّمة، وجميع أدوات التطوّر الشخصي في Evolve.',
+			'settingsPage.proStartJourney' => 'ابدأ رحلتك',
 			'consent.onboardingTitle' => 'خصوصيتك تهمّنا',
 			'consent.continueButton' => 'متابعة',
 			'notifications.actionDone' => 'تم',
@@ -1803,6 +1836,19 @@ extension on TranslationsAr {
 			'authCtrl.accessNotCompleted' => ({required Object provider}) => 'لم يكتمل تسجيل الدخول عبر ${provider}.',
 			'authCtrl.providerAuthFailed' => ({required Object provider}) => 'فشلت مصادقة ${provider}.',
 			'authCtrl.operationFailed' => 'فشلت العملية. أعد المحاولة بعد قليل.',
+			'proModal.title' => 'افتح Evolve Pro',
+			'proModal.subtitle' => 'ارتقِ بنظام عاداتك إلى المستوى التالي',
+			'proModal.featuresHeader' => 'ما الذي تتضمّنه خطة PRO',
+			'proModal.aiCoachTitle' => 'مدرّب AI مخصّص',
+			'proModal.aiCoachDesc' => 'تحليل متقدّم للاتجاهات واقتراحات ذكية مولّدة بواسطة AI.',
+			'proModal.statsTitle' => 'إحصاءات خاصة بكل عادة',
+			'proModal.statsDesc' => 'رؤى أساسية لتعزيز إنتاجيتك.',
+			'proModal.metricsTitle' => 'مقاييس متقدّمة للأهداف',
+			'proModal.metricsDesc' => 'اعرض رسوماً بيانية مفصّلة وإحصاءات أداء معمّقة لكل سنة.',
+			'proModal.unlimitedTitle' => 'عادات غير محدودة',
+			'proModal.unlimitedDesc' => 'أنشئ وتتبّع كل العادات التي تريدها دون أي حدود.',
+			'proModal.maybeLater' => 'ربما لاحقاً',
+			'proModal.viewPlans' => 'عرض خطط Pro',
 			_ => null,
 		};
 	}

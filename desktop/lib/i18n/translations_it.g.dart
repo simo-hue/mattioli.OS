@@ -78,6 +78,7 @@ class TranslationsIt extends Translations with BaseTranslations<AppLocale, Trans
 	@override late final _Translations$sync$it sync = _Translations$sync$it._(_root);
 	@override late final _Translations$subscriptionCtrl$it subscriptionCtrl = _Translations$subscriptionCtrl$it._(_root);
 	@override late final _Translations$authCtrl$it authCtrl = _Translations$authCtrl$it._(_root);
+	@override late final _Translations$proModal$it proModal = _Translations$proModal$it._(_root);
 }
 
 // Path: auth
@@ -897,6 +898,11 @@ class _Translations$settingsPage$it extends Translations$settingsPage$en {
 	@override String get customColor => 'Colore personalizzato';
 	@override String get applyAction => 'Applica';
 	@override String useAccent({required Object hex}) => 'Usa accento ${hex}';
+	@override String get proUpsellTitle => 'Passa a Evolve Pro';
+	@override String get proUpsellSubtitle => 'Sblocca tutte le funzionalità e accelera la tua crescita.';
+	@override String get proWelcomeTitle => 'Benvenuto in Evolve Pro!';
+	@override String get proActiveMessage => 'La tua iscrizione è attiva. Ora hai accesso completo ed illimitato all\'AI Coach personalizzato, alle statistiche avanzate dei trend e a tutti gli strumenti di crescita personale di Evolve.';
+	@override String get proStartJourney => 'Inizia il tuo Percorso';
 }
 
 // Path: consent
@@ -1029,6 +1035,28 @@ class _Translations$authCtrl$it extends Translations$authCtrl$en {
 	@override String accessNotCompleted({required Object provider}) => 'Accesso ${provider} non completato.';
 	@override String providerAuthFailed({required Object provider}) => 'Autenticazione ${provider} non riuscita.';
 	@override String get operationFailed => 'Operazione non riuscita. Riprova tra poco.';
+}
+
+// Path: proModal
+class _Translations$proModal$it extends Translations$proModal$en {
+	_Translations$proModal$it._(TranslationsIt root) : this._root = root, super.internal(root);
+
+	final TranslationsIt _root; // ignore: unused_field
+
+	// Translations
+	@override String get title => 'Sblocca Evolve Pro';
+	@override String get subtitle => 'Porta il tuo sistema di abitudini al livello successivo';
+	@override String get featuresHeader => 'COSA INCLUDE IL PIANO PRO';
+	@override String get aiCoachTitle => 'AI Coach Personalizzato';
+	@override String get aiCoachDesc => 'Analisi avanzata dei trend e suggerimenti intelligenti generati dall\'AI.';
+	@override String get statsTitle => 'Statistiche Specifiche Per Abitudine';
+	@override String get statsDesc => 'Informazioni chiave per aumentare la tua produttività.';
+	@override String get metricsTitle => 'Metriche Avanzate Obiettivi';
+	@override String get metricsDesc => 'Visualizza grafici dettagliati e statistiche di performance profonde per ogni anno.';
+	@override String get unlimitedTitle => 'Abitudini Illimitate';
+	@override String get unlimitedDesc => 'Crea e traccia tutti gli habits che desideri senza alcun limite.';
+	@override String get maybeLater => 'Forse più tardi';
+	@override String get viewPlans => 'Vedi i piani Pro';
 }
 
 // Path: common.actions
@@ -1752,6 +1780,11 @@ extension on TranslationsIt {
 			'settingsPage.customColor' => 'Colore personalizzato',
 			'settingsPage.applyAction' => 'Applica',
 			'settingsPage.useAccent' => ({required Object hex}) => 'Usa accento ${hex}',
+			'settingsPage.proUpsellTitle' => 'Passa a Evolve Pro',
+			'settingsPage.proUpsellSubtitle' => 'Sblocca tutte le funzionalità e accelera la tua crescita.',
+			'settingsPage.proWelcomeTitle' => 'Benvenuto in Evolve Pro!',
+			'settingsPage.proActiveMessage' => 'La tua iscrizione è attiva. Ora hai accesso completo ed illimitato all\'AI Coach personalizzato, alle statistiche avanzate dei trend e a tutti gli strumenti di crescita personale di Evolve.',
+			'settingsPage.proStartJourney' => 'Inizia il tuo Percorso',
 			'consent.onboardingTitle' => 'La tua Privacy è Importante',
 			'consent.continueButton' => 'Continua',
 			'notifications.actionDone' => 'Fatto',
@@ -1803,6 +1836,19 @@ extension on TranslationsIt {
 			'authCtrl.accessNotCompleted' => ({required Object provider}) => 'Accesso ${provider} non completato.',
 			'authCtrl.providerAuthFailed' => ({required Object provider}) => 'Autenticazione ${provider} non riuscita.',
 			'authCtrl.operationFailed' => 'Operazione non riuscita. Riprova tra poco.',
+			'proModal.title' => 'Sblocca Evolve Pro',
+			'proModal.subtitle' => 'Porta il tuo sistema di abitudini al livello successivo',
+			'proModal.featuresHeader' => 'COSA INCLUDE IL PIANO PRO',
+			'proModal.aiCoachTitle' => 'AI Coach Personalizzato',
+			'proModal.aiCoachDesc' => 'Analisi avanzata dei trend e suggerimenti intelligenti generati dall\'AI.',
+			'proModal.statsTitle' => 'Statistiche Specifiche Per Abitudine',
+			'proModal.statsDesc' => 'Informazioni chiave per aumentare la tua produttività.',
+			'proModal.metricsTitle' => 'Metriche Avanzate Obiettivi',
+			'proModal.metricsDesc' => 'Visualizza grafici dettagliati e statistiche di performance profonde per ogni anno.',
+			'proModal.unlimitedTitle' => 'Abitudini Illimitate',
+			'proModal.unlimitedDesc' => 'Crea e traccia tutti gli habits che desideri senza alcun limite.',
+			'proModal.maybeLater' => 'Forse più tardi',
+			'proModal.viewPlans' => 'Vedi i piani Pro',
 			_ => null,
 		};
 	}

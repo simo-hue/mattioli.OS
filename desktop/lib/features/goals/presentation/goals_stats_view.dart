@@ -10,9 +10,11 @@ import 'dart:math' as math;
 
 import 'package:evolve_desktop/app/theme/evolve_theme.dart';
 import 'package:flutter/services.dart';
+import 'dart:async';
 import 'package:evolve_desktop/i18n/translations.g.dart';
 import 'package:evolve_desktop/features/dashboard/domain/dashboard_models.dart';
 import 'package:evolve_desktop/features/settings/application/desktop_subscription_controller.dart';
+import 'package:evolve_desktop/features/settings/presentation/pro_features_modal.dart';
 import 'package:evolve_desktop/features/dashboard/application/dashboard_controller.dart';
 import 'package:evolve_desktop/features/statistics/data/statistics_rpc_providers.dart';
 import 'package:evolve_desktop/features/goals/application/goal_categories_controller.dart';
@@ -411,6 +413,9 @@ class _GoalsStatsViewState extends ConsumerState<GoalsStatsView> {
   void _showYearPicker(List<int> years) {
     final isPro = ref.read(desktopIsProProvider);
     final primaryColor = Theme.of(context).colorScheme.primary;
+    // Captured before the sheet builder shadows `context`; the locked-year tap
+    // pops the sheet, so its own context is deactivated and can't host a dialog.
+    final pageContext = context;
 
     showModalBottomSheet(
       context: context,
@@ -517,12 +522,9 @@ class _GoalsStatsViewState extends ConsumerState<GoalsStatsView> {
                 onTap: () {
                   if (!isPro) {
                     Navigator.pop(context);
-
-                    ScaffoldMessenger.of(context).showSnackBar(
-                      SnackBar(content: Text(t.goalsStats.proRequired)),
-                    );
                     if (mounted) {
                       setState(() => _selectedYear = 'all');
+                      unawaited(showProFeaturesDialog(pageContext, ref));
                     }
                   } else {
                     HapticFeedback.selectionClick();

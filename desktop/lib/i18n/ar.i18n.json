@@ -700,7 +700,12 @@
     "sectionPrivacy": "الخصوصية",
     "customColor": "لون مخصص",
     "applyAction": "تطبيق",
-    "useAccent": "استخدم التمييز {hex}"
+    "useAccent": "استخدم التمييز {hex}",
+    "proUpsellTitle": "الترقية إلى Evolve Pro",
+    "proUpsellSubtitle": "افتح جميع الميزات وسرّع نموّك.",
+    "proWelcomeTitle": "مرحباً بك في Evolve Pro!",
+    "proActiveMessage": "اشتراكك نشط. أصبح لديك الآن وصول كامل وغير محدود إلى مدرّب AI المخصّص، وإحصاءات الاتجاهات المتقدّمة، وجميع أدوات التطوّر الشخصي في Evolve.",
+    "proStartJourney": "ابدأ رحلتك"
   },
   "consent": {
     "onboardingTitle": "خصوصيتك تهمّنا",
@@ -770,5 +775,20 @@
     "accessNotCompleted": "لم يكتمل تسجيل الدخول عبر {provider}.",
     "providerAuthFailed": "فشلت مصادقة {provider}.",
     "operationFailed": "فشلت العملية. أعد المحاولة بعد قليل."
+  },
+  "proModal": {
+    "title": "افتح Evolve Pro",
+    "subtitle": "ارتقِ بنظام عاداتك إلى المستوى التالي",
+    "featuresHeader": "ما الذي تتضمّنه خطة PRO",
+    "aiCoachTitle": "مدرّب AI مخصّص",
+    "aiCoachDesc": "تحليل متقدّم للاتجاهات واقتراحات ذكية مولّدة بواسطة AI.",
+    "statsTitle": "إحصاءات خاصة بكل عادة",
+    "statsDesc": "رؤى أساسية لتعزيز إنتاجيتك.",
+    "metricsTitle": "مقاييس متقدّمة للأهداف",
+    "metricsDesc": "اعرض رسوماً بيانية مفصّلة وإحصاءات أداء معمّقة لكل سنة.",
+    "unlimitedTitle": "عادات غير محدودة",
+    "unlimitedDesc": "أنشئ وتتبّع كل العادات التي تريدها دون أي حدود.",
+    "maybeLater": "ربما لاحقاً",
+    "viewPlans": "عرض خطط Pro"
   }
 }

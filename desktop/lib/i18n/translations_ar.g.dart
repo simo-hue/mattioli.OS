@@ -80,6 +80,7 @@ class TranslationsAr extends Translations with BaseTranslations<AppLocale, Trans
 	@override late final _Translations$authCtrl$ar authCtrl = _Translations$authCtrl$ar._(_root);
 	@override late final _Translations$proModal$ar proModal = _Translations$proModal$ar._(_root);
 	@override late final _Translations$tutorial$ar tutorial = _Translations$tutorial$ar._(_root);
+	@override late final _Translations$appLogs$ar appLogs = _Translations$appLogs$ar._(_root);
 }
 
 // Path: auth
@@ -904,6 +905,9 @@ class _Translations$settingsPage$ar extends Translations$settingsPage$en {
 	@override String get proWelcomeTitle => 'مرحباً بك في Evolve Pro!';
 	@override String get proActiveMessage => 'اشتراكك نشط. أصبح لديك الآن وصول كامل وغير محدود إلى مدرّب AI المخصّص، وإحصاءات الاتجاهات المتقدّمة، وجميع أدوات التطوّر الشخصي في Evolve.';
 	@override String get proStartJourney => 'ابدأ رحلتك';
+	@override String get systemSection => 'النظام';
+	@override String get appLogsTitle => 'سجلات التطبيق';
+	@override String get appLogsDetail => 'عرض سجلّات التشخيص لهذه الجلسة';
 }
 
 // Path: consent
@@ -1080,6 +1084,35 @@ class _Translations$tutorial$ar extends Translations$tutorial$en {
 	@override String get filterHabitDesc => 'من هنا يمكنك اختيار عادة معيّنة لعرض تفاصيلها، أو "كل العادات" للحصول على نظرة عامة شاملة.';
 	@override String get statisticsSections => 'أقسام الإحصاءات';
 	@override String get statsSectionsDesc => 'تنقّل بين التبويبات لعرض الاتجاهات وتنبيهات الأداء وتقدّم عاداتك ومزاجك.';
+}
+
+// Path: appLogs
+class _Translations$appLogs$ar extends Translations$appLogs$en {
+	_Translations$appLogs$ar._(TranslationsAr root) : this._root = root, super.internal(root);
+
+	final TranslationsAr _root; // ignore: unused_field
+
+	// Translations
+	@override String get title => 'سجلات التطبيق';
+	@override String get copiedToClipboard => 'تم نسخ السجلات إلى الحافظة';
+	@override String get clearLogsTitle => 'مسح السجلات';
+	@override String get clearLogsConfirm => 'هل أنت متأكد من رغبتك في مسح جميع إدخالات السجل؟ لا يمكن التراجع عن هذا الإجراء.';
+	@override String get clearLogsAction => 'مسح الكل';
+	@override String get copyAll => 'نسخ جميع السجلات';
+	@override String get searchPlaceholder => 'البحث في السجلات...';
+	@override String get filterAll => 'الكل';
+	@override String get filterErrors => 'أخطاء';
+	@override String get filterWarnings => 'تحذيرات';
+	@override String get filterInfo => 'معلومات';
+	@override String get emptyTitle => 'لا توجد سجلات';
+	@override String get emptySubtitle => 'ستظهر السجلات هنا أثناء تشغيل التطبيق';
+	@override String get stackTraceAvailable => 'انقر لعرض تتبع المكدس';
+	@override String get detailMessage => 'الرسالة';
+	@override String get detailError => 'الخطأ';
+	@override String get detailExtras => 'سياق إضافي';
+	@override String get detailStackTrace => 'تتبع المكدس';
+	@override String get shareLogs => 'مشاركة ملف السجلات';
+	@override String get exportDone => 'تم تصدير السجلات';
 }
 
 // Path: common.actions
@@ -1808,6 +1841,9 @@ extension on TranslationsAr {
 			'settingsPage.proWelcomeTitle' => 'مرحباً بك في Evolve Pro!',
 			'settingsPage.proActiveMessage' => 'اشتراكك نشط. أصبح لديك الآن وصول كامل وغير محدود إلى مدرّب AI المخصّص، وإحصاءات الاتجاهات المتقدّمة، وجميع أدوات التطوّر الشخصي في Evolve.',
 			'settingsPage.proStartJourney' => 'ابدأ رحلتك',
+			'settingsPage.systemSection' => 'النظام',
+			'settingsPage.appLogsTitle' => 'سجلات التطبيق',
+			'settingsPage.appLogsDetail' => 'عرض سجلّات التشخيص لهذه الجلسة',
 			'consent.onboardingTitle' => 'خصوصيتك تهمّنا',
 			'consent.continueButton' => 'متابعة',
 			'notifications.actionDone' => 'تم',
@@ -1885,6 +1921,26 @@ extension on TranslationsAr {
 			'tutorial.filterHabitDesc' => 'من هنا يمكنك اختيار عادة معيّنة لعرض تفاصيلها، أو "كل العادات" للحصول على نظرة عامة شاملة.',
 			'tutorial.statisticsSections' => 'أقسام الإحصاءات',
 			'tutorial.statsSectionsDesc' => 'تنقّل بين التبويبات لعرض الاتجاهات وتنبيهات الأداء وتقدّم عاداتك ومزاجك.',
+			'appLogs.title' => 'سجلات التطبيق',
+			'appLogs.copiedToClipboard' => 'تم نسخ السجلات إلى الحافظة',
+			'appLogs.clearLogsTitle' => 'مسح السجلات',
+			'appLogs.clearLogsConfirm' => 'هل أنت متأكد من رغبتك في مسح جميع إدخالات السجل؟ لا يمكن التراجع عن هذا الإجراء.',
+			'appLogs.clearLogsAction' => 'مسح الكل',
+			'appLogs.copyAll' => 'نسخ جميع السجلات',
+			'appLogs.searchPlaceholder' => 'البحث في السجلات...',
+			'appLogs.filterAll' => 'الكل',
+			'appLogs.filterErrors' => 'أخطاء',
+			'appLogs.filterWarnings' => 'تحذيرات',
+			'appLogs.filterInfo' => 'معلومات',
+			'appLogs.emptyTitle' => 'لا توجد سجلات',
+			'appLogs.emptySubtitle' => 'ستظهر السجلات هنا أثناء تشغيل التطبيق',
+			'appLogs.stackTraceAvailable' => 'انقر لعرض تتبع المكدس',
+			'appLogs.detailMessage' => 'الرسالة',
+			'appLogs.detailError' => 'الخطأ',
+			'appLogs.detailExtras' => 'سياق إضافي',
+			'appLogs.detailStackTrace' => 'تتبع المكدس',
+			'appLogs.shareLogs' => 'مشاركة ملف السجلات',
+			'appLogs.exportDone' => 'تم تصدير السجلات',
 			_ => null,
 		};
 	}

@@ -705,7 +705,10 @@
     "proUpsellSubtitle": "Sblocca tutte le funzionalità e accelera la tua crescita.",
     "proWelcomeTitle": "Benvenuto in Evolve Pro!",
     "proActiveMessage": "La tua iscrizione è attiva. Ora hai accesso completo ed illimitato all'AI Coach personalizzato, alle statistiche avanzate dei trend e a tutti gli strumenti di crescita personale di Evolve.",
-    "proStartJourney": "Inizia il tuo Percorso"
+    "proStartJourney": "Inizia il tuo Percorso",
+    "systemSection": "Sistema",
+    "appLogsTitle": "Log dell'app",
+    "appLogsDetail": "Visualizza i log diagnostici di questa sessione"
   },
   "consent": {
     "onboardingTitle": "La tua Privacy è Importante",
@@ -805,5 +808,27 @@
     "filterHabitDesc": "Da qui puoi selezionare una specifica abitudine per vederne i dettagli, oppure 'Tutti gli Habits' per una panoramica globale.",
     "statisticsSections": "Sezioni Statistiche",
     "statsSectionsDesc": "Naviga tra le varie schede per vedere i Trend, gli Alert sulle performance, l'andamento delle Abitudini e il tuo Mood."
+  },
+  "appLogs": {
+    "title": "Log App",
+    "copiedToClipboard": "Log copiati negli appunti",
+    "clearLogsTitle": "Cancella Log",
+    "clearLogsConfirm": "Sei sicuro di voler cancellare tutte le voci di log? Questa azione non può essere annullata.",
+    "clearLogsAction": "Cancella Tutto",
+    "copyAll": "Copia Tutti i Log",
+    "searchPlaceholder": "Cerca nei log...",
+    "filterAll": "Tutti",
+    "filterErrors": "Errori",
+    "filterWarnings": "Avvisi",
+    "filterInfo": "Info",
+    "emptyTitle": "Nessun Log",
+    "emptySubtitle": "I log appariranno qui durante l'uso dell'app",
+    "stackTraceAvailable": "Tocca per visualizzare lo stack trace",
+    "detailMessage": "MESSAGGIO",
+    "detailError": "ERRORE",
+    "detailExtras": "CONTESTO AGGIUNTIVO",
+    "detailStackTrace": "STACK TRACE",
+    "shareLogs": "Condividi file dei log",
+    "exportDone": "Log esportati"
   }
 }

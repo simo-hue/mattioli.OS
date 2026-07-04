@@ -705,7 +705,10 @@
     "proUpsellSubtitle": "افتح جميع الميزات وسرّع نموّك.",
     "proWelcomeTitle": "مرحباً بك في Evolve Pro!",
     "proActiveMessage": "اشتراكك نشط. أصبح لديك الآن وصول كامل وغير محدود إلى مدرّب AI المخصّص، وإحصاءات الاتجاهات المتقدّمة، وجميع أدوات التطوّر الشخصي في Evolve.",
-    "proStartJourney": "ابدأ رحلتك"
+    "proStartJourney": "ابدأ رحلتك",
+    "systemSection": "النظام",
+    "appLogsTitle": "سجلات التطبيق",
+    "appLogsDetail": "عرض سجلّات التشخيص لهذه الجلسة"
   },
   "consent": {
     "onboardingTitle": "خصوصيتك تهمّنا",
@@ -805,5 +808,27 @@
     "filterHabitDesc": "من هنا يمكنك اختيار عادة معيّنة لعرض تفاصيلها، أو \"كل العادات\" للحصول على نظرة عامة شاملة.",
     "statisticsSections": "أقسام الإحصاءات",
     "statsSectionsDesc": "تنقّل بين التبويبات لعرض الاتجاهات وتنبيهات الأداء وتقدّم عاداتك ومزاجك."
+  },
+  "appLogs": {
+    "title": "سجلات التطبيق",
+    "copiedToClipboard": "تم نسخ السجلات إلى الحافظة",
+    "clearLogsTitle": "مسح السجلات",
+    "clearLogsConfirm": "هل أنت متأكد من رغبتك في مسح جميع إدخالات السجل؟ لا يمكن التراجع عن هذا الإجراء.",
+    "clearLogsAction": "مسح الكل",
+    "copyAll": "نسخ جميع السجلات",
+    "searchPlaceholder": "البحث في السجلات...",
+    "filterAll": "الكل",
+    "filterErrors": "أخطاء",
+    "filterWarnings": "تحذيرات",
+    "filterInfo": "معلومات",
+    "emptyTitle": "لا توجد سجلات",
+    "emptySubtitle": "ستظهر السجلات هنا أثناء تشغيل التطبيق",
+    "stackTraceAvailable": "انقر لعرض تتبع المكدس",
+    "detailMessage": "الرسالة",
+    "detailError": "الخطأ",
+    "detailExtras": "سياق إضافي",
+    "detailStackTrace": "تتبع المكدس",
+    "shareLogs": "مشاركة ملف السجلات",
+    "exportDone": "تم تصدير السجلات"
   }
 }

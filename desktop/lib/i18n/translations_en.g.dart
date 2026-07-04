@@ -98,6 +98,7 @@ class Translations with BaseTranslations<AppLocale, Translations> {
 	late final Translations$authCtrl$en authCtrl = Translations$authCtrl$en.internal(_root);
 	late final Translations$proModal$en proModal = Translations$proModal$en.internal(_root);
 	late final Translations$tutorial$en tutorial = Translations$tutorial$en.internal(_root);
+	late final Translations$appLogs$en appLogs = Translations$appLogs$en.internal(_root);
 }
 
 // Path: auth
@@ -2085,6 +2086,15 @@ class Translations$settingsPage$en {
 
 	/// en: 'Start your Journey'
 	String get proStartJourney => 'Start your Journey';
+
+	/// en: 'System'
+	String get systemSection => 'System';
+
+	/// en: 'App Logs'
+	String get appLogsTitle => 'App Logs';
+
+	/// en: 'View diagnostic logs from this session'
+	String get appLogsDetail => 'View diagnostic logs from this session';
 }
 
 // Path: consent
@@ -2415,6 +2425,75 @@ class Translations$tutorial$en {
 
 	/// en: 'Navigate between the tabs to see Trends, performance Alerts, your Habits progress, and your Mood.'
 	String get statsSectionsDesc => 'Navigate between the tabs to see Trends, performance Alerts, your Habits progress, and your Mood.';
+}
+
+// Path: appLogs
+class Translations$appLogs$en {
+	Translations$appLogs$en.internal(this._root);
+
+	final Translations _root; // ignore: unused_field
+
+	// Translations
+
+	/// en: 'App Logs'
+	String get title => 'App Logs';
+
+	/// en: 'Logs copied to clipboard'
+	String get copiedToClipboard => 'Logs copied to clipboard';
+
+	/// en: 'Clear Logs'
+	String get clearLogsTitle => 'Clear Logs';
+
+	/// en: 'Are you sure you want to clear all log entries? This action cannot be undone.'
+	String get clearLogsConfirm => 'Are you sure you want to clear all log entries? This action cannot be undone.';
+
+	/// en: 'Clear All'
+	String get clearLogsAction => 'Clear All';
+
+	/// en: 'Copy All Logs'
+	String get copyAll => 'Copy All Logs';
+
+	/// en: 'Search logs...'
+	String get searchPlaceholder => 'Search logs...';
+
+	/// en: 'All'
+	String get filterAll => 'All';
+
+	/// en: 'Errors'
+	String get filterErrors => 'Errors';
+
+	/// en: 'Warnings'
+	String get filterWarnings => 'Warnings';
+
+	/// en: 'Info'
+	String get filterInfo => 'Info';
+
+	/// en: 'No Logs Yet'
+	String get emptyTitle => 'No Logs Yet';
+
+	/// en: 'Logs will appear here as the app runs'
+	String get emptySubtitle => 'Logs will appear here as the app runs';
+
+	/// en: 'Tap to view stack trace'
+	String get stackTraceAvailable => 'Tap to view stack trace';
+
+	/// en: 'MESSAGE'
+	String get detailMessage => 'MESSAGE';
+
+	/// en: 'ERROR'
+	String get detailError => 'ERROR';
+
+	/// en: 'ADDITIONAL CONTEXT'
+	String get detailExtras => 'ADDITIONAL CONTEXT';
+
+	/// en: 'STACK TRACE'
+	String get detailStackTrace => 'STACK TRACE';
+
+	/// en: 'Share logs file'
+	String get shareLogs => 'Share logs file';
+
+	/// en: 'Logs exported'
+	String get exportDone => 'Logs exported';
 }
 
 // Path: common.actions
@@ -3193,6 +3272,9 @@ extension on Translations {
 			'settingsPage.proWelcomeTitle' => 'Welcome to Evolve Pro!',
 			'settingsPage.proActiveMessage' => 'Your subscription is active. You now have full and unlimited access to the personalized AI Coach, advanced trend statistics, and all Evolve\'s personal growth tools.',
 			'settingsPage.proStartJourney' => 'Start your Journey',
+			'settingsPage.systemSection' => 'System',
+			'settingsPage.appLogsTitle' => 'App Logs',
+			'settingsPage.appLogsDetail' => 'View diagnostic logs from this session',
 			'consent.onboardingTitle' => 'Your Privacy Matters',
 			'consent.continueButton' => 'Continue',
 			'notifications.actionDone' => 'Done',
@@ -3270,6 +3352,26 @@ extension on Translations {
 			'tutorial.filterHabitDesc' => 'From here you can select a specific habit to see its details, or \'All Habits\' for a global overview.',
 			'tutorial.statisticsSections' => 'Statistics Sections',
 			'tutorial.statsSectionsDesc' => 'Navigate between the tabs to see Trends, performance Alerts, your Habits progress, and your Mood.',
+			'appLogs.title' => 'App Logs',
+			'appLogs.copiedToClipboard' => 'Logs copied to clipboard',
+			'appLogs.clearLogsTitle' => 'Clear Logs',
+			'appLogs.clearLogsConfirm' => 'Are you sure you want to clear all log entries? This action cannot be undone.',
+			'appLogs.clearLogsAction' => 'Clear All',
+			'appLogs.copyAll' => 'Copy All Logs',
+			'appLogs.searchPlaceholder' => 'Search logs...',
+			'appLogs.filterAll' => 'All',
+			'appLogs.filterErrors' => 'Errors',
+			'appLogs.filterWarnings' => 'Warnings',
+			'appLogs.filterInfo' => 'Info',
+			'appLogs.emptyTitle' => 'No Logs Yet',
+			'appLogs.emptySubtitle' => 'Logs will appear here as the app runs',
+			'appLogs.stackTraceAvailable' => 'Tap to view stack trace',
+			'appLogs.detailMessage' => 'MESSAGE',
+			'appLogs.detailError' => 'ERROR',
+			'appLogs.detailExtras' => 'ADDITIONAL CONTEXT',
+			'appLogs.detailStackTrace' => 'STACK TRACE',
+			'appLogs.shareLogs' => 'Share logs file',
+			'appLogs.exportDone' => 'Logs exported',
 			_ => null,
 		};
 	}

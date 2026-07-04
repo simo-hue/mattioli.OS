@@ -705,7 +705,10 @@
     "proUpsellSubtitle": "Desbloquea todas las funciones y acelera tu crecimiento.",
     "proWelcomeTitle": "Bienvenido a Evolve PRO",
     "proActiveMessage": "Tu suscripción está activa. Ahora tiene acceso completo e ilimitado al Entrenador de IA personalizado, estadísticas de tendencias avanzadas y todas las herramientas de crecimiento personal de Evolve.",
-    "proStartJourney": "Empieza tu recorrido"
+    "proStartJourney": "Empieza tu recorrido",
+    "systemSection": "Sistema",
+    "appLogsTitle": "Registros de la app",
+    "appLogsDetail": "Ver los registros de diagnóstico de esta sesión"
   },
   "consent": {
     "onboardingTitle": "Tu privacidad importa",
@@ -805,5 +808,27 @@
     "filterHabitDesc": "Desde aquí puedes seleccionar un hábito específico para ver sus detalles, o 'Todos los hábitos' para una visión global.",
     "statisticsSections": "Secciones de estadísticas",
     "statsSectionsDesc": "Navega entre las pestañas para ver Tendencias, Alertas de rendimiento, la evolución de tus Hábitos y tu Estado de ánimo."
+  },
+  "appLogs": {
+    "title": "Registros de la App",
+    "copiedToClipboard": "Registros copiados al portapapeles",
+    "clearLogsTitle": "Borrar Registros",
+    "clearLogsConfirm": "¿Estás seguro de que deseas borrar todas las entradas del registro? Esta acción no se puede deshacer.",
+    "clearLogsAction": "Borrar Todo",
+    "copyAll": "Copiar Todos los Registros",
+    "searchPlaceholder": "Buscar en registros...",
+    "filterAll": "Todo",
+    "filterErrors": "Errores",
+    "filterWarnings": "Advertencias",
+    "filterInfo": "Info",
+    "emptyTitle": "Sin Registros",
+    "emptySubtitle": "Los registros aparecerán aquí mientras la app se ejecuta",
+    "stackTraceAvailable": "Toca para ver el stack trace",
+    "detailMessage": "MENSAJE",
+    "detailError": "ERROR",
+    "detailExtras": "CONTEXTO ADICIONAL",
+    "detailStackTrace": "STACK TRACE",
+    "shareLogs": "Compartir archivo de registros",
+    "exportDone": "Registros exportados"
   }
 }

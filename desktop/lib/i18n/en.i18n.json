@@ -705,7 +705,10 @@
     "proUpsellSubtitle": "Unlock all features and accelerate your growth.",
     "proWelcomeTitle": "Welcome to Evolve Pro!",
     "proActiveMessage": "Your subscription is active. You now have full and unlimited access to the personalized AI Coach, advanced trend statistics, and all Evolve's personal growth tools.",
-    "proStartJourney": "Start your Journey"
+    "proStartJourney": "Start your Journey",
+    "systemSection": "System",
+    "appLogsTitle": "App Logs",
+    "appLogsDetail": "View diagnostic logs from this session"
   },
   "consent": {
     "onboardingTitle": "Your Privacy Matters",
@@ -805,5 +808,27 @@
     "filterHabitDesc": "From here you can select a specific habit to see its details, or 'All Habits' for a global overview.",
     "statisticsSections": "Statistics Sections",
     "statsSectionsDesc": "Navigate between the tabs to see Trends, performance Alerts, your Habits progress, and your Mood."
+  },
+  "appLogs": {
+    "title": "App Logs",
+    "copiedToClipboard": "Logs copied to clipboard",
+    "clearLogsTitle": "Clear Logs",
+    "clearLogsConfirm": "Are you sure you want to clear all log entries? This action cannot be undone.",
+    "clearLogsAction": "Clear All",
+    "copyAll": "Copy All Logs",
+    "searchPlaceholder": "Search logs...",
+    "filterAll": "All",
+    "filterErrors": "Errors",
+    "filterWarnings": "Warnings",
+    "filterInfo": "Info",
+    "emptyTitle": "No Logs Yet",
+    "emptySubtitle": "Logs will appear here as the app runs",
+    "stackTraceAvailable": "Tap to view stack trace",
+    "detailMessage": "MESSAGE",
+    "detailError": "ERROR",
+    "detailExtras": "ADDITIONAL CONTEXT",
+    "detailStackTrace": "STACK TRACE",
+    "shareLogs": "Share logs file",
+    "exportDone": "Logs exported"
   }
 }

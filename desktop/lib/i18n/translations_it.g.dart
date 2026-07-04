@@ -80,6 +80,7 @@ class TranslationsIt extends Translations with BaseTranslations<AppLocale, Trans
 	@override late final _Translations$authCtrl$it authCtrl = _Translations$authCtrl$it._(_root);
 	@override late final _Translations$proModal$it proModal = _Translations$proModal$it._(_root);
 	@override late final _Translations$tutorial$it tutorial = _Translations$tutorial$it._(_root);
+	@override late final _Translations$appLogs$it appLogs = _Translations$appLogs$it._(_root);
 }
 
 // Path: auth
@@ -904,6 +905,9 @@ class _Translations$settingsPage$it extends Translations$settingsPage$en {
 	@override String get proWelcomeTitle => 'Benvenuto in Evolve Pro!';
 	@override String get proActiveMessage => 'La tua iscrizione è attiva. Ora hai accesso completo ed illimitato all\'AI Coach personalizzato, alle statistiche avanzate dei trend e a tutti gli strumenti di crescita personale di Evolve.';
 	@override String get proStartJourney => 'Inizia il tuo Percorso';
+	@override String get systemSection => 'Sistema';
+	@override String get appLogsTitle => 'Log dell\'app';
+	@override String get appLogsDetail => 'Visualizza i log diagnostici di questa sessione';
 }
 
 // Path: consent
@@ -1080,6 +1084,35 @@ class _Translations$tutorial$it extends Translations$tutorial$en {
 	@override String get filterHabitDesc => 'Da qui puoi selezionare una specifica abitudine per vederne i dettagli, oppure \'Tutti gli Habits\' per una panoramica globale.';
 	@override String get statisticsSections => 'Sezioni Statistiche';
 	@override String get statsSectionsDesc => 'Naviga tra le varie schede per vedere i Trend, gli Alert sulle performance, l\'andamento delle Abitudini e il tuo Mood.';
+}
+
+// Path: appLogs
+class _Translations$appLogs$it extends Translations$appLogs$en {
+	_Translations$appLogs$it._(TranslationsIt root) : this._root = root, super.internal(root);
+
+	final TranslationsIt _root; // ignore: unused_field
+
+	// Translations
+	@override String get title => 'Log App';
+	@override String get copiedToClipboard => 'Log copiati negli appunti';
+	@override String get clearLogsTitle => 'Cancella Log';
+	@override String get clearLogsConfirm => 'Sei sicuro di voler cancellare tutte le voci di log? Questa azione non può essere annullata.';
+	@override String get clearLogsAction => 'Cancella Tutto';
+	@override String get copyAll => 'Copia Tutti i Log';
+	@override String get searchPlaceholder => 'Cerca nei log...';
+	@override String get filterAll => 'Tutti';
+	@override String get filterErrors => 'Errori';
+	@override String get filterWarnings => 'Avvisi';
+	@override String get filterInfo => 'Info';
+	@override String get emptyTitle => 'Nessun Log';
+	@override String get emptySubtitle => 'I log appariranno qui durante l\'uso dell\'app';
+	@override String get stackTraceAvailable => 'Tocca per visualizzare lo stack trace';
+	@override String get detailMessage => 'MESSAGGIO';
+	@override String get detailError => 'ERRORE';
+	@override String get detailExtras => 'CONTESTO AGGIUNTIVO';
+	@override String get detailStackTrace => 'STACK TRACE';
+	@override String get shareLogs => 'Condividi file dei log';
+	@override String get exportDone => 'Log esportati';
 }
 
 // Path: common.actions
@@ -1808,6 +1841,9 @@ extension on TranslationsIt {
 			'settingsPage.proWelcomeTitle' => 'Benvenuto in Evolve Pro!',
 			'settingsPage.proActiveMessage' => 'La tua iscrizione è attiva. Ora hai accesso completo ed illimitato all\'AI Coach personalizzato, alle statistiche avanzate dei trend e a tutti gli strumenti di crescita personale di Evolve.',
 			'settingsPage.proStartJourney' => 'Inizia il tuo Percorso',
+			'settingsPage.systemSection' => 'Sistema',
+			'settingsPage.appLogsTitle' => 'Log dell\'app',
+			'settingsPage.appLogsDetail' => 'Visualizza i log diagnostici di questa sessione',
 			'consent.onboardingTitle' => 'La tua Privacy è Importante',
 			'consent.continueButton' => 'Continua',
 			'notifications.actionDone' => 'Fatto',
@@ -1885,6 +1921,26 @@ extension on TranslationsIt {
 			'tutorial.filterHabitDesc' => 'Da qui puoi selezionare una specifica abitudine per vederne i dettagli, oppure \'Tutti gli Habits\' per una panoramica globale.',
 			'tutorial.statisticsSections' => 'Sezioni Statistiche',
 			'tutorial.statsSectionsDesc' => 'Naviga tra le varie schede per vedere i Trend, gli Alert sulle performance, l\'andamento delle Abitudini e il tuo Mood.',
+			'appLogs.title' => 'Log App',
+			'appLogs.copiedToClipboard' => 'Log copiati negli appunti',
+			'appLogs.clearLogsTitle' => 'Cancella Log',
+			'appLogs.clearLogsConfirm' => 'Sei sicuro di voler cancellare tutte le voci di log? Questa azione non può essere annullata.',
+			'appLogs.clearLogsAction' => 'Cancella Tutto',
+			'appLogs.copyAll' => 'Copia Tutti i Log',
+			'appLogs.searchPlaceholder' => 'Cerca nei log...',
+			'appLogs.filterAll' => 'Tutti',
+			'appLogs.filterErrors' => 'Errori',
+			'appLogs.filterWarnings' => 'Avvisi',
+			'appLogs.filterInfo' => 'Info',
+			'appLogs.emptyTitle' => 'Nessun Log',
+			'appLogs.emptySubtitle' => 'I log appariranno qui durante l\'uso dell\'app',
+			'appLogs.stackTraceAvailable' => 'Tocca per visualizzare lo stack trace',
+			'appLogs.detailMessage' => 'MESSAGGIO',
+			'appLogs.detailError' => 'ERRORE',
+			'appLogs.detailExtras' => 'CONTESTO AGGIUNTIVO',
+			'appLogs.detailStackTrace' => 'STACK TRACE',
+			'appLogs.shareLogs' => 'Condividi file dei log',
+			'appLogs.exportDone' => 'Log esportati',
 			_ => null,
 		};
 	}

@@ -20,6 +20,7 @@ import 'package:evolve_desktop/features/settings/application/desktop_biometric_c
 import 'package:evolve_desktop/features/settings/application/desktop_subscription_controller.dart';
 import 'package:evolve_desktop/features/settings/data/desktop_notification_service.dart';
 import 'package:evolve_desktop/features/settings/data/desktop_system_settings_service.dart';
+import 'package:evolve_desktop/features/settings/presentation/app_logs_dialog.dart';
 import 'package:evolve_desktop/features/settings/presentation/pro_features_modal.dart';
 import 'package:evolve_desktop/shared/widgets/desktop_page.dart';
 import 'package:evolve_desktop/shared/widgets/evolve_dialog.dart';
@@ -377,6 +378,12 @@ class _SettingsPageState extends ConsumerState<SettingsPage> {
               title: t.settingsPage.resetTutorial,
               detail: t.settingsPage.resetTutorialDetail,
               onTap: _resetTutorials,
+            ),
+            _ActionRow(
+              icon: Icons.terminal_rounded,
+              title: t.settingsPage.appLogsTitle,
+              detail: t.settingsPage.appLogsDetail,
+              onTap: () => unawaited(showAppLogsDialog(context)),
             ),
           ],
         ),

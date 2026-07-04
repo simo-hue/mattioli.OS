@@ -705,7 +705,10 @@
     "proUpsellSubtitle": "Schalte alle Funktionen frei und beschleunige dein Wachstum.",
     "proWelcomeTitle": "Willkommen bei Evolve PRO",
     "proActiveMessage": "Ihr Abonnement ist aktiv. Sie haben jetzt vollständigen und unbegrenzten Zugriff auf den personalisierten AI Coach, erweiterte Trendstatistiken und alle persönlichen Wachstumstools von Evolve.",
-    "proStartJourney": "Starte deinen Weg"
+    "proStartJourney": "Starte deinen Weg",
+    "systemSection": "System",
+    "appLogsTitle": "App-Protokolle",
+    "appLogsDetail": "Diagnoseprotokolle dieser Sitzung ansehen"
   },
   "consent": {
     "onboardingTitle": "Deine Privatsphäre ist wichtig",
@@ -805,5 +808,27 @@
     "filterHabitDesc": "Von hier aus kannst du eine bestimmte Gewohnheit für Details auswählen oder 'Alle Gewohnheiten' für einen Gesamtüberblick.",
     "statisticsSections": "Statistikbereiche",
     "statsSectionsDesc": "Navigiere zwischen den Tabs, um Trends, Leistungs-Warnungen, den Verlauf deiner Gewohnheiten und deine Stimmung zu sehen."
+  },
+  "appLogs": {
+    "title": "App-Protokolle",
+    "copiedToClipboard": "Protokolle in die Zwischenablage kopiert",
+    "clearLogsTitle": "Protokolle löschen",
+    "clearLogsConfirm": "Möchten Sie wirklich alle Protokolleinträge löschen? Diese Aktion kann nicht rückgängig gemacht werden.",
+    "clearLogsAction": "Alle löschen",
+    "copyAll": "Alle Protokolle kopieren",
+    "searchPlaceholder": "Protokolle durchsuchen...",
+    "filterAll": "Alle",
+    "filterErrors": "Fehler",
+    "filterWarnings": "Warnungen",
+    "filterInfo": "Info",
+    "emptyTitle": "Keine Protokolle",
+    "emptySubtitle": "Protokolle werden hier angezeigt, während die App läuft",
+    "stackTraceAvailable": "Tippen für Stack-Trace",
+    "detailMessage": "NACHRICHT",
+    "detailError": "FEHLER",
+    "detailExtras": "ZUSÄTZLICHER KONTEXT",
+    "detailStackTrace": "STACK-TRACE",
+    "shareLogs": "Protokolldatei teilen",
+    "exportDone": "Protokolle exportiert"
   }
 }

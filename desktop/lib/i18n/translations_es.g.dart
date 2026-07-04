@@ -80,6 +80,7 @@ class TranslationsEs extends Translations with BaseTranslations<AppLocale, Trans
 	@override late final _Translations$authCtrl$es authCtrl = _Translations$authCtrl$es._(_root);
 	@override late final _Translations$proModal$es proModal = _Translations$proModal$es._(_root);
 	@override late final _Translations$tutorial$es tutorial = _Translations$tutorial$es._(_root);
+	@override late final _Translations$appLogs$es appLogs = _Translations$appLogs$es._(_root);
 }
 
 // Path: auth
@@ -904,6 +905,9 @@ class _Translations$settingsPage$es extends Translations$settingsPage$en {
 	@override String get proWelcomeTitle => 'Bienvenido a Evolve PRO';
 	@override String get proActiveMessage => 'Tu suscripción está activa. Ahora tiene acceso completo e ilimitado al Entrenador de IA personalizado, estadísticas de tendencias avanzadas y todas las herramientas de crecimiento personal de Evolve.';
 	@override String get proStartJourney => 'Empieza tu recorrido';
+	@override String get systemSection => 'Sistema';
+	@override String get appLogsTitle => 'Registros de la app';
+	@override String get appLogsDetail => 'Ver los registros de diagnóstico de esta sesión';
 }
 
 // Path: consent
@@ -1080,6 +1084,35 @@ class _Translations$tutorial$es extends Translations$tutorial$en {
 	@override String get filterHabitDesc => 'Desde aquí puedes seleccionar un hábito específico para ver sus detalles, o \'Todos los hábitos\' para una visión global.';
 	@override String get statisticsSections => 'Secciones de estadísticas';
 	@override String get statsSectionsDesc => 'Navega entre las pestañas para ver Tendencias, Alertas de rendimiento, la evolución de tus Hábitos y tu Estado de ánimo.';
+}
+
+// Path: appLogs
+class _Translations$appLogs$es extends Translations$appLogs$en {
+	_Translations$appLogs$es._(TranslationsEs root) : this._root = root, super.internal(root);
+
+	final TranslationsEs _root; // ignore: unused_field
+
+	// Translations
+	@override String get title => 'Registros de la App';
+	@override String get copiedToClipboard => 'Registros copiados al portapapeles';
+	@override String get clearLogsTitle => 'Borrar Registros';
+	@override String get clearLogsConfirm => '¿Estás seguro de que deseas borrar todas las entradas del registro? Esta acción no se puede deshacer.';
+	@override String get clearLogsAction => 'Borrar Todo';
+	@override String get copyAll => 'Copiar Todos los Registros';
+	@override String get searchPlaceholder => 'Buscar en registros...';
+	@override String get filterAll => 'Todo';
+	@override String get filterErrors => 'Errores';
+	@override String get filterWarnings => 'Advertencias';
+	@override String get filterInfo => 'Info';
+	@override String get emptyTitle => 'Sin Registros';
+	@override String get emptySubtitle => 'Los registros aparecerán aquí mientras la app se ejecuta';
+	@override String get stackTraceAvailable => 'Toca para ver el stack trace';
+	@override String get detailMessage => 'MENSAJE';
+	@override String get detailError => 'ERROR';
+	@override String get detailExtras => 'CONTEXTO ADICIONAL';
+	@override String get detailStackTrace => 'STACK TRACE';
+	@override String get shareLogs => 'Compartir archivo de registros';
+	@override String get exportDone => 'Registros exportados';
 }
 
 // Path: common.actions
@@ -1808,6 +1841,9 @@ extension on TranslationsEs {
 			'settingsPage.proWelcomeTitle' => 'Bienvenido a Evolve PRO',
 			'settingsPage.proActiveMessage' => 'Tu suscripción está activa. Ahora tiene acceso completo e ilimitado al Entrenador de IA personalizado, estadísticas de tendencias avanzadas y todas las herramientas de crecimiento personal de Evolve.',
 			'settingsPage.proStartJourney' => 'Empieza tu recorrido',
+			'settingsPage.systemSection' => 'Sistema',
+			'settingsPage.appLogsTitle' => 'Registros de la app',
+			'settingsPage.appLogsDetail' => 'Ver los registros de diagnóstico de esta sesión',
 			'consent.onboardingTitle' => 'Tu privacidad importa',
 			'consent.continueButton' => 'Continuar',
 			'notifications.actionDone' => 'Hecho',
@@ -1885,6 +1921,26 @@ extension on TranslationsEs {
 			'tutorial.filterHabitDesc' => 'Desde aquí puedes seleccionar un hábito específico para ver sus detalles, o \'Todos los hábitos\' para una visión global.',
 			'tutorial.statisticsSections' => 'Secciones de estadísticas',
 			'tutorial.statsSectionsDesc' => 'Navega entre las pestañas para ver Tendencias, Alertas de rendimiento, la evolución de tus Hábitos y tu Estado de ánimo.',
+			'appLogs.title' => 'Registros de la App',
+			'appLogs.copiedToClipboard' => 'Registros copiados al portapapeles',
+			'appLogs.clearLogsTitle' => 'Borrar Registros',
+			'appLogs.clearLogsConfirm' => '¿Estás seguro de que deseas borrar todas las entradas del registro? Esta acción no se puede deshacer.',
+			'appLogs.clearLogsAction' => 'Borrar Todo',
+			'appLogs.copyAll' => 'Copiar Todos los Registros',
+			'appLogs.searchPlaceholder' => 'Buscar en registros...',
+			'appLogs.filterAll' => 'Todo',
+			'appLogs.filterErrors' => 'Errores',
+			'appLogs.filterWarnings' => 'Advertencias',
+			'appLogs.filterInfo' => 'Info',
+			'appLogs.emptyTitle' => 'Sin Registros',
+			'appLogs.emptySubtitle' => 'Los registros aparecerán aquí mientras la app se ejecuta',
+			'appLogs.stackTraceAvailable' => 'Toca para ver el stack trace',
+			'appLogs.detailMessage' => 'MENSAJE',
+			'appLogs.detailError' => 'ERROR',
+			'appLogs.detailExtras' => 'CONTEXTO ADICIONAL',
+			'appLogs.detailStackTrace' => 'STACK TRACE',
+			'appLogs.shareLogs' => 'Compartir archivo de registros',
+			'appLogs.exportDone' => 'Registros exportados',
 			_ => null,
 		};
 	}

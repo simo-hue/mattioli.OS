@@ -4,6 +4,7 @@ import 'dart:io';
 
 import 'package:evolve_desktop/core/app_bootstrap.dart';
 import 'package:evolve_desktop/core/app_logger.dart';
+import 'package:evolve_desktop/core/desktop_data_mode.dart';
 import 'package:evolve_desktop/core/desktop_supabase_config.dart';
 import 'package:evolve_desktop/core/secure_storage_utils.dart';
 import 'package:evolve_desktop/features/auth/application/consent_controller.dart';
@@ -196,6 +197,16 @@ class DesktopAuthController extends Notifier<DesktopAuthState> {
 
   Future<void> clearError() async {
     state = state.copyWith(clearError: true);
+  }
+
+  /// Enter Private mode — no Supabase session required.
+  Future<void> enterPrivateMode() async {
+    await ref.read(activeDesktopDataModeProvider.notifier).enterPrivateMode();
+  }
+
+  /// Exit Private mode without deleting private data.
+  Future<void> goToLogin() async {
+    await ref.read(activeDesktopDataModeProvider.notifier).enterSupabaseMode();
   }
 
   SupabaseClient get _client {

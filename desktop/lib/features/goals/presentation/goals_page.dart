@@ -1,12 +1,14 @@
+import 'dart:async';
 import 'package:evolve_desktop/app/theme/evolve_theme.dart';
 import 'package:evolve_desktop/core/macro_goal_calendar.dart';
 import 'package:evolve_desktop/features/dashboard/application/dashboard_controller.dart';
 import 'package:evolve_desktop/features/dashboard/domain/dashboard_models.dart';
 import 'package:evolve_desktop/features/goals/application/goal_categories_controller.dart';
-import 'package:evolve_desktop/features/statistics/data/statistics_rpc_providers.dart';
 import 'package:evolve_desktop/shared/widgets/desktop_page.dart';
 import 'package:evolve_desktop/shared/widgets/evolve_dialog.dart';
+import 'goals_stats_view.dart';
 import 'package:evolve_desktop/shared/widgets/evolve_panel.dart';
+import 'package:evolve_desktop/core/tutorial_provider.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
@@ -29,6 +31,22 @@ class _GoalsPageState extends ConsumerState<GoalsPage> {
   final _categories = [..._defaultGoalCategories];
   final _archivedCategoryIds = <String>{};
 
+  // Tutorial State
+  bool _didFinishGoalsTutorial = false;
+  int _goalsTutorialIndex = 0;
+  bool _isRefreshingGoalsTutorialGeometry = false;
+
+  // Tutorial Keys
+  final _goalsTutorialOverlayKey = GlobalKey();
+  final _planSelectorKey = GlobalKey();
+  final _performanceToggleKey = GlobalKey();
+  final _addGoalKey = GlobalKey();
+  final _tutorialCheckboxKey = GlobalKey();
+  final _tutorialCategoryKey = GlobalKey();
+  final _tutorialRescheduleKey = GlobalKey();
+  final _tutorialEditKey = GlobalKey();
+  final _tutorialDeleteKey = GlobalKey();
+
   @override
   void initState() {
     super.initState();
@@ -38,6 +56,18 @@ class _GoalsPageState extends ConsumerState<GoalsPage> {
     _selectedQuarter = ((now.month - 1) ~/ 3) + 1;
     _selectedMonth = now.month;
     _selectedWeek = logicalWeekOfMonth(now);
+
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      _checkTutorial();
+    });
+  }
+
+  void _checkTutorial() {
+    if (!mounted || _didFinishGoalsTutorial) return;
+    final hasSeenTutorial = ref.read(goalsTutorialProvider);
+    if (!hasSeenTutorial) {
+      setState(() {});
+    }
   }
 
   @override
@@ -52,7 +82,7 @@ class _GoalsPageState extends ConsumerState<GoalsPage> {
     final allGoals = ref.watch(dashboardControllerProvider).goals;
     final goals = allGoals.where(_matchesPeriod).toList()..sort(_sortGoals);
 
-    final activeGoals = goals
+    var activeGoals = goals
         .where((goal) => goal.state == GoalState.active)
         .toList();
     final completedGoals = goals
@@ -62,10 +92,35 @@ class _GoalsPageState extends ConsumerState<GoalsPage> {
         .where((goal) => goal.state == GoalState.failed)
         .toList();
 
+    final hasSeenTutorial = ref.watch(goalsTutorialProvider);
+    final showTutorial = !hasSeenTutorial && !_didFinishGoalsTutorial;
+
+    if (showTutorial && activeGoals.isEmpty) {
+      activeGoals = [
+        DashboardGoal(
+          id: 'tutorial_fake_goal',
+          title: 'Obiettivo di esempio',
+          category: 'Tutorial',
+          color: Colors.blueAccent,
+          state: GoalState.active,
+          type: _selectedType,
+          createdAt: DateTime.now(),
+          dueLabel: _periodLabel,
+          year: _selectedYear,
+          quarter: _selectedQuarter,
+          month: _selectedMonth,
+          weekNumber: _selectedWeek,
+          progress: 0,
+        )
+      ];
+    }
+
     return DesktopPage(
       title: 'Macro Obiettivi',
       subtitle: 'Pianificazione a lungo termine.',
-      child: DecoratedBox(
+      child: Stack(
+        children: [
+          DecoratedBox(
         decoration: BoxDecoration(
           color: context.evolveColors.panel.withValues(alpha: 0.7),
           borderRadius: BorderRadius.circular(22),
@@ -77,6 +132,7 @@ class _GoalsPageState extends ConsumerState<GoalsPage> {
             crossAxisAlignment: CrossAxisAlignment.stretch,
             children: [
               _GoalToolbar(
+                statsToggleKey: _performanceToggleKey,
                 selectedType: _selectedType,
                 showStats: _showStats,
                 onTypeChanged: (type) => setState(() {
@@ -87,6 +143,7 @@ class _GoalsPageState extends ConsumerState<GoalsPage> {
               ),
               const SizedBox(height: 30),
               _GoalPeriodBar(
+                key: _planSelectorKey,
                 selectedType: _selectedType,
                 selectedYear: _selectedYear,
                 selectedQuarter: _selectedQuarter,
@@ -112,13 +169,22 @@ class _GoalsPageState extends ConsumerState<GoalsPage> {
               ),
               const SizedBox(height: 30),
               if (_showStats)
-                _GoalStats(goals: allGoals)
+                const Padding(
+                  padding: EdgeInsets.only(top: 24),
+                  child: GoalsStatsView(),
+                )
               else
                 _GoalBoard(
                   periodTitle: _periodTitle,
                   periodSubtitle: _periodSubtitle,
                   quickGoalController: _quickGoalController,
                   quickGoalCategory: _quickGoalCategory,
+                  addGoalKey: _addGoalKey,
+                  tutorialCheckboxKey: _tutorialCheckboxKey,
+                  tutorialCategoryKey: _tutorialCategoryKey,
+                  tutorialRescheduleKey: _tutorialRescheduleKey,
+                  tutorialEditKey: _tutorialEditKey,
+                  tutorialDeleteKey: _tutorialDeleteKey,
                   categories: _availableCategories,
                   activeGoals: activeGoals,
                   completedGoals: completedGoals,
@@ -139,6 +205,9 @@ class _GoalsPageState extends ConsumerState<GoalsPage> {
             ],
           ),
         ),
+      ),
+          if (showTutorial) _buildGoalsTutorialOverlay(),
+        ],
       ),
     );
   }
@@ -273,15 +342,13 @@ class _GoalsPageState extends ConsumerState<GoalsPage> {
     _quickGoalController.clear();
   }
 
-  Future<void> _cycleGoalStatus(DashboardGoal goal) async {
-    final next = switch (goal.state) {
-      GoalState.active => GoalState.completed,
-      GoalState.completed => GoalState.failed,
-      GoalState.failed => GoalState.active,
-    };
+  Future<void> _cycleGoalStatus(
+    DashboardGoal goal,
+    GoalState finalState,
+  ) async {
     await ref
         .read(dashboardControllerProvider.notifier)
-        .updateGoalState(goal.id, next);
+        .updateGoalState(goal.id, finalState);
   }
 
   Future<void> _openGoalEditorFor(DashboardGoal goal) async {
@@ -473,16 +540,275 @@ class _GoalsPageState extends ConsumerState<GoalsPage> {
       }
     });
   }
+
+  // --- Tutorial Methods ---
+
+  Rect? _targetRectForKey(GlobalKey? targetKey) {
+    final overlayContext = _goalsTutorialOverlayKey.currentContext;
+    final targetContext = targetKey?.currentContext;
+    if (overlayContext == null || targetContext == null) return null;
+
+    final overlayObject = overlayContext.findRenderObject();
+    final targetObject = targetContext.findRenderObject();
+    if (overlayObject is! RenderBox ||
+        targetObject is! RenderBox ||
+        !overlayObject.attached ||
+        !targetObject.attached ||
+        !targetObject.hasSize) {
+      return null;
+    }
+
+    final targetSize = targetObject.size;
+    if (targetSize.width <= 1 || targetSize.height <= 1) return null;
+
+    final targetOffset = targetObject.localToGlobal(
+      Offset.zero,
+      ancestor: overlayObject,
+    );
+    return targetOffset & targetSize;
+  }
+
+  void _clearGoalsTutorialState() {
+    _goalsTutorialIndex = 0;
+    _showStats = false;
+  }
+
+  Widget _buildGoalsTutorialOverlay() {
+    final steps = _buildGoalsTutorialSteps();
+    final index = _goalsTutorialIndex.clamp(0, steps.length - 1).toInt();
+    final step = steps[index];
+    final targetRect = _targetRectForKey(step.targetKey);
+    
+    if (step.targetKey != null && targetRect == null) {
+      _scheduleGoalsTutorialGeometryRefresh();
+    }
+
+    return Positioned.fill(
+      child: Material(
+        key: _goalsTutorialOverlayKey,
+        color: Colors.transparent,
+        child: LayoutBuilder(
+          builder: (context, constraints) {
+            final overlaySize = Size(
+              constraints.maxWidth,
+              constraints.maxHeight,
+            );
+            final showCardAtTop = targetRect != null && targetRect.center.dy > overlaySize.height * 0.52;
+
+            return Stack(
+              children: [
+                Positioned.fill(
+                  child: CustomPaint(
+                    painter: _GoalsTutorialScrimPainter(targetRect),
+                  ),
+                ),
+                if (targetRect != null)
+                  Positioned.fromRect(
+                    rect: targetRect.inflate(8),
+                    child: IgnorePointer(
+                      child: DecoratedBox(
+                        decoration: BoxDecoration(
+                          borderRadius: BorderRadius.circular(16),
+                          border: Border.all(
+                            color: context.evolveAccent,
+                            width: 2,
+                          ),
+                        ),
+                      ),
+                    ),
+                  ),
+                Align(
+                  alignment: showCardAtTop ? Alignment.topCenter : Alignment.bottomCenter,
+                  child: Padding(
+                    padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 40),
+                    child: _buildTutorialContent(
+                      step.title,
+                      step.description,
+                      isFirst: index == 0,
+                      isLast: index == steps.length - 1,
+                      nextButtonLabel: step.nextButtonLabel,
+                      onPreviousPressed: () => _goToGoalsTutorialStep(index - 1),
+                      onNextPressed: () {
+                        if (index == steps.length - 1) {
+                          _finishGoalsTutorial();
+                          return;
+                        }
+                        _goToGoalsTutorialStep(index + 1);
+                      },
+                    ),
+                  ),
+                ),
+              ],
+            );
+          },
+        ),
+      ),
+    );
+  }
+
+  void _finishGoalsTutorial() {
+    if (!mounted || _didFinishGoalsTutorial) return;
+    _didFinishGoalsTutorial = true;
+    _clearGoalsTutorialState();
+    ref.read(goalsTutorialProvider.notifier).setTutorialSeen(true);
+  }
+
+  void _goToGoalsTutorialStep(int index) {
+    if (index < 0) return;
+    final steps = _buildGoalsTutorialSteps();
+    if (index >= steps.length) {
+      _finishGoalsTutorial();
+      return;
+    }
+
+    setState(() {
+      _goalsTutorialIndex = index;
+      _showStats = steps[index].showStats;
+    });
+    _scheduleGoalsTutorialGeometryRefresh();
+  }
+
+  void _scheduleGoalsTutorialGeometryRefresh() {
+    if (_isRefreshingGoalsTutorialGeometry) return;
+    _isRefreshingGoalsTutorialGeometry = true;
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      _isRefreshingGoalsTutorialGeometry = false;
+      if (!mounted || _didFinishGoalsTutorial) return;
+      setState(() {});
+    });
+  }
+
+  Widget _buildTutorialContent(
+    String title,
+    String description, {
+    required bool isFirst,
+    required bool isLast,
+    String? nextButtonLabel,
+    required VoidCallback onPreviousPressed,
+    required VoidCallback onNextPressed,
+  }) {
+    return ConstrainedBox(
+      constraints: const BoxConstraints(maxWidth: 400),
+      child: DecoratedBox(
+        decoration: BoxDecoration(
+          color: context.evolveColors.panelRaised,
+          borderRadius: BorderRadius.circular(20),
+          border: Border.all(color: context.evolveColors.border),
+          boxShadow: [
+            BoxShadow(
+              color: Colors.black.withValues(alpha: 0.2),
+              blurRadius: 16,
+              offset: const Offset(0, 8),
+            ),
+          ],
+        ),
+        child: Padding(
+          padding: const EdgeInsets.all(24),
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              Text(
+                title,
+                textAlign: TextAlign.center,
+                style: const TextStyle(
+                  fontSize: 18,
+                  fontWeight: FontWeight.bold,
+                ),
+              ),
+              const SizedBox(height: 12),
+              Text(
+                description,
+                textAlign: TextAlign.center,
+                style: TextStyle(
+                  fontSize: 14,
+                  height: 1.5,
+                  color: context.evolveColors.muted,
+                ),
+              ),
+              const SizedBox(height: 24),
+              Row(
+                mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                children: [
+                  if (!isFirst)
+                    TextButton(
+                      onPressed: onPreviousPressed,
+                      child: const Text('Indietro'),
+                    )
+                  else
+                    const SizedBox.shrink(),
+                  FilledButton(
+                    onPressed: onNextPressed,
+                    child: Text(
+                      nextButtonLabel ?? (isLast ? 'Fine' : 'Avanti'),
+                    ),
+                  ),
+                ],
+              ),
+            ],
+          ),
+        ),
+      ),
+    );
+  }
+
+  List<_GoalsTutorialStep> _buildGoalsTutorialSteps() {
+    return [
+      _GoalsTutorialStep(
+        targetKey: _planSelectorKey,
+        title: 'Tipo di pianificazione',
+        description: 'Qui puoi selezionare l\'orizzonte temporale dei tuoi obiettivi.',
+      ),
+      _GoalsTutorialStep(
+        targetKey: _addGoalKey,
+        title: 'Nuovo obiettivo',
+        description: 'Da qui puoi inserire rapidamente un nuovo obiettivo.',
+      ),
+      _GoalsTutorialStep(
+        targetKey: _tutorialCheckboxKey,
+        title: 'Completa o fallisci',
+        description: 'Segna l\'obiettivo come completato o fallito con un semplice clic.',
+      ),
+      _GoalsTutorialStep(
+        targetKey: _tutorialCategoryKey,
+        title: 'Categoria',
+        description: 'Gestisci le categorie e associale ai tuoi obiettivi.',
+      ),
+      _GoalsTutorialStep(
+        targetKey: _tutorialRescheduleKey,
+        title: 'Riprogramma',
+        description: 'Sposta l\'obiettivo al periodo successivo se non sei riuscito a completarlo.',
+      ),
+      _GoalsTutorialStep(
+        targetKey: _tutorialEditKey,
+        title: 'Modifica',
+        description: 'Modifica i dettagli del tuo obiettivo.',
+      ),
+      _GoalsTutorialStep(
+        targetKey: _tutorialDeleteKey,
+        title: 'Elimina',
+        description: 'Elimina un obiettivo se non è più rilevante.',
+      ),
+      _GoalsTutorialStep(
+        targetKey: _performanceToggleKey,
+        showStats: true,
+        title: 'Analisi e statistiche',
+        description: 'Passa alla vista statistiche per analizzare il tuo rendimento nel tempo.',
+        nextButtonLabel: 'Fine',
+      ),
+    ];
+  }
 }
 
 class _GoalToolbar extends StatelessWidget {
   const _GoalToolbar({
+    this.statsToggleKey,
     required this.selectedType,
     required this.showStats,
     required this.onTypeChanged,
     required this.onShowStats,
   });
 
+  final GlobalKey? statsToggleKey;
   final GoalType selectedType;
   final bool showStats;
   final ValueChanged<GoalType> onTypeChanged;
@@ -529,6 +855,7 @@ class _GoalToolbar extends StatelessWidget {
                 onTap: () => onTypeChanged(GoalType.weekly),
               ),
               _GoalModeTab(
+                key: statsToggleKey,
                 label: 'Stats',
                 icon: Icons.pie_chart_outline_rounded,
                 active: showStats,
@@ -544,6 +871,7 @@ class _GoalToolbar extends StatelessWidget {
 
 class _GoalModeTab extends StatelessWidget {
   const _GoalModeTab({
+    super.key,
     required this.label,
     required this.active,
     required this.onTap,
@@ -602,6 +930,7 @@ class _GoalModeTab extends StatelessWidget {
 
 class _GoalPeriodBar extends StatelessWidget {
   const _GoalPeriodBar({
+    super.key,
     required this.selectedType,
     required this.selectedYear,
     required this.selectedQuarter,
@@ -803,7 +1132,13 @@ class _GoalBoard extends StatelessWidget {
     required this.periodTitle,
     required this.periodSubtitle,
     required this.quickGoalController,
-    required this.quickGoalCategory,
+    this.quickGoalCategory,
+    this.addGoalKey,
+    this.tutorialCheckboxKey,
+    this.tutorialCategoryKey,
+    this.tutorialRescheduleKey,
+    this.tutorialEditKey,
+    this.tutorialDeleteKey,
     required this.categories,
     required this.activeGoals,
     required this.completedGoals,
@@ -822,13 +1157,19 @@ class _GoalBoard extends StatelessWidget {
   final String quickGoalHint;
   final TextEditingController quickGoalController;
   final _GoalCategory? quickGoalCategory;
+  final GlobalKey? addGoalKey;
+  final GlobalKey? tutorialCheckboxKey;
+  final GlobalKey? tutorialCategoryKey;
+  final GlobalKey? tutorialRescheduleKey;
+  final GlobalKey? tutorialEditKey;
+  final GlobalKey? tutorialDeleteKey;
   final List<_GoalCategory> categories;
   final List<DashboardGoal> activeGoals;
   final List<DashboardGoal> completedGoals;
   final List<DashboardGoal> failedGoals;
   final ValueChanged<_GoalCategory?> onQuickCategoryChanged;
   final VoidCallback onQuickSubmit;
-  final ValueChanged<DashboardGoal> onToggleStatus;
+  final void Function(DashboardGoal, GoalState) onToggleStatus;
   final ValueChanged<DashboardGoal> onEdit;
   final ValueChanged<DashboardGoal> onReschedule;
   final ValueChanged<DashboardGoal> onDelete;
@@ -872,13 +1213,15 @@ class _GoalBoard extends StatelessWidget {
           ],
         ),
         const SizedBox(height: 22),
-        _QuickGoalInput(
+        _QuickGoalBar(
+          key: addGoalKey,
+          tutorialCategoryKey: tutorialCategoryKey,
           controller: quickGoalController,
-          category: quickGoalCategory,
+          selectedCategory: quickGoalCategory,
           categories: categories,
-          hintText: quickGoalHint,
           onCategoryChanged: onQuickCategoryChanged,
           onSubmit: onQuickSubmit,
+          hintText: quickGoalHint,
         ),
         const SizedBox(height: 12),
         if (activeGoals.isEmpty)
@@ -887,8 +1230,12 @@ class _GoalBoard extends StatelessWidget {
           for (final goal in activeGoals)
             Padding(
               padding: const EdgeInsets.only(bottom: 10),
-              child: _GoalRow(
+              child: _GoalItem(
                 goal: goal,
+                checkboxKey: tutorialCheckboxKey,
+                rescheduleKey: tutorialRescheduleKey,
+                editKey: tutorialEditKey,
+                deleteKey: tutorialDeleteKey,
                 categories: categories,
                 onToggleStatus: onToggleStatus,
                 onEdit: onEdit,
@@ -903,7 +1250,7 @@ class _GoalBoard extends StatelessWidget {
           for (final goal in completedGoals)
             Padding(
               padding: const EdgeInsets.only(bottom: 10),
-              child: _GoalRow(
+              child: _GoalItem(
                 goal: goal,
                 categories: categories,
                 onToggleStatus: onToggleStatus,
@@ -920,7 +1267,7 @@ class _GoalBoard extends StatelessWidget {
           for (final goal in failedGoals)
             Padding(
               padding: const EdgeInsets.only(bottom: 10),
-              child: _GoalRow(
+              child: _GoalItem(
                 goal: goal,
                 categories: categories,
                 onToggleStatus: onToggleStatus,
@@ -935,18 +1282,21 @@ class _GoalBoard extends StatelessWidget {
   }
 }
 
-class _QuickGoalInput extends StatelessWidget {
-  const _QuickGoalInput({
+class _QuickGoalBar extends StatelessWidget {
+  const _QuickGoalBar({
+    super.key,
+    this.tutorialCategoryKey,
     required this.controller,
-    required this.category,
+    required this.selectedCategory,
     required this.categories,
-    required this.hintText,
     required this.onCategoryChanged,
     required this.onSubmit,
+    required this.hintText,
   });
 
+  final GlobalKey? tutorialCategoryKey;
   final TextEditingController controller;
-  final _GoalCategory? category;
+  final _GoalCategory? selectedCategory;
   final List<_GoalCategory> categories;
   final String hintText;
   final ValueChanged<_GoalCategory?> onCategoryChanged;
@@ -954,111 +1304,84 @@ class _QuickGoalInput extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final categoryColor = category?.color;
-    return Row(
-      children: [
-        Expanded(
-          child: SizedBox(
-            height: 54,
-            child: TextField(
-              controller: controller,
-              onSubmitted: (_) => onSubmit(),
-              style: Theme.of(context).textTheme.titleMedium,
-              decoration: InputDecoration(
-                hintText: hintText,
-                filled: true,
-                fillColor: Colors.black.withValues(alpha: 0.18),
-                contentPadding: const EdgeInsets.symmetric(
-                  horizontal: 18,
-                  vertical: 16,
-                ),
-                border: OutlineInputBorder(
-                  borderRadius: BorderRadius.circular(14),
-                  borderSide: BorderSide(color: context.evolveColors.border),
-                ),
-                enabledBorder: OutlineInputBorder(
-                  borderRadius: BorderRadius.circular(14),
-                  borderSide: BorderSide(color: context.evolveColors.border),
-                ),
-                focusedBorder: OutlineInputBorder(
-                  borderRadius: BorderRadius.circular(14),
-                  borderSide: BorderSide(
-                    color: context.evolveColors.foreground,
-                    width: 1.4,
-                  ),
+    return EvolvePanel(
+      child: Padding(
+        padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+        child: Row(
+          children: [
+            Container(
+              key: tutorialCategoryKey,
+              child: _QuickCategoryButton(
+                selectedCategory: selectedCategory,
+                categories: categories,
+                onCategoryChanged: onCategoryChanged,
+              ),
+            ),
+            const SizedBox(width: 10),
+            Expanded(
+              child: TextField(
+                controller: controller,
+                onSubmitted: (_) => onSubmit(),
+                decoration: InputDecoration(
+                  hintText: hintText,
+                  border: InputBorder.none,
                 ),
               ),
             ),
-          ),
-        ),
-        const SizedBox(width: 10),
-        PopupMenuButton<Object>(
-          tooltip: 'Scegli categoria',
-          onSelected: (value) =>
-              onCategoryChanged(value is _GoalCategory ? value : null),
-          color: context.evolveColors.panelRaised,
-          itemBuilder: (context) => [
-            const PopupMenuItem<Object>(
-              value: _QuickGoalCategoryAction.clear,
-              child: Text('Default'),
+            const SizedBox(width: 10),
+            IconButton(
+              onPressed: onSubmit,
+              icon: const Icon(Icons.add_rounded),
             ),
-            for (final item in categories)
-              PopupMenuItem<Object>(
-                value: item,
-                child: Row(
-                  children: [
-                    CircleAvatar(radius: 5, backgroundColor: item.color),
-                    const SizedBox(width: 10),
-                    Text(item.label),
-                  ],
-                ),
-              ),
           ],
-          child: Container(
-            width: 54,
-            height: 54,
-            decoration: BoxDecoration(
-              color: Colors.black.withValues(alpha: 0.18),
-              borderRadius: BorderRadius.circular(14),
-              border: Border.all(color: context.evolveColors.border),
-            ),
-            child: Center(
-              child: Container(
-                width: 18,
-                height: 18,
-                decoration: BoxDecoration(
-                  shape: BoxShape.circle,
-                  color: categoryColor?.withValues(alpha: 0.25),
-                  border: Border.all(
-                    color: categoryColor ?? context.evolveColors.borderStrong,
-                    width: 1.5,
-                  ),
-                ),
-              ),
-            ),
-          ),
         ),
-        const SizedBox(width: 10),
-        SizedBox(
-          width: 54,
-          height: 54,
-          child: FilledButton(
-            onPressed: onSubmit,
-            style: FilledButton.styleFrom(
-              padding: EdgeInsets.zero,
-              shape: RoundedRectangleBorder(
-                borderRadius: BorderRadius.circular(14),
-              ),
-            ),
-            child: const Icon(Icons.add_rounded, size: 25),
-          ),
-        ),
-      ],
+      ),
     );
   }
 }
 
-enum _QuickGoalCategoryAction { clear }
+class _QuickCategoryButton extends StatelessWidget {
+  const _QuickCategoryButton({
+    required this.selectedCategory,
+    required this.categories,
+    required this.onCategoryChanged,
+  });
+
+  final _GoalCategory? selectedCategory;
+  final List<_GoalCategory> categories;
+  final ValueChanged<_GoalCategory?> onCategoryChanged;
+
+  @override
+  Widget build(BuildContext context) {
+    final color = selectedCategory?.color ?? context.evolveColors.borderStrong;
+    return PopupMenuButton<_GoalCategory?>(
+      onSelected: onCategoryChanged,
+      itemBuilder: (context) => [
+        const PopupMenuItem(value: null, child: Text('Default')),
+        for (final item in categories)
+          PopupMenuItem(
+            value: item,
+            child: Row(
+              children: [
+                CircleAvatar(radius: 5, backgroundColor: item.color),
+                const SizedBox(width: 10),
+                Text(item.label),
+              ],
+            ),
+          ),
+      ],
+      child: Container(
+        width: 32,
+        height: 32,
+        decoration: BoxDecoration(
+          shape: BoxShape.circle,
+          color: color.withValues(alpha: 0.2),
+          border: Border.all(color: color, width: 1.5),
+        ),
+      ),
+    );
+  }
+}
 
 class _GoalEmptyState extends StatelessWidget {
   const _GoalEmptyState({required this.hasAnyGoal});
@@ -1096,9 +1419,13 @@ class _GoalEmptyState extends StatelessWidget {
   }
 }
 
-class _GoalRow extends StatelessWidget {
-  const _GoalRow({
+class _GoalItem extends StatefulWidget {
+  const _GoalItem({
     required this.goal,
+    this.checkboxKey,
+    this.rescheduleKey,
+    this.editKey,
+    this.deleteKey,
     required this.categories,
     required this.onToggleStatus,
     required this.onEdit,
@@ -1107,17 +1434,67 @@ class _GoalRow extends StatelessWidget {
   });
 
   final DashboardGoal goal;
+  final GlobalKey? checkboxKey;
+  final GlobalKey? rescheduleKey;
+  final GlobalKey? editKey;
+  final GlobalKey? deleteKey;
   final List<_GoalCategory> categories;
-  final ValueChanged<DashboardGoal> onToggleStatus;
+  final void Function(DashboardGoal, GoalState) onToggleStatus;
   final ValueChanged<DashboardGoal> onEdit;
   final ValueChanged<DashboardGoal> onReschedule;
   final ValueChanged<DashboardGoal> onDelete;
 
   @override
+  State<_GoalItem> createState() => _GoalItemState();
+}
+
+class _GoalItemState extends State<_GoalItem> {
+  GoalState? _visualStatusOverride;
+  Timer? _debounceTimer;
+
+  @override
+  void dispose() {
+    _debounceTimer?.cancel();
+    super.dispose();
+  }
+
+  GoalState get _nextStatus {
+    final currentStatus = _visualStatusOverride ?? widget.goal.state;
+    switch (currentStatus) {
+      case GoalState.active:
+        return GoalState.completed;
+      case GoalState.completed:
+        return GoalState.failed;
+      case GoalState.failed:
+        return GoalState.active;
+    }
+  }
+
+  void _cycleStatus() {
+    setState(() {
+      _visualStatusOverride = _nextStatus;
+    });
+
+    _debounceTimer?.cancel();
+    _debounceTimer = Timer(const Duration(seconds: 2), () {
+      if (!mounted) return;
+      final finalState = _visualStatusOverride;
+      if (finalState != null) {
+        widget.onToggleStatus(widget.goal, finalState);
+      }
+      setState(() {
+        _visualStatusOverride = null;
+      });
+    });
+  }
+
+  @override
   Widget build(BuildContext context) {
-    final category = _categoryForGoal(goal, categories);
-    final completed = goal.state == GoalState.completed;
-    final failed = goal.state == GoalState.failed;
+    final goal = widget.goal;
+    final category = _categoryForGoal(goal, widget.categories);
+    final currentState = _visualStatusOverride ?? goal.state;
+    final completed = currentState == GoalState.completed;
+    final failed = currentState == GoalState.failed;
     final statusColor = completed
         ? const Color(0xFF10B981)
         : failed
@@ -1134,9 +1511,9 @@ class _GoalRow extends StatelessWidget {
       ),
       child: Row(
         children: [
-          _GoalCheckButton(
-            state: goal.state,
-            onPressed: () => onToggleStatus(goal),
+          Container(
+            key: widget.checkboxKey,
+            child: _GoalCheckButton(state: currentState, onPressed: _cycleStatus),
           ),
           const SizedBox(width: 16),
           if (!completed && !failed) ...[
@@ -1163,11 +1540,24 @@ class _GoalRow extends StatelessWidget {
             ),
           ),
           const SizedBox(width: 16),
-          _GoalActionsMenu(
-            goal: goal,
-            onEdit: onEdit,
-            onReschedule: onReschedule,
-            onDelete: onDelete,
+          if (failed && goal.type != GoalType.lifetime)
+            IconButton(
+              key: widget.rescheduleKey,
+              tooltip: 'Riprogramma al periodo successivo',
+              onPressed: () => widget.onReschedule(goal),
+              icon: const Icon(Icons.next_plan_outlined, size: 20),
+            ),
+          IconButton(
+            key: widget.editKey,
+            tooltip: 'Modifica',
+            onPressed: () => widget.onEdit(goal),
+            icon: const Icon(Icons.edit_outlined, size: 20),
+          ),
+          IconButton(
+            key: widget.deleteKey,
+            tooltip: 'Elimina',
+            onPressed: () => widget.onDelete(goal),
+            icon: const Icon(Icons.delete_outline, size: 20),
           ),
         ],
       ),
@@ -1212,50 +1602,6 @@ class _GoalCheckButton extends StatelessWidget {
   }
 }
 
-class _GoalActionsMenu extends StatelessWidget {
-  const _GoalActionsMenu({
-    required this.goal,
-    required this.onEdit,
-    required this.onReschedule,
-    required this.onDelete,
-  });
-
-  final DashboardGoal goal;
-  final ValueChanged<DashboardGoal> onEdit;
-  final ValueChanged<DashboardGoal> onReschedule;
-  final ValueChanged<DashboardGoal> onDelete;
-
-  @override
-  Widget build(BuildContext context) {
-    return PopupMenuButton<String>(
-      tooltip: 'Azioni obiettivo',
-      color: context.evolveColors.panelRaised,
-      icon: Icon(
-        Icons.more_horiz_rounded,
-        color: context.evolveColors.subtle,
-        size: 21,
-      ),
-      onSelected: (action) {
-        switch (action) {
-          case 'edit':
-            onEdit(goal);
-          case 'reschedule':
-            onReschedule(goal);
-          case 'delete':
-            onDelete(goal);
-        }
-      },
-      itemBuilder: (context) => [
-        const PopupMenuItem(value: 'edit', child: Text('Modifica')),
-        if (goal.state == GoalState.failed && goal.type != GoalType.lifetime)
-          const PopupMenuItem(value: 'reschedule', child: Text('Ripianifica')),
-        const PopupMenuDivider(),
-        const PopupMenuItem(value: 'delete', child: Text('Elimina')),
-      ],
-    );
-  }
-}
-
 class _StatusDivider extends StatelessWidget {
   const _StatusDivider({required this.label, required this.color});
 
@@ -1280,121 +1626,6 @@ class _StatusDivider extends StatelessWidget {
           ),
         ),
         Expanded(child: Divider(color: color.withValues(alpha: 0.25))),
-      ],
-    );
-  }
-}
-
-class _GoalStats extends ConsumerWidget {
-  const _GoalStats({required this.goals});
-
-  final List<DashboardGoal> goals;
-
-  @override
-  Widget build(BuildContext context, WidgetRef ref) {
-    final rpc = ref.watch(macroGoalsStatsRpcProvider('all')).value ?? const {};
-    final completed = goals
-        .where((goal) => goal.state == GoalState.completed)
-        .length;
-    final localSuccess = goals.isEmpty
-        ? 0
-        : (completed / goals.length * 100).round();
-    final total = (rpc['total_goals'] as num?)?.toInt() ?? goals.length;
-    final completedTotal =
-        (rpc['completed_goals'] as num?)?.toInt() ?? completed;
-    final success = (rpc['success_rate'] as num?)?.round() ?? localSuccess;
-    return Column(
-      children: [
-        Row(
-          children: [
-            Expanded(
-              child: _Kpi(label: 'Totale', value: '$total'),
-            ),
-            const SizedBox(width: 14),
-            Expanded(
-              child: _Kpi(label: 'Completati', value: '$completedTotal'),
-            ),
-            const SizedBox(width: 14),
-            Expanded(
-              child: _Kpi(label: 'Success rate', value: '$success%'),
-            ),
-          ],
-        ),
-        const SizedBox(height: 18),
-        EvolvePanel(
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              const SectionHeading(
-                title: 'Distribuzione per orizzonte',
-                subtitle:
-                    'Sintesi calcolata dai dati sincronizzati con arricchimento RPC',
-              ),
-              const SizedBox(height: 18),
-              for (final type in GoalType.values) ...[
-                _TypeProgress(type: type, goals: goals),
-                if (type != GoalType.values.last) const SizedBox(height: 13),
-              ],
-            ],
-          ),
-        ),
-      ],
-    );
-  }
-}
-
-class _Kpi extends StatelessWidget {
-  const _Kpi({required this.label, required this.value});
-
-  final String label;
-  final String value;
-
-  @override
-  Widget build(BuildContext context) {
-    return EvolvePanel(
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Text(label, style: Theme.of(context).textTheme.bodySmall),
-          const SizedBox(height: 7),
-          Text(
-            value,
-            style: TextStyle(
-              color: context.evolveColors.foreground,
-              fontSize: 25,
-              fontWeight: FontWeight.w800,
-            ),
-          ),
-        ],
-      ),
-    );
-  }
-}
-
-class _TypeProgress extends StatelessWidget {
-  const _TypeProgress({required this.type, required this.goals});
-
-  final GoalType type;
-  final List<DashboardGoal> goals;
-
-  @override
-  Widget build(BuildContext context) {
-    final count = goals.where((goal) => goal.type == type).length;
-    final value = goals.isEmpty ? 0.0 : count / goals.length;
-    return Row(
-      children: [
-        SizedBox(width: 110, child: Text(type.label)),
-        Expanded(
-          child: LinearProgressIndicator(
-            value: value,
-            minHeight: 6,
-            color: EvolveColors.cyan,
-            backgroundColor: context.evolveColors.panelSoft,
-            borderRadius: BorderRadius.circular(8),
-          ),
-        ),
-        const SizedBox(width: 12),
-        SizedBox(width: 24, child: Text('$count')),
       ],
     );
   }
@@ -1742,3 +1973,58 @@ const _months = [
   'Novembre',
   'Dicembre',
 ];
+
+class _GoalsTutorialStep {
+  const _GoalsTutorialStep({
+    this.targetKey,
+    this.showStats = false,
+    required this.title,
+    required this.description,
+    this.nextButtonLabel,
+  });
+
+  final GlobalKey? targetKey;
+  final bool showStats;
+  final String title;
+  final String description;
+  final String? nextButtonLabel;
+}
+
+class _GoalsTutorialScrimPainter extends CustomPainter {
+  const _GoalsTutorialScrimPainter(this.targetRect);
+
+  final Rect? targetRect;
+
+  @override
+  void paint(Canvas canvas, Size size) {
+    final overlayBounds = Offset.zero & size;
+    final scrimPaint = Paint()..color = Colors.black.withValues(alpha: 0.82);
+    final target = targetRect;
+
+    if (target == null) {
+      canvas.drawRect(overlayBounds, scrimPaint);
+      return;
+    }
+
+    final highlightedRect = target.inflate(10).intersect(overlayBounds);
+    if (highlightedRect.isEmpty) {
+      canvas.drawRect(overlayBounds, scrimPaint);
+      return;
+    }
+
+    final overlayPath = Path()..addRect(overlayBounds);
+    final highlightPath = Path()
+      ..addRRect(
+        RRect.fromRectAndRadius(highlightedRect, const Radius.circular(16)),
+      );
+    canvas.drawPath(
+      Path.combine(PathOperation.difference, overlayPath, highlightPath),
+      scrimPaint,
+    );
+  }
+
+  @override
+  bool shouldRepaint(covariant _GoalsTutorialScrimPainter oldDelegate) {
+    return oldDelegate.targetRect != targetRect;
+  }
+}

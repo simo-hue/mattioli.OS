@@ -2,6 +2,7 @@ import 'package:evolve_desktop/app/theme/desktop_appearance_controller.dart';
 import 'package:evolve_desktop/app/theme/evolve_theme.dart';
 import 'package:evolve_desktop/app/localization/desktop_locale_controller.dart';
 import 'package:evolve_desktop/core/app_bootstrap.dart';
+import 'package:evolve_desktop/core/desktop_data_mode.dart';
 import 'package:evolve_desktop/features/auth/application/auth_controller.dart';
 import 'package:evolve_desktop/features/auth/application/consent_controller.dart';
 import 'package:evolve_desktop/features/auth/presentation/auth_page.dart';
@@ -20,8 +21,12 @@ class EvolveDesktopApp extends ConsumerWidget {
     final backendConfigured = ref.watch(supabaseClientProvider) != null;
     final consent = ref.watch(desktopConsentControllerProvider);
     final auth = ref.watch(desktopAuthControllerProvider);
+    final dataMode = ref.watch(activeDesktopDataModeProvider);
     final appearance = ref.watch(desktopAppearanceControllerProvider);
     final locale = ref.watch(desktopLocaleControllerProvider);
+
+    // Private mode lets the user bypass Supabase auth entirely.
+    final isPrivateMode = dataMode.isPrivate;
 
     return MaterialApp(
       title: 'Evolve Desktop',
@@ -38,11 +43,11 @@ class EvolveDesktopApp extends ConsumerWidget {
         Locale('ar'),
       ],
       localizationsDelegates: GlobalMaterialLocalizations.delegates,
-      home: !backendConfigured
+      home: !backendConfigured && !isPrivateMode
           ? const _DesktopBackendConfigurationErrorPage()
           : !consent.hasCompletedOnboarding
           ? const DesktopConsentPage()
-          : auth.isLoggedIn
+          : isPrivateMode || auth.isLoggedIn
           ? const DesktopBiometricGate(child: DesktopShell())
           : const DesktopAuthPage(),
     );

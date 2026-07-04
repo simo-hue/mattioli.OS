@@ -1,4 +1,6 @@
-import 'package:evolve_desktop/app/theme/evolve_theme.dart';
+import re
+
+content = """import 'package:evolve_desktop/app/theme/evolve_theme.dart';
 import 'package:evolve_desktop/features/dashboard/application/dashboard_controller.dart';
 import 'package:evolve_desktop/features/dashboard/domain/dashboard_models.dart';
 import 'package:evolve_desktop/shared/widgets/desktop_page.dart';
@@ -6,7 +8,7 @@ import 'package:evolve_desktop/shared/widgets/evolve_panel.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_markdown/flutter_markdown.dart';
-
+import 'dart:ui';
 
 import '../domain/chat_message.dart';
 import '../data/openrouter_service.dart';
@@ -63,29 +65,29 @@ class _AiCoachPageState extends ConsumerState<AiCoachPage> {
 
     // Inietta contesto se abilitato
     final snapshot = ref.read(dashboardControllerProvider);
-    String contextPrompt = "Sei Evolve AI Coach, un assistente virtuale per la disciplina personale.\n";
+    String contextPrompt = "Sei Evolve AI Coach, un assistente virtuale per la disciplina personale.\\n";
     
     if (_shareHabits) {
-      contextPrompt += "\nABITUDINI ATTIVE:\n";
+      contextPrompt += "\\nABITUDINI ATTIVE:\\n";
       final habits = snapshot.habits;
       if (habits.isEmpty) {
-        contextPrompt += "- Nessuna abitudine attiva.\n";
+        contextPrompt += "- Nessuna abitudine attiva.\\n";
       } else {
         for (final h in habits) {
           final done = snapshot.habitStatusFor(h.id, DateTime.now()) == 'done';
-          contextPrompt += "- ${h.title} (Completata oggi: $done, Streak: ${h.streak})\n";
+          contextPrompt += "- ${h.title} (Completata oggi: $done, Streak: ${h.streak})\\n";
         }
       }
     }
 
     if (_shareGoals) {
-      contextPrompt += "\nOBIETTIVI:\n";
+      contextPrompt += "\\nOBIETTIVI:\\n";
       final goals = snapshot.goals.where((g) => g.state == GoalState.active).toList();
       if (goals.isEmpty) {
-        contextPrompt += "- Nessun obiettivo a lungo termine attivo.\n";
+        contextPrompt += "- Nessun obiettivo a lungo termine attivo.\\n";
       } else {
         for (final g in goals) {
-          contextPrompt += "- ${g.title} (Scadenza: ${g.dueLabel})\n";
+          contextPrompt += "- ${g.title} (Scadenza: ${g.dueLabel})\\n";
         }
       }
     }
@@ -165,7 +167,7 @@ class _AiCoachPageState extends ConsumerState<AiCoachPage> {
                 title: Text('Abitudini Quotidiane', style: TextStyle(color: context.evolveColors.foreground)),
                 subtitle: Text('Condivide le abitudini attive, le serie e lo stato di completamento di oggi.', style: TextStyle(color: context.evolveColors.foreground.withValues(alpha: 0.5), fontSize: 12)),
                 value: _shareHabits,
-                activeThumbColor: Theme.of(context).colorScheme.primary,
+                activeColor: Theme.of(context).colorScheme.primary,
                 onChanged: (val) {
                   setDialogState(() => _shareHabits = val);
                   setState(() => _shareHabits = val);
@@ -175,7 +177,7 @@ class _AiCoachPageState extends ConsumerState<AiCoachPage> {
                 title: Text('Obiettivi Macro', style: TextStyle(color: context.evolveColors.foreground)),
                 subtitle: Text('Condivide i tuoi obiettivi attivi a lungo termine.', style: TextStyle(color: context.evolveColors.foreground.withValues(alpha: 0.5), fontSize: 12)),
                 value: _shareGoals,
-                activeThumbColor: Theme.of(context).colorScheme.primary,
+                activeColor: Theme.of(context).colorScheme.primary,
                 onChanged: (val) {
                   setDialogState(() => _shareGoals = val);
                   setState(() => _shareGoals = val);
@@ -345,3 +347,7 @@ class _MessageBubble extends StatelessWidget {
     );
   }
 }
+"""
+
+with open('desktop/lib/features/ai_coach/presentation/ai_coach_page.dart', 'w') as f:
+    f.write(content)

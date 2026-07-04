@@ -1,3 +1,5 @@
+import 'package:evolve_desktop/core/desktop_backup_import_service.dart';
+import 'package:file_picker/file_picker.dart';
 import 'dart:async';
 import 'dart:convert';
 import 'dart:io';
@@ -6,9 +8,12 @@ import 'package:evolve_desktop/app/theme/desktop_appearance_controller.dart';
 import 'package:evolve_desktop/app/theme/evolve_theme.dart';
 import 'package:evolve_desktop/app/localization/desktop_locale_controller.dart';
 import 'package:evolve_desktop/core/app_bootstrap.dart';
+import 'package:evolve_desktop/core/tutorial_provider.dart';
 import 'package:evolve_desktop/core/app_logger.dart';
+import 'package:evolve_desktop/core/desktop_private_db.dart';
 import 'package:evolve_desktop/features/auth/application/auth_controller.dart';
 import 'package:evolve_desktop/features/auth/application/consent_controller.dart';
+import 'package:evolve_desktop/core/desktop_data_mode.dart';
 import 'package:evolve_desktop/features/dashboard/application/dashboard_controller.dart';
 import 'package:evolve_desktop/features/dashboard/domain/dashboard_models.dart';
 import 'package:evolve_desktop/features/settings/application/desktop_biometric_controller.dart';
@@ -25,6 +30,9 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:image_picker/image_picker.dart';
 import 'package:share_plus/share_plus.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
+import 'package:evolve_desktop/features/auth/application/desktop_profile_controller.dart';
+import 'package:path_provider/path_provider.dart';
+import 'package:path/path.dart' as p;
 
 enum _SettingsSection {
   profile,
@@ -92,6 +100,17 @@ class _SettingsPageState extends ConsumerState<SettingsPage> {
 
   @override
   Widget build(BuildContext context) {
+    final dataMode = ref.watch(activeDesktopDataModeProvider);
+    final isPrivateMode = dataMode.isPrivate;
+
+    // Filter available sections based on mode
+    final availableSections = _SettingsSection.values.where((section) {
+      if (isPrivateMode && section == _SettingsSection.subscription) {
+        return false;
+      }
+      return true;
+    }).toList();
+
     return DesktopPage(
       title: 'Impostazioni',
       subtitle:
@@ -107,7 +126,7 @@ class _SettingsPageState extends ConsumerState<SettingsPage> {
                 padding: const EdgeInsets.all(13),
                 child: Column(
                   children: [
-                    for (final section in _SettingsSection.values)
+                    for (final section in availableSections)
                       _SettingsDestination(
                         section: section,
                         selected: section == _section,
@@ -139,6 +158,8 @@ class _SettingsPageState extends ConsumerState<SettingsPage> {
 
   Widget _profile() {
     final auth = ref.watch(desktopAuthControllerProvider);
+    final isPrivateMode = ref.watch(activeDesktopDataModeProvider).isPrivate;
+
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
@@ -150,8 +171,10 @@ class _SettingsPageState extends ConsumerState<SettingsPage> {
         _ProfileCard(
           user: auth.user,
           image: _profileImage,
-          isPro: ref.watch(desktopSubscriptionControllerProvider).isPro,
+          isPro: isPrivateMode ? false : ref.watch(desktopSubscriptionControllerProvider).isPro,
           onPickAvatar: _pickAvatar,
+          isPrivateMode: isPrivateMode,
+          privateProfile: isPrivateMode ? ref.watch(privateProfileProvider).value : null,
         ),
         const SizedBox(height: 16),
         _SettingsGroup(
@@ -159,52 +182,67 @@ class _SettingsPageState extends ConsumerState<SettingsPage> {
           children: [
             _InfoRow(
               label: 'Account',
-              value: auth.user?.email ?? 'Sessione non disponibile',
+              value: isPrivateMode 
+                  ? 'Modalità Privata'
+                  : auth.user?.email ?? 'Sessione non disponibile',
             ),
-            const _InfoRow(
+            _InfoRow(
               label: 'Repository dati',
-              value: 'Supabase con cache cifrata',
+              value: isPrivateMode 
+                  ? 'Database locale crittografato'
+                  : 'Supabase con cache cifrata',
             ),
-            _ActionRow(
-              icon: Icons.badge_outlined,
-              title: 'Informazioni personali',
-              detail: 'Nome, cognome, email e data di nascita',
-              onTap: auth.isLoggedIn
-                  ? () => showEvolveDialog<void>(
-                      context: context,
-                      builder: (context) => const _PersonalInfoDialog(),
-                    )
-                  : () => _showGate(
-                      'Profilo',
-                      'Richiede una sessione Supabase attiva.',
-                    ),
-            ),
-            _ActionRow(
-              icon: Icons.photo_camera_outlined,
-              title: 'Aggiorna avatar',
-              detail: 'Scegli un immagine locale per il profilo desktop.',
-              onTap: _pickAvatar,
-            ),
-            _ActionRow(
-              icon: Icons.fact_check_outlined,
-              title: 'Rivedi consenso iniziale',
-              detail: 'Termini, privacy, notifiche e crash reporting',
-              onTap: _reviewConsent,
-            ),
-            _ActionRow(
-              icon: Icons.logout_rounded,
-              title: 'Esci dall\'account',
-              detail: auth.isLoggedIn
-                  ? 'Chiudi la sessione su questo dispositivo'
-                  : 'Disponibile con una sessione Supabase attiva',
-              destructive: true,
-              onTap: auth.isLoggedIn
-                  ? () => _confirmSignOut()
-                  : () => _showGate(
-                      'Logout',
-                      'Richiede una sessione Supabase attiva.',
-                    ),
-            ),
+            if (!isPrivateMode) ...[
+              _ActionRow(
+                icon: Icons.badge_outlined,
+                title: 'Informazioni personali',
+                detail: 'Nome, cognome, email e data di nascita',
+                onTap: auth.isLoggedIn
+                    ? () => showEvolveDialog<void>(
+                        context: context,
+                        builder: (context) => const _PersonalInfoDialog(),
+                      )
+                    : () => _showGate(
+                        'Profilo',
+                        'Richiede una sessione Supabase attiva.',
+                      ),
+              ),
+              _ActionRow(
+                icon: Icons.photo_camera_outlined,
+                title: 'Aggiorna avatar',
+                detail: 'Scegli un immagine locale per il profilo desktop.',
+                onTap: _pickAvatar,
+              ),
+              _ActionRow(
+                icon: Icons.fact_check_outlined,
+                title: 'Rivedi consenso iniziale',
+                detail: 'Termini, privacy, notifiche e crash reporting',
+                onTap: _reviewConsent,
+              ),
+              _ActionRow(
+                icon: Icons.logout_rounded,
+                title: 'Esci dall\'account',
+                detail: auth.isLoggedIn
+                    ? 'Chiudi la sessione su questo dispositivo'
+                    : 'Disponibile con una sessione Supabase attiva',
+                destructive: true,
+                onTap: auth.isLoggedIn
+                    ? () => _confirmSignOut()
+                    : () => _showGate(
+                        'Logout',
+                        'Richiede una sessione Supabase attiva.',
+                      ),
+              ),
+            ] else ...[
+              _ActionRow(
+                icon: Icons.login_outlined,
+                title: 'Vai al Login',
+                detail: 'Sospendi la modalità privata e accedi a Supabase.',
+                onTap: () {
+                  ref.read(desktopAuthControllerProvider.notifier).goToLogin();
+                },
+              ),
+            ]
           ],
         ),
       ],
@@ -419,6 +457,8 @@ class _SettingsPageState extends ConsumerState<SettingsPage> {
 
   Widget _privacy() {
     final biometric = ref.watch(desktopBiometricControllerProvider);
+    final isPrivateMode = ref.watch(activeDesktopDataModeProvider).isPrivate;
+
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
@@ -437,32 +477,34 @@ class _SettingsPageState extends ConsumerState<SettingsPage> {
               value: biometric.enabled,
               onChanged: _setBiometricLock,
             ),
-            _ActionRow(
-              icon: Icons.key_outlined,
-              title: 'Cambia password',
-              detail: 'Aggiornamento credenziali tramite Supabase Auth.',
-              onTap: ref.watch(desktopAuthControllerProvider).isLoggedIn
-                  ? () => showEvolveDialog<void>(
-                      context: context,
-                      builder: (context) => const _ChangePasswordDialog(),
-                    )
-                  : () => _showGate(
-                      'Cambio password',
-                      'Richiede una sessione Supabase attiva.',
-                    ),
-            ),
+            if (!isPrivateMode)
+              _ActionRow(
+                icon: Icons.key_outlined,
+                title: 'Cambia password',
+                detail: 'Aggiornamento credenziali tramite Supabase Auth.',
+                onTap: ref.watch(desktopAuthControllerProvider).isLoggedIn
+                    ? () => showEvolveDialog<void>(
+                        context: context,
+                        builder: (context) => const _ChangePasswordDialog(),
+                      )
+                    : () => _showGate(
+                        'Cambio password',
+                        'Richiede una sessione Supabase attiva.',
+                      ),
+              ),
           ],
         ),
         const SizedBox(height: 16),
         _SettingsGroup(
           title: 'Dati e consensi',
           children: [
-            _SwitchRow(
-              label: 'Invia segnalazioni crash',
-              detail: 'Consenso separato per Sentry.',
-              value: _crashReports,
-              onChanged: _setCrashReportingConsent,
-            ),
+            if (!isPrivateMode)
+              _SwitchRow(
+                label: 'Invia segnalazioni crash',
+                detail: 'Consenso separato per Sentry.',
+                value: _crashReports,
+                onChanged: _setCrashReportingConsent,
+              ),
             _ActionRow(
               icon: Icons.download_outlined,
               title: 'Esporta dati',
@@ -470,18 +512,33 @@ class _SettingsPageState extends ConsumerState<SettingsPage> {
               onTap: _exportData,
             ),
             _ActionRow(
+              icon: Icons.upload_outlined,
+              title: 'Importa dati',
+              detail: 'Ripristina un backup (formato .zip) di Evolve.',
+              onTap: _importData,
+            ),
+            _ActionRow(
               icon: Icons.settings_outlined,
               title: 'Gestione permessi di sistema',
               detail: 'Notifiche, calendario e sicurezza.',
               onTap: _openSystemPermissions,
             ),
-            _ActionRow(
-              icon: Icons.delete_forever_outlined,
-              title: 'Elimina account e dati',
-              detail: 'Operazione irreversibile protetta da conferma.',
-              destructive: true,
-              onTap: _showDeleteOrResetDialog,
-            ),
+            if (isPrivateMode)
+              _ActionRow(
+                icon: Icons.delete_forever_outlined,
+                title: 'Elimina dati privati',
+                detail: 'Cancella definitivamente il database locale crittografato.',
+                destructive: true,
+                onTap: _deletePrivateData,
+              )
+            else
+              _ActionRow(
+                icon: Icons.delete_forever_outlined,
+                title: 'Elimina account e dati',
+                detail: 'Operazione irreversibile protetta da conferma.',
+                destructive: true,
+                onTap: _showDeleteOrResetDialog,
+              ),
           ],
         ),
       ],
@@ -565,7 +622,19 @@ class _SettingsPageState extends ConsumerState<SettingsPage> {
     try {
       final image = await ImagePicker().pickImage(source: ImageSource.gallery);
       if (image == null || !mounted) return;
-      setState(() => _profileImage = File(image.path));
+      
+      final isPrivateMode = ref.read(activeDesktopDataModeProvider).isPrivate;
+      if (isPrivateMode) {
+        final supportDir = await getApplicationSupportDirectory();
+        final avatarDir = Directory(p.join(supportDir.path, 'private_profile'));
+        await avatarDir.create(recursive: true);
+        final avatarFile = File(p.join(avatarDir.path, 'avatar${p.extension(image.path)}'));
+        final selectedFile = await File(image.path).copy(avatarFile.path);
+        await ref.read(privateProfileProvider.notifier).updateAvatar(selectedFile.path);
+        setState(() => _profileImage = selectedFile);
+      } else {
+        setState(() => _profileImage = File(image.path));
+      }
     } catch (error, stack) {
       AppLogger.error('Unable to pick desktop avatar', error, stack);
       if (mounted) {
@@ -653,14 +722,11 @@ class _SettingsPageState extends ConsumerState<SettingsPage> {
   }
 
   Future<void> _resetTutorials() async {
-    final preferences = ref.read(sharedPreferencesProvider);
-    if (preferences != null) {
-      await Future.wait([
-        preferences.setBool('has_seen_tutorial', false),
-        preferences.setBool('has_seen_goals_tutorial', false),
-        preferences.setBool('has_seen_stats_tutorial', false),
-      ]);
-    }
+    await Future.wait([
+      ref.read(tutorialProvider.notifier).setTutorialSeen(false),
+      ref.read(goalsTutorialProvider.notifier).setTutorialSeen(false),
+      ref.read(statsTutorialProvider.notifier).setTutorialSeen(false),
+    ]);
     if (mounted) {
       _showGate(
         'Tutorial ripristinati',
@@ -769,6 +835,178 @@ class _SettingsPageState extends ConsumerState<SettingsPage> {
     } catch (error, stack) {
       AppLogger.error('Unable to delete desktop account', error, stack);
       if (mounted) _showGate('Elimina account', 'Operazione non riuscita.');
+    }
+  }
+
+
+  Future<void> _importData() async {
+    try {
+      final result = await FilePicker.platform.pickFiles(
+        type: FileType.custom,
+        allowedExtensions: ['zip'],
+      );
+
+      if (result == null || result.files.isEmpty) return;
+      final path = result.files.single.path;
+      if (path == null) return;
+
+      final isPrivateMode = ref.read(activeDesktopDataModeProvider) == DesktopDataMode.private;
+      if (!isPrivateMode) {
+        _showGate('Importa dati', 'La funzione di importazione è attualmente disponibile solo in Modalità Privata (Locale).');
+        return;
+      }
+
+      final privateStore = DesktopPrivateDb.instance;
+      final importService = DesktopBackupImportService(privateStore, null);
+
+      // 1. Preview
+      final preview = await importService.parseZipPreview(path);
+
+      if (!mounted) return;
+
+      // 2. Ask for Replace/Merge
+      bool replaceExisting = true;
+      final confirm = await showEvolveDialog<bool>(
+        context: context,
+        builder: (ctx) {
+          return StatefulBuilder(
+            builder: (context, setState) {
+              return AlertDialog(
+                backgroundColor: context.evolveColors.background,
+                title: Text(
+                  'Riepilogo Importazione',
+                  style: TextStyle(
+                    color: context.evolveColors.foreground,
+                    fontWeight: FontWeight.w600,
+                  ),
+                ),
+                content: SingleChildScrollView(
+                  child: Column(
+                    mainAxisSize: MainAxisSize.min,
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Text('• ${preview.habitsCount} Abitudini', style: TextStyle(color: context.evolveColors.foreground)),
+                      Text('• ${preview.logsCount} Check-in (Log)', style: TextStyle(color: context.evolveColors.foreground)),
+                      Text('• ${preview.macroGoalsCount} Obiettivi Macro', style: TextStyle(color: context.evolveColors.foreground)),
+                      Text('• ${preview.categoriesCount} Categorie', style: TextStyle(color: context.evolveColors.foreground)),
+                      Text('• ${preview.moodsCount} Registrazioni Umore', style: TextStyle(color: context.evolveColors.foreground)),
+                      const SizedBox(height: 24),
+                      RadioListTile<bool>(
+                        title: Text('Sostituisci i dati attuali', style: TextStyle(color: context.evolveColors.foreground)),
+                        subtitle: Text('Elimina tutti i dati locali esistenti prima di importare. (Consigliato)', style: TextStyle(color: context.evolveColors.foreground.withValues(alpha: 0.5), fontSize: 12)),
+                        value: true,
+                        groupValue: replaceExisting,
+                        activeColor: Theme.of(context).colorScheme.primary,
+                        onChanged: (val) => setState(() => replaceExisting = val!),
+                      ),
+                      RadioListTile<bool>(
+                        title: Text('Unisci ai dati attuali', style: TextStyle(color: context.evolveColors.foreground)),
+                        subtitle: Text('Aggiunge i dati importati senza eliminare nulla. Potrebbe causare duplicati.', style: TextStyle(color: context.evolveColors.foreground.withValues(alpha: 0.5), fontSize: 12)),
+                        value: false,
+                        groupValue: replaceExisting,
+                        activeColor: Theme.of(context).colorScheme.primary,
+                        onChanged: (val) => setState(() => replaceExisting = val!),
+                      ),
+                    ],
+                  ),
+                ),
+                actions: [
+                  TextButton(
+                    onPressed: () => Navigator.pop(ctx, false),
+                    child: Text(
+                      'Annulla',
+                      style: TextStyle(color: context.evolveColors.foreground.withValues(alpha: 0.5)),
+                    ),
+                  ),
+                  FilledButton(
+                    onPressed: () => Navigator.pop(ctx, true),
+                    child: const Text('Conferma Importazione'),
+                  ),
+                ],
+              );
+            },
+          );
+        },
+      );
+
+      if (confirm != true) return;
+      if (!mounted) return;
+
+      // 3. Execute
+      showDialog(
+        context: context,
+        barrierDismissible: false,
+        builder: (ctx) => Center(
+          child: Material(
+            color: Colors.transparent,
+            child: Container(
+              padding: const EdgeInsets.all(24),
+              decoration: BoxDecoration(
+                color: context.evolveColors.background,
+                borderRadius: BorderRadius.circular(16),
+              ),
+              child: const Column(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  CircularProgressIndicator(),
+                  SizedBox(height: 16),
+                  Text('Importazione in corso...'),
+                ],
+              ),
+            ),
+          ),
+        ),
+      );
+
+      await importService.executeImport(
+        rawData: preview.rawData,
+        replaceExisting: replaceExisting,
+        isPrivateMode: true,
+      );
+
+      if (!mounted) return;
+      Navigator.pop(context); // close loading
+
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text('Importazione completata con successo!'),
+          backgroundColor: Colors.green,
+        ),
+      );
+      
+      // Refresh dashboard
+      ref.invalidate(dashboardControllerProvider);
+
+    } catch (e, st) {
+      AppLogger.error('Errore durante importData', e, st);
+      if (!mounted) return;
+      // Close loading if still open
+      if (Navigator.canPop(context)) Navigator.pop(context);
+
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text('Errore durante importazione: $e'),
+          backgroundColor: Colors.red,
+        ),
+      );
+    }
+  }
+
+  Future<void> _deletePrivateData() async {
+    final confirmed = await _confirm(
+      title: 'Elimina dati privati',
+      message: 'Sei sicuro di voler eliminare tutto il database locale crittografato? Questa operazione è irreversibile e i dati non potranno essere recuperati.',
+      destructive: true,
+    );
+    if (!confirmed) return;
+    
+    try {
+      await DesktopPrivateDb.instance.deleteAll();
+      await ref.read(dashboardControllerProvider.notifier).resetData();
+      await ref.read(desktopAuthControllerProvider.notifier).goToLogin();
+    } catch (error, stack) {
+      AppLogger.error('Unable to delete private database', error, stack);
+      if (mounted) _showGate('Elimina dati privati', 'Operazione non riuscita.');
     }
   }
 
@@ -1453,18 +1691,22 @@ class _ProfileCard extends StatelessWidget {
     required this.image,
     required this.isPro,
     required this.onPickAvatar,
+    this.isPrivateMode = false,
+    this.privateProfile,
   });
 
   final User? user;
   final File? image;
   final bool isPro;
   final VoidCallback onPickAvatar;
+  final bool isPrivateMode;
+  final PrivateProfileState? privateProfile;
 
   @override
   Widget build(BuildContext context) {
     final metadata = user?.userMetadata;
-    final fullName = (metadata?['full_name'] as String?)?.trim();
-    final avatarUrl = metadata?['avatar_url'] as String?;
+    final fullName = isPrivateMode ? privateProfile?.fullName : (metadata?['full_name'] as String?)?.trim();
+    final avatarUrl = isPrivateMode ? privateProfile?.avatarPath : metadata?['avatar_url'] as String?;
     return Container(
       padding: const EdgeInsets.all(16),
       decoration: BoxDecoration(
@@ -1483,7 +1725,7 @@ class _ProfileCard extends StatelessWidget {
               backgroundImage: image != null
                   ? FileImage(image!)
                   : avatarUrl != null
-                  ? NetworkImage(avatarUrl)
+                  ? (isPrivateMode ? FileImage(File(avatarUrl)) : NetworkImage(avatarUrl)) as ImageProvider
                   : null,
               child: image == null && avatarUrl == null
                   ? Icon(
@@ -1499,9 +1741,11 @@ class _ProfileCard extends StatelessWidget {
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
                 Text(
-                  fullName?.isNotEmpty ?? false
-                      ? fullName!
-                      : user?.email?.split('@').first ?? 'Profilo',
+                  isPrivateMode
+                      ? 'Modalità Privata'
+                      : fullName?.isNotEmpty ?? false
+                          ? fullName!
+                          : user?.email?.split('@').first ?? 'Profilo',
                   style: TextStyle(
                     color: context.evolveColors.foreground,
                     fontSize: 15,
@@ -1510,7 +1754,9 @@ class _ProfileCard extends StatelessWidget {
                 ),
                 SizedBox(height: 4),
                 Text(
-                  user?.email ?? 'Sessione non disponibile',
+                  isPrivateMode 
+                      ? 'I tuoi dati sono protetti e salvati unicamente su questo dispositivo.'
+                      : user?.email ?? 'Sessione non disponibile',
                   style: TextStyle(
                     color: context.evolveColors.subtle,
                     fontSize: 12,
@@ -1756,13 +2002,20 @@ class _PersonalInfoDialogState extends ConsumerState<_PersonalInfoDialog> {
   @override
   void initState() {
     super.initState();
-    final user = ref.read(desktopAuthControllerProvider).user;
-    _nameController = TextEditingController(
-      text: user?.userMetadata?['full_name'] as String?,
-    );
-    _birthDateController = TextEditingController(
-      text: user?.userMetadata?['date_of_birth'] as String?,
-    );
+    final isPrivate = ref.read(activeDesktopDataModeProvider).isPrivate;
+    if (isPrivate) {
+      final profile = ref.read(privateProfileProvider).value;
+      _nameController = TextEditingController(text: profile?.fullName);
+      _birthDateController = TextEditingController(text: profile?.dateOfBirth);
+    } else {
+      final user = ref.read(desktopAuthControllerProvider).user;
+      _nameController = TextEditingController(
+        text: user?.userMetadata?['full_name'] as String?,
+      );
+      _birthDateController = TextEditingController(
+        text: user?.userMetadata?['date_of_birth'] as String?,
+      );
+    }
   }
 
   @override
@@ -1774,6 +2027,7 @@ class _PersonalInfoDialogState extends ConsumerState<_PersonalInfoDialog> {
 
   @override
   Widget build(BuildContext context) {
+    final isPrivate = ref.watch(activeDesktopDataModeProvider).isPrivate;
     final email = ref.watch(desktopAuthControllerProvider).user?.email;
     return EvolveAlertDialog(
       icon: Icons.person_outline_rounded,
@@ -1787,14 +2041,16 @@ class _PersonalInfoDialogState extends ConsumerState<_PersonalInfoDialog> {
               controller: _nameController,
               decoration: const InputDecoration(labelText: 'Nome completo'),
             ),
-            const SizedBox(height: 10),
-            TextField(
-              readOnly: true,
-              decoration: InputDecoration(
-                labelText: 'Email',
-                hintText: email ?? 'Sessione non disponibile',
+            if (!isPrivate) ...[
+              const SizedBox(height: 10),
+              TextField(
+                readOnly: true,
+                decoration: InputDecoration(
+                  labelText: 'Email',
+                  hintText: email ?? 'Sessione non disponibile',
+                ),
               ),
-            ),
+            ],
             const SizedBox(height: 10),
             TextField(
               controller: _birthDateController,
@@ -1833,9 +2089,16 @@ class _PersonalInfoDialogState extends ConsumerState<_PersonalInfoDialog> {
     }
     setState(() => _isSaving = true);
     try {
-      await ref
-          .read(desktopAuthControllerProvider.notifier)
-          .updatePersonalInfo(fullName: name, dateOfBirth: birthDate);
+      final isPrivate = ref.read(activeDesktopDataModeProvider).isPrivate;
+      if (isPrivate) {
+        await ref
+            .read(privateProfileProvider.notifier)
+            .updateProfile(fullName: name, dateOfBirth: birthDate);
+      } else {
+        await ref
+            .read(desktopAuthControllerProvider.notifier)
+            .updatePersonalInfo(fullName: name, dateOfBirth: birthDate);
+      }
       if (mounted) Navigator.pop(context);
     } catch (_) {
       if (mounted) setState(() => _isSaving = false);

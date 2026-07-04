@@ -4,8 +4,11 @@ import 'dart:io';
 
 import 'package:evolve_desktop/core/app_bootstrap.dart';
 import 'package:evolve_desktop/core/app_logger.dart';
+import 'package:evolve_desktop/core/desktop_data_mode.dart';
+import 'package:evolve_desktop/core/desktop_private_db.dart';
 import 'package:evolve_desktop/core/secure_storage_utils.dart';
 import 'package:evolve_desktop/features/auth/application/auth_controller.dart';
+import 'package:evolve_desktop/features/dashboard/data/private_dashboard_repository.dart';
 import 'package:evolve_desktop/features/dashboard/domain/dashboard_models.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
@@ -51,6 +54,15 @@ abstract class DashboardRepository {
 }
 
 final dashboardRepositoryProvider = Provider<DashboardRepository>((ref) {
+  final dataMode = ref.watch(activeDesktopDataModeProvider);
+
+  if (dataMode.isPrivate) {
+    // Private mode: use the local encrypted database.
+    // The owner ID is resolved asynchronously on first refresh; we provide a
+    // placeholder here that PrivateDashboardRepository will replace.
+    return _PrivateRepositoryProxy();
+  }
+
   final client = ref.watch(supabaseClientProvider);
   final userId = ref.watch(
     desktopAuthControllerProvider.select((state) => state.user?.id),
@@ -60,6 +72,112 @@ final dashboardRepositoryProvider = Provider<DashboardRepository>((ref) {
   }
   return SupabaseDashboardRepository(client: client, userId: userId);
 });
+
+/// A proxy that resolves the private owner ID lazily.  The provider is
+/// synchronous so we cannot `await` during construction; instead the
+/// first call to [refresh] bootstraps the real repository.
+class _PrivateRepositoryProxy extends DashboardRepository {
+  PrivateDashboardRepository? _inner;
+
+  @override
+  DashboardSnapshot load() => _inner?.load() ?? DashboardSnapshot.empty;
+
+  @override
+  Future<DashboardSnapshot> refresh() async {
+    _inner ??= PrivateDashboardRepository(
+      ownerId: await DesktopPrivateDb.instance.ownerId,
+    );
+    return _inner!.refresh();
+  }
+
+  @override
+  Future<void> save(DashboardSnapshot snapshot) async {
+    _inner ??= PrivateDashboardRepository(
+      ownerId: await DesktopPrivateDb.instance.ownerId,
+    );
+    await _inner!.save(snapshot);
+  }
+
+  @override
+  Future<DashboardHabit> createHabit(DashboardHabit habit) async {
+    _inner ??= PrivateDashboardRepository(
+      ownerId: await DesktopPrivateDb.instance.ownerId,
+    );
+    return _inner!.createHabit(habit);
+  }
+
+  @override
+  Future<void> updateHabit(DashboardHabit habit) async {
+    _inner ??= PrivateDashboardRepository(
+      ownerId: await DesktopPrivateDb.instance.ownerId,
+    );
+    await _inner!.updateHabit(habit);
+  }
+
+  @override
+  Future<void> deleteHabit(String id) async {
+    _inner ??= PrivateDashboardRepository(
+      ownerId: await DesktopPrivateDb.instance.ownerId,
+    );
+    await _inner!.deleteHabit(id);
+  }
+
+  @override
+  Future<String?> setHabitStatus({
+    required String habitId,
+    required DateTime date,
+    required String? currentStatus,
+  }) async {
+    _inner ??= PrivateDashboardRepository(
+      ownerId: await DesktopPrivateDb.instance.ownerId,
+    );
+    return _inner!.setHabitStatus(
+      habitId: habitId,
+      date: date,
+      currentStatus: currentStatus,
+    );
+  }
+
+  @override
+  Future<void> saveCheckIn(DateTime date, DailyCheckIn checkIn) async {
+    _inner ??= PrivateDashboardRepository(
+      ownerId: await DesktopPrivateDb.instance.ownerId,
+    );
+    await _inner!.saveCheckIn(date, checkIn);
+  }
+
+  @override
+  Future<DashboardGoal> createGoal(DashboardGoal goal) async {
+    _inner ??= PrivateDashboardRepository(
+      ownerId: await DesktopPrivateDb.instance.ownerId,
+    );
+    return _inner!.createGoal(goal);
+  }
+
+  @override
+  Future<void> updateGoal(DashboardGoal goal) async {
+    _inner ??= PrivateDashboardRepository(
+      ownerId: await DesktopPrivateDb.instance.ownerId,
+    );
+    await _inner!.updateGoal(goal);
+  }
+
+  @override
+  Future<void> deleteGoal(String id) async {
+    _inner ??= PrivateDashboardRepository(
+      ownerId: await DesktopPrivateDb.instance.ownerId,
+    );
+    await _inner!.deleteGoal(id);
+  }
+
+  @override
+  Future<void> resetData() async {
+    _inner ??= PrivateDashboardRepository(
+      ownerId: await DesktopPrivateDb.instance.ownerId,
+    );
+    await _inner!.resetData();
+  }
+}
 
 class UnavailableDashboardRepository extends DashboardRepository {
   @override

@@ -2,19 +2,127 @@ import 'dart:math' as math;
 
 import 'package:evolve_desktop/app/theme/evolve_theme.dart';
 import 'package:evolve_desktop/features/auth/application/auth_controller.dart';
+import 'package:evolve_desktop/features/settings/application/desktop_subscription_controller.dart';
+import 'package:evolve_desktop/core/app_bootstrap.dart';
+import 'package:evolve_desktop/core/tutorial_provider.dart';
 import 'package:evolve_desktop/features/dashboard/application/dashboard_controller.dart';
 import 'package:evolve_desktop/features/dashboard/domain/dashboard_models.dart';
 import 'package:evolve_desktop/shared/widgets/desktop_page.dart';
 import 'package:evolve_desktop/shared/widgets/evolve_dialog.dart';
 import 'package:evolve_desktop/shared/widgets/evolve_panel.dart';
+import 'package:evolve_desktop/features/dashboard/presentation/create_goal_dialog.dart';
+import 'package:evolve_desktop/features/dashboard/presentation/create_habit_dialog.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
-class DashboardPage extends ConsumerWidget {
+class DashboardPage extends ConsumerStatefulWidget {
   const DashboardPage({super.key});
 
   @override
-  Widget build(BuildContext context, WidgetRef ref) {
+  ConsumerState<DashboardPage> createState() => _DashboardPageState();
+}
+
+class _DashboardPageState extends ConsumerState<DashboardPage> {
+  bool _isRunningStartupOnboardingFlow = false;
+  bool _isNameDialogOpen = false;
+  bool _isWelcomeDialogOpen = false;
+
+  @override
+  void initState() {
+    super.initState();
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      _runStartupOnboardingFlow();
+    });
+  }
+
+  Future<void> _runStartupOnboardingFlow() async {
+    if (_isRunningStartupOnboardingFlow || !mounted) return;
+    _isRunningStartupOnboardingFlow = true;
+    try {
+      final isProfileReady = await _ensureProfileNameReady();
+      if (!isProfileReady || !mounted) return;
+      _checkTutorial();
+    } finally {
+      _isRunningStartupOnboardingFlow = false;
+    }
+  }
+
+  Future<bool> _ensureProfileNameReady() async {
+    final authState = ref.read(desktopAuthControllerProvider);
+    if (authState.user != null) return true; // Logged in user
+    
+    // Privacy mode
+    final prefs = ref.read(sharedPreferencesProvider);
+    final hasName = prefs?.getString('private_profile_name') != null;
+    if (hasName) return true;
+
+    return _showNameDialog();
+  }
+
+  Future<bool> _showNameDialog() async {
+    if (_isNameDialogOpen || !mounted) return false;
+    _isNameDialogOpen = true;
+    
+    bool result = false;
+    try {
+      result = await showEvolveDialog<bool>(
+        context: context,
+        barrierDismissible: false,
+        builder: (context) => const _NamePromptDialog(),
+      ) ?? false;
+    } finally {
+      _isNameDialogOpen = false;
+    }
+    return result;
+  }
+
+  void _checkTutorial() {
+    if (!mounted || _isWelcomeDialogOpen || _isNameDialogOpen) return;
+
+    final hasSeenTutorial = ref.read(tutorialProvider);
+    if (!hasSeenTutorial) {
+      _showWelcomeScreen();
+    }
+  }
+
+  Future<void> _showWelcomeScreen() async {
+    if (_isWelcomeDialogOpen || !mounted) return;
+    _isWelcomeDialogOpen = true;
+    
+    try {
+      await showEvolveDialog<bool>(
+        context: context,
+        barrierDismissible: false,
+        builder: (context) => EvolveAlertDialog(
+          icon: Icons.auto_awesome,
+          title: const Text('Benvenuto in Evolve'),
+          subtitle: 'Inizia il tuo percorso di crescita personale.',
+          content: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              const Text('Questa applicazione ti aiuta a costruire buone abitudini e raggiungere i tuoi obiettivi a lungo termine.'),
+              const SizedBox(height: 24),
+              SizedBox(
+                width: double.infinity,
+                child: FilledButton(
+                  onPressed: () {
+                    ref.read(tutorialProvider.notifier).setTutorialSeen(true);
+                    Navigator.pop(context);
+                  },
+                  child: const Text('Inizia'),
+                ),
+              ),
+            ],
+          ),
+        ),
+      );
+    } finally {
+      _isWelcomeDialogOpen = false;
+    }
+  }
+
+  @override
+  Widget build(BuildContext context) {
     final snapshot = ref.watch(dashboardControllerProvider);
     final user = ref.watch(desktopAuthControllerProvider).user;
 
@@ -394,11 +502,39 @@ class _HabitPanel extends ConsumerWidget {
           SectionHeading(
             title: 'Protocollo di oggi',
             subtitle: 'Completa le azioni essenziali prima di aggiungere altro',
-            trailing: StatusPill(label: '${snapshot.totalHabits} azioni'),
+            trailing: Row(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                StatusPill(label: '${snapshot.totalHabits} azioni'),
+                const SizedBox(width: 8),
+                IconButton(
+                  onPressed: () => showEvolveDialog<void>(
+                    context: context,
+                    builder: (context) => const CreateHabitDialog(),
+                  ),
+                  icon: const Icon(Icons.add_rounded, size: 20),
+                  tooltip: 'Nuova Abitudine',
+                  style: IconButton.styleFrom(
+                    backgroundColor: context.evolveColors.border.withValues(alpha: 0.3),
+                  ),
+                ),
+              ],
+            ),
           ),
           const SizedBox(height: 14),
-          for (final habit in snapshot.todayHabits)
-            _HabitRow(
+          if (snapshot.todayHabits.isEmpty)
+            Padding(
+              padding: const EdgeInsets.symmetric(vertical: 24),
+              child: Center(
+                child: Text(
+                  'Il tuo canvas è vuoto. Crea la tua prima abitudine.',
+                  style: TextStyle(color: context.evolveColors.foreground.withValues(alpha: 0.5), fontSize: 13),
+                ),
+              ),
+            )
+          else
+            for (final habit in snapshot.todayHabits)
+              _HabitRow(
               habit: habit,
               onTap: () => ref
                   .read(dashboardControllerProvider.notifier)
@@ -648,26 +784,59 @@ class _CheckInSlider extends StatelessWidget {
   }
 }
 
-class _FocusGoalsPanel extends StatelessWidget {
+class _FocusGoalsPanel extends ConsumerWidget {
   const _FocusGoalsPanel({required this.goals});
 
   final List<DashboardGoal> goals;
 
   @override
-  Widget build(BuildContext context) {
+  Widget build(BuildContext context, WidgetRef ref) {
     return EvolvePanel(
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          const SectionHeading(
+          SectionHeading(
             title: 'Obiettivi in focus',
             subtitle: 'Priorita correnti',
+            trailing: Builder(
+              builder: (context) => IconButton(
+                onPressed: () {
+                  final isPro = ref.read(desktopSubscriptionControllerProvider).isPro;
+                  if (!isPro && goals.length >= 100) {
+                    ScaffoldMessenger.of(context).showSnackBar(
+                      const SnackBar(content: Text('Limite di 100 obiettivi raggiunto. Passa a Pro per crearne altri.')),
+                    );
+                    return;
+                  }
+                  showEvolveDialog<void>(
+                    context: context,
+                    builder: (context) => const CreateGoalDialog(),
+                  );
+                },
+                icon: const Icon(Icons.add_rounded, size: 20),
+                tooltip: 'Nuovo Obiettivo',
+                style: IconButton.styleFrom(
+                  backgroundColor: context.evolveColors.border.withValues(alpha: 0.3),
+                ),
+              ),
+            ),
           ),
           const SizedBox(height: 16),
-          for (final goal in goals.take(3)) ...[
-            _GoalProgressRow(goal: goal),
-            if (goal != goals.take(3).last) const SizedBox(height: 15),
-          ],
+          if (goals.isEmpty)
+            Padding(
+              padding: const EdgeInsets.symmetric(vertical: 24),
+              child: Center(
+                child: Text(
+                  'Nessun obiettivo in focus. Aggiungine uno.',
+                  style: TextStyle(color: context.evolveColors.foreground.withValues(alpha: 0.5), fontSize: 13),
+                ),
+              ),
+            )
+          else
+            for (final goal in goals.take(3)) ...[
+              _GoalProgressRow(goal: goal),
+              if (goal != goals.take(3).last) const SizedBox(height: 15),
+            ],
         ],
       ),
     );
@@ -844,4 +1013,68 @@ String _greeting(Map<String, dynamic>? metadata, String? email) {
 String _signedPercentage(double value) {
   final percentage = (value * 100).round();
   return '${percentage > 0 ? '+' : ''}$percentage%';
+}
+
+class _NamePromptDialog extends StatefulWidget {
+  const _NamePromptDialog();
+
+  @override
+  State<_NamePromptDialog> createState() => _NamePromptDialogState();
+}
+
+class _NamePromptDialogState extends State<_NamePromptDialog> {
+  final _controller = TextEditingController();
+
+  @override
+  void dispose() {
+    _controller.dispose();
+    super.dispose();
+  }
+
+  void _submit(WidgetRef ref) {
+    final name = _controller.text.trim();
+    if (name.isEmpty) return;
+    ref.read(sharedPreferencesProvider)?.setString('private_profile_name', name);
+    Navigator.pop(context, true);
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return Consumer(
+      builder: (context, ref, child) {
+        return EvolveAlertDialog(
+          icon: Icons.person_outline,
+          title: const Text('Come ti chiami?'),
+          subtitle: 'Inserisci il tuo nome per personalizzare la dashboard.',
+          content: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              TextField(
+                controller: _controller,
+                autofocus: true,
+                decoration: InputDecoration(
+                  hintText: 'Es. Simo',
+                  filled: true,
+                  fillColor: Theme.of(context).colorScheme.surfaceContainerHighest.withValues(alpha: 0.3),
+                  border: OutlineInputBorder(
+                    borderRadius: BorderRadius.circular(12),
+                    borderSide: BorderSide.none,
+                  ),
+                ),
+                onSubmitted: (_) => _submit(ref),
+              ),
+              const SizedBox(height: 24),
+              SizedBox(
+                width: double.infinity,
+                child: FilledButton(
+                  onPressed: () => _submit(ref),
+                  child: const Text('Salva e continua'),
+                ),
+              ),
+            ],
+          ),
+        );
+      }
+    );
+  }
 }

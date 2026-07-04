@@ -2,6 +2,15 @@
 
 ## Recent Changes
 
+- [2026-07-04 14:45]: **Desktop Goals Interactive Tutorial Porting**
+  - *Details*: Ported the interactive interactive tutorial for the Macro Goals page (`GoalsPage`) from the Mobile implementation to the Desktop application, ensuring 100% coherence between platforms.
+  - *Tech Notes*:
+    - Implemented `tutorial_provider.dart` to manage state based on desktop context.
+    - Updated `_GoalsPageState` with GlobalKeys for target UI elements (`_planSelectorKey`, `_performanceToggleKey`, `_addGoalKey`, etc.).
+    - Ported `_GoalsTutorialScrimPainter` and `_GoalsTutorialStep` for the visual overlay and cutout.
+    - Added a "fake tutorial goal" in case the user has no active goals, so the action buttons can be highlighted properly during the tutorial.
+
+
 - [2026-06-30 22:21]: **App Version Increment**
   - *Details*: Incremented the app version from `1.0.5+9` to `1.0.6+10` in `pubspec.yaml` in preparation for the App Store release.
   - *Tech Notes*: Only `pubspec.yaml` was modified as iOS picks up the `FLUTTER_BUILD_NAME` and `FLUTTER_BUILD_NUMBER` automatically.
@@ -671,3 +680,27 @@ NEXT ACTION: Ensure device is running the latest built version of the codebase.
 - [2026-07-02]: App Store Connect 'What's New' Update
   - *Details*: Updated 'What's new in this version' to "Logs nelle impostazioni" across all supported App Store languages using Fastlane.
   - *Tech Notes*: Edited the translations dictionary in `ios/fastlane/Fastfile` and executed `fastlane update_notes`.
+
+- [2026-07-03 22:36]: **App Store Connect Metadata Translation & Upload**
+  - *Details*: Successfully downloaded current App Store Connect metadata to resolve name uniqueness conflicts, translated the release notes ("UI improvements") to 38 localized languages using Google Translate, and successfully uploaded the localized release notes to App Store Connect via Fastlane.
+  - *Tech Notes*: Downloaded true metadata using `fastlane deliver download_metadata`. Translated `release_notes.txt` iteratively with `deep_translator` for all locales in `fastlane/metadata`. Uploaded securely without duplicate name conflicts via `fastlane deliver --force`.
+
+- [2026-07-03 22:48]: **App Store Connect Metadata Translation & Upload**
+  - *Details*: Successfully downloaded current App Store Connect metadata to resolve name uniqueness conflicts, translated the release notes ("UI improvements") to 38 localized languages using Google Translate, and successfully uploaded the localized release notes to App Store Connect via Fastlane.
+  - *Tech Notes*: Downloaded true metadata using `fastlane deliver download_metadata`. Translated `release_notes.txt` iteratively with `deep_translator` for all locales in `fastlane/metadata`. Uploaded securely without duplicate name conflicts via `fastlane deliver --force`.
+
+- [2026-07-03 22:58]: **App Store Connect Metadata Translation & Upload**
+  - *Details*: Successfully downloaded current App Store Connect metadata to resolve name uniqueness conflicts, translated the release notes ("UI improvements") to 38 localized languages using Google Translate, and successfully uploaded the localized release notes to App Store Connect via Fastlane.
+  - *Tech Notes*: Downloaded true metadata using `fastlane deliver download_metadata`. Translated `release_notes.txt` iteratively with `deep_translator` for all locales in `fastlane/metadata`. Uploaded securely without duplicate name conflicts via `fastlane deliver --force`.
+
+- [2026-07-03]: Dashboard Porting (Privacy Mode Onboarding & Pro Limits)
+  - *Details*: Aligned the Desktop `DashboardPage` with the Mobile `HomeScreen` by porting the startup onboarding flow and `_NamePromptDialog` for Privacy Mode users. Added `100 goals` pro limits check and rich empty states.
+  - *Tech Notes*: Migrated `DashboardPage` to `ConsumerStatefulWidget`. Integrated `sharedPreferencesProvider`. Fixed widget signatures. No new dependencies.
+
+- [2026-07-03]: Data Import Feature (Privacy Mode)
+  - *Details*: Ported the Backup Import Service from mobile to Desktop, enabling Privacy Mode users to restore their local data via `.zip` files. Added the "Importa dati" UI flow to `settings_page.dart`.
+  - *Tech Notes*: Created `desktop_backup_import_service.dart`, integrated `file_picker` and `archive` in `pubspec.yaml`, injected `importData()` into `DesktopPrivateDb`, and copied `streak_utils.dart` to calculate streaks locally.
+
+- [2026-07-03]: AI Coach Feature Porting (Desktop)
+  - *Details*: Fully ported the AI Coach screen and logic from mobile into `desktop/lib/features/ai_coach`. The desktop app now features a live Markdown-powered chat capable of injecting the user's local dashboard state (Habits & Goals) directly into the system prompt.
+  - *Tech Notes*: Added `flutter_markdown` and `http` to pubspec. Created `ChatMessage` domain model. Ported `OpenRouterConfig` and `OpenRouterService`, adapting the streaming logic to the desktop environment. Rewrote `AiCoachPage` replacing the stub with a complete interactive chat UI holding local state.

@@ -147,9 +147,33 @@ class _DesktopAuthPageState extends ConsumerState<DesktopAuthPage> {
                             : 'Non hai un account? Registrati',
                       ),
                     ),
-                    TextButton(
+                    IconButton(
                       onPressed: _openPrivacyPolicy,
-                      child: const Text('Privacy policy'),
+                      icon: const Icon(Icons.privacy_tip_outlined, size: 18),
+                      tooltip: 'Privacy policy',
+                      color: context.evolveColors.subtle,
+                    ),
+                    const SizedBox(height: 14),
+                    _AuthDivider(label: 'Oppure'),
+                    const SizedBox(height: 14),
+                    OutlinedButton.icon(
+                      onPressed: auth.isLoading ? null : _enterPrivateMode,
+                      icon: Icon(
+                        Icons.shield_outlined,
+                        size: 18,
+                        color: context.evolveColors.subtle,
+                      ),
+                      label: const Text(
+                        'Continua in modalità privata su questo Mac',
+                      ),
+                      style: OutlinedButton.styleFrom(
+                        alignment: Alignment.center,
+                        foregroundColor: context.evolveColors.foreground,
+                        side: BorderSide(
+                          color: context.evolveColors.border,
+                        ),
+                        minimumSize: const Size.fromHeight(44),
+                      ),
                     ),
                   ],
                 ),
@@ -207,6 +231,10 @@ class _DesktopAuthPageState extends ConsumerState<DesktopAuthPage> {
       Uri.parse('https://simo-hue.github.io/evolve/privacy.html'),
       mode: LaunchMode.externalApplication,
     );
+  }
+
+  Future<void> _enterPrivateMode() async {
+    await ref.read(desktopAuthControllerProvider.notifier).enterPrivateMode();
   }
 
   void _showMessage(String message) {

@@ -626,6 +626,7 @@ class _Translations$habitsPage$ar extends Translations$habitsPage$en {
 	@override String get catEducation => 'التعليم';
 	@override String get catHealth => 'الصحة';
 	@override String get catMindfulness => 'اليقظة الذهنية';
+	@override String get editableHint => 'يمكن تعديل اليوم والأمس فقط.';
 }
 
 // Path: goalsPage
@@ -1635,6 +1636,7 @@ extension on TranslationsAr {
 			'habitsPage.catEducation' => 'التعليم',
 			'habitsPage.catHealth' => 'الصحة',
 			'habitsPage.catMindfulness' => 'اليقظة الذهنية',
+			'habitsPage.editableHint' => 'يمكن تعديل اليوم والأمس فقط.',
 			'lavoro' => 'العمل',
 			'salute' => 'الصحة',
 			'finanza' => 'المال',
@@ -1752,9 +1754,9 @@ extension on TranslationsAr {
 			'aiCoach.completedGoalsCount' => ({required Object count}) => '- الأهداف المكتملة: ${count}',
 			'aiCoach.todayCompletion' => ({required Object completed, required Object total}) => '- عادات اليوم: ${completed} مكتملة من أصل ${total}.',
 			'settingsPage.account' => 'الحساب',
-			'settingsPage.notifications' => 'الإشعارات',
 			_ => null,
 		} ?? switch (path) {
+			'settingsPage.notifications' => 'الإشعارات',
 			'settingsPage.language' => 'اللغة',
 			'settingsPage.timeFormat24h' => 'تنسيق 24 ساعة',
 			'settingsPage.subscription' => 'الاشتراك',

@@ -441,7 +441,8 @@
     "catProductivity": "Produttività",
     "catEducation": "Formazione",
     "catHealth": "Salute",
-    "catMindfulness": "Mindfulness"
+    "catMindfulness": "Mindfulness",
+    "editableHint": "Puoi modificare solo oggi e ieri."
   },
   "lavoro": "Lavoro",
   "salute": "Salute",

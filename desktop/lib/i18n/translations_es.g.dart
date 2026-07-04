@@ -626,6 +626,7 @@ class _Translations$habitsPage$es extends Translations$habitsPage$en {
 	@override String get catEducation => 'Formación';
 	@override String get catHealth => 'Salud';
 	@override String get catMindfulness => 'Mindfulness';
+	@override String get editableHint => 'Solo se pueden editar hoy y ayer.';
 }
 
 // Path: goalsPage
@@ -1635,6 +1636,7 @@ extension on TranslationsEs {
 			'habitsPage.catEducation' => 'Formación',
 			'habitsPage.catHealth' => 'Salud',
 			'habitsPage.catMindfulness' => 'Mindfulness',
+			'habitsPage.editableHint' => 'Solo se pueden editar hoy y ayer.',
 			'lavoro' => 'Trabajo',
 			'salute' => 'Salud',
 			'finanza' => 'Finanzas',
@@ -1752,9 +1754,9 @@ extension on TranslationsEs {
 			'aiCoach.completedGoalsCount' => ({required Object count}) => '- Objetivos completados: ${count}',
 			'aiCoach.todayCompletion' => ({required Object completed, required Object total}) => '- Hábitos de hoy: ${completed} completados de ${total} en total.',
 			'settingsPage.account' => 'Cuenta',
-			'settingsPage.notifications' => 'Notificaciones',
 			_ => null,
 		} ?? switch (path) {
+			'settingsPage.notifications' => 'Notificaciones',
 			'settingsPage.language' => 'Idioma',
 			'settingsPage.timeFormat24h' => 'Formato 24h',
 			'settingsPage.subscription' => 'Suscripción',

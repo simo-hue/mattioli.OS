@@ -8,6 +8,7 @@ import 'package:evolve_desktop/features/settings/application/desktop_subscriptio
 import 'package:evolve_desktop/features/settings/presentation/pro_features_modal.dart';
 import 'package:evolve_desktop/i18n/translations.g.dart';
 import 'package:evolve_desktop/core/rtl.dart';
+import 'package:evolve_desktop/shared/widgets/color_picker_dialog.dart';
 import 'package:evolve_desktop/shared/widgets/desktop_page.dart';
 import 'package:evolve_desktop/shared/widgets/evolve_dialog.dart';
 import 'goals_stats_view.dart';
@@ -1904,6 +1905,7 @@ class _CategoryEditorDialogState extends State<_CategoryEditorDialog> {
             const SizedBox(height: 14),
             Wrap(
               spacing: 9,
+              runSpacing: 9,
               children: [
                 for (final color in _goalColors)
                   InkWell(
@@ -1916,6 +1918,12 @@ class _CategoryEditorDialogState extends State<_CategoryEditorDialog> {
                           : null,
                     ),
                   ),
+                CustomColorSwatch(
+                  size: 24,
+                  initial: _color,
+                  isSelected: !_goalColors.contains(_color),
+                  onPicked: (color) => setState(() => _color = color),
+                ),
               ],
             ),
           ],

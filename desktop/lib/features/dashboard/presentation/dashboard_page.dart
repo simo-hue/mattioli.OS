@@ -851,6 +851,15 @@ class _DailyCheckInDialogState extends ConsumerState<_DailyCheckInDialog> {
   }
 }
 
+/// Emoji feedback for a 0–10 mood/energy value (mirrors the mobile check-in).
+String _checkInEmoji(int value) {
+  if (value <= 2) return '😞';
+  if (value <= 4) return '😕';
+  if (value <= 6) return '😐';
+  if (value <= 8) return '🙂';
+  return '😄';
+}
+
 class _CheckInSlider extends StatelessWidget {
   const _CheckInSlider({
     required this.label,
@@ -876,6 +885,11 @@ class _CheckInSlider extends StatelessWidget {
                 style: Theme.of(context).textTheme.titleMedium,
               ),
             ),
+            Text(
+              _checkInEmoji(value.round()),
+              style: const TextStyle(fontSize: 16),
+            ),
+            const SizedBox(width: 8),
             Text(
               '${value.round()}/10',
               style: TextStyle(color: color, fontWeight: FontWeight.w800),

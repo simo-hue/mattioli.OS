@@ -214,3 +214,15 @@ Everything from this pass is landed and verified together:
 - **Consent screen** (`consent_page.dart`, grill decision = add both): added a **notification-permission card** (`Enable` → `DesktopNotificationService.requestPermissions()`, shows a granted state) and a **Terms-of-Service link** alongside the existing privacy link (both open the app's single legal page via `url_launcher`, mirroring mobile's combined "terms & privacy" resource). Password min stays **8** (grilled — intentional divergence, no change).
 - **i18n**: `consentPage.openTerms`/`notificationsTitle`/`notificationsSubtitle`/`enableNotifications`/`notificationsEnabled` (5 locales). `dart run slang` regenerated.
 - **Verification**: `flutter analyze lib` → **0 errors** (11 pre-existing infos); `flutter test` → green except the environmental Supabase-config test. A 1-lens review of the cloud write returned 2 LOW findings (unpaginated fetch — pre-existing app-wide, mitigated by DESC order; no offline queue — accepted).
+
+## [2026-07-05]: BACKLOG Item 8 — Cleanup batch (part 3: color picker + check-in emoji + day-details) — **Item 8 & backlog COMPLETE**
+*Details*: The final three UI-polish sub-items, completing Item 8 and the whole feature-parity backlog.
+*Tech Notes*:
+- **Full color picker** (`shared/widgets/color_picker_dialog.dart`, new): `showEvolveColorPicker(context, initial)` (reuses the `flutter_colorpicker` `ColorPicker` in an `EvolveAlertDialog` — the dep was already present) + `CustomColorSwatch` (rainbow tile, `size` param, highlighted when the current selection isn't a preset). Added the custom swatch to the preset grids in **create-habit**, **create-goal** (32px), and **`_CategoryEditorDialog`** (24px); picking sets the dialog's selected color, which flows through the existing create/update paths.
+- **Check-in emoji feedback** (`dashboard_page._CheckInSlider`): each mood/energy slider now shows a face emoji for its 0–10 value via the pure `_checkInEmoji` (no i18n — emoji are locale-independent).
+- **Day-details dialog** (`habits_page._DayDetailsDialog`): each habit row gained a **🔥 streak badge** (`secondary`), and an **"editable only today/yesterday" hint** (`habitsPage.editableHint`) shows when the day isn't editable (the edit-gating via `_canEditDate` already existed).
+- **i18n**: `habitsPage.editableHint` (5 locales). `dart run slang` regenerated.
+- **Verification**: `flutter analyze lib` → **0 errors** (11 pre-existing infos); `flutter test` → green except the environmental Supabase-config test. A 1-lens adversarial review returned **zero findings**.
+
+### BACKLOG COMPLETE
+All 8 desktop feature-parity backlog items are implemented, localized (en/it/es/de/ar), analyzed (0 errors), tested, adversarially reviewed, and committed. `flutter analyze lib` → **0 errors** (11 pre-existing infos, down from 12); `flutter test` → all green except the one environmental `desktop_supabase_config_security_test` (needs a `--dart-define` Supabase config; fails identically on unmodified code).

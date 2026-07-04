@@ -3,6 +3,7 @@ import 'package:evolve_desktop/core/macro_goal_calendar.dart';
 import 'package:evolve_desktop/features/dashboard/application/dashboard_controller.dart';
 import 'package:evolve_desktop/features/dashboard/domain/dashboard_models.dart';
 import 'package:evolve_desktop/i18n/translations.g.dart';
+import 'package:evolve_desktop/shared/widgets/color_picker_dialog.dart';
 import 'package:evolve_desktop/shared/widgets/evolve_dialog.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
@@ -168,26 +169,32 @@ class _CreateGoalDialogState extends ConsumerState<CreateGoalDialog> {
           const SizedBox(height: 8),
           Wrap(
             spacing: 8,
-            children: _colors.map((color) {
-              final isSelected = _selectedColor == color;
-              return GestureDetector(
-                onTap: () => setState(() => _selectedColor = color),
-                child: Container(
-                  width: 32,
-                  height: 32,
-                  decoration: BoxDecoration(
-                    color: color,
-                    shape: BoxShape.circle,
-                    border: isSelected
-                        ? Border.all(
-                            color: context.evolveColors.foreground,
-                            width: 2,
-                          )
-                        : null,
+            runSpacing: 8,
+            children: [
+              for (final color in _colors)
+                GestureDetector(
+                  onTap: () => setState(() => _selectedColor = color),
+                  child: Container(
+                    width: 32,
+                    height: 32,
+                    decoration: BoxDecoration(
+                      color: color,
+                      shape: BoxShape.circle,
+                      border: _selectedColor == color
+                          ? Border.all(
+                              color: context.evolveColors.foreground,
+                              width: 2,
+                            )
+                          : null,
+                    ),
                   ),
                 ),
-              );
-            }).toList(),
+              CustomColorSwatch(
+                initial: _selectedColor,
+                isSelected: !_colors.contains(_selectedColor),
+                onPicked: (color) => setState(() => _selectedColor = color),
+              ),
+            ],
           ),
         ],
       ),

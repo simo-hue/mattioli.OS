@@ -1008,11 +1008,44 @@ class _DayDetailsDialog extends ConsumerWidget {
       subtitle: t.habitsPage.dayDetailSubtitle,
       content: Column(
         mainAxisSize: MainAxisSize.min,
+        crossAxisAlignment: CrossAxisAlignment.start,
         children: [
+          if (!_canEditDate(date))
+            Padding(
+              padding: const EdgeInsets.only(bottom: 6),
+              child: Row(
+                children: [
+                  Icon(
+                    Icons.lock_clock_outlined,
+                    size: 14,
+                    color: context.evolveColors.muted,
+                  ),
+                  const SizedBox(width: 6),
+                  Expanded(
+                    child: Text(
+                      t.habitsPage.editableHint,
+                      style: TextStyle(
+                        color: context.evolveColors.muted,
+                        fontSize: 12,
+                        fontStyle: FontStyle.italic,
+                      ),
+                    ),
+                  ),
+                ],
+              ),
+            ),
           for (final habit in snapshot.habitsFor(date))
             CheckboxListTile(
               dense: true,
               contentPadding: EdgeInsets.zero,
+              secondary: Text(
+                '🔥 ${habit.streak}',
+                style: const TextStyle(
+                  color: EvolveColors.amber,
+                  fontSize: 12,
+                  fontWeight: FontWeight.w700,
+                ),
+              ),
               title: Text(habit.title),
               subtitle: Text(
                 _habitStatusLabel(snapshot, habit.id, date, habit),

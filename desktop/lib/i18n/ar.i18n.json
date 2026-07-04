@@ -441,7 +441,8 @@
     "catProductivity": "الإنتاجية",
     "catEducation": "التعليم",
     "catHealth": "الصحة",
-    "catMindfulness": "اليقظة الذهنية"
+    "catMindfulness": "اليقظة الذهنية",
+    "editableHint": "يمكن تعديل اليوم والأمس فقط."
   },
   "lavoro": "العمل",
   "salute": "الصحة",

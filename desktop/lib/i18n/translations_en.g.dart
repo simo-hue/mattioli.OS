@@ -1340,6 +1340,9 @@ class Translations$habitsPage$en {
 
 	/// en: 'Mindfulness'
 	String get catMindfulness => 'Mindfulness';
+
+	/// en: 'Only today and yesterday can be edited.'
+	String get editableHint => 'Only today and yesterday can be edited.';
 }
 
 // Path: goalsPage
@@ -3142,6 +3145,7 @@ extension on Translations {
 			'habitsPage.catEducation' => 'Education',
 			'habitsPage.catHealth' => 'Health',
 			'habitsPage.catMindfulness' => 'Mindfulness',
+			'habitsPage.editableHint' => 'Only today and yesterday can be edited.',
 			'lavoro' => 'Work',
 			'salute' => 'Health',
 			'finanza' => 'Finance',
@@ -3259,9 +3263,9 @@ extension on Translations {
 			'aiCoach.completedGoalsCount' => ({required Object count}) => '- Completed goals: ${count}',
 			'aiCoach.todayCompletion' => ({required Object completed, required Object total}) => '- Habits today: ${completed} completed out of ${total} total.',
 			'settingsPage.account' => 'Account',
-			'settingsPage.notifications' => 'Notifications',
 			_ => null,
 		} ?? switch (path) {
+			'settingsPage.notifications' => 'Notifications',
 			'settingsPage.language' => 'Language',
 			'settingsPage.timeFormat24h' => '24h Format',
 			'settingsPage.subscription' => 'Subscription',

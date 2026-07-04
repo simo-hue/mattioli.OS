@@ -615,6 +615,7 @@ class _HabitPanel extends ConsumerWidget {
             for (final habit in snapshot.todayHabits)
               _HabitRow(
                 habit: habit,
+                status: snapshot.habitStatusFor(habit.id, DateTime.now()),
                 onTap: () => ref
                     .read(dashboardControllerProvider.notifier)
                     .toggleHabit(habit.id),
@@ -626,14 +627,19 @@ class _HabitPanel extends ConsumerWidget {
 }
 
 class _HabitRow extends StatelessWidget {
-  const _HabitRow({required this.habit, required this.onTap});
+  const _HabitRow({required this.habit, required this.onTap, this.status});
 
   final DashboardHabit habit;
+
+  /// Today's log status: 'done', 'missed', or null (untracked). Drives the
+  /// tri-state indicator (tapping cycles untracked → done → missed → untracked).
+  final String? status;
   final VoidCallback onTap;
 
   @override
   Widget build(BuildContext context) {
-    final isDone = habit.state == HabitState.completed;
+    final isDone = status == 'done';
+    final isMissed = status == 'missed';
 
     return InkWell(
       onTap: onTap,
@@ -651,6 +657,8 @@ class _HabitRow extends StatelessWidget {
                 border: Border.all(
                   color: isDone
                       ? habit.color
+                      : isMissed
+                      ? EvolveColors.rose
                       : context.evolveColors.borderStrong,
                 ),
                 borderRadius: BorderRadius.circular(7),
@@ -660,6 +668,12 @@ class _HabitRow extends StatelessWidget {
                       Icons.check_rounded,
                       color: Color(0xFF092113),
                       size: 16,
+                    )
+                  : isMissed
+                  ? const Icon(
+                      Icons.close_rounded,
+                      color: EvolveColors.rose,
+                      size: 15,
                     )
                   : null,
             ),

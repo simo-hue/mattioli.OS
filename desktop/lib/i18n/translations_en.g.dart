@@ -1192,6 +1192,18 @@ class Translations$stats$en {
 
 	/// en: '{rate}% success'
 	String successRate({required Object rate}) => '${rate}% success';
+
+	/// en: 'Rate'
+	String get sortRate => 'Rate';
+
+	/// en: 'Streak'
+	String get sortStreak => 'Streak';
+
+	/// en: 'Name'
+	String get sortName => 'Name';
+
+	/// en: 'Worst'
+	String get worstStreakLabel => 'Worst';
 }
 
 // Path: habitsPage
@@ -3065,6 +3077,10 @@ extension on Translations {
 			'stats.failureDetail' => ({required Object streak, required Object frequency}) => 'Worst streak: ${streak}d · ~${frequency}/month missed',
 			'stats.recoveryDetail' => ({required Object days}) => 'Average recovery time: ${days} days',
 			'stats.successRate' => ({required Object rate}) => '${rate}% success',
+			'stats.sortRate' => 'Rate',
+			'stats.sortStreak' => 'Streak',
+			'stats.sortName' => 'Name',
+			'stats.worstStreakLabel' => 'Worst',
 			'habitsPage.today' => 'Today',
 			'habitsPage.subtitle' => 'Build your daily protocol and watch consistency over time.',
 			'habitsPage.tabProtocol' => 'Protocol',
@@ -3229,12 +3245,12 @@ extension on Translations {
 			'aiCoach.todayCompletion' => ({required Object completed, required Object total}) => '- Habits today: ${completed} completed out of ${total} total.',
 			'settingsPage.account' => 'Account',
 			'settingsPage.notifications' => 'Notifications',
+			_ => null,
+		} ?? switch (path) {
 			'settingsPage.language' => 'Language',
 			'settingsPage.timeFormat24h' => '24h Format',
 			'settingsPage.subscription' => 'Subscription',
 			'settingsPage.proName' => 'Evolve Pro',
-			_ => null,
-		} ?? switch (path) {
 			'settingsPage.planMonthly' => 'Monthly',
 			'settingsPage.planAnnual' => 'Annual',
 			'settingsPage.restorePurchases' => 'Restore purchases',

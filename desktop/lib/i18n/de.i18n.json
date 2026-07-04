@@ -387,7 +387,11 @@
     "blackDayDetail": "Schwarzer Tag: {day}",
     "failureDetail": "Schlimmste Serie: {streak}T · ~{frequency}/Monat verpasst",
     "recoveryDetail": "Durchschnittliche Erholungszeit: {days} Tage",
-    "successRate": "{rate}% Erfolg"
+    "successRate": "{rate}% Erfolg",
+    "sortRate": "Quote",
+    "sortStreak": "Serie",
+    "sortName": "Name",
+    "worstStreakLabel": "Schlechteste"
   },
   "habitsPage": {
     "today": "Heute",

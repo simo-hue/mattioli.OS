@@ -1,7 +1,9 @@
 import 'package:evolve_desktop/app/theme/evolve_theme.dart';
 import 'package:evolve_desktop/core/macro_goal_calendar.dart';
 import 'package:evolve_desktop/core/app_bootstrap.dart';
+import 'package:evolve_desktop/core/desktop_data_mode.dart';
 import 'package:evolve_desktop/features/auth/application/auth_controller.dart';
+import 'package:evolve_desktop/features/auth/application/desktop_profile_controller.dart';
 import 'package:evolve_desktop/features/dashboard/application/dashboard_controller.dart';
 import 'package:evolve_desktop/features/dashboard/domain/dashboard_models.dart';
 import 'package:evolve_desktop/i18n/translations.g.dart';
@@ -871,13 +873,20 @@ class _LifeCalendar extends ConsumerWidget {
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
-    final metadata = ref
-        .watch(desktopAuthControllerProvider)
-        .user
-        ?.userMetadata;
-    final birthDate =
-        DateTime.tryParse(metadata?['date_of_birth'] as String? ?? '') ??
-        DateTime(2003);
+    // Private mode has no Supabase user; read the date of birth from the
+    // encrypted private profile instead of defaulting everyone to 2003.
+    final isPrivate = ref.watch(activeDesktopDataModeProvider).isPrivate;
+    final String? dobString;
+    if (isPrivate) {
+      dobString = ref.watch(privateProfileProvider).value?.dateOfBirth;
+    } else {
+      final metadata = ref
+          .watch(desktopAuthControllerProvider)
+          .user
+          ?.userMetadata;
+      dobString = metadata?['date_of_birth'] as String?;
+    }
+    final birthDate = DateTime.tryParse(dobString ?? '') ?? DateTime(2003);
     final now = DateTime.now();
     const years = 85;
     final totalMonths = years * 12;

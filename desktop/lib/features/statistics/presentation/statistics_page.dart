@@ -629,13 +629,45 @@ class _AlertsSection extends StatelessWidget {
   }
 }
 
-class _GlobalHabits extends StatelessWidget {
+enum _HabitSort { rate, streak, name }
+
+class _GlobalHabits extends ConsumerStatefulWidget {
   const _GlobalHabits({required this.snapshot});
 
   final DashboardSnapshot snapshot;
 
   @override
+  ConsumerState<_GlobalHabits> createState() => _GlobalHabitsState();
+}
+
+class _GlobalHabitsState extends ConsumerState<_GlobalHabits> {
+  _HabitSort _sort = _HabitSort.rate;
+
+  String _sortLabel(_HabitSort s) => switch (s) {
+    _HabitSort.rate => t.stats.sortRate,
+    _HabitSort.streak => t.stats.sortStreak,
+    _HabitSort.name => t.stats.sortName,
+  };
+
+  int _compare(Map<String, dynamic> a, Map<String, dynamic> b) =>
+      switch (_sort) {
+        _HabitSort.rate => ((b['rate'] as num?) ?? 0).compareTo(
+          (a['rate'] as num?) ?? 0,
+        ),
+        _HabitSort.streak => ((b['best_streak'] as num?) ?? 0).compareTo(
+          (a['best_streak'] as num?) ?? 0,
+        ),
+        _HabitSort.name =>
+          ((a['title'] as String?) ?? '').toLowerCase().compareTo(
+            ((b['title'] as String?) ?? '').toLowerCase(),
+          ),
+      };
+
+  @override
   Widget build(BuildContext context) {
+    final statsAsync = ref.watch(habitStatsRpcProvider);
+    final habitsById = {for (final h in widget.snapshot.habits) h.id: h};
+
     return EvolvePanel(
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
@@ -644,13 +676,145 @@ class _GlobalHabits extends StatelessWidget {
             title: t.stats.performancePerHabit,
             subtitle: t.stats.performancePerHabitSubtitle,
           ),
+          const SizedBox(height: 12),
+          Wrap(
+            spacing: 8,
+            children: [
+              for (final s in _HabitSort.values)
+                ChoiceChip(
+                  label: Text(_sortLabel(s)),
+                  selected: _sort == s,
+                  onSelected: (_) => setState(() => _sort = s),
+                ),
+            ],
+          ),
           const SizedBox(height: 15),
-          for (final habit in snapshot.habits) ...[
-            _HabitPerformanceRow(habit: habit),
-            if (habit != snapshot.habits.last) const Divider(height: 22),
-          ],
+          statsAsync.when(
+            loading: () => const Padding(
+              padding: EdgeInsets.symmetric(vertical: 24),
+              child: Center(child: CircularProgressIndicator()),
+            ),
+            error: (_, _) => Text(
+              t.stats.createHabitForAnalysis,
+              style: Theme.of(context).textTheme.bodyMedium,
+            ),
+            data: (rows) {
+              if (rows.isEmpty) {
+                return Text(
+                  t.stats.createHabitForAnalysis,
+                  style: Theme.of(context).textTheme.bodyMedium,
+                );
+              }
+              final sorted = [...rows]..sort(_compare);
+              return Column(
+                children: [
+                  for (final row in sorted) ...[
+                    _HabitStatsRow(
+                      row: row,
+                      color:
+                          habitsById[row['goal_id']]?.color ??
+                          context.evolveAccent,
+                    ),
+                    if (row != sorted.last) const Divider(height: 22),
+                  ],
+                ],
+              );
+            },
+          ),
         ],
       ),
+    );
+  }
+}
+
+class _HabitStatsRow extends StatelessWidget {
+  const _HabitStatsRow({required this.row, required this.color});
+
+  final Map<String, dynamic> row;
+  final Color color;
+
+  @override
+  Widget build(BuildContext context) {
+    final rate = ((row['rate'] as num?) ?? 0).toDouble();
+    final best = ((row['best_streak'] as num?) ?? 0).toInt();
+    final worst = ((row['worst_streak'] as num?) ?? 0).toInt();
+    final title = (row['title'] as String?) ?? '';
+    return Row(
+      children: [
+        Container(
+          width: 9,
+          height: 9,
+          decoration: BoxDecoration(color: color, shape: BoxShape.circle),
+        ),
+        const SizedBox(width: 11),
+        Expanded(
+          child: Text(title, maxLines: 1, overflow: TextOverflow.ellipsis),
+        ),
+        SizedBox(
+          width: 150,
+          child: LinearProgressIndicator(
+            value: (rate / 100).clamp(0, 1),
+            minHeight: 6,
+            color: color,
+            backgroundColor: context.evolveColors.panelSoft,
+            borderRadius: BorderRadius.circular(8),
+          ),
+        ),
+        const SizedBox(width: 12),
+        SizedBox(
+          width: 42,
+          child: Text('${rate.round()}%', textAlign: TextAlign.end),
+        ),
+        const SizedBox(width: 16),
+        _StatBadge(
+          label: t.stats.bestStreakLabel,
+          value: '$best',
+          color: EvolveColors.amber,
+        ),
+        const SizedBox(width: 12),
+        _StatBadge(
+          label: t.stats.worstStreakLabel,
+          value: '$worst',
+          color: EvolveColors.rose,
+        ),
+      ],
+    );
+  }
+}
+
+class _StatBadge extends StatelessWidget {
+  const _StatBadge({
+    required this.label,
+    required this.value,
+    required this.color,
+  });
+
+  final String label;
+  final String value;
+  final Color color;
+
+  @override
+  Widget build(BuildContext context) {
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.end,
+      children: [
+        Text(
+          value,
+          style: TextStyle(
+            color: color,
+            fontSize: 13,
+            fontWeight: FontWeight.w800,
+          ),
+        ),
+        Text(
+          label,
+          style: TextStyle(
+            color: context.evolveColors.subtle,
+            fontSize: 9,
+            fontWeight: FontWeight.w700,
+          ),
+        ),
+      ],
     );
   }
 }
@@ -867,6 +1031,26 @@ class _GridLegend extends StatelessWidget {
   }
 }
 
+/// Yearly per-day statuses for a habit (1=done, 2=missed, 0=untracked) over the
+/// last 365 days — the same encoding as `computeYearlyGrid`, derived from the
+/// snapshot when the RPC/local grid isn't available.
+List<int> _habitYearlyStatuses(DashboardSnapshot snapshot, String habitId) {
+  final today = DateTime.now();
+  final start = DateTime(
+    today.year,
+    today.month,
+    today.day,
+  ).subtract(const Duration(days: 364));
+  return [
+    for (var i = 0; i < 365; i++)
+      switch (snapshot.habitStatusFor(habitId, start.add(Duration(days: i)))) {
+        'done' => 1,
+        'missed' => 2,
+        _ => 0,
+      },
+  ];
+}
+
 class _HabitCalendar extends ConsumerWidget {
   const _HabitCalendar({required this.habit, required this.snapshot});
 
@@ -876,13 +1060,141 @@ class _HabitCalendar extends ConsumerWidget {
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final yearlyGrid = ref.watch(habitYearlyGridRpcProvider(habit.id)).value;
-    return _HeatmapPanel(
+    final statuses = (yearlyGrid == null || yearlyGrid.isEmpty)
+        ? _habitYearlyStatuses(snapshot, habit.id)
+        : yearlyGrid;
+    return _YearlyHabitHeatmap(
       title: t.stats.yearlyCalendar,
       subtitle: t.stats.yearlyCalendarSubtitle(habit: habit.title),
       color: habit.color,
-      values: yearlyGrid == null || yearlyGrid.isEmpty
-          ? _habitActivityValues(snapshot, habit.id, 280)
-          : yearlyGrid.map((status) => status == 1 ? 1.0 : 0.0).toList(),
+      statuses: statuses,
+    );
+  }
+}
+
+/// Yearly heatmap that distinguishes **completed** (habit color), **missed**
+/// (rose) and **untracked** (faint), with a completed/missed/rate summary —
+/// mirrors mobile's calendar tab (the old panel collapsed missed into untracked
+/// and lost the red-miss + summary).
+class _YearlyHabitHeatmap extends StatelessWidget {
+  const _YearlyHabitHeatmap({
+    required this.title,
+    required this.subtitle,
+    required this.color,
+    required this.statuses,
+  });
+
+  final String title;
+  final String subtitle;
+  final Color color;
+  final List<int> statuses;
+
+  @override
+  Widget build(BuildContext context) {
+    final completed = statuses.where((s) => s == 1).length;
+    final missed = statuses.where((s) => s == 2).length;
+    final tracked = completed + missed;
+    final rate = tracked == 0 ? 0 : (completed * 100 / tracked).round();
+
+    return EvolvePanel(
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          SectionHeading(title: title, subtitle: subtitle),
+          const SizedBox(height: 14),
+          Row(
+            children: [
+              _CalendarSummaryStat(
+                value: '$completed',
+                label: t.statistics.completed2,
+                color: color,
+              ),
+              const SizedBox(width: 24),
+              _CalendarSummaryStat(
+                value: '$missed',
+                label: t.statistics.notCompleted,
+                color: EvolveColors.rose,
+              ),
+              const Spacer(),
+              Container(
+                padding: const EdgeInsets.symmetric(
+                  horizontal: 10,
+                  vertical: 5,
+                ),
+                decoration: BoxDecoration(
+                  color: context.evolveAccent.withValues(alpha: 0.12),
+                  borderRadius: BorderRadius.circular(8),
+                ),
+                child: Text(
+                  t.stats.successRate(rate: rate),
+                  style: TextStyle(
+                    color: context.evolveAccent,
+                    fontSize: 12,
+                    fontWeight: FontWeight.w700,
+                  ),
+                ),
+              ),
+            ],
+          ),
+          const SizedBox(height: 17),
+          Wrap(
+            spacing: 4,
+            runSpacing: 4,
+            children: [
+              for (final s in statuses)
+                Container(
+                  width: 10,
+                  height: 10,
+                  decoration: BoxDecoration(
+                    color: switch (s) {
+                      1 => color,
+                      2 => EvolveColors.rose.withValues(alpha: 0.85),
+                      _ => context.evolveColors.panelSoft,
+                    },
+                    borderRadius: BorderRadius.circular(2),
+                  ),
+                ),
+            ],
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+class _CalendarSummaryStat extends StatelessWidget {
+  const _CalendarSummaryStat({
+    required this.value,
+    required this.label,
+    required this.color,
+  });
+
+  final String value;
+  final String label;
+  final Color color;
+
+  @override
+  Widget build(BuildContext context) {
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Text(
+          value,
+          style: TextStyle(
+            color: color,
+            fontSize: 20,
+            fontWeight: FontWeight.w800,
+          ),
+        ),
+        Text(
+          label,
+          style: TextStyle(
+            color: context.evolveColors.subtle,
+            fontSize: 10,
+            fontWeight: FontWeight.w700,
+          ),
+        ),
+      ],
     );
   }
 }
@@ -1781,44 +2093,6 @@ class _AlertCard extends StatelessWidget {
   }
 }
 
-class _HabitPerformanceRow extends StatelessWidget {
-  const _HabitPerformanceRow({required this.habit});
-
-  final DashboardHabit habit;
-
-  @override
-  Widget build(BuildContext context) {
-    final done = habit.weeklyProgress.where((value) => value).length;
-    return Row(
-      children: [
-        Container(
-          width: 9,
-          height: 9,
-          decoration: BoxDecoration(color: habit.color, shape: BoxShape.circle),
-        ),
-        const SizedBox(width: 11),
-        Expanded(child: Text(habit.title)),
-        SizedBox(
-          width: 200,
-          child: LinearProgressIndicator(
-            value: done / 7,
-            minHeight: 6,
-            color: habit.color,
-            backgroundColor: context.evolveColors.panelSoft,
-            borderRadius: BorderRadius.circular(8),
-          ),
-        ),
-        const SizedBox(width: 12),
-        SizedBox(width: 34, child: Text('$done/7')),
-        SizedBox(
-          width: 72,
-          child: Text(t.dashboard.streakDaysShort(n: habit.streak)),
-        ),
-      ],
-    );
-  }
-}
-
 class _EmptyHabitAnalytics extends StatelessWidget {
   const _EmptyHabitAnalytics();
 
@@ -1844,17 +2118,6 @@ List<double> _moodValues(DashboardSnapshot snapshot, int count) {
         ((checkIn.mood ?? 0) + (checkIn.energy ?? 0)) / 20
       else
         0,
-  ];
-}
-
-List<double> _habitActivityValues(
-  DashboardSnapshot snapshot,
-  String habitId,
-  int count,
-) {
-  return [
-    for (final date in _lastDays(count))
-      snapshot.habitStatusFor(habitId, date) == 'done' ? 1 : 0,
   ];
 }
 

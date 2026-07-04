@@ -565,6 +565,10 @@ class _Translations$stats$ar extends Translations$stats$en {
 	@override String failureDetail({required Object streak, required Object frequency}) => 'اسوأ سلسلة: ${streak}ي · ~${frequency}/شهر فائتة';
 	@override String recoveryDetail({required Object days}) => 'متوسط وقت التعافي: ${days} يوم';
 	@override String successRate({required Object rate}) => '${rate}% نجاح';
+	@override String get sortRate => 'النسبة';
+	@override String get sortStreak => 'التتابع';
+	@override String get sortName => 'الاسم';
+	@override String get worstStreakLabel => 'الأسوأ';
 }
 
 // Path: habitsPage
@@ -1576,6 +1580,10 @@ extension on TranslationsAr {
 			'stats.failureDetail' => ({required Object streak, required Object frequency}) => 'اسوأ سلسلة: ${streak}ي · ~${frequency}/شهر فائتة',
 			'stats.recoveryDetail' => ({required Object days}) => 'متوسط وقت التعافي: ${days} يوم',
 			'stats.successRate' => ({required Object rate}) => '${rate}% نجاح',
+			'stats.sortRate' => 'النسبة',
+			'stats.sortStreak' => 'التتابع',
+			'stats.sortName' => 'الاسم',
+			'stats.worstStreakLabel' => 'الأسوأ',
 			'habitsPage.today' => 'اليوم',
 			'habitsPage.subtitle' => 'ابنِ بروتوكولك اليومي وراقب الاتساق عبر الزمن.',
 			'habitsPage.tabProtocol' => 'البروتوكول',
@@ -1740,12 +1748,12 @@ extension on TranslationsAr {
 			'aiCoach.todayCompletion' => ({required Object completed, required Object total}) => '- عادات اليوم: ${completed} مكتملة من أصل ${total}.',
 			'settingsPage.account' => 'الحساب',
 			'settingsPage.notifications' => 'الإشعارات',
+			_ => null,
+		} ?? switch (path) {
 			'settingsPage.language' => 'اللغة',
 			'settingsPage.timeFormat24h' => 'تنسيق 24 ساعة',
 			'settingsPage.subscription' => 'الاشتراك',
 			'settingsPage.proName' => 'Evolve Pro',
-			_ => null,
-		} ?? switch (path) {
 			'settingsPage.planMonthly' => 'شهري',
 			'settingsPage.planAnnual' => 'سنوي',
 			'settingsPage.restorePurchases' => 'استعادة المشتريات',

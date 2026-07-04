@@ -387,7 +387,11 @@
     "blackDayDetail": "Black day: {day}",
     "failureDetail": "Worst streak: {streak}d · ~{frequency}/month missed",
     "recoveryDetail": "Average recovery time: {days} days",
-    "successRate": "{rate}% success"
+    "successRate": "{rate}% success",
+    "sortRate": "Rate",
+    "sortStreak": "Streak",
+    "sortName": "Name",
+    "worstStreakLabel": "Worst"
   },
   "habitsPage": {
     "today": "Today",

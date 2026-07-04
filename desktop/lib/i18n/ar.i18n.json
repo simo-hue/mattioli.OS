@@ -387,7 +387,11 @@
     "blackDayDetail": "يوم اسود: {day}",
     "failureDetail": "اسوأ سلسلة: {streak}ي · ~{frequency}/شهر فائتة",
     "recoveryDetail": "متوسط وقت التعافي: {days} يوم",
-    "successRate": "{rate}% نجاح"
+    "successRate": "{rate}% نجاح",
+    "sortRate": "النسبة",
+    "sortStreak": "التتابع",
+    "sortName": "الاسم",
+    "worstStreakLabel": "الأسوأ"
   },
   "habitsPage": {
     "today": "اليوم",

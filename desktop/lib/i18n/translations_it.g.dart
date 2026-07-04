@@ -565,6 +565,10 @@ class _Translations$stats$it extends Translations$stats$en {
 	@override String failureDetail({required Object streak, required Object frequency}) => 'Serie peggiore: ${streak}g · ~${frequency}/mese mancati';
 	@override String recoveryDetail({required Object days}) => 'Tempo medio di recupero: ${days} giorni';
 	@override String successRate({required Object rate}) => '${rate}% successo';
+	@override String get sortRate => 'Percentuale';
+	@override String get sortStreak => 'Serie';
+	@override String get sortName => 'Nome';
+	@override String get worstStreakLabel => 'Peggiore';
 }
 
 // Path: habitsPage
@@ -1576,6 +1580,10 @@ extension on TranslationsIt {
 			'stats.failureDetail' => ({required Object streak, required Object frequency}) => 'Serie peggiore: ${streak}g · ~${frequency}/mese mancati',
 			'stats.recoveryDetail' => ({required Object days}) => 'Tempo medio di recupero: ${days} giorni',
 			'stats.successRate' => ({required Object rate}) => '${rate}% successo',
+			'stats.sortRate' => 'Percentuale',
+			'stats.sortStreak' => 'Serie',
+			'stats.sortName' => 'Nome',
+			'stats.worstStreakLabel' => 'Peggiore',
 			'habitsPage.today' => 'Oggi',
 			'habitsPage.subtitle' => 'Costruisci il protocollo quotidiano e osserva la consistenza nel tempo.',
 			'habitsPage.tabProtocol' => 'Protocollo',
@@ -1740,12 +1748,12 @@ extension on TranslationsIt {
 			'aiCoach.todayCompletion' => ({required Object completed, required Object total}) => '- Abitudini oggi: ${completed} completate su ${total} totali.',
 			'settingsPage.account' => 'Account',
 			'settingsPage.notifications' => 'Notifiche',
+			_ => null,
+		} ?? switch (path) {
 			'settingsPage.language' => 'Lingua',
 			'settingsPage.timeFormat24h' => 'Formato 24h',
 			'settingsPage.subscription' => 'Abbonamento',
 			'settingsPage.proName' => 'Evolve Pro',
-			_ => null,
-		} ?? switch (path) {
 			'settingsPage.planMonthly' => 'Mensile',
 			'settingsPage.planAnnual' => 'Annuale',
 			'settingsPage.restorePurchases' => 'Ripristina acquisti',

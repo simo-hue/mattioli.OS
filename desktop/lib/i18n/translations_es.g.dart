@@ -565,6 +565,10 @@ class _Translations$stats$es extends Translations$stats$en {
 	@override String failureDetail({required Object streak, required Object frequency}) => 'Peor racha: ${streak}d · ~${frequency}/mes perdidos';
 	@override String recoveryDetail({required Object days}) => 'Tiempo medio de recuperacion: ${days} dias';
 	@override String successRate({required Object rate}) => '${rate}% exito';
+	@override String get sortRate => 'Porcentaje';
+	@override String get sortStreak => 'Racha';
+	@override String get sortName => 'Nombre';
+	@override String get worstStreakLabel => 'Peor';
 }
 
 // Path: habitsPage
@@ -1576,6 +1580,10 @@ extension on TranslationsEs {
 			'stats.failureDetail' => ({required Object streak, required Object frequency}) => 'Peor racha: ${streak}d · ~${frequency}/mes perdidos',
 			'stats.recoveryDetail' => ({required Object days}) => 'Tiempo medio de recuperacion: ${days} dias',
 			'stats.successRate' => ({required Object rate}) => '${rate}% exito',
+			'stats.sortRate' => 'Porcentaje',
+			'stats.sortStreak' => 'Racha',
+			'stats.sortName' => 'Nombre',
+			'stats.worstStreakLabel' => 'Peor',
 			'habitsPage.today' => 'Hoy',
 			'habitsPage.subtitle' => 'Construye tu protocolo diario y observa la constancia a lo largo del tiempo.',
 			'habitsPage.tabProtocol' => 'Protocolo',
@@ -1740,12 +1748,12 @@ extension on TranslationsEs {
 			'aiCoach.todayCompletion' => ({required Object completed, required Object total}) => '- Hábitos de hoy: ${completed} completados de ${total} en total.',
 			'settingsPage.account' => 'Cuenta',
 			'settingsPage.notifications' => 'Notificaciones',
+			_ => null,
+		} ?? switch (path) {
 			'settingsPage.language' => 'Idioma',
 			'settingsPage.timeFormat24h' => 'Formato 24h',
 			'settingsPage.subscription' => 'Suscripción',
 			'settingsPage.proName' => 'Evolve PRO',
-			_ => null,
-		} ?? switch (path) {
 			'settingsPage.planMonthly' => 'Mensual',
 			'settingsPage.planAnnual' => 'Anual',
 			'settingsPage.restorePurchases' => 'Restaurar compras',

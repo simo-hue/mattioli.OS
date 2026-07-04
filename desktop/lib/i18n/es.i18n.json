@@ -387,7 +387,11 @@
     "blackDayDetail": "Dia negro: {day}",
     "failureDetail": "Peor racha: {streak}d · ~{frequency}/mes perdidos",
     "recoveryDetail": "Tiempo medio de recuperacion: {days} dias",
-    "successRate": "{rate}% exito"
+    "successRate": "{rate}% exito",
+    "sortRate": "Porcentaje",
+    "sortStreak": "Racha",
+    "sortName": "Nombre",
+    "worstStreakLabel": "Peor"
   },
   "habitsPage": {
     "today": "Hoy",

@@ -565,6 +565,10 @@ class _Translations$stats$de extends Translations$stats$en {
 	@override String failureDetail({required Object streak, required Object frequency}) => 'Schlimmste Serie: ${streak}T · ~${frequency}/Monat verpasst';
 	@override String recoveryDetail({required Object days}) => 'Durchschnittliche Erholungszeit: ${days} Tage';
 	@override String successRate({required Object rate}) => '${rate}% Erfolg';
+	@override String get sortRate => 'Quote';
+	@override String get sortStreak => 'Serie';
+	@override String get sortName => 'Name';
+	@override String get worstStreakLabel => 'Schlechteste';
 }
 
 // Path: habitsPage
@@ -1576,6 +1580,10 @@ extension on TranslationsDe {
 			'stats.failureDetail' => ({required Object streak, required Object frequency}) => 'Schlimmste Serie: ${streak}T · ~${frequency}/Monat verpasst',
 			'stats.recoveryDetail' => ({required Object days}) => 'Durchschnittliche Erholungszeit: ${days} Tage',
 			'stats.successRate' => ({required Object rate}) => '${rate}% Erfolg',
+			'stats.sortRate' => 'Quote',
+			'stats.sortStreak' => 'Serie',
+			'stats.sortName' => 'Name',
+			'stats.worstStreakLabel' => 'Schlechteste',
 			'habitsPage.today' => 'Heute',
 			'habitsPage.subtitle' => 'Baue dein tägliches Protokoll auf und beobachte die Konstanz im Zeitverlauf.',
 			'habitsPage.tabProtocol' => 'Protokoll',
@@ -1740,12 +1748,12 @@ extension on TranslationsDe {
 			'aiCoach.todayCompletion' => ({required Object completed, required Object total}) => '- Gewohnheiten heute: ${completed} von insgesamt ${total} abgeschlossen.',
 			'settingsPage.account' => 'Konto',
 			'settingsPage.notifications' => 'Benachrichtigungen',
+			_ => null,
+		} ?? switch (path) {
 			'settingsPage.language' => 'Sprache',
 			'settingsPage.timeFormat24h' => '24-Stunden-Format',
 			'settingsPage.subscription' => 'Abonnement',
 			'settingsPage.proName' => 'Evolve PRO',
-			_ => null,
-		} ?? switch (path) {
 			'settingsPage.planMonthly' => 'Monatlich',
 			'settingsPage.planAnnual' => 'Jährlich',
 			'settingsPage.restorePurchases' => 'Käufe wiederherstellen',

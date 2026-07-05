@@ -945,6 +945,18 @@ class PrivacySettingsScreen extends ConsumerWidget {
                       Text(context.t.privacy.importPreviewMacroGoals(count: preview.macroGoalsCount), style: TextStyle(color: context.appColors.foreground)),
                       Text(context.t.privacy.importPreviewCategories(count: preview.categoriesCount), style: TextStyle(color: context.appColors.foreground)),
                       Text(context.t.privacy.importPreviewMoods(count: preview.moodsCount), style: TextStyle(color: context.appColors.foreground)),
+                      if (preview.totalSkipped > 0)
+                        Padding(
+                          padding: const EdgeInsets.only(top: 12),
+                          child: Text(
+                            '⚠ ${preview.totalSkipped} invalid record(s) will be skipped',
+                            style: const TextStyle(
+                              color: AppColors.destructive,
+                              fontSize: 12,
+                              fontWeight: FontWeight.w500,
+                            ),
+                          ),
+                        ),
                       const SizedBox(height: 24),
                       RadioListTile<bool>(
                         title: Text(context.t.privacy.importModeReplace, style: TextStyle(color: context.appColors.foreground)),
@@ -1041,6 +1053,7 @@ class PrivacySettingsScreen extends ConsumerWidget {
         canonicalData: preview.canonicalData,
         replaceExisting: replaceExisting,
         isPrivateMode: isPrivateMode,
+        skipped: preview.skipped,
       );
 
       // 4. Refresh Providers
@@ -1173,9 +1186,11 @@ class PrivacySettingsScreen extends ConsumerWidget {
   /// One summary line. Replace mode shows a single total; merge mode breaks the
   /// outcome into added / updated / unchanged.
   String _mergeRowText(ImportMergeStats stats, EntityMerge m, String label) {
-    if (stats.replaced) return '${m.total} $label';
-    return '$label: ${m.added} added, ${m.updated} updated, '
-        '${m.unchanged} unchanged';
+    final base = stats.replaced
+        ? '${m.total} $label'
+        : '$label: ${m.added} added, ${m.updated} updated, '
+              '${m.unchanged} unchanged';
+    return m.skipped > 0 ? '$base, ${m.skipped} skipped' : base;
   }
 
   Widget _buildSummaryRow(BuildContext context, IconData icon, String text) {

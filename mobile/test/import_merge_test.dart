@@ -356,4 +356,145 @@ void main() {
       await db.close();
     });
   });
+
+  // ── Validation + must-fix hardening ───────────────────────────────────────
+
+  Map<String, dynamic> clean(Map<String, dynamic> raw) =>
+      validateCanonical(normalizeBackup(raw)).canonical;
+
+  group('validateCanonical', () {
+    test('drops invalid rows per entity and counts them as skipped', () {
+      final v = validateCanonical(normalizeBackup({
+        'mode': 'private',
+        'habits': [
+          nativeGoal(id: 'ok', updatedAt: now),
+          {'id': 'bad', 'title': 'No start', 'color': '#fff'}, // no start_date
+        ],
+        'habitLogs': [
+          {'id': 'l1', 'goal_id': 'ok', 'date': '2026-01-01', 'status': 'done'},
+          {'id': 'l2', 'goal_id': 'ok', 'date': '2026-01-02', 'status': 'pending'},
+        ],
+        'dailyMoods': [
+          {'id': 'd1', 'date': '2026-01-01', 'mood_score': 5, 'energy_score': 5},
+          {'id': 'd2', 'date': '2026-01-02', 'mood_score': 99, 'energy_score': 5},
+        ],
+        'macroGoals': [
+          {'id': 'm1', 'title': 'ok', 'status': 'active', 'type': 'annual'},
+          {'id': 'm2', 'title': 'bad', 'status': 'active', 'type': 'weekly', 'week_number': 99},
+        ],
+        'macroGoalCategories': [
+          {'id': 'c1', 'name': 'Health', 'color': '#10B981'},
+          {'id': 'c2', 'name': '', 'color': '#000'}, // empty name
+        ],
+      }));
+      expect((v.canonical[kGoalsKey] as List).length, 1);
+      expect(v.skipped['habits'], 1);
+      expect((v.canonical[kLogsKey] as List).length, 1);
+      expect(v.skipped['logs'], 1);
+      expect((v.canonical[kMoodsKey] as List).length, 1);
+      expect(v.skipped['moods'], 1);
+      expect((v.canonical[kMacrosKey] as List).length, 1);
+      expect(v.skipped['macroGoals'], 1);
+      expect((v.canonical[kCategoriesKey] as List).length, 1);
+      expect(v.skipped['categories'], 1);
+    });
+
+    test('coerces a non-string id to its string form (no crash)', () {
+      final v = validateCanonical(normalizeBackup({
+        'mode': 'private',
+        'habits': [
+          {'id': 42, 'title': 'Num', 'color': '#fff', 'start_date': '2026-01-01', 'updated_at': now},
+        ],
+      }));
+      expect((v.canonical[kGoalsKey] as List).single['id'], '42');
+      expect(v.skipped['habits'], 0);
+    });
+  });
+
+  group('must-fix hardening (private)', () {
+    test('#3: a dropped goal never FK-aborts the import via its logs', () async {
+      final db = await openDb();
+      final v = validateCanonical(normalizeBackup({
+        'mode': 'private',
+        'habits': [
+          nativeGoal(id: 'good', updatedAt: now),
+          {'id': 'bad', 'title': 'No start', 'color': '#fff'}, // dropped
+        ],
+        'habitLogs': [
+          {'id': 'lg', 'goal_id': 'good', 'date': '2026-01-01', 'status': 'done', 'updated_at': now},
+          {'id': 'lb', 'goal_id': 'bad', 'date': '2026-01-01', 'status': 'done', 'updated_at': now},
+        ],
+      }));
+      final s = await merge(db, v.canonical); // must NOT throw
+      expect((await db.query('goals')).length, 1);
+      expect(
+        (await db.query('goals', where: 'id = ?', whereArgs: ['bad'])).isEmpty,
+        isTrue,
+      );
+      expect((await db.query('goal_logs')).length, 1,
+          reason: 'orphan log of the dropped goal is skipped, not FK-aborted');
+      expect(s.logs.added, 1);
+      await db.close();
+    });
+
+    test('#4: an invalid-status winning log is dropped, not a CHECK abort',
+        () async {
+      final db = await openDb();
+      await merge(
+        db,
+        clean({
+          'mode': 'private',
+          'habits': [
+            nativeGoal(id: 'g1', updatedAt: '2026-01-01T00:00:00.000Z'),
+          ],
+          'habitLogs': [
+            {'id': 'l1', 'goal_id': 'g1', 'date': '2026-01-05', 'status': 'done', 'updated_at': '2026-01-01T00:00:00.000Z'},
+          ],
+        }),
+      );
+
+      // A NEWER log for the same (g1, 2026-01-05) but with a status outside the
+      // CHECK vocabulary. Validation drops it; the merge must not abort.
+      final v = validateCanonical(normalizeBackup({
+        'mode': 'private',
+        'habitLogs': [
+          {'id': 'l1b', 'goal_id': 'g1', 'date': '2026-01-05', 'status': 'completed', 'updated_at': '2026-02-01T00:00:00.000Z'},
+        ],
+      }));
+      expect(v.skipped['logs'], 1);
+      final s = await merge(db, v.canonical); // must NOT throw
+      final log = (await db.query('goal_logs',
+              where: 'date = ?', whereArgs: ['2026-01-05']))
+          .single;
+      expect(log['status'], 'done', reason: 'existing log untouched');
+      expect(s.logs.total, 0);
+      await db.close();
+    });
+
+    test('#4b: a non-numeric log value is nulled, never a bind abort',
+        () async {
+      final db = await openDb();
+      final v = validateCanonical(normalizeBackup({
+        'mode': 'private',
+        'habits': [nativeGoal(id: 'g1', updatedAt: now)],
+        'habitLogs': [
+          {
+            'id': 'l1',
+            'goal_id': 'g1',
+            'date': '2026-01-01',
+            'status': 'done',
+            'value': {'oops': true}, // a JSON object sqflite cannot bind
+            'updated_at': now,
+          },
+        ],
+      }));
+      // The log is kept (value is optional) with value coerced to null.
+      expect((v.canonical[kLogsKey] as List).single['value'], isNull);
+      expect(v.skipped['logs'], 0);
+      final s = await merge(db, v.canonical); // must NOT throw
+      expect(s.logs.added, 1);
+      expect((await db.query('goal_logs')).single['value'], isNull);
+      await db.close();
+    });
+  });
 }

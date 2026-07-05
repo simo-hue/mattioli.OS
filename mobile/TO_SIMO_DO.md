@@ -105,3 +105,20 @@ Manual actions required for the fixes landed this session (see `ICLOUD_SYNC_PRIV
       app (Private mode), then re-import the resulting `.json` in Merge mode —
       it should report everything as *unchanged* (no duplicates), proving the
       round-trip is now lossless.
+
+## Import merge — must-fix hardening (2026-07-05, follow-up)
+
+The 4 pre-release blockers are fixed and unit-tested (184/184). The cloud path
+was rewritten (fetch → pure `planCloudImport` → delete/upsert) and cannot be
+unit-tested here, so please verify ON A LOGGED-IN CLOUD ACCOUNT:
+
+- [ ] **Cloud MERGE with a new category** (this was blocker #1 — used to crash):
+      import a backup containing a category you don't have. It must succeed and
+      show the category, not an "Import Failed" PGRST204 error.
+- [ ] **Cloud REPLACE resilience** (blocker #2): a normal replace import fully
+      repopulates the account. (The malformed-file wipe path is now guarded by
+      validation + build-before-delete, but confirm a real replace works.)
+- [ ] **Invalid-row skipping**: import a hand-edited/partial backup with a bad
+      row (e.g. a habit log with `"status":"pending"`). The rest must import and
+      the preview + summary must show a "⚠ N invalid record(s) skipped" count —
+      not a failed or misleading-success import.

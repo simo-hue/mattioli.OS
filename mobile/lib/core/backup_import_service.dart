@@ -20,8 +20,12 @@ class BackupImportPreview {
   final int categoriesCount;
   final int moodsCount;
 
-  /// Canonical, normalized backup — feed straight to [BackupImportService.executeImport].
+  /// Canonical, VALIDATED backup — feed straight to [BackupImportService.executeImport].
   final Map<String, dynamic> canonicalData;
+
+  /// How many rows were dropped as invalid during validation, keyed by
+  /// 'habits' | 'logs' | 'macroGoals' | 'categories' | 'moods'.
+  final Map<String, int> skipped;
 
   const BackupImportPreview({
     required this.habitsCount,
@@ -30,7 +34,11 @@ class BackupImportPreview {
     required this.categoriesCount,
     required this.moodsCount,
     required this.canonicalData,
+    required this.skipped,
   });
+
+  /// Total invalid rows across all entities.
+  int get totalSkipped => skipped.values.fold(0, (a, b) => a + b);
 }
 
 /// Reads a backup file (the app's own `.json` export OR a web `.zip` backup),
@@ -48,7 +56,8 @@ class BackupImportService {
   /// (web backup, containing `backup.json`) or a raw `.json` (app export).
   Future<BackupImportPreview> parsePreview(String filePath) async {
     final raw = await _readBackupFile(filePath);
-    final canonical = normalizeBackup(raw);
+    final validated = validateCanonical(normalizeBackup(raw));
+    final canonical = validated.canonical;
     return BackupImportPreview(
       habitsCount: (canonical[kGoalsKey] as List).length,
       logsCount: (canonical[kLogsKey] as List).length,
@@ -56,6 +65,7 @@ class BackupImportService {
       categoriesCount: (canonical[kCategoriesKey] as List).length,
       moodsCount: (canonical[kMoodsKey] as List).length,
       canonicalData: canonical,
+      skipped: validated.skipped,
     );
   }
 
@@ -88,28 +98,36 @@ class BackupImportService {
     return jsonDecode(await file.readAsString()) as Map<String, dynamic>;
   }
 
-  /// Imports already-normalized [canonicalData] into the active store and returns
-  /// the per-entity merge outcome.
+  /// Imports already-validated [canonicalData] into the active store and returns
+  /// the per-entity merge outcome. [skipped] (from [parsePreview]) is folded into
+  /// the result so the summary can report how many rows were dropped as invalid.
   Future<ImportMergeStats> executeImport({
     required Map<String, dynamic> canonicalData,
     required bool replaceExisting,
     required bool isPrivateMode,
+    Map<String, int> skipped = const {},
   }) async {
-    if (isPrivateMode) {
-      return _privateStore.importData(
-        backupData: canonicalData,
-        replaceExisting: replaceExisting,
-      );
-    }
-    return _executeCloudImport(canonicalData, replaceExisting);
+    final stats = isPrivateMode
+        ? await _privateStore.importData(
+            backupData: canonicalData,
+            replaceExisting: replaceExisting,
+          )
+        : await _executeCloudImport(canonicalData, replaceExisting);
+
+    stats.habits.skipped = skipped['habits'] ?? 0;
+    stats.logs.skipped = skipped['logs'] ?? 0;
+    stats.macroGoals.skipped = skipped['macroGoals'] ?? 0;
+    stats.categories.skipped = skipped['categories'] ?? 0;
+    stats.moods.skipped = skipped['moods'] ?? 0;
+    return stats;
   }
 
   // ── Cloud (Supabase) import ────────────────────────────────────────────────
   //
-  // Mirrors the Private-mode merge semantics (identity + last-write-wins) but
-  // over Supabase: existing rows are fetched to decide add/update/skip, then
-  // only the rows that should win are upserted. Streaks are recomputed for the
-  // goals whose logs changed.
+  // Mirrors the Private-mode merge (identity + last-write-wins), but since
+  // Supabase has no client-side transaction, the entire plan is computed from
+  // the fetched existing state FIRST — so a malformed file can never delete data
+  // and then fail. Only once the plan is built do we mutate the server.
 
   Future<ImportMergeStats> _executeCloudImport(
       Map<String, dynamic> canonical, bool replaceExisting) async {
@@ -120,15 +138,51 @@ class BackupImportService {
     final userId = client.auth.currentUser?.id;
     if (userId == null) throw Exception('Not logged in to cloud');
 
-    final stats = ImportMergeStats(replaced: replaceExisting);
     final now = DateTime.now().toUtc().toIso8601String();
 
-    final categories = _rows(canonical[kCategoriesKey]);
-    final goals = _rows(canonical[kGoalsKey]);
-    final logs = _rows(canonical[kLogsKey]);
-    final macros = _rows(canonical[kMacrosKey]);
-    final moods = _rows(canonical[kMoodsKey]);
+    // Fetch existing state (empty in replace mode) BEFORE building the plan.
+    Future<List<Map<String, dynamic>>> fetch(String table, String cols) async {
+      if (replaceExisting) return const [];
+      final res = await client.from(table).select(cols).eq('user_id', userId);
+      return (res as List)
+          .map((e) => (e as Map).cast<String, dynamic>())
+          .toList();
+    }
 
+    final existingCategories =
+        await fetch('macro_goal_categories', 'id,name,archived_at');
+    final existingGoals = {
+      for (final r in await fetch('goals', 'id,updated_at'))
+        r['id'] as String: r['updated_at'] as String?,
+    };
+    final existingMacros = {
+      for (final r in await fetch('long_term_goals', 'id,updated_at'))
+        r['id'] as String: r['updated_at'] as String?,
+    };
+    final existingLogs = {
+      for (final r in await fetch('goal_logs', 'id,goal_id,date,updated_at'))
+        '${r['goal_id']}|${r['date']}': r,
+    };
+    final existingMoods = {
+      for (final r in await fetch('daily_moods', 'id,date,updated_at'))
+        r['date'] as String: r,
+    };
+
+    // Build the whole plan with NO writes — validate-before-delete.
+    final plan = planCloudImport(
+      userId: userId,
+      canonical: canonical,
+      replaceExisting: replaceExisting,
+      now: now,
+      existingCategories: existingCategories,
+      existingGoals: existingGoals,
+      existingMacros: existingMacros,
+      existingLogs: existingLogs,
+      existingMoods: existingMoods,
+      newId: () => _uuid.v4(),
+    );
+
+    // Only now mutate the server.
     if (replaceExisting) {
       await client.from('goal_logs').delete().eq('user_id', userId);
       await client.from('daily_moods').delete().eq('user_id', userId);
@@ -137,237 +191,24 @@ class BackupImportService {
       await client.from('goals').delete().eq('user_id', userId);
     }
 
-    Future<List<Map<String, dynamic>>> existing(
-        String table, String columns) async {
-      if (replaceExisting) return const [];
-      final res =
-          await client.from(table).select(columns).eq('user_id', userId);
-      return (res as List)
-          .map((e) => (e as Map).cast<String, dynamic>())
-          .toList();
-    }
-
-    // ── Categories: id, else name (existing wins). ──
-    final exCats = await existing('macro_goal_categories', 'id,name,archived_at');
-    final catById = {for (final c in exCats) c['id'] as String: c};
-    final catByName = {
-      for (final c in exCats) (c['name'] as String).trim().toLowerCase(): c,
-    };
-    final catRemap = <String, String>{};
-    final validCatIds = <String>{for (final c in exCats) c['id'] as String};
-    final catsToWrite = <Map<String, dynamic>>[];
-
-    for (final cat in categories) {
-      final importedId = (cat['id'] as String?) ?? _uuid.v4();
-      final name = (cat['name'] as String? ?? '').trim();
-      final match = catById[importedId] ?? catByName[name.toLowerCase()];
-      if (match != null) {
-        final finalId = match['id'] as String;
-        catRemap[importedId] = finalId;
-        validCatIds.add(finalId);
-        final importedArchived = cat['archived_at'] as String?;
-        if (match['archived_at'] == null && importedArchived != null) {
-          await client
-              .from('macro_goal_categories')
-              .update({'archived_at': importedArchived, 'updated_at': now}).eq(
-                  'id', finalId);
-          stats.categories.updated++;
-        } else {
-          stats.categories.unchanged++;
-        }
-      } else {
-        catRemap[importedId] = importedId;
-        validCatIds.add(importedId);
-        catsToWrite.add({
-          'id': importedId,
-          'user_id': userId,
-          'name': cat['name'],
-          'color': cat['color'],
-          'created_at': cat['created_at'] ?? now,
-          'updated_at': cat['updated_at'] ?? now,
-          'archived_at': cat['archived_at'],
-        });
-        catByName[name.toLowerCase()] = {
-          'id': importedId,
-          'name': cat['name'],
-          'archived_at': cat['archived_at'],
-        };
-        stats.categories.added++;
-      }
-    }
-
-    // ── Goals ──
-    final exGoals = {
-      for (final r in await existing('goals', 'id,updated_at'))
-        r['id'] as String: r['updated_at'] as String?,
-    };
-    final knownGoalIds = <String>{...exGoals.keys};
-    final goalsToWrite = <Map<String, dynamic>>[];
-    for (final g in goals) {
-      final id = (g['id'] as String?) ?? _uuid.v4();
-      final decision = _decide(
-          id: id, incoming: g['updated_at'] as String?, existing: exGoals, has: exGoals.containsKey(id));
-      if (decision == _Decision.skip) {
-        stats.habits.unchanged++;
-        continue;
-      }
-      knownGoalIds.add(id);
-      goalsToWrite.add({
-        'id': id,
-        'user_id': userId,
-        'title': g['title'],
-        'description': g['description'],
-        'icon': g['icon'],
-        'color': g['color'] ?? '#3B82F6',
-        'frequency_days': g['frequency_days'],
-        'start_date': g['start_date'],
-        'end_date': g['end_date'],
-        'display_order': g['display_order'],
-        'created_at': g['created_at'] ?? now,
-        'updated_at': g['updated_at'] ?? now,
-        'reminder_time': g['reminder_time'],
-      });
-      decision == _Decision.add ? stats.habits.added++ : stats.habits.updated++;
-    }
-
-    // ── Macro goals ──
-    final exMacros = {
-      for (final r in await existing('long_term_goals', 'id,updated_at'))
-        r['id'] as String: r['updated_at'] as String?,
-    };
-    final macrosToWrite = <Map<String, dynamic>>[];
-    for (final g in macros) {
-      final id = (g['id'] as String?) ?? _uuid.v4();
-      final importedCatId = g['category_id'] as String?;
-      final remapped = importedCatId == null
-          ? null
-          : (catRemap[importedCatId] ?? importedCatId);
-      final categoryId =
-          (remapped != null && validCatIds.contains(remapped)) ? remapped : null;
-      final decision = _decide(
-          id: id, incoming: g['updated_at'] as String?, existing: exMacros, has: exMacros.containsKey(id));
-      if (decision == _Decision.skip) {
-        stats.macroGoals.unchanged++;
-        continue;
-      }
-      macrosToWrite.add({
-        'id': id,
-        'user_id': userId,
-        'title': g['title'],
-        'status': g['status'],
-        'type': g['type'],
-        'year': g['year'],
-        'month': g['month'],
-        'week_number': g['week_number'],
-        'quarter': g['quarter'],
-        'category_key': g['category_key'],
-        'category_id': categoryId,
-        'created_at': g['created_at'] ?? now,
-        'updated_at': g['updated_at'] ?? now,
-      });
-      decision == _Decision.add
-          ? stats.macroGoals.added++
-          : stats.macroGoals.updated++;
-    }
-
-    // ── Goal logs: natural key (goal_id, date); reuse existing id on update. ──
-    final exLogs = {
-      for (final r in await existing('goal_logs', 'id,goal_id,date,updated_at'))
-        '${r['goal_id']}|${r['date']}': r,
-    };
-    final affectedGoals = <String>{};
-    final logsToWrite = <Map<String, dynamic>>[];
-    for (final l in logs) {
-      final goalId = l['goal_id'] as String?;
-      final date = l['date'] as String?;
-      if (goalId == null || date == null || !knownGoalIds.contains(goalId)) {
-        continue;
-      }
-      final match = exLogs['$goalId|$date'];
-      if (match == null) {
-        logsToWrite.add({
-          'id': (l['id'] as String?) ?? _uuid.v4(),
-          'user_id': userId,
-          'goal_id': goalId,
-          'date': date,
-          'status': l['status'],
-          'value': l['value'],
-          'created_at': l['created_at'] ?? now,
-          'updated_at': l['updated_at'] ?? now,
-          'streak': l['streak'] ?? 0,
-        });
-        affectedGoals.add(goalId);
-        stats.logs.added++;
-      } else if (incomingWins(
-          incoming: l['updated_at'] as String?,
-          existing: match['updated_at'] as String?)) {
-        logsToWrite.add({
-          'id': match['id'], // reuse to update in place, not duplicate
-          'user_id': userId,
-          'goal_id': goalId,
-          'date': date,
-          'status': l['status'],
-          'value': l['value'],
-          'created_at': l['created_at'] ?? now,
-          'updated_at': l['updated_at'] ?? now,
-          'streak': l['streak'] ?? 0,
-        });
-        affectedGoals.add(goalId);
-        stats.logs.updated++;
-      } else {
-        stats.logs.unchanged++;
-      }
-    }
-
-    // ── Daily moods: natural key date; reuse existing id on update. ──
-    final exMoods = {
-      for (final r in await existing('daily_moods', 'id,date,updated_at'))
-        r['date'] as String: r,
-    };
-    final moodsToWrite = <Map<String, dynamic>>[];
-    for (final m in moods) {
-      final date = m['date'] as String?;
-      if (date == null) continue;
-      final match = exMoods[date];
-      if (match == null) {
-        moodsToWrite.add({
-          'id': (m['id'] as String?) ?? _uuid.v4(),
-          'user_id': userId,
-          'date': date,
-          'mood_score': m['mood_score'],
-          'energy_score': m['energy_score'],
-          'created_at': m['created_at'] ?? now,
-          'updated_at': m['updated_at'] ?? now,
-        });
-        stats.moods.added++;
-      } else if (incomingWins(
-          incoming: m['updated_at'] as String?,
-          existing: match['updated_at'] as String?)) {
-        moodsToWrite.add({
-          'id': match['id'],
-          'user_id': userId,
-          'date': date,
-          'mood_score': m['mood_score'],
-          'energy_score': m['energy_score'],
-          'created_at': m['created_at'] ?? now,
-          'updated_at': m['updated_at'] ?? now,
-        });
-        stats.moods.updated++;
-      } else {
-        stats.moods.unchanged++;
-      }
+    // Fill archived_at on existing categories — bare update, no updated_at
+    // (the cloud macro_goal_categories table has no such column).
+    for (final f in plan.categoryArchiveFills) {
+      await client
+          .from('macro_goal_categories')
+          .update({'archived_at': f.archivedAt}).eq('id', f.id);
     }
 
     // Write parents before children so foreign keys resolve.
-    await _bulkUpsert(client, 'macro_goal_categories', catsToWrite);
-    await _bulkUpsert(client, 'goals', goalsToWrite);
-    await _bulkUpsert(client, 'long_term_goals', macrosToWrite);
-    await _bulkUpsert(client, 'goal_logs', logsToWrite);
-    await _bulkUpsert(client, 'daily_moods', moodsToWrite);
+    await _bulkUpsert(client, 'macro_goal_categories', plan.categories);
+    await _bulkUpsert(client, 'goals', plan.goals);
+    await _bulkUpsert(client, 'long_term_goals', plan.macros);
+    await _bulkUpsert(client, 'goal_logs', plan.logs);
+    await _bulkUpsert(client, 'daily_moods', plan.moods);
 
-    await _recomputeCloudStreaks(client, userId, affectedGoals);
+    await _recomputeCloudStreaks(client, userId, plan.affectedGoals);
 
-    return stats;
+    return plan.stats;
   }
 
   Future<void> _bulkUpsert(
@@ -435,21 +276,4 @@ class BackupImportService {
     }
   }
 
-  List<Map<String, dynamic>> _rows(dynamic v) =>
-      (v as List?)?.map((e) => (e as Map).cast<String, dynamic>()).toList() ??
-      const [];
-
-  _Decision _decide({
-    required String id,
-    required String? incoming,
-    required Map<String, String?> existing,
-    required bool has,
-  }) {
-    if (!has) return _Decision.add;
-    return incomingWins(incoming: incoming, existing: existing[id])
-        ? _Decision.update
-        : _Decision.skip;
-  }
 }
-
-enum _Decision { add, update, skip }

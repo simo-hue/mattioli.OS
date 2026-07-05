@@ -18,9 +18,19 @@ class EntityMerge {
   int updated;
   int unchanged;
 
-  EntityMerge({this.added = 0, this.updated = 0, this.unchanged = 0});
+  /// Rows the file contained but that were dropped before the merge because
+  /// they were invalid (missing a required field, out-of-vocabulary status,
+  /// out-of-range score, …). Populated by validation, not by the merge loop.
+  int skipped;
 
-  /// Every record the file contributed for this entity.
+  EntityMerge({
+    this.added = 0,
+    this.updated = 0,
+    this.unchanged = 0,
+    this.skipped = 0,
+  });
+
+  /// Every valid record the file contributed for this entity (excludes skipped).
   int get total => added + updated + unchanged;
 
   /// Records actually written this import (inserted + superseded). Excludes

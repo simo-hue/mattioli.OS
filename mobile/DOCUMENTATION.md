@@ -2259,3 +2259,54 @@ iCloud Sync core is implemented, unit-tested (160), and iOS-compiling. Remaining
       green**; `flutter analyze` reports **zero errors** project-wide.
     - **No new dependencies. No new endpoints.** No schema/migration change
       (`macro_goal_categories.updated_at` from v3 is reused).
+
+- **2026-07-05: Import merge — production hardening (4 must-fix blockers)**
+  - *Details*: A multi-agent pre-release review of the import-merge feature found
+    4 confirmed release blockers (2 causing cloud data loss). This pass fixes all
+    4 plus several folded should-fixes, on the principle of a centralized
+    *skip-and-report* validation layer and a cloud path that builds its full plan
+    before it deletes anything.
+    - **#1 (cloud crash + data loss)**: the cloud `macro_goal_categories` table has
+      no `updated_at` column, but the import wrote it → PGRST204, and in replace
+      mode the wipe had already run. Removed `updated_at` from every cloud category
+      write (new-row upsert carries no `updated_at`; archived-fill is a bare
+      `archived_at` update). Audited all other cloud payloads for column parity.
+    - **#2 (cloud replace = data loss on any failure)**: cloud replace deleted 5
+      tables *before* building payloads, so a malformed field threw after the wipe.
+      Now `_executeCloudImport` fetches existing state, builds the ENTIRE plan via
+      the pure `planCloudImport()`, and only *then* deletes + upserts. Combined with
+      validation, a bad file can no longer wipe-then-fail.
+    - **#3 (private FK abort)**: a goal silently dropped by `INSERT OR IGNORE` still
+      entered `knownGoalIds`, so its logs FK-aborted the whole transaction. Now the
+      merge gates `knownGoalIds`/counters on the real write result (`rid != 0`), and
+      validation drops invalid goals up front.
+    - **#4 (private CHECK/NOT-NULL abort)**: the LWW winning-UPDATE path had no
+      validation, so an out-of-vocabulary status / out-of-range score / null field
+      aborted the whole import. Now `validateCanonical()` drops such rows before the
+      merge, so no constraint-violating value ever reaches an INSERT or UPDATE.
+  - *Policy*: skip-and-report. Invalid rows (missing required field, bad status/
+    type vocab, score out of 0–10, month/quarter/week out of range) are DROPPED
+    (never coerced with invented values); identity/text fields are string-coerced
+    (defensive reads kill the `as String` crash); every drop is counted and shown
+    to the user as a per-entity **skipped** count (preview warning + final summary).
+  - *Tech Notes*:
+    - `lib/core/import_merge.dart`: added `validateCanonical()` (+ `ValidatedBackup`)
+      and the pure `planCloudImport()` (+ `CloudImportPlan`); `applyPrivateImportMerge`
+      now gates writes on `rid`/affected-rows and has a category name-remap fallback.
+    - `lib/core/import_merge_stats.dart`: `EntityMerge.skipped`.
+    - `lib/core/backup_import_service.dart`: `parsePreview` runs normalize→validate;
+      `executeImport` folds skipped counts in; `_executeCloudImport` rewritten to
+      fetch→plan→execute (validate-before-delete). Removed dead `_rows`/`_decide`.
+    - `lib/ui/.../privacy_settings_screen.dart`: preview shows "⚠ N invalid record(s)
+      will be skipped"; summary rows include a `skipped` count. (Dialog copy still
+      English — localization tracked as a polish follow-up.)
+    - Folded should-fixes: honest skipped counts (was "phantom added"); intra-file
+      duplicate `(goal_id,date)` logs / duplicate mood dates deduped in the cloud plan;
+      category insert-ignore now remaps instead of dangling a `category_id` FK.
+    - **Tests**: `test/import_merge_test.dart` (+validation drops/skip-counts,
+      non-string id coercion, #3 orphan-not-FK-abort, #4 bad-status-dropped) and new
+      `test/cloud_import_plan_test.dart` (no `updated_at` on categories, name-remap,
+      archived-fill, LWW, intra-file dedup, replace-all-added). Full suite **184/184
+      green**; `flutter analyze` **zero errors** project-wide.
+    - **No new dependencies, endpoints, or migrations.** Cloud execution
+      (network I/O) still needs on-device manual verification — see TO_SIMO_DO.md.

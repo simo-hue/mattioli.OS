@@ -899,6 +899,10 @@ class PrivacySettingsScreen extends ConsumerWidget {
   }
 
   Future<void> _importData(BuildContext context, WidgetRef ref) async {
+    // Tracks whether the blocking progress dialog is on the navigator stack, so
+    // an error thrown BEFORE it opens (e.g. a bad file during preview) doesn't
+    // pop the settings screen itself.
+    var progressShown = false;
     try {
       final result = await FilePicker.pickFiles(
         type: FileType.custom,
@@ -949,7 +953,8 @@ class PrivacySettingsScreen extends ConsumerWidget {
                         Padding(
                           padding: const EdgeInsets.only(top: 12),
                           child: Text(
-                            '⚠ ${preview.totalSkipped} invalid record(s) will be skipped',
+                            context.t.privacy.importPreviewSkipped(
+                                count: preview.totalSkipped),
                             style: const TextStyle(
                               color: AppColors.destructive,
                               fontSize: 12,
@@ -1006,6 +1011,7 @@ class PrivacySettingsScreen extends ConsumerWidget {
       if (confirm != true) return;
       if (!context.mounted) return;
 
+      progressShown = true;
       showDialog(
         context: context,
         barrierDismissible: false,
@@ -1070,8 +1076,11 @@ class PrivacySettingsScreen extends ConsumerWidget {
       });
 
       if (context.mounted) {
-        Navigator.pop(context); // Close progress
-        
+        if (progressShown) {
+          Navigator.pop(context); // Close progress
+          progressShown = false;
+        }
+
         await showDialog(
           context: context,
           builder: (ctx) => AlertDialog(
@@ -1083,7 +1092,7 @@ class PrivacySettingsScreen extends ConsumerWidget {
                 const SizedBox(width: 12),
                 Expanded(
                   child: Text(
-                    'Import Completed',
+                    ctx.t.privacy.importCompletedTitle,
                     style: TextStyle(
                       fontFamily: 'Inter',
                       fontSize: 20,
@@ -1100,19 +1109,19 @@ class PrivacySettingsScreen extends ConsumerWidget {
               children: [
                 Text(
                   importResult.replaced
-                      ? 'Your data was replaced with the backup. Summary:'
-                      : 'Your data was merged with the backup. Summary:',
+                      ? ctx.t.privacy.importSummaryReplaced
+                      : ctx.t.privacy.importSummaryMerged,
                   style: TextStyle(
                     fontFamily: 'Inter',
                     color: ctx.appColors.mutedForeground,
                   ),
                 ),
                 const SizedBox(height: 16),
-                _buildSummaryRow(ctx, LucideIcons.check, _mergeRowText(importResult, importResult.habits, 'Habits')),
-                _buildSummaryRow(ctx, LucideIcons.history, _mergeRowText(importResult, importResult.logs, 'Habit Logs')),
-                _buildSummaryRow(ctx, LucideIcons.target, _mergeRowText(importResult, importResult.macroGoals, 'Macro Goals')),
-                _buildSummaryRow(ctx, LucideIcons.folder, _mergeRowText(importResult, importResult.categories, 'Categories')),
-                _buildSummaryRow(ctx, LucideIcons.smile, _mergeRowText(importResult, importResult.moods, 'Mood Logs')),
+                _buildSummaryRow(ctx, LucideIcons.check, _mergeRowText(ctx, importResult, importResult.habits, ctx.t.privacy.importEntityHabits)),
+                _buildSummaryRow(ctx, LucideIcons.history, _mergeRowText(ctx, importResult, importResult.logs, ctx.t.privacy.importEntityLogs)),
+                _buildSummaryRow(ctx, LucideIcons.target, _mergeRowText(ctx, importResult, importResult.macroGoals, ctx.t.privacy.importEntityMacroGoals)),
+                _buildSummaryRow(ctx, LucideIcons.folder, _mergeRowText(ctx, importResult, importResult.categories, ctx.t.privacy.importEntityCategories)),
+                _buildSummaryRow(ctx, LucideIcons.smile, _mergeRowText(ctx, importResult, importResult.moods, ctx.t.privacy.importEntityMoods)),
               ],
             ),
             actions: [
@@ -1124,7 +1133,7 @@ class PrivacySettingsScreen extends ConsumerWidget {
                   shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
                   padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 12),
                 ),
-                child: const Text('Awesome!', style: TextStyle(fontWeight: FontWeight.w600)),
+                child: Text(ctx.t.privacy.importSummaryDone, style: const TextStyle(fontWeight: FontWeight.w600)),
               ),
             ],
           ),
@@ -1133,8 +1142,11 @@ class PrivacySettingsScreen extends ConsumerWidget {
     } catch (e, stack) {
       AppLogger.error('Import failed', e, stack);
       if (context.mounted) {
-        Navigator.pop(context); // Close progress if open
-        
+        if (progressShown) {
+          Navigator.pop(context); // Close progress if open
+          progressShown = false;
+        }
+
         await showDialog(
           context: context,
           builder: (ctx) => AlertDialog(
@@ -1146,7 +1158,7 @@ class PrivacySettingsScreen extends ConsumerWidget {
                 const SizedBox(width: 12),
                 Expanded(
                   child: Text(
-                    'Import Failed',
+                    ctx.t.privacy.importFailedTitle,
                     style: TextStyle(
                       fontFamily: 'Inter',
                       fontSize: 20,
@@ -1185,12 +1197,24 @@ class PrivacySettingsScreen extends ConsumerWidget {
 
   /// One summary line. Replace mode shows a single total; merge mode breaks the
   /// outcome into added / updated / unchanged.
-  String _mergeRowText(ImportMergeStats stats, EntityMerge m, String label) {
+  String _mergeRowText(
+    BuildContext context,
+    ImportMergeStats stats,
+    EntityMerge m,
+    String label,
+  ) {
+    final t = context.t.privacy;
     final base = stats.replaced
-        ? '${m.total} $label'
-        : '$label: ${m.added} added, ${m.updated} updated, '
-              '${m.unchanged} unchanged';
-    return m.skipped > 0 ? '$base, ${m.skipped} skipped' : base;
+        ? t.importRowReplace(count: m.total, label: label)
+        : t.importRowMerge(
+            label: label,
+            added: m.added,
+            updated: m.updated,
+            unchanged: m.unchanged,
+          );
+    return m.skipped > 0
+        ? '$base${t.importRowSkipped(count: m.skipped)}'
+        : base;
   }
 
   Widget _buildSummaryRow(BuildContext context, IconData icon, String text) {

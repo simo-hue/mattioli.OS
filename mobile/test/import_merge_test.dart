@@ -496,5 +496,33 @@ void main() {
       expect((await db.query('goal_logs')).single['value'], isNull);
       await db.close();
     });
+
+    test('an LWW update keeps the existing local created_at', () async {
+      final db = await openDb();
+      await merge(
+        db,
+        clean({
+          'mode': 'private',
+          'habits': [
+            {'id': 'g1', 'title': 'A', 'color': '#111111', 'start_date': '2026-01-01', 'created_at': '2020-01-01T00:00:00.000Z', 'updated_at': '2026-01-01T00:00:00.000Z'},
+          ],
+        }),
+      );
+      await merge(
+        db,
+        clean({
+          'mode': 'private',
+          'habits': [
+            {'id': 'g1', 'title': 'B', 'color': '#222222', 'start_date': '2026-01-01', 'created_at': '2099-01-01T00:00:00.000Z', 'updated_at': '2026-02-01T00:00:00.000Z'},
+          ],
+        }),
+      );
+      final row =
+          (await db.query('goals', where: 'id = ?', whereArgs: ['g1'])).single;
+      expect(row['title'], 'B', reason: 'newer import applied');
+      expect(row['created_at'], '2020-01-01T00:00:00.000Z',
+          reason: "existing created_at kept, not the file's future value");
+      await db.close();
+    });
   });
 }

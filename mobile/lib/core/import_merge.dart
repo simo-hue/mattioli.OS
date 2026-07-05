@@ -667,7 +667,9 @@ Future<ImportMergeStats> applyPrivateImportMerge({
       // landed (rid == 0 means INSERT OR IGNORE dropped it). This keeps a
       // non-inserted goal out of knownGoalIds so its logs are correctly
       // orphan-skipped instead of FK-aborting the whole transaction.
-      final rid = await txn.insert('goals', _goalRow(g, id, owner, now, now),
+      final rid = await txn.insert(
+          'goals',
+          _goalRow(g, id, owner, (g['created_at'] as String?) ?? now, now),
           conflictAlgorithm: ConflictAlgorithm.ignore);
       if (rid != 0) {
         knownGoalIds.add(id);
@@ -713,8 +715,10 @@ Future<ImportMergeStats> applyPrivateImportMerge({
         (remapped != null && validCatIds.contains(remapped)) ? remapped : null;
     final existing = existingMacros[id];
     if (existing == null) {
-      final rid = await txn.insert('long_term_goals',
-          _macroRow(g, id, owner, categoryId, now, now),
+      final rid = await txn.insert(
+          'long_term_goals',
+          _macroRow(g, id, owner, categoryId,
+              (g['created_at'] as String?) ?? now, now),
           conflictAlgorithm: ConflictAlgorithm.ignore);
       if (rid != 0) {
         stats.macroGoals.added++;
@@ -865,7 +869,9 @@ Map<String, Object?> _goalRow(
     'start_date': g['start_date'],
     'end_date': g['end_date'],
     'display_order': g['display_order'],
-    'created_at': g['created_at'] ?? createdAt,
+    // createdAt is decided by the caller (file's value on insert, existing row's
+    // on an LWW update) so a winning update never rewrites the local created_at.
+    'created_at': createdAt,
     'updated_at': g['updated_at'] ?? updatedAt,
     'reminder_time': g['reminder_time'],
   };
@@ -891,7 +897,7 @@ Map<String, Object?> _macroRow(
     'quarter': g['quarter'],
     'category_key': g['category_key'],
     'category_id': categoryId,
-    'created_at': g['created_at'] ?? createdAt,
+    'created_at': createdAt,
     'updated_at': g['updated_at'] ?? updatedAt,
   };
 }

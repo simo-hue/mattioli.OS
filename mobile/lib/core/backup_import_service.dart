@@ -228,49 +228,59 @@ class BackupImportService {
   /// Recomputes `goal_logs.streak` over the merged history for [goalIds] and
   /// writes back the rows that changed. Best-effort: a failure here never fails
   /// the import (the data landed; only the denormalized streak may be stale).
+  ///
+  /// Bounded network cost: two reads (start dates + all affected logs) and one
+  /// chunked bulk upsert of the changed rows — not one UPDATE per log.
   Future<void> _recomputeCloudStreaks(
       SupabaseClient client, String userId, Set<String> goalIds) async {
     if (goalIds.isEmpty) return;
     try {
-      for (final goalId in goalIds) {
-        final goalRes = await client
-            .from('goals')
-            .select('start_date')
-            .eq('id', goalId)
-            .maybeSingle();
-        final startDate = DateTime.tryParse(
-                (goalRes?['start_date'] as String?) ?? '') ??
-            DateTime(2000);
+      final ids = goalIds.toList();
 
-        final logRes = await client
-            .from('goal_logs')
-            .select('id,date,status,streak')
-            .eq('goal_id', goalId);
-        final logRows =
-            (logRes as List).map((e) => (e as Map).cast<String, dynamic>());
+      final goalRes = await client.from('goals').select('id,start_date').inFilter(
+          'id', ids);
+      final startById = {
+        for (final r in (goalRes as List)
+            .map((e) => (e as Map).cast<String, dynamic>()))
+          r['id'] as String:
+              DateTime.tryParse((r['start_date'] as String?) ?? '') ??
+                  DateTime(2000),
+      };
 
+      final logRes =
+          await client.from('goal_logs').select().inFilter('goal_id', ids);
+      final byGoal = <String, List<Map<String, dynamic>>>{};
+      for (final r in (logRes as List)
+          .map((e) => (e as Map).cast<String, dynamic>())) {
+        (byGoal[r['goal_id'] as String] ??= []).add(r);
+      }
+
+      final changed = <Map<String, dynamic>>[];
+      for (final goalId in ids) {
+        final rows = byGoal[goalId] ?? const [];
+        final startDate = startById[goalId] ?? DateTime(2000);
         final map = <String, Map<String, String>>{};
-        final dateById = <String, DateTime>{};
-        for (final r in logRows) {
+        final dateByRow = <Map<String, dynamic>, DateTime>{};
+        for (final r in rows) {
           final d = DateTime.tryParse(r['date'] as String);
           if (d == null) continue;
           final key =
               '${d.year}-${d.month.toString().padLeft(2, '0')}-${d.day.toString().padLeft(2, '0')}';
           (map[key] ??= <String, String>{})[goalId] = r['status'] as String;
-          dateById[r['id'] as String] = d;
+          dateByRow[r] = d;
         }
-
-        for (final r in logRows) {
-          final id = r['id'] as String;
-          final d = dateById[id];
+        for (final r in rows) {
+          final d = dateByRow[r];
           if (d == null) continue;
           final newStreak = computeStreak(
               habitId: goalId, date: d, logs: map, startDate: startDate);
           if (newStreak != ((r['streak'] as num?)?.toInt() ?? 0)) {
-            await client.from('goal_logs').update({'streak': newStreak}).eq('id', id);
+            changed.add({...r, 'streak': newStreak});
           }
         }
       }
+
+      await _bulkUpsert(client, 'goal_logs', changed);
     } catch (e, s) {
       AppLogger.warning('[Import] cloud streak recompute failed', e, s);
     }

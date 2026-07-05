@@ -2310,3 +2310,34 @@ iCloud Sync core is implemented, unit-tested (160), and iOS-compiling. Remaining
       green**; `flutter analyze` **zero errors** project-wide.
     - **No new dependencies, endpoints, or migrations.** Cloud execution
       (network I/O) still needs on-device manual verification — see TO_SIMO_DO.md.
+
+- **2026-07-05: Import merge — should-fix + polish follow-up**
+  - *Details*: Cleared the remaining non-blocking items after the must-fix batch.
+    - **Cloud streak recompute de-N+1'd**: `_recomputeCloudStreaks` was doing one
+      HTTP `UPDATE` per changed log (a request storm on large cloud imports). Now
+      two reads (start dates + all affected logs, via `inFilter`) and a single
+      chunked bulk upsert of only the changed rows.
+    - **Error-path no longer pops the settings screen**: `_importData` tracks a
+      `progressShown` flag so an error thrown *before* the progress dialog opens
+      (e.g. a corrupt file during preview) shows the error dialog without popping
+      the whole `PrivacySettingsScreen`.
+    - **`created_at` preserved on LWW update**: the row builders now take the
+      caller-decided `created_at` (file's on insert, existing row's on a winning
+      update), so a merge never rewrites the local `created_at` with the file's.
+    - **Import dialogs localized**: the success/failure dialogs, the per-entity
+      summary rows (added/updated/unchanged/skipped), and the preview "invalid
+      records skipped" warning were hardcoded English; now driven by 14 new i18n
+      keys across all 5 locales (en/it/es/de/ar), regenerated via `dart run slang`.
+  - *Tech Notes*:
+    - `lib/core/backup_import_service.dart`: batched `_recomputeCloudStreaks`.
+    - `lib/core/import_merge.dart`: `_goalRow`/`_macroRow` use the passed
+      `created_at`; insert callers pass the file's, update callers the existing.
+    - `lib/ui/.../privacy_settings_screen.dart`: `progressShown` guard;
+      `_mergeRowText` + dialogs use `context.t.privacy.import*` keys.
+    - `lib/i18n/*.i18n.json`: +14 keys (importCompletedTitle, importFailedTitle,
+      importSummary{Replaced,Merged,Done}, importPreviewSkipped, importEntity*,
+      importRow{Replace,Merge,Skipped}).
+    - **Tests**: added cases for `created_at` preservation and non-numeric log
+      `value` coercion; full suite **186/186 green**, `flutter analyze` clean.
+    - Cosmetic note: the *cloud* LWW path still writes the file's `created_at` on
+      update (it doesn't fetch the existing one); harmless and left as-is.

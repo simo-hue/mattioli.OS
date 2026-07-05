@@ -12,3 +12,7 @@
 - [ ] Profile photo when updated from the settings it becames black in the other pages and does not render the users' photo;
 - [ ] Change the bar in the month from the dashboard as right now are colored in a specific color but I would love to have them to have a performance base color like we have in the home page in the monthly view ( based on the completed and failed habits ). If the current implementation is not the best we can also decide to implement a new professional one that allignes better with this goal;
 - [ ] 
+
+---
+
+fastlane ios update_notes

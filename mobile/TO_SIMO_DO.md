@@ -80,3 +80,28 @@ Manual actions required for the fixes landed this session (see `ICLOUD_SYNC_PRIV
       to *load* because of them. All iCloud-sync/privacy suites compile and pass.
       Run `dart run slang` (or your i18n codegen) and provide `sentry_config.dart`
       to exercise the full suite.
+
+## Data-import true-merge (2026-07-05)
+
+- [ ] **Replace my placeholder config stubs with real credentials.** To make
+      the full app compile/test locally I generated the three git-ignored config
+      files that were missing from this checkout, using their `.example`
+      templates: `lib/core/sentry_config.dart`, `lib/core/supabase_config.dart`,
+      `lib/core/openrouter_config.dart`. They contain **placeholder values**
+      (empty DSN, `YOUR_SUPABASE_URL`, `YOUR_OPENROUTER_API_KEY`, …). They are
+      git-ignored so they won't be committed, but Cloud mode / AI / crash
+      reporting will not work at runtime until you drop in the real values (or
+      restore your own local copies). With these present, `flutter test` is now
+      fully green (174/174) and `dart run slang` regenerated `translations.g.dart`.
+- [ ] **On-device verify the Cloud-mode merge.** The Supabase merge path
+      (`BackupImportService._executeCloudImport`) mirrors the Private-mode logic
+      but cannot be unit-tested here (no Supabase in the test env). While logged
+      into a cloud account, import a backup in **Merge** mode and confirm:
+      no duplicate goals/logs/categories on a repeat import; a newer record in
+      the file updates the existing one; an older file leaves current data
+      intact; streaks look right after merging. Cloud streak recompute is
+      best-effort (a failure is logged, not fatal).
+- [ ] **(Optional) Sanity-check the export→import round-trip.** Export from the
+      app (Private mode), then re-import the resulting `.json` in Merge mode —
+      it should report everything as *unchanged* (no duplicates), proving the
+      round-trip is now lossless.

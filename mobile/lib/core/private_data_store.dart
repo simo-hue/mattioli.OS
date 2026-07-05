@@ -1,6 +1,7 @@
 import '../models/goal.dart';
 import '../models/macro_goal.dart';
 import '../models/daily_mood.dart';
+import 'import_merge_stats.dart';
 
 /// Abstraction over the on-device Private-mode store.
 ///
@@ -83,7 +84,10 @@ abstract interface class PrivateDataStore {
 
   Future<Map<String, dynamic>> exportData();
 
-  Future<void> importData({
+  /// Imports [backupData] (already normalized to canonical shape by
+  /// [normalizeBackup]) either by replacing existing data or by a true
+  /// identity-based merge. Returns the per-entity add/update/unchanged counts.
+  Future<ImportMergeStats> importData({
     required Map<String, dynamic> backupData,
     required bool replaceExisting,
   });

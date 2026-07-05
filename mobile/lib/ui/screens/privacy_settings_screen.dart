@@ -7,6 +7,7 @@ import 'package:share_plus/share_plus.dart';
 import 'package:file_picker/file_picker.dart';
 import 'dart:convert';
 import '../../core/backup_import_service.dart';
+import '../../core/import_merge_stats.dart';
 import '../../providers/goal_provider.dart';
 import '../../providers/macro_goals_provider.dart';
 import '../../providers/macro_goal_categories_provider.dart';
@@ -901,7 +902,7 @@ class PrivacySettingsScreen extends ConsumerWidget {
     try {
       final result = await FilePicker.pickFiles(
         type: FileType.custom,
-        allowedExtensions: ['zip'],
+        allowedExtensions: ['zip', 'json'],
       );
 
       if (result == null || result.files.isEmpty) return;
@@ -914,7 +915,7 @@ class PrivacySettingsScreen extends ConsumerWidget {
       final importService = BackupImportService(privateStore, supabase);
 
       // 1. Preview
-      final preview = await importService.parseZipPreview(path);
+      final preview = await importService.parsePreview(path);
 
       if (!context.mounted) return;
 
@@ -1037,7 +1038,7 @@ class PrivacySettingsScreen extends ConsumerWidget {
 
       // 3. Execute
       final importResult = await importService.executeImport(
-        rawData: preview.rawData,
+        canonicalData: preview.canonicalData,
         replaceExisting: replaceExisting,
         isPrivateMode: isPrivateMode,
       );
@@ -1085,18 +1086,20 @@ class PrivacySettingsScreen extends ConsumerWidget {
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
                 Text(
-                  'Your data has been successfully imported. Here is the summary:',
+                  importResult.replaced
+                      ? 'Your data was replaced with the backup. Summary:'
+                      : 'Your data was merged with the backup. Summary:',
                   style: TextStyle(
                     fontFamily: 'Inter',
                     color: ctx.appColors.mutedForeground,
                   ),
                 ),
                 const SizedBox(height: 16),
-                _buildSummaryRow(ctx, LucideIcons.check, '${importResult.habitsCount} Habits'),
-                _buildSummaryRow(ctx, LucideIcons.history, '${importResult.logsCount} Habit Logs'),
-                _buildSummaryRow(ctx, LucideIcons.target, '${importResult.macroGoalsCount} Macro Goals'),
-                _buildSummaryRow(ctx, LucideIcons.folder, '${importResult.categoriesCount} Categories'),
-                _buildSummaryRow(ctx, LucideIcons.smile, '${importResult.moodsCount} Mood Logs'),
+                _buildSummaryRow(ctx, LucideIcons.check, _mergeRowText(importResult, importResult.habits, 'Habits')),
+                _buildSummaryRow(ctx, LucideIcons.history, _mergeRowText(importResult, importResult.logs, 'Habit Logs')),
+                _buildSummaryRow(ctx, LucideIcons.target, _mergeRowText(importResult, importResult.macroGoals, 'Macro Goals')),
+                _buildSummaryRow(ctx, LucideIcons.folder, _mergeRowText(importResult, importResult.categories, 'Categories')),
+                _buildSummaryRow(ctx, LucideIcons.smile, _mergeRowText(importResult, importResult.moods, 'Mood Logs')),
               ],
             ),
             actions: [
@@ -1165,6 +1168,14 @@ class PrivacySettingsScreen extends ConsumerWidget {
         );
       }
     }
+  }
+
+  /// One summary line. Replace mode shows a single total; merge mode breaks the
+  /// outcome into added / updated / unchanged.
+  String _mergeRowText(ImportMergeStats stats, EntityMerge m, String label) {
+    if (stats.replaced) return '${m.total} $label';
+    return '$label: ${m.added} added, ${m.updated} updated, '
+        '${m.unchanged} unchanged';
   }
 
   Widget _buildSummaryRow(BuildContext context, IconData icon, String text) {

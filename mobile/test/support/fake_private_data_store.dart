@@ -19,6 +19,7 @@
 // for `Supabase.instance` would throw. Driving CRUD through this fake proves
 // Private-mode writes stay entirely on-device.
 
+import 'package:mattioli_os/core/import_merge_stats.dart';
 import 'package:mattioli_os/core/private_data_store.dart';
 import 'package:mattioli_os/models/daily_mood.dart';
 import 'package:mattioli_os/models/goal.dart';
@@ -172,11 +173,12 @@ class FakePrivateDataStore implements PrivateDataStore {
 
   // ── Import / export / wipe ──────────────────────────────────────────────
   @override
-  Future<void> importData({
+  Future<ImportMergeStats> importData({
     required Map<String, dynamic> backupData,
     bool replaceExisting = false,
   }) async {
     calls.add('importData');
+    return ImportMergeStats(replaced: replaceExisting);
   }
 
   @override

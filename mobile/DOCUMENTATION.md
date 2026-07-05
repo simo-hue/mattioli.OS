@@ -2205,3 +2205,57 @@ iCloud Sync core is implemented, unit-tested (160), and iOS-compiling. Remaining
       private_db_schema_test). All sync/privacy suites green; `flutter analyze`
       clean on the 7 changed lib files.
     - **No new dependencies. No new endpoints.** Native change is iOS-only.
+
+- **2026-07-05: True identity-based merge for data import (iOS/mobile)**
+  - *Details*: The import flow already offered a Replace/Merge choice, but
+    "Merge" was fake — it minted fresh UUIDs for every imported record and
+    appended them, so re-importing a backup duplicated all goals/logs/macro
+    goals (moods silently collided on `UNIQUE(user_id,date)` and were dropped).
+    Replaced it with a real merge: records are matched by identity and
+    reconciled with **last-write-wins by `updated_at`**. Replace mode is
+    unchanged (wipe the 5 domain tables, load fresh; profile/settings untouched).
+    Merge is **union-only** (never deletes local records absent from the file).
+    Applies to **both** stores — Private mode (SQLCipher, precise local LWW) and
+    Cloud mode (Supabase, same identity model via fetch-existing + newer-wins
+    upsert). Also fixed the broken export↔import round-trip: import is now
+    format-aware and the app's own JSON export is re-importable.
+  - *Identity & conflict rules*:
+    - Goals & macro goals → by `id`; goal logs → natural key `(goal_id, date)`;
+      daily moods → natural key `date`; all last-write-wins on `updated_at`.
+    - A **missing** incoming `updated_at` is treated as *oldest* (never clobbers
+      existing data); ties keep the existing record. See `incomingWins()`.
+    - Categories → by `id`, else case-insensitive **name** (DB enforces
+      `UNIQUE(user_id,name)`); existing wins, only a missing `archived_at` is
+      filled. Referencing macro goals are remapped onto the surviving category id
+      (prevents FK violations and duplicate "Health"/"Work" categories on
+      re-import). Merge preserves original ids instead of minting new ones.
+    - Orphan logs (goal absent locally and in the file) are skipped to respect
+      the FK. `goal_logs.streak` is **recomputed** from the merged history for
+      every touched goal (via `computeStreak`), never trusted from the file.
+  - *Tech Notes*:
+    - **New files**: `lib/core/import_merge_stats.dart` (`ImportMergeStats` /
+      `EntityMerge` result counts + `incomingWins`/`parseImportTimestamp`);
+      `lib/core/import_merge.dart` (`normalizeBackup` — web-ZIP *and* app-JSON
+      shapes, current + legacy map-logs, HSL→hex, into one canonical structure —
+      plus `applyPrivateImportMerge` running inside one transaction).
+    - **Interface change**: `PrivateDataStore.importData` now returns
+      `Future<ImportMergeStats>` (was `void`); `PrivateLocalDatabase.importData`
+      delegates to `applyPrivateImportMerge`; fake updated.
+    - `BackupImportService`: `parseZipPreview`→`parsePreview` (accepts `.zip`
+      *and* `.json`); `executeImport` takes `canonicalData` and returns stats;
+      `_executeCloudImport` rewritten for LWW + best-effort cloud streak
+      recompute.
+    - `PrivateLocalDatabase.exportData` now emits **full rows** (ids +
+      timestamps + log value/streak) as lists under `schemaVersion:1` so the
+      export round-trips losslessly and carries `updated_at` for LWW.
+    - UI (`privacy_settings_screen.dart`): file picker accepts `zip`+`json`;
+      post-import summary now reports **added / updated / unchanged** per entity.
+    - i18n: `importDataSubtitle` + `importModeMergeDesc` reworded across all 5
+      locales (en/it/es/de/ar); regenerated `translations.g.dart` via `dart run
+      slang`.
+    - **Tests**: `test/import_merge_test.dart` (9 tests: normalizer web/native/
+      legacy shapes; merge dedup, LWW both directions, category name-dedup +
+      remap, replace-wipes, streak recompute, orphan-skip). Full suite **174/174
+      green**; `flutter analyze` reports **zero errors** project-wide.
+    - **No new dependencies. No new endpoints.** No schema/migration change
+      (`macro_goal_categories.updated_at` from v3 is reused).

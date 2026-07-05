@@ -13,6 +13,8 @@ import '../models/goal.dart';
 import '../models/macro_goal.dart';
 import '../models/daily_mood.dart';
 import 'app_logger.dart';
+import 'import_merge.dart';
+import 'import_merge_stats.dart';
 import 'private_analytics.dart';
 import 'private_data_store.dart';
 import 'private_db_schema.dart';
@@ -547,35 +549,105 @@ class PrivateLocalDatabase implements PrivateDataStore {
 
   @override
   Future<Map<String, dynamic>> exportData() async {
+    final db = await _database();
+    final owner = await ownerId();
+    Future<List<Map<String, Object?>>> rows(String table, {String? orderBy}) =>
+        db.query(
+          table,
+          where: 'user_id = ?',
+          whereArgs: [owner],
+          orderBy: orderBy,
+        );
+
+    final goals = await rows(
+      'goals',
+      orderBy: 'display_order ASC, created_at ASC',
+    );
+    final logs = await rows('goal_logs');
+    final macros = await rows('long_term_goals', orderBy: 'created_at ASC');
+    final cats = await rows('macro_goal_categories', orderBy: 'created_at ASC');
+    final moods = await rows('daily_moods');
+
+    // Full rows (ids + timestamps) so this export round-trips losslessly and an
+    // import can reconcile by identity + last-write-wins. `frequency_days` is
+    // stored JSON-encoded; decode it back to a list for the portable file.
     return {
+      'schemaVersion': 1,
       'exportDate': DateTime.now().toIso8601String(),
       'mode': 'private',
       'profile': await loadProfileRow(),
       'settings': await loadSettingsRow(),
-      'habits': (await loadGoals()).map((g) => g.toJson()).toList(),
-      'habitLogs': await loadHabitLogs(),
-      'macroGoals': (await loadMacroGoals()).map((g) => g.toJson()).toList(),
-      'macroGoalCategories':
-          (await loadMacroGoalCategories(includeArchived: true))
-              .map(
-                (c) => {
-                  'id': c.key,
-                  'name': c.label,
-                  'color': _colorToHex(c.color),
-                  if (c.archivedAt != null)
-                    'archived_at': c.archivedAt!.toIso8601String(),
-                },
-              )
-              .toList(),
-      'dailyMoods': (await loadDailyMoods()).map(
-        (key, value) => MapEntry(key, {
-          'id': value.id,
-          'user_id': value.userId,
-          'date': value.date,
-          'mood_score': value.moodScore,
-          'energy_score': value.energyScore,
-        }),
-      ),
+      'habits': [
+        for (final g in goals)
+          {
+            'id': g['id'],
+            'title': g['title'],
+            'description': g['description'],
+            'icon': g['icon'],
+            'color': g['color'],
+            'frequency_days': g['frequency_days'] == null
+                ? null
+                : jsonDecode(g['frequency_days'] as String),
+            'start_date': g['start_date'],
+            'end_date': g['end_date'],
+            'display_order': g['display_order'],
+            'created_at': g['created_at'],
+            'updated_at': g['updated_at'],
+            'reminder_time': g['reminder_time'],
+          },
+      ],
+      'habitLogs': [
+        for (final l in logs)
+          {
+            'id': l['id'],
+            'goal_id': l['goal_id'],
+            'date': l['date'],
+            'status': l['status'],
+            'value': l['value'],
+            'created_at': l['created_at'],
+            'updated_at': l['updated_at'],
+            'streak': l['streak'],
+          },
+      ],
+      'macroGoals': [
+        for (final g in macros)
+          {
+            'id': g['id'],
+            'title': g['title'],
+            'status': g['status'],
+            'type': g['type'],
+            'year': g['year'],
+            'month': g['month'],
+            'week_number': g['week_number'],
+            'quarter': g['quarter'],
+            'category_key': g['category_key'],
+            'category_id': g['category_id'],
+            'created_at': g['created_at'],
+            'updated_at': g['updated_at'],
+          },
+      ],
+      'macroGoalCategories': [
+        for (final c in cats)
+          {
+            'id': c['id'],
+            'name': c['name'],
+            'color': c['color'],
+            'created_at': c['created_at'],
+            'updated_at': c['updated_at'],
+            'archived_at': c['archived_at'],
+          },
+      ],
+      'dailyMoods': [
+        for (final m in moods)
+          {
+            'id': m['id'],
+            'date': m['date'],
+            'mood_score': m['mood_score'],
+            'energy_score': m['energy_score'],
+            'created_at': m['created_at'],
+            'updated_at': m['updated_at'],
+          },
+      ],
     };
   }
 
@@ -611,147 +683,24 @@ class PrivateLocalDatabase implements PrivateDataStore {
   }
 
   @override
-  Future<void> importData({
+  Future<ImportMergeStats> importData({
     required Map<String, dynamic> backupData,
     required bool replaceExisting,
   }) async {
     final db = await _database();
     final owner = await ownerId();
-    final now = _now();
-
-    await db.transaction((txn) async {
-      if (replaceExisting) {
-        // Wipe existing user data (except profiles and settings)
-        await txn.delete('goal_logs');
-        await txn.delete('daily_moods');
-        await txn.delete('long_term_goals');
-        await txn.delete('macro_goal_categories');
-        await txn.delete('goals');
-      }
-
-      // Insert Categories
-      if (backupData.containsKey('macro_goal_categories')) {
-        for (final cat
-            in (backupData['macro_goal_categories'] as List)
-                .cast<Map<String, dynamic>>()) {
-          final catRow = {
-            'id': cat['id'],
-            'user_id': owner,
-            'name': cat['name'],
-            'color': cat['color'],
-            'created_at': cat['created_at'] ?? now,
-            'archived_at': cat['archived_at'],
-          };
-          await txn.insert(
-            'macro_goal_categories',
-            catRow,
-            conflictAlgorithm: ConflictAlgorithm.ignore,
-          );
-        }
-      }
-
-      // Insert Goals (Habits)
-      if (backupData.containsKey('goals')) {
-        for (final g
-            in (backupData['goals'] as List).cast<Map<String, dynamic>>()) {
-          final goalRow = {
-            'id': g['id'],
-            'user_id': owner,
-            'title': g['title'],
-            'description': g['description'],
-            'icon': g['icon'],
-            'color': g['color'],
-            'frequency_days': g['frequency_days'] != null
-                ? jsonEncode(g['frequency_days'])
-                : null,
-            'start_date': g['start_date'],
-            'end_date': g['end_date'],
-            'display_order': g['display_order'],
-            'created_at': g['created_at'] ?? now,
-            'updated_at': g['updated_at'] ?? now,
-            'reminder_time': g['reminder_time'],
-          };
-          await txn.insert(
-            'goals',
-            goalRow,
-            conflictAlgorithm: ConflictAlgorithm.ignore,
-          );
-        }
-      }
-
-      // Insert Goal Logs
-      if (backupData.containsKey('goal_logs')) {
-        for (final l
-            in (backupData['goal_logs'] as List).cast<Map<String, dynamic>>()) {
-          final logRow = {
-            'id': l['id'],
-            'user_id': owner,
-            'goal_id': l['goal_id'],
-            'date': l['date'],
-            'status': l['status'],
-            'value': l['value'],
-            'created_at': l['created_at'] ?? now,
-            'updated_at': l['updated_at'] ?? now,
-            'streak': l['streak'] ?? 0,
-          };
-          await txn.insert(
-            'goal_logs',
-            logRow,
-            conflictAlgorithm: ConflictAlgorithm.ignore,
-          );
-        }
-      }
-
-      // Insert Macro Goals
-      if (backupData.containsKey('long_term_goals')) {
-        for (final g
-            in (backupData['long_term_goals'] as List)
-                .cast<Map<String, dynamic>>()) {
-          final ltgRow = {
-            'id': g['id'],
-            'user_id': owner,
-            'title': g['title'],
-            'status': g['status'],
-            'type': g['type'],
-            'year': g['year'],
-            'month': g['month'],
-            'week_number': g['week_number'],
-            'quarter': g['quarter'],
-            'category_key': g['category_key'],
-            'category_id': g['category_id'],
-            'created_at': g['created_at'] ?? now,
-            'updated_at': g['updated_at'] ?? now,
-          };
-          await txn.insert(
-            'long_term_goals',
-            ltgRow,
-            conflictAlgorithm: ConflictAlgorithm.ignore,
-          );
-        }
-      }
-
-      // Insert Daily Moods
-      if (backupData.containsKey('daily_moods')) {
-        for (final m
-            in (backupData['daily_moods'] as List)
-                .cast<Map<String, dynamic>>()) {
-          final moodRow = {
-            'id': m['id'],
-            'user_id': owner,
-            'date': m['date'],
-            'mood_score': m['mood_score'],
-            'energy_score': m['energy_score'],
-            'created_at': m['created_at'] ?? now,
-            'updated_at': m['updated_at'] ?? now,
-          };
-          await txn.insert(
-            'daily_moods',
-            moodRow,
-            conflictAlgorithm: ConflictAlgorithm.ignore,
-          );
-        }
-      }
-    });
+    // The whole import is one transaction: on any failure nothing is applied,
+    // and the post-merge streak recompute reads back its own writes.
+    return db.transaction<ImportMergeStats>(
+      (txn) => applyPrivateImportMerge(
+        txn: txn,
+        owner: owner,
+        canonical: backupData,
+        replaceExisting: replaceExisting,
+        now: _now(),
+        newId: () => _uuid.v4(),
+      ),
+    );
   }
 
   Future<void> _deletePrivateProfileFiles(String? avatarPath) async {

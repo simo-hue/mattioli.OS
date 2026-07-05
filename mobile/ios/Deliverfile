@@ -1,5 +1,5 @@
 release_notes({
-  "default" => "UI improvements"
+  "default" => "Smarter data import & fixes"
 })
 
 privacy_url({

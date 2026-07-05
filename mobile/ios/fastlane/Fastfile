@@ -24,24 +24,24 @@ platform :ios do
     UI.message("Lingue da aggiornare: #{all_locales.join(', ')}")
     
     translations = {
-      "it" => "Logs nelle impostazioni",
-      "en" => "Logs in settings",
-      "fr" => "Logs dans les paramètres",
-      "vi" => "Nhật ký trong cài đặt",
-      "ko" => "설정의 로그",
-      "es" => "Registros en los ajustes",
-      "id" => "Log di pengaturan",
-      "de" => "Protokolle in den Einstellungen",
-      "sk" => "Denníky v nastaveniach",
-      "sv" => "Loggar i inställningar",
-      "da" => "Logfiler i indstillinger",
-      "pt" => "Logs nas configurações",
-      "he" => "יומנים בהגדרות",
-      "el" => "Αρχεία καταγραφής στις ρυθμίσεις",
-      "zh" => "设置中的日志",
-      "ja" => "設定のログ",
-      "ru" => "Журналы в настройках",
-      "ar" => "السجلات في الإعدادات"
+      "it" => "Importazione dati migliorata e correzioni",
+      "en" => "Smarter data import & fixes",
+      "fr" => "Import de données amélioré et corrections",
+      "vi" => "Nhập dữ liệu thông minh hơn và sửa lỗi",
+      "ko" => "더 똑똑해진 데이터 가져오기 및 버그 수정",
+      "es" => "Importación de datos mejorada y correcciones",
+      "id" => "Impor data lebih cerdas & perbaikan",
+      "de" => "Intelligenterer Datenimport & Fehlerbehebungen",
+      "sk" => "Inteligentnejší import údajov a opravy",
+      "sv" => "Smartare dataimport och buggfixar",
+      "da" => "Smartere dataimport og fejlrettelser",
+      "pt" => "Importação de dados mais inteligente e correções",
+      "he" => "ייבוא נתונים חכם יותר ותיקונים",
+      "el" => "Πιο έξυπνη εισαγωγή δεδομένων και διορθώσεις",
+      "zh" => "更智能的数据导入及问题修复",
+      "ja" => "よりスマートなデータインポートと修正",
+      "ru" => "Улучшенный импорт данных и исправления",
+      "ar" => "استيراد بيانات أذكى وإصلاحات"
     }
     
     all_locales.each do |locale|

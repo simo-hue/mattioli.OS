@@ -1,6 +1,6 @@
 # TO_SIMO_DO.md
 - [ ] Local AI Models ( Ollama for desktop? Other solutions? For mobile what can we do? )
-- [ ] 
+- [ ] Redesign the box of the montly calendar view in the home page as inside the box there are some wird boxes that appears when I start logging habits but I want a much more professional look ( even without anythiing but leaving a personalized color based on the performance is fine if there aren't other solutions )
 
 ## DESKTOP
 - [ ] Privacy policy in the log in must be a small icon;

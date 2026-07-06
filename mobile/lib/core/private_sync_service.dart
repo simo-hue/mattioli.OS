@@ -1,83 +1,37 @@
 import 'dart:io';
 
+import 'package:evolve_sync/evolve_sync.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../providers/shared_prefs_provider.dart';
-import 'cloudkit_bridge.dart';
-import 'cloudkit_bridge_method_channel.dart';
-import 'cloudkit_private_sync_service.dart';
+import 'app_logger.dart';
+import 'keychain_sync_secret_store.dart';
 import 'private_local_database.dart';
-import 'sync_crypto.dart';
-import 'sync_key_store.dart';
 
-class PrivateSyncStatus {
-  final bool isAvailable;
-  final bool isEnabled;
-  final DateTime? lastSyncedAt;
+/// The sync core (engine, service, crypto, bridge, schema) lives in the shared
+/// `evolve_sync` package — single source of truth with the macOS desktop app.
+/// This file provides only the mobile wiring: the Riverpod provider, the
+/// AppLogger adapter, and (via [KeychainSyncSecretStore]) the iCloud-Keychain
+/// secret store. Re-exported so callers keep one import for the sync surface.
+export 'package:evolve_sync/evolve_sync.dart';
 
-  /// Raw account status for richer UI messaging (null for the no-op service).
-  final CloudAccountStatus? account;
-  final String? message;
-
-  /// How many remote records the just-finished sync applied locally. Lets a
-  /// caller know whether to refresh the in-memory data providers (>0). 0 for
-  /// status() / no-op.
-  final int appliedChanges;
-
-  const PrivateSyncStatus({
-    required this.isAvailable,
-    required this.isEnabled,
-    this.lastSyncedAt,
-    this.account,
-    this.message,
-    this.appliedChanges = 0,
-  });
-
-  const PrivateSyncStatus.localOnly()
-      : isAvailable = false,
-        isEnabled = false,
-        lastSyncedAt = null,
-        account = null,
-        message = 'iCloud sync is not available on this platform.',
-        appliedChanges = 0;
-}
-
-abstract class PrivateSyncService {
-  Future<PrivateSyncStatus> status();
-  Future<PrivateSyncStatus> enable();
-  Future<PrivateSyncStatus> disable();
-  Future<PrivateSyncStatus> syncNow();
-
-  /// Full reset for "delete private data": wipe the CloudKit zone, delete the
-  /// shared key + canonical owner from iCloud Keychain, and turn sync off
-  /// (offline → queued and finished on the next sync). The LOCAL wipe is done
-  /// separately by [PrivateLocalDatabase.deleteAllPrivateData].
-  Future<PrivateSyncStatus> requestFullReset();
-}
-
-/// Used on Android (sync is iOS-only) and anywhere sync isn't wired.
-class NoOpPrivateSyncService implements PrivateSyncService {
-  const NoOpPrivateSyncService();
+/// Routes the shared sync core's logging through the app's [AppLogger]
+/// (Sentry breadcrumbs + privacy sanitization).
+class AppSyncLogger extends SyncLogger {
+  const AppSyncLogger();
 
   @override
-  Future<PrivateSyncStatus> status() async =>
-      const PrivateSyncStatus.localOnly();
+  void info(String message, {Map<String, dynamic>? extras}) =>
+      AppLogger.info(message, extras: extras);
 
   @override
-  Future<PrivateSyncStatus> enable() async =>
-      const PrivateSyncStatus.localOnly();
-
-  @override
-  Future<PrivateSyncStatus> disable() async =>
-      const PrivateSyncStatus.localOnly();
-
-  @override
-  Future<PrivateSyncStatus> syncNow() async =>
-      const PrivateSyncStatus.localOnly();
-
-  @override
-  Future<PrivateSyncStatus> requestFullReset() async =>
-      const PrivateSyncStatus.localOnly();
+  void error(
+    String message,
+    dynamic error, [
+    StackTrace? stackTrace,
+    Map<String, dynamic>? extras,
+  ]) =>
+      AppLogger.error(message, error, stackTrace, extras);
 }
 
 final privateSyncServiceProvider = Provider<PrivateSyncService>((ref) {
@@ -92,5 +46,6 @@ final privateSyncServiceProvider = Provider<PrivateSyncService>((ref) {
     ownerProvider: () => PrivateLocalDatabase().ownerId(),
     ownerWriter: (id) => PrivateLocalDatabase().adoptOwner(id),
     enabledStore: PrefsSyncEnabledStore(prefs),
+    logger: const AppSyncLogger(),
   );
 });

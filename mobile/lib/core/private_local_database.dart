@@ -2,6 +2,7 @@ import 'dart:convert';
 import 'dart:io';
 import 'dart:math';
 
+import 'package:evolve_sync/evolve_sync.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:path/path.dart' as p;
@@ -17,10 +18,8 @@ import 'import_merge.dart';
 import 'import_merge_stats.dart';
 import 'private_analytics.dart';
 import 'private_data_store.dart';
-import 'private_db_schema.dart';
 import 'secure_storage_utils.dart';
 import 'streak_utils.dart';
-import 'sync_local_store.dart';
 
 final privateLocalDatabaseProvider = Provider<PrivateDataStore>((ref) {
   return PrivateLocalDatabase();

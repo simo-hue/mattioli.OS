@@ -1,0 +1,144 @@
+import 'package:flutter/services.dart';
+
+import 'cloudkit_bridge.dart';
+
+/// Production [CloudKitBridge] over a MethodChannel to the native Swift
+/// implementation (`evolve/cloudkit`). It only marshals the contract —
+/// all sync logic stays in the Dart engine — and only ever passes encrypted
+/// bytes across the channel.
+class MethodChannelCloudKitBridge implements CloudKitBridge {
+  static const MethodChannel channel = MethodChannel('evolve/cloudkit');
+
+  const MethodChannelCloudKitBridge();
+
+  @override
+  Future<CloudAccountStatus> accountStatus() async {
+    // If the native channel isn't registered (e.g. a lifecycle regression where
+    // neither AppDelegate nor SceneDelegate wired it up), degrade to
+    // couldNotDetermine instead of throwing. The engine treats that as "iCloud
+    // unavailable" and no-ops, so local Private mode keeps working. This is the
+    // single gate the engine checks before every sync, so it's the one call
+    // that must never throw on a missing plugin.
+    try {
+      final raw = await channel.invokeMethod<String>('accountStatus');
+      return _statusFromString(raw);
+    } on MissingPluginException {
+      return CloudAccountStatus.couldNotDetermine;
+    }
+  }
+
+  @override
+  Future<void> ensureZone() async {
+    try {
+      await channel.invokeMethod<void>('ensureZone');
+    } on MissingPluginException {
+      // No-op: the account gate already short-circuits sync when the channel is
+      // missing; this just keeps a stray call from crashing.
+    }
+  }
+
+  @override
+  Future<SaveOutcome> saveRecords(List<CloudRecord> records) async {
+    final res = await channel.invokeMapMethod<String, dynamic>('saveRecords', {
+      'records': [for (final r in records) _encodeRecord(r)],
+    }).catchError(
+      (_) => <String, dynamic>{}, // missing plugin → nothing saved
+      test: (e) => e is MissingPluginException,
+    );
+    if (res == null || res.isEmpty) return const SaveOutcome();
+    return SaveOutcome(
+      saved: _stringList(res['saved']),
+      conflicts: [
+        for (final c in _mapList(res['conflicts']))
+          CloudConflict(
+            c['recordName'] as String,
+            (c['serverUpdatedAtMs'] as num).toInt(),
+          ),
+      ],
+      errors: [
+        for (final e in _mapList(res['errors']))
+          CloudRecordError(e['recordName'] as String, '${e['code']}'),
+      ],
+    );
+  }
+
+  @override
+  Future<FetchOutcome> fetchChanges(String? token) async {
+    final res = await channel.invokeMapMethod<String, dynamic>(
+      'fetchChanges',
+      {'token': token},
+    ).catchError(
+      (_) => <String, dynamic>{}, // missing plugin → no remote changes
+      test: (e) => e is MissingPluginException,
+    );
+    if (res == null || res.isEmpty) return const FetchOutcome();
+    return FetchOutcome(
+      records: [for (final r in _mapList(res['records'])) _decodeRecord(r)],
+      newToken: res['newToken'] as String?,
+      moreComing: (res['moreComing'] as bool?) ?? false,
+    );
+  }
+
+  @override
+  Future<void> deleteRecords(List<String> recordNames) async {
+    try {
+      await channel
+          .invokeMethod<void>('deleteRecords', {'recordNames': recordNames});
+    } on MissingPluginException {
+      // No-op (see [accountStatus]).
+    }
+  }
+
+  @override
+  Future<void> deleteZone() async {
+    try {
+      await channel.invokeMethod<void>('deleteZone');
+    } on MissingPluginException {
+      // No-op (see [accountStatus]).
+    }
+  }
+
+  // ── (de)serialization ──────────────────────────────────────────────────────
+
+  Map<String, dynamic> _encodeRecord(CloudRecord r) => {
+        'recordName': r.recordName,
+        'tableName': r.tableName,
+        'updatedAtMs': r.updatedAtMs,
+        'deleted': r.deleted,
+        if (r.payload != null) 'payload': r.payload,
+        if (r.assetPath != null) 'assetPath': r.assetPath,
+      };
+
+  CloudRecord _decodeRecord(Map<String, dynamic> m) => CloudRecord(
+        recordName: m['recordName'] as String,
+        tableName: m['tableName'] as String,
+        updatedAtMs: (m['updatedAtMs'] as num).toInt(),
+        deleted: (m['deleted'] as bool?) ?? false,
+        payload: m['payload'] as Uint8List?,
+        assetPath: m['assetPath'] as String?,
+      );
+
+  List<String> _stringList(Object? v) =>
+      (v as List?)?.map((e) => e as String).toList() ?? const [];
+
+  List<Map<String, dynamic>> _mapList(Object? v) =>
+      (v as List?)
+          ?.map((e) => Map<String, dynamic>.from(e as Map))
+          .toList() ??
+      const [];
+
+  static CloudAccountStatus _statusFromString(String? s) {
+    switch (s) {
+      case 'available':
+        return CloudAccountStatus.available;
+      case 'noAccount':
+        return CloudAccountStatus.noAccount;
+      case 'restricted':
+        return CloudAccountStatus.restricted;
+      case 'temporarilyUnavailable':
+        return CloudAccountStatus.temporarilyUnavailable;
+      default:
+        return CloudAccountStatus.couldNotDetermine;
+    }
+  }
+}

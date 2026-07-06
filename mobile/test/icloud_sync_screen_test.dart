@@ -12,7 +12,6 @@ import 'package:flutter_localizations/flutter_localizations.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:google_fonts/google_fonts.dart';
-import 'package:mattioli_os/core/cloudkit_bridge.dart';
 import 'package:mattioli_os/core/private_local_database.dart';
 import 'package:mattioli_os/core/private_sync_service.dart';
 import 'package:mattioli_os/core/theme.dart';

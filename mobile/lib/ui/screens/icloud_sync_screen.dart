@@ -6,7 +6,6 @@ import 'package:google_fonts/google_fonts.dart';
 import 'package:lucide_icons_flutter/lucide_icons.dart';
 
 import '../../core/app_logger.dart';
-import '../../core/cloudkit_bridge.dart';
 import '../../core/haptics.dart';
 import '../../core/private_sync_service.dart';
 import '../../core/rtl.dart';

@@ -6,7 +6,7 @@
 import 'package:flutter_test/flutter_test.dart';
 import 'package:mattioli_os/core/import_merge.dart';
 import 'package:mattioli_os/core/import_merge_stats.dart';
-import 'package:mattioli_os/core/private_db_schema.dart';
+import 'package:evolve_sync/evolve_sync.dart';
 import 'package:sqflite_common_ffi/sqflite_ffi.dart';
 
 void main() {

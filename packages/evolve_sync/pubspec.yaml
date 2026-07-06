@@ -1,0 +1,37 @@
+name: evolve_sync
+description: >-
+  Shared end-to-end-encrypted CloudKit sync core for the Evolve apps
+  (iOS `mobile/` + macOS `desktop/`). Owns the private-DB schema, the sync
+  engine (LWW, tombstones, re-key merge), the AES-256-GCM payload crypto, the
+  CloudKit bridge contract and the sync service — so the wire format and the
+  merge invariants can never drift between platforms. Per-app code provides
+  only the keychain-backed secret store, the platform wiring and the UI.
+publish_to: none
+version: 1.0.0
+
+environment:
+  sdk: ^3.11.5
+
+dependencies:
+  flutter:
+    sdk: flutter
+
+  # AES-256-GCM payload encryption (pure Dart, unit-testable).
+  pointycastle: ^4.0.0
+
+  # PrefsSyncEnabledStore — the per-device "sync enabled" opt-in flag.
+  shared_preferences: ^2.5.5
+
+  # Database/DatabaseExecutor/ConflictAlgorithm types only. Both apps' stores
+  # satisfy these: sqflite_sqlcipher re-exports sqflite_common's API, and the
+  # in-memory test factory (sqflite_common_ffi) implements it too.
+  sqflite_common: ^2.5.0
+
+dev_dependencies:
+  flutter_test:
+    sdk: flutter
+  flutter_lints: ^6.0.0
+
+  # In-memory FFI SQLite for the engine/schema tests (encryption is orthogonal
+  # to sync/schema correctness, so tests run unencrypted).
+  sqflite_common_ffi: ^2.3.3

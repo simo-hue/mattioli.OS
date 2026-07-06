@@ -217,6 +217,13 @@ packages:
       url: "https://pub.dev"
     source: hosted
     version: "2.0.8"
+  evolve_sync:
+    dependency: "direct main"
+    description:
+      path: "../packages/evolve_sync"
+      relative: true
+    source: path
+    version: "1.0.0"
   fake_async:
     dependency: transitive
     description:
@@ -1006,7 +1013,7 @@ packages:
     source: hosted
     version: "2.1.8"
   pointycastle:
-    dependency: "direct main"
+    dependency: transitive
     description:
       name: pointycastle
       sha256: "92aa3841d083cc4b0f4709b5c74fd6409a3e6ba833ffc7dc6a8fee096366acf5"

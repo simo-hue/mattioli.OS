@@ -24,3 +24,15 @@ Setting the team wasn't enough: the Runner app target inherited `CODE_SIGN_IDENT
 ## Desktop-first layout round (2026-07-06, round 2)
 
 - **Re-run the visual pass**: Habits, Statistics and Goals were recomposed desktop-first (side-by-side habits protocol+calendar, stats hero+rail and 3-up alerts, goals board+summary rail with the consolidated command bar). Same command: `flutter run -d macos --dart-define-from-file=.env`. Eyeball specifically: the habits page around the 1120px breakpoint (resize across it), the dense protocol metrics at ~1440px, the goals command bar at the 960px minimum window, the stats Alert tab 3-up row, and the goals right-rail items with long titles.
+
+## Round 3 — fluid + pinned + polish (2026-07-06)
+
+- **Visual pass on your machine** (`flutter run -d macos --dart-define-from-file=.env`), ideally on BOTH the MacBook Pro 14" and the external monitor:
+  1. Resize the window from 960px up to full width on every page — nothing should overflow and width should be absorbed by columns/density (no giant buttons).
+  2. Habits: the new Protocollo/Calendario switch; calendar month view must fill the window height with no page scroll (day cells grow on the big monitor); protocol table scrolls internally.
+  3. Statistics: habit selector now sits in the page header (top-right); check the header at narrow widths ~960-1000px.
+  4. Goals: goal cards go 2-up above ~1400 and 3-up above ~1760 content width.
+  5. Settings: group cards tile 2-up above ~1568px window width.
+  6. AI Coach: chat fills the window, thread centered at 900px.
+  7. Toggle light theme once across all pages (audited in code, worth one visual sweep).
+  8. Keyboard: ⌘1–⌘5, ⌘, and ⌘K are now covered by tests, but give them a real-hardware tap.

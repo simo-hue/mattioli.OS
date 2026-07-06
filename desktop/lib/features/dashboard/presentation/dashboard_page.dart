@@ -197,12 +197,18 @@ class _DashboardPageState extends ConsumerState<DashboardPage> {
                 );
               }
 
+              // Rail scales with the window instead of staying a fixed 350,
+              // so ultra-wide screens don't leave it looking skinny.
+              final railWidth = (constraints.maxWidth * 0.26).clamp(
+                350.0,
+                440.0,
+              );
               return Row(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
                   Expanded(flex: 7, child: primary),
                   const SizedBox(width: 18),
-                  SizedBox(width: 350, child: secondary),
+                  SizedBox(width: railWidth, child: secondary),
                 ],
               );
             },
@@ -271,50 +277,55 @@ class _ProtocolloSection extends ConsumerWidget {
       children: [
         const EvolveSectionLabel('Protocollo'),
         const SizedBox(height: 14),
-        Row(
-          children: [
-            Expanded(
-              flex: 3,
-              child: _ActionTile(
-                icon: LucideIcons.heartPulse,
-                label: t.dashboard.dailyCheckIn,
-                subtitle: t.dashboard.mood,
-                color: EvolveColors.destructive,
-                showPulse: !checkIn.isComplete,
-                showCheckBadge: checkIn.isComplete,
-                onTap: () => showEvolveDialog<void>(
-                  context: context,
-                  builder: (context) => _DailyCheckInDialog(checkIn: checkIn),
+        // Guardrail: quick-action tiles cap at ~420px each so an ultra-wide
+        // window grows the charts, not the buttons.
+        ConstrainedBox(
+          constraints: const BoxConstraints(maxWidth: 1284),
+          child: Row(
+            children: [
+              Expanded(
+                flex: 3,
+                child: _ActionTile(
+                  icon: LucideIcons.heartPulse,
+                  label: t.dashboard.dailyCheckIn,
+                  subtitle: t.dashboard.mood,
+                  color: EvolveColors.destructive,
+                  showPulse: !checkIn.isComplete,
+                  showCheckBadge: checkIn.isComplete,
+                  onTap: () => showEvolveDialog<void>(
+                    context: context,
+                    builder: (context) => _DailyCheckInDialog(checkIn: checkIn),
+                  ),
                 ),
               ),
-            ),
-            const SizedBox(width: 12),
-            Expanded(
-              flex: 2,
-              child: _ActionTile(
-                icon: LucideIcons.sparkles,
-                label: t.dashboard.aiChat,
-                subtitle: t.ai.macroGoals,
-                color: EvolveColors.violet,
-                onTap: () => ref
-                    .read(navigationControllerProvider.notifier)
-                    .select(DesktopSection.coach),
+              const SizedBox(width: 12),
+              Expanded(
+                flex: 2,
+                child: _ActionTile(
+                  icon: LucideIcons.sparkles,
+                  label: t.dashboard.aiChat,
+                  subtitle: t.ai.macroGoals,
+                  color: EvolveColors.violet,
+                  onTap: () => ref
+                      .read(navigationControllerProvider.notifier)
+                      .select(DesktopSection.coach),
+                ),
               ),
-            ),
-            const SizedBox(width: 12),
-            Expanded(
-              flex: 2,
-              child: _ActionTile(
-                icon: LucideIcons.listTodo,
-                label: t.dashboard.manager,
-                subtitle: t.ai.dailyHabits,
-                color: context.evolveAccent,
-                onTap: () => ref
-                    .read(navigationControllerProvider.notifier)
-                    .select(DesktopSection.habits),
+              const SizedBox(width: 12),
+              Expanded(
+                flex: 2,
+                child: _ActionTile(
+                  icon: LucideIcons.listTodo,
+                  label: t.dashboard.manager,
+                  subtitle: t.ai.dailyHabits,
+                  color: context.evolveAccent,
+                  onTap: () => ref
+                      .read(navigationControllerProvider.notifier)
+                      .select(DesktopSection.habits),
+                ),
               ),
-            ),
-          ],
+            ],
+          ),
         ),
       ],
     );
@@ -553,8 +564,13 @@ class _MetricGrid extends StatelessWidget {
       builder: (context, constraints) {
         final columns = constraints.maxWidth >= 1080 ? 4 : 2;
         const spacing = 14.0;
+        // Guardrail: metric cards stop growing at ~470px; extra width goes to
+        // the charts below, not to inflated stat tiles.
         final cardWidth =
-            (constraints.maxWidth - spacing * (columns - 1)) / columns;
+            ((constraints.maxWidth - spacing * (columns - 1)) / columns).clamp(
+              0.0,
+              470.0,
+            );
 
         return Wrap(
           spacing: spacing,

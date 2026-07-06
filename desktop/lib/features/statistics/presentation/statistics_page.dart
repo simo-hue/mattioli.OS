@@ -40,6 +40,12 @@ String _trendTimeframeLabel(_TrendTimeframe value) => switch (value) {
   _TrendTimeframe.all => t.stats.timeframeAll,
 };
 
+/// Proportional rail width for primary+rail rows (LAYOUT_SPEC fluid system):
+/// 26% of the content width, clamped to 350–440 so the rail neither starves
+/// nor balloons.
+double _railWidth(double contentWidth) =>
+    (contentWidth * 0.26).clamp(350.0, 440.0);
+
 class StatisticsPage extends ConsumerStatefulWidget {
   const StatisticsPage({super.key});
 
@@ -107,55 +113,63 @@ class _StatisticsPageState extends ConsumerState<StatisticsPage> {
             orElse: () => snapshot.habits.first,
           );
 
+    // Content below the control row, keyed so AnimatedSwitcher cross-fades on
+    // tab/scope switches (LAYOUT_SPEC motion) without touching any state.
+    final Widget content;
+    final String contentKey;
+    if (_scope == _AnalyticsScope.global) {
+      content = _globalContent(snapshot);
+      contentKey = 'global-${_globalTab.name}';
+    } else if (selectedHabit == null) {
+      content = const _EmptyHabitAnalytics();
+      contentKey = 'habit-empty';
+    } else {
+      content = _habitContent(selectedHabit, snapshot);
+      contentKey = 'habit-${_habitTab.name}';
+    }
+
     final page = DesktopPage(
       title: t.stats.title,
       subtitle: t.stats.pageSubtitle,
-      trailing: StatusPill(
-        label: t.stats.last30Days,
-        icon: LucideIcons.calendarClock,
+      // Chrome consolidation: the habit-selector card lives in the title row
+      // (width-capped tap target), leaving a single control row below.
+      trailing: Row(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          StatusPill(
+            label: t.stats.last30Days,
+            icon: LucideIcons.calendarClock,
+          ),
+          const SizedBox(width: 12),
+          KeyedSubtree(
+            key: _filterKey,
+            child: SizedBox(
+              width: 360,
+              child: _HabitSelectorCard(
+                scope: _scope,
+                habits: snapshot.habits,
+                selectedHabit: selectedHabit,
+                onHabitChanged: (id) => setState(() => _habitId = id),
+              ),
+            ),
+          ),
+        ],
       ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          KeyedSubtree(
-            key: _filterKey,
-            child: _AnalyticsToolbar(
-              scope: _scope,
-              habits: snapshot.habits,
-              selectedHabit: selectedHabit,
-              onScopeChanged: (scope) => setState(() => _scope = scope),
-              onHabitChanged: (id) => setState(() => _habitId = id),
+          _controlRow(),
+          const SizedBox(height: 18),
+          AnimatedSwitcher(
+            duration: const Duration(milliseconds: 200),
+            switchInCurve: Curves.easeOutCubic,
+            layoutBuilder: (currentChild, previousChildren) => Stack(
+              clipBehavior: Clip.none,
+              alignment: Alignment.topCenter,
+              children: [...previousChildren, ?currentChild],
             ),
+            child: KeyedSubtree(key: ValueKey(contentKey), child: content),
           ),
-          const SizedBox(height: 12),
-          if (_scope == _AnalyticsScope.global) ...[
-            KeyedSubtree(
-              key: _tabsKey,
-              child: _TabSelector<_GlobalTab>(
-                selected: _globalTab,
-                values: _GlobalTab.values,
-                labelFor: _globalTabLabel,
-                onChanged: (tab) => setState(() => _globalTab = tab),
-              ),
-            ),
-            const SizedBox(height: 18),
-            _globalContent(snapshot),
-          ] else ...[
-            KeyedSubtree(
-              key: _tabsKey,
-              child: _TabSelector<_HabitTab>(
-                selected: _habitTab,
-                values: _HabitTab.values,
-                labelFor: _habitTabLabel,
-                onChanged: (tab) => setState(() => _habitTab = tab),
-              ),
-            ),
-            const SizedBox(height: 18),
-            if (selectedHabit == null)
-              const _EmptyHabitAnalytics()
-            else
-              _habitContent(selectedHabit, snapshot),
-          ],
         ],
       ),
     );
@@ -174,6 +188,51 @@ class _StatisticsPageState extends ConsumerState<StatisticsPage> {
             finishLabel: t.tutorial.finish,
           ),
       ],
+    );
+  }
+
+  /// The single chrome row under the header: the 5-tab selector absorbs the
+  /// width (Expanded) while the scope segmented control keeps a fixed compact
+  /// size; below 980 content width they stack (tabs above scope).
+  Widget _controlRow() {
+    final Widget tabs = _scope == _AnalyticsScope.global
+        ? _TabSelector<_GlobalTab>(
+            selected: _globalTab,
+            values: _GlobalTab.values,
+            labelFor: _globalTabLabel,
+            onChanged: (tab) => setState(() => _globalTab = tab),
+          )
+        : _TabSelector<_HabitTab>(
+            selected: _habitTab,
+            values: _HabitTab.values,
+            labelFor: _habitTabLabel,
+            onChanged: (tab) => setState(() => _habitTab = tab),
+          );
+    final keyedTabs = KeyedSubtree(key: _tabsKey, child: tabs);
+    final scopeControl = EvolveSegmentedControl<_AnalyticsScope>(
+      height: 44,
+      segments: {
+        _AnalyticsScope.global: t.stats.global,
+        _AnalyticsScope.habit: t.stats.singleHabit,
+      },
+      selected: _scope,
+      onSelected: (scope) => setState(() => _scope = scope),
+    );
+    return LayoutBuilder(
+      builder: (context, constraints) {
+        if (constraints.maxWidth < 980) {
+          return Column(
+            children: [keyedTabs, const SizedBox(height: 10), scopeControl],
+          );
+        }
+        return Row(
+          children: [
+            Expanded(child: keyedTabs),
+            const SizedBox(width: 12),
+            SizedBox(width: 300, child: scopeControl),
+          ],
+        );
+      },
     );
   }
 
@@ -205,58 +264,26 @@ class _StatisticsPageState extends ConsumerState<StatisticsPage> {
       };
 }
 
-class _AnalyticsToolbar extends StatelessWidget {
-  const _AnalyticsToolbar({
+/// Mobile's "All Habits" selector card, now living in the DesktopPage title
+/// row: translucent card with a target icon chip tinted by the selected habit
+/// color, a bold 15/w700 title and a muted disclosure chevron (provided by
+/// the embedded dropdown in habit scope). The caller caps its width — it is
+/// a tap target, not a width absorber.
+class _HabitSelectorCard extends StatelessWidget {
+  const _HabitSelectorCard({
     required this.scope,
     required this.habits,
     required this.selectedHabit,
-    required this.onScopeChanged,
     required this.onHabitChanged,
   });
 
   final _AnalyticsScope scope;
   final List<DashboardHabit> habits;
   final DashboardHabit? selectedHabit;
-  final ValueChanged<_AnalyticsScope> onScopeChanged;
   final ValueChanged<String> onHabitChanged;
 
   @override
   Widget build(BuildContext context) {
-    return LayoutBuilder(
-      builder: (context, constraints) {
-        final scopeControl = EvolveSegmentedControl<_AnalyticsScope>(
-          height: 44,
-          segments: {
-            _AnalyticsScope.global: t.stats.global,
-            _AnalyticsScope.habit: t.stats.singleHabit,
-          },
-          selected: scope,
-          onSelected: onScopeChanged,
-        );
-        if (constraints.maxWidth < 980) {
-          return Column(
-            children: [
-              _buildSelectorCard(context),
-              const SizedBox(height: 10),
-              scopeControl,
-            ],
-          );
-        }
-        return Row(
-          children: [
-            Expanded(child: _buildSelectorCard(context)),
-            const SizedBox(width: 12),
-            SizedBox(width: 300, child: scopeControl),
-          ],
-        );
-      },
-    );
-  }
-
-  /// Mobile's "All Habits" selector card: translucent card with a target icon
-  /// chip tinted by the selected habit color, a bold 15/w700 title and a muted
-  /// disclosure chevron (provided by the embedded dropdown in habit scope).
-  Widget _buildSelectorCard(BuildContext context) {
     final colors = context.evolveColors;
     final isHabitScope = scope == _AnalyticsScope.habit;
     final tint = isHabitScope && selectedHabit != null
@@ -453,7 +480,10 @@ class _GlobalInfo extends ConsumerWidget {
               children: [
                 Expanded(flex: 7, child: heatmap),
                 const SizedBox(width: 18),
-                SizedBox(width: 350, child: correlations),
+                SizedBox(
+                  width: _railWidth(constraints.maxWidth),
+                  child: correlations,
+                ),
               ],
             );
           },
@@ -502,63 +532,98 @@ class _GlobalTrend extends ConsumerWidget {
 
     return LayoutBuilder(
       builder: (context, constraints) {
-        final useColumns = constraints.maxWidth >= 1120;
-        final hero = _TrendHeroCard(
-          trend: trend,
-          average: average,
-          delta: delta,
-          timeframe: timeframe,
-          onTimeframeChanged: onTimeframeChanged,
-          chartHeight: useColumns ? 280 : 240,
-          footer: useColumns
-              ? null
-              : Row(
+        final width = constraints.maxWidth;
+        Widget hero({required double chartHeight, Widget? footer}) =>
+            _TrendHeroCard(
+              trend: trend,
+              average: average,
+              delta: delta,
+              timeframe: timeframe,
+              onTimeframeChanged: onTimeframeChanged,
+              chartHeight: chartHeight,
+              footer: footer,
+            );
+        final bestCard = _TrendInsightCard(
+          icon: LucideIcons.trophy,
+          color: context.evolveAccent,
+          label: t.stats.bestHabit,
+          value: bestValue,
+        );
+        final criticalCard = _TrendInsightCard(
+          icon: LucideIcons.circleAlert,
+          color: EvolveColors.rose,
+          label: t.stats.criticalArea,
+          value: criticalValue,
+        );
+
+        // Ultra: the hero chart and a proportional insight rail share the row.
+        if (width >= 1760) {
+          final rail = _railWidth(width);
+          return Row(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Expanded(
+                child: hero(
+                  chartHeight: ((width - rail - 18) * 0.22).clamp(280.0, 380.0),
+                ),
+              ),
+              const SizedBox(width: 18),
+              SizedBox(
+                width: rail,
+                child: Column(
                   children: [
-                    Expanded(
-                      child: _InlineInsight(
-                        title: t.stats.bestHabit,
-                        value: bestValue,
-                        color: context.evolveAccent,
-                      ),
-                    ),
-                    const SizedBox(width: 12),
-                    Expanded(
-                      child: _InlineInsight(
-                        title: t.stats.criticalArea,
-                        value: criticalValue,
-                        color: EvolveColors.rose,
-                      ),
-                    ),
+                    bestCard,
+                    const SizedBox(height: 14),
+                    criticalCard,
                   ],
                 ),
-        );
-        if (!useColumns) return hero;
-        return Row(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            Expanded(flex: 7, child: hero),
-            const SizedBox(width: 18),
-            SizedBox(
-              width: 350,
-              child: Column(
+              ),
+            ],
+          );
+        }
+
+        // The chart absorbs the width: its height scales with the page.
+        final chartHeight = (width * 0.22).clamp(280.0, 380.0);
+        // Columns: full-width hero with the two insight cards side by side
+        // underneath.
+        if (width >= 1120) {
+          return Column(
+            children: [
+              hero(chartHeight: chartHeight),
+              const SizedBox(height: 18),
+              Row(
+                crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  _TrendInsightCard(
-                    icon: LucideIcons.trophy,
-                    color: context.evolveAccent,
-                    label: t.stats.bestHabit,
-                    value: bestValue,
-                  ),
-                  const SizedBox(height: 14),
-                  _TrendInsightCard(
-                    icon: LucideIcons.circleAlert,
-                    color: EvolveColors.rose,
-                    label: t.stats.criticalArea,
-                    value: criticalValue,
-                  ),
+                  Expanded(child: bestCard),
+                  const SizedBox(width: 18),
+                  Expanded(child: criticalCard),
                 ],
               ),
-            ),
-          ],
+            ],
+          );
+        }
+        // Compact: the insights collapse into the hero footer.
+        return hero(
+          chartHeight: chartHeight,
+          footer: Row(
+            children: [
+              Expanded(
+                child: _InlineInsight(
+                  title: t.stats.bestHabit,
+                  value: bestValue,
+                  color: context.evolveAccent,
+                ),
+              ),
+              const SizedBox(width: 12),
+              Expanded(
+                child: _InlineInsight(
+                  title: t.stats.criticalArea,
+                  value: criticalValue,
+                  color: EvolveColors.rose,
+                ),
+              ),
+            ],
+          ),
         );
       },
     );
@@ -586,8 +651,9 @@ class _TrendHeroCard extends StatelessWidget {
   final ValueChanged<_TrendTimeframe> onTimeframeChanged;
   final double chartHeight;
 
-  /// Extra content below the chart (the inline-insight row on stacked
-  /// layouts); wide layouts move the insights to the right rail instead.
+  /// Extra content below the chart (the inline-insight row on compact
+  /// layouts); wider layouts promote the insights to their own cards under
+  /// the chart, or into the proportional rail at ultra widths.
   final Widget? footer;
 
   @override
@@ -884,12 +950,9 @@ class _GlobalAlerts extends ConsumerWidget {
 
     if (improvement.isEmpty && failures.isEmpty && recovery.isEmpty) {
       return EvolvePanel(
-        padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 30),
-        child: Center(
-          child: Text(
-            t.statistics.noDataForAlerts,
-            style: Theme.of(context).textTheme.bodyMedium,
-          ),
+        child: _EmptyState(
+          icon: LucideIcons.circleAlert,
+          title: t.statistics.noDataForAlerts,
         ),
       );
     }
@@ -1042,7 +1105,7 @@ class _AlertsSection extends StatelessWidget {
                 return Column(
                   children: [
                     for (var i = 0; i < children.length; i++) ...[
-                      if (i > 0) const SizedBox(height: 12),
+                      if (i > 0) const SizedBox(height: 14),
                       children[i],
                     ],
                   ],
@@ -1369,96 +1432,122 @@ class _GlobalHabitsState extends ConsumerState<_GlobalHabits> {
     final statsAsync = ref.watch(habitStatsRpcProvider);
     final habitsById = {for (final h in widget.snapshot.habits) h.id: h};
 
-    return EvolvePanel(
-      radius: 20,
-      padding: const EdgeInsets.all(22),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          LayoutBuilder(
-            builder: (context, constraints) {
-              final heading = _CardHeading(
-                title: t.stats.performancePerHabit,
-                subtitle: t.stats.performancePerHabitSubtitle,
-              );
-              final sortControl = EvolveSegmentedControl<_HabitSort>(
-                segments: {for (final s in _HabitSort.values) s: _sortLabel(s)},
-                selected: _sort,
-                onSelected: (s) => setState(() => _sort = s),
-              );
-              if (constraints.maxWidth < 640) {
-                return Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    heading,
-                    const SizedBox(height: 14),
-                    ConstrainedBox(
-                      constraints: const BoxConstraints(maxWidth: 380),
-                      child: sortControl,
-                    ),
-                  ],
-                );
-              }
-              return Row(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Expanded(child: heading),
-                  const SizedBox(width: 14),
-                  SizedBox(width: 340, child: sortControl),
-                ],
-              );
-            },
-          ),
-          const SizedBox(height: 18),
-          statsAsync.when(
-            loading: () => const Padding(
-              padding: EdgeInsets.symmetric(vertical: 24),
-              child: Center(child: CircularProgressIndicator()),
-            ),
-            error: (_, _) => Text(
-              t.stats.createHabitForAnalysis,
-              style: Theme.of(context).textTheme.bodyMedium,
-            ),
-            data: (rows) {
-              if (rows.isEmpty) {
-                return Text(
-                  t.stats.createHabitForAnalysis,
-                  style: Theme.of(context).textTheme.bodyMedium,
-                );
-              }
-              final sorted = [...rows]..sort(_compare);
-              return Column(
-                children: [
-                  for (final row in sorted) ...[
-                    _HabitStatsRow(
-                      row: row,
-                      color:
-                          habitsById[row['goal_id']]?.color ??
-                          context.evolveAccent,
-                    ),
-                    if (row != sorted.last)
-                      Divider(
-                        height: 8,
-                        color: context.evolveColors.border.withValues(
-                          alpha: 0.5,
+    return LayoutBuilder(
+      builder: (context, pageConstraints) {
+        // Desktop-table mode (>=1440 content width): roomier paddings and
+        // column gaps; the progress column absorbs the extra width — badges
+        // and tap targets keep their natural size.
+        final wide = pageConstraints.maxWidth >= 1440;
+        final barWidth = wide
+            ? (pageConstraints.maxWidth * 0.18).clamp(220.0, 340.0)
+            : 150.0;
+        return EvolvePanel(
+          radius: 20,
+          padding: const EdgeInsets.all(22),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              LayoutBuilder(
+                builder: (context, constraints) {
+                  final heading = _CardHeading(
+                    title: t.stats.performancePerHabit,
+                    subtitle: t.stats.performancePerHabitSubtitle,
+                  );
+                  final sortControl = EvolveSegmentedControl<_HabitSort>(
+                    segments: {
+                      for (final s in _HabitSort.values) s: _sortLabel(s),
+                    },
+                    selected: _sort,
+                    onSelected: (s) => setState(() => _sort = s),
+                  );
+                  if (constraints.maxWidth < 640) {
+                    return Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        heading,
+                        const SizedBox(height: 14),
+                        ConstrainedBox(
+                          constraints: const BoxConstraints(maxWidth: 380),
+                          child: sortControl,
                         ),
-                      ),
-                  ],
-                ],
-              );
-            },
+                      ],
+                    );
+                  }
+                  return Row(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Expanded(child: heading),
+                      const SizedBox(width: 14),
+                      SizedBox(width: 340, child: sortControl),
+                    ],
+                  );
+                },
+              ),
+              const SizedBox(height: 18),
+              statsAsync.when(
+                loading: () => const Padding(
+                  padding: EdgeInsets.symmetric(vertical: 24),
+                  child: Center(child: CircularProgressIndicator()),
+                ),
+                error: (_, _) => _EmptyState(
+                  icon: LucideIcons.listTodo,
+                  title: t.stats.createHabitForAnalysis,
+                ),
+                data: (rows) {
+                  if (rows.isEmpty) {
+                    return _EmptyState(
+                      icon: LucideIcons.listTodo,
+                      title: t.stats.createHabitForAnalysis,
+                    );
+                  }
+                  final sorted = [...rows]..sort(_compare);
+                  return Column(
+                    children: [
+                      for (final row in sorted) ...[
+                        _HabitStatsRow(
+                          row: row,
+                          color:
+                              habitsById[row['goal_id']]?.color ??
+                              context.evolveAccent,
+                          wide: wide,
+                          barWidth: barWidth,
+                        ),
+                        if (row != sorted.last)
+                          Divider(
+                            height: 8,
+                            color: context.evolveColors.border.withValues(
+                              alpha: 0.5,
+                            ),
+                          ),
+                      ],
+                    ],
+                  );
+                },
+              ),
+            ],
           ),
-        ],
-      ),
+        );
+      },
     );
   }
 }
 
 class _HabitStatsRow extends StatefulWidget {
-  const _HabitStatsRow({required this.row, required this.color});
+  const _HabitStatsRow({
+    required this.row,
+    required this.color,
+    this.wide = false,
+    this.barWidth = 150,
+  });
 
   final Map<String, dynamic> row;
   final Color color;
+
+  /// Desktop-table density (>=1440 content width): more generous paddings
+  /// and column gaps, with [barWidth] letting the progress column absorb the
+  /// extra width.
+  final bool wide;
+  final double barWidth;
 
   @override
   State<_HabitStatsRow> createState() => _HabitStatsRowState();
@@ -1473,12 +1562,16 @@ class _HabitStatsRowState extends State<_HabitStatsRow> {
     final best = ((widget.row['best_streak'] as num?) ?? 0).toInt();
     final worst = ((widget.row['worst_streak'] as num?) ?? 0).toInt();
     final title = (widget.row['title'] as String?) ?? '';
+    final wide = widget.wide;
     return MouseRegion(
       onEnter: (_) => setState(() => _hovered = true),
       onExit: (_) => setState(() => _hovered = false),
       child: AnimatedContainer(
-        duration: const Duration(milliseconds: 150),
-        padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 8),
+        duration: const Duration(milliseconds: 140),
+        padding: EdgeInsets.symmetric(
+          horizontal: wide ? 14 : 8,
+          vertical: wide ? 10 : 8,
+        ),
         decoration: BoxDecoration(
           color: _hovered
               ? context.evolveColors.panelRaised
@@ -1488,7 +1581,7 @@ class _HabitStatsRowState extends State<_HabitStatsRow> {
         child: Row(
           children: [
             _HabitDot(color: widget.color),
-            const SizedBox(width: 11),
+            SizedBox(width: wide ? 14 : 11),
             Expanded(
               child: Text(
                 title,
@@ -1502,8 +1595,9 @@ class _HabitStatsRowState extends State<_HabitStatsRow> {
                 ),
               ),
             ),
+            SizedBox(width: wide ? 24 : 12),
             SizedBox(
-              width: 150,
+              width: widget.barWidth,
               child: LinearProgressIndicator(
                 value: (rate / 100).clamp(0, 1),
                 minHeight: 6,
@@ -1512,9 +1606,9 @@ class _HabitStatsRowState extends State<_HabitStatsRow> {
                 borderRadius: BorderRadius.circular(8),
               ),
             ),
-            const SizedBox(width: 12),
+            SizedBox(width: wide ? 20 : 12),
             SizedBox(
-              width: 42,
+              width: wide ? 48 : 42,
               child: Text(
                 '${rate.round()}%',
                 textAlign: TextAlign.end,
@@ -1525,13 +1619,13 @@ class _HabitStatsRowState extends State<_HabitStatsRow> {
                 ),
               ),
             ),
-            const SizedBox(width: 16),
+            SizedBox(width: wide ? 28 : 16),
             _StatBadge(
               label: t.stats.bestStreakLabel,
               value: '$best',
               color: EvolveColors.amber,
             ),
-            const SizedBox(width: 12),
+            SizedBox(width: wide ? 24 : 12),
             _StatBadge(
               label: t.stats.worstStreakLabel,
               value: '$worst',
@@ -1701,7 +1795,10 @@ class _HabitOverview extends ConsumerWidget {
               children: [
                 Expanded(flex: 7, child: grid),
                 const SizedBox(width: 18),
-                SizedBox(width: 350, child: correlations),
+                SizedBox(
+                  width: _railWidth(constraints.maxWidth),
+                  child: correlations,
+                ),
               ],
             );
           },
@@ -1730,9 +1827,9 @@ class _Last30DaysGrid extends StatelessWidget {
           ),
           const SizedBox(height: 16),
           if (statuses.isEmpty)
-            Text(
-              t.stats.moreLogsNeeded,
-              style: Theme.of(context).textTheme.bodySmall,
+            _EmptyState(
+              icon: LucideIcons.calendarClock,
+              title: t.stats.moreLogsNeeded,
             )
           else ...[
             Wrap(
@@ -2183,7 +2280,7 @@ class _HabitPerformance extends ConsumerWidget {
             Expanded(flex: 7, child: bars),
             const SizedBox(width: 18),
             SizedBox(
-              width: 350,
+              width: _railWidth(constraints.maxWidth),
               child: Column(
                 children: [
                   for (var i = 0; i < highlights.length; i++) ...[
@@ -2379,7 +2476,7 @@ class _HabitImprovement extends ConsumerWidget {
         if (constraints.maxWidth < 1120) {
           return Column(
             crossAxisAlignment: CrossAxisAlignment.start,
-            children: [worstPanel, const SizedBox(height: 16), brokenPanel],
+            children: [worstPanel, const SizedBox(height: 18), brokenPanel],
           );
         }
         return Row(
@@ -2413,12 +2510,9 @@ class _HabitMood extends ConsumerWidget {
 
     if (correlation == null) {
       return EvolvePanel(
-        padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 30),
-        child: Center(
-          child: Text(
-            t.stats.moreLogsNeeded,
-            style: Theme.of(context).textTheme.bodyMedium,
-          ),
+        child: _EmptyState(
+          icon: LucideIcons.heartPulse,
+          title: t.stats.moreLogsNeeded,
         ),
       );
     }
@@ -2487,7 +2581,7 @@ class _HabitMood extends ConsumerWidget {
               return Column(
                 children: [
                   completedVsMissed,
-                  const SizedBox(height: 16),
+                  const SizedBox(height: 18),
                   perLevel,
                 ],
               );
@@ -2533,27 +2627,31 @@ class _CompletedVsMissedPanel extends StatelessWidget {
             style: Theme.of(context).textTheme.titleLarge,
           ),
           const SizedBox(height: 20),
-          SizedBox(
-            height: 160,
-            child: Row(
-              crossAxisAlignment: CrossAxisAlignment.end,
-              children: [
-                Expanded(
-                  child: _MoodBarGroup(
-                    label: t.statistics.completed2,
-                    mood: correlation.avgMoodDone,
-                    energy: correlation.avgEnergyDone,
+          LayoutBuilder(
+            builder: (context, constraints) => SizedBox(
+              // The bar chart absorbs the panel width and scales its height
+              // with it, like the Trend hero chart.
+              height: (constraints.maxWidth * 0.28).clamp(160.0, 240.0),
+              child: Row(
+                crossAxisAlignment: CrossAxisAlignment.end,
+                children: [
+                  Expanded(
+                    child: _MoodBarGroup(
+                      label: t.statistics.completed2,
+                      mood: correlation.avgMoodDone,
+                      energy: correlation.avgEnergyDone,
+                    ),
                   ),
-                ),
-                const SizedBox(width: 16),
-                Expanded(
-                  child: _MoodBarGroup(
-                    label: t.statistics.missed2,
-                    mood: correlation.avgMoodMissed,
-                    energy: correlation.avgEnergyMissed,
+                  const SizedBox(width: 16),
+                  Expanded(
+                    child: _MoodBarGroup(
+                      label: t.statistics.missed2,
+                      mood: correlation.avgMoodMissed,
+                      energy: correlation.avgEnergyMissed,
+                    ),
                   ),
-                ),
-              ],
+                ],
+              ),
             ),
           ),
           const SizedBox(height: 16),
@@ -2718,7 +2816,8 @@ class _LevelBar extends StatelessWidget {
 
 /// Dashboard-style metric grid: 14px-gapped Wrap that lays the [_Metric]
 /// tiles 4-up on wide layouts (>=1080) and 2-up below, capped at the tile
-/// count so a 3-tile row still fills the full width.
+/// count so a 3-tile row still fills the full width. Tiles grow with the
+/// fluid grid but cap at ~470px (LAYOUT_SPEC growth guardrail).
 class _MetricGrid extends StatelessWidget {
   const _MetricGrid({required this.tiles});
 
@@ -2732,7 +2831,10 @@ class _MetricGrid extends StatelessWidget {
         final columns = tiles.length < maxColumns ? tiles.length : maxColumns;
         const spacing = 14.0;
         final cardWidth =
-            (constraints.maxWidth - spacing * (columns - 1)) / columns;
+            ((constraints.maxWidth - spacing * (columns - 1)) / columns).clamp(
+              0.0,
+              470.0,
+            );
         return Wrap(
           spacing: spacing,
           runSpacing: spacing,
@@ -3049,11 +3151,50 @@ class _EmptyHabitAnalytics extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return EvolvePanel(
-      padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 30),
+      child: _EmptyState(
+        icon: LucideIcons.activity,
+        title: t.stats.createHabitForAnalysis,
+      ),
+    );
+  }
+}
+
+/// Unified empty-state recipe (LAYOUT_SPEC): a muted icon chip over a short
+/// 14/w600 message, centered in the host panel with generous padding. Reuses
+/// existing strings only; no CTA because these states have no existing
+/// action to wire.
+class _EmptyState extends StatelessWidget {
+  const _EmptyState({required this.icon, required this.title});
+
+  final IconData icon;
+  final String title;
+
+  @override
+  Widget build(BuildContext context) {
+    return Padding(
+      padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 36),
       child: Center(
-        child: Text(
-          t.stats.createHabitForAnalysis,
-          style: Theme.of(context).textTheme.bodyMedium,
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            EvolveIconChip(
+              icon: icon,
+              color: context.evolveColors.muted,
+              size: 44,
+              iconSize: 20,
+            ),
+            const SizedBox(height: 12),
+            Text(
+              title,
+              textAlign: TextAlign.center,
+              style: TextStyle(
+                fontSize: 14,
+                fontWeight: FontWeight.w600,
+                letterSpacing: -0.2,
+                color: context.evolveColors.foreground,
+              ),
+            ),
+          ],
         ),
       ),
     );

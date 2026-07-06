@@ -451,6 +451,7 @@ class _AiCoachPageState extends ConsumerState<AiCoachPage> {
     final colors = context.evolveColors;
 
     return DesktopPage(
+      pinned: true,
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.stretch,
         children: [
@@ -499,114 +500,149 @@ class _AiCoachPageState extends ConsumerState<AiCoachPage> {
             ],
           ),
           const SizedBox(height: 20),
-          EvolvePanel(
-            padding: EdgeInsets.zero,
-            radius: 20,
-            glowColor: EvolveColors.violet,
-            child: SizedBox(
-              height: MediaQuery.of(context).size.height - 230,
+          // Pinned chat surface: the panel absorbs all remaining viewport
+          // height (no page scroll). The thread scrolls internally and the
+          // message column is centered at max 900 so bubbles never span an
+          // ultra-wide window while the panel itself stays full width.
+          Expanded(
+            child: EvolvePanel(
+              padding: EdgeInsets.zero,
+              radius: 20,
+              glowColor: EvolveColors.violet,
               child: Column(
                 children: [
                   Expanded(
-                    child: ListView.builder(
+                    child: Scrollbar(
                       controller: _scrollController,
-                      padding: const EdgeInsets.all(24),
-                      itemCount: _messages.length,
-                      itemBuilder: (context, index) {
-                        final msg = _messages[index];
-                        return _MessageBubble(message: msg);
-                      },
+                      child: Center(
+                        child: ConstrainedBox(
+                          constraints: const BoxConstraints(maxWidth: 900),
+                          child: ListView.builder(
+                            controller: _scrollController,
+                            padding: const EdgeInsets.all(24),
+                            itemCount: _messages.length,
+                            itemBuilder: (context, index) {
+                              final msg = _messages[index];
+                              return _MessageBubble(message: msg);
+                            },
+                          ),
+                        ),
+                      ),
                     ),
                   ),
-                  if (_isTyping)
-                    Padding(
-                      padding: const EdgeInsets.symmetric(
-                        horizontal: 24,
-                        vertical: 8,
-                      ),
-                      child: Align(
-                        alignment: AlignmentDirectional.centerStart,
-                        child: Text(
-                          t.aiCoach.typing,
-                          style: TextStyle(
-                            color: colors.muted,
-                            fontSize: 12,
-                            fontWeight: FontWeight.w500,
-                          ),
-                        ),
-                      ),
-                    ),
-                  if (!_isTyping)
-                    Builder(
-                      builder: (context) {
-                        final suggestions = _dynamicSuggestions();
-                        if (suggestions.isEmpty) return const SizedBox.shrink();
-                        return SizedBox(
-                          height: 42,
-                          child: ListView(
-                            scrollDirection: Axis.horizontal,
+                  // Bottom dock (fixed below the thread): typing status or
+                  // suggestion pills, then the input bar — centered on the
+                  // same 900 column as the messages.
+                  Center(
+                    child: ConstrainedBox(
+                      constraints: const BoxConstraints(maxWidth: 900),
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.stretch,
+                        children: [
+                          if (_isTyping)
+                            Padding(
+                              padding: const EdgeInsets.symmetric(
+                                horizontal: 24,
+                                vertical: 8,
+                              ),
+                              child: Align(
+                                alignment: AlignmentDirectional.centerStart,
+                                child: Text(
+                                  t.aiCoach.typing,
+                                  style: TextStyle(
+                                    color: colors.muted,
+                                    fontSize: 12,
+                                    fontWeight: FontWeight.w500,
+                                  ),
+                                ),
+                              ),
+                            ),
+                          if (!_isTyping)
+                            Builder(
+                              builder: (context) {
+                                final suggestions = _dynamicSuggestions();
+                                if (suggestions.isEmpty) {
+                                  return const SizedBox.shrink();
+                                }
+                                return SizedBox(
+                                  height: 42,
+                                  child: ListView(
+                                    scrollDirection: Axis.horizontal,
+                                    padding:
+                                        const EdgeInsetsDirectional.fromSTEB(
+                                          20,
+                                          0,
+                                          20,
+                                          10,
+                                        ),
+                                    children: [
+                                      for (final s in suggestions) ...[
+                                        _SuggestionChip(
+                                          label: s,
+                                          onTap: () => _onSuggestionTap(s),
+                                        ),
+                                        const SizedBox(width: 8),
+                                      ],
+                                    ],
+                                  ),
+                                );
+                              },
+                            ),
+                          // Input bar: translucent rounded card + circular send button.
+                          Padding(
                             padding: const EdgeInsetsDirectional.fromSTEB(
                               20,
-                              0,
+                              4,
                               20,
-                              10,
+                              20,
                             ),
-                            children: [
-                              for (final s in suggestions) ...[
-                                _SuggestionChip(
-                                  label: s,
-                                  onTap: () => _onSuggestionTap(s),
+                            child: Row(
+                              children: [
+                                Expanded(
+                                  child: Container(
+                                    decoration: BoxDecoration(
+                                      color: colors.panel.withValues(
+                                        alpha: 0.4,
+                                      ),
+                                      borderRadius: BorderRadius.circular(16),
+                                      border: Border.all(
+                                        color: colors.border.withValues(
+                                          alpha: 0.5,
+                                        ),
+                                      ),
+                                    ),
+                                    child: TextField(
+                                      controller: _controller,
+                                      style: TextStyle(
+                                        color: colors.foreground,
+                                        fontSize: 14,
+                                      ),
+                                      decoration: InputDecoration(
+                                        hintText: t.aiCoach.inputHint,
+                                        filled: false,
+                                        border: InputBorder.none,
+                                        enabledBorder: InputBorder.none,
+                                        focusedBorder: InputBorder.none,
+                                        contentPadding:
+                                            const EdgeInsets.symmetric(
+                                              horizontal: 18,
+                                              vertical: 13,
+                                            ),
+                                      ),
+                                      onSubmitted: (_) => _sendMessage(),
+                                    ),
+                                  ),
                                 ),
-                                const SizedBox(width: 8),
+                                const SizedBox(width: 10),
+                                _SendButton(
+                                  enabled: !_isTyping,
+                                  onTap: _sendMessage,
+                                ),
                               ],
-                            ],
-                          ),
-                        );
-                      },
-                    ),
-                  // Input bar: translucent rounded card + circular send button.
-                  Padding(
-                    padding: const EdgeInsetsDirectional.fromSTEB(
-                      20,
-                      4,
-                      20,
-                      20,
-                    ),
-                    child: Row(
-                      children: [
-                        Expanded(
-                          child: Container(
-                            decoration: BoxDecoration(
-                              color: colors.panel.withValues(alpha: 0.4),
-                              borderRadius: BorderRadius.circular(16),
-                              border: Border.all(
-                                color: colors.border.withValues(alpha: 0.5),
-                              ),
-                            ),
-                            child: TextField(
-                              controller: _controller,
-                              style: TextStyle(
-                                color: colors.foreground,
-                                fontSize: 14,
-                              ),
-                              decoration: InputDecoration(
-                                hintText: t.aiCoach.inputHint,
-                                filled: false,
-                                border: InputBorder.none,
-                                enabledBorder: InputBorder.none,
-                                focusedBorder: InputBorder.none,
-                                contentPadding: const EdgeInsets.symmetric(
-                                  horizontal: 18,
-                                  vertical: 13,
-                                ),
-                              ),
-                              onSubmitted: (_) => _sendMessage(),
                             ),
                           ),
-                        ),
-                        const SizedBox(width: 10),
-                        _SendButton(enabled: !_isTyping, onTap: _sendMessage),
-                      ],
+                        ],
+                      ),
                     ),
                   ),
                 ],
@@ -620,44 +656,59 @@ class _AiCoachPageState extends ConsumerState<AiCoachPage> {
 }
 
 /// Circular accent send button (white pill look); panelSoft + muted when the
-/// coach is still streaming a reply.
-class _SendButton extends StatelessWidget {
+/// coach is still streaming a reply. Desktop affordances: pointer cursor and
+/// a stronger accent glow on hover.
+class _SendButton extends StatefulWidget {
   const _SendButton({required this.enabled, required this.onTap});
 
   final bool enabled;
   final VoidCallback onTap;
 
   @override
+  State<_SendButton> createState() => _SendButtonState();
+}
+
+class _SendButtonState extends State<_SendButton> {
+  bool _hovered = false;
+
+  @override
   Widget build(BuildContext context) {
     final colors = context.evolveColors;
     final accent = context.evolveAccent;
-    return InkWell(
-      onTap: enabled ? onTap : null,
-      customBorder: const CircleBorder(),
-      child: AnimatedContainer(
-        duration: const Duration(milliseconds: 200),
-        width: 38,
-        height: 38,
-        alignment: Alignment.center,
-        decoration: BoxDecoration(
-          shape: BoxShape.circle,
-          color: enabled ? accent : colors.panelSoft,
-          boxShadow: enabled
-              ? [
-                  BoxShadow(
-                    color: accent.withValues(alpha: 0.25),
-                    blurRadius: 12,
-                    offset: const Offset(0, 4),
-                  ),
-                ]
-              : null,
-        ),
-        child: Icon(
-          LucideIcons.send,
-          size: 16,
-          color: enabled
-              ? Theme.of(context).colorScheme.onPrimary
-              : colors.muted,
+    final enabled = widget.enabled;
+    final lifted = enabled && _hovered;
+    return MouseRegion(
+      cursor: enabled ? SystemMouseCursors.click : MouseCursor.defer,
+      onEnter: (_) => setState(() => _hovered = true),
+      onExit: (_) => setState(() => _hovered = false),
+      child: InkWell(
+        onTap: enabled ? widget.onTap : null,
+        customBorder: const CircleBorder(),
+        child: AnimatedContainer(
+          duration: const Duration(milliseconds: 150),
+          width: 38,
+          height: 38,
+          alignment: Alignment.center,
+          decoration: BoxDecoration(
+            shape: BoxShape.circle,
+            color: enabled ? accent : colors.panelSoft,
+            boxShadow: enabled
+                ? [
+                    BoxShadow(
+                      color: accent.withValues(alpha: lifted ? 0.4 : 0.25),
+                      blurRadius: lifted ? 16 : 12,
+                      offset: const Offset(0, 4),
+                    ),
+                  ]
+                : null,
+          ),
+          child: Icon(
+            LucideIcons.send,
+            size: 16,
+            color: enabled
+                ? Theme.of(context).colorScheme.onPrimary
+                : colors.muted,
+          ),
         ),
       ),
     );

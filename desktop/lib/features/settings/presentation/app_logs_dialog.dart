@@ -12,17 +12,17 @@ import 'package:path_provider/path_provider.dart';
 import 'package:share_plus/share_plus.dart';
 
 // Severity accents mapped onto the shared StatusPill palette
-// (destructive / amber / muted).
+// (destructive / amber / muted). Info resolves from the active palette so it
+// stays readable on the light theme (the dark muted gray washes out on white).
 const _errorColor = EvolveColors.destructive;
 const _warnColor = EvolveColors.amber;
-const _infoColor = EvolveColors.muted;
 
 const _monoFont = 'monospace';
 
-Color _levelColor(AppLogLevel level) => switch (level) {
+Color _levelColor(EvolvePalette colors, AppLogLevel level) => switch (level) {
   AppLogLevel.error => _errorColor,
   AppLogLevel.warning => _warnColor,
-  AppLogLevel.info => _infoColor,
+  AppLogLevel.info => colors.muted,
 };
 
 /// Opens the in-app diagnostic log viewer (Settings → System → App Logs).
@@ -243,7 +243,7 @@ class _AppLogsDialogState extends State<_AppLogsDialog> {
                     colors,
                     label: t.appLogs.filterInfo,
                     count: AppLogger.infoCount,
-                    color: _infoColor,
+                    color: colors.muted,
                     active: _filter == AppLogLevel.info,
                     onTap: () => _toggleFilter(AppLogLevel.info),
                   ),
@@ -413,7 +413,7 @@ class _AppLogsDialogState extends State<_AppLogsDialog> {
   }
 
   Widget _logCard(EvolvePalette colors, LogEntry entry) {
-    final levelColor = _levelColor(entry.level);
+    final levelColor = _levelColor(colors, entry.level);
     final isExpanded = _expanded.contains(entry);
 
     return Container(

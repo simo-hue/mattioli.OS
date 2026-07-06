@@ -910,32 +910,29 @@ class _GoalToolbar extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     // A `null` segment key stands for the Stats tab so the whole toolbar stays
-    // a single signature white-pill segmented control, matching mobile.
-    return Center(
-      child: ConstrainedBox(
-        constraints: const BoxConstraints(maxWidth: 920),
-        child: Container(
-          key: statsToggleKey,
-          child: EvolveSegmentedControl<GoalType?>(
-            height: 44,
-            segments: {
-              GoalType.lifetime: t.macroGoals.types.lifetime,
-              GoalType.annual: t.macroGoals.types.annual,
-              GoalType.quarterly: t.macroGoals.types.quarterly,
-              GoalType.monthly: t.macroGoals.types.monthly,
-              GoalType.weekly: t.macroGoals.types.weekly,
-              null: t.goalsPage.statsTab,
-            },
-            selected: showStats ? null : selectedType,
-            onSelected: (type) {
-              if (type == null) {
-                onShowStats();
-              } else {
-                onTypeChanged(type);
-              }
-            },
-          ),
-        ),
+    // a single signature white-pill segmented control, matching mobile. The
+    // control spans the full content width so the six segments share the
+    // fluid page width equally.
+    return Container(
+      key: statsToggleKey,
+      child: EvolveSegmentedControl<GoalType?>(
+        height: 44,
+        segments: {
+          GoalType.lifetime: t.macroGoals.types.lifetime,
+          GoalType.annual: t.macroGoals.types.annual,
+          GoalType.quarterly: t.macroGoals.types.quarterly,
+          GoalType.monthly: t.macroGoals.types.monthly,
+          GoalType.weekly: t.macroGoals.types.weekly,
+          null: t.goalsPage.statsTab,
+        },
+        selected: showStats ? null : selectedType,
+        onSelected: (type) {
+          if (type == null) {
+            onShowStats();
+          } else {
+            onTypeChanged(type);
+          }
+        },
       ),
     );
   }
@@ -1269,22 +1266,77 @@ class _GoalBoard extends StatelessWidget {
   final ValueChanged<DashboardGoal> onReschedule;
   final ValueChanged<DashboardGoal> onDelete;
 
-  Widget _activeItem(DashboardGoal goal) {
+  /// Active goal item. The tutorial GlobalKeys attach to the FIRST active
+  /// item only so the spotlight has a single stable target (and the tree never
+  /// holds duplicate GlobalKeys when several goals are visible).
+  Widget _activeItem(
+    DashboardGoal goal, {
+    required bool isFirst,
+    bool asCard = false,
+  }) {
+    return _GoalItem(
+      key: ValueKey(goal.id),
+      goal: goal,
+      checkboxKey: isFirst ? tutorialCheckboxKey : null,
+      rescheduleKey: isFirst ? tutorialRescheduleKey : null,
+      editKey: isFirst ? tutorialEditKey : null,
+      deleteKey: isFirst ? tutorialDeleteKey : null,
+      categories: categories,
+      onToggleStatus: onToggleStatus,
+      onEdit: onEdit,
+      onReschedule: onReschedule,
+      onDelete: onDelete,
+      asCard: asCard,
+    );
+  }
+
+  /// Single-column flavor of [_activeItem] with the list row spacing.
+  Widget _activeListItem(DashboardGoal goal, {required bool isFirst}) {
     return Padding(
       padding: const EdgeInsets.only(bottom: 10),
-      child: _GoalItem(
-        key: ValueKey(goal.id),
-        goal: goal,
-        checkboxKey: tutorialCheckboxKey,
-        rescheduleKey: tutorialRescheduleKey,
-        editKey: tutorialEditKey,
-        deleteKey: tutorialDeleteKey,
-        categories: categories,
-        onToggleStatus: onToggleStatus,
-        onEdit: onEdit,
-        onReschedule: onReschedule,
-        onDelete: onDelete,
-      ),
+      child: _activeItem(goal, isFirst: isFirst),
+    );
+  }
+
+  /// Adaptive card grid for the active goals: rows are chunked to [columns]
+  /// cells with 14px gaps and stretched per row so cards in the same run share
+  /// a height (LAYOUT_SPEC card-grid recipe).
+  Widget _activeGrid(int columns) {
+    const gap = 14.0;
+    final rows = <Widget>[];
+    for (var start = 0; start < activeGoals.length; start += columns) {
+      final chunk = activeGoals.sublist(
+        start,
+        math.min(start + columns, activeGoals.length),
+      );
+      rows.add(
+        Padding(
+          padding: EdgeInsets.only(top: start == 0 ? 0 : gap),
+          child: IntrinsicHeight(
+            child: Row(
+              crossAxisAlignment: CrossAxisAlignment.stretch,
+              children: [
+                for (var i = 0; i < columns; i++) ...[
+                  if (i > 0) const SizedBox(width: gap),
+                  Expanded(
+                    child: i < chunk.length
+                        ? _activeItem(
+                            chunk[i],
+                            isFirst: start + i == 0,
+                            asCard: true,
+                          )
+                        : const SizedBox.shrink(),
+                  ),
+                ],
+              ],
+            ),
+          ),
+        ),
+      );
+    }
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.stretch,
+      children: rows,
     );
   }
 
@@ -1337,7 +1389,8 @@ class _GoalBoard extends StatelessWidget {
 
     return LayoutBuilder(
       builder: (context, constraints) {
-        final useColumns = constraints.maxWidth >= 1120;
+        final contentWidth = constraints.maxWidth;
+        final useColumns = contentWidth >= 1120;
         if (!useColumns) {
           // Narrow: the original single-column flow with status dividers.
           return Column(
@@ -1348,7 +1401,8 @@ class _GoalBoard extends StatelessWidget {
               if (activeGoals.isEmpty)
                 _GoalEmptyState(hasAnyGoal: hasAnyGoal)
               else
-                for (final goal in activeGoals) _activeItem(goal),
+                for (var i = 0; i < activeGoals.length; i++)
+                  _activeListItem(activeGoals[i], isFirst: i == 0),
               if (completedGoals.isNotEmpty) ...[
                 const SizedBox(height: 22),
                 _StatusDivider(
@@ -1371,10 +1425,19 @@ class _GoalBoard extends StatelessWidget {
           );
         }
 
-        // Wide: active goals in the primary panel, period summary plus the
-        // completed/failed archives in a 350px right rail (dashboard pattern).
+        // Wide: active goals in the primary panel — as an adaptive card grid
+        // once the content width allows it — with the period summary plus the
+        // completed/failed archives in a proportional right rail.
+        final gridColumns = contentWidth >= 1760
+            ? 3
+            : contentWidth >= 1400
+            ? 2
+            : 1;
+        final railWidth = (contentWidth * 0.26).clamp(350.0, 440.0);
         final primary = EvolvePanel(
-          padding: const EdgeInsets.fromLTRB(18, 18, 18, 8),
+          padding: gridColumns > 1
+              ? const EdgeInsets.all(18)
+              : const EdgeInsets.fromLTRB(18, 18, 18, 8),
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.stretch,
             children: [
@@ -1382,11 +1445,14 @@ class _GoalBoard extends StatelessWidget {
               const SizedBox(height: 16),
               if (activeGoals.isEmpty)
                 Padding(
-                  padding: const EdgeInsets.only(bottom: 10),
+                  padding: EdgeInsets.only(bottom: gridColumns > 1 ? 0 : 10),
                   child: _GoalEmptyState(hasAnyGoal: hasAnyGoal),
                 )
+              else if (gridColumns > 1)
+                _activeGrid(gridColumns)
               else
-                for (final goal in activeGoals) _activeItem(goal),
+                for (var i = 0; i < activeGoals.length; i++)
+                  _activeListItem(activeGoals[i], isFirst: i == 0),
             ],
           ),
         );
@@ -1432,9 +1498,9 @@ class _GoalBoard extends StatelessWidget {
         return Row(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            Expanded(flex: 7, child: primary),
+            Expanded(child: primary),
             const SizedBox(width: 18),
-            SizedBox(width: 350, child: secondary),
+            SizedBox(width: railWidth, child: secondary),
           ],
         );
       },
@@ -1779,6 +1845,10 @@ class _QuickCategoryButton extends StatelessWidget {
   }
 }
 
+/// Unified empty-state recipe (LAYOUT_SPEC): centered icon chip + title. The
+/// page has a single localized string per case, so it is used as the title
+/// and no CTA is shown (the quick-add composer already sits in the command
+/// bar above).
 class _GoalEmptyState extends StatelessWidget {
   const _GoalEmptyState({required this.hasAnyGoal});
 
@@ -1787,7 +1857,7 @@ class _GoalEmptyState extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Container(
-      padding: const EdgeInsets.symmetric(horizontal: 18, vertical: 30),
+      padding: const EdgeInsets.symmetric(horizontal: 18, vertical: 40),
       decoration: BoxDecoration(
         color: context.evolveColors.panel.withValues(alpha: 0.4),
         borderRadius: BorderRadius.circular(16),
@@ -1798,20 +1868,21 @@ class _GoalEmptyState extends StatelessWidget {
       child: Column(
         mainAxisSize: MainAxisSize.min,
         children: [
-          Icon(
-            hasAnyGoal ? LucideIcons.circleCheck : LucideIcons.flag,
-            color: context.evolveColors.subtle,
-            size: 22,
+          EvolveIconChip(
+            icon: hasAnyGoal ? LucideIcons.circleCheck : LucideIcons.flag,
+            color: context.evolveColors.muted,
+            size: 44,
+            iconSize: 20,
           ),
-          const SizedBox(height: 10),
+          const SizedBox(height: 12),
           Text(
             hasAnyGoal ? t.goalsPage.emptyActive : t.goalsPage.emptyAdd,
             textAlign: TextAlign.center,
             style: TextStyle(
-              fontSize: 13,
-              fontWeight: FontWeight.w500,
+              fontSize: 14,
+              fontWeight: FontWeight.w600,
               height: 1.4,
-              color: context.evolveColors.muted,
+              color: context.evolveColors.foreground,
             ),
           ),
         ],
@@ -1833,6 +1904,7 @@ class _GoalItem extends StatefulWidget {
     required this.onEdit,
     required this.onReschedule,
     required this.onDelete,
+    this.asCard = false,
   });
 
   final DashboardGoal goal;
@@ -1845,6 +1917,12 @@ class _GoalItem extends StatefulWidget {
   final ValueChanged<DashboardGoal> onEdit;
   final ValueChanged<DashboardGoal> onReschedule;
   final ValueChanged<DashboardGoal> onDelete;
+
+  /// Grid cells render the stacked CARD layout (check + title on top,
+  /// category chip + due label + hover actions pinned below); the default row
+  /// layout keeps the compact list look used by the narrow flow and the
+  /// archive rail.
+  final bool asCard;
 
   @override
   State<_GoalItem> createState() => _GoalItemState();
@@ -1891,6 +1969,198 @@ class _GoalItemState extends State<_GoalItem> {
     });
   }
 
+  TextStyle _titleStyle(
+    BuildContext context, {
+    required bool completed,
+    required bool failed,
+    required Color statusColor,
+  }) {
+    return TextStyle(
+      fontSize: 15,
+      fontWeight: completed || failed ? FontWeight.w500 : FontWeight.w700,
+      letterSpacing: -0.2,
+      color: completed
+          ? EvolveColors.success.withValues(alpha: 0.72)
+          : failed
+          ? EvolveColors.destructive.withValues(alpha: 0.7)
+          : context.evolveColors.foreground,
+      decoration: completed || failed
+          ? TextDecoration.lineThrough
+          : TextDecoration.none,
+      decorationColor: statusColor.withValues(alpha: 0.55),
+      decorationThickness: 1.5,
+    );
+  }
+
+  /// Desktop affordance: the item actions stay tappable at all times but sit
+  /// dimmed until the pointer hovers the item.
+  Widget _hoverActions(BuildContext context) {
+    final goal = widget.goal;
+    return AnimatedOpacity(
+      opacity: _hovered ? 1 : 0.35,
+      duration: const Duration(milliseconds: 120),
+      child: Row(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          if (goal.type != GoalType.lifetime)
+            IconButton(
+              key: widget.rescheduleKey,
+              tooltip: t.goalsPage.rescheduleTooltip,
+              onPressed: () => widget.onReschedule(goal),
+              icon: const Icon(LucideIcons.calendarClock, size: 16),
+              style: IconButton.styleFrom(
+                foregroundColor: context.evolveColors.muted,
+              ),
+            ),
+          IconButton(
+            key: widget.editKey,
+            tooltip: t.common.actions.edit,
+            onPressed: () => widget.onEdit(goal),
+            icon: const Icon(LucideIcons.pencil, size: 16),
+            style: IconButton.styleFrom(
+              foregroundColor: context.evolveColors.muted,
+            ),
+          ),
+          IconButton(
+            key: widget.deleteKey,
+            tooltip: t.common.actions.delete,
+            onPressed: () => widget.onDelete(goal),
+            icon: const Icon(LucideIcons.trash2, size: 16),
+            style: IconButton.styleFrom(
+              foregroundColor: EvolveColors.destructive.withValues(alpha: 0.7),
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _checkButton(GoalState currentState) {
+    return Container(
+      key: widget.checkboxKey,
+      child: _GoalCheckButton(state: currentState, onPressed: _cycleStatus),
+    );
+  }
+
+  /// Compact single-line layout (narrow flow + archive rail).
+  Widget _rowLayout(
+    BuildContext context, {
+    required _GoalCategory category,
+    required GoalState currentState,
+    required bool completed,
+    required bool failed,
+    required Color statusColor,
+  }) {
+    return Row(
+      children: [
+        _checkButton(currentState),
+        const SizedBox(width: 14),
+        if (!completed && !failed) ...[
+          EvolveIconChip(
+            icon: LucideIcons.target,
+            color: category.color,
+            size: 30,
+            iconSize: 15,
+          ),
+          const SizedBox(width: 12),
+        ],
+        Expanded(
+          child: Text(
+            widget.goal.title,
+            maxLines: 2,
+            overflow: TextOverflow.ellipsis,
+            style: _titleStyle(
+              context,
+              completed: completed,
+              failed: failed,
+              statusColor: statusColor,
+            ),
+          ),
+        ),
+        const SizedBox(width: 12),
+        _hoverActions(context),
+      ],
+    );
+  }
+
+  /// Stacked CARD layout for the adaptive grid: check + two-line title on
+  /// top, category chip + due label + hover actions pinned to the bottom so
+  /// cards sharing a stretched grid row stay aligned.
+  Widget _cardLayout(
+    BuildContext context, {
+    required _GoalCategory category,
+    required GoalState currentState,
+    required bool completed,
+    required bool failed,
+    required Color statusColor,
+  }) {
+    final goal = widget.goal;
+    return Column(
+      mainAxisAlignment: MainAxisAlignment.spaceBetween,
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Padding(
+          padding: const EdgeInsets.only(bottom: 12),
+          child: Row(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              _checkButton(currentState),
+              const SizedBox(width: 12),
+              Expanded(
+                child: Text(
+                  goal.title,
+                  maxLines: 2,
+                  overflow: TextOverflow.ellipsis,
+                  style: _titleStyle(
+                    context,
+                    completed: completed,
+                    failed: failed,
+                    statusColor: statusColor,
+                  ),
+                ),
+              ),
+            ],
+          ),
+        ),
+        Row(
+          children: [
+            Expanded(
+              child: Row(
+                children: [
+                  Flexible(
+                    child: _GoalCategoryChip(
+                      label: _categoryLabel(category),
+                      color: category.color,
+                    ),
+                  ),
+                  if (goal.dueLabel.isNotEmpty) ...[
+                    const SizedBox(width: 10),
+                    Flexible(
+                      child: Text(
+                        goal.dueLabel,
+                        maxLines: 1,
+                        overflow: TextOverflow.ellipsis,
+                        style: TextStyle(
+                          fontSize: 11,
+                          fontWeight: FontWeight.w500,
+                          color: context.evolveColors.muted.withValues(
+                            alpha: 0.8,
+                          ),
+                        ),
+                      ),
+                    ),
+                  ],
+                ],
+              ),
+            ),
+            const SizedBox(width: 8),
+            _hoverActions(context),
+          ],
+        ),
+      ],
+    );
+  }
+
   @override
   Widget build(BuildContext context) {
     final goal = widget.goal;
@@ -1910,7 +2180,10 @@ class _GoalItemState extends State<_GoalItem> {
       child: AnimatedContainer(
         duration: const Duration(milliseconds: 250),
         constraints: const BoxConstraints(minHeight: 64),
-        padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+        padding: EdgeInsets.symmetric(
+          horizontal: 16,
+          vertical: widget.asCard ? 14 : 12,
+        ),
         decoration: BoxDecoration(
           color: statusColor.withValues(
             alpha: completed
@@ -1930,93 +2203,69 @@ class _GoalItemState extends State<_GoalItem> {
             ),
           ),
         ),
-        child: Row(
-          children: [
-            Container(
-              key: widget.checkboxKey,
-              child: _GoalCheckButton(
-                state: currentState,
-                onPressed: _cycleStatus,
+        child: widget.asCard
+            ? _cardLayout(
+                context,
+                category: category,
+                currentState: currentState,
+                completed: completed,
+                failed: failed,
+                statusColor: statusColor,
+              )
+            : _rowLayout(
+                context,
+                category: category,
+                currentState: currentState,
+                completed: completed,
+                failed: failed,
+                statusColor: statusColor,
+              ),
+      ),
+    );
+  }
+}
+
+/// Small category pill for the goal cards: colored dot + localized label,
+/// mirroring the shared StatusPill recipe but with ellipsis protection so
+/// long category names never overflow a grid cell.
+class _GoalCategoryChip extends StatelessWidget {
+  const _GoalCategoryChip({required this.label, required this.color});
+
+  final String label;
+  final Color color;
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 5),
+      decoration: BoxDecoration(
+        color: color.withValues(alpha: 0.12),
+        borderRadius: BorderRadius.circular(100),
+        border: Border.all(color: color.withValues(alpha: 0.22)),
+      ),
+      child: Row(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          Container(
+            width: 7,
+            height: 7,
+            decoration: BoxDecoration(shape: BoxShape.circle, color: color),
+          ),
+          const SizedBox(width: 6),
+          Flexible(
+            child: Text(
+              label,
+              maxLines: 1,
+              overflow: TextOverflow.ellipsis,
+              style: TextStyle(
+                color: color,
+                fontSize: 11,
+                fontWeight: FontWeight.w700,
+                letterSpacing: -0.1,
               ),
             ),
-            const SizedBox(width: 14),
-            if (!completed && !failed) ...[
-              EvolveIconChip(
-                icon: LucideIcons.target,
-                color: category.color,
-                size: 30,
-                iconSize: 15,
-              ),
-              const SizedBox(width: 12),
-            ],
-            Expanded(
-              child: Text(
-                goal.title,
-                maxLines: 2,
-                overflow: TextOverflow.ellipsis,
-                style: TextStyle(
-                  fontSize: 15,
-                  fontWeight: completed || failed
-                      ? FontWeight.w500
-                      : FontWeight.w700,
-                  letterSpacing: -0.2,
-                  color: completed
-                      ? EvolveColors.success.withValues(alpha: 0.72)
-                      : failed
-                      ? EvolveColors.destructive.withValues(alpha: 0.7)
-                      : context.evolveColors.foreground,
-                  decoration: completed || failed
-                      ? TextDecoration.lineThrough
-                      : TextDecoration.none,
-                  decorationColor: statusColor.withValues(alpha: 0.55),
-                  decorationThickness: 1.5,
-                ),
-              ),
-            ),
-            const SizedBox(width: 12),
-            // Desktop affordance: the row actions stay tappable at all times
-            // but sit dimmed until the pointer hovers the row.
-            AnimatedOpacity(
-              opacity: _hovered ? 1 : 0.35,
-              duration: const Duration(milliseconds: 120),
-              child: Row(
-                mainAxisSize: MainAxisSize.min,
-                children: [
-                  if (goal.type != GoalType.lifetime)
-                    IconButton(
-                      key: widget.rescheduleKey,
-                      tooltip: t.goalsPage.rescheduleTooltip,
-                      onPressed: () => widget.onReschedule(goal),
-                      icon: const Icon(LucideIcons.calendarClock, size: 16),
-                      style: IconButton.styleFrom(
-                        foregroundColor: context.evolveColors.muted,
-                      ),
-                    ),
-                  IconButton(
-                    key: widget.editKey,
-                    tooltip: t.common.actions.edit,
-                    onPressed: () => widget.onEdit(goal),
-                    icon: const Icon(LucideIcons.pencil, size: 16),
-                    style: IconButton.styleFrom(
-                      foregroundColor: context.evolveColors.muted,
-                    ),
-                  ),
-                  IconButton(
-                    key: widget.deleteKey,
-                    tooltip: t.common.actions.delete,
-                    onPressed: () => widget.onDelete(goal),
-                    icon: const Icon(LucideIcons.trash2, size: 16),
-                    style: IconButton.styleFrom(
-                      foregroundColor: EvolveColors.destructive.withValues(
-                        alpha: 0.7,
-                      ),
-                    ),
-                  ),
-                ],
-              ),
-            ),
-          ],
-        ),
+          ),
+        ],
       ),
     );
   }

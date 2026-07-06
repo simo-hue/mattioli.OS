@@ -48,7 +48,11 @@ class _HabitsPageState extends ConsumerState<HabitsPage> {
   Widget build(BuildContext context) {
     final snapshot = ref.watch(dashboardControllerProvider);
 
+    // App-like workspace: the page is pinned to the viewport. Fixed chrome
+    // (metrics + the Protocollo/Calendario switch) sits on top and the active
+    // view fills the remaining height, scrolling internally where needed.
     return DesktopPage(
+      pinned: true,
       title: t.common.habits,
       subtitle: t.habitsPage.subtitle,
       trailing: PageActionButton(
@@ -61,62 +65,42 @@ class _HabitsPageState extends ConsumerState<HabitsPage> {
         crossAxisAlignment: CrossAxisAlignment.stretch,
         children: [
           _Summary(snapshot: snapshot),
-          const SizedBox(height: 18),
-          LayoutBuilder(
-            builder: (context, constraints) {
-              final useColumns = constraints.maxWidth >= 1120;
-              if (useColumns) {
-                // Desktop-first composition (mirrors the dashboard): protocol
-                // and calendar are visible side by side, no surface switcher.
-                return Row(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Expanded(
-                      flex: 6,
-                      child: _protocolSurface(snapshot, wide: true),
-                    ),
-                    const SizedBox(width: 18),
-                    Expanded(
-                      flex: 5,
-                      child: _calendarSurface(snapshot, wide: true),
-                    ),
-                  ],
-                );
-              }
-              // Narrow windows keep the segmented Protocol/Calendar switcher.
-              return Column(
-                crossAxisAlignment: CrossAxisAlignment.stretch,
-                children: [
-                  EvolveSegmentedControl<_HabitSurface>(
-                    height: 44,
-                    segments: {
-                      _HabitSurface.protocol: t.habitsPage.tabProtocol,
-                      _HabitSurface.calendar: t.habitsPage.tabCalendar,
-                    },
-                    selected: _surface,
-                    onSelected: (surface) => setState(() => _surface = surface),
-                  ),
-                  const SizedBox(height: 14),
-                  if (_surface == _HabitSurface.protocol)
-                    _protocolSurface(snapshot, wide: false)
-                  else
-                    _calendarSurface(snapshot, wide: false),
-                ],
-              );
+          const SizedBox(height: 14),
+          EvolveSegmentedControl<_HabitSurface>(
+            height: 44,
+            segments: {
+              _HabitSurface.protocol: t.habitsPage.tabProtocol,
+              _HabitSurface.calendar: t.habitsPage.tabCalendar,
             },
+            selected: _surface,
+            onSelected: (surface) => setState(() => _surface = surface),
+          ),
+          const SizedBox(height: 14),
+          Expanded(
+            child: AnimatedSwitcher(
+              duration: const Duration(milliseconds: 200),
+              switchInCurve: Curves.easeOutCubic,
+              switchOutCurve: Curves.easeOutCubic,
+              layoutBuilder: _expandedSwitcherLayout,
+              child: KeyedSubtree(
+                key: ValueKey(_surface),
+                child: _surface == _HabitSurface.protocol
+                    ? _protocolSurface(snapshot)
+                    : _calendarSurface(snapshot),
+              ),
+            ),
           ),
         ],
       ),
     );
   }
 
-  Widget _protocolSurface(DashboardSnapshot snapshot, {required bool wide}) {
+  Widget _protocolSurface(DashboardSnapshot snapshot) {
     return _ProtocolPanel(
       snapshot: snapshot,
-      wide: wide,
       onToggle: (id) =>
           ref.read(dashboardControllerProvider.notifier).toggleHabit(id),
-      onAdd: wide ? () => _openHabitEditor() : null,
+      onAdd: () => _openHabitEditor(),
       onEdit: _openHabitEditor,
       onDelete: _deleteHabit,
       onReorder: (oldIndex, newIndex) => ref
@@ -125,10 +109,9 @@ class _HabitsPageState extends ConsumerState<HabitsPage> {
     );
   }
 
-  Widget _calendarSurface(DashboardSnapshot snapshot, {required bool wide}) {
+  Widget _calendarSurface(DashboardSnapshot snapshot) {
     return _CalendarPanel(
       snapshot: snapshot,
-      wide: wide,
       anchor: _anchor,
       view: _calendarView,
       onViewChanged: (view) => setState(() => _calendarView = view),
@@ -208,8 +191,22 @@ class _HabitsPageState extends ConsumerState<HabitsPage> {
   }
 }
 
-/// Dashboard-style metric grid (Wrap, 4 columns on wide surfaces, else 2)
-/// mirroring the Overview page's metric cards.
+/// AnimatedSwitcher layout that keeps both the incoming and the outgoing view
+/// sized to the full pinned content area (the default Stack lets them
+/// shrink-wrap during the cross-fade).
+Widget _expandedSwitcherLayout(
+  Widget? currentChild,
+  List<Widget> previousChildren,
+) {
+  return Stack(
+    fit: StackFit.expand,
+    children: [...previousChildren, ?currentChild],
+  );
+}
+
+/// Compact metric strip: the three summary cards share one row of fixed
+/// chrome. They are secondary info, so they stay ~72px tall and stop growing
+/// at 470px per card (aligned to the start on very wide windows).
 class _Summary extends StatelessWidget {
   const _Summary({required this.snapshot});
 
@@ -217,55 +214,53 @@ class _Summary extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return LayoutBuilder(
-      builder: (context, constraints) {
-        final columns = constraints.maxWidth >= 1080 ? 4 : 2;
-        const spacing = 14.0;
-        final cardWidth =
-            (constraints.maxWidth - spacing * (columns - 1)) / columns;
-
-        return Wrap(
-          spacing: spacing,
-          runSpacing: spacing,
-          children: [
-            _SummaryCard(
-              width: cardWidth,
-              label: t.habitsPage.activeProtocol,
-              value: '${snapshot.totalHabits}',
-              icon: LucideIcons.listTodo,
-              color: context.evolveAccent,
+    final cards = [
+      _SummaryCard(
+        label: t.habitsPage.activeProtocol,
+        value: '${snapshot.totalHabits}',
+        icon: LucideIcons.listTodo,
+        color: context.evolveAccent,
+      ),
+      _SummaryCard(
+        label: t.habitsPage.completedToday,
+        value: '${snapshot.completedHabits}',
+        icon: LucideIcons.check,
+        color: EvolveColors.cyan,
+      ),
+      _SummaryCard(
+        label: t.stats.bestStreakLabel,
+        value: t.dashboard.streakDaysShort(n: snapshot.bestStreak),
+        icon: LucideIcons.flame,
+        color: EvolveColors.amber,
+      ),
+    ];
+    return Row(
+      children: [
+        for (var index = 0; index < cards.length; index++) ...[
+          if (index > 0) const SizedBox(width: 14),
+          Expanded(
+            child: Align(
+              alignment: AlignmentDirectional.centerStart,
+              child: ConstrainedBox(
+                constraints: const BoxConstraints(maxWidth: 470),
+                child: cards[index],
+              ),
             ),
-            _SummaryCard(
-              width: cardWidth,
-              label: t.habitsPage.completedToday,
-              value: '${snapshot.completedHabits}',
-              icon: LucideIcons.check,
-              color: EvolveColors.cyan,
-            ),
-            _SummaryCard(
-              width: cardWidth,
-              label: t.stats.bestStreakLabel,
-              value: t.dashboard.streakDaysShort(n: snapshot.bestStreak),
-              icon: LucideIcons.flame,
-              color: EvolveColors.amber,
-            ),
-          ],
-        );
-      },
+          ),
+        ],
+      ],
     );
   }
 }
 
 class _SummaryCard extends StatelessWidget {
   const _SummaryCard({
-    required this.width,
     required this.label,
     required this.value,
     required this.icon,
     required this.color,
   });
 
-  final double width;
   final String label;
   final String value;
   final IconData icon;
@@ -273,53 +268,57 @@ class _SummaryCard extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return SizedBox(
-      width: width,
-      child: EvolvePanel(
-        radius: 20,
-        glowColor: color,
-        child: Row(
-          children: [
-            Expanded(
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Text(
-                    label,
-                    maxLines: 1,
-                    overflow: TextOverflow.ellipsis,
-                    style: Theme.of(context).textTheme.bodySmall,
+    return EvolvePanel(
+      radius: 20,
+      glowColor: color,
+      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
+      child: Row(
+        children: [
+          EvolveIconChip(icon: icon, color: color, size: 38, iconSize: 18),
+          const SizedBox(width: 12),
+          Expanded(
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(
+                  value,
+                  maxLines: 1,
+                  overflow: TextOverflow.ellipsis,
+                  style: TextStyle(
+                    color: context.evolveColors.foreground,
+                    fontSize: 24,
+                    fontWeight: FontWeight.w800,
+                    letterSpacing: -1,
+                    height: 1.1,
                   ),
-                  const SizedBox(height: 8),
-                  Text(
-                    value,
-                    style: TextStyle(
-                      color: context.evolveColors.foreground,
-                      fontSize: 27,
-                      fontWeight: FontWeight.w800,
-                      letterSpacing: -1,
-                    ),
-                  ),
-                ],
-              ),
+                ),
+                const SizedBox(height: 2),
+                Text(
+                  label,
+                  maxLines: 1,
+                  overflow: TextOverflow.ellipsis,
+                  style: Theme.of(context).textTheme.bodySmall,
+                ),
+              ],
             ),
-            EvolveIconChip(icon: icon, color: color, size: 42, iconSize: 19),
-          ],
-        ),
+          ),
+        ],
       ),
     );
   }
 }
 
-class _ProtocolPanel extends StatelessWidget {
+/// Full-height protocol surface: one panel hosting the heading, the fixed
+/// column-label row and the internally scrolling habit table.
+class _ProtocolPanel extends StatefulWidget {
   const _ProtocolPanel({
     required this.snapshot,
     required this.onToggle,
+    required this.onAdd,
     required this.onEdit,
     required this.onDelete,
     required this.onReorder,
-    this.onAdd,
-    this.wide = false,
   });
 
   final DashboardSnapshot snapshot;
@@ -328,112 +327,164 @@ class _ProtocolPanel extends StatelessWidget {
   final ValueChanged<DashboardHabit> onDelete;
   final void Function(int oldIndex, int newIndex) onReorder;
 
-  /// Optional quick-add action shown next to the status pill (wide mode).
-  final VoidCallback? onAdd;
+  /// Quick-add action shown next to the status pill.
+  final VoidCallback onAdd;
 
-  /// Two-column composition: the section takes the protocol tab label as its
-  /// title and the rows compact themselves to the narrower column.
-  final bool wide;
+  @override
+  State<_ProtocolPanel> createState() => _ProtocolPanelState();
+}
+
+class _ProtocolPanelState extends State<_ProtocolPanel> {
+  final _scroll = ScrollController();
+
+  @override
+  void dispose() {
+    _scroll.dispose();
+    super.dispose();
+  }
 
   @override
   Widget build(BuildContext context) {
-    final habits = snapshot.habits;
-    final pill = StatusPill(
-      label: t.stats.currentWeek,
-      icon: LucideIcons.calendarClock,
-    );
-    // Mobile habit-manager look: floating heading + one translucent outlined
-    // card per habit row instead of a single table panel.
-    return LayoutBuilder(
-      builder: (context, constraints) {
-        final metrics = wide && constraints.maxWidth < 700
-            ? const _HabitRowMetrics.dense()
-            : const _HabitRowMetrics.regular();
-        return Column(
-          crossAxisAlignment: CrossAxisAlignment.stretch,
-          children: [
-            Padding(
-              padding: const EdgeInsetsDirectional.only(start: 2, end: 2),
-              child: SectionHeading(
-                title: wide
-                    ? t.habitsPage.tabProtocol
-                    : t.habitsPage.dailyProtocol,
-                subtitle: t.habitsPage.protocolSubtitle,
-                trailing: onAdd == null
-                    ? pill
-                    : Row(
-                        mainAxisSize: MainAxisSize.min,
-                        children: [
-                          pill,
-                          const SizedBox(width: 8),
-                          EvolveSquareIconButton(
-                            icon: LucideIcons.plus,
-                            tooltip: t.habitsPage.newHabit,
-                            onTap: onAdd,
-                          ),
-                        ],
-                      ),
-              ),
+    final habits = widget.snapshot.habits;
+    const metrics = _HabitRowMetrics.comfortable();
+    return EvolvePanel(
+      radius: 20,
+      padding: const EdgeInsets.fromLTRB(18, 18, 18, 10),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.stretch,
+        children: [
+          SectionHeading(
+            title: t.habitsPage.dailyProtocol,
+            subtitle: t.habitsPage.protocolSubtitle,
+            trailing: Row(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                StatusPill(
+                  label: t.stats.currentWeek,
+                  icon: LucideIcons.calendarClock,
+                ),
+                const SizedBox(width: 8),
+                EvolveSquareIconButton(
+                  icon: LucideIcons.plus,
+                  tooltip: t.habitsPage.newHabit,
+                  onTap: widget.onAdd,
+                ),
+              ],
             ),
-            const SizedBox(height: 14),
-            _HabitHeader(metrics: metrics),
-            const SizedBox(height: 8),
-            ReorderableListView.builder(
-              shrinkWrap: true,
-              physics: const NeverScrollableScrollPhysics(),
-              buildDefaultDragHandles: false,
-              itemCount: habits.length,
-              onReorderItem: onReorder,
-              itemBuilder: (context, index) {
-                final habit = habits[index];
-                return _HabitRow(
-                  key: ValueKey(habit.id),
-                  habit: habit,
-                  metrics: metrics,
-                  onToggle: () => onToggle(habit.id),
-                  onEdit: () => onEdit(habit),
-                  onDelete: () => onDelete(habit),
-                  dragHandle: ReorderableDragStartListener(
-                    index: index,
-                    child: Icon(
-                      LucideIcons.gripVertical,
-                      size: 16,
-                      color: context.evolveColors.muted,
+          ),
+          const SizedBox(height: 14),
+          const _HabitHeader(metrics: metrics),
+          const SizedBox(height: 8),
+          Expanded(
+            child: habits.isEmpty
+                ? _EmptyProtocol(onAdd: widget.onAdd)
+                : Scrollbar(
+                    controller: _scroll,
+                    child: ReorderableListView.builder(
+                      scrollController: _scroll,
+                      padding: const EdgeInsets.only(bottom: 4),
+                      buildDefaultDragHandles: false,
+                      itemCount: habits.length,
+                      onReorderItem: widget.onReorder,
+                      itemBuilder: (context, index) {
+                        final habit = habits[index];
+                        return _HabitRow(
+                          key: ValueKey(habit.id),
+                          habit: habit,
+                          metrics: metrics,
+                          onToggle: () => widget.onToggle(habit.id),
+                          onEdit: () => widget.onEdit(habit),
+                          onDelete: () => widget.onDelete(habit),
+                          dragHandle: ReorderableDragStartListener(
+                            index: index,
+                            child: Icon(
+                              LucideIcons.gripVertical,
+                              size: 16,
+                              color: context.evolveColors.muted,
+                            ),
+                          ),
+                        );
+                      },
                     ),
                   ),
-                );
-              },
-            ),
-          ],
-        );
-      },
+          ),
+        ],
+      ),
     );
   }
 }
 
-/// Column sizing for the protocol table: regular for full-width surfaces,
-/// dense when the protocol shares the main row with the calendar panel.
+/// Empty state (LAYOUT_SPEC recipe): centered icon chip + existing copy +
+/// the new-habit CTA. The scroll view is a guard for very short windows.
+class _EmptyProtocol extends StatelessWidget {
+  const _EmptyProtocol({required this.onAdd});
+
+  final VoidCallback onAdd;
+
+  @override
+  Widget build(BuildContext context) {
+    return Center(
+      child: SingleChildScrollView(
+        child: Padding(
+          padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 12),
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              EvolveIconChip(
+                icon: LucideIcons.listTodo,
+                color: context.evolveAccent,
+                size: 44,
+                iconSize: 20,
+              ),
+              const SizedBox(height: 12),
+              Text(
+                t.stats.noHabit,
+                textAlign: TextAlign.center,
+                style: TextStyle(
+                  color: context.evolveColors.foreground,
+                  fontSize: 14,
+                  fontWeight: FontWeight.w600,
+                ),
+              ),
+              const SizedBox(height: 4),
+              Text(
+                t.dashboard.emptyHabits,
+                textAlign: TextAlign.center,
+                style: TextStyle(
+                  color: context.evolveColors.muted,
+                  fontSize: 12,
+                  fontWeight: FontWeight.w500,
+                ),
+              ),
+              const SizedBox(height: 16),
+              SizedBox(
+                height: 40,
+                child: FilledButton.icon(
+                  onPressed: onAdd,
+                  icon: const Icon(LucideIcons.plus, size: 16),
+                  label: Text(t.habitsPage.newHabit),
+                ),
+              ),
+            ],
+          ),
+        ),
+      ),
+    );
+  }
+}
+
+/// Column sizing for the full-width protocol table: one comfortable desktop
+/// preset (the title/category column absorbs the remaining width).
 class _HabitRowMetrics {
-  const _HabitRowMetrics.regular()
-    : streakWidth = 100,
-      weekWidth = 200,
-      reminderWidth = 105,
-      actionsWidth = 84,
+  const _HabitRowMetrics.comfortable()
+    : streakWidth = 110,
+      weekWidth = 210,
+      reminderWidth = 120,
+      actionsWidth = 90,
       daySquareSize = 18,
       daySquareGap = 8,
       actionButtonSize = 36,
       actionIconSize = 17,
-      verticalPadding = 12;
-
-  const _HabitRowMetrics.dense()
-    : streakWidth = 78,
-      weekWidth = 136,
-      reminderWidth = 68,
-      actionsWidth = 64,
-      daySquareSize = 14,
-      daySquareGap = 5,
-      actionButtonSize = 30,
-      actionIconSize = 15,
       verticalPadding = 10;
 
   final double streakWidth;
@@ -804,6 +855,9 @@ class _RowIconButtonState extends State<_RowIconButton> {
   }
 }
 
+/// Full-screen calendar surface: one panel with the period title on the left,
+/// the Mese/Settimana/Anno/Vita switcher plus navigation on the right, and a
+/// grid that flexes to fill all the remaining height.
 class _CalendarPanel extends StatelessWidget {
   const _CalendarPanel({
     required this.snapshot,
@@ -814,7 +868,6 @@ class _CalendarPanel extends StatelessWidget {
     required this.onNext,
     required this.onToday,
     required this.onSelectDay,
-    this.wide = false,
   });
 
   final DashboardSnapshot snapshot;
@@ -826,22 +879,8 @@ class _CalendarPanel extends StatelessWidget {
   final VoidCallback onToday;
   final ValueChanged<DateTime> onSelectDay;
 
-  /// Two-column composition: heading, view switcher and navigation live in
-  /// the panel header zone and the month grid is width-capped.
-  final bool wide;
-
-  /// Keeps month day cells in a pleasant size range when the calendar column
-  /// grows on large windows ((540 - 6 gaps) / 7 = 72px cells at most).
-  static const _wideMonthMaxWidth = 540.0;
-
   @override
   Widget build(BuildContext context) {
-    final switcher = EvolveSegmentedControl<CalendarViewMode>(
-      height: 44,
-      segments: {for (final mode in CalendarViewMode.values) mode: mode.label},
-      selected: view,
-      onSelected: onViewChanged,
-    );
     final body = switch (view) {
       CalendarViewMode.month => _MonthCalendar(
         snapshot: snapshot,
@@ -860,68 +899,47 @@ class _CalendarPanel extends StatelessWidget {
       CalendarViewMode.life => const _LifeCalendar(),
     };
 
-    if (wide) {
-      return EvolvePanel(
-        radius: 20,
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.stretch,
-          children: [
-            SectionHeading(
-              title: t.habitsPage.tabCalendar,
-              trailing: view == CalendarViewMode.life
-                  ? null
-                  : Row(
-                      mainAxisSize: MainAxisSize.min,
-                      children: _navigationControls(context),
-                    ),
-            ),
-            const SizedBox(height: 14),
-            switcher,
-            const SizedBox(height: 16),
-            _PeriodTitle(anchor: anchor, view: view),
-            const SizedBox(height: 16),
-            if (view == CalendarViewMode.month)
-              Center(
-                child: ConstrainedBox(
-                  constraints: const BoxConstraints(
-                    maxWidth: _wideMonthMaxWidth,
-                  ),
-                  child: body,
-                ),
-              )
-            else
-              body,
-          ],
-        ),
-      );
-    }
-
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.stretch,
-      children: [
-        switcher,
-        const SizedBox(height: 14),
-        EvolvePanel(
-          radius: 20,
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
+    return EvolvePanel(
+      radius: 20,
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.stretch,
+        children: [
+          Row(
             children: [
-              Row(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Expanded(
-                    child: _PeriodTitle(anchor: anchor, view: view),
-                  ),
-                  if (view != CalendarViewMode.life)
-                    ..._navigationControls(context),
-                ],
+              Expanded(
+                child: _PeriodTitle(anchor: anchor, view: view),
               ),
-              const SizedBox(height: 16),
-              body,
+              const SizedBox(width: 12),
+              SizedBox(
+                width: 380,
+                child: EvolveSegmentedControl<CalendarViewMode>(
+                  height: 44,
+                  segments: {
+                    for (final mode in CalendarViewMode.values)
+                      mode: mode.label,
+                  },
+                  selected: view,
+                  onSelected: onViewChanged,
+                ),
+              ),
+              if (view != CalendarViewMode.life) ...[
+                const SizedBox(width: 8),
+                ..._navigationControls(context),
+              ],
             ],
           ),
-        ),
-      ],
+          const SizedBox(height: 16),
+          Expanded(
+            child: AnimatedSwitcher(
+              duration: const Duration(milliseconds: 200),
+              switchInCurve: Curves.easeOutCubic,
+              switchOutCurve: Curves.easeOutCubic,
+              layoutBuilder: _expandedSwitcherLayout,
+              child: KeyedSubtree(key: ValueKey(view), child: body),
+            ),
+          ),
+        ],
+      ),
     );
   }
 
@@ -981,14 +999,26 @@ class _PeriodTitle extends StatelessWidget {
       letterSpacing: -0.8,
     );
     if (view != CalendarViewMode.month) {
-      return Text(_periodLabel(anchor, view), style: titleStyle);
+      return Text(
+        _periodLabel(anchor, view),
+        maxLines: 1,
+        overflow: TextOverflow.ellipsis,
+        style: titleStyle,
+      );
     }
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        Text(t.common.months[anchor.month - 1], style: titleStyle),
+        Text(
+          t.common.months[anchor.month - 1],
+          maxLines: 1,
+          overflow: TextOverflow.ellipsis,
+          style: titleStyle,
+        ),
         Text(
           '${anchor.year}',
+          maxLines: 1,
+          overflow: TextOverflow.ellipsis,
           style: TextStyle(
             color: context.evolveColors.muted,
             fontSize: 14,
@@ -1017,43 +1047,61 @@ class _MonthCalendar extends StatelessWidget {
     final first = DateTime(anchor.year, anchor.month);
     final days = DateUtils.getDaysInMonth(anchor.year, anchor.month);
     final leading = first.weekday - 1;
+    final weeks = (leading + days + 6) ~/ 7;
+    // The grid fills the viewport by construction: every week row is an
+    // Expanded row of flexible day cells, so the month never scrolls.
     return Column(
+      crossAxisAlignment: CrossAxisAlignment.stretch,
       children: [
         Row(
           children: [
-            for (final day in t.habitsPage.weekdayAbbrevUpper)
-              Expanded(child: Center(child: _WeekdayLabel(day))),
+            for (var day = 0; day < 7; day++) ...[
+              if (day > 0) const SizedBox(width: 6),
+              Expanded(
+                child: Center(
+                  child: _WeekdayLabel(t.habitsPage.weekdayAbbrevUpper[day]),
+                ),
+              ),
+            ],
           ],
         ),
         const SizedBox(height: 8),
-        GridView.builder(
-          shrinkWrap: true,
-          physics: const NeverScrollableScrollPhysics(),
-          gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
-            crossAxisCount: 7,
-            childAspectRatio: 0.85,
-            mainAxisSpacing: 6,
-            crossAxisSpacing: 6,
+        Expanded(
+          child: Column(
+            children: [
+              for (var week = 0; week < weeks; week++) ...[
+                if (week > 0) const SizedBox(height: 6),
+                Expanded(
+                  child: Row(
+                    crossAxisAlignment: CrossAxisAlignment.stretch,
+                    children: [
+                      for (var day = 0; day < 7; day++) ...[
+                        if (day > 0) const SizedBox(width: 6),
+                        Expanded(
+                          child: _cellFor(week * 7 + day, leading, days),
+                        ),
+                      ],
+                    ],
+                  ),
+                ),
+              ],
+            ],
           ),
-          itemCount: leading + days,
-          itemBuilder: (context, index) {
-            if (index < leading) return const SizedBox.shrink();
-            final date = DateTime(
-              anchor.year,
-              anchor.month,
-              index - leading + 1,
-            );
-            return _DayCell(
-              snapshot: snapshot,
-              date: date,
-              completion: _completionFor(snapshot, date),
-              onTap: date.isAfter(DateTime.now())
-                  ? null
-                  : () => onSelectDay(date),
-            );
-          },
         ),
       ],
+    );
+  }
+
+  Widget _cellFor(int index, int leading, int days) {
+    if (index < leading || index >= leading + days) {
+      return const SizedBox.shrink();
+    }
+    final date = DateTime(anchor.year, anchor.month, index - leading + 1);
+    return _DayCell(
+      snapshot: snapshot,
+      date: date,
+      completion: _completionFor(snapshot, date),
+      onTap: date.isAfter(DateTime.now()) ? null : () => onSelectDay(date),
     );
   }
 }
@@ -1072,26 +1120,50 @@ class _WeekCalendar extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final monday = anchor.subtract(Duration(days: anchor.weekday - 1));
-    return Row(
-      crossAxisAlignment: CrossAxisAlignment.start,
+    // Seven flexible day columns that fill the available height.
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.stretch,
       children: [
-        for (var index = 0; index < 7; index++) ...[
-          if (index > 0) const SizedBox(width: 8),
-          Expanded(
-            child: _DayCell(
-              snapshot: snapshot,
-              date: monday.add(Duration(days: index)),
-              completion: _completionFor(
-                snapshot,
-                monday.add(Duration(days: index)),
+        Row(
+          children: [
+            for (var day = 0; day < 7; day++) ...[
+              if (day > 0) const SizedBox(width: 8),
+              Expanded(
+                child: Center(
+                  child: _WeekdayLabel(t.habitsPage.weekdayAbbrevUpper[day]),
+                ),
               ),
-              expanded: true,
-              onTap: monday.add(Duration(days: index)).isAfter(DateTime.now())
-                  ? null
-                  : () => onSelectDay(monday.add(Duration(days: index))),
-            ),
+            ],
+          ],
+        ),
+        const SizedBox(height: 8),
+        Expanded(
+          child: Row(
+            crossAxisAlignment: CrossAxisAlignment.stretch,
+            children: [
+              for (var index = 0; index < 7; index++) ...[
+                if (index > 0) const SizedBox(width: 8),
+                Expanded(
+                  child: _DayCell(
+                    snapshot: snapshot,
+                    date: monday.add(Duration(days: index)),
+                    completion: _completionFor(
+                      snapshot,
+                      monday.add(Duration(days: index)),
+                    ),
+                    expanded: true,
+                    onTap:
+                        monday
+                            .add(Duration(days: index))
+                            .isAfter(DateTime.now())
+                        ? null
+                        : () => onSelectDay(monday.add(Duration(days: index))),
+                  ),
+                ),
+              ],
+            ],
           ),
-        ],
+        ),
       ],
     );
   }
@@ -1162,89 +1234,111 @@ class _DayCell extends StatelessWidget {
             ? SystemMouseCursors.basic
             : SystemMouseCursors.click,
         borderRadius: BorderRadius.circular(8),
-        child: Container(
-          height: expanded ? 155 : null,
-          padding: const EdgeInsets.all(8),
-          decoration: BoxDecoration(
-            color: background,
-            borderRadius: BorderRadius.circular(8),
-            border: Border.all(color: borderColor),
-            boxShadow: hasActivity && completion == 1.0
-                ? [
-                    BoxShadow(
-                      color: performanceColor(
-                        1,
-                        saturation: 0.8,
-                        lightness: 0.4,
-                        alpha: 0.15,
-                      ),
-                      blurRadius: 8,
-                    ),
-                  ]
-                : null,
-          ),
-          child: Column(
-            children: [
-              Text(
-                '${date.day}',
-                style: TextStyle(
-                  color: isToday
-                      ? context.evolveAccent
-                      : hasActivity
-                      ? context.evolveColors.foreground
-                      : context.evolveColors.muted,
-                  fontSize: 12,
-                  fontWeight: isToday ? FontWeight.w700 : FontWeight.w600,
-                ),
+        child: LayoutBuilder(
+          builder: (context, constraints) {
+            // Cells flex with the pinned viewport: short cells tighten their
+            // padding, clip surplus dots and drop the completion caption; the
+            // caption returns as soon as there is comfortable room (~90px).
+            final compact = constraints.maxHeight < 64;
+            final showCaption = constraints.maxHeight >= 72;
+            return Container(
+              padding: EdgeInsets.symmetric(
+                horizontal: compact ? 6 : 8,
+                vertical: compact ? 3 : 8,
               ),
-              const SizedBox(height: 6),
-              Wrap(
-                alignment: WrapAlignment.center,
-                spacing: 3,
-                runSpacing: 3,
+              decoration: BoxDecoration(
+                color: background,
+                borderRadius: BorderRadius.circular(8),
+                border: Border.all(color: borderColor),
+                boxShadow: hasActivity && completion == 1.0
+                    ? [
+                        BoxShadow(
+                          color: performanceColor(
+                            1,
+                            saturation: 0.8,
+                            lightness: 0.4,
+                            alpha: 0.15,
+                          ),
+                          blurRadius: 8,
+                        ),
+                      ]
+                    : null,
+              ),
+              child: Column(
                 children: [
-                  for (final habit in indicators.take(indicatorLimit))
-                    Container(
-                      width: 5,
-                      height: 5,
-                      decoration: BoxDecoration(
-                        color: switch (snapshot.habitStatusFor(
-                          habit.id,
-                          date,
-                        )) {
-                          'done' => habit.color,
-                          'missed' => EvolveColors.rose,
-                          _ => habit.color.withValues(alpha: 0.22),
-                        },
-                        shape: BoxShape.circle,
+                  Text(
+                    '${date.day}',
+                    style: TextStyle(
+                      color: isToday
+                          ? context.evolveAccent
+                          : hasActivity
+                          ? context.evolveColors.foreground
+                          : context.evolveColors.muted,
+                      fontSize: 12,
+                      fontWeight: isToday ? FontWeight.w700 : FontWeight.w600,
+                    ),
+                  ),
+                  SizedBox(height: compact ? 2 : 6),
+                  Expanded(
+                    child: ClipRect(
+                      child: Align(
+                        alignment: Alignment.topCenter,
+                        child: Wrap(
+                          alignment: WrapAlignment.center,
+                          spacing: 3,
+                          runSpacing: 3,
+                          children: [
+                            for (final habit in indicators.take(indicatorLimit))
+                              Container(
+                                width: 5,
+                                height: 5,
+                                decoration: BoxDecoration(
+                                  color: switch (snapshot.habitStatusFor(
+                                    habit.id,
+                                    date,
+                                  )) {
+                                    'done' => habit.color,
+                                    'missed' => EvolveColors.rose,
+                                    _ => habit.color.withValues(alpha: 0.22),
+                                  },
+                                  shape: BoxShape.circle,
+                                ),
+                              ),
+                            if (hiddenIndicators > 0)
+                              Text(
+                                '+$hiddenIndicators',
+                                style: TextStyle(
+                                  color: context.evolveColors.muted,
+                                  fontSize: 9,
+                                  fontWeight: FontWeight.w600,
+                                ),
+                              ),
+                          ],
+                        ),
                       ),
                     ),
-                  if (hiddenIndicators > 0)
+                  ),
+                  if (showCaption) ...[
+                    const SizedBox(height: 4),
                     Text(
-                      '+$hiddenIndicators',
+                      indicators.isEmpty
+                          ? t.stats.noHabit
+                          : '${(completion * 100).round()}%',
+                      maxLines: 1,
+                      overflow: TextOverflow.ellipsis,
                       style: TextStyle(
-                        color: context.evolveColors.muted,
-                        fontSize: 9,
+                        color: context.evolveColors.muted.withValues(
+                          alpha: 0.8,
+                        ),
+                        fontSize: 10,
                         fontWeight: FontWeight.w600,
                       ),
                     ),
+                  ],
                 ],
               ),
-              const Spacer(),
-              Text(
-                indicators.isEmpty
-                    ? t.stats.noHabit
-                    : '${(completion * 100).round()}%',
-                maxLines: 1,
-                overflow: TextOverflow.ellipsis,
-                style: TextStyle(
-                  color: context.evolveColors.muted.withValues(alpha: 0.8),
-                  fontSize: 10,
-                  fontWeight: FontWeight.w600,
-                ),
-              ),
-            ],
-          ),
+            );
+          },
         ),
       ),
     );
@@ -1261,62 +1355,89 @@ class _YearCalendar extends StatelessWidget {
   Widget build(BuildContext context) {
     return LayoutBuilder(
       builder: (context, constraints) {
-        final width = (constraints.maxWidth - 33) / 4;
-        return Wrap(
-          spacing: 11,
-          runSpacing: 11,
+        // 4x3 month grid on wide surfaces, 3x4 when narrower — unless the
+        // area is too short for four rows (compact pinned windows).
+        final columns =
+            constraints.maxWidth >= 1080 || constraints.maxHeight < 380 ? 4 : 3;
+        final rows = (12 + columns - 1) ~/ columns;
+        return Column(
+          crossAxisAlignment: CrossAxisAlignment.stretch,
           children: [
-            for (var month = 1; month <= 12; month++)
-              SizedBox(
-                width: width,
-                child: Container(
-                  padding: const EdgeInsets.all(14),
-                  decoration: BoxDecoration(
-                    color: context.evolveColors.panel.withValues(alpha: 0.4),
-                    borderRadius: BorderRadius.circular(16),
-                    border: Border.all(
-                      color: context.evolveColors.border.withValues(alpha: 0.5),
-                    ),
-                  ),
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      Text(
-                        t.common.months[month - 1],
-                        style: TextStyle(
-                          color: context.evolveColors.foreground,
-                          fontSize: 15,
-                          fontWeight: FontWeight.w700,
-                          letterSpacing: -0.2,
-                        ),
+            for (var row = 0; row < rows; row++) ...[
+              if (row > 0) const SizedBox(height: 11),
+              Expanded(
+                child: Row(
+                  crossAxisAlignment: CrossAxisAlignment.stretch,
+                  children: [
+                    for (var column = 0; column < columns; column++) ...[
+                      if (column > 0) const SizedBox(width: 11),
+                      Expanded(
+                        child: _monthTile(context, row * columns + column + 1),
                       ),
-                      const SizedBox(height: 10),
-                      for (
-                        var week = 0;
-                        week < logicalWeeksInMonth(anchor.year, month);
-                        week++
-                      ) ...[
-                        LinearProgressIndicator(
-                          value: _weekCompletion(month, week),
-                          minHeight: 4,
-                          color: performanceColor(
-                            _weekCompletion(month, week),
-                            saturation: 0.8,
-                            lightness: 0.4,
-                          ),
-                          backgroundColor: context.evolveColors.panelSoft,
-                          borderRadius: BorderRadius.circular(6),
-                        ),
-                        if (week < logicalWeeksInMonth(anchor.year, month) - 1)
-                          const SizedBox(height: 5),
-                      ],
                     ],
-                  ),
+                  ],
                 ),
               ),
+            ],
           ],
         );
       },
+    );
+  }
+
+  Widget _monthTile(BuildContext context, int month) {
+    final weeks = logicalWeeksInMonth(anchor.year, month);
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 10),
+      decoration: BoxDecoration(
+        color: context.evolveColors.panel.withValues(alpha: 0.4),
+        borderRadius: BorderRadius.circular(16),
+        border: Border.all(
+          color: context.evolveColors.border.withValues(alpha: 0.5),
+        ),
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.stretch,
+        children: [
+          Text(
+            t.common.months[month - 1],
+            maxLines: 1,
+            overflow: TextOverflow.ellipsis,
+            style: TextStyle(
+              color: context.evolveColors.foreground,
+              fontSize: 15,
+              fontWeight: FontWeight.w700,
+              letterSpacing: -0.2,
+            ),
+          ),
+          const SizedBox(height: 6),
+          // The week bars distribute across whatever height the tile gets;
+          // each bar keeps its 4px stroke and centers inside its slot.
+          Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.stretch,
+              children: [
+                for (var week = 0; week < weeks; week++)
+                  Expanded(
+                    child: Center(
+                      child: LinearProgressIndicator(
+                        value: _weekCompletion(month, week),
+                        minHeight: 4,
+                        color: performanceColor(
+                          _weekCompletion(month, week),
+                          saturation: 0.8,
+                          lightness: 0.4,
+                        ),
+                        backgroundColor: context.evolveColors.panelSoft,
+                        borderRadius: BorderRadius.circular(6),
+                      ),
+                    ),
+                  ),
+              ],
+            ),
+          ),
+        ],
+      ),
     );
   }
 
@@ -1333,11 +1454,25 @@ class _YearCalendar extends StatelessWidget {
   }
 }
 
-class _LifeCalendar extends ConsumerWidget {
+class _LifeCalendar extends ConsumerStatefulWidget {
   const _LifeCalendar();
 
   @override
-  Widget build(BuildContext context, WidgetRef ref) {
+  ConsumerState<_LifeCalendar> createState() => _LifeCalendarState();
+}
+
+class _LifeCalendarState extends ConsumerState<_LifeCalendar> {
+  // The life grid is intrinsically tall, so it scrolls inside the panel.
+  final _scroll = ScrollController();
+
+  @override
+  void dispose() {
+    _scroll.dispose();
+    super.dispose();
+  }
+
+  @override
+  Widget build(BuildContext context) {
     // Private mode has no Supabase user; read the date of birth from the
     // encrypted private profile instead of defaulting everyone to 2003.
     final isPrivate = ref.watch(activeDesktopDataModeProvider).isPrivate;
@@ -1362,56 +1497,65 @@ class _LifeCalendar extends ConsumerWidget {
         );
     final remainingMonths = totalMonths - livedMonths;
     final age = livedMonths ~/ 12;
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: [
-        SectionHeading(
-          title: t.habitsPage.lifeView,
-          subtitle: t.habitsPage.lifeViewSubtitle,
-        ),
-        const SizedBox(height: 16),
-        Row(
+    return Scrollbar(
+      controller: _scroll,
+      child: SingleChildScrollView(
+        controller: _scroll,
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            Expanded(
-              child: _LifeMetric(
-                label: t.habitsPage.monthsLived,
-                value: '$livedMonths',
-              ),
+            SectionHeading(
+              title: t.habitsPage.lifeView,
+              subtitle: t.habitsPage.lifeViewSubtitle,
             ),
-            const SizedBox(width: 10),
-            Expanded(
-              child: _LifeMetric(label: t.habitsPage.currentAge, value: '$age'),
-            ),
-            const SizedBox(width: 10),
-            Expanded(
-              child: _LifeMetric(
-                label: t.habitsPage.monthsRemaining,
-                value: '$remainingMonths',
-              ),
-            ),
-          ],
-        ),
-        const SizedBox(height: 16),
-        Wrap(
-          spacing: 4,
-          runSpacing: 4,
-          children: [
-            for (var index = 0; index < totalMonths; index++)
-              Container(
-                width: 7,
-                height: 7,
-                decoration: BoxDecoration(
-                  color: index == livedMonths - 1
-                      ? EvolveColors.amber
-                      : index < livedMonths
-                      ? context.evolveAccent.withValues(alpha: 0.52)
-                      : context.evolveColors.panelSoft,
-                  borderRadius: BorderRadius.circular(2),
+            const SizedBox(height: 16),
+            Row(
+              children: [
+                Expanded(
+                  child: _LifeMetric(
+                    label: t.habitsPage.monthsLived,
+                    value: '$livedMonths',
+                  ),
                 ),
-              ),
+                const SizedBox(width: 10),
+                Expanded(
+                  child: _LifeMetric(
+                    label: t.habitsPage.currentAge,
+                    value: '$age',
+                  ),
+                ),
+                const SizedBox(width: 10),
+                Expanded(
+                  child: _LifeMetric(
+                    label: t.habitsPage.monthsRemaining,
+                    value: '$remainingMonths',
+                  ),
+                ),
+              ],
+            ),
+            const SizedBox(height: 16),
+            Wrap(
+              spacing: 4,
+              runSpacing: 4,
+              children: [
+                for (var index = 0; index < totalMonths; index++)
+                  Container(
+                    width: 7,
+                    height: 7,
+                    decoration: BoxDecoration(
+                      color: index == livedMonths - 1
+                          ? EvolveColors.amber
+                          : index < livedMonths
+                          ? context.evolveAccent.withValues(alpha: 0.52)
+                          : context.evolveColors.panelSoft,
+                      borderRadius: BorderRadius.circular(2),
+                    ),
+                  ),
+              ],
+            ),
           ],
         ),
-      ],
+      ),
     );
   }
 }

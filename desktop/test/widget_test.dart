@@ -5,6 +5,7 @@ import 'package:evolve_desktop/core/app_bootstrap.dart';
 import 'package:evolve_desktop/features/shell/presentation/desktop_shell.dart';
 import 'package:evolve_desktop/i18n/translations.g.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:shared_preferences/shared_preferences.dart';
@@ -49,19 +50,22 @@ void main() {
     await tester.tap(find.text('Abitudini'));
     await tester.pumpAndSettle();
 
-    // Wide desktop layout: protocol and calendar are shown side by side, so
-    // the calendar view switcher is visible without any tab tap.
+    // The pinned page shows the Protocollo/Calendario view switch; protocol
+    // is the default view, the calendar exposes its four view modes.
     expect(find.text('Protocollo'), findsOneWidget);
     expect(find.text('Calendario'), findsOneWidget);
+
+    await tester.tap(find.text('Calendario'));
+    await tester.pumpAndSettle();
+
     expect(find.text('Mese'), findsOneWidget);
     expect(find.text('Settimana'), findsOneWidget);
     expect(find.text('Anno'), findsOneWidget);
     expect(find.text('Vita'), findsOneWidget);
+    expect(tester.takeException(), isNull);
   });
 
-  testWidgets('habits page falls back to tabs on a narrow window', (
-    tester,
-  ) async {
+  testWidgets('habits page fits the minimum desktop window', (tester) async {
     await tester.binding.setSurfaceSize(const Size(960, 640));
     addTearDown(() => tester.binding.setSurfaceSize(null));
 
@@ -76,6 +80,81 @@ void main() {
     expect(find.text('Settimana'), findsOneWidget);
     expect(find.text('Anno'), findsOneWidget);
     expect(find.text('Vita'), findsOneWidget);
+    expect(tester.takeException(), isNull);
+  });
+
+  testWidgets('statistics page fits the minimum desktop window', (
+    tester,
+  ) async {
+    await tester.binding.setSurfaceSize(const Size(960, 640));
+    addTearDown(() => tester.binding.setSurfaceSize(null));
+
+    await tester.pumpWidget(const ProviderScope(child: _DesktopTestApp()));
+    await tester.tap(find.byTooltip('Statistiche'));
+    await tester.pumpAndSettle();
+
+    expect(tester.takeException(), isNull);
+  });
+
+  testWidgets('keyboard shortcuts drive navigation and the palette', (
+    tester,
+  ) async {
+    await tester.binding.setSurfaceSize(const Size(1440, 900));
+    addTearDown(() => tester.binding.setSurfaceSize(null));
+
+    await tester.pumpWidget(const ProviderScope(child: _DesktopTestApp()));
+
+    // The overview check-in tile runs an endless pulse animation, so
+    // pumpAndSettle would never settle — pump fixed frames instead.
+    Future<void> settleFrames() async {
+      await tester.pump();
+      await tester.pump(const Duration(milliseconds: 300));
+      await tester.pump(const Duration(milliseconds: 300));
+    }
+
+    Future<void> pressCmd(LogicalKeyboardKey key) async {
+      await tester.sendKeyDownEvent(LogicalKeyboardKey.metaLeft);
+      await tester.sendKeyDownEvent(key);
+      await tester.sendKeyUpEvent(key);
+      await tester.sendKeyUpEvent(LogicalKeyboardKey.metaLeft);
+      await settleFrames();
+    }
+
+    // ⌘2 → Habits (page action button; the empty-state CTA may show it too).
+    await pressCmd(LogicalKeyboardKey.digit2);
+    expect(find.text('Abitudini'), findsWidgets);
+    expect(find.text('Nuova abitudine'), findsWidgets);
+
+    // ⌘3 → Statistics.
+    await pressCmd(LogicalKeyboardKey.digit3);
+    expect(find.text('Statistiche'), findsWidgets);
+
+    // ⌘4 → Goals.
+    await pressCmd(LogicalKeyboardKey.digit4);
+    expect(find.text('Settimanale'), findsOneWidget);
+
+    // ⌘5 → AI Coach.
+    await pressCmd(LogicalKeyboardKey.digit5);
+    expect(find.text('AI Coach'), findsWidgets);
+
+    // ⌘1 → back to Overview (PROTOCOLLO strip is dashboard-only).
+    await pressCmd(LogicalKeyboardKey.digit1);
+    expect(find.text('PROTOCOLLO'), findsOneWidget);
+
+    // ⌘, → Settings.
+    await pressCmd(LogicalKeyboardKey.comma);
+    expect(find.text('Impostazioni'), findsWidgets);
+
+    // ⌘K → command palette opens; pick a section from it.
+    await pressCmd(LogicalKeyboardKey.keyK);
+    expect(find.byType(TextField), findsOneWidget);
+    await tester.tap(find.text('Panoramica').last);
+    await settleFrames();
+    expect(find.text('PROTOCOLLO'), findsOneWidget);
+
+    // Shortcuts must still work after the dialog round-trip.
+    await pressCmd(LogicalKeyboardKey.digit4);
+    expect(find.text('Settimanale'), findsOneWidget);
     expect(tester.takeException(), isNull);
   });
 

@@ -318,6 +318,21 @@ abstract final class EvolveTheme {
           return palette.border;
         }),
       ),
+      scrollbarTheme: ScrollbarThemeData(
+        thickness: WidgetStateProperty.resolveWith(
+          (states) => states.contains(WidgetState.hovered) ? 8.0 : 6.0,
+        ),
+        radius: const Radius.circular(100),
+        thumbColor: WidgetStateProperty.resolveWith(
+          (states) => states.contains(WidgetState.hovered)
+              ? palette.borderStrong
+              : palette.border,
+        ),
+        trackColor: const WidgetStatePropertyAll(Colors.transparent),
+        trackBorderColor: const WidgetStatePropertyAll(Colors.transparent),
+        mainAxisMargin: 4,
+        crossAxisMargin: 2,
+      ),
       tooltipTheme: TooltipThemeData(
         decoration: BoxDecoration(
           color: palette.panelSoft,

@@ -120,48 +120,72 @@ class _SettingsPageState extends ConsumerState<SettingsPage> {
     return DesktopPage(
       title: t.settingsPage.pageTitle,
       subtitle: t.settingsPage.pageSubtitle,
-      child: EvolvePanel(
-        padding: EdgeInsets.zero,
-        child: Row(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            SizedBox(
-              width: 225,
-              child: Padding(
-                padding: const EdgeInsets.all(13),
-                child: Column(
-                  children: [
-                    for (final section in availableSections)
-                      _SettingsDestination(
-                        section: section,
-                        selected: section == _section,
-                        onTap: () => setState(() => _section = section),
-                      ),
-                  ],
+      // The group-card grid goes 2-up when the page content width (inside the
+      // 28px gutters, LAYOUT_SPEC scale) reaches ~1280; below that the cards
+      // stack full width.
+      child: LayoutBuilder(
+        builder: (context, constraints) {
+          final twoColumn = constraints.maxWidth >= 1280;
+          return EvolvePanel(
+            padding: EdgeInsets.zero,
+            child: Row(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                SizedBox(
+                  width: 225,
+                  child: Padding(
+                    padding: const EdgeInsets.all(13),
+                    child: Column(
+                      children: [
+                        for (final section in availableSections)
+                          _SettingsDestination(
+                            section: section,
+                            selected: section == _section,
+                            onTap: () => setState(() => _section = section),
+                          ),
+                      ],
+                    ),
+                  ),
                 ),
-              ),
+                const VerticalDivider(width: 1),
+                Expanded(
+                  child: Padding(
+                    padding: const EdgeInsets.all(22),
+                    child: AnimatedSwitcher(
+                      duration: const Duration(milliseconds: 200),
+                      switchInCurve: Curves.easeOutCubic,
+                      switchOutCurve: Curves.easeOutCubic,
+                      transitionBuilder: (child, animation) =>
+                          FadeTransition(opacity: animation, child: child),
+                      layoutBuilder: (currentChild, previousChildren) => Stack(
+                        alignment: AlignmentDirectional.topStart,
+                        children: [...previousChildren, ?currentChild],
+                      ),
+                      child: KeyedSubtree(
+                        key: ValueKey(_section),
+                        child: switch (_section) {
+                          _SettingsSection.profile => _profile(twoColumn),
+                          _SettingsSection.appearance => _appearance(twoColumn),
+                          _SettingsSection.notifications => _notifications(
+                            twoColumn,
+                          ),
+                          _SettingsSection.privacy => _privacy(twoColumn),
+                          _SettingsSection.subscription =>
+                            _SubscriptionSettings(twoColumn: twoColumn),
+                        },
+                      ),
+                    ),
+                  ),
+                ),
+              ],
             ),
-            const VerticalDivider(width: 1),
-            Expanded(
-              child: Padding(
-                padding: const EdgeInsets.all(22),
-                child: switch (_section) {
-                  _SettingsSection.profile => _profile(),
-                  _SettingsSection.appearance => _appearance(),
-                  _SettingsSection.notifications => _notifications(),
-                  _SettingsSection.privacy => _privacy(),
-                  _SettingsSection.subscription =>
-                    const _SubscriptionSettings(),
-                },
-              ),
-            ),
-          ],
-        ),
+          );
+        },
       ),
     );
   }
 
-  Widget _profile() {
+  Widget _profile(bool twoColumn) {
     final auth = ref.watch(desktopAuthControllerProvider);
     final isPrivateMode = ref.watch(activeDesktopDataModeProvider).isPrivate;
 
@@ -186,78 +210,85 @@ class _SettingsPageState extends ConsumerState<SettingsPage> {
               : null,
         ),
         const SizedBox(height: 24),
-        _SettingsGroup(
-          title: t.settingsPage.accountAndOnboarding,
-          children: [
-            _InfoRow(
-              icon: LucideIcons.mail,
-              label: t.settingsPage.account,
-              value: isPrivateMode
-                  ? t.settingsPage.privateMode
-                  : auth.user?.email ?? t.settingsPage.sessionUnavailable,
+        _GroupGrid(
+          twoColumn: twoColumn,
+          groups: [
+            _SettingsGroup(
+              title: t.settingsPage.accountAndOnboarding,
+              children: [
+                _InfoRow(
+                  icon: LucideIcons.mail,
+                  label: t.settingsPage.account,
+                  value: isPrivateMode
+                      ? t.settingsPage.privateMode
+                      : auth.user?.email ?? t.settingsPage.sessionUnavailable,
+                ),
+                _InfoRow(
+                  icon: LucideIcons.database,
+                  label: t.settingsPage.dataRepository,
+                  value: isPrivateMode
+                      ? t.settingsPage.encryptedLocalDatabase
+                      : t.settingsPage.supabaseWithEncryptedCache,
+                ),
+                if (!isPrivateMode) ...[
+                  _ActionRow(
+                    icon: LucideIcons.user,
+                    title: t.settingsPage.personalInfo,
+                    detail: t.settingsPage.personalInfoDetail,
+                    onTap: auth.isLoggedIn
+                        ? () => showEvolveDialog<void>(
+                            context: context,
+                            builder: (context) => const _PersonalInfoDialog(),
+                          )
+                        : () => _showGate(
+                            t.settingsPage.gateProfile,
+                            t.settingsPage.gateRequiresActiveSession,
+                          ),
+                  ),
+                  _ActionRow(
+                    icon: LucideIcons.camera,
+                    title: t.settingsPage.updateAvatar,
+                    detail: t.settingsPage.updateAvatarDetail,
+                    onTap: _pickAvatar,
+                  ),
+                  _ActionRow(
+                    icon: LucideIcons.fileText,
+                    title: t.settingsPage.reviewInitialConsent,
+                    detail: t.settingsPage.reviewInitialConsentDetail,
+                    onTap: _reviewConsent,
+                  ),
+                ],
+              ],
             ),
-            _InfoRow(
-              icon: LucideIcons.database,
-              label: t.settingsPage.dataRepository,
-              value: isPrivateMode
-                  ? t.settingsPage.encryptedLocalDatabase
-                  : t.settingsPage.supabaseWithEncryptedCache,
-            ),
-            if (!isPrivateMode) ...[
-              _ActionRow(
-                icon: LucideIcons.user,
-                title: t.settingsPage.personalInfo,
-                detail: t.settingsPage.personalInfoDetail,
-                onTap: auth.isLoggedIn
-                    ? () => showEvolveDialog<void>(
-                        context: context,
-                        builder: (context) => const _PersonalInfoDialog(),
-                      )
-                    : () => _showGate(
-                        t.settingsPage.gateProfile,
-                        t.settingsPage.gateRequiresActiveSession,
-                      ),
-              ),
-              _ActionRow(
-                icon: LucideIcons.camera,
-                title: t.settingsPage.updateAvatar,
-                detail: t.settingsPage.updateAvatarDetail,
-                onTap: _pickAvatar,
-              ),
-              _ActionRow(
-                icon: LucideIcons.fileText,
-                title: t.settingsPage.reviewInitialConsent,
-                detail: t.settingsPage.reviewInitialConsentDetail,
-                onTap: _reviewConsent,
-              ),
-              _DestructiveButton(
-                label: t.settingsPage.signOut,
-                caption: auth.isLoggedIn
-                    ? t.settingsPage.signOutDetailActive
-                    : t.settingsPage.availableWithActiveSession,
-                onTap: auth.isLoggedIn
-                    ? () => _confirmSignOut()
-                    : () => _showGate(
-                        t.settingsPage.gateLogout,
-                        t.settingsPage.gateRequiresActiveSession,
-                      ),
-              ),
-            ] else ...[
-              _DestructiveButton(
-                label: t.settingsPage.goToLogin,
-                caption: t.settingsPage.goToLoginDetail,
-                onTap: () {
-                  ref.read(desktopAuthControllerProvider.notifier).goToLogin();
-                },
-              ),
-            ],
           ],
         ),
+        const SizedBox(height: 18),
+        if (!isPrivateMode)
+          _DestructiveButton(
+            label: t.settingsPage.signOut,
+            caption: auth.isLoggedIn
+                ? t.settingsPage.signOutDetailActive
+                : t.settingsPage.availableWithActiveSession,
+            onTap: auth.isLoggedIn
+                ? () => _confirmSignOut()
+                : () => _showGate(
+                    t.settingsPage.gateLogout,
+                    t.settingsPage.gateRequiresActiveSession,
+                  ),
+          )
+        else
+          _DestructiveButton(
+            label: t.settingsPage.goToLogin,
+            caption: t.settingsPage.goToLoginDetail,
+            onTap: () {
+              ref.read(desktopAuthControllerProvider.notifier).goToLogin();
+            },
+          ),
       ],
     );
   }
 
-  Widget _appearance() {
+  Widget _appearance(bool twoColumn) {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
@@ -266,130 +297,136 @@ class _SettingsPageState extends ConsumerState<SettingsPage> {
           subtitle: t.settingsPage.appearanceSubtitle,
         ),
         const SizedBox(height: 20),
-        _SettingsGroup(
-          title: t.settingsPage.appearanceAndVisual,
-          children: [
-            _SwitchRow(
-              icon: LucideIcons.moon,
-              label: t.settingsPage.darkMode,
-              detail: t.settingsPage.darkModeDetail,
-              value: _darkMode,
-              onChanged: (value) {
-                ref
-                    .read(desktopAppearanceControllerProvider.notifier)
-                    .setThemeMode(value ? ThemeMode.dark : ThemeMode.light);
-                _setBool(
-                  'desktop_dark_mode',
-                  value,
-                  () => _darkMode = value,
-                  profileColumn: 'theme_mode',
-                  profileValue: value ? 'dark' : 'light',
-                );
-              },
-            ),
-          ],
-        ),
-        const SizedBox(height: 16),
-        _SettingsGroup(
-          title: t.settingsPage.calendarExperienceLanguage,
-          children: [
-            _ColorRow(
-              icon: LucideIcons.palette,
-              label: t.settingsPage.accentColor,
-              detail: t.settingsPage.accentColorDetail,
-              selected: _accent,
-              onChanged: (color) {
-                ref
-                    .read(desktopAppearanceControllerProvider.notifier)
-                    .setAccentColor(color);
-                final accent = ref.read(
-                  desktopAppearanceControllerProvider.select(
-                    (appearance) => appearance.accentColor,
-                  ),
-                );
-                setState(() => _accent = accent);
-                unawaited(
-                  _syncProfile({'accent_color': dashboardColorToHex(accent)}),
-                );
-              },
-            ),
-            _SelectRow(
-              icon: LucideIcons.calendar,
-              label: t.settingsPage.defaultCalendarView,
-              value: _calendarView,
-              options: const ['Mese', 'Settimana', 'Anno', 'Vita'],
-              onChanged: (value) => _setString(
-                'pref_default_calendar_view',
-                value,
-                () => _calendarView = value,
-                profileColumn: 'pref_default_calendar_view',
-                profileValue: _calendarProfileValue(value),
-              ),
-            ),
-            _SelectRow(
-              icon: LucideIcons.languages,
-              label: t.settingsPage.language,
-              value: _language,
-              options: const [
-                'Sistema',
-                'Italiano',
-                'English',
-                'Espanol',
-                'Deutsch',
-                'Arabic',
+        _GroupGrid(
+          twoColumn: twoColumn,
+          groups: [
+            _SettingsGroup(
+              title: t.settingsPage.appearanceAndVisual,
+              children: [
+                _SwitchRow(
+                  icon: LucideIcons.moon,
+                  label: t.settingsPage.darkMode,
+                  detail: t.settingsPage.darkModeDetail,
+                  value: _darkMode,
+                  onChanged: (value) {
+                    ref
+                        .read(desktopAppearanceControllerProvider.notifier)
+                        .setThemeMode(value ? ThemeMode.dark : ThemeMode.light);
+                    _setBool(
+                      'desktop_dark_mode',
+                      value,
+                      () => _darkMode = value,
+                      profileColumn: 'theme_mode',
+                      profileValue: value ? 'dark' : 'light',
+                    );
+                  },
+                ),
               ],
-              onChanged: (value) => _setString(
-                'pref_language',
-                value,
-                () {
-                  _language = value;
-                  ref
-                      .read(desktopLocaleControllerProvider.notifier)
-                      .setLanguage(_languageProfileValue(value));
-                },
-                profileColumn: 'language',
-                profileValue: _languageProfileValue(value),
-              ),
             ),
-            _SwitchRow(
-              icon: LucideIcons.clock,
-              label: t.settingsPage.timeFormat24h,
-              detail: t.settingsPage.timeFormat24hDetail,
-              value: _timeFormat24h,
-              onChanged: (value) => _setBool(
-                'pref_time_format_24h',
-                value,
-                () => _timeFormat24h = value,
-                profileColumn: 'pref_time_format_24h',
-              ),
-            ),
-            _SwitchRow(
-              icon: LucideIcons.vibrate,
-              label: t.settingsPage.hapticFeedback,
-              detail: t.settingsPage.hapticFeedbackDetail,
-              value:
-                  ref
-                      .read(sharedPreferencesProvider)
-                      ?.getBool('pref_haptic_feedback') ??
-                  true,
-              onChanged: (value) => _setBool(
-                'pref_haptic_feedback',
-                value,
-                () {},
-                profileColumn: 'pref_haptic_feedback',
-              ),
-            ),
-            _ActionRow(
-              icon: LucideIcons.info,
-              title: t.settingsPage.resetTutorial,
-              detail: t.settingsPage.resetTutorialDetail,
-              onTap: _resetTutorials,
-            ),
-            _ActionRow(
-              icon: LucideIcons.scrollText,
-              title: t.settingsPage.appLogsTitle,
-              detail: t.settingsPage.appLogsDetail,
-              onTap: () => unawaited(showAppLogsDialog(context)),
+            _SettingsGroup(
+              title: t.settingsPage.calendarExperienceLanguage,
+              children: [
+                _ColorRow(
+                  icon: LucideIcons.palette,
+                  label: t.settingsPage.accentColor,
+                  detail: t.settingsPage.accentColorDetail,
+                  selected: _accent,
+                  onChanged: (color) {
+                    ref
+                        .read(desktopAppearanceControllerProvider.notifier)
+                        .setAccentColor(color);
+                    final accent = ref.read(
+                      desktopAppearanceControllerProvider.select(
+                        (appearance) => appearance.accentColor,
+                      ),
+                    );
+                    setState(() => _accent = accent);
+                    unawaited(
+                      _syncProfile({
+                        'accent_color': dashboardColorToHex(accent),
+                      }),
+                    );
+                  },
+                ),
+                _SelectRow(
+                  icon: LucideIcons.calendar,
+                  label: t.settingsPage.defaultCalendarView,
+                  value: _calendarView,
+                  options: const ['Mese', 'Settimana', 'Anno', 'Vita'],
+                  onChanged: (value) => _setString(
+                    'pref_default_calendar_view',
+                    value,
+                    () => _calendarView = value,
+                    profileColumn: 'pref_default_calendar_view',
+                    profileValue: _calendarProfileValue(value),
+                  ),
+                ),
+                _SelectRow(
+                  icon: LucideIcons.languages,
+                  label: t.settingsPage.language,
+                  value: _language,
+                  options: const [
+                    'Sistema',
+                    'Italiano',
+                    'English',
+                    'Espanol',
+                    'Deutsch',
+                    'Arabic',
+                  ],
+                  onChanged: (value) => _setString(
+                    'pref_language',
+                    value,
+                    () {
+                      _language = value;
+                      ref
+                          .read(desktopLocaleControllerProvider.notifier)
+                          .setLanguage(_languageProfileValue(value));
+                    },
+                    profileColumn: 'language',
+                    profileValue: _languageProfileValue(value),
+                  ),
+                ),
+                _SwitchRow(
+                  icon: LucideIcons.clock,
+                  label: t.settingsPage.timeFormat24h,
+                  detail: t.settingsPage.timeFormat24hDetail,
+                  value: _timeFormat24h,
+                  onChanged: (value) => _setBool(
+                    'pref_time_format_24h',
+                    value,
+                    () => _timeFormat24h = value,
+                    profileColumn: 'pref_time_format_24h',
+                  ),
+                ),
+                _SwitchRow(
+                  icon: LucideIcons.vibrate,
+                  label: t.settingsPage.hapticFeedback,
+                  detail: t.settingsPage.hapticFeedbackDetail,
+                  value:
+                      ref
+                          .read(sharedPreferencesProvider)
+                          ?.getBool('pref_haptic_feedback') ??
+                      true,
+                  onChanged: (value) => _setBool(
+                    'pref_haptic_feedback',
+                    value,
+                    () {},
+                    profileColumn: 'pref_haptic_feedback',
+                  ),
+                ),
+                _ActionRow(
+                  icon: LucideIcons.info,
+                  title: t.settingsPage.resetTutorial,
+                  detail: t.settingsPage.resetTutorialDetail,
+                  onTap: _resetTutorials,
+                ),
+                _ActionRow(
+                  icon: LucideIcons.scrollText,
+                  title: t.settingsPage.appLogsTitle,
+                  detail: t.settingsPage.appLogsDetail,
+                  onTap: () => unawaited(showAppLogsDialog(context)),
+                ),
+              ],
             ),
           ],
         ),
@@ -397,7 +434,7 @@ class _SettingsPageState extends ConsumerState<SettingsPage> {
     );
   }
 
-  Widget _notifications() {
+  Widget _notifications(bool twoColumn) {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
@@ -406,70 +443,75 @@ class _SettingsPageState extends ConsumerState<SettingsPage> {
           subtitle: t.settingsPage.notificationsSubtitle,
         ),
         const SizedBox(height: 20),
-        _SettingsGroup(
-          title: t.settingsPage.operationalReminders,
-          children: [
-            _SwitchRow(
-              icon: LucideIcons.calendarCheck,
-              label: t.settingsPage.habitReminders,
-              detail: t.settingsPage.habitRemindersDetail,
-              value: _habitReminders,
-              onChanged: (value) => _setNotificationBool(
-                key: 'notif_habit_reminders',
-                value: value,
-                update: () => _habitReminders = value,
-                profileColumn: 'notif_habit_reminders',
-                requestPermissions: value,
-              ),
-            ),
-            if (_habitReminders)
-              _TimeRow(
-                icon: LucideIcons.sunrise,
-                label: t.settingsPage.morningBriefTime,
-                value: _morningTime,
-                use24hFormat: _timeFormat24h,
-                onChanged: (value) => _setNotificationString(
-                  'notif_morning_brief_time',
-                  value,
-                  () => _morningTime = value,
-                  profileColumn: 'morning_brief_time',
+        _GroupGrid(
+          twoColumn: twoColumn,
+          groups: [
+            _SettingsGroup(
+              title: t.settingsPage.operationalReminders,
+              children: [
+                _SwitchRow(
+                  icon: LucideIcons.calendarCheck,
+                  label: t.settingsPage.habitReminders,
+                  detail: t.settingsPage.habitRemindersDetail,
+                  value: _habitReminders,
+                  onChanged: (value) => _setNotificationBool(
+                    key: 'notif_habit_reminders',
+                    value: value,
+                    update: () => _habitReminders = value,
+                    profileColumn: 'notif_habit_reminders',
+                    requestPermissions: value,
+                  ),
                 ),
-              ),
-            _SwitchRow(
-              icon: LucideIcons.bellRing,
-              label: t.settingsPage.eveningReview,
-              detail: t.settingsPage.eveningReviewDetail,
-              value: _eveningReview,
-              onChanged: (value) => _setNotificationBool(
-                key: 'notif_evening_review',
-                value: value,
-                update: () => _eveningReview = value,
-                profileColumn: 'notif_evening_review',
-                requestPermissions: value,
-              ),
-            ),
-            if (_eveningReview)
-              _TimeRow(
-                icon: LucideIcons.sunset,
-                label: t.settingsPage.eveningReviewTime,
-                value: _eveningTime,
-                use24hFormat: _timeFormat24h,
-                onChanged: (value) => _setNotificationString(
-                  'notif_evening_review_time',
-                  value,
-                  () => _eveningTime = value,
-                  profileColumn: 'evening_review_time',
+                if (_habitReminders)
+                  _TimeRow(
+                    icon: LucideIcons.sunrise,
+                    label: t.settingsPage.morningBriefTime,
+                    value: _morningTime,
+                    use24hFormat: _timeFormat24h,
+                    onChanged: (value) => _setNotificationString(
+                      'notif_morning_brief_time',
+                      value,
+                      () => _morningTime = value,
+                      profileColumn: 'morning_brief_time',
+                    ),
+                  ),
+                _SwitchRow(
+                  icon: LucideIcons.bellRing,
+                  label: t.settingsPage.eveningReview,
+                  detail: t.settingsPage.eveningReviewDetail,
+                  value: _eveningReview,
+                  onChanged: (value) => _setNotificationBool(
+                    key: 'notif_evening_review',
+                    value: value,
+                    update: () => _eveningReview = value,
+                    profileColumn: 'notif_evening_review',
+                    requestPermissions: value,
+                  ),
                 ),
-              ),
-            _ActionRow(
-              icon: LucideIcons.bell,
-              title: t.settingsPage.requestNotificationPermissions,
-              detail: t.settingsPage.requestNotificationPermissionsDetail,
-              onTap: _requestNotificationPermissions,
+                if (_eveningReview)
+                  _TimeRow(
+                    icon: LucideIcons.sunset,
+                    label: t.settingsPage.eveningReviewTime,
+                    value: _eveningTime,
+                    use24hFormat: _timeFormat24h,
+                    onChanged: (value) => _setNotificationString(
+                      'notif_evening_review_time',
+                      value,
+                      () => _eveningTime = value,
+                      profileColumn: 'evening_review_time',
+                    ),
+                  ),
+                _ActionRow(
+                  icon: LucideIcons.bell,
+                  title: t.settingsPage.requestNotificationPermissions,
+                  detail: t.settingsPage.requestNotificationPermissionsDetail,
+                  onTap: _requestNotificationPermissions,
+                ),
+              ],
             ),
           ],
         ),
-        const SizedBox(height: 16),
+        const SizedBox(height: 18),
         _PlatformNote(
           title: t.settingsPage.nativeDeliveryTitle,
           detail: DesktopNotificationService.instance.platformSummary,
@@ -478,7 +520,7 @@ class _SettingsPageState extends ConsumerState<SettingsPage> {
     );
   }
 
-  Widget _privacy() {
+  Widget _privacy(bool twoColumn) {
     final biometric = ref.watch(desktopBiometricControllerProvider);
     final isPrivateMode = ref.watch(activeDesktopDataModeProvider).isPrivate;
 
@@ -490,77 +532,82 @@ class _SettingsPageState extends ConsumerState<SettingsPage> {
           subtitle: t.settingsPage.privacySubtitle,
         ),
         const SizedBox(height: 20),
-        _SettingsGroup(
-          title: t.settingsPage.accessProtection,
-          children: [
-            _SwitchRow(
-              icon: LucideIcons.shield,
-              label: t.settingsPage.biometricLock,
-              detail: t.settingsPage.biometricLockDetail,
-              value: biometric.enabled,
-              onChanged: _setBiometricLock,
+        _GroupGrid(
+          twoColumn: twoColumn,
+          groups: [
+            _SettingsGroup(
+              title: t.settingsPage.accessProtection,
+              children: [
+                _SwitchRow(
+                  icon: LucideIcons.shield,
+                  label: t.settingsPage.biometricLock,
+                  detail: t.settingsPage.biometricLockDetail,
+                  value: biometric.enabled,
+                  onChanged: _setBiometricLock,
+                ),
+                if (!isPrivateMode)
+                  _ActionRow(
+                    icon: LucideIcons.keyRound,
+                    title: t.settingsPage.changePassword,
+                    detail: t.settingsPage.changePasswordDetail,
+                    onTap: ref.watch(desktopAuthControllerProvider).isLoggedIn
+                        ? () => showEvolveDialog<void>(
+                            context: context,
+                            builder: (context) => const _ChangePasswordDialog(),
+                          )
+                        : () => _showGate(
+                            t.settingsPage.gateChangePassword,
+                            t.settingsPage.gateRequiresActiveSession,
+                          ),
+                  ),
+              ],
             ),
-            if (!isPrivateMode)
-              _ActionRow(
-                icon: LucideIcons.keyRound,
-                title: t.settingsPage.changePassword,
-                detail: t.settingsPage.changePasswordDetail,
-                onTap: ref.watch(desktopAuthControllerProvider).isLoggedIn
-                    ? () => showEvolveDialog<void>(
-                        context: context,
-                        builder: (context) => const _ChangePasswordDialog(),
-                      )
-                    : () => _showGate(
-                        t.settingsPage.gateChangePassword,
-                        t.settingsPage.gateRequiresActiveSession,
-                      ),
-              ),
+            _SettingsGroup(
+              title: t.settingsPage.dataAndConsents,
+              children: [
+                if (!isPrivateMode)
+                  _SwitchRow(
+                    icon: LucideIcons.circleAlert,
+                    label: t.settingsPage.sendCrashReports,
+                    detail: t.settingsPage.sendCrashReportsDetail,
+                    value: _crashReports,
+                    onChanged: _setCrashReportingConsent,
+                  ),
+                _ActionRow(
+                  icon: LucideIcons.download,
+                  title: t.settingsPage.exportData,
+                  detail: t.settingsPage.exportDataDetail,
+                  onTap: _exportData,
+                ),
+                _ActionRow(
+                  icon: LucideIcons.upload,
+                  title: t.settingsPage.importData,
+                  detail: t.settingsPage.importDataDetail,
+                  onTap: _importData,
+                ),
+                _ActionRow(
+                  icon: LucideIcons.externalLink,
+                  title: t.settingsPage.systemPermissionsManagement,
+                  detail: t.settingsPage.systemPermissionsManagementDetail,
+                  onTap: _openSystemPermissions,
+                ),
+              ],
+            ),
           ],
         ),
-        const SizedBox(height: 16),
-        _SettingsGroup(
-          title: t.settingsPage.dataAndConsents,
-          children: [
-            if (!isPrivateMode)
-              _SwitchRow(
-                icon: LucideIcons.circleAlert,
-                label: t.settingsPage.sendCrashReports,
-                detail: t.settingsPage.sendCrashReportsDetail,
-                value: _crashReports,
-                onChanged: _setCrashReportingConsent,
-              ),
-            _ActionRow(
-              icon: LucideIcons.download,
-              title: t.settingsPage.exportData,
-              detail: t.settingsPage.exportDataDetail,
-              onTap: _exportData,
-            ),
-            _ActionRow(
-              icon: LucideIcons.upload,
-              title: t.settingsPage.importData,
-              detail: t.settingsPage.importDataDetail,
-              onTap: _importData,
-            ),
-            _ActionRow(
-              icon: LucideIcons.externalLink,
-              title: t.settingsPage.systemPermissionsManagement,
-              detail: t.settingsPage.systemPermissionsManagementDetail,
-              onTap: _openSystemPermissions,
-            ),
-            if (isPrivateMode)
-              _DestructiveButton(
-                label: t.settingsPage.deletePrivateData,
-                caption: t.settingsPage.deletePrivateDataDetail,
-                onTap: _deletePrivateData,
-              )
-            else
-              _DestructiveButton(
-                label: t.settingsPage.deleteAccountAndData,
-                caption: t.settingsPage.deleteAccountAndDataDetail,
-                onTap: _showDeleteOrResetDialog,
-              ),
-          ],
-        ),
+        const SizedBox(height: 18),
+        if (isPrivateMode)
+          _DestructiveButton(
+            label: t.settingsPage.deletePrivateData,
+            caption: t.settingsPage.deletePrivateDataDetail,
+            onTap: _deletePrivateData,
+          )
+        else
+          _DestructiveButton(
+            label: t.settingsPage.deleteAccountAndData,
+            caption: t.settingsPage.deleteAccountAndDataDetail,
+            onTap: _showDeleteOrResetDialog,
+          ),
       ],
     );
   }
@@ -1479,41 +1526,103 @@ class _SettingsHeading extends StatelessWidget {
   }
 }
 
-/// Section grouping in the mobile profile style: a tiny uppercase muted label
-/// followed by one translucent card per row (no shared container, no
-/// dividers).
+/// One settings group as a single titled card: the tiny uppercase muted label
+/// sits inside an [EvolvePanel] (radius 20) above its rows, which render as
+/// flat list tiles separated by hairline dividers — the macOS
+/// grouped-settings look in the Evolve skin.
 class _SettingsGroup extends StatelessWidget {
   const _SettingsGroup({required this.title, required this.children});
 
   final String title;
   final List<Widget> children;
 
+  /// Row count used by [_GroupGrid] to balance the two columns.
+  int get rowCount => children.length;
+
   @override
   Widget build(BuildContext context) {
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: [
-        EvolveSectionLabel(title, withRule: false),
-        const SizedBox(height: 8),
-        ...children,
-      ],
+    return EvolvePanel(
+      padding: EdgeInsets.zero,
+      radius: 20,
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.stretch,
+        children: [
+          Padding(
+            padding: const EdgeInsetsDirectional.fromSTEB(16, 16, 16, 6),
+            child: EvolveSectionLabel(title, withRule: false),
+          ),
+          for (var i = 0; i < children.length; i++) ...[
+            if (i > 0) const _RowHairline(),
+            children[i],
+          ],
+          const SizedBox(height: 6),
+        ],
+      ),
     );
   }
 }
 
-/// The translucent outlined card that hosts a single settings row
-/// (mobile `_buildProfileOption` container: panel .4, radius 16, border .5,
-/// 8px bottom margin).
-class _RowCard extends StatelessWidget {
-  const _RowCard({required this.child});
-
-  final Widget child;
+/// 1px divider between the flat rows of a group card, indented past the icon
+/// chip (16 content padding + 36 chip + 16 title gap).
+class _RowHairline extends StatelessWidget {
+  const _RowHairline();
 
   @override
   Widget build(BuildContext context) {
-    return Padding(
-      padding: const EdgeInsets.only(bottom: 8),
-      child: EvolvePanel(padding: EdgeInsets.zero, child: child),
+    return Container(
+      height: 1,
+      margin: const EdgeInsetsDirectional.only(start: 68),
+      color: context.evolveColors.border.withValues(alpha: 0.35),
+    );
+  }
+}
+
+/// Adaptive tiling for the group cards: a single full-width column, or — when
+/// the page content is wide enough — two columns filled greedily by row count
+/// so their heights stay balanced. Cards never split across columns.
+class _GroupGrid extends StatelessWidget {
+  const _GroupGrid({required this.twoColumn, required this.groups});
+
+  final bool twoColumn;
+  final List<_SettingsGroup> groups;
+
+  static const _gap = 18.0;
+
+  Widget _column(List<_SettingsGroup> items) {
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.stretch,
+      children: [
+        for (var i = 0; i < items.length; i++) ...[
+          if (i > 0) const SizedBox(height: _gap),
+          items[i],
+        ],
+      ],
+    );
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    if (!twoColumn || groups.length < 2) return _column(groups);
+    final start = <_SettingsGroup>[];
+    final end = <_SettingsGroup>[];
+    var startRows = 0;
+    var endRows = 0;
+    for (final group in groups) {
+      if (startRows <= endRows) {
+        start.add(group);
+        startRows += group.rowCount;
+      } else {
+        end.add(group);
+        endRows += group.rowCount;
+      }
+    }
+    return Row(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Expanded(child: _column(start)),
+        const SizedBox(width: _gap),
+        Expanded(child: _column(end)),
+      ],
     );
   }
 }
@@ -1621,14 +1730,12 @@ class _SwitchRow extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return _RowCard(
-      child: ListTile(
-        contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 2),
-        leading: _rowIconChip(context, icon),
-        title: Text(label, style: _rowTitleStyle(context)),
-        subtitle: Text(detail, style: _rowSubtitleStyle(context)),
-        trailing: Switch(value: value, onChanged: onChanged),
-      ),
+    return ListTile(
+      contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 2),
+      leading: _rowIconChip(context, icon),
+      title: Text(label, style: _rowTitleStyle(context)),
+      subtitle: Text(detail, style: _rowSubtitleStyle(context)),
+      trailing: Switch(value: value, onChanged: onChanged),
     );
   }
 }
@@ -1650,30 +1757,28 @@ class _SelectRow extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return _RowCard(
-      child: ListTile(
-        contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 2),
-        leading: _rowIconChip(context, icon),
-        title: Text(label, style: _rowTitleStyle(context)),
-        trailing: DropdownButton<String>(
-          value: value,
-          underline: const SizedBox.shrink(),
-          borderRadius: BorderRadius.circular(12),
-          dropdownColor: context.evolveColors.panelRaised,
-          style: Theme.of(context).textTheme.titleMedium,
-          icon: Icon(
-            LucideIcons.chevronDown,
-            size: 16,
-            color: context.evolveColors.muted,
-          ),
-          items: [
-            for (final option in options)
-              DropdownMenuItem(value: option, child: Text(option)),
-          ],
-          onChanged: (value) {
-            if (value != null) onChanged(value);
-          },
+    return ListTile(
+      contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 2),
+      leading: _rowIconChip(context, icon),
+      title: Text(label, style: _rowTitleStyle(context)),
+      trailing: DropdownButton<String>(
+        value: value,
+        underline: const SizedBox.shrink(),
+        borderRadius: BorderRadius.circular(12),
+        dropdownColor: context.evolveColors.panelRaised,
+        style: Theme.of(context).textTheme.titleMedium,
+        icon: Icon(
+          LucideIcons.chevronDown,
+          size: 16,
+          color: context.evolveColors.muted,
         ),
+        items: [
+          for (final option in options)
+            DropdownMenuItem(value: option, child: Text(option)),
+        ],
+        onChanged: (value) {
+          if (value != null) onChanged(value);
+        },
       ),
     );
   }
@@ -1696,35 +1801,33 @@ class _TimeRow extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return _RowCard(
-      child: ListTile(
-        contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 2),
-        leading: _rowIconChip(context, icon),
-        title: Text(label, style: _rowTitleStyle(context)),
-        trailing: OutlinedButton(
-          onPressed: () async {
-            final parts = value.split(':');
-            final selected = await showTimePicker(
-              context: context,
-              initialTime: TimeOfDay(
-                hour: int.tryParse(parts.first) ?? 9,
-                minute: parts.length > 1 ? int.tryParse(parts[1]) ?? 0 : 0,
-              ),
-              builder: (context, child) => MediaQuery(
-                data: MediaQuery.of(
-                  context,
-                ).copyWith(alwaysUse24HourFormat: use24hFormat),
-                child: child!,
-              ),
-            );
-            if (selected == null) return;
-            onChanged(
-              '${selected.hour.toString().padLeft(2, '0')}:'
-              '${selected.minute.toString().padLeft(2, '0')}',
-            );
-          },
-          child: Text(value),
-        ),
+    return ListTile(
+      contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 2),
+      leading: _rowIconChip(context, icon),
+      title: Text(label, style: _rowTitleStyle(context)),
+      trailing: OutlinedButton(
+        onPressed: () async {
+          final parts = value.split(':');
+          final selected = await showTimePicker(
+            context: context,
+            initialTime: TimeOfDay(
+              hour: int.tryParse(parts.first) ?? 9,
+              minute: parts.length > 1 ? int.tryParse(parts[1]) ?? 0 : 0,
+            ),
+            builder: (context, child) => MediaQuery(
+              data: MediaQuery.of(
+                context,
+              ).copyWith(alwaysUse24HourFormat: use24hFormat),
+              child: child!,
+            ),
+          );
+          if (selected == null) return;
+          onChanged(
+            '${selected.hour.toString().padLeft(2, '0')}:'
+            '${selected.minute.toString().padLeft(2, '0')}',
+          );
+        },
+        child: Text(value),
       ),
     );
   }
@@ -1756,64 +1859,62 @@ class _ColorRow extends StatelessWidget {
       const Color(0xFFEC4899),
       const Color(0xFFF97316),
     ].map((color) => _visibleAccent(context, color));
-    return _RowCard(
-      child: Padding(
-        padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
-        child: Row(
-          children: [
-            _rowIconChip(context, icon),
-            const SizedBox(width: 16),
-            Expanded(
-              child: _RowCopy(label: label, detail: detail),
-            ),
-            SizedBox(
-              width: 220,
-              child: Wrap(
-                alignment: WrapAlignment.end,
-                spacing: 8,
-                runSpacing: 8,
-                children: [
-                  for (final color in colors)
-                    Tooltip(
-                      message: t.settingsPage.useAccent(hex: _toHex(color)),
-                      child: InkWell(
-                        onTap: () => onChanged(color),
-                        customBorder: const CircleBorder(),
-                        child: _Swatch(
-                          color: color,
-                          isSelected: selected == color,
-                          child: selected == color
-                              ? Icon(
-                                  LucideIcons.check,
-                                  size: 12,
-                                  color: _checkColor(color),
-                                )
-                              : null,
-                        ),
-                      ),
-                    ),
+    return Padding(
+      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+      child: Row(
+        children: [
+          _rowIconChip(context, icon),
+          const SizedBox(width: 16),
+          Expanded(
+            child: _RowCopy(label: label, detail: detail),
+          ),
+          SizedBox(
+            width: 220,
+            child: Wrap(
+              alignment: WrapAlignment.end,
+              spacing: 8,
+              runSpacing: 8,
+              children: [
+                for (final color in colors)
                   Tooltip(
-                    message: t.settingsPage.customColor,
+                    message: t.settingsPage.useAccent(hex: _toHex(color)),
                     child: InkWell(
-                      onTap: () => _showFullColorPicker(context),
+                      onTap: () => onChanged(color),
                       customBorder: const CircleBorder(),
                       child: _Swatch(
-                        color: context.evolveColors.panelRaised,
-                        isSelected: false,
-                        outlined: true,
-                        child: Icon(
-                          LucideIcons.plus,
-                          size: 14,
-                          color: context.evolveColors.foreground,
-                        ),
+                        color: color,
+                        isSelected: selected == color,
+                        child: selected == color
+                            ? Icon(
+                                LucideIcons.check,
+                                size: 12,
+                                color: _checkColor(color),
+                              )
+                            : null,
                       ),
                     ),
                   ),
-                ],
-              ),
+                Tooltip(
+                  message: t.settingsPage.customColor,
+                  child: InkWell(
+                    onTap: () => _showFullColorPicker(context),
+                    customBorder: const CircleBorder(),
+                    child: _Swatch(
+                      color: context.evolveColors.panelRaised,
+                      isSelected: false,
+                      outlined: true,
+                      child: Icon(
+                        LucideIcons.plus,
+                        size: 14,
+                        color: context.evolveColors.foreground,
+                      ),
+                    ),
+                  ),
+                ),
+              ],
             ),
-          ],
-        ),
+          ),
+        ],
       ),
     );
   }
@@ -1915,19 +2016,17 @@ class _ActionRow extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return _RowCard(
-      child: ListTile(
-        onTap: onTap,
-        contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 2),
-        leading: _rowIconChip(context, icon),
-        title: Text(title, style: _rowTitleStyle(context)),
-        subtitle: Text(detail, style: _rowSubtitleStyle(context)),
-        trailing: DirectionalIcon(
-          LucideIcons.chevronRight,
-          LucideIcons.chevronLeft,
-          size: 18,
-          color: context.evolveColors.muted,
-        ),
+    return ListTile(
+      onTap: onTap,
+      contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 2),
+      leading: _rowIconChip(context, icon),
+      title: Text(title, style: _rowTitleStyle(context)),
+      subtitle: Text(detail, style: _rowSubtitleStyle(context)),
+      trailing: DirectionalIcon(
+        LucideIcons.chevronRight,
+        LucideIcons.chevronLeft,
+        size: 18,
+        color: context.evolveColors.muted,
       ),
     );
   }
@@ -1946,13 +2045,11 @@ class _InfoRow extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return _RowCard(
-      child: ListTile(
-        contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 2),
-        leading: _rowIconChip(context, icon),
-        title: Text(label, style: _rowTitleStyle(context)),
-        subtitle: Text(value, style: _rowSubtitleStyle(context)),
-      ),
+    return ListTile(
+      contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 2),
+      leading: _rowIconChip(context, icon),
+      title: Text(label, style: _rowTitleStyle(context)),
+      subtitle: Text(value, style: _rowSubtitleStyle(context)),
     );
   }
 }
@@ -2123,7 +2220,9 @@ class _PlatformNote extends StatelessWidget {
 }
 
 class _SubscriptionSettings extends ConsumerStatefulWidget {
-  const _SubscriptionSettings();
+  const _SubscriptionSettings({required this.twoColumn});
+
+  final bool twoColumn;
 
   @override
   ConsumerState<_SubscriptionSettings> createState() =>
@@ -2242,54 +2341,62 @@ class _SubscriptionSettingsState extends ConsumerState<_SubscriptionSettings> {
           ],
         ),
         const SizedBox(height: 24),
-        _SettingsGroup(
-          title: t.settingsPage.planManagement,
-          children: [
-            _ActionRow(
-              icon: LucideIcons.sparkles,
-              title: t.settingsPage.activateEvolvePro,
-              detail: subscription.isPro
-                  ? t.settingsPage.activateEvolveProActive
-                  : t.settingsPage.activateEvolveProStart,
-              onTap: subscription.isLoading
-                  ? () {}
-                  : () async {
-                      final package = _plan == 'monthly' ? monthly : yearly;
-                      if (package == null) {
-                        await ref
-                            .read(
-                              desktopSubscriptionControllerProvider.notifier,
-                            )
-                            .refresh();
-                        return;
-                      }
-                      final activated = await ref
-                          .read(desktopSubscriptionControllerProvider.notifier)
-                          .purchase(package);
-                      if (activated && mounted) {
-                        _showProSuccessDialog();
-                      }
-                    },
-            ),
-            _ActionRow(
-              icon: LucideIcons.refreshCw,
-              title: t.settingsPage.restorePurchases,
-              detail: t.settingsPage.restorePurchasesDetail,
-              onTap: () => unawaited(
-                ref
-                    .read(desktopSubscriptionControllerProvider.notifier)
-                    .restore(),
-              ),
-            ),
-            _ActionRow(
-              icon: LucideIcons.creditCard,
-              title: t.settingsPage.manageSubscription,
-              detail: t.settingsPage.manageSubscriptionDetail,
-              onTap: () => unawaited(
-                ref
-                    .read(desktopSubscriptionControllerProvider.notifier)
-                    .manageSubscription(),
-              ),
+        _GroupGrid(
+          twoColumn: widget.twoColumn,
+          groups: [
+            _SettingsGroup(
+              title: t.settingsPage.planManagement,
+              children: [
+                _ActionRow(
+                  icon: LucideIcons.sparkles,
+                  title: t.settingsPage.activateEvolvePro,
+                  detail: subscription.isPro
+                      ? t.settingsPage.activateEvolveProActive
+                      : t.settingsPage.activateEvolveProStart,
+                  onTap: subscription.isLoading
+                      ? () {}
+                      : () async {
+                          final package = _plan == 'monthly' ? monthly : yearly;
+                          if (package == null) {
+                            await ref
+                                .read(
+                                  desktopSubscriptionControllerProvider
+                                      .notifier,
+                                )
+                                .refresh();
+                            return;
+                          }
+                          final activated = await ref
+                              .read(
+                                desktopSubscriptionControllerProvider.notifier,
+                              )
+                              .purchase(package);
+                          if (activated && mounted) {
+                            _showProSuccessDialog();
+                          }
+                        },
+                ),
+                _ActionRow(
+                  icon: LucideIcons.refreshCw,
+                  title: t.settingsPage.restorePurchases,
+                  detail: t.settingsPage.restorePurchasesDetail,
+                  onTap: () => unawaited(
+                    ref
+                        .read(desktopSubscriptionControllerProvider.notifier)
+                        .restore(),
+                  ),
+                ),
+                _ActionRow(
+                  icon: LucideIcons.creditCard,
+                  title: t.settingsPage.manageSubscription,
+                  detail: t.settingsPage.manageSubscriptionDetail,
+                  onTap: () => unawaited(
+                    ref
+                        .read(desktopSubscriptionControllerProvider.notifier)
+                        .manageSubscription(),
+                  ),
+                ),
+              ],
             ),
           ],
         ),

@@ -8,6 +8,7 @@ import 'package:evolve_desktop/core/tutorial_provider.dart';
 import 'package:evolve_desktop/i18n/translations.g.dart';
 import 'package:evolve_desktop/shared/widgets/coach_tutorial.dart';
 import 'package:evolve_desktop/shared/widgets/desktop_page.dart';
+import 'package:evolve_desktop/shared/widgets/evolve_controls.dart';
 import 'package:evolve_desktop/shared/widgets/evolve_panel.dart';
 import 'package:fl_chart/fl_chart.dart';
 import 'package:flutter/material.dart';
@@ -326,35 +327,20 @@ class _HabitSelectorCard extends StatelessWidget {
                       overflow: TextOverflow.ellipsis,
                       style: titleStyle.copyWith(color: colors.muted),
                     )
-                  : DropdownButtonHideUnderline(
-                      child: DropdownButton<String>(
-                        value: selectedHabit!.id,
-                        isExpanded: true,
-                        isDense: true,
-                        icon: Icon(
-                          LucideIcons.chevronDown,
-                          size: 16,
-                          color: colors.muted,
-                        ),
-                        dropdownColor: colors.panelRaised,
-                        borderRadius: BorderRadius.circular(14),
-                        focusColor: Colors.transparent,
-                        style: titleStyle,
-                        items: [
-                          for (final habit in habits)
-                            DropdownMenuItem(
-                              value: habit.id,
-                              child: Text(
-                                habit.title,
-                                maxLines: 1,
-                                overflow: TextOverflow.ellipsis,
-                              ),
-                            ),
-                        ],
-                        onChanged: (id) {
-                          if (id != null) onHabitChanged(id);
-                        },
-                      ),
+                  : EvolveSelect<String>(
+                      value: selectedHabit!.id,
+                      filled: false,
+                      expand: true,
+                      textStyle: titleStyle,
+                      options: [
+                        for (final habit in habits)
+                          EvolveSelectOption(
+                            value: habit.id,
+                            label: habit.title,
+                            leading: _HabitDot(color: habit.color),
+                          ),
+                      ],
+                      onChanged: onHabitChanged,
                     ),
             ),
             const SizedBox(width: 12),

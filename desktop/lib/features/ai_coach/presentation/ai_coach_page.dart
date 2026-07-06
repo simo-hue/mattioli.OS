@@ -7,6 +7,8 @@ import 'package:evolve_desktop/features/auth/application/desktop_profile_control
 import 'package:evolve_desktop/features/dashboard/application/dashboard_controller.dart';
 import 'package:evolve_desktop/features/dashboard/domain/dashboard_models.dart';
 import 'package:evolve_desktop/shared/widgets/desktop_page.dart';
+import 'package:evolve_desktop/shared/widgets/evolve_controls.dart';
+import 'package:evolve_desktop/shared/widgets/evolve_dialog.dart';
 import 'package:evolve_desktop/shared/widgets/evolve_panel.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
@@ -129,17 +131,11 @@ class _AiCoachPageState extends ConsumerState<AiCoachPage> {
     final db = DesktopPrivateDb.instance;
     if (await db.hasPrivateAiExternalConsent()) return true;
     if (!mounted) return false;
-    final granted = await showDialog<bool>(
+    final granted = await showEvolveDialog<bool>(
       context: context,
-      builder: (context) => AlertDialog(
-        title: Text(
-          t.privateAi.consentTitle,
-          style: TextStyle(
-            color: context.evolveColors.foreground,
-            fontWeight: FontWeight.w800,
-            letterSpacing: -0.4,
-          ),
-        ),
+      builder: (context) => EvolveAlertDialog(
+        icon: LucideIcons.shield,
+        title: Text(t.privateAi.consentTitle),
         content: Text(
           t.privateAi.consentBody,
           style: TextStyle(
@@ -359,18 +355,12 @@ class _AiCoachPageState extends ConsumerState<AiCoachPage> {
   }
 
   void _showSettingsDialog() {
-    showDialog(
+    showEvolveDialog<void>(
       context: context,
       builder: (context) => StatefulBuilder(
-        builder: (context, setDialogState) => AlertDialog(
-          title: Text(
-            t.aiCoach.contextTitle,
-            style: TextStyle(
-              color: context.evolveColors.foreground,
-              fontWeight: FontWeight.w800,
-              letterSpacing: -0.4,
-            ),
-          ),
+        builder: (context, setDialogState) => EvolveAlertDialog(
+          icon: LucideIcons.slidersHorizontal,
+          title: Text(t.aiCoach.contextTitle),
           content: Column(
             mainAxisSize: MainAxisSize.min,
             crossAxisAlignment: CrossAxisAlignment.start,
@@ -384,49 +374,20 @@ class _AiCoachPageState extends ConsumerState<AiCoachPage> {
                   height: 1.5,
                 ),
               ),
-              const SizedBox(height: 20),
-              SwitchListTile(
-                contentPadding: EdgeInsets.zero,
-                title: Text(
-                  t.ai.dailyHabits,
-                  style: TextStyle(
-                    color: context.evolveColors.foreground,
-                    fontSize: 14,
-                    fontWeight: FontWeight.w600,
-                  ),
-                ),
-                subtitle: Text(
-                  t.aiCoach.shareHabitsDesc,
-                  style: TextStyle(
-                    color: context.evolveColors.muted.withValues(alpha: 0.8),
-                    fontSize: 12,
-                    fontWeight: FontWeight.w500,
-                  ),
-                ),
+              const SizedBox(height: 18),
+              _ContextSwitchRow(
+                title: t.ai.dailyHabits,
+                subtitle: t.aiCoach.shareHabitsDesc,
                 value: _shareHabits,
                 onChanged: (val) {
                   setDialogState(() => _shareHabits = val);
                   setState(() => _shareHabits = val);
                 },
               ),
-              SwitchListTile(
-                contentPadding: EdgeInsets.zero,
-                title: Text(
-                  t.ai.macroGoals,
-                  style: TextStyle(
-                    color: context.evolveColors.foreground,
-                    fontSize: 14,
-                    fontWeight: FontWeight.w600,
-                  ),
-                ),
-                subtitle: Text(
-                  t.aiCoach.shareGoalsDesc,
-                  style: TextStyle(
-                    color: context.evolveColors.muted.withValues(alpha: 0.8),
-                    fontSize: 12,
-                    fontWeight: FontWeight.w500,
-                  ),
-                ),
+              const SizedBox(height: 10),
+              _ContextSwitchRow(
+                title: t.ai.macroGoals,
+                subtitle: t.aiCoach.shareGoalsDesc,
                 value: _shareGoals,
                 onChanged: (val) {
                   setDialogState(() => _shareGoals = val);
@@ -896,6 +857,60 @@ class _AvatarDot extends StatelessWidget {
             : null,
       ),
       child: Icon(icon, size: 14, color: iconColor),
+    );
+  }
+}
+
+/// Context-sharing toggle row of the AI settings dialog: title + caption with
+/// a kit [EvolveSwitch] (replaces the stock SwitchListTile).
+class _ContextSwitchRow extends StatelessWidget {
+  const _ContextSwitchRow({
+    required this.title,
+    required this.subtitle,
+    required this.value,
+    required this.onChanged,
+  });
+
+  final String title;
+  final String subtitle;
+  final bool value;
+  final ValueChanged<bool> onChanged;
+
+  @override
+  Widget build(BuildContext context) {
+    return Row(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Expanded(
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Text(
+                title,
+                style: TextStyle(
+                  color: context.evolveColors.foreground,
+                  fontSize: 14,
+                  fontWeight: FontWeight.w600,
+                ),
+              ),
+              const SizedBox(height: 2),
+              Text(
+                subtitle,
+                style: TextStyle(
+                  color: context.evolveColors.muted.withValues(alpha: 0.8),
+                  fontSize: 12,
+                  fontWeight: FontWeight.w500,
+                ),
+              ),
+            ],
+          ),
+        ),
+        const SizedBox(width: 12),
+        Padding(
+          padding: const EdgeInsets.only(top: 2),
+          child: EvolveSwitch(value: value, onChanged: onChanged),
+        ),
+      ],
     );
   }
 }

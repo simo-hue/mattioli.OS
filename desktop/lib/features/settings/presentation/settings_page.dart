@@ -27,6 +27,7 @@ import 'package:evolve_desktop/features/settings/presentation/app_logs_dialog.da
 import 'package:evolve_desktop/features/statistics/data/private_analytics_source.dart';
 import 'package:evolve_desktop/features/settings/presentation/pro_features_modal.dart';
 import 'package:evolve_desktop/shared/widgets/desktop_page.dart';
+import 'package:evolve_desktop/shared/widgets/evolve_controls.dart';
 import 'package:evolve_desktop/shared/widgets/evolve_dialog.dart';
 import 'package:evolve_desktop/shared/widgets/evolve_panel.dart';
 import 'package:flutter/material.dart';
@@ -457,6 +458,9 @@ class _SettingsPageState extends ConsumerState<SettingsPage> {
                   icon: LucideIcons.sparkles,
                   label: t.settingsPage.aiSuggestions,
                   detail: t.settingsPage.aiSuggestionsDetail,
+                  // Pro-gated feature: badge the row like mobile instead of
+                  // leaving it looking disabled.
+                  badge: const EvolveProBadge(),
                   value: _aiSuggestions,
                   onChanged: (value) {
                     // Pro-gated exactly like mobile's toggleAi (Private mode
@@ -1171,130 +1175,113 @@ class _SettingsPageState extends ConsumerState<SettingsPage> {
         builder: (ctx) {
           return StatefulBuilder(
             builder: (context, setState) {
-              return AlertDialog(
-                backgroundColor: context.evolveColors.background,
-                title: Text(
-                  t.settingsPage.importSummaryTitle,
-                  style: TextStyle(
-                    color: context.evolveColors.foreground,
-                    fontWeight: FontWeight.w600,
-                  ),
-                ),
-                content: SingleChildScrollView(
-                  child: Column(
-                    mainAxisSize: MainAxisSize.min,
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      Text(
-                        '• ${t.settingsPage.importHabitsCount(count: preview.habitsCount)}',
-                        style: TextStyle(
-                          color: context.evolveColors.foreground,
-                        ),
+              return EvolveAlertDialog(
+                maxWidth: 470,
+                icon: LucideIcons.upload,
+                title: Text(t.settingsPage.importSummaryTitle),
+                content: Column(
+                  mainAxisSize: MainAxisSize.min,
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    // Same per-entity icons as the post-import summary dialog
+                    // so the two read as one flow.
+                    _importSummaryRow(
+                      context,
+                      LucideIcons.check,
+                      t.settingsPage.importHabitsCount(
+                        count: preview.habitsCount,
                       ),
-                      Text(
-                        '• ${t.settingsPage.importLogsCount(count: preview.logsCount)}',
-                        style: TextStyle(
-                          color: context.evolveColors.foreground,
-                        ),
+                    ),
+                    _importSummaryRow(
+                      context,
+                      LucideIcons.history,
+                      t.settingsPage.importLogsCount(count: preview.logsCount),
+                    ),
+                    _importSummaryRow(
+                      context,
+                      LucideIcons.target,
+                      t.settingsPage.importMacroGoalsCount(
+                        count: preview.macroGoalsCount,
                       ),
-                      Text(
-                        '• ${t.settingsPage.importMacroGoalsCount(count: preview.macroGoalsCount)}',
-                        style: TextStyle(
-                          color: context.evolveColors.foreground,
-                        ),
+                    ),
+                    _importSummaryRow(
+                      context,
+                      LucideIcons.folder,
+                      t.settingsPage.importCategoriesCount(
+                        count: preview.categoriesCount,
                       ),
-                      Text(
-                        '• ${t.settingsPage.importCategoriesCount(count: preview.categoriesCount)}',
-                        style: TextStyle(
-                          color: context.evolveColors.foreground,
-                        ),
+                    ),
+                    _importSummaryRow(
+                      context,
+                      LucideIcons.smile,
+                      t.settingsPage.importMoodsCount(
+                        count: preview.moodsCount,
                       ),
-                      Text(
-                        '• ${t.settingsPage.importMoodsCount(count: preview.moodsCount)}',
-                        style: TextStyle(
-                          color: context.evolveColors.foreground,
+                    ),
+                    if (preview.totalSkipped > 0) ...[
+                      const SizedBox(height: 10),
+                      Container(
+                        padding: const EdgeInsets.symmetric(
+                          horizontal: 11,
+                          vertical: 9,
                         ),
-                      ),
-                      if (preview.totalSkipped > 0)
-                        Padding(
-                          padding: const EdgeInsets.only(top: 12),
-                          child: Text(
-                            t.settingsPage.importPreviewSkipped(
-                              count: preview.totalSkipped,
-                            ),
-                            style: TextStyle(
-                              color: Theme.of(context).colorScheme.error,
-                              fontSize: 12,
-                              fontWeight: FontWeight.w500,
+                        decoration: BoxDecoration(
+                          color: EvolveColors.destructive.withValues(
+                            alpha: 0.08,
+                          ),
+                          borderRadius: BorderRadius.circular(10),
+                          border: Border.all(
+                            color: EvolveColors.destructive.withValues(
+                              alpha: 0.25,
                             ),
                           ),
                         ),
-                      const SizedBox(height: 24),
-                      RadioGroup<bool>(
-                        groupValue: replaceExisting,
-                        onChanged: (val) => setState(
-                          () => replaceExisting = val ?? replaceExisting,
-                        ),
-                        child: Column(
-                          mainAxisSize: MainAxisSize.min,
+                        child: Row(
                           children: [
-                            RadioListTile<bool>(
-                              title: Text(
-                                t.settingsPage.importReplaceTitle,
-                                style: TextStyle(
-                                  color: context.evolveColors.foreground,
-                                ),
-                              ),
-                              subtitle: Text(
-                                t.settingsPage.importReplaceSubtitle,
-                                style: TextStyle(
-                                  color: context.evolveColors.foreground
-                                      .withValues(alpha: 0.5),
-                                  fontSize: 12,
-                                ),
-                              ),
-                              value: true,
-                              activeColor: Theme.of(
-                                context,
-                              ).colorScheme.primary,
+                            const Icon(
+                              LucideIcons.triangleAlert,
+                              size: 14,
+                              color: EvolveColors.destructive,
                             ),
-                            RadioListTile<bool>(
-                              title: Text(
-                                t.settingsPage.importMergeTitle,
-                                style: TextStyle(
-                                  color: context.evolveColors.foreground,
+                            const SizedBox(width: 8),
+                            Expanded(
+                              child: Text(
+                                t.settingsPage.importPreviewSkipped(
+                                  count: preview.totalSkipped,
                                 ),
-                              ),
-                              subtitle: Text(
-                                t.settingsPage.importMergeSubtitle,
-                                style: TextStyle(
-                                  color: context.evolveColors.foreground
-                                      .withValues(alpha: 0.5),
+                                style: const TextStyle(
+                                  color: EvolveColors.destructive,
                                   fontSize: 12,
+                                  fontWeight: FontWeight.w600,
                                 ),
                               ),
-                              value: false,
-                              activeColor: Theme.of(
-                                context,
-                              ).colorScheme.primary,
                             ),
                           ],
                         ),
                       ),
                     ],
-                  ),
+                    const SizedBox(height: 18),
+                    EvolveRadioRow<bool>(
+                      value: true,
+                      groupValue: replaceExisting,
+                      onChanged: (val) => setState(() => replaceExisting = val),
+                      title: t.settingsPage.importReplaceTitle,
+                      subtitle: t.settingsPage.importReplaceSubtitle,
+                    ),
+                    const SizedBox(height: 8),
+                    EvolveRadioRow<bool>(
+                      value: false,
+                      groupValue: replaceExisting,
+                      onChanged: (val) => setState(() => replaceExisting = val),
+                      title: t.settingsPage.importMergeTitle,
+                      subtitle: t.settingsPage.importMergeSubtitle,
+                    ),
+                  ],
                 ),
                 actions: [
                   TextButton(
                     onPressed: () => Navigator.pop(ctx, false),
-                    child: Text(
-                      t.settingsPage.cancel,
-                      style: TextStyle(
-                        color: context.evolveColors.foreground.withValues(
-                          alpha: 0.5,
-                        ),
-                      ),
-                    ),
+                    child: Text(t.settingsPage.cancel),
                   ),
                   FilledButton(
                     onPressed: () => Navigator.pop(ctx, true),
@@ -1311,26 +1298,31 @@ class _SettingsPageState extends ConsumerState<SettingsPage> {
       if (!mounted) return;
 
       // 3. Execute
-      showDialog(
+      showEvolveDialog<void>(
         context: context,
         barrierDismissible: false,
-        builder: (ctx) => Center(
-          child: Material(
-            color: Colors.transparent,
-            child: Container(
-              padding: const EdgeInsets.all(24),
-              decoration: BoxDecoration(
-                color: context.evolveColors.background,
-                borderRadius: BorderRadius.circular(16),
-              ),
-              child: Column(
-                mainAxisSize: MainAxisSize.min,
-                children: [
-                  const CircularProgressIndicator(),
-                  const SizedBox(height: 16),
-                  Text(t.settingsPage.importInProgress),
-                ],
-              ),
+        builder: (ctx) => EvolveDialog(
+          maxWidth: 280,
+          child: Padding(
+            padding: const EdgeInsets.all(26),
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                const SizedBox.square(
+                  dimension: 28,
+                  child: CircularProgressIndicator(strokeWidth: 3),
+                ),
+                const SizedBox(height: 16),
+                Text(
+                  t.settingsPage.importInProgress,
+                  textAlign: TextAlign.center,
+                  style: TextStyle(
+                    color: ctx.evolveColors.foreground,
+                    fontSize: 13,
+                    fontWeight: FontWeight.w600,
+                  ),
+                ),
+              ],
             ),
           ),
         ),
@@ -2129,6 +2121,7 @@ class _SwitchRow extends StatelessWidget {
     required this.detail,
     required this.value,
     required this.onChanged,
+    this.badge,
   });
 
   final IconData icon;
@@ -2137,14 +2130,33 @@ class _SwitchRow extends StatelessWidget {
   final bool value;
   final ValueChanged<bool> onChanged;
 
+  /// Optional trailing chip after the title (e.g. the PRO badge on
+  /// Pro-gated rows).
+  final Widget? badge;
+
   @override
   Widget build(BuildContext context) {
     return ListTile(
       contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 2),
       leading: _rowIconChip(context, icon),
-      title: Text(label, style: _rowTitleStyle(context)),
+      title: badge == null
+          ? Text(label, style: _rowTitleStyle(context))
+          : Row(
+              children: [
+                Flexible(
+                  child: Text(
+                    label,
+                    style: _rowTitleStyle(context),
+                    maxLines: 1,
+                    overflow: TextOverflow.ellipsis,
+                  ),
+                ),
+                const SizedBox(width: 8),
+                badge!,
+              ],
+            ),
       subtitle: Text(detail, style: _rowSubtitleStyle(context)),
-      trailing: Switch(value: value, onChanged: onChanged),
+      trailing: EvolveSwitch(value: value, onChanged: onChanged),
     );
   }
 }
@@ -2170,24 +2182,13 @@ class _SelectRow extends StatelessWidget {
       contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 2),
       leading: _rowIconChip(context, icon),
       title: Text(label, style: _rowTitleStyle(context)),
-      trailing: DropdownButton<String>(
+      trailing: EvolveSelect<String>(
         value: value,
-        underline: const SizedBox.shrink(),
-        borderRadius: BorderRadius.circular(12),
-        dropdownColor: context.evolveColors.panelRaised,
-        style: Theme.of(context).textTheme.titleMedium,
-        icon: Icon(
-          LucideIcons.chevronDown,
-          size: 16,
-          color: context.evolveColors.muted,
-        ),
-        items: [
+        options: [
           for (final option in options)
-            DropdownMenuItem(value: option, child: Text(option)),
+            EvolveSelectOption(value: option, label: option),
         ],
-        onChanged: (value) {
-          if (value != null) onChanged(value);
-        },
+        onChanged: onChanged,
       ),
     );
   }
@@ -2210,33 +2211,21 @@ class _TimeRow extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final parts = value.split(':');
     return ListTile(
       contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 2),
       leading: _rowIconChip(context, icon),
       title: Text(label, style: _rowTitleStyle(context)),
-      trailing: OutlinedButton(
-        onPressed: () async {
-          final parts = value.split(':');
-          final selected = await showTimePicker(
-            context: context,
-            initialTime: TimeOfDay(
-              hour: int.tryParse(parts.first) ?? 9,
-              minute: parts.length > 1 ? int.tryParse(parts[1]) ?? 0 : 0,
-            ),
-            builder: (context, child) => MediaQuery(
-              data: MediaQuery.of(
-                context,
-              ).copyWith(alwaysUse24HourFormat: use24hFormat),
-              child: child!,
-            ),
-          );
-          if (selected == null) return;
-          onChanged(
-            '${selected.hour.toString().padLeft(2, '0')}:'
-            '${selected.minute.toString().padLeft(2, '0')}',
-          );
-        },
-        child: Text(value),
+      trailing: EvolveTimePicker(
+        value: TimeOfDay(
+          hour: int.tryParse(parts.first) ?? 9,
+          minute: parts.length > 1 ? int.tryParse(parts[1]) ?? 0 : 0,
+        ),
+        use24hFormat: use24hFormat,
+        onChanged: (selected) => onChanged(
+          '${selected.hour.toString().padLeft(2, '0')}:'
+          '${selected.minute.toString().padLeft(2, '0')}',
+        ),
       ),
     );
   }
@@ -2979,32 +2968,34 @@ class _PersonalInfoDialog extends ConsumerStatefulWidget {
 
 class _PersonalInfoDialogState extends ConsumerState<_PersonalInfoDialog> {
   late final TextEditingController _nameController;
-  late final TextEditingController _birthDateController;
+  DateTime? _birthDate;
   bool _isSaving = false;
 
   @override
   void initState() {
     super.initState();
     final isPrivate = ref.read(activeDesktopDataModeProvider).isPrivate;
+    final String? storedBirthDate;
     if (isPrivate) {
       final profile = ref.read(privateProfileProvider).value;
       _nameController = TextEditingController(text: profile?.fullName);
-      _birthDateController = TextEditingController(text: profile?.dateOfBirth);
+      storedBirthDate = profile?.dateOfBirth;
     } else {
       final user = ref.read(desktopAuthControllerProvider).user;
       _nameController = TextEditingController(
         text: user?.userMetadata?['full_name'] as String?,
       );
-      _birthDateController = TextEditingController(
-        text: user?.userMetadata?['date_of_birth'] as String?,
-      );
+      storedBirthDate = user?.userMetadata?['date_of_birth'] as String?;
     }
+    // The profile stores an ISO `yyyy-MM-dd` string (or empty).
+    _birthDate = storedBirthDate == null || storedBirthDate.trim().isEmpty
+        ? null
+        : DateTime.tryParse(storedBirthDate.trim());
   }
 
   @override
   void dispose() {
     _nameController.dispose();
-    _birthDateController.dispose();
     super.dispose();
   }
 
@@ -3035,12 +3026,13 @@ class _PersonalInfoDialogState extends ConsumerState<_PersonalInfoDialog> {
               ),
             ],
             const SizedBox(height: 10),
-            TextField(
-              controller: _birthDateController,
-              decoration: InputDecoration(
-                labelText: t.settingsPage.dateOfBirth,
-                hintText: t.settingsPage.dateOfBirthHint,
-              ),
+            EvolveDateField(
+              value: _birthDate,
+              label: t.settingsPage.dateOfBirth,
+              hint: t.settingsPage.dateOfBirthHint,
+              firstDate: DateTime(1900),
+              lastDate: DateTime.now(),
+              onChanged: (date) => setState(() => _birthDate = date),
             ),
           ],
         ),
@@ -3066,10 +3058,13 @@ class _PersonalInfoDialogState extends ConsumerState<_PersonalInfoDialog> {
   Future<void> _save() async {
     final name = _nameController.text.trim();
     if (name.isEmpty) return;
-    final birthDate = _birthDateController.text.trim();
-    if (birthDate.isNotEmpty && DateTime.tryParse(birthDate) == null) {
-      return;
-    }
+    // Persist the same ISO `yyyy-MM-dd` shape the free-text field produced
+    // (empty string when unset), so profiles round-trip unchanged.
+    final birthDate = _birthDate == null
+        ? ''
+        : '${_birthDate!.year.toString().padLeft(4, '0')}-'
+              '${_birthDate!.month.toString().padLeft(2, '0')}-'
+              '${_birthDate!.day.toString().padLeft(2, '0')}';
     setState(() => _isSaving = true);
     try {
       final isPrivate = ref.read(activeDesktopDataModeProvider).isPrivate;

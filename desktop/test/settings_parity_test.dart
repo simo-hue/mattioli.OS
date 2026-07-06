@@ -11,6 +11,7 @@ import 'package:evolve_desktop/app/theme/evolve_theme.dart';
 import 'package:evolve_desktop/core/app_bootstrap.dart';
 import 'package:evolve_desktop/features/settings/presentation/settings_page.dart';
 import 'package:evolve_desktop/i18n/translations.g.dart';
+import 'package:evolve_desktop/shared/widgets/evolve_controls.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_localizations/flutter_localizations.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
@@ -50,10 +51,10 @@ Future<void> _openSection(WidgetTester tester, String label) async {
   await tester.pumpAndSettle();
 }
 
-/// The Switch inside the row titled [rowLabel].
+/// The toggle (kit EvolveSwitch) inside the row titled [rowLabel].
 Finder _switchIn(String rowLabel) => find.descendant(
       of: find.widgetWithText(ListTile, rowLabel),
-      matching: find.byType(Switch),
+      matching: find.byType(EvolveSwitch),
     );
 
 void main() {

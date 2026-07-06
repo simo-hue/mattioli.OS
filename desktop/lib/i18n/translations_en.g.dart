@@ -1960,8 +1960,8 @@ class Translations$settingsPage$en {
 	/// en: 'Import data'
 	String get importData => 'Import data';
 
-	/// en: 'Restores a backup (.zip format) from Evolve.'
-	String get importDataDetail => 'Restores a backup (.zip format) from Evolve.';
+	/// en: 'Restores a backup (JSON or ZIP) from Evolve.'
+	String get importDataDetail => 'Restores a backup (JSON or ZIP) from Evolve.';
 
 	/// en: 'System permissions management'
 	String get systemPermissionsManagement => 'System permissions management';
@@ -3523,7 +3523,7 @@ extension on Translations {
 			'settingsPage.exportData' => 'Export data',
 			'settingsPage.exportDataDetail' => 'Shares a complete JSON export of the available data.',
 			'settingsPage.importData' => 'Import data',
-			'settingsPage.importDataDetail' => 'Restores a backup (.zip format) from Evolve.',
+			'settingsPage.importDataDetail' => 'Restores a backup (JSON or ZIP) from Evolve.',
 			'settingsPage.systemPermissionsManagement' => 'System permissions management',
 			'settingsPage.systemPermissionsManagementDetail' => 'Notifications, calendar and security.',
 			'settingsPage.deletePrivateDataDetail' => 'Permanently deletes the encrypted local database.',

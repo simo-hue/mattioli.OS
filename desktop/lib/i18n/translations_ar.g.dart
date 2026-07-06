@@ -870,7 +870,7 @@ class _Translations$settingsPage$ar extends Translations$settingsPage$en {
 	@override String get exportData => 'تصدير البيانات';
 	@override String get exportDataDetail => 'يشارك تصديراً كاملاً بصيغة JSON للبيانات المتاحة.';
 	@override String get importData => 'استيراد البيانات';
-	@override String get importDataDetail => 'يستعيد نسخة احتياطية (بصيغة .zip) من Evolve.';
+	@override String get importDataDetail => 'يستعيد نسخة احتياطية (JSON أو ZIP) من Evolve.';
 	@override String get systemPermissionsManagement => 'إدارة أذونات النظام';
 	@override String get systemPermissionsManagementDetail => 'الإشعارات والتقويم والأمان.';
 	@override String get deletePrivateDataDetail => 'يحذف نهائياً قاعدة البيانات المحلية المشفرة.';
@@ -1920,7 +1920,7 @@ extension on TranslationsAr {
 			'settingsPage.exportData' => 'تصدير البيانات',
 			'settingsPage.exportDataDetail' => 'يشارك تصديراً كاملاً بصيغة JSON للبيانات المتاحة.',
 			'settingsPage.importData' => 'استيراد البيانات',
-			'settingsPage.importDataDetail' => 'يستعيد نسخة احتياطية (بصيغة .zip) من Evolve.',
+			'settingsPage.importDataDetail' => 'يستعيد نسخة احتياطية (JSON أو ZIP) من Evolve.',
 			'settingsPage.systemPermissionsManagement' => 'إدارة أذونات النظام',
 			'settingsPage.systemPermissionsManagementDetail' => 'الإشعارات والتقويم والأمان.',
 			'settingsPage.deletePrivateDataDetail' => 'يحذف نهائياً قاعدة البيانات المحلية المشفرة.',

@@ -11,6 +11,7 @@ import 'package:evolve_desktop/i18n/translations.g.dart';
 import 'package:evolve_desktop/core/rtl.dart';
 import 'package:evolve_desktop/shared/widgets/color_picker_dialog.dart';
 import 'package:evolve_desktop/shared/widgets/desktop_page.dart';
+import 'package:evolve_desktop/shared/widgets/evolve_controls.dart';
 import 'package:evolve_desktop/shared/widgets/evolve_dialog.dart';
 import 'goals_stats_view.dart';
 import 'package:evolve_desktop/shared/widgets/evolve_panel.dart';
@@ -1196,39 +1197,18 @@ class _PeriodDropdown extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return Container(
+    return EvolveSelect<int>(
+      value: value,
       height: 44,
-      padding: const EdgeInsetsDirectional.only(start: 14, end: 10),
-      decoration: BoxDecoration(
-        color: context.evolveColors.panel.withValues(alpha: 0.5),
-        borderRadius: BorderRadius.circular(12),
-        border: Border.all(
-          color: context.evolveColors.border.withValues(alpha: 0.5),
-        ),
+      textStyle: Theme.of(context).textTheme.titleMedium?.copyWith(
+        fontWeight: FontWeight.w700,
+        letterSpacing: -0.2,
       ),
-      child: DropdownButtonHideUnderline(
-        child: DropdownButton<int>(
-          value: value,
-          items: [
-            for (final item in values)
-              DropdownMenuItem(value: item, child: Text(labelFor(item))),
-          ],
-          onChanged: (value) {
-            if (value != null) onChanged(value);
-          },
-          borderRadius: BorderRadius.circular(12),
-          icon: Icon(
-            LucideIcons.chevronDown,
-            color: context.evolveColors.muted,
-            size: 16,
-          ),
-          style: Theme.of(context).textTheme.titleMedium?.copyWith(
-            fontWeight: FontWeight.w700,
-            letterSpacing: -0.2,
-          ),
-          dropdownColor: context.evolveColors.panelRaised,
-        ),
-      ),
+      options: [
+        for (final item in values)
+          EvolveSelectOption(value: item, label: labelFor(item)),
+      ],
+      onChanged: onChanged,
     );
   }
 }
@@ -1786,56 +1766,58 @@ class _QuickCategoryButton extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final color = selectedCategory?.color;
-    return PopupMenuButton<_GoalCategory?>(
-      onSelected: onCategoryChanged,
+    return EvolveMenu(
       tooltip: t.form.category,
-      itemBuilder: (context) => [
-        PopupMenuItem(value: null, child: Text(t.goalsPage.defaultCategory)),
+      children: [
+        EvolveMenuItem(
+          label: t.goalsPage.defaultCategory,
+          selected: selectedCategory == null,
+          onTap: () => onCategoryChanged(null),
+        ),
         for (final item in categories)
-          PopupMenuItem(
-            value: item,
-            child: Row(
-              children: [
-                CircleAvatar(radius: 5, backgroundColor: item.color),
-                const SizedBox(width: 10),
-                Text(_categoryLabel(item)),
-              ],
-            ),
+          EvolveMenuItem(
+            label: _categoryLabel(item),
+            leading: CircleAvatar(radius: 5, backgroundColor: item.color),
+            selected: selectedCategory == item,
+            onTap: () => onCategoryChanged(item),
           ),
-        const PopupMenuDivider(),
-        PopupMenuItem(
-          // Not a category value — create inline via onTap (fires after close),
-          // which opens the editor and auto-selects the new category.
+        const EvolveMenuDivider(),
+        EvolveMenuItem(
+          // Not a category value — creates inline (fires after close), which
+          // opens the editor and auto-selects the new category.
+          label: t.macroGoals.createNewCategory,
+          accent: true,
+          leading: Icon(LucideIcons.plus, size: 16, color: context.evolveAccent),
           onTap: onCreateCategory,
-          child: Row(
-            children: [
-              Icon(LucideIcons.plus, size: 16, color: context.evolveAccent),
-              const SizedBox(width: 10),
-              Text(t.macroGoals.createNewCategory),
-            ],
-          ),
         ),
       ],
-      child: Container(
-        width: 44,
-        height: 44,
-        decoration: BoxDecoration(
-          color: context.evolveColors.panel.withValues(alpha: 0.5),
-          borderRadius: BorderRadius.circular(12),
-          border: Border.all(color: context.evolveColors.border),
-        ),
-        child: Center(
+      triggerBuilder: (context, controller) => MouseRegion(
+        cursor: SystemMouseCursors.click,
+        child: GestureDetector(
+          behavior: HitTestBehavior.opaque,
+          onTap: () => controller.isOpen ? controller.close() : controller.open(),
           child: Container(
-            width: 16,
-            height: 16,
+            width: 44,
+            height: 44,
             decoration: BoxDecoration(
-              color: color?.withValues(alpha: 0.7) ?? Colors.transparent,
-              shape: BoxShape.circle,
-              border: Border.all(
-                color:
-                    color?.withValues(alpha: 0.9) ??
-                    context.evolveColors.borderStrong,
-                width: 1.5,
+              color: context.evolveColors.panel.withValues(alpha: 0.5),
+              borderRadius: BorderRadius.circular(12),
+              border: Border.all(color: context.evolveColors.border),
+            ),
+            child: Center(
+              child: Container(
+                width: 16,
+                height: 16,
+                decoration: BoxDecoration(
+                  color: color?.withValues(alpha: 0.7) ?? Colors.transparent,
+                  shape: BoxShape.circle,
+                  border: Border.all(
+                    color:
+                        color?.withValues(alpha: 0.9) ??
+                        context.evolveColors.borderStrong,
+                    width: 1.5,
+                  ),
+                ),
               ),
             ),
           ),
@@ -2398,20 +2380,25 @@ class _GoalEditorDialogState extends State<_GoalEditorDialog> {
               autofocus: true,
               decoration: InputDecoration(labelText: t.form.title),
             ),
-            const SizedBox(height: 12),
-            DropdownButtonFormField<_GoalCategory>(
-              initialValue: _category,
-              decoration: InputDecoration(labelText: t.form.category),
-              items: [
+            const SizedBox(height: 14),
+            EvolveSelect<_GoalCategory>(
+              value: _category,
+              label: t.form.category,
+              expand: true,
+              height: 46,
+              fillColor: context.evolveColors.background.withValues(alpha: 0.5),
+              options: [
                 for (final category in widget.categories)
-                  DropdownMenuItem(
+                  EvolveSelectOption(
                     value: category,
-                    child: Text(_categoryLabel(category)),
+                    label: _categoryLabel(category),
+                    leading: CircleAvatar(
+                      radius: 4,
+                      backgroundColor: category.color,
+                    ),
                   ),
               ],
-              onChanged: (value) {
-                if (value != null) setState(() => _category = value);
-              },
+              onChanged: (value) => setState(() => _category = value),
             ),
           ],
         ),

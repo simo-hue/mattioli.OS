@@ -11,6 +11,7 @@ import 'package:evolve_desktop/features/dashboard/domain/dashboard_models.dart';
 import 'package:evolve_desktop/i18n/translations.g.dart';
 import 'package:evolve_desktop/core/rtl.dart';
 import 'package:evolve_desktop/shared/widgets/desktop_page.dart';
+import 'package:evolve_desktop/shared/widgets/evolve_controls.dart';
 import 'package:evolve_desktop/shared/widgets/evolve_dialog.dart';
 import 'package:evolve_desktop/shared/widgets/evolve_panel.dart';
 import 'package:flutter/material.dart';
@@ -1762,18 +1763,19 @@ class _HabitEditorDialogState extends State<_HabitEditorDialog> {
             const SizedBox(height: 16),
             _FieldLabel(t.form.category),
             const SizedBox(height: 8),
-            DropdownButtonFormField<String>(
-              initialValue: _category,
-              items: [
+            EvolveSelect<String>(
+              value: _category,
+              expand: true,
+              height: 46,
+              fillColor: context.evolveColors.background.withValues(alpha: 0.5),
+              options: [
                 for (final value in _habitCategories)
-                  DropdownMenuItem(
+                  EvolveSelectOption(
                     value: value,
-                    child: Text(_localizedHabitCategory(value)),
+                    label: _localizedHabitCategory(value),
                   ),
               ],
-              onChanged: (value) {
-                if (value != null) setState(() => _category = value);
-              },
+              onChanged: (value) => setState(() => _category = value),
             ),
             const SizedBox(height: 16),
             _FieldLabel(t.habitsPage.optionalReminder),
@@ -1796,7 +1798,7 @@ class _HabitEditorDialogState extends State<_HabitEditorDialog> {
                       ),
               ),
               onTap: () async {
-                final picked = await showTimePicker(
+                final picked = await showEvolveTimePicker(
                   context: context,
                   initialTime:
                       _parseReminderTime(_reminder.text) ?? TimeOfDay.now(),

@@ -4,6 +4,7 @@ import 'package:evolve_desktop/features/dashboard/application/dashboard_controll
 import 'package:evolve_desktop/features/dashboard/domain/dashboard_models.dart';
 import 'package:evolve_desktop/i18n/translations.g.dart';
 import 'package:evolve_desktop/shared/widgets/color_picker_dialog.dart';
+import 'package:evolve_desktop/shared/widgets/evolve_controls.dart';
 import 'package:evolve_desktop/shared/widgets/evolve_dialog.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
@@ -130,39 +131,34 @@ class _CreateGoalDialogState extends ConsumerState<CreateGoalDialog> {
           const SizedBox(height: 20),
           _FieldLabel(t.createGoal.timeline),
           const SizedBox(height: 8),
-          DropdownButtonFormField<GoalType>(
-            initialValue: _selectedType,
-            decoration: const InputDecoration(
-              contentPadding: EdgeInsets.symmetric(
-                horizontal: 12,
-                vertical: 12,
-              ),
-            ),
-            items: [
-              DropdownMenuItem(
+          EvolveSelect<GoalType>(
+            value: _selectedType,
+            expand: true,
+            height: 46,
+            fillColor: context.evolveColors.background.withValues(alpha: 0.5),
+            options: [
+              EvolveSelectOption(
                 value: GoalType.weekly,
-                child: Text(t.createGoal.thisWeek),
+                label: t.createGoal.thisWeek,
               ),
-              DropdownMenuItem(
+              EvolveSelectOption(
                 value: GoalType.monthly,
-                child: Text(t.createGoal.thisMonth),
+                label: t.createGoal.thisMonth,
               ),
-              DropdownMenuItem(
+              EvolveSelectOption(
                 value: GoalType.quarterly,
-                child: Text(t.createGoal.thisQuarter),
+                label: t.createGoal.thisQuarter,
               ),
-              DropdownMenuItem(
+              EvolveSelectOption(
                 value: GoalType.annual,
-                child: Text(t.createGoal.thisYear),
+                label: t.createGoal.thisYear,
               ),
-              DropdownMenuItem(
+              EvolveSelectOption(
                 value: GoalType.lifetime,
-                child: Text(t.createGoal.longTerm),
+                label: t.createGoal.longTerm,
               ),
             ],
-            onChanged: (val) {
-              if (val != null) setState(() => _selectedType = val);
-            },
+            onChanged: (val) => setState(() => _selectedType = val),
           ),
           const SizedBox(height: 20),
           _FieldLabel(t.form.color),

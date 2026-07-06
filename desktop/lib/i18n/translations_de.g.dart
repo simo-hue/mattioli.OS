@@ -870,7 +870,7 @@ class _Translations$settingsPage$de extends Translations$settingsPage$en {
 	@override String get exportData => 'Daten exportieren';
 	@override String get exportDataDetail => 'Teilt einen vollständigen JSON-Export der verfügbaren Daten.';
 	@override String get importData => 'Daten importieren';
-	@override String get importDataDetail => 'Stellt ein Backup (.zip-Format) von Evolve wieder her.';
+	@override String get importDataDetail => 'Stellt ein Backup (JSON oder ZIP) von Evolve wieder her.';
 	@override String get systemPermissionsManagement => 'Verwaltung der Systemberechtigungen';
 	@override String get systemPermissionsManagementDetail => 'Benachrichtigungen, Kalender und Sicherheit.';
 	@override String get deletePrivateDataDetail => 'Löscht die verschlüsselte lokale Datenbank dauerhaft.';
@@ -1920,7 +1920,7 @@ extension on TranslationsDe {
 			'settingsPage.exportData' => 'Daten exportieren',
 			'settingsPage.exportDataDetail' => 'Teilt einen vollständigen JSON-Export der verfügbaren Daten.',
 			'settingsPage.importData' => 'Daten importieren',
-			'settingsPage.importDataDetail' => 'Stellt ein Backup (.zip-Format) von Evolve wieder her.',
+			'settingsPage.importDataDetail' => 'Stellt ein Backup (JSON oder ZIP) von Evolve wieder her.',
 			'settingsPage.systemPermissionsManagement' => 'Verwaltung der Systemberechtigungen',
 			'settingsPage.systemPermissionsManagementDetail' => 'Benachrichtigungen, Kalender und Sicherheit.',
 			'settingsPage.deletePrivateDataDetail' => 'Löscht die verschlüsselte lokale Datenbank dauerhaft.',

@@ -2,6 +2,7 @@ import 'package:evolve_desktop/app/theme/evolve_theme.dart';
 import 'package:evolve_desktop/features/auth/application/consent_controller.dart';
 import 'package:evolve_desktop/features/settings/data/desktop_notification_service.dart';
 import 'package:evolve_desktop/i18n/translations.g.dart';
+import 'package:evolve_desktop/shared/widgets/evolve_controls.dart';
 import 'package:evolve_desktop/shared/widgets/evolve_panel.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
@@ -109,16 +110,16 @@ class _DesktopConsentPageState extends ConsumerState<DesktopConsentPage> {
                     ),
                   ),
                   _ConsentRow(
-                    child: SwitchListTile(
+                    child: ListTile(
                       contentPadding: const EdgeInsetsDirectional.fromSTEB(
                         16,
                         6,
                         12,
                         6,
                       ),
-                      value: _sentryConsent,
-                      onChanged: (value) =>
-                          setState(() => _sentryConsent = value),
+                      // Whole-row toggle (SwitchListTile parity).
+                      onTap: () =>
+                          setState(() => _sentryConsent = !_sentryConsent),
                       title: Text(
                         t.consentPage.crashDiagnostics,
                         style: _rowTitleStyle,
@@ -126,6 +127,11 @@ class _DesktopConsentPageState extends ConsumerState<DesktopConsentPage> {
                       subtitle: Text(
                         t.consentPage.crashSubtitle,
                         style: _rowSubtitleStyle,
+                      ),
+                      trailing: EvolveSwitch(
+                        value: _sentryConsent,
+                        onChanged: (value) =>
+                            setState(() => _sentryConsent = value),
                       ),
                     ),
                   ),

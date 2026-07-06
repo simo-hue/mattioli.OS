@@ -304,6 +304,16 @@ abstract final class EvolveTheme {
           ),
         ),
       ),
+      checkboxTheme: CheckboxThemeData(
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(6)),
+        side: BorderSide(color: palette.borderStrong, width: 1.4),
+        fillColor: WidgetStateProperty.resolveWith(
+          (states) => states.contains(WidgetState.selected)
+              ? accentColor
+              : Colors.transparent,
+        ),
+        checkColor: WidgetStatePropertyAll(_foregroundFor(accentColor)),
+      ),
       switchTheme: SwitchThemeData(
         thumbColor: WidgetStateProperty.resolveWith((states) {
           if (states.contains(WidgetState.selected)) {

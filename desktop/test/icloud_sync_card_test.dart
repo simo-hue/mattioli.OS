@@ -9,6 +9,7 @@ import 'package:evolve_desktop/core/desktop_data_mode.dart';
 import 'package:evolve_desktop/core/desktop_private_sync_service.dart';
 import 'package:evolve_desktop/features/settings/presentation/settings_page.dart';
 import 'package:evolve_desktop/i18n/translations.g.dart';
+import 'package:evolve_desktop/shared/widgets/evolve_controls.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_localizations/flutter_localizations.dart';
@@ -107,11 +108,11 @@ Future<void> _pumpPrivacy(WidgetTester tester, _FakeSyncService fake) async {
   await tester.pumpAndSettle();
 }
 
-/// The enable toggle = the Switch inside the row titled with enableTitle
-/// (the row's ListTile itself has no onTap).
+/// The enable toggle = the kit EvolveSwitch inside the row titled with
+/// enableTitle (the row's ListTile itself has no onTap).
 Finder _syncToggle() => find.descendant(
       of: find.widgetWithText(ListTile, t.icloudSync.enableTitle),
-      matching: find.byType(Switch),
+      matching: find.byType(EvolveSwitch),
     );
 
 void main() {

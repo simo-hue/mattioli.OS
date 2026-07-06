@@ -683,7 +683,7 @@
     "exportData": "Exportar datos",
     "exportDataDetail": "Comparte una exportación JSON completa de los datos disponibles.",
     "importData": "Importar datos",
-    "importDataDetail": "Restaura una copia de seguridad (formato .zip) de Evolve.",
+    "importDataDetail": "Restaura una copia de seguridad (JSON o ZIP) de Evolve.",
     "systemPermissionsManagement": "Gestión de permisos del sistema",
     "systemPermissionsManagementDetail": "Notificaciones, calendario y seguridad.",
     "deletePrivateDataDetail": "Elimina permanentemente la base de datos local cifrada.",

@@ -1,4 +1,5 @@
 import 'dart:async';
+import 'dart:math' as math;
 import 'package:evolve_desktop/app/theme/evolve_theme.dart';
 import 'package:evolve_desktop/core/macro_goal_calendar.dart';
 import 'package:evolve_desktop/features/dashboard/application/dashboard_controller.dart';
@@ -98,6 +99,7 @@ class _GoalsPageState extends ConsumerState<GoalsPage> {
         .where((goal) => goal.state == GoalState.failed)
         .toList();
 
+    final categories = _availableCategories;
     final hasSeenTutorial = ref.watch(goalsTutorialProvider);
     final showTutorial = !hasSeenTutorial && !_didFinishGoalsTutorial;
 
@@ -140,8 +142,10 @@ class _GoalsPageState extends ConsumerState<GoalsPage> {
                 onShowStats: () => setState(() => _showStats = true),
               ),
               const SizedBox(height: 22),
-              _GoalPeriodBar(
-                key: _planSelectorKey,
+              _GoalCommandBar(
+                periodClusterKey: _planSelectorKey,
+                addGoalKey: _addGoalKey,
+                tutorialCategoryKey: _tutorialCategoryKey,
                 selectedType: _selectedType,
                 selectedYear: _selectedYear,
                 selectedQuarter: _selectedQuarter,
@@ -164,6 +168,15 @@ class _GoalsPageState extends ConsumerState<GoalsPage> {
                 onPrevious: () => _movePeriod(-1),
                 onNext: () => _movePeriod(1),
                 onManageCategories: _openCategoryManager,
+                showQuickAdd: !_showStats,
+                quickGoalController: _quickGoalController,
+                quickGoalCategory: _quickGoalCategory,
+                categories: categories,
+                onQuickCategoryChanged: (category) =>
+                    setState(() => _quickGoalCategory = category),
+                onCreateCategory: _createCategoryInline,
+                onQuickSubmit: _submitQuickGoal,
+                quickGoalHint: _quickGoalHint,
               ),
               const SizedBox(height: 22),
               if (_showStats)
@@ -172,22 +185,14 @@ class _GoalsPageState extends ConsumerState<GoalsPage> {
                 _GoalBoard(
                   periodTitle: _periodTitle,
                   periodSubtitle: _periodSubtitle,
-                  quickGoalController: _quickGoalController,
-                  quickGoalCategory: _quickGoalCategory,
-                  addGoalKey: _addGoalKey,
                   tutorialCheckboxKey: _tutorialCheckboxKey,
-                  tutorialCategoryKey: _tutorialCategoryKey,
                   tutorialRescheduleKey: _tutorialRescheduleKey,
                   tutorialEditKey: _tutorialEditKey,
                   tutorialDeleteKey: _tutorialDeleteKey,
-                  categories: _availableCategories,
+                  categories: categories,
                   activeGoals: activeGoals,
                   completedGoals: completedGoals,
                   failedGoals: failedGoals,
-                  onQuickCategoryChanged: (category) =>
-                      setState(() => _quickGoalCategory = category),
-                  onCreateCategory: _createCategoryInline,
-                  onQuickSubmit: _submitQuickGoal,
                   onToggleStatus: _cycleGoalStatus,
                   onEdit: _openGoalEditorFor,
                   onReschedule: (goal) => ref
@@ -196,7 +201,6 @@ class _GoalsPageState extends ConsumerState<GoalsPage> {
                   onDelete: (goal) => ref
                       .read(dashboardControllerProvider.notifier)
                       .deleteGoal(goal.id),
-                  quickGoalHint: _quickGoalHint,
                 ),
             ],
           ),
@@ -937,9 +941,15 @@ class _GoalToolbar extends StatelessWidget {
   }
 }
 
-class _GoalPeriodBar extends StatelessWidget {
-  const _GoalPeriodBar({
-    super.key,
+/// Consolidated toolbar row: period selectors + prev/next + category manager
+/// on the left and the quick-add composer expanding on the right. On narrow
+/// windows the two clusters stack on two lines inside the same panel so the
+/// bar keeps fitting the 960px minimum window without overflowing.
+class _GoalCommandBar extends StatelessWidget {
+  const _GoalCommandBar({
+    this.periodClusterKey,
+    this.addGoalKey,
+    this.tutorialCategoryKey,
     required this.selectedType,
     required this.selectedYear,
     required this.selectedQuarter,
@@ -952,8 +962,19 @@ class _GoalPeriodBar extends StatelessWidget {
     required this.onPrevious,
     required this.onNext,
     required this.onManageCategories,
+    required this.showQuickAdd,
+    required this.quickGoalController,
+    this.quickGoalCategory,
+    required this.categories,
+    required this.onQuickCategoryChanged,
+    required this.onCreateCategory,
+    required this.onQuickSubmit,
+    required this.quickGoalHint,
   });
 
+  final GlobalKey? periodClusterKey;
+  final GlobalKey? addGoalKey;
+  final GlobalKey? tutorialCategoryKey;
   final GoalType selectedType;
   final int selectedYear;
   final int selectedQuarter;
@@ -966,113 +987,199 @@ class _GoalPeriodBar extends StatelessWidget {
   final VoidCallback onPrevious;
   final VoidCallback onNext;
   final VoidCallback onManageCategories;
+  final bool showQuickAdd;
+  final TextEditingController quickGoalController;
+  final _GoalCategory? quickGoalCategory;
+  final List<_GoalCategory> categories;
+  final ValueChanged<_GoalCategory?> onQuickCategoryChanged;
+  final VoidCallback onCreateCategory;
+  final VoidCallback onQuickSubmit;
+  final String quickGoalHint;
+
+  List<Widget> _periodSelectors(BuildContext context) {
+    if (selectedType == GoalType.lifetime) {
+      return [
+        Padding(
+          padding: const EdgeInsetsDirectional.only(start: 6),
+          child: Row(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              EvolveIconChip(
+                icon: LucideIcons.infinity,
+                color: context.evolveAccent,
+                size: 30,
+                iconSize: 15,
+              ),
+              const SizedBox(width: 10),
+              Text(
+                t.goalsPage.fullView,
+                style: Theme.of(context).textTheme.titleLarge,
+              ),
+            ],
+          ),
+        ),
+      ];
+    }
+    return [
+      _PeriodDropdown(
+        value: selectedYear,
+        values: [
+          for (
+            var year = DateTime.now().year - 10;
+            year <= DateTime.now().year + 10;
+            year++
+          )
+            year,
+        ],
+        labelFor: (value) => '$value',
+        onChanged: onYearChanged,
+      ),
+      if (selectedType == GoalType.quarterly)
+        _PeriodDropdown(
+          value: selectedQuarter,
+          values: const [1, 2, 3, 4],
+          labelFor: (value) => 'Q$value',
+          onChanged: onQuarterChanged,
+        ),
+      if (selectedType == GoalType.monthly || selectedType == GoalType.weekly)
+        _PeriodDropdown(
+          value: selectedMonth,
+          values: [for (var month = 1; month <= 12; month++) month],
+          labelFor: (value) => t.common.months[value - 1],
+          onChanged: onMonthChanged,
+        ),
+      if (selectedType == GoalType.weekly)
+        _PeriodDropdown(
+          value: selectedWeek,
+          values: [
+            for (
+              var week = 1;
+              week <= logicalWeeksInMonth(selectedYear, selectedMonth);
+              week++
+            )
+              week,
+          ],
+          labelFor: (value) => '${t.common.calendarView.week} $value',
+          onChanged: onWeekChanged,
+        ),
+    ];
+  }
+
+  List<Widget> _navButtons(BuildContext context) {
+    return [
+      if (selectedType != GoalType.lifetime) ...[
+        EvolveSquareIconButton(
+          tooltip: t.habitsPage.prevPeriod,
+          icon: directionalIcon(
+            context,
+            LucideIcons.chevronLeft,
+            LucideIcons.chevronRight,
+          ),
+          onTap: onPrevious,
+        ),
+        const SizedBox(width: 8),
+        EvolveSquareIconButton(
+          tooltip: t.habitsPage.nextPeriod,
+          icon: directionalIcon(
+            context,
+            LucideIcons.chevronRight,
+            LucideIcons.chevronLeft,
+          ),
+          onTap: onNext,
+        ),
+        const SizedBox(width: 12),
+      ],
+      EvolveSquareIconButton(
+        tooltip: t.goalsPage.categoriesTooltip,
+        icon: LucideIcons.slidersHorizontal,
+        onTap: onManageCategories,
+      ),
+    ];
+  }
+
+  /// Full-width line: selectors flow (and wrap if ever needed) on the leading
+  /// side while the nav cluster stays pinned to the trailing edge.
+  Widget _periodLine(BuildContext context) {
+    return Container(
+      key: periodClusterKey,
+      child: Row(
+        children: [
+          Expanded(
+            child: Wrap(
+              spacing: 10,
+              runSpacing: 10,
+              crossAxisAlignment: WrapCrossAlignment.center,
+              children: _periodSelectors(context),
+            ),
+          ),
+          const SizedBox(width: 12),
+          ..._navButtons(context),
+        ],
+      ),
+    );
+  }
+
+  /// Intrinsic-width cluster used when the quick-add composer shares the row.
+  Widget _periodCluster(BuildContext context) {
+    return Container(
+      key: periodClusterKey,
+      child: Row(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          Wrap(
+            spacing: 10,
+            crossAxisAlignment: WrapCrossAlignment.center,
+            children: _periodSelectors(context),
+          ),
+          const SizedBox(width: 12),
+          ..._navButtons(context),
+        ],
+      ),
+    );
+  }
+
+  Widget _quickBar() {
+    return _QuickGoalBar(
+      key: addGoalKey,
+      tutorialCategoryKey: tutorialCategoryKey,
+      controller: quickGoalController,
+      selectedCategory: quickGoalCategory,
+      categories: categories,
+      onCategoryChanged: onQuickCategoryChanged,
+      onCreateCategory: onCreateCategory,
+      onSubmit: onQuickSubmit,
+      hintText: quickGoalHint,
+    );
+  }
 
   @override
   Widget build(BuildContext context) {
-    final showPeriod = selectedType != GoalType.lifetime;
     return EvolvePanel(
       radius: 20,
       padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
-      child: Row(
-        children: [
-          if (showPeriod) ...[
-            _PeriodDropdown(
-              value: selectedYear,
-              values: [
-                for (
-                  var year = DateTime.now().year - 10;
-                  year <= DateTime.now().year + 10;
-                  year++
-                )
-                  year,
-              ],
-              labelFor: (value) => '$value',
-              onChanged: onYearChanged,
+      child: !showQuickAdd
+          ? _periodLine(context)
+          : LayoutBuilder(
+              builder: (context, constraints) {
+                if (constraints.maxWidth >= 1000) {
+                  return Row(
+                    children: [
+                      _periodCluster(context),
+                      const SizedBox(width: 14),
+                      Expanded(child: _quickBar()),
+                    ],
+                  );
+                }
+                return Column(
+                  crossAxisAlignment: CrossAxisAlignment.stretch,
+                  children: [
+                    _periodLine(context),
+                    const SizedBox(height: 10),
+                    _quickBar(),
+                  ],
+                );
+              },
             ),
-            if (selectedType == GoalType.quarterly) ...[
-              const SizedBox(width: 10),
-              _PeriodDropdown(
-                value: selectedQuarter,
-                values: const [1, 2, 3, 4],
-                labelFor: (value) => 'Q$value',
-                onChanged: onQuarterChanged,
-              ),
-            ],
-            if (selectedType == GoalType.monthly ||
-                selectedType == GoalType.weekly) ...[
-              const SizedBox(width: 10),
-              _PeriodDropdown(
-                value: selectedMonth,
-                values: [for (var month = 1; month <= 12; month++) month],
-                labelFor: (value) => t.common.months[value - 1],
-                onChanged: onMonthChanged,
-              ),
-            ],
-            if (selectedType == GoalType.weekly) ...[
-              const SizedBox(width: 10),
-              _PeriodDropdown(
-                value: selectedWeek,
-                values: [
-                  for (
-                    var week = 1;
-                    week <= logicalWeeksInMonth(selectedYear, selectedMonth);
-                    week++
-                  )
-                    week,
-                ],
-                labelFor: (value) => '${t.common.calendarView.week} $value',
-                onChanged: onWeekChanged,
-              ),
-            ],
-          ] else
-            Padding(
-              padding: const EdgeInsetsDirectional.only(start: 6),
-              child: Row(
-                children: [
-                  EvolveIconChip(
-                    icon: LucideIcons.infinity,
-                    color: context.evolveAccent,
-                    size: 30,
-                    iconSize: 15,
-                  ),
-                  const SizedBox(width: 10),
-                  Text(
-                    t.goalsPage.fullView,
-                    style: Theme.of(context).textTheme.titleLarge,
-                  ),
-                ],
-              ),
-            ),
-          const Spacer(),
-          if (showPeriod) ...[
-            EvolveSquareIconButton(
-              tooltip: t.habitsPage.prevPeriod,
-              icon: directionalIcon(
-                context,
-                LucideIcons.chevronLeft,
-                LucideIcons.chevronRight,
-              ),
-              onTap: onPrevious,
-            ),
-            const SizedBox(width: 8),
-            EvolveSquareIconButton(
-              tooltip: t.habitsPage.nextPeriod,
-              icon: directionalIcon(
-                context,
-                LucideIcons.chevronRight,
-                LucideIcons.chevronLeft,
-              ),
-              onTap: onNext,
-            ),
-            const SizedBox(width: 12),
-          ],
-          EvolveSquareIconButton(
-            tooltip: t.goalsPage.categoriesTooltip,
-            icon: LucideIcons.slidersHorizontal,
-            onTap: onManageCategories,
-          ),
-        ],
-      ),
     );
   }
 }
@@ -1133,11 +1240,7 @@ class _GoalBoard extends StatelessWidget {
   const _GoalBoard({
     required this.periodTitle,
     required this.periodSubtitle,
-    required this.quickGoalController,
-    this.quickGoalCategory,
-    this.addGoalKey,
     this.tutorialCheckboxKey,
-    this.tutorialCategoryKey,
     this.tutorialRescheduleKey,
     this.tutorialEditKey,
     this.tutorialDeleteKey,
@@ -1145,24 +1248,15 @@ class _GoalBoard extends StatelessWidget {
     required this.activeGoals,
     required this.completedGoals,
     required this.failedGoals,
-    required this.onQuickCategoryChanged,
-    required this.onCreateCategory,
-    required this.onQuickSubmit,
     required this.onToggleStatus,
     required this.onEdit,
     required this.onReschedule,
     required this.onDelete,
-    required this.quickGoalHint,
   });
 
   final String periodTitle;
   final String periodSubtitle;
-  final String quickGoalHint;
-  final TextEditingController quickGoalController;
-  final _GoalCategory? quickGoalCategory;
-  final GlobalKey? addGoalKey;
   final GlobalKey? tutorialCheckboxKey;
-  final GlobalKey? tutorialCategoryKey;
   final GlobalKey? tutorialRescheduleKey;
   final GlobalKey? tutorialEditKey;
   final GlobalKey? tutorialDeleteKey;
@@ -1170,23 +1264,48 @@ class _GoalBoard extends StatelessWidget {
   final List<DashboardGoal> activeGoals;
   final List<DashboardGoal> completedGoals;
   final List<DashboardGoal> failedGoals;
-  final ValueChanged<_GoalCategory?> onQuickCategoryChanged;
-  final VoidCallback onCreateCategory;
-  final VoidCallback onQuickSubmit;
   final void Function(DashboardGoal, GoalState) onToggleStatus;
   final ValueChanged<DashboardGoal> onEdit;
   final ValueChanged<DashboardGoal> onReschedule;
   final ValueChanged<DashboardGoal> onDelete;
 
-  @override
-  Widget build(BuildContext context) {
-    final hasAnyGoal =
-        activeGoals.isNotEmpty ||
-        completedGoals.isNotEmpty ||
-        failedGoals.isNotEmpty;
+  Widget _activeItem(DashboardGoal goal) {
+    return Padding(
+      padding: const EdgeInsets.only(bottom: 10),
+      child: _GoalItem(
+        key: ValueKey(goal.id),
+        goal: goal,
+        checkboxKey: tutorialCheckboxKey,
+        rescheduleKey: tutorialRescheduleKey,
+        editKey: tutorialEditKey,
+        deleteKey: tutorialDeleteKey,
+        categories: categories,
+        onToggleStatus: onToggleStatus,
+        onEdit: onEdit,
+        onReschedule: onReschedule,
+        onDelete: onDelete,
+      ),
+    );
+  }
 
+  Widget _archivedItem(DashboardGoal goal) {
+    return Padding(
+      padding: const EdgeInsets.only(bottom: 10),
+      child: _GoalItem(
+        key: ValueKey(goal.id),
+        goal: goal,
+        categories: categories,
+        onToggleStatus: onToggleStatus,
+        onEdit: onEdit,
+        onReschedule: onReschedule,
+        onDelete: onDelete,
+      ),
+    );
+  }
+
+  Widget _periodHeading(BuildContext context) {
     return Column(
-      crossAxisAlignment: CrossAxisAlignment.stretch,
+      crossAxisAlignment: CrossAxisAlignment.start,
       children: [
         Text(
           periodTitle,
@@ -1205,84 +1324,294 @@ class _GoalBoard extends StatelessWidget {
             color: context.evolveColors.muted.withValues(alpha: 0.8),
           ),
         ),
-        const SizedBox(height: 18),
-        _QuickGoalBar(
-          key: addGoalKey,
-          tutorialCategoryKey: tutorialCategoryKey,
-          controller: quickGoalController,
-          selectedCategory: quickGoalCategory,
-          categories: categories,
-          onCategoryChanged: onQuickCategoryChanged,
-          onCreateCategory: onCreateCategory,
-          onSubmit: onQuickSubmit,
-          hintText: quickGoalHint,
-        ),
-        const SizedBox(height: 12),
-        if (activeGoals.isEmpty)
-          _GoalEmptyState(hasAnyGoal: hasAnyGoal)
-        else
-          for (final goal in activeGoals)
-            Padding(
-              padding: const EdgeInsets.only(bottom: 10),
-              child: _GoalItem(
-                key: ValueKey(goal.id),
-                goal: goal,
-                checkboxKey: tutorialCheckboxKey,
-                rescheduleKey: tutorialRescheduleKey,
-                editKey: tutorialEditKey,
-                deleteKey: tutorialDeleteKey,
-                categories: categories,
-                onToggleStatus: onToggleStatus,
-                onEdit: onEdit,
-                onReschedule: onReschedule,
-                onDelete: onDelete,
-              ),
-            ),
-        if (completedGoals.isNotEmpty) ...[
-          const SizedBox(height: 22),
-          _StatusDivider(
-            label: t.macroGoals.completed,
-            color: EvolveColors.success,
-          ),
-          const SizedBox(height: 12),
-          for (final goal in completedGoals)
-            Padding(
-              padding: const EdgeInsets.only(bottom: 10),
-              child: _GoalItem(
-                key: ValueKey(goal.id),
-                goal: goal,
-                categories: categories,
-                onToggleStatus: onToggleStatus,
-                onEdit: onEdit,
-                onReschedule: onReschedule,
-                onDelete: onDelete,
-              ),
-            ),
-        ],
-        if (failedGoals.isNotEmpty) ...[
-          const SizedBox(height: 22),
-          _StatusDivider(
-            label: t.macroGoals.failed,
-            color: EvolveColors.destructive,
-          ),
-          const SizedBox(height: 12),
-          for (final goal in failedGoals)
-            Padding(
-              padding: const EdgeInsets.only(bottom: 10),
-              child: _GoalItem(
-                key: ValueKey(goal.id),
-                goal: goal,
-                categories: categories,
-                onToggleStatus: onToggleStatus,
-                onEdit: onEdit,
-                onReschedule: onReschedule,
-                onDelete: onDelete,
-              ),
-            ),
-        ],
       ],
     );
   }
+
+  @override
+  Widget build(BuildContext context) {
+    final hasAnyGoal =
+        activeGoals.isNotEmpty ||
+        completedGoals.isNotEmpty ||
+        failedGoals.isNotEmpty;
+
+    return LayoutBuilder(
+      builder: (context, constraints) {
+        final useColumns = constraints.maxWidth >= 1120;
+        if (!useColumns) {
+          // Narrow: the original single-column flow with status dividers.
+          return Column(
+            crossAxisAlignment: CrossAxisAlignment.stretch,
+            children: [
+              _periodHeading(context),
+              const SizedBox(height: 18),
+              if (activeGoals.isEmpty)
+                _GoalEmptyState(hasAnyGoal: hasAnyGoal)
+              else
+                for (final goal in activeGoals) _activeItem(goal),
+              if (completedGoals.isNotEmpty) ...[
+                const SizedBox(height: 22),
+                _StatusDivider(
+                  label: t.macroGoals.completed,
+                  color: EvolveColors.success,
+                ),
+                const SizedBox(height: 12),
+                for (final goal in completedGoals) _archivedItem(goal),
+              ],
+              if (failedGoals.isNotEmpty) ...[
+                const SizedBox(height: 22),
+                _StatusDivider(
+                  label: t.macroGoals.failed,
+                  color: EvolveColors.destructive,
+                ),
+                const SizedBox(height: 12),
+                for (final goal in failedGoals) _archivedItem(goal),
+              ],
+            ],
+          );
+        }
+
+        // Wide: active goals in the primary panel, period summary plus the
+        // completed/failed archives in a 350px right rail (dashboard pattern).
+        final primary = EvolvePanel(
+          padding: const EdgeInsets.fromLTRB(18, 18, 18, 8),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.stretch,
+            children: [
+              _periodHeading(context),
+              const SizedBox(height: 16),
+              if (activeGoals.isEmpty)
+                Padding(
+                  padding: const EdgeInsets.only(bottom: 10),
+                  child: _GoalEmptyState(hasAnyGoal: hasAnyGoal),
+                )
+              else
+                for (final goal in activeGoals) _activeItem(goal),
+            ],
+          ),
+        );
+
+        final secondary = Column(
+          children: [
+            _PeriodSummaryPanel(
+              activeCount: activeGoals.length,
+              completedCount: completedGoals.length,
+              failedCount: failedGoals.length,
+            ),
+            if (completedGoals.isNotEmpty) ...[
+              const SizedBox(height: 18),
+              EvolvePanel(
+                padding: const EdgeInsets.fromLTRB(18, 18, 18, 8),
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.stretch,
+                  children: [
+                    SectionHeading(title: t.macroGoals.completed),
+                    const SizedBox(height: 12),
+                    for (final goal in completedGoals) _archivedItem(goal),
+                  ],
+                ),
+              ),
+            ],
+            if (failedGoals.isNotEmpty) ...[
+              const SizedBox(height: 18),
+              EvolvePanel(
+                padding: const EdgeInsets.fromLTRB(18, 18, 18, 8),
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.stretch,
+                  children: [
+                    SectionHeading(title: t.macroGoals.failed),
+                    const SizedBox(height: 12),
+                    for (final goal in failedGoals) _archivedItem(goal),
+                  ],
+                ),
+              ),
+            ],
+          ],
+        );
+
+        return Row(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Expanded(flex: 7, child: primary),
+            const SizedBox(width: 18),
+            SizedBox(width: 350, child: secondary),
+          ],
+        );
+      },
+    );
+  }
+}
+
+/// Right-rail summary for the visible period: completion ring (dashboard
+/// weekly-review pattern) plus per-status counts, computed from the same goal
+/// lists the board already renders.
+class _PeriodSummaryPanel extends StatelessWidget {
+  const _PeriodSummaryPanel({
+    required this.activeCount,
+    required this.completedCount,
+    required this.failedCount,
+  });
+
+  final int activeCount;
+  final int completedCount;
+  final int failedCount;
+
+  @override
+  Widget build(BuildContext context) {
+    final total = activeCount + completedCount + failedCount;
+    final completion = total == 0 ? 0.0 : completedCount / total;
+    return EvolvePanel(
+      child: Row(
+        children: [
+          _PeriodProgressRing(value: completion),
+          const SizedBox(width: 14),
+          Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                _StatusCountRow(
+                  label: t.macroGoals.completed,
+                  color: EvolveColors.success,
+                  count: completedCount,
+                ),
+                const SizedBox(height: 8),
+                _StatusCountRow(
+                  label: t.macroGoals.failed,
+                  color: EvolveColors.destructive,
+                  count: failedCount,
+                ),
+                const SizedBox(height: 8),
+                _StatusCountRow(
+                  label: t.goalsStats.active.toUpperCase(),
+                  color: context.evolveAccent,
+                  count: activeCount,
+                ),
+              ],
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+class _StatusCountRow extends StatelessWidget {
+  const _StatusCountRow({
+    required this.label,
+    required this.color,
+    required this.count,
+  });
+
+  final String label;
+  final Color color;
+  final int count;
+
+  @override
+  Widget build(BuildContext context) {
+    return Row(
+      children: [
+        Expanded(
+          child: Text(
+            label,
+            maxLines: 1,
+            overflow: TextOverflow.ellipsis,
+            style: TextStyle(
+              color: color.withValues(alpha: 0.7),
+              fontSize: 10,
+              fontWeight: FontWeight.w700,
+              letterSpacing: 1.5,
+            ),
+          ),
+        ),
+        const SizedBox(width: 8),
+        Text(
+          '$count',
+          style: TextStyle(
+            color: context.evolveColors.foreground,
+            fontSize: 13,
+            fontWeight: FontWeight.w800,
+          ),
+        ),
+      ],
+    );
+  }
+}
+
+/// Page-private copy of the dashboard progress ring (shared widgets are frozen
+/// for this pass).
+class _PeriodProgressRing extends StatelessWidget {
+  const _PeriodProgressRing({required this.value});
+
+  final double value;
+
+  @override
+  Widget build(BuildContext context) {
+    return SizedBox(
+      width: 58,
+      height: 58,
+      child: CustomPaint(
+        painter: _PeriodRingPainter(
+          value,
+          accent: context.evolveAccent,
+          track: context.evolveColors.panelSoft,
+        ),
+        child: Center(
+          child: Text(
+            '${(value * 100).round()}%',
+            style: TextStyle(
+              color: context.evolveAccent,
+              fontSize: 11,
+              fontWeight: FontWeight.w800,
+            ),
+          ),
+        ),
+      ),
+    );
+  }
+}
+
+class _PeriodRingPainter extends CustomPainter {
+  const _PeriodRingPainter(
+    this.value, {
+    required this.accent,
+    required this.track,
+  });
+
+  final double value;
+  final Color accent;
+  final Color track;
+
+  @override
+  void paint(Canvas canvas, Size size) {
+    final center = size.center(Offset.zero);
+    final radius = math.min(size.width, size.height) / 2 - 4;
+    final bounds = Rect.fromCircle(center: center, radius: radius);
+    canvas.drawCircle(
+      center,
+      radius,
+      Paint()
+        ..color = track
+        ..style = PaintingStyle.stroke
+        ..strokeWidth = 5,
+    );
+    canvas.drawArc(
+      bounds,
+      -math.pi / 2,
+      value * math.pi * 2,
+      false,
+      Paint()
+        ..color = accent
+        ..style = PaintingStyle.stroke
+        ..strokeCap = StrokeCap.round
+        ..strokeWidth = 5,
+    );
+  }
+
+  @override
+  bool shouldRepaint(covariant _PeriodRingPainter oldDelegate) =>
+      oldDelegate.value != value ||
+      oldDelegate.accent != accent ||
+      oldDelegate.track != track;
 }
 
 class _QuickGoalBar extends StatelessWidget {
@@ -1524,6 +1853,7 @@ class _GoalItem extends StatefulWidget {
 class _GoalItemState extends State<_GoalItem> {
   GoalState? _visualStatusOverride;
   Timer? _debounceTimer;
+  bool _hovered = false;
 
   @override
   void dispose() {
@@ -1574,102 +1904,119 @@ class _GoalItemState extends State<_GoalItem> {
         ? EvolveColors.destructive
         : category.color;
 
-    return AnimatedContainer(
-      duration: const Duration(milliseconds: 250),
-      constraints: const BoxConstraints(minHeight: 64),
-      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
-      decoration: BoxDecoration(
-        color: statusColor.withValues(
-          alpha: completed
-              ? 0.05
-              : failed
-              ? 0.06
-              : 0.08,
-        ),
-        borderRadius: BorderRadius.circular(16),
-        border: Border.all(
+    return MouseRegion(
+      onEnter: (_) => setState(() => _hovered = true),
+      onExit: (_) => setState(() => _hovered = false),
+      child: AnimatedContainer(
+        duration: const Duration(milliseconds: 250),
+        constraints: const BoxConstraints(minHeight: 64),
+        padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+        decoration: BoxDecoration(
           color: statusColor.withValues(
             alpha: completed
-                ? 0.15
+                ? 0.05
                 : failed
-                ? 0.2
-                : 0.3,
+                ? 0.06
+                : 0.08,
+          ),
+          borderRadius: BorderRadius.circular(16),
+          border: Border.all(
+            color: statusColor.withValues(
+              alpha: completed
+                  ? 0.15
+                  : failed
+                  ? 0.2
+                  : 0.3,
+            ),
           ),
         ),
-      ),
-      child: Row(
-        children: [
-          Container(
-            key: widget.checkboxKey,
-            child: _GoalCheckButton(
-              state: currentState,
-              onPressed: _cycleStatus,
+        child: Row(
+          children: [
+            Container(
+              key: widget.checkboxKey,
+              child: _GoalCheckButton(
+                state: currentState,
+                onPressed: _cycleStatus,
+              ),
             ),
-          ),
-          const SizedBox(width: 14),
-          if (!completed && !failed) ...[
-            EvolveIconChip(
-              icon: LucideIcons.target,
-              color: category.color,
-              size: 30,
-              iconSize: 15,
+            const SizedBox(width: 14),
+            if (!completed && !failed) ...[
+              EvolveIconChip(
+                icon: LucideIcons.target,
+                color: category.color,
+                size: 30,
+                iconSize: 15,
+              ),
+              const SizedBox(width: 12),
+            ],
+            Expanded(
+              child: Text(
+                goal.title,
+                maxLines: 2,
+                overflow: TextOverflow.ellipsis,
+                style: TextStyle(
+                  fontSize: 15,
+                  fontWeight: completed || failed
+                      ? FontWeight.w500
+                      : FontWeight.w700,
+                  letterSpacing: -0.2,
+                  color: completed
+                      ? EvolveColors.success.withValues(alpha: 0.72)
+                      : failed
+                      ? EvolveColors.destructive.withValues(alpha: 0.7)
+                      : context.evolveColors.foreground,
+                  decoration: completed || failed
+                      ? TextDecoration.lineThrough
+                      : TextDecoration.none,
+                  decorationColor: statusColor.withValues(alpha: 0.55),
+                  decorationThickness: 1.5,
+                ),
+              ),
             ),
             const SizedBox(width: 12),
+            // Desktop affordance: the row actions stay tappable at all times
+            // but sit dimmed until the pointer hovers the row.
+            AnimatedOpacity(
+              opacity: _hovered ? 1 : 0.35,
+              duration: const Duration(milliseconds: 120),
+              child: Row(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  if (goal.type != GoalType.lifetime)
+                    IconButton(
+                      key: widget.rescheduleKey,
+                      tooltip: t.goalsPage.rescheduleTooltip,
+                      onPressed: () => widget.onReschedule(goal),
+                      icon: const Icon(LucideIcons.calendarClock, size: 16),
+                      style: IconButton.styleFrom(
+                        foregroundColor: context.evolveColors.muted,
+                      ),
+                    ),
+                  IconButton(
+                    key: widget.editKey,
+                    tooltip: t.common.actions.edit,
+                    onPressed: () => widget.onEdit(goal),
+                    icon: const Icon(LucideIcons.pencil, size: 16),
+                    style: IconButton.styleFrom(
+                      foregroundColor: context.evolveColors.muted,
+                    ),
+                  ),
+                  IconButton(
+                    key: widget.deleteKey,
+                    tooltip: t.common.actions.delete,
+                    onPressed: () => widget.onDelete(goal),
+                    icon: const Icon(LucideIcons.trash2, size: 16),
+                    style: IconButton.styleFrom(
+                      foregroundColor: EvolveColors.destructive.withValues(
+                        alpha: 0.7,
+                      ),
+                    ),
+                  ),
+                ],
+              ),
+            ),
           ],
-          Expanded(
-            child: Text(
-              goal.title,
-              maxLines: 2,
-              overflow: TextOverflow.ellipsis,
-              style: TextStyle(
-                fontSize: 15,
-                fontWeight: completed || failed
-                    ? FontWeight.w500
-                    : FontWeight.w700,
-                letterSpacing: -0.2,
-                color: completed
-                    ? EvolveColors.success.withValues(alpha: 0.72)
-                    : failed
-                    ? EvolveColors.destructive.withValues(alpha: 0.7)
-                    : context.evolveColors.foreground,
-                decoration: completed || failed
-                    ? TextDecoration.lineThrough
-                    : TextDecoration.none,
-                decorationColor: statusColor.withValues(alpha: 0.55),
-                decorationThickness: 1.5,
-              ),
-            ),
-          ),
-          const SizedBox(width: 12),
-          if (goal.type != GoalType.lifetime)
-            IconButton(
-              key: widget.rescheduleKey,
-              tooltip: t.goalsPage.rescheduleTooltip,
-              onPressed: () => widget.onReschedule(goal),
-              icon: const Icon(LucideIcons.calendarClock, size: 16),
-              style: IconButton.styleFrom(
-                foregroundColor: context.evolveColors.muted,
-              ),
-            ),
-          IconButton(
-            key: widget.editKey,
-            tooltip: t.common.actions.edit,
-            onPressed: () => widget.onEdit(goal),
-            icon: const Icon(LucideIcons.pencil, size: 16),
-            style: IconButton.styleFrom(
-              foregroundColor: context.evolveColors.muted,
-            ),
-          ),
-          IconButton(
-            key: widget.deleteKey,
-            tooltip: t.common.actions.delete,
-            onPressed: () => widget.onDelete(goal),
-            icon: const Icon(LucideIcons.trash2, size: 16),
-            style: IconButton.styleFrom(
-              foregroundColor: EvolveColors.destructive.withValues(alpha: 0.7),
-            ),
-          ),
-        ],
+        ),
       ),
     );
   }

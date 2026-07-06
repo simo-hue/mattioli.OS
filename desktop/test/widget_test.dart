@@ -48,6 +48,27 @@ void main() {
     await tester.pumpWidget(const ProviderScope(child: _DesktopTestApp()));
     await tester.tap(find.text('Abitudini'));
     await tester.pumpAndSettle();
+
+    // Wide desktop layout: protocol and calendar are shown side by side, so
+    // the calendar view switcher is visible without any tab tap.
+    expect(find.text('Protocollo'), findsOneWidget);
+    expect(find.text('Calendario'), findsOneWidget);
+    expect(find.text('Mese'), findsOneWidget);
+    expect(find.text('Settimana'), findsOneWidget);
+    expect(find.text('Anno'), findsOneWidget);
+    expect(find.text('Vita'), findsOneWidget);
+  });
+
+  testWidgets('habits page falls back to tabs on a narrow window', (
+    tester,
+  ) async {
+    await tester.binding.setSurfaceSize(const Size(960, 640));
+    addTearDown(() => tester.binding.setSurfaceSize(null));
+
+    await tester.pumpWidget(const ProviderScope(child: _DesktopTestApp()));
+    await tester.tap(find.byTooltip('Abitudini'));
+    await tester.pumpAndSettle();
+
     await tester.tap(find.text('Calendario'));
     await tester.pumpAndSettle();
 
@@ -55,6 +76,7 @@ void main() {
     expect(find.text('Settimana'), findsOneWidget);
     expect(find.text('Anno'), findsOneWidget);
     expect(find.text('Vita'), findsOneWidget);
+    expect(tester.takeException(), isNull);
   });
 
   testWidgets('macro goals expose horizons and period selectors', (

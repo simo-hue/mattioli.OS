@@ -77,31 +77,45 @@ class _GoalsStatsViewState extends ConsumerState<GoalsStatsView> {
 
     return statsAsync.when(
       data: (stats) {
-        return SingleChildScrollView(
-          physics: const BouncingScrollPhysics(),
-          padding: const EdgeInsets.symmetric(vertical: 4),
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              // Header & Year Selector
-              Row(
-                mainAxisAlignment: MainAxisAlignment.spaceBetween,
+        return LayoutBuilder(
+          builder: (context, constraints) {
+            // Same breakpoints as the dashboard: metric grids collapse from 4
+            // to 2 columns below 1080, chart pairs stack below 1120.
+            final wide = constraints.maxWidth >= 1120;
+            final columns = constraints.maxWidth >= 1080 ? 4 : 2;
+            const spacing = 14.0;
+            final cardWidth =
+                (constraints.maxWidth - spacing * (columns - 1)) / columns;
+
+            return SingleChildScrollView(
+              physics: const BouncingScrollPhysics(),
+              padding: const EdgeInsets.symmetric(vertical: 4),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  Text(
-                    t.stats.tabPerformance,
-                    style: Theme.of(context).textTheme.headlineMedium,
+                  // Header & Year Selector
+                  SectionHeading(
+                    title: t.stats.tabPerformance,
+                    trailing: _buildYearSelector(years),
                   ),
-                  _buildYearSelector(years),
+                  const SizedBox(height: 20),
+
+                  if (_selectedYear == 'all')
+                    ..._buildGlobalContent(
+                      stats,
+                      wide: wide,
+                      cardWidth: cardWidth,
+                    )
+                  else
+                    ..._buildSingleYearContent(
+                      stats,
+                      wide: wide,
+                      cardWidth: cardWidth,
+                    ),
                 ],
               ),
-              const SizedBox(height: 20),
-
-              if (_selectedYear == 'all')
-                ..._buildGlobalContent(stats)
-              else
-                ..._buildSingleYearContent(stats),
-            ],
-          ),
+            );
+          },
         );
       },
       loading: () => const SizedBox(
@@ -120,7 +134,27 @@ class _GoalsStatsViewState extends ConsumerState<GoalsStatsView> {
     );
   }
 
-  List<Widget> _buildSingleYearContent(Map<String, dynamic> stats) {
+  /// Pairs two chart cards side by side on wide desktop layouts, stacking
+  /// them on narrow ones (mirrors the dashboard two-column composition).
+  Widget _chartPair(bool wide, Widget first, Widget second) {
+    if (!wide) {
+      return Column(children: [first, const SizedBox(height: 16), second]);
+    }
+    return Row(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Expanded(child: first),
+        const SizedBox(width: 18),
+        Expanded(child: second),
+      ],
+    );
+  }
+
+  List<Widget> _buildSingleYearContent(
+    Map<String, dynamic> stats, {
+    required bool wide,
+    required double cardWidth,
+  }) {
     final List<DesktopGoalCategory> categories =
         ref.watch(desktopGoalCategoriesControllerProvider).value ?? [];
     final totalGoals = stats['total_goals'] as int? ?? 0;
@@ -152,9 +186,48 @@ class _GoalsStatsViewState extends ConsumerState<GoalsStatsView> {
     final bestTypeRate = stats['best_type_rate'] as int? ?? 0;
 
     return [
-      Row(
+      // KPI + highlight cards in a single dashboard-style metric grid.
+      Wrap(
+        spacing: 14,
+        runSpacing: 14,
         children: [
-          Expanded(
+          SizedBox(
+            width: cardWidth,
+            child: _buildKpiCard(
+              t.common.total,
+              '$totalGoals',
+              LucideIcons.target,
+            ),
+          ),
+          SizedBox(
+            width: cardWidth,
+            child: _buildKpiCard(
+              t.common.completed,
+              '$completedGoals',
+              LucideIcons.circleCheck,
+              color: EvolveColors.success,
+            ),
+          ),
+          SizedBox(
+            width: cardWidth,
+            child: _buildKpiCard(
+              t.macroGoals.success2,
+              '$successRate%',
+              LucideIcons.trophy,
+              color: const Color(0xFFFBBF24),
+            ),
+          ),
+          SizedBox(
+            width: cardWidth,
+            child: _buildKpiCard(
+              t.stats.tabTrend,
+              (trendPositive ? t.statistics.growth : t.statistics.decline),
+              trendPositive ? LucideIcons.trendingUp : LucideIcons.trendingDown,
+              color: const Color(0xFF60A5FA),
+            ),
+          ),
+          SizedBox(
+            width: cardWidth,
             child: _buildHighlightCard(
               title: t.macroGoals.strength,
               value: bestCategory,
@@ -163,8 +236,8 @@ class _GoalsStatsViewState extends ConsumerState<GoalsStatsView> {
               color: const Color(0xFFA855F7),
             ),
           ),
-          const SizedBox(width: 12),
-          Expanded(
+          SizedBox(
+            width: cardWidth,
             child: _buildHighlightCard(
               title: t.macroGoals.bestMonth,
               value: (bestMonthIdx != null && bestMonthIdx > 0)
@@ -175,82 +248,52 @@ class _GoalsStatsViewState extends ConsumerState<GoalsStatsView> {
               color: const Color(0xFFF59E0B),
             ),
           ),
-        ],
-      ),
-      const SizedBox(height: 12),
-      _buildHighlightCard(
-        title: t.macroGoals.effectiveType,
-        value: bestTypeLabel,
-        subtitle: '$bestTypeRate% ${t.macroGoals.successRate2}',
-        icon: LucideIcons.brainCircuit,
-        color: Theme.of(context).colorScheme.primary,
-        fullWidth: true,
-      ),
-      const SizedBox(height: 16),
-      Row(
-        children: [
-          Expanded(
-            child: _buildKpiCard(
-              t.common.total,
-              '$totalGoals',
-              LucideIcons.target,
-            ),
-          ),
-          const SizedBox(width: 8),
-          Expanded(
-            child: _buildKpiCard(
-              t.common.completed,
-              '$completedGoals',
-              LucideIcons.circleCheck,
-              color: EvolveColors.success,
-            ),
-          ),
-        ],
-      ),
-      const SizedBox(height: 12),
-      Row(
-        children: [
-          Expanded(
-            child: _buildKpiCard(
-              t.macroGoals.success2,
-              '$successRate%',
-              LucideIcons.trophy,
-              color: const Color(0xFFFBBF24),
-            ),
-          ),
-          const SizedBox(width: 8),
-          Expanded(
-            child: _buildKpiCard(
-              t.stats.tabTrend,
-              (trendPositive ? t.statistics.growth : t.statistics.decline),
-              trendPositive ? LucideIcons.trendingUp : LucideIcons.trendingDown,
-              color: const Color(0xFF60A5FA),
+          SizedBox(
+            width: cardWidth,
+            child: _buildHighlightCard(
+              title: t.macroGoals.effectiveType,
+              value: bestTypeLabel,
+              subtitle: '$bestTypeRate% ${t.macroGoals.successRate2}',
+              icon: LucideIcons.brainCircuit,
+              color: Theme.of(context).colorScheme.primary,
             ),
           ),
         ],
       ),
       const SizedBox(height: 24),
-      _buildAreaChartCard(stats['cumulative_monthly'] as List<dynamic>? ?? []),
+      _chartPair(
+        wide,
+        _buildAreaChartCard(
+          stats['cumulative_monthly'] as List<dynamic>? ?? [],
+        ),
+        _buildMonthlyComposedCard(
+          stats['monthly_composed'] as List<dynamic>? ?? [],
+        ),
+      ),
       const SizedBox(height: 16),
-      _buildCategoryRadarCard(stats['category_rates'] as List<dynamic>? ?? []),
+      _chartPair(
+        wide,
+        _buildCategoryRadarCard(
+          stats['category_rates'] as List<dynamic>? ?? [],
+        ),
+        _buildCategoryPieCard(
+          stats['category_distribution'] as List<dynamic>? ?? [],
+          categories,
+        ),
+      ),
       const SizedBox(height: 16),
       _buildQuarterlyBarCard(
         stats['quarterly_activity'] as List<dynamic>? ?? [],
-      ),
-      const SizedBox(height: 16),
-      _buildMonthlyComposedCard(
-        stats['monthly_composed'] as List<dynamic>? ?? [],
-      ),
-      const SizedBox(height: 16),
-      _buildCategoryPieCard(
-        stats['category_distribution'] as List<dynamic>? ?? [],
-        categories,
       ),
       const SizedBox(height: 48),
     ];
   }
 
-  List<Widget> _buildGlobalContent(Map<String, dynamic> stats) {
+  List<Widget> _buildGlobalContent(
+    Map<String, dynamic> stats, {
+    required bool wide,
+    required double cardWidth,
+  }) {
     final List<DesktopGoalCategory> categories =
         ref.watch(desktopGoalCategoriesControllerProvider).value ?? [];
     final total = stats['total_goals'] as int? ?? 0;
@@ -273,9 +316,13 @@ class _GoalsStatsViewState extends ConsumerState<GoalsStatsView> {
     sortedYears.sort();
 
     return [
-      Row(
+      // Highlight cards in a single dashboard-style metric grid.
+      Wrap(
+        spacing: 14,
+        runSpacing: 14,
         children: [
-          Expanded(
+          SizedBox(
+            width: cardWidth,
             child: _buildHighlightCard(
               title: t.macroGoals.historicalTotal,
               value: '$total',
@@ -285,8 +332,8 @@ class _GoalsStatsViewState extends ConsumerState<GoalsStatsView> {
               color: const Color(0xFF6366F1),
             ),
           ),
-          const SizedBox(width: 12),
-          Expanded(
+          SizedBox(
+            width: cardWidth,
             child: _buildHighlightCard(
               title: t.macroGoals.globalSuccess,
               value: '$succ%',
@@ -295,12 +342,8 @@ class _GoalsStatsViewState extends ConsumerState<GoalsStatsView> {
               color: EvolveColors.success,
             ),
           ),
-        ],
-      ),
-      const SizedBox(height: 12),
-      Row(
-        children: [
-          Expanded(
+          SizedBox(
+            width: cardWidth,
             child: _buildHighlightCard(
               title: t.macroGoals.bestYear,
               value: bestYear != null ? '$bestYear' : 'N/A',
@@ -309,8 +352,8 @@ class _GoalsStatsViewState extends ConsumerState<GoalsStatsView> {
               color: const Color(0xFFD97706),
             ),
           ),
-          const SizedBox(width: 12),
-          Expanded(
+          SizedBox(
+            width: cardWidth,
             child: _buildHighlightCard(
               title: t.macroGoals.mostProductiveYear,
               value: mostProdYear != null ? '$mostProdYear' : 'N/A',
@@ -323,22 +366,26 @@ class _GoalsStatsViewState extends ConsumerState<GoalsStatsView> {
       ),
       const SizedBox(height: 24),
 
-      _buildGlobalYearProgressionCard(yearProgression),
+      _chartPair(
+        wide,
+        _buildGlobalYearProgressionCard(yearProgression),
+        _buildGlobalMonthlyHistCard(
+          stats['monthly_history'] as List<dynamic>? ?? [],
+        ),
+      ),
       const SizedBox(height: 16),
-      _buildCategoryRadarCard(
-        stats['category_performance'] as List<dynamic>? ?? [],
+      _chartPair(
+        wide,
+        _buildCategoryRadarCard(
+          stats['category_performance'] as List<dynamic>? ?? [],
+        ),
+        _buildQuarterSeasonalityCard(
+          stats['seasonality'] as List<dynamic>? ?? [],
+        ),
       ),
       const SizedBox(height: 16),
       _buildGlobalTypeDistCard(
         stats['type_distribution'] as Map<String, dynamic>? ?? {},
-      ),
-      const SizedBox(height: 16),
-      _buildQuarterSeasonalityCard(
-        stats['seasonality'] as List<dynamic>? ?? [],
-      ),
-      const SizedBox(height: 16),
-      _buildGlobalMonthlyHistCard(
-        stats['monthly_history'] as List<dynamic>? ?? [],
       ),
       const SizedBox(height: 16),
       _buildGlobalInterestEvolutionCard(
@@ -538,10 +585,8 @@ class _GoalsStatsViewState extends ConsumerState<GoalsStatsView> {
     required String subtitle,
     required IconData icon,
     required Color color,
-    bool fullWidth = false,
   }) {
     return Container(
-      width: fullWidth ? double.infinity : null,
       padding: const EdgeInsets.all(16),
       decoration: BoxDecoration(
         borderRadius: BorderRadius.circular(20),
@@ -728,7 +773,7 @@ class _GoalsStatsViewState extends ConsumerState<GoalsStatsView> {
       title: '',
       subtitle: '',
       child: SizedBox(
-        height: 220,
+        height: 240,
         child: LineChart(
           LineChartData(
             gridData: FlGridData(
@@ -1004,7 +1049,7 @@ class _GoalsStatsViewState extends ConsumerState<GoalsStatsView> {
       title: '',
       subtitle: '',
       child: SizedBox(
-        height: 150,
+        height: 240,
         child: BarChart(
           BarChartData(
             gridData: const FlGridData(show: false),
@@ -1111,7 +1156,7 @@ class _GoalsStatsViewState extends ConsumerState<GoalsStatsView> {
       title: t.macroGoals.completions,
       subtitle: '',
       child: SizedBox(
-        height: 180,
+        height: 240,
         child: BarChart(
           BarChartData(
             barTouchData: BarTouchData(
@@ -1274,7 +1319,7 @@ class _GoalsStatsViewState extends ConsumerState<GoalsStatsView> {
       child: Column(
         children: [
           SizedBox(
-            height: 200,
+            height: 220,
             child: Stack(
               alignment: Alignment.center,
               children: [
@@ -1465,7 +1510,7 @@ class _GoalsStatsViewState extends ConsumerState<GoalsStatsView> {
       child: Column(
         children: [
           SizedBox(
-            height: 200,
+            height: 240,
             child: BarChart(
               BarChartData(
                 barTouchData: BarTouchData(
@@ -1776,7 +1821,7 @@ class _GoalsStatsViewState extends ConsumerState<GoalsStatsView> {
       child: Column(
         children: [
           SizedBox(
-            height: 150,
+            height: 240,
             child: BarChart(
               BarChartData(
                 barTouchData: BarTouchData(
@@ -1901,7 +1946,7 @@ class _GoalsStatsViewState extends ConsumerState<GoalsStatsView> {
       title: '',
       subtitle: '',
       child: SizedBox(
-        height: 180,
+        height: 240,
         child: LineChart(
           LineChartData(
             lineTouchData: LineTouchData(
@@ -2096,7 +2141,7 @@ class _GoalsStatsViewState extends ConsumerState<GoalsStatsView> {
       child: Column(
         children: [
           SizedBox(
-            height: 240,
+            height: 260,
             child: BarChart(
               BarChartData(
                 barTouchData: BarTouchData(

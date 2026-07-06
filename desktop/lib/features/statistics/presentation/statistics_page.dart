@@ -127,7 +127,7 @@ class _StatisticsPageState extends ConsumerState<StatisticsPage> {
               onHabitChanged: (id) => setState(() => _habitId = id),
             ),
           ),
-          const SizedBox(height: 14),
+          const SizedBox(height: 12),
           if (_scope == _AnalyticsScope.global) ...[
             KeyedSubtree(
               key: _tabsKey,
@@ -138,7 +138,7 @@ class _StatisticsPageState extends ConsumerState<StatisticsPage> {
                 onChanged: (tab) => setState(() => _globalTab = tab),
               ),
             ),
-            const SizedBox(height: 14),
+            const SizedBox(height: 18),
             _globalContent(snapshot),
           ] else ...[
             KeyedSubtree(
@@ -150,7 +150,7 @@ class _StatisticsPageState extends ConsumerState<StatisticsPage> {
                 onChanged: (tab) => setState(() => _habitTab = tab),
               ),
             ),
-            const SizedBox(height: 14),
+            const SizedBox(height: 18),
             if (selectedHabit == null)
               const _EmptyHabitAnalytics()
             else
@@ -222,23 +222,34 @@ class _AnalyticsToolbar extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return Row(
-      children: [
-        Expanded(child: _buildSelectorCard(context)),
-        const SizedBox(width: 12),
-        SizedBox(
-          width: 300,
-          child: EvolveSegmentedControl<_AnalyticsScope>(
-            height: 44,
-            segments: {
-              _AnalyticsScope.global: t.stats.global,
-              _AnalyticsScope.habit: t.stats.singleHabit,
-            },
-            selected: scope,
-            onSelected: onScopeChanged,
-          ),
-        ),
-      ],
+    return LayoutBuilder(
+      builder: (context, constraints) {
+        final scopeControl = EvolveSegmentedControl<_AnalyticsScope>(
+          height: 44,
+          segments: {
+            _AnalyticsScope.global: t.stats.global,
+            _AnalyticsScope.habit: t.stats.singleHabit,
+          },
+          selected: scope,
+          onSelected: onScopeChanged,
+        );
+        if (constraints.maxWidth < 980) {
+          return Column(
+            children: [
+              _buildSelectorCard(context),
+              const SizedBox(height: 10),
+              scopeControl,
+            ],
+          );
+        }
+        return Row(
+          children: [
+            Expanded(child: _buildSelectorCard(context)),
+            const SizedBox(width: 12),
+            SizedBox(width: 300, child: scopeControl),
+          ],
+        );
+      },
     );
   }
 
@@ -395,39 +406,31 @@ class _GlobalInfo extends ConsumerWidget {
         ref.watch(globalCriticalDayRpcProvider).value ?? _criticalDay(snapshot);
     return Column(
       children: [
-        Row(
-          children: [
-            Expanded(
-              child: _Metric(
-                label: t.stats.completionToday,
-                value: '${(snapshot.completionRate * 100).round()}%',
-                detail: t.stats.actionsFraction(
-                  done: snapshot.completedHabits,
-                  total: snapshot.totalHabits,
-                ),
-                color: context.evolveAccent,
-                icon: LucideIcons.activity,
+        _MetricGrid(
+          tiles: [
+            _Metric(
+              label: t.stats.completionToday,
+              value: '${(snapshot.completionRate * 100).round()}%',
+              detail: t.stats.actionsFraction(
+                done: snapshot.completedHabits,
+                total: snapshot.totalHabits,
               ),
+              color: context.evolveAccent,
+              icon: LucideIcons.activity,
             ),
-            const SizedBox(width: 14),
-            Expanded(
-              child: _Metric(
-                label: t.stats.bestStreakLabel,
-                value: t.dashboard.streakDaysShort(n: snapshot.bestStreak),
-                detail: _bestHabit(snapshot),
-                color: EvolveColors.amber,
-                icon: LucideIcons.flame,
-              ),
+            _Metric(
+              label: t.stats.bestStreakLabel,
+              value: t.dashboard.streakDaysShort(n: snapshot.bestStreak),
+              detail: _bestHabit(snapshot),
+              color: EvolveColors.amber,
+              icon: LucideIcons.flame,
             ),
-            const SizedBox(width: 14),
-            Expanded(
-              child: _Metric(
-                label: t.stats.criticalDay,
-                value: _criticalDayLabel(criticalDay),
-                detail: t.stats.completePrioritiesFirst,
-                color: EvolveColors.rose,
-                icon: LucideIcons.circleAlert,
-              ),
+            _Metric(
+              label: t.stats.criticalDay,
+              value: _criticalDayLabel(criticalDay),
+              detail: t.stats.completePrioritiesFirst,
+              color: EvolveColors.rose,
+              icon: LucideIcons.circleAlert,
             ),
           ],
         ),
@@ -440,7 +443,7 @@ class _GlobalInfo extends ConsumerWidget {
               values: _activityValues(snapshot, 90),
             );
             final correlations = _CorrelationPanel(snapshot: snapshot);
-            if (constraints.maxWidth < 980) {
+            if (constraints.maxWidth < 1120) {
               return Column(
                 children: [heatmap, const SizedBox(height: 18), correlations],
               );
@@ -450,7 +453,7 @@ class _GlobalInfo extends ConsumerWidget {
               children: [
                 Expanded(flex: 7, child: heatmap),
                 const SizedBox(width: 18),
-                Expanded(flex: 4, child: correlations),
+                SizedBox(width: 350, child: correlations),
               ],
             );
           },
@@ -486,85 +489,236 @@ class _GlobalTrend extends ConsumerWidget {
         ? 0.0
         : trend.fold<double>(0, (sum, point) => sum + point.value) /
               trend.length;
+    final bestValue = _resolveHabitTitle(
+      snapshot,
+      best?.firstOrNull?['goal_id'] as String?,
+      fallback: _bestHabit(snapshot),
+    );
+    final criticalValue = _resolveHabitTitle(
+      snapshot,
+      critical?.firstOrNull?['goal_id'] as String?,
+      fallback: _criticalHabit(snapshot),
+    );
 
+    return LayoutBuilder(
+      builder: (context, constraints) {
+        final useColumns = constraints.maxWidth >= 1120;
+        final hero = _TrendHeroCard(
+          trend: trend,
+          average: average,
+          delta: delta,
+          timeframe: timeframe,
+          onTimeframeChanged: onTimeframeChanged,
+          chartHeight: useColumns ? 280 : 240,
+          footer: useColumns
+              ? null
+              : Row(
+                  children: [
+                    Expanded(
+                      child: _InlineInsight(
+                        title: t.stats.bestHabit,
+                        value: bestValue,
+                        color: context.evolveAccent,
+                      ),
+                    ),
+                    const SizedBox(width: 12),
+                    Expanded(
+                      child: _InlineInsight(
+                        title: t.stats.criticalArea,
+                        value: criticalValue,
+                        color: EvolveColors.rose,
+                      ),
+                    ),
+                  ],
+                ),
+        );
+        if (!useColumns) return hero;
+        return Row(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Expanded(flex: 7, child: hero),
+            const SizedBox(width: 18),
+            SizedBox(
+              width: 350,
+              child: Column(
+                children: [
+                  _TrendInsightCard(
+                    icon: LucideIcons.trophy,
+                    color: context.evolveAccent,
+                    label: t.stats.bestHabit,
+                    value: bestValue,
+                  ),
+                  const SizedBox(height: 14),
+                  _TrendInsightCard(
+                    icon: LucideIcons.circleAlert,
+                    color: EvolveColors.rose,
+                    label: t.stats.criticalArea,
+                    value: criticalValue,
+                  ),
+                ],
+              ),
+            ),
+          ],
+        );
+      },
+    );
+  }
+}
+
+/// The Performance-Evolution hero card: 22/w800 heading with the timeframe
+/// segmented control in the header row (own line on narrow cards), the big
+/// w900 average with its trend pill and the white fl_chart line underneath.
+class _TrendHeroCard extends StatelessWidget {
+  const _TrendHeroCard({
+    required this.trend,
+    required this.average,
+    required this.delta,
+    required this.timeframe,
+    required this.onTimeframeChanged,
+    required this.chartHeight,
+    this.footer,
+  });
+
+  final List<TrendPoint> trend;
+  final double average;
+  final double delta;
+  final _TrendTimeframe timeframe;
+  final ValueChanged<_TrendTimeframe> onTimeframeChanged;
+  final double chartHeight;
+
+  /// Extra content below the chart (the inline-insight row on stacked
+  /// layouts); wide layouts move the insights to the right rail instead.
+  final Widget? footer;
+
+  @override
+  Widget build(BuildContext context) {
+    final heading = _CardHeading(
+      title: t.stats.trendGlobal,
+      subtitle: t.stats.trendGlobalSubtitle,
+    );
+    final selector = _TrendTimeframeSelector(
+      selected: timeframe,
+      onChanged: onTimeframeChanged,
+    );
     return EvolvePanel(
       radius: 20,
       padding: const EdgeInsets.all(22),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
+      child: LayoutBuilder(
+        builder: (context, constraints) {
+          final inlineSelector = constraints.maxWidth >= 620;
+          return Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              if (inlineSelector)
+                Row(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Expanded(child: heading),
+                    const SizedBox(width: 14),
+                    SizedBox(width: 300, child: selector),
+                  ],
+                )
+              else ...[
+                heading,
+                const SizedBox(height: 18),
+                selector,
+              ],
+              const SizedBox(height: 22),
+              Row(
+                crossAxisAlignment: CrossAxisAlignment.end,
+                children: [
+                  Text(
+                    '${(average * 100).toStringAsFixed(1)}%',
+                    style: TextStyle(
+                      fontSize: 38,
+                      fontWeight: FontWeight.w900,
+                      letterSpacing: -1,
+                      height: 1,
+                      color: context.evolveColors.foreground,
+                    ),
+                  ),
+                  const SizedBox(width: 12),
+                  Padding(
+                    padding: const EdgeInsets.only(bottom: 2),
+                    child: StatusPill(
+                      label: t.stats.vsPrevDay(value: (delta * 100).round()),
+                      color: delta >= 0
+                          ? EvolveColors.success
+                          : EvolveColors.destructive,
+                      icon: delta >= 0
+                          ? LucideIcons.trendingUp
+                          : LucideIcons.trendingDown,
+                    ),
+                  ),
+                ],
+              ),
+              const SizedBox(height: 20),
+              SizedBox(
+                height: chartHeight,
+                child: trend.isEmpty
+                    ? const SizedBox.shrink()
+                    : _TrendLineChart(points: trend),
+              ),
+              if (footer != null) ...[const SizedBox(height: 20), footer!],
+            ],
+          );
+        },
+      ),
+    );
+  }
+}
+
+/// Right-rail counterpart of [_InlineInsight]: a small panel with an icon
+/// chip, uppercase micro-label and the w800 insight value.
+class _TrendInsightCard extends StatelessWidget {
+  const _TrendInsightCard({
+    required this.icon,
+    required this.color,
+    required this.label,
+    required this.value,
+  });
+
+  final IconData icon;
+  final Color color;
+  final String label;
+  final String value;
+
+  @override
+  Widget build(BuildContext context) {
+    return EvolvePanel(
+      child: Row(
         children: [
-          _CardHeading(
-            title: t.stats.trendGlobal,
-            subtitle: t.stats.trendGlobalSubtitle,
-          ),
-          const SizedBox(height: 18),
-          _TrendTimeframeSelector(
-            selected: timeframe,
-            onChanged: onTimeframeChanged,
-          ),
-          const SizedBox(height: 26),
-          Row(
-            crossAxisAlignment: CrossAxisAlignment.end,
-            children: [
-              Text(
-                '${(average * 100).toStringAsFixed(1)}%',
-                style: TextStyle(
-                  fontSize: 38,
-                  fontWeight: FontWeight.w900,
-                  letterSpacing: -1,
-                  height: 1,
-                  color: context.evolveColors.foreground,
-                ),
-              ),
-              const SizedBox(width: 12),
-              Padding(
-                padding: const EdgeInsets.only(bottom: 2),
-                child: StatusPill(
-                  label: t.stats.vsPrevDay(value: (delta * 100).round()),
-                  color: delta >= 0
-                      ? EvolveColors.success
-                      : EvolveColors.destructive,
-                  icon: delta >= 0
-                      ? LucideIcons.trendingUp
-                      : LucideIcons.trendingDown,
-                ),
-              ),
-            ],
-          ),
-          const SizedBox(height: 24),
-          SizedBox(
-            height: 220,
-            child: trend.isEmpty
-                ? const SizedBox.shrink()
-                : _TrendLineChart(points: trend),
-          ),
-          const SizedBox(height: 20),
-          Row(
-            children: [
-              Expanded(
-                child: _InlineInsight(
-                  title: t.stats.bestHabit,
-                  value: _resolveHabitTitle(
-                    snapshot,
-                    best?.firstOrNull?['goal_id'] as String?,
-                    fallback: _bestHabit(snapshot),
+          EvolveIconChip(icon: icon, color: color, size: 38, iconSize: 18),
+          const SizedBox(width: 12),
+          Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(
+                  label.toUpperCase(),
+                  maxLines: 1,
+                  overflow: TextOverflow.ellipsis,
+                  style: TextStyle(
+                    fontSize: 10,
+                    fontWeight: FontWeight.w600,
+                    letterSpacing: 0.5,
+                    color: context.evolveColors.muted,
                   ),
-                  color: context.evolveAccent,
                 ),
-              ),
-              const SizedBox(width: 12),
-              Expanded(
-                child: _InlineInsight(
-                  title: t.stats.criticalArea,
-                  value: _resolveHabitTitle(
-                    snapshot,
-                    critical?.firstOrNull?['goal_id'] as String?,
-                    fallback: _criticalHabit(snapshot),
+                const SizedBox(height: 4),
+                Text(
+                  value,
+                  maxLines: 1,
+                  overflow: TextOverflow.ellipsis,
+                  style: TextStyle(
+                    fontSize: 15,
+                    fontWeight: FontWeight.w800,
+                    letterSpacing: -0.2,
+                    color: color,
                   ),
-                  color: EvolveColors.rose,
                 ),
-              ),
-            ],
+              ],
+            ),
           ),
         ],
       ),
@@ -740,48 +894,88 @@ class _GlobalAlerts extends ConsumerWidget {
       );
     }
 
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: [
-        if (improvement.isNotEmpty) ...[
-          _AlertsSection(
-            icon: LucideIcons.target,
-            iconColor: context.evolveColors.foreground,
-            title: t.statistics.improvementAreas,
-            subtitle: t.statistics.habitsRequiringMoreAttention,
+    final sections = <Widget>[
+      if (improvement.isNotEmpty)
+        _AlertsSection(
+          icon: LucideIcons.target,
+          iconColor: context.evolveColors.foreground,
+          title: t.statistics.improvementAreas,
+          subtitle: t.statistics.habitsRequiringMoreAttention,
+          children: [
+            for (final area in improvement) _ImprovementCard(area: area),
+          ],
+        ),
+      if (failures.isNotEmpty)
+        _AlertsSection(
+          icon: LucideIcons.chartBar,
+          iconColor: EvolveColors.amber,
+          title: t.statistics.failureAnalysis,
+          subtitle: t.statistics.missedDaysPattern,
+          children: [
+            for (final failure in failures) _FailureCard(failure: failure),
+          ],
+        ),
+      if (recovery.isNotEmpty)
+        _AlertsSection(
+          icon: LucideIcons.calendarClock,
+          iconColor: context.evolveColors.foreground,
+          title: t.statistics.recoveryPatterns,
+          subtitle: t.statistics.recoverySpeed,
+          children: [for (final item in recovery) _RecoveryCard(item: item)],
+        ),
+    ];
+
+    return LayoutBuilder(
+      builder: (context, constraints) {
+        // Wide: all section cards in one 18px-gapped row of equal columns.
+        if (constraints.maxWidth >= 1120) {
+          return Row(
+            crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              for (final area in improvement) _ImprovementCard(area: area),
+              for (var i = 0; i < sections.length; i++) ...[
+                if (i > 0) const SizedBox(width: 18),
+                Expanded(child: sections[i]),
+              ],
             ],
-          ),
-          const SizedBox(height: 22),
-        ],
-        if (failures.isNotEmpty) ...[
-          _AlertsSection(
-            icon: LucideIcons.chartBar,
-            iconColor: EvolveColors.amber,
-            title: t.statistics.failureAnalysis,
-            subtitle: t.statistics.missedDaysPattern,
+          );
+        }
+        // Mid: 2-up rows with the remainder full-width below.
+        if (constraints.maxWidth >= 760) {
+          return Column(
             children: [
-              for (final failure in failures) _FailureCard(failure: failure),
+              for (var i = 0; i < sections.length; i += 2) ...[
+                if (i > 0) const SizedBox(height: 18),
+                if (i + 1 < sections.length)
+                  Row(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Expanded(child: sections[i]),
+                      const SizedBox(width: 18),
+                      Expanded(child: sections[i + 1]),
+                    ],
+                  )
+                else
+                  sections[i],
+              ],
             ],
-          ),
-          const SizedBox(height: 22),
-        ],
-        if (recovery.isNotEmpty)
-          _AlertsSection(
-            icon: LucideIcons.calendarClock,
-            iconColor: context.evolveColors.foreground,
-            title: t.statistics.recoveryPatterns,
-            subtitle: t.statistics.recoverySpeed,
-            children: [for (final item in recovery) _RecoveryCard(item: item)],
-          ),
-      ],
+          );
+        }
+        return Column(
+          children: [
+            for (var i = 0; i < sections.length; i++) ...[
+              if (i > 0) const SizedBox(height: 18),
+              sections[i],
+            ],
+          ],
+        );
+      },
     );
   }
 }
 
-/// Alert-tab section: tinted lucide icon + 16/w700 title, a muted 13px
-/// subtitle sentence and the cards laid side by side on wide layouts
+/// Alert-tab section card: icon chip + 16/w700 title and a muted 13px
+/// subtitle in the panel header, then the item cards — stacked when the
+/// panel is a narrow column, side by side when it spans the full page width
 /// (mobile shows them as a swipe carousel).
 class _AlertsSection extends StatelessWidget {
   const _AlertsSection({
@@ -800,60 +994,97 @@ class _AlertsSection extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: [
-        Row(
-          children: [
-            Icon(icon, size: 17, color: iconColor),
-            const SizedBox(width: 8),
-            Expanded(
-              child: Text(
-                title,
-                style: TextStyle(
-                  fontSize: 16,
-                  fontWeight: FontWeight.w700,
-                  letterSpacing: -0.2,
-                  color: context.evolveColors.foreground,
+    return EvolvePanel(
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Row(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              EvolveIconChip(
+                icon: icon,
+                color: iconColor,
+                size: 34,
+                iconSize: 16,
+              ),
+              const SizedBox(width: 12),
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(
+                      title,
+                      style: TextStyle(
+                        fontSize: 16,
+                        fontWeight: FontWeight.w700,
+                        letterSpacing: -0.2,
+                        color: context.evolveColors.foreground,
+                      ),
+                    ),
+                    const SizedBox(height: 2),
+                    Text(
+                      subtitle,
+                      style: TextStyle(
+                        fontSize: 13,
+                        fontWeight: FontWeight.w500,
+                        color: context.evolveColors.muted,
+                      ),
+                    ),
+                  ],
                 ),
               ),
-            ),
-          ],
-        ),
-        const SizedBox(height: 4),
-        Text(
-          subtitle,
-          style: TextStyle(
-            fontSize: 13,
-            fontWeight: FontWeight.w500,
-            color: context.evolveColors.muted,
+            ],
           ),
-        ),
-        const SizedBox(height: 14),
-        LayoutBuilder(
-          builder: (context, constraints) {
-            if (constraints.maxWidth < 760 || children.length == 1) {
-              return Column(
+          const SizedBox(height: 14),
+          LayoutBuilder(
+            builder: (context, constraints) {
+              if (constraints.maxWidth < 700 || children.length == 1) {
+                return Column(
+                  children: [
+                    for (var i = 0; i < children.length; i++) ...[
+                      if (i > 0) const SizedBox(height: 12),
+                      children[i],
+                    ],
+                  ],
+                );
+              }
+              return Row(
+                crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
                   for (var i = 0; i < children.length; i++) ...[
-                    if (i > 0) const SizedBox(height: 12),
-                    children[i],
+                    if (i > 0) const SizedBox(width: 14),
+                    Expanded(child: children[i]),
                   ],
                 ],
               );
-            }
-            return Row(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                for (var i = 0; i < children.length; i++) ...[
-                  if (i > 0) const SizedBox(width: 14),
-                  Expanded(child: children[i]),
-                ],
-              ],
-            );
-          },
+            },
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+/// Raised inner card for items nested inside a section panel — same recipe
+/// as [_InlineInsight] (panelRaised fill, radius 12, half-alpha border).
+class _RaisedCard extends StatelessWidget {
+  const _RaisedCard({required this.child});
+
+  final Widget child;
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      width: double.infinity,
+      padding: const EdgeInsets.all(16),
+      decoration: BoxDecoration(
+        color: context.evolveColors.panelRaised,
+        borderRadius: BorderRadius.circular(12),
+        border: Border.all(
+          color: context.evolveColors.border.withValues(alpha: 0.5),
         ),
-      ],
+      ),
+      child: child,
     );
   }
 }
@@ -925,8 +1156,7 @@ class _ImprovementCard extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return EvolvePanel(
-      padding: const EdgeInsets.all(16),
+    return _RaisedCard(
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
@@ -1010,8 +1240,7 @@ class _FailureCard extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return EvolvePanel(
-      padding: const EdgeInsets.all(16),
+    return _RaisedCard(
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
@@ -1063,8 +1292,7 @@ class _RecoveryCard extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return EvolvePanel(
-      padding: const EdgeInsets.all(16),
+    return _RaisedCard(
       child: Row(
         children: [
           _HabitDot(color: item.color),
@@ -1147,18 +1375,39 @@ class _GlobalHabitsState extends ConsumerState<_GlobalHabits> {
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          _CardHeading(
-            title: t.stats.performancePerHabit,
-            subtitle: t.stats.performancePerHabitSubtitle,
-          ),
-          const SizedBox(height: 16),
-          ConstrainedBox(
-            constraints: const BoxConstraints(maxWidth: 380),
-            child: EvolveSegmentedControl<_HabitSort>(
-              segments: {for (final s in _HabitSort.values) s: _sortLabel(s)},
-              selected: _sort,
-              onSelected: (s) => setState(() => _sort = s),
-            ),
+          LayoutBuilder(
+            builder: (context, constraints) {
+              final heading = _CardHeading(
+                title: t.stats.performancePerHabit,
+                subtitle: t.stats.performancePerHabitSubtitle,
+              );
+              final sortControl = EvolveSegmentedControl<_HabitSort>(
+                segments: {for (final s in _HabitSort.values) s: _sortLabel(s)},
+                selected: _sort,
+                onSelected: (s) => setState(() => _sort = s),
+              );
+              if (constraints.maxWidth < 640) {
+                return Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    heading,
+                    const SizedBox(height: 14),
+                    ConstrainedBox(
+                      constraints: const BoxConstraints(maxWidth: 380),
+                      child: sortControl,
+                    ),
+                  ],
+                );
+              }
+              return Row(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Expanded(child: heading),
+                  const SizedBox(width: 14),
+                  SizedBox(width: 340, child: sortControl),
+                ],
+              );
+            },
           ),
           const SizedBox(height: 18),
           statsAsync.when(
@@ -1189,7 +1438,7 @@ class _GlobalHabitsState extends ConsumerState<_GlobalHabits> {
                     ),
                     if (row != sorted.last)
                       Divider(
-                        height: 22,
+                        height: 8,
                         color: context.evolveColors.border.withValues(
                           alpha: 0.5,
                         ),
@@ -1205,71 +1454,92 @@ class _GlobalHabitsState extends ConsumerState<_GlobalHabits> {
   }
 }
 
-class _HabitStatsRow extends StatelessWidget {
+class _HabitStatsRow extends StatefulWidget {
   const _HabitStatsRow({required this.row, required this.color});
 
   final Map<String, dynamic> row;
   final Color color;
 
   @override
+  State<_HabitStatsRow> createState() => _HabitStatsRowState();
+}
+
+class _HabitStatsRowState extends State<_HabitStatsRow> {
+  bool _hovered = false;
+
+  @override
   Widget build(BuildContext context) {
-    final rate = ((row['rate'] as num?) ?? 0).toDouble();
-    final best = ((row['best_streak'] as num?) ?? 0).toInt();
-    final worst = ((row['worst_streak'] as num?) ?? 0).toInt();
-    final title = (row['title'] as String?) ?? '';
-    return Row(
-      children: [
-        _HabitDot(color: color),
-        const SizedBox(width: 11),
-        Expanded(
-          child: Text(
-            title,
-            maxLines: 1,
-            overflow: TextOverflow.ellipsis,
-            style: TextStyle(
-              fontSize: 14,
-              fontWeight: FontWeight.w600,
-              letterSpacing: -0.2,
-              color: context.evolveColors.foreground,
+    final rate = ((widget.row['rate'] as num?) ?? 0).toDouble();
+    final best = ((widget.row['best_streak'] as num?) ?? 0).toInt();
+    final worst = ((widget.row['worst_streak'] as num?) ?? 0).toInt();
+    final title = (widget.row['title'] as String?) ?? '';
+    return MouseRegion(
+      onEnter: (_) => setState(() => _hovered = true),
+      onExit: (_) => setState(() => _hovered = false),
+      child: AnimatedContainer(
+        duration: const Duration(milliseconds: 150),
+        padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 8),
+        decoration: BoxDecoration(
+          color: _hovered
+              ? context.evolveColors.panelRaised
+              : Colors.transparent,
+          borderRadius: BorderRadius.circular(10),
+        ),
+        child: Row(
+          children: [
+            _HabitDot(color: widget.color),
+            const SizedBox(width: 11),
+            Expanded(
+              child: Text(
+                title,
+                maxLines: 1,
+                overflow: TextOverflow.ellipsis,
+                style: TextStyle(
+                  fontSize: 14,
+                  fontWeight: FontWeight.w600,
+                  letterSpacing: -0.2,
+                  color: context.evolveColors.foreground,
+                ),
+              ),
             ),
-          ),
-        ),
-        SizedBox(
-          width: 150,
-          child: LinearProgressIndicator(
-            value: (rate / 100).clamp(0, 1),
-            minHeight: 6,
-            color: color,
-            backgroundColor: context.evolveColors.panelSoft,
-            borderRadius: BorderRadius.circular(8),
-          ),
-        ),
-        const SizedBox(width: 12),
-        SizedBox(
-          width: 42,
-          child: Text(
-            '${rate.round()}%',
-            textAlign: TextAlign.end,
-            style: TextStyle(
-              fontSize: 13,
-              fontWeight: FontWeight.w700,
-              color: context.evolveColors.foreground,
+            SizedBox(
+              width: 150,
+              child: LinearProgressIndicator(
+                value: (rate / 100).clamp(0, 1),
+                minHeight: 6,
+                color: widget.color,
+                backgroundColor: context.evolveColors.panelSoft,
+                borderRadius: BorderRadius.circular(8),
+              ),
             ),
-          ),
+            const SizedBox(width: 12),
+            SizedBox(
+              width: 42,
+              child: Text(
+                '${rate.round()}%',
+                textAlign: TextAlign.end,
+                style: TextStyle(
+                  fontSize: 13,
+                  fontWeight: FontWeight.w700,
+                  color: context.evolveColors.foreground,
+                ),
+              ),
+            ),
+            const SizedBox(width: 16),
+            _StatBadge(
+              label: t.stats.bestStreakLabel,
+              value: '$best',
+              color: EvolveColors.amber,
+            ),
+            const SizedBox(width: 12),
+            _StatBadge(
+              label: t.stats.worstStreakLabel,
+              value: '$worst',
+              color: EvolveColors.rose,
+            ),
+          ],
         ),
-        const SizedBox(width: 16),
-        _StatBadge(
-          label: t.stats.bestStreakLabel,
-          value: '$best',
-          color: EvolveColors.amber,
-        ),
-        const SizedBox(width: 12),
-        _StatBadge(
-          label: t.stats.worstStreakLabel,
-          value: '$worst',
-          color: EvolveColors.rose,
-        ),
-      ],
+      ),
     );
   }
 }
@@ -1324,36 +1594,28 @@ class _GlobalMood extends StatelessWidget {
     final averageEnergy = _averageCheckIn(moods, (mood) => mood.energy);
     return Column(
       children: [
-        Row(
-          children: [
-            Expanded(
-              child: _Metric(
-                label: t.stats.avgMood,
-                value: '${averageMood.toStringAsFixed(1)}/10',
-                detail: t.stats.checkInsAvailable(count: moods.length),
-                color: EvolveColors.violet,
-                icon: LucideIcons.smile,
-              ),
+        _MetricGrid(
+          tiles: [
+            _Metric(
+              label: t.stats.avgMood,
+              value: '${averageMood.toStringAsFixed(1)}/10',
+              detail: t.stats.checkInsAvailable(count: moods.length),
+              color: EvolveColors.violet,
+              icon: LucideIcons.smile,
             ),
-            const SizedBox(width: 14),
-            Expanded(
-              child: _Metric(
-                label: t.stats.avgEnergy,
-                value: '${averageEnergy.toStringAsFixed(1)}/10',
-                detail: t.stats.checkInsAvailable(count: moods.length),
-                color: EvolveColors.amber,
-                icon: LucideIcons.zap,
-              ),
+            _Metric(
+              label: t.stats.avgEnergy,
+              value: '${averageEnergy.toStringAsFixed(1)}/10',
+              detail: t.stats.checkInsAvailable(count: moods.length),
+              color: EvolveColors.amber,
+              icon: LucideIcons.zap,
             ),
-            const SizedBox(width: 14),
-            Expanded(
-              child: _Metric(
-                label: t.stats.resilientHabit,
-                value: _bestHabit(snapshot),
-                detail: t.stats.completedEvenHardDays,
-                color: context.evolveAccent,
-                icon: LucideIcons.heartPulse,
-              ),
+            _Metric(
+              label: t.stats.resilientHabit,
+              value: _bestHabit(snapshot),
+              detail: t.stats.completedEvenHardDays,
+              color: context.evolveAccent,
+              icon: LucideIcons.heartPulse,
             ),
           ],
         ),
@@ -1393,46 +1655,57 @@ class _HabitOverview extends ConsumerWidget {
 
     return Column(
       children: [
-        Row(
-          children: [
-            Expanded(
-              child: _Metric(
-                label: t.stats.completion,
-                value: '$completionRate%',
-                detail: t.stats.actionsFraction(
-                  done: totalCompletions,
-                  total: totalActiveDays,
-                ),
-                color: habit.color,
-                icon: LucideIcons.target,
+        _MetricGrid(
+          tiles: [
+            _Metric(
+              label: t.stats.completion,
+              value: '$completionRate%',
+              detail: t.stats.actionsFraction(
+                done: totalCompletions,
+                total: totalActiveDays,
               ),
+              color: habit.color,
+              icon: LucideIcons.target,
             ),
-            const SizedBox(width: 14),
-            Expanded(
-              child: _Metric(
-                label: t.stats.currentStreak,
-                value: t.dashboard.streakDaysShort(n: currentStreak),
-                detail: t.stats.currentStreakDetail,
-                color: EvolveColors.amber,
-                icon: LucideIcons.flame,
-              ),
+            _Metric(
+              label: t.stats.currentStreak,
+              value: t.dashboard.streakDaysShort(n: currentStreak),
+              detail: t.stats.currentStreakDetail,
+              color: EvolveColors.amber,
+              icon: LucideIcons.flame,
             ),
-            const SizedBox(width: 14),
-            Expanded(
-              child: _Metric(
-                label: t.statistics.missed,
-                value: '$missedDays',
-                detail: t.stats.trend30Detail,
-                color: EvolveColors.rose,
-                icon: LucideIcons.circleAlert,
-              ),
+            _Metric(
+              label: t.statistics.missed,
+              value: '$missedDays',
+              detail: t.stats.trend30Detail,
+              color: EvolveColors.rose,
+              icon: LucideIcons.circleAlert,
             ),
           ],
         ),
         const SizedBox(height: 18),
-        _Last30DaysGrid(statuses: last30),
-        const SizedBox(height: 18),
-        _HabitCorrelationsPanel(habit: habit, snapshot: snapshot),
+        LayoutBuilder(
+          builder: (context, constraints) {
+            final grid = _Last30DaysGrid(statuses: last30);
+            final correlations = _HabitCorrelationsPanel(
+              habit: habit,
+              snapshot: snapshot,
+            );
+            if (constraints.maxWidth < 1120) {
+              return Column(
+                children: [grid, const SizedBox(height: 18), correlations],
+              );
+            }
+            return Row(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Expanded(flex: 7, child: grid),
+                const SizedBox(width: 18),
+                SizedBox(width: 350, child: correlations),
+              ],
+            );
+          },
+        ),
       ],
     );
   }
@@ -1804,97 +2077,125 @@ class _HabitPerformance extends ConsumerWidget {
         ref.watch(habitPerformanceRpcProvider(habit.id)).value ?? const [];
     final extremes = _weekdayExtremes(rpc);
 
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: [
-        EvolvePanel(
-          child: Column(
+    final bars = EvolvePanel(
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          SectionHeading(
+            title: t.stats.performancePerDay,
+            subtitle: t.stats.performancePerDaySubtitle,
+          ),
+          const SizedBox(height: 18),
+          for (var index = 0; index < labels.length; index++) ...[
+            Row(
+              children: [
+                SizedBox(
+                  width: 44,
+                  child: Text(
+                    labels[index],
+                    style: TextStyle(
+                      fontSize: 12,
+                      fontWeight: FontWeight.w600,
+                      color: context.evolveColors.muted,
+                    ),
+                  ),
+                ),
+                Expanded(
+                  child: LinearProgressIndicator(
+                    value: _rpcWeekdayCompletion(
+                      rpc,
+                      index + 1,
+                      fallback: _habitWeekdayCompletion(
+                        snapshot,
+                        habit.id,
+                        index + 1,
+                      ),
+                    ),
+                    minHeight: 7,
+                    color: habit.color,
+                    backgroundColor: context.evolveColors.panelSoft,
+                    borderRadius: BorderRadius.circular(8),
+                  ),
+                ),
+                const SizedBox(width: 12),
+                SizedBox(
+                  width: 36,
+                  child: Text(
+                    '${(_rpcWeekdayCompletion(rpc, index + 1, fallback: _habitWeekdayCompletion(snapshot, habit.id, index + 1)) * 100).round()}%',
+                    style: TextStyle(
+                      fontSize: 12,
+                      fontWeight: FontWeight.w700,
+                      color: context.evolveColors.foreground,
+                    ),
+                  ),
+                ),
+              ],
+            ),
+            if (index < labels.length - 1) const SizedBox(height: 14),
+          ],
+        ],
+      ),
+    );
+    final highlights = <Widget>[
+      if (extremes.strongest != null)
+        _AlertCard(
+          title:
+              '${t.statistics.strongestDay}: ${_weekdayName(extremes.strongest!.dow)}',
+          detail: t.stats.strongestDayDetail(
+            pct: extremes.strongest!.pct,
+            done: extremes.strongest!.done,
+            total: extremes.strongest!.total,
+          ),
+          color: context.evolveAccent,
+          icon: LucideIcons.trophy,
+        ),
+      if (extremes.weakest != null)
+        _AlertCard(
+          title:
+              '${t.statistics.weakestDay}: ${_weekdayName(extremes.weakest!.dow)}',
+          detail: t.stats.weakestDayDetail(
+            pct: extremes.weakest!.pct,
+            done: extremes.weakest!.done,
+            total: extremes.weakest!.total,
+          ),
+          color: EvolveColors.rose,
+          icon: LucideIcons.circleAlert,
+        ),
+    ];
+
+    return LayoutBuilder(
+      builder: (context, constraints) {
+        if (constraints.maxWidth < 1120 || highlights.isEmpty) {
+          return Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              SectionHeading(
-                title: t.stats.performancePerDay,
-                subtitle: t.stats.performancePerDaySubtitle,
-              ),
-              const SizedBox(height: 18),
-              for (var index = 0; index < labels.length; index++) ...[
-                Row(
-                  children: [
-                    SizedBox(
-                      width: 44,
-                      child: Text(
-                        labels[index],
-                        style: TextStyle(
-                          fontSize: 12,
-                          fontWeight: FontWeight.w600,
-                          color: context.evolveColors.muted,
-                        ),
-                      ),
-                    ),
-                    Expanded(
-                      child: LinearProgressIndicator(
-                        value: _rpcWeekdayCompletion(
-                          rpc,
-                          index + 1,
-                          fallback: _habitWeekdayCompletion(
-                            snapshot,
-                            habit.id,
-                            index + 1,
-                          ),
-                        ),
-                        minHeight: 7,
-                        color: habit.color,
-                        backgroundColor: context.evolveColors.panelSoft,
-                        borderRadius: BorderRadius.circular(8),
-                      ),
-                    ),
-                    const SizedBox(width: 12),
-                    SizedBox(
-                      width: 36,
-                      child: Text(
-                        '${(_rpcWeekdayCompletion(rpc, index + 1, fallback: _habitWeekdayCompletion(snapshot, habit.id, index + 1)) * 100).round()}%',
-                        style: TextStyle(
-                          fontSize: 12,
-                          fontWeight: FontWeight.w700,
-                          color: context.evolveColors.foreground,
-                        ),
-                      ),
-                    ),
-                  ],
-                ),
-                if (index < labels.length - 1) const SizedBox(height: 14),
+              bars,
+              for (final card in highlights) ...[
+                const SizedBox(height: 12),
+                card,
               ],
             ],
-          ),
-        ),
-        if (extremes.strongest != null) ...[
-          const SizedBox(height: 12),
-          _AlertCard(
-            title:
-                '${t.statistics.strongestDay}: ${_weekdayName(extremes.strongest!.dow)}',
-            detail: t.stats.strongestDayDetail(
-              pct: extremes.strongest!.pct,
-              done: extremes.strongest!.done,
-              total: extremes.strongest!.total,
+          );
+        }
+        return Row(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Expanded(flex: 7, child: bars),
+            const SizedBox(width: 18),
+            SizedBox(
+              width: 350,
+              child: Column(
+                children: [
+                  for (var i = 0; i < highlights.length; i++) ...[
+                    if (i > 0) const SizedBox(height: 14),
+                    highlights[i],
+                  ],
+                ],
+              ),
             ),
-            color: context.evolveAccent,
-            icon: LucideIcons.trophy,
-          ),
-        ],
-        if (extremes.weakest != null) ...[
-          const SizedBox(height: 12),
-          _AlertCard(
-            title:
-                '${t.statistics.weakestDay}: ${_weekdayName(extremes.weakest!.dow)}',
-            detail: t.stats.weakestDayDetail(
-              pct: extremes.weakest!.pct,
-              done: extremes.weakest!.done,
-              total: extremes.weakest!.total,
-            ),
-            color: EvolveColors.rose,
-            icon: LucideIcons.circleAlert,
-          ),
-        ],
-      ],
+          ],
+        );
+      },
     );
   }
 }
@@ -1950,135 +2251,146 @@ class _HabitImprovement extends ConsumerWidget {
       broken.add((days: (raw['days'] as num?)?.toInt() ?? 0, date: date));
     }
 
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: [
-        EvolvePanel(
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
+    final worstPanel = EvolvePanel(
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Row(
             children: [
-              Row(
-                children: [
-                  const EvolveIconChip(
-                    icon: LucideIcons.trendingDown,
-                    color: EvolveColors.destructive,
-                    size: 36,
-                    iconSize: 18,
-                  ),
-                  const SizedBox(width: 12),
-                  Expanded(
-                    child: Text(
-                      t.statistics.worstNegativeStreak,
-                      style: Theme.of(context).textTheme.titleLarge,
-                    ),
-                  ),
-                ],
+              const EvolveIconChip(
+                icon: LucideIcons.trendingDown,
+                color: EvolveColors.destructive,
+                size: 36,
+                iconSize: 18,
               ),
-              const SizedBox(height: 16),
+              const SizedBox(width: 12),
+              Expanded(
+                child: Text(
+                  t.statistics.worstNegativeStreak,
+                  style: Theme.of(context).textTheme.titleLarge,
+                ),
+              ),
+            ],
+          ),
+          const SizedBox(height: 16),
+          Row(
+            crossAxisAlignment: CrossAxisAlignment.center,
+            children: [
+              Text(
+                '$worstNegativeDays',
+                style: const TextStyle(
+                  color: EvolveColors.destructive,
+                  fontSize: 44,
+                  fontWeight: FontWeight.w800,
+                  letterSpacing: -1,
+                  height: 1,
+                ),
+              ),
+              const SizedBox(width: 16),
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(
+                      t.statistics.missedConsecutiveDays,
+                      style: Theme.of(context).textTheme.bodyMedium,
+                    ),
+                    if (worstStart != null) ...[
+                      const SizedBox(height: 2),
+                      Text(
+                        '${t.statistics.startedOn} ${_shortDate(worstStart)}',
+                        style: Theme.of(context).textTheme.bodySmall,
+                      ),
+                    ],
+                  ],
+                ),
+              ),
+            ],
+          ),
+        ],
+      ),
+    );
+    final brokenPanel = EvolvePanel(
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Text(
+            t.statistics.brokenStreaks,
+            style: Theme.of(context).textTheme.titleLarge,
+          ),
+          const SizedBox(height: 14),
+          if (broken.isEmpty)
+            Text(
+              t.statistics.noBrokenStreaks,
+              style: Theme.of(context).textTheme.bodySmall,
+            )
+          else
+            for (final b in broken) ...[
               Row(
-                crossAxisAlignment: CrossAxisAlignment.center,
                 children: [
-                  Text(
-                    '$worstNegativeDays',
-                    style: const TextStyle(
-                      color: EvolveColors.destructive,
-                      fontSize: 44,
-                      fontWeight: FontWeight.w800,
-                      letterSpacing: -1,
-                      height: 1,
+                  Container(
+                    width: 40,
+                    height: 40,
+                    alignment: Alignment.center,
+                    decoration: BoxDecoration(
+                      color: EvolveColors.destructive.withValues(alpha: 0.12),
+                      shape: BoxShape.circle,
+                    ),
+                    child: Text(
+                      '${b.days}',
+                      style: const TextStyle(
+                        color: EvolveColors.destructive,
+                        fontWeight: FontWeight.w800,
+                      ),
                     ),
                   ),
-                  const SizedBox(width: 16),
+                  const SizedBox(width: 14),
                   Expanded(
                     child: Column(
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
                         Text(
-                          t.statistics.missedConsecutiveDays,
-                          style: Theme.of(context).textTheme.bodyMedium,
-                        ),
-                        if (worstStart != null) ...[
-                          const SizedBox(height: 2),
-                          Text(
-                            '${t.statistics.startedOn} ${_shortDate(worstStart)}',
-                            style: Theme.of(context).textTheme.bodySmall,
+                          t.stats.brokenStreakItem(days: b.days),
+                          style: TextStyle(
+                            fontSize: 14,
+                            fontWeight: FontWeight.w600,
+                            letterSpacing: -0.2,
+                            color: context.evolveColors.foreground,
                           ),
-                        ],
+                        ),
+                        const SizedBox(height: 2),
+                        Text(
+                          _shortDate(b.date),
+                          style: Theme.of(context).textTheme.bodySmall,
+                        ),
                       ],
                     ),
                   ),
                 ],
               ),
+              const SizedBox(height: 12),
             ],
-          ),
-        ),
-        const SizedBox(height: 16),
-        EvolvePanel(
-          child: Column(
+        ],
+      ),
+    );
+
+    return LayoutBuilder(
+      builder: (context, constraints) {
+        if (constraints.maxWidth < 1120) {
+          return Column(
             crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              Text(
-                t.statistics.brokenStreaks,
-                style: Theme.of(context).textTheme.titleLarge,
-              ),
-              const SizedBox(height: 14),
-              if (broken.isEmpty)
-                Text(
-                  t.statistics.noBrokenStreaks,
-                  style: Theme.of(context).textTheme.bodySmall,
-                )
-              else
-                for (final b in broken) ...[
-                  Row(
-                    children: [
-                      Container(
-                        width: 40,
-                        height: 40,
-                        alignment: Alignment.center,
-                        decoration: BoxDecoration(
-                          color: EvolveColors.destructive.withValues(
-                            alpha: 0.12,
-                          ),
-                          shape: BoxShape.circle,
-                        ),
-                        child: Text(
-                          '${b.days}',
-                          style: const TextStyle(
-                            color: EvolveColors.destructive,
-                            fontWeight: FontWeight.w800,
-                          ),
-                        ),
-                      ),
-                      const SizedBox(width: 14),
-                      Expanded(
-                        child: Column(
-                          crossAxisAlignment: CrossAxisAlignment.start,
-                          children: [
-                            Text(
-                              t.stats.brokenStreakItem(days: b.days),
-                              style: TextStyle(
-                                fontSize: 14,
-                                fontWeight: FontWeight.w600,
-                                letterSpacing: -0.2,
-                                color: context.evolveColors.foreground,
-                              ),
-                            ),
-                            const SizedBox(height: 2),
-                            Text(
-                              _shortDate(b.date),
-                              style: Theme.of(context).textTheme.bodySmall,
-                            ),
-                          ],
-                        ),
-                      ),
-                    ],
-                  ),
-                  const SizedBox(height: 12),
-                ],
-            ],
-          ),
-        ),
-      ],
+            children: [worstPanel, const SizedBox(height: 16), brokenPanel],
+          );
+        }
+        return Row(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Expanded(child: worstPanel),
+            const SizedBox(width: 18),
+            Expanded(child: brokenPanel),
+          ],
+        );
+      },
     );
   }
 }
@@ -2114,58 +2426,43 @@ class _HabitMood extends ConsumerWidget {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        Row(
-          children: [
-            Expanded(
-              child: _Metric(
-                label: t.statistics.moodCorrelation,
-                value: '${correlation.sensitivity}%',
-                detail: correlation.sensitivity > 10
-                    ? t.statistics.positive
-                    : t.statistics.neutral,
-                color: EvolveColors.violet,
-                icon: LucideIcons.heartPulse,
-              ),
+        _MetricGrid(
+          tiles: [
+            _Metric(
+              label: t.statistics.moodCorrelation,
+              value: '${correlation.sensitivity}%',
+              detail: correlation.sensitivity > 10
+                  ? t.statistics.positive
+                  : t.statistics.neutral,
+              color: EvolveColors.violet,
+              icon: LucideIcons.heartPulse,
             ),
-            const SizedBox(width: 14),
-            Expanded(
-              child: _Metric(
-                label: t.stats.resilience,
-                value: '${correlation.resilience}%',
-                detail: correlation.resilience > 50
-                    ? t.statistics.high
-                    : t.statistics.low,
-                color: context.evolveAccent,
-                icon: LucideIcons.zap,
-              ),
+            _Metric(
+              label: t.stats.resilience,
+              value: '${correlation.resilience}%',
+              detail: correlation.resilience > 50
+                  ? t.statistics.high
+                  : t.statistics.low,
+              color: context.evolveAccent,
+              icon: LucideIcons.zap,
             ),
-          ],
-        ),
-        const SizedBox(height: 14),
-        Row(
-          children: [
-            Expanded(
-              child: _Metric(
-                label: t.statistics.avgMood,
-                value: correlation.avgMoodDone.toStringAsFixed(1),
-                detail: t.statistics.onCompletedDays,
-                color: correlation.avgMoodDone < 4
-                    ? EvolveColors.rose
-                    : context.evolveAccent,
-                icon: LucideIcons.smile,
-              ),
+            _Metric(
+              label: t.statistics.avgMood,
+              value: correlation.avgMoodDone.toStringAsFixed(1),
+              detail: t.statistics.onCompletedDays,
+              color: correlation.avgMoodDone < 4
+                  ? EvolveColors.rose
+                  : context.evolveAccent,
+              icon: LucideIcons.smile,
             ),
-            const SizedBox(width: 14),
-            Expanded(
-              child: _Metric(
-                label: t.statistics.avgEnergy,
-                value: correlation.avgEnergyDone.toStringAsFixed(1),
-                detail: t.statistics.onCompletedDays,
-                color: correlation.avgEnergyDone < 4
-                    ? EvolveColors.rose
-                    : EvolveColors.amber,
-                icon: LucideIcons.zap,
-              ),
+            _Metric(
+              label: t.statistics.avgEnergy,
+              value: correlation.avgEnergyDone.toStringAsFixed(1),
+              detail: t.statistics.onCompletedDays,
+              color: correlation.avgEnergyDone < 4
+                  ? EvolveColors.rose
+                  : EvolveColors.amber,
+              icon: LucideIcons.zap,
             ),
           ],
         ),
@@ -2178,9 +2475,33 @@ class _HabitMood extends ConsumerWidget {
           ),
         ],
         const SizedBox(height: 18),
-        _CompletedVsMissedPanel(correlation: correlation),
-        const SizedBox(height: 16),
-        _PerformancePerLevelPanel(correlation: correlation),
+        LayoutBuilder(
+          builder: (context, constraints) {
+            final completedVsMissed = _CompletedVsMissedPanel(
+              correlation: correlation,
+            );
+            final perLevel = _PerformancePerLevelPanel(
+              correlation: correlation,
+            );
+            if (constraints.maxWidth < 1120) {
+              return Column(
+                children: [
+                  completedVsMissed,
+                  const SizedBox(height: 16),
+                  perLevel,
+                ],
+              );
+            }
+            return Row(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Expanded(child: completedVsMissed),
+                const SizedBox(width: 18),
+                Expanded(child: perLevel),
+              ],
+            );
+          },
+        ),
         const SizedBox(height: 16),
         Center(
           child: Text(
@@ -2391,6 +2712,35 @@ class _LevelBar extends StatelessWidget {
           ),
         ),
       ],
+    );
+  }
+}
+
+/// Dashboard-style metric grid: 14px-gapped Wrap that lays the [_Metric]
+/// tiles 4-up on wide layouts (>=1080) and 2-up below, capped at the tile
+/// count so a 3-tile row still fills the full width.
+class _MetricGrid extends StatelessWidget {
+  const _MetricGrid({required this.tiles});
+
+  final List<Widget> tiles;
+
+  @override
+  Widget build(BuildContext context) {
+    return LayoutBuilder(
+      builder: (context, constraints) {
+        final maxColumns = constraints.maxWidth >= 1080 ? 4 : 2;
+        final columns = tiles.length < maxColumns ? tiles.length : maxColumns;
+        const spacing = 14.0;
+        final cardWidth =
+            (constraints.maxWidth - spacing * (columns - 1)) / columns;
+        return Wrap(
+          spacing: spacing,
+          runSpacing: spacing,
+          children: [
+            for (final tile in tiles) SizedBox(width: cardWidth, child: tile),
+          ],
+        );
+      },
     );
   }
 }

@@ -62,41 +62,80 @@ class _HabitsPageState extends ConsumerState<HabitsPage> {
         children: [
           _Summary(snapshot: snapshot),
           const SizedBox(height: 18),
-          EvolveSegmentedControl<_HabitSurface>(
-            height: 44,
-            segments: {
-              _HabitSurface.protocol: t.habitsPage.tabProtocol,
-              _HabitSurface.calendar: t.habitsPage.tabCalendar,
+          LayoutBuilder(
+            builder: (context, constraints) {
+              final useColumns = constraints.maxWidth >= 1120;
+              if (useColumns) {
+                // Desktop-first composition (mirrors the dashboard): protocol
+                // and calendar are visible side by side, no surface switcher.
+                return Row(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Expanded(
+                      flex: 6,
+                      child: _protocolSurface(snapshot, wide: true),
+                    ),
+                    const SizedBox(width: 18),
+                    Expanded(
+                      flex: 5,
+                      child: _calendarSurface(snapshot, wide: true),
+                    ),
+                  ],
+                );
+              }
+              // Narrow windows keep the segmented Protocol/Calendar switcher.
+              return Column(
+                crossAxisAlignment: CrossAxisAlignment.stretch,
+                children: [
+                  EvolveSegmentedControl<_HabitSurface>(
+                    height: 44,
+                    segments: {
+                      _HabitSurface.protocol: t.habitsPage.tabProtocol,
+                      _HabitSurface.calendar: t.habitsPage.tabCalendar,
+                    },
+                    selected: _surface,
+                    onSelected: (surface) => setState(() => _surface = surface),
+                  ),
+                  const SizedBox(height: 14),
+                  if (_surface == _HabitSurface.protocol)
+                    _protocolSurface(snapshot, wide: false)
+                  else
+                    _calendarSurface(snapshot, wide: false),
+                ],
+              );
             },
-            selected: _surface,
-            onSelected: (surface) => setState(() => _surface = surface),
           ),
-          const SizedBox(height: 14),
-          if (_surface == _HabitSurface.protocol)
-            _ProtocolPanel(
-              snapshot: snapshot,
-              onToggle: (id) => ref
-                  .read(dashboardControllerProvider.notifier)
-                  .toggleHabit(id),
-              onEdit: _openHabitEditor,
-              onDelete: _deleteHabit,
-              onReorder: (oldIndex, newIndex) => ref
-                  .read(dashboardControllerProvider.notifier)
-                  .reorderHabits(oldIndex, newIndex),
-            )
-          else
-            _CalendarPanel(
-              snapshot: snapshot,
-              anchor: _anchor,
-              view: _calendarView,
-              onViewChanged: (view) => setState(() => _calendarView = view),
-              onPrevious: () => setState(() => _anchor = _shiftAnchor(-1)),
-              onNext: () => setState(() => _anchor = _shiftAnchor(1)),
-              onToday: () => setState(() => _anchor = DateTime.now()),
-              onSelectDay: _openDayDetails,
-            ),
         ],
       ),
+    );
+  }
+
+  Widget _protocolSurface(DashboardSnapshot snapshot, {required bool wide}) {
+    return _ProtocolPanel(
+      snapshot: snapshot,
+      wide: wide,
+      onToggle: (id) =>
+          ref.read(dashboardControllerProvider.notifier).toggleHabit(id),
+      onAdd: wide ? () => _openHabitEditor() : null,
+      onEdit: _openHabitEditor,
+      onDelete: _deleteHabit,
+      onReorder: (oldIndex, newIndex) => ref
+          .read(dashboardControllerProvider.notifier)
+          .reorderHabits(oldIndex, newIndex),
+    );
+  }
+
+  Widget _calendarSurface(DashboardSnapshot snapshot, {required bool wide}) {
+    return _CalendarPanel(
+      snapshot: snapshot,
+      wide: wide,
+      anchor: _anchor,
+      view: _calendarView,
+      onViewChanged: (view) => setState(() => _calendarView = view),
+      onPrevious: () => setState(() => _anchor = _shiftAnchor(-1)),
+      onNext: () => setState(() => _anchor = _shiftAnchor(1)),
+      onToday: () => setState(() => _anchor = DateTime.now()),
+      onSelectDay: _openDayDetails,
     );
   }
 
@@ -169,6 +208,8 @@ class _HabitsPageState extends ConsumerState<HabitsPage> {
   }
 }
 
+/// Dashboard-style metric grid (Wrap, 4 columns on wide surfaces, else 2)
+/// mirroring the Overview page's metric cards.
 class _Summary extends StatelessWidget {
   const _Summary({required this.snapshot});
 
@@ -176,47 +217,55 @@ class _Summary extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return Row(
-      children: [
-        Expanded(
-          child: _SummaryCard(
-            label: t.habitsPage.activeProtocol,
-            value: '${snapshot.totalHabits}',
-            icon: LucideIcons.listTodo,
-            color: context.evolveAccent,
-          ),
-        ),
-        const SizedBox(width: 14),
-        Expanded(
-          child: _SummaryCard(
-            label: t.habitsPage.completedToday,
-            value: '${snapshot.completedHabits}',
-            icon: LucideIcons.check,
-            color: EvolveColors.cyan,
-          ),
-        ),
-        const SizedBox(width: 14),
-        Expanded(
-          child: _SummaryCard(
-            label: t.stats.bestStreakLabel,
-            value: t.dashboard.streakDaysShort(n: snapshot.bestStreak),
-            icon: LucideIcons.flame,
-            color: EvolveColors.amber,
-          ),
-        ),
-      ],
+    return LayoutBuilder(
+      builder: (context, constraints) {
+        final columns = constraints.maxWidth >= 1080 ? 4 : 2;
+        const spacing = 14.0;
+        final cardWidth =
+            (constraints.maxWidth - spacing * (columns - 1)) / columns;
+
+        return Wrap(
+          spacing: spacing,
+          runSpacing: spacing,
+          children: [
+            _SummaryCard(
+              width: cardWidth,
+              label: t.habitsPage.activeProtocol,
+              value: '${snapshot.totalHabits}',
+              icon: LucideIcons.listTodo,
+              color: context.evolveAccent,
+            ),
+            _SummaryCard(
+              width: cardWidth,
+              label: t.habitsPage.completedToday,
+              value: '${snapshot.completedHabits}',
+              icon: LucideIcons.check,
+              color: EvolveColors.cyan,
+            ),
+            _SummaryCard(
+              width: cardWidth,
+              label: t.stats.bestStreakLabel,
+              value: t.dashboard.streakDaysShort(n: snapshot.bestStreak),
+              icon: LucideIcons.flame,
+              color: EvolveColors.amber,
+            ),
+          ],
+        );
+      },
     );
   }
 }
 
 class _SummaryCard extends StatelessWidget {
   const _SummaryCard({
+    required this.width,
     required this.label,
     required this.value,
     required this.icon,
     required this.color,
   });
 
+  final double width;
   final String label;
   final String value;
   final IconData icon;
@@ -224,30 +273,39 @@ class _SummaryCard extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return EvolvePanel(
-      child: Row(
-        children: [
-          EvolveIconChip(icon: icon, color: color, size: 40, iconSize: 18),
-          const SizedBox(width: 14),
-          Expanded(
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Text(label, style: Theme.of(context).textTheme.bodySmall),
-                const SizedBox(height: 4),
-                Text(
-                  value,
-                  style: TextStyle(
-                    color: context.evolveColors.foreground,
-                    fontSize: 20,
-                    fontWeight: FontWeight.w800,
-                    letterSpacing: -0.5,
+    return SizedBox(
+      width: width,
+      child: EvolvePanel(
+        radius: 20,
+        glowColor: color,
+        child: Row(
+          children: [
+            Expanded(
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text(
+                    label,
+                    maxLines: 1,
+                    overflow: TextOverflow.ellipsis,
+                    style: Theme.of(context).textTheme.bodySmall,
                   ),
-                ),
-              ],
+                  const SizedBox(height: 8),
+                  Text(
+                    value,
+                    style: TextStyle(
+                      color: context.evolveColors.foreground,
+                      fontSize: 27,
+                      fontWeight: FontWeight.w800,
+                      letterSpacing: -1,
+                    ),
+                  ),
+                ],
+              ),
             ),
-          ),
-        ],
+            EvolveIconChip(icon: icon, color: color, size: 42, iconSize: 19),
+          ],
+        ),
       ),
     );
   }
@@ -260,6 +318,8 @@ class _ProtocolPanel extends StatelessWidget {
     required this.onEdit,
     required this.onDelete,
     required this.onReorder,
+    this.onAdd,
+    this.wide = false,
   });
 
   final DashboardSnapshot snapshot;
@@ -268,60 +328,129 @@ class _ProtocolPanel extends StatelessWidget {
   final ValueChanged<DashboardHabit> onDelete;
   final void Function(int oldIndex, int newIndex) onReorder;
 
+  /// Optional quick-add action shown next to the status pill (wide mode).
+  final VoidCallback? onAdd;
+
+  /// Two-column composition: the section takes the protocol tab label as its
+  /// title and the rows compact themselves to the narrower column.
+  final bool wide;
+
   @override
   Widget build(BuildContext context) {
     final habits = snapshot.habits;
+    final pill = StatusPill(
+      label: t.stats.currentWeek,
+      icon: LucideIcons.calendarClock,
+    );
     // Mobile habit-manager look: floating heading + one translucent outlined
     // card per habit row instead of a single table panel.
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.stretch,
-      children: [
-        Padding(
-          padding: const EdgeInsetsDirectional.only(start: 2, end: 2),
-          child: SectionHeading(
-            title: t.habitsPage.dailyProtocol,
-            subtitle: t.habitsPage.protocolSubtitle,
-            trailing: StatusPill(
-              label: t.stats.currentWeek,
-              icon: LucideIcons.calendarClock,
-            ),
-          ),
-        ),
-        const SizedBox(height: 14),
-        const _HabitHeader(),
-        const SizedBox(height: 8),
-        ReorderableListView.builder(
-          shrinkWrap: true,
-          physics: const NeverScrollableScrollPhysics(),
-          buildDefaultDragHandles: false,
-          itemCount: habits.length,
-          onReorderItem: onReorder,
-          itemBuilder: (context, index) {
-            final habit = habits[index];
-            return _HabitRow(
-              key: ValueKey(habit.id),
-              habit: habit,
-              onToggle: () => onToggle(habit.id),
-              onEdit: () => onEdit(habit),
-              onDelete: () => onDelete(habit),
-              dragHandle: ReorderableDragStartListener(
-                index: index,
-                child: Icon(
-                  LucideIcons.gripVertical,
-                  size: 16,
-                  color: context.evolveColors.muted,
-                ),
+    return LayoutBuilder(
+      builder: (context, constraints) {
+        final metrics = wide && constraints.maxWidth < 700
+            ? const _HabitRowMetrics.dense()
+            : const _HabitRowMetrics.regular();
+        return Column(
+          crossAxisAlignment: CrossAxisAlignment.stretch,
+          children: [
+            Padding(
+              padding: const EdgeInsetsDirectional.only(start: 2, end: 2),
+              child: SectionHeading(
+                title: wide
+                    ? t.habitsPage.tabProtocol
+                    : t.habitsPage.dailyProtocol,
+                subtitle: t.habitsPage.protocolSubtitle,
+                trailing: onAdd == null
+                    ? pill
+                    : Row(
+                        mainAxisSize: MainAxisSize.min,
+                        children: [
+                          pill,
+                          const SizedBox(width: 8),
+                          EvolveSquareIconButton(
+                            icon: LucideIcons.plus,
+                            tooltip: t.habitsPage.newHabit,
+                            onTap: onAdd,
+                          ),
+                        ],
+                      ),
               ),
-            );
-          },
-        ),
-      ],
+            ),
+            const SizedBox(height: 14),
+            _HabitHeader(metrics: metrics),
+            const SizedBox(height: 8),
+            ReorderableListView.builder(
+              shrinkWrap: true,
+              physics: const NeverScrollableScrollPhysics(),
+              buildDefaultDragHandles: false,
+              itemCount: habits.length,
+              onReorderItem: onReorder,
+              itemBuilder: (context, index) {
+                final habit = habits[index];
+                return _HabitRow(
+                  key: ValueKey(habit.id),
+                  habit: habit,
+                  metrics: metrics,
+                  onToggle: () => onToggle(habit.id),
+                  onEdit: () => onEdit(habit),
+                  onDelete: () => onDelete(habit),
+                  dragHandle: ReorderableDragStartListener(
+                    index: index,
+                    child: Icon(
+                      LucideIcons.gripVertical,
+                      size: 16,
+                      color: context.evolveColors.muted,
+                    ),
+                  ),
+                );
+              },
+            ),
+          ],
+        );
+      },
     );
   }
 }
 
+/// Column sizing for the protocol table: regular for full-width surfaces,
+/// dense when the protocol shares the main row with the calendar panel.
+class _HabitRowMetrics {
+  const _HabitRowMetrics.regular()
+    : streakWidth = 100,
+      weekWidth = 200,
+      reminderWidth = 105,
+      actionsWidth = 84,
+      daySquareSize = 18,
+      daySquareGap = 8,
+      actionButtonSize = 36,
+      actionIconSize = 17,
+      verticalPadding = 12;
+
+  const _HabitRowMetrics.dense()
+    : streakWidth = 78,
+      weekWidth = 136,
+      reminderWidth = 68,
+      actionsWidth = 64,
+      daySquareSize = 14,
+      daySquareGap = 5,
+      actionButtonSize = 30,
+      actionIconSize = 15,
+      verticalPadding = 10;
+
+  final double streakWidth;
+  final double weekWidth;
+  final double reminderWidth;
+  final double actionsWidth;
+  final double daySquareSize;
+  final double daySquareGap;
+  final double actionButtonSize;
+  final double actionIconSize;
+  final double verticalPadding;
+}
+
 class _HabitHeader extends StatelessWidget {
-  const _HabitHeader();
+  const _HabitHeader({required this.metrics});
+
+  final _HabitRowMetrics metrics;
 
   @override
   Widget build(BuildContext context) {
@@ -332,10 +461,19 @@ class _HabitHeader extends StatelessWidget {
           const SizedBox(width: 24),
           const SizedBox(width: 32),
           Expanded(child: _ColumnLabel(t.habitsPage.colHabit)),
-          SizedBox(width: 100, child: _ColumnLabel(t.habitsPage.colStreak)),
-          SizedBox(width: 200, child: _ColumnLabel(t.habitsPage.colLast7Days)),
-          SizedBox(width: 105, child: _ColumnLabel(t.habitsPage.colReminder)),
-          const SizedBox(width: 84),
+          SizedBox(
+            width: metrics.streakWidth,
+            child: _ColumnLabel(t.habitsPage.colStreak),
+          ),
+          SizedBox(
+            width: metrics.weekWidth,
+            child: _ColumnLabel(t.habitsPage.colLast7Days),
+          ),
+          SizedBox(
+            width: metrics.reminderWidth,
+            child: _ColumnLabel(t.habitsPage.colReminder),
+          ),
+          SizedBox(width: metrics.actionsWidth),
         ],
       ),
     );
@@ -381,9 +519,10 @@ class _WeekdayLabel extends StatelessWidget {
   }
 }
 
-class _HabitRow extends StatelessWidget {
+class _HabitRow extends StatefulWidget {
   const _HabitRow({
     required this.habit,
+    required this.metrics,
     required this.onToggle,
     required this.onEdit,
     required this.onDelete,
@@ -392,189 +531,220 @@ class _HabitRow extends StatelessWidget {
   });
 
   final DashboardHabit habit;
+  final _HabitRowMetrics metrics;
   final Widget? dragHandle;
   final VoidCallback onToggle;
   final VoidCallback onEdit;
   final VoidCallback onDelete;
 
   @override
+  State<_HabitRow> createState() => _HabitRowState();
+}
+
+class _HabitRowState extends State<_HabitRow> {
+  var _hovered = false;
+
+  @override
   Widget build(BuildContext context) {
+    final habit = widget.habit;
+    final metrics = widget.metrics;
     final completed = habit.state == HabitState.completed;
-    return Container(
-      margin: const EdgeInsets.only(bottom: 8),
-      padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
-      decoration: BoxDecoration(
-        color: context.evolveColors.panel.withValues(alpha: 0.4),
-        borderRadius: BorderRadius.circular(16),
-        border: Border.all(
-          color: context.evolveColors.border.withValues(alpha: 0.5),
+    // Desktop affordance: the row card brightens slightly under the pointer.
+    return MouseRegion(
+      onEnter: (_) => setState(() => _hovered = true),
+      onExit: (_) => setState(() => _hovered = false),
+      child: AnimatedContainer(
+        duration: const Duration(milliseconds: 140),
+        margin: const EdgeInsets.only(bottom: 8),
+        padding: EdgeInsets.symmetric(
+          horizontal: 14,
+          vertical: metrics.verticalPadding,
         ),
-      ),
-      child: Row(
-        children: [
-          SizedBox(
-            width: 24,
-            child: dragHandle == null
-                ? null
-                : MouseRegion(
-                    cursor: SystemMouseCursors.grab,
-                    child: dragHandle,
-                  ),
+        decoration: BoxDecoration(
+          color: context.evolveColors.panel.withValues(
+            alpha: _hovered ? 0.55 : 0.4,
           ),
-          SizedBox(
-            width: 32,
-            child: Align(
-              alignment: AlignmentDirectional.centerStart,
-              child: InkWell(
-                onTap: onToggle,
-                borderRadius: BorderRadius.circular(8),
-                child: AnimatedContainer(
-                  duration: const Duration(milliseconds: 160),
-                  width: 22,
-                  height: 22,
-                  decoration: BoxDecoration(
-                    color: completed ? habit.color : Colors.transparent,
-                    border: Border.all(
-                      color: completed
-                          ? habit.color
-                          : context.evolveColors.borderStrong,
+          borderRadius: BorderRadius.circular(16),
+          border: Border.all(
+            color: context.evolveColors.border.withValues(
+              alpha: _hovered ? 0.9 : 0.5,
+            ),
+          ),
+        ),
+        child: Row(
+          children: [
+            SizedBox(
+              width: 24,
+              child: widget.dragHandle == null
+                  ? null
+                  : MouseRegion(
+                      cursor: SystemMouseCursors.grab,
+                      child: widget.dragHandle,
                     ),
-                    borderRadius: BorderRadius.circular(7),
+            ),
+            SizedBox(
+              width: 32,
+              child: Align(
+                alignment: AlignmentDirectional.centerStart,
+                child: InkWell(
+                  onTap: widget.onToggle,
+                  borderRadius: BorderRadius.circular(8),
+                  child: AnimatedContainer(
+                    duration: const Duration(milliseconds: 160),
+                    width: 22,
+                    height: 22,
+                    decoration: BoxDecoration(
+                      color: completed ? habit.color : Colors.transparent,
+                      border: Border.all(
+                        color: completed
+                            ? habit.color
+                            : context.evolveColors.borderStrong,
+                      ),
+                      borderRadius: BorderRadius.circular(7),
+                    ),
+                    child: completed
+                        ? const Icon(
+                            LucideIcons.check,
+                            color: Color(0xFF092113),
+                            size: 14,
+                          )
+                        : null,
                   ),
-                  child: completed
-                      ? const Icon(
-                          LucideIcons.check,
-                          color: Color(0xFF092113),
-                          size: 14,
-                        )
-                      : null,
                 ),
               ),
             ),
-          ),
-          Expanded(
-            child: Row(
-              children: [
-                Container(
-                  width: 11,
-                  height: 11,
-                  decoration: BoxDecoration(
-                    color: habit.color,
-                    shape: BoxShape.circle,
-                    boxShadow: [
-                      BoxShadow(
-                        color: habit.color.withValues(alpha: 0.5),
-                        blurRadius: 6,
-                      ),
-                    ],
-                  ),
-                ),
-                const SizedBox(width: 12),
-                Expanded(
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      Text(
-                        habit.title,
-                        maxLines: 1,
-                        overflow: TextOverflow.ellipsis,
-                        style: TextStyle(
-                          color: context.evolveColors.foreground,
-                          fontSize: 15,
-                          fontWeight: FontWeight.w700,
-                          letterSpacing: -0.2,
-                        ),
-                      ),
-                      const SizedBox(height: 3),
-                      Text(
-                        habit.category,
-                        maxLines: 1,
-                        overflow: TextOverflow.ellipsis,
-                        style: TextStyle(
-                          color: context.evolveColors.muted.withValues(
-                            alpha: 0.8,
-                          ),
-                          fontSize: 12,
-                          fontWeight: FontWeight.w500,
-                        ),
-                      ),
-                    ],
-                  ),
-                ),
-              ],
-            ),
-          ),
-          SizedBox(
-            width: 100,
-            child: Row(
-              children: [
-                const Icon(
-                  LucideIcons.flame,
-                  size: 12,
-                  color: EvolveColors.amber,
-                ),
-                const SizedBox(width: 4),
-                Flexible(
-                  child: Text(
-                    t.habitsPage.streakDays(n: habit.streak),
-                    maxLines: 1,
-                    overflow: TextOverflow.ellipsis,
-                    style: const TextStyle(
-                      color: EvolveColors.amber,
-                      fontSize: 12,
-                      fontWeight: FontWeight.w700,
-                    ),
-                  ),
-                ),
-              ],
-            ),
-          ),
-          SizedBox(
-            width: 200,
-            child: Row(
-              children: [
-                for (final done in habit.weeklyProgress)
+            Expanded(
+              child: Row(
+                children: [
                   Container(
-                    width: 18,
-                    height: 18,
-                    margin: const EdgeInsetsDirectional.only(end: 8),
+                    width: 11,
+                    height: 11,
                     decoration: BoxDecoration(
-                      color: done
-                          ? habit.color.withValues(alpha: 0.86)
-                          : context.evolveColors.panelSoft,
-                      borderRadius: BorderRadius.circular(5),
+                      color: habit.color,
+                      shape: BoxShape.circle,
+                      boxShadow: [
+                        BoxShadow(
+                          color: habit.color.withValues(alpha: 0.5),
+                          blurRadius: 6,
+                        ),
+                      ],
                     ),
                   ),
-              ],
+                  const SizedBox(width: 12),
+                  Expanded(
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Text(
+                          habit.title,
+                          maxLines: 1,
+                          overflow: TextOverflow.ellipsis,
+                          style: TextStyle(
+                            color: context.evolveColors.foreground,
+                            fontSize: 15,
+                            fontWeight: FontWeight.w700,
+                            letterSpacing: -0.2,
+                          ),
+                        ),
+                        const SizedBox(height: 3),
+                        Text(
+                          habit.category,
+                          maxLines: 1,
+                          overflow: TextOverflow.ellipsis,
+                          style: TextStyle(
+                            color: context.evolveColors.muted.withValues(
+                              alpha: 0.8,
+                            ),
+                            fontSize: 12,
+                            fontWeight: FontWeight.w500,
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
+                ],
+              ),
             ),
-          ),
-          SizedBox(
-            width: 105,
-            child: Text(
-              habit.reminderTime ?? t.common.none,
-              style: Theme.of(context).textTheme.bodySmall,
+            SizedBox(
+              width: metrics.streakWidth,
+              child: Row(
+                children: [
+                  const Icon(
+                    LucideIcons.flame,
+                    size: 12,
+                    color: EvolveColors.amber,
+                  ),
+                  const SizedBox(width: 4),
+                  Flexible(
+                    child: Text(
+                      t.habitsPage.streakDays(n: habit.streak),
+                      maxLines: 1,
+                      overflow: TextOverflow.ellipsis,
+                      style: const TextStyle(
+                        color: EvolveColors.amber,
+                        fontSize: 12,
+                        fontWeight: FontWeight.w700,
+                      ),
+                    ),
+                  ),
+                ],
+              ),
             ),
-          ),
-          SizedBox(
-            width: 84,
-            child: Row(
-              children: [
-                _RowIconButton(
-                  icon: LucideIcons.pencil,
-                  tooltip: t.common.actions.edit,
-                  onPressed: onEdit,
-                ),
-                _RowIconButton(
-                  icon: LucideIcons.trash2,
-                  tooltip: t.common.actions.delete,
-                  color: EvolveColors.destructive,
-                  hoverColor: EvolveColors.destructive,
-                  onPressed: onDelete,
-                ),
-              ],
+            SizedBox(
+              width: metrics.weekWidth,
+              child: Row(
+                children: [
+                  for (final done in habit.weeklyProgress)
+                    Container(
+                      width: metrics.daySquareSize,
+                      height: metrics.daySquareSize,
+                      margin: EdgeInsetsDirectional.only(
+                        end: metrics.daySquareGap,
+                      ),
+                      decoration: BoxDecoration(
+                        color: done
+                            ? habit.color.withValues(alpha: 0.86)
+                            : context.evolveColors.panelSoft,
+                        borderRadius: BorderRadius.circular(5),
+                      ),
+                    ),
+                ],
+              ),
             ),
-          ),
-        ],
+            SizedBox(
+              width: metrics.reminderWidth,
+              child: Text(
+                habit.reminderTime ?? t.common.none,
+                maxLines: 1,
+                overflow: TextOverflow.ellipsis,
+                style: Theme.of(context).textTheme.bodySmall,
+              ),
+            ),
+            SizedBox(
+              width: metrics.actionsWidth,
+              child: Row(
+                children: [
+                  _RowIconButton(
+                    icon: LucideIcons.pencil,
+                    tooltip: t.common.actions.edit,
+                    size: metrics.actionButtonSize,
+                    iconSize: metrics.actionIconSize,
+                    onPressed: widget.onEdit,
+                  ),
+                  _RowIconButton(
+                    icon: LucideIcons.trash2,
+                    tooltip: t.common.actions.delete,
+                    size: metrics.actionButtonSize,
+                    iconSize: metrics.actionIconSize,
+                    color: EvolveColors.destructive,
+                    hoverColor: EvolveColors.destructive,
+                    onPressed: widget.onDelete,
+                  ),
+                ],
+              ),
+            ),
+          ],
+        ),
       ),
     );
   }
@@ -587,6 +757,8 @@ class _RowIconButton extends StatefulWidget {
     required this.icon,
     required this.tooltip,
     required this.onPressed,
+    this.size = 36,
+    this.iconSize = 17,
     this.color,
     this.hoverColor,
   });
@@ -594,6 +766,8 @@ class _RowIconButton extends StatefulWidget {
   final IconData icon;
   final String tooltip;
   final VoidCallback onPressed;
+  final double size;
+  final double iconSize;
   final Color? color;
   final Color? hoverColor;
 
@@ -614,10 +788,17 @@ class _RowIconButtonState extends State<_RowIconButton> {
       child: IconButton(
         tooltip: widget.tooltip,
         visualDensity: VisualDensity.compact,
-        constraints: const BoxConstraints.tightFor(width: 36, height: 36),
+        constraints: BoxConstraints.tightFor(
+          width: widget.size,
+          height: widget.size,
+        ),
         padding: EdgeInsets.zero,
         onPressed: widget.onPressed,
-        icon: Icon(widget.icon, size: 17, color: _hovered ? hoverColor : color),
+        icon: Icon(
+          widget.icon,
+          size: widget.iconSize,
+          color: _hovered ? hoverColor : color,
+        ),
       ),
     );
   }
@@ -633,6 +814,7 @@ class _CalendarPanel extends StatelessWidget {
     required this.onNext,
     required this.onToday,
     required this.onSelectDay,
+    this.wide = false,
   });
 
   final DashboardSnapshot snapshot;
@@ -644,19 +826,80 @@ class _CalendarPanel extends StatelessWidget {
   final VoidCallback onToday;
   final ValueChanged<DateTime> onSelectDay;
 
+  /// Two-column composition: heading, view switcher and navigation live in
+  /// the panel header zone and the month grid is width-capped.
+  final bool wide;
+
+  /// Keeps month day cells in a pleasant size range when the calendar column
+  /// grows on large windows ((540 - 6 gaps) / 7 = 72px cells at most).
+  static const _wideMonthMaxWidth = 540.0;
+
   @override
   Widget build(BuildContext context) {
+    final switcher = EvolveSegmentedControl<CalendarViewMode>(
+      height: 44,
+      segments: {for (final mode in CalendarViewMode.values) mode: mode.label},
+      selected: view,
+      onSelected: onViewChanged,
+    );
+    final body = switch (view) {
+      CalendarViewMode.month => _MonthCalendar(
+        snapshot: snapshot,
+        anchor: anchor,
+        onSelectDay: onSelectDay,
+      ),
+      CalendarViewMode.week => _WeekCalendar(
+        snapshot: snapshot,
+        anchor: anchor,
+        onSelectDay: onSelectDay,
+      ),
+      CalendarViewMode.year => _YearCalendar(
+        snapshot: snapshot,
+        anchor: anchor,
+      ),
+      CalendarViewMode.life => const _LifeCalendar(),
+    };
+
+    if (wide) {
+      return EvolvePanel(
+        radius: 20,
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.stretch,
+          children: [
+            SectionHeading(
+              title: t.habitsPage.tabCalendar,
+              trailing: view == CalendarViewMode.life
+                  ? null
+                  : Row(
+                      mainAxisSize: MainAxisSize.min,
+                      children: _navigationControls(context),
+                    ),
+            ),
+            const SizedBox(height: 14),
+            switcher,
+            const SizedBox(height: 16),
+            _PeriodTitle(anchor: anchor, view: view),
+            const SizedBox(height: 16),
+            if (view == CalendarViewMode.month)
+              Center(
+                child: ConstrainedBox(
+                  constraints: const BoxConstraints(
+                    maxWidth: _wideMonthMaxWidth,
+                  ),
+                  child: body,
+                ),
+              )
+            else
+              body,
+          ],
+        ),
+      );
+    }
+
     return Column(
       crossAxisAlignment: CrossAxisAlignment.stretch,
       children: [
-        EvolveSegmentedControl<CalendarViewMode>(
-          height: 44,
-          segments: {
-            for (final mode in CalendarViewMode.values) mode: mode.label,
-          },
-          selected: view,
-          onSelected: onViewChanged,
-        ),
+        switcher,
         const SizedBox(height: 14),
         EvolvePanel(
           radius: 20,
@@ -666,99 +909,91 @@ class _CalendarPanel extends StatelessWidget {
               Row(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  // Mobile calendar header: 22px w800 period title with, on
-                  // the month view, the year as a muted subtitle underneath.
                   Expanded(
-                    child: view == CalendarViewMode.month
-                        ? Column(
-                            crossAxisAlignment: CrossAxisAlignment.start,
-                            children: [
-                              Text(
-                                t.common.months[anchor.month - 1],
-                                style: TextStyle(
-                                  color: context.evolveColors.foreground,
-                                  fontSize: 22,
-                                  fontWeight: FontWeight.w800,
-                                  letterSpacing: -0.8,
-                                ),
-                              ),
-                              Text(
-                                '${anchor.year}',
-                                style: TextStyle(
-                                  color: context.evolveColors.muted,
-                                  fontSize: 14,
-                                  fontWeight: FontWeight.w500,
-                                  letterSpacing: 0.5,
-                                ),
-                              ),
-                            ],
-                          )
-                        : Text(
-                            _periodLabel(anchor, view),
-                            style: TextStyle(
-                              color: context.evolveColors.foreground,
-                              fontSize: 22,
-                              fontWeight: FontWeight.w800,
-                              letterSpacing: -0.8,
-                            ),
-                          ),
+                    child: _PeriodTitle(anchor: anchor, view: view),
                   ),
-                  if (view != CalendarViewMode.life) ...[
-                    SizedBox(
-                      height: 36,
-                      child: OutlinedButton(
-                        style: OutlinedButton.styleFrom(
-                          padding: const EdgeInsets.symmetric(horizontal: 14),
-                          shape: RoundedRectangleBorder(
-                            borderRadius: BorderRadius.circular(10),
-                          ),
-                        ),
-                        onPressed: onToday,
-                        child: Text(t.habitsPage.today),
-                      ),
-                    ),
-                    const SizedBox(width: 8),
-                    EvolveSquareIconButton(
-                      icon: directionalIcon(
-                        context,
-                        LucideIcons.chevronLeft,
-                        LucideIcons.chevronRight,
-                      ),
-                      tooltip: t.habitsPage.prevPeriod,
-                      onTap: onPrevious,
-                    ),
-                    const SizedBox(width: 4),
-                    EvolveSquareIconButton(
-                      icon: directionalIcon(
-                        context,
-                        LucideIcons.chevronRight,
-                        LucideIcons.chevronLeft,
-                      ),
-                      tooltip: t.habitsPage.nextPeriod,
-                      onTap: onNext,
-                    ),
-                  ],
+                  if (view != CalendarViewMode.life)
+                    ..._navigationControls(context),
                 ],
               ),
               const SizedBox(height: 16),
-              switch (view) {
-                CalendarViewMode.month => _MonthCalendar(
-                  snapshot: snapshot,
-                  anchor: anchor,
-                  onSelectDay: onSelectDay,
-                ),
-                CalendarViewMode.week => _WeekCalendar(
-                  snapshot: snapshot,
-                  anchor: anchor,
-                  onSelectDay: onSelectDay,
-                ),
-                CalendarViewMode.year => _YearCalendar(
-                  snapshot: snapshot,
-                  anchor: anchor,
-                ),
-                CalendarViewMode.life => const _LifeCalendar(),
-              },
+              body,
             ],
+          ),
+        ),
+      ],
+    );
+  }
+
+  List<Widget> _navigationControls(BuildContext context) {
+    return [
+      SizedBox(
+        height: 36,
+        child: OutlinedButton(
+          style: OutlinedButton.styleFrom(
+            padding: const EdgeInsets.symmetric(horizontal: 14),
+            shape: RoundedRectangleBorder(
+              borderRadius: BorderRadius.circular(10),
+            ),
+          ),
+          onPressed: onToday,
+          child: Text(t.habitsPage.today),
+        ),
+      ),
+      const SizedBox(width: 8),
+      EvolveSquareIconButton(
+        icon: directionalIcon(
+          context,
+          LucideIcons.chevronLeft,
+          LucideIcons.chevronRight,
+        ),
+        tooltip: t.habitsPage.prevPeriod,
+        onTap: onPrevious,
+      ),
+      const SizedBox(width: 4),
+      EvolveSquareIconButton(
+        icon: directionalIcon(
+          context,
+          LucideIcons.chevronRight,
+          LucideIcons.chevronLeft,
+        ),
+        tooltip: t.habitsPage.nextPeriod,
+        onTap: onNext,
+      ),
+    ];
+  }
+}
+
+/// Mobile calendar header: 22px w800 period title with, on the month view,
+/// the year as a muted subtitle underneath.
+class _PeriodTitle extends StatelessWidget {
+  const _PeriodTitle({required this.anchor, required this.view});
+
+  final DateTime anchor;
+  final CalendarViewMode view;
+
+  @override
+  Widget build(BuildContext context) {
+    final titleStyle = TextStyle(
+      color: context.evolveColors.foreground,
+      fontSize: 22,
+      fontWeight: FontWeight.w800,
+      letterSpacing: -0.8,
+    );
+    if (view != CalendarViewMode.month) {
+      return Text(_periodLabel(anchor, view), style: titleStyle);
+    }
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Text(t.common.months[anchor.month - 1], style: titleStyle),
+        Text(
+          '${anchor.year}',
+          style: TextStyle(
+            color: context.evolveColors.muted,
+            fontSize: 14,
+            fontWeight: FontWeight.w500,
+            letterSpacing: 0.5,
           ),
         ),
       ],
@@ -923,6 +1158,9 @@ class _DayCell extends StatelessWidget {
       opacity: isFuture ? 0.28 : 1,
       child: InkWell(
         onTap: onTap,
+        mouseCursor: onTap == null
+            ? SystemMouseCursors.basic
+            : SystemMouseCursors.click,
         borderRadius: BorderRadius.circular(8),
         child: Container(
           height: expanded ? 155 : null,

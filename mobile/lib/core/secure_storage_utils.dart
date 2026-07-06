@@ -1,3 +1,4 @@
+import 'package:evolve_sync/evolve_sync.dart' show kSyncKeychainAccessGroup;
 import 'package:flutter/services.dart';
 import 'package:flutter_secure_storage/flutter_secure_storage.dart';
 
@@ -32,8 +33,27 @@ class SecureStorageUtils {
   /// Apple devices — which is exactly how a second device obtains the E2E key.
   /// Deliberately the OPPOSITE of [_deviceLocalStorage]: this is the only secret
   /// allowed to leave the device, and only via the user's own iCloud Keychain.
+  ///
+  /// The items live in the SHARED keychain access group
+  /// ([kSyncKeychainAccessGroup], listed in Runner.entitlements) so the macOS
+  /// desktop app — a different bundle id — can read the same secrets. iCloud
+  /// Keychain syncs across devices; only the shared group crosses APPS.
   /// iOS-only behavior; Android uses the same encrypted store (sync is iOS-only).
   static const FlutterSecureStorage _syncedStorage = FlutterSecureStorage(
+    aOptions: _aOptions,
+    iOptions: IOSOptions(
+      groupId: kSyncKeychainAccessGroup,
+      accessibility: KeychainAccessibility.first_unlock,
+      synchronizable: true,
+    ),
+  );
+
+  /// Where versions ≤1.0.9 kept the sync secrets: same options but NO explicit
+  /// access group, i.e. the app's default group — unreadable by the desktop
+  /// app. Kept only as the `legacy` tier of the package's
+  /// `MigratingSyncSecretStore` (reads heal into [_syncedStorage], writes go to
+  /// both so older devices still see the secrets, deletes wipe both).
+  static const FlutterSecureStorage _syncedLegacyStorage = FlutterSecureStorage(
     aOptions: _aOptions,
     iOptions: IOSOptions(
       accessibility: KeychainAccessibility.first_unlock,
@@ -55,6 +75,11 @@ class SecureStorageUtils {
     return _syncedStorage.read(key: key);
   }
 
+  /// Read from the pre-1.0.10 sync-secret location (see [_syncedLegacyStorage]).
+  static Future<String?> readSyncedLegacy(String key) {
+    return _syncedLegacyStorage.read(key: key);
+  }
+
   static Future<bool> containsKey(String key) {
     return storage.containsKey(key: key);
   }
@@ -71,6 +96,12 @@ class SecureStorageUtils {
   /// Delete an iCloud-synced sync secret (see [_syncedStorage]).
   static Future<void> deleteSynced(String key) {
     return _syncedStorage.delete(key: key);
+  }
+
+  /// Delete from the pre-1.0.10 sync-secret location (see
+  /// [_syncedLegacyStorage]).
+  static Future<void> deleteSyncedLegacy(String key) {
+    return _syncedLegacyStorage.delete(key: key);
   }
 
   static Future<void> write(
@@ -97,6 +128,15 @@ class SecureStorageUtils {
     String context = 'SecureStorage',
   }) {
     return _writeTo(_syncedStorage, key, value, context);
+  }
+
+  /// Write to the pre-1.0.10 sync-secret location (see [_syncedLegacyStorage]).
+  static Future<void> writeSyncedLegacy(
+    String key,
+    String value, {
+    String context = 'SecureStorage',
+  }) {
+    return _writeTo(_syncedLegacyStorage, key, value, context);
   }
 
   static Future<void> _writeTo(

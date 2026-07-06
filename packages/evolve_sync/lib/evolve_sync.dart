@@ -9,6 +9,7 @@ library;
 export 'src/cloudkit_bridge.dart';
 export 'src/cloudkit_bridge_method_channel.dart';
 export 'src/cloudkit_private_sync_service.dart';
+export 'src/migrating_sync_secret_store.dart';
 export 'src/private_db_schema.dart';
 export 'src/private_sync_service.dart';
 export 'src/sync_crypto.dart';

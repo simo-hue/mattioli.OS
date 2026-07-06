@@ -40,7 +40,7 @@ final privateSyncServiceProvider = Provider<PrivateSyncService>((ref) {
   final prefs = ref.read(sharedPrefsProvider);
   return CloudKitPrivateSyncService(
     bridge: const MethodChannelCloudKitBridge(),
-    keys: SyncKeyStore(const KeychainSyncSecretStore()),
+    keys: SyncKeyStore(keychainSyncSecretStore),
     crypto: SyncCrypto(),
     storeProvider: () => PrivateLocalDatabase().syncStore(),
     ownerProvider: () => PrivateLocalDatabase().ownerId(),

@@ -80,6 +80,19 @@ class _DesktopShellState extends ConsumerState<DesktopShell> {
                         Expanded(
                           child: AnimatedSwitcher(
                             duration: const Duration(milliseconds: 180),
+                            // The default layout builder centers children in
+                            // a loose Stack, which vertically centers any
+                            // page shorter than the viewport. Expand pages to
+                            // fill instead so content always starts at the
+                            // top.
+                            layoutBuilder: (currentChild, previousChildren) =>
+                                Stack(
+                                  fit: StackFit.expand,
+                                  children: [
+                                    ...previousChildren,
+                                    ?currentChild,
+                                  ],
+                                ),
                             child: KeyedSubtree(
                               key: ValueKey(section),
                               child: _pageFor(section),

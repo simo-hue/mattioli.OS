@@ -177,6 +177,31 @@ void main() {
     expect(find.text('Stats'), findsOneWidget);
   });
 
+  testWidgets('pages start at the top even when content is short', (
+    tester,
+  ) async {
+    // Regression: the shell AnimatedSwitcher's default layout builder
+    // vertically centered pages shorter than the viewport, so short views
+    // (e.g. an empty goals board on a big window) floated mid-screen.
+    await tester.binding.setSurfaceSize(const Size(2000, 1050));
+    addTearDown(() => tester.binding.setSurfaceSize(null));
+
+    await tester.pumpWidget(const ProviderScope(child: _DesktopTestApp()));
+    await tester.tap(find.text('Obiettivi'));
+    await tester.pumpAndSettle();
+
+    final boardTop = tester.getTopLeft(find.text('Macro Obiettivi')).dy;
+
+    await tester.tap(find.text('Stats'));
+    await tester.pumpAndSettle();
+    final statsTop = tester.getTopLeft(find.text('Macro Obiettivi')).dy;
+
+    // Same offset in every tab, right under the 68px top bar + page gutter.
+    expect(boardTop, statsTop);
+    expect(boardTop, lessThan(120));
+    expect(tester.takeException(), isNull);
+  });
+
   testWidgets('macro goals toolbar fits the minimum desktop window', (
     tester,
   ) async {

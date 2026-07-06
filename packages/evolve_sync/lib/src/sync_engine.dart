@@ -2,6 +2,7 @@ import 'dart:typed_data';
 
 import 'cloudkit_bridge.dart';
 import 'private_db_schema.dart';
+import 'sync_avatar_store.dart';
 import 'sync_crypto.dart';
 import 'sync_key_store.dart';
 import 'sync_local_store.dart';
@@ -38,15 +39,21 @@ class SyncEngine {
   final SyncCrypto crypto;
   final SyncLogger logger;
 
+  /// File-side of avatar sync (app-provided). Null ⇒ avatar records are
+  /// neither pushed nor applied (pulled ones are skipped).
+  final SyncAvatarStore? avatarStore;
+
   SyncEngine({
     required this.store,
     required this.bridge,
     required this.crypto,
+    this.avatarStore,
     this.logger = const SilentSyncLogger(),
   });
 
   /// FK-safe apply order: parents before children (profiles → goals/categories →
-  /// logs/macro-goals/moods). Applied across the whole pulled batch.
+  /// logs/macro-goals/moods → the avatar, which rewrites profiles.avatar_url).
+  /// Applied across the whole pulled batch.
   static const Map<String, int> _applyPriority = {
     'profiles': 0,
     'goals': 1,
@@ -55,6 +62,7 @@ class SyncEngine {
     'goal_logs': 2,
     'long_term_goals': 2,
     'daily_moods': 2,
+    PrivateDbSchema.avatarRecordTable: 3,
   };
 
   /// Reject timestamps more than this far in the future (clock-skew guard, Q10).
@@ -119,6 +127,11 @@ class SyncEngine {
     for (final e in entries) {
       if (e.deleted) {
         records.add(_tombstone(e.recordName, e.tableName, e.updatedAt));
+        continue;
+      }
+      if (e.tableName == PrivateDbSchema.avatarRecordTable) {
+        final rec = await _encodeAvatar(e, key);
+        if (rec != null) records.add(rec);
         continue;
       }
       final row = await store.readRow(e.tableName, e.rowId);
@@ -202,12 +215,39 @@ class SyncEngine {
     return (applied, skipped);
   }
 
+  /// Builds the avatar CloudRecord for push: plaintext bytes from the app's
+  /// avatar store, sealed with the sync key, staged to a temp file the native
+  /// bridge wraps as a CKAsset. A missing avatar (file gone / never set)
+  /// degrades to a tombstone — same semantics as a vanished row.
+  Future<CloudRecord?> _encodeAvatar(SyncStateEntry e, Uint8List key) async {
+    final files = avatarStore;
+    if (files == null) return null; // avatar sync not wired on this app
+    final bytes = await files.readAvatarBytes();
+    if (bytes == null) {
+      return _tombstone(e.recordName, e.tableName, e.updatedAt);
+    }
+    final assetPath =
+        await files.stageEncryptedUpload(crypto.encryptBytes(bytes, key));
+    return CloudRecord(
+      recordName: e.recordName,
+      tableName: e.tableName,
+      updatedAtMs: _ms(e.updatedAt),
+      deleted: false,
+      payload: Uint8List(0),
+      assetPath: assetPath,
+    );
+  }
+
   Future<bool> _applyRemote(CloudRecord rec, Uint8List key) async {
     final local = await store.stateOf(rec.recordName);
     final localMs = local == null ? -1 : _ms(local.updatedAt);
     // Strict >: equal timestamps keep the local copy. Exact-millisecond
     // conflicts on the same record are vanishingly rare for a single user.
     if (rec.updatedAtMs <= localMs) return false;
+
+    if (rec.tableName == PrivateDbSchema.avatarRecordTable) {
+      return _applyRemoteAvatar(rec, key);
+    }
 
     final rowId = rec.recordName.substring(rec.tableName.length + 1);
     try {
@@ -236,6 +276,43 @@ class SyncEngine {
         e,
         stack,
         {'recordName': rec.recordName, 'tableName': rec.tableName},
+      );
+      return false;
+    }
+  }
+
+  /// Applies a pulled avatar record: tombstone removes the local avatar,
+  /// otherwise the downloaded (encrypted) asset is opened with the sync key and
+  /// re-localized by the app's avatar store. Bookkeeping mirrors the row paths:
+  /// server edit time stamped, dirty cleared.
+  Future<bool> _applyRemoteAvatar(CloudRecord rec, Uint8List key) async {
+    final files = avatarStore;
+    if (files == null) return false; // not wired — skip, don't error
+    try {
+      if (rec.deleted) {
+        await files.removeAvatar();
+      } else {
+        final assetPath = rec.assetPath;
+        if (assetPath == null) {
+          throw StateError('avatar record without an asset');
+        }
+        final encrypted = await files.readStagedDownload(assetPath);
+        await files.writeAvatarBytes(crypto.decryptBytes(encrypted, key));
+      }
+      await store.applyAvatarState(
+        rec.recordName,
+        _iso(rec.updatedAtMs),
+        _nowIso(),
+        deleted: rec.deleted,
+      );
+      return true;
+    } catch (e, stack) {
+      await store.markError(rec.recordName, e.toString());
+      logger.error(
+        '[CloudKit] Avatar apply failed',
+        e,
+        stack,
+        {'recordName': rec.recordName},
       );
       return false;
     }

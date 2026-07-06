@@ -12,6 +12,7 @@ export 'src/cloudkit_private_sync_service.dart';
 export 'src/migrating_sync_secret_store.dart';
 export 'src/private_db_schema.dart';
 export 'src/private_sync_service.dart';
+export 'src/sync_avatar_store.dart';
 export 'src/sync_crypto.dart';
 export 'src/sync_engine.dart';
 export 'src/sync_key_store.dart';

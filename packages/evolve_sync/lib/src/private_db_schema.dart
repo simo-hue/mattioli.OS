@@ -35,6 +35,14 @@ class PrivateDbSchema {
   static const String syncStateTable = 'sync_state';
   static const String syncMetaTable = 'sync_meta';
 
+  /// Pseudo-table name for the avatar CKAsset record (`avatar:<owner>`). It has
+  /// no DB table — the image is a file — but it flows through `sync_state` and
+  /// the engine like a row. NOT trigger-managed: the avatar write path marks it
+  /// dirty explicitly ([SyncLocalStore.markAvatarDirty]).
+  static const String avatarRecordTable = 'avatar';
+
+  static String avatarRecordName(String owner) => 'avatar:$owner';
+
   /// Columns whose values are device-local and MUST NOT cross the sync boundary.
   /// `profiles.avatar_url` is a local filesystem path to the cached avatar — the
   /// image itself rides along as a CloudKit asset, but the path is meaningless

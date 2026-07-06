@@ -254,7 +254,9 @@ class SyncLocalStore {
       _db.rawQuery('PRAGMA foreign_key_check');
 
   /// Backfill `sync_state` for rows that pre-date sync (first enable marks all
-  /// existing local data dirty so it uploads on the first sync).
+  /// existing local data dirty so it uploads on the first sync). Includes the
+  /// avatar pseudo-record when a local avatar exists, since no trigger covers
+  /// it.
   Future<void> markAllDirty() async {
     for (final t in PrivateDbSchema.syncedTables) {
       final rows = await _db.query(t, columns: ['id', 'updated_at']);
@@ -273,5 +275,106 @@ class SyncLocalStore {
         );
       }
     }
+    final profiles = await _db.query(
+      'profiles',
+      columns: ['id', 'avatar_url', 'updated_at'],
+    );
+    for (final p in profiles) {
+      final avatar = p['avatar_url'] as String?;
+      if (avatar != null && avatar.isNotEmpty) {
+        await markAvatarDirty(p['id'] as String);
+      }
+    }
+  }
+
+  // ── Avatar pseudo-record (`avatar:<owner>`, no backing table) ─────────────
+
+  /// Mark the avatar record dirty for push — called explicitly by the app's
+  /// avatar write path (no trigger exists for it). [deleted] pushes a tombstone
+  /// (avatar removed).
+  Future<void> markAvatarDirty(String owner, {bool deleted = false}) =>
+      _db.insert(
+        PrivateDbSchema.syncStateTable,
+        {
+          'record_name': PrivateDbSchema.avatarRecordName(owner),
+          'table_name': PrivateDbSchema.avatarRecordTable,
+          'row_id': owner,
+          'updated_at': _nowIso(),
+          'dirty': 1,
+          'deleted': deleted ? 1 : 0,
+        },
+        conflictAlgorithm: ConflictAlgorithm.replace,
+      );
+
+  /// Record a pulled avatar (or avatar tombstone) as applied: stamp the
+  /// server's edit time and clear dirty — mirroring [applyUpsert]/[applyDelete]
+  /// for the record that has no DB row of its own.
+  Future<void> applyAvatarState(
+    String recordName,
+    String updatedAtIso,
+    String at, {
+    required bool deleted,
+  }) =>
+      _db.insert(
+        PrivateDbSchema.syncStateTable,
+        {
+          'record_name': recordName,
+          'table_name': PrivateDbSchema.avatarRecordTable,
+          'row_id': recordName
+              .substring(PrivateDbSchema.avatarRecordTable.length + 1),
+          'updated_at': updatedAtIso,
+          'last_synced_at': at,
+          'dirty': 0,
+          'deleted': deleted ? 1 : 0,
+          'last_error': null,
+        },
+        conflictAlgorithm: ConflictAlgorithm.replace,
+      );
+
+  /// Update a device-local column (e.g. `profiles.avatar_url`) WITHOUT leaving
+  /// the row marked for push: the write fires the table's dirty trigger like
+  /// any other, so the row's prior sync state is captured first and restored
+  /// after, all in one transaction. Local-only columns are stripped from
+  /// payloads anyway — re-pushing the row over them would be pure ping-pong.
+  Future<void> setLocalOnlyColumn(
+    String table,
+    String id,
+    String column,
+    Object? value,
+  ) async {
+    await _db.transaction((txn) async {
+      final prior = await txn.query(
+        PrivateDbSchema.syncStateTable,
+        where: 'record_name = ?',
+        whereArgs: ['$table:$id'],
+        limit: 1,
+      );
+      await txn.update(
+        table,
+        {column: value},
+        where: 'id = ?',
+        whereArgs: [id],
+      );
+      if (prior.isEmpty) {
+        // The row had no sync state before this write — drop what the trigger
+        // just created so a local-only touch never queues a push by itself.
+        await txn.delete(
+          PrivateDbSchema.syncStateTable,
+          where: 'record_name = ?',
+          whereArgs: ['$table:$id'],
+        );
+      } else {
+        await txn.update(
+          PrivateDbSchema.syncStateTable,
+          {
+            'dirty': prior.first['dirty'],
+            'deleted': prior.first['deleted'],
+            'updated_at': prior.first['updated_at'],
+          },
+          where: 'record_name = ?',
+          whereArgs: ['$table:$id'],
+        );
+      }
+    });
   }
 }

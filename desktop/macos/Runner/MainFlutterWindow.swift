@@ -13,6 +13,10 @@ class MainFlutterWindow: NSWindow {
     self.setFrame(windowFrame, display: true)
 
     RegisterGeneratedPlugins(registry: flutterViewController)
+    // iCloud sync bridge (`evolve/cloudkit`). Registered here — the single
+    // window/engine creation path on macOS — so it can't miss a launch route
+    // (the class of bug the iOS Scene-lifecycle registration once had).
+    CloudKitSyncBridge.register(flutterViewController.engine.binaryMessenger)
 
     super.awakeFromNib()
   }

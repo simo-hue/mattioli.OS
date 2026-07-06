@@ -209,6 +209,7 @@ class DesktopGoalCategoriesController
         'created_at': now,
         'updated_at': now,
       });
+      DesktopPrivateDb.notifyWrite();
       ref.invalidateSelf();
       return DesktopGoalCategory(id: id, label: label, color: color);
     } catch (error, stack) {
@@ -220,12 +221,16 @@ class DesktopGoalCategoriesController
   Future<void> _archiveLocal(String id) async {
     try {
       final db = await DesktopPrivateDb.instance.database;
+      final now = DateTime.now().toUtc().toIso8601String();
+      // updated_at must move with the archive or last-write-wins would let an
+      // older remote edit un-archive this row on the next sync.
       await db.update(
         'macro_goal_categories',
-        {'archived_at': DateTime.now().toUtc().toIso8601String()},
+        {'archived_at': now, 'updated_at': now},
         where: 'id = ?',
         whereArgs: [id],
       );
+      DesktopPrivateDb.notifyWrite();
       ref.invalidateSelf();
     } catch (error, stack) {
       AppLogger.error('Unable to archive local category', error, stack);
@@ -250,6 +255,7 @@ class DesktopGoalCategoriesController
         where: 'id = ?',
         whereArgs: [id],
       );
+      DesktopPrivateDb.notifyWrite();
       ref.invalidateSelf();
       return DesktopGoalCategory(id: id, label: label, color: color);
     } catch (error, stack) {

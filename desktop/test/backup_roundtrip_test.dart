@@ -11,7 +11,7 @@
 // SQLCipher / Keychain / Supabase / path_provider needed.
 import 'package:evolve_desktop/core/desktop_backup_import_service.dart';
 import 'package:evolve_desktop/core/desktop_private_db.dart';
-import 'package:evolve_desktop/core/private_db_schema.dart';
+import 'package:evolve_sync/evolve_sync.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:sqflite_common_ffi/sqflite_ffi.dart';
 

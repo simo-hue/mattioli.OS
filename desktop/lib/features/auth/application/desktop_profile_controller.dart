@@ -43,9 +43,12 @@ class PrivateProfileNotifier extends AsyncNotifier<PrivateProfileState> {
     try {
       final db = await DesktopPrivateDb.instance.database;
       final ownerId = await DesktopPrivateDb.instance.ownerId;
+      // The schema column is `avatar_url` (shared with mobile; the local file
+      // path of the cached avatar). An earlier version queried a non-existent
+      // `avatar_path`, which broke the whole private-profile load.
       final rows = await db.query(
         'profiles',
-        columns: ['full_name', 'date_of_birth', 'avatar_path'],
+        columns: ['full_name', 'date_of_birth', 'avatar_url'],
         where: 'id = ?',
         whereArgs: [ownerId],
       );
@@ -55,7 +58,7 @@ class PrivateProfileNotifier extends AsyncNotifier<PrivateProfileState> {
         return PrivateProfileState(
           fullName: row['full_name'] as String?,
           dateOfBirth: row['date_of_birth'] as String?,
-          avatarPath: row['avatar_path'] as String?,
+          avatarPath: row['avatar_url'] as String?,
         );
       }
     } catch (e, stack) {
@@ -73,18 +76,15 @@ class PrivateProfileNotifier extends AsyncNotifier<PrivateProfileState> {
     if (!mode.isPrivate) return;
 
     try {
-      final db = await DesktopPrivateDb.instance.database;
-      final ownerId = await DesktopPrivateDb.instance.ownerId;
-
       final normalizedDateOfBirth = dateOfBirth?.trim().isEmpty ?? true
           ? null
           : dateOfBirth?.trim();
 
-      await db.update(
-        'profiles',
-        {'full_name': fullName.trim(), 'date_of_birth': normalizedDateOfBirth},
-        where: 'id = ?',
-        whereArgs: [ownerId],
+      // Stamps updated_at (last-write-wins comparator) and notifies the
+      // after-write sync trigger.
+      await DesktopPrivateDb.instance.updateProfileFields(
+        fullName: fullName.trim(),
+        dateOfBirth: normalizedDateOfBirth,
       );
 
       state = AsyncData(
@@ -108,15 +108,9 @@ class PrivateProfileNotifier extends AsyncNotifier<PrivateProfileState> {
     if (!mode.isPrivate) return;
 
     try {
-      final db = await DesktopPrivateDb.instance.database;
-      final ownerId = await DesktopPrivateDb.instance.ownerId;
-
-      await db.update(
-        'profiles',
-        {'avatar_path': avatarPath},
-        where: 'id = ?',
-        whereArgs: [ownerId],
-      );
+      // Writes avatar_url + updated_at and marks the avatar pseudo-record
+      // dirty so the image uploads as an encrypted CKAsset.
+      await DesktopPrivateDb.instance.setAvatarPath(avatarPath);
 
       state = AsyncData(
         state.value?.copyWith(avatarPath: avatarPath) ??

@@ -97,6 +97,7 @@ class PrivateDashboardRepository extends DashboardRepository {
       'created_at': now,
       'updated_at': now,
     });
+    DesktopPrivateDb.notifyWrite();
     return habit.copyWith(id: id);
   }
 
@@ -123,12 +124,14 @@ class PrivateDashboardRepository extends DashboardRepository {
       where: 'id = ?',
       whereArgs: [habit.id],
     );
+    DesktopPrivateDb.notifyWrite();
   }
 
   @override
   Future<void> deleteHabit(String id) async {
     final db = await DesktopPrivateDb.instance.database;
     await db.delete('goals', where: 'id = ?', whereArgs: [id]);
+    DesktopPrivateDb.notifyWrite();
   }
 
   @override
@@ -147,6 +150,7 @@ class PrivateDashboardRepository extends DashboardRepository {
       );
     }
     await batch.commit(noResult: true);
+    DesktopPrivateDb.notifyWrite();
   }
 
   @override
@@ -169,6 +173,7 @@ class PrivateDashboardRepository extends DashboardRepository {
         where: 'goal_id = ? AND date = ?',
         whereArgs: [habitId, dateKey],
       );
+      DesktopPrivateDb.notifyWrite();
       return null;
     }
 
@@ -206,6 +211,7 @@ class PrivateDashboardRepository extends DashboardRepository {
         'updated_at': now,
       });
     }
+    DesktopPrivateDb.notifyWrite();
     return nextStatus;
   }
 
@@ -288,6 +294,7 @@ class PrivateDashboardRepository extends DashboardRepository {
         'updated_at': now,
       });
     }
+    DesktopPrivateDb.notifyWrite();
   }
 
   @override
@@ -310,6 +317,7 @@ class PrivateDashboardRepository extends DashboardRepository {
       'created_at': (goal.createdAt ?? DateTime.now()).toIso8601String(),
       'updated_at': now,
     });
+    DesktopPrivateDb.notifyWrite();
     return goal.copyWith(id: id);
   }
 
@@ -333,12 +341,14 @@ class PrivateDashboardRepository extends DashboardRepository {
       where: 'id = ?',
       whereArgs: [goal.id],
     );
+    DesktopPrivateDb.notifyWrite();
   }
 
   @override
   Future<void> deleteGoal(String id) async {
     final db = await DesktopPrivateDb.instance.database;
     await db.delete('long_term_goals', where: 'id = ?', whereArgs: [id]);
+    DesktopPrivateDb.notifyWrite();
   }
 
   @override
@@ -352,6 +362,7 @@ class PrivateDashboardRepository extends DashboardRepository {
     batch.delete('macro_goal_categories');
     await batch.commit(noResult: true);
     _snapshot = DashboardSnapshot.empty;
+    DesktopPrivateDb.notifyWrite();
   }
 
   // ---------------------------------------------------------------------------

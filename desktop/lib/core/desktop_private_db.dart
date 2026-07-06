@@ -3,7 +3,7 @@ import 'dart:io';
 import 'dart:math';
 
 import 'package:evolve_desktop/core/app_logger.dart';
-import 'package:evolve_desktop/core/private_db_schema.dart';
+import 'package:evolve_sync/evolve_sync.dart';
 import 'package:evolve_desktop/core/streak_utils.dart';
 import 'package:flutter/foundation.dart';
 import 'package:flutter_secure_storage/flutter_secure_storage.dart';
@@ -42,6 +42,28 @@ class DesktopPrivateDb {
     return _instance!;
   }
 
+  /// After-write sync hook (iCloud sync trigger #2): set at app bootstrap to
+  /// the [SyncWriteDebouncer]'s notifyWrite. Every private-mode mutation —
+  /// here, in `PrivateDashboardRepository`, and in the private branches of the
+  /// controllers — calls [notifyWrite] after committing. Deliberately NOT
+  /// invoked by the sync engine's own applies (those go through
+  /// [SyncLocalStore.applyUpsert]), so a pull can never re-trigger a push.
+  static void Function()? onPrivateWrite;
+
+  static void notifyWrite() => onPrivateWrite?.call();
+
+  /// A [SyncLocalStore] over the opened private database, for the sync engine.
+  Future<SyncLocalStore> syncStore() async => SyncLocalStore(await database);
+
+  /// Persist [canonical] as this device's owner id after the sync engine
+  /// re-keyed all local rows onto the canonical sync-owner (second-device
+  /// merge). Without this, [ownerId] keeps returning the old device-local id
+  /// and every owner-filtered query misses the re-keyed rows.
+  Future<void> adoptOwner(String canonical) async {
+    const storage = FlutterSecureStorage();
+    await storage.write(key: _ownerStorageKey, value: canonical);
+  }
+
   /// Returns the open database, initializing it on first call. The open is
   /// serialized so concurrent callers share a single connection.
   Future<Database> get database async {
@@ -76,14 +98,34 @@ class DesktopPrivateDb {
   /// then re-seeds an empty owner profile so the app stays usable **and stays in
   /// Private mode** (mirrors mobile's `deleteAllPrivateData`). The encryption key
   /// and owner UUID are intentionally preserved.
+  ///
+  /// Sync bookkeeping is reset too (mirrors mobile's fixes #6/#7): the wipe's
+  /// delete triggers just queued a tombstone per row and the reseed re-dirtied
+  /// a fresh profile — stale state that a later re-enable would push as
+  /// deletes for records that no longer exist. `pending_zone_wipe` is
+  /// PRESERVED so a full reset queued while offline still wipes the cloud zone
+  /// on the next sync.
   Future<void> deleteAllPrivateData() async {
     final db = await database;
     final owner = await ownerId;
     await db.transaction((txn) async {
       await wipeUserData(txn);
       await seedProfile(txn, owner: owner, now: _now());
+      await resetSyncBookkeeping(txn);
     });
     await _deletePrivateProfileFiles();
+  }
+
+  /// Clears `sync_state` and the delta-fetch token/last-sync in `sync_meta`,
+  /// preserving `pending_zone_wipe` (see [deleteAllPrivateData]). Static so the
+  /// FFI tests can exercise it against an in-memory database.
+  static Future<void> resetSyncBookkeeping(DatabaseExecutor txn) async {
+    await txn.delete(PrivateDbSchema.syncStateTable);
+    await txn.update(
+      PrivateDbSchema.syncMetaTable,
+      {'server_change_token': null, 'last_full_sync_at': null},
+      where: 'id = 1',
+    );
   }
 
   /// Exports the entire private data space as a JSON-serializable map.
@@ -136,6 +178,128 @@ class DesktopPrivateDb {
       where: 'id = ?',
       whereArgs: [owner],
     );
+    notifyWrite();
+  }
+
+  /// Updates the profile's name / date of birth, stamping `updated_at` so the
+  /// edit wins last-write-wins against older copies from other devices.
+  Future<void> updateProfileFields({
+    required String fullName,
+    String? dateOfBirth,
+  }) async {
+    final db = await database;
+    final owner = await ownerId;
+    await db.update(
+      'profiles',
+      {
+        'full_name': fullName,
+        'date_of_birth': dateOfBirth,
+        'updated_at': _now(),
+      },
+      where: 'id = ?',
+      whereArgs: [owner],
+    );
+    notifyWrite();
+  }
+
+  /// Records a locally-picked avatar: points `profiles.avatar_url` at [path]
+  /// (a normal, trigger-visible write — the user really edited their profile)
+  /// and marks the avatar pseudo-record dirty so the image itself uploads as
+  /// an encrypted CKAsset (no trigger covers that record).
+  Future<void> setAvatarPath(String path) async {
+    final db = await database;
+    final owner = await ownerId;
+    await db.update(
+      'profiles',
+      {'avatar_url': path, 'updated_at': _now()},
+      where: 'id = ?',
+      whereArgs: [owner],
+    );
+    await SyncLocalStore(db).markAvatarDirty(owner);
+    notifyWrite();
+  }
+
+  // ---------------------------------------------------------------------------
+  // Avatar bytes (file side of the encrypted-CKAsset avatar sync)
+  // ---------------------------------------------------------------------------
+
+  /// Plaintext bytes of the current local avatar, or null when none is set or
+  /// the file has gone missing (the engine then pushes a tombstone).
+  Future<Uint8List?> readAvatarBytes() async {
+    final db = await database;
+    final owner = await ownerId;
+    final rows = await db.query(
+      'profiles',
+      columns: ['avatar_url'],
+      where: 'id = ?',
+      whereArgs: [owner],
+      limit: 1,
+    );
+    final path = rows.isEmpty ? null : rows.first['avatar_url'] as String?;
+    if (path == null || path.isEmpty) return null;
+    final file = File(path);
+    if (!await file.exists()) return null;
+    return file.readAsBytes();
+  }
+
+  /// Persist a PULLED avatar: write the image under `private_profile/` with a
+  /// fresh name (so stale `FileImage` caches can't show the old picture),
+  /// point `profiles.avatar_url` at it WITHOUT re-dirtying the profile row
+  /// (setLocalOnlyColumn), and delete the previous file.
+  Future<void> applyPulledAvatar(Uint8List bytes) async {
+    final db = await database;
+    final owner = await ownerId;
+    final previous = await _currentAvatarPath(db, owner);
+
+    final dir = await getApplicationSupportDirectory();
+    final avatarDir = Directory(p.join(dir.path, _avatarDirName));
+    await avatarDir.create(recursive: true);
+    final path = p.join(
+      avatarDir.path,
+      'avatar_sync_${DateTime.now().millisecondsSinceEpoch}.img',
+    );
+    await File(path).writeAsBytes(bytes, flush: true);
+
+    await SyncLocalStore(db)
+        .setLocalOnlyColumn('profiles', owner, 'avatar_url', path);
+
+    if (previous != null && previous.isNotEmpty && previous != path) {
+      try {
+        final old = File(previous);
+        if (await old.exists()) await old.delete();
+      } catch (error, stack) {
+        AppLogger.error('Stale avatar cleanup failed', error, stack);
+      }
+    }
+  }
+
+  /// Apply a PULLED avatar tombstone: remove the local file and clear
+  /// `profiles.avatar_url` without re-dirtying the profile row.
+  Future<void> removePulledAvatar() async {
+    final db = await database;
+    final owner = await ownerId;
+    final current = await _currentAvatarPath(db, owner);
+    await SyncLocalStore(db)
+        .setLocalOnlyColumn('profiles', owner, 'avatar_url', null);
+    if (current != null && current.isNotEmpty) {
+      try {
+        final file = File(current);
+        if (await file.exists()) await file.delete();
+      } catch (error, stack) {
+        AppLogger.error('Avatar removal cleanup failed', error, stack);
+      }
+    }
+  }
+
+  Future<String?> _currentAvatarPath(Database db, String owner) async {
+    final rows = await db.query(
+      'profiles',
+      columns: ['avatar_url'],
+      where: 'id = ?',
+      whereArgs: [owner],
+      limit: 1,
+    );
+    return rows.isEmpty ? null : rows.first['avatar_url'] as String?;
   }
 
   /// Settings/preference columns that Private mode persists in the profiles row.
@@ -192,6 +356,7 @@ class DesktopPrivateDb {
       where: 'id = ?',
       whereArgs: [owner],
     );
+    notifyWrite();
   }
 
   /// Writes a habit log from a macOS notification action (Done/Skip), computing
@@ -260,6 +425,7 @@ class DesktopPrivateDb {
       'created_at': now,
       'updated_at': now,
     }, conflictAlgorithm: ConflictAlgorithm.replace);
+    notifyWrite();
   }
 
   Future<void> importData({
@@ -277,6 +443,7 @@ class DesktopPrivateDb {
         now: _now(),
       );
     });
+    notifyWrite();
   }
 
   // ---------------------------------------------------------------------------

@@ -5,6 +5,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../providers/shared_prefs_provider.dart';
 import 'app_logger.dart';
+import 'app_sync_avatar_store.dart';
 import 'keychain_sync_secret_store.dart';
 import 'private_local_database.dart';
 
@@ -46,6 +47,7 @@ final privateSyncServiceProvider = Provider<PrivateSyncService>((ref) {
     ownerProvider: () => PrivateLocalDatabase().ownerId(),
     ownerWriter: (id) => PrivateLocalDatabase().adoptOwner(id),
     enabledStore: PrefsSyncEnabledStore(prefs),
+    avatarStore: const AppSyncAvatarStore(),
     logger: const AppSyncLogger(),
   );
 });

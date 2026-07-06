@@ -28,6 +28,7 @@ import 'core/secure_local_storage.dart';
 import 'core/secure_storage_utils.dart';
 import 'package:flutter_localizations/flutter_localizations.dart';
 import 'core/data_mode.dart';
+import 'core/private_local_database.dart';
 import 'core/private_sync_service.dart';
 import 'providers/sync_refresh.dart';
 import 'i18n/translations.g.dart';
@@ -304,33 +305,52 @@ class EvolveApp extends ConsumerStatefulWidget {
 
 class _EvolveAppState extends ConsumerState<EvolveApp>
     with WidgetsBindingObserver {
+  /// After-write sync trigger (iCloud sync trigger #2): private-mode writes
+  /// funnel through [PrivateLocalDatabase.onPrivateWrite] and coalesce here
+  /// into one sync a few quiet seconds after the last edit.
+  late final SyncWriteDebouncer _writeDebouncer;
+
   @override
   void initState() {
     super.initState();
     WidgetsBinding.instance.addObserver(this);
+    _writeDebouncer = SyncWriteDebouncer(onFlush: _syncAndRefresh);
+    PrivateLocalDatabase.onPrivateWrite = _onPrivateWrite;
   }
 
   @override
   void dispose() {
+    if (identical(PrivateLocalDatabase.onPrivateWrite, _onPrivateWrite)) {
+      PrivateLocalDatabase.onPrivateWrite = null;
+    }
+    _writeDebouncer.dispose();
     WidgetsBinding.instance.removeObserver(this);
     super.dispose();
+  }
+
+  void _onPrivateWrite() {
+    // Mode-gated like the resume trigger; the service additionally no-ops when
+    // sync is disabled, so a disabled user costs one cheap call per burst.
+    if (ref.read(activeDataModeProvider) == AppDataMode.private) {
+      _writeDebouncer.notifyWrite();
+    }
   }
 
   @override
   void didChangeAppLifecycleState(AppLifecycleState state) {
     AppLogger.info('[AppLifecycle] State changed to ${state.name}', category: 'lifecycle');
-    
+
     // Foreground sync trigger: on resume, pull/push private data. Gated to
     // Private mode so it never opens the private DB or calls CloudKit in
     // Supabase mode; the service itself is a no-op on Android and when sync is
     // disabled. Fire-and-forget — failures never affect the UI.
     if (state == AppLifecycleState.resumed &&
         ref.read(activeDataModeProvider) == AppDataMode.private) {
-      unawaited(_syncOnResume());
+      unawaited(_syncAndRefresh());
     }
   }
 
-  Future<void> _syncOnResume() async {
+  Future<void> _syncAndRefresh() async {
     final status = await ref.read(privateSyncServiceProvider).syncNow();
     // If the sync pulled remote changes, refresh the cached providers so the UI
     // shows them (the engine writes straight to the local DB).

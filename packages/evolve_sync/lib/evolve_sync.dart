@@ -18,3 +18,4 @@ export 'src/sync_engine.dart';
 export 'src/sync_key_store.dart';
 export 'src/sync_local_store.dart';
 export 'src/sync_logger.dart';
+export 'src/sync_write_debouncer.dart';

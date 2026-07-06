@@ -42,6 +42,16 @@ class PrivateLocalDatabase implements PrivateDataStore {
   Future<Database>? _opening;
   String? _ownerId;
 
+  /// After-write sync hook (iCloud sync trigger #2): set at app bootstrap to
+  /// the [SyncWriteDebouncer]'s notifyWrite, called by every mutating method
+  /// below. Deliberately NOT invoked by the sync engine's own applies (those
+  /// go through [SyncLocalStore.applyUpsert], not these methods), so a pull
+  /// can never re-trigger a push. Null (default, and in the notification
+  /// background isolate) → no-op; those writes sync on the next trigger.
+  static void Function()? onPrivateWrite;
+
+  void _notifyWrite() => onPrivateWrite?.call();
+
   @override
   Future<String> ownerId() async {
     final existing =
@@ -219,12 +229,14 @@ class PrivateLocalDatabase implements PrivateDataStore {
           : now,
       'updated_at': now,
     }, conflictAlgorithm: ConflictAlgorithm.replace);
+    _notifyWrite();
   }
 
   @override
   Future<void> deleteGoal(String id) async {
     final db = await _database();
     await db.delete('goals', where: 'id = ?', whereArgs: [id]);
+    _notifyWrite();
   }
 
   @override
@@ -275,6 +287,7 @@ class PrivateLocalDatabase implements PrivateDataStore {
       'updated_at': now,
       'streak': streak,
     }, conflictAlgorithm: ConflictAlgorithm.replace);
+    _notifyWrite();
   }
 
   /// Sets a habit log and computes its signed [computeStreak] from the full
@@ -326,6 +339,7 @@ class PrivateLocalDatabase implements PrivateDataStore {
       where: 'goal_id = ? AND date = ?',
       whereArgs: [goalId, date],
     );
+    _notifyWrite();
   }
 
   @override
@@ -370,12 +384,14 @@ class PrivateLocalDatabase implements PrivateDataStore {
           : goal.createdAt.toIso8601String(),
       'updated_at': now,
     }, conflictAlgorithm: ConflictAlgorithm.replace);
+    _notifyWrite();
   }
 
   @override
   Future<void> deleteMacroGoal(String id) async {
     final db = await _database();
     await db.delete('long_term_goals', where: 'id = ?', whereArgs: [id]);
+    _notifyWrite();
   }
 
   @override
@@ -409,6 +425,7 @@ class PrivateLocalDatabase implements PrivateDataStore {
       'created_at': now,
       'updated_at': now,
     });
+    _notifyWrite();
     return id;
   }
 
@@ -425,6 +442,7 @@ class PrivateLocalDatabase implements PrivateDataStore {
       where: 'id = ?',
       whereArgs: [id],
     );
+    _notifyWrite();
   }
 
   @override
@@ -437,6 +455,7 @@ class PrivateLocalDatabase implements PrivateDataStore {
       where: 'id = ?',
       whereArgs: [id],
     );
+    _notifyWrite();
   }
 
   @override
@@ -482,6 +501,7 @@ class PrivateLocalDatabase implements PrivateDataStore {
       row,
       conflictAlgorithm: ConflictAlgorithm.replace,
     );
+    _notifyWrite();
     return _dailyMoodFromRow(row);
   }
 
@@ -518,6 +538,12 @@ class PrivateLocalDatabase implements PrivateDataStore {
       values['date_of_birth'] = clearDateOfBirth ? null : dateOfBirth;
     }
     await db.update('profiles', values, where: 'id = ?', whereArgs: [owner]);
+    if (avatarUrl != null) {
+      // The avatar image itself syncs as an encrypted CKAsset under its own
+      // record; no trigger covers that pseudo-record, so mark it here.
+      await SyncLocalStore(db).markAvatarDirty(owner);
+    }
+    _notifyWrite();
   }
 
   @override
@@ -533,6 +559,7 @@ class PrivateLocalDatabase implements PrivateDataStore {
       where: 'id = ?',
       whereArgs: [owner],
     );
+    _notifyWrite();
   }
 
   @override
@@ -690,7 +717,7 @@ class PrivateLocalDatabase implements PrivateDataStore {
     final owner = await ownerId();
     // The whole import is one transaction: on any failure nothing is applied,
     // and the post-merge streak recompute reads back its own writes.
-    return db.transaction<ImportMergeStats>(
+    final stats = await db.transaction<ImportMergeStats>(
       (txn) => applyPrivateImportMerge(
         txn: txn,
         owner: owner,
@@ -700,6 +727,71 @@ class PrivateLocalDatabase implements PrivateDataStore {
         newId: () => _uuid.v4(),
       ),
     );
+    _notifyWrite();
+    return stats;
+  }
+
+  // ── Avatar bytes (file side of the encrypted-CKAsset avatar sync) ─────────
+
+  /// Plaintext bytes of the current local avatar, or null when none is set or
+  /// the file has gone missing (the engine then pushes a tombstone).
+  Future<Uint8List?> readAvatarBytes() async {
+    final row = await loadProfileRow();
+    final path = row['avatar_url'] as String?;
+    if (path == null || path.isEmpty) return null;
+    final file = File(path);
+    if (!await file.exists()) return null;
+    return file.readAsBytes();
+  }
+
+  /// Persist a PULLED avatar: write the image under `private_profile/` with a
+  /// fresh name (so stale `FileImage` caches can't show the old picture),
+  /// point `profiles.avatar_url` at it WITHOUT re-dirtying the profile row
+  /// (setLocalOnlyColumn), and delete the previous file.
+  Future<void> applyPulledAvatar(Uint8List bytes) async {
+    final db = await _database();
+    final owner = await ownerId();
+    final previous =
+        (await loadProfileRow())['avatar_url'] as String?;
+
+    final dir = await getApplicationSupportDirectory();
+    final avatarDir = Directory(p.join(dir.path, 'private_profile'));
+    await avatarDir.create(recursive: true);
+    final path = p.join(
+      avatarDir.path,
+      'avatar_sync_${DateTime.now().millisecondsSinceEpoch}.img',
+    );
+    await File(path).writeAsBytes(bytes, flush: true);
+
+    await SyncLocalStore(db)
+        .setLocalOnlyColumn('profiles', owner, 'avatar_url', path);
+
+    if (previous != null && previous.isNotEmpty && previous != path) {
+      try {
+        final old = File(previous);
+        if (await old.exists()) await old.delete();
+      } catch (e, stack) {
+        AppLogger.warning('[PrivateDB] stale avatar cleanup failed', e, stack);
+      }
+    }
+  }
+
+  /// Apply a PULLED avatar tombstone: remove the local file and clear
+  /// `profiles.avatar_url` without re-dirtying the profile row.
+  Future<void> removePulledAvatar() async {
+    final db = await _database();
+    final owner = await ownerId();
+    final current = (await loadProfileRow())['avatar_url'] as String?;
+    await SyncLocalStore(db)
+        .setLocalOnlyColumn('profiles', owner, 'avatar_url', null);
+    if (current != null && current.isNotEmpty) {
+      try {
+        final file = File(current);
+        if (await file.exists()) await file.delete();
+      } catch (e, stack) {
+        AppLogger.warning('[PrivateDB] avatar removal cleanup failed', e, stack);
+      }
+    }
   }
 
   Future<void> _deletePrivateProfileFiles(String? avatarPath) async {

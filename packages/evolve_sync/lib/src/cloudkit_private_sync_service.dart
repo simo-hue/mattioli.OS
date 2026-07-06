@@ -4,6 +4,7 @@ import 'package:shared_preferences/shared_preferences.dart';
 
 import 'cloudkit_bridge.dart';
 import 'private_sync_service.dart';
+import 'sync_avatar_store.dart';
 import 'sync_crypto.dart';
 import 'sync_engine.dart';
 import 'sync_key_store.dart';
@@ -46,6 +47,10 @@ class CloudKitPrivateSyncService implements PrivateSyncService {
   final SyncEnabledStore enabledStore;
   final SyncLogger logger;
 
+  /// App-provided file side of avatar sync; null leaves avatar records
+  /// unsynced (see [SyncEngine.avatarStore]).
+  final SyncAvatarStore? avatarStore;
+
   CloudKitPrivateSyncService({
     required this.bridge,
     required this.keys,
@@ -54,11 +59,17 @@ class CloudKitPrivateSyncService implements PrivateSyncService {
     required this.ownerProvider,
     required this.ownerWriter,
     required this.enabledStore,
+    this.avatarStore,
     this.logger = const SilentSyncLogger(),
   });
 
-  Future<SyncEngine> _engine(SyncLocalStore store) async =>
-      SyncEngine(store: store, bridge: bridge, crypto: crypto, logger: logger);
+  Future<SyncEngine> _engine(SyncLocalStore store) async => SyncEngine(
+        store: store,
+        bridge: bridge,
+        crypto: crypto,
+        avatarStore: avatarStore,
+        logger: logger,
+      );
 
   /// Tail of the in-flight operation chain. Each mutating op links onto it so
   /// only ONE runs at a time. Without this, the foreground-resume syncNow and a

@@ -3,6 +3,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../core/theme.dart';
+import '../../core/performance_color.dart';
 import '../../providers/goal_provider.dart';
 
 const _kMonthShort = [
@@ -193,7 +194,6 @@ class _MonthDensityWidget extends ConsumerWidget {
                 habits: habits,
                 logs: logs,
                 now: now,
-                accentColor: Theme.of(context).colorScheme.primary,
                 foregroundColor: context.appColors.foreground,
                 borderColor: context.appColors.border,
               ),
@@ -212,7 +212,6 @@ class _MonthBarsPainter extends CustomPainter {
   final List<dynamic> habits;
   final Map<String, dynamic> logs;
   final DateTime now;
-  final Color accentColor;
   final Color foregroundColor;
   final Color borderColor;
 
@@ -223,7 +222,6 @@ class _MonthBarsPainter extends CustomPainter {
     required this.habits,
     required this.logs,
     required this.now,
-    required this.accentColor,
     required this.foregroundColor,
     required this.borderColor,
   });
@@ -258,21 +256,23 @@ class _MonthBarsPainter extends CustomPainter {
       final dayLogs = logs[dateKey] ?? {};
       double completionPct = 0;
 
-      if (habits.isNotEmpty) {
-        final validHabits = habits.where((h) {
-          // Simplified check for painter
-          return true; 
-        }).toList();
-        
-        if (validHabits.isNotEmpty) {
-          final doneCount = validHabits.where((h) => dayLogs[h.id] == 'done').length;
-          completionPct = doneCount / validHabits.length;
-        }
+      // Denominator = habits active on THIS day (matching the home monthly
+      // view), not every habit that exists now — otherwise days before a habit
+      // started counted against completion and skewed the bar short/red.
+      final dayDate = DateTime(year, month, day);
+      final validHabits =
+          habits.where((h) => h.isActiveOn(dayDate) == true).toList();
+      if (validHabits.isNotEmpty) {
+        final doneCount =
+            validHabits.where((h) => dayLogs[h.id] == 'done').length;
+        completionPct = doneCount / validHabits.length;
       }
 
       if (completionPct > 0) {
+        // Performance color: red (low completion) → green (full), matching the
+        // home monthly view's scale via the shared performanceColor helper.
         final Paint barPaint = Paint()
-          ..color = accentColor;
+          ..color = performanceColor(completionPct, lightness: 0.5);
         canvas.drawRRect(rect, barPaint);
       } else {
         canvas.drawRRect(rect, emptyPaint);
@@ -282,8 +282,9 @@ class _MonthBarsPainter extends CustomPainter {
 
   @override
   bool shouldRepaint(covariant _MonthBarsPainter oldDelegate) {
-    return oldDelegate.year != year || 
-           oldDelegate.month != month || 
+    return oldDelegate.year != year ||
+           oldDelegate.month != month ||
+           oldDelegate.habits != habits ||
            oldDelegate.logs != logs;
   }
 }

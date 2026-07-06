@@ -2365,3 +2365,28 @@ iCloud Sync core is implemented, unit-tested (160), and iOS-compiling. Remaining
     - **Tests**: `test/profile_avatar_image_test.dart` (Private → FileImage not
       NetworkImage; Cloud → NetworkImage; null → default asset). Suite **189/189
       green**; `flutter analyze` clean. Final render best confirmed on device.
+
+- **2026-07-06: Yearly-view month bars use a performance-based color**
+  - *Details*: In the yearly (12-month) calendar view, every day with any
+    completion was drawn in one flat color (the theme primary). Now each bar is
+    colored by completion, using the same red→yellow→green scale as the home
+    monthly-view cells. Also fixed a latent bug: the bars' completion metric had
+    a `// Simplified check` that divided by *all* habits, even ones not active on
+    that day, so early days counted against completion and showed short/red bars.
+  - *Tech Notes*:
+    - New `lib/core/performance_color.dart` — `performanceHue(pct)` (0→red,
+      1→green at hue 142) + `performanceColor(pct, {saturation, lightness,
+      alpha})`. Single source of truth so the two calendar surfaces can't drift
+      apart (same lesson as the ProfileAvatarImage extraction). Alpha is applied
+      via `Color.withValues` so it's byte-identical to the old cell colors.
+    - `yearly_view_widget.dart` `_MonthBarsPainter`: denominator now
+      `habits.where((h) => h.isActiveOn(date))` (matches the monthly view — fixes
+      both color and bar heights); bars use `performanceColor(pct, lightness:
+      0.5)`; removed the now-unused `accentColor`; `shouldRepaint` also compares
+      `habits`.
+    - `habit_calendar_widget.dart` `_DayCell`: refactored its inline HSL formula
+      to `performanceColor(...)` — **no visual change** (guarded by a test that
+      asserts equality with the old formula).
+    - **Tests**: `test/performance_color_test.dart` (hue mapping + clamp; alpha;
+      byte-identical equivalence with the old cell color). Suite **194/194
+      green**; `flutter analyze` clean. Colors best confirmed on device.

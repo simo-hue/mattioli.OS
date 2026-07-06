@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:lucide_icons_flutter/lucide_icons.dart';
 import '../../core/theme.dart';
+import '../../core/performance_color.dart';
 import '../../models/goal.dart';
 import '../../providers/goal_provider.dart';
 import 'day_details_modal.dart';
@@ -386,12 +387,20 @@ class _DayCell extends StatelessWidget {
     Color borderColor = Colors.transparent;
 
     if (hasActivity) {
-      final hue = completionPct * 142.0; // 142 is green
-      bgColor = HSLColor.fromAHSL(1.0, hue, 0.7, 0.1)
-          .toColor()
-          .withValues(alpha: 0.3);
-      borderColor =
-          HSLColor.fromAHSL(1.0, hue, 0.8, 0.4).toColor().withValues(alpha: 0.5);
+      // Same red→green scale as the yearly bars via the shared helper. Tuned
+      // for a faint tinted cell background (unchanged from before).
+      bgColor = performanceColor(
+        completionPct,
+        saturation: 0.7,
+        lightness: 0.1,
+        alpha: 0.3,
+      );
+      borderColor = performanceColor(
+        completionPct,
+        saturation: 0.8,
+        lightness: 0.4,
+        alpha: 0.5,
+      );
     }
 
     if (isEditableDay && !hasActivity) {

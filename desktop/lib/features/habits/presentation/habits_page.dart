@@ -2,6 +2,7 @@ import 'package:evolve_desktop/app/theme/evolve_theme.dart';
 import 'package:evolve_desktop/core/macro_goal_calendar.dart';
 import 'package:evolve_desktop/core/app_bootstrap.dart';
 import 'package:evolve_desktop/core/desktop_data_mode.dart';
+import 'package:evolve_desktop/core/performance_color.dart';
 import 'package:evolve_desktop/features/auth/application/auth_controller.dart';
 import 'package:evolve_desktop/features/auth/application/desktop_profile_controller.dart';
 import 'package:evolve_desktop/features/dashboard/application/dashboard_controller.dart';
@@ -13,6 +14,7 @@ import 'package:evolve_desktop/shared/widgets/evolve_dialog.dart';
 import 'package:evolve_desktop/shared/widgets/evolve_panel.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:lucide_icons_flutter/lucide_icons.dart';
 
 enum _HabitSurface { protocol, calendar }
 
@@ -51,34 +53,23 @@ class _HabitsPageState extends ConsumerState<HabitsPage> {
       subtitle: t.habitsPage.subtitle,
       trailing: PageActionButton(
         label: t.habitsPage.newHabit,
-        icon: Icons.add_rounded,
+        icon: LucideIcons.plus,
         primary: true,
         onPressed: () => _openHabitEditor(),
       ),
       child: Column(
+        crossAxisAlignment: CrossAxisAlignment.stretch,
         children: [
           _Summary(snapshot: snapshot),
           const SizedBox(height: 18),
-          Align(
-            alignment: AlignmentDirectional.centerStart,
-            child: SegmentedButton<_HabitSurface>(
-              segments: [
-                ButtonSegment(
-                  value: _HabitSurface.protocol,
-                  icon: Icon(Icons.fact_check_outlined),
-                  label: Text(t.habitsPage.tabProtocol),
-                ),
-                ButtonSegment(
-                  value: _HabitSurface.calendar,
-                  icon: Icon(Icons.calendar_month_outlined),
-                  label: Text(t.habitsPage.tabCalendar),
-                ),
-              ],
-              selected: {_surface},
-              onSelectionChanged: (selection) {
-                setState(() => _surface = selection.single);
-              },
-            ),
+          EvolveSegmentedControl<_HabitSurface>(
+            height: 44,
+            segments: {
+              _HabitSurface.protocol: t.habitsPage.tabProtocol,
+              _HabitSurface.calendar: t.habitsPage.tabCalendar,
+            },
+            selected: _surface,
+            onSelected: (surface) => setState(() => _surface = surface),
           ),
           const SizedBox(height: 14),
           if (_surface == _HabitSurface.protocol)
@@ -150,8 +141,8 @@ class _HabitsPageState extends ConsumerState<HabitsPage> {
     final confirmed = await showEvolveDialog<bool>(
       context: context,
       builder: (context) => EvolveAlertDialog(
-        icon: Icons.delete_outline_rounded,
-        iconColor: EvolveColors.rose,
+        icon: LucideIcons.trash2,
+        iconColor: EvolveColors.destructive,
         title: Text(t.habitsPage.deleteHabitTitle),
         content: Text(t.habitsPage.deleteHabitConfirm(title: habit.title)),
         actions: [
@@ -191,7 +182,7 @@ class _Summary extends StatelessWidget {
           child: _SummaryCard(
             label: t.habitsPage.activeProtocol,
             value: '${snapshot.totalHabits}',
-            icon: Icons.event_available_outlined,
+            icon: LucideIcons.listTodo,
             color: context.evolveAccent,
           ),
         ),
@@ -200,7 +191,7 @@ class _Summary extends StatelessWidget {
           child: _SummaryCard(
             label: t.habitsPage.completedToday,
             value: '${snapshot.completedHabits}',
-            icon: Icons.check_circle_outline_rounded,
+            icon: LucideIcons.check,
             color: EvolveColors.cyan,
           ),
         ),
@@ -209,7 +200,7 @@ class _Summary extends StatelessWidget {
           child: _SummaryCard(
             label: t.stats.bestStreakLabel,
             value: t.dashboard.streakDaysShort(n: snapshot.bestStreak),
-            icon: Icons.local_fire_department_outlined,
+            icon: LucideIcons.flame,
             color: EvolveColors.amber,
           ),
         ),
@@ -236,30 +227,25 @@ class _SummaryCard extends StatelessWidget {
     return EvolvePanel(
       child: Row(
         children: [
-          Container(
-            width: 42,
-            height: 42,
-            decoration: BoxDecoration(
-              color: color.withValues(alpha: 0.1),
-              borderRadius: BorderRadius.circular(12),
-            ),
-            child: Icon(icon, color: color, size: 20),
-          ),
+          EvolveIconChip(icon: icon, color: color, size: 40, iconSize: 18),
           const SizedBox(width: 14),
-          Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              Text(label, style: Theme.of(context).textTheme.bodySmall),
-              const SizedBox(height: 4),
-              Text(
-                value,
-                style: TextStyle(
-                  color: context.evolveColors.foreground,
-                  fontSize: 20,
-                  fontWeight: FontWeight.w800,
+          Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(label, style: Theme.of(context).textTheme.bodySmall),
+                const SizedBox(height: 4),
+                Text(
+                  value,
+                  style: TextStyle(
+                    color: context.evolveColors.foreground,
+                    fontSize: 20,
+                    fontWeight: FontWeight.w800,
+                    letterSpacing: -0.5,
+                  ),
                 ),
-              ),
-            ],
+              ],
+            ),
           ),
         ],
       ),
@@ -285,50 +271,51 @@ class _ProtocolPanel extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final habits = snapshot.habits;
-    return EvolvePanel(
-      padding: EdgeInsets.zero,
-      child: Column(
-        children: [
-          Padding(
-            padding: const EdgeInsets.fromLTRB(18, 18, 18, 14),
-            child: SectionHeading(
-              title: t.habitsPage.dailyProtocol,
-              subtitle: t.habitsPage.protocolSubtitle,
-              trailing: StatusPill(
-                label: t.stats.currentWeek,
-                icon: Icons.calendar_today_outlined,
-              ),
+    // Mobile habit-manager look: floating heading + one translucent outlined
+    // card per habit row instead of a single table panel.
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.stretch,
+      children: [
+        Padding(
+          padding: const EdgeInsetsDirectional.only(start: 2, end: 2),
+          child: SectionHeading(
+            title: t.habitsPage.dailyProtocol,
+            subtitle: t.habitsPage.protocolSubtitle,
+            trailing: StatusPill(
+              label: t.stats.currentWeek,
+              icon: LucideIcons.calendarClock,
             ),
           ),
-          const Divider(height: 1),
-          const _HabitHeader(),
-          ReorderableListView.builder(
-            shrinkWrap: true,
-            physics: const NeverScrollableScrollPhysics(),
-            buildDefaultDragHandles: false,
-            itemCount: habits.length,
-            onReorderItem: onReorder,
-            itemBuilder: (context, index) {
-              final habit = habits[index];
-              return _HabitRow(
-                key: ValueKey(habit.id),
-                habit: habit,
-                onToggle: () => onToggle(habit.id),
-                onEdit: () => onEdit(habit),
-                onDelete: () => onDelete(habit),
-                dragHandle: ReorderableDragStartListener(
-                  index: index,
-                  child: Icon(
-                    Icons.drag_indicator,
-                    size: 18,
-                    color: context.evolveColors.subtle,
-                  ),
+        ),
+        const SizedBox(height: 14),
+        const _HabitHeader(),
+        const SizedBox(height: 8),
+        ReorderableListView.builder(
+          shrinkWrap: true,
+          physics: const NeverScrollableScrollPhysics(),
+          buildDefaultDragHandles: false,
+          itemCount: habits.length,
+          onReorderItem: onReorder,
+          itemBuilder: (context, index) {
+            final habit = habits[index];
+            return _HabitRow(
+              key: ValueKey(habit.id),
+              habit: habit,
+              onToggle: () => onToggle(habit.id),
+              onEdit: () => onEdit(habit),
+              onDelete: () => onDelete(habit),
+              dragHandle: ReorderableDragStartListener(
+                index: index,
+                child: Icon(
+                  LucideIcons.gripVertical,
+                  size: 16,
+                  color: context.evolveColors.muted,
                 ),
-              );
-            },
-          ),
-        ],
-      ),
+              ),
+            );
+          },
+        ),
+      ],
     );
   }
 }
@@ -339,7 +326,7 @@ class _HabitHeader extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Padding(
-      padding: const EdgeInsets.symmetric(horizontal: 18, vertical: 11),
+      padding: const EdgeInsets.symmetric(horizontal: 15),
       child: Row(
         children: [
           const SizedBox(width: 24),
@@ -365,10 +352,30 @@ class _ColumnLabel extends StatelessWidget {
     return Text(
       label,
       style: TextStyle(
-        color: context.evolveColors.subtle,
+        color: context.evolveColors.muted.withValues(alpha: 0.8),
         fontSize: 10,
-        fontWeight: FontWeight.w800,
-        letterSpacing: 0.9,
+        fontWeight: FontWeight.w600,
+        letterSpacing: 0.5,
+      ),
+    );
+  }
+}
+
+/// Calendar weekday header label (mobile: 9px w600 uppercase muted, ls .5).
+class _WeekdayLabel extends StatelessWidget {
+  const _WeekdayLabel(this.label);
+
+  final String label;
+
+  @override
+  Widget build(BuildContext context) {
+    return Text(
+      label,
+      style: TextStyle(
+        color: context.evolveColors.muted,
+        fontSize: 9,
+        fontWeight: FontWeight.w600,
+        letterSpacing: 0.5,
       ),
     );
   }
@@ -393,125 +400,225 @@ class _HabitRow extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final completed = habit.state == HabitState.completed;
-    return Column(
-      children: [
-        const Divider(height: 1),
-        Padding(
-          padding: const EdgeInsets.symmetric(horizontal: 18, vertical: 12),
-          child: Row(
-            children: [
-              SizedBox(
-                width: 24,
-                child: dragHandle == null
-                    ? null
-                    : MouseRegion(
-                        cursor: SystemMouseCursors.grab,
-                        child: dragHandle,
+    return Container(
+      margin: const EdgeInsets.only(bottom: 8),
+      padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
+      decoration: BoxDecoration(
+        color: context.evolveColors.panel.withValues(alpha: 0.4),
+        borderRadius: BorderRadius.circular(16),
+        border: Border.all(
+          color: context.evolveColors.border.withValues(alpha: 0.5),
+        ),
+      ),
+      child: Row(
+        children: [
+          SizedBox(
+            width: 24,
+            child: dragHandle == null
+                ? null
+                : MouseRegion(
+                    cursor: SystemMouseCursors.grab,
+                    child: dragHandle,
+                  ),
+          ),
+          SizedBox(
+            width: 32,
+            child: Align(
+              alignment: AlignmentDirectional.centerStart,
+              child: InkWell(
+                onTap: onToggle,
+                borderRadius: BorderRadius.circular(8),
+                child: AnimatedContainer(
+                  duration: const Duration(milliseconds: 160),
+                  width: 22,
+                  height: 22,
+                  decoration: BoxDecoration(
+                    color: completed ? habit.color : Colors.transparent,
+                    border: Border.all(
+                      color: completed
+                          ? habit.color
+                          : context.evolveColors.borderStrong,
+                    ),
+                    borderRadius: BorderRadius.circular(7),
+                  ),
+                  child: completed
+                      ? const Icon(
+                          LucideIcons.check,
+                          color: Color(0xFF092113),
+                          size: 14,
+                        )
+                      : null,
+                ),
+              ),
+            ),
+          ),
+          Expanded(
+            child: Row(
+              children: [
+                Container(
+                  width: 11,
+                  height: 11,
+                  decoration: BoxDecoration(
+                    color: habit.color,
+                    shape: BoxShape.circle,
+                    boxShadow: [
+                      BoxShadow(
+                        color: habit.color.withValues(alpha: 0.5),
+                        blurRadius: 6,
                       ),
-              ),
-              SizedBox(
-                width: 32,
-                child: IconButton(
-                  visualDensity: VisualDensity.compact,
-                  padding: EdgeInsets.zero,
-                  onPressed: onToggle,
-                  icon: Icon(
-                    completed
-                        ? Icons.check_circle_rounded
-                        : Icons.radio_button_unchecked_rounded,
-                    color: completed
-                        ? habit.color
-                        : context.evolveColors.subtle,
-                    size: 20,
+                    ],
                   ),
                 ),
-              ),
-              Expanded(
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Text(
-                      habit.title,
-                      style: Theme.of(context).textTheme.titleMedium,
-                    ),
-                    const SizedBox(height: 3),
-                    Text(
-                      habit.category,
-                      style: Theme.of(context).textTheme.bodySmall,
-                    ),
-                  ],
-                ),
-              ),
-              SizedBox(
-                width: 100,
-                child: Text(
-                  t.habitsPage.streakDays(n: habit.streak),
-                  style: const TextStyle(
-                    color: EvolveColors.amber,
-                    fontSize: 12,
-                    fontWeight: FontWeight.w700,
-                  ),
-                ),
-              ),
-              SizedBox(
-                width: 200,
-                child: Row(
-                  children: [
-                    for (final done in habit.weeklyProgress)
-                      Container(
-                        width: 18,
-                        height: 18,
-                        margin: const EdgeInsetsDirectional.only(end: 8),
-                        decoration: BoxDecoration(
-                          color: done
-                              ? habit.color.withValues(alpha: 0.86)
-                              : context.evolveColors.panelSoft,
-                          borderRadius: BorderRadius.circular(5),
+                const SizedBox(width: 12),
+                Expanded(
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Text(
+                        habit.title,
+                        maxLines: 1,
+                        overflow: TextOverflow.ellipsis,
+                        style: TextStyle(
+                          color: context.evolveColors.foreground,
+                          fontSize: 15,
+                          fontWeight: FontWeight.w700,
+                          letterSpacing: -0.2,
                         ),
                       ),
-                  ],
-                ),
-              ),
-              SizedBox(
-                width: 105,
-                child: Text(
-                  habit.reminderTime ?? t.common.none,
-                  style: Theme.of(context).textTheme.bodySmall,
-                ),
-              ),
-              SizedBox(
-                width: 84,
-                child: Row(
-                  children: [
-                    IconButton(
-                      tooltip: t.common.actions.edit,
-                      visualDensity: VisualDensity.compact,
-                      constraints: const BoxConstraints.tightFor(
-                        width: 36,
-                        height: 36,
+                      const SizedBox(height: 3),
+                      Text(
+                        habit.category,
+                        maxLines: 1,
+                        overflow: TextOverflow.ellipsis,
+                        style: TextStyle(
+                          color: context.evolveColors.muted.withValues(
+                            alpha: 0.8,
+                          ),
+                          fontSize: 12,
+                          fontWeight: FontWeight.w500,
+                        ),
                       ),
-                      padding: EdgeInsets.zero,
-                      onPressed: onEdit,
-                      icon: const Icon(Icons.edit_outlined, size: 17),
-                    ),
-                    IconButton(
-                      tooltip: t.common.actions.delete,
-                      visualDensity: VisualDensity.compact,
-                      constraints: const BoxConstraints.tightFor(
-                        width: 36,
-                        height: 36,
-                      ),
-                      padding: EdgeInsets.zero,
-                      onPressed: onDelete,
-                      icon: const Icon(Icons.delete_outline_rounded, size: 17),
-                    ),
-                  ],
+                    ],
+                  ),
                 ),
-              ),
-            ],
+              ],
+            ),
           ),
-        ),
-      ],
+          SizedBox(
+            width: 100,
+            child: Row(
+              children: [
+                const Icon(
+                  LucideIcons.flame,
+                  size: 12,
+                  color: EvolveColors.amber,
+                ),
+                const SizedBox(width: 4),
+                Flexible(
+                  child: Text(
+                    t.habitsPage.streakDays(n: habit.streak),
+                    maxLines: 1,
+                    overflow: TextOverflow.ellipsis,
+                    style: const TextStyle(
+                      color: EvolveColors.amber,
+                      fontSize: 12,
+                      fontWeight: FontWeight.w700,
+                    ),
+                  ),
+                ),
+              ],
+            ),
+          ),
+          SizedBox(
+            width: 200,
+            child: Row(
+              children: [
+                for (final done in habit.weeklyProgress)
+                  Container(
+                    width: 18,
+                    height: 18,
+                    margin: const EdgeInsetsDirectional.only(end: 8),
+                    decoration: BoxDecoration(
+                      color: done
+                          ? habit.color.withValues(alpha: 0.86)
+                          : context.evolveColors.panelSoft,
+                      borderRadius: BorderRadius.circular(5),
+                    ),
+                  ),
+              ],
+            ),
+          ),
+          SizedBox(
+            width: 105,
+            child: Text(
+              habit.reminderTime ?? t.common.none,
+              style: Theme.of(context).textTheme.bodySmall,
+            ),
+          ),
+          SizedBox(
+            width: 84,
+            child: Row(
+              children: [
+                _RowIconButton(
+                  icon: LucideIcons.pencil,
+                  tooltip: t.common.actions.edit,
+                  onPressed: onEdit,
+                ),
+                _RowIconButton(
+                  icon: LucideIcons.trash2,
+                  tooltip: t.common.actions.delete,
+                  color: EvolveColors.destructive,
+                  hoverColor: EvolveColors.destructive,
+                  onPressed: onDelete,
+                ),
+              ],
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+/// Compact 36x36 row action icon: muted by default, foreground on hover
+/// (destructive actions keep their red tint).
+class _RowIconButton extends StatefulWidget {
+  const _RowIconButton({
+    required this.icon,
+    required this.tooltip,
+    required this.onPressed,
+    this.color,
+    this.hoverColor,
+  });
+
+  final IconData icon;
+  final String tooltip;
+  final VoidCallback onPressed;
+  final Color? color;
+  final Color? hoverColor;
+
+  @override
+  State<_RowIconButton> createState() => _RowIconButtonState();
+}
+
+class _RowIconButtonState extends State<_RowIconButton> {
+  var _hovered = false;
+
+  @override
+  Widget build(BuildContext context) {
+    final color = widget.color ?? context.evolveColors.muted;
+    final hoverColor = widget.hoverColor ?? context.evolveColors.foreground;
+    return MouseRegion(
+      onEnter: (_) => setState(() => _hovered = true),
+      onExit: (_) => setState(() => _hovered = false),
+      child: IconButton(
+        tooltip: widget.tooltip,
+        visualDensity: VisualDensity.compact,
+        constraints: const BoxConstraints.tightFor(width: 36, height: 36),
+        padding: EdgeInsets.zero,
+        onPressed: widget.onPressed,
+        icon: Icon(widget.icon, size: 17, color: _hovered ? hoverColor : color),
+      ),
     );
   }
 }
@@ -539,74 +646,122 @@ class _CalendarPanel extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return EvolvePanel(
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Row(
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.stretch,
+      children: [
+        EvolveSegmentedControl<CalendarViewMode>(
+          height: 44,
+          segments: {
+            for (final mode in CalendarViewMode.values) mode: mode.label,
+          },
+          selected: view,
+          onSelected: onViewChanged,
+        ),
+        const SizedBox(height: 14),
+        EvolvePanel(
+          radius: 20,
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              Expanded(
-                child: SegmentedButton<CalendarViewMode>(
-                  segments: [
-                    for (final mode in CalendarViewMode.values)
-                      ButtonSegment(value: mode, label: Text(mode.label)),
+              Row(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  // Mobile calendar header: 22px w800 period title with, on
+                  // the month view, the year as a muted subtitle underneath.
+                  Expanded(
+                    child: view == CalendarViewMode.month
+                        ? Column(
+                            crossAxisAlignment: CrossAxisAlignment.start,
+                            children: [
+                              Text(
+                                t.common.months[anchor.month - 1],
+                                style: TextStyle(
+                                  color: context.evolveColors.foreground,
+                                  fontSize: 22,
+                                  fontWeight: FontWeight.w800,
+                                  letterSpacing: -0.8,
+                                ),
+                              ),
+                              Text(
+                                '${anchor.year}',
+                                style: TextStyle(
+                                  color: context.evolveColors.muted,
+                                  fontSize: 14,
+                                  fontWeight: FontWeight.w500,
+                                  letterSpacing: 0.5,
+                                ),
+                              ),
+                            ],
+                          )
+                        : Text(
+                            _periodLabel(anchor, view),
+                            style: TextStyle(
+                              color: context.evolveColors.foreground,
+                              fontSize: 22,
+                              fontWeight: FontWeight.w800,
+                              letterSpacing: -0.8,
+                            ),
+                          ),
+                  ),
+                  if (view != CalendarViewMode.life) ...[
+                    SizedBox(
+                      height: 36,
+                      child: OutlinedButton(
+                        style: OutlinedButton.styleFrom(
+                          padding: const EdgeInsets.symmetric(horizontal: 14),
+                          shape: RoundedRectangleBorder(
+                            borderRadius: BorderRadius.circular(10),
+                          ),
+                        ),
+                        onPressed: onToday,
+                        child: Text(t.habitsPage.today),
+                      ),
+                    ),
+                    const SizedBox(width: 8),
+                    EvolveSquareIconButton(
+                      icon: directionalIcon(
+                        context,
+                        LucideIcons.chevronLeft,
+                        LucideIcons.chevronRight,
+                      ),
+                      tooltip: t.habitsPage.prevPeriod,
+                      onTap: onPrevious,
+                    ),
+                    const SizedBox(width: 4),
+                    EvolveSquareIconButton(
+                      icon: directionalIcon(
+                        context,
+                        LucideIcons.chevronRight,
+                        LucideIcons.chevronLeft,
+                      ),
+                      tooltip: t.habitsPage.nextPeriod,
+                      onTap: onNext,
+                    ),
                   ],
-                  selected: {view},
-                  onSelectionChanged: (selection) {
-                    onViewChanged(selection.single);
-                  },
-                ),
+                ],
               ),
-              if (view != CalendarViewMode.life) ...[
-                OutlinedButton(
-                  onPressed: onToday,
-                  child: Text(t.habitsPage.today),
+              const SizedBox(height: 16),
+              switch (view) {
+                CalendarViewMode.month => _MonthCalendar(
+                  snapshot: snapshot,
+                  anchor: anchor,
+                  onSelectDay: onSelectDay,
                 ),
-                const SizedBox(width: 8),
-                IconButton(
-                  tooltip: t.habitsPage.prevPeriod,
-                  onPressed: onPrevious,
-                  icon: const DirectionalIcon(
-                    Icons.chevron_left_rounded,
-                    Icons.chevron_right_rounded,
-                  ),
+                CalendarViewMode.week => _WeekCalendar(
+                  snapshot: snapshot,
+                  anchor: anchor,
+                  onSelectDay: onSelectDay,
                 ),
-                IconButton(
-                  tooltip: t.habitsPage.nextPeriod,
-                  onPressed: onNext,
-                  icon: const DirectionalIcon(
-                    Icons.chevron_right_rounded,
-                    Icons.chevron_left_rounded,
-                  ),
+                CalendarViewMode.year => _YearCalendar(
+                  snapshot: snapshot,
+                  anchor: anchor,
                 ),
-              ],
+                CalendarViewMode.life => const _LifeCalendar(),
+              },
             ],
           ),
-          const SizedBox(height: 18),
-          Text(
-            _periodLabel(anchor, view),
-            style: Theme.of(context).textTheme.headlineSmall,
-          ),
-          const SizedBox(height: 16),
-          switch (view) {
-            CalendarViewMode.month => _MonthCalendar(
-              snapshot: snapshot,
-              anchor: anchor,
-              onSelectDay: onSelectDay,
-            ),
-            CalendarViewMode.week => _WeekCalendar(
-              snapshot: snapshot,
-              anchor: anchor,
-              onSelectDay: onSelectDay,
-            ),
-            CalendarViewMode.year => _YearCalendar(
-              snapshot: snapshot,
-              anchor: anchor,
-            ),
-            CalendarViewMode.life => const _LifeCalendar(),
-          },
-        ],
-      ),
+        ),
+      ],
     );
   }
 }
@@ -632,7 +787,7 @@ class _MonthCalendar extends StatelessWidget {
         Row(
           children: [
             for (final day in t.habitsPage.weekdayAbbrevUpper)
-              Expanded(child: Center(child: _ColumnLabel(day))),
+              Expanded(child: Center(child: _WeekdayLabel(day))),
           ],
         ),
         const SizedBox(height: 8),
@@ -641,9 +796,9 @@ class _MonthCalendar extends StatelessWidget {
           physics: const NeverScrollableScrollPhysics(),
           gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
             crossAxisCount: 7,
-            childAspectRatio: 1.34,
-            mainAxisSpacing: 7,
-            crossAxisSpacing: 7,
+            childAspectRatio: 0.85,
+            mainAxisSpacing: 6,
+            crossAxisSpacing: 6,
           ),
           itemCount: leading + days,
           itemBuilder: (context, index) {
@@ -729,68 +884,129 @@ class _DayCell extends StatelessWidget {
     final indicatorLimit = expanded ? 28 : 14;
     final hiddenIndicators = indicators.length - indicatorLimit;
     final isFuture = date.isAfter(DateTime.now());
-    return InkWell(
-      onTap: onTap,
-      borderRadius: BorderRadius.circular(11),
-      child: Container(
-        height: expanded ? 155 : null,
-        padding: const EdgeInsets.all(10),
-        decoration: BoxDecoration(
-          color: isToday
-              ? context.evolveAccent.withValues(alpha: 0.08)
-              : isFuture
-              ? context.evolveColors.panelSoft.withValues(alpha: 0.5)
-              : context.evolveColors.panelRaised,
-          borderRadius: BorderRadius.circular(11),
-          border: Border.all(
-            color: isToday ? context.evolveAccent : context.evolveColors.border,
-          ),
-        ),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            Text(
-              '${date.day}',
-              style: TextStyle(
-                color: isToday
-                    ? context.evolveAccent
-                    : context.evolveColors.foreground,
-                fontWeight: FontWeight.w800,
-              ),
-            ),
-            const SizedBox(height: 9),
-            Wrap(
-              spacing: 4,
-              runSpacing: 4,
-              children: [
-                for (final habit in indicators.take(indicatorLimit))
-                  Container(
-                    width: 6,
-                    height: 6,
-                    decoration: BoxDecoration(
-                      color: switch (snapshot.habitStatusFor(habit.id, date)) {
-                        'done' => habit.color,
-                        'missed' => EvolveColors.rose,
-                        _ => habit.color.withValues(alpha: 0.22),
-                      },
-                      shape: BoxShape.circle,
+    final isEditable = _canEditDate(date);
+    final hasActivity = indicators.any(
+      (habit) => _habitStatus(snapshot, habit.id, date, habit) != null,
+    );
+
+    // Mobile day-cell recipe: red→green performance tint for recorded days,
+    // accent hairline for today / still-editable days, faded future days.
+    Color? background;
+    var borderColor = Colors.transparent;
+    if (hasActivity) {
+      background = performanceColor(
+        completion,
+        saturation: 0.7,
+        lightness: 0.1,
+        alpha: 0.3,
+      );
+      borderColor = performanceColor(
+        completion,
+        saturation: 0.8,
+        lightness: 0.4,
+        alpha: 0.5,
+      );
+    } else if (isEditable) {
+      background = context.evolveAccent.withValues(alpha: 0.04);
+      borderColor = context.evolveAccent.withValues(alpha: 0.25);
+    }
+    if (isToday && !hasActivity) {
+      background = context.evolveColors.foreground.withValues(alpha: 0.04);
+      borderColor = context.evolveAccent.withValues(alpha: 0.4);
+    }
+    if (isFuture) {
+      background = null;
+      borderColor = Colors.transparent;
+    }
+
+    return Opacity(
+      opacity: isFuture ? 0.28 : 1,
+      child: InkWell(
+        onTap: onTap,
+        borderRadius: BorderRadius.circular(8),
+        child: Container(
+          height: expanded ? 155 : null,
+          padding: const EdgeInsets.all(8),
+          decoration: BoxDecoration(
+            color: background,
+            borderRadius: BorderRadius.circular(8),
+            border: Border.all(color: borderColor),
+            boxShadow: hasActivity && completion == 1.0
+                ? [
+                    BoxShadow(
+                      color: performanceColor(
+                        1,
+                        saturation: 0.8,
+                        lightness: 0.4,
+                        alpha: 0.15,
+                      ),
+                      blurRadius: 8,
                     ),
-                  ),
-                if (hiddenIndicators > 0)
-                  Text(
-                    '+$hiddenIndicators',
-                    style: Theme.of(context).textTheme.bodySmall,
-                  ),
-              ],
-            ),
-            const Spacer(),
-            Text(
-              indicators.isEmpty
-                  ? t.stats.noHabit
-                  : '${(completion * 100).round()}%',
-              style: Theme.of(context).textTheme.bodySmall,
-            ),
-          ],
+                  ]
+                : null,
+          ),
+          child: Column(
+            children: [
+              Text(
+                '${date.day}',
+                style: TextStyle(
+                  color: isToday
+                      ? context.evolveAccent
+                      : hasActivity
+                      ? context.evolveColors.foreground
+                      : context.evolveColors.muted,
+                  fontSize: 12,
+                  fontWeight: isToday ? FontWeight.w700 : FontWeight.w600,
+                ),
+              ),
+              const SizedBox(height: 6),
+              Wrap(
+                alignment: WrapAlignment.center,
+                spacing: 3,
+                runSpacing: 3,
+                children: [
+                  for (final habit in indicators.take(indicatorLimit))
+                    Container(
+                      width: 5,
+                      height: 5,
+                      decoration: BoxDecoration(
+                        color: switch (snapshot.habitStatusFor(
+                          habit.id,
+                          date,
+                        )) {
+                          'done' => habit.color,
+                          'missed' => EvolveColors.rose,
+                          _ => habit.color.withValues(alpha: 0.22),
+                        },
+                        shape: BoxShape.circle,
+                      ),
+                    ),
+                  if (hiddenIndicators > 0)
+                    Text(
+                      '+$hiddenIndicators',
+                      style: TextStyle(
+                        color: context.evolveColors.muted,
+                        fontSize: 9,
+                        fontWeight: FontWeight.w600,
+                      ),
+                    ),
+                ],
+              ),
+              const Spacer(),
+              Text(
+                indicators.isEmpty
+                    ? t.stats.noHabit
+                    : '${(completion * 100).round()}%',
+                maxLines: 1,
+                overflow: TextOverflow.ellipsis,
+                style: TextStyle(
+                  color: context.evolveColors.muted.withValues(alpha: 0.8),
+                  fontSize: 10,
+                  fontWeight: FontWeight.w600,
+                ),
+              ),
+            ],
+          ),
         ),
       ),
     );
@@ -816,18 +1032,25 @@ class _YearCalendar extends StatelessWidget {
               SizedBox(
                 width: width,
                 child: Container(
-                  padding: const EdgeInsets.all(12),
+                  padding: const EdgeInsets.all(14),
                   decoration: BoxDecoration(
-                    color: context.evolveColors.panelRaised,
-                    borderRadius: BorderRadius.circular(11),
-                    border: Border.all(color: context.evolveColors.border),
+                    color: context.evolveColors.panel.withValues(alpha: 0.4),
+                    borderRadius: BorderRadius.circular(16),
+                    border: Border.all(
+                      color: context.evolveColors.border.withValues(alpha: 0.5),
+                    ),
                   ),
                   child: Column(
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
                       Text(
                         t.common.months[month - 1],
-                        style: Theme.of(context).textTheme.titleMedium,
+                        style: TextStyle(
+                          color: context.evolveColors.foreground,
+                          fontSize: 15,
+                          fontWeight: FontWeight.w700,
+                          letterSpacing: -0.2,
+                        ),
                       ),
                       const SizedBox(height: 10),
                       for (
@@ -838,7 +1061,11 @@ class _YearCalendar extends StatelessWidget {
                         LinearProgressIndicator(
                           value: _weekCompletion(month, week),
                           minHeight: 4,
-                          color: context.evolveAccent,
+                          color: performanceColor(
+                            _weekCompletion(month, week),
+                            saturation: 0.8,
+                            lightness: 0.4,
+                          ),
                           backgroundColor: context.evolveColors.panelSoft,
                           borderRadius: BorderRadius.circular(6),
                         ),
@@ -897,67 +1124,56 @@ class _LifeCalendar extends ConsumerWidget {
         );
     final remainingMonths = totalMonths - livedMonths;
     final age = livedMonths ~/ 12;
-    return Container(
-      padding: const EdgeInsets.all(16),
-      decoration: BoxDecoration(
-        color: context.evolveColors.panelRaised,
-        borderRadius: BorderRadius.circular(12),
-        border: Border.all(color: context.evolveColors.border),
-      ),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          SectionHeading(
-            title: t.habitsPage.lifeView,
-            subtitle: t.habitsPage.lifeViewSubtitle,
-          ),
-          const SizedBox(height: 16),
-          Row(
-            children: [
-              Expanded(
-                child: _LifeMetric(
-                  label: t.habitsPage.monthsLived,
-                  value: '$livedMonths',
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        SectionHeading(
+          title: t.habitsPage.lifeView,
+          subtitle: t.habitsPage.lifeViewSubtitle,
+        ),
+        const SizedBox(height: 16),
+        Row(
+          children: [
+            Expanded(
+              child: _LifeMetric(
+                label: t.habitsPage.monthsLived,
+                value: '$livedMonths',
+              ),
+            ),
+            const SizedBox(width: 10),
+            Expanded(
+              child: _LifeMetric(label: t.habitsPage.currentAge, value: '$age'),
+            ),
+            const SizedBox(width: 10),
+            Expanded(
+              child: _LifeMetric(
+                label: t.habitsPage.monthsRemaining,
+                value: '$remainingMonths',
+              ),
+            ),
+          ],
+        ),
+        const SizedBox(height: 16),
+        Wrap(
+          spacing: 4,
+          runSpacing: 4,
+          children: [
+            for (var index = 0; index < totalMonths; index++)
+              Container(
+                width: 7,
+                height: 7,
+                decoration: BoxDecoration(
+                  color: index == livedMonths - 1
+                      ? EvolveColors.amber
+                      : index < livedMonths
+                      ? context.evolveAccent.withValues(alpha: 0.52)
+                      : context.evolveColors.panelSoft,
+                  borderRadius: BorderRadius.circular(2),
                 ),
               ),
-              const SizedBox(width: 10),
-              Expanded(
-                child: _LifeMetric(
-                  label: t.habitsPage.currentAge,
-                  value: '$age',
-                ),
-              ),
-              const SizedBox(width: 10),
-              Expanded(
-                child: _LifeMetric(
-                  label: t.habitsPage.monthsRemaining,
-                  value: '$remainingMonths',
-                ),
-              ),
-            ],
-          ),
-          const SizedBox(height: 16),
-          Wrap(
-            spacing: 4,
-            runSpacing: 4,
-            children: [
-              for (var index = 0; index < totalMonths; index++)
-                Container(
-                  width: 7,
-                  height: 7,
-                  decoration: BoxDecoration(
-                    color: index == livedMonths - 1
-                        ? EvolveColors.amber
-                        : index < livedMonths
-                        ? context.evolveAccent.withValues(alpha: 0.52)
-                        : context.evolveColors.panelSoft,
-                    borderRadius: BorderRadius.circular(2),
-                  ),
-                ),
-            ],
-          ),
-        ],
-      ),
+          ],
+        ),
+      ],
     );
   }
 }
@@ -971,17 +1187,35 @@ class _LifeMetric extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Container(
-      padding: const EdgeInsets.all(12),
+      padding: const EdgeInsets.all(14),
       decoration: BoxDecoration(
-        color: context.evolveColors.panelSoft,
-        borderRadius: BorderRadius.circular(10),
+        color: context.evolveColors.panel.withValues(alpha: 0.4),
+        borderRadius: BorderRadius.circular(12),
+        border: Border.all(
+          color: context.evolveColors.border.withValues(alpha: 0.5),
+        ),
       ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          Text(value, style: Theme.of(context).textTheme.titleLarge),
+          Text(
+            value,
+            style: TextStyle(
+              color: context.evolveColors.foreground,
+              fontSize: 22,
+              fontWeight: FontWeight.w800,
+              letterSpacing: -0.5,
+            ),
+          ),
           const SizedBox(height: 3),
-          Text(label, style: Theme.of(context).textTheme.bodySmall),
+          Text(
+            label,
+            style: TextStyle(
+              color: context.evolveColors.muted.withValues(alpha: 0.8),
+              fontSize: 11,
+              fontWeight: FontWeight.w500,
+            ),
+          ),
         ],
       ),
     );
@@ -998,7 +1232,7 @@ class _DayDetailsDialog extends ConsumerWidget {
     final snapshot = ref.watch(dashboardControllerProvider);
     return EvolveAlertDialog(
       maxWidth: 560,
-      icon: Icons.calendar_today_outlined,
+      icon: LucideIcons.calendarClock,
       title: Text(
         t.habitsPage.dayDetail(
           day: date.day,
@@ -1016,7 +1250,7 @@ class _DayDetailsDialog extends ConsumerWidget {
               child: Row(
                 children: [
                   Icon(
-                    Icons.lock_clock_outlined,
+                    LucideIcons.lock,
                     size: 14,
                     color: context.evolveColors.muted,
                   ),
@@ -1038,13 +1272,24 @@ class _DayDetailsDialog extends ConsumerWidget {
             CheckboxListTile(
               dense: true,
               contentPadding: EdgeInsets.zero,
-              secondary: Text(
-                '🔥 ${habit.streak}',
-                style: const TextStyle(
-                  color: EvolveColors.amber,
-                  fontSize: 12,
-                  fontWeight: FontWeight.w700,
-                ),
+              secondary: Row(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  const Icon(
+                    LucideIcons.flame,
+                    size: 13,
+                    color: EvolveColors.amber,
+                  ),
+                  const SizedBox(width: 4),
+                  Text(
+                    '${habit.streak}',
+                    style: const TextStyle(
+                      color: EvolveColors.amber,
+                      fontSize: 12,
+                      fontWeight: FontWeight.w700,
+                    ),
+                  ),
+                ],
               ),
               title: Text(habit.title),
               subtitle: Text(
@@ -1115,7 +1360,7 @@ class _HabitEditorDialogState extends State<_HabitEditorDialog> {
   @override
   Widget build(BuildContext context) {
     return EvolveAlertDialog(
-      icon: Icons.event_repeat_rounded,
+      icon: widget.habit == null ? LucideIcons.plus : LucideIcons.pencil,
       title: Text(
         widget.habit == null ? t.habitsPage.newHabit : t.habitsPage.editHabit,
       ),
@@ -1125,15 +1370,14 @@ class _HabitEditorDialogState extends State<_HabitEditorDialog> {
           mainAxisSize: MainAxisSize.min,
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            TextField(
-              controller: _title,
-              autofocus: true,
-              decoration: InputDecoration(labelText: t.form.title),
-            ),
-            const SizedBox(height: 12),
+            _FieldLabel(t.form.title),
+            const SizedBox(height: 8),
+            TextField(controller: _title, autofocus: true),
+            const SizedBox(height: 16),
+            _FieldLabel(t.form.category),
+            const SizedBox(height: 8),
             DropdownButtonFormField<String>(
               initialValue: _category,
-              decoration: InputDecoration(labelText: t.form.category),
               items: [
                 for (final value in _habitCategories)
                   DropdownMenuItem(
@@ -1145,17 +1389,23 @@ class _HabitEditorDialogState extends State<_HabitEditorDialog> {
                 if (value != null) setState(() => _category = value);
               },
             ),
-            const SizedBox(height: 12),
+            const SizedBox(height: 16),
+            _FieldLabel(t.habitsPage.optionalReminder),
+            const SizedBox(height: 8),
             TextField(
               controller: _reminder,
               readOnly: true,
               decoration: InputDecoration(
-                labelText: t.habitsPage.optionalReminder,
                 hintText: t.habitsPage.reminderHint,
                 suffixIcon: _reminder.text.trim().isEmpty
-                    ? const Icon(Icons.schedule_outlined, size: 18)
+                    ? Icon(
+                        LucideIcons.bell,
+                        size: 16,
+                        color: context.evolveColors.muted,
+                      )
                     : IconButton(
-                        icon: const Icon(Icons.clear, size: 18),
+                        icon: const Icon(LucideIcons.x, size: 16),
+                        color: context.evolveColors.muted,
                         onPressed: () => setState(() => _reminder.clear()),
                       ),
               ),
@@ -1170,27 +1420,40 @@ class _HabitEditorDialogState extends State<_HabitEditorDialog> {
                 }
               },
             ),
-            const SizedBox(height: 16),
-            Text(t.form.color, style: Theme.of(context).textTheme.titleMedium),
-            const SizedBox(height: 8),
+            const SizedBox(height: 20),
+            _FieldLabel(t.form.color),
+            const SizedBox(height: 10),
             Wrap(
-              spacing: 9,
+              spacing: 10,
+              runSpacing: 10,
               children: [
                 for (final color in _habitColors)
-                  InkWell(
+                  GestureDetector(
                     onTap: () => setState(() => _color = color),
-                    borderRadius: BorderRadius.circular(20),
-                    child: Container(
-                      width: 26,
-                      height: 26,
-                      decoration: BoxDecoration(
-                        color: color,
-                        shape: BoxShape.circle,
-                        border: Border.all(
-                          color: _color == color
-                              ? context.evolveColors.foreground
-                              : Colors.transparent,
-                          width: 2,
+                    child: MouseRegion(
+                      cursor: SystemMouseCursors.click,
+                      child: Container(
+                        width: 28,
+                        height: 28,
+                        decoration: BoxDecoration(
+                          color: color,
+                          shape: BoxShape.circle,
+                          border: Border.all(
+                            color: _color == color
+                                ? (color.computeLuminance() > 0.7
+                                      ? Colors.black.withValues(alpha: 0.2)
+                                      : Colors.white)
+                                : Colors.transparent,
+                            width: 2,
+                          ),
+                          boxShadow: _color == color
+                              ? [
+                                  BoxShadow(
+                                    color: color.withValues(alpha: 0.5),
+                                    blurRadius: 8,
+                                  ),
+                                ]
+                              : null,
                         ),
                       ),
                     ),
@@ -1224,6 +1487,26 @@ class _HabitEditorDialogState extends State<_HabitEditorDialog> {
           child: Text(t.common.actions.save),
         ),
       ],
+    );
+  }
+}
+
+/// Uppercase micro-label above a form field ("HABIT NAME" on mobile).
+class _FieldLabel extends StatelessWidget {
+  const _FieldLabel(this.label);
+
+  final String label;
+
+  @override
+  Widget build(BuildContext context) {
+    return Text(
+      label.toUpperCase(),
+      style: TextStyle(
+        fontSize: 10,
+        fontWeight: FontWeight.w600,
+        color: context.evolveColors.muted,
+        letterSpacing: 0.5,
+      ),
     );
   }
 }

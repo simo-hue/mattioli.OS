@@ -1,23 +1,19 @@
-import 'package:flutter/material.dart';
-import 'package:flutter/services.dart';
-import 'package:flutter_riverpod/flutter_riverpod.dart';
-
-import 'package:fl_chart/fl_chart.dart';
-
-import 'package:intl/intl.dart';
-import 'package:lucide_icons_flutter/lucide_icons.dart';
+import 'dart:async';
 import 'dart:math' as math;
 
 import 'package:evolve_desktop/app/theme/evolve_theme.dart';
-import 'package:flutter/services.dart';
-import 'dart:async';
-import 'package:evolve_desktop/i18n/translations.g.dart';
-import 'package:evolve_desktop/features/dashboard/domain/dashboard_models.dart';
+import 'package:evolve_desktop/features/dashboard/application/dashboard_controller.dart';
+import 'package:evolve_desktop/features/goals/application/goal_categories_controller.dart';
 import 'package:evolve_desktop/features/settings/application/desktop_subscription_controller.dart';
 import 'package:evolve_desktop/features/settings/presentation/pro_features_modal.dart';
-import 'package:evolve_desktop/features/dashboard/application/dashboard_controller.dart';
 import 'package:evolve_desktop/features/statistics/data/statistics_rpc_providers.dart';
-import 'package:evolve_desktop/features/goals/application/goal_categories_controller.dart';
+import 'package:evolve_desktop/i18n/translations.g.dart';
+import 'package:evolve_desktop/shared/widgets/evolve_panel.dart';
+import 'package:fl_chart/fl_chart.dart';
+import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:lucide_icons_flutter/lucide_icons.dart';
 
 class GoalsStatsView extends ConsumerStatefulWidget {
   const GoalsStatsView({super.key});
@@ -46,12 +42,14 @@ class _GoalsStatsViewState extends ConsumerState<GoalsStatsView> {
     }
   }
 
+  /// Localized month name from the slang `t.common.months` array; the
+  /// abbreviated variant keeps the first three characters ("Gen", "Feb", …)
+  /// to match the short axis labels previously produced via `DateFormat.MMM`.
   String _monthLabel(int month, {bool abbreviated = false}) {
     if (month < 1 || month > 12) return '';
-    final formatter = abbreviated
-        ? DateFormat.MMM('it')
-        : DateFormat.MMMM('it');
-    return formatter.format(DateTime(2000, month));
+    final label = t.common.months[month - 1];
+    if (!abbreviated || label.length <= 3) return label;
+    return label.substring(0, 3);
   }
 
   @override
@@ -81,7 +79,7 @@ class _GoalsStatsViewState extends ConsumerState<GoalsStatsView> {
       data: (stats) {
         return SingleChildScrollView(
           physics: const BouncingScrollPhysics(),
-          padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+          padding: const EdgeInsets.symmetric(vertical: 4),
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
@@ -91,13 +89,7 @@ class _GoalsStatsViewState extends ConsumerState<GoalsStatsView> {
                 children: [
                   Text(
                     t.stats.tabPerformance,
-                    style: TextStyle(
-                      fontFamily: 'Inter',
-                      fontSize: 22,
-                      fontWeight: FontWeight.bold,
-                      color: context.evolveColors.foreground,
-                      letterSpacing: -0.5,
-                    ),
+                    style: Theme.of(context).textTheme.headlineMedium,
                   ),
                   _buildYearSelector(years),
                 ],
@@ -210,7 +202,7 @@ class _GoalsStatsViewState extends ConsumerState<GoalsStatsView> {
               t.common.completed,
               '$completedGoals',
               LucideIcons.circleCheck,
-              color: const Color(0xFF10B981),
+              color: EvolveColors.success,
             ),
           ),
         ],
@@ -300,7 +292,7 @@ class _GoalsStatsViewState extends ConsumerState<GoalsStatsView> {
               value: '$succ%',
               subtitle: '$comp ${t.macroGoals.completedGoals}',
               icon: LucideIcons.trophy,
-              color: const Color(0xFF10B981),
+              color: EvolveColors.success,
             ),
           ),
         ],
@@ -312,7 +304,7 @@ class _GoalsStatsViewState extends ConsumerState<GoalsStatsView> {
             child: _buildHighlightCard(
               title: t.macroGoals.bestYear,
               value: bestYear != null ? '$bestYear' : 'N/A',
-              subtitle: '$bestYearRate% ${'completamento'}',
+              subtitle: '$bestYearRate% completamento',
               icon: LucideIcons.calendar,
               color: const Color(0xFFD97706),
             ),
@@ -364,47 +356,49 @@ class _GoalsStatsViewState extends ConsumerState<GoalsStatsView> {
         ? t.macroGoals.allYears
         : _selectedYear;
 
-    return GestureDetector(
-      onTap: () {
-        HapticFeedback.lightImpact();
-        _showYearPicker(years);
-      },
-      child: Container(
-        height: 38,
-        padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 8),
-        decoration: BoxDecoration(
-          color: context.evolveColors.panel.withValues(alpha: 0.5),
-          borderRadius: BorderRadius.circular(14),
-          border: Border.all(
-            color: context.evolveColors.border.withValues(alpha: 0.5),
-            width: 1,
+    return MouseRegion(
+      cursor: SystemMouseCursors.click,
+      child: GestureDetector(
+        onTap: () {
+          HapticFeedback.lightImpact();
+          _showYearPicker(years);
+        },
+        child: Container(
+          height: 38,
+          padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 8),
+          decoration: BoxDecoration(
+            color: context.evolveColors.panel.withValues(alpha: 0.5),
+            borderRadius: BorderRadius.circular(14),
+            border: Border.all(
+              color: context.evolveColors.border.withValues(alpha: 0.5),
+            ),
           ),
-        ),
-        child: Row(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            Icon(
-              LucideIcons.calendar,
-              size: 14,
-              color: Theme.of(context).colorScheme.primary,
-            ),
-            const SizedBox(width: 8),
-            Text(
-              displayLabel,
-              style: TextStyle(
-                fontFamily: 'Inter',
-                fontSize: 13,
-                fontWeight: FontWeight.w600,
-                color: context.evolveColors.foreground,
+          child: Row(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              Icon(
+                LucideIcons.calendar,
+                size: 14,
+                color: Theme.of(context).colorScheme.primary,
               ),
-            ),
-            const SizedBox(width: 6),
-            Icon(
-              LucideIcons.chevronDown,
-              size: 14,
-              color: context.evolveColors.muted,
-            ),
-          ],
+              const SizedBox(width: 8),
+              Text(
+                displayLabel,
+                style: TextStyle(
+                  fontSize: 13,
+                  fontWeight: FontWeight.w600,
+                  letterSpacing: -0.2,
+                  color: context.evolveColors.foreground,
+                ),
+              ),
+              const SizedBox(width: 6),
+              Icon(
+                LucideIcons.chevronDown,
+                size: 14,
+                color: context.evolveColors.muted,
+              ),
+            ],
+          ),
         ),
       ),
     );
@@ -444,7 +438,6 @@ class _GoalsStatsViewState extends ConsumerState<GoalsStatsView> {
                 child: Text(
                   t.macroGoals.selectYearHeader,
                   style: TextStyle(
-                    fontFamily: 'Inter',
                     fontWeight: FontWeight.w800,
                     color: context.evolveColors.muted,
                     fontSize: 10,
@@ -464,7 +457,6 @@ class _GoalsStatsViewState extends ConsumerState<GoalsStatsView> {
               title: Text(
                 t.macroGoals.allYears,
                 style: TextStyle(
-                  fontFamily: 'Inter',
                   fontSize: 16,
                   fontWeight: _selectedYear == 'all'
                       ? FontWeight.w700
@@ -496,7 +488,6 @@ class _GoalsStatsViewState extends ConsumerState<GoalsStatsView> {
                 title: Text(
                   '$y',
                   style: TextStyle(
-                    fontFamily: 'Inter',
                     fontSize: 16,
                     fontWeight: isSel ? FontWeight.w700 : FontWeight.w500,
                     color: isPro
@@ -550,16 +541,23 @@ class _GoalsStatsViewState extends ConsumerState<GoalsStatsView> {
     bool fullWidth = false,
   }) {
     return Container(
+      width: fullWidth ? double.infinity : null,
       padding: const EdgeInsets.all(16),
       decoration: BoxDecoration(
-        color: color.withValues(alpha: 0.05),
         borderRadius: BorderRadius.circular(20),
-        border: Border.all(color: color.withValues(alpha: 0.2), width: 1.5),
+        border: Border.all(color: color.withValues(alpha: 0.2)),
         gradient: LinearGradient(
           begin: Alignment.topLeft,
           end: Alignment.bottomRight,
           colors: [color.withValues(alpha: 0.1), color.withValues(alpha: 0.02)],
         ),
+        boxShadow: [
+          BoxShadow(
+            color: Colors.black.withValues(alpha: 0.08),
+            blurRadius: 10,
+            offset: const Offset(0, 4),
+          ),
+        ],
       ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
@@ -571,43 +569,37 @@ class _GoalsStatsViewState extends ConsumerState<GoalsStatsView> {
                 child: Text(
                   title.toUpperCase(),
                   style: TextStyle(
-                    fontFamily: 'Inter',
                     fontSize: 10,
                     color: color.withValues(alpha: 0.8),
                     fontWeight: FontWeight.w700,
-                    letterSpacing: 0.5,
+                    letterSpacing: 1.2,
                   ),
                   maxLines: 1,
                   overflow: TextOverflow.ellipsis,
                 ),
               ),
-              const SizedBox(width: 4),
-              Container(
-                padding: const EdgeInsets.all(4),
-                decoration: BoxDecoration(
-                  color: color.withValues(alpha: 0.1),
-                  shape: BoxShape.circle,
-                ),
-                child: Icon(icon, size: 12, color: color),
-              ),
+              const SizedBox(width: 6),
+              EvolveIconChip(icon: icon, color: color, size: 28, iconSize: 14),
             ],
           ),
           const SizedBox(height: 12),
           Text(
             value,
+            maxLines: 1,
+            overflow: TextOverflow.ellipsis,
             style: TextStyle(
-              fontFamily: 'Inter',
-              fontSize: 24,
+              fontSize: 27,
               color: context.evolveColors.foreground,
               fontWeight: FontWeight.w800,
-              letterSpacing: -0.5,
+              letterSpacing: -1,
             ),
           ),
           const SizedBox(height: 4),
           Text(
             subtitle,
+            maxLines: 1,
+            overflow: TextOverflow.ellipsis,
             style: TextStyle(
-              fontFamily: 'Inter',
               fontSize: 11,
               color: context.evolveColors.muted,
               fontWeight: FontWeight.w500,
@@ -624,13 +616,8 @@ class _GoalsStatsViewState extends ConsumerState<GoalsStatsView> {
     IconData icon, {
     Color color = EvolveColors.foreground,
   }) {
-    return Container(
-      padding: const EdgeInsets.symmetric(vertical: 14, horizontal: 10),
-      decoration: BoxDecoration(
-        color: context.evolveColors.panel.withValues(alpha: 0.5),
-        borderRadius: BorderRadius.circular(14),
-        border: Border.all(color: context.evolveColors.border),
-      ),
+    return EvolvePanel(
+      padding: const EdgeInsets.symmetric(vertical: 14, horizontal: 14),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
@@ -639,28 +626,30 @@ class _GoalsStatsViewState extends ConsumerState<GoalsStatsView> {
             children: [
               Expanded(
                 child: Text(
-                  title,
+                  title.toUpperCase(),
                   style: TextStyle(
-                    fontFamily: 'Inter',
-                    fontSize: 11,
-                    color: context.evolveColors.muted,
-                    letterSpacing: -0.2,
+                    fontSize: 10,
+                    fontWeight: FontWeight.w600,
+                    color: context.evolveColors.muted.withValues(alpha: 0.8),
+                    letterSpacing: 0.5,
                   ),
                   maxLines: 1,
                   overflow: TextOverflow.ellipsis,
                 ),
               ),
-              Icon(icon, size: 12, color: color),
+              Icon(icon, size: 13, color: color),
             ],
           ),
           const SizedBox(height: 8),
           Text(
             value,
+            maxLines: 1,
+            overflow: TextOverflow.ellipsis,
             style: TextStyle(
-              fontFamily: 'Inter',
-              fontSize: 18,
+              fontSize: 27,
               color: context.evolveColors.foreground,
-              fontWeight: FontWeight.w700,
+              fontWeight: FontWeight.w800,
+              letterSpacing: -1,
             ),
           ),
         ],
@@ -673,48 +662,40 @@ class _GoalsStatsViewState extends ConsumerState<GoalsStatsView> {
     required String subtitle,
     required Widget child,
   }) {
-    return Container(
+    return SizedBox(
       width: double.infinity,
-      padding: const EdgeInsets.all(20),
-      decoration: BoxDecoration(
-        color: context.evolveColors.panel.withValues(alpha: 0.3),
-        borderRadius: BorderRadius.circular(24),
-        border: Border.all(color: context.evolveColors.border),
-        gradient: LinearGradient(
-          begin: Alignment.topCenter,
-          end: Alignment.bottomCenter,
-          colors: [
-            context.evolveColors.panel.withValues(alpha: 0.4),
-            context.evolveColors.panel.withValues(alpha: 0.2),
+      child: EvolvePanel(
+        radius: 20,
+        padding: const EdgeInsets.all(20),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            if (title.isNotEmpty) ...[
+              Text(
+                title,
+                style: TextStyle(
+                  fontSize: 16,
+                  color: context.evolveColors.foreground,
+                  fontWeight: FontWeight.w700,
+                  letterSpacing: -0.2,
+                ),
+              ),
+              if (subtitle.isNotEmpty) ...[
+                const SizedBox(height: 3),
+                Text(
+                  subtitle,
+                  style: TextStyle(
+                    fontSize: 12,
+                    color: context.evolveColors.muted.withValues(alpha: 0.8),
+                    fontWeight: FontWeight.w500,
+                  ),
+                ),
+              ],
+              const SizedBox(height: 20),
+            ],
+            child,
           ],
         ),
-      ),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Text(
-            title,
-            style: TextStyle(
-              fontFamily: 'Inter',
-              fontSize: 17,
-              color: context.evolveColors.foreground,
-              fontWeight: FontWeight.w700,
-              letterSpacing: -0.4,
-            ),
-          ),
-          const SizedBox(height: 4),
-          Text(
-            subtitle,
-            style: TextStyle(
-              fontFamily: 'Inter',
-              fontSize: 13,
-              color: context.evolveColors.muted,
-              fontWeight: FontWeight.w400,
-            ),
-          ),
-          const SizedBox(height: 24),
-          child,
-        ],
       ),
     );
   }
@@ -752,15 +733,9 @@ class _GoalsStatsViewState extends ConsumerState<GoalsStatsView> {
           LineChartData(
             gridData: FlGridData(
               show: true,
-              drawVerticalLine: true,
+              drawVerticalLine: false,
               horizontalInterval: maxY / 4,
-              verticalInterval: 1,
               getDrawingHorizontalLine: (value) => FlLine(
-                color: context.evolveColors.border.withValues(alpha: 0.5),
-                strokeWidth: 1,
-                dashArray: [4, 4],
-              ),
-              getDrawingVerticalLine: (value) => FlLine(
                 color: context.evolveColors.border.withValues(alpha: 0.5),
                 strokeWidth: 1,
                 dashArray: [4, 4],
@@ -785,7 +760,6 @@ class _GoalsStatsViewState extends ConsumerState<GoalsStatsView> {
                       child: Text(
                         _monthLabel(val.toInt(), abbreviated: true),
                         style: TextStyle(
-                          fontFamily: 'Inter',
                           fontSize: 10,
                           color: context.evolveColors.muted,
                         ),
@@ -803,7 +777,6 @@ class _GoalsStatsViewState extends ConsumerState<GoalsStatsView> {
                     return Text(
                       val.toInt().toString(),
                       style: TextStyle(
-                        fontFamily: 'Inter',
                         fontSize: 10,
                         color: context.evolveColors.muted,
                       ),
@@ -821,25 +794,39 @@ class _GoalsStatsViewState extends ConsumerState<GoalsStatsView> {
               LineChartBarData(
                 spots: totalSpots,
                 isCurved: true,
-                color: const Color(0xFF818CF8), // Indigo
-                barWidth: 2,
+                color: context.evolveColors.foreground,
+                barWidth: 3,
                 isStrokeCapRound: true,
                 dotData: const FlDotData(show: false),
                 belowBarData: BarAreaData(
                   show: true,
-                  color: const Color(0xFF818CF8).withValues(alpha: 0.15),
+                  gradient: LinearGradient(
+                    begin: Alignment.topCenter,
+                    end: Alignment.bottomCenter,
+                    colors: [
+                      context.evolveColors.foreground.withValues(alpha: 0.12),
+                      context.evolveColors.foreground.withValues(alpha: 0.0),
+                    ],
+                  ),
                 ),
               ),
               LineChartBarData(
                 spots: compSpots,
                 isCurved: true,
-                color: const Color(0xFF10B981),
-                barWidth: 2,
+                color: EvolveColors.success,
+                barWidth: 3,
                 isStrokeCapRound: true,
                 dotData: const FlDotData(show: false),
                 belowBarData: BarAreaData(
                   show: true,
-                  color: const Color(0xFF10B981).withValues(alpha: 0.15),
+                  gradient: LinearGradient(
+                    begin: Alignment.topCenter,
+                    end: Alignment.bottomCenter,
+                    colors: [
+                      EvolveColors.success.withValues(alpha: 0.12),
+                      EvolveColors.success.withValues(alpha: 0.0),
+                    ],
+                  ),
                 ),
               ),
             ],
@@ -925,9 +912,11 @@ class _GoalsStatsViewState extends ConsumerState<GoalsStatsView> {
             ],
             radarBackgroundColor: Colors.transparent,
             borderData: FlBorderData(show: false),
-            radarBorderData: BorderSide(color: context.evolveColors.border),
+            radarBorderData: BorderSide(
+              color: context.evolveColors.border.withValues(alpha: 0.5),
+            ),
             tickBorderData: BorderSide(
-              color: context.evolveColors.border,
+              color: context.evolveColors.border.withValues(alpha: 0.5),
               width: 0.5,
             ),
             ticksTextStyle: const TextStyle(color: Colors.transparent),
@@ -942,7 +931,6 @@ class _GoalsStatsViewState extends ConsumerState<GoalsStatsView> {
               return const RadarChartTitle(text: '');
             },
             titleTextStyle: TextStyle(
-              fontFamily: 'Inter',
               fontSize: 10,
               color: context.evolveColors.muted,
             ),
@@ -999,13 +987,13 @@ class _GoalsStatsViewState extends ConsumerState<GoalsStatsView> {
               toY: tot,
               color: const Color(0xFFD97706),
               width: 10,
-              borderRadius: BorderRadius.circular(2),
+              borderRadius: BorderRadius.circular(3),
             ),
             BarChartRodData(
               toY: comp,
-              color: const Color(0xFF10B981),
+              color: EvolveColors.success,
               width: 10,
-              borderRadius: BorderRadius.circular(2),
+              borderRadius: BorderRadius.circular(3),
             ),
           ],
         ),
@@ -1036,7 +1024,6 @@ class _GoalsStatsViewState extends ConsumerState<GoalsStatsView> {
                   getTitlesWidget: (val, meta) => Text(
                     'Q${val.toInt()}',
                     style: TextStyle(
-                      fontFamily: 'Inter',
                       fontSize: 10,
                       color: context.evolveColors.muted,
                     ),
@@ -1139,24 +1126,21 @@ class _GoalsStatsViewState extends ConsumerState<GoalsStatsView> {
                   return BarTooltipItem(
                     '${_monthLabel(m)}\n',
                     TextStyle(
-                      fontFamily: 'Inter',
                       color: context.evolveColors.foreground,
-                      fontWeight: FontWeight.bold,
+                      fontWeight: FontWeight.w700,
                       fontSize: 13,
                     ),
                     children: [
                       TextSpan(
-                        text: '${''}$tot\n',
-                        style: TextStyle(
-                          fontFamily: 'Inter',
-                          color: const Color(0xFF6366F1),
+                        text: '$tot\n',
+                        style: const TextStyle(
+                          color: Color(0xFF6366F1),
                           fontSize: 10,
                         ),
                       ),
                       TextSpan(
-                        text: '${''}$comp',
+                        text: '$comp',
                         style: TextStyle(
-                          fontFamily: 'Inter',
                           color: Theme.of(context).colorScheme.primary,
                           fontSize: 10,
                         ),
@@ -1171,7 +1155,7 @@ class _GoalsStatsViewState extends ConsumerState<GoalsStatsView> {
               drawVerticalLine: false,
               horizontalInterval: math.max(1.0, maxY / 4),
               getDrawingHorizontalLine: (v) => FlLine(
-                color: context.evolveColors.border.withValues(alpha: 0.2),
+                color: context.evolveColors.border.withValues(alpha: 0.5),
                 strokeWidth: 1,
                 dashArray: [4, 4],
               ),
@@ -1190,7 +1174,6 @@ class _GoalsStatsViewState extends ConsumerState<GoalsStatsView> {
                   getTitlesWidget: (v, _) => Text(
                     v.toInt().toString(),
                     style: TextStyle(
-                      fontFamily: 'Inter',
                       fontSize: 10,
                       color: context.evolveColors.muted,
                     ),
@@ -1210,7 +1193,6 @@ class _GoalsStatsViewState extends ConsumerState<GoalsStatsView> {
                       child: Text(
                         _monthLabel(index, abbreviated: true),
                         style: TextStyle(
-                          fontFamily: 'Inter',
                           fontSize: 10,
                           color: context.evolveColors.muted,
                           fontWeight: FontWeight.w600,
@@ -1271,7 +1253,6 @@ class _GoalsStatsViewState extends ConsumerState<GoalsStatsView> {
         } catch (_) {
           color =
               categories.where((c) => c.id == catKey).firstOrNull?.color ??
-              Colors.grey ??
               Colors.grey;
         }
 
@@ -1310,17 +1291,17 @@ class _GoalsStatsViewState extends ConsumerState<GoalsStatsView> {
                     Text(
                       '$totalCount',
                       style: TextStyle(
-                        fontFamily: 'Inter',
-                        fontSize: 28,
-                        fontWeight: FontWeight.bold,
+                        fontSize: 30,
+                        fontWeight: FontWeight.w800,
+                        letterSpacing: -1,
                         color: context.evolveColors.foreground,
                       ),
                     ),
                     Text(
                       'obiettivi',
                       style: TextStyle(
-                        fontFamily: 'Inter',
-                        fontSize: 12,
+                        fontSize: 11,
+                        fontWeight: FontWeight.w500,
                         color: context.evolveColors.muted,
                       ),
                     ),
@@ -1350,7 +1331,6 @@ class _GoalsStatsViewState extends ConsumerState<GoalsStatsView> {
                         .where((c) => c.id == catKey)
                         .firstOrNull
                         ?.color ??
-                    Colors.grey ??
                     Colors.grey;
                 label =
                     categories
@@ -1364,43 +1344,44 @@ class _GoalsStatsViewState extends ConsumerState<GoalsStatsView> {
                   : 0;
 
               return Container(
-                width: 150, // Fix width for grid likeness
                 padding: const EdgeInsets.symmetric(
-                  horizontal: 12,
-                  vertical: 8,
+                  horizontal: 10,
+                  vertical: 5,
                 ),
                 decoration: BoxDecoration(
-                  color: context.evolveColors.background,
-                  borderRadius: BorderRadius.circular(8),
-                  border: Border.all(color: context.evolveColors.border),
+                  color: color.withValues(alpha: 0.12),
+                  borderRadius: BorderRadius.circular(100),
+                  border: Border.all(color: color.withValues(alpha: 0.22)),
                 ),
                 child: Row(
+                  mainAxisSize: MainAxisSize.min,
                   children: [
                     Container(
-                      width: 8,
-                      height: 8,
+                      width: 7,
+                      height: 7,
                       decoration: BoxDecoration(
                         shape: BoxShape.circle,
                         color: color,
                       ),
                     ),
-                    const SizedBox(width: 8),
-                    Expanded(
-                      child: Text(
-                        label,
-                        style: TextStyle(
-                          fontFamily: 'Inter',
-                          fontSize: 12,
-                          color: context.evolveColors.foreground,
-                        ),
-                        maxLines: 1,
+                    const SizedBox(width: 6),
+                    Text(
+                      label,
+                      maxLines: 1,
+                      overflow: TextOverflow.ellipsis,
+                      style: TextStyle(
+                        fontSize: 11,
+                        fontWeight: FontWeight.w700,
+                        letterSpacing: -0.1,
+                        color: color,
                       ),
                     ),
+                    const SizedBox(width: 6),
                     Text(
                       '$perc%',
                       style: TextStyle(
-                        fontFamily: 'Inter',
-                        fontSize: 12,
+                        fontSize: 11,
+                        fontWeight: FontWeight.w600,
                         color: context.evolveColors.muted,
                       ),
                     ),
@@ -1456,20 +1437,20 @@ class _GoalsStatsViewState extends ConsumerState<GoalsStatsView> {
                     BarChartRodStackItem(
                       0,
                       act,
-                      const Color(0xFF3B82F6),
+                      EvolveColors.cyan,
                     ), // Attivi - Blue
                   if (fail > 0)
                     BarChartRodStackItem(
                       act,
                       act + fail,
-                      const Color(0xFFEF4444),
+                      EvolveColors.destructive,
                     ), // Falliti - Red
                   if (comp > 0)
                     BarChartRodStackItem(
                       act + fail,
                       act + fail + comp,
-                      const Color(0xFF10B981),
-                    ), // Completati - Dynamic Accent
+                      EvolveColors.success,
+                    ), // Completati - Green
                 ],
               ),
             ],
@@ -1507,33 +1488,29 @@ class _GoalsStatsViewState extends ConsumerState<GoalsStatsView> {
                       return BarTooltipItem(
                         '$y\n',
                         TextStyle(
-                          fontFamily: 'Inter',
                           color: context.evolveColors.foreground,
-                          fontWeight: FontWeight.bold,
+                          fontWeight: FontWeight.w700,
                           fontSize: 13,
                         ),
                         children: [
                           TextSpan(
-                            text: '${''}$act\n',
-                            style: TextStyle(
-                              fontFamily: 'Inter',
-                              color: const Color(0xFF3B82F6),
+                            text: '$act\n',
+                            style: const TextStyle(
+                              color: EvolveColors.cyan,
                               fontSize: 11,
                             ),
                           ),
                           TextSpan(
-                            text: '${''}$fail\n',
-                            style: TextStyle(
-                              fontFamily: 'Inter',
-                              color: const Color(0xFFEF4444),
+                            text: '$fail\n',
+                            style: const TextStyle(
+                              color: EvolveColors.destructive,
                               fontSize: 11,
                             ),
                           ),
                           TextSpan(
-                            text: '${''}$comp',
-                            style: TextStyle(
-                              fontFamily: 'Inter',
-                              color: const Color(0xFF10B981),
+                            text: '$comp',
+                            style: const TextStyle(
+                              color: EvolveColors.success,
                               fontSize: 11,
                             ),
                           ),
@@ -1547,7 +1524,7 @@ class _GoalsStatsViewState extends ConsumerState<GoalsStatsView> {
                   drawVerticalLine: false,
                   horizontalInterval: math.max(1.0, maxTot / 4),
                   getDrawingHorizontalLine: (v) => FlLine(
-                    color: context.evolveColors.border.withValues(alpha: 0.3),
+                    color: context.evolveColors.border.withValues(alpha: 0.5),
                     strokeWidth: 1,
                     dashArray: [4, 4],
                   ),
@@ -1568,7 +1545,6 @@ class _GoalsStatsViewState extends ConsumerState<GoalsStatsView> {
                         child: Text(
                           v.toInt().toString(),
                           style: TextStyle(
-                            fontFamily: 'Inter',
                             fontSize: 10,
                             color: context.evolveColors.muted,
                           ),
@@ -1591,7 +1567,6 @@ class _GoalsStatsViewState extends ConsumerState<GoalsStatsView> {
                           child: Text(
                             y?.toString() ?? '',
                             style: TextStyle(
-                              fontFamily: 'Inter',
                               fontSize: 10,
                               color: context.evolveColors.muted,
                               fontWeight: FontWeight.w600,
@@ -1611,9 +1586,9 @@ class _GoalsStatsViewState extends ConsumerState<GoalsStatsView> {
           ),
           const SizedBox(height: 16),
           _buildLegend([
-            _LegendItem(t.goalsStats.active, const Color(0xFF3B82F6)),
-            _LegendItem(t.goalsStats.failed, const Color(0xFFEF4444)),
-            _LegendItem(t.common.completed, const Color(0xFF10B981)),
+            _LegendItem(t.goalsStats.active, EvolveColors.cyan),
+            _LegendItem(t.goalsStats.failed, EvolveColors.destructive),
+            _LegendItem(t.common.completed, EvolveColors.success),
           ]),
         ],
       ),
@@ -1630,19 +1605,19 @@ class _GoalsStatsViewState extends ConsumerState<GoalsStatsView> {
               mainAxisSize: MainAxisSize.min,
               children: [
                 Container(
-                  width: 10,
-                  height: 10,
+                  width: 9,
+                  height: 9,
                   decoration: BoxDecoration(
                     color: i.color,
-                    borderRadius: BorderRadius.circular(2),
+                    borderRadius: BorderRadius.circular(3),
                   ),
                 ),
                 const SizedBox(width: 6),
                 Text(
                   i.label,
                   style: TextStyle(
-                    fontFamily: 'Inter',
-                    fontSize: 12,
+                    fontSize: 11,
+                    fontWeight: FontWeight.w500,
                     color: context.evolveColors.muted,
                   ),
                 ),
@@ -1669,7 +1644,7 @@ class _GoalsStatsViewState extends ConsumerState<GoalsStatsView> {
         children: counts.entries
             .map(
               (e) => Padding(
-                padding: const EdgeInsets.only(bottom: 12),
+                padding: const EdgeInsets.only(bottom: 14),
                 child: Row(
                   children: [
                     SizedBox(
@@ -1677,40 +1652,40 @@ class _GoalsStatsViewState extends ConsumerState<GoalsStatsView> {
                       child: Text(
                         e.key,
                         style: TextStyle(
-                          fontFamily: 'Inter',
                           fontSize: 12,
+                          fontWeight: FontWeight.w500,
                           color: context.evolveColors.muted,
                         ),
                       ),
                     ),
                     Expanded(
-                      child: Stack(
-                        children: [
-                          Container(
-                            height: 18,
-                            decoration: BoxDecoration(
-                              color: context.evolveColors.panel,
-                              borderRadius: BorderRadius.circular(4),
+                      child: ClipRRect(
+                        borderRadius: BorderRadius.circular(100),
+                        child: Stack(
+                          children: [
+                            Container(
+                              height: 7,
+                              color: context.evolveColors.panelSoft,
                             ),
-                          ),
-                          FractionallySizedBox(
-                            alignment: AlignmentDirectional.centerStart,
-                            widthFactor: maxV == 0 ? 0 : e.value / maxV,
-                            child: Container(
-                              height: 18,
-                              decoration: BoxDecoration(
-                                gradient: LinearGradient(
-                                  colors: [
-                                    Theme.of(context).colorScheme.primary,
-                                    Theme.of(context).colorScheme.primary
-                                        .withValues(alpha: 0.7),
-                                  ],
+                            FractionallySizedBox(
+                              alignment: AlignmentDirectional.centerStart,
+                              widthFactor: maxV == 0 ? 0 : e.value / maxV,
+                              child: Container(
+                                height: 7,
+                                decoration: BoxDecoration(
+                                  gradient: LinearGradient(
+                                    colors: [
+                                      Theme.of(context).colorScheme.primary,
+                                      Theme.of(context).colorScheme.primary
+                                          .withValues(alpha: 0.7),
+                                    ],
+                                  ),
+                                  borderRadius: BorderRadius.circular(100),
                                 ),
-                                borderRadius: BorderRadius.circular(4),
                               ),
                             ),
-                          ),
-                        ],
+                          ],
+                        ),
                       ),
                     ),
                     const SizedBox(width: 12),
@@ -1719,10 +1694,9 @@ class _GoalsStatsViewState extends ConsumerState<GoalsStatsView> {
                       child: Text(
                         '${e.value}',
                         style: TextStyle(
-                          fontFamily: 'Inter',
                           fontSize: 12,
                           color: context.evolveColors.foreground,
-                          fontWeight: FontWeight.bold,
+                          fontWeight: FontWeight.w800,
                         ),
                         textAlign: TextAlign.right,
                       ),
@@ -1777,19 +1751,18 @@ class _GoalsStatsViewState extends ConsumerState<GoalsStatsView> {
                 color: context.evolveColors.border.withValues(alpha: 0.1),
               ),
               rodStackItems: [
-                if (act > 0)
-                  BarChartRodStackItem(0, act, const Color(0xFF3B82F6)),
+                if (act > 0) BarChartRodStackItem(0, act, EvolveColors.cyan),
                 if (fail > 0)
                   BarChartRodStackItem(
                     act,
                     act + fail,
-                    const Color(0xFFD97706),
+                    EvolveColors.destructive,
                   ),
                 if (comp > 0)
                   BarChartRodStackItem(
                     act + fail,
                     act + fail + comp,
-                    const Color(0xFF10B981),
+                    EvolveColors.success,
                   ),
               ],
             ),
@@ -1819,33 +1792,29 @@ class _GoalsStatsViewState extends ConsumerState<GoalsStatsView> {
                       return BarTooltipItem(
                         'Q$q\n',
                         TextStyle(
-                          fontFamily: 'Inter',
                           color: context.evolveColors.foreground,
-                          fontWeight: FontWeight.bold,
+                          fontWeight: FontWeight.w700,
                           fontSize: 13,
                         ),
                         children: [
                           TextSpan(
-                            text: '${''}$act\n',
-                            style: TextStyle(
-                              fontFamily: 'Inter',
-                              color: const Color(0xFF3B82F6),
+                            text: '$act\n',
+                            style: const TextStyle(
+                              color: EvolveColors.cyan,
                               fontSize: 10,
                             ),
                           ),
                           TextSpan(
-                            text: '${''}$fail\n',
-                            style: TextStyle(
-                              fontFamily: 'Inter',
-                              color: const Color(0xFFD97706),
+                            text: '$fail\n',
+                            style: const TextStyle(
+                              color: EvolveColors.destructive,
                               fontSize: 10,
                             ),
                           ),
                           TextSpan(
-                            text: '${''}$comp',
-                            style: TextStyle(
-                              fontFamily: 'Inter',
-                              color: const Color(0xFF10B981),
+                            text: '$comp',
+                            style: const TextStyle(
+                              color: EvolveColors.success,
                               fontSize: 10,
                             ),
                           ),
@@ -1859,7 +1828,7 @@ class _GoalsStatsViewState extends ConsumerState<GoalsStatsView> {
                   drawVerticalLine: false,
                   horizontalInterval: math.max(1.0, maxX / 4),
                   getDrawingHorizontalLine: (v) => FlLine(
-                    color: context.evolveColors.border.withValues(alpha: 0.2),
+                    color: context.evolveColors.border.withValues(alpha: 0.5),
                     strokeWidth: 1,
                     dashArray: [4, 4],
                   ),
@@ -1882,7 +1851,6 @@ class _GoalsStatsViewState extends ConsumerState<GoalsStatsView> {
                           child: Text(
                             'Q$index',
                             style: TextStyle(
-                              fontFamily: 'Inter',
                               fontSize: 10,
                               color: context.evolveColors.muted,
                               fontWeight: FontWeight.w600,
@@ -1900,9 +1868,9 @@ class _GoalsStatsViewState extends ConsumerState<GoalsStatsView> {
           ),
           const SizedBox(height: 12),
           _buildLegend([
-            _LegendItem(t.goalsStats.active, const Color(0xFF3B82F6)),
-            _LegendItem(t.goalsStats.failed, const Color(0xFFD97706)),
-            _LegendItem(t.goalsStats.complAbbr, const Color(0xFF10B981)),
+            _LegendItem(t.goalsStats.active, EvolveColors.cyan),
+            _LegendItem(t.goalsStats.failed, EvolveColors.destructive),
+            _LegendItem(t.goalsStats.complAbbr, EvolveColors.success),
           ]),
         ],
       ),
@@ -1945,17 +1913,15 @@ class _GoalsStatsViewState extends ConsumerState<GoalsStatsView> {
                     return LineTooltipItem(
                       '${_monthLabel(s.x.toInt())}\n',
                       TextStyle(
-                        fontFamily: 'Inter',
                         color: context.evolveColors.muted,
                         fontSize: 10,
                       ),
                       children: [
                         TextSpan(
-                          text: '${s.y.round()}%${''}',
-                          style: TextStyle(
-                            fontFamily: 'Inter',
-                            color: const Color(0xFF10B981),
-                            fontWeight: FontWeight.bold,
+                          text: '${s.y.round()}%',
+                          style: const TextStyle(
+                            color: EvolveColors.success,
+                            fontWeight: FontWeight.w700,
                             fontSize: 13,
                           ),
                         ),
@@ -1969,7 +1935,7 @@ class _GoalsStatsViewState extends ConsumerState<GoalsStatsView> {
               show: true,
               drawVerticalLine: false,
               getDrawingHorizontalLine: (v) => FlLine(
-                color: context.evolveColors.border.withValues(alpha: 0.2),
+                color: context.evolveColors.border.withValues(alpha: 0.5),
                 strokeWidth: 1,
                 dashArray: [4, 4],
               ),
@@ -1985,7 +1951,6 @@ class _GoalsStatsViewState extends ConsumerState<GoalsStatsView> {
                   getTitlesWidget: (v, _) => Text(
                     '${v.toInt()}%',
                     style: TextStyle(
-                      fontFamily: 'Inter',
                       fontSize: 9,
                       color: context.evolveColors.muted,
                     ),
@@ -2004,7 +1969,6 @@ class _GoalsStatsViewState extends ConsumerState<GoalsStatsView> {
                       child: Text(
                         _monthLabel(idx, abbreviated: true),
                         style: TextStyle(
-                          fontFamily: 'Inter',
                           fontSize: 9,
                           color: context.evolveColors.muted,
                           fontWeight: FontWeight.w600,
@@ -2022,33 +1986,21 @@ class _GoalsStatsViewState extends ConsumerState<GoalsStatsView> {
             lineBarsData: [
               LineChartBarData(
                 spots: spots,
-                color: const Color(0xFF10B981),
+                color: EvolveColors.success,
                 barWidth: 3,
                 isCurved: true,
                 curveSmoothness: 0.35,
                 preventCurveOverShooting: true,
-                dotData: FlDotData(
-                  show: true,
-                  getDotPainter: (spot, percent, barData, index) =>
-                      FlDotCirclePainter(
-                        radius: 4,
-                        color: const Color(0xFF10B981),
-                        strokeWidth: 2,
-                        strokeColor: context.evolveColors.panel,
-                      ),
-                ),
+                isStrokeCapRound: true,
+                dotData: const FlDotData(show: false),
                 belowBarData: BarAreaData(
                   show: true,
                   gradient: LinearGradient(
                     begin: Alignment.topCenter,
                     end: Alignment.bottomCenter,
                     colors: [
-                      Theme.of(
-                        context,
-                      ).colorScheme.primary.withValues(alpha: 0.15),
-                      Theme.of(
-                        context,
-                      ).colorScheme.primary.withValues(alpha: 0.0),
+                      EvolveColors.success.withValues(alpha: 0.12),
+                      EvolveColors.success.withValues(alpha: 0.0),
                     ],
                   ),
                 ),
@@ -2168,7 +2120,6 @@ class _GoalsStatsViewState extends ConsumerState<GoalsStatsView> {
                             TextSpan(
                               text: '${c.label}: $count\n',
                               style: TextStyle(
-                                fontFamily: 'Inter',
                                 color: c.color,
                                 fontSize: 10,
                                 fontWeight: FontWeight.w500,
@@ -2181,7 +2132,6 @@ class _GoalsStatsViewState extends ConsumerState<GoalsStatsView> {
                       return BarTooltipItem(
                         '$y\n',
                         TextStyle(
-                          fontFamily: 'Inter',
                           color: context.evolveColors.foreground,
                           fontWeight: FontWeight.bold,
                           fontSize: 14,
@@ -2196,7 +2146,7 @@ class _GoalsStatsViewState extends ConsumerState<GoalsStatsView> {
                   drawVerticalLine: false,
                   horizontalInterval: math.max(1.0, maxY / 4),
                   getDrawingHorizontalLine: (v) => FlLine(
-                    color: context.evolveColors.border.withValues(alpha: 0.2),
+                    color: context.evolveColors.border.withValues(alpha: 0.5),
                     strokeWidth: 1,
                     dashArray: [4, 4],
                   ),
@@ -2212,7 +2162,6 @@ class _GoalsStatsViewState extends ConsumerState<GoalsStatsView> {
                       getTitlesWidget: (v, _) => Text(
                         v.toInt().toString(),
                         style: TextStyle(
-                          fontFamily: 'Inter',
                           fontSize: 10,
                           color: context.evolveColors.muted,
                         ),
@@ -2234,7 +2183,6 @@ class _GoalsStatsViewState extends ConsumerState<GoalsStatsView> {
                           child: Text(
                             y?.toString() ?? '',
                             style: TextStyle(
-                              fontFamily: 'Inter',
                               fontSize: 10,
                               color: context.evolveColors.muted,
                               fontWeight: FontWeight.w600,

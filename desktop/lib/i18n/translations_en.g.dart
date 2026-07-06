@@ -815,6 +815,18 @@ class Translations$dashboard$en {
 	/// en: 'Good morning'
 	String get goodMorning => 'Good morning';
 
+	/// en: 'Good afternoon'
+	String get goodAfternoon => 'Good afternoon';
+
+	/// en: 'Good evening'
+	String get goodEvening => 'Good evening';
+
+	/// en: 'Manager'
+	String get manager => 'Manager';
+
+	/// en: 'AI Chat'
+	String get aiChat => 'AI Chat';
+
 	/// en: 'consecutive days'
 	String get consecutiveDays => 'consecutive days';
 
@@ -2972,6 +2984,10 @@ extension on Translations {
 			'dashboard.mood' => 'Mood',
 			'dashboard.energy' => 'Energy',
 			'dashboard.goodMorning' => 'Good morning',
+			'dashboard.goodAfternoon' => 'Good afternoon',
+			'dashboard.goodEvening' => 'Good evening',
+			'dashboard.manager' => 'Manager',
+			'dashboard.aiChat' => 'AI Chat',
 			'dashboard.consecutiveDays' => 'consecutive days',
 			'dashboard.welcomeTitle' => 'Welcome to Evolve',
 			'dashboard.welcomeSubtitle' => 'Start your personal growth journey.',
@@ -3259,12 +3275,12 @@ extension on Translations {
 			'aiCoach.inputHint' => 'Ask your Coach for advice...',
 			'aiCoach.defaultUserName' => 'user',
 			'aiCoach.userNameLine' => ({required Object userName}) => '- Name: ${userName}',
+			_ => null,
+		} ?? switch (path) {
 			'aiCoach.activeGoalsCount' => ({required Object count}) => '- Active goals: ${count}',
 			'aiCoach.completedGoalsCount' => ({required Object count}) => '- Completed goals: ${count}',
 			'aiCoach.todayCompletion' => ({required Object completed, required Object total}) => '- Habits today: ${completed} completed out of ${total} total.',
 			'settingsPage.account' => 'Account',
-			_ => null,
-		} ?? switch (path) {
 			'settingsPage.notifications' => 'Notifications',
 			'settingsPage.language' => 'Language',
 			'settingsPage.timeFormat24h' => '24h Format',

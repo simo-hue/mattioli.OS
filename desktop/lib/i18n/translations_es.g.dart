@@ -433,6 +433,10 @@ class _Translations$dashboard$es extends Translations$dashboard$en {
 	@override String get mood => 'Estado de ánimo';
 	@override String get energy => 'Energía';
 	@override String get goodMorning => 'Buenos días';
+	@override String get goodAfternoon => 'Buenas tardes';
+	@override String get goodEvening => 'Buenas noches';
+	@override String get manager => 'Gestión';
+	@override String get aiChat => 'Chat AI';
 	@override String get consecutiveDays => 'días consecutivos';
 	@override String get welcomeTitle => 'Bienvenido a Evolve';
 	@override String get welcomeSubtitle => 'Comienza tu camino de crecimiento personal.';
@@ -1463,6 +1467,10 @@ extension on TranslationsEs {
 			'dashboard.mood' => 'Estado de ánimo',
 			'dashboard.energy' => 'Energía',
 			'dashboard.goodMorning' => 'Buenos días',
+			'dashboard.goodAfternoon' => 'Buenas tardes',
+			'dashboard.goodEvening' => 'Buenas noches',
+			'dashboard.manager' => 'Gestión',
+			'dashboard.aiChat' => 'Chat AI',
 			'dashboard.consecutiveDays' => 'días consecutivos',
 			'dashboard.welcomeTitle' => 'Bienvenido a Evolve',
 			'dashboard.welcomeSubtitle' => 'Comienza tu camino de crecimiento personal.',
@@ -1750,12 +1758,12 @@ extension on TranslationsEs {
 			'aiCoach.inputHint' => 'Pide consejos a tu Coach...',
 			'aiCoach.defaultUserName' => 'Usuario',
 			'aiCoach.userNameLine' => ({required Object userName}) => '- Nombre: ${userName}',
+			_ => null,
+		} ?? switch (path) {
 			'aiCoach.activeGoalsCount' => ({required Object count}) => '- Objetivos activos: ${count}',
 			'aiCoach.completedGoalsCount' => ({required Object count}) => '- Objetivos completados: ${count}',
 			'aiCoach.todayCompletion' => ({required Object completed, required Object total}) => '- Hábitos de hoy: ${completed} completados de ${total} en total.',
 			'settingsPage.account' => 'Cuenta',
-			_ => null,
-		} ?? switch (path) {
 			'settingsPage.notifications' => 'Notificaciones',
 			'settingsPage.language' => 'Idioma',
 			'settingsPage.timeFormat24h' => 'Formato 24h',

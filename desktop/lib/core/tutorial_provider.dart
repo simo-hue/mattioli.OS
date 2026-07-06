@@ -21,9 +21,9 @@ abstract class ModeAwareTutorialNotifier extends Notifier<bool> {
   bool build() {
     final mode = ref.watch(activeDesktopDataModeProvider);
     final prefs = ref.read(sharedPreferencesProvider);
-    
+
     if (prefs == null) return false;
-    
+
     final modeSpecificValue = prefs.getBool(step.keyFor(mode));
     if (modeSpecificValue != null) return modeSpecificValue;
 
@@ -37,9 +37,9 @@ abstract class ModeAwareTutorialNotifier extends Notifier<bool> {
   Future<void> setTutorialSeen(bool seen) async {
     final mode = ref.read(activeDesktopDataModeProvider);
     final prefs = ref.read(sharedPreferencesProvider);
-    
+
     if (prefs == null) return;
-    
+
     state = seen;
     await prefs.setBool(step.keyFor(mode), seen);
     if (!mode.isPrivate) {

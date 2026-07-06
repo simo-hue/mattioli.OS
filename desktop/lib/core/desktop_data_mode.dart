@@ -46,8 +46,7 @@ class ActiveDesktopDataModeNotifier extends Notifier<DesktopDataMode> {
     if (mode.isPrivate) {
       await DesktopSentryService.setEnabled(false);
     } else if (wasPrivate) {
-      final hasSentryConsent =
-          prefs?.getBool('has_sentry_consent') ?? true;
+      final hasSentryConsent = prefs?.getBool('has_sentry_consent') ?? true;
       if (hasSentryConsent) {
         await DesktopSentryService.ensureInitialized();
       }

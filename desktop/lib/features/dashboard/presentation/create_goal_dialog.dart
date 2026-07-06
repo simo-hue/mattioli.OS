@@ -7,6 +7,7 @@ import 'package:evolve_desktop/shared/widgets/color_picker_dialog.dart';
 import 'package:evolve_desktop/shared/widgets/evolve_dialog.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:lucide_icons_flutter/lucide_icons.dart';
 
 class CreateGoalDialog extends ConsumerStatefulWidget {
   const CreateGoalDialog({super.key});
@@ -20,16 +21,20 @@ class _CreateGoalDialogState extends ConsumerState<CreateGoalDialog> {
   final _categoryController = TextEditingController(
     text: t.createGoal.defaultCategory,
   );
+  // Mobile "Add Habit" preset palette (habit_management_modal.dart).
+  static const _presetColors = [
+    Color(0xFF30A661),
+    Color(0xFF3B82F6),
+    Color(0xFF7C3AED),
+    Color(0xFFEC4899),
+    Color(0xFFEF4444),
+    Color(0xFFF59E0B),
+    Color(0xFF10B981),
+  ];
+
   Color _selectedColor = EvolveColors.amber;
   GoalType _selectedType = GoalType.monthly;
   bool _isLoading = false;
-
-  final List<Color> _colors = [
-    EvolveColors.cyan,
-    EvolveColors.violet,
-    EvolveColors.amber,
-    EvolveColors.rose,
-  ];
 
   @override
   void dispose() {
@@ -98,37 +103,32 @@ class _CreateGoalDialogState extends ConsumerState<CreateGoalDialog> {
   Widget build(BuildContext context) {
     return EvolveAlertDialog(
       maxWidth: 480,
-      icon: Icons.emoji_events_outlined,
+      icon: LucideIcons.trophy,
       title: Text(t.createGoal.title),
       subtitle: t.createGoal.subtitle,
       content: Column(
         mainAxisSize: MainAxisSize.min,
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
+          _FieldLabel(t.form.title),
+          const SizedBox(height: 8),
           TextField(
             controller: _titleController,
-            decoration: InputDecoration(
-              labelText: t.form.title,
-              hintText: t.createGoal.titleHint,
-            ),
+            decoration: InputDecoration(hintText: t.createGoal.titleHint),
             autofocus: true,
             textInputAction: TextInputAction.next,
           ),
           const SizedBox(height: 16),
+          _FieldLabel(t.form.category),
+          const SizedBox(height: 8),
           TextField(
             controller: _categoryController,
-            decoration: InputDecoration(
-              labelText: t.form.category,
-              hintText: t.createGoal.categoryHint,
-            ),
+            decoration: InputDecoration(hintText: t.createGoal.categoryHint),
             textInputAction: TextInputAction.done,
             onSubmitted: (_) => _save(),
           ),
-          const SizedBox(height: 24),
-          Text(
-            t.createGoal.timeline,
-            style: Theme.of(context).textTheme.titleSmall,
-          ),
+          const SizedBox(height: 20),
+          _FieldLabel(t.createGoal.timeline),
           const SizedBox(height: 8),
           DropdownButtonFormField<GoalType>(
             initialValue: _selectedType,
@@ -164,34 +164,45 @@ class _CreateGoalDialogState extends ConsumerState<CreateGoalDialog> {
               if (val != null) setState(() => _selectedType = val);
             },
           ),
-          const SizedBox(height: 24),
-          Text(t.form.color, style: Theme.of(context).textTheme.titleSmall),
-          const SizedBox(height: 8),
+          const SizedBox(height: 20),
+          _FieldLabel(t.form.color),
+          const SizedBox(height: 10),
           Wrap(
-            spacing: 8,
-            runSpacing: 8,
+            spacing: 10,
+            runSpacing: 10,
             children: [
-              for (final color in _colors)
+              for (final color in _presetColors)
                 GestureDetector(
                   onTap: () => setState(() => _selectedColor = color),
-                  child: Container(
-                    width: 32,
-                    height: 32,
-                    decoration: BoxDecoration(
-                      color: color,
-                      shape: BoxShape.circle,
-                      border: _selectedColor == color
-                          ? Border.all(
-                              color: context.evolveColors.foreground,
-                              width: 2,
-                            )
-                          : null,
+                  child: MouseRegion(
+                    cursor: SystemMouseCursors.click,
+                    child: Container(
+                      width: 28,
+                      height: 28,
+                      decoration: BoxDecoration(
+                        color: color,
+                        shape: BoxShape.circle,
+                        border: Border.all(
+                          color: _selectedColor == color
+                              ? Colors.white
+                              : Colors.transparent,
+                          width: 2,
+                        ),
+                        boxShadow: _selectedColor == color
+                            ? [
+                                BoxShadow(
+                                  color: color.withValues(alpha: 0.5),
+                                  blurRadius: 8,
+                                ),
+                              ]
+                            : null,
+                      ),
                     ),
                   ),
                 ),
               CustomColorSwatch(
                 initial: _selectedColor,
-                isSelected: !_colors.contains(_selectedColor),
+                isSelected: !_presetColors.contains(_selectedColor),
                 onPicked: (color) => setState(() => _selectedColor = color),
               ),
             ],
@@ -213,6 +224,26 @@ class _CreateGoalDialogState extends ConsumerState<CreateGoalDialog> {
               : Text(t.form.add),
         ),
       ],
+    );
+  }
+}
+
+/// Uppercase micro-label above a form field ("HABIT NAME" on mobile).
+class _FieldLabel extends StatelessWidget {
+  const _FieldLabel(this.label);
+
+  final String label;
+
+  @override
+  Widget build(BuildContext context) {
+    return Text(
+      label.toUpperCase(),
+      style: TextStyle(
+        fontSize: 10,
+        fontWeight: FontWeight.w600,
+        color: context.evolveColors.muted,
+        letterSpacing: 0.5,
+      ),
     );
   }
 }

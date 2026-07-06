@@ -18,8 +18,10 @@ import 'package:evolve_desktop/shared/widgets/evolve_dialog.dart';
 import 'package:evolve_desktop/shared/widgets/evolve_panel.dart';
 import 'package:evolve_desktop/features/dashboard/presentation/create_goal_dialog.dart';
 import 'package:evolve_desktop/features/dashboard/presentation/create_habit_dialog.dart';
+import 'package:evolve_desktop/features/shell/application/navigation_controller.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:lucide_icons_flutter/lucide_icons.dart';
 
 class DashboardPage extends ConsumerStatefulWidget {
   const DashboardPage({super.key});
@@ -115,7 +117,7 @@ class _DashboardPageState extends ConsumerState<DashboardPage> {
         context: context,
         barrierDismissible: false,
         builder: (context) => EvolveAlertDialog(
-          icon: Icons.auto_awesome,
+          icon: LucideIcons.sparkles,
           title: Text(t.dashboard.welcomeTitle),
           subtitle: t.dashboard.welcomeSubtitle,
           content: Column(
@@ -150,23 +152,16 @@ class _DashboardPageState extends ConsumerState<DashboardPage> {
   @override
   Widget build(BuildContext context) {
     final snapshot = ref.watch(dashboardControllerProvider);
-    final user = ref.watch(desktopAuthControllerProvider).user;
-    final isPrivate = ref.watch(activeDesktopDataModeProvider).isPrivate;
-    final privateName = isPrivate
-        ? ref.watch(privateProfileProvider).value?.fullName
-        : null;
 
     final page = DesktopPage(
-      title: user != null
-          ? _greeting(user.userMetadata, user.email)
-          : _greeting(
-              privateName != null ? {'full_name': privateName} : null,
-              null,
-            ),
-      subtitle: t.dashboard.subtitle,
-      trailing: _TodayLabel(date: DateTime.now()),
       child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
         children: [
+          KeyedSubtree(
+            key: _checkInKey,
+            child: _ProtocolloSection(checkIn: snapshot.checkIn),
+          ),
+          const SizedBox(height: 22),
           _MetricGrid(snapshot: snapshot),
           const SizedBox(height: 18),
           LayoutBuilder(
@@ -187,11 +182,6 @@ class _DashboardPageState extends ConsumerState<DashboardPage> {
               );
               final secondary = Column(
                 children: [
-                  KeyedSubtree(
-                    key: _checkInKey,
-                    child: _CheckInPanel(checkIn: snapshot.checkIn),
-                  ),
-                  const SizedBox(height: 18),
                   KeyedSubtree(
                     key: _focusGoalsKey,
                     child: _FocusGoalsPanel(goals: snapshot.goals),
@@ -266,21 +256,287 @@ class _DashboardPageState extends ConsumerState<DashboardPage> {
   }
 }
 
-class _TodayLabel extends StatelessWidget {
-  const _TodayLabel({required this.date});
+/// The mobile home's "PROTOCOLLO" strip: uppercase label with fading rule and
+/// three quick-action tiles (Daily check-in, AI Chat, Manager).
+class _ProtocolloSection extends ConsumerWidget {
+  const _ProtocolloSection({required this.checkIn});
 
-  final DateTime date;
+  final DailyCheckIn checkIn;
+
+  @override
+  Widget build(BuildContext context, WidgetRef ref) {
+    // Brand label, deliberately not localized (same on mobile).
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        const EvolveSectionLabel('Protocollo'),
+        const SizedBox(height: 14),
+        Row(
+          children: [
+            Expanded(
+              flex: 3,
+              child: _ActionTile(
+                icon: LucideIcons.heartPulse,
+                label: t.dashboard.dailyCheckIn,
+                subtitle: t.dashboard.mood,
+                color: EvolveColors.destructive,
+                showPulse: !checkIn.isComplete,
+                showCheckBadge: checkIn.isComplete,
+                onTap: () => showEvolveDialog<void>(
+                  context: context,
+                  builder: (context) => _DailyCheckInDialog(checkIn: checkIn),
+                ),
+              ),
+            ),
+            const SizedBox(width: 12),
+            Expanded(
+              flex: 2,
+              child: _ActionTile(
+                icon: LucideIcons.sparkles,
+                label: t.dashboard.aiChat,
+                subtitle: t.ai.macroGoals,
+                color: EvolveColors.violet,
+                onTap: () => ref
+                    .read(navigationControllerProvider.notifier)
+                    .select(DesktopSection.coach),
+              ),
+            ),
+            const SizedBox(width: 12),
+            Expanded(
+              flex: 2,
+              child: _ActionTile(
+                icon: LucideIcons.listTodo,
+                label: t.dashboard.manager,
+                subtitle: t.ai.dailyHabits,
+                color: context.evolveAccent,
+                onTap: () => ref
+                    .read(navigationControllerProvider.notifier)
+                    .select(DesktopSection.habits),
+              ),
+            ),
+          ],
+        ),
+      ],
+    );
+  }
+}
+
+class _ActionTile extends StatefulWidget {
+  const _ActionTile({
+    required this.icon,
+    required this.label,
+    required this.subtitle,
+    required this.color,
+    required this.onTap,
+    this.showPulse = false,
+    this.showCheckBadge = false,
+  });
+
+  final IconData icon;
+  final String label;
+  final String subtitle;
+  final Color color;
+  final VoidCallback onTap;
+  final bool showPulse;
+  final bool showCheckBadge;
+
+  @override
+  State<_ActionTile> createState() => _ActionTileState();
+}
+
+class _ActionTileState extends State<_ActionTile>
+    with SingleTickerProviderStateMixin {
+  AnimationController? _pulseController;
+  Animation<double>? _pulseAnimation;
+
+  @override
+  void initState() {
+    super.initState();
+    if (widget.showPulse) _startPulse();
+  }
+
+  @override
+  void didUpdateWidget(covariant _ActionTile oldWidget) {
+    super.didUpdateWidget(oldWidget);
+    if (widget.showPulse && !oldWidget.showPulse) {
+      _startPulse();
+    } else if (!widget.showPulse && oldWidget.showPulse) {
+      _stopPulse();
+    }
+  }
+
+  void _startPulse() {
+    _pulseController?.dispose();
+    _pulseController = AnimationController(
+      vsync: this,
+      duration: const Duration(milliseconds: 2000),
+    );
+    _pulseAnimation = CurvedAnimation(
+      parent: _pulseController!,
+      curve: Curves.easeInOut,
+    );
+    _pulseController!.repeat(reverse: true);
+  }
+
+  void _stopPulse() {
+    _pulseController?.stop();
+    _pulseController?.dispose();
+    _pulseController = null;
+    _pulseAnimation = null;
+  }
+
+  @override
+  void dispose() {
+    _pulseController?.dispose();
+    super.dispose();
+  }
 
   @override
   Widget build(BuildContext context) {
-    final months = t.common.months;
-    final weekdays = t.common.weekdaysLong;
+    Widget tile = _buildTileContent(context);
 
-    return Padding(
-      padding: const EdgeInsets.only(top: 9),
-      child: Text(
-        '${weekdays[date.weekday - 1]}, ${date.day} ${months[date.month - 1]}',
-        style: Theme.of(context).textTheme.bodyMedium,
+    if (widget.showPulse && _pulseAnimation != null) {
+      tile = AnimatedBuilder(
+        animation: _pulseAnimation!,
+        builder: (context, child) {
+          final value = _pulseAnimation!.value;
+          return Container(
+            decoration: BoxDecoration(
+              borderRadius: BorderRadius.circular(20),
+              boxShadow: [
+                BoxShadow(
+                  color: widget.color.withValues(alpha: value * 0.40),
+                  blurRadius: value * 16,
+                  spreadRadius: value * 3,
+                ),
+              ],
+            ),
+            child: child,
+          );
+        },
+        child: tile,
+      );
+    }
+
+    return tile;
+  }
+
+  Widget _buildTileContent(BuildContext context) {
+    return MouseRegion(
+      cursor: SystemMouseCursors.click,
+      child: GestureDetector(
+        onTap: widget.onTap,
+        child: Container(
+          height: 100,
+          decoration: BoxDecoration(
+            color: context.evolveColors.panel.withValues(alpha: 0.4),
+            borderRadius: BorderRadius.circular(20),
+            border: Border.all(
+              color: context.evolveColors.border.withValues(alpha: 0.5),
+            ),
+            boxShadow: [
+              BoxShadow(
+                color: Colors.black.withValues(alpha: 0.1),
+                blurRadius: 10,
+                offset: const Offset(0, 4),
+              ),
+            ],
+          ),
+          clipBehavior: Clip.antiAlias,
+          child: Stack(
+            children: [
+              PositionedDirectional(
+                top: -20,
+                end: -20,
+                child: Container(
+                  width: 60,
+                  height: 60,
+                  decoration: BoxDecoration(
+                    shape: BoxShape.circle,
+                    gradient: RadialGradient(
+                      colors: [
+                        widget.color.withValues(alpha: 0.15),
+                        Colors.transparent,
+                      ],
+                    ),
+                  ),
+                ),
+              ),
+              Padding(
+                padding: const EdgeInsets.all(12),
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                  children: [
+                    Container(
+                      padding: const EdgeInsets.all(8),
+                      decoration: BoxDecoration(
+                        color: widget.color.withValues(alpha: 0.1),
+                        borderRadius: BorderRadius.circular(10),
+                      ),
+                      child: Icon(widget.icon, size: 18, color: widget.color),
+                    ),
+                    Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Text(
+                          widget.label,
+                          maxLines: 1,
+                          overflow: TextOverflow.ellipsis,
+                          style: TextStyle(
+                            fontSize: 13,
+                            fontWeight: FontWeight.w700,
+                            color: context.evolveColors.foreground,
+                            letterSpacing: -0.2,
+                          ),
+                        ),
+                        Text(
+                          widget.subtitle,
+                          maxLines: 1,
+                          overflow: TextOverflow.ellipsis,
+                          style: TextStyle(
+                            fontSize: 10,
+                            fontWeight: FontWeight.w500,
+                            color: context.evolveColors.muted.withValues(
+                              alpha: 0.8,
+                            ),
+                          ),
+                        ),
+                      ],
+                    ),
+                  ],
+                ),
+              ),
+              if (widget.showCheckBadge)
+                PositionedDirectional(
+                  top: 6,
+                  end: 6,
+                  child: Container(
+                    width: 18,
+                    height: 18,
+                    decoration: BoxDecoration(
+                      color: EvolveColors.successBright,
+                      shape: BoxShape.circle,
+                      boxShadow: [
+                        BoxShadow(
+                          color: EvolveColors.successBright.withValues(
+                            alpha: 0.3,
+                          ),
+                          blurRadius: 4,
+                          spreadRadius: 1,
+                        ),
+                      ],
+                    ),
+                    child: const Icon(
+                      LucideIcons.check,
+                      size: 10,
+                      color: Colors.white,
+                    ),
+                  ),
+                ),
+            ],
+          ),
+        ),
       ),
     );
   }
@@ -313,7 +569,7 @@ class _MetricGrid extends StatelessWidget {
                 total: snapshot.totalHabits,
               ),
               color: context.evolveAccent,
-              icon: Icons.bolt_rounded,
+              icon: LucideIcons.zap,
             ),
             _MetricCard(
               width: cardWidth,
@@ -321,7 +577,7 @@ class _MetricGrid extends StatelessWidget {
               value: '${snapshot.bestStreak}',
               detail: t.dashboard.consecutiveDays,
               color: EvolveColors.amber,
-              icon: Icons.local_fire_department_outlined,
+              icon: LucideIcons.flame,
             ),
             _MetricCard(
               width: cardWidth,
@@ -331,7 +587,7 @@ class _MetricGrid extends StatelessWidget {
                 pct: (snapshot.averageGoalProgress * 100).round(),
               ),
               color: EvolveColors.cyan,
-              icon: Icons.flag_outlined,
+              icon: LucideIcons.target,
             ),
             _MetricCard(
               width: cardWidth,
@@ -339,7 +595,7 @@ class _MetricGrid extends StatelessWidget {
               value: _signedPercentage(snapshot.weeklyMomentum),
               detail: t.dashboard.vsLastWeek,
               color: EvolveColors.violet,
-              icon: Icons.trending_up_rounded,
+              icon: LucideIcons.trendingUp,
             ),
           ],
         );
@@ -370,6 +626,8 @@ class _MetricCard extends StatelessWidget {
     return SizedBox(
       width: width,
       child: EvolvePanel(
+        radius: 20,
+        glowColor: color,
         child: Row(
           children: [
             Expanded(
@@ -392,15 +650,7 @@ class _MetricCard extends StatelessWidget {
                 ],
               ),
             ),
-            Container(
-              width: 42,
-              height: 42,
-              decoration: BoxDecoration(
-                color: color.withValues(alpha: 0.11),
-                borderRadius: BorderRadius.circular(13),
-              ),
-              child: Icon(icon, size: 21, color: color),
-            ),
+            EvolveIconChip(icon: icon, color: color, size: 42, iconSize: 19),
           ],
         ),
       ),
@@ -427,8 +677,12 @@ class _TrendPanel extends StatelessWidget {
               label: t.dashboard.thisWeekPill(
                 value: _signedPercentage(weeklyMomentum),
               ),
-              color: context.evolveAccent,
-              icon: Icons.north_east_rounded,
+              color: weeklyMomentum >= 0
+                  ? EvolveColors.success
+                  : EvolveColors.destructive,
+              icon: weeklyMomentum >= 0
+                  ? LucideIcons.trendingUp
+                  : LucideIcons.trendingDown,
             ),
           ),
           const SizedBox(height: 22),
@@ -473,7 +727,7 @@ class _TrendChartPainter extends CustomPainter {
       size.height - bottom,
     );
     final gridPaint = Paint()
-      ..color = palette.border
+      ..color = palette.border.withValues(alpha: 0.5)
       ..strokeWidth = 1;
     final labelPainter = TextPainter(textDirection: TextDirection.ltr);
 
@@ -523,25 +777,29 @@ class _TrendChartPainter extends CustomPainter {
         ..shader = LinearGradient(
           begin: Alignment.topCenter,
           end: Alignment.bottomCenter,
-          colors: [accent.withValues(alpha: 0.27), accent.withValues(alpha: 0)],
+          colors: [accent.withValues(alpha: 0.14), accent.withValues(alpha: 0)],
         ).createShader(chart),
     );
+    // Mobile draws a clean white stroke with no data-point dots.
     canvas.drawPath(
       linePath,
       Paint()
         ..color = accent
-        ..strokeWidth = 2.5
+        ..strokeWidth = 3
         ..style = PaintingStyle.stroke
-        ..strokeCap = StrokeCap.round,
+        ..strokeCap = StrokeCap.round
+        ..strokeJoin = StrokeJoin.round,
     );
 
     for (var i = 0; i < offsets.length; i++) {
-      canvas.drawCircle(offsets[i], 4.5, Paint()..color = palette.panel);
-      canvas.drawCircle(offsets[i], 3, Paint()..color = accent);
       labelPainter
         ..text = TextSpan(
           text: points[i].label,
-          style: TextStyle(color: palette.muted, fontSize: 11),
+          style: TextStyle(
+            color: palette.muted,
+            fontSize: 11,
+            fontWeight: FontWeight.w500,
+          ),
         )
         ..layout()
         ..paint(
@@ -579,17 +837,12 @@ class _HabitPanel extends ConsumerWidget {
                   label: t.dashboard.actionsCount(count: snapshot.totalHabits),
                 ),
                 const SizedBox(width: 8),
-                IconButton(
-                  onPressed: () => showEvolveDialog<void>(
+                EvolveSquareIconButton(
+                  icon: LucideIcons.plus,
+                  tooltip: t.createHabit.title,
+                  onTap: () => showEvolveDialog<void>(
                     context: context,
                     builder: (context) => const CreateHabitDialog(),
-                  ),
-                  icon: const Icon(Icons.add_rounded, size: 20),
-                  tooltip: t.createHabit.title,
-                  style: IconButton.styleFrom(
-                    backgroundColor: context.evolveColors.border.withValues(
-                      alpha: 0.3,
-                    ),
                   ),
                 ),
               ],
@@ -665,15 +918,15 @@ class _HabitRow extends StatelessWidget {
               ),
               child: isDone
                   ? const Icon(
-                      Icons.check_rounded,
+                      LucideIcons.check,
                       color: Color(0xFF092113),
-                      size: 16,
+                      size: 14,
                     )
                   : isMissed
                   ? const Icon(
-                      Icons.close_rounded,
+                      LucideIcons.x,
                       color: EvolveColors.rose,
-                      size: 15,
+                      size: 13,
                     )
                   : null,
             ),
@@ -715,70 +968,29 @@ class _HabitRow extends StatelessWidget {
               ),
             const SizedBox(width: 16),
             SizedBox(
-              width: 54,
-              child: Text(
-                t.dashboard.streakDaysShort(n: habit.streak),
-                textAlign: TextAlign.right,
-                style: const TextStyle(
-                  color: EvolveColors.amber,
-                  fontSize: 11,
-                  fontWeight: FontWeight.w700,
-                ),
+              width: 58,
+              child: Row(
+                mainAxisAlignment: MainAxisAlignment.end,
+                children: [
+                  const Icon(
+                    LucideIcons.flame,
+                    size: 11,
+                    color: EvolveColors.amber,
+                  ),
+                  const SizedBox(width: 3),
+                  Text(
+                    t.dashboard.streakDaysShort(n: habit.streak),
+                    style: const TextStyle(
+                      color: EvolveColors.amber,
+                      fontSize: 11,
+                      fontWeight: FontWeight.w700,
+                    ),
+                  ),
+                ],
               ),
             ),
           ],
         ),
-      ),
-    );
-  }
-}
-
-class _CheckInPanel extends StatelessWidget {
-  const _CheckInPanel({required this.checkIn});
-
-  final DailyCheckIn checkIn;
-
-  @override
-  Widget build(BuildContext context) {
-    return EvolvePanel(
-      color: context.evolveColors.panelRaised,
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Icon(Icons.spa_outlined, size: 23, color: context.evolveAccent),
-          const SizedBox(height: 14),
-          Text(
-            checkIn.isComplete
-                ? t.dashboard.checkInDone
-                : t.dashboard.checkInPrompt,
-            style: Theme.of(context).textTheme.titleLarge,
-          ),
-          const SizedBox(height: 6),
-          Text(
-            checkIn.isComplete
-                ? t.dashboard.moodEnergyValue(
-                    mood: checkIn.mood!,
-                    energy: checkIn.energy!,
-                  )
-                : t.dashboard.checkInHint,
-            style: Theme.of(context).textTheme.bodySmall,
-          ),
-          const SizedBox(height: 16),
-          SizedBox(
-            width: double.infinity,
-            child: FilledButton(
-              onPressed: () => showEvolveDialog<void>(
-                context: context,
-                builder: (context) => _DailyCheckInDialog(checkIn: checkIn),
-              ),
-              child: Text(
-                checkIn.isComplete
-                    ? t.dashboard.updateCheckIn
-                    : t.dashboard.doCheckIn,
-              ),
-            ),
-          ),
-        ],
       ),
     );
   }
@@ -811,7 +1023,7 @@ class _DailyCheckInDialogState extends ConsumerState<_DailyCheckInDialog> {
   Widget build(BuildContext context) {
     return EvolveAlertDialog(
       maxWidth: 420,
-      icon: Icons.spa_outlined,
+      icon: LucideIcons.heartPulse,
       title: Text(t.dashboard.dailyCheckIn),
       subtitle: t.dashboard.dailyCheckInSubtitle,
       content: Column(
@@ -923,8 +1135,10 @@ class _FocusGoalsPanel extends ConsumerWidget {
             title: t.dashboard.focusGoals,
             subtitle: t.dashboard.currentPriorities,
             trailing: Builder(
-              builder: (context) => IconButton(
-                onPressed: () {
+              builder: (context) => EvolveSquareIconButton(
+                icon: LucideIcons.plus,
+                tooltip: t.createGoal.title,
+                onTap: () {
                   final isPro = ref.read(desktopIsProProvider);
                   if (!isPro && goals.length >= 100) {
                     unawaited(showProFeaturesDialog(context, ref));
@@ -935,13 +1149,6 @@ class _FocusGoalsPanel extends ConsumerWidget {
                     builder: (context) => const CreateGoalDialog(),
                   );
                 },
-                icon: const Icon(Icons.add_rounded, size: 20),
-                tooltip: t.createGoal.title,
-                style: IconButton.styleFrom(
-                  backgroundColor: context.evolveColors.border.withValues(
-                    alpha: 0.3,
-                  ),
-                ),
               ),
             ),
           ),
@@ -1133,16 +1340,6 @@ class _RingPainter extends CustomPainter {
       oldDelegate.track != track;
 }
 
-String _greeting(Map<String, dynamic>? metadata, String? email) {
-  final fullName = (metadata?['full_name'] as String?)?.trim();
-  final name = fullName?.isNotEmpty ?? false
-      ? fullName!.split(RegExp(r'\s+')).first
-      : email?.split('@').first;
-  return name == null || name.isEmpty
-      ? t.dashboard.goodMorning
-      : '${t.dashboard.goodMorning}, $name';
-}
-
 String _signedPercentage(double value) {
   final percentage = (value * 100).round();
   return '${percentage > 0 ? '+' : ''}$percentage%';
@@ -1178,7 +1375,7 @@ class _NamePromptDialogState extends State<_NamePromptDialog> {
     return Consumer(
       builder: (context, ref, child) {
         return EvolveAlertDialog(
-          icon: Icons.person_outline,
+          icon: LucideIcons.user,
           title: Text(t.namePrompt.title),
           subtitle: t.namePrompt.subtitle,
           content: Column(

@@ -1,10 +1,13 @@
 import 'package:evolve_desktop/app/theme/evolve_theme.dart';
+import 'package:evolve_desktop/core/desktop_data_mode.dart';
 import 'package:evolve_desktop/features/ai_coach/presentation/ai_coach_page.dart';
 import 'package:evolve_desktop/features/auth/application/auth_controller.dart';
+import 'package:evolve_desktop/features/auth/application/desktop_profile_controller.dart';
 import 'package:evolve_desktop/features/dashboard/application/dashboard_controller.dart';
 import 'package:evolve_desktop/features/dashboard/presentation/dashboard_page.dart';
 import 'package:evolve_desktop/features/goals/presentation/goals_page.dart';
 import 'package:evolve_desktop/features/habits/presentation/habits_page.dart';
+import 'package:evolve_desktop/features/settings/application/desktop_subscription_controller.dart';
 import 'package:evolve_desktop/features/settings/presentation/settings_page.dart';
 import 'package:evolve_desktop/features/shell/application/navigation_controller.dart';
 import 'package:evolve_desktop/features/statistics/presentation/statistics_page.dart';
@@ -14,6 +17,7 @@ import 'package:evolve_desktop/shared/widgets/evolve_panel.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:lucide_icons_flutter/lucide_icons.dart';
 
 class DesktopShell extends ConsumerStatefulWidget {
   const DesktopShell({super.key});
@@ -65,12 +69,14 @@ class _DesktopShellState extends ConsumerState<DesktopShell> {
               return Row(
                 children: [
                   _DesktopSidebar(collapsed: collapsed),
-                  const VerticalDivider(width: 1),
+                  VerticalDivider(
+                    width: 1,
+                    color: context.evolveColors.border.withValues(alpha: 0.5),
+                  ),
                   Expanded(
                     child: Column(
                       children: [
                         _TopBar(onOpenSearch: _showCommandPalette),
-                        const Divider(height: 1),
                         Expanded(
                           child: AnimatedSwitcher(
                             duration: const Duration(milliseconds: 180),
@@ -226,51 +232,76 @@ class _SidebarDestination extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final color = selected ? context.evolveAccent : context.evolveColors.muted;
+    // Selected destination mirrors the mobile segmented control: a solid
+    // accent (white) pill with black-on-white label and a soft drop shadow.
+    final onAccent = Theme.of(context).colorScheme.onPrimary;
+    final color = selected ? onAccent : context.evolveColors.muted;
     final destination = Padding(
       padding: EdgeInsets.symmetric(
         horizontal: collapsed ? 11 : 14,
         vertical: 3,
       ),
-      child: Material(
-        color: selected
-            ? context.evolveAccent.withValues(alpha: 0.1)
-            : Colors.transparent,
-        borderRadius: BorderRadius.circular(10),
-        child: InkWell(
-          onTap: onTap,
-          borderRadius: BorderRadius.circular(10),
-          child: Padding(
-            padding: EdgeInsets.symmetric(
-              horizontal: collapsed ? 15 : 12,
-              vertical: 11,
-            ),
-            child: Row(
-              children: [
-                Icon(section.icon, color: color, size: 19),
-                if (!collapsed) ...[
-                  const SizedBox(width: 11),
-                  Expanded(
-                    child: Text(
-                      section.label,
-                      style: TextStyle(
-                        color: color,
-                        fontSize: 13,
-                        fontWeight: selected
-                            ? FontWeight.w700
-                            : FontWeight.w500,
+      child: AnimatedContainer(
+        duration: const Duration(milliseconds: 250),
+        curve: Curves.easeInOut,
+        decoration: BoxDecoration(
+          color: selected ? context.evolveAccent : Colors.transparent,
+          borderRadius: BorderRadius.circular(12),
+          boxShadow: selected
+              ? [
+                  BoxShadow(
+                    color: Colors.black.withValues(alpha: 0.3),
+                    blurRadius: 8,
+                    offset: const Offset(0, 2),
+                  ),
+                ]
+              : null,
+        ),
+        child: Material(
+          type: MaterialType.transparency,
+          borderRadius: BorderRadius.circular(12),
+          child: InkWell(
+            onTap: onTap,
+            borderRadius: BorderRadius.circular(12),
+            hoverColor: selected
+                ? Colors.transparent
+                : context.evolveColors.panel.withValues(alpha: 0.6),
+            child: Padding(
+              padding: EdgeInsets.symmetric(
+                horizontal: collapsed ? 15 : 12,
+                vertical: 11,
+              ),
+              child: Row(
+                children: [
+                  Icon(section.icon, color: color, size: 18),
+                  if (!collapsed) ...[
+                    const SizedBox(width: 11),
+                    Expanded(
+                      child: Text(
+                        section.label,
+                        style: TextStyle(
+                          color: color,
+                          fontSize: 13,
+                          letterSpacing: -0.2,
+                          fontWeight: selected
+                              ? FontWeight.w800
+                              : FontWeight.w600,
+                        ),
                       ),
                     ),
-                  ),
-                  Text(
-                    section.shortcut,
-                    style: TextStyle(
-                      color: context.evolveColors.subtle,
-                      fontSize: 10,
+                    Text(
+                      section.shortcut,
+                      style: TextStyle(
+                        color: selected
+                            ? onAccent.withValues(alpha: 0.55)
+                            : context.evolveColors.subtle,
+                        fontSize: 10,
+                        fontWeight: FontWeight.w600,
+                      ),
                     ),
-                  ),
+                  ],
                 ],
-              ],
+              ),
             ),
           ),
         ),
@@ -288,69 +319,137 @@ class _TopBar extends ConsumerWidget {
 
   final VoidCallback onOpenSearch;
 
+  String _greetingWord() {
+    final hour = DateTime.now().hour;
+    if (hour < 12) return t.dashboard.goodMorning;
+    if (hour < 18) return t.dashboard.goodAfternoon;
+    return t.dashboard.goodEvening;
+  }
+
+  String _firstName(Map<String, dynamic>? metadata, String? email) {
+    final fullName = (metadata?['full_name'] as String?)?.trim();
+    final name = fullName?.isNotEmpty ?? false
+        ? fullName!.split(RegExp(r'\s+')).first
+        : email?.split('@').first;
+    return name ?? '';
+  }
+
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final dashboard = ref.watch(dashboardControllerProvider);
     final syncPending = dashboard.errorMessage != null;
     final user = ref.watch(desktopAuthControllerProvider).user;
-    return SizedBox(
+    final isPrivate = ref.watch(activeDesktopDataModeProvider).isPrivate;
+    final privateName = isPrivate
+        ? ref.watch(privateProfileProvider).value?.fullName
+        : null;
+    final isPro = ref.watch(desktopIsProProvider);
+
+    final name = user != null
+        ? _firstName(user.userMetadata, user.email)
+        : _firstName(
+            privateName != null ? {'full_name': privateName} : null,
+            null,
+          );
+    final greeting = name.isEmpty
+        ? _greetingWord()
+        : '${_greetingWord()}, $name';
+
+    final date = DateTime.now();
+    final dateLabel =
+        '${t.common.weekdaysLong[date.weekday - 1]}, ${date.day} '
+        '${t.common.months[date.month - 1]}';
+
+    return Container(
       height: 68,
+      decoration: BoxDecoration(
+        color: context.evolveColors.background.withValues(alpha: 0.7),
+        border: Border(
+          bottom: BorderSide(
+            color: context.evolveColors.border.withValues(alpha: 0.3),
+            width: 0.5,
+          ),
+        ),
+      ),
       child: Padding(
         padding: const EdgeInsets.symmetric(horizontal: 24),
         child: Row(
           children: [
-            StatusPill(
-              label: syncPending
-                  ? t.shell.syncPending
-                  : dashboard.isRefreshing
-                  ? t.shell.syncing
-                  : t.shell.synced,
-              color: syncPending ? EvolveColors.amber : context.evolveAccent,
-              icon: syncPending
-                  ? Icons.cloud_off_outlined
-                  : Icons.cloud_done_outlined,
+            Expanded(
+              child: Column(
+                mainAxisAlignment: MainAxisAlignment.center,
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text(
+                    greeting,
+                    maxLines: 1,
+                    overflow: TextOverflow.ellipsis,
+                    style: TextStyle(
+                      fontSize: 20,
+                      fontWeight: FontWeight.w700,
+                      color: context.evolveColors.foreground,
+                      letterSpacing: -0.5,
+                    ),
+                  ),
+                  const SizedBox(height: 3),
+                  Row(
+                    children: [
+                      Container(
+                        width: 6,
+                        height: 6,
+                        decoration: const BoxDecoration(
+                          color: EvolveColors.success,
+                          shape: BoxShape.circle,
+                        ),
+                      ),
+                      const SizedBox(width: 6),
+                      Text(
+                        dateLabel,
+                        style: TextStyle(
+                          fontSize: 11,
+                          fontWeight: FontWeight.w500,
+                          color: context.evolveColors.muted,
+                          letterSpacing: 0.1,
+                        ),
+                      ),
+                    ],
+                  ),
+                ],
+              ),
             ),
-            const SizedBox(width: 8),
-            IconButton(
-              tooltip: t.shell.syncTooltip,
-              onPressed: dashboard.isRefreshing
-                  ? null
-                  : ref.read(dashboardControllerProvider.notifier).refresh,
-              icon: dashboard.isRefreshing
-                  ? const SizedBox.square(
-                      dimension: 16,
-                      child: CircularProgressIndicator(strokeWidth: 2),
-                    )
-                  : const Icon(Icons.sync_rounded, size: 19),
-            ),
-            const Spacer(),
+            const SizedBox(width: 16),
             SizedBox(
-              width: 260,
+              width: 240,
               child: InkWell(
                 onTap: onOpenSearch,
-                borderRadius: BorderRadius.circular(10),
+                borderRadius: BorderRadius.circular(12),
                 child: Container(
                   height: 38,
-                  padding: const EdgeInsets.symmetric(horizontal: 11),
+                  padding: const EdgeInsets.symmetric(horizontal: 12),
                   decoration: BoxDecoration(
-                    color: context.evolveColors.panel,
-                    border: Border.all(color: context.evolveColors.border),
-                    borderRadius: BorderRadius.circular(10),
+                    color: context.evolveColors.panel.withValues(alpha: 0.4),
+                    border: Border.all(
+                      color: context.evolveColors.border.withValues(alpha: 0.5),
+                    ),
+                    borderRadius: BorderRadius.circular(12),
                   ),
                   child: Row(
                     children: [
                       Icon(
-                        Icons.search_rounded,
-                        size: 18,
+                        LucideIcons.search,
+                        size: 15,
                         color: context.evolveColors.muted,
                       ),
-                      SizedBox(width: 8),
+                      const SizedBox(width: 8),
                       Expanded(
                         child: Text(
                           t.shell.searchHint,
+                          maxLines: 1,
+                          overflow: TextOverflow.ellipsis,
                           style: TextStyle(
                             color: context.evolveColors.muted,
                             fontSize: 12,
+                            fontWeight: FontWeight.w500,
                           ),
                         ),
                       ),
@@ -359,6 +458,7 @@ class _TopBar extends ConsumerWidget {
                         style: TextStyle(
                           color: context.evolveColors.subtle,
                           fontSize: 11,
+                          fontWeight: FontWeight.w600,
                         ),
                       ),
                     ],
@@ -366,26 +466,93 @@ class _TopBar extends ConsumerWidget {
                 ),
               ),
             ),
-            const SizedBox(width: 16),
-            Icon(
-              Icons.notifications_none_rounded,
-              color: context.evolveColors.muted,
-              size: 21,
+            const SizedBox(width: 12),
+            if (syncPending) ...[
+              StatusPill(
+                label: t.shell.syncPending,
+                color: EvolveColors.amber,
+                icon: LucideIcons.cloudOff,
+              ),
+              const SizedBox(width: 4),
+            ],
+            IconButton(
+              tooltip: t.shell.syncTooltip,
+              onPressed: dashboard.isRefreshing
+                  ? null
+                  : ref.read(dashboardControllerProvider.notifier).refresh,
+              icon: dashboard.isRefreshing
+                  ? const SizedBox.square(
+                      dimension: 15,
+                      child: CircularProgressIndicator(strokeWidth: 2),
+                    )
+                  : const Icon(LucideIcons.refreshCw, size: 16),
+              style: IconButton.styleFrom(
+                foregroundColor: context.evolveColors.muted,
+              ),
             ),
-            const SizedBox(width: 18),
-            CircleAvatar(
-              radius: 16,
-              backgroundColor: context.evolveColors.panelSoft,
+            const SizedBox(width: 10),
+            _AvatarButton(
+              initials: _initials(
+                user?.userMetadata ??
+                    (privateName != null ? {'full_name': privateName} : null),
+                user?.email,
+              ),
+              isPro: isPro,
+              onTap: () => ref
+                  .read(navigationControllerProvider.notifier)
+                  .select(DesktopSection.settings),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+}
+
+class _AvatarButton extends StatelessWidget {
+  const _AvatarButton({
+    required this.initials,
+    required this.isPro,
+    required this.onTap,
+  });
+
+  final String initials;
+  final bool isPro;
+  final VoidCallback onTap;
+
+  @override
+  Widget build(BuildContext context) {
+    // Mobile profile ring: gold for Pro users, faint accent otherwise.
+    final ringColor = isPro
+        ? EvolveColors.amber
+        : context.evolveAccent.withValues(alpha: 0.4);
+    return MouseRegion(
+      cursor: SystemMouseCursors.click,
+      child: GestureDetector(
+        onTap: onTap,
+        child: Container(
+          width: 38,
+          height: 38,
+          padding: const EdgeInsets.all(2),
+          decoration: BoxDecoration(
+            shape: BoxShape.circle,
+            border: Border.all(color: ringColor, width: 1.5),
+          ),
+          child: ClipOval(
+            child: Container(
+              color: context.evolveColors.panel,
+              alignment: Alignment.center,
               child: Text(
-                _initials(user?.userMetadata, user?.email),
+                initials,
                 style: TextStyle(
-                  color: context.evolveAccent,
-                  fontWeight: FontWeight.w700,
+                  color: context.evolveColors.foreground,
+                  fontWeight: FontWeight.w800,
                   fontSize: 10,
+                  letterSpacing: 0.2,
                 ),
               ),
             ),
-          ],
+          ),
         ),
       ),
     );
@@ -421,7 +588,7 @@ class _CommandPalette extends ConsumerWidget {
             TextField(
               autofocus: true,
               decoration: InputDecoration(
-                prefixIcon: const Icon(Icons.search_rounded, size: 19),
+                prefixIcon: const Icon(LucideIcons.search, size: 17),
                 hintText: t.shell.searchSectionHint,
               ),
             ),

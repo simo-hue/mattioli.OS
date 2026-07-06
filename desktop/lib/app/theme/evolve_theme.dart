@@ -29,6 +29,9 @@ abstract final class EvolveColors {
   static const amber = Color(0xFFEAB308);
   static const violet = Color(0xFF8B5CF6);
   static const rose = Color(0xFFEC4899);
+  static const success = Color(0xFF26C252);
+  static const successBright = Color(0xFF22C55E);
+  static const destructive = Color(0xFFEF4444);
 }
 
 class EvolvePalette extends ThemeExtension<EvolvePalette> {
@@ -140,19 +143,27 @@ abstract final class EvolveTheme {
   static ThemeData light([Color accentColor = EvolveColors.lightForeground]) =>
       _theme(Brightness.light, accentColor, _lightPalette);
 
+  /// Inter ships in assets/fonts (400/500/600/700/800) so the desktop app
+  /// matches the mobile typography without a runtime font download.
+  static const fontFamily = 'Inter';
+
   static ThemeData _theme(
     Brightness brightness,
     Color accentColor,
     EvolvePalette palette,
   ) {
-    final base = ThemeData(brightness: brightness, useMaterial3: true);
+    final base = ThemeData(
+      brightness: brightness,
+      useMaterial3: true,
+      fontFamily: fontFamily,
+    );
     final scheme =
         ColorScheme.fromSeed(
           seedColor: accentColor,
           brightness: brightness,
           primary: accentColor,
           surface: palette.panel,
-          error: const Color(0xFFEF4444),
+          error: EvolveColors.destructive,
         ).copyWith(
           onPrimary: _foregroundFor(accentColor),
           secondary: accentColor,
@@ -166,65 +177,85 @@ abstract final class EvolveTheme {
       scaffoldBackgroundColor: palette.background,
       splashColor: accentColor.withValues(alpha: 0.06),
       highlightColor: accentColor.withValues(alpha: 0.04),
+      hoverColor: palette.foreground.withValues(alpha: 0.03),
       dividerColor: palette.border,
       dialogTheme: DialogThemeData(
         backgroundColor: palette.panelRaised,
         surfaceTintColor: Colors.transparent,
         elevation: 0,
         shape: RoundedRectangleBorder(
-          borderRadius: BorderRadius.circular(22),
-          side: BorderSide(color: palette.borderStrong),
+          borderRadius: BorderRadius.circular(20),
+          side: BorderSide(color: palette.border.withValues(alpha: 0.5)),
         ),
       ),
-      textTheme: base.textTheme.copyWith(
-        displaySmall: TextStyle(
-          color: palette.foreground,
-          fontSize: 34,
-          fontWeight: FontWeight.w700,
-          letterSpacing: -1.4,
-        ),
-        headlineMedium: TextStyle(
-          color: palette.foreground,
-          fontSize: 24,
-          fontWeight: FontWeight.w700,
-          letterSpacing: -0.8,
-        ),
-        headlineSmall: TextStyle(
-          color: palette.foreground,
-          fontSize: 19,
-          fontWeight: FontWeight.w700,
-          letterSpacing: -0.4,
-        ),
-        titleLarge: TextStyle(
-          color: palette.foreground,
-          fontSize: 16,
-          fontWeight: FontWeight.w700,
-          letterSpacing: -0.2,
-        ),
-        titleMedium: TextStyle(
-          color: palette.foreground,
-          fontSize: 14,
-          fontWeight: FontWeight.w600,
-        ),
-        bodyLarge: TextStyle(
-          color: palette.foreground,
-          fontSize: 14,
-          height: 1.45,
-        ),
-        bodyMedium: TextStyle(color: palette.muted, fontSize: 13, height: 1.45),
-        bodySmall: TextStyle(color: palette.subtle, fontSize: 12, height: 1.35),
-        labelLarge: TextStyle(
-          color: palette.foreground,
-          fontSize: 13,
-          fontWeight: FontWeight.w700,
-        ),
-      ),
+      textTheme: base.textTheme
+          .copyWith(
+            displaySmall: TextStyle(
+              color: palette.foreground,
+              fontSize: 32,
+              fontWeight: FontWeight.w900,
+              letterSpacing: -1.2,
+              height: 1.1,
+            ),
+            headlineMedium: TextStyle(
+              color: palette.foreground,
+              fontSize: 22,
+              fontWeight: FontWeight.w800,
+              letterSpacing: -0.8,
+            ),
+            headlineSmall: TextStyle(
+              color: palette.foreground,
+              fontSize: 19,
+              fontWeight: FontWeight.w800,
+              letterSpacing: -0.4,
+            ),
+            titleLarge: TextStyle(
+              color: palette.foreground,
+              fontSize: 16,
+              fontWeight: FontWeight.w700,
+              letterSpacing: -0.2,
+            ),
+            titleMedium: TextStyle(
+              color: palette.foreground,
+              fontSize: 14,
+              fontWeight: FontWeight.w600,
+            ),
+            bodyLarge: TextStyle(
+              color: palette.foreground,
+              fontSize: 14,
+              height: 1.45,
+            ),
+            bodyMedium: TextStyle(
+              color: palette.muted,
+              fontSize: 13,
+              fontWeight: FontWeight.w500,
+              height: 1.45,
+            ),
+            bodySmall: TextStyle(
+              color: palette.subtle,
+              fontSize: 12,
+              fontWeight: FontWeight.w500,
+              height: 1.35,
+            ),
+            labelLarge: TextStyle(
+              color: palette.foreground,
+              fontSize: 13,
+              fontWeight: FontWeight.w700,
+            ),
+            labelSmall: TextStyle(
+              color: palette.muted,
+              fontSize: 10,
+              fontWeight: FontWeight.w800,
+              letterSpacing: 1.2,
+            ),
+          )
+          .apply(fontFamily: fontFamily),
       inputDecorationTheme: InputDecorationTheme(
         filled: true,
-        fillColor: palette.panelRaised,
-        hintStyle: TextStyle(color: palette.subtle),
+        fillColor: palette.background.withValues(alpha: 0.5),
+        hintStyle: TextStyle(color: palette.muted.withValues(alpha: 0.5)),
         contentPadding: const EdgeInsets.symmetric(
-          horizontal: 14,
+          horizontal: 16,
           vertical: 12,
         ),
         border: _inputBorder(palette.border),
@@ -233,38 +264,70 @@ abstract final class EvolveTheme {
       ),
       filledButtonTheme: FilledButtonThemeData(
         style: FilledButton.styleFrom(
-          padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+          padding: const EdgeInsets.symmetric(horizontal: 18, vertical: 14),
           shape: RoundedRectangleBorder(
-            borderRadius: BorderRadius.circular(10),
+            borderRadius: BorderRadius.circular(12),
           ),
-          textStyle: const TextStyle(fontSize: 13, fontWeight: FontWeight.w700),
+          textStyle: const TextStyle(
+            fontFamily: fontFamily,
+            fontSize: 13,
+            fontWeight: FontWeight.w700,
+            letterSpacing: -0.2,
+          ),
         ),
       ),
       outlinedButtonTheme: OutlinedButtonThemeData(
         style: OutlinedButton.styleFrom(
-          padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
-          side: BorderSide(color: palette.borderStrong),
+          padding: const EdgeInsets.symmetric(horizontal: 18, vertical: 14),
+          foregroundColor: palette.muted,
+          side: BorderSide(color: palette.border),
           shape: RoundedRectangleBorder(
-            borderRadius: BorderRadius.circular(10),
+            borderRadius: BorderRadius.circular(12),
           ),
-          textStyle: const TextStyle(fontSize: 13, fontWeight: FontWeight.w700),
+          textStyle: const TextStyle(
+            fontFamily: fontFamily,
+            fontSize: 13,
+            fontWeight: FontWeight.w600,
+          ),
         ),
       ),
       textButtonTheme: TextButtonThemeData(
         style: TextButton.styleFrom(
           padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
           shape: RoundedRectangleBorder(
-            borderRadius: BorderRadius.circular(10),
+            borderRadius: BorderRadius.circular(12),
           ),
-          textStyle: const TextStyle(fontSize: 13, fontWeight: FontWeight.w700),
+          textStyle: const TextStyle(
+            fontFamily: fontFamily,
+            fontSize: 13,
+            fontWeight: FontWeight.w700,
+          ),
         ),
+      ),
+      switchTheme: SwitchThemeData(
+        thumbColor: WidgetStateProperty.resolveWith((states) {
+          if (states.contains(WidgetState.selected)) {
+            return EvolveColors.success;
+          }
+          return palette.muted;
+        }),
+        trackColor: WidgetStateProperty.resolveWith((states) {
+          if (states.contains(WidgetState.selected)) {
+            return EvolveColors.success.withValues(alpha: 0.5);
+          }
+          return palette.border;
+        }),
       ),
       tooltipTheme: TooltipThemeData(
         decoration: BoxDecoration(
           color: palette.panelSoft,
           borderRadius: const BorderRadius.all(Radius.circular(8)),
         ),
-        textStyle: TextStyle(color: palette.foreground, fontSize: 12),
+        textStyle: TextStyle(
+          color: palette.foreground,
+          fontSize: 12,
+          fontFamily: fontFamily,
+        ),
       ),
     );
   }
@@ -274,7 +337,7 @@ abstract final class EvolveTheme {
 
   static OutlineInputBorder _inputBorder(Color color) {
     return OutlineInputBorder(
-      borderRadius: BorderRadius.circular(10),
+      borderRadius: BorderRadius.circular(12),
       borderSide: BorderSide(color: color),
     );
   }

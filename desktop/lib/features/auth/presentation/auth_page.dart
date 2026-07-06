@@ -4,6 +4,7 @@ import 'package:evolve_desktop/i18n/translations.g.dart';
 import 'package:evolve_desktop/shared/widgets/evolve_panel.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:lucide_icons_flutter/lucide_icons.dart';
 import 'package:url_launcher/url_launcher.dart';
 
 enum _AuthMode { signIn, signUp, resetPassword }
@@ -33,77 +34,191 @@ class _DesktopAuthPageState extends ConsumerState<DesktopAuthPage> {
   @override
   Widget build(BuildContext context) {
     final auth = ref.watch(desktopAuthControllerProvider);
+    final colors = context.evolveColors;
+    final accent = context.evolveAccent;
+
     return Scaffold(
       body: Center(
         child: SingleChildScrollView(
           padding: const EdgeInsets.all(28),
           child: ConstrainedBox(
-            constraints: const BoxConstraints(maxWidth: 460),
-            child: EvolvePanel(
-              padding: const EdgeInsets.all(28),
-              child: Form(
-                key: _formKey,
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.stretch,
-                  children: [
-                    Icon(
-                      Icons.auto_awesome_rounded,
-                      size: 38,
-                      color: context.evolveAccent,
+            constraints: const BoxConstraints(maxWidth: 400),
+            child: Form(
+              key: _formKey,
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.stretch,
+                children: [
+                  // Hero mark: tinted circular chip on the near-black canvas.
+                  Center(
+                    child: Container(
+                      width: 76,
+                      height: 76,
+                      alignment: Alignment.center,
+                      decoration: BoxDecoration(
+                        shape: BoxShape.circle,
+                        color: accent.withValues(alpha: 0.1),
+                        boxShadow: [
+                          BoxShadow(
+                            color: accent.withValues(alpha: 0.12),
+                            blurRadius: 30,
+                            offset: const Offset(0, 8),
+                          ),
+                        ],
+                      ),
+                      child: Icon(
+                        LucideIcons.sparkles,
+                        size: 32,
+                        color: accent,
+                      ),
                     ),
-                    const SizedBox(height: 16),
-                    Text(
-                      switch (_mode) {
-                        _AuthMode.signIn => t.auth.signInTitle,
-                        _AuthMode.signUp => t.auth.signUpTitle,
-                        _AuthMode.resetPassword => t.auth.resetTitle,
-                      },
-                      textAlign: TextAlign.center,
-                      style: Theme.of(context).textTheme.headlineSmall,
+                  ),
+                  const SizedBox(height: 20),
+                  Text(
+                    switch (_mode) {
+                      _AuthMode.signIn => t.auth.signInTitle,
+                      _AuthMode.signUp => t.auth.signUpTitle,
+                      _AuthMode.resetPassword => t.auth.resetTitle,
+                    },
+                    textAlign: TextAlign.center,
+                    style: TextStyle(
+                      color: colors.foreground,
+                      fontSize: 28,
+                      fontWeight: FontWeight.w800,
+                      letterSpacing: -0.5,
+                      height: 1.15,
                     ),
-                    const SizedBox(height: 20),
-                    if (_mode == _AuthMode.signUp) ...[
-                      TextFormField(
-                        controller: _nameController,
-                        decoration: InputDecoration(
-                          labelText: t.auth.nameLabel,
+                  ),
+                  const SizedBox(height: 24),
+                  EvolveSegmentedControl<_AuthMode>(
+                    height: 44,
+                    segments: {
+                      _AuthMode.signIn: t.auth.signIn,
+                      _AuthMode.signUp: t.auth.register,
+                    },
+                    selected: _mode,
+                    onSelected: (mode) => setState(() => _mode = mode),
+                  ),
+                  const SizedBox(height: 22),
+                  if (_mode == _AuthMode.signUp) ...[
+                    _FieldLabel(t.auth.nameLabel),
+                    const SizedBox(height: 8),
+                    TextFormField(controller: _nameController),
+                    const SizedBox(height: 14),
+                  ],
+                  _FieldLabel(t.auth.emailLabel),
+                  const SizedBox(height: 8),
+                  TextFormField(
+                    controller: _emailController,
+                    keyboardType: TextInputType.emailAddress,
+                    validator: (value) => value?.contains('@') ?? false
+                        ? null
+                        : t.auth.invalidEmail,
+                  ),
+                  if (_mode != _AuthMode.resetPassword) ...[
+                    const SizedBox(height: 14),
+                    _FieldLabel(t.auth.password),
+                    const SizedBox(height: 8),
+                    TextFormField(
+                      controller: _passwordController,
+                      obscureText: true,
+                      validator: (value) => (value?.length ?? 0) >= 8
+                          ? null
+                          : t.auth.passwordMin8,
+                    ),
+                  ],
+                  if (_mode == _AuthMode.signIn) ...[
+                    const SizedBox(height: 6),
+                    Align(
+                      alignment: AlignmentDirectional.centerEnd,
+                      child: TextButton(
+                        onPressed: () =>
+                            setState(() => _mode = _AuthMode.resetPassword),
+                        style: TextButton.styleFrom(
+                          padding: const EdgeInsets.symmetric(
+                            horizontal: 8,
+                            vertical: 6,
+                          ),
+                          minimumSize: Size.zero,
+                          tapTargetSize: MaterialTapTargetSize.shrinkWrap,
+                        ),
+                        child: Text(
+                          t.auth.forgotPassword,
+                          style: TextStyle(
+                            color: colors.muted,
+                            fontSize: 12,
+                            fontWeight: FontWeight.w600,
+                          ),
                         ),
                       ),
-                      const SizedBox(height: 12),
-                    ],
-                    TextFormField(
-                      controller: _emailController,
-                      keyboardType: TextInputType.emailAddress,
-                      decoration: InputDecoration(labelText: t.auth.emailLabel),
-                      validator: (value) => value?.contains('@') ?? false
-                          ? null
-                          : t.auth.invalidEmail,
                     ),
-                    if (_mode != _AuthMode.resetPassword) ...[
-                      const SizedBox(height: 12),
-                      TextFormField(
-                        controller: _passwordController,
-                        obscureText: true,
-                        decoration: InputDecoration(labelText: t.auth.password),
-                        validator: (value) => (value?.length ?? 0) >= 8
-                            ? null
-                            : t.auth.passwordMin8,
+                  ],
+                  if (auth.errorMessage != null) ...[
+                    const SizedBox(height: 12),
+                    Container(
+                      padding: const EdgeInsets.symmetric(
+                        horizontal: 14,
+                        vertical: 10,
                       ),
-                    ],
-                    if (auth.errorMessage != null) ...[
-                      const SizedBox(height: 12),
-                      Text(
-                        auth.errorMessage!,
-                        style: const TextStyle(color: EvolveColors.rose),
+                      decoration: BoxDecoration(
+                        color: EvolveColors.destructive.withValues(alpha: 0.1),
+                        borderRadius: BorderRadius.circular(12),
+                        border: Border.all(
+                          color: EvolveColors.destructive.withValues(
+                            alpha: 0.3,
+                          ),
+                        ),
                       ),
-                    ],
-                    const SizedBox(height: 20),
-                    FilledButton(
+                      child: Row(
+                        children: [
+                          const Icon(
+                            LucideIcons.circleAlert,
+                            size: 16,
+                            color: EvolveColors.destructive,
+                          ),
+                          const SizedBox(width: 8),
+                          Expanded(
+                            child: Text(
+                              auth.errorMessage!,
+                              style: const TextStyle(
+                                color: EvolveColors.destructive,
+                                fontSize: 12,
+                                fontWeight: FontWeight.w500,
+                              ),
+                            ),
+                          ),
+                        ],
+                      ),
+                    ),
+                  ],
+                  const SizedBox(height: 20),
+                  DecoratedBox(
+                    decoration: BoxDecoration(
+                      borderRadius: BorderRadius.circular(14),
+                      boxShadow: auth.isLoading
+                          ? null
+                          : [
+                              BoxShadow(
+                                color: accent.withValues(alpha: 0.3),
+                                blurRadius: 15,
+                                offset: const Offset(0, 5),
+                              ),
+                            ],
+                    ),
+                    child: FilledButton(
                       onPressed: auth.isLoading ? null : _submit,
+                      style: FilledButton.styleFrom(
+                        minimumSize: const Size.fromHeight(52),
+                        shape: RoundedRectangleBorder(
+                          borderRadius: BorderRadius.circular(14),
+                        ),
+                      ),
                       child: auth.isLoading
-                          ? const SizedBox.square(
+                          ? SizedBox.square(
                               dimension: 18,
-                              child: CircularProgressIndicator(strokeWidth: 2),
+                              child: CircularProgressIndicator(
+                                strokeWidth: 2,
+                                color: Theme.of(context).colorScheme.onPrimary,
+                              ),
                             )
                           : Text(
                               _mode == _AuthMode.resetPassword
@@ -111,69 +226,104 @@ class _DesktopAuthPageState extends ConsumerState<DesktopAuthPage> {
                                   : _mode == _AuthMode.signUp
                                   ? t.auth.register
                                   : t.auth.signIn,
+                              style: const TextStyle(
+                                fontSize: 15,
+                                fontWeight: FontWeight.w700,
+                                letterSpacing: -0.2,
+                              ),
                             ),
                     ),
-                    if (_mode != _AuthMode.resetPassword) ...[
-                      const SizedBox(height: 18),
-                      _AuthDivider(label: t.auth.or),
-                      const SizedBox(height: 18),
-                      _SocialAuthButton(
-                        icon: Icons.apple,
-                        label: t.auth.continueWithApple,
-                        onPressed: auth.isLoading ? null : _signInWithApple,
-                      ),
-                      const SizedBox(height: 10),
-                      _SocialAuthButton(
-                        icon: Icons.g_mobiledata_rounded,
-                        label: t.auth.continueWithGoogle,
-                        onPressed: auth.isLoading ? null : _signInWithGoogle,
-                      ),
-                    ],
-                    const SizedBox(height: 10),
-                    if (_mode == _AuthMode.signIn)
-                      TextButton(
-                        onPressed: () =>
-                            setState(() => _mode = _AuthMode.resetPassword),
-                        child: Text(t.auth.forgotPassword),
-                      ),
-                    TextButton(
-                      onPressed: () => setState(() {
-                        _mode = _mode == _AuthMode.signUp
-                            ? _AuthMode.signIn
-                            : _AuthMode.signUp;
-                      }),
-                      child: Text(
-                        _mode == _AuthMode.signUp
-                            ? '${t.auth.haveAccount} ${t.auth.signIn}'
-                            : '${t.auth.noAccount} ${t.auth.register}',
-                      ),
-                    ),
-                    IconButton(
-                      onPressed: _openPrivacyPolicy,
-                      icon: const Icon(Icons.privacy_tip_outlined, size: 18),
-                      tooltip: t.auth.readPrivacyPolicy,
-                      color: context.evolveColors.subtle,
-                    ),
-                    const SizedBox(height: 14),
+                  ),
+                  if (_mode != _AuthMode.resetPassword) ...[
+                    const SizedBox(height: 18),
                     _AuthDivider(label: t.auth.or),
-                    const SizedBox(height: 14),
-                    OutlinedButton.icon(
-                      onPressed: auth.isLoading ? null : _enterPrivateMode,
-                      icon: Icon(
-                        Icons.shield_outlined,
-                        size: 18,
-                        color: context.evolveColors.subtle,
-                      ),
-                      label: Text(t.auth.continuePrivately),
-                      style: OutlinedButton.styleFrom(
-                        alignment: Alignment.center,
-                        foregroundColor: context.evolveColors.foreground,
-                        side: BorderSide(color: context.evolveColors.border),
-                        minimumSize: const Size.fromHeight(44),
-                      ),
+                    const SizedBox(height: 18),
+                    _SocialAuthButton(
+                      icon: LucideIcons.apple,
+                      label: t.auth.continueWithApple,
+                      onPressed: auth.isLoading ? null : _signInWithApple,
+                    ),
+                    const SizedBox(height: 10),
+                    _SocialAuthButton(
+                      icon: LucideIcons.mail,
+                      label: t.auth.continueWithGoogle,
+                      onPressed: auth.isLoading ? null : _signInWithGoogle,
                     ),
                   ],
-                ),
+                  const SizedBox(height: 16),
+                  Row(
+                    mainAxisAlignment: MainAxisAlignment.center,
+                    children: [
+                      Text(
+                        _mode == _AuthMode.signUp
+                            ? t.auth.haveAccount
+                            : t.auth.noAccount,
+                        style: TextStyle(
+                          color: colors.muted,
+                          fontSize: 13,
+                          fontWeight: FontWeight.w500,
+                        ),
+                      ),
+                      TextButton(
+                        onPressed: () => setState(() {
+                          _mode = _mode == _AuthMode.signUp
+                              ? _AuthMode.signIn
+                              : _AuthMode.signUp;
+                        }),
+                        style: TextButton.styleFrom(
+                          padding: const EdgeInsets.symmetric(
+                            horizontal: 6,
+                            vertical: 8,
+                          ),
+                          minimumSize: Size.zero,
+                          tapTargetSize: MaterialTapTargetSize.shrinkWrap,
+                        ),
+                        child: Text(
+                          _mode == _AuthMode.signUp
+                              ? t.auth.signIn
+                              : t.auth.register,
+                          style: TextStyle(
+                            color: accent,
+                            fontSize: 13,
+                            fontWeight: FontWeight.w700,
+                          ),
+                        ),
+                      ),
+                    ],
+                  ),
+                  const SizedBox(height: 2),
+                  Center(
+                    child: TextButton(
+                      onPressed: _openPrivacyPolicy,
+                      style: TextButton.styleFrom(
+                        padding: const EdgeInsets.symmetric(
+                          horizontal: 8,
+                          vertical: 6,
+                        ),
+                        minimumSize: Size.zero,
+                        tapTargetSize: MaterialTapTargetSize.shrinkWrap,
+                      ),
+                      child: Text(
+                        t.auth.readPrivacyPolicy,
+                        style: TextStyle(
+                          color: colors.subtle,
+                          fontSize: 11,
+                          fontWeight: FontWeight.w500,
+                          decoration: TextDecoration.underline,
+                          decorationColor: colors.subtle,
+                        ),
+                      ),
+                    ),
+                  ),
+                  const SizedBox(height: 14),
+                  _AuthDivider(label: t.auth.or),
+                  const SizedBox(height: 14),
+                  _SocialAuthButton(
+                    icon: LucideIcons.shieldCheck,
+                    label: t.auth.continuePrivately,
+                    onPressed: auth.isLoading ? null : _enterPrivateMode,
+                  ),
+                ],
               ),
             ),
           ),
@@ -241,6 +391,26 @@ class _DesktopAuthPageState extends ConsumerState<DesktopAuthPage> {
   }
 }
 
+/// Uppercase micro-label above a form field (mobile's "HABIT NAME" style).
+class _FieldLabel extends StatelessWidget {
+  const _FieldLabel(this.label);
+
+  final String label;
+
+  @override
+  Widget build(BuildContext context) {
+    return Text(
+      label.toUpperCase(),
+      style: TextStyle(
+        fontSize: 10,
+        fontWeight: FontWeight.w600,
+        color: context.evolveColors.muted,
+        letterSpacing: 0.5,
+      ),
+    );
+  }
+}
+
 class _AuthDivider extends StatelessWidget {
   const _AuthDivider({required this.label});
 
@@ -269,6 +439,8 @@ class _AuthDivider extends StatelessWidget {
   }
 }
 
+/// Secondary auth button (OAuth providers + private mode): translucent card
+/// fill, half-strength border, radius 14, leading icon — mirrors mobile.
 class _SocialAuthButton extends StatelessWidget {
   const _SocialAuthButton({
     required this.icon,
@@ -282,15 +454,39 @@ class _SocialAuthButton extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return OutlinedButton.icon(
-      onPressed: onPressed,
-      icon: Icon(icon, size: 20),
-      label: Text(label),
-      style: OutlinedButton.styleFrom(
-        alignment: Alignment.center,
-        foregroundColor: context.evolveColors.foreground,
-        side: BorderSide(color: context.evolveColors.borderStrong),
-        minimumSize: const Size.fromHeight(44),
+    final colors = context.evolveColors;
+    return Opacity(
+      opacity: onPressed == null ? 0.55 : 1,
+      child: Material(
+        color: colors.panel.withValues(alpha: 0.4),
+        borderRadius: BorderRadius.circular(14),
+        child: InkWell(
+          onTap: onPressed,
+          borderRadius: BorderRadius.circular(14),
+          child: Container(
+            height: 48,
+            decoration: BoxDecoration(
+              borderRadius: BorderRadius.circular(14),
+              border: Border.all(color: colors.border.withValues(alpha: 0.5)),
+            ),
+            child: Row(
+              mainAxisAlignment: MainAxisAlignment.center,
+              children: [
+                Icon(icon, size: 18, color: colors.foreground),
+                const SizedBox(width: 10),
+                Text(
+                  label,
+                  style: TextStyle(
+                    color: colors.foreground,
+                    fontSize: 15,
+                    fontWeight: FontWeight.w600,
+                    letterSpacing: -0.2,
+                  ),
+                ),
+              ],
+            ),
+          ),
+        ),
       ),
     );
   }

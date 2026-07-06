@@ -433,6 +433,10 @@ class _Translations$dashboard$de extends Translations$dashboard$en {
 	@override String get mood => 'Stimmung';
 	@override String get energy => 'Energie';
 	@override String get goodMorning => 'Guten Morgen';
+	@override String get goodAfternoon => 'Guten Nachmittag';
+	@override String get goodEvening => 'Guten Abend';
+	@override String get manager => 'Verwaltung';
+	@override String get aiChat => 'AI-Chat';
 	@override String get consecutiveDays => 'aufeinanderfolgende Tage';
 	@override String get welcomeTitle => 'Willkommen bei Evolve';
 	@override String get welcomeSubtitle => 'Beginne deine persönliche Wachstumsreise.';
@@ -1463,6 +1467,10 @@ extension on TranslationsDe {
 			'dashboard.mood' => 'Stimmung',
 			'dashboard.energy' => 'Energie',
 			'dashboard.goodMorning' => 'Guten Morgen',
+			'dashboard.goodAfternoon' => 'Guten Nachmittag',
+			'dashboard.goodEvening' => 'Guten Abend',
+			'dashboard.manager' => 'Verwaltung',
+			'dashboard.aiChat' => 'AI-Chat',
 			'dashboard.consecutiveDays' => 'aufeinanderfolgende Tage',
 			'dashboard.welcomeTitle' => 'Willkommen bei Evolve',
 			'dashboard.welcomeSubtitle' => 'Beginne deine persönliche Wachstumsreise.',
@@ -1750,12 +1758,12 @@ extension on TranslationsDe {
 			'aiCoach.inputHint' => 'Frag deinen Coach um Rat...',
 			'aiCoach.defaultUserName' => 'Nutzer',
 			'aiCoach.userNameLine' => ({required Object userName}) => '- Name: ${userName}',
+			_ => null,
+		} ?? switch (path) {
 			'aiCoach.activeGoalsCount' => ({required Object count}) => '- Aktive Ziele: ${count}',
 			'aiCoach.completedGoalsCount' => ({required Object count}) => '- Abgeschlossene Ziele: ${count}',
 			'aiCoach.todayCompletion' => ({required Object completed, required Object total}) => '- Gewohnheiten heute: ${completed} von insgesamt ${total} abgeschlossen.',
 			'settingsPage.account' => 'Konto',
-			_ => null,
-		} ?? switch (path) {
 			'settingsPage.notifications' => 'Benachrichtigungen',
 			'settingsPage.language' => 'Sprache',
 			'settingsPage.timeFormat24h' => '24-Stunden-Format',

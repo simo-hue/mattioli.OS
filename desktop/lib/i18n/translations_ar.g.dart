@@ -433,6 +433,10 @@ class _Translations$dashboard$ar extends Translations$dashboard$en {
 	@override String get mood => 'المزاج';
 	@override String get energy => 'الطاقة';
 	@override String get goodMorning => 'صباح الخير';
+	@override String get goodAfternoon => 'مساء الخير';
+	@override String get goodEvening => 'مساء الخير';
+	@override String get manager => 'الإدارة';
+	@override String get aiChat => 'محادثة AI';
 	@override String get consecutiveDays => 'أيام متتالية';
 	@override String get welcomeTitle => 'مرحبًا بك في Evolve';
 	@override String get welcomeSubtitle => 'ابدأ رحلة نموّك الشخصي.';
@@ -1463,6 +1467,10 @@ extension on TranslationsAr {
 			'dashboard.mood' => 'المزاج',
 			'dashboard.energy' => 'الطاقة',
 			'dashboard.goodMorning' => 'صباح الخير',
+			'dashboard.goodAfternoon' => 'مساء الخير',
+			'dashboard.goodEvening' => 'مساء الخير',
+			'dashboard.manager' => 'الإدارة',
+			'dashboard.aiChat' => 'محادثة AI',
 			'dashboard.consecutiveDays' => 'أيام متتالية',
 			'dashboard.welcomeTitle' => 'مرحبًا بك في Evolve',
 			'dashboard.welcomeSubtitle' => 'ابدأ رحلة نموّك الشخصي.',
@@ -1750,12 +1758,12 @@ extension on TranslationsAr {
 			'aiCoach.inputHint' => 'اطلب النصيحة من مدرّبك...',
 			'aiCoach.defaultUserName' => 'المستخدم',
 			'aiCoach.userNameLine' => ({required Object userName}) => '- الاسم: ${userName}',
+			_ => null,
+		} ?? switch (path) {
 			'aiCoach.activeGoalsCount' => ({required Object count}) => '- الأهداف النشطة: ${count}',
 			'aiCoach.completedGoalsCount' => ({required Object count}) => '- الأهداف المكتملة: ${count}',
 			'aiCoach.todayCompletion' => ({required Object completed, required Object total}) => '- عادات اليوم: ${completed} مكتملة من أصل ${total}.',
 			'settingsPage.account' => 'الحساب',
-			_ => null,
-		} ?? switch (path) {
 			'settingsPage.notifications' => 'الإشعارات',
 			'settingsPage.language' => 'اللغة',
 			'settingsPage.timeFormat24h' => 'تنسيق 24 ساعة',

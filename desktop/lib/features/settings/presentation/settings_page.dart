@@ -30,6 +30,7 @@ import 'package:flutter/services.dart';
 import 'package:flutter_colorpicker/flutter_colorpicker.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:image_picker/image_picker.dart';
+import 'package:lucide_icons_flutter/lucide_icons.dart';
 import 'package:share_plus/share_plus.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 import 'package:evolve_desktop/features/auth/application/desktop_profile_controller.dart';
@@ -171,7 +172,7 @@ class _SettingsPageState extends ConsumerState<SettingsPage> {
           title: t.settingsPage.profileLabel,
           subtitle: t.settingsPage.profileSubtitle,
         ),
-        const SizedBox(height: 17),
+        const SizedBox(height: 20),
         _ProfileCard(
           user: auth.user,
           image: _profileImage,
@@ -184,17 +185,19 @@ class _SettingsPageState extends ConsumerState<SettingsPage> {
               ? ref.watch(privateProfileProvider).value
               : null,
         ),
-        const SizedBox(height: 16),
+        const SizedBox(height: 24),
         _SettingsGroup(
           title: t.settingsPage.accountAndOnboarding,
           children: [
             _InfoRow(
+              icon: LucideIcons.mail,
               label: t.settingsPage.account,
               value: isPrivateMode
                   ? t.settingsPage.privateMode
                   : auth.user?.email ?? t.settingsPage.sessionUnavailable,
             ),
             _InfoRow(
+              icon: LucideIcons.database,
               label: t.settingsPage.dataRepository,
               value: isPrivateMode
                   ? t.settingsPage.encryptedLocalDatabase
@@ -202,7 +205,7 @@ class _SettingsPageState extends ConsumerState<SettingsPage> {
             ),
             if (!isPrivateMode) ...[
               _ActionRow(
-                icon: Icons.badge_outlined,
+                icon: LucideIcons.user,
                 title: t.settingsPage.personalInfo,
                 detail: t.settingsPage.personalInfoDetail,
                 onTap: auth.isLoggedIn
@@ -216,24 +219,22 @@ class _SettingsPageState extends ConsumerState<SettingsPage> {
                       ),
               ),
               _ActionRow(
-                icon: Icons.photo_camera_outlined,
+                icon: LucideIcons.camera,
                 title: t.settingsPage.updateAvatar,
                 detail: t.settingsPage.updateAvatarDetail,
                 onTap: _pickAvatar,
               ),
               _ActionRow(
-                icon: Icons.fact_check_outlined,
+                icon: LucideIcons.fileText,
                 title: t.settingsPage.reviewInitialConsent,
                 detail: t.settingsPage.reviewInitialConsentDetail,
                 onTap: _reviewConsent,
               ),
-              _ActionRow(
-                icon: Icons.logout_rounded,
-                title: t.settingsPage.signOut,
-                detail: auth.isLoggedIn
+              _DestructiveButton(
+                label: t.settingsPage.signOut,
+                caption: auth.isLoggedIn
                     ? t.settingsPage.signOutDetailActive
                     : t.settingsPage.availableWithActiveSession,
-                destructive: true,
                 onTap: auth.isLoggedIn
                     ? () => _confirmSignOut()
                     : () => _showGate(
@@ -242,10 +243,9 @@ class _SettingsPageState extends ConsumerState<SettingsPage> {
                       ),
               ),
             ] else ...[
-              _ActionRow(
-                icon: Icons.login_outlined,
-                title: t.settingsPage.goToLogin,
-                detail: t.settingsPage.goToLoginDetail,
+              _DestructiveButton(
+                label: t.settingsPage.goToLogin,
+                caption: t.settingsPage.goToLoginDetail,
                 onTap: () {
                   ref.read(desktopAuthControllerProvider.notifier).goToLogin();
                 },
@@ -265,11 +265,12 @@ class _SettingsPageState extends ConsumerState<SettingsPage> {
           title: t.settingsPage.appearanceTitle,
           subtitle: t.settingsPage.appearanceSubtitle,
         ),
-        const SizedBox(height: 17),
+        const SizedBox(height: 20),
         _SettingsGroup(
           title: t.settingsPage.appearanceAndVisual,
           children: [
             _SwitchRow(
+              icon: LucideIcons.moon,
               label: t.settingsPage.darkMode,
               detail: t.settingsPage.darkModeDetail,
               value: _darkMode,
@@ -293,6 +294,7 @@ class _SettingsPageState extends ConsumerState<SettingsPage> {
           title: t.settingsPage.calendarExperienceLanguage,
           children: [
             _ColorRow(
+              icon: LucideIcons.palette,
               label: t.settingsPage.accentColor,
               detail: t.settingsPage.accentColorDetail,
               selected: _accent,
@@ -312,6 +314,7 @@ class _SettingsPageState extends ConsumerState<SettingsPage> {
               },
             ),
             _SelectRow(
+              icon: LucideIcons.calendar,
               label: t.settingsPage.defaultCalendarView,
               value: _calendarView,
               options: const ['Mese', 'Settimana', 'Anno', 'Vita'],
@@ -324,6 +327,7 @@ class _SettingsPageState extends ConsumerState<SettingsPage> {
               ),
             ),
             _SelectRow(
+              icon: LucideIcons.languages,
               label: t.settingsPage.language,
               value: _language,
               options: const [
@@ -348,6 +352,7 @@ class _SettingsPageState extends ConsumerState<SettingsPage> {
               ),
             ),
             _SwitchRow(
+              icon: LucideIcons.clock,
               label: t.settingsPage.timeFormat24h,
               detail: t.settingsPage.timeFormat24hDetail,
               value: _timeFormat24h,
@@ -359,6 +364,7 @@ class _SettingsPageState extends ConsumerState<SettingsPage> {
               ),
             ),
             _SwitchRow(
+              icon: LucideIcons.vibrate,
               label: t.settingsPage.hapticFeedback,
               detail: t.settingsPage.hapticFeedbackDetail,
               value:
@@ -374,13 +380,13 @@ class _SettingsPageState extends ConsumerState<SettingsPage> {
               ),
             ),
             _ActionRow(
-              icon: Icons.restart_alt_rounded,
+              icon: LucideIcons.info,
               title: t.settingsPage.resetTutorial,
               detail: t.settingsPage.resetTutorialDetail,
               onTap: _resetTutorials,
             ),
             _ActionRow(
-              icon: Icons.terminal_rounded,
+              icon: LucideIcons.scrollText,
               title: t.settingsPage.appLogsTitle,
               detail: t.settingsPage.appLogsDetail,
               onTap: () => unawaited(showAppLogsDialog(context)),
@@ -399,11 +405,12 @@ class _SettingsPageState extends ConsumerState<SettingsPage> {
           title: t.settingsPage.notifications,
           subtitle: t.settingsPage.notificationsSubtitle,
         ),
-        const SizedBox(height: 17),
+        const SizedBox(height: 20),
         _SettingsGroup(
           title: t.settingsPage.operationalReminders,
           children: [
             _SwitchRow(
+              icon: LucideIcons.calendarCheck,
               label: t.settingsPage.habitReminders,
               detail: t.settingsPage.habitRemindersDetail,
               value: _habitReminders,
@@ -417,6 +424,7 @@ class _SettingsPageState extends ConsumerState<SettingsPage> {
             ),
             if (_habitReminders)
               _TimeRow(
+                icon: LucideIcons.sunrise,
                 label: t.settingsPage.morningBriefTime,
                 value: _morningTime,
                 use24hFormat: _timeFormat24h,
@@ -428,6 +436,7 @@ class _SettingsPageState extends ConsumerState<SettingsPage> {
                 ),
               ),
             _SwitchRow(
+              icon: LucideIcons.bellRing,
               label: t.settingsPage.eveningReview,
               detail: t.settingsPage.eveningReviewDetail,
               value: _eveningReview,
@@ -441,6 +450,7 @@ class _SettingsPageState extends ConsumerState<SettingsPage> {
             ),
             if (_eveningReview)
               _TimeRow(
+                icon: LucideIcons.sunset,
                 label: t.settingsPage.eveningReviewTime,
                 value: _eveningTime,
                 use24hFormat: _timeFormat24h,
@@ -452,7 +462,7 @@ class _SettingsPageState extends ConsumerState<SettingsPage> {
                 ),
               ),
             _ActionRow(
-              icon: Icons.notifications_active_outlined,
+              icon: LucideIcons.bell,
               title: t.settingsPage.requestNotificationPermissions,
               detail: t.settingsPage.requestNotificationPermissionsDetail,
               onTap: _requestNotificationPermissions,
@@ -479,11 +489,12 @@ class _SettingsPageState extends ConsumerState<SettingsPage> {
           title: t.settingsPage.privacyTitle,
           subtitle: t.settingsPage.privacySubtitle,
         ),
-        const SizedBox(height: 17),
+        const SizedBox(height: 20),
         _SettingsGroup(
           title: t.settingsPage.accessProtection,
           children: [
             _SwitchRow(
+              icon: LucideIcons.shield,
               label: t.settingsPage.biometricLock,
               detail: t.settingsPage.biometricLockDetail,
               value: biometric.enabled,
@@ -491,7 +502,7 @@ class _SettingsPageState extends ConsumerState<SettingsPage> {
             ),
             if (!isPrivateMode)
               _ActionRow(
-                icon: Icons.key_outlined,
+                icon: LucideIcons.keyRound,
                 title: t.settingsPage.changePassword,
                 detail: t.settingsPage.changePasswordDetail,
                 onTap: ref.watch(desktopAuthControllerProvider).isLoggedIn
@@ -512,43 +523,40 @@ class _SettingsPageState extends ConsumerState<SettingsPage> {
           children: [
             if (!isPrivateMode)
               _SwitchRow(
+                icon: LucideIcons.circleAlert,
                 label: t.settingsPage.sendCrashReports,
                 detail: t.settingsPage.sendCrashReportsDetail,
                 value: _crashReports,
                 onChanged: _setCrashReportingConsent,
               ),
             _ActionRow(
-              icon: Icons.download_outlined,
+              icon: LucideIcons.download,
               title: t.settingsPage.exportData,
               detail: t.settingsPage.exportDataDetail,
               onTap: _exportData,
             ),
             _ActionRow(
-              icon: Icons.upload_outlined,
+              icon: LucideIcons.upload,
               title: t.settingsPage.importData,
               detail: t.settingsPage.importDataDetail,
               onTap: _importData,
             ),
             _ActionRow(
-              icon: Icons.settings_outlined,
+              icon: LucideIcons.externalLink,
               title: t.settingsPage.systemPermissionsManagement,
               detail: t.settingsPage.systemPermissionsManagementDetail,
               onTap: _openSystemPermissions,
             ),
             if (isPrivateMode)
-              _ActionRow(
-                icon: Icons.delete_forever_outlined,
-                title: t.settingsPage.deletePrivateData,
-                detail: t.settingsPage.deletePrivateDataDetail,
-                destructive: true,
+              _DestructiveButton(
+                label: t.settingsPage.deletePrivateData,
+                caption: t.settingsPage.deletePrivateDataDetail,
                 onTap: _deletePrivateData,
               )
             else
-              _ActionRow(
-                icon: Icons.delete_forever_outlined,
-                title: t.settingsPage.deleteAccountAndData,
-                detail: t.settingsPage.deleteAccountAndDataDetail,
-                destructive: true,
+              _DestructiveButton(
+                label: t.settingsPage.deleteAccountAndData,
+                caption: t.settingsPage.deleteAccountAndDataDetail,
                 onTap: _showDeleteOrResetDialog,
               ),
           ],
@@ -782,7 +790,7 @@ class _SettingsPageState extends ConsumerState<SettingsPage> {
     final action = await showEvolveDialog<String>(
       context: context,
       builder: (context) => EvolveAlertDialog(
-        icon: Icons.manage_accounts_outlined,
+        icon: LucideIcons.userCog,
         title: Text(t.settingsPage.accountDataManagementTitle),
         content: Text(t.settingsPage.accountDataManagementContent),
         actions: [
@@ -829,9 +837,9 @@ class _SettingsPageState extends ConsumerState<SettingsPage> {
           context: context,
           builder: (context) => EvolveAlertDialog(
             icon: destructive
-                ? Icons.warning_amber_rounded
-                : Icons.check_circle_outline_rounded,
-            iconColor: destructive ? EvolveColors.rose : null,
+                ? LucideIcons.triangleAlert
+                : LucideIcons.circleCheck,
+            iconColor: destructive ? EvolveColors.destructive : null,
             title: Text(title),
             content: Text(message),
             actions: [
@@ -842,7 +850,9 @@ class _SettingsPageState extends ConsumerState<SettingsPage> {
               FilledButton(
                 onPressed: () => Navigator.pop(context, true),
                 style: destructive
-                    ? FilledButton.styleFrom(backgroundColor: EvolveColors.rose)
+                    ? FilledButton.styleFrom(
+                        backgroundColor: EvolveColors.destructive,
+                      )
                     : null,
                 child: Text(t.settingsPage.confirm),
               ),
@@ -977,49 +987,56 @@ class _SettingsPageState extends ConsumerState<SettingsPage> {
                         ),
                       ),
                       const SizedBox(height: 24),
-                      RadioListTile<bool>(
-                        title: Text(
-                          t.settingsPage.importReplaceTitle,
-                          style: TextStyle(
-                            color: context.evolveColors.foreground,
-                          ),
-                        ),
-                        subtitle: Text(
-                          t.settingsPage.importReplaceSubtitle,
-                          style: TextStyle(
-                            color: context.evolveColors.foreground.withValues(
-                              alpha: 0.5,
-                            ),
-                            fontSize: 12,
-                          ),
-                        ),
-                        value: true,
+                      RadioGroup<bool>(
                         groupValue: replaceExisting,
-                        activeColor: Theme.of(context).colorScheme.primary,
-                        onChanged: (val) =>
-                            setState(() => replaceExisting = val!),
-                      ),
-                      RadioListTile<bool>(
-                        title: Text(
-                          t.settingsPage.importMergeTitle,
-                          style: TextStyle(
-                            color: context.evolveColors.foreground,
-                          ),
+                        onChanged: (val) => setState(
+                          () => replaceExisting = val ?? replaceExisting,
                         ),
-                        subtitle: Text(
-                          t.settingsPage.importMergeSubtitle,
-                          style: TextStyle(
-                            color: context.evolveColors.foreground.withValues(
-                              alpha: 0.5,
+                        child: Column(
+                          mainAxisSize: MainAxisSize.min,
+                          children: [
+                            RadioListTile<bool>(
+                              title: Text(
+                                t.settingsPage.importReplaceTitle,
+                                style: TextStyle(
+                                  color: context.evolveColors.foreground,
+                                ),
+                              ),
+                              subtitle: Text(
+                                t.settingsPage.importReplaceSubtitle,
+                                style: TextStyle(
+                                  color: context.evolveColors.foreground
+                                      .withValues(alpha: 0.5),
+                                  fontSize: 12,
+                                ),
+                              ),
+                              value: true,
+                              activeColor: Theme.of(
+                                context,
+                              ).colorScheme.primary,
                             ),
-                            fontSize: 12,
-                          ),
+                            RadioListTile<bool>(
+                              title: Text(
+                                t.settingsPage.importMergeTitle,
+                                style: TextStyle(
+                                  color: context.evolveColors.foreground,
+                                ),
+                              ),
+                              subtitle: Text(
+                                t.settingsPage.importMergeSubtitle,
+                                style: TextStyle(
+                                  color: context.evolveColors.foreground
+                                      .withValues(alpha: 0.5),
+                                  fontSize: 12,
+                                ),
+                              ),
+                              value: false,
+                              activeColor: Theme.of(
+                                context,
+                              ).colorScheme.primary,
+                            ),
+                          ],
                         ),
-                        value: false,
-                        groupValue: replaceExisting,
-                        activeColor: Theme.of(context).colorScheme.primary,
-                        onChanged: (val) =>
-                            setState(() => replaceExisting = val!),
                       ),
                     ],
                   ),
@@ -1382,42 +1399,59 @@ class _SettingsDestination extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final contentColor = selected
+        ? Theme.of(context).colorScheme.onPrimary
+        : context.evolveColors.muted;
     return Padding(
       padding: const EdgeInsets.only(bottom: 5),
-      child: Material(
-        color: selected
-            ? context.evolveAccent.withValues(alpha: 0.1)
-            : Colors.transparent,
-        borderRadius: BorderRadius.circular(9),
-        child: InkWell(
-          onTap: onTap,
-          borderRadius: BorderRadius.circular(9),
-          child: Padding(
-            padding: const EdgeInsets.symmetric(horizontal: 11, vertical: 10),
-            child: Row(
-              children: [
-                Icon(
-                  section.icon,
-                  color: selected
-                      ? context.evolveAccent
-                      : context.evolveColors.muted,
-                  size: 18,
-                ),
-                const SizedBox(width: 10),
-                Expanded(
-                  child: Text(
-                    section.label,
-                    maxLines: 1,
-                    overflow: TextOverflow.ellipsis,
-                    style: TextStyle(
-                      color: selected
-                          ? context.evolveAccent
-                          : context.evolveColors.muted,
-                      fontWeight: selected ? FontWeight.w700 : FontWeight.w500,
+      child: AnimatedContainer(
+        duration: const Duration(milliseconds: 250),
+        curve: Curves.easeInOut,
+        decoration: BoxDecoration(
+          color: selected ? context.evolveAccent : Colors.transparent,
+          borderRadius: BorderRadius.circular(12),
+          boxShadow: selected
+              ? [
+                  BoxShadow(
+                    color: Colors.black.withValues(alpha: 0.3),
+                    blurRadius: 8,
+                    offset: const Offset(0, 2),
+                  ),
+                ]
+              : null,
+        ),
+        child: Material(
+          type: MaterialType.transparency,
+          borderRadius: BorderRadius.circular(12),
+          child: InkWell(
+            onTap: onTap,
+            borderRadius: BorderRadius.circular(12),
+            hoverColor: selected
+                ? Colors.transparent
+                : context.evolveColors.panel.withValues(alpha: 0.4),
+            child: Padding(
+              padding: const EdgeInsets.symmetric(horizontal: 11, vertical: 10),
+              child: Row(
+                children: [
+                  Icon(section.icon, color: contentColor, size: 18),
+                  const SizedBox(width: 10),
+                  Expanded(
+                    child: Text(
+                      section.label,
+                      maxLines: 1,
+                      overflow: TextOverflow.ellipsis,
+                      style: TextStyle(
+                        fontSize: 13,
+                        letterSpacing: -0.2,
+                        color: contentColor,
+                        fontWeight: selected
+                            ? FontWeight.w800
+                            : FontWeight.w600,
+                      ),
                     ),
                   ),
-                ),
-              ],
+                ],
+              ),
             ),
           ),
         ),
@@ -1445,6 +1479,9 @@ class _SettingsHeading extends StatelessWidget {
   }
 }
 
+/// Section grouping in the mobile profile style: a tiny uppercase muted label
+/// followed by one translucent card per row (no shared container, no
+/// dividers).
 class _SettingsGroup extends StatelessWidget {
   const _SettingsGroup({required this.title, required this.children});
 
@@ -1453,31 +1490,114 @@ class _SettingsGroup extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return Container(
-      decoration: BoxDecoration(
-        color: context.evolveColors.panelRaised,
-        borderRadius: BorderRadius.circular(12),
-        border: Border.all(color: context.evolveColors.border),
-      ),
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        EvolveSectionLabel(title, withRule: false),
+        const SizedBox(height: 8),
+        ...children,
+      ],
+    );
+  }
+}
+
+/// The translucent outlined card that hosts a single settings row
+/// (mobile `_buildProfileOption` container: panel .4, radius 16, border .5,
+/// 8px bottom margin).
+class _RowCard extends StatelessWidget {
+  const _RowCard({required this.child});
+
+  final Widget child;
+
+  @override
+  Widget build(BuildContext context) {
+    return Padding(
+      padding: const EdgeInsets.only(bottom: 8),
+      child: EvolvePanel(padding: EdgeInsets.zero, child: child),
+    );
+  }
+}
+
+TextStyle _rowTitleStyle(BuildContext context) => TextStyle(
+  color: context.evolveColors.foreground,
+  fontSize: 15,
+  fontWeight: FontWeight.w700,
+  letterSpacing: -0.2,
+);
+
+TextStyle _rowSubtitleStyle(BuildContext context) => TextStyle(
+  color: context.evolveColors.muted.withValues(alpha: 0.8),
+  fontSize: 12,
+  fontWeight: FontWeight.w500,
+);
+
+Widget _rowIconChip(BuildContext context, IconData icon) => EvolveIconChip(
+  icon: icon,
+  color: context.evolveAccent,
+  size: 36,
+  iconSize: 18,
+  outlined: true,
+);
+
+/// Full-width destructive action styled exactly like the mobile
+/// "Go to login" button (destructive .1 fill, .2 border, radius 14), with the
+/// row's original detail text kept as a small muted caption underneath.
+class _DestructiveButton extends StatelessWidget {
+  const _DestructiveButton({
+    required this.label,
+    required this.caption,
+    required this.onTap,
+  });
+
+  final String label;
+  final String caption;
+  final VoidCallback onTap;
+
+  @override
+  Widget build(BuildContext context) {
+    return Padding(
+      padding: const EdgeInsets.only(bottom: 8),
       child: Column(
+        crossAxisAlignment: CrossAxisAlignment.stretch,
         children: [
-          Padding(
-            padding: const EdgeInsets.fromLTRB(15, 13, 15, 9),
-            child: Align(
-              alignment: AlignmentDirectional.centerStart,
-              child: Text(
-                title.toUpperCase(),
-                style: Theme.of(context).textTheme.bodySmall?.copyWith(
-                  fontWeight: FontWeight.w800,
-                  letterSpacing: 1,
+          Material(
+            color: EvolveColors.destructive.withValues(alpha: 0.1),
+            borderRadius: BorderRadius.circular(14),
+            child: InkWell(
+              onTap: onTap,
+              borderRadius: BorderRadius.circular(14),
+              child: Container(
+                height: 48,
+                decoration: BoxDecoration(
+                  borderRadius: BorderRadius.circular(14),
+                  border: Border.all(
+                    color: EvolveColors.destructive.withValues(alpha: 0.2),
+                  ),
+                ),
+                child: Center(
+                  child: Text(
+                    label,
+                    style: const TextStyle(
+                      color: EvolveColors.destructive,
+                      fontSize: 15,
+                      fontWeight: FontWeight.w700,
+                      letterSpacing: -0.2,
+                    ),
+                  ),
                 ),
               ),
             ),
           ),
-          for (var index = 0; index < children.length; index++) ...[
-            if (index > 0) const Divider(height: 1),
-            children[index],
-          ],
+          const SizedBox(height: 6),
+          Text(
+            caption,
+            textAlign: TextAlign.center,
+            style: TextStyle(
+              color: context.evolveColors.muted.withValues(alpha: 0.5),
+              fontSize: 10,
+              fontWeight: FontWeight.w500,
+            ),
+          ),
         ],
       ),
     );
@@ -1486,12 +1606,14 @@ class _SettingsGroup extends StatelessWidget {
 
 class _SwitchRow extends StatelessWidget {
   const _SwitchRow({
+    required this.icon,
     required this.label,
     required this.detail,
     required this.value,
     required this.onChanged,
   });
 
+  final IconData icon;
   final String label;
   final String detail;
   final bool value;
@@ -1499,15 +1621,13 @@ class _SwitchRow extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return Padding(
-      padding: const EdgeInsets.symmetric(horizontal: 15, vertical: 10),
-      child: Row(
-        children: [
-          Expanded(
-            child: _RowCopy(label: label, detail: detail),
-          ),
-          Switch(value: value, onChanged: onChanged),
-        ],
+    return _RowCard(
+      child: ListTile(
+        contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 2),
+        leading: _rowIconChip(context, icon),
+        title: Text(label, style: _rowTitleStyle(context)),
+        subtitle: Text(detail, style: _rowSubtitleStyle(context)),
+        trailing: Switch(value: value, onChanged: onChanged),
       ),
     );
   }
@@ -1515,12 +1635,14 @@ class _SwitchRow extends StatelessWidget {
 
 class _SelectRow extends StatelessWidget {
   const _SelectRow({
+    required this.icon,
     required this.label,
     required this.value,
     required this.options,
     required this.onChanged,
   });
 
+  final IconData icon;
   final String label;
   final String value;
   final List<String> options;
@@ -1528,22 +1650,30 @@ class _SelectRow extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return Padding(
-      padding: const EdgeInsets.symmetric(horizontal: 15, vertical: 8),
-      child: Row(
-        children: [
-          Expanded(child: Text(label)),
-          DropdownButton<String>(
-            value: value,
-            items: [
-              for (final option in options)
-                DropdownMenuItem(value: option, child: Text(option)),
-            ],
-            onChanged: (value) {
-              if (value != null) onChanged(value);
-            },
+    return _RowCard(
+      child: ListTile(
+        contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 2),
+        leading: _rowIconChip(context, icon),
+        title: Text(label, style: _rowTitleStyle(context)),
+        trailing: DropdownButton<String>(
+          value: value,
+          underline: const SizedBox.shrink(),
+          borderRadius: BorderRadius.circular(12),
+          dropdownColor: context.evolveColors.panelRaised,
+          style: Theme.of(context).textTheme.titleMedium,
+          icon: Icon(
+            LucideIcons.chevronDown,
+            size: 16,
+            color: context.evolveColors.muted,
           ),
-        ],
+          items: [
+            for (final option in options)
+              DropdownMenuItem(value: option, child: Text(option)),
+          ],
+          onChanged: (value) {
+            if (value != null) onChanged(value);
+          },
+        ),
       ),
     );
   }
@@ -1551,12 +1681,14 @@ class _SelectRow extends StatelessWidget {
 
 class _TimeRow extends StatelessWidget {
   const _TimeRow({
+    required this.icon,
     required this.label,
     required this.value,
     required this.use24hFormat,
     required this.onChanged,
   });
 
+  final IconData icon;
   final String label;
   final String value;
   final bool use24hFormat;
@@ -1564,36 +1696,35 @@ class _TimeRow extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return Padding(
-      padding: const EdgeInsets.symmetric(horizontal: 15, vertical: 8),
-      child: Row(
-        children: [
-          Expanded(child: Text(label)),
-          OutlinedButton(
-            onPressed: () async {
-              final parts = value.split(':');
-              final selected = await showTimePicker(
-                context: context,
-                initialTime: TimeOfDay(
-                  hour: int.tryParse(parts.first) ?? 9,
-                  minute: parts.length > 1 ? int.tryParse(parts[1]) ?? 0 : 0,
-                ),
-                builder: (context, child) => MediaQuery(
-                  data: MediaQuery.of(
-                    context,
-                  ).copyWith(alwaysUse24HourFormat: use24hFormat),
-                  child: child!,
-                ),
-              );
-              if (selected == null) return;
-              onChanged(
-                '${selected.hour.toString().padLeft(2, '0')}:'
-                '${selected.minute.toString().padLeft(2, '0')}',
-              );
-            },
-            child: Text(value),
-          ),
-        ],
+    return _RowCard(
+      child: ListTile(
+        contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 2),
+        leading: _rowIconChip(context, icon),
+        title: Text(label, style: _rowTitleStyle(context)),
+        trailing: OutlinedButton(
+          onPressed: () async {
+            final parts = value.split(':');
+            final selected = await showTimePicker(
+              context: context,
+              initialTime: TimeOfDay(
+                hour: int.tryParse(parts.first) ?? 9,
+                minute: parts.length > 1 ? int.tryParse(parts[1]) ?? 0 : 0,
+              ),
+              builder: (context, child) => MediaQuery(
+                data: MediaQuery.of(
+                  context,
+                ).copyWith(alwaysUse24HourFormat: use24hFormat),
+                child: child!,
+              ),
+            );
+            if (selected == null) return;
+            onChanged(
+              '${selected.hour.toString().padLeft(2, '0')}:'
+              '${selected.minute.toString().padLeft(2, '0')}',
+            );
+          },
+          child: Text(value),
+        ),
       ),
     );
   }
@@ -1601,12 +1732,14 @@ class _TimeRow extends StatelessWidget {
 
 class _ColorRow extends StatelessWidget {
   const _ColorRow({
+    required this.icon,
     required this.label,
     required this.detail,
     required this.selected,
     required this.onChanged,
   });
 
+  final IconData icon;
   final String label;
   final String detail;
   final Color selected;
@@ -1623,59 +1756,64 @@ class _ColorRow extends StatelessWidget {
       const Color(0xFFEC4899),
       const Color(0xFFF97316),
     ].map((color) => _visibleAccent(context, color));
-    return Padding(
-      padding: const EdgeInsets.symmetric(horizontal: 15, vertical: 10),
-      child: Row(
-        children: [
-          Expanded(
-            child: _RowCopy(label: label, detail: detail),
-          ),
-          SizedBox(
-            width: 220,
-            child: Wrap(
-              alignment: WrapAlignment.end,
-              spacing: 8,
-              runSpacing: 8,
-              children: [
-                for (final color in colors)
-                  Tooltip(
-                    message: t.settingsPage.useAccent(hex: _toHex(color)),
-                    child: InkWell(
-                      onTap: () => onChanged(color),
-                      customBorder: const CircleBorder(),
-                      child: CircleAvatar(
-                        radius: 11,
-                        backgroundColor: color,
-                        child: selected == color
-                            ? Icon(
-                                Icons.check_rounded,
-                                size: 14,
-                                color: _checkColor(color),
-                              )
-                            : null,
-                      ),
-                    ),
-                  ),
-                Tooltip(
-                  message: t.settingsPage.customColor,
-                  child: InkWell(
-                    onTap: () => _showFullColorPicker(context),
-                    customBorder: const CircleBorder(),
-                    child: CircleAvatar(
-                      radius: 11,
-                      backgroundColor: context.evolveColors.panelRaised,
-                      child: Icon(
-                        Icons.add_rounded,
-                        size: 15,
-                        color: context.evolveColors.foreground,
-                      ),
-                    ),
-                  ),
-                ),
-              ],
+    return _RowCard(
+      child: Padding(
+        padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+        child: Row(
+          children: [
+            _rowIconChip(context, icon),
+            const SizedBox(width: 16),
+            Expanded(
+              child: _RowCopy(label: label, detail: detail),
             ),
-          ),
-        ],
+            SizedBox(
+              width: 220,
+              child: Wrap(
+                alignment: WrapAlignment.end,
+                spacing: 8,
+                runSpacing: 8,
+                children: [
+                  for (final color in colors)
+                    Tooltip(
+                      message: t.settingsPage.useAccent(hex: _toHex(color)),
+                      child: InkWell(
+                        onTap: () => onChanged(color),
+                        customBorder: const CircleBorder(),
+                        child: _Swatch(
+                          color: color,
+                          isSelected: selected == color,
+                          child: selected == color
+                              ? Icon(
+                                  LucideIcons.check,
+                                  size: 12,
+                                  color: _checkColor(color),
+                                )
+                              : null,
+                        ),
+                      ),
+                    ),
+                  Tooltip(
+                    message: t.settingsPage.customColor,
+                    child: InkWell(
+                      onTap: () => _showFullColorPicker(context),
+                      customBorder: const CircleBorder(),
+                      child: _Swatch(
+                        color: context.evolveColors.panelRaised,
+                        isSelected: false,
+                        outlined: true,
+                        child: Icon(
+                          LucideIcons.plus,
+                          size: 14,
+                          color: context.evolveColors.foreground,
+                        ),
+                      ),
+                    ),
+                  ),
+                ],
+              ),
+            ),
+          ],
+        ),
       ),
     );
   }
@@ -1685,7 +1823,7 @@ class _ColorRow extends StatelessWidget {
     final picked = await showEvolveDialog<Color>(
       context: context,
       builder: (context) => EvolveAlertDialog(
-        icon: Icons.palette_outlined,
+        icon: LucideIcons.palette,
         title: Text(t.settingsPage.accentColor),
         content: SingleChildScrollView(
           child: ColorPicker(
@@ -1725,43 +1863,70 @@ class _ColorRow extends StatelessWidget {
       '#${color.toARGB32().toRadixString(16).substring(2, 8).toUpperCase()}';
 }
 
+/// 24px color swatch circle; the selected one gets a foreground ring and a
+/// soft tint glow (mobile color-picker recipe).
+class _Swatch extends StatelessWidget {
+  const _Swatch({
+    required this.color,
+    required this.isSelected,
+    this.outlined = false,
+    this.child,
+  });
+
+  final Color color;
+  final bool isSelected;
+  final bool outlined;
+  final Widget? child;
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      width: 24,
+      height: 24,
+      decoration: BoxDecoration(
+        shape: BoxShape.circle,
+        color: color,
+        border: isSelected
+            ? Border.all(color: context.evolveColors.foreground, width: 2)
+            : outlined
+            ? Border.all(color: context.evolveColors.border)
+            : null,
+        boxShadow: isSelected
+            ? [BoxShadow(color: color.withValues(alpha: 0.5), blurRadius: 8)]
+            : null,
+      ),
+      child: child == null ? null : Center(child: child),
+    );
+  }
+}
+
 class _ActionRow extends StatelessWidget {
   const _ActionRow({
     required this.icon,
     required this.title,
     required this.detail,
     required this.onTap,
-    this.destructive = false,
   });
 
   final IconData icon;
   final String title;
   final String detail;
   final VoidCallback onTap;
-  final bool destructive;
 
   @override
   Widget build(BuildContext context) {
-    final color = destructive
-        ? EvolveColors.rose
-        : context.evolveColors.foreground;
-    return InkWell(
-      onTap: onTap,
-      child: Padding(
-        padding: const EdgeInsets.symmetric(horizontal: 15, vertical: 11),
-        child: Row(
-          children: [
-            Icon(icon, color: color, size: 19),
-            const SizedBox(width: 12),
-            Expanded(
-              child: _RowCopy(label: title, detail: detail, color: color),
-            ),
-            DirectionalIcon(
-              Icons.chevron_right_rounded,
-              Icons.chevron_left_rounded,
-              color: context.evolveColors.subtle,
-            ),
-          ],
+    return _RowCard(
+      child: ListTile(
+        onTap: onTap,
+        contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 2),
+        leading: _rowIconChip(context, icon),
+        title: Text(title, style: _rowTitleStyle(context)),
+        subtitle: Text(detail, style: _rowSubtitleStyle(context)),
+        trailing: DirectionalIcon(
+          LucideIcons.chevronRight,
+          LucideIcons.chevronLeft,
+          size: 18,
+          color: context.evolveColors.muted,
         ),
       ),
     );
@@ -1769,52 +1934,43 @@ class _ActionRow extends StatelessWidget {
 }
 
 class _InfoRow extends StatelessWidget {
-  const _InfoRow({required this.label, required this.value});
+  const _InfoRow({
+    required this.icon,
+    required this.label,
+    required this.value,
+  });
 
+  final IconData icon;
   final String label;
   final String value;
 
   @override
   Widget build(BuildContext context) {
-    return Padding(
-      padding: const EdgeInsets.symmetric(horizontal: 15, vertical: 11),
-      child: Row(
-        children: [
-          Expanded(child: Text(label)),
-          Text(
-            value,
-            style: TextStyle(
-              color: context.evolveColors.foreground,
-              fontWeight: FontWeight.w700,
-            ),
-          ),
-        ],
+    return _RowCard(
+      child: ListTile(
+        contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 2),
+        leading: _rowIconChip(context, icon),
+        title: Text(label, style: _rowTitleStyle(context)),
+        subtitle: Text(value, style: _rowSubtitleStyle(context)),
       ),
     );
   }
 }
 
 class _RowCopy extends StatelessWidget {
-  const _RowCopy({required this.label, required this.detail, this.color});
+  const _RowCopy({required this.label, required this.detail});
 
   final String label;
   final String detail;
-  final Color? color;
 
   @override
   Widget build(BuildContext context) {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        Text(
-          label,
-          style: TextStyle(
-            color: color ?? context.evolveColors.foreground,
-            fontWeight: FontWeight.w600,
-          ),
-        ),
+        Text(label, style: _rowTitleStyle(context)),
         const SizedBox(height: 3),
-        Text(detail, style: Theme.of(context).textTheme.bodySmall),
+        Text(detail, style: _rowSubtitleStyle(context)),
       ],
     );
   }
@@ -1846,38 +2002,46 @@ class _ProfileCard extends StatelessWidget {
     final avatarUrl = isPrivateMode
         ? privateProfile?.avatarPath
         : metadata?['avatar_url'] as String?;
-    return Container(
+    return EvolvePanel(
       padding: const EdgeInsets.all(16),
-      decoration: BoxDecoration(
-        color: context.evolveColors.panelRaised,
-        borderRadius: BorderRadius.circular(12),
-        border: Border.all(color: context.evolveColors.border),
-      ),
       child: Row(
         children: [
           InkWell(
             onTap: onPickAvatar,
             customBorder: const CircleBorder(),
-            child: CircleAvatar(
-              radius: 28,
-              backgroundColor: context.evolveAccent.withValues(alpha: 0.13),
-              backgroundImage: image != null
-                  ? FileImage(image!)
-                  : avatarUrl != null
-                  ? (isPrivateMode
-                            ? FileImage(File(avatarUrl))
-                            : NetworkImage(avatarUrl))
-                        as ImageProvider
-                  : null,
-              child: image == null && avatarUrl == null
-                  ? Icon(
-                      Icons.person_outline_rounded,
-                      color: context.evolveAccent,
-                    )
-                  : null,
+            child: Container(
+              padding: const EdgeInsets.all(2),
+              decoration: BoxDecoration(
+                shape: BoxShape.circle,
+                border: Border.all(
+                  color: isPro
+                      ? EvolveColors.amber
+                      : context.evolveAccent.withValues(alpha: 0.4),
+                  width: 1.5,
+                ),
+              ),
+              child: CircleAvatar(
+                radius: 26,
+                backgroundColor: context.evolveColors.panel,
+                backgroundImage: image != null
+                    ? FileImage(image!)
+                    : avatarUrl != null
+                    ? (isPrivateMode
+                              ? FileImage(File(avatarUrl))
+                              : NetworkImage(avatarUrl))
+                          as ImageProvider
+                    : null,
+                child: image == null && avatarUrl == null
+                    ? Icon(
+                        LucideIcons.user,
+                        size: 20,
+                        color: context.evolveAccent,
+                      )
+                    : null,
+              ),
             ),
           ),
-          SizedBox(width: 14),
+          const SizedBox(width: 14),
           Expanded(
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
@@ -1893,16 +2057,18 @@ class _ProfileCard extends StatelessWidget {
                     color: context.evolveColors.foreground,
                     fontSize: 15,
                     fontWeight: FontWeight.w700,
+                    letterSpacing: -0.2,
                   ),
                 ),
-                SizedBox(height: 4),
+                const SizedBox(height: 4),
                 Text(
                   isPrivateMode
                       ? t.settingsPage.privateModeDataProtected
                       : user?.email ?? t.settingsPage.sessionUnavailable,
                   style: TextStyle(
-                    color: context.evolveColors.subtle,
+                    color: context.evolveColors.muted.withValues(alpha: 0.8),
                     fontSize: 12,
+                    fontWeight: FontWeight.w500,
                   ),
                 ),
               ],
@@ -1912,7 +2078,7 @@ class _ProfileCard extends StatelessWidget {
             const StatusPill(
               label: 'PRO',
               color: EvolveColors.amber,
-              icon: Icons.workspace_premium_outlined,
+              icon: LucideIcons.sparkles,
             )
           else
             StatusPill(
@@ -1920,9 +2086,7 @@ class _ProfileCard extends StatelessWidget {
                   ? t.settingsPage.notAuthenticated
                   : t.settingsPage.verified,
               color: user == null ? EvolveColors.amber : context.evolveAccent,
-              icon: user == null
-                  ? Icons.lock_outline_rounded
-                  : Icons.verified_outlined,
+              icon: user == null ? LucideIcons.lock : LucideIcons.shieldCheck,
             ),
         ],
       ),
@@ -1939,10 +2103,15 @@ class _PlatformNote extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return EvolvePanel(
-      color: const Color(0xFF151522),
+      glowColor: EvolveColors.violet,
       child: Row(
         children: [
-          const Icon(Icons.devices_outlined, color: EvolveColors.violet),
+          const EvolveIconChip(
+            icon: LucideIcons.monitor,
+            color: EvolveColors.violet,
+            size: 36,
+            iconSize: 18,
+          ),
           const SizedBox(width: 13),
           Expanded(
             child: _RowCopy(label: title, detail: detail),
@@ -1976,67 +2145,59 @@ class _SubscriptionSettingsState extends ConsumerState<_SubscriptionSettings> {
           title: t.settingsPage.proTitle,
           subtitle: t.settingsPage.proSubtitle,
         ),
-        const SizedBox(height: 17),
+        const SizedBox(height: 20),
         if (!subscription.isPro) ...[
-          Container(
-            width: double.infinity,
+          EvolvePanel(
             padding: const EdgeInsets.all(20),
-            decoration: BoxDecoration(
-              color: context.evolveColors.panelSoft,
-              borderRadius: BorderRadius.circular(18),
-              border: Border.all(color: context.evolveColors.border),
-            ),
-            child: Column(
-              children: [
-                Container(
-                  padding: const EdgeInsets.all(14),
-                  decoration: BoxDecoration(
-                    shape: BoxShape.circle,
-                    color: proAccent.withValues(alpha: 0.1),
-                    border: Border.all(color: proAccent.withValues(alpha: 0.3)),
+            radius: 20,
+            glowColor: proAccent,
+            child: SizedBox(
+              width: double.infinity,
+              child: Column(
+                children: [
+                  Container(
+                    padding: const EdgeInsets.all(14),
+                    decoration: BoxDecoration(
+                      shape: BoxShape.circle,
+                      color: proAccent.withValues(alpha: 0.1),
+                      border: Border.all(
+                        color: proAccent.withValues(alpha: 0.3),
+                      ),
+                    ),
+                    child: const Icon(
+                      LucideIcons.sparkles,
+                      size: 26,
+                      color: proAccent,
+                    ),
                   ),
-                  child: const Icon(
-                    Icons.auto_awesome,
-                    size: 26,
-                    color: proAccent,
+                  const SizedBox(height: 14),
+                  Text(
+                    t.settingsPage.proUpsellTitle,
+                    textAlign: TextAlign.center,
+                    style: TextStyle(
+                      color: context.evolveColors.foreground,
+                      fontSize: 18,
+                      fontWeight: FontWeight.w800,
+                      letterSpacing: -0.4,
+                    ),
                   ),
-                ),
-                const SizedBox(height: 14),
-                Text(
-                  t.settingsPage.proUpsellTitle,
-                  textAlign: TextAlign.center,
-                  style: TextStyle(
-                    color: context.evolveColors.foreground,
-                    fontSize: 18,
-                    fontWeight: FontWeight.w800,
+                  const SizedBox(height: 6),
+                  Text(
+                    t.settingsPage.proUpsellSubtitle,
+                    textAlign: TextAlign.center,
+                    style: TextStyle(
+                      color: context.evolveColors.muted,
+                      fontSize: 13,
+                      fontWeight: FontWeight.w500,
+                    ),
                   ),
-                ),
-                const SizedBox(height: 6),
-                Text(
-                  t.settingsPage.proUpsellSubtitle,
-                  textAlign: TextAlign.center,
-                  style: TextStyle(
-                    color: context.evolveColors.muted,
-                    fontSize: 13,
-                  ),
-                ),
-              ],
-            ),
-          ),
-          const SizedBox(height: 18),
-          Align(
-            alignment: AlignmentDirectional.centerStart,
-            child: Text(
-              t.proModal.featuresHeader,
-              style: TextStyle(
-                color: context.evolveColors.muted,
-                fontSize: 11,
-                fontWeight: FontWeight.w700,
-                letterSpacing: 1.2,
+                ],
               ),
             ),
           ),
-          const SizedBox(height: 14),
+          const SizedBox(height: 24),
+          EvolveSectionLabel(t.proModal.featuresHeader, withRule: false),
+          const SizedBox(height: 12),
           for (final feature in proFeatures()) ...[
             ProFeatureRow(feature: feature),
             const SizedBox(height: 14),
@@ -2080,12 +2241,12 @@ class _SubscriptionSettingsState extends ConsumerState<_SubscriptionSettings> {
             ),
           ],
         ),
-        const SizedBox(height: 16),
+        const SizedBox(height: 24),
         _SettingsGroup(
           title: t.settingsPage.planManagement,
           children: [
             _ActionRow(
-              icon: Icons.workspace_premium_outlined,
+              icon: LucideIcons.sparkles,
               title: t.settingsPage.activateEvolvePro,
               detail: subscription.isPro
                   ? t.settingsPage.activateEvolveProActive
@@ -2111,7 +2272,7 @@ class _SubscriptionSettingsState extends ConsumerState<_SubscriptionSettings> {
                     },
             ),
             _ActionRow(
-              icon: Icons.restore_rounded,
+              icon: LucideIcons.refreshCw,
               title: t.settingsPage.restorePurchases,
               detail: t.settingsPage.restorePurchasesDetail,
               onTap: () => unawaited(
@@ -2121,7 +2282,7 @@ class _SubscriptionSettingsState extends ConsumerState<_SubscriptionSettings> {
               ),
             ),
             _ActionRow(
-              icon: Icons.manage_accounts_outlined,
+              icon: LucideIcons.creditCard,
               title: t.settingsPage.manageSubscription,
               detail: t.settingsPage.manageSubscriptionDetail,
               onTap: () => unawaited(
@@ -2134,7 +2295,17 @@ class _SubscriptionSettingsState extends ConsumerState<_SubscriptionSettings> {
         ),
         if (subscription.message != null) ...[
           const SizedBox(height: 12),
-          Text(subscription.message!),
+          Center(
+            child: Text(
+              subscription.message!,
+              textAlign: TextAlign.center,
+              style: TextStyle(
+                color: context.evolveColors.muted.withValues(alpha: 0.8),
+                fontSize: 12,
+                fontWeight: FontWeight.w500,
+              ),
+            ),
+          ),
         ],
       ],
     );
@@ -2158,7 +2329,7 @@ class _SubscriptionSettingsState extends ConsumerState<_SubscriptionSettings> {
                   border: Border.all(color: proAccent.withValues(alpha: 0.3)),
                 ),
                 child: const Icon(
-                  Icons.auto_awesome,
+                  LucideIcons.sparkles,
                   size: 34,
                   color: proAccent,
                 ),
@@ -2187,17 +2358,18 @@ class _SubscriptionSettingsState extends ConsumerState<_SubscriptionSettings> {
               const SizedBox(height: 24),
               SizedBox(
                 width: double.infinity,
+                height: 48,
                 child: FilledButton(
                   style: FilledButton.styleFrom(
                     backgroundColor: proAccent,
                     foregroundColor: Colors.black,
-                    padding: const EdgeInsets.symmetric(vertical: 14),
                     shape: RoundedRectangleBorder(
                       borderRadius: BorderRadius.circular(14),
                     ),
                     textStyle: const TextStyle(
                       fontSize: 15,
                       fontWeight: FontWeight.w700,
+                      letterSpacing: -0.2,
                     ),
                   ),
                   onPressed: () => Navigator.of(dialogContext).pop(),
@@ -2231,19 +2403,30 @@ class _PlanCard extends StatelessWidget {
   Widget build(BuildContext context) {
     return InkWell(
       onTap: onTap,
-      borderRadius: BorderRadius.circular(12),
-      child: Container(
+      borderRadius: BorderRadius.circular(16),
+      child: AnimatedContainer(
+        duration: const Duration(milliseconds: 250),
+        curve: Curves.easeInOut,
         padding: const EdgeInsets.all(15),
         decoration: BoxDecoration(
           color: selected
               ? context.evolveAccent.withValues(alpha: 0.08)
-              : context.evolveColors.panelRaised,
-          borderRadius: BorderRadius.circular(12),
+              : context.evolveColors.panel.withValues(alpha: 0.4),
+          borderRadius: BorderRadius.circular(16),
           border: Border.all(
             color: selected
                 ? context.evolveAccent
-                : context.evolveColors.border,
+                : context.evolveColors.border.withValues(alpha: 0.5),
           ),
+          boxShadow: selected
+              ? [
+                  BoxShadow(
+                    color: context.evolveAccent.withValues(alpha: 0.15),
+                    blurRadius: 15,
+                    offset: const Offset(0, 5),
+                  ),
+                ]
+              : null,
         ),
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
@@ -2256,11 +2439,12 @@ class _PlanCard extends StatelessWidget {
                 color: context.evolveAccent,
                 fontSize: 22,
                 fontWeight: FontWeight.w800,
+                letterSpacing: -0.8,
               ),
             ),
             if (detail != null) ...[
               const SizedBox(height: 5),
-              Text(detail!, style: Theme.of(context).textTheme.bodySmall),
+              Text(detail!, style: _rowSubtitleStyle(context)),
             ],
           ],
         ),
@@ -2313,7 +2497,7 @@ class _PersonalInfoDialogState extends ConsumerState<_PersonalInfoDialog> {
     final isPrivate = ref.watch(activeDesktopDataModeProvider).isPrivate;
     final email = ref.watch(desktopAuthControllerProvider).user?.email;
     return EvolveAlertDialog(
-      icon: Icons.person_outline_rounded,
+      icon: LucideIcons.user,
       title: Text(t.settingsPage.personalInfo),
       content: SizedBox(
         width: 460,
@@ -2415,7 +2599,7 @@ class _ChangePasswordDialogState extends ConsumerState<_ChangePasswordDialog> {
   @override
   Widget build(BuildContext context) {
     return EvolveAlertDialog(
-      icon: Icons.lock_reset_rounded,
+      icon: LucideIcons.keyRound,
       title: Text(t.settingsPage.changePassword),
       content: SizedBox(
         width: 470,
@@ -2447,7 +2631,10 @@ class _ChangePasswordDialogState extends ConsumerState<_ChangePasswordDialog> {
             ),
             if (_error != null) ...[
               const SizedBox(height: 10),
-              Text(_error!, style: const TextStyle(color: EvolveColors.rose)),
+              Text(
+                _error!,
+                style: const TextStyle(color: EvolveColors.destructive),
+              ),
             ],
           ],
         ),
@@ -2516,10 +2703,10 @@ extension on _SettingsSection {
   };
 
   IconData get icon => switch (this) {
-    _SettingsSection.profile => Icons.person_outline_rounded,
-    _SettingsSection.appearance => Icons.tune_rounded,
-    _SettingsSection.notifications => Icons.notifications_outlined,
-    _SettingsSection.privacy => Icons.shield_outlined,
-    _SettingsSection.subscription => Icons.workspace_premium_outlined,
+    _SettingsSection.profile => LucideIcons.user,
+    _SettingsSection.appearance => LucideIcons.settings,
+    _SettingsSection.notifications => LucideIcons.bell,
+    _SettingsSection.privacy => LucideIcons.shield,
+    _SettingsSection.subscription => LucideIcons.sparkles,
   };
 }

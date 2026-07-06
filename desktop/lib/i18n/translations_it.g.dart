@@ -433,6 +433,10 @@ class _Translations$dashboard$it extends Translations$dashboard$en {
 	@override String get mood => 'Umore';
 	@override String get energy => 'Energia';
 	@override String get goodMorning => 'Buongiorno';
+	@override String get goodAfternoon => 'Buon pomeriggio';
+	@override String get goodEvening => 'Buonasera';
+	@override String get manager => 'Gestione';
+	@override String get aiChat => 'AI Chat';
 	@override String get consecutiveDays => 'giorni consecutivi';
 	@override String get welcomeTitle => 'Benvenuto in Evolve';
 	@override String get welcomeSubtitle => 'Inizia il tuo percorso di crescita personale.';
@@ -1463,6 +1467,10 @@ extension on TranslationsIt {
 			'dashboard.mood' => 'Umore',
 			'dashboard.energy' => 'Energia',
 			'dashboard.goodMorning' => 'Buongiorno',
+			'dashboard.goodAfternoon' => 'Buon pomeriggio',
+			'dashboard.goodEvening' => 'Buonasera',
+			'dashboard.manager' => 'Gestione',
+			'dashboard.aiChat' => 'AI Chat',
 			'dashboard.consecutiveDays' => 'giorni consecutivi',
 			'dashboard.welcomeTitle' => 'Benvenuto in Evolve',
 			'dashboard.welcomeSubtitle' => 'Inizia il tuo percorso di crescita personale.',
@@ -1750,12 +1758,12 @@ extension on TranslationsIt {
 			'aiCoach.inputHint' => 'Chiedi consigli al tuo Coach...',
 			'aiCoach.defaultUserName' => 'utente',
 			'aiCoach.userNameLine' => ({required Object userName}) => '- Nome: ${userName}',
+			_ => null,
+		} ?? switch (path) {
 			'aiCoach.activeGoalsCount' => ({required Object count}) => '- Obiettivi attivi: ${count}',
 			'aiCoach.completedGoalsCount' => ({required Object count}) => '- Obiettivi completati: ${count}',
 			'aiCoach.todayCompletion' => ({required Object completed, required Object total}) => '- Abitudini oggi: ${completed} completate su ${total} totali.',
 			'settingsPage.account' => 'Account',
-			_ => null,
-		} ?? switch (path) {
 			'settingsPage.notifications' => 'Notifiche',
 			'settingsPage.language' => 'Lingua',
 			'settingsPage.timeFormat24h' => 'Formato 24h',

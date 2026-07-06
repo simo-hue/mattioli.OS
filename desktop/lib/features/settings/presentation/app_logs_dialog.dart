@@ -4,15 +4,18 @@ import 'package:evolve_desktop/app/theme/evolve_theme.dart';
 import 'package:evolve_desktop/core/app_logger.dart';
 import 'package:evolve_desktop/i18n/translations.g.dart';
 import 'package:evolve_desktop/shared/widgets/evolve_dialog.dart';
+import 'package:evolve_desktop/shared/widgets/evolve_panel.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:lucide_icons_flutter/lucide_icons.dart';
 import 'package:path_provider/path_provider.dart';
 import 'package:share_plus/share_plus.dart';
 
-const _errorColor = Color(0xFFEF4444);
-const _warnColor = Color(0xFFEAB308);
-const _infoColor = Color(0xFF3B82F6);
+// Severity accents mapped onto the shared StatusPill palette
+// (destructive / amber / muted).
+const _errorColor = EvolveColors.destructive;
+const _warnColor = EvolveColors.amber;
+const _infoColor = EvolveColors.muted;
 
 const _monoFont = 'monospace';
 
@@ -271,6 +274,14 @@ class _AppLogsDialogState extends State<_AppLogsDialog> {
       padding: const EdgeInsetsDirectional.fromSTEB(24, 20, 16, 16),
       child: Row(
         children: [
+          EvolveIconChip(
+            icon: LucideIcons.scrollText,
+            color: context.evolveAccent,
+            size: 36,
+            iconSize: 18,
+            outlined: true,
+          ),
+          const SizedBox(width: 12),
           Expanded(
             child: Text(
               t.appLogs.title,
@@ -329,14 +340,20 @@ class _AppLogsDialogState extends State<_AppLogsDialog> {
     final chipColor = color ?? colors.foreground;
     return InkWell(
       onTap: onTap,
-      borderRadius: BorderRadius.circular(10),
-      child: Container(
-        padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
+      borderRadius: BorderRadius.circular(100),
+      child: AnimatedContainer(
+        duration: const Duration(milliseconds: 200),
+        curve: Curves.easeInOut,
+        padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 5),
         decoration: BoxDecoration(
-          color: active ? chipColor.withValues(alpha: 0.15) : colors.panelSoft,
-          borderRadius: BorderRadius.circular(10),
+          color: active
+              ? chipColor.withValues(alpha: 0.12)
+              : colors.panel.withValues(alpha: 0.4),
+          borderRadius: BorderRadius.circular(100),
           border: Border.all(
-            color: active ? chipColor.withValues(alpha: 0.4) : colors.border,
+            color: active
+                ? chipColor.withValues(alpha: 0.4)
+                : colors.border.withValues(alpha: 0.5),
           ),
         ),
         child: Row(
@@ -347,14 +364,15 @@ class _AppLogsDialogState extends State<_AppLogsDialog> {
               style: TextStyle(
                 color: active ? chipColor : colors.muted,
                 fontSize: 11,
-                fontWeight: FontWeight.w600,
+                fontWeight: FontWeight.w700,
+                letterSpacing: -0.1,
               ),
             ),
             const SizedBox(width: 6),
             Text(
               '$count',
               style: TextStyle(
-                color: active ? chipColor : colors.muted,
+                color: active ? chipColor : colors.muted.withValues(alpha: 0.8),
                 fontSize: 10,
                 fontWeight: FontWeight.w700,
               ),
@@ -401,18 +419,18 @@ class _AppLogsDialogState extends State<_AppLogsDialog> {
     return Container(
       margin: const EdgeInsets.only(bottom: 8),
       decoration: BoxDecoration(
-        color: colors.panelSoft,
-        borderRadius: BorderRadius.circular(12),
+        color: colors.panel.withValues(alpha: 0.4),
+        borderRadius: BorderRadius.circular(16),
         border: Border.all(
           color: entry.level == AppLogLevel.error
               ? _errorColor.withValues(alpha: 0.25)
-              : colors.border,
+              : colors.border.withValues(alpha: 0.5),
         ),
       ),
       child: Material(
         color: Colors.transparent,
         child: InkWell(
-          borderRadius: BorderRadius.circular(12),
+          borderRadius: BorderRadius.circular(16),
           onTap: () => setState(() {
             if (isExpanded) {
               _expanded.remove(entry);
@@ -429,23 +447,23 @@ class _AppLogsDialogState extends State<_AppLogsDialog> {
                   children: [
                     Container(
                       padding: const EdgeInsets.symmetric(
-                        horizontal: 7,
+                        horizontal: 8,
                         vertical: 3,
                       ),
                       decoration: BoxDecoration(
                         color: levelColor.withValues(alpha: 0.12),
-                        borderRadius: BorderRadius.circular(6),
+                        borderRadius: BorderRadius.circular(100),
                         border: Border.all(
-                          color: levelColor.withValues(alpha: 0.25),
+                          color: levelColor.withValues(alpha: 0.22),
                         ),
                       ),
                       child: Text(
                         entry.levelLabel,
                         style: TextStyle(
-                          fontFamily: _monoFont,
                           color: levelColor,
                           fontSize: 10,
                           fontWeight: FontWeight.w700,
+                          letterSpacing: 0.4,
                         ),
                       ),
                     ),

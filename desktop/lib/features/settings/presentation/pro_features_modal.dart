@@ -6,8 +6,9 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:lucide_icons_flutter/lucide_icons.dart';
 
-/// The premium accent used across the Pro upsell surfaces (mirrors mobile).
-const proAccent = Color(0xFFF59E0B); // amber 500
+/// The premium accent used across the Pro upsell surfaces (mirrors the
+/// mobile pro-gold token, EvolveColors.amber).
+const proAccent = EvolveColors.amber;
 
 /// A single Pro feature (icon + localized title/description).
 class ProFeature {
@@ -93,17 +94,18 @@ class _ProFeaturesDialog extends StatelessWidget {
             const SizedBox(height: 8),
             SizedBox(
               width: double.infinity,
+              height: 48,
               child: FilledButton(
                 style: FilledButton.styleFrom(
                   backgroundColor: proAccent,
                   foregroundColor: Colors.black,
-                  padding: const EdgeInsets.symmetric(vertical: 16),
                   shape: RoundedRectangleBorder(
-                    borderRadius: BorderRadius.circular(16),
+                    borderRadius: BorderRadius.circular(14),
                   ),
                   textStyle: const TextStyle(
                     fontSize: 15,
                     fontWeight: FontWeight.w800,
+                    letterSpacing: -0.2,
                   ),
                 ),
                 onPressed: () {
@@ -141,15 +143,15 @@ class _ProSparkleBadge extends StatelessWidget {
       padding: const EdgeInsets.all(18),
       decoration: BoxDecoration(
         shape: BoxShape.circle,
-        gradient: LinearGradient(
-          colors: [
-            proAccent.withValues(alpha: 0.2),
-            proAccent.withValues(alpha: 0.05),
-          ],
-          begin: Alignment.topLeft,
-          end: Alignment.bottomRight,
-        ),
+        color: proAccent.withValues(alpha: 0.1),
         border: Border.all(color: proAccent.withValues(alpha: 0.3), width: 2),
+        boxShadow: [
+          BoxShadow(
+            color: proAccent.withValues(alpha: 0.15),
+            blurRadius: 24,
+            spreadRadius: -4,
+          ),
+        ],
       ),
       child: const Icon(LucideIcons.sparkles, size: 36, color: proAccent),
     );
@@ -170,11 +172,12 @@ class ProFeatureRow extends StatelessWidget {
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
         Container(
-          padding: const EdgeInsets.all(10),
+          width: 38,
+          height: 38,
           decoration: BoxDecoration(
-            color: colors.panelSoft,
+            color: proAccent.withValues(alpha: 0.1),
             borderRadius: BorderRadius.circular(12),
-            border: Border.all(color: colors.border),
+            border: Border.all(color: proAccent.withValues(alpha: 0.3)),
           ),
           child: Icon(feature.icon, size: 18, color: proAccent),
         ),
@@ -189,14 +192,16 @@ class ProFeatureRow extends StatelessWidget {
                   color: colors.foreground,
                   fontSize: 14,
                   fontWeight: FontWeight.w700,
+                  letterSpacing: -0.2,
                 ),
               ),
               const SizedBox(height: 2),
               Text(
                 feature.description,
                 style: TextStyle(
-                  color: colors.muted,
+                  color: colors.muted.withValues(alpha: 0.8),
                   fontSize: 12,
+                  fontWeight: FontWeight.w500,
                   height: 1.4,
                 ),
               ),

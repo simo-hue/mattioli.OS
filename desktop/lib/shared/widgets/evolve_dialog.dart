@@ -1,6 +1,7 @@
 import 'package:evolve_desktop/app/theme/evolve_theme.dart';
 import 'package:evolve_desktop/i18n/translations.g.dart';
 import 'package:flutter/material.dart';
+import 'package:lucide_icons_flutter/lucide_icons.dart';
 
 Future<T?> showEvolveDialog<T>({
   required BuildContext context,
@@ -200,7 +201,7 @@ class EvolveDialogHeader extends StatelessWidget {
             IconButton(
               tooltip: t.habitsPage.close,
               onPressed: () => Navigator.pop(context),
-              icon: const Icon(Icons.close_rounded, size: 19),
+              icon: const Icon(LucideIcons.x, size: 18),
               style: IconButton.styleFrom(
                 foregroundColor: context.evolveColors.muted,
                 backgroundColor: context.evolveColors.panelSoft,

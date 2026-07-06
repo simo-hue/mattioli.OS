@@ -6,11 +6,7 @@ import 'package:evolve_desktop/core/desktop_private_db.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 class PrivateProfileState {
-  const PrivateProfileState({
-    this.fullName,
-    this.dateOfBirth,
-    this.avatarPath,
-  });
+  const PrivateProfileState({this.fullName, this.dateOfBirth, this.avatarPath});
 
   final String? fullName;
   final String? dateOfBirth;
@@ -31,9 +27,10 @@ class PrivateProfileState {
   }
 }
 
-final privateProfileProvider = AsyncNotifierProvider<PrivateProfileNotifier, PrivateProfileState>(
-  PrivateProfileNotifier.new,
-);
+final privateProfileProvider =
+    AsyncNotifierProvider<PrivateProfileNotifier, PrivateProfileState>(
+      PrivateProfileNotifier.new,
+    );
 
 class PrivateProfileNotifier extends AsyncNotifier<PrivateProfileState> {
   @override
@@ -78,24 +75,29 @@ class PrivateProfileNotifier extends AsyncNotifier<PrivateProfileState> {
     try {
       final db = await DesktopPrivateDb.instance.database;
       final ownerId = await DesktopPrivateDb.instance.ownerId;
-      
-      final normalizedDateOfBirth = dateOfBirth?.trim().isEmpty ?? true ? null : dateOfBirth?.trim();
+
+      final normalizedDateOfBirth = dateOfBirth?.trim().isEmpty ?? true
+          ? null
+          : dateOfBirth?.trim();
 
       await db.update(
         'profiles',
-        {
-          'full_name': fullName.trim(),
-          'date_of_birth': normalizedDateOfBirth,
-        },
+        {'full_name': fullName.trim(), 'date_of_birth': normalizedDateOfBirth},
         where: 'id = ?',
         whereArgs: [ownerId],
       );
 
-      state = AsyncData(state.value?.copyWith(
-        fullName: fullName.trim(),
-        dateOfBirth: normalizedDateOfBirth,
-        clearDateOfBirth: normalizedDateOfBirth == null,
-      ) ?? PrivateProfileState(fullName: fullName.trim(), dateOfBirth: normalizedDateOfBirth));
+      state = AsyncData(
+        state.value?.copyWith(
+              fullName: fullName.trim(),
+              dateOfBirth: normalizedDateOfBirth,
+              clearDateOfBirth: normalizedDateOfBirth == null,
+            ) ??
+            PrivateProfileState(
+              fullName: fullName.trim(),
+              dateOfBirth: normalizedDateOfBirth,
+            ),
+      );
     } catch (e, stack) {
       AppLogger.error('Failed to update private profile', e, stack);
     }
@@ -116,9 +118,10 @@ class PrivateProfileNotifier extends AsyncNotifier<PrivateProfileState> {
         whereArgs: [ownerId],
       );
 
-      state = AsyncData(state.value?.copyWith(
-        avatarPath: avatarPath,
-      ) ?? PrivateProfileState(avatarPath: avatarPath));
+      state = AsyncData(
+        state.value?.copyWith(avatarPath: avatarPath) ??
+            PrivateProfileState(avatarPath: avatarPath),
+      );
     } catch (e, stack) {
       AppLogger.error('Failed to update private avatar', e, stack);
     }

@@ -11,6 +11,7 @@ import 'package:evolve_desktop/shared/widgets/evolve_panel.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_markdown/flutter_markdown.dart';
+import 'package:lucide_icons_flutter/lucide_icons.dart';
 
 import '../domain/chat_message.dart';
 import '../data/openrouter_service.dart';
@@ -131,18 +132,21 @@ class _AiCoachPageState extends ConsumerState<AiCoachPage> {
     final granted = await showDialog<bool>(
       context: context,
       builder: (context) => AlertDialog(
-        backgroundColor: context.evolveColors.background,
         title: Text(
           t.privateAi.consentTitle,
           style: TextStyle(
             color: context.evolveColors.foreground,
-            fontWeight: FontWeight.w600,
+            fontWeight: FontWeight.w800,
+            letterSpacing: -0.4,
           ),
         ),
         content: Text(
           t.privateAi.consentBody,
           style: TextStyle(
-            color: context.evolveColors.foreground.withValues(alpha: 0.7),
+            color: context.evolveColors.muted,
+            fontSize: 13,
+            fontWeight: FontWeight.w500,
+            height: 1.5,
           ),
         ),
         actions: [
@@ -342,29 +346,6 @@ class _AiCoachPageState extends ConsumerState<AiCoachPage> {
     _sendMessage();
   }
 
-  Widget _suggestionChip(String text) {
-    return InkWell(
-      onTap: () => _onSuggestionTap(text),
-      borderRadius: BorderRadius.circular(18),
-      child: Container(
-        alignment: Alignment.center,
-        padding: const EdgeInsets.symmetric(horizontal: 14),
-        decoration: BoxDecoration(
-          color: context.evolveColors.panelSoft,
-          borderRadius: BorderRadius.circular(18),
-          border: Border.all(color: context.evolveColors.border),
-        ),
-        child: Text(
-          text,
-          style: TextStyle(
-            color: context.evolveColors.foreground,
-            fontSize: 12,
-          ),
-        ),
-      ),
-    );
-  }
-
   void _scrollToBottom() {
     Future.delayed(const Duration(milliseconds: 100), () {
       if (_scrollController.hasClients) {
@@ -382,12 +363,12 @@ class _AiCoachPageState extends ConsumerState<AiCoachPage> {
       context: context,
       builder: (context) => StatefulBuilder(
         builder: (context, setDialogState) => AlertDialog(
-          backgroundColor: context.evolveColors.background,
           title: Text(
             t.aiCoach.contextTitle,
             style: TextStyle(
               color: context.evolveColors.foreground,
-              fontWeight: FontWeight.w600,
+              fontWeight: FontWeight.w800,
+              letterSpacing: -0.4,
             ),
           ),
           content: Column(
@@ -397,47 +378,56 @@ class _AiCoachPageState extends ConsumerState<AiCoachPage> {
               Text(
                 t.aiCoach.contextBody,
                 style: TextStyle(
-                  color: context.evolveColors.foreground.withValues(alpha: 0.7),
+                  color: context.evolveColors.muted,
+                  fontSize: 13,
+                  fontWeight: FontWeight.w500,
+                  height: 1.5,
                 ),
               ),
-              const SizedBox(height: 24),
+              const SizedBox(height: 20),
               SwitchListTile(
+                contentPadding: EdgeInsets.zero,
                 title: Text(
                   t.ai.dailyHabits,
-                  style: TextStyle(color: context.evolveColors.foreground),
+                  style: TextStyle(
+                    color: context.evolveColors.foreground,
+                    fontSize: 14,
+                    fontWeight: FontWeight.w600,
+                  ),
                 ),
                 subtitle: Text(
                   t.aiCoach.shareHabitsDesc,
                   style: TextStyle(
-                    color: context.evolveColors.foreground.withValues(
-                      alpha: 0.5,
-                    ),
+                    color: context.evolveColors.muted.withValues(alpha: 0.8),
                     fontSize: 12,
+                    fontWeight: FontWeight.w500,
                   ),
                 ),
                 value: _shareHabits,
-                activeThumbColor: Theme.of(context).colorScheme.primary,
                 onChanged: (val) {
                   setDialogState(() => _shareHabits = val);
                   setState(() => _shareHabits = val);
                 },
               ),
               SwitchListTile(
+                contentPadding: EdgeInsets.zero,
                 title: Text(
                   t.ai.macroGoals,
-                  style: TextStyle(color: context.evolveColors.foreground),
+                  style: TextStyle(
+                    color: context.evolveColors.foreground,
+                    fontSize: 14,
+                    fontWeight: FontWeight.w600,
+                  ),
                 ),
                 subtitle: Text(
                   t.aiCoach.shareGoalsDesc,
                   style: TextStyle(
-                    color: context.evolveColors.foreground.withValues(
-                      alpha: 0.5,
-                    ),
+                    color: context.evolveColors.muted.withValues(alpha: 0.8),
                     fontSize: 12,
+                    fontWeight: FontWeight.w500,
                   ),
                 ),
                 value: _shareGoals,
-                activeThumbColor: Theme.of(context).colorScheme.primary,
                 onChanged: (val) {
                   setDialogState(() => _shareGoals = val);
                   setState(() => _shareGoals = val);
@@ -458,124 +448,266 @@ class _AiCoachPageState extends ConsumerState<AiCoachPage> {
 
   @override
   Widget build(BuildContext context) {
+    final colors = context.evolveColors;
+
     return DesktopPage(
-      title: t.ai.coach,
-      subtitle: t.aiCoach.subtitle,
-      trailing: PageActionButton(
-        label: t.aiCoach.contextButton,
-        icon: Icons.tune_rounded,
-        onPressed: _showSettingsDialog,
-      ),
-      child: EvolvePanel(
-        child: SizedBox(
-          height: MediaQuery.of(context).size.height - 230,
-          child: Column(
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.stretch,
+        children: [
+          // Chat header: violet sparkles chip + heavy title (mobile app bar).
+          Row(
             children: [
-              Expanded(
-                child: ListView.builder(
-                  controller: _scrollController,
-                  padding: const EdgeInsets.all(24),
-                  itemCount: _messages.length,
-                  itemBuilder: (context, index) {
-                    final msg = _messages[index];
-                    return _MessageBubble(message: msg);
-                  },
-                ),
+              const EvolveIconChip(
+                icon: LucideIcons.sparkles,
+                color: EvolveColors.violet,
+                size: 44,
+                iconSize: 20,
               ),
-              if (_isTyping)
-                Padding(
-                  padding: const EdgeInsets.symmetric(
-                    horizontal: 24,
-                    vertical: 8,
-                  ),
-                  child: Align(
-                    alignment: AlignmentDirectional.centerStart,
-                    child: Text(
-                      t.aiCoach.typing,
-                      style: TextStyle(
-                        color: context.evolveColors.muted,
-                        fontSize: 12,
-                        fontStyle: FontStyle.italic,
-                      ),
-                    ),
-                  ),
-                ),
-              if (!_isTyping)
-                Builder(
-                  builder: (context) {
-                    final suggestions = _dynamicSuggestions();
-                    if (suggestions.isEmpty) return const SizedBox.shrink();
-                    return SizedBox(
-                      height: 44,
-                      child: ListView(
-                        scrollDirection: Axis.horizontal,
-                        padding: const EdgeInsetsDirectional.fromSTEB(
-                          24,
-                          0,
-                          24,
-                          8,
-                        ),
-                        children: [
-                          for (final s in suggestions) ...[
-                            _suggestionChip(s),
-                            const SizedBox(width: 8),
-                          ],
-                        ],
-                      ),
-                    );
-                  },
-                ),
-              Container(
-                padding: const EdgeInsets.symmetric(
-                  horizontal: 24,
-                  vertical: 16,
-                ),
-                decoration: BoxDecoration(
-                  border: Border(
-                    top: BorderSide(color: context.evolveColors.border),
-                  ),
-                ),
-                child: Row(
+              const SizedBox(width: 14),
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
-                    Expanded(
-                      child: TextField(
-                        controller: _controller,
-                        style: TextStyle(
-                          color: context.evolveColors.foreground,
-                        ),
-                        decoration: InputDecoration(
-                          hintText: t.aiCoach.inputHint,
-                          hintStyle: TextStyle(
-                            color: context.evolveColors.muted,
-                          ),
-                          filled: true,
-                          fillColor: context.evolveColors.background,
-                          border: OutlineInputBorder(
-                            borderRadius: BorderRadius.circular(24),
-                            borderSide: BorderSide.none,
-                          ),
-                          contentPadding: const EdgeInsets.symmetric(
-                            horizontal: 20,
-                            vertical: 14,
-                          ),
-                        ),
-                        onSubmitted: (_) => _sendMessage(),
+                    Text(
+                      t.ai.coach,
+                      style: TextStyle(
+                        color: colors.foreground,
+                        fontSize: 26,
+                        fontWeight: FontWeight.w800,
+                        letterSpacing: -0.8,
+                        height: 1.1,
                       ),
                     ),
-                    const SizedBox(width: 12),
-                    FloatingActionButton(
-                      elevation: 0,
-                      backgroundColor: Theme.of(context).colorScheme.primary,
-                      onPressed: _isTyping ? null : _sendMessage,
-                      child: const Icon(
-                        Icons.send_rounded,
-                        color: Colors.white,
+                    const SizedBox(height: 3),
+                    Text(
+                      t.aiCoach.subtitle,
+                      style: TextStyle(
+                        fontSize: 13,
+                        fontWeight: FontWeight.w500,
+                        color: colors.muted.withValues(alpha: 0.8),
                       ),
                     ),
                   ],
                 ),
               ),
+              const SizedBox(width: 12),
+              PageActionButton(
+                label: t.aiCoach.contextButton,
+                icon: LucideIcons.brain,
+                onPressed: _showSettingsDialog,
+              ),
             ],
+          ),
+          const SizedBox(height: 20),
+          EvolvePanel(
+            padding: EdgeInsets.zero,
+            radius: 20,
+            glowColor: EvolveColors.violet,
+            child: SizedBox(
+              height: MediaQuery.of(context).size.height - 230,
+              child: Column(
+                children: [
+                  Expanded(
+                    child: ListView.builder(
+                      controller: _scrollController,
+                      padding: const EdgeInsets.all(24),
+                      itemCount: _messages.length,
+                      itemBuilder: (context, index) {
+                        final msg = _messages[index];
+                        return _MessageBubble(message: msg);
+                      },
+                    ),
+                  ),
+                  if (_isTyping)
+                    Padding(
+                      padding: const EdgeInsets.symmetric(
+                        horizontal: 24,
+                        vertical: 8,
+                      ),
+                      child: Align(
+                        alignment: AlignmentDirectional.centerStart,
+                        child: Text(
+                          t.aiCoach.typing,
+                          style: TextStyle(
+                            color: colors.muted,
+                            fontSize: 12,
+                            fontWeight: FontWeight.w500,
+                          ),
+                        ),
+                      ),
+                    ),
+                  if (!_isTyping)
+                    Builder(
+                      builder: (context) {
+                        final suggestions = _dynamicSuggestions();
+                        if (suggestions.isEmpty) return const SizedBox.shrink();
+                        return SizedBox(
+                          height: 42,
+                          child: ListView(
+                            scrollDirection: Axis.horizontal,
+                            padding: const EdgeInsetsDirectional.fromSTEB(
+                              20,
+                              0,
+                              20,
+                              10,
+                            ),
+                            children: [
+                              for (final s in suggestions) ...[
+                                _SuggestionChip(
+                                  label: s,
+                                  onTap: () => _onSuggestionTap(s),
+                                ),
+                                const SizedBox(width: 8),
+                              ],
+                            ],
+                          ),
+                        );
+                      },
+                    ),
+                  // Input bar: translucent rounded card + circular send button.
+                  Padding(
+                    padding: const EdgeInsetsDirectional.fromSTEB(
+                      20,
+                      4,
+                      20,
+                      20,
+                    ),
+                    child: Row(
+                      children: [
+                        Expanded(
+                          child: Container(
+                            decoration: BoxDecoration(
+                              color: colors.panel.withValues(alpha: 0.4),
+                              borderRadius: BorderRadius.circular(16),
+                              border: Border.all(
+                                color: colors.border.withValues(alpha: 0.5),
+                              ),
+                            ),
+                            child: TextField(
+                              controller: _controller,
+                              style: TextStyle(
+                                color: colors.foreground,
+                                fontSize: 14,
+                              ),
+                              decoration: InputDecoration(
+                                hintText: t.aiCoach.inputHint,
+                                filled: false,
+                                border: InputBorder.none,
+                                enabledBorder: InputBorder.none,
+                                focusedBorder: InputBorder.none,
+                                contentPadding: const EdgeInsets.symmetric(
+                                  horizontal: 18,
+                                  vertical: 13,
+                                ),
+                              ),
+                              onSubmitted: (_) => _sendMessage(),
+                            ),
+                          ),
+                        ),
+                        const SizedBox(width: 10),
+                        _SendButton(enabled: !_isTyping, onTap: _sendMessage),
+                      ],
+                    ),
+                  ),
+                ],
+              ),
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+/// Circular accent send button (white pill look); panelSoft + muted when the
+/// coach is still streaming a reply.
+class _SendButton extends StatelessWidget {
+  const _SendButton({required this.enabled, required this.onTap});
+
+  final bool enabled;
+  final VoidCallback onTap;
+
+  @override
+  Widget build(BuildContext context) {
+    final colors = context.evolveColors;
+    final accent = context.evolveAccent;
+    return InkWell(
+      onTap: enabled ? onTap : null,
+      customBorder: const CircleBorder(),
+      child: AnimatedContainer(
+        duration: const Duration(milliseconds: 200),
+        width: 38,
+        height: 38,
+        alignment: Alignment.center,
+        decoration: BoxDecoration(
+          shape: BoxShape.circle,
+          color: enabled ? accent : colors.panelSoft,
+          boxShadow: enabled
+              ? [
+                  BoxShadow(
+                    color: accent.withValues(alpha: 0.25),
+                    blurRadius: 12,
+                    offset: const Offset(0, 4),
+                  ),
+                ]
+              : null,
+        ),
+        child: Icon(
+          LucideIcons.send,
+          size: 16,
+          color: enabled
+              ? Theme.of(context).colorScheme.onPrimary
+              : colors.muted,
+        ),
+      ),
+    );
+  }
+}
+
+/// Pill suggestion chip: translucent track, muted label that lifts to
+/// foreground on hover (desktop affordance).
+class _SuggestionChip extends StatefulWidget {
+  const _SuggestionChip({required this.label, required this.onTap});
+
+  final String label;
+  final VoidCallback onTap;
+
+  @override
+  State<_SuggestionChip> createState() => _SuggestionChipState();
+}
+
+class _SuggestionChipState extends State<_SuggestionChip> {
+  bool _hovered = false;
+
+  @override
+  Widget build(BuildContext context) {
+    final colors = context.evolveColors;
+    return MouseRegion(
+      cursor: SystemMouseCursors.click,
+      onEnter: (_) => setState(() => _hovered = true),
+      onExit: (_) => setState(() => _hovered = false),
+      child: GestureDetector(
+        onTap: widget.onTap,
+        child: AnimatedContainer(
+          duration: const Duration(milliseconds: 150),
+          alignment: Alignment.center,
+          padding: const EdgeInsets.symmetric(horizontal: 14),
+          decoration: BoxDecoration(
+            color: colors.panel.withValues(alpha: _hovered ? 0.5 : 0.3),
+            borderRadius: BorderRadius.circular(100),
+            border: Border.all(
+              color: _hovered
+                  ? colors.borderStrong
+                  : colors.border.withValues(alpha: 0.5),
+            ),
+          ),
+          child: Text(
+            widget.label,
+            style: TextStyle(
+              color: _hovered ? colors.foreground : colors.muted,
+              fontSize: 12,
+              fontWeight: FontWeight.w600,
+            ),
           ),
         ),
       ),
@@ -590,7 +722,67 @@ class _MessageBubble extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final colors = context.evolveColors;
+    final accent = context.evolveAccent;
     final isUser = message.isUser;
+
+    final bubble = Container(
+      constraints: const BoxConstraints(maxWidth: 640),
+      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+      decoration: BoxDecoration(
+        color: isUser ? accent : colors.panel.withValues(alpha: 0.4),
+        borderRadius: BorderRadiusDirectional.only(
+          topStart: const Radius.circular(18),
+          topEnd: const Radius.circular(18),
+          bottomStart: Radius.circular(isUser ? 18 : 6),
+          bottomEnd: Radius.circular(isUser ? 6 : 18),
+        ),
+        border: isUser
+            ? null
+            : Border.all(color: colors.border.withValues(alpha: 0.5)),
+      ),
+      child: isUser
+          ? Text(
+              message.text,
+              style: TextStyle(
+                color: Theme.of(context).colorScheme.onPrimary,
+                fontSize: 14,
+                fontWeight: FontWeight.w500,
+                height: 1.45,
+              ),
+            )
+          : MarkdownBody(
+              data: message.text,
+              styleSheet: MarkdownStyleSheet(
+                p: TextStyle(
+                  color: colors.foreground,
+                  fontSize: 14,
+                  height: 1.45,
+                ),
+                h1: TextStyle(
+                  color: colors.foreground,
+                  fontWeight: FontWeight.w800,
+                ),
+                h2: TextStyle(
+                  color: colors.foreground,
+                  fontWeight: FontWeight.w800,
+                ),
+                h3: TextStyle(
+                  color: colors.foreground,
+                  fontWeight: FontWeight.w800,
+                ),
+                listBullet: TextStyle(
+                  color: colors.foreground,
+                  fontSize: 14,
+                  height: 1.45,
+                ),
+                strong: TextStyle(
+                  color: colors.foreground,
+                  fontWeight: FontWeight.w700,
+                ),
+              ),
+            ),
+    );
 
     return Padding(
       padding: const EdgeInsets.only(bottom: 16),
@@ -601,82 +793,58 @@ class _MessageBubble extends StatelessWidget {
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           if (!isUser) ...[
-            CircleAvatar(
-              backgroundColor: Theme.of(
-                context,
-              ).colorScheme.primary.withValues(alpha: 0.1),
-              child: Icon(
-                Icons.auto_awesome,
-                color: Theme.of(context).colorScheme.primary,
-                size: 20,
-              ),
+            _AvatarDot(
+              icon: LucideIcons.sparkles,
+              background: EvolveColors.violet.withValues(alpha: 0.12),
+              iconColor: EvolveColors.violet,
             ),
-            const SizedBox(width: 12),
+            const SizedBox(width: 10),
           ],
-          Flexible(
-            child: Container(
-              padding: const EdgeInsets.all(16),
-              decoration: BoxDecoration(
-                color: isUser
-                    ? Theme.of(context).colorScheme.primary
-                    : context.evolveColors.background,
-                borderRadius: BorderRadius.circular(16).copyWith(
-                  bottomRight: isUser
-                      ? const Radius.circular(4)
-                      : const Radius.circular(16),
-                  bottomLeft: !isUser
-                      ? const Radius.circular(4)
-                      : const Radius.circular(16),
-                ),
-                border: isUser
-                    ? null
-                    : Border.all(color: context.evolveColors.border),
-              ),
-              child: isUser
-                  ? Text(
-                      message.text,
-                      style: const TextStyle(color: Colors.white),
-                    )
-                  : MarkdownBody(
-                      data: message.text,
-                      styleSheet: MarkdownStyleSheet(
-                        p: TextStyle(color: context.evolveColors.foreground),
-                        h1: TextStyle(
-                          color: context.evolveColors.foreground,
-                          fontWeight: FontWeight.bold,
-                        ),
-                        h2: TextStyle(
-                          color: context.evolveColors.foreground,
-                          fontWeight: FontWeight.bold,
-                        ),
-                        h3: TextStyle(
-                          color: context.evolveColors.foreground,
-                          fontWeight: FontWeight.bold,
-                        ),
-                        listBullet: TextStyle(
-                          color: context.evolveColors.foreground,
-                        ),
-                        strong: TextStyle(
-                          color: context.evolveColors.foreground,
-                          fontWeight: FontWeight.bold,
-                        ),
-                      ),
-                    ),
-            ),
-          ),
+          Flexible(child: bubble),
           if (isUser) ...[
-            const SizedBox(width: 12),
-            CircleAvatar(
-              backgroundColor: context.evolveColors.background,
-              child: Icon(
-                Icons.person,
-                color: context.evolveColors.foreground,
-                size: 20,
-              ),
+            const SizedBox(width: 10),
+            _AvatarDot(
+              icon: LucideIcons.user,
+              background: colors.panel,
+              iconColor: colors.foreground,
+              bordered: true,
             ),
           ],
         ],
       ),
+    );
+  }
+}
+
+/// Small circular avatar next to a chat bubble (violet sparkles for the coach,
+/// bordered user chip for the person).
+class _AvatarDot extends StatelessWidget {
+  const _AvatarDot({
+    required this.icon,
+    required this.background,
+    required this.iconColor,
+    this.bordered = false,
+  });
+
+  final IconData icon;
+  final Color background;
+  final Color iconColor;
+  final bool bordered;
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      width: 30,
+      height: 30,
+      alignment: Alignment.center,
+      decoration: BoxDecoration(
+        shape: BoxShape.circle,
+        color: background,
+        border: bordered
+            ? Border.all(color: context.evolveColors.border)
+            : null,
+      ),
+      child: Icon(icon, size: 14, color: iconColor),
     );
   }
 }

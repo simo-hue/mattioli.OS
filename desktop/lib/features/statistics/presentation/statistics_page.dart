@@ -9,8 +9,10 @@ import 'package:evolve_desktop/i18n/translations.g.dart';
 import 'package:evolve_desktop/shared/widgets/coach_tutorial.dart';
 import 'package:evolve_desktop/shared/widgets/desktop_page.dart';
 import 'package:evolve_desktop/shared/widgets/evolve_panel.dart';
+import 'package:fl_chart/fl_chart.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:lucide_icons_flutter/lucide_icons.dart';
 
 enum _AnalyticsScope { global, habit }
 
@@ -110,7 +112,7 @@ class _StatisticsPageState extends ConsumerState<StatisticsPage> {
       subtitle: t.stats.pageSubtitle,
       trailing: StatusPill(
         label: t.stats.last30Days,
-        icon: Icons.date_range_outlined,
+        icon: LucideIcons.calendarClock,
       ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
@@ -220,47 +222,109 @@ class _AnalyticsToolbar extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    return Row(
+      children: [
+        Expanded(child: _buildSelectorCard(context)),
+        const SizedBox(width: 12),
+        SizedBox(
+          width: 300,
+          child: EvolveSegmentedControl<_AnalyticsScope>(
+            height: 44,
+            segments: {
+              _AnalyticsScope.global: t.stats.global,
+              _AnalyticsScope.habit: t.stats.singleHabit,
+            },
+            selected: scope,
+            onSelected: onScopeChanged,
+          ),
+        ),
+      ],
+    );
+  }
+
+  /// Mobile's "All Habits" selector card: translucent card with a target icon
+  /// chip tinted by the selected habit color, a bold 15/w700 title and a muted
+  /// disclosure chevron (provided by the embedded dropdown in habit scope).
+  Widget _buildSelectorCard(BuildContext context) {
+    final colors = context.evolveColors;
+    final isHabitScope = scope == _AnalyticsScope.habit;
+    final tint = isHabitScope && selectedHabit != null
+        ? selectedHabit!.color
+        : colors.foreground;
+    final titleStyle = TextStyle(
+      fontSize: 15,
+      fontWeight: FontWeight.w700,
+      letterSpacing: -0.2,
+      color: colors.foreground,
+    );
+
     return EvolvePanel(
-      padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 11),
+      color: colors.panel.withValues(alpha: 0.5),
+      padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 9),
       child: Row(
         children: [
-          SegmentedButton<_AnalyticsScope>(
-            segments: [
-              ButtonSegment(
-                value: _AnalyticsScope.global,
-                icon: const Icon(Icons.public_outlined),
-                label: Text(t.stats.global),
-              ),
-              ButtonSegment(
-                value: _AnalyticsScope.habit,
-                icon: const Icon(Icons.track_changes_outlined),
-                label: Text(t.stats.singleHabit),
-              ),
-            ],
-            selected: {scope},
-            onSelectionChanged: (value) => onScopeChanged(value.single),
+          EvolveIconChip(
+            icon: LucideIcons.target,
+            color: tint,
+            size: 34,
+            iconSize: 16,
           ),
-          const Spacer(),
-          if (scope == _AnalyticsScope.habit) ...[
+          const SizedBox(width: 12),
+          if (!isHabitScope)
+            Expanded(
+              child: Text(
+                t.stats.global,
+                maxLines: 1,
+                overflow: TextOverflow.ellipsis,
+                style: titleStyle,
+              ),
+            )
+          else ...[
+            Expanded(
+              child: selectedHabit == null
+                  ? Text(
+                      t.stats.noHabit,
+                      maxLines: 1,
+                      overflow: TextOverflow.ellipsis,
+                      style: titleStyle.copyWith(color: colors.muted),
+                    )
+                  : DropdownButtonHideUnderline(
+                      child: DropdownButton<String>(
+                        value: selectedHabit!.id,
+                        isExpanded: true,
+                        isDense: true,
+                        icon: Icon(
+                          LucideIcons.chevronDown,
+                          size: 16,
+                          color: colors.muted,
+                        ),
+                        dropdownColor: colors.panelRaised,
+                        borderRadius: BorderRadius.circular(14),
+                        focusColor: Colors.transparent,
+                        style: titleStyle,
+                        items: [
+                          for (final habit in habits)
+                            DropdownMenuItem(
+                              value: habit.id,
+                              child: Text(
+                                habit.title,
+                                maxLines: 1,
+                                overflow: TextOverflow.ellipsis,
+                              ),
+                            ),
+                        ],
+                        onChanged: (id) {
+                          if (id != null) onHabitChanged(id);
+                        },
+                      ),
+                    ),
+            ),
+            const SizedBox(width: 12),
             const StatusPill(
               label: 'Evolve Pro',
               color: EvolveColors.amber,
-              icon: Icons.auto_awesome_outlined,
+              icon: LucideIcons.sparkles,
             ),
-            const SizedBox(width: 10),
-            if (selectedHabit == null)
-              Text(t.stats.noHabit)
-            else
-              DropdownButton<String>(
-                value: selectedHabit!.id,
-                items: [
-                  for (final habit in habits)
-                    DropdownMenuItem(value: habit.id, child: Text(habit.title)),
-                ],
-                onChanged: (id) {
-                  if (id != null) onHabitChanged(id);
-                },
-              ),
           ],
         ],
       ),
@@ -283,16 +347,38 @@ class _TabSelector<T> extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return Wrap(
-      spacing: 8,
-      runSpacing: 8,
+    return EvolveSegmentedControl<T>(
+      height: 44,
+      segments: {for (final value in values) value: labelFor(value)},
+      selected: selected,
+      onSelected: onChanged,
+    );
+  }
+}
+
+/// 22/w800 card heading with a muted subtitle, matching mobile's feature-card
+/// headings ("Performance Evolution").
+class _CardHeading extends StatelessWidget {
+  const _CardHeading({required this.title, required this.subtitle});
+
+  final String title;
+  final String subtitle;
+
+  @override
+  Widget build(BuildContext context) {
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        for (final value in values)
-          ChoiceChip(
-            label: Text(labelFor(value)),
-            selected: value == selected,
-            onSelected: (_) => onChanged(value),
+        Text(title, style: Theme.of(context).textTheme.headlineMedium),
+        const SizedBox(height: 4),
+        Text(
+          subtitle,
+          style: TextStyle(
+            fontSize: 12,
+            fontWeight: FontWeight.w500,
+            color: context.evolveColors.muted.withValues(alpha: 0.8),
           ),
+        ),
       ],
     );
   }
@@ -320,6 +406,7 @@ class _GlobalInfo extends ConsumerWidget {
                   total: snapshot.totalHabits,
                 ),
                 color: context.evolveAccent,
+                icon: LucideIcons.activity,
               ),
             ),
             const SizedBox(width: 14),
@@ -329,6 +416,7 @@ class _GlobalInfo extends ConsumerWidget {
                 value: t.dashboard.streakDaysShort(n: snapshot.bestStreak),
                 detail: _bestHabit(snapshot),
                 color: EvolveColors.amber,
+                icon: LucideIcons.flame,
               ),
             ),
             const SizedBox(width: 14),
@@ -338,6 +426,7 @@ class _GlobalInfo extends ConsumerWidget {
                 value: _criticalDayLabel(criticalDay),
                 detail: t.stats.completePrioritiesFirst,
                 color: EvolveColors.rose,
+                icon: LucideIcons.circleAlert,
               ),
             ),
           ],
@@ -392,64 +481,64 @@ class _GlobalTrend extends ConsumerWidget {
     );
     final best = ref.watch(bestHabitsRpcProvider(timeframe.token)).value;
     final critical = ref.watch(criticalHabitsRpcProvider).value;
+    final delta = _trendDelta(trend);
+    final average = trend.isEmpty
+        ? 0.0
+        : trend.fold<double>(0, (sum, point) => sum + point.value) /
+              trend.length;
+
     return EvolvePanel(
+      radius: 20,
+      padding: const EdgeInsets.all(22),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          SectionHeading(
+          _CardHeading(
             title: t.stats.trendGlobal,
             subtitle: t.stats.trendGlobalSubtitle,
-            trailing: StatusPill(
-              label: t.stats.vsPrevDay(
-                value: (_trendDelta(trend) * 100).round(),
-              ),
-              icon: Icons.trending_up_rounded,
-            ),
           ),
-          const SizedBox(height: 16),
+          const SizedBox(height: 18),
           _TrendTimeframeSelector(
             selected: timeframe,
             onChanged: onTimeframeChanged,
           ),
-          const SizedBox(height: 22),
-          SizedBox(
-            height: 230,
-            child: Row(
-              crossAxisAlignment: CrossAxisAlignment.end,
-              children: [
-                for (final point in trend)
-                  Expanded(
-                    child: Padding(
-                      padding: const EdgeInsets.symmetric(horizontal: 9),
-                      child: Column(
-                        mainAxisAlignment: MainAxisAlignment.end,
-                        children: [
-                          Text('${(point.value * 100).round()}%'),
-                          const SizedBox(height: 8),
-                          Expanded(
-                            child: Align(
-                              alignment: Alignment.bottomCenter,
-                              child: FractionallySizedBox(
-                                heightFactor: point.value.clamp(0.0, 1.0),
-                                child: Container(
-                                  decoration: BoxDecoration(
-                                    color: context.evolveAccent,
-                                    borderRadius: BorderRadius.circular(8),
-                                  ),
-                                ),
-                              ),
-                            ),
-                          ),
-                          const SizedBox(height: 8),
-                          Text(point.label),
-                        ],
-                      ),
-                    ),
-                  ),
-              ],
-            ),
+          const SizedBox(height: 26),
+          Row(
+            crossAxisAlignment: CrossAxisAlignment.end,
+            children: [
+              Text(
+                '${(average * 100).toStringAsFixed(1)}%',
+                style: TextStyle(
+                  fontSize: 38,
+                  fontWeight: FontWeight.w900,
+                  letterSpacing: -1,
+                  height: 1,
+                  color: context.evolveColors.foreground,
+                ),
+              ),
+              const SizedBox(width: 12),
+              Padding(
+                padding: const EdgeInsets.only(bottom: 2),
+                child: StatusPill(
+                  label: t.stats.vsPrevDay(value: (delta * 100).round()),
+                  color: delta >= 0
+                      ? EvolveColors.success
+                      : EvolveColors.destructive,
+                  icon: delta >= 0
+                      ? LucideIcons.trendingUp
+                      : LucideIcons.trendingDown,
+                ),
+              ),
+            ],
           ),
-          const SizedBox(height: 18),
+          const SizedBox(height: 24),
+          SizedBox(
+            height: 220,
+            child: trend.isEmpty
+                ? const SizedBox.shrink()
+                : _TrendLineChart(points: trend),
+          ),
+          const SizedBox(height: 20),
           Row(
             children: [
               Expanded(
@@ -483,6 +572,123 @@ class _GlobalTrend extends ConsumerWidget {
   }
 }
 
+/// Mobile's Performance Evolution chart: white ~3px curved line, no point
+/// dots, faint foreground area gradient, muted 10px axis labels and 0.5-alpha
+/// horizontal gridlines.
+class _TrendLineChart extends StatelessWidget {
+  const _TrendLineChart({required this.points});
+
+  final List<TrendPoint> points;
+
+  @override
+  Widget build(BuildContext context) {
+    final colors = context.evolveColors;
+    final line = colors.foreground;
+    final axisStyle = TextStyle(
+      fontSize: 10,
+      fontWeight: FontWeight.w500,
+      color: colors.muted,
+    );
+    final spots = [
+      for (var i = 0; i < points.length; i++)
+        FlSpot(i.toDouble(), points[i].value.clamp(0.0, 1.0) * 100),
+    ];
+    final maxX = points.length < 2 ? 1.0 : (points.length - 1).toDouble();
+    final labelInterval = ((points.length + 6) ~/ 7).clamp(1, 1000).toDouble();
+
+    return LineChart(
+      LineChartData(
+        minX: 0,
+        maxX: maxX,
+        minY: 0,
+        maxY: 100,
+        gridData: FlGridData(
+          drawVerticalLine: false,
+          horizontalInterval: 25,
+          getDrawingHorizontalLine: (value) => FlLine(
+            color: colors.border.withValues(alpha: 0.5),
+            strokeWidth: 1,
+          ),
+        ),
+        titlesData: FlTitlesData(
+          rightTitles: const AxisTitles(
+            sideTitles: SideTitles(showTitles: false),
+          ),
+          topTitles: const AxisTitles(
+            sideTitles: SideTitles(showTitles: false),
+          ),
+          leftTitles: AxisTitles(
+            sideTitles: SideTitles(
+              showTitles: true,
+              reservedSize: 38,
+              interval: 25,
+              getTitlesWidget: (value, meta) =>
+                  Text('${value.toInt()}%', style: axisStyle),
+            ),
+          ),
+          bottomTitles: AxisTitles(
+            sideTitles: SideTitles(
+              showTitles: true,
+              reservedSize: 28,
+              interval: labelInterval,
+              getTitlesWidget: (value, meta) {
+                if (value % 1 != 0) return const SizedBox.shrink();
+                final index = value.toInt();
+                if (index < 0 || index >= points.length) {
+                  return const SizedBox.shrink();
+                }
+                return Padding(
+                  padding: const EdgeInsets.only(top: 8),
+                  child: Text(points[index].label, style: axisStyle),
+                );
+              },
+            ),
+          ),
+        ),
+        borderData: FlBorderData(show: false),
+        lineTouchData: LineTouchData(
+          touchTooltipData: LineTouchTooltipData(
+            getTooltipColor: (touchedSpot) => colors.panelRaised,
+            getTooltipItems: (touchedSpots) => [
+              for (final spot in touchedSpots)
+                LineTooltipItem(
+                  '${spot.y.toStringAsFixed(1)}%',
+                  TextStyle(
+                    color: colors.foreground,
+                    fontSize: 12,
+                    fontWeight: FontWeight.w700,
+                  ),
+                ),
+            ],
+          ),
+        ),
+        lineBarsData: [
+          LineChartBarData(
+            spots: spots,
+            isCurved: true,
+            preventCurveOverShooting: true,
+            color: line,
+            barWidth: 3,
+            isStrokeCapRound: true,
+            dotData: const FlDotData(show: false),
+            belowBarData: BarAreaData(
+              show: true,
+              gradient: LinearGradient(
+                begin: Alignment.topCenter,
+                end: Alignment.bottomCenter,
+                colors: [
+                  line.withValues(alpha: 0.12),
+                  line.withValues(alpha: 0),
+                ],
+              ),
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+}
+
 class _TrendTimeframeSelector extends StatelessWidget {
   const _TrendTimeframeSelector({
     required this.selected,
@@ -494,17 +700,14 @@ class _TrendTimeframeSelector extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return Wrap(
-      spacing: 8,
-      runSpacing: 8,
-      children: [
+    return EvolveSegmentedControl<_TrendTimeframe>(
+      height: 40,
+      segments: {
         for (final value in _TrendTimeframe.values)
-          ChoiceChip(
-            label: Text(_trendTimeframeLabel(value)),
-            selected: value == selected,
-            onSelected: (_) => onChanged(value),
-          ),
-      ],
+          value: _trendTimeframeLabel(value),
+      },
+      selected: selected,
+      onSelected: onChanged,
     );
   }
 }
@@ -527,9 +730,12 @@ class _GlobalAlerts extends ConsumerWidget {
 
     if (improvement.isEmpty && failures.isEmpty && recovery.isEmpty) {
       return EvolvePanel(
-        child: Text(
-          t.statistics.noDataForAlerts,
-          style: Theme.of(context).textTheme.bodyMedium,
+        padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 30),
+        child: Center(
+          child: Text(
+            t.statistics.noDataForAlerts,
+            style: Theme.of(context).textTheme.bodyMedium,
+          ),
         ),
       );
     }
@@ -539,71 +745,55 @@ class _GlobalAlerts extends ConsumerWidget {
       children: [
         if (improvement.isNotEmpty) ...[
           _AlertsSection(
-            icon: Icons.track_changes_outlined,
+            icon: LucideIcons.target,
+            iconColor: context.evolveColors.foreground,
             title: t.statistics.improvementAreas,
             subtitle: t.statistics.habitsRequiringMoreAttention,
             children: [
-              for (final area in improvement)
-                _AlertCard(
-                  title: area.title,
-                  detail: t.stats.blackDayDetail(day: area.day),
-                  color: EvolveColors.rose,
-                  icon: Icons.error_outline,
-                  trailing: t.stats.successRate(rate: area.rate),
-                ),
+              for (final area in improvement) _ImprovementCard(area: area),
             ],
           ),
-          const SizedBox(height: 18),
+          const SizedBox(height: 22),
         ],
         if (failures.isNotEmpty) ...[
           _AlertsSection(
-            icon: Icons.bar_chart_outlined,
+            icon: LucideIcons.chartBar,
+            iconColor: EvolveColors.amber,
             title: t.statistics.failureAnalysis,
             subtitle: t.statistics.missedDaysPattern,
             children: [
-              for (final failure in failures)
-                _AlertCard(
-                  title: failure.title,
-                  detail: t.stats.failureDetail(
-                    streak: failure.worstStreak,
-                    frequency: failure.frequency,
-                  ),
-                  color: EvolveColors.amber,
-                  icon: Icons.trending_down_rounded,
-                ),
+              for (final failure in failures) _FailureCard(failure: failure),
             ],
           ),
-          const SizedBox(height: 18),
+          const SizedBox(height: 22),
         ],
         if (recovery.isNotEmpty)
           _AlertsSection(
-            icon: Icons.calendar_month_outlined,
+            icon: LucideIcons.calendarClock,
+            iconColor: context.evolveColors.foreground,
             title: t.statistics.recoveryPatterns,
             subtitle: t.statistics.recoverySpeed,
-            children: [
-              for (final item in recovery)
-                _AlertCard(
-                  title: item.title,
-                  detail: t.stats.recoveryDetail(days: item.days),
-                  color: context.evolveAccent,
-                  icon: Icons.schedule_outlined,
-                ),
-            ],
+            children: [for (final item in recovery) _RecoveryCard(item: item)],
           ),
       ],
     );
   }
 }
 
+/// Alert-tab section: tinted lucide icon + 16/w700 title, a muted 13px
+/// subtitle sentence and the cards laid side by side on wide layouts
+/// (mobile shows them as a swipe carousel).
 class _AlertsSection extends StatelessWidget {
   const _AlertsSection({
     required this.icon,
+    required this.iconColor,
     required this.title,
     required this.subtitle,
     required this.children,
   });
 
   final IconData icon;
+  final Color iconColor;
   final String title;
   final String subtitle;
   final List<Widget> children;
@@ -615,16 +805,299 @@ class _AlertsSection extends StatelessWidget {
       children: [
         Row(
           children: [
-            Icon(icon, size: 18, color: context.evolveColors.muted),
+            Icon(icon, size: 17, color: iconColor),
             const SizedBox(width: 8),
-            Text(title, style: Theme.of(context).textTheme.titleMedium),
+            Expanded(
+              child: Text(
+                title,
+                style: TextStyle(
+                  fontSize: 16,
+                  fontWeight: FontWeight.w700,
+                  letterSpacing: -0.2,
+                  color: context.evolveColors.foreground,
+                ),
+              ),
+            ),
           ],
         ),
-        const SizedBox(height: 2),
-        Text(subtitle, style: Theme.of(context).textTheme.bodySmall),
-        const SizedBox(height: 12),
-        for (final child in children) ...[child, const SizedBox(height: 10)],
+        const SizedBox(height: 4),
+        Text(
+          subtitle,
+          style: TextStyle(
+            fontSize: 13,
+            fontWeight: FontWeight.w500,
+            color: context.evolveColors.muted,
+          ),
+        ),
+        const SizedBox(height: 14),
+        LayoutBuilder(
+          builder: (context, constraints) {
+            if (constraints.maxWidth < 760 || children.length == 1) {
+              return Column(
+                children: [
+                  for (var i = 0; i < children.length; i++) ...[
+                    if (i > 0) const SizedBox(height: 12),
+                    children[i],
+                  ],
+                ],
+              );
+            }
+            return Row(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                for (var i = 0; i < children.length; i++) ...[
+                  if (i > 0) const SizedBox(width: 14),
+                  Expanded(child: children[i]),
+                ],
+              ],
+            );
+          },
+        ),
       ],
+    );
+  }
+}
+
+/// Small colored habit dot used as the leading marker of alert cards.
+class _HabitDot extends StatelessWidget {
+  const _HabitDot({required this.color});
+
+  final Color color;
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      width: 8,
+      height: 8,
+      decoration: BoxDecoration(color: color, shape: BoxShape.circle),
+    );
+  }
+}
+
+/// Uppercase 10px micro-label above a bold semantic-colored value
+/// ("WORST STREAK" / "FREQUENCY" on mobile's alert cards).
+class _MicroStat extends StatelessWidget {
+  const _MicroStat({
+    required this.label,
+    required this.value,
+    required this.color,
+  });
+
+  final String label;
+  final String value;
+  final Color color;
+
+  @override
+  Widget build(BuildContext context) {
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Text(
+          label,
+          style: TextStyle(
+            fontSize: 10,
+            fontWeight: FontWeight.w600,
+            letterSpacing: 0.5,
+            color: context.evolveColors.muted,
+          ),
+        ),
+        const SizedBox(height: 3),
+        Text(
+          value,
+          style: TextStyle(
+            fontSize: 16,
+            fontWeight: FontWeight.w800,
+            letterSpacing: -0.2,
+            color: color,
+          ),
+        ),
+      ],
+    );
+  }
+}
+
+/// Mobile's improvement-area card: habit dot + title, red success rate at the
+/// trailing edge and the "BLACK DAY" micro-stat underneath.
+class _ImprovementCard extends StatelessWidget {
+  const _ImprovementCard({required this.area});
+
+  final _ImprovementArea area;
+
+  @override
+  Widget build(BuildContext context) {
+    return EvolvePanel(
+      padding: const EdgeInsets.all(16),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Row(
+            children: [
+              _HabitDot(color: area.color),
+              const SizedBox(width: 8),
+              Expanded(
+                child: Text(
+                  area.title,
+                  maxLines: 1,
+                  overflow: TextOverflow.ellipsis,
+                  style: TextStyle(
+                    fontSize: 14,
+                    fontWeight: FontWeight.w700,
+                    letterSpacing: -0.2,
+                    color: context.evolveColors.foreground,
+                  ),
+                ),
+              ),
+              const SizedBox(width: 10),
+              Text(
+                t.stats.successRate(rate: area.rate),
+                style: const TextStyle(
+                  fontSize: 11,
+                  fontWeight: FontWeight.w700,
+                  color: EvolveColors.destructive,
+                ),
+              ),
+            ],
+          ),
+          const SizedBox(height: 16),
+          Row(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              const Icon(
+                LucideIcons.circleAlert,
+                size: 14,
+                color: EvolveColors.destructive,
+              ),
+              const SizedBox(width: 8),
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(
+                      t.statistics.blackDay,
+                      style: const TextStyle(
+                        fontSize: 10,
+                        fontWeight: FontWeight.w800,
+                        letterSpacing: 0.5,
+                        color: EvolveColors.destructive,
+                      ),
+                    ),
+                    const SizedBox(height: 2),
+                    Text(
+                      area.day,
+                      style: TextStyle(
+                        fontSize: 13,
+                        fontWeight: FontWeight.w700,
+                        color: context.evolveColors.foreground,
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+            ],
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+/// Mobile's failure-analysis card: habit dot + title with the WORST STREAK /
+/// FREQUENCY micro-stats row underneath.
+class _FailureCard extends StatelessWidget {
+  const _FailureCard({required this.failure});
+
+  final _FailureItem failure;
+
+  @override
+  Widget build(BuildContext context) {
+    return EvolvePanel(
+      padding: const EdgeInsets.all(16),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Row(
+            children: [
+              _HabitDot(color: failure.color),
+              const SizedBox(width: 8),
+              Expanded(
+                child: Text(
+                  failure.title,
+                  maxLines: 1,
+                  overflow: TextOverflow.ellipsis,
+                  style: TextStyle(
+                    fontSize: 15,
+                    fontWeight: FontWeight.w700,
+                    letterSpacing: -0.2,
+                    color: context.evolveColors.foreground,
+                  ),
+                ),
+              ),
+            ],
+          ),
+          const SizedBox(height: 18),
+          Row(
+            mainAxisAlignment: MainAxisAlignment.spaceBetween,
+            children: [
+              _MicroStat(
+                label: t.statistics.worstStreak,
+                value: '${failure.worstStreak} ${t.statistics.daysShortUnit}',
+                color: EvolveColors.destructive,
+              ),
+              _MicroStat(
+                label: t.statistics.frequency,
+                value: '~${failure.frequency}/${t.statistics.perMonthUnit}',
+                color: EvolveColors.amber,
+              ),
+            ],
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+class _RecoveryCard extends StatelessWidget {
+  const _RecoveryCard({required this.item});
+
+  final _RecoveryItem item;
+
+  @override
+  Widget build(BuildContext context) {
+    return EvolvePanel(
+      padding: const EdgeInsets.all(16),
+      child: Row(
+        children: [
+          _HabitDot(color: item.color),
+          const SizedBox(width: 10),
+          Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(
+                  item.title,
+                  maxLines: 1,
+                  overflow: TextOverflow.ellipsis,
+                  style: TextStyle(
+                    fontSize: 15,
+                    fontWeight: FontWeight.w700,
+                    letterSpacing: -0.2,
+                    color: context.evolveColors.foreground,
+                  ),
+                ),
+                const SizedBox(height: 3),
+                Text(
+                  t.stats.recoveryDetail(days: item.days),
+                  style: TextStyle(
+                    fontSize: 12,
+                    fontWeight: FontWeight.w500,
+                    color: context.evolveColors.muted.withValues(alpha: 0.8),
+                  ),
+                ),
+              ],
+            ),
+          ),
+        ],
+      ),
     );
   }
 }
@@ -669,26 +1142,25 @@ class _GlobalHabitsState extends ConsumerState<_GlobalHabits> {
     final habitsById = {for (final h in widget.snapshot.habits) h.id: h};
 
     return EvolvePanel(
+      radius: 20,
+      padding: const EdgeInsets.all(22),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          SectionHeading(
+          _CardHeading(
             title: t.stats.performancePerHabit,
             subtitle: t.stats.performancePerHabitSubtitle,
           ),
-          const SizedBox(height: 12),
-          Wrap(
-            spacing: 8,
-            children: [
-              for (final s in _HabitSort.values)
-                ChoiceChip(
-                  label: Text(_sortLabel(s)),
-                  selected: _sort == s,
-                  onSelected: (_) => setState(() => _sort = s),
-                ),
-            ],
+          const SizedBox(height: 16),
+          ConstrainedBox(
+            constraints: const BoxConstraints(maxWidth: 380),
+            child: EvolveSegmentedControl<_HabitSort>(
+              segments: {for (final s in _HabitSort.values) s: _sortLabel(s)},
+              selected: _sort,
+              onSelected: (s) => setState(() => _sort = s),
+            ),
           ),
-          const SizedBox(height: 15),
+          const SizedBox(height: 18),
           statsAsync.when(
             loading: () => const Padding(
               padding: EdgeInsets.symmetric(vertical: 24),
@@ -715,7 +1187,13 @@ class _GlobalHabitsState extends ConsumerState<_GlobalHabits> {
                           habitsById[row['goal_id']]?.color ??
                           context.evolveAccent,
                     ),
-                    if (row != sorted.last) const Divider(height: 22),
+                    if (row != sorted.last)
+                      Divider(
+                        height: 22,
+                        color: context.evolveColors.border.withValues(
+                          alpha: 0.5,
+                        ),
+                      ),
                   ],
                 ],
               );
@@ -741,14 +1219,20 @@ class _HabitStatsRow extends StatelessWidget {
     final title = (row['title'] as String?) ?? '';
     return Row(
       children: [
-        Container(
-          width: 9,
-          height: 9,
-          decoration: BoxDecoration(color: color, shape: BoxShape.circle),
-        ),
+        _HabitDot(color: color),
         const SizedBox(width: 11),
         Expanded(
-          child: Text(title, maxLines: 1, overflow: TextOverflow.ellipsis),
+          child: Text(
+            title,
+            maxLines: 1,
+            overflow: TextOverflow.ellipsis,
+            style: TextStyle(
+              fontSize: 14,
+              fontWeight: FontWeight.w600,
+              letterSpacing: -0.2,
+              color: context.evolveColors.foreground,
+            ),
+          ),
         ),
         SizedBox(
           width: 150,
@@ -763,7 +1247,15 @@ class _HabitStatsRow extends StatelessWidget {
         const SizedBox(width: 12),
         SizedBox(
           width: 42,
-          child: Text('${rate.round()}%', textAlign: TextAlign.end),
+          child: Text(
+            '${rate.round()}%',
+            textAlign: TextAlign.end,
+            style: TextStyle(
+              fontSize: 13,
+              fontWeight: FontWeight.w700,
+              color: context.evolveColors.foreground,
+            ),
+          ),
         ),
         const SizedBox(width: 16),
         _StatBadge(
@@ -807,11 +1299,12 @@ class _StatBadge extends StatelessWidget {
           ),
         ),
         Text(
-          label,
+          label.toUpperCase(),
           style: TextStyle(
-            color: context.evolveColors.subtle,
+            color: context.evolveColors.muted.withValues(alpha: 0.8),
             fontSize: 9,
-            fontWeight: FontWeight.w700,
+            fontWeight: FontWeight.w600,
+            letterSpacing: 0.5,
           ),
         ),
       ],
@@ -839,24 +1332,27 @@ class _GlobalMood extends StatelessWidget {
                 value: '${averageMood.toStringAsFixed(1)}/10',
                 detail: t.stats.checkInsAvailable(count: moods.length),
                 color: EvolveColors.violet,
+                icon: LucideIcons.smile,
               ),
             ),
-            SizedBox(width: 14),
+            const SizedBox(width: 14),
             Expanded(
               child: _Metric(
                 label: t.stats.avgEnergy,
                 value: '${averageEnergy.toStringAsFixed(1)}/10',
                 detail: t.stats.checkInsAvailable(count: moods.length),
                 color: EvolveColors.amber,
+                icon: LucideIcons.zap,
               ),
             ),
-            SizedBox(width: 14),
+            const SizedBox(width: 14),
             Expanded(
               child: _Metric(
                 label: t.stats.resilientHabit,
                 value: _bestHabit(snapshot),
                 detail: t.stats.completedEvenHardDays,
                 color: context.evolveAccent,
+                icon: LucideIcons.heartPulse,
               ),
             ),
           ],
@@ -908,6 +1404,7 @@ class _HabitOverview extends ConsumerWidget {
                   total: totalActiveDays,
                 ),
                 color: habit.color,
+                icon: LucideIcons.target,
               ),
             ),
             const SizedBox(width: 14),
@@ -917,6 +1414,7 @@ class _HabitOverview extends ConsumerWidget {
                 value: t.dashboard.streakDaysShort(n: currentStreak),
                 detail: t.stats.currentStreakDetail,
                 color: EvolveColors.amber,
+                icon: LucideIcons.flame,
               ),
             ),
             const SizedBox(width: 14),
@@ -926,6 +1424,7 @@ class _HabitOverview extends ConsumerWidget {
                 value: '$missedDays',
                 detail: t.stats.trend30Detail,
                 color: EvolveColors.rose,
+                icon: LucideIcons.circleAlert,
               ),
             ),
           ],
@@ -1116,24 +1615,7 @@ class _YearlyHabitHeatmap extends StatelessWidget {
                 color: EvolveColors.rose,
               ),
               const Spacer(),
-              Container(
-                padding: const EdgeInsets.symmetric(
-                  horizontal: 10,
-                  vertical: 5,
-                ),
-                decoration: BoxDecoration(
-                  color: context.evolveAccent.withValues(alpha: 0.12),
-                  borderRadius: BorderRadius.circular(8),
-                ),
-                child: Text(
-                  t.stats.successRate(rate: rate),
-                  style: TextStyle(
-                    color: context.evolveAccent,
-                    fontSize: 12,
-                    fontWeight: FontWeight.w700,
-                  ),
-                ),
-              ),
+              StatusPill(label: t.stats.successRate(rate: rate)),
             ],
           ),
           const SizedBox(height: 17),
@@ -1184,14 +1666,16 @@ class _CalendarSummaryStat extends StatelessWidget {
             color: color,
             fontSize: 20,
             fontWeight: FontWeight.w800,
+            letterSpacing: -0.5,
           ),
         ),
         Text(
-          label,
+          label.toUpperCase(),
           style: TextStyle(
-            color: context.evolveColors.subtle,
+            color: context.evolveColors.muted.withValues(alpha: 0.8),
             fontSize: 10,
-            fontWeight: FontWeight.w700,
+            fontWeight: FontWeight.w600,
+            letterSpacing: 0.5,
           ),
         ),
       ],
@@ -1229,11 +1713,16 @@ class _HabitCorrelationsPanel extends ConsumerWidget {
       ..sort((a, b) => a.percentage.compareTo(b.percentage));
 
     return EvolvePanel(
-      color: const Color(0xFF151522),
+      glowColor: EvolveColors.violet,
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          const Icon(Icons.hub_outlined, color: EvolveColors.violet),
+          const EvolveIconChip(
+            icon: LucideIcons.brain,
+            color: EvolveColors.violet,
+            size: 36,
+            iconSize: 18,
+          ),
           const SizedBox(height: 13),
           SectionHeading(
             title: t.statistics.correlationsWith,
@@ -1250,7 +1739,9 @@ class _HabitCorrelationsPanel extends ConsumerWidget {
               t.statistics.positiveCorrelations,
               style: const TextStyle(
                 color: Color(0xFF10B981),
+                fontSize: 13,
                 fontWeight: FontWeight.w700,
+                letterSpacing: -0.1,
               ),
             ),
             const SizedBox(height: 10),
@@ -1273,7 +1764,9 @@ class _HabitCorrelationsPanel extends ConsumerWidget {
               t.statistics.negativeCorrelations,
               style: const TextStyle(
                 color: EvolveColors.rose,
+                fontSize: 13,
                 fontWeight: FontWeight.w700,
+                letterSpacing: -0.1,
               ),
             ),
             const SizedBox(height: 10),
@@ -1326,7 +1819,17 @@ class _HabitPerformance extends ConsumerWidget {
               for (var index = 0; index < labels.length; index++) ...[
                 Row(
                   children: [
-                    SizedBox(width: 44, child: Text(labels[index])),
+                    SizedBox(
+                      width: 44,
+                      child: Text(
+                        labels[index],
+                        style: TextStyle(
+                          fontSize: 12,
+                          fontWeight: FontWeight.w600,
+                          color: context.evolveColors.muted,
+                        ),
+                      ),
+                    ),
                     Expanded(
                       child: LinearProgressIndicator(
                         value: _rpcWeekdayCompletion(
@@ -1349,6 +1852,11 @@ class _HabitPerformance extends ConsumerWidget {
                       width: 36,
                       child: Text(
                         '${(_rpcWeekdayCompletion(rpc, index + 1, fallback: _habitWeekdayCompletion(snapshot, habit.id, index + 1)) * 100).round()}%',
+                        style: TextStyle(
+                          fontSize: 12,
+                          fontWeight: FontWeight.w700,
+                          color: context.evolveColors.foreground,
+                        ),
                       ),
                     ),
                   ],
@@ -1369,7 +1877,7 @@ class _HabitPerformance extends ConsumerWidget {
               total: extremes.strongest!.total,
             ),
             color: context.evolveAccent,
-            icon: Icons.emoji_events_outlined,
+            icon: LucideIcons.trophy,
           ),
         ],
         if (extremes.weakest != null) ...[
@@ -1383,7 +1891,7 @@ class _HabitPerformance extends ConsumerWidget {
               total: extremes.weakest!.total,
             ),
             color: EvolveColors.rose,
-            icon: Icons.warning_amber_rounded,
+            icon: LucideIcons.circleAlert,
           ),
         ],
       ],
@@ -1451,28 +1959,32 @@ class _HabitImprovement extends ConsumerWidget {
             children: [
               Row(
                 children: [
-                  const Icon(
-                    Icons.trending_down_rounded,
-                    color: EvolveColors.rose,
-                    size: 20,
+                  const EvolveIconChip(
+                    icon: LucideIcons.trendingDown,
+                    color: EvolveColors.destructive,
+                    size: 36,
+                    iconSize: 18,
                   ),
-                  const SizedBox(width: 8),
-                  Text(
-                    t.statistics.worstNegativeStreak,
-                    style: Theme.of(context).textTheme.titleMedium,
+                  const SizedBox(width: 12),
+                  Expanded(
+                    child: Text(
+                      t.statistics.worstNegativeStreak,
+                      style: Theme.of(context).textTheme.titleLarge,
+                    ),
                   ),
                 ],
               ),
-              const SizedBox(height: 14),
+              const SizedBox(height: 16),
               Row(
                 crossAxisAlignment: CrossAxisAlignment.center,
                 children: [
                   Text(
                     '$worstNegativeDays',
                     style: const TextStyle(
-                      color: EvolveColors.rose,
+                      color: EvolveColors.destructive,
                       fontSize: 44,
                       fontWeight: FontWeight.w800,
+                      letterSpacing: -1,
                       height: 1,
                     ),
                   ),
@@ -1507,7 +2019,7 @@ class _HabitImprovement extends ConsumerWidget {
             children: [
               Text(
                 t.statistics.brokenStreaks,
-                style: Theme.of(context).textTheme.titleMedium,
+                style: Theme.of(context).textTheme.titleLarge,
               ),
               const SizedBox(height: 14),
               if (broken.isEmpty)
@@ -1524,14 +2036,16 @@ class _HabitImprovement extends ConsumerWidget {
                         height: 40,
                         alignment: Alignment.center,
                         decoration: BoxDecoration(
-                          color: EvolveColors.rose.withValues(alpha: 0.12),
+                          color: EvolveColors.destructive.withValues(
+                            alpha: 0.12,
+                          ),
                           shape: BoxShape.circle,
                         ),
                         child: Text(
                           '${b.days}',
                           style: const TextStyle(
-                            color: EvolveColors.rose,
-                            fontWeight: FontWeight.w700,
+                            color: EvolveColors.destructive,
+                            fontWeight: FontWeight.w800,
                           ),
                         ),
                       ),
@@ -1542,7 +2056,12 @@ class _HabitImprovement extends ConsumerWidget {
                           children: [
                             Text(
                               t.stats.brokenStreakItem(days: b.days),
-                              style: Theme.of(context).textTheme.bodyMedium,
+                              style: TextStyle(
+                                fontSize: 14,
+                                fontWeight: FontWeight.w600,
+                                letterSpacing: -0.2,
+                                color: context.evolveColors.foreground,
+                              ),
                             ),
                             const SizedBox(height: 2),
                             Text(
@@ -1582,9 +2101,12 @@ class _HabitMood extends ConsumerWidget {
 
     if (correlation == null) {
       return EvolvePanel(
-        child: Text(
-          t.stats.moreLogsNeeded,
-          style: Theme.of(context).textTheme.bodyMedium,
+        padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 30),
+        child: Center(
+          child: Text(
+            t.stats.moreLogsNeeded,
+            style: Theme.of(context).textTheme.bodyMedium,
+          ),
         ),
       );
     }
@@ -1602,6 +2124,7 @@ class _HabitMood extends ConsumerWidget {
                     ? t.statistics.positive
                     : t.statistics.neutral,
                 color: EvolveColors.violet,
+                icon: LucideIcons.heartPulse,
               ),
             ),
             const SizedBox(width: 14),
@@ -1613,6 +2136,7 @@ class _HabitMood extends ConsumerWidget {
                     ? t.statistics.high
                     : t.statistics.low,
                 color: context.evolveAccent,
+                icon: LucideIcons.zap,
               ),
             ),
           ],
@@ -1628,6 +2152,7 @@ class _HabitMood extends ConsumerWidget {
                 color: correlation.avgMoodDone < 4
                     ? EvolveColors.rose
                     : context.evolveAccent,
+                icon: LucideIcons.smile,
               ),
             ),
             const SizedBox(width: 14),
@@ -1639,28 +2164,17 @@ class _HabitMood extends ConsumerWidget {
                 color: correlation.avgEnergyDone < 4
                     ? EvolveColors.rose
                     : EvolveColors.amber,
+                icon: LucideIcons.zap,
               ),
             ),
           ],
         ),
         if (correlation.resilience > 50) ...[
           const SizedBox(height: 12),
-          Row(
-            children: [
-              const Icon(
-                Icons.bolt_outlined,
-                size: 16,
-                color: EvolveColors.violet,
-              ),
-              const SizedBox(width: 6),
-              Text(
-                t.statistics.resilient,
-                style: const TextStyle(
-                  color: EvolveColors.violet,
-                  fontWeight: FontWeight.w600,
-                ),
-              ),
-            ],
+          StatusPill(
+            label: t.statistics.resilient,
+            color: EvolveColors.violet,
+            icon: LucideIcons.zap,
           ),
         ],
         const SizedBox(height: 18),
@@ -1668,10 +2182,12 @@ class _HabitMood extends ConsumerWidget {
         const SizedBox(height: 16),
         _PerformancePerLevelPanel(correlation: correlation),
         const SizedBox(height: 16),
-        Text(
-          t.statistics.moodEnergyAnalysis,
-          style: Theme.of(context).textTheme.bodySmall,
-          textAlign: TextAlign.center,
+        Center(
+          child: Text(
+            t.statistics.moodEnergyAnalysis,
+            style: Theme.of(context).textTheme.bodySmall,
+            textAlign: TextAlign.center,
+          ),
         ),
       ],
     );
@@ -1693,7 +2209,7 @@ class _CompletedVsMissedPanel extends StatelessWidget {
         children: [
           Text(
             t.statistics.completedVsMissed,
-            style: Theme.of(context).textTheme.titleMedium,
+            style: Theme.of(context).textTheme.titleLarge,
           ),
           const SizedBox(height: 20),
           SizedBox(
@@ -1814,7 +2330,7 @@ class _PerformancePerLevelPanel extends StatelessWidget {
         children: [
           Text(
             t.statistics.performancePerLevel,
-            style: Theme.of(context).textTheme.titleMedium,
+            style: Theme.of(context).textTheme.titleLarge,
           ),
           const SizedBox(height: 18),
           _LevelBar(
@@ -1856,7 +2372,11 @@ class _LevelBar extends StatelessWidget {
             Text(label, style: Theme.of(context).textTheme.bodyMedium),
             Text(
               '$percentage%',
-              style: TextStyle(color: color, fontWeight: FontWeight.w700),
+              style: TextStyle(
+                color: color,
+                fontSize: 13,
+                fontWeight: FontWeight.w800,
+              ),
             ),
           ],
         ),
@@ -1875,18 +2395,22 @@ class _LevelBar extends StatelessWidget {
   }
 }
 
+/// Metric tile: uppercase micro-label + tinted icon chip on the first row and
+/// a big w800 figure underneath (mobile stat-card recipe).
 class _Metric extends StatelessWidget {
   const _Metric({
     required this.label,
     required this.value,
     required this.detail,
     required this.color,
+    this.icon,
   });
 
   final String label;
   final String value;
   final String detail;
   final Color color;
+  final IconData? icon;
 
   @override
   Widget build(BuildContext context) {
@@ -1894,18 +2418,56 @@ class _Metric extends StatelessWidget {
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          Text(label, style: Theme.of(context).textTheme.bodySmall),
-          const SizedBox(height: 8),
+          Row(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Expanded(
+                child: Padding(
+                  padding: const EdgeInsets.only(top: 4),
+                  child: Text(
+                    label.toUpperCase(),
+                    maxLines: 2,
+                    overflow: TextOverflow.ellipsis,
+                    style: TextStyle(
+                      fontSize: 10,
+                      fontWeight: FontWeight.w800,
+                      letterSpacing: 1.2,
+                      color: context.evolveColors.muted.withValues(alpha: 0.8),
+                    ),
+                  ),
+                ),
+              ),
+              if (icon != null) ...[
+                const SizedBox(width: 10),
+                EvolveIconChip(
+                  icon: icon!,
+                  color: color,
+                  size: 30,
+                  iconSize: 15,
+                ),
+              ],
+            ],
+          ),
+          const SizedBox(height: 10),
           Text(
             value,
+            maxLines: 1,
+            overflow: TextOverflow.ellipsis,
             style: TextStyle(
               color: color,
-              fontSize: 24,
+              fontSize: 26,
               fontWeight: FontWeight.w800,
+              letterSpacing: -1,
+              height: 1.05,
             ),
           ),
-          const SizedBox(height: 4),
-          Text(detail, style: Theme.of(context).textTheme.bodySmall),
+          const SizedBox(height: 6),
+          Text(
+            detail,
+            maxLines: 2,
+            overflow: TextOverflow.ellipsis,
+            style: Theme.of(context).textTheme.bodySmall,
+          ),
         ],
       ),
     );
@@ -1987,11 +2549,16 @@ class _CorrelationPanel extends ConsumerWidget {
     correlations.sort((a, b) => b.percentage.compareTo(a.percentage));
 
     return EvolvePanel(
-      color: const Color(0xFF151522),
+      glowColor: EvolveColors.violet,
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          const Icon(Icons.hub_outlined, color: EvolveColors.violet),
+          const EvolveIconChip(
+            icon: LucideIcons.brain,
+            color: EvolveColors.violet,
+            size: 36,
+            iconSize: 18,
+          ),
           const SizedBox(height: 13),
           SectionHeading(
             title: t.stats.keyCorrelations,
@@ -1999,7 +2566,10 @@ class _CorrelationPanel extends ConsumerWidget {
           ),
           const SizedBox(height: 16),
           if (correlations.isEmpty)
-            Text(t.stats.moreLogsNeeded)
+            Text(
+              t.stats.moreLogsNeeded,
+              style: Theme.of(context).textTheme.bodySmall,
+            )
           else
             for (final correlation in correlations.take(2)) ...[
               _InlineInsight(
@@ -2029,18 +2599,41 @@ class _InlineInsight extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Container(
-      padding: const EdgeInsets.all(11),
+      padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
       decoration: BoxDecoration(
         color: context.evolveColors.panelRaised,
-        borderRadius: BorderRadius.circular(9),
-        border: Border.all(color: context.evolveColors.border),
+        borderRadius: BorderRadius.circular(12),
+        border: Border.all(
+          color: context.evolveColors.border.withValues(alpha: 0.5),
+        ),
       ),
       child: Row(
         children: [
-          Expanded(child: Text(title)),
-          Text(
-            value,
-            style: TextStyle(color: color, fontWeight: FontWeight.w800),
+          Expanded(
+            child: Text(
+              title,
+              maxLines: 1,
+              overflow: TextOverflow.ellipsis,
+              style: TextStyle(
+                fontSize: 12,
+                fontWeight: FontWeight.w500,
+                color: context.evolveColors.muted.withValues(alpha: 0.8),
+              ),
+            ),
+          ),
+          const SizedBox(width: 10),
+          Flexible(
+            child: Text(
+              value,
+              maxLines: 1,
+              overflow: TextOverflow.ellipsis,
+              style: TextStyle(
+                color: color,
+                fontSize: 13,
+                fontWeight: FontWeight.w800,
+                letterSpacing: -0.2,
+              ),
+            ),
           ),
         ],
       ),
@@ -2054,39 +2647,46 @@ class _AlertCard extends StatelessWidget {
     required this.detail,
     required this.color,
     required this.icon,
-    this.trailing,
   });
 
   final String title;
   final String detail;
   final Color color;
   final IconData icon;
-  final String? trailing;
 
   @override
   Widget build(BuildContext context) {
     return EvolvePanel(
+      padding: const EdgeInsets.all(16),
       child: Row(
         children: [
-          Icon(icon, color: color, size: 24),
+          EvolveIconChip(icon: icon, color: color, size: 38, iconSize: 18),
           const SizedBox(width: 14),
           Expanded(
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                Text(title, style: Theme.of(context).textTheme.titleMedium),
-                const SizedBox(height: 4),
-                Text(detail, style: Theme.of(context).textTheme.bodyMedium),
+                Text(
+                  title,
+                  style: TextStyle(
+                    fontSize: 15,
+                    fontWeight: FontWeight.w700,
+                    letterSpacing: -0.2,
+                    color: context.evolveColors.foreground,
+                  ),
+                ),
+                const SizedBox(height: 3),
+                Text(
+                  detail,
+                  style: TextStyle(
+                    fontSize: 12,
+                    fontWeight: FontWeight.w500,
+                    color: context.evolveColors.muted.withValues(alpha: 0.8),
+                  ),
+                ),
               ],
             ),
           ),
-          if (trailing != null) ...[
-            const SizedBox(width: 12),
-            Text(
-              trailing!,
-              style: TextStyle(color: color, fontWeight: FontWeight.w800),
-            ),
-          ],
         ],
       ),
     );
@@ -2099,9 +2699,12 @@ class _EmptyHabitAnalytics extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return EvolvePanel(
-      child: Text(
-        t.stats.createHabitForAnalysis,
-        style: Theme.of(context).textTheme.bodyMedium,
+      padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 30),
+      child: Center(
+        child: Text(
+          t.stats.createHabitForAnalysis,
+          style: Theme.of(context).textTheme.bodyMedium,
+        ),
       ),
     );
   }
@@ -2147,7 +2750,7 @@ List<TrendPoint> _rpcTrendPoints(
 ) {
   if (rows.isEmpty) return fallback;
   // The engine returns denser series for month/year/all; keep the last N points
-  // so the bar chart stays readable (weekly = 7, otherwise ~14 buckets).
+  // so the line chart stays readable (weekly = 7, otherwise ~14 buckets).
   final maxBars = switch (timeframe) {
     _TrendTimeframe.week => 7,
     _ => 14,
@@ -2218,10 +2821,12 @@ class _ImprovementArea {
     required this.title,
     required this.rate,
     required this.day,
+    required this.color,
   });
   final String title;
   final int rate;
   final String day;
+  final Color color;
 }
 
 class _FailureItem {
@@ -2229,16 +2834,23 @@ class _FailureItem {
     required this.title,
     required this.worstStreak,
     required this.frequency,
+    required this.color,
   });
   final String title;
   final int worstStreak;
   final int frequency;
+  final Color color;
 }
 
 class _RecoveryItem {
-  const _RecoveryItem({required this.title, required this.days});
+  const _RecoveryItem({
+    required this.title,
+    required this.days,
+    required this.color,
+  });
   final String title;
   final int days;
+  final Color color;
 }
 
 /// Lowest-rate habits and their worst weekday. Mirrors mobile's
@@ -2255,14 +2867,15 @@ List<_ImprovementArea> _improvementAreas(
   for (final stat in sorted.take(3)) {
     final goalId = stat['goal_id'] as String?;
     if (goalId == null) continue;
-    final title = _habitTitleFor(snapshot, goalId);
-    if (title == null) continue;
+    final habit = snapshot.habits.where((h) => h.id == goalId).firstOrNull;
+    if (habit == null) continue;
     final worstDow = (analytics[goalId]?['worst_dow'] as num?)?.toInt() ?? 1;
     result.add(
       _ImprovementArea(
-        title: title,
+        title: habit.title,
         rate: (stat['rate'] as num? ?? 0).round(),
         day: _weekdayName(worstDow),
+        color: habit.color,
       ),
     );
   }
@@ -2285,14 +2898,21 @@ List<_FailureItem> _failureAnalysis(
   for (final stat in sorted.take(3)) {
     final goalId = stat['goal_id'] as String?;
     if (goalId == null) continue;
-    final title = _habitTitleFor(snapshot, goalId);
-    if (title == null) continue;
+    final habit = snapshot.habits.where((h) => h.id == goalId).firstOrNull;
+    if (habit == null) continue;
     final missed = (stat['missed_days'] as num? ?? 0).toInt();
     final totalDays = (stat['total_active_days'] as num? ?? 1).toInt();
     final freq = totalDays > 0 ? (missed / totalDays * 30).round() : 0;
     final worst = (stat['worst_streak'] as num? ?? 0).toInt();
     if (worst <= 0) continue;
-    result.add(_FailureItem(title: title, worstStreak: worst, frequency: freq));
+    result.add(
+      _FailureItem(
+        title: habit.title,
+        worstStreak: worst,
+        frequency: freq,
+        color: habit.color,
+      ),
+    );
   }
   return result;
 }
@@ -2308,7 +2928,9 @@ List<_RecoveryItem> _recoveryPatterns(
     final recovery =
         (analytics[habit.id]?['avg_recovery_days'] as num?)?.round() ?? 0;
     if (recovery <= 0) continue;
-    result.add(_RecoveryItem(title: habit.title, days: recovery));
+    result.add(
+      _RecoveryItem(title: habit.title, days: recovery, color: habit.color),
+    );
   }
   result.sort((a, b) => a.days.compareTo(b.days));
   return result.take(3).toList();

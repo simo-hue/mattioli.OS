@@ -5,6 +5,7 @@ import 'package:evolve_desktop/shared/widgets/color_picker_dialog.dart';
 import 'package:evolve_desktop/shared/widgets/evolve_dialog.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:lucide_icons_flutter/lucide_icons.dart';
 
 class CreateHabitDialog extends ConsumerStatefulWidget {
   const CreateHabitDialog({super.key});
@@ -18,16 +19,20 @@ class _CreateHabitDialogState extends ConsumerState<CreateHabitDialog> {
   final _categoryController = TextEditingController(
     text: t.createHabit.defaultCategory,
   );
-  Color _selectedColor = EvolveColors.cyan;
+  // Mobile "Add Habit" preset palette (habit_management_modal.dart).
+  static const _presetColors = [
+    Color(0xFF30A661),
+    Color(0xFF3B82F6),
+    Color(0xFF7C3AED),
+    Color(0xFFEC4899),
+    Color(0xFFEF4444),
+    Color(0xFFF59E0B),
+    Color(0xFF10B981),
+  ];
+
+  Color _selectedColor = _presetColors[0];
   final List<int> _selectedDays = [1, 2, 3, 4, 5, 6, 7];
   bool _isLoading = false;
-
-  final List<Color> _colors = [
-    EvolveColors.cyan,
-    EvolveColors.violet,
-    EvolveColors.amber,
-    EvolveColors.rose,
-  ];
 
   @override
   void dispose() {
@@ -76,70 +81,76 @@ class _CreateHabitDialogState extends ConsumerState<CreateHabitDialog> {
 
     return EvolveAlertDialog(
       maxWidth: 480,
-      icon: Icons.add_task_rounded,
+      icon: LucideIcons.plus,
       title: Text(t.createHabit.title),
       subtitle: t.createHabit.subtitle,
       content: Column(
         mainAxisSize: MainAxisSize.min,
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
+          _FieldLabel(t.form.title),
+          const SizedBox(height: 8),
           TextField(
             controller: _titleController,
-            decoration: InputDecoration(
-              labelText: t.form.title,
-              hintText: t.createHabit.titleHint,
-            ),
+            decoration: InputDecoration(hintText: t.createHabit.titleHint),
             autofocus: true,
             textInputAction: TextInputAction.next,
           ),
           const SizedBox(height: 16),
+          _FieldLabel(t.form.category),
+          const SizedBox(height: 8),
           TextField(
             controller: _categoryController,
-            decoration: InputDecoration(
-              labelText: t.form.category,
-              hintText: t.createHabit.categoryHint,
-            ),
+            decoration: InputDecoration(hintText: t.createHabit.categoryHint),
             textInputAction: TextInputAction.done,
             onSubmitted: (_) => _save(),
           ),
-          const SizedBox(height: 24),
-          Text(t.form.color, style: Theme.of(context).textTheme.titleSmall),
-          const SizedBox(height: 8),
+          const SizedBox(height: 20),
+          _FieldLabel(t.form.color),
+          const SizedBox(height: 10),
           Wrap(
-            spacing: 8,
-            runSpacing: 8,
+            spacing: 10,
+            runSpacing: 10,
             children: [
-              for (final color in _colors)
+              for (final color in _presetColors)
                 GestureDetector(
                   onTap: () => setState(() => _selectedColor = color),
-                  child: Container(
-                    width: 32,
-                    height: 32,
-                    decoration: BoxDecoration(
-                      color: color,
-                      shape: BoxShape.circle,
-                      border: _selectedColor == color
-                          ? Border.all(
-                              color: context.evolveColors.foreground,
-                              width: 2,
-                            )
-                          : null,
+                  child: MouseRegion(
+                    cursor: SystemMouseCursors.click,
+                    child: Container(
+                      width: 28,
+                      height: 28,
+                      decoration: BoxDecoration(
+                        color: color,
+                        shape: BoxShape.circle,
+                        border: Border.all(
+                          color: _selectedColor == color
+                              ? Colors.white
+                              : Colors.transparent,
+                          width: 2,
+                        ),
+                        boxShadow: _selectedColor == color
+                            ? [
+                                BoxShadow(
+                                  color: color.withValues(alpha: 0.5),
+                                  blurRadius: 8,
+                                ),
+                              ]
+                            : null,
+                      ),
                     ),
                   ),
                 ),
               CustomColorSwatch(
                 initial: _selectedColor,
-                isSelected: !_colors.contains(_selectedColor),
+                isSelected: !_presetColors.contains(_selectedColor),
                 onPicked: (color) => setState(() => _selectedColor = color),
               ),
             ],
           ),
-          const SizedBox(height: 24),
-          Text(
-            t.createHabit.weeklyFrequency,
-            style: Theme.of(context).textTheme.titleSmall,
-          ),
-          const SizedBox(height: 8),
+          const SizedBox(height: 20),
+          _FieldLabel(t.createHabit.weeklyFrequency),
+          const SizedBox(height: 10),
           Row(
             mainAxisAlignment: MainAxisAlignment.spaceBetween,
             children: List.generate(7, (index) {
@@ -147,25 +158,43 @@ class _CreateHabitDialogState extends ConsumerState<CreateHabitDialog> {
               final isSelected = _selectedDays.contains(day);
               return InkWell(
                 onTap: () => _toggleDay(day),
-                borderRadius: BorderRadius.circular(8),
+                borderRadius: BorderRadius.circular(10),
                 child: AnimatedContainer(
-                  duration: const Duration(milliseconds: 150),
+                  duration: const Duration(milliseconds: 250),
+                  curve: Curves.easeInOut,
                   width: 36,
                   height: 36,
                   alignment: Alignment.center,
                   decoration: BoxDecoration(
                     color: isSelected
                         ? context.evolveAccent
-                        : context.evolveColors.panelRaised,
-                    borderRadius: BorderRadius.circular(8),
+                        : context.evolveColors.panel.withValues(alpha: 0.3),
+                    borderRadius: BorderRadius.circular(10),
+                    border: Border.all(
+                      color: isSelected
+                          ? Colors.transparent
+                          : context.evolveColors.border.withValues(alpha: 0.5),
+                    ),
+                    boxShadow: isSelected
+                        ? [
+                            BoxShadow(
+                              color: Colors.black.withValues(alpha: 0.3),
+                              blurRadius: 8,
+                              offset: const Offset(0, 2),
+                            ),
+                          ]
+                        : null,
                   ),
                   child: Text(
                     days[index],
                     style: TextStyle(
+                      fontSize: 12,
                       color: isSelected
-                          ? Colors.black
-                          : context.evolveColors.foreground,
-                      fontWeight: FontWeight.w600,
+                          ? Theme.of(context).colorScheme.onPrimary
+                          : context.evolveColors.muted,
+                      fontWeight: isSelected
+                          ? FontWeight.w800
+                          : FontWeight.w600,
                     ),
                   ),
                 ),
@@ -189,6 +218,26 @@ class _CreateHabitDialogState extends ConsumerState<CreateHabitDialog> {
               : Text(t.form.add),
         ),
       ],
+    );
+  }
+}
+
+/// Uppercase micro-label above a form field ("HABIT NAME" on mobile).
+class _FieldLabel extends StatelessWidget {
+  const _FieldLabel(this.label);
+
+  final String label;
+
+  @override
+  Widget build(BuildContext context) {
+    return Text(
+      label.toUpperCase(),
+      style: TextStyle(
+        fontSize: 10,
+        fontWeight: FontWeight.w600,
+        color: context.evolveColors.muted,
+        letterSpacing: 0.5,
+      ),
     );
   }
 }

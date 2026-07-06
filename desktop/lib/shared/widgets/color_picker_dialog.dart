@@ -1,8 +1,8 @@
-import 'package:evolve_desktop/app/theme/evolve_theme.dart';
 import 'package:evolve_desktop/i18n/translations.g.dart';
 import 'package:evolve_desktop/shared/widgets/evolve_dialog.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_colorpicker/flutter_colorpicker.dart';
+import 'package:lucide_icons_flutter/lucide_icons.dart';
 
 /// The rainbow ring shown on the "custom color" swatch.
 const _customSwatchGradient = SweepGradient(
@@ -24,7 +24,7 @@ Future<Color?> showEvolveColorPicker(BuildContext context, Color initial) {
   return showEvolveDialog<Color>(
     context: context,
     builder: (context) => EvolveAlertDialog(
-      icon: Icons.palette_outlined,
+      icon: LucideIcons.palette,
       title: Text(t.form.color),
       content: SingleChildScrollView(
         child: ColorPicker(
@@ -48,14 +48,14 @@ Future<Color?> showEvolveColorPicker(BuildContext context, Color initial) {
   );
 }
 
-/// A 32×32 swatch that opens the full color picker. Highlighted when the current
+/// A swatch that opens the full color picker. Highlighted when the current
 /// selection is a custom color (i.e. not one of the presets).
 class CustomColorSwatch extends StatelessWidget {
   const CustomColorSwatch({
     required this.isSelected,
     required this.onPicked,
     required this.initial,
-    this.size = 32,
+    this.size = 28,
     super.key,
   });
 
@@ -66,22 +66,34 @@ class CustomColorSwatch extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return GestureDetector(
-      onTap: () async {
-        final picked = await showEvolveColorPicker(context, initial);
-        if (picked != null) onPicked(picked);
-      },
-      child: Container(
-        width: size,
-        height: size,
-        decoration: BoxDecoration(
-          gradient: _customSwatchGradient,
-          shape: BoxShape.circle,
-          border: isSelected
-              ? Border.all(color: context.evolveColors.foreground, width: 2)
-              : null,
+    return MouseRegion(
+      cursor: SystemMouseCursors.click,
+      child: GestureDetector(
+        onTap: () async {
+          final picked = await showEvolveColorPicker(context, initial);
+          if (picked != null) onPicked(picked);
+        },
+        child: Container(
+          width: size,
+          height: size,
+          decoration: BoxDecoration(
+            gradient: _customSwatchGradient,
+            shape: BoxShape.circle,
+            border: Border.all(
+              color: isSelected ? Colors.white : Colors.transparent,
+              width: 2,
+            ),
+            boxShadow: isSelected
+                ? [
+                    BoxShadow(
+                      color: initial.withValues(alpha: 0.5),
+                      blurRadius: 8,
+                    ),
+                  ]
+                : null,
+          ),
+          child: Icon(LucideIcons.plus, size: size * 0.5, color: Colors.white),
         ),
-        child: Icon(Icons.tune_rounded, size: size * 0.46, color: Colors.white),
       ),
     );
   }

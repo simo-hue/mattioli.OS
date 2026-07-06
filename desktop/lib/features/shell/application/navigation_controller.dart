@@ -1,6 +1,7 @@
 import 'package:evolve_desktop/i18n/translations.g.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:lucide_icons_flutter/lucide_icons.dart';
 
 enum DesktopSection {
   overview,
@@ -29,12 +30,12 @@ enum DesktopSection {
   };
 
   IconData get icon => switch (this) {
-    overview => Icons.space_dashboard_outlined,
-    habits => Icons.check_circle_outline_rounded,
-    insights => Icons.query_stats_rounded,
-    goals => Icons.flag_outlined,
-    coach => Icons.auto_awesome_outlined,
-    settings => Icons.settings_outlined,
+    overview => LucideIcons.house,
+    habits => LucideIcons.listTodo,
+    insights => LucideIcons.activity,
+    goals => LucideIcons.chartPie,
+    coach => LucideIcons.sparkles,
+    settings => LucideIcons.settings,
   };
 }
 

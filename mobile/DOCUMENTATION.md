@@ -2390,3 +2390,17 @@ iCloud Sync core is implemented, unit-tested (160), and iOS-compiling. Remaining
     - **Tests**: `test/performance_color_test.dart` (hue mapping + clamp; alpha;
       byte-identical equivalence with the old cell color). Suite **194/194
       green**; `flutter analyze` clean. Colors best confirmed on device.
+
+- **2026-07-06: Home monthly-calendar day cell — cleaner, professional look**
+  - *Details*: Each day cell rendered up to 8 tiny green squares (one per
+    completed habit) that appeared as you logged habits — visually noisy and
+    redundant with the cell's performance-color background. Removed them; the
+    cell is now just a centered day number over the performance-colored
+    background/border (+ the existing 100%-complete glow).
+  - *Tech Notes*:
+    - `habit_calendar_widget.dart` `_DayCell`: removed the habit-dots `Wrap` and
+      its `dotsToShow` computation; the day number is now centered (`Center`)
+      instead of top-aligned. Dropped the now-unused `validHabits` / `dayRecord`
+      fields + constructor args (they only fed the dots). No behavior change to
+      the performance coloring. Suite **194/194 green**; `flutter analyze` clean.
+      Visual best confirmed on device.

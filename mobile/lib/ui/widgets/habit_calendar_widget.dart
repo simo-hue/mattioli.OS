@@ -290,8 +290,6 @@ class _HabitCalendarWidgetState extends ConsumerState<HabitCalendarWidget> {
                           isEditableDay: editableDay,
                           hasActivity: hasActivity,
                           completionPct: completionPct,
-                          validHabits: validHabits,
-                          dayRecord: dayRecord,
                           isPrivacy: isPrivacy,
                           onTap: future
                               ? null
@@ -363,8 +361,6 @@ class _DayCell extends StatelessWidget {
   final bool isEditableDay;
   final bool hasActivity;
   final double completionPct;
-  final List<Goal> validHabits;
-  final Map<String, String> dayRecord;
   final bool isPrivacy;
   final VoidCallback? onTap;
 
@@ -375,8 +371,6 @@ class _DayCell extends StatelessWidget {
     required this.isEditableDay,
     required this.hasActivity,
     required this.completionPct,
-    required this.validHabits,
-    required this.dayRecord,
     required this.isPrivacy,
     this.onTap,
   });
@@ -418,11 +412,6 @@ class _DayCell extends StatelessWidget {
       borderColor = Colors.transparent;
     }
 
-    final dotsToShow = validHabits
-        .where((h) => dayRecord[h.id] == 'done')
-        .take(8)
-        .toList();
-
     return GestureDetector(
       onTap: onTap,
       child: AnimatedOpacity(
@@ -447,57 +436,29 @@ class _DayCell extends StatelessWidget {
                     ]
                   : null,
             ),
-            child: Column(
-              mainAxisAlignment: MainAxisAlignment.start,
-              children: [
-                const SizedBox(height: 4),
-                // Day number
-                AnimatedDefaultTextStyle(
-                  duration: const Duration(milliseconds: 200),
-                  style: TextStyle(
-                    fontFamily: 'Inter',
-                    fontSize: 11,
-                    fontWeight: isToday ? FontWeight.w700 : FontWeight.w500,
-                    color: isToday
-                        ? Theme.of(context).colorScheme.primary
-                        : hasActivity
-                            ? context.appColors.foreground
-                            : context.appColors.mutedForeground,
-                  ),
-                  child: Text(
-                    '$day',
-                    style: isPrivacy
-                        ? const TextStyle(color: Colors.transparent)
-                        : null,
-                  ),
+            // A single centered day number over the performance-colored cell —
+            // the per-habit "dots" were removed (redundant with the color and
+            // visually noisy).
+            child: Center(
+              child: AnimatedDefaultTextStyle(
+                duration: const Duration(milliseconds: 200),
+                style: TextStyle(
+                  fontFamily: 'Inter',
+                  fontSize: 11,
+                  fontWeight: isToday ? FontWeight.w700 : FontWeight.w500,
+                  color: isToday
+                      ? Theme.of(context).colorScheme.primary
+                      : hasActivity
+                          ? context.appColors.foreground
+                          : context.appColors.mutedForeground,
                 ),
-
-                const SizedBox(height: 2),
-
-                // Habit dots
-                if (dotsToShow.isNotEmpty)
-                  Padding(
-                    padding: const EdgeInsets.symmetric(horizontal: 3),
-                    child: Wrap(
-                      alignment: WrapAlignment.center,
-                      spacing: 2,
-                      runSpacing: 2,
-                      children: dotsToShow.map((h) {
-                        return Opacity(
-                          opacity: isPrivacy ? 0.2 : 1.0,
-                          child: Container(
-                            width: 4,
-                            height: 4,
-                            decoration: BoxDecoration(
-                              color: context.appColors.success,
-                              borderRadius: BorderRadius.circular(1),
-                            ),
-                          ),
-                        );
-                      }).toList(),
-                    ),
-                  ),
-              ],
+                child: Text(
+                  '$day',
+                  style: isPrivacy
+                      ? const TextStyle(color: Colors.transparent)
+                      : null,
+                ),
+              ),
             ),
           ),
         ),

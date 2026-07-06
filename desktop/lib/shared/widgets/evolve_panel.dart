@@ -21,7 +21,16 @@ class EvolvePanel extends StatelessWidget {
         border: Border.all(color: context.evolveColors.border),
         borderRadius: BorderRadius.circular(16),
       ),
-      child: Padding(padding: padding, child: child),
+      // A transparent Material sits in front of the panel fill so any
+      // ListTile-family children (ListTile, Checkbox/Switch/RadioListTile)
+      // paint their ink splashes and selected backgrounds on a visible
+      // surface instead of behind the DecoratedBox color.
+      child: Material(
+        type: MaterialType.transparency,
+        borderRadius: BorderRadius.circular(16),
+        clipBehavior: Clip.antiAlias,
+        child: Padding(padding: padding, child: child),
+      ),
     );
   }
 }

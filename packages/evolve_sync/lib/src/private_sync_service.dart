@@ -9,6 +9,13 @@ class PrivateSyncStatus {
   final CloudAccountStatus? account;
   final String? message;
 
+  /// Whether the E2E sync key is readable from the (shared) iCloud Keychain.
+  /// False on a device that enabled sync but is still waiting for iCloud
+  /// Keychain to deliver the key — e.g. a Mac paired with an iPhone whose app
+  /// predates the shared keychain group. Lets the UI show a "waiting for
+  /// iCloud Keychain" state instead of a misleading "up to date".
+  final bool hasKey;
+
   /// How many remote records the just-finished sync applied locally. Lets a
   /// caller know whether to refresh the in-memory data providers (>0). 0 for
   /// status() / no-op.
@@ -20,6 +27,7 @@ class PrivateSyncStatus {
     this.lastSyncedAt,
     this.account,
     this.message,
+    this.hasKey = true,
     this.appliedChanges = 0,
   });
 
@@ -29,6 +37,7 @@ class PrivateSyncStatus {
         lastSyncedAt = null,
         account = null,
         message = 'iCloud sync is not available on this platform.',
+        hasKey = false,
         appliedChanges = 0;
 }
 

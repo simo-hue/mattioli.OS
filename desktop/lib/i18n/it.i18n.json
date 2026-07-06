@@ -37,6 +37,23 @@
     "exportDoneClipboard": "Il JSON è negli appunti: Linux non supporta la condivisione file.",
     "exportDoneShare": "Il JSON è stato inviato al selettore di condivisione."
   },
+  "icloudSync": {
+    "title": "Sincronizzazione iCloud",
+    "enableTitle": "Abilita sincronizzazione iCloud",
+    "syncNow": "Sincronizza ora",
+    "disclosureTitle": "Crittografia end-to-end",
+    "disclosureBody": "I tuoi dati privati si sincronizzano solo tramite il tuo account iCloud, con crittografia end-to-end — mai attraverso i nostri server. La chiave di crittografia risiede nel tuo Portachiavi iCloud; se disattivi il Portachiavi iCloud, i dati sincronizzati non potranno essere recuperati.",
+    "disclosureAccept": "Abilita",
+    "statusIdle": "Aggiornato",
+    "statusSyncing": "Sincronizzazione…",
+    "statusOff": "Sincronizzazione disattivata",
+    "statusNoAccount": "Accedi a iCloud per sincronizzare",
+    "statusUnavailable": "iCloud non è disponibile al momento",
+    "statusWaitingKeychain": "In attesa del Portachiavi iCloud — assicurati che l'app sul tuo iPhone sia aggiornata",
+    "lastSyncedNever": "Mai sincronizzato",
+    "lastSyncedAt": "Ultima sincronizzazione {time}",
+    "deleteSyncNote": "La sincronizzazione iCloud è attiva: verrà eliminata anche la copia sincronizzata nel tuo iCloud e la sincronizzazione verrà disattivata. Gli altri dispositivi conservano la loro copia locale — esegui questa operazione su ciascun dispositivo per eliminare tutto ovunque."
+  },
   "namePrompt": {
     "title": "Come ti chiami?",
     "subtitle": "Inserisci il tuo nome per personalizzare la dashboard.",

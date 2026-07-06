@@ -42,6 +42,7 @@ class TranslationsIt extends Translations with BaseTranslations<AppLocale, Trans
 	@override late final _Translations$auth$it auth = _Translations$auth$it._(_root);
 	@override late final _Translations$privateAi$it privateAi = _Translations$privateAi$it._(_root);
 	@override late final _Translations$privateData$it privateData = _Translations$privateData$it._(_root);
+	@override late final _Translations$icloudSync$it icloudSync = _Translations$icloudSync$it._(_root);
 	@override late final _Translations$namePrompt$it namePrompt = _Translations$namePrompt$it._(_root);
 	@override late final _Translations$nav$it nav = _Translations$nav$it._(_root);
 	@override late final _Translations$shell$it shell = _Translations$shell$it._(_root);
@@ -140,6 +141,30 @@ class _Translations$privateData$it extends Translations$privateData$en {
 	@override String get exportDoneTitle => 'Export completato';
 	@override String get exportDoneClipboard => 'Il JSON è negli appunti: Linux non supporta la condivisione file.';
 	@override String get exportDoneShare => 'Il JSON è stato inviato al selettore di condivisione.';
+}
+
+// Path: icloudSync
+class _Translations$icloudSync$it extends Translations$icloudSync$en {
+	_Translations$icloudSync$it._(TranslationsIt root) : this._root = root, super.internal(root);
+
+	final TranslationsIt _root; // ignore: unused_field
+
+	// Translations
+	@override String get title => 'Sincronizzazione iCloud';
+	@override String get enableTitle => 'Abilita sincronizzazione iCloud';
+	@override String get syncNow => 'Sincronizza ora';
+	@override String get disclosureTitle => 'Crittografia end-to-end';
+	@override String get disclosureBody => 'I tuoi dati privati si sincronizzano solo tramite il tuo account iCloud, con crittografia end-to-end — mai attraverso i nostri server. La chiave di crittografia risiede nel tuo Portachiavi iCloud; se disattivi il Portachiavi iCloud, i dati sincronizzati non potranno essere recuperati.';
+	@override String get disclosureAccept => 'Abilita';
+	@override String get statusIdle => 'Aggiornato';
+	@override String get statusSyncing => 'Sincronizzazione…';
+	@override String get statusOff => 'Sincronizzazione disattivata';
+	@override String get statusNoAccount => 'Accedi a iCloud per sincronizzare';
+	@override String get statusUnavailable => 'iCloud non è disponibile al momento';
+	@override String get statusWaitingKeychain => 'In attesa del Portachiavi iCloud — assicurati che l\'app sul tuo iPhone sia aggiornata';
+	@override String get lastSyncedNever => 'Mai sincronizzato';
+	@override String lastSyncedAt({required Object time}) => 'Ultima sincronizzazione ${time}';
+	@override String get deleteSyncNote => 'La sincronizzazione iCloud è attiva: verrà eliminata anche la copia sincronizzata nel tuo iCloud e la sincronizzazione verrà disattivata. Gli altri dispositivi conservano la loro copia locale — esegui questa operazione su ciascun dispositivo per eliminare tutto ovunque.';
 }
 
 // Path: namePrompt
@@ -1278,6 +1303,21 @@ extension on TranslationsIt {
 			'privateData.exportDoneTitle' => 'Export completato',
 			'privateData.exportDoneClipboard' => 'Il JSON è negli appunti: Linux non supporta la condivisione file.',
 			'privateData.exportDoneShare' => 'Il JSON è stato inviato al selettore di condivisione.',
+			'icloudSync.title' => 'Sincronizzazione iCloud',
+			'icloudSync.enableTitle' => 'Abilita sincronizzazione iCloud',
+			'icloudSync.syncNow' => 'Sincronizza ora',
+			'icloudSync.disclosureTitle' => 'Crittografia end-to-end',
+			'icloudSync.disclosureBody' => 'I tuoi dati privati si sincronizzano solo tramite il tuo account iCloud, con crittografia end-to-end — mai attraverso i nostri server. La chiave di crittografia risiede nel tuo Portachiavi iCloud; se disattivi il Portachiavi iCloud, i dati sincronizzati non potranno essere recuperati.',
+			'icloudSync.disclosureAccept' => 'Abilita',
+			'icloudSync.statusIdle' => 'Aggiornato',
+			'icloudSync.statusSyncing' => 'Sincronizzazione…',
+			'icloudSync.statusOff' => 'Sincronizzazione disattivata',
+			'icloudSync.statusNoAccount' => 'Accedi a iCloud per sincronizzare',
+			'icloudSync.statusUnavailable' => 'iCloud non è disponibile al momento',
+			'icloudSync.statusWaitingKeychain' => 'In attesa del Portachiavi iCloud — assicurati che l\'app sul tuo iPhone sia aggiornata',
+			'icloudSync.lastSyncedNever' => 'Mai sincronizzato',
+			'icloudSync.lastSyncedAt' => ({required Object time}) => 'Ultima sincronizzazione ${time}',
+			'icloudSync.deleteSyncNote' => 'La sincronizzazione iCloud è attiva: verrà eliminata anche la copia sincronizzata nel tuo iCloud e la sincronizzazione verrà disattivata. Gli altri dispositivi conservano la loro copia locale — esegui questa operazione su ciascun dispositivo per eliminare tutto ovunque.',
 			'namePrompt.title' => 'Come ti chiami?',
 			'namePrompt.subtitle' => 'Inserisci il tuo nome per personalizzare la dashboard.',
 			'namePrompt.hint' => 'Es. Simo',
@@ -1743,6 +1783,8 @@ extension on TranslationsIt {
 			'aiCoach.systemPersona' => 'Sei Evolve AI Coach, un assistente virtuale per la disciplina personale.',
 			'aiCoach.habitsHeader' => 'ABITUDINI ATTIVE:',
 			'aiCoach.noActiveHabits' => 'Nessuna abitudine attiva.',
+			_ => null,
+		} ?? switch (path) {
 			'aiCoach.habitLine' => ({required Object title, required Object done, required Object streak}) => '${title} (Completata oggi: ${done}, Streak: ${streak})',
 			'aiCoach.goalsHeader' => 'OBIETTIVI:',
 			'aiCoach.noActiveGoals' => 'Nessun obiettivo a lungo termine attivo.',
@@ -1758,8 +1800,6 @@ extension on TranslationsIt {
 			'aiCoach.inputHint' => 'Chiedi consigli al tuo Coach...',
 			'aiCoach.defaultUserName' => 'utente',
 			'aiCoach.userNameLine' => ({required Object userName}) => '- Nome: ${userName}',
-			_ => null,
-		} ?? switch (path) {
 			'aiCoach.activeGoalsCount' => ({required Object count}) => '- Obiettivi attivi: ${count}',
 			'aiCoach.completedGoalsCount' => ({required Object count}) => '- Obiettivi completati: ${count}',
 			'aiCoach.todayCompletion' => ({required Object completed, required Object total}) => '- Abitudini oggi: ${completed} completate su ${total} totali.',

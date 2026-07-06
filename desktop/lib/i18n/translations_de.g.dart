@@ -42,6 +42,7 @@ class TranslationsDe extends Translations with BaseTranslations<AppLocale, Trans
 	@override late final _Translations$auth$de auth = _Translations$auth$de._(_root);
 	@override late final _Translations$privateAi$de privateAi = _Translations$privateAi$de._(_root);
 	@override late final _Translations$privateData$de privateData = _Translations$privateData$de._(_root);
+	@override late final _Translations$icloudSync$de icloudSync = _Translations$icloudSync$de._(_root);
 	@override late final _Translations$namePrompt$de namePrompt = _Translations$namePrompt$de._(_root);
 	@override late final _Translations$nav$de nav = _Translations$nav$de._(_root);
 	@override late final _Translations$shell$de shell = _Translations$shell$de._(_root);
@@ -140,6 +141,30 @@ class _Translations$privateData$de extends Translations$privateData$en {
 	@override String get exportDoneTitle => 'Export abgeschlossen';
 	@override String get exportDoneClipboard => 'Das JSON ist in der Zwischenablage: Linux unterstützt keine Dateifreigabe.';
 	@override String get exportDoneShare => 'Das JSON wurde an die Teilen-Auswahl gesendet.';
+}
+
+// Path: icloudSync
+class _Translations$icloudSync$de extends Translations$icloudSync$en {
+	_Translations$icloudSync$de._(TranslationsDe root) : this._root = root, super.internal(root);
+
+	final TranslationsDe _root; // ignore: unused_field
+
+	// Translations
+	@override String get title => 'iCloud-Synchronisierung';
+	@override String get enableTitle => 'iCloud-Synchronisierung aktivieren';
+	@override String get syncNow => 'Jetzt synchronisieren';
+	@override String get disclosureTitle => 'Ende-zu-Ende-verschlüsselt';
+	@override String get disclosureBody => 'Deine privaten Daten werden ausschließlich über deinen eigenen iCloud-Account synchronisiert, Ende-zu-Ende-verschlüsselt — niemals über unsere Server. Der Verschlüsselungsschlüssel liegt in deinem iCloud-Schlüsselbund; wenn du den iCloud-Schlüsselbund deaktivierst, können synchronisierte Daten nicht wiederhergestellt werden.';
+	@override String get disclosureAccept => 'Aktivieren';
+	@override String get statusIdle => 'Aktuell';
+	@override String get statusSyncing => 'Synchronisiere…';
+	@override String get statusOff => 'Synchronisierung aus';
+	@override String get statusNoAccount => 'Bei iCloud anmelden, um zu synchronisieren';
+	@override String get statusUnavailable => 'iCloud ist derzeit nicht verfügbar';
+	@override String get statusWaitingKeychain => 'Warte auf den iCloud-Schlüsselbund — stelle sicher, dass die App auf deinem iPhone aktuell ist';
+	@override String get lastSyncedNever => 'Noch nie synchronisiert';
+	@override String lastSyncedAt({required Object time}) => 'Zuletzt synchronisiert ${time}';
+	@override String get deleteSyncNote => 'Die iCloud-Synchronisierung ist aktiv: Dabei wird auch die synchronisierte Kopie in deiner iCloud gelöscht und die Synchronisierung deaktiviert. Andere Geräte behalten ihre lokale Kopie — führe dies auf jedem Gerät aus, um überall zu löschen.';
 }
 
 // Path: namePrompt
@@ -1278,6 +1303,21 @@ extension on TranslationsDe {
 			'privateData.exportDoneTitle' => 'Export abgeschlossen',
 			'privateData.exportDoneClipboard' => 'Das JSON ist in der Zwischenablage: Linux unterstützt keine Dateifreigabe.',
 			'privateData.exportDoneShare' => 'Das JSON wurde an die Teilen-Auswahl gesendet.',
+			'icloudSync.title' => 'iCloud-Synchronisierung',
+			'icloudSync.enableTitle' => 'iCloud-Synchronisierung aktivieren',
+			'icloudSync.syncNow' => 'Jetzt synchronisieren',
+			'icloudSync.disclosureTitle' => 'Ende-zu-Ende-verschlüsselt',
+			'icloudSync.disclosureBody' => 'Deine privaten Daten werden ausschließlich über deinen eigenen iCloud-Account synchronisiert, Ende-zu-Ende-verschlüsselt — niemals über unsere Server. Der Verschlüsselungsschlüssel liegt in deinem iCloud-Schlüsselbund; wenn du den iCloud-Schlüsselbund deaktivierst, können synchronisierte Daten nicht wiederhergestellt werden.',
+			'icloudSync.disclosureAccept' => 'Aktivieren',
+			'icloudSync.statusIdle' => 'Aktuell',
+			'icloudSync.statusSyncing' => 'Synchronisiere…',
+			'icloudSync.statusOff' => 'Synchronisierung aus',
+			'icloudSync.statusNoAccount' => 'Bei iCloud anmelden, um zu synchronisieren',
+			'icloudSync.statusUnavailable' => 'iCloud ist derzeit nicht verfügbar',
+			'icloudSync.statusWaitingKeychain' => 'Warte auf den iCloud-Schlüsselbund — stelle sicher, dass die App auf deinem iPhone aktuell ist',
+			'icloudSync.lastSyncedNever' => 'Noch nie synchronisiert',
+			'icloudSync.lastSyncedAt' => ({required Object time}) => 'Zuletzt synchronisiert ${time}',
+			'icloudSync.deleteSyncNote' => 'Die iCloud-Synchronisierung ist aktiv: Dabei wird auch die synchronisierte Kopie in deiner iCloud gelöscht und die Synchronisierung deaktiviert. Andere Geräte behalten ihre lokale Kopie — führe dies auf jedem Gerät aus, um überall zu löschen.',
 			'namePrompt.title' => 'Wie heißt du?',
 			'namePrompt.subtitle' => 'Gib deinen Namen ein, um das Dashboard zu personalisieren.',
 			'namePrompt.hint' => 'z. B. Simo',
@@ -1743,6 +1783,8 @@ extension on TranslationsDe {
 			'aiCoach.systemPersona' => 'Du bist Evolve AI Coach, ein virtueller Assistent für persönliche Disziplin.',
 			'aiCoach.habitsHeader' => 'AKTIVE GEWOHNHEITEN:',
 			'aiCoach.noActiveHabits' => 'Keine aktiven Gewohnheiten.',
+			_ => null,
+		} ?? switch (path) {
 			'aiCoach.habitLine' => ({required Object title, required Object done, required Object streak}) => '${title} (Heute erledigt: ${done}, Serie: ${streak})',
 			'aiCoach.goalsHeader' => 'ZIELE:',
 			'aiCoach.noActiveGoals' => 'Keine aktiven langfristigen Ziele.',
@@ -1758,8 +1800,6 @@ extension on TranslationsDe {
 			'aiCoach.inputHint' => 'Frag deinen Coach um Rat...',
 			'aiCoach.defaultUserName' => 'Nutzer',
 			'aiCoach.userNameLine' => ({required Object userName}) => '- Name: ${userName}',
-			_ => null,
-		} ?? switch (path) {
 			'aiCoach.activeGoalsCount' => ({required Object count}) => '- Aktive Ziele: ${count}',
 			'aiCoach.completedGoalsCount' => ({required Object count}) => '- Abgeschlossene Ziele: ${count}',
 			'aiCoach.todayCompletion' => ({required Object completed, required Object total}) => '- Gewohnheiten heute: ${completed} von insgesamt ${total} abgeschlossen.',

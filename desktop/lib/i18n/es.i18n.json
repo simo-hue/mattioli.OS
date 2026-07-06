@@ -37,6 +37,23 @@
     "exportDoneClipboard": "El JSON está en el portapapeles: Linux no admite compartir archivos.",
     "exportDoneShare": "El JSON se envió al selector de uso compartido."
   },
+  "icloudSync": {
+    "title": "Sincronización de iCloud",
+    "enableTitle": "Activar sincronización de iCloud",
+    "syncNow": "Sincronizar ahora",
+    "disclosureTitle": "Cifrado de extremo a extremo",
+    "disclosureBody": "Tus datos privados se sincronizan únicamente a través de tu propia cuenta de iCloud, con cifrado de extremo a extremo, nunca a través de nuestros servidores. La clave de cifrado reside en tu Llavero de iCloud; si desactivas el Llavero de iCloud, los datos sincronizados no podrán recuperarse.",
+    "disclosureAccept": "Activar",
+    "statusIdle": "Actualizado",
+    "statusSyncing": "Sincronizando…",
+    "statusOff": "Sincronización desactivada",
+    "statusNoAccount": "Inicia sesión en iCloud para sincronizar",
+    "statusUnavailable": "iCloud no está disponible ahora",
+    "statusWaitingKeychain": "Esperando el Llavero de iCloud — asegúrate de que la app de tu iPhone esté actualizada",
+    "lastSyncedNever": "Nunca sincronizado",
+    "lastSyncedAt": "Última sincronización {time}",
+    "deleteSyncNote": "La sincronización de iCloud está activada: también se eliminará la copia sincronizada de tu iCloud y se desactivará la sincronización. Los demás dispositivos conservan su copia local — ejecuta esta acción en cada dispositivo para borrarlo todo en todas partes."
+  },
   "namePrompt": {
     "title": "¿Cómo te llamas?",
     "subtitle": "Introduce tu nombre para personalizar el panel.",

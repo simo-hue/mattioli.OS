@@ -37,6 +37,23 @@
     "exportDoneClipboard": "ملف JSON في الحافظة: لا يدعم لينكس مشاركة الملفات.",
     "exportDoneShare": "تم إرسال ملف JSON إلى أداة المشاركة."
   },
+  "icloudSync": {
+    "title": "مزامنة iCloud",
+    "enableTitle": "تفعيل مزامنة iCloud",
+    "syncNow": "مزامنة الآن",
+    "disclosureTitle": "تشفير تام بين الطرفين",
+    "disclosureBody": "تتم مزامنة بياناتك الخاصة فقط عبر حساب iCloud الخاص بك، بتشفير تام بين الطرفين — وليس عبر خوادمنا أبدًا. يُحفظ مفتاح التشفير في سلسلة مفاتيح iCloud الخاصة بك؛ إذا أوقفت سلسلة مفاتيح iCloud، فلن يمكن استرداد البيانات المتزامنة.",
+    "disclosureAccept": "تفعيل",
+    "statusIdle": "مُحدَّث",
+    "statusSyncing": "جارٍ المزامنة…",
+    "statusOff": "المزامنة متوقفة",
+    "statusNoAccount": "سجّل الدخول إلى iCloud للمزامنة",
+    "statusUnavailable": "iCloud غير متاح حاليًا",
+    "statusWaitingKeychain": "في انتظار سلسلة مفاتيح iCloud — تأكد من تحديث التطبيق على iPhone الخاص بك",
+    "lastSyncedNever": "لم تتم المزامنة مطلقًا",
+    "lastSyncedAt": "آخر مزامنة {time}",
+    "deleteSyncNote": "مزامنة iCloud مفعّلة: سيؤدي هذا أيضًا إلى حذف النسخة المتزامنة من iCloud الخاص بك وإيقاف المزامنة. تحتفظ الأجهزة الأخرى بنسختها المحلية — نفّذ هذا الإجراء على كل جهاز للحذف في كل مكان."
+  },
   "namePrompt": {
     "title": "ما اسمك؟",
     "subtitle": "أدخل اسمك لتخصيص لوحة المعلومات.",

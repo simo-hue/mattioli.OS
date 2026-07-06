@@ -43,6 +43,7 @@ class Translations with BaseTranslations<AppLocale, Translations> {
 	late final Translations$auth$en auth = Translations$auth$en.internal(_root);
 	late final Translations$privateAi$en privateAi = Translations$privateAi$en.internal(_root);
 	late final Translations$privateData$en privateData = Translations$privateData$en.internal(_root);
+	late final Translations$icloudSync$en icloudSync = Translations$icloudSync$en.internal(_root);
 	late final Translations$namePrompt$en namePrompt = Translations$namePrompt$en.internal(_root);
 	late final Translations$nav$en nav = Translations$nav$en.internal(_root);
 	late final Translations$shell$en shell = Translations$shell$en.internal(_root);
@@ -222,6 +223,60 @@ class Translations$privateData$en {
 
 	/// en: 'The JSON was sent to the share sheet.'
 	String get exportDoneShare => 'The JSON was sent to the share sheet.';
+}
+
+// Path: icloudSync
+class Translations$icloudSync$en {
+	Translations$icloudSync$en.internal(this._root);
+
+	final Translations _root; // ignore: unused_field
+
+	// Translations
+
+	/// en: 'iCloud Sync'
+	String get title => 'iCloud Sync';
+
+	/// en: 'Enable iCloud Sync'
+	String get enableTitle => 'Enable iCloud Sync';
+
+	/// en: 'Sync now'
+	String get syncNow => 'Sync now';
+
+	/// en: 'End-to-end encrypted'
+	String get disclosureTitle => 'End-to-end encrypted';
+
+	/// en: 'Your private data syncs only through your own iCloud account, end-to-end encrypted — never through our servers. The encryption key lives in your iCloud Keychain; if you turn iCloud Keychain off, synced data can't be recovered.'
+	String get disclosureBody => 'Your private data syncs only through your own iCloud account, end-to-end encrypted — never through our servers. The encryption key lives in your iCloud Keychain; if you turn iCloud Keychain off, synced data can\'t be recovered.';
+
+	/// en: 'Enable'
+	String get disclosureAccept => 'Enable';
+
+	/// en: 'Up to date'
+	String get statusIdle => 'Up to date';
+
+	/// en: 'Syncing…'
+	String get statusSyncing => 'Syncing…';
+
+	/// en: 'Sync is off'
+	String get statusOff => 'Sync is off';
+
+	/// en: 'Sign in to iCloud to sync'
+	String get statusNoAccount => 'Sign in to iCloud to sync';
+
+	/// en: 'iCloud is unavailable right now'
+	String get statusUnavailable => 'iCloud is unavailable right now';
+
+	/// en: 'Waiting for iCloud Keychain — make sure the app on your iPhone is up to date'
+	String get statusWaitingKeychain => 'Waiting for iCloud Keychain — make sure the app on your iPhone is up to date';
+
+	/// en: 'Never synced'
+	String get lastSyncedNever => 'Never synced';
+
+	/// en: 'Last synced {time}'
+	String lastSyncedAt({required Object time}) => 'Last synced ${time}';
+
+	/// en: 'iCloud Sync is on: this also deletes the synced copy in your iCloud and turns sync off. Other devices keep their local copy — run this on each device to erase everywhere.'
+	String get deleteSyncNote => 'iCloud Sync is on: this also deletes the synced copy in your iCloud and turns sync off. Other devices keep their local copy — run this on each device to erase everywhere.';
 }
 
 // Path: namePrompt
@@ -2795,6 +2850,21 @@ extension on Translations {
 			'privateData.exportDoneTitle' => 'Export complete',
 			'privateData.exportDoneClipboard' => 'The JSON is on the clipboard: Linux does not support file sharing.',
 			'privateData.exportDoneShare' => 'The JSON was sent to the share sheet.',
+			'icloudSync.title' => 'iCloud Sync',
+			'icloudSync.enableTitle' => 'Enable iCloud Sync',
+			'icloudSync.syncNow' => 'Sync now',
+			'icloudSync.disclosureTitle' => 'End-to-end encrypted',
+			'icloudSync.disclosureBody' => 'Your private data syncs only through your own iCloud account, end-to-end encrypted — never through our servers. The encryption key lives in your iCloud Keychain; if you turn iCloud Keychain off, synced data can\'t be recovered.',
+			'icloudSync.disclosureAccept' => 'Enable',
+			'icloudSync.statusIdle' => 'Up to date',
+			'icloudSync.statusSyncing' => 'Syncing…',
+			'icloudSync.statusOff' => 'Sync is off',
+			'icloudSync.statusNoAccount' => 'Sign in to iCloud to sync',
+			'icloudSync.statusUnavailable' => 'iCloud is unavailable right now',
+			'icloudSync.statusWaitingKeychain' => 'Waiting for iCloud Keychain — make sure the app on your iPhone is up to date',
+			'icloudSync.lastSyncedNever' => 'Never synced',
+			'icloudSync.lastSyncedAt' => ({required Object time}) => 'Last synced ${time}',
+			'icloudSync.deleteSyncNote' => 'iCloud Sync is on: this also deletes the synced copy in your iCloud and turns sync off. Other devices keep their local copy — run this on each device to erase everywhere.',
 			'namePrompt.title' => 'What is your name?',
 			'namePrompt.subtitle' => 'Enter your name to personalize the dashboard.',
 			'namePrompt.hint' => 'e.g. Simo',
@@ -3260,6 +3330,8 @@ extension on Translations {
 			'aiCoach.systemPersona' => 'You are Evolve AI Coach, a virtual assistant for personal discipline.',
 			'aiCoach.habitsHeader' => 'ACTIVE HABITS:',
 			'aiCoach.noActiveHabits' => 'No active habits.',
+			_ => null,
+		} ?? switch (path) {
 			'aiCoach.habitLine' => ({required Object title, required Object done, required Object streak}) => '${title} (Completed today: ${done}, Streak: ${streak})',
 			'aiCoach.goalsHeader' => 'GOALS:',
 			'aiCoach.noActiveGoals' => 'No active long-term goals.',
@@ -3275,8 +3347,6 @@ extension on Translations {
 			'aiCoach.inputHint' => 'Ask your Coach for advice...',
 			'aiCoach.defaultUserName' => 'user',
 			'aiCoach.userNameLine' => ({required Object userName}) => '- Name: ${userName}',
-			_ => null,
-		} ?? switch (path) {
 			'aiCoach.activeGoalsCount' => ({required Object count}) => '- Active goals: ${count}',
 			'aiCoach.completedGoalsCount' => ({required Object count}) => '- Completed goals: ${count}',
 			'aiCoach.todayCompletion' => ({required Object completed, required Object total}) => '- Habits today: ${completed} completed out of ${total} total.',

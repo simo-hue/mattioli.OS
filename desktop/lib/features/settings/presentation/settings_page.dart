@@ -11,6 +11,7 @@ import 'package:evolve_desktop/core/app_bootstrap.dart';
 import 'package:evolve_desktop/core/tutorial_provider.dart';
 import 'package:evolve_desktop/core/app_logger.dart';
 import 'package:evolve_desktop/core/desktop_private_db.dart';
+import 'package:evolve_desktop/core/desktop_private_sync_service.dart';
 import 'package:evolve_desktop/features/auth/application/auth_controller.dart';
 import 'package:evolve_desktop/features/auth/application/consent_controller.dart';
 import 'package:evolve_desktop/core/desktop_data_mode.dart';
@@ -21,6 +22,7 @@ import 'package:evolve_desktop/features/settings/application/desktop_subscriptio
 import 'package:evolve_desktop/features/settings/data/desktop_notification_service.dart';
 import 'package:evolve_desktop/features/settings/data/desktop_system_settings_service.dart';
 import 'package:evolve_desktop/features/settings/presentation/app_logs_dialog.dart';
+import 'package:evolve_desktop/features/statistics/data/private_analytics_source.dart';
 import 'package:evolve_desktop/features/settings/presentation/pro_features_modal.dart';
 import 'package:evolve_desktop/shared/widgets/desktop_page.dart';
 import 'package:evolve_desktop/shared/widgets/evolve_dialog.dart';
@@ -72,9 +74,16 @@ class _SettingsPageState extends ConsumerState<SettingsPage> {
   Color _accent = EvolveColors.primaryStrong;
   File? _profileImage;
 
+  /// iCloud sync card state (Private mode, macOS only). [_syncBusy] is true
+  /// while an enable/disable/sync action is in flight; it drives the
+  /// "Syncing…" label and disables the controls.
+  PrivateSyncStatus? _syncStatus;
+  bool _syncBusy = false;
+
   @override
   void initState() {
     super.initState();
+    unawaited(_refreshSyncStatus());
     final preferences = ref.read(sharedPreferencesProvider);
     final appearance = ref.read(desktopAppearanceControllerProvider);
     _darkMode = appearance.themeMode != ThemeMode.light;
@@ -535,6 +544,27 @@ class _SettingsPageState extends ConsumerState<SettingsPage> {
         _GroupGrid(
           twoColumn: twoColumn,
           groups: [
+            // iCloud sync — Private mode on macOS only: the same E2E-encrypted
+            // CloudKit dataset the iPhone app syncs.
+            if (isPrivateMode && Platform.isMacOS)
+              _SettingsGroup(
+                title: t.icloudSync.title,
+                children: [
+                  _SwitchRow(
+                    icon: LucideIcons.cloud,
+                    label: t.icloudSync.enableTitle,
+                    detail: _syncStatusLabel(),
+                    value: _syncStatus?.isEnabled ?? false,
+                    onChanged: _onSyncToggle,
+                  ),
+                  _ActionRow(
+                    icon: LucideIcons.refreshCw,
+                    title: t.icloudSync.syncNow,
+                    detail: _lastSyncedLabel(),
+                    onTap: _onSyncNow,
+                  ),
+                ],
+              ),
             _SettingsGroup(
               title: t.settingsPage.accessProtection,
               children: [
@@ -1175,21 +1205,126 @@ class _SettingsPageState extends ConsumerState<SettingsPage> {
     }
   }
 
+  // ---------------------------------------------------------------------------
+  // iCloud sync (Private mode, macOS)
+  // ---------------------------------------------------------------------------
+
+  Future<void> _refreshSyncStatus() async {
+    if (!Platform.isMacOS) return;
+    if (!ref.read(activeDesktopDataModeProvider).isPrivate) return;
+    final status = await ref.read(desktopPrivateSyncServiceProvider).status();
+    if (!mounted) return;
+    setState(() => _syncStatus = status);
+  }
+
+  Future<void> _runSyncAction(
+    Future<PrivateSyncStatus> Function(PrivateSyncService service) action,
+  ) async {
+    if (_syncBusy) return;
+    setState(() => _syncBusy = true);
+    try {
+      final status =
+          await action(ref.read(desktopPrivateSyncServiceProvider));
+      if (!mounted) return;
+      setState(() => _syncStatus = status);
+      // A pull writes straight to the encrypted DB — refresh the UI providers.
+      if (status.appliedChanges > 0) {
+        unawaited(ref.read(dashboardControllerProvider.notifier).refresh());
+        ref.invalidate(privateAnalyticsDataProvider);
+        ref.invalidate(privateProfileProvider);
+        ref.invalidate(desktopGoalCategoriesControllerProvider);
+      }
+    } catch (error, stack) {
+      AppLogger.error('iCloud sync action failed', error, stack);
+      await _refreshSyncStatus(); // reflect the real state after a failure
+    } finally {
+      if (mounted) setState(() => _syncBusy = false);
+    }
+  }
+
+  Future<void> _onSyncToggle(bool value) async {
+    if (_syncBusy) return;
+    if (value) {
+      final accepted = await _confirm(
+        title: t.icloudSync.disclosureTitle,
+        message: t.icloudSync.disclosureBody,
+      );
+      if (!accepted) return;
+      await _runSyncAction((service) => service.enable());
+    } else {
+      await _runSyncAction((service) => service.disable());
+    }
+  }
+
+  Future<void> _onSyncNow() async {
+    final status = _syncStatus;
+    if (_syncBusy || status == null || !status.isEnabled || !status.isAvailable) {
+      return;
+    }
+    await _runSyncAction((service) => service.syncNow());
+  }
+
+  /// One-line status under the enable toggle.
+  String _syncStatusLabel() {
+    final status = _syncStatus;
+    if (_syncBusy) return t.icloudSync.statusSyncing;
+    if (status == null || !status.isEnabled) return t.icloudSync.statusOff;
+    if (status.account == CloudAccountStatus.noAccount) {
+      return t.icloudSync.statusNoAccount;
+    }
+    if (status.account != CloudAccountStatus.available) {
+      return t.icloudSync.statusUnavailable;
+    }
+    if (!status.hasKey) {
+      // Enabled + iCloud fine, but the E2E key hasn't arrived through iCloud
+      // Keychain — typically an iPhone app that predates the shared keychain
+      // group. The copy nudges the fix.
+      return t.icloudSync.statusWaitingKeychain;
+    }
+    return t.icloudSync.statusIdle;
+  }
+
+  /// "Never synced" or "Last synced `<date> <time>`" under the Sync-now row.
+  String _lastSyncedLabel() {
+    final at = _syncStatus?.lastSyncedAt;
+    if (at == null) return t.icloudSync.lastSyncedNever;
+    final local = at.toLocal();
+    final materialLocalizations = MaterialLocalizations.of(context);
+    final date = materialLocalizations.formatShortDate(local);
+    final time = materialLocalizations.formatTimeOfDay(
+      TimeOfDay.fromDateTime(local),
+      alwaysUse24HourFormat: _timeFormat24h,
+    );
+    return t.icloudSync.lastSyncedAt(time: '$date $time');
+  }
+
   Future<void> _deletePrivateData() async {
+    // With sync on, deleting is a FULL reset (local + the user's iCloud copy);
+    // the disclosure must also say other devices keep their local copy.
+    final syncEnabled = _syncStatus?.isEnabled ?? false;
+    final message = syncEnabled
+        ? '${t.privateData.deleteMessage}\n\n${t.icloudSync.deleteSyncNote}'
+        : t.privateData.deleteMessage;
     final confirmed = await _confirm(
       title: t.privateData.deleteTitle,
-      message: t.privateData.deleteMessage,
+      message: message,
       destructive: true,
     );
     if (!confirmed) return;
 
     try {
+      // Order mirrors mobile: queue/perform the cloud-zone wipe and remove the
+      // shared keychain secrets FIRST (requestFullReset sets pending_zone_wipe,
+      // which deleteAllPrivateData preserves if the wipe must wait for
+      // connectivity), then wipe the local space.
+      await ref.read(desktopPrivateSyncServiceProvider).requestFullReset();
       // Wipe all private data but stay in Private mode with a fresh, empty
       // profile (mirrors the mobile client — non-destructive to the mode).
       await DesktopPrivateDb.instance.deleteAllPrivateData();
       await ref.read(dashboardControllerProvider.notifier).refresh();
       ref.invalidate(privateProfileProvider);
       ref.invalidate(desktopGoalCategoriesControllerProvider);
+      await _refreshSyncStatus();
       if (mounted) {
         _showGate(t.privateData.deleteTitle, t.privateData.deleteSuccess);
       }

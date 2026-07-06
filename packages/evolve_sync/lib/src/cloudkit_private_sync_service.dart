@@ -107,6 +107,7 @@ class CloudKitPrivateSyncService implements PrivateSyncService {
       isEnabled: enabled,
       lastSyncedAt: await store.lastFullSync(),
       account: account,
+      hasKey: await keys.readKey() != null,
       appliedChanges: appliedChanges,
     );
   }

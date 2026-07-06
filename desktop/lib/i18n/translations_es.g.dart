@@ -42,6 +42,7 @@ class TranslationsEs extends Translations with BaseTranslations<AppLocale, Trans
 	@override late final _Translations$auth$es auth = _Translations$auth$es._(_root);
 	@override late final _Translations$privateAi$es privateAi = _Translations$privateAi$es._(_root);
 	@override late final _Translations$privateData$es privateData = _Translations$privateData$es._(_root);
+	@override late final _Translations$icloudSync$es icloudSync = _Translations$icloudSync$es._(_root);
 	@override late final _Translations$namePrompt$es namePrompt = _Translations$namePrompt$es._(_root);
 	@override late final _Translations$nav$es nav = _Translations$nav$es._(_root);
 	@override late final _Translations$shell$es shell = _Translations$shell$es._(_root);
@@ -140,6 +141,30 @@ class _Translations$privateData$es extends Translations$privateData$en {
 	@override String get exportDoneTitle => 'Exportación completada';
 	@override String get exportDoneClipboard => 'El JSON está en el portapapeles: Linux no admite compartir archivos.';
 	@override String get exportDoneShare => 'El JSON se envió al selector de uso compartido.';
+}
+
+// Path: icloudSync
+class _Translations$icloudSync$es extends Translations$icloudSync$en {
+	_Translations$icloudSync$es._(TranslationsEs root) : this._root = root, super.internal(root);
+
+	final TranslationsEs _root; // ignore: unused_field
+
+	// Translations
+	@override String get title => 'Sincronización de iCloud';
+	@override String get enableTitle => 'Activar sincronización de iCloud';
+	@override String get syncNow => 'Sincronizar ahora';
+	@override String get disclosureTitle => 'Cifrado de extremo a extremo';
+	@override String get disclosureBody => 'Tus datos privados se sincronizan únicamente a través de tu propia cuenta de iCloud, con cifrado de extremo a extremo, nunca a través de nuestros servidores. La clave de cifrado reside en tu Llavero de iCloud; si desactivas el Llavero de iCloud, los datos sincronizados no podrán recuperarse.';
+	@override String get disclosureAccept => 'Activar';
+	@override String get statusIdle => 'Actualizado';
+	@override String get statusSyncing => 'Sincronizando…';
+	@override String get statusOff => 'Sincronización desactivada';
+	@override String get statusNoAccount => 'Inicia sesión en iCloud para sincronizar';
+	@override String get statusUnavailable => 'iCloud no está disponible ahora';
+	@override String get statusWaitingKeychain => 'Esperando el Llavero de iCloud — asegúrate de que la app de tu iPhone esté actualizada';
+	@override String get lastSyncedNever => 'Nunca sincronizado';
+	@override String lastSyncedAt({required Object time}) => 'Última sincronización ${time}';
+	@override String get deleteSyncNote => 'La sincronización de iCloud está activada: también se eliminará la copia sincronizada de tu iCloud y se desactivará la sincronización. Los demás dispositivos conservan su copia local — ejecuta esta acción en cada dispositivo para borrarlo todo en todas partes.';
 }
 
 // Path: namePrompt
@@ -1278,6 +1303,21 @@ extension on TranslationsEs {
 			'privateData.exportDoneTitle' => 'Exportación completada',
 			'privateData.exportDoneClipboard' => 'El JSON está en el portapapeles: Linux no admite compartir archivos.',
 			'privateData.exportDoneShare' => 'El JSON se envió al selector de uso compartido.',
+			'icloudSync.title' => 'Sincronización de iCloud',
+			'icloudSync.enableTitle' => 'Activar sincronización de iCloud',
+			'icloudSync.syncNow' => 'Sincronizar ahora',
+			'icloudSync.disclosureTitle' => 'Cifrado de extremo a extremo',
+			'icloudSync.disclosureBody' => 'Tus datos privados se sincronizan únicamente a través de tu propia cuenta de iCloud, con cifrado de extremo a extremo, nunca a través de nuestros servidores. La clave de cifrado reside en tu Llavero de iCloud; si desactivas el Llavero de iCloud, los datos sincronizados no podrán recuperarse.',
+			'icloudSync.disclosureAccept' => 'Activar',
+			'icloudSync.statusIdle' => 'Actualizado',
+			'icloudSync.statusSyncing' => 'Sincronizando…',
+			'icloudSync.statusOff' => 'Sincronización desactivada',
+			'icloudSync.statusNoAccount' => 'Inicia sesión en iCloud para sincronizar',
+			'icloudSync.statusUnavailable' => 'iCloud no está disponible ahora',
+			'icloudSync.statusWaitingKeychain' => 'Esperando el Llavero de iCloud — asegúrate de que la app de tu iPhone esté actualizada',
+			'icloudSync.lastSyncedNever' => 'Nunca sincronizado',
+			'icloudSync.lastSyncedAt' => ({required Object time}) => 'Última sincronización ${time}',
+			'icloudSync.deleteSyncNote' => 'La sincronización de iCloud está activada: también se eliminará la copia sincronizada de tu iCloud y se desactivará la sincronización. Los demás dispositivos conservan su copia local — ejecuta esta acción en cada dispositivo para borrarlo todo en todas partes.',
 			'namePrompt.title' => '¿Cómo te llamas?',
 			'namePrompt.subtitle' => 'Introduce tu nombre para personalizar el panel.',
 			'namePrompt.hint' => 'Ej. Simo',
@@ -1743,6 +1783,8 @@ extension on TranslationsEs {
 			'aiCoach.systemPersona' => 'Eres Evolve AI Coach, un asistente virtual para la disciplina personal.',
 			'aiCoach.habitsHeader' => 'HÁBITOS ACTIVOS:',
 			'aiCoach.noActiveHabits' => 'Sin hábitos activos.',
+			_ => null,
+		} ?? switch (path) {
 			'aiCoach.habitLine' => ({required Object title, required Object done, required Object streak}) => '${title} (Completado hoy: ${done}, Racha: ${streak})',
 			'aiCoach.goalsHeader' => 'OBJETIVOS:',
 			'aiCoach.noActiveGoals' => 'Sin objetivos a largo plazo activos.',
@@ -1758,8 +1800,6 @@ extension on TranslationsEs {
 			'aiCoach.inputHint' => 'Pide consejos a tu Coach...',
 			'aiCoach.defaultUserName' => 'Usuario',
 			'aiCoach.userNameLine' => ({required Object userName}) => '- Nombre: ${userName}',
-			_ => null,
-		} ?? switch (path) {
 			'aiCoach.activeGoalsCount' => ({required Object count}) => '- Objetivos activos: ${count}',
 			'aiCoach.completedGoalsCount' => ({required Object count}) => '- Objetivos completados: ${count}',
 			'aiCoach.todayCompletion' => ({required Object completed, required Object total}) => '- Hábitos de hoy: ${completed} completados de ${total} en total.',

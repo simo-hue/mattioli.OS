@@ -42,6 +42,7 @@ class TranslationsAr extends Translations with BaseTranslations<AppLocale, Trans
 	@override late final _Translations$auth$ar auth = _Translations$auth$ar._(_root);
 	@override late final _Translations$privateAi$ar privateAi = _Translations$privateAi$ar._(_root);
 	@override late final _Translations$privateData$ar privateData = _Translations$privateData$ar._(_root);
+	@override late final _Translations$icloudSync$ar icloudSync = _Translations$icloudSync$ar._(_root);
 	@override late final _Translations$namePrompt$ar namePrompt = _Translations$namePrompt$ar._(_root);
 	@override late final _Translations$nav$ar nav = _Translations$nav$ar._(_root);
 	@override late final _Translations$shell$ar shell = _Translations$shell$ar._(_root);
@@ -140,6 +141,30 @@ class _Translations$privateData$ar extends Translations$privateData$en {
 	@override String get exportDoneTitle => 'اكتمل التصدير';
 	@override String get exportDoneClipboard => 'ملف JSON في الحافظة: لا يدعم لينكس مشاركة الملفات.';
 	@override String get exportDoneShare => 'تم إرسال ملف JSON إلى أداة المشاركة.';
+}
+
+// Path: icloudSync
+class _Translations$icloudSync$ar extends Translations$icloudSync$en {
+	_Translations$icloudSync$ar._(TranslationsAr root) : this._root = root, super.internal(root);
+
+	final TranslationsAr _root; // ignore: unused_field
+
+	// Translations
+	@override String get title => 'مزامنة iCloud';
+	@override String get enableTitle => 'تفعيل مزامنة iCloud';
+	@override String get syncNow => 'مزامنة الآن';
+	@override String get disclosureTitle => 'تشفير تام بين الطرفين';
+	@override String get disclosureBody => 'تتم مزامنة بياناتك الخاصة فقط عبر حساب iCloud الخاص بك، بتشفير تام بين الطرفين — وليس عبر خوادمنا أبدًا. يُحفظ مفتاح التشفير في سلسلة مفاتيح iCloud الخاصة بك؛ إذا أوقفت سلسلة مفاتيح iCloud، فلن يمكن استرداد البيانات المتزامنة.';
+	@override String get disclosureAccept => 'تفعيل';
+	@override String get statusIdle => 'مُحدَّث';
+	@override String get statusSyncing => 'جارٍ المزامنة…';
+	@override String get statusOff => 'المزامنة متوقفة';
+	@override String get statusNoAccount => 'سجّل الدخول إلى iCloud للمزامنة';
+	@override String get statusUnavailable => 'iCloud غير متاح حاليًا';
+	@override String get statusWaitingKeychain => 'في انتظار سلسلة مفاتيح iCloud — تأكد من تحديث التطبيق على iPhone الخاص بك';
+	@override String get lastSyncedNever => 'لم تتم المزامنة مطلقًا';
+	@override String lastSyncedAt({required Object time}) => 'آخر مزامنة ${time}';
+	@override String get deleteSyncNote => 'مزامنة iCloud مفعّلة: سيؤدي هذا أيضًا إلى حذف النسخة المتزامنة من iCloud الخاص بك وإيقاف المزامنة. تحتفظ الأجهزة الأخرى بنسختها المحلية — نفّذ هذا الإجراء على كل جهاز للحذف في كل مكان.';
 }
 
 // Path: namePrompt
@@ -1278,6 +1303,21 @@ extension on TranslationsAr {
 			'privateData.exportDoneTitle' => 'اكتمل التصدير',
 			'privateData.exportDoneClipboard' => 'ملف JSON في الحافظة: لا يدعم لينكس مشاركة الملفات.',
 			'privateData.exportDoneShare' => 'تم إرسال ملف JSON إلى أداة المشاركة.',
+			'icloudSync.title' => 'مزامنة iCloud',
+			'icloudSync.enableTitle' => 'تفعيل مزامنة iCloud',
+			'icloudSync.syncNow' => 'مزامنة الآن',
+			'icloudSync.disclosureTitle' => 'تشفير تام بين الطرفين',
+			'icloudSync.disclosureBody' => 'تتم مزامنة بياناتك الخاصة فقط عبر حساب iCloud الخاص بك، بتشفير تام بين الطرفين — وليس عبر خوادمنا أبدًا. يُحفظ مفتاح التشفير في سلسلة مفاتيح iCloud الخاصة بك؛ إذا أوقفت سلسلة مفاتيح iCloud، فلن يمكن استرداد البيانات المتزامنة.',
+			'icloudSync.disclosureAccept' => 'تفعيل',
+			'icloudSync.statusIdle' => 'مُحدَّث',
+			'icloudSync.statusSyncing' => 'جارٍ المزامنة…',
+			'icloudSync.statusOff' => 'المزامنة متوقفة',
+			'icloudSync.statusNoAccount' => 'سجّل الدخول إلى iCloud للمزامنة',
+			'icloudSync.statusUnavailable' => 'iCloud غير متاح حاليًا',
+			'icloudSync.statusWaitingKeychain' => 'في انتظار سلسلة مفاتيح iCloud — تأكد من تحديث التطبيق على iPhone الخاص بك',
+			'icloudSync.lastSyncedNever' => 'لم تتم المزامنة مطلقًا',
+			'icloudSync.lastSyncedAt' => ({required Object time}) => 'آخر مزامنة ${time}',
+			'icloudSync.deleteSyncNote' => 'مزامنة iCloud مفعّلة: سيؤدي هذا أيضًا إلى حذف النسخة المتزامنة من iCloud الخاص بك وإيقاف المزامنة. تحتفظ الأجهزة الأخرى بنسختها المحلية — نفّذ هذا الإجراء على كل جهاز للحذف في كل مكان.',
 			'namePrompt.title' => 'ما اسمك؟',
 			'namePrompt.subtitle' => 'أدخل اسمك لتخصيص لوحة المعلومات.',
 			'namePrompt.hint' => 'مثال: Simo',
@@ -1743,6 +1783,8 @@ extension on TranslationsAr {
 			'aiCoach.systemPersona' => 'أنت Evolve AI Coach، مساعد افتراضي للانضباط الشخصي.',
 			'aiCoach.habitsHeader' => 'العادات النشطة:',
 			'aiCoach.noActiveHabits' => 'لا توجد عادات نشطة.',
+			_ => null,
+		} ?? switch (path) {
 			'aiCoach.habitLine' => ({required Object title, required Object done, required Object streak}) => '${title} (أُنجزت اليوم: ${done}، السلسلة: ${streak})',
 			'aiCoach.goalsHeader' => 'الأهداف:',
 			'aiCoach.noActiveGoals' => 'لا توجد أهداف طويلة المدى نشطة.',
@@ -1758,8 +1800,6 @@ extension on TranslationsAr {
 			'aiCoach.inputHint' => 'اطلب النصيحة من مدرّبك...',
 			'aiCoach.defaultUserName' => 'المستخدم',
 			'aiCoach.userNameLine' => ({required Object userName}) => '- الاسم: ${userName}',
-			_ => null,
-		} ?? switch (path) {
 			'aiCoach.activeGoalsCount' => ({required Object count}) => '- الأهداف النشطة: ${count}',
 			'aiCoach.completedGoalsCount' => ({required Object count}) => '- الأهداف المكتملة: ${count}',
 			'aiCoach.todayCompletion' => ({required Object completed, required Object total}) => '- عادات اليوم: ${completed} مكتملة من أصل ${total}.',

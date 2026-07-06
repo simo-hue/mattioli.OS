@@ -37,6 +37,23 @@
     "exportDoneClipboard": "Das JSON ist in der Zwischenablage: Linux unterstützt keine Dateifreigabe.",
     "exportDoneShare": "Das JSON wurde an die Teilen-Auswahl gesendet."
   },
+  "icloudSync": {
+    "title": "iCloud-Synchronisierung",
+    "enableTitle": "iCloud-Synchronisierung aktivieren",
+    "syncNow": "Jetzt synchronisieren",
+    "disclosureTitle": "Ende-zu-Ende-verschlüsselt",
+    "disclosureBody": "Deine privaten Daten werden ausschließlich über deinen eigenen iCloud-Account synchronisiert, Ende-zu-Ende-verschlüsselt — niemals über unsere Server. Der Verschlüsselungsschlüssel liegt in deinem iCloud-Schlüsselbund; wenn du den iCloud-Schlüsselbund deaktivierst, können synchronisierte Daten nicht wiederhergestellt werden.",
+    "disclosureAccept": "Aktivieren",
+    "statusIdle": "Aktuell",
+    "statusSyncing": "Synchronisiere…",
+    "statusOff": "Synchronisierung aus",
+    "statusNoAccount": "Bei iCloud anmelden, um zu synchronisieren",
+    "statusUnavailable": "iCloud ist derzeit nicht verfügbar",
+    "statusWaitingKeychain": "Warte auf den iCloud-Schlüsselbund — stelle sicher, dass die App auf deinem iPhone aktuell ist",
+    "lastSyncedNever": "Noch nie synchronisiert",
+    "lastSyncedAt": "Zuletzt synchronisiert {time}",
+    "deleteSyncNote": "Die iCloud-Synchronisierung ist aktiv: Dabei wird auch die synchronisierte Kopie in deiner iCloud gelöscht und die Synchronisierung deaktiviert. Andere Geräte behalten ihre lokale Kopie — führe dies auf jedem Gerät aus, um überall zu löschen."
+  },
   "namePrompt": {
     "title": "Wie heißt du?",
     "subtitle": "Gib deinen Namen ein, um das Dashboard zu personalisieren.",

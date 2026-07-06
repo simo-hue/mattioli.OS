@@ -37,6 +37,23 @@
     "exportDoneClipboard": "The JSON is on the clipboard: Linux does not support file sharing.",
     "exportDoneShare": "The JSON was sent to the share sheet."
   },
+  "icloudSync": {
+    "title": "iCloud Sync",
+    "enableTitle": "Enable iCloud Sync",
+    "syncNow": "Sync now",
+    "disclosureTitle": "End-to-end encrypted",
+    "disclosureBody": "Your private data syncs only through your own iCloud account, end-to-end encrypted — never through our servers. The encryption key lives in your iCloud Keychain; if you turn iCloud Keychain off, synced data can't be recovered.",
+    "disclosureAccept": "Enable",
+    "statusIdle": "Up to date",
+    "statusSyncing": "Syncing…",
+    "statusOff": "Sync is off",
+    "statusNoAccount": "Sign in to iCloud to sync",
+    "statusUnavailable": "iCloud is unavailable right now",
+    "statusWaitingKeychain": "Waiting for iCloud Keychain — make sure the app on your iPhone is up to date",
+    "lastSyncedNever": "Never synced",
+    "lastSyncedAt": "Last synced {time}",
+    "deleteSyncNote": "iCloud Sync is on: this also deletes the synced copy in your iCloud and turns sync off. Other devices keep their local copy — run this on each device to erase everywhere."
+  },
   "namePrompt": {
     "title": "What is your name?",
     "subtitle": "Enter your name to personalize the dashboard.",

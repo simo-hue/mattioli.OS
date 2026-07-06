@@ -921,10 +921,24 @@ class _Translations$settingsPage$ar extends Translations$settingsPage$en {
 	@override String get importReplaceTitle => 'استبدال البيانات الحالية';
 	@override String get importReplaceSubtitle => 'يحذف جميع البيانات المحلية الموجودة قبل الاستيراد. (موصى به)';
 	@override String get importMergeTitle => 'دمج مع البيانات الحالية';
-	@override String get importMergeSubtitle => 'يضيف البيانات المستوردة دون حذف أي شيء. قد يسبب تكرارات.';
+	@override String get importMergeSubtitle => 'يدمج مع بياناتك مع الاحتفاظ بأحدث نسخة من كل عنصر.';
 	@override String get importConfirmButton => 'تأكيد الاستيراد';
 	@override String get importSuccess => 'اكتمل الاستيراد بنجاح!';
 	@override String importError({required Object error}) => 'خطأ أثناء الاستيراد: ${error}';
+	@override String importPreviewSkipped({required Object count}) => '⚠ سيتم تجاوز ${count} سجلات غير صالحة';
+	@override String get importCompletedTitle => 'اكتمل الاستيراد';
+	@override String get importSummaryReplaced => 'تم استبدال بياناتك بالنسخة الاحتياطية. الملخص:';
+	@override String get importSummaryMerged => 'تم دمج بياناتك مع النسخة الاحتياطية. الملخص:';
+	@override String get importSummaryDone => 'رائع!';
+	@override String get importEntityHabits => 'العادات';
+	@override String get importEntityLogs => 'سجلات العادات';
+	@override String get importEntityMacroGoals => 'الأهداف الكبيرة';
+	@override String get importEntityCategories => 'الفئات';
+	@override String get importEntityMoods => 'سجلات المزاج';
+	@override String importRowReplace({required Object count, required Object label}) => '${count} ${label}';
+	@override String importRowMerge({required Object label, required Object added, required Object updated, required Object unchanged}) => '${label}: ${added} مضافة، ${updated} محدّثة، ${unchanged} دون تغيير';
+	@override String importRowSkipped({required Object count}) => '، ${count} تم تجاوزها';
+	@override String get exportDoneSaved => 'تم حفظ ملف JSON في الموقع المحدد.';
 	@override String get proTitle => 'Evolve Pro';
 	@override String get proSubtitle => 'الخطة واستعادة المشتريات وإدارة الاشتراك';
 	@override String get revenueCatMacos => 'RevenueCat macOS';
@@ -1957,10 +1971,24 @@ extension on TranslationsAr {
 			'settingsPage.importReplaceTitle' => 'استبدال البيانات الحالية',
 			'settingsPage.importReplaceSubtitle' => 'يحذف جميع البيانات المحلية الموجودة قبل الاستيراد. (موصى به)',
 			'settingsPage.importMergeTitle' => 'دمج مع البيانات الحالية',
-			'settingsPage.importMergeSubtitle' => 'يضيف البيانات المستوردة دون حذف أي شيء. قد يسبب تكرارات.',
+			'settingsPage.importMergeSubtitle' => 'يدمج مع بياناتك مع الاحتفاظ بأحدث نسخة من كل عنصر.',
 			'settingsPage.importConfirmButton' => 'تأكيد الاستيراد',
 			'settingsPage.importSuccess' => 'اكتمل الاستيراد بنجاح!',
 			'settingsPage.importError' => ({required Object error}) => 'خطأ أثناء الاستيراد: ${error}',
+			'settingsPage.importPreviewSkipped' => ({required Object count}) => '⚠ سيتم تجاوز ${count} سجلات غير صالحة',
+			'settingsPage.importCompletedTitle' => 'اكتمل الاستيراد',
+			'settingsPage.importSummaryReplaced' => 'تم استبدال بياناتك بالنسخة الاحتياطية. الملخص:',
+			'settingsPage.importSummaryMerged' => 'تم دمج بياناتك مع النسخة الاحتياطية. الملخص:',
+			'settingsPage.importSummaryDone' => 'رائع!',
+			'settingsPage.importEntityHabits' => 'العادات',
+			'settingsPage.importEntityLogs' => 'سجلات العادات',
+			'settingsPage.importEntityMacroGoals' => 'الأهداف الكبيرة',
+			'settingsPage.importEntityCategories' => 'الفئات',
+			'settingsPage.importEntityMoods' => 'سجلات المزاج',
+			'settingsPage.importRowReplace' => ({required Object count, required Object label}) => '${count} ${label}',
+			'settingsPage.importRowMerge' => ({required Object label, required Object added, required Object updated, required Object unchanged}) => '${label}: ${added} مضافة، ${updated} محدّثة، ${unchanged} دون تغيير',
+			'settingsPage.importRowSkipped' => ({required Object count}) => '، ${count} تم تجاوزها',
+			'settingsPage.exportDoneSaved' => 'تم حفظ ملف JSON في الموقع المحدد.',
 			'settingsPage.proTitle' => 'Evolve Pro',
 			'settingsPage.proSubtitle' => 'الخطة واستعادة المشتريات وإدارة الاشتراك',
 			'settingsPage.revenueCatMacos' => 'RevenueCat macOS',

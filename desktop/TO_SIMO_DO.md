@@ -36,3 +36,10 @@ Setting the team wasn't enough: the Runner app target inherited `CODE_SIGN_IDENT
   6. AI Coach: chat fills the window, thread centered at 900px.
   7. Toggle light theme once across all pages (audited in code, worth one visual sweep).
   8. Keyboard: ⌘1–⌘5, ⌘, and ⌘K are now covered by tests, but give them a real-hardware tap.
+
+## Data import/export rework (2026-07-07)
+
+- **Rebuild once on the Xcode machine**: `file_picker` was bumped 3.0.4 → 11.0.2 and `share_plus` 13.1.0 → 12.0.2 (matching mobile's pair), so the macOS pods change — run `flutter run -d macos --dart-define-from-file=.env` (CocoaPods will re-install automatically; if it complains, `cd macos && pod install`). No Xcode build was possible on this machine.
+- **Manually verify the new export Save dialog** (needs real macOS UI): Settings → Export data in BOTH Private and Cloud mode — a native Save panel should appear with `evolve_private_export.json` / `mattioli_os_export.json` pre-filled; cancel must do nothing; save must write the JSON. The sandbox entitlement was changed to `com.apple.security.files.user-selected.read-write` in Debug+Release — if the Save panel writes nothing, double-check Xcode picked up the entitlement change (clean build).
+- **Cloud import/export smoke test against real Supabase** (cannot be tested headless): run one export + one merge-mode import + one replace-mode import while logged in. The cloud import path is now plan-based (fetch → plan → upserts) and was verified by pure unit tests only.
+- **Cross-device check**: export from desktop Private mode and import the file on the iPhone app (and vice versa) — the desktop export shape changed to the mobile-canonical camelCase shape precisely so this works.

@@ -3,6 +3,8 @@ import 'dart:io';
 import 'dart:math';
 
 import 'package:evolve_desktop/core/app_logger.dart';
+import 'package:evolve_desktop/core/import_merge.dart';
+import 'package:evolve_desktop/core/import_merge_stats.dart';
 import 'package:evolve_sync/evolve_sync.dart';
 import 'package:evolve_desktop/core/streak_utils.dart';
 import 'package:flutter/foundation.dart';
@@ -121,36 +123,155 @@ class DesktopPrivateDb {
   /// FFI tests can exercise it against an in-memory database.
   static Future<void> resetSyncBookkeeping(DatabaseExecutor txn) async {
     await txn.delete(PrivateDbSchema.syncStateTable);
-    await txn.update(
-      PrivateDbSchema.syncMetaTable,
-      {'server_change_token': null, 'last_full_sync_at': null},
-      where: 'id = 1',
-    );
+    await txn.update(PrivateDbSchema.syncMetaTable, {
+      'server_change_token': null,
+      'last_full_sync_at': null,
+    }, where: 'id = 1');
   }
 
   /// Exports the entire private data space as a JSON-serializable map.
   Future<Map<String, dynamic>> exportData() async {
     final db = await database;
     final owner = await ownerId;
-    Future<List<Map<String, dynamic>>> rows(String table) =>
-        db.query(table, where: 'user_id = ?', whereArgs: [owner]);
+    return exportSnapshot(db, owner: owner);
+  }
+
+  /// Builds the export payload from [db]. Static so the FFI round-trip tests
+  /// can exercise it against an in-memory database.
+  ///
+  /// The shape mirrors the MOBILE private export
+  /// (`mobile/lib/core/private_local_database.dart` `exportData`) key-for-key —
+  /// `schemaVersion` + `settings` + camelCase container keys with snake_case
+  /// DB-row elements — because mobile's import normalization only reads the
+  /// camelCase containers for a `mode: 'private'` file. Emitting the same
+  /// canonical shape from every client keeps a backup round-trippable across
+  /// desktop, mobile, and back. `frequency_days` is stored JSON-encoded;
+  /// decode it back to a list so re-imports are representation-stable.
+  static Future<Map<String, dynamic>> exportSnapshot(
+    DatabaseExecutor db, {
+    required String owner,
+  }) async {
+    Future<List<Map<String, Object?>>> rows(String table, {String? orderBy}) =>
+        db.query(
+          table,
+          where: 'user_id = ?',
+          whereArgs: [owner],
+          orderBy: orderBy,
+        );
+
+    final goals = await rows(
+      'goals',
+      orderBy: 'display_order ASC, created_at ASC',
+    );
+    final logs = await rows('goal_logs');
+    final macros = await rows('long_term_goals', orderBy: 'created_at ASC');
+    final cats = await rows('macro_goal_categories', orderBy: 'created_at ASC');
+    final moods = await rows('daily_moods');
 
     final profileRows = await db.query(
       'profiles',
       where: 'id = ?',
       whereArgs: [owner],
+      limit: 1,
     );
+    final profile = profileRows.isNotEmpty ? profileRows.first : null;
 
+    // Full rows (ids + timestamps) so this export round-trips losslessly and an
+    // import can reconcile by identity + last-write-wins.
     return {
-      'exportDate': _now(),
+      'schemaVersion': 1,
+      'exportDate': DateTime.now().toIso8601String(),
       'mode': 'private',
-      'profile': profileRows.isNotEmpty ? profileRows.first : null,
-      'goals': await rows('goals'),
-      'goal_logs': await rows('goal_logs'),
-      'long_term_goals': await rows('long_term_goals'),
-      'daily_moods': await rows('daily_moods'),
-      'macro_goal_categories': await rows('macro_goal_categories'),
+      'profile': profile,
+      // On both clients the settings ARE profile columns; mobile exports the
+      // same row under both keys (`loadSettingsRow() => loadProfileRow()`).
+      'settings': profile,
+      'habits': [
+        for (final g in goals)
+          {
+            'id': g['id'],
+            'title': g['title'],
+            'description': g['description'],
+            'icon': g['icon'],
+            'color': g['color'],
+            'frequency_days': decodeFrequencyDays(g['frequency_days']),
+            'start_date': g['start_date'],
+            'end_date': g['end_date'],
+            'display_order': g['display_order'],
+            'created_at': g['created_at'],
+            'updated_at': g['updated_at'],
+            'reminder_time': g['reminder_time'],
+          },
+      ],
+      'habitLogs': [
+        for (final l in logs)
+          {
+            'id': l['id'],
+            'goal_id': l['goal_id'],
+            'date': l['date'],
+            'status': l['status'],
+            'value': l['value'],
+            'created_at': l['created_at'],
+            'updated_at': l['updated_at'],
+            'streak': l['streak'],
+          },
+      ],
+      'macroGoals': [
+        for (final g in macros)
+          {
+            'id': g['id'],
+            'title': g['title'],
+            'status': g['status'],
+            'type': g['type'],
+            'year': g['year'],
+            'month': g['month'],
+            'week_number': g['week_number'],
+            'quarter': g['quarter'],
+            'category_key': g['category_key'],
+            'category_id': g['category_id'],
+            'created_at': g['created_at'],
+            'updated_at': g['updated_at'],
+          },
+      ],
+      'macroGoalCategories': [
+        for (final c in cats)
+          {
+            'id': c['id'],
+            'name': c['name'],
+            'color': c['color'],
+            'created_at': c['created_at'],
+            'updated_at': c['updated_at'],
+            'archived_at': c['archived_at'],
+          },
+      ],
+      'dailyMoods': [
+        for (final m in moods)
+          {
+            'id': m['id'],
+            'date': m['date'],
+            'mood_score': m['mood_score'],
+            'energy_score': m['energy_score'],
+            'created_at': m['created_at'],
+            'updated_at': m['updated_at'],
+          },
+      ],
     };
+  }
+
+  /// Decodes a stored `frequency_days` value (JSON-encoded TEXT in the private
+  /// DB, a real list from Supabase) to a plain list for the portable export
+  /// file. An unparseable value is passed through unchanged rather than lost.
+  static Object? decodeFrequencyDays(Object? stored) {
+    if (stored == null || stored is List) return stored;
+    if (stored is String) {
+      try {
+        final decoded = jsonDecode(stored);
+        if (decoded is List) return decoded;
+      } catch (_) {
+        // fall through: keep the original representation
+      }
+    }
+    return stored;
   }
 
   /// Whether the user has opted in to sending private context to the external AI
@@ -260,8 +381,9 @@ class DesktopPrivateDb {
     );
     await File(path).writeAsBytes(bytes, flush: true);
 
-    await SyncLocalStore(db)
-        .setLocalOnlyColumn('profiles', owner, 'avatar_url', path);
+    await SyncLocalStore(
+      db,
+    ).setLocalOnlyColumn('profiles', owner, 'avatar_url', path);
 
     if (previous != null && previous.isNotEmpty && previous != path) {
       try {
@@ -279,8 +401,9 @@ class DesktopPrivateDb {
     final db = await database;
     final owner = await ownerId;
     final current = await _currentAvatarPath(db, owner);
-    await SyncLocalStore(db)
-        .setLocalOnlyColumn('profiles', owner, 'avatar_url', null);
+    await SyncLocalStore(
+      db,
+    ).setLocalOnlyColumn('profiles', owner, 'avatar_url', null);
     if (current != null && current.isNotEmpty) {
       try {
         final file = File(current);
@@ -428,22 +551,27 @@ class DesktopPrivateDb {
     notifyWrite();
   }
 
-  Future<void> importData({
+  /// Imports [backupData] (canonical shape) into the private DB and returns
+  /// the per-entity merge outcome. The whole import is one transaction; the
+  /// dirty/tombstone triggers record every row it touches, and [notifyWrite]
+  /// schedules the iCloud push after the commit.
+  Future<ImportMergeStats> importData({
     required Map<String, dynamic> backupData,
     required bool replaceExisting,
   }) async {
     final db = await database;
     final owner = await ownerId;
-    await db.transaction((txn) async {
-      await applyImport(
+    final stats = await db.transaction(
+      (txn) => applyImport(
         txn,
         owner: owner,
         backupData: backupData,
         replaceExisting: replaceExisting,
         now: _now(),
-      );
-    });
+      ),
+    );
     notifyWrite();
+    return stats;
   }
 
   // ---------------------------------------------------------------------------
@@ -483,24 +611,43 @@ class DesktopPrivateDb {
     await txn.delete('profiles');
   }
 
-  /// Inserts backup rows under [owner], coalescing every NOT-NULL column so the
-  /// aligned schema is satisfied. Parents are inserted before children.
+  /// Applies backup data under [owner], coalescing every NOT-NULL column so
+  /// the aligned schema is satisfied. Parents are written before children.
   ///
-  /// Import is resilient: a single malformed row is skipped rather than aborting
+  /// When [replaceExisting] is true, wipes the five user-data tables first and
+  /// inserts everything fresh (profile/settings are left untouched by the
+  /// wipe). When false, performs a **true merge** mirroring mobile's
+  /// `applyPrivateImportMerge`: records are matched by identity and reconciled
+  /// with last-write-wins —
+  ///   - goals & macro goals by `id`;
+  ///   - goal logs by their natural key `(goal_id, date)`;
+  ///   - daily moods by their natural key `(user_id, date)`;
+  ///   - categories by `id`, else by case-insensitive name (existing wins on a
+  ///     match; only a missing `archived_at` is filled from the import) — see
+  ///     [reconcileCategoriesByName], shared with the cloud plan.
+  ///
+  /// Streaks are recomputed from the merged log history for every goal whose
+  /// logs changed, so the denormalized `goal_logs.streak` is never trusted
+  /// from the file.
+  ///
+  /// Import stays resilient: a malformed row is skipped rather than aborting
   /// the whole transaction (which would roll back an otherwise-valid import).
-  /// In merge mode ([replaceExisting] false), imported categories whose
-  /// `(user_id, name)` collides with an existing row reuse that row instead of
-  /// being silently dropped, and referencing macro goals are remapped to the
-  /// resolved id so no `category_id` is left dangling.
-  static Future<void> applyImport(
+  /// Callers going through [DesktopBackupImportService] get invalid rows
+  /// dropped AND counted upfront by `validateCanonical`; the inline guards
+  /// here are the last line of defense for direct callers.
+  static Future<ImportMergeStats> applyImport(
     DatabaseExecutor txn, {
     required String owner,
     required Map<String, dynamic> backupData,
     required bool replaceExisting,
     required String now,
   }) async {
+    final stats = ImportMergeStats(replaced: replaceExisting);
+
     if (replaceExisting) {
-      // Wipe existing user data (profiles/settings are preserved).
+      // Wipe existing user data (profiles/settings are preserved). The delete
+      // triggers queue a tombstone per row — deliberate: replace-mode deletions
+      // must propagate to the other devices on the next sync.
       await txn.delete('goal_logs');
       await txn.delete('daily_moods');
       await txn.delete('long_term_goals');
@@ -508,33 +655,41 @@ class DesktopPrivateDb {
       await txn.delete('goals');
     }
 
-    // Maps an imported category id to the id actually used in the DB. In merge
-    // mode a name collision resolves to the pre-existing row's id so referencing
-    // macro goals can be remapped (Bug 3); otherwise it is the imported id.
-    final categoryIdRemap = <String, String>{};
+    // ── Categories: id, else case-insensitive name (shared brain with the
+    // cloud plan). macro_goal_categories has UNIQUE(user_id, name), so a
+    // same-name insert would collide; matching by name and remapping the
+    // referencing macro goals is mandatory. ──
+    final existingCats = replaceExisting
+        ? const <Map<String, Object?>>[]
+        : await txn.query(
+            'macro_goal_categories',
+            columns: ['id', 'name', 'archived_at'],
+            where: 'user_id = ?',
+            whereArgs: [owner],
+          );
+    final rec = reconcileCategoriesByName(
+      categories: _listOf(backupData['macro_goal_categories']),
+      existing: existingCats,
+      newId: () => const Uuid().v4(),
+    );
+    final catRemap = <String, String>{...rec.remap};
+    final validCatIds = <String>{...rec.validIds};
 
-    for (final cat in _listOf(backupData['macro_goal_categories'])) {
-      final importedId = (cat['id'] as String?) ?? const Uuid().v4();
+    for (final fill in rec.archiveFills) {
+      await txn.update(
+        'macro_goal_categories',
+        {'archived_at': fill.archivedAt, 'updated_at': now},
+        where: 'id = ?',
+        whereArgs: [fill.id],
+      );
+      stats.categories.updated++;
+    }
+    stats.categories.unchanged += rec.unchanged;
+
+    for (final cat in rec.toInsert) {
+      final importedId = cat['id'] as String;
       final name = cat['name'] ?? 'Categoria';
-
-      if (!replaceExisting) {
-        // Merge mode: reuse an existing category with the same (user_id, name)
-        // rather than letting the UNIQUE constraint silently drop this row.
-        final existing = await txn.query(
-          'macro_goal_categories',
-          columns: ['id'],
-          where: 'user_id = ? AND name = ?',
-          whereArgs: [owner, name],
-          limit: 1,
-        );
-        if (existing.isNotEmpty) {
-          categoryIdRemap[importedId] = existing.first['id'] as String;
-          continue; // reuse existing; do not insert a duplicate
-        }
-      }
-
-      categoryIdRemap[importedId] = importedId;
-      await txn.insert('macro_goal_categories', {
+      final rid = await txn.insert('macro_goal_categories', {
         'id': importedId,
         'user_id': owner,
         'name': name,
@@ -543,92 +698,275 @@ class DesktopPrivateDb {
         'updated_at': cat['updated_at'] ?? cat['created_at'] ?? now,
         'archived_at': cat['archived_at'],
       }, conflictAlgorithm: ConflictAlgorithm.ignore);
+      if (rid != 0) {
+        stats.categories.added++;
+      } else {
+        // Insert was ignored — a colliding row exists that the preloaded set
+        // missed (e.g. an exact-name duplicate raced in). Remap onto it so
+        // referencing macro goals never dangle.
+        final row = await txn.query(
+          'macro_goal_categories',
+          columns: ['id'],
+          where: 'user_id = ? AND name = ?',
+          whereArgs: [owner, name],
+          limit: 1,
+        );
+        if (row.isNotEmpty) {
+          final fid = row.first['id'] as String;
+          catRemap[importedId] = fid;
+          validCatIds.add(fid);
+        }
+        stats.categories.unchanged++;
+      }
     }
 
-    // Track which goal ids exist so goal_logs referencing a missing/orphan
-    // goal_id can be skipped (the FK would otherwise abort the whole import).
-    final importedGoalIds = <String>{};
+    // ── Goals: identity by id, last-write-wins by updated_at. ──
+    final existingGoals = replaceExisting
+        ? const <String, Map<String, Object?>>{}
+        : {
+            for (final r in await txn.query(
+              'goals',
+              columns: ['id', 'created_at', 'updated_at'],
+              where: 'user_id = ?',
+              whereArgs: [owner],
+            ))
+              r['id'] as String: r,
+          };
+    // Logs may attach to goals that already exist locally (merge mode) as well
+    // as to goals introduced by this import; anything else is orphan-skipped
+    // (the FK would otherwise abort the whole import).
+    final knownGoalIds = <String>{...existingGoals.keys};
 
     for (final g in _listOf(backupData['goals'])) {
-      final goalId = (g['id'] as String?) ?? const Uuid().v4();
-      importedGoalIds.add(goalId);
-      await txn.insert('goals', {
-        'id': goalId,
-        'user_id': owner,
-        'title': g['title'] ?? '',
-        'description': g['description'],
-        'icon': g['icon'],
-        'color': g['color'] ?? '#3B82F6',
-        'frequency_days': _encodeFrequency(g['frequency_days']),
-        'start_date': g['start_date'] ?? g['created_at'] ?? now,
-        'end_date': g['end_date'],
-        'display_order': g['display_order'],
-        'reminder_time': g['reminder_time'],
-        'created_at': g['created_at'] ?? now,
-        'updated_at': g['updated_at'] ?? now,
-      }, conflictAlgorithm: ConflictAlgorithm.ignore);
+      final id = (g['id'] as String?) ?? const Uuid().v4();
+      final existing = existingGoals[id];
+      if (existing == null) {
+        // Only register the goal as "known" and count it if the row actually
+        // landed (rid == 0 means INSERT OR IGNORE dropped it). This keeps a
+        // non-inserted goal out of knownGoalIds so its logs are correctly
+        // orphan-skipped instead of FK-aborting the whole transaction.
+        final rid = await txn.insert(
+          'goals',
+          _goalRow(g, id, owner, (g['created_at'] as String?) ?? now, now),
+          conflictAlgorithm: ConflictAlgorithm.ignore,
+        );
+        if (rid != 0) {
+          knownGoalIds.add(id);
+          stats.habits.added++;
+        }
+      } else if (incomingWins(
+        incoming: g['updated_at'] as String?,
+        existing: existing['updated_at'] as String?,
+      )) {
+        final n = await txn.update(
+          'goals',
+          _goalRow(g, id, owner, existing['created_at'] as String? ?? now, now),
+          where: 'id = ?',
+          whereArgs: [id],
+        );
+        if (n > 0) {
+          stats.habits.updated++;
+        } else {
+          stats.habits.unchanged++;
+        }
+      } else {
+        stats.habits.unchanged++;
+      }
     }
 
-    for (final l in _listOf(backupData['goal_logs'])) {
-      final goalId = l['goal_id'];
-      final date = l['date'];
-      // Skip rows that would violate NOT NULL (goal_id, date) or the goal_id FK
-      // (a goal that is not part of this import) instead of aborting.
-      if (goalId == null || date == null) continue;
-      if (!importedGoalIds.contains(goalId)) continue;
-      await txn.insert('goal_logs', {
-        'id': l['id'] ?? const Uuid().v4(),
-        'user_id': owner,
-        'goal_id': goalId,
-        'date': date,
-        'status': l['status'] ?? 'done',
-        'value': l['value'],
-        'streak': l['streak'] ?? 0,
-        'created_at': l['created_at'] ?? now,
-        'updated_at': l['updated_at'] ?? now,
-      }, conflictAlgorithm: ConflictAlgorithm.ignore);
-    }
+    // ── Macro goals: identity by id, LWW; category_id remapped onto the merged
+    // category, nulled if it would dangle (the insert would otherwise violate
+    // the FK and abort). ──
+    final existingMacros = replaceExisting
+        ? const <String, Map<String, Object?>>{}
+        : {
+            for (final r in await txn.query(
+              'long_term_goals',
+              columns: ['id', 'created_at', 'updated_at'],
+              where: 'user_id = ?',
+              whereArgs: [owner],
+            ))
+              r['id'] as String: r,
+          };
 
     for (final g in _listOf(backupData['long_term_goals'])) {
-      // Remap the category reference onto the resolved id so merge-mode name
-      // collisions don't leave a dangling category_id (Bug 3).
-      final importedCategoryId = g['category_id'] as String?;
-      final categoryId = importedCategoryId == null
+      final id = (g['id'] as String?) ?? const Uuid().v4();
+      final importedCatId = g['category_id'] as String?;
+      final remapped = importedCatId == null
           ? null
-          : categoryIdRemap[importedCategoryId] ?? importedCategoryId;
-      await txn.insert('long_term_goals', {
-        'id': g['id'] ?? const Uuid().v4(),
-        'user_id': owner,
-        'title': g['title'] ?? '',
-        'status': g['status'] ?? 'active',
-        'type': g['type'] ?? 'annual',
-        'year': g['year'],
-        'month': g['month'],
-        'week_number': g['week_number'],
-        'quarter': g['quarter'],
-        'category_key': g['category_key'],
-        'category_id': categoryId,
-        'created_at': g['created_at'] ?? now,
-        'updated_at': g['updated_at'] ?? now,
-      }, conflictAlgorithm: ConflictAlgorithm.ignore);
+          : (catRemap[importedCatId] ?? importedCatId);
+      final categoryId = (remapped != null && validCatIds.contains(remapped))
+          ? remapped
+          : null;
+      final existing = existingMacros[id];
+      if (existing == null) {
+        final rid = await txn.insert(
+          'long_term_goals',
+          _macroRow(
+            g,
+            id,
+            owner,
+            categoryId,
+            (g['created_at'] as String?) ?? now,
+            now,
+          ),
+          conflictAlgorithm: ConflictAlgorithm.ignore,
+        );
+        if (rid != 0) {
+          stats.macroGoals.added++;
+        }
+      } else if (incomingWins(
+        incoming: g['updated_at'] as String?,
+        existing: existing['updated_at'] as String?,
+      )) {
+        final n = await txn.update(
+          'long_term_goals',
+          _macroRow(
+            g,
+            id,
+            owner,
+            categoryId,
+            existing['created_at'] as String? ?? now,
+            now,
+          ),
+          where: 'id = ?',
+          whereArgs: [id],
+        );
+        if (n > 0) {
+          stats.macroGoals.updated++;
+        } else {
+          stats.macroGoals.unchanged++;
+        }
+      } else {
+        stats.macroGoals.unchanged++;
+      }
     }
 
+    // ── Goal logs: identity by (goal_id, date), LWW. Orphan logs (no goal) are
+    // skipped to respect the FK. ──
+    final existingLogs = replaceExisting
+        ? const <String, Map<String, Object?>>{}
+        : {
+            for (final r in await txn.query(
+              'goal_logs',
+              columns: ['id', 'goal_id', 'date', 'updated_at'],
+              where: 'user_id = ?',
+              whereArgs: [owner],
+            ))
+              '${r['goal_id']}|${r['date']}': r,
+          };
+    final affectedGoals = <String>{};
+
+    for (final l in _listOf(backupData['goal_logs'])) {
+      final goalId = l['goal_id'] as String?;
+      final date = l['date'] as String?;
+      if (goalId == null || date == null || !knownGoalIds.contains(goalId)) {
+        continue;
+      }
+      final key = '$goalId|$date';
+      final existing = existingLogs[key];
+      if (existing == null) {
+        final rid = await txn.insert('goal_logs', {
+          'id': (l['id'] as String?) ?? const Uuid().v4(),
+          'user_id': owner,
+          'goal_id': goalId,
+          'date': date,
+          'status': l['status'] ?? 'done',
+          'value': l['value'],
+          'streak': l['streak'] ?? 0,
+          'created_at': l['created_at'] ?? now,
+          'updated_at': l['updated_at'] ?? now,
+        }, conflictAlgorithm: ConflictAlgorithm.ignore);
+        if (rid != 0) {
+          affectedGoals.add(goalId);
+          stats.logs.added++;
+        }
+      } else if (incomingWins(
+        incoming: l['updated_at'] as String?,
+        existing: existing['updated_at'] as String?,
+      )) {
+        final n = await txn.update(
+          'goal_logs',
+          {
+            'status': l['status'] ?? 'done',
+            'value': l['value'],
+            'updated_at': l['updated_at'] ?? now,
+          },
+          where: 'id = ?',
+          whereArgs: [existing['id']],
+        );
+        if (n > 0) {
+          affectedGoals.add(goalId);
+          stats.logs.updated++;
+        } else {
+          stats.logs.unchanged++;
+        }
+      } else {
+        stats.logs.unchanged++;
+      }
+    }
+
+    // ── Daily moods: identity by (user_id, date), LWW. ──
+    final existingMoods = replaceExisting
+        ? const <String, Map<String, Object?>>{}
+        : {
+            for (final r in await txn.query(
+              'daily_moods',
+              columns: ['id', 'date', 'updated_at'],
+              where: 'user_id = ?',
+              whereArgs: [owner],
+            ))
+              r['date'] as String: r,
+          };
+
     for (final m in _listOf(backupData['daily_moods'])) {
+      final date = m['date'] as String?;
       final moodScore = _validScore(m['mood_score']);
       final energyScore = _validScore(m['energy_score']);
-      // Both scores are NOT NULL with a CHECK (0..10); skip the row if either is
+      // date/scores are NOT NULL with a CHECK (0..10); skip the row if any is
       // missing or out of range instead of aborting the transaction.
-      if (moodScore == null || energyScore == null) continue;
-      await txn.insert('daily_moods', {
-        'id': m['id'] ?? const Uuid().v4(),
-        'user_id': owner,
-        'date': m['date'],
-        'mood_score': moodScore,
-        'energy_score': energyScore,
-        'created_at': m['created_at'] ?? now,
-        'updated_at': m['updated_at'] ?? now,
-      }, conflictAlgorithm: ConflictAlgorithm.ignore);
+      if (date == null || moodScore == null || energyScore == null) continue;
+      final existing = existingMoods[date];
+      if (existing == null) {
+        final rid = await txn.insert('daily_moods', {
+          'id': (m['id'] as String?) ?? const Uuid().v4(),
+          'user_id': owner,
+          'date': date,
+          'mood_score': moodScore,
+          'energy_score': energyScore,
+          'created_at': m['created_at'] ?? now,
+          'updated_at': m['updated_at'] ?? now,
+        }, conflictAlgorithm: ConflictAlgorithm.ignore);
+        if (rid != 0) {
+          stats.moods.added++;
+        }
+      } else if (incomingWins(
+        incoming: m['updated_at'] as String?,
+        existing: existing['updated_at'] as String?,
+      )) {
+        final n = await txn.update(
+          'daily_moods',
+          {
+            'mood_score': moodScore,
+            'energy_score': energyScore,
+            'updated_at': m['updated_at'] ?? now,
+          },
+          where: 'id = ?',
+          whereArgs: [existing['id']],
+        );
+        if (n > 0) {
+          stats.moods.updated++;
+        } else {
+          stats.moods.unchanged++;
+        }
+      } else {
+        stats.moods.unchanged++;
+      }
     }
+
+    // ── Recompute streaks over the merged history for every touched goal, so
+    // the stored signed streak reflects local + imported logs combined. ──
+    await recomputeStreaksForGoals(txn, affectedGoals);
 
     // Restore the profile (name / date of birth / settings) onto the owner row.
     // sanitizeSettings filters to known columns, coerces bools, forces the
@@ -655,6 +993,62 @@ class DesktopPrivateDb {
         }
       }
     }
+
+    return stats;
+  }
+
+  /// Full `goals` row from a canonical backup record. [createdAt] is decided
+  /// by the caller (the file's value on insert, the existing row's on an LWW
+  /// update) so a winning update never rewrites the local created_at.
+  static Map<String, Object?> _goalRow(
+    Map<String, dynamic> g,
+    String id,
+    String owner,
+    String createdAt,
+    String updatedAt,
+  ) {
+    return {
+      'id': id,
+      'user_id': owner,
+      'title': g['title'] ?? '',
+      'description': g['description'],
+      'icon': g['icon'],
+      'color': g['color'] ?? '#3B82F6',
+      'frequency_days': _encodeFrequency(g['frequency_days']),
+      'start_date': g['start_date'] ?? g['created_at'] ?? updatedAt,
+      'end_date': g['end_date'],
+      'display_order': g['display_order'],
+      'reminder_time': g['reminder_time'],
+      'created_at': createdAt,
+      'updated_at': g['updated_at'] ?? updatedAt,
+    };
+  }
+
+  /// Full `long_term_goals` row from a canonical backup record; [categoryId]
+  /// is the already-remapped (and FK-safe) category reference.
+  static Map<String, Object?> _macroRow(
+    Map<String, dynamic> g,
+    String id,
+    String owner,
+    String? categoryId,
+    String createdAt,
+    String updatedAt,
+  ) {
+    return {
+      'id': id,
+      'user_id': owner,
+      'title': g['title'] ?? '',
+      'status': g['status'] ?? 'active',
+      'type': g['type'] ?? 'annual',
+      'year': g['year'],
+      'month': g['month'],
+      'week_number': g['week_number'],
+      'quarter': g['quarter'],
+      'category_key': g['category_key'],
+      'category_id': categoryId,
+      'created_at': createdAt,
+      'updated_at': g['updated_at'] ?? updatedAt,
+    };
   }
 
   // ---------------------------------------------------------------------------

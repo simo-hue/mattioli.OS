@@ -921,10 +921,24 @@ class _Translations$settingsPage$de extends Translations$settingsPage$en {
 	@override String get importReplaceTitle => 'Aktuelle Daten ersetzen';
 	@override String get importReplaceSubtitle => 'Löscht alle vorhandenen lokalen Daten vor dem Import. (Empfohlen)';
 	@override String get importMergeTitle => 'Mit aktuellen Daten zusammenführen';
-	@override String get importMergeSubtitle => 'Fügt die importierten Daten hinzu, ohne etwas zu löschen. Kann zu Duplikaten führen.';
+	@override String get importMergeSubtitle => 'Wird mit deinen Daten zusammengeführt, wobei die neueste Version jedes Eintrags behalten wird.';
 	@override String get importConfirmButton => 'Import bestätigen';
 	@override String get importSuccess => 'Import erfolgreich abgeschlossen!';
 	@override String importError({required Object error}) => 'Fehler beim Import: ${error}';
+	@override String importPreviewSkipped({required Object count}) => '⚠ ${count} ungültige Datensätze werden übersprungen';
+	@override String get importCompletedTitle => 'Import abgeschlossen';
+	@override String get importSummaryReplaced => 'Deine Daten wurden durch das Backup ersetzt. Zusammenfassung:';
+	@override String get importSummaryMerged => 'Deine Daten wurden mit dem Backup zusammengeführt. Zusammenfassung:';
+	@override String get importSummaryDone => 'Super!';
+	@override String get importEntityHabits => 'Gewohnheiten';
+	@override String get importEntityLogs => 'Gewohnheits-Logs';
+	@override String get importEntityMacroGoals => 'Makro-Ziele';
+	@override String get importEntityCategories => 'Kategorien';
+	@override String get importEntityMoods => 'Stimmungsdaten';
+	@override String importRowReplace({required Object count, required Object label}) => '${count} ${label}';
+	@override String importRowMerge({required Object label, required Object added, required Object updated, required Object unchanged}) => '${label}: ${added} hinzugefügt, ${updated} aktualisiert, ${unchanged} unverändert';
+	@override String importRowSkipped({required Object count}) => ', ${count} übersprungen';
+	@override String get exportDoneSaved => 'Die JSON-Datei wurde am gewählten Ort gespeichert.';
 	@override String get proTitle => 'Evolve Pro';
 	@override String get proSubtitle => 'Plan, Kaufwiederherstellung und Abonnementverwaltung';
 	@override String get revenueCatMacos => 'RevenueCat macOS';
@@ -1957,10 +1971,24 @@ extension on TranslationsDe {
 			'settingsPage.importReplaceTitle' => 'Aktuelle Daten ersetzen',
 			'settingsPage.importReplaceSubtitle' => 'Löscht alle vorhandenen lokalen Daten vor dem Import. (Empfohlen)',
 			'settingsPage.importMergeTitle' => 'Mit aktuellen Daten zusammenführen',
-			'settingsPage.importMergeSubtitle' => 'Fügt die importierten Daten hinzu, ohne etwas zu löschen. Kann zu Duplikaten führen.',
+			'settingsPage.importMergeSubtitle' => 'Wird mit deinen Daten zusammengeführt, wobei die neueste Version jedes Eintrags behalten wird.',
 			'settingsPage.importConfirmButton' => 'Import bestätigen',
 			'settingsPage.importSuccess' => 'Import erfolgreich abgeschlossen!',
 			'settingsPage.importError' => ({required Object error}) => 'Fehler beim Import: ${error}',
+			'settingsPage.importPreviewSkipped' => ({required Object count}) => '⚠ ${count} ungültige Datensätze werden übersprungen',
+			'settingsPage.importCompletedTitle' => 'Import abgeschlossen',
+			'settingsPage.importSummaryReplaced' => 'Deine Daten wurden durch das Backup ersetzt. Zusammenfassung:',
+			'settingsPage.importSummaryMerged' => 'Deine Daten wurden mit dem Backup zusammengeführt. Zusammenfassung:',
+			'settingsPage.importSummaryDone' => 'Super!',
+			'settingsPage.importEntityHabits' => 'Gewohnheiten',
+			'settingsPage.importEntityLogs' => 'Gewohnheits-Logs',
+			'settingsPage.importEntityMacroGoals' => 'Makro-Ziele',
+			'settingsPage.importEntityCategories' => 'Kategorien',
+			'settingsPage.importEntityMoods' => 'Stimmungsdaten',
+			'settingsPage.importRowReplace' => ({required Object count, required Object label}) => '${count} ${label}',
+			'settingsPage.importRowMerge' => ({required Object label, required Object added, required Object updated, required Object unchanged}) => '${label}: ${added} hinzugefügt, ${updated} aktualisiert, ${unchanged} unverändert',
+			'settingsPage.importRowSkipped' => ({required Object count}) => ', ${count} übersprungen',
+			'settingsPage.exportDoneSaved' => 'Die JSON-Datei wurde am gewählten Ort gespeichert.',
 			'settingsPage.proTitle' => 'Evolve Pro',
 			'settingsPage.proSubtitle' => 'Plan, Kaufwiederherstellung und Abonnementverwaltung',
 			'settingsPage.revenueCatMacos' => 'RevenueCat macOS',

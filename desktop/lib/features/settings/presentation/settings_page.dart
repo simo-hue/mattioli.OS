@@ -12,6 +12,7 @@ import 'package:evolve_desktop/core/calendar_view_preference.dart';
 import 'package:evolve_desktop/core/tutorial_provider.dart';
 import 'package:evolve_desktop/core/app_logger.dart';
 import 'package:evolve_desktop/core/desktop_private_db.dart';
+import 'package:evolve_desktop/core/import_merge_stats.dart';
 import 'package:evolve_desktop/core/desktop_private_sync_service.dart';
 import 'package:evolve_desktop/features/auth/application/auth_controller.dart';
 import 'package:evolve_desktop/features/auth/application/consent_controller.dart';
@@ -107,8 +108,7 @@ class _SettingsPageState extends ConsumerState<SettingsPage> {
     _aiSuggestions = preferences.getBool('pref_ai_suggestions') ?? false;
     _focusMode = preferences.getBool('pref_focus_mode') ?? false;
     _milestones = preferences.getBool('pref_milestones') ?? true;
-    _deepWorkInsights =
-        preferences.getBool('pref_deep_work_insights') ?? false;
+    _deepWorkInsights = preferences.getBool('pref_deep_work_insights') ?? false;
     // The pref stores the canonical CODE ('mese'…); older builds stored the
     // display label — calendarViewLabel normalizes both to the label.
     _calendarView = calendarViewLabel(
@@ -761,89 +761,121 @@ class _SettingsPageState extends ConsumerState<SettingsPage> {
   }
 
   Future<void> _exportData() async {
-    // Private mode: export the full local data space from the encrypted DB
-    // (profile, habits, logs, macro goals, categories, moods).
-    if (ref.read(activeDesktopDataModeProvider).isPrivate) {
-      final payload = await DesktopPrivateDb.instance.exportData();
-      final privateJson = const JsonEncoder.withIndent('  ').convert(payload);
-      if (Platform.isLinux) {
-        await Clipboard.setData(ClipboardData(text: privateJson));
+    try {
+      final isPrivateMode = ref.read(activeDesktopDataModeProvider).isPrivate;
+      final String json;
+      final String fileName;
+      final String shareText;
+      final String doneTitle;
+
+      if (isPrivateMode) {
+        // Private mode: export the full local data space from the encrypted DB
+        // (profile, settings, habits, logs, macro goals, categories, moods) in
+        // the canonical cross-client shape (see exportSnapshot).
+        final payload = await DesktopPrivateDb.instance.exportData();
+        json = const JsonEncoder.withIndent('  ').convert(payload);
+        fileName = 'evolve_private_export.json';
+        shareText = t.settingsPage.exportPrivateShareText;
+        doneTitle = t.privateData.exportDoneTitle;
+      } else {
+        // Cloud mode: emit a full, lossless snapshot of the user's Supabase
+        // rows in the same canonical cross-client shape as the Private-mode
+        // (and mobile) export, so every importer round-trips it (categories +
+        // goals + logs + macro goals + moods + profile). Read straight from
+        // the tables — the in-memory dashboard snapshot is lossy (no log
+        // ids/streaks, no category list).
+        final client = Supabase.instance.client;
+        final userId = client.auth.currentUser?.id;
+        if (userId == null) {
+          if (!mounted) return;
+          _showGate(
+            t.settingsPage.exportDoneTitle,
+            t.settingsPage.operationFailed,
+          );
+          return;
+        }
+        Future<List<Map<String, dynamic>>> rows(String table) async {
+          final res = await client.from(table).select().eq('user_id', userId);
+          return List<Map<String, dynamic>>.from(res);
+        }
+
+        final profileRow = await client
+            .from('profiles')
+            .select()
+            .eq('id', userId)
+            .maybeSingle();
+
+        final goals = await rows('goals');
+        for (final g in goals) {
+          // Supabase already returns integer[] as a list; the decode keeps the
+          // representation stable if a stored string ever sneaks through.
+          g['frequency_days'] = DesktopPrivateDb.decodeFrequencyDays(
+            g['frequency_days'],
+          );
+        }
+
+        json = const JsonEncoder.withIndent('  ').convert({
+          'schemaVersion': 1,
+          'exportDate': DateTime.now().toIso8601String(),
+          'mode': 'cloud',
+          'profile': profileRow,
+          'settings': profileRow,
+          'habits': goals,
+          'habitLogs': await rows('goal_logs'),
+          'macroGoals': await rows('long_term_goals'),
+          'macroGoalCategories': await rows('macro_goal_categories'),
+          'dailyMoods': await rows('daily_moods'),
+        });
+        fileName = 'mattioli_os_export.json';
+        shareText = t.settingsPage.exportShareText;
+        doneTitle = t.settingsPage.exportDoneTitle;
+      }
+
+      // Delivery. macOS gets a native Save dialog (requires the user-selected
+      // read-write entitlement); Linux has no share sheet so the clipboard is
+      // used; anything else keeps the share-sheet behavior.
+      if (Platform.isMacOS) {
+        final path = await FilePicker.saveFile(
+          fileName: fileName,
+          type: FileType.custom,
+          allowedExtensions: const ['json'],
+          bytes: utf8.encode(json),
+        );
+        if (path == null) return; // user cancelled the dialog — not an error
+        if (!mounted) return;
+        _showGate(doneTitle, t.settingsPage.exportDoneSaved);
+      } else if (Platform.isLinux) {
+        await Clipboard.setData(ClipboardData(text: json));
+        if (!mounted) return;
+        _showGate(
+          doneTitle,
+          isPrivateMode
+              ? t.privateData.exportDoneClipboard
+              : t.settingsPage.exportDoneClipboard,
+        );
       } else {
         await SharePlus.instance.share(
           ShareParams(
             files: [
-              XFile.fromData(
-                utf8.encode(privateJson),
-                mimeType: 'application/json',
-              ),
+              XFile.fromData(utf8.encode(json), mimeType: 'application/json'),
             ],
-            fileNameOverrides: const ['evolve_private_export.json'],
-            text: t.settingsPage.exportPrivateShareText,
+            fileNameOverrides: [fileName],
+            text: shareText,
           ),
         );
+        if (!mounted) return;
+        _showGate(
+          doneTitle,
+          isPrivateMode
+              ? t.privateData.exportDoneShare
+              : t.settingsPage.exportDoneShare,
+        );
       }
-      if (!mounted) return;
-      _showGate(
-        t.privateData.exportDoneTitle,
-        Platform.isLinux
-            ? t.privateData.exportDoneClipboard
-            : t.privateData.exportDoneShare,
-      );
-      return;
-    }
-    // Cloud mode: emit a full, lossless snapshot of the user's Supabase rows in
-    // the same native DB-row shape as the Private-mode export, so the exact same
-    // importer round-trips it (categories + goals + logs + macro goals + moods +
-    // profile). Read straight from the tables — the in-memory dashboard snapshot
-    // is lossy (no log ids/streaks, no category list).
-    final client = Supabase.instance.client;
-    final userId = client.auth.currentUser?.id;
-    if (userId == null) {
+    } catch (error, stack) {
+      AppLogger.error('Errore durante exportData', error, stack);
       if (!mounted) return;
       _showGate(t.settingsPage.exportDoneTitle, t.settingsPage.operationFailed);
-      return;
     }
-    Future<List<Map<String, dynamic>>> rows(String table) async {
-      final res = await client.from(table).select().eq('user_id', userId);
-      return List<Map<String, dynamic>>.from(res);
-    }
-
-    final profileRow = await client
-        .from('profiles')
-        .select()
-        .eq('id', userId)
-        .maybeSingle();
-
-    final json = const JsonEncoder.withIndent('  ').convert({
-      'exportDate': DateTime.now().toIso8601String(),
-      'mode': 'cloud',
-      'profile': profileRow,
-      'goals': await rows('goals'),
-      'goal_logs': await rows('goal_logs'),
-      'long_term_goals': await rows('long_term_goals'),
-      'daily_moods': await rows('daily_moods'),
-      'macro_goal_categories': await rows('macro_goal_categories'),
-    });
-    if (Platform.isLinux) {
-      await Clipboard.setData(ClipboardData(text: json));
-    } else {
-      await SharePlus.instance.share(
-        ShareParams(
-          files: [
-            XFile.fromData(utf8.encode(json), mimeType: 'application/json'),
-          ],
-          fileNameOverrides: const ['mattioli_os_export.json'],
-          text: t.settingsPage.exportShareText,
-        ),
-      );
-    }
-    if (!mounted) return;
-    _showGate(
-      t.settingsPage.exportDoneTitle,
-      Platform.isLinux
-          ? t.settingsPage.exportDoneClipboard
-          : t.settingsPage.exportDoneShare,
-    );
   }
 
   Future<void> _signOut() async {
@@ -1109,7 +1141,7 @@ class _SettingsPageState extends ConsumerState<SettingsPage> {
 
   Future<void> _importData() async {
     try {
-      final result = await FilePicker.platform.pickFiles(
+      final result = await FilePicker.pickFiles(
         type: FileType.custom,
         allowedExtensions: ['zip', 'json'],
       );
@@ -1183,6 +1215,20 @@ class _SettingsPageState extends ConsumerState<SettingsPage> {
                           color: context.evolveColors.foreground,
                         ),
                       ),
+                      if (preview.totalSkipped > 0)
+                        Padding(
+                          padding: const EdgeInsets.only(top: 12),
+                          child: Text(
+                            t.settingsPage.importPreviewSkipped(
+                              count: preview.totalSkipped,
+                            ),
+                            style: TextStyle(
+                              color: Theme.of(context).colorScheme.error,
+                              fontSize: 12,
+                              fontWeight: FontWeight.w500,
+                            ),
+                          ),
+                        ),
                       const SizedBox(height: 24),
                       RadioGroup<bool>(
                         groupValue: replaceExisting,
@@ -1290,26 +1336,24 @@ class _SettingsPageState extends ConsumerState<SettingsPage> {
         ),
       );
 
-      await importService.executeImport(
-        rawData: preview.rawData,
+      final stats = await importService.executeImport(
+        canonicalData: preview.canonicalData,
         replaceExisting: replaceExisting,
         isPrivateMode: isPrivateMode,
+        skipped: preview.skipped,
       );
 
       if (!mounted) return;
       Navigator.pop(context); // close loading
 
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(
-          content: Text(t.settingsPage.importSuccess),
-          backgroundColor: Colors.green,
-        ),
-      );
-
       // Refresh dashboard + category/profile providers so imported data shows.
       ref.invalidate(dashboardControllerProvider);
       ref.invalidate(desktopGoalCategoriesControllerProvider);
       if (isPrivateMode) ref.invalidate(privateProfileProvider);
+
+      // Per-entity outcome summary (added / updated / unchanged / skipped),
+      // mirroring the mobile client's post-import dialog.
+      await _showImportResult(stats);
     } catch (e, st) {
       AppLogger.error('Errore durante importData', e, st);
       if (!mounted) return;
@@ -1323,6 +1367,119 @@ class _SettingsPageState extends ConsumerState<SettingsPage> {
         ),
       );
     }
+  }
+
+  /// Post-import summary dialog: one line per entity with the merge outcome,
+  /// mirroring mobile's import-completed dialog.
+  Future<void> _showImportResult(ImportMergeStats stats) {
+    return showEvolveDialog<void>(
+      context: context,
+      builder: (ctx) => EvolveAlertDialog(
+        icon: LucideIcons.circleCheck,
+        title: Text(t.settingsPage.importCompletedTitle),
+        content: Column(
+          mainAxisSize: MainAxisSize.min,
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Text(
+              stats.replaced
+                  ? t.settingsPage.importSummaryReplaced
+                  : t.settingsPage.importSummaryMerged,
+              style: TextStyle(color: ctx.evolveColors.foreground),
+            ),
+            const SizedBox(height: 12),
+            _importSummaryRow(
+              ctx,
+              LucideIcons.check,
+              _mergeRowText(
+                stats,
+                stats.habits,
+                t.settingsPage.importEntityHabits,
+              ),
+            ),
+            _importSummaryRow(
+              ctx,
+              LucideIcons.history,
+              _mergeRowText(stats, stats.logs, t.settingsPage.importEntityLogs),
+            ),
+            _importSummaryRow(
+              ctx,
+              LucideIcons.target,
+              _mergeRowText(
+                stats,
+                stats.macroGoals,
+                t.settingsPage.importEntityMacroGoals,
+              ),
+            ),
+            _importSummaryRow(
+              ctx,
+              LucideIcons.folder,
+              _mergeRowText(
+                stats,
+                stats.categories,
+                t.settingsPage.importEntityCategories,
+              ),
+            ),
+            _importSummaryRow(
+              ctx,
+              LucideIcons.smile,
+              _mergeRowText(
+                stats,
+                stats.moods,
+                t.settingsPage.importEntityMoods,
+              ),
+            ),
+          ],
+        ),
+        actions: [
+          FilledButton(
+            onPressed: () => Navigator.pop(ctx),
+            child: Text(t.settingsPage.importSummaryDone),
+          ),
+        ],
+      ),
+    );
+  }
+
+  /// One summary line. Replace mode shows a single total; merge mode breaks the
+  /// outcome into added / updated / unchanged. Invalid rows append ", N skipped".
+  String _mergeRowText(ImportMergeStats stats, EntityMerge m, String label) {
+    final base = stats.replaced
+        ? t.settingsPage.importRowReplace(count: m.total, label: label)
+        : t.settingsPage.importRowMerge(
+            label: label,
+            added: m.added,
+            updated: m.updated,
+            unchanged: m.unchanged,
+          );
+    return m.skipped > 0
+        ? '$base${t.settingsPage.importRowSkipped(count: m.skipped)}'
+        : base;
+  }
+
+  Widget _importSummaryRow(BuildContext context, IconData icon, String text) {
+    return Padding(
+      padding: const EdgeInsets.symmetric(vertical: 4),
+      child: Row(
+        children: [
+          Icon(
+            icon,
+            size: 16,
+            color: context.evolveColors.foreground.withValues(alpha: 0.7),
+          ),
+          const SizedBox(width: 8),
+          Expanded(
+            child: Text(
+              text,
+              style: TextStyle(
+                color: context.evolveColors.foreground,
+                fontSize: 13,
+              ),
+            ),
+          ),
+        ],
+      ),
+    );
   }
 
   // ---------------------------------------------------------------------------
@@ -1343,8 +1500,7 @@ class _SettingsPageState extends ConsumerState<SettingsPage> {
     if (_syncBusy) return;
     setState(() => _syncBusy = true);
     try {
-      final status =
-          await action(ref.read(desktopPrivateSyncServiceProvider));
+      final status = await action(ref.read(desktopPrivateSyncServiceProvider));
       if (!mounted) return;
       setState(() => _syncStatus = status);
       // A pull writes straight to the encrypted DB — refresh the UI providers.
@@ -1378,7 +1534,10 @@ class _SettingsPageState extends ConsumerState<SettingsPage> {
 
   Future<void> _onSyncNow() async {
     final status = _syncStatus;
-    if (_syncBusy || status == null || !status.isEnabled || !status.isAvailable) {
+    if (_syncBusy ||
+        status == null ||
+        !status.isEnabled ||
+        !status.isAvailable) {
       return;
     }
     await _runSyncAction((service) => service.syncNow());

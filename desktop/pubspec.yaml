@@ -47,7 +47,9 @@ dependencies:
   local_auth: ^3.0.1
   purchases_flutter: ^10.2.0
   sentry_flutter: ^9.20.0
-  share_plus: ^13.1.0
+  # Pinned to the mobile client's pair: share_plus 13 requires win32 ^6 while
+  # file_picker <=11 requires win32 ^5, so 12.x + 11.x is the compatible combo.
+  share_plus: ^12.0.2
   sign_in_with_apple: ^7.0.1
   shared_preferences: ^2.5.5
   supabase_flutter: ^2.8.3
@@ -60,7 +62,9 @@ dependencies:
   fl_chart: ^1.2.0
   lucide_icons_flutter: ^3.1.14+2
   archive: ^4.0.9
-  file_picker: ^3.0.4
+  # v11 (mobile parity): static pickFiles/saveFile API; saveFile powers the
+  # native macOS Save dialog for data export.
+  file_picker: ^11.0.2
   flutter_markdown: ^0.7.7+1
 
   http: ^1.2.0

@@ -7,15 +7,27 @@ import 'package:uuid/uuid.dart';
 
 import 'desktop_private_db.dart';
 import 'app_logger.dart';
+import 'import_merge.dart';
+import 'import_merge_stats.dart';
 import 'streak_utils.dart';
 
+/// Counts shown in the pre-import preview: how many VALID records the file
+/// contributes per entity, the canonical data ready to import, and how many
+/// rows were dropped as invalid (so the user is warned before confirming).
 class BackupImportPreview {
   final int habitsCount;
   final int logsCount;
   final int macroGoalsCount;
   final int categoriesCount;
   final int moodsCount;
-  final Map<String, dynamic> rawData;
+
+  /// Canonical, VALIDATED backup — feed straight to
+  /// [DesktopBackupImportService.executeImport].
+  final Map<String, dynamic> canonicalData;
+
+  /// How many rows were dropped as invalid during validation, keyed by
+  /// 'habits' | 'logs' | 'macroGoals' | 'categories' | 'moods'.
+  final Map<String, int> skipped;
 
   const BackupImportPreview({
     required this.habitsCount,
@@ -23,24 +35,12 @@ class BackupImportPreview {
     required this.macroGoalsCount,
     required this.categoriesCount,
     required this.moodsCount,
-    required this.rawData,
+    required this.canonicalData,
+    required this.skipped,
   });
-}
 
-class BackupImportResult {
-  final int habitsCount;
-  final int logsCount;
-  final int macroGoalsCount;
-  final int categoriesCount;
-  final int moodsCount;
-
-  const BackupImportResult({
-    required this.habitsCount,
-    required this.logsCount,
-    required this.macroGoalsCount,
-    required this.categoriesCount,
-    required this.moodsCount,
-  });
+  /// Total invalid rows across all entities.
+  int get totalSkipped => skipped.values.fold(0, (a, b) => a + b);
 }
 
 /// Parses and imports backup archives on desktop.
@@ -50,21 +50,26 @@ class BackupImportResult {
 ///   1. **Web `.zip`** containing `backup.json` — the legacy web-app schema
 ///      (`goals`/`goal_logs`/`long_term_goals`/`goal_category_settings.mappings`
 ///      /`daily_moods`, hsl colors). Handled by [parseZipPreview].
-///   2. **Native DB-row `.json`** — the shape emitted by both desktop exports
-///      (`DesktopPrivateDb.exportData()` and the cloud export) and by the mobile
-///      private export: `goals`/`goal_logs`/`long_term_goals`
+///   2. **Native DB-row `.json`** — the snake_case container shape emitted by
+///      pre-1.x desktop exports: `goals`/`goal_logs`/`long_term_goals`
 ///      /`macro_goal_categories`/`daily_moods` (+ `profile`), hex colors.
-///   3. **Mobile cloud camelCase `.json`** (`mattioli_os_export.json`):
+///   3. **CamelCase `.json`** — the canonical cross-client export emitted by
+///      the mobile app AND by current desktop exports
+///      (`evolve_private_export.json` / `mattioli_os_export.json`):
 ///      `habits`/`habitLogs`/`macroGoals`/`macroGoalCategories`/`dailyMoods`
-///      (+ `profile`). The array *elements* already use snake_case DB keys, so
-///      only the container keys are renamed.
+///      (+ `profile`/`settings`/`schemaVersion`). The array *elements* already
+///      use snake_case DB keys, so only the container keys are renamed.
 ///
-/// Every shape is normalized to a single canonical model consumed by
-/// [buildImportModel]/[_processData] and then persisted to the encrypted DB
-/// (private mode) or Supabase (cloud mode).
+/// Every shape is normalized to a single canonical model, VALIDATED (invalid
+/// rows are dropped and counted — see `validateCanonical`), previewed, and
+/// then reconciled into the encrypted DB (private mode) or Supabase (cloud
+/// mode) by identity + last-write-wins, mirroring the mobile client's
+/// `BackupImportService` semantics. Records keep their **original** ids so a
+/// re-import deduplicates by identity instead of duplicating.
 class DesktopBackupImportService {
   final DesktopPrivateDb _privateStore;
   final SupabaseClient? _supabase;
+  static const _uuid = Uuid();
 
   DesktopBackupImportService(this._privateStore, this._supabase);
 
@@ -77,7 +82,7 @@ class DesktopBackupImportService {
     'date_of_birth',
   };
 
-  /// Reads a backup file and returns a preview + the normalized raw data.
+  /// Reads a backup file and returns a preview + the canonical validated data.
   /// Dispatches on file type: `.json` → native/camelCase shape; anything else is
   /// treated as a web `.zip` backup.
   Future<BackupImportPreview> parsePreview(String filePath) {
@@ -106,31 +111,7 @@ class DesktopBackupImportService {
     }
 
     final data = jsonDecode(jsonContent) as Map<String, dynamic>;
-
-    // Web backup structure:
-    // data['goals'] (habits)
-    // data['goal_logs'] (logs)
-    // data['long_term_goals'] (macro goals)
-    // data['goal_category_settings'] (contains mappings)
-    // data['daily_moods'] (moods)
-
-    final goals = (data['goals'] as List?) ?? [];
-    final logs = (data['goal_logs'] as List?) ?? [];
-    final macroGoals = (data['long_term_goals'] as List?) ?? [];
-    final categorySettings =
-        data['goal_category_settings'] as Map<String, dynamic>?;
-    final mappings =
-        categorySettings?['mappings'] as Map<String, dynamic>? ?? {};
-    final moods = (data['daily_moods'] as List?) ?? [];
-
-    return BackupImportPreview(
-      habitsCount: goals.length,
-      logsCount: logs.length,
-      macroGoalsCount: macroGoals.length,
-      categoriesCount: mappings.length,
-      moodsCount: moods.length,
-      rawData: data,
-    );
+    return _previewOf(buildCanonicalModel(data));
   }
 
   Future<BackupImportPreview> _parseJsonPreview(String filePath) async {
@@ -143,75 +124,55 @@ class DesktopBackupImportService {
     if (!_looksLikeBackup(normalized)) {
       throw Exception('Unsupported JSON backup: no recognizable data');
     }
+    return _previewOf(validateCanonical(_processData(normalized)));
+  }
 
-    final categories = normalized['macro_goal_categories'] as List? ?? const [];
+  static BackupImportPreview _previewOf(ValidatedBackup validated) {
+    final canonical = validated.canonical;
     return BackupImportPreview(
-      habitsCount: (normalized['goals'] as List?)?.length ?? 0,
-      logsCount: (normalized['goal_logs'] as List?)?.length ?? 0,
-      macroGoalsCount: (normalized['long_term_goals'] as List?)?.length ?? 0,
-      categoriesCount: categories.length,
-      moodsCount: (normalized['daily_moods'] as List?)?.length ?? 0,
-      rawData: normalized,
+      habitsCount: (canonical[kGoalsKey] as List).length,
+      logsCount: (canonical[kLogsKey] as List).length,
+      macroGoalsCount: (canonical[kMacrosKey] as List).length,
+      categoriesCount: (canonical[kCategoriesKey] as List).length,
+      moodsCount: (canonical[kMoodsKey] as List).length,
+      canonicalData: canonical,
+      skipped: validated.skipped,
     );
   }
 
-  Future<BackupImportResult> executeImport({
-    required Map<String, dynamic> rawData,
+  /// Imports already-validated [canonicalData] into the active store and
+  /// returns the per-entity merge outcome. [skipped] (from [parsePreview]) is
+  /// folded into the result so the summary can report how many rows were
+  /// dropped as invalid.
+  Future<ImportMergeStats> executeImport({
+    required Map<String, dynamic> canonicalData,
     required bool replaceExisting,
     required bool isPrivateMode,
+    Map<String, int> skipped = const {},
   }) async {
-    final processedData = buildImportModel(
-      rawData,
-      replaceExisting: replaceExisting,
-    );
+    final stats = isPrivateMode
+        ? await _privateStore.importData(
+            backupData: canonicalData,
+            replaceExisting: replaceExisting,
+          )
+        : await _executeCloudImport(canonicalData, replaceExisting);
 
-    if (isPrivateMode) {
-      await _privateStore.importData(
-        backupData: processedData,
-        replaceExisting: replaceExisting,
-      );
-    } else {
-      await _executeCloudImport(processedData, replaceExisting);
-    }
-
-    return BackupImportResult(
-      habitsCount: (processedData['goals'] as List?)?.length ?? 0,
-      logsCount: (processedData['goal_logs'] as List?)?.length ?? 0,
-      macroGoalsCount: (processedData['long_term_goals'] as List?)?.length ?? 0,
-      categoriesCount:
-          (processedData['macro_goal_categories'] as List?)?.length ?? 0,
-      moodsCount: (processedData['daily_moods'] as List?)?.length ?? 0,
-    );
+    stats.habits.skipped = skipped['habits'] ?? 0;
+    stats.logs.skipped = skipped['logs'] ?? 0;
+    stats.macroGoals.skipped = skipped['macroGoals'] ?? 0;
+    stats.categories.skipped = skipped['categories'] ?? 0;
+    stats.moods.skipped = skipped['moods'] ?? 0;
+    return stats;
   }
 
-  /// Pure transformation from a (web or normalized-native) raw backup into the
-  /// canonical import model persisted by the DB/Supabase layers. Exposed for
-  /// round-trip tests.
-  static Map<String, dynamic> buildImportModel(
-    Map<String, dynamic> rawData, {
-    required bool replaceExisting,
-  }) => _processData(rawData, replaceExisting);
+  /// Pure pipeline from any raw `.json`/`.zip` backup map to the canonical
+  /// VALIDATED import model: normalize the container shape, process (colors,
+  /// web-category synthesis, frequency decode), validate (drop + count invalid
+  /// rows). Exposed for round-trip tests.
+  static ValidatedBackup buildCanonicalModel(Map<String, dynamic> data) =>
+      validateCanonical(_processData(_normalizeShape(data)));
 
-  /// Builds the canonical import model from a raw `.json` backup (native DB-row
-  /// or mobile camelCase shape). This is exactly what the `.json` import path
-  /// runs: normalize the shape, then process. Exposed for round-trip tests.
-  static Map<String, dynamic> modelFromJson(
-    Map<String, dynamic> data, {
-    required bool replaceExisting,
-  }) => _processData(_normalizeShape(data), replaceExisting);
-
-  static Map<String, dynamic> _processData(
-    Map<String, dynamic> rawData,
-    bool replaceExisting,
-  ) {
-    const uuid = Uuid();
-    final Map<String, String> idMap = {}; // oldId -> newId
-
-    String mapId(String oldId) {
-      if (replaceExisting) return oldId;
-      return idMap.putIfAbsent(oldId, () => uuid.v4());
-    }
-
+  static Map<String, dynamic> _processData(Map<String, dynamic> rawData) {
     // 1. Process Categories.
     // Native shape carries `macro_goal_categories` (a list with stable ids and
     // hex colors); the web shape carries `goal_category_settings.mappings`
@@ -225,16 +186,15 @@ class DesktopBackupImportService {
         if (raw is! Map) continue;
         final c = Map<String, dynamic>.from(raw);
         // Keep the imported id stable so macro goals' `category_id` still
-        // resolves; merge-mode name-collision remapping happens in applyImport.
-        final id = (c['id'] as String?) ?? uuid.v4();
+        // resolves; identity/name reconciliation happens at merge time.
         processedCategories.add({
-          'id': id,
-          'name': c['name'] ?? 'Categoria',
+          'id': _sid(c['id']) ?? _uuid.v4(),
+          'name': c['name'],
           'color': _hslToHex((c['color'] as String?) ?? '#6B7280'),
           'created_at': c['created_at'],
-          // NB: `macro_goal_categories` has no `updated_at` column (cloud or
-          // mobile schema) — emitting one would make the Supabase upsert fail
-          // with PGRST204. The private importer coalesces its own timestamps.
+          // Carried for the private store (its schema has the column); the
+          // cloud plan deliberately omits it (the Supabase table doesn't).
+          'updated_at': c['updated_at'],
           'archived_at': c['archived_at'],
         });
       }
@@ -244,7 +204,7 @@ class DesktopBackupImportService {
       final mappings =
           categorySettings?['mappings'] as Map<String, dynamic>? ?? {};
       mappings.forEach((key, value) {
-        final id = uuid.v4();
+        final id = _uuid.v4();
         categoryColorToId[key] = id;
 
         String colorStr = '#6B7280';
@@ -265,26 +225,26 @@ class DesktopBackupImportService {
           'name': name,
           'color': colorStr,
           'created_at': categorySettings?['created_at'],
+          'updated_at': null,
           'archived_at': null,
         });
       });
     }
 
-    // 2. Process Goals
+    // 2. Process Goals — original ids are KEPT (identity-based merge dedups a
+    // re-import; a fresh id here would duplicate every habit instead).
     final processedGoals = <Map<String, dynamic>>[];
     for (final raw in (rawData['goals'] as List?) ?? []) {
       if (raw is! Map) continue;
       final g = Map<String, dynamic>.from(raw);
-      final oldId = g['id'] as String;
-      final newId = mapId(oldId);
 
       String colorHex = '#3B82F6';
       if (g['color'] != null) {
-        colorHex = _hslToHex(g['color'] as String);
+        colorHex = _hslToHex(g['color'].toString());
       }
 
       processedGoals.add({
-        'id': newId,
+        'id': _sid(g['id']) ?? _uuid.v4(),
         'title': g['title'],
         'description': g['description'],
         'icon': g['icon'],
@@ -302,75 +262,24 @@ class DesktopBackupImportService {
       });
     }
 
-    // 3. Process Goal Logs
-    final rawLogs = (rawData['goal_logs'] as List?) ?? [];
-    final logsByGoal = <String, List<Map<String, dynamic>>>{};
-    for (final raw in rawLogs) {
+    // 3. Process Goal Logs — ids and goal references are passed through; the
+    // stores match by (goal_id, date) and recompute streaks AFTER the merge
+    // from the combined history (a file-local streak would be wrong whenever
+    // the device already has logs for the same habit).
+    final processedLogs = <Map<String, dynamic>>[];
+    for (final raw in (rawData['goal_logs'] as List?) ?? []) {
       if (raw is! Map) continue;
       final l = Map<String, dynamic>.from(raw);
-      final goalId = l['goal_id'];
-      if (goalId is! String) continue;
-      final newGoalId = mapId(goalId);
-      logsByGoal.putIfAbsent(newGoalId, () => []).add(l);
-    }
-
-    final processedLogs = <Map<String, dynamic>>[];
-    for (final entry in logsByGoal.entries) {
-      final newGoalId = entry.key;
-      final logs = entry.value;
-
-      final matchedGoal = processedGoals.firstWhere(
-        (g) => g['id'] == newGoalId,
-        orElse: () => <String, dynamic>{},
-      );
-      final startDateStr = matchedGoal['start_date'] as String?;
-      final startDate = startDateStr != null
-          ? (DateTime.tryParse(startDateStr) ?? DateTime(2000))
-          : DateTime(2000);
-
-      logs.sort((a, b) {
-        final dateA =
-            DateTime.tryParse(a['date']?.toString() ?? '') ?? DateTime(2000);
-        final dateB =
-            DateTime.tryParse(b['date']?.toString() ?? '') ?? DateTime(2000);
-        return dateA.compareTo(dateB);
+      processedLogs.add({
+        'id': _sid(l['id']),
+        'goal_id': _sid(l['goal_id']),
+        'date': l['date']?.toString(),
+        'status': l['status'],
+        'value': l['value'],
+        'created_at': l['created_at'],
+        'updated_at': l['updated_at'],
+        'streak': l['streak'],
       });
-
-      final streakLogsMap = <String, Map<String, String>>{};
-
-      for (final l in logs) {
-        final oldLogId = l['id'] as String?;
-        final newLogId = replaceExisting ? (oldLogId ?? uuid.v4()) : uuid.v4();
-        final dateStr = l['date']?.toString();
-        if (dateStr == null) continue;
-        final status = (l['status'] as String?) ?? 'done';
-
-        int streak = 0;
-        final parsedDate = DateTime.tryParse(dateStr);
-        if (parsedDate != null) {
-          final dateKey =
-              '${parsedDate.year}-${parsedDate.month.toString().padLeft(2, '0')}-${parsedDate.day.toString().padLeft(2, '0')}';
-          streakLogsMap.putIfAbsent(dateKey, () => {})[newGoalId] = status;
-
-          streak = computeStreak(
-            habitId: newGoalId,
-            date: parsedDate,
-            logs: streakLogsMap,
-            startDate: startDate,
-          );
-        }
-
-        processedLogs.add({
-          'id': newLogId,
-          'goal_id': newGoalId,
-          'date': dateStr,
-          'status': status,
-          'value': l['value'],
-          'created_at': l['created_at'],
-          'updated_at': l['updated_at'],
-          'streak': streak,
-        });
-      }
     }
 
     // 4. Process Macro Goals
@@ -378,12 +287,10 @@ class DesktopBackupImportService {
     for (final raw in (rawData['long_term_goals'] as List?) ?? []) {
       if (raw is! Map) continue;
       final g = Map<String, dynamic>.from(raw);
-      final oldId = g['id'] as String;
-      final newId = mapId(oldId);
 
       // Native shape references categories by `category_id`; the web shape
       // references them via the `color` color-key -> synthesized id.
-      String? categoryId = g['category_id'] as String?;
+      String? categoryId = _sid(g['category_id']);
       if (categoryId == null) {
         final colorKey = g['color'] as String?;
         if (colorKey != null && categoryColorToId.containsKey(colorKey)) {
@@ -392,7 +299,7 @@ class DesktopBackupImportService {
       }
 
       processedMacroGoals.add({
-        'id': newId,
+        'id': _sid(g['id']) ?? _uuid.v4(),
         'title': g['title'],
         'status': g['status'],
         'type': g['type'],
@@ -412,12 +319,9 @@ class DesktopBackupImportService {
     for (final raw in (rawData['daily_moods'] as List?) ?? []) {
       if (raw is! Map) continue;
       final m = Map<String, dynamic>.from(raw);
-      final oldId = m['id'] as String?;
-      final newId = replaceExisting ? (oldId ?? uuid.v4()) : uuid.v4();
-
       processedMoods.add({
-        'id': newId,
-        'date': m['date'],
+        'id': _sid(m['id']),
+        'date': m['date']?.toString(),
         'mood_score': m['mood_score'],
         'energy_score': m['energy_score'],
         'created_at': m['created_at'],
@@ -426,19 +330,27 @@ class DesktopBackupImportService {
     }
 
     return {
-      'goals': processedGoals,
-      'goal_logs': processedLogs,
-      'long_term_goals': processedMacroGoals,
-      'macro_goal_categories': processedCategories,
-      'daily_moods': processedMoods,
+      kGoalsKey: processedGoals,
+      kLogsKey: processedLogs,
+      kMacrosKey: processedMacroGoals,
+      kCategoriesKey: processedCategories,
+      kMoodsKey: processedMoods,
       // Passed straight through; applied by the DB/Supabase layers under a safe
       // allow-list. Null for web-zip backups (no profile block).
-      'profile': _normalizeProfile(rawData['profile']),
+      kProfileKey: _normalizeProfile(rawData['profile']),
     };
   }
 
+  /// Coerce any JSON scalar id to a trimmed non-empty String, or null — an id
+  /// exported as a number must not crash the parse.
+  static String? _sid(Object? v) {
+    if (v == null) return null;
+    final s = v.toString().trim();
+    return s.isEmpty ? null : s;
+  }
+
   // ---------------------------------------------------------------------------
-  // Shape normalization (native DB-row JSON + mobile camelCase JSON)
+  // Shape normalization (native DB-row JSON + camelCase JSON)
   // ---------------------------------------------------------------------------
 
   /// Maps any `.json` backup shape to the common pre-process schema that
@@ -489,6 +401,7 @@ class DesktopBackupImportService {
       final value = normalized[key];
       if (value is List && value.isNotEmpty) return true;
     }
+    if (normalized['goal_category_settings'] != null) return true;
     // A profile-only backup is still a valid (if empty) backup.
     return normalized['profile'] is Map;
   }
@@ -527,7 +440,7 @@ class DesktopBackupImportService {
   }
 
   /// Logs may arrive as a list of rows (native shape) or as a nested
-  /// `{ date: { goalId: status } }` map (some snapshot exports). Both are
+  /// `{ date: { goalId: status } }` map (legacy snapshot exports). Both are
   /// flattened to row maps; the streak is recomputed downstream.
   static List<Map<String, dynamic>> _normalizeLogs(Object? value) {
     if (value is List) return _asList(value);
@@ -583,42 +496,17 @@ class DesktopBackupImportService {
     return p;
   }
 
-  /// Merge-mode category reconciliation for the cloud path: an imported category
-  /// whose `name` already exists (under a different id) is dropped from the
-  /// insert set and its id is remapped onto the existing row's id; referencing
-  /// macro goals' `category_id` is rewritten in place. Mirrors the private
-  /// importer's `(user_id, name)` reconciliation. Pure & testable — returns the
-  /// categories that still need inserting.
-  static List<Map<String, dynamic>> reconcileCategoriesByName(
-    List<Map<String, dynamic>> categories,
-    List<Map<String, dynamic>> macroGoals,
-    Map<String, String> existingIdByName,
-  ) {
-    final remap = <String, String>{};
-    final toInsert = <Map<String, dynamic>>[];
-    for (final c in categories) {
-      final name = c['name'] as String?;
-      final importedId = c['id'] as String?;
-      final existingId = name == null ? null : existingIdByName[name];
-      if (existingId != null && importedId != null) {
-        remap[importedId] = existingId;
-      } else {
-        toInsert.add(c);
-      }
-    }
-    if (remap.isNotEmpty) {
-      for (final g in macroGoals) {
-        final cid = g['category_id'] as String?;
-        if (cid != null && remap.containsKey(cid)) {
-          g['category_id'] = remap[cid];
-        }
-      }
-    }
-    return toInsert;
-  }
+  // ---------------------------------------------------------------------------
+  // Cloud (Supabase) import
+  //
+  // Mirrors the private-mode merge (identity + last-write-wins), but since
+  // Supabase has no client-side transaction, the entire plan is computed from
+  // the fetched existing state FIRST — so a malformed file can never delete
+  // data and then fail. Only once the plan is built do we mutate the server.
+  // ---------------------------------------------------------------------------
 
-  Future<void> _executeCloudImport(
-    Map<String, dynamic> data,
+  Future<ImportMergeStats> _executeCloudImport(
+    Map<String, dynamic> canonical,
     bool replaceExisting,
   ) async {
     final client = _supabase;
@@ -631,91 +519,85 @@ class DesktopBackupImportService {
     final userId = client.auth.currentUser?.id;
     if (userId == null) throw Exception('Not logged in to cloud');
 
-    // Add user_id to all rows
-    void addUser(List<Map<String, dynamic>> list) {
-      for (final item in list) {
-        item['user_id'] = userId;
-      }
+    final now = DateTime.now().toUtc().toIso8601String();
+
+    // Fetch existing state (empty in replace mode) BEFORE building the plan.
+    Future<List<Map<String, dynamic>>> fetch(String table, String cols) async {
+      if (replaceExisting) return const [];
+      final res = await client.from(table).select(cols).eq('user_id', userId);
+      return (res as List)
+          .map((e) => (e as Map).cast<String, dynamic>())
+          .toList();
     }
 
-    final goals = (data['goals'] as List).cast<Map<String, dynamic>>();
-    final logs = (data['goal_logs'] as List).cast<Map<String, dynamic>>();
-    final macroGoals = (data['long_term_goals'] as List)
-        .cast<Map<String, dynamic>>();
-    var categories = (data['macro_goal_categories'] as List)
-        .cast<Map<String, dynamic>>();
-    final moods = (data['daily_moods'] as List).cast<Map<String, dynamic>>();
+    final existingCategories = await fetch(
+      'macro_goal_categories',
+      'id,name,archived_at',
+    );
+    final existingGoals = {
+      for (final r in await fetch('goals', 'id,updated_at'))
+        r['id'] as String: r['updated_at'] as String?,
+    };
+    final existingMacros = {
+      for (final r in await fetch('long_term_goals', 'id,updated_at'))
+        r['id'] as String: r['updated_at'] as String?,
+    };
+    final existingLogs = {
+      for (final r in await fetch('goal_logs', 'id,goal_id,date,updated_at'))
+        '${r['goal_id']}|${r['date']}': r,
+    };
+    final existingMoods = {
+      for (final r in await fetch('daily_moods', 'id,date,updated_at'))
+        r['date'] as String: r,
+    };
 
-    addUser(goals);
-    addUser(logs);
-    addUser(macroGoals);
-    addUser(categories);
-    addUser(moods);
+    // Build the whole plan with NO writes — validate-before-delete.
+    final plan = planCloudImport(
+      userId: userId,
+      canonical: canonical,
+      replaceExisting: replaceExisting,
+      now: now,
+      existingCategories: existingCategories,
+      existingGoals: existingGoals,
+      existingMacros: existingMacros,
+      existingLogs: existingLogs,
+      existingMoods: existingMoods,
+      newId: () => _uuid.v4(),
+    );
 
+    // Only now mutate the server (children first, so FKs never block).
     if (replaceExisting) {
-      // In replace mode we first delete existing records (children first).
       await client.from('goal_logs').delete().eq('user_id', userId);
       await client.from('daily_moods').delete().eq('user_id', userId);
       await client.from('long_term_goals').delete().eq('user_id', userId);
       await client.from('macro_goal_categories').delete().eq('user_id', userId);
       await client.from('goals').delete().eq('user_id', userId);
-    } else if (categories.isNotEmpty) {
-      // Merge mode: reconcile categories by (user_id, name) — a name that
-      // already exists is reused (its id) and referencing macro goals are
-      // remapped — mirroring the private importer, so the (user_id, name)
-      // UNIQUE constraint can't abort the upsert and no category_id is left
-      // dangling.
-      final existing = await client
+    }
+
+    // Fill archived_at on existing categories — bare update, no updated_at
+    // (the cloud macro_goal_categories table has no such column).
+    for (final f in plan.categoryArchiveFills) {
+      await client
           .from('macro_goal_categories')
-          .select('id, name')
-          .eq('user_id', userId);
-      final existingIdByName = <String, String>{
-        for (final row in (existing as List).cast<Map<String, dynamic>>())
-          if (row['name'] != null) row['name'] as String: row['id'] as String,
-      };
-      categories = reconcileCategoriesByName(
-        categories,
-        macroGoals,
-        existingIdByName,
-      );
+          .update({'archived_at': f.archivedAt})
+          .eq('id', f.id);
     }
 
-    // Helper to chunk upserts for supabase (max ~1000 per request). The conflict
-    // target must match each table's operative UNIQUE constraint — not just
-    // `id` — or a merge collision on a secondary constraint (daily_moods
-    // (user_id,date), goal_logs (goal_id,date)) aborts the whole request.
-    Future<void> bulkUpsert(
-      String table,
-      List<Map<String, dynamic>> rows, {
-      required String conflictTarget,
-    }) async {
-      if (rows.isEmpty) return;
+    // Write parents before children so foreign keys resolve. The plan reuses
+    // existing row ids for updates and drops intra-file duplicates, so
+    // conflicting on `id` can never trip the secondary UNIQUE constraints
+    // (goal_logs (goal_id,date), daily_moods (user_id,date)).
+    await _bulkUpsert(client, 'macro_goal_categories', plan.categories);
+    await _bulkUpsert(client, 'goals', plan.goals);
+    await _bulkUpsert(client, 'long_term_goals', plan.macros);
+    await _bulkUpsert(client, 'goal_logs', plan.logs);
+    await _bulkUpsert(client, 'daily_moods', plan.moods);
 
-      const chunkSize = 500;
-      for (var i = 0; i < rows.length; i += chunkSize) {
-        final chunk = rows.sublist(
-          i,
-          i + chunkSize > rows.length ? rows.length : i + chunkSize,
-        );
-        await client
-            .from(table)
-            .upsert(
-              chunk,
-              onConflict: conflictTarget,
-              ignoreDuplicates: !replaceExisting,
-            );
-      }
-    }
-
-    await bulkUpsert('macro_goal_categories', categories, conflictTarget: 'id');
-    await bulkUpsert('goals', goals, conflictTarget: 'id');
-    await bulkUpsert('goal_logs', logs, conflictTarget: 'goal_id,date');
-    await bulkUpsert('long_term_goals', macroGoals, conflictTarget: 'id');
-    await bulkUpsert('daily_moods', moods, conflictTarget: 'user_id,date');
+    await _recomputeCloudStreaks(client, userId, plan.affectedGoals);
 
     // Restore the profile last, under a conservative allow-list (identity and
     // entitlement columns are never overwritten).
-    final profile = data['profile'];
+    final profile = canonical[kProfileKey];
     if (profile is Map) {
       final updates = <String, dynamic>{};
       for (final col in _cloudProfileImportColumns) {
@@ -725,6 +607,99 @@ class DesktopBackupImportService {
         updates['id'] = userId;
         await client.from('profiles').upsert(updates, onConflict: 'id');
       }
+    }
+
+    return plan.stats;
+  }
+
+  /// Chunked bulk upsert (Supabase caps request sizes around ~1000 rows).
+  Future<void> _bulkUpsert(
+    SupabaseClient client,
+    String table,
+    List<Map<String, dynamic>> rows, {
+    String onConflict = 'id',
+  }) async {
+    if (rows.isEmpty) return;
+    const chunk = 500;
+    for (var i = 0; i < rows.length; i += chunk) {
+      final end = (i + chunk < rows.length) ? i + chunk : rows.length;
+      await client
+          .from(table)
+          .upsert(rows.sublist(i, end), onConflict: onConflict);
+    }
+  }
+
+  /// Recomputes `goal_logs.streak` over the merged history for [goalIds] and
+  /// writes back the rows that changed. Best-effort: a failure here never fails
+  /// the import (the data landed; only the denormalized streak may be stale).
+  ///
+  /// Bounded network cost: two reads (start dates + all affected logs) and one
+  /// chunked bulk upsert of the changed rows — not one UPDATE per log.
+  Future<void> _recomputeCloudStreaks(
+    SupabaseClient client,
+    String userId,
+    Set<String> goalIds,
+  ) async {
+    if (goalIds.isEmpty) return;
+    try {
+      final ids = goalIds.toList();
+
+      final goalRes = await client
+          .from('goals')
+          .select('id,start_date')
+          .inFilter('id', ids);
+      final startById = {
+        for (final r in (goalRes as List).map(
+          (e) => (e as Map).cast<String, dynamic>(),
+        ))
+          r['id'] as String:
+              DateTime.tryParse((r['start_date'] as String?) ?? '') ??
+              DateTime(2000),
+      };
+
+      final logRes = await client
+          .from('goal_logs')
+          .select()
+          .inFilter('goal_id', ids);
+      final byGoal = <String, List<Map<String, dynamic>>>{};
+      for (final r in (logRes as List).map(
+        (e) => (e as Map).cast<String, dynamic>(),
+      )) {
+        (byGoal[r['goal_id'] as String] ??= []).add(r);
+      }
+
+      final changed = <Map<String, dynamic>>[];
+      for (final goalId in ids) {
+        final rows = byGoal[goalId] ?? const [];
+        final startDate = startById[goalId] ?? DateTime(2000);
+        final map = <String, Map<String, String>>{};
+        final dateByRow = <Map<String, dynamic>, DateTime>{};
+        for (final r in rows) {
+          final d = DateTime.tryParse(r['date'] as String);
+          if (d == null) continue;
+          final key =
+              '${d.year}-${d.month.toString().padLeft(2, '0')}-${d.day.toString().padLeft(2, '0')}';
+          (map[key] ??= <String, String>{})[goalId] = r['status'] as String;
+          dateByRow[r] = d;
+        }
+        for (final r in rows) {
+          final d = dateByRow[r];
+          if (d == null) continue;
+          final newStreak = computeStreak(
+            habitId: goalId,
+            date: d,
+            logs: map,
+            startDate: startDate,
+          );
+          if (newStreak != ((r['streak'] as num?)?.toInt() ?? 0)) {
+            changed.add({...r, 'streak': newStreak});
+          }
+        }
+      }
+
+      await _bulkUpsert(client, 'goal_logs', changed);
+    } catch (e, s) {
+      AppLogger.warning('[Import] cloud streak recompute failed', e, s);
     }
   }
 

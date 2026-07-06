@@ -2113,8 +2113,8 @@ class Translations$settingsPage$en {
 	/// en: 'Merge with current data'
 	String get importMergeTitle => 'Merge with current data';
 
-	/// en: 'Adds the imported data without deleting anything. It may cause duplicates.'
-	String get importMergeSubtitle => 'Adds the imported data without deleting anything. It may cause duplicates.';
+	/// en: 'Combines with your data, keeping the newest version of each item.'
+	String get importMergeSubtitle => 'Combines with your data, keeping the newest version of each item.';
 
 	/// en: 'Confirm import'
 	String get importConfirmButton => 'Confirm import';
@@ -2124,6 +2124,48 @@ class Translations$settingsPage$en {
 
 	/// en: 'Error during import: {error}'
 	String importError({required Object error}) => 'Error during import: ${error}';
+
+	/// en: '⚠ {count} invalid record(s) will be skipped'
+	String importPreviewSkipped({required Object count}) => '⚠ ${count} invalid record(s) will be skipped';
+
+	/// en: 'Import Completed'
+	String get importCompletedTitle => 'Import Completed';
+
+	/// en: 'Your data was replaced with the backup. Summary:'
+	String get importSummaryReplaced => 'Your data was replaced with the backup. Summary:';
+
+	/// en: 'Your data was merged with the backup. Summary:'
+	String get importSummaryMerged => 'Your data was merged with the backup. Summary:';
+
+	/// en: 'Awesome!'
+	String get importSummaryDone => 'Awesome!';
+
+	/// en: 'Habits'
+	String get importEntityHabits => 'Habits';
+
+	/// en: 'Habit Logs'
+	String get importEntityLogs => 'Habit Logs';
+
+	/// en: 'Macro Goals'
+	String get importEntityMacroGoals => 'Macro Goals';
+
+	/// en: 'Categories'
+	String get importEntityCategories => 'Categories';
+
+	/// en: 'Mood Logs'
+	String get importEntityMoods => 'Mood Logs';
+
+	/// en: '{count} {label}'
+	String importRowReplace({required Object count, required Object label}) => '${count} ${label}';
+
+	/// en: '{label}: {added} added, {updated} updated, {unchanged} unchanged'
+	String importRowMerge({required Object label, required Object added, required Object updated, required Object unchanged}) => '${label}: ${added} added, ${updated} updated, ${unchanged} unchanged';
+
+	/// en: ', {count} skipped'
+	String importRowSkipped({required Object count}) => ', ${count} skipped';
+
+	/// en: 'The JSON file was saved to the selected location.'
+	String get exportDoneSaved => 'The JSON file was saved to the selected location.';
 
 	/// en: 'Evolve Pro'
 	String get proTitle => 'Evolve Pro';
@@ -3532,10 +3574,24 @@ extension on Translations {
 			'settingsPage.importReplaceTitle' => 'Replace current data',
 			'settingsPage.importReplaceSubtitle' => 'Deletes all existing local data before importing. (Recommended)',
 			'settingsPage.importMergeTitle' => 'Merge with current data',
-			'settingsPage.importMergeSubtitle' => 'Adds the imported data without deleting anything. It may cause duplicates.',
+			'settingsPage.importMergeSubtitle' => 'Combines with your data, keeping the newest version of each item.',
 			'settingsPage.importConfirmButton' => 'Confirm import',
 			'settingsPage.importSuccess' => 'Import completed successfully!',
 			'settingsPage.importError' => ({required Object error}) => 'Error during import: ${error}',
+			'settingsPage.importPreviewSkipped' => ({required Object count}) => '⚠ ${count} invalid record(s) will be skipped',
+			'settingsPage.importCompletedTitle' => 'Import Completed',
+			'settingsPage.importSummaryReplaced' => 'Your data was replaced with the backup. Summary:',
+			'settingsPage.importSummaryMerged' => 'Your data was merged with the backup. Summary:',
+			'settingsPage.importSummaryDone' => 'Awesome!',
+			'settingsPage.importEntityHabits' => 'Habits',
+			'settingsPage.importEntityLogs' => 'Habit Logs',
+			'settingsPage.importEntityMacroGoals' => 'Macro Goals',
+			'settingsPage.importEntityCategories' => 'Categories',
+			'settingsPage.importEntityMoods' => 'Mood Logs',
+			'settingsPage.importRowReplace' => ({required Object count, required Object label}) => '${count} ${label}',
+			'settingsPage.importRowMerge' => ({required Object label, required Object added, required Object updated, required Object unchanged}) => '${label}: ${added} added, ${updated} updated, ${unchanged} unchanged',
+			'settingsPage.importRowSkipped' => ({required Object count}) => ', ${count} skipped',
+			'settingsPage.exportDoneSaved' => 'The JSON file was saved to the selected location.',
 			'settingsPage.proTitle' => 'Evolve Pro',
 			'settingsPage.proSubtitle' => 'Plan, purchase restore and subscription management',
 			'settingsPage.revenueCatMacos' => 'RevenueCat macOS',

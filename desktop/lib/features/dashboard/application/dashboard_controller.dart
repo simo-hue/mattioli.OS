@@ -225,6 +225,9 @@ class DashboardController extends Notifier<DashboardSnapshot> {
                 prefs?.getString('notif_morning_brief_time') ?? '09:00',
             eveningReviewTime:
                 prefs?.getString('notif_evening_review_time') ?? '21:00',
+            // Honor Focus Mode here too — otherwise any habit edit would
+            // re-schedule the notifications the mode is suppressing.
+            focusMode: prefs?.getBool('pref_focus_mode') ?? false,
             habits: state.habits,
           )
           .catchError((Object error, StackTrace stack) {

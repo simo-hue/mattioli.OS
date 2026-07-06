@@ -8,6 +8,7 @@ import 'package:evolve_desktop/app/theme/desktop_appearance_controller.dart';
 import 'package:evolve_desktop/app/theme/evolve_theme.dart';
 import 'package:evolve_desktop/app/localization/desktop_locale_controller.dart';
 import 'package:evolve_desktop/core/app_bootstrap.dart';
+import 'package:evolve_desktop/core/calendar_view_preference.dart';
 import 'package:evolve_desktop/core/tutorial_provider.dart';
 import 'package:evolve_desktop/core/app_logger.dart';
 import 'package:evolve_desktop/core/desktop_private_db.dart';
@@ -67,6 +68,12 @@ class _SettingsPageState extends ConsumerState<SettingsPage> {
   bool _aiInsights = true;
   bool _weeklyReport = true;
   bool _crashReports = true;
+  // Experience/Pro toggles (mobile parity — same keys and defaults as
+  // mobile's AppSettings: ai/focus/deep-work OFF, milestones ON).
+  bool _aiSuggestions = false;
+  bool _focusMode = false;
+  bool _milestones = true;
+  bool _deepWorkInsights = false;
   String _calendarView = 'Settimana';
   String _language = 'Sistema';
   String _morningTime = '08:00';
@@ -93,11 +100,20 @@ class _SettingsPageState extends ConsumerState<SettingsPage> {
     _habitReminders = preferences.getBool('notif_habit_reminders') ?? true;
     _eveningReview = preferences.getBool('notif_evening_review') ?? true;
     _goalDeadlines = preferences.getBool('notif_goal_deadlines') ?? true;
-    _aiInsights = preferences.getBool('notif_ai_insights') ?? true;
-    _weeklyReport = preferences.getBool('notif_weekly_reports') ?? true;
+    // Mobile parity: AI insights and weekly reports default OFF.
+    _aiInsights = preferences.getBool('notif_ai_insights') ?? false;
+    _weeklyReport = preferences.getBool('notif_weekly_reports') ?? false;
     _crashReports = preferences.getBool('has_sentry_consent') ?? true;
-    _calendarView =
-        preferences.getString('pref_default_calendar_view') ?? 'Settimana';
+    _aiSuggestions = preferences.getBool('pref_ai_suggestions') ?? false;
+    _focusMode = preferences.getBool('pref_focus_mode') ?? false;
+    _milestones = preferences.getBool('pref_milestones') ?? true;
+    _deepWorkInsights =
+        preferences.getBool('pref_deep_work_insights') ?? false;
+    // The pref stores the canonical CODE ('mese'…); older builds stored the
+    // display label — calendarViewLabel normalizes both to the label.
+    _calendarView = calendarViewLabel(
+      preferences.getString('pref_default_calendar_view'),
+    );
     _language = _languageLabel(
       preferences.getString('pref_language') ??
           preferences.getString('language'),
@@ -298,6 +314,7 @@ class _SettingsPageState extends ConsumerState<SettingsPage> {
   }
 
   Widget _appearance(bool twoColumn) {
+    final isPrivateMode = ref.watch(activeDesktopDataModeProvider).isPrivate;
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
@@ -362,12 +379,15 @@ class _SettingsPageState extends ConsumerState<SettingsPage> {
                   label: t.settingsPage.defaultCalendarView,
                   value: _calendarView,
                   options: const ['Mese', 'Settimana', 'Anno', 'Vita'],
+                  // Persist the canonical CODE ('mese'…) in BOTH
+                  // SharedPreferences and the profiles row (they used to
+                  // diverge: prefs got the label, the profile the code); the
+                  // widget state keeps the display label.
                   onChanged: (value) => _setString(
                     'pref_default_calendar_view',
-                    value,
+                    normalizeCalendarViewCode(value),
                     () => _calendarView = value,
                     profileColumn: 'pref_default_calendar_view',
-                    profileValue: _calendarProfileValue(value),
                   ),
                 ),
                 _SelectRow(
@@ -407,22 +427,10 @@ class _SettingsPageState extends ConsumerState<SettingsPage> {
                     profileColumn: 'pref_time_format_24h',
                   ),
                 ),
-                _SwitchRow(
-                  icon: LucideIcons.vibrate,
-                  label: t.settingsPage.hapticFeedback,
-                  detail: t.settingsPage.hapticFeedbackDetail,
-                  value:
-                      ref
-                          .read(sharedPreferencesProvider)
-                          ?.getBool('pref_haptic_feedback') ??
-                      true,
-                  onChanged: (value) => _setBool(
-                    'pref_haptic_feedback',
-                    value,
-                    () {},
-                    profileColumn: 'pref_haptic_feedback',
-                  ),
-                ),
+                // No haptic-feedback toggle on desktop: macOS generates no
+                // haptics for this, so the row is hidden. The
+                // pref_haptic_feedback column stays in the profiles row and
+                // keeps syncing untouched for the mobile clients.
                 _ActionRow(
                   icon: LucideIcons.info,
                   title: t.settingsPage.resetTutorial,
@@ -434,6 +442,81 @@ class _SettingsPageState extends ConsumerState<SettingsPage> {
                   title: t.settingsPage.appLogsTitle,
                   detail: t.settingsPage.appLogsDetail,
                   onTap: () => unawaited(showAppLogsDialog(context)),
+                ),
+              ],
+            ),
+            // AI & System — the experience toggles the mobile client models in
+            // AppSettings (same pref keys and defaults). In cloud mode they
+            // stay local like on mobile (the Supabase profiles upsert never
+            // includes them); in Private mode they persist to the encrypted
+            // profiles row so they iCloud-sync across devices.
+            _SettingsGroup(
+              title: t.settingsPage.aiAndSystem,
+              children: [
+                _SwitchRow(
+                  icon: LucideIcons.sparkles,
+                  label: t.settingsPage.aiSuggestions,
+                  detail: t.settingsPage.aiSuggestionsDetail,
+                  value: _aiSuggestions,
+                  onChanged: (value) {
+                    // Pro-gated exactly like mobile's toggleAi (Private mode
+                    // is always entitled via desktopIsProProvider).
+                    if (!ref.read(desktopIsProProvider)) {
+                      unawaited(showProFeaturesDialog(context, ref));
+                      return;
+                    }
+                    _setBool(
+                      'pref_ai_suggestions',
+                      value,
+                      () => _aiSuggestions = value,
+                      profileColumn: isPrivateMode
+                          ? 'pref_ai_suggestions'
+                          : null,
+                    );
+                  },
+                ),
+                _SwitchRow(
+                  icon: LucideIcons.crosshair,
+                  label: t.settingsPage.focusMode,
+                  detail: t.settingsPage.focusModeDetail,
+                  value: _focusMode,
+                  onChanged: (value) {
+                    _setBool(
+                      'pref_focus_mode',
+                      value,
+                      () => _focusMode = value,
+                      profileColumn: isPrivateMode ? 'pref_focus_mode' : null,
+                    );
+                    // Focus Mode suppresses local notifications (mobile
+                    // parity) — re-sync so schedules are cancelled/restored.
+                    unawaited(_syncNotifications());
+                  },
+                ),
+                _SwitchRow(
+                  icon: LucideIcons.flag,
+                  label: t.settingsPage.milestones,
+                  detail: t.settingsPage.milestonesDetail,
+                  value: _milestones,
+                  onChanged: (value) => _setBool(
+                    'pref_milestones',
+                    value,
+                    () => _milestones = value,
+                    profileColumn: isPrivateMode ? 'pref_milestones' : null,
+                  ),
+                ),
+                _SwitchRow(
+                  icon: LucideIcons.brain,
+                  label: t.settingsPage.deepWorkInsights,
+                  detail: t.settingsPage.deepWorkInsightsDetail,
+                  value: _deepWorkInsights,
+                  onChanged: (value) => _setBool(
+                    'pref_deep_work_insights',
+                    value,
+                    () => _deepWorkInsights = value,
+                    profileColumn: isPrivateMode
+                        ? 'pref_deep_work_insights'
+                        : null,
+                  ),
                 ),
               ],
             ),
@@ -515,6 +598,41 @@ class _SettingsPageState extends ConsumerState<SettingsPage> {
                   title: t.settingsPage.requestNotificationPermissions,
                   detail: t.settingsPage.requestNotificationPermissionsDetail,
                   onTap: _requestNotificationPermissions,
+                ),
+              ],
+            ),
+            // Insights & reports — notif_ai_insights / notif_weekly_reports
+            // were already loaded and synced but had no rows here. Like the
+            // other notification toggles they dual-write prefs + profiles row
+            // and re-sync the local schedules; unlike the operational
+            // reminders they do not prompt for permissions (mobile parity —
+            // their delivery is still a placeholder there too).
+            _SettingsGroup(
+              title: t.settingsPage.insightsAndReports,
+              children: [
+                _SwitchRow(
+                  icon: LucideIcons.lightbulb,
+                  label: t.settingsPage.aiInsights,
+                  detail: t.settingsPage.aiInsightsDetail,
+                  value: _aiInsights,
+                  onChanged: (value) => _setNotificationBool(
+                    key: 'notif_ai_insights',
+                    value: value,
+                    update: () => _aiInsights = value,
+                    profileColumn: 'notif_ai_insights',
+                  ),
+                ),
+                _SwitchRow(
+                  icon: LucideIcons.chartColumn,
+                  label: t.settingsPage.weeklyReports,
+                  detail: t.settingsPage.weeklyReportsDetail,
+                  value: _weeklyReport,
+                  onChanged: (value) => _setNotificationBool(
+                    key: 'notif_weekly_reports',
+                    value: value,
+                    update: () => _weeklyReport = value,
+                    profileColumn: 'notif_weekly_reports',
+                  ),
                 ),
               ],
             ),
@@ -832,6 +950,8 @@ class _SettingsPageState extends ConsumerState<SettingsPage> {
       morningBriefTime: _morningTime,
       eveningReviewTime: _eveningTime,
       habits: ref.read(dashboardControllerProvider).habits,
+      // Focus Mode cancels every scheduled notification (mobile parity).
+      focusMode: _focusMode,
     );
   }
 
@@ -1358,9 +1478,14 @@ class _SettingsPageState extends ConsumerState<SettingsPage> {
       _timeFormat24h = true;
       _habitReminders = true;
       _goalDeadlines = true;
-      // Match the initial-state defaults (both ON), not false.
-      _aiInsights = true;
-      _weeklyReport = true;
+      // Mobile defaults: AI insights and weekly reports start OFF (matches
+      // the initial-state defaults and the profile values synced below).
+      _aiInsights = false;
+      _weeklyReport = false;
+      _aiSuggestions = false;
+      _focusMode = false;
+      _milestones = true;
+      _deepWorkInsights = false;
       _eveningReview = true;
       _morningTime = '09:00';
       _eveningTime = '21:00';
@@ -1471,7 +1596,7 @@ class _SettingsPageState extends ConsumerState<SettingsPage> {
         _aiInsights = profile['notif_ai_insights'] as bool? ?? _aiInsights;
         _weeklyReport =
             profile['notif_weekly_reports'] as bool? ?? _weeklyReport;
-        _calendarView = _calendarLabel(
+        _calendarView = calendarViewLabel(
           profile['pref_default_calendar_view'] as String?,
         );
         _language = _languageLabel(profile['language'] as String?);
@@ -1490,7 +1615,11 @@ class _SettingsPageState extends ConsumerState<SettingsPage> {
           preferences.setBool('notif_goal_deadlines', _goalDeadlines),
           preferences.setBool('notif_ai_insights', _aiInsights),
           preferences.setBool('notif_weekly_reports', _weeklyReport),
-          preferences.setString('pref_default_calendar_view', _calendarView),
+          // Prefs hold the canonical code, never the display label.
+          preferences.setString(
+            'pref_default_calendar_view',
+            normalizeCalendarViewCode(_calendarView),
+          ),
           preferences.setString(
             'pref_language',
             _languageProfileValue(_language),
@@ -1528,20 +1657,6 @@ class _SettingsPageState extends ConsumerState<SettingsPage> {
       AppLogger.error('Unable to sync desktop preferences', error, stack);
     }
   }
-
-  String _calendarProfileValue(String label) => switch (label) {
-    'Mese' => 'mese',
-    'Anno' => 'anno',
-    'Vita' => 'vita',
-    _ => 'settimana',
-  };
-
-  String _calendarLabel(String? value) => switch (value?.toLowerCase()) {
-    'mese' || 'month' => 'Mese',
-    'anno' || 'year' => 'Anno',
-    'vita' || 'life' => 'Vita',
-    _ => 'Settimana',
-  };
 
   String _languageProfileValue(String label) => switch (label) {
     'Italiano' => 'it',

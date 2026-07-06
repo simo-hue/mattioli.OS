@@ -1,4 +1,5 @@
 import 'package:evolve_desktop/app/theme/evolve_theme.dart';
+import 'package:evolve_desktop/core/calendar_view_preference.dart';
 import 'package:evolve_desktop/core/macro_goal_calendar.dart';
 import 'package:evolve_desktop/core/app_bootstrap.dart';
 import 'package:evolve_desktop/core/desktop_data_mode.dart';
@@ -36,10 +37,13 @@ class _HabitsPageState extends ConsumerState<HabitsPage> {
     final value = ref
         .read(sharedPreferencesProvider)
         ?.getString('pref_default_calendar_view');
-    _calendarView = switch (value?.toLowerCase()) {
-      'settimana' || 'week' => CalendarViewMode.week,
-      'anno' || 'year' => CalendarViewMode.year,
-      'vita' || 'life' => CalendarViewMode.life,
+    // Normalize first: the pref now stores the canonical code, but older
+    // builds stored the display label — and 'mese'/'month' previously had no
+    // arm here at all, so a Month default wrongly opened the week view.
+    _calendarView = switch (normalizeCalendarViewCode(value)) {
+      kCalendarViewMonth => CalendarViewMode.month,
+      kCalendarViewYear => CalendarViewMode.year,
+      kCalendarViewLife => CalendarViewMode.life,
       _ => CalendarViewMode.week,
     };
   }

@@ -255,10 +255,17 @@ void main() {
     expect(find.text('Modalita scura'), findsOneWidget);
     expect(find.text('Colore accento'), findsOneWidget);
     expect(find.text('Vista calendario predefinita'), findsOneWidget);
-    expect(find.text('Feedback aptico'), findsOneWidget);
+    // Hidden on desktop: macOS generates no haptics for this toggle (the
+    // synced pref_haptic_feedback column stays untouched for mobile).
+    expect(find.text('Feedback aptico'), findsNothing);
     expect(find.text('Lingua'), findsOneWidget);
     expect(find.text('Formato 24h'), findsOneWidget);
     expect(find.text('Ripristina tutorial'), findsOneWidget);
+    // AI & System experience toggles (mobile parity).
+    expect(find.text('Suggerimenti AI'), findsOneWidget);
+    expect(find.text('Modalità Focus'), findsOneWidget);
+    expect(find.text('Milestones'), findsOneWidget);
+    expect(find.text('Deep Work Insights'), findsOneWidget);
 
     await tester.tap(find.text('Notifiche'));
     await tester.pumpAndSettle();
@@ -266,6 +273,9 @@ void main() {
     expect(find.text('Orario morning brief'), findsOneWidget);
     expect(find.text('Review serale'), findsOneWidget);
     expect(find.text('Orario review serale'), findsOneWidget);
+    // Insights & reports rows (mobile parity).
+    expect(find.text('Insight AI'), findsOneWidget);
+    expect(find.text('Resoconti Settimanali'), findsOneWidget);
 
     await tester.tap(find.text('Privacy'));
     await tester.pumpAndSettle();

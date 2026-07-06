@@ -1840,6 +1840,33 @@ class Translations$settingsPage$en {
 	/// en: 'The desktop keeps the preference but does not generate vibrations.'
 	String get hapticFeedbackDetail => 'The desktop keeps the preference but does not generate vibrations.';
 
+	/// en: 'AI & SYSTEM'
+	String get aiAndSystem => 'AI & SYSTEM';
+
+	/// en: 'AI Suggestions'
+	String get aiSuggestions => 'AI Suggestions';
+
+	/// en: 'Intelligent habit analysis'
+	String get aiSuggestionsDetail => 'Intelligent habit analysis';
+
+	/// en: 'Focus Mode'
+	String get focusMode => 'Focus Mode';
+
+	/// en: 'Pauses all reminders and notifications.'
+	String get focusModeDetail => 'Pauses all reminders and notifications.';
+
+	/// en: 'Milestones'
+	String get milestones => 'Milestones';
+
+	/// en: 'Celebrations when you reach key milestones.'
+	String get milestonesDetail => 'Celebrations when you reach key milestones.';
+
+	/// en: 'Deep Work Insights'
+	String get deepWorkInsights => 'Deep Work Insights';
+
+	/// en: 'Advanced analysis of your focus sessions.'
+	String get deepWorkInsightsDetail => 'Advanced analysis of your focus sessions.';
+
 	/// en: 'Reset tutorial'
 	String get resetTutorial => 'Reset tutorial';
 
@@ -1869,6 +1896,21 @@ class Translations$settingsPage$en {
 
 	/// en: 'Evening review time'
 	String get eveningReviewTime => 'Evening review time';
+
+	/// en: 'Insights and reports'
+	String get insightsAndReports => 'Insights and reports';
+
+	/// en: 'AI Insights'
+	String get aiInsights => 'AI Insights';
+
+	/// en: 'Personalized analysis and advice from AI.'
+	String get aiInsightsDetail => 'Personalized analysis and advice from AI.';
+
+	/// en: 'Weekly Reports'
+	String get weeklyReports => 'Weekly Reports';
+
+	/// en: 'A weekly summary of your progress.'
+	String get weeklyReportsDetail => 'A weekly summary of your progress.';
 
 	/// en: 'Request notification permissions'
 	String get requestNotificationPermissions => 'Request notification permissions';
@@ -3399,6 +3441,15 @@ extension on Translations {
 			'settingsPage.timeFormat24hDetail' => 'Use times like 20:30 instead of 8:30 PM.',
 			'settingsPage.hapticFeedback' => 'Haptic feedback',
 			'settingsPage.hapticFeedbackDetail' => 'The desktop keeps the preference but does not generate vibrations.',
+			'settingsPage.aiAndSystem' => 'AI & SYSTEM',
+			'settingsPage.aiSuggestions' => 'AI Suggestions',
+			'settingsPage.aiSuggestionsDetail' => 'Intelligent habit analysis',
+			'settingsPage.focusMode' => 'Focus Mode',
+			'settingsPage.focusModeDetail' => 'Pauses all reminders and notifications.',
+			'settingsPage.milestones' => 'Milestones',
+			'settingsPage.milestonesDetail' => 'Celebrations when you reach key milestones.',
+			'settingsPage.deepWorkInsights' => 'Deep Work Insights',
+			'settingsPage.deepWorkInsightsDetail' => 'Advanced analysis of your focus sessions.',
 			'settingsPage.resetTutorial' => 'Reset tutorial',
 			'settingsPage.resetTutorialDetail' => 'Reopens the dashboard and goals walkthroughs.',
 			'settingsPage.notificationsSubtitle' => 'Operational reminders from the desktop client',
@@ -3409,6 +3460,11 @@ extension on Translations {
 			'settingsPage.eveningReview' => 'Evening review',
 			'settingsPage.eveningReviewDetail' => 'Reminds you to consolidate your day.',
 			'settingsPage.eveningReviewTime' => 'Evening review time',
+			'settingsPage.insightsAndReports' => 'Insights and reports',
+			'settingsPage.aiInsights' => 'AI Insights',
+			'settingsPage.aiInsightsDetail' => 'Personalized analysis and advice from AI.',
+			'settingsPage.weeklyReports' => 'Weekly Reports',
+			'settingsPage.weeklyReportsDetail' => 'A weekly summary of your progress.',
 			'settingsPage.requestNotificationPermissions' => 'Request notification permissions',
 			'settingsPage.requestNotificationPermissionsDetail' => 'Opens the native prompt on the supported target.',
 			'settingsPage.nativeDeliveryTitle' => 'Native delivery per operating system',

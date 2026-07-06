@@ -112,10 +112,16 @@ class DesktopNotificationService {
     required String morningBriefTime,
     required String eveningReviewTime,
     required List<DashboardHabit> habits,
+    bool focusMode = false,
   }) async {
     await init();
     if (!_initialized) return;
     await _notifications.cancelAll();
+    // Focus Mode (mobile parity): everything scheduled was just cancelled and
+    // nothing is rescheduled while it is on — mirrors mobile's
+    // AppSettingsNotifier.syncNotifications, which returns right after
+    // cancelAll() when focusMode is set.
+    if (focusMode) return;
     if (!canScheduleDaily) return;
 
     if (habitReminders) {

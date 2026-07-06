@@ -15,6 +15,7 @@ import '../../core/rtl.dart';
 import '../../providers/user_provider.dart';
 import '../../providers/auth_provider.dart';
 import '../../providers/settings_provider.dart';
+import '../widgets/profile_avatar_image.dart';
 import 'personal_info_screen.dart';
 import 'app_settings_screen.dart';
 import 'notification_settings_screen.dart';
@@ -78,6 +79,11 @@ class _ProfileScreenState extends ConsumerState<ProfileScreen> {
             p.join(avatarDir.path, 'avatar${p.extension(image.path)}'),
           );
           selectedFile = await selectedFile.copy(avatarFile.path);
+          // The avatar path is stable (avatar.<ext>), so overwriting it leaves
+          // Flutter's ImageCache holding the OLD decoded bytes — evict so this
+          // screen and every other page (dashboard header) re-read the new file
+          // instead of showing the previous photo.
+          await FileImage(File(selectedFile.path)).evict();
           await ref
               .read(userProfileProvider.notifier)
               .updatePrivateAvatar(selectedFile.path);
@@ -292,28 +298,9 @@ class _ProfileScreenState extends ConsumerState<ProfileScreen> {
                                       _profileImage!,
                                       fit: BoxFit.cover,
                                     )
-                                  : userProfile.avatarUrl != null
-                                  ? (isPrivateMode
-                                        ? Image.file(
-                                            File(userProfile.avatarUrl!),
-                                            fit: BoxFit.cover,
-                                            errorBuilder:
-                                                (
-                                                  context,
-                                                  error,
-                                                  stack,
-                                                ) => Image.asset(
-                                                  'assets/images/default_avatar.png',
-                                                  fit: BoxFit.cover,
-                                                ),
-                                          )
-                                        : Image.network(
-                                            userProfile.avatarUrl!,
-                                            fit: BoxFit.cover,
-                                          ))
-                                  : Image.asset(
-                                      'assets/images/default_avatar.png',
-                                      fit: BoxFit.cover,
+                                  : ProfileAvatarImage(
+                                      avatarUrl: userProfile.avatarUrl,
+                                      isPrivate: isPrivateMode,
                                     ),
                             ),
                           ),

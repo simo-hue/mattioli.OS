@@ -2341,3 +2341,27 @@ iCloud Sync core is implemented, unit-tested (160), and iOS-compiling. Remaining
       `value` coercion; full suite **186/186 green**, `flutter analyze` clean.
     - Cosmetic note: the *cloud* LWW path still writes the file's `created_at` on
       update (it doesn't fetch the existing one); harmless and left as-is.
+
+- **2026-07-06: Fix — profile photo renders black on other pages**
+  - *Details*: After updating the profile photo from Settings, it showed as a
+    black/blank circle in the dashboard header (and anywhere but the profile
+    screen). Root cause: the dashboard `_AppBar` rendered the avatar with
+    `NetworkImage(avatarUrl)` unconditionally, but in **Private mode** `avatarUrl`
+    is a LOCAL FILE path — the network load failed and the circle fell back to
+    its card/background color. The profile screen already handled this correctly;
+    the two render sites were copy-pasted and had diverged.
+  - *Fix / Tech Notes*:
+    - New shared widget `lib/ui/widgets/profile_avatar_image.dart`
+      (`ProfileAvatarImage`) resolves the source by data mode — `Image.file` for
+      Private (local path), `Image.network` for Cloud, default asset on null/error
+      — so the dashboard and profile screen can no longer diverge. Both now use it.
+    - `dashboard_screen.dart`: avatar now uses `ProfileAvatarImage` (was a
+      `DecorationImage` with `NetworkImage`); added the `activeDataModeProvider`
+      read.
+    - `profile_screen.dart` `_pickImage`: the avatar path is stable
+      (`avatar.<ext>`), so overwriting it left Flutter's `ImageCache` holding the
+      old decoded bytes — added `FileImage(...).evict()` after the copy so every
+      page re-reads the new photo (fixes a latent stale-image-on-re-update issue).
+    - **Tests**: `test/profile_avatar_image_test.dart` (Private → FileImage not
+      NetworkImage; Cloud → NetworkImage; null → default asset). Suite **189/189
+      green**; `flutter analyze` clean. Final render best confirmed on device.

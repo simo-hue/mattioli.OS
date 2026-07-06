@@ -15,6 +15,7 @@ import '../../providers/user_provider.dart';
 import '../../providers/auth_provider.dart';
 import '../../core/data_mode.dart';
 import '../widgets/bottom_nav_bar.dart';
+import '../widgets/profile_avatar_image.dart';
 import '../widgets/protocollo_panel.dart';
 import '../widgets/view_tab_bar.dart';
 import 'package:lucide_icons_flutter/lucide_icons.dart';
@@ -1449,6 +1450,8 @@ class _AppBar extends ConsumerWidget {
         : formattedDate;
 
     final userProfile = ref.watch(userProfileProvider);
+    final isPrivateMode =
+        ref.watch(activeDataModeProvider) == AppDataMode.private;
     final displayName = userProfile.firstName ?? userProfile.displayName;
     final settings = ref.watch(settingsProvider);
     final isPro = settings.isPro;
@@ -1541,21 +1544,12 @@ class _AppBar extends ConsumerWidget {
                               width: 1.5,
                             ),
                           ),
-                          child: Container(
-                            decoration: BoxDecoration(
+                          child: ClipOval(
+                            child: Container(
                               color: context.appColors.card,
-                              shape: BoxShape.circle,
-                              image: DecorationImage(
-                                image:
-                                    (userProfile.avatarUrl != null
-                                            ? NetworkImage(
-                                                userProfile.avatarUrl!,
-                                              )
-                                            : const AssetImage(
-                                                'assets/images/default_avatar.png',
-                                              ))
-                                        as ImageProvider,
-                                fit: BoxFit.cover,
+                              child: ProfileAvatarImage(
+                                avatarUrl: userProfile.avatarUrl,
+                                isPrivate: isPrivateMode,
                               ),
                             ),
                           ),

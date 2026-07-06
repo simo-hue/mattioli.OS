@@ -49,6 +49,26 @@ Determined defaults (not re-asked): debounce ≈3 s; periodic ≈15 min; keychai
 3. App Store Connect: create the separate Mac app product (universal purchase not possible); privacy answers mirror iOS ("data syncs to the user's iCloud, no third-party servers").
 4. Two-pass, two-device QA matrix (Development pair first, TestFlight/Production pair as release gate): fresh Mac pulls all; both-had-data merge; offline edits converge; edit-vs-delete; avatar round-trip; delete-doesn't-resurrect; keychain-off warning; old-iOS + new-Mac shows waiting-with-update-hint.
 
+## 3b. Implementation status — 2026-07-06
+
+All code-side phases are done; what remains is Simone's manual Apple setup +
+device QA (§3, tracked in TO_SIMO_DO.md).
+
+| Phase | Status | Commit |
+| --- | --- | --- |
+| P0 — packages/evolve_sync extraction | ✅ | `4e59eb4`→`refactor(sync)` |
+| P1 — shared keychain group + migration | ✅ | `feat(sync): shared keychain access group` |
+| P2 — avatar CKAsset in the shared engine | ✅ | `feat(sync): avatar CKAsset sync` |
+| P3 — after-write debounce + mobile wiring | ✅ | `feat(sync): after-write debounced sync trigger` |
+| P4 — desktop Dart integration | ✅ | `feat(desktop): full Dart-side iCloud sync integration` |
+| P5 — desktop Swift bridge + entitlements (typechecked; compile pending Xcode) | ✅ | `feat(desktop): native CloudKit bridge` |
+| P6 — desktop settings card + full-reset delete + l10n ×5 | ✅ | `feat(desktop): iCloud Sync settings card` |
+| P7 — docs + TO_SIMO_DO handoff; mobile bumped to 1.0.10+14 | ✅ | this commit |
+
+Suites at handoff: package 73/73 · mobile 144/144 · desktop 94/94; `flutter
+analyze` at baseline on all three. Two latent desktop bugs fixed en route
+(profile `avatar_path`→`avatar_url` column, category-archive `updated_at`).
+
 ## 4. Risks carried forward
 
 - **Cross-schema-version apply (#10)** is now cross-*platform*: never add a column to a synced table in one app's release without the other's (the shared package makes the config single-source, but store DDL is still per-app).

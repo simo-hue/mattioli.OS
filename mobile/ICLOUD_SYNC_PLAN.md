@@ -333,6 +333,18 @@ The full Dart sync stack + native bridge + UI are implemented and unit-tested
 | — refresh providers after a pull | ✅ | `92fb560` |
 
 **Remaining (refinements / external):**
-- **After-write debounced trigger** — sync a few seconds after a private edit while the app is open. Foreground + manual "Sync now" already cover the dominant cases. Loop-safe design: hook the private write methods (not provider rebuilds), coalesce via a debouncer.
-- **Avatar CKAsset sync (3c)** — cosmetic; the only encrypted-binary path. Dart logic is testable; the CKAsset wrapping is already handled by the Swift bridge (`asset` field) and the Dart contract carries `assetPath`.
+- ~~**After-write debounced trigger**~~ — ✅ done in the 1.0.10 cross-platform
+  work: `SyncWriteDebouncer` (shared `evolve_sync` package) hooked at the
+  `PrivateLocalDatabase` write methods, loop-safe as designed.
+- ~~**Avatar CKAsset sync (3c)**~~ — ✅ done in the 1.0.10 cross-platform work:
+  encrypted `avatar:<owner>` asset in the shared engine + `AppSyncAvatarStore`.
 - **Device QA + Apple provisioning** — see TO_SIMO_DO.md (CloudKit container/capability, schema → Production, two-device matrix, App Store privacy).
+
+> **2026-07-06 — engine extracted.** The whole sync core (engine, crypto,
+> local store, bridge contract + MethodChannel impl, schema, service, key
+> store, fakes and their tests) moved to the shared **`packages/evolve_sync`**
+> package, now consumed by BOTH this app and the macOS desktop app so the wire
+> format and merge invariants cannot drift. The sync secrets moved to the
+> shared keychain access group (`…com.simo.evolve.sync`, dual-written to the
+> legacy location during the ≤1.0.9 transition). See
+> `desktop/ICLOUD_SYNC_PLAN.md` for the cross-platform design record.

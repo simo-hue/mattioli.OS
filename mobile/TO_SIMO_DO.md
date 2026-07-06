@@ -1,124 +1,56 @@
 # PROSSIME AZIONI MANUALI (SIMO)
 
-## 2026-06-17 - Private Mode Phase 1 manual QA before release
+Manual / on-device / Apple-account steps that can't be done from code. The
+in-code work behind each of these is implemented and committed.
 
-- [ ] On iOS, complete onboarding/consent, open the login screen, choose Private mode, create habits, macro goals, custom categories, moods, profile data, settings, reminders, and export/delete private data.
-- [ ] Relaunch the app and confirm the saved active mode reopens Private mode automatically without Supabase login.
-- [ ] Return to login from Private mode and confirm the Supabase login/sign-up path still behaves exactly as before.
-- [ ] On Android, repeat the same Private mode local-storage flow and confirm iCloud/CloudKit options are not visible.
+## Release prep — before the next App Store build
 
----
+- [ ] **Restore real config credentials.** Three git-ignored config files were
+      regenerated from their `.example` templates with PLACEHOLDER values and
+      must get your real values back before a release build (they're git-ignored,
+      so they never get committed):
+      `lib/core/sentry_config.dart` (empty DSN), `lib/core/supabase_config.dart`
+      (`YOUR_SUPABASE_URL` / `YOUR_SUPABASE_ANON_KEY`),
+      `lib/core/openrouter_config.dart` (`YOUR_OPENROUTER_API_KEY`).
+      Without them, Cloud mode/auth, crash reporting, and AI ship broken.
+- [ ] **One real release build** (`flutter build ios`) + a device boot smoke
+      test — unit tests and `flutter analyze` don't exercise codesigning, pods,
+      or tree-shaking.
 
-## 2026-06-23 - Private Mode follow-ups: manual / external-only items
+## Data-import merge — on-device cloud verification
 
-These are the items from PRIVATE_MODE_DISCOVERY.md that CANNOT be completed in code alone (all in-code fixes are done & committed):
+The cloud import path is unit-tested at the decision layer (`planCloudImport`)
+but can't run against a real Supabase in tests. On a logged-in cloud account:
 
-  - Precise MSA Arabic authored as nested `lib/i18n/ar.i18n.json` (908 leaves, full key/placeholder parity with `en`). NOTE: the old `tool/arb_to_slang.py` "add `ar` + regenerate" path is now obsolete — the slang JSON is hand-maintained nested namespaces, so `ar` is authored directly like the other locales (slang auto-discovers it). The legacy flat `lib/l10n/app_ar.arb` is left in place (removed in the plan's final demolition with the other ARBs).
-  - Language picker option restored (`app_settings_screen.dart`); `AppLocale.ar` + `AppLocaleUtils.supportedLocales` now include Arabic; `main.dart` `_appLocaleFor` resolves `ar` correctly.
-  - RTL pass: physical `EdgeInsets.only`/`Alignment`(content)/`Positioned` → `*Directional`; 17 directional chevrons mirrored via new `lib/core/rtl.dart` (`DirectionalIcon` / `directionalIcon`).
+- [ ] **Cloud MERGE with a new category** — import a backup containing a category
+      you don't already have; it must succeed (not an "Import Failed" error).
+- [ ] **Cloud REPLACE** — a normal replace import fully repopulates the account.
+- [ ] **Invalid-row skipping** — import a backup with a bad row (e.g. a habit log
+      with `"status":"pending"`); the rest imports and the preview + summary show
+      a "⚠ N invalid record(s) skipped" count.
+- [ ] **(Optional) Round-trip** — export in Private mode, re-import the `.json`
+      in Merge mode; everything should report as *unchanged* (no duplicates).
 
-  **Still needs a human + a device (cannot be done in code):**
-  - [ ] **Native-Arabic + VoiceOver visual QA on device** for every screen (the inherent RTL sign-off).
-  - [ ] **Human translation review** of `lib/i18n/ar.i18n.json` (MSA quality/terminology; brand terms `Evolve`/`Pro`/`AI` kept in Latin by design).
-  - [ ] **Verify the 3 intentionally-skipped physical spots in RTL** and convert if QA shows they should mirror: decorative gradients (`begin/end: topLeft/bottomRight`, cosmetic); the year/week slide-transition direction (`yearly_view_widget.dart:70-71`, `weekly_view_widget.dart:97-101`, logic-driven by `_slideDirection`); and `fl_chart` RTL layout incl. the y-axis label padding at `macro_goals_stats_view.dart:1528`.
-- [ ] **Phase 2 — iCloud/CloudKit sync** — not started (intentional). Before any sync code can run/test: create & configure the CloudKit container in the Apple Developer portal, add the iCloud + (if used) Keychain-sharing entitlements to the iOS target, and plan two-device testing. The Dart `PrivateSyncService` is a no-op placeholder ready for the native bridge.
-- [ ] **Optional future test infra** — delete-private-data and notification-action routing tests need either a real SQLCipher DB in tests (add `sqflite_common_ffi` + verify sqlcipher ffi support) or making `NotificationService`'s store injectable. Deferred (lower value; the no-Supabase-call + settings-separation guards already cover the core promise).
+## iCloud / CloudKit sync — Apple-account steps
 
----
+The Dart sync stack + native Swift bridge are implemented and unit-tested. These
+require your Apple account / a device:
 
-## 2026-06-23 - iCloud Sync (Private Mode Phase 2): manual Apple steps
+- [ ] Xcode (Runner → Signing & Capabilities): iCloud + CloudKit capability, with
+      the container `iCloud.com.simo.evolve` (referenced in
+      `ios/Runner/Runner.entitlements`) — a signed build fails without it.
+- [ ] Promote the CloudKit schema from Development to **Production** in the
+      CloudKit Dashboard before release.
+- [ ] **Two-device QA**: enable on a fresh 2nd device (pulls all); both-had-data
+      merge; offline edits converge; delete-private-data wipes iCloud without
+      resurrecting; signed-out shows status but never blocks local mode.
+- [ ] Re-check **App Store privacy** answers (data syncs to the user's own iCloud,
+      still no third-party servers) and `ITSAppUsesNonExemptEncryption`.
 
-The full Dart sync stack + native Swift bridge are implemented and unit-tested
-(see ICLOUD_SYNC_PLAN.md). These steps require your Apple account / a device and
-CANNOT be done from code:
+## Arabic / RTL — human sign-off
 
-- [ ] In the Apple Developer portal / Xcode (Runner target → Signing &
-      Capabilities): add the **iCloud** capability with **CloudKit** and create/
-      select the container **`iCloud.com.simo.evolve`** (already referenced in
-      `ios/Runner/Runner.entitlements`). Without the provisioned container a
-      signed build will fail.
-- [ ] First run on a device: the CloudKit **schema auto-creates in Development**
-      (record type `PrivateRecord`, zone `PrivateZone`). Then **promote the
-      schema to Production** in the CloudKit Dashboard before App Store release.
-- [ ] **Two-device QA** (the parts unit tests can't cover): enable on a fresh
-      2nd device (pulls all); both-had-data merge; offline edits converge;
-      delete-private-data wipes iCloud and doesn't resurrect; iCloud signed-out
-      shows status but never blocks local mode; confirm CloudKit Dashboard shows
-      only opaque encrypted `payload` blobs.
-- [ ] Update **App Store privacy** answers (data now syncs to the user's own
-      iCloud; still no third-party servers) and re-confirm
-      `ITSAppUsesNonExemptEncryption`.
-- [ ] Remaining in-app refinements (not blocking; the settings UI, foreground
-      sync, manual "Sync now", UI-refresh-after-pull, and delete-reset wiring are
-      DONE): the debounced **after-write** sync trigger and **avatar CKAsset**
-      sync. The engine/service/bridge/UI they build on are complete.
+The `ar` locale and the RTL pass are implemented. What's left needs a person:
 
-### 2026-07-01: Fix Statistics for imported data
-The backup import service now correctly calculates streaks. If your statistics page is still showing 0 for past data, you will need to **re-import your backup** or manually trigger a recalculation on the local database for historical logs.
----
-
-## iCloud Sync / Privacy bug-fix pass (2026-06-26, branch `fix/icloud-sync-privacy-bugs`)
-
-Manual actions required for the fixes landed this session (see `ICLOUD_SYNC_PRIVACY_BUGS.md` for full status table):
-
-- [ ] **On-device verify #3 (CloudKit channel under Scene lifecycle).** The fix
-      registers `CloudKitSyncBridge` in `SceneDelegate.scene(willConnectTo:)`.
-      This cannot be unit-tested — run on a real device/simulator and confirm
-      `accountStatus` returns a real value (no `MissingPluginException`) and a
-      first sync works. The Dart bridge now degrades gracefully if the channel
-      is ever missing, so a regression would show as "sync unavailable" rather
-      than a crash.
-- [ ] **#11 disclosure copy (product, not code).** "Delete private data" only
-      wipes the originating device's iCloud copy; another enabled device will
-      resurrect the data on its next sync. The settings/reset disclosure must
-      tell the user to run delete on **each** device. Confirm the copy before
-      release.
-- [ ] **(Pre-existing, not from this work) Full `flutter test` is blocked
-      locally** by two missing files that this environment doesn't generate:
-      `lib/core/sentry_config.dart` (git-ignored secret) and
-      `lib/i18n/translations.g.dart` (code-gen output). 16 non-sync suites fail
-      to *load* because of them. All iCloud-sync/privacy suites compile and pass.
-      Run `dart run slang` (or your i18n codegen) and provide `sentry_config.dart`
-      to exercise the full suite.
-
-## Data-import true-merge (2026-07-05)
-
-- [ ] **Replace my placeholder config stubs with real credentials.** To make
-      the full app compile/test locally I generated the three git-ignored config
-      files that were missing from this checkout, using their `.example`
-      templates: `lib/core/sentry_config.dart`, `lib/core/supabase_config.dart`,
-      `lib/core/openrouter_config.dart`. They contain **placeholder values**
-      (empty DSN, `YOUR_SUPABASE_URL`, `YOUR_OPENROUTER_API_KEY`, …). They are
-      git-ignored so they won't be committed, but Cloud mode / AI / crash
-      reporting will not work at runtime until you drop in the real values (or
-      restore your own local copies). With these present, `flutter test` is now
-      fully green (174/174) and `dart run slang` regenerated `translations.g.dart`.
-- [ ] **On-device verify the Cloud-mode merge.** The Supabase merge path
-      (`BackupImportService._executeCloudImport`) mirrors the Private-mode logic
-      but cannot be unit-tested here (no Supabase in the test env). While logged
-      into a cloud account, import a backup in **Merge** mode and confirm:
-      no duplicate goals/logs/categories on a repeat import; a newer record in
-      the file updates the existing one; an older file leaves current data
-      intact; streaks look right after merging. Cloud streak recompute is
-      best-effort (a failure is logged, not fatal).
-- [ ] **(Optional) Sanity-check the export→import round-trip.** Export from the
-      app (Private mode), then re-import the resulting `.json` in Merge mode —
-      it should report everything as *unchanged* (no duplicates), proving the
-      round-trip is now lossless.
-
-## Import merge — must-fix hardening (2026-07-05, follow-up)
-
-The 4 pre-release blockers are fixed and unit-tested (184/184). The cloud path
-was rewritten (fetch → pure `planCloudImport` → delete/upsert) and cannot be
-unit-tested here, so please verify ON A LOGGED-IN CLOUD ACCOUNT:
-
-- [ ] **Cloud MERGE with a new category** (this was blocker #1 — used to crash):
-      import a backup containing a category you don't have. It must succeed and
-      show the category, not an "Import Failed" PGRST204 error.
-- [ ] **Cloud REPLACE resilience** (blocker #2): a normal replace import fully
-      repopulates the account. (The malformed-file wipe path is now guarded by
-      validation + build-before-delete, but confirm a real replace works.)
-- [ ] **Invalid-row skipping**: import a hand-edited/partial backup with a bad
-      row (e.g. a habit log with `"status":"pending"`). The rest must import and
-      the preview + summary must show a "⚠ N invalid record(s) skipped" count —
-      not a failed or misleading-success import.
+- [ ] Native-Arabic + VoiceOver visual QA on device.
+- [ ] Human translation review of `lib/i18n/ar.i18n.json` (MSA quality; brand
+      terms Evolve / Pro / AI intentionally kept in Latin).

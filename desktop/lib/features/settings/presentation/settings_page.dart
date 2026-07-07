@@ -1096,11 +1096,13 @@ class _SettingsPageState extends ConsumerState<SettingsPage> {
   }
 
   Future<void> _resetData() async {
+    _showLoadingDialog(t.settingsPage.resetDataTitle);
     try {
       await ref.read(dashboardControllerProvider.notifier).resetData();
       await _resetSettingsToDefaults();
       if (mounted) {
-        _showGate(
+        Navigator.pop(context); // close loading dialog
+        _showResultDialog(
           t.settingsPage.resetDataTitle,
           t.settingsPage.resetDataSuccess,
         );
@@ -1108,7 +1110,8 @@ class _SettingsPageState extends ConsumerState<SettingsPage> {
     } catch (error, stack) {
       AppLogger.error('Unable to reset desktop data', error, stack);
       if (mounted) {
-        _showGate(
+        Navigator.pop(context); // close loading dialog
+        _showResultDialog(
           t.settingsPage.resetDataTitle,
           t.settingsPage.operationFailed,
         );
@@ -1118,16 +1121,18 @@ class _SettingsPageState extends ConsumerState<SettingsPage> {
 
   Future<void> _deleteAccount() async {
     if (!ref.read(desktopAuthControllerProvider).isLoggedIn) {
-      _showGate(
+      _showResultDialog(
         t.settingsPage.deleteAccountGateTitle,
         t.settingsPage.gateRequiresActiveSession,
       );
       return;
     }
+    _showLoadingDialog(t.settingsPage.deleteAccountGateTitle);
     try {
       await ref.read(desktopAuthControllerProvider.notifier).deleteAccount();
       if (mounted) {
-        _showGate(
+        Navigator.pop(context); // close loading dialog
+        _showResultDialog(
           t.settingsPage.deleteAccountGateTitle,
           t.settingsPage.accountDeleted,
         );
@@ -1135,7 +1140,8 @@ class _SettingsPageState extends ConsumerState<SettingsPage> {
     } catch (error, stack) {
       AppLogger.error('Unable to delete desktop account', error, stack);
       if (mounted) {
-        _showGate(
+        Navigator.pop(context); // close loading dialog
+        _showResultDialog(
           t.settingsPage.deleteAccountGateTitle,
           t.settingsPage.operationFailed,
         );
@@ -1298,35 +1304,7 @@ class _SettingsPageState extends ConsumerState<SettingsPage> {
       if (!mounted) return;
 
       // 3. Execute
-      showEvolveDialog<void>(
-        context: context,
-        barrierDismissible: false,
-        builder: (ctx) => EvolveDialog(
-          maxWidth: 280,
-          child: Padding(
-            padding: const EdgeInsets.all(26),
-            child: Column(
-              mainAxisSize: MainAxisSize.min,
-              children: [
-                const SizedBox.square(
-                  dimension: 28,
-                  child: CircularProgressIndicator(strokeWidth: 3),
-                ),
-                const SizedBox(height: 16),
-                Text(
-                  t.settingsPage.importInProgress,
-                  textAlign: TextAlign.center,
-                  style: TextStyle(
-                    color: ctx.evolveColors.foreground,
-                    fontSize: 13,
-                    fontWeight: FontWeight.w600,
-                  ),
-                ),
-              ],
-            ),
-          ),
-        ),
-      );
+      _showLoadingDialog(t.settingsPage.importInProgress);
 
       final stats = await importService.executeImport(
         canonicalData: preview.canonicalData,
@@ -1335,13 +1313,18 @@ class _SettingsPageState extends ConsumerState<SettingsPage> {
         skipped: preview.skipped,
       );
 
-      if (!mounted) return;
-      Navigator.pop(context); // close loading
-
       // Refresh dashboard + category/profile providers so imported data shows.
-      ref.invalidate(dashboardControllerProvider);
       ref.invalidate(desktopGoalCategoriesControllerProvider);
       if (isPrivateMode) ref.invalidate(privateProfileProvider);
+      
+      await Future.wait([
+        ref.read(dashboardControllerProvider.notifier).refresh(),
+        ref.read(desktopGoalCategoriesControllerProvider.future),
+        if (isPrivateMode) ref.read(privateProfileProvider.future),
+      ]);
+
+      if (!mounted) return;
+      Navigator.pop(context); // close loading
 
       // Per-entity outcome summary (added / updated / unchanged / skipped),
       // mirroring the mobile client's post-import dialog.
@@ -1583,6 +1566,7 @@ class _SettingsPageState extends ConsumerState<SettingsPage> {
     );
     if (!confirmed) return;
 
+    _showLoadingDialog(t.privateData.deleteTitle);
     try {
       // Order mirrors mobile: queue/perform the cloud-zone wipe and remove the
       // shared keychain secrets FIRST (requestFullReset sets pending_zone_wipe,
@@ -1597,12 +1581,14 @@ class _SettingsPageState extends ConsumerState<SettingsPage> {
       ref.invalidate(desktopGoalCategoriesControllerProvider);
       await _refreshSyncStatus();
       if (mounted) {
-        _showGate(t.privateData.deleteTitle, t.privateData.deleteSuccess);
+        Navigator.pop(context); // close loading dialog
+        _showResultDialog(t.privateData.deleteTitle, t.privateData.deleteSuccess);
       }
     } catch (error, stack) {
       AppLogger.error('Unable to delete private database', error, stack);
       if (mounted) {
-        _showGate(t.privateData.deleteTitle, t.privateData.deleteFailed);
+        Navigator.pop(context); // close loading dialog
+        _showResultDialog(t.privateData.deleteTitle, t.privateData.deleteFailed);
       }
     }
   }
@@ -1831,6 +1817,55 @@ class _SettingsPageState extends ConsumerState<SettingsPage> {
     ScaffoldMessenger.of(
       context,
     ).showSnackBar(SnackBar(content: Text('$title: $detail')));
+  }
+
+  void _showLoadingDialog(String message) {
+    showEvolveDialog<void>(
+      context: context,
+      barrierDismissible: false,
+      builder: (ctx) => EvolveDialog(
+        maxWidth: 280,
+        child: Padding(
+          padding: const EdgeInsets.all(26),
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              const SizedBox.square(
+                dimension: 28,
+                child: CircularProgressIndicator(strokeWidth: 3),
+              ),
+              const SizedBox(height: 16),
+              Text(
+                message,
+                textAlign: TextAlign.center,
+                style: TextStyle(
+                  color: ctx.evolveColors.foreground,
+                  fontSize: 13,
+                  fontWeight: FontWeight.w600,
+                ),
+              ),
+            ],
+          ),
+        ),
+      ),
+    );
+  }
+
+  void _showResultDialog(String title, String detail) {
+    showEvolveDialog<void>(
+      context: context,
+      builder: (ctx) => EvolveAlertDialog(
+        icon: LucideIcons.info,
+        title: Text(title),
+        content: Text(detail),
+        actions: [
+          FilledButton(
+            onPressed: () => Navigator.pop(ctx),
+            child: Text(t.notifications.actionDone),
+          ),
+        ],
+      ),
+    );
   }
 }
 

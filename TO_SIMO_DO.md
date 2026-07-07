@@ -20,11 +20,6 @@ not compiled).
       `com.simo.evolve.evolveDesktop` + `com.simo.evolve.sync` — must match
       DebugProfile.entitlements / Release.entitlements, which are already
       updated. Signing team `8528AN28A3`.
-- [ ] Desktop deployment target was raised to **macOS 12.3** (CloudKit APIs) —
-      pbxproj + Podfile already changed; run `pod install` in `desktop/macos`
-      and check the build.
-- [ ] `cd desktop && flutter build macos` (first compile of the Swift bridge —
-      it typechecks, but this is the real gate).
 
 ### 2. CloudKit Console (before ANY release with avatars)
 - [ ] In the `iCloud.com.simo.evolve` container: verify record type

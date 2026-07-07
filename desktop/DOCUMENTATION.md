@@ -332,3 +332,11 @@ All 8 desktop feature-parity backlog items are implemented, localized (en/it/es/
 
 ### Current Status
 Apple-like control kit COMPLETE (analyze clean, 140/140 tests green, tree left uncommitted for review). Immediate next step: Simone's visual QA pass on the Xcode machine — checklist appended to TO_SIMO_DO.md ("Apple-like control kit — visual QA (2026-07-07)"), covering dark + light themes and Arabic RTL.
+
+- [2026-07-07]: Automatic Refresh after Import
+  - *Details*: Fixed a bug where the dashboard and other pages didn't visually refresh after a data import unless a manual refresh was triggered. The UI loading dialog is now blocked until the data refresh finishes entirely.
+  - *Tech Notes*: Replaced `ref.invalidate(...)` calls in `_importData` with explicitly awaited `ref.read(...).refresh()` and `.future` reads so that Riverpod pulls the newly imported data from the local store immediately, ensuring seamless view updates.
+
+- [2026-07-07]: Loading Dialogs for Deletion Actions
+  - *Details*: Added a loading spinner dialog and a dedicated result popup to all data deletion operations in settings (Reset Data, Delete Account, Delete Private Data) so that the app gives immediate visual feedback instead of appearing frozen or simply showing a brief snackbar.
+  - *Tech Notes*: Replaced `_showGate` snackbars with a `_showResultDialog` (using `EvolveAlertDialog`) for deletion methods. Extracted the import loading dialog into a reusable `_showLoadingDialog` helper in `_SettingsPageState` and applied it across all heavy asynchronous deletion/reset methods.

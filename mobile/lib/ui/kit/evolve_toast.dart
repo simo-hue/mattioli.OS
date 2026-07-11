@@ -1,3 +1,5 @@
+import 'dart:async';
+
 import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
@@ -23,13 +25,21 @@ void showEvolveToast(
   if (overlay == null) return;
 
   late OverlayEntry entry;
+  var removed = false;
   entry = OverlayEntry(
     builder: (_) => _EvolveToast(
       message: message,
       icon: icon,
       kind: kind,
       duration: duration,
-      onDismissed: () => entry.remove(),
+      // The toast can end either by its own dwell finishing or by the route
+      // tree being torn down early. Guard so the entry is removed exactly once
+      // and never on an already-removed entry.
+      onDismissed: () {
+        if (removed) return;
+        removed = true;
+        entry.remove();
+      },
     ),
   );
   overlay.insert(entry);
@@ -59,6 +69,7 @@ class _EvolveToastState extends State<_EvolveToast>
   late final AnimationController _controller;
   late final Animation<double> _fade;
   late final Animation<Offset> _slide;
+  Timer? _dismissTimer;
 
   @override
   void initState() {
@@ -72,12 +83,19 @@ class _EvolveToastState extends State<_EvolveToast>
       begin: const Offset(0, 0.4),
       end: Offset.zero,
     ).animate(CurvedAnimation(parent: _controller, curve: Curves.easeOutCubic));
-    _run();
+    _show();
   }
 
-  Future<void> _run() async {
+  Future<void> _show() async {
     await _controller.forward();
-    await Future<void>.delayed(widget.duration);
+    if (!mounted) return;
+    // A cancellable Timer (cancelled in dispose) rather than Future.delayed, so
+    // tearing the widget tree down mid-toast never leaves a pending timer whose
+    // inherited dependents (Theme/MediaQuery) outlive the route tree.
+    _dismissTimer = Timer(widget.duration, _dismiss);
+  }
+
+  Future<void> _dismiss() async {
     if (!mounted) return;
     await _controller.reverse();
     if (mounted) widget.onDismissed();
@@ -85,6 +103,7 @@ class _EvolveToastState extends State<_EvolveToast>
 
   @override
   void dispose() {
+    _dismissTimer?.cancel();
     _controller.dispose();
     super.dispose();
   }

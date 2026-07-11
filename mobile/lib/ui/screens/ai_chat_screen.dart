@@ -45,9 +45,13 @@ class _AIChatScreenState extends ConsumerState<AIChatScreen> {
   bool _shareGoals = false;
 
   @override
-  void initState() {
-    super.initState();
-    _addInitialMessages();
+  void didChangeDependencies() {
+    super.didChangeDependencies();
+    // Seed the greeting here rather than in initState: it reads `context.t`
+    // (the slang translations InheritedWidget) and inherited-widget lookups are
+    // illegal during initState. Guarded so a later dependency change
+    // (theme/locale) never re-seeds an already-populated conversation.
+    if (_messages.isEmpty) _addInitialMessages();
   }
 
   void _addInitialMessages() {

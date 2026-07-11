@@ -916,7 +916,7 @@
     "stackTraceAvailable": "Tocca per visualizzare lo stack trace",
     "detailMessage": "MESSAGGIO",
     "detailError": "ERRORE",
-    "detailExtras": "CONTESTO AGGIUNTIVO",
+    "detailExtras": "Contesto aggiuntivo",
     "detailStackTrace": "STACK TRACE",
     "shareLogs": "Condividi file dei log",
     "exportDone": "Log esportati"

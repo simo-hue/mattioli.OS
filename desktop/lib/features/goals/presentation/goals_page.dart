@@ -111,7 +111,7 @@ class _GoalsPageState extends ConsumerState<GoalsPage> {
           id: 'tutorial_fake_goal',
           title: t.goalsPage.sampleGoal,
           category: 'Tutorial',
-          color: Colors.blueAccent,
+          color: EvolveColors.cyan,
           state: GoalState.active,
           type: _selectedType,
           createdAt: DateTime.now(),

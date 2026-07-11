@@ -1187,7 +1187,7 @@ class _Translations$appLogs$de extends Translations$appLogs$en {
 	@override String get stackTraceAvailable => 'Tippen für Stack-Trace';
 	@override String get detailMessage => 'NACHRICHT';
 	@override String get detailError => 'FEHLER';
-	@override String get detailExtras => 'ZUSÄTZLICHER KONTEXT';
+	@override String get detailExtras => 'Zusätzlicher Kontext';
 	@override String get detailStackTrace => 'STACK-TRACE';
 	@override String get shareLogs => 'Protokolldatei teilen';
 	@override String get exportDone => 'Protokolle exportiert';
@@ -2129,7 +2129,7 @@ extension on TranslationsDe {
 			'appLogs.stackTraceAvailable' => 'Tippen für Stack-Trace',
 			'appLogs.detailMessage' => 'NACHRICHT',
 			'appLogs.detailError' => 'FEHLER',
-			'appLogs.detailExtras' => 'ZUSÄTZLICHER KONTEXT',
+			'appLogs.detailExtras' => 'Zusätzlicher Kontext',
 			'appLogs.detailStackTrace' => 'STACK-TRACE',
 			'appLogs.shareLogs' => 'Protokolldatei teilen',
 			'appLogs.exportDone' => 'Protokolle exportiert',

@@ -481,14 +481,7 @@ class _ActionTileState extends State<_ActionTile>
                   crossAxisAlignment: CrossAxisAlignment.start,
                   mainAxisAlignment: MainAxisAlignment.spaceBetween,
                   children: [
-                    Container(
-                      padding: const EdgeInsets.all(8),
-                      decoration: BoxDecoration(
-                        color: widget.color.withValues(alpha: 0.1),
-                        borderRadius: BorderRadius.circular(10),
-                      ),
-                      child: Icon(widget.icon, size: 18, color: widget.color),
-                    ),
+                    EvolveIconChip(icon: widget.icon, color: widget.color),
                     Column(
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: [

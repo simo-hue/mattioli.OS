@@ -1829,7 +1829,7 @@ class _Last30DaysGrid extends StatelessWidget {
                     height: 16,
                     decoration: BoxDecoration(
                       color: switch (status) {
-                        1 => const Color(0xFF10B981),
+                        1 => EvolveColors.success,
                         2 => EvolveColors.rose,
                         _ => context.evolveColors.panelSoft,
                       },
@@ -1844,7 +1844,7 @@ class _Last30DaysGrid extends StatelessWidget {
               runSpacing: 8,
               children: [
                 _GridLegend(
-                  color: const Color(0xFF10B981),
+                  color: EvolveColors.success,
                   label: t.statistics.completed2,
                 ),
                 _GridLegend(
@@ -2095,7 +2095,7 @@ class _HabitCorrelationsPanel extends ConsumerWidget {
             Text(
               t.statistics.positiveCorrelations,
               style: const TextStyle(
-                color: Color(0xFF10B981),
+                color: EvolveColors.success,
                 fontSize: 13,
                 fontWeight: FontWeight.w700,
                 letterSpacing: -0.1,
@@ -2112,7 +2112,7 @@ class _HabitCorrelationsPanel extends ConsumerWidget {
                 _InlineInsight(
                   title: c.title,
                   value: t.stats.togetherProbability(percentage: c.percentage),
-                  color: const Color(0xFF10B981),
+                  color: EvolveColors.success,
                 ),
                 const SizedBox(height: 8),
               ],
@@ -2646,7 +2646,7 @@ class _CompletedVsMissedPanel extends StatelessWidget {
             mainAxisAlignment: MainAxisAlignment.center,
             children: [
               _GridLegend(
-                color: const Color(0xFF10B981),
+                color: EvolveColors.success,
                 label: t.statistics.mood2,
               ),
               const SizedBox(width: 16),
@@ -2688,7 +2688,7 @@ class _MoodBarGroup extends StatelessWidget {
                   alignment: Alignment.bottomCenter,
                   child: Container(
                     decoration: const BoxDecoration(
-                      color: Color(0xFF10B981),
+                      color: EvolveColors.success,
                       borderRadius: BorderRadius.vertical(
                         top: Radius.circular(4),
                       ),
@@ -2742,7 +2742,7 @@ class _PerformancePerLevelPanel extends StatelessWidget {
           _LevelBar(
             label: t.statistics.withHighMood,
             percentage: correlation.highMoodPct,
-            color: const Color(0xFF10B981),
+            color: EvolveColors.success,
           ),
           const SizedBox(height: 16),
           _LevelBar(

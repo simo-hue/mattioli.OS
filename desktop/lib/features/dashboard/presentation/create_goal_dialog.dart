@@ -2,6 +2,7 @@ import 'package:evolve_desktop/app/theme/evolve_theme.dart';
 import 'package:evolve_desktop/core/macro_goal_calendar.dart';
 import 'package:evolve_desktop/features/dashboard/application/dashboard_controller.dart';
 import 'package:evolve_desktop/features/dashboard/domain/dashboard_models.dart';
+import 'package:evolve_desktop/features/goals/application/goal_categories_controller.dart';
 import 'package:evolve_desktop/i18n/translations.g.dart';
 import 'package:evolve_desktop/shared/widgets/color_picker_dialog.dart';
 import 'package:evolve_desktop/shared/widgets/evolve_controls.dart';
@@ -37,6 +38,11 @@ class _CreateGoalDialogState extends ConsumerState<CreateGoalDialog> {
   Color _selectedColor = EvolveColors.amber;
   GoalType _selectedType = GoalType.monthly;
   bool _isLoading = false;
+  bool _isNewCategory = false;
+  String? _selectedCategoryLabel;
+
+  /// Sentinel option value for the "create new category" row in the picker.
+  static const _kNewCategory = '__evolve_new_category__';
 
   @override
   void dispose() {
@@ -62,9 +68,101 @@ class _CreateGoalDialogState extends ConsumerState<CreateGoalDialog> {
     }
   }
 
+  List<DesktopGoalCategory> _activeCategories() =>
+      (ref.read(desktopGoalCategoriesControllerProvider).value ??
+              const <DesktopGoalCategory>[])
+          .where((c) => !c.isArchived)
+          .toList();
+
+  /// The goal category as a plain string for `addGoal`: the typed name in
+  /// "create new" mode (or when there are no saved categories yet), otherwise
+  /// the selected existing category's label.
+  String _resolveCategory() {
+    final categories = _activeCategories();
+    if (categories.isEmpty || _isNewCategory) {
+      final typed = _categoryController.text.trim();
+      return typed.isEmpty ? t.createGoal.defaultCategory : typed;
+    }
+    return _selectedCategoryLabel ?? categories.first.label;
+  }
+
+  /// Category picker — an [EvolveSelect] of the saved categories plus a
+  /// "create new category" row that reveals an inline text field (so a brand
+  /// new category can still be typed), matching the goal editor's control. Falls
+  /// back to a plain text field when there are no saved categories yet.
+  Widget _categoryField(
+    BuildContext context,
+    List<DesktopGoalCategory> categories,
+  ) {
+    if (categories.isEmpty) {
+      return TextField(
+        controller: _categoryController,
+        decoration: InputDecoration(hintText: t.createGoal.categoryHint),
+        textInputAction: TextInputAction.done,
+        onSubmitted: (_) => _save(),
+      );
+    }
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.stretch,
+      children: [
+        EvolveSelect<String>(
+          value: _isNewCategory
+              ? _kNewCategory
+              : (_selectedCategoryLabel ?? categories.first.label),
+          expand: true,
+          height: 46,
+          fillColor: context.evolveColors.background.withValues(alpha: 0.5),
+          options: [
+            for (final category in categories)
+              EvolveSelectOption(
+                value: category.label,
+                label: category.label,
+                leading: CircleAvatar(
+                  radius: 4,
+                  backgroundColor: category.color,
+                ),
+              ),
+            EvolveSelectOption(
+              value: _kNewCategory,
+              label: t.goalsPage.newCategory,
+              leading: Icon(
+                LucideIcons.plus,
+                size: 13,
+                color: context.evolveAccent,
+              ),
+            ),
+          ],
+          onChanged: (value) {
+            setState(() {
+              if (value == _kNewCategory) {
+                _isNewCategory = true;
+                _categoryController.clear();
+              } else {
+                _isNewCategory = false;
+                _selectedCategoryLabel = value;
+              }
+            });
+          },
+        ),
+        if (_isNewCategory) ...[
+          const SizedBox(height: 8),
+          TextField(
+            controller: _categoryController,
+            autofocus: true,
+            decoration: InputDecoration(hintText: t.createGoal.categoryHint),
+            textInputAction: TextInputAction.done,
+            onSubmitted: (_) => _save(),
+          ),
+        ],
+      ],
+    );
+  }
+
   Future<void> _save() async {
     final title = _titleController.text.trim();
     if (title.isEmpty) return;
+
+    final category = _resolveCategory();
 
     setState(() => _isLoading = true);
 
@@ -86,7 +184,7 @@ class _CreateGoalDialogState extends ConsumerState<CreateGoalDialog> {
           .read(dashboardControllerProvider.notifier)
           .addGoal(
             title: title,
-            category: _categoryController.text.trim(),
+            category: category,
             color: _selectedColor,
             type: _selectedType,
             dueLabel: _getDueLabelFor(_selectedType),
@@ -103,6 +201,11 @@ class _CreateGoalDialogState extends ConsumerState<CreateGoalDialog> {
 
   @override
   Widget build(BuildContext context) {
+    final categories =
+        (ref.watch(desktopGoalCategoriesControllerProvider).value ??
+                const <DesktopGoalCategory>[])
+            .where((c) => !c.isArchived)
+            .toList();
     return EvolveAlertDialog(
       maxWidth: 480,
       icon: LucideIcons.trophy,
@@ -123,12 +226,7 @@ class _CreateGoalDialogState extends ConsumerState<CreateGoalDialog> {
           const SizedBox(height: 16),
           EvolveFieldLabel(t.form.category),
           const SizedBox(height: 8),
-          TextField(
-            controller: _categoryController,
-            decoration: InputDecoration(hintText: t.createGoal.categoryHint),
-            textInputAction: TextInputAction.done,
-            onSubmitted: (_) => _save(),
-          ),
+          _categoryField(context, categories),
           const SizedBox(height: 20),
           EvolveFieldLabel(t.createGoal.timeline),
           const SizedBox(height: 8),

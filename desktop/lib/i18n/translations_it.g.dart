@@ -1187,7 +1187,7 @@ class _Translations$appLogs$it extends Translations$appLogs$en {
 	@override String get stackTraceAvailable => 'Tocca per visualizzare lo stack trace';
 	@override String get detailMessage => 'MESSAGGIO';
 	@override String get detailError => 'ERRORE';
-	@override String get detailExtras => 'CONTESTO AGGIUNTIVO';
+	@override String get detailExtras => 'Contesto aggiuntivo';
 	@override String get detailStackTrace => 'STACK TRACE';
 	@override String get shareLogs => 'Condividi file dei log';
 	@override String get exportDone => 'Log esportati';
@@ -2129,7 +2129,7 @@ extension on TranslationsIt {
 			'appLogs.stackTraceAvailable' => 'Tocca per visualizzare lo stack trace',
 			'appLogs.detailMessage' => 'MESSAGGIO',
 			'appLogs.detailError' => 'ERRORE',
-			'appLogs.detailExtras' => 'CONTESTO AGGIUNTIVO',
+			'appLogs.detailExtras' => 'Contesto aggiuntivo',
 			'appLogs.detailStackTrace' => 'STACK TRACE',
 			'appLogs.shareLogs' => 'Condividi file dei log',
 			'appLogs.exportDone' => 'Log esportati',

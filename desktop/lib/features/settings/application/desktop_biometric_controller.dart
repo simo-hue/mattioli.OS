@@ -1,6 +1,7 @@
 import 'dart:async';
 import 'dart:io';
 
+import 'package:evolve_desktop/app/theme/evolve_theme.dart';
 import 'package:evolve_desktop/core/app_bootstrap.dart';
 import 'package:evolve_desktop/i18n/translations.g.dart';
 import 'package:evolve_desktop/core/app_logger.dart';
@@ -185,7 +186,7 @@ class DesktopBiometricGate extends ConsumerWidget {
               const SizedBox(height: 9),
               Text(
                 biometric.errorMessage!,
-                style: const TextStyle(color: Colors.redAccent),
+                style: const TextStyle(color: EvolveColors.destructive),
               ),
             ],
             const SizedBox(height: 20),

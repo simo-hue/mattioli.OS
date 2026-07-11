@@ -36,37 +36,42 @@ class _DesktopShellState extends ConsumerState<DesktopShell> {
     super.dispose();
   }
 
-  // ── Two-finger trackpad swipe-back (macOS) ───────────────────────────────
+  // ── Two-finger trackpad swipe navigation (macOS) ─────────────────────────
   // Trackpad pans arrive as pointer pan-zoom events; we track the cumulative
   // horizontal translation and, once a clearly-horizontal swipe crosses the
-  // threshold, pop the navigation history once per gesture.
-  static const double _backSwipeThreshold = 48;
-  bool _backSwipeConsumed = false;
+  // threshold, move through the visited-section history once per gesture —
+  // swipe-right = back, swipe-left = forward.
+  static const double _navSwipeThreshold = 48;
+  bool _navSwipeConsumed = false;
 
   void _onTrackpadPanStart(PointerPanZoomStartEvent event) {
-    _backSwipeConsumed = false;
+    _navSwipeConsumed = false;
   }
 
   void _onTrackpadPanUpdate(PointerPanZoomUpdateEvent event) {
-    if (_backSwipeConsumed) return;
-    final navigation = ref.read(navigationControllerProvider.notifier);
-    if (!navigation.canGoBack) return;
-
+    if (_navSwipeConsumed) return;
     final dx = event.pan.dx;
     final dy = event.pan.dy;
-    // Back = swiping the content to the right (fingers move right) in LTR; the
-    // sign flips in RTL. Require a clearly horizontal gesture so it never
-    // competes with vertical scrolling inside the page.
+    // Require a clearly horizontal gesture so it never competes with vertical
+    // scrolling inside the page.
+    if (dx.abs() <= dy.abs() * 1.5) return;
+
+    final navigation = ref.read(navigationControllerProvider.notifier);
+    // In LTR, swiping the content to the right (fingers move right, dx > 0) is
+    // "back" and swiping left is "forward"; both flip in RTL.
     final isRtl = Directionality.of(context) == TextDirection.rtl;
     final backwardDx = isRtl ? -dx : dx;
-    if (backwardDx > _backSwipeThreshold && backwardDx.abs() > dy.abs() * 1.5) {
-      _backSwipeConsumed = true;
+    if (backwardDx > _navSwipeThreshold && navigation.canGoBack) {
+      _navSwipeConsumed = true;
       navigation.back();
+    } else if (backwardDx < -_navSwipeThreshold && navigation.canGoForward) {
+      _navSwipeConsumed = true;
+      navigation.forward();
     }
   }
 
   void _onTrackpadPanEnd(PointerPanZoomEndEvent event) {
-    _backSwipeConsumed = false;
+    _navSwipeConsumed = false;
   }
 
   @override
@@ -90,10 +95,12 @@ class _DesktopShellState extends ConsumerState<DesktopShell> {
             select(DesktopSection.coach),
         const SingleActivator(LogicalKeyboardKey.comma, meta: true): () =>
             select(DesktopSection.settings),
-        // ⌘[ — return to the previously visited section (macOS "back"),
-        // matching the two-finger trackpad swipe on the content area.
+        // ⌘[ / ⌘] — move back / forward through the visited-section history,
+        // matching the two-finger trackpad swipe-right / swipe-left.
         const SingleActivator(LogicalKeyboardKey.bracketLeft, meta: true):
             navigation.back,
+        const SingleActivator(LogicalKeyboardKey.bracketRight, meta: true):
+            navigation.forward,
         const SingleActivator(LogicalKeyboardKey.keyK, meta: true):
             _showCommandPalette,
         const SingleActivator(LogicalKeyboardKey.keyK, control: true):

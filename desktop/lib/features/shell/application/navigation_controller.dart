@@ -54,6 +54,11 @@ class NavigationController extends Notifier<DesktopSection> {
   /// Kept modest in size so a long session of sidebar hopping can't grow it
   /// without bound.
   final List<DesktopSection> _history = <DesktopSection>[];
+
+  /// Sections ahead of the current one (the forward-stack), filled by [back]
+  /// and consumed by [forward]. Any fresh [select] clears it — standard
+  /// browser back/forward semantics.
+  final List<DesktopSection> _forward = <DesktopSection>[];
   static const int _maxHistory = 50;
 
   NavDirection _lastDirection = NavDirection.forward;
@@ -69,6 +74,10 @@ class NavigationController extends Notifier<DesktopSection> {
   /// the two-finger swipe / ⌘[ back gesture does anything.
   bool get canGoBack => _history.isNotEmpty;
 
+  /// Whether there is a backed-out-of section to re-enter. Drives whether the
+  /// two-finger swipe-left / ⌘] forward gesture does anything.
+  bool get canGoForward => _forward.isNotEmpty;
+
   /// Navigate to [section], recording the current one so it can be returned to
   /// with [back]. Selecting the already-current section is a no-op.
   void select(DesktopSection section) {
@@ -77,6 +86,7 @@ class NavigationController extends Notifier<DesktopSection> {
     if (_history.length > _maxHistory) {
       _history.removeAt(0);
     }
+    _forward.clear();
     _lastDirection = NavDirection.forward;
     state = section;
   }
@@ -86,7 +96,18 @@ class NavigationController extends Notifier<DesktopSection> {
   /// swipe. No-op at the root of the history.
   void back() {
     if (_history.isEmpty) return;
+    _forward.add(state);
     _lastDirection = NavDirection.back;
     state = _history.removeLast();
+  }
+
+  /// Re-enter the section most recently left via [back], if any, pushing the
+  /// current one back onto the history. Bound on macOS to ⌘] and the
+  /// two-finger trackpad swipe-left. No-op when there is nothing ahead.
+  void forward() {
+    if (_forward.isEmpty) return;
+    _history.add(state);
+    _lastDirection = NavDirection.forward;
+    state = _forward.removeLast();
   }
 }

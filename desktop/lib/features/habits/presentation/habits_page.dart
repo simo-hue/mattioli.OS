@@ -1656,36 +1656,14 @@ class _DayDetailsDialog extends ConsumerWidget {
               ),
             ),
           for (final habit in snapshot.habitsFor(date))
-            CheckboxListTile(
-              dense: true,
-              contentPadding: EdgeInsets.zero,
-              secondary: Row(
-                mainAxisSize: MainAxisSize.min,
-                children: [
-                  const Icon(
-                    LucideIcons.flame,
-                    size: 13,
-                    color: EvolveColors.amber,
-                  ),
-                  const SizedBox(width: 4),
-                  Text(
-                    '${habit.streak}',
-                    style: const TextStyle(
-                      color: EvolveColors.amber,
-                      fontSize: 12,
-                      fontWeight: FontWeight.w700,
-                    ),
-                  ),
-                ],
-              ),
-              title: Text(habit.title),
-              subtitle: Text(
-                _habitStatusLabel(snapshot, habit.id, date, habit),
-              ),
-              activeColor: habit.color,
-              value: _habitStatus(snapshot, habit.id, date, habit) == 'done',
-              onChanged: _canEditDate(date)
-                  ? (_) => ref
+            _DayHabitRow(
+              title: habit.title,
+              color: habit.color,
+              streak: habit.streak,
+              done: _habitStatus(snapshot, habit.id, date, habit) == 'done',
+              statusLabel: _habitStatusLabel(snapshot, habit.id, date, habit),
+              onToggle: _canEditDate(date)
+                  ? () => ref
                         .read(dashboardControllerProvider.notifier)
                         .toggleHabitForDay(habit.id, date)
                   : null,
@@ -1698,6 +1676,101 @@ class _DayDetailsDialog extends ConsumerWidget {
           child: Text(t.habitsPage.close),
         ),
       ],
+    );
+  }
+}
+
+/// Day-detail habit completion row — the kit-native replacement for the old
+/// Material `CheckboxListTile`. Mirrors the toggle square used by `_HabitRow`
+/// (fills with the habit color + a check glyph when done) so completion reads
+/// identically across the protocol table and the day-detail dialog, and adds
+/// the title, status caption and streak badge.
+class _DayHabitRow extends StatelessWidget {
+  const _DayHabitRow({
+    required this.title,
+    required this.color,
+    required this.streak,
+    required this.done,
+    required this.statusLabel,
+    required this.onToggle,
+  });
+
+  final String title;
+  final Color color;
+  final int streak;
+  final bool done;
+  final String statusLabel;
+  final VoidCallback? onToggle;
+
+  @override
+  Widget build(BuildContext context) {
+    final colors = context.evolveColors;
+    final square = AnimatedContainer(
+      duration: const Duration(milliseconds: 160),
+      width: 22,
+      height: 22,
+      decoration: BoxDecoration(
+        color: done ? color : Colors.transparent,
+        border: Border.all(color: done ? color : colors.borderStrong),
+        borderRadius: BorderRadius.circular(7),
+      ),
+      child: done
+          ? const Icon(LucideIcons.check, color: Color(0xFF092113), size: 14)
+          : null,
+    );
+    return Padding(
+      padding: const EdgeInsets.symmetric(vertical: 6),
+      child: Row(
+        children: [
+          if (onToggle == null)
+            Opacity(opacity: 0.5, child: square)
+          else
+            MouseRegion(
+              cursor: SystemMouseCursors.click,
+              child: GestureDetector(
+                behavior: HitTestBehavior.opaque,
+                onTap: onToggle,
+                child: square,
+              ),
+            ),
+          const SizedBox(width: 12),
+          Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(
+                  title,
+                  style: TextStyle(
+                    fontSize: 13,
+                    fontWeight: FontWeight.w600,
+                    color: colors.foreground,
+                  ),
+                ),
+                const SizedBox(height: 1),
+                Text(
+                  statusLabel,
+                  style: TextStyle(
+                    fontSize: 12,
+                    fontWeight: FontWeight.w500,
+                    color: colors.muted,
+                  ),
+                ),
+              ],
+            ),
+          ),
+          const SizedBox(width: 10),
+          const Icon(LucideIcons.flame, size: 13, color: EvolveColors.amber),
+          const SizedBox(width: 4),
+          Text(
+            '$streak',
+            style: const TextStyle(
+              color: EvolveColors.amber,
+              fontSize: 12,
+              fontWeight: FontWeight.w700,
+            ),
+          ),
+        ],
+      ),
     );
   }
 }

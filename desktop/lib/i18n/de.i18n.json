@@ -916,7 +916,7 @@
     "stackTraceAvailable": "Tippen für Stack-Trace",
     "detailMessage": "NACHRICHT",
     "detailError": "FEHLER",
-    "detailExtras": "ZUSÄTZLICHER KONTEXT",
+    "detailExtras": "Zusätzlicher Kontext",
     "detailStackTrace": "STACK-TRACE",
     "shareLogs": "Protokolldatei teilen",
     "exportDone": "Protokolle exportiert"

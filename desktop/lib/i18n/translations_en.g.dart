@@ -2695,8 +2695,8 @@ class Translations$appLogs$en {
 	/// en: 'ERROR'
 	String get detailError => 'ERROR';
 
-	/// en: 'ADDITIONAL CONTEXT'
-	String get detailExtras => 'ADDITIONAL CONTEXT';
+	/// en: 'Additional context'
+	String get detailExtras => 'Additional context';
 
 	/// en: 'STACK TRACE'
 	String get detailStackTrace => 'STACK TRACE';
@@ -3732,7 +3732,7 @@ extension on Translations {
 			'appLogs.stackTraceAvailable' => 'Tap to view stack trace',
 			'appLogs.detailMessage' => 'MESSAGE',
 			'appLogs.detailError' => 'ERROR',
-			'appLogs.detailExtras' => 'ADDITIONAL CONTEXT',
+			'appLogs.detailExtras' => 'Additional context',
 			'appLogs.detailStackTrace' => 'STACK TRACE',
 			'appLogs.shareLogs' => 'Share logs file',
 			'appLogs.exportDone' => 'Logs exported',

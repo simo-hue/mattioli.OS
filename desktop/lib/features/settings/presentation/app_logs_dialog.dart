@@ -3,6 +3,7 @@ import 'dart:io';
 import 'package:evolve_desktop/app/theme/evolve_theme.dart';
 import 'package:evolve_desktop/core/app_logger.dart';
 import 'package:evolve_desktop/i18n/translations.g.dart';
+import 'package:evolve_desktop/shared/widgets/evolve_controls.dart';
 import 'package:evolve_desktop/shared/widgets/evolve_dialog.dart';
 import 'package:evolve_desktop/shared/widgets/evolve_panel.dart';
 import 'package:evolve_desktop/shared/widgets/evolve_toast.dart';
@@ -440,28 +441,7 @@ class _AppLogsDialogState extends State<_AppLogsDialog> {
               children: [
                 Row(
                   children: [
-                    Container(
-                      padding: const EdgeInsets.symmetric(
-                        horizontal: 8,
-                        vertical: 3,
-                      ),
-                      decoration: BoxDecoration(
-                        color: levelColor.withValues(alpha: 0.12),
-                        borderRadius: BorderRadius.circular(100),
-                        border: Border.all(
-                          color: levelColor.withValues(alpha: 0.22),
-                        ),
-                      ),
-                      child: Text(
-                        entry.levelLabel,
-                        style: TextStyle(
-                          color: levelColor,
-                          fontSize: 10,
-                          fontWeight: FontWeight.w700,
-                          letterSpacing: 0.4,
-                        ),
-                      ),
-                    ),
+                    StatusPill(label: entry.levelLabel, color: levelColor),
                     const Spacer(),
                     Text(
                       entry.formattedTimestamp,
@@ -505,15 +485,7 @@ class _AppLogsDialogState extends State<_AppLogsDialog> {
                     entry.extras != null &&
                     entry.extras!.isNotEmpty) ...[
                   const SizedBox(height: 8),
-                  Text(
-                    t.appLogs.detailExtras,
-                    style: TextStyle(
-                      color: colors.muted,
-                      fontSize: 10,
-                      fontWeight: FontWeight.w800,
-                      letterSpacing: 1.1,
-                    ),
-                  ),
+                  EvolveFieldLabel(t.appLogs.detailExtras),
                   const SizedBox(height: 4),
                   _detailBlock(
                     colors,

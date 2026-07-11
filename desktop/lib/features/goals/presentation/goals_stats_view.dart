@@ -458,13 +458,13 @@ class _GoalsStatsViewState extends ConsumerState<GoalsStatsView> {
       child: GestureDetector(
         onTap: () => _showYearPicker(years),
         child: Container(
-          height: 38,
-          padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 8),
+          height: 34,
+          padding: const EdgeInsetsDirectional.only(start: 12, end: 8),
           decoration: BoxDecoration(
             color: context.evolveColors.panel.withValues(alpha: 0.5),
-            borderRadius: BorderRadius.circular(14),
+            borderRadius: BorderRadius.circular(12),
             border: Border.all(
-              color: context.evolveColors.border.withValues(alpha: 0.5),
+              color: context.evolveColors.border.withValues(alpha: 0.9),
             ),
           ),
           child: Row(
@@ -473,7 +473,7 @@ class _GoalsStatsViewState extends ConsumerState<GoalsStatsView> {
               Icon(
                 LucideIcons.calendar,
                 size: 14,
-                color: Theme.of(context).colorScheme.primary,
+                color: context.evolveColors.muted,
               ),
               const SizedBox(width: 8),
               Text(
@@ -481,14 +481,14 @@ class _GoalsStatsViewState extends ConsumerState<GoalsStatsView> {
                 style: TextStyle(
                   fontSize: 13,
                   fontWeight: FontWeight.w600,
-                  letterSpacing: -0.2,
+                  letterSpacing: -0.1,
                   color: context.evolveColors.foreground,
                 ),
               ),
-              const SizedBox(width: 6),
+              const SizedBox(width: 7),
               Icon(
-                LucideIcons.chevronDown,
-                size: 14,
+                LucideIcons.chevronsUpDown,
+                size: 13,
                 color: context.evolveColors.muted,
               ),
             ],
@@ -1289,7 +1289,7 @@ class _GoalsStatsViewState extends ConsumerState<GoalsStatsView> {
         } catch (_) {
           color =
               categories.where((c) => c.id == catKey).firstOrNull?.color ??
-              Colors.grey;
+              EvolveColors.subtle;
         }
 
         sections.add(
@@ -1368,7 +1368,7 @@ class _GoalsStatsViewState extends ConsumerState<GoalsStatsView> {
                         .where((c) => c.id == catKey)
                         .firstOrNull
                         ?.color ??
-                    Colors.grey;
+                    EvolveColors.subtle;
                 label =
                     categories
                         .where((c) => c.id == catKey)

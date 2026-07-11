@@ -51,7 +51,7 @@ dependencies:
   local_auth: ^3.0.1
   supabase_flutter: ^2.8.3
   google_sign_in: ^6.2.1
-  sign_in_with_apple: ^7.0.1
+  sign_in_with_apple: ^8.1.0
   crypto: ^3.0.7
   # Shared E2E-encrypted CloudKit sync core (engine, AES-GCM crypto, private-DB
   # schema, sync service) — single source of truth with the macOS desktop app.

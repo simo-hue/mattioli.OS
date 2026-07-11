@@ -765,3 +765,7 @@ NEXT ACTION: Ensure device is running the latest built version of the codebase.
       - **`navigation_controller.dart`**: added a `_forward` stack + `canGoForward`; `back()` now pushes the current section onto `_forward` before popping `_history`; new `forward()` pops `_forward`, pushes current back onto `_history`, sets `NavDirection.forward`; `select()` clears `_forward`.
       - **`desktop_shell.dart`**: the trackpad handler (`_backSwipe*` → `_navSwipe*`) now resolves both directions — swipe-right past the 48 px threshold → `back()`, swipe-left → `forward()` — RTL-aware, one-shot per gesture, horizontal-dominance guarded; added ⌘] (`bracketRight`, meta) → `forward`. No transition changes: `forward()` reuses the existing `NavDirection.forward` slide, so it animates in from the trailing edge automatically. No visible button.
       - **No new dependencies.** `flutter analyze` clean. Runtime forward-swipe QA delegated via `TO_SIMO_DO.md`.
+
+- [2026-07-11]: iOS Version Bump & Metadata
+  - *Details*: Bumped the iOS app version to 1.1.0 in `mobile/pubspec.yaml` and updated the fastlane translations in `mobile/ios/fastlane/Fastfile` to include "New UI" as requested.
+  - *Tech Notes*: Ran `fastlane update_notes` to sync the updated metadata to App Store Connect, but it failed with "Nessuna versione in stato editabile trovata!". The new version 1.1.0 must be created manually on App Store Connect first before the metadata can be updated.

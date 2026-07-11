@@ -14,6 +14,7 @@ import 'package:evolve_desktop/features/statistics/presentation/statistics_page.
 import 'package:evolve_desktop/i18n/translations.g.dart';
 import 'package:evolve_desktop/shared/widgets/evolve_dialog.dart';
 import 'package:evolve_desktop/shared/widgets/evolve_panel.dart';
+import 'package:flutter/gestures.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
@@ -35,10 +36,45 @@ class _DesktopShellState extends ConsumerState<DesktopShell> {
     super.dispose();
   }
 
+  // ── Two-finger trackpad swipe-back (macOS) ───────────────────────────────
+  // Trackpad pans arrive as pointer pan-zoom events; we track the cumulative
+  // horizontal translation and, once a clearly-horizontal swipe crosses the
+  // threshold, pop the navigation history once per gesture.
+  static const double _backSwipeThreshold = 48;
+  bool _backSwipeConsumed = false;
+
+  void _onTrackpadPanStart(PointerPanZoomStartEvent event) {
+    _backSwipeConsumed = false;
+  }
+
+  void _onTrackpadPanUpdate(PointerPanZoomUpdateEvent event) {
+    if (_backSwipeConsumed) return;
+    final navigation = ref.read(navigationControllerProvider.notifier);
+    if (!navigation.canGoBack) return;
+
+    final dx = event.pan.dx;
+    final dy = event.pan.dy;
+    // Back = swiping the content to the right (fingers move right) in LTR; the
+    // sign flips in RTL. Require a clearly horizontal gesture so it never
+    // competes with vertical scrolling inside the page.
+    final isRtl = Directionality.of(context) == TextDirection.rtl;
+    final backwardDx = isRtl ? -dx : dx;
+    if (backwardDx > _backSwipeThreshold && backwardDx.abs() > dy.abs() * 1.5) {
+      _backSwipeConsumed = true;
+      navigation.back();
+    }
+  }
+
+  void _onTrackpadPanEnd(PointerPanZoomEndEvent event) {
+    _backSwipeConsumed = false;
+  }
+
   @override
   Widget build(BuildContext context) {
     final section = ref.watch(navigationControllerProvider);
-    final select = ref.read(navigationControllerProvider.notifier).select;
+    final navigation = ref.read(navigationControllerProvider.notifier);
+    final select = navigation.select;
+    final isRtl = Directionality.of(context) == TextDirection.rtl;
 
     return CallbackShortcuts(
       bindings: {
@@ -54,6 +90,10 @@ class _DesktopShellState extends ConsumerState<DesktopShell> {
             select(DesktopSection.coach),
         const SingleActivator(LogicalKeyboardKey.comma, meta: true): () =>
             select(DesktopSection.settings),
+        // ⌘[ — return to the previously visited section (macOS "back"),
+        // matching the two-finger trackpad swipe on the content area.
+        const SingleActivator(LogicalKeyboardKey.bracketLeft, meta: true):
+            navigation.back,
         const SingleActivator(LogicalKeyboardKey.keyK, meta: true):
             _showCommandPalette,
         const SingleActivator(LogicalKeyboardKey.keyK, control: true):
@@ -74,32 +114,62 @@ class _DesktopShellState extends ConsumerState<DesktopShell> {
                     color: context.evolveColors.border.withValues(alpha: 0.5),
                   ),
                   Expanded(
-                    child: Column(
-                      children: [
-                        _TopBar(onOpenSearch: _showCommandPalette),
-                        Expanded(
-                          child: AnimatedSwitcher(
-                            duration: const Duration(milliseconds: 180),
-                            // The default layout builder centers children in
-                            // a loose Stack, which vertically centers any
-                            // page shorter than the viewport. Expand pages to
-                            // fill instead so content always starts at the
-                            // top.
-                            layoutBuilder: (currentChild, previousChildren) =>
-                                Stack(
-                                  fit: StackFit.expand,
-                                  children: [
-                                    ...previousChildren,
-                                    ?currentChild,
-                                  ],
-                                ),
-                            child: KeyedSubtree(
-                              key: ValueKey(section),
-                              child: _pageFor(section),
+                    // Two-finger trackpad swipe (macOS) → back. Scoped to the
+                    // content area so the sidebar is intentionally excluded.
+                    child: Listener(
+                      onPointerPanZoomStart: _onTrackpadPanStart,
+                      onPointerPanZoomUpdate: _onTrackpadPanUpdate,
+                      onPointerPanZoomEnd: _onTrackpadPanEnd,
+                      child: Column(
+                        children: [
+                          _TopBar(onOpenSearch: _showCommandPalette),
+                          Expanded(
+                            child: AnimatedSwitcher(
+                              duration: const Duration(milliseconds: 220),
+                              switchInCurve: Curves.easeOutCubic,
+                              switchOutCurve: Curves.easeOutCubic,
+                              // Directional slide + fade: a forward navigation
+                              // slides the new section in from the trailing
+                              // edge, a back navigation from the leading edge
+                              // (RTL-aware).
+                              transitionBuilder: (child, animation) {
+                                final back =
+                                    navigation.lastDirection ==
+                                    NavDirection.back;
+                                final sign =
+                                    (back ? -1.0 : 1.0) * (isRtl ? -1.0 : 1.0);
+                                return FadeTransition(
+                                  opacity: animation,
+                                  child: SlideTransition(
+                                    position: Tween<Offset>(
+                                      begin: Offset(sign * 0.06, 0),
+                                      end: Offset.zero,
+                                    ).animate(animation),
+                                    child: child,
+                                  ),
+                                );
+                              },
+                              // The default layout builder centers children in
+                              // a loose Stack, which vertically centers any
+                              // page shorter than the viewport. Expand pages to
+                              // fill instead so content always starts at the
+                              // top.
+                              layoutBuilder: (currentChild, previousChildren) =>
+                                  Stack(
+                                    fit: StackFit.expand,
+                                    children: [
+                                      ...previousChildren,
+                                      ?currentChild,
+                                    ],
+                                  ),
+                              child: KeyedSubtree(
+                                key: ValueKey(section),
+                                child: _pageFor(section),
+                              ),
                             ),
                           ),
-                        ),
-                      ],
+                        ],
+                      ),
                     ),
                   ),
                 ],

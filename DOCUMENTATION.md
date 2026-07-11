@@ -2,6 +2,27 @@
 
 ## Recent Changes
 
+- [2026-07-11]: **Apple-Style UI Kit — implemented (mobile)**
+  - *Details*: Built the shared `lib/ui/kit/` and migrated the three named surfaces to it so they read as native iOS: the "Select Habit" sheet (statistics), the "Choose category" sheet + its editor + delete confirm (goals), and every colour picker (habit, category, accent). Cross-platform (no `Platform.isIOS` gating), built on the existing `context.appColors`. Verified: `flutter analyze` clean (no new issues) and full suite green (144 tests). Visual QA is owner's.
+  - *Tech Notes*:
+    - New `lib/ui/kit/evolve_sheet.dart`: `showEvolveSheet` (draggable selection sheet, grabber + 17pt centred title + detents 0.6→0.92), `showEvolveFormSheet` (keyboard-aware editor with Cancel/title/Done nav header), `EvolveListSection` (grouped-inset rounded card + hairline separators), `EvolveListRow` (ConsumerWidget → gated `hapticSelection`; accent `CupertinoIcons.check_mark` / chevron), `EvolveIconTile`, `EvolveColorDotTile`, `EvolveTextAction`.
+    - New `lib/ui/kit/evolve_color_picker.dart`: `kEvolveDefaultPalette` (desktop's 6 colours), `EvolveColorSwatchGrid` (swatch circles + luminance-aware contrast + "Custom" cell; hooks `isLocked`/`onLockedTap`/`onCustomTap`/`customLocked` for the accent Pro-gate), `showEvolveColorPicker(context, initial)→Future<Color?>` (restyled `flutter_colorpicker` in a form sheet).
+    - `statistics_screen.dart`: `_showGoalSelector` → `showEvolveSheet` (All-habits row + Pro-lock flow + selected highlight preserved).
+    - `category_picker_sheet.dart`: rewritten — sheet → kit; editor `Dialog` → `showEvolveFormSheet`; delete `AlertDialog` → `CupertinoAlertDialog` (destructive). Post-dispose-safe notifier capture preserved.
+    - `habit_management_modal.dart`: colour `Wrap` + Cupertino popup → `EvolveColorSwatchGrid`; removed local `_presetColors`/`_showColorPicker` + `flutter_colorpicker` import.
+    - `app_settings_screen.dart`: accent presets → `EvolveColorSwatchGrid` with `premiumAccentColors` + `customLocked: !isPro` + `onCustomTap`; the `_showValidationDialog`/too-dark `SlidePicker` flow and light-mode white→dark remap kept intact.
+    - Palette unification side effect: habit/category colours now default to the shared 6; any previously-saved off-palette colour still displays (rendered in the "Custom" cell), no data loss.
+    - Deliberately out of scope (surgical): the habit modal's own `COLOR`/`REMINDER` micro-labels and the accent sheet's title/handle chrome were left as-is — only the colour control inside them was migrated.
+
+- [2026-07-11]: **Apple-Style UI Kit — design spec finalized (mobile)**
+  - *Details*: Agreed (via grill-me session) the full design/scope for making three mobile surfaces feel authentically Apple — "Select Habit" (statistics), the "Choose category" selector (goals), and every color picker — through one shared reusable kit. No code yet; this logs the finalized architectural decision. Full spec at `mobile/docs/apple-style-kit-spec.md`.
+  - *Tech Notes*:
+    - New `lib/ui/kit/` (Cupertino-look on Material scaffolding, cross-platform, NOT `Platform.isIOS`-gated). `Evolve`-prefixed API mirroring desktop: `showEvolveSheet` / `showEvolveEditorSheet`, `EvolveListSection`, `EvolveListRow`, `EvolveColorSwatchGrid`, `showEvolveColorPicker`.
+    - Sheet anatomy: grabber, bold 17pt centered title (kills the 10px uppercase label), solid `appColors.card`, `DraggableScrollableSheet` detents 0.6→0.92, grouped-inset rounded rows.
+    - Color control: swatch-grid + "Custom" hatch; unified 6-color palette mirroring desktop (`kEvolveDefaultPalette`); accent site keeps premium Pro-gated palette via a per-cell locking hook; `flutter_colorpicker` retained but restyled.
+    - Type/interaction: keep Inter (iOS scale), surgical `CupertinoIcons` checkmark+chevron, gated `Haptics.selectionClick`/`mediumImpact`, accent-tinted selection.
+    - Blast radius: `statistics_screen.dart`, `macro_goals/category_picker_sheet.dart` (incl. editor→sheet, delete→`CupertinoAlertDialog`), `habit_management_modal.dart`, `app_settings_screen.dart`. Non-goals: no theme rename, no migration of the other ~12 sheets, no new deps.
+
 - [2026-07-04 14:45]: **Desktop Goals Interactive Tutorial Porting**
   - *Details*: Ported the interactive interactive tutorial for the Macro Goals page (`GoalsPage`) from the Mobile implementation to the Desktop application, ensuring 100% coherence between platforms.
   - *Tech Notes*:

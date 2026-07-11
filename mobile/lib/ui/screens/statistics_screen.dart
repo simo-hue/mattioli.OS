@@ -23,6 +23,7 @@ import '../widgets/statistics/global_habits_tab_widget.dart';
 import '../widgets/statistics/global_mood_tab_widget.dart';
 import '../../i18n/translations.g.dart';
 import '../../core/l10n_dynamic.dart';
+import '../kit/evolve_sheet.dart';
 
 class StatisticsScreen extends ConsumerStatefulWidget {
   final bool isActive;
@@ -729,133 +730,56 @@ class _StatisticsScreenState extends ConsumerState<StatisticsScreen>
     final settings = ref.read(settingsProvider);
     final isPro = settings.isPro;
 
-    showModalBottomSheet(
+    showEvolveSheet<void>(
       context: context,
-      backgroundColor: context.appColors.background,
-      isScrollControlled: true,
-      shape: const RoundedRectangleBorder(
-        borderRadius: BorderRadius.vertical(top: Radius.circular(24)),
-      ),
-      builder: (context) {
-        return SafeArea(
-          child: Padding(
-            padding: const EdgeInsets.symmetric(vertical: 24),
-            child: SingleChildScrollView(
-              child: Column(
-                mainAxisSize: MainAxisSize.min,
-                children: [
-                  Text(
-                    context.t.statistics.selectHabit,
-                  style: TextStyle(
-                    fontFamily: 'Inter',
-                    fontSize: 10,
-                    fontWeight: FontWeight.w800,
-                    color: context.appColors.mutedForeground,
-                    letterSpacing: 1.2,
-                  ),
-                ),
-
-                const SizedBox(height: 16),
-                ListTile(
-                  leading: Container(
-                    width: 24,
-                    height: 24,
-                    decoration: BoxDecoration(
-                      color: context.appColors.muted,
-                      borderRadius: BorderRadius.circular(6),
-                    ),
-                    child: Icon(
-                      LucideIcons.list,
-                      size: 14,
-                      color: context.appColors.foreground,
-                    ),
-                  ),
-                  title: Text(
-                    context.t.statistics.allHabits,
-                    style: TextStyle(
-                      fontFamily: 'Inter',
-                      fontSize: 16,
-                      fontWeight: FontWeight.w600,
-                      color: context.appColors.foreground,
-                    ),
-                  ),
-                  trailing: _selectedGoalId == null
-                      ? Icon(
-                          LucideIcons.check,
-                          color: context.appColors.foreground,
-                        )
-                      : null,
-                  onTap: () {
-                    _selectGoal(null);
-                    Navigator.pop(context);
-                  },
-                ),
-                ...goals.map((goal) {
-                  return ListTile(
-                    leading: Container(
-                      width: 24,
-                      height: 24,
-                      decoration: BoxDecoration(
-                        color: goal.color.withValues(alpha: 0.2),
-                        borderRadius: BorderRadius.circular(6),
-                      ),
-                      child: Center(
-                        child: Container(
-                          width: 8,
-                          height: 8,
-                          decoration: BoxDecoration(
-                            color: goal.color,
-                            shape: BoxShape.circle,
-                          ),
-                        ),
-                      ),
-                    ),
-                    title: Text(
-                      goal.title,
-                      style: TextStyle(
-                        fontFamily: 'Inter',
-                        fontSize: 16,
-                        fontWeight: FontWeight.w500,
-                        color: isPro
-                            ? context.appColors.foreground
-                            : context.appColors.mutedForeground,
-                      ),
-                    ),
-                    trailing: isPro
-                        ? (_selectedGoalId == goal.id
-                              ? Icon(
-                                  LucideIcons.check,
-                                  color: context.appColors.foreground,
-                                )
-                              : null)
-                        : Icon(
-                            LucideIcons.lock,
-                            color: context.appColors.mutedForeground,
-                            size: 14,
-                          ),
-                    onTap: () {
-                      if (!isPro) {
-                        Navigator.pop(context);
-                        ref.hapticHeavy();
-                        ProFeaturesModal.show(context).then((_) {
-                          if (mounted) {
-                            _selectGoal(null);
-                          }
-                        });
-                      } else {
-                        _selectGoal(goal.id);
-                        Navigator.pop(context);
-                      }
-                    },
-                  );
-                }),
-                const SizedBox(height: 8),
-                ],
+      title: context.t.statistics.selectHabit,
+      itemsBuilder: (context) => [
+        EvolveListSection(
+          children: [
+            EvolveListRow(
+              leading: EvolveIconTile(
+                icon: LucideIcons.list,
+                tint: context.appColors.foreground,
               ),
+              title: context.t.statistics.allHabits,
+              selected: _selectedGoalId == null,
+              onTap: () {
+                _selectGoal(null);
+                Navigator.pop(context);
+              },
             ),
-          ),
-        );
-      },
+            ...goals.map((goal) {
+              return EvolveListRow(
+                leading: EvolveColorDotTile(color: goal.color),
+                title: goal.title,
+                titleColor: isPro ? null : context.appColors.mutedForeground,
+                selected: isPro && _selectedGoalId == goal.id,
+                trailing: isPro
+                    ? null
+                    : Icon(
+                        LucideIcons.lock,
+                        color: context.appColors.mutedForeground,
+                        size: 14,
+                      ),
+                onTap: () {
+                  if (!isPro) {
+                    Navigator.pop(context);
+                    ref.hapticHeavy();
+                    ProFeaturesModal.show(context).then((_) {
+                      if (mounted) {
+                        _selectGoal(null);
+                      }
+                    });
+                  } else {
+                    _selectGoal(goal.id);
+                    Navigator.pop(context);
+                  }
+                },
+              );
+            }),
+          ],
+        ),
+      ],
     );
   }
 }

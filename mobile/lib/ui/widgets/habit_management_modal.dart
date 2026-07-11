@@ -4,7 +4,6 @@ import 'dart:ui';
 import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:lucide_icons_flutter/lucide_icons.dart';
-import 'package:flutter_colorpicker/flutter_colorpicker.dart';
 import '../../core/theme.dart';
 import '../../core/haptics.dart';
 import '../../core/time_formatting.dart';
@@ -13,6 +12,7 @@ import '../../providers/goal_provider.dart';
 import '../../providers/settings_provider.dart';
 import '../screens/subscription_screen.dart';
 import '../../i18n/translations.g.dart';
+import '../kit/evolve_color_picker.dart';
 
 class HabitManagementModal extends ConsumerStatefulWidget {
   const HabitManagementModal({super.key});
@@ -41,7 +41,7 @@ class _HabitManagementModalState extends ConsumerState<HabitManagementModal> {
   @override
   void initState() {
     super.initState();
-    _selectedColor = _presetColors[0];
+    _selectedColor = kEvolveDefaultPalette[0];
   }
 
   @override
@@ -59,16 +59,6 @@ class _HabitManagementModalState extends ConsumerState<HabitManagementModal> {
       _selectedColor = Theme.of(context).colorScheme.primary;
     }
   }
-
-  final List<Color> _presetColors = [
-    const Color(0xFF30A661),
-    const Color(0xFF3B82F6),
-    const Color(0xFF7C3AED),
-    const Color(0xFFEC4899),
-    const Color(0xFFEF4444),
-    const Color(0xFFF59E0B),
-    const Color(0xFF10B981),
-  ];
 
   void _onSave() {
     if (_nameController.text.trim().isEmpty) return;
@@ -116,7 +106,7 @@ class _HabitManagementModalState extends ConsumerState<HabitManagementModal> {
     _nameController.clear();
     setState(() {
       _editingHabit = null;
-      _selectedColor = _presetColors[0];
+      _selectedColor = kEvolveDefaultPalette[0];
       _reminderTime = null;
     });
     HapticFeedback.mediumImpact();
@@ -133,63 +123,6 @@ class _HabitManagementModalState extends ConsumerState<HabitManagementModal> {
       0,
       duration: const Duration(milliseconds: 500),
       curve: Curves.easeInOut,
-    );
-  }
-
-  void _showColorPicker() {
-    showCupertinoModalPopup(
-      context: context,
-      builder: (BuildContext context) => Container(
-        height: 450,
-        color: context.appColors.card,
-        child: Column(
-          children: [
-            Container(
-              color: context.appColors.border.withValues(alpha: 0.3),
-              child: Row(
-                mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                children: [
-                  CupertinoButton(
-                    child: Text(
-                      context.t.common.actions.cancel,
-                      style: TextStyle(
-                        color: context.appColors.mutedForeground,
-                      ),
-                    ),
-                    onPressed: () => Navigator.pop(context),
-                  ),
-                  CupertinoButton(
-                    child: Text(
-                      context.t.common.actions.confirm,
-                      style: TextStyle(
-                        color: Theme.of(context).colorScheme.primary,
-                      ),
-                    ),
-                    onPressed: () => Navigator.pop(context),
-                  ),
-                ],
-              ),
-            ),
-            Expanded(
-              child: SingleChildScrollView(
-                padding: const EdgeInsets.all(16.0),
-                child: Material(
-                  color: Colors.transparent,
-                  child: ColorPicker(
-                    pickerColor: _selectedColor,
-                    onColorChanged: (color) =>
-                        setState(() => _selectedColor = color),
-                    pickerAreaHeightPercent: 0.7,
-                    enableAlpha: false,
-                    displayThumbColor: true,
-                    labelTypes: const [],
-                  ),
-                ),
-              ),
-            ),
-          ],
-        ),
-      ),
     );
   }
 
@@ -528,74 +461,10 @@ class _HabitManagementModalState extends ConsumerState<HabitManagementModal> {
                         ),
                       ),
                       const SizedBox(height: 10),
-                      Wrap(
-                        spacing: 10,
-                        runSpacing: 10,
-                        children: [
-                          ..._presetColors.map((color) {
-                            final isSelected = _selectedColor == color;
-                            return GestureDetector(
-                              onTap: () =>
-                                  setState(() => _selectedColor = color),
-                              child: Container(
-                                width: 28,
-                                height: 28,
-                                decoration: BoxDecoration(
-                                  color: color,
-                                  shape: BoxShape.circle,
-                                  border: Border.all(
-                                    color: isSelected
-                                        ? (color.computeLuminance() > 0.7
-                                              ? Colors.black.withValues(
-                                                  alpha: 0.2,
-                                                )
-                                              : Colors.white)
-                                        : Colors.transparent,
-                                    width: 2,
-                                  ),
-                                  boxShadow: isSelected
-                                      ? [
-                                          BoxShadow(
-                                            color: color.withValues(alpha: 0.5),
-                                            blurRadius: 8,
-                                            spreadRadius: 0,
-                                          ),
-                                        ]
-                                      : null,
-                                ),
-                              ),
-                            );
-                          }),
-                          // Custom Color Picker Button
-                          GestureDetector(
-                            onTap: _showColorPicker,
-                            child: Container(
-                              width: 28,
-                              height: 28,
-                              decoration: BoxDecoration(
-                                color: context.appColors.border.withValues(
-                                  alpha: 0.3,
-                                ),
-                                shape: BoxShape.circle,
-                                border: Border.all(
-                                  color: !_presetColors.contains(_selectedColor)
-                                      ? (_selectedColor.computeLuminance() > 0.7
-                                            ? Colors.black.withValues(
-                                                alpha: 0.2,
-                                              )
-                                            : Colors.white)
-                                      : Colors.transparent,
-                                  width: 2,
-                                ),
-                              ),
-                              child: Icon(
-                                LucideIcons.plus,
-                                size: 14,
-                                color: context.appColors.foreground,
-                              ),
-                            ),
-                          ),
-                        ],
+                      EvolveColorSwatchGrid(
+                        selected: _selectedColor,
+                        onChanged: (color) =>
+                            setState(() => _selectedColor = color),
                       ),
                       const SizedBox(height: 16),
                       Text(

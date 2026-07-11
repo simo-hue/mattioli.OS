@@ -10,6 +10,7 @@ import '../../core/haptics.dart';
 import '../../core/rtl.dart';
 import '../../i18n/translations.g.dart';
 import '../widgets/pro_features_modal.dart';
+import '../kit/evolve_color_picker.dart';
 
 class AppSettingsScreen extends ConsumerWidget {
   const AppSettingsScreen({super.key});
@@ -548,123 +549,37 @@ class AppSettingsScreen extends ConsumerWidget {
               ),
             ),
             const SizedBox(height: 32),
-            Row(
-              mainAxisAlignment: MainAxisAlignment.spaceEvenly,
-              children: [
-                // 3 Presets
-                ...AppSettingsNotifier.premiumAccentColors.take(3).map((c) {
-                  final settings = ref.read(settingsProvider);
-                  var color = c;
-                  if (settings.themeMode == 'light' &&
-                      color.toARGB32() == 0xFFFAFAFA) {
-                    color = const Color(0xFF09090B);
+            Center(
+              child: EvolveColorSwatchGrid(
+                selected: currentColor,
+                palette: [
+                  for (final c
+                      in AppSettingsNotifier.premiumAccentColors.take(3))
+                    (settings.themeMode == 'light' &&
+                            c.toARGB32() == 0xFFFAFAFA)
+                        ? const Color(0xFF09090B)
+                        : c,
+                ],
+                customLocked: !settings.isPro,
+                onChanged: (color) {
+                  Navigator.pop(context); // close the accent selector sheet
+                  _showValidationDialog(context, ref, color);
+                },
+                onCustomTap: () {
+                  if (!settings.isPro) {
+                    Navigator.pop(context);
+                    ref.hapticHeavy();
+                    ProFeaturesModal.show(context);
+                  } else {
+                    HapticFeedback.mediumImpact();
+                    _showFullColorPicker(context, ref, currentColor);
                   }
-                  final isSelected =
-                      currentColor.toARGB32() == color.toARGB32();
-                  return _buildColorOption(context, ref, color, isSelected);
-                }),
-                // Custom Color Picker Button
-                GestureDetector(
-                  onTap: () {
-                    final settings = ref.read(settingsProvider);
-                    if (!settings.isPro) {
-                      Navigator.pop(
-                        context,
-                      ); // Close the accent color selector sheet
-                      ref.hapticHeavy();
-                      ProFeaturesModal.show(context);
-                    } else {
-                      HapticFeedback.mediumImpact();
-                      _showFullColorPicker(context, ref, currentColor);
-                    }
-                  },
-                  child: Container(
-                    width: 54,
-                    height: 54,
-                    decoration: BoxDecoration(
-                      color: context.appColors.card,
-                      shape: BoxShape.circle,
-                      border: Border.all(
-                        color: !settings.isPro
-                            ? const Color(0xFFEAB308).withValues(alpha: 0.5)
-                            : context.appColors.border,
-                        width: 2,
-                      ),
-                      boxShadow: !settings.isPro
-                          ? [
-                              BoxShadow(
-                                color: const Color(
-                                  0xFFEAB308,
-                                ).withValues(alpha: 0.15),
-                                blurRadius: 8,
-                                spreadRadius: 1,
-                              ),
-                            ]
-                          : null,
-                    ),
-                    child: Icon(
-                      settings.isPro ? LucideIcons.plus : LucideIcons.lock,
-                      color: settings.isPro
-                          ? context.appColors.foreground
-                          : const Color(0xFFEAB308),
-                      size: settings.isPro ? 24 : 18,
-                    ),
-                  ),
-                ),
-              ],
+                },
+              ),
             ),
             const SizedBox(height: 48),
           ],
         ),
-      ),
-    );
-  }
-
-  Widget _buildColorOption(
-    BuildContext context,
-    WidgetRef ref,
-    Color color,
-    bool isSelected,
-  ) {
-    return GestureDetector(
-      onTap: () {
-        ref.hapticMedium();
-        Navigator.pop(context); // Close bottom sheet
-        _showValidationDialog(context, ref, color);
-      },
-      child: Container(
-        width: 54,
-        height: 54,
-        decoration: BoxDecoration(
-          color: color,
-          shape: BoxShape.circle,
-          border: Border.all(
-            color: isSelected
-                ? (color.computeLuminance() > 0.7
-                      ? Colors.black.withValues(alpha: 0.2)
-                      : Colors.white)
-                : Colors.transparent,
-            width: 3,
-          ),
-          boxShadow: isSelected
-              ? [
-                  BoxShadow(
-                    color: color.withValues(alpha: 0.4),
-                    blurRadius: 12,
-                    spreadRadius: 2,
-                  ),
-                ]
-              : null,
-        ),
-        child: isSelected
-            ? Icon(
-                LucideIcons.check,
-                size: 24,
-                color: color.computeLuminance() > 0.5
-                    ? Colors.black
-                    : Colors.white,
-              )
-            : null,
       ),
     );
   }

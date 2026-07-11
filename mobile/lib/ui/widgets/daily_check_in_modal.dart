@@ -4,6 +4,7 @@ import 'package:lucide_icons_flutter/lucide_icons.dart';
 import '../../core/theme.dart';
 import '../../core/haptics.dart';
 import '../../providers/mood_provider.dart';
+import '../kit/evolve_button.dart';
 import '../../i18n/translations.g.dart';
 
 class DailyCheckInModal extends ConsumerStatefulWidget {
@@ -152,45 +153,21 @@ class _DailyCheckInModalState extends ConsumerState<DailyCheckInModal> {
                 const SizedBox(height: 32),
 
                 // Update Button
-                SizedBox(
-                  width: double.infinity,
-                  height: 52,
-                  child: ElevatedButton(
-                    onPressed: () async {
-                      ref.hapticSuccess();
-                      await ref.read(dailyMoodsProvider.notifier).saveMood(
-                        DateTime.now(),
-                        _mood.round(),
-                        _energy.round(),
-                      );
-                      if (!context.mounted) return;
-                      Navigator.pop(context);
-                    },
-                    style: ElevatedButton.styleFrom(
-                      backgroundColor: Theme.of(context).colorScheme.primary,
-                      foregroundColor: Theme.of(context).colorScheme.primary.computeLuminance() > 0.5 ? Colors.black : Colors.white,
-                      shape: RoundedRectangleBorder(
-                        borderRadius: BorderRadius.circular(12),
-                      ),
-                      elevation: 0,
-                    ),
-                    child: Row(
-                      mainAxisAlignment: MainAxisAlignment.center,
-                      children: [
-                        const Icon(LucideIcons.save, size: 18),
-                        const SizedBox(width: 10),
-                        Text(
-                          isFirstTime
-                              ? context.t.habits.enter
-                              : context.t.habits.update,
-                          style: const TextStyle(
-                            fontSize: 15,
-                            fontWeight: FontWeight.w600,
-                          ),
-                        ),
-                      ],
-                    ),
-                  ),
+                EvolveButton(
+                  label: isFirstTime
+                      ? context.t.habits.enter
+                      : context.t.habits.update,
+                  icon: LucideIcons.save,
+                  haptic: EvolveButtonHaptic.success,
+                  onPressed: () async {
+                    await ref.read(dailyMoodsProvider.notifier).saveMood(
+                      DateTime.now(),
+                      _mood.round(),
+                      _energy.round(),
+                    );
+                    if (!context.mounted) return;
+                    Navigator.pop(context);
+                  },
                 ),
               ],
             ),

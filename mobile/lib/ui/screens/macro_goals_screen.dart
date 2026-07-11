@@ -18,6 +18,8 @@ import '../widgets/macro_goals/macro_goals_stats_view.dart';
 import '../../core/haptics.dart';
 import '../../providers/tutorial_provider.dart';
 import '../../i18n/translations.g.dart';
+import '../kit/evolve_segmented_control.dart';
+import '../kit/evolve_sheet.dart';
 
 class MacroGoalsScreen extends ConsumerStatefulWidget {
   final bool isActive;
@@ -709,70 +711,13 @@ class _MacroGoalsScreenState extends ConsumerState<MacroGoalsScreen>
   }
 
   Widget _buildModeToggle() {
-    return Container(
-      height: 44,
-      padding: const EdgeInsets.all(4),
-      decoration: BoxDecoration(
-        color: context.appColors.card.withValues(alpha: 0.3),
-        borderRadius: BorderRadius.circular(14),
-        border: Border.all(
-          color: context.appColors.border.withValues(alpha: 0.5),
-          width: 1,
-        ),
-      ),
-      child: Row(
-        children: [
-          _buildToggleItem(false, context.t.macroGoals.myGoals),
-          _buildToggleItem(true, context.t.macroGoals.performanceAnalysis),
-        ],
-      ),
-    );
-  }
-
-  Widget _buildToggleItem(bool stats, String label) {
-    final active = _showStats == stats;
-    return Expanded(
-      child: GestureDetector(
-        onTap: () {
-          if (_showStats != stats) {
-            setState(() => _showStats = stats);
-            ref.hapticSelection();
-          }
-        },
-        behavior: HitTestBehavior.opaque,
-        child: AnimatedContainer(
-          duration: const Duration(milliseconds: 250),
-          curve: Curves.easeInOut,
-          decoration: BoxDecoration(
-            color: active
-                ? Theme.of(context).colorScheme.primary
-                : Colors.transparent,
-            borderRadius: BorderRadius.circular(10),
-            boxShadow: active
-                ? [
-                    BoxShadow(
-                      color: Colors.black.withValues(alpha: 0.3),
-                      blurRadius: 8,
-                      offset: const Offset(0, 2),
-                    ),
-                  ]
-                : null,
-          ),
-          alignment: Alignment.center,
-          child: Text(
-            label,
-            style: TextStyle(
-              fontFamily: 'Inter',
-              fontSize: 11,
-              fontWeight: active ? FontWeight.w800 : FontWeight.w600,
-              color: active
-                  ? context.appColors.background
-                  : context.appColors.mutedForeground,
-              letterSpacing: -0.2,
-            ),
-          ),
-        ),
-      ),
+    return EvolveSegmentedControl<bool>(
+      groupValue: _showStats,
+      segments: {
+        false: context.t.macroGoals.myGoals,
+        true: context.t.macroGoals.performanceAnalysis,
+      },
+      onValueChanged: (stats) => setState(() => _showStats = stats),
     );
   }
 
@@ -790,79 +735,27 @@ class _MacroGoalsScreenState extends ConsumerState<MacroGoalsScreen>
       (t: GoalType.weekly, i: LucideIcons.clock),
     ];
 
-    showModalBottomSheet(
+    showEvolveSheet<void>(
       context: context,
-      backgroundColor: context.appColors.card,
-      shape: const RoundedRectangleBorder(
-        borderRadius: BorderRadius.vertical(top: Radius.circular(24)),
-      ),
-      builder: (_) => SafeArea(
-        child: Column(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            const SizedBox(height: 12),
-            Container(
-              width: 40,
-              height: 4,
-              decoration: BoxDecoration(
-                color: context.appColors.border,
-                borderRadius: BorderRadius.circular(2),
+      title: context.t.macroGoals.planningTypeHeader,
+      itemsBuilder: (sheetContext) => [
+        EvolveListSection(
+          children: types.map((type) {
+            return EvolveListRow(
+              leading: EvolveIconTile(
+                icon: type.i,
+                tint: context.appColors.mutedForeground,
               ),
-            ),
-            const SizedBox(height: 20),
-            Padding(
-              padding: const EdgeInsets.only(bottom: 12),
-              child: Align(
-                alignment: Alignment.center,
-                child: Text(
-                  context.t.macroGoals.planningTypeHeader,
-                  style: TextStyle(
-                    fontFamily: 'Inter',
-                    fontWeight: FontWeight.w800,
-                    color: context.appColors.mutedForeground,
-                    fontSize: 10,
-                    letterSpacing: 1.2,
-                  ),
-                ),
-              ),
-            ),
-            ...types.map((type) {
-              final isSel = type.t == vs.selectedType;
-              return ListTile(
-                leading: Icon(
-                  type.i,
-                  size: 20,
-                  color: isSel
-                      ? primaryColor
-                      : context.appColors.mutedForeground.withValues(
-                          alpha: 0.6,
-                        ),
-                ),
-                title: Text(
-                  _goalTypeLabel(context, type.t).toUpperCase(),
-                  style: TextStyle(
-                    fontFamily: 'Inter',
-                    fontSize: 16,
-                    color: isSel
-                        ? context.appColors.foreground
-                        : context.appColors.mutedForeground,
-                    fontWeight: isSel ? FontWeight.w700 : FontWeight.w500,
-                  ),
-                ),
-                trailing: isSel
-                    ? Icon(LucideIcons.check, color: primaryColor, size: 20)
-                    : null,
-                onTap: () {
-                  ref.read(macroGoalsViewProvider.notifier).setType(type.t);
-                  Navigator.pop(context);
-                  ref.hapticSelection();
-                },
-              );
-            }),
-            const SizedBox(height: 20),
-          ],
+              title: _goalTypeLabel(context, type.t),
+              selected: type.t == vs.selectedType,
+              onTap: () {
+                ref.read(macroGoalsViewProvider.notifier).setType(type.t);
+                Navigator.pop(sheetContext);
+              },
+            );
+          }).toList(),
         ),
-      ),
+      ],
     );
   }
 

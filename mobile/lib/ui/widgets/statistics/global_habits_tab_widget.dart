@@ -11,6 +11,7 @@ import '../../../core/haptics.dart';
 import '../pro_features_modal.dart';
 import '../../../i18n/translations.g.dart';
 import '../../../core/l10n_dynamic.dart';
+import '../../kit/evolve_sheet.dart';
 
 class GlobalHabitsTabWidget extends ConsumerStatefulWidget {
   final Function(String?)? onGoalSelected;
@@ -198,81 +199,27 @@ class _GlobalHabitsTabWidgetState extends ConsumerState<GlobalHabitsTabWidget> {
       (val: 'first_name', icon: LucideIcons.list),
     ];
 
-    showModalBottomSheet(
+    showEvolveSheet<void>(
       context: context,
-      backgroundColor: context.appColors.card,
-      shape: const RoundedRectangleBorder(
-        borderRadius: BorderRadius.vertical(top: Radius.circular(24)),
-      ),
-      builder: (context) => SafeArea(
-        child: Column(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            const SizedBox(height: 12),
-            Container(
-              width: 40,
-              height: 4,
-              decoration: BoxDecoration(
-                color: context.appColors.border,
-                borderRadius: BorderRadius.circular(2),
+      title: context.t.statistics.sortBy,
+      itemsBuilder: (sheetContext) => [
+        EvolveListSection(
+          children: options.map((opt) {
+            return EvolveListRow(
+              leading: EvolveIconTile(
+                icon: opt.icon,
+                tint: context.appColors.mutedForeground,
               ),
-            ),
-            const SizedBox(height: 20),
-            Padding(
-              padding: const EdgeInsets.only(bottom: 12),
-              child: Align(
-                alignment: Alignment.center,
-                child: Text(
-                  context.t.statistics.sortBy,
-                  style: TextStyle(
-                    fontFamily: 'Inter',
-                    fontSize: 10,
-                    fontWeight: FontWeight.w800,
-                    color: context.appColors.mutedForeground,
-                    letterSpacing: 1.2,
-                  ),
-                ),
-              ),
-            ),
-
-            ...options.map((opt) {
-              final isSel = _sortBy == opt.val;
-              final primaryColor = Theme.of(context).colorScheme.primary;
-              return ListTile(
-                leading: Icon(
-                  opt.icon,
-                  size: 20,
-                  color: isSel
-                      ? primaryColor
-                      : context.appColors.mutedForeground.withValues(
-                          alpha: 0.6,
-                        ),
-                ),
-                title: Text(
-                  tSortBy(context, opt.val),
-                  style: TextStyle(
-                    fontFamily: 'Inter',
-                    fontSize: 16,
-                    fontWeight: isSel ? FontWeight.w700 : FontWeight.w500,
-                    color: isSel
-                        ? context.appColors.foreground
-                        : context.appColors.mutedForeground,
-                  ),
-                ),
-                trailing: isSel
-                    ? Icon(LucideIcons.check, color: primaryColor, size: 20)
-                    : null,
-                onTap: () {
-                  HapticFeedback.selectionClick();
-                  setState(() => _sortBy = opt.val);
-                  Navigator.pop(context);
-                },
-              );
-            }),
-            const SizedBox(height: 20),
-          ],
+              title: tSortBy(context, opt.val),
+              selected: _sortBy == opt.val,
+              onTap: () {
+                setState(() => _sortBy = opt.val);
+                Navigator.pop(sheetContext);
+              },
+            );
+          }).toList(),
         ),
-      ),
+      ],
     );
   }
 

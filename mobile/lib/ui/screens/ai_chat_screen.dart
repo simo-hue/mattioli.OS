@@ -19,6 +19,9 @@ import '../../providers/goal_provider.dart';
 import '../../providers/macro_goals_provider.dart';
 import '../../providers/user_provider.dart';
 import '../../i18n/translations.g.dart';
+import '../kit/evolve_dialog.dart';
+import '../kit/evolve_toast.dart';
+import '../../core/haptics.dart';
 
 class AIChatScreen extends ConsumerStatefulWidget {
   const AIChatScreen({super.key});
@@ -287,15 +290,10 @@ class _AIChatScreenState extends ConsumerState<AIChatScreen> {
         _scrollToBottom();
 
         // Avvisa l'utente in modo esplicito
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(
-            content: Text(context.t.ai.connectionIssues),
-            backgroundColor: Colors.redAccent,
-            behavior: SnackBarBehavior.floating,
-            shape: RoundedRectangleBorder(
-              borderRadius: BorderRadius.circular(12),
-            ),
-          ),
+        showEvolveToast(
+          context,
+          message: context.t.ai.connectionIssues,
+          kind: EvolveToastKind.error,
         );
       },
 
@@ -317,34 +315,15 @@ class _AIChatScreenState extends ConsumerState<AIChatScreen> {
     if (await db.hasPrivateAiExternalConsent()) return true;
     if (!mounted) return false;
 
-    final accepted = await showDialog<bool>(
+    final accepted = await showEvolveConfirm(
       context: context,
-      builder: (dialogContext) {
-        return AlertDialog(
-          backgroundColor: context.appColors.card,
-          title: Text(
-            context.t.ai.privateConsentTitle,
-            style: TextStyle(color: context.appColors.foreground),
-          ),
-          content: Text(
-            context.t.ai.privateConsentBody,
-            style: TextStyle(color: context.appColors.mutedForeground),
-          ),
-          actions: [
-            TextButton(
-              onPressed: () => Navigator.pop(dialogContext, false),
-              child: Text(context.t.common.actions.cancel),
-            ),
-            TextButton(
-              onPressed: () => Navigator.pop(dialogContext, true),
-              child: Text(context.t.ai.accept),
-            ),
-          ],
-        );
-      },
+      title: context.t.ai.privateConsentTitle,
+      message: context.t.ai.privateConsentBody,
+      confirmLabel: context.t.ai.accept,
+      ref: ref,
     );
 
-    if (accepted == true) {
+    if (accepted) {
       await db.setPrivateAiExternalConsent(true);
       return true;
     }
@@ -589,85 +568,23 @@ class _AIChatScreenState extends ConsumerState<AIChatScreen> {
                 size: 18,
                 color: colors.mutedForeground,
               ),
-              onPressed: () {
-                HapticFeedback.lightImpact();
-                showDialog(
+              onPressed: () async {
+                ref.hapticLight();
+                final confirmed = await showEvolveConfirm(
                   context: context,
-                  builder: (context) {
-                    final colors = context.appColors;
-                    return Dialog(
-                      backgroundColor: Colors.transparent,
-                      child: BackdropFilter(
-                        filter: ImageFilter.blur(sigmaX: 10, sigmaY: 10),
-                        child: Container(
-                          padding: const EdgeInsets.all(24),
-                          decoration: BoxDecoration(
-                            color: colors.card.withValues(alpha: 0.9),
-                            borderRadius: BorderRadius.circular(24),
-                            border: Border.all(color: colors.borderSubtle),
-                          ),
-                          child: Column(
-                            mainAxisSize: MainAxisSize.min,
-                            crossAxisAlignment: CrossAxisAlignment.start,
-                            children: [
-                              Text(
-                                context.t.tutorial.deleteChat,
-                                style: TextStyle(
-                                  fontSize: 18,
-                                  fontWeight: FontWeight.w700,
-                                  color: colors.foreground,
-                                ),
-                              ),
-                              const SizedBox(height: 12),
-                              Text(
-                                context.t.tutorial.areYouSureYouWantTo,
-                                style: TextStyle(
-                                  fontSize: 14,
-                                  color: colors.mutedForeground,
-                                ),
-                              ),
-                              const SizedBox(height: 24),
-                              Row(
-                                mainAxisAlignment: MainAxisAlignment.end,
-                                children: [
-                                  TextButton(
-                                    onPressed: () => Navigator.pop(context),
-                                    child: Text(
-                                      context.t.tutorial.cancel,
-                                      style: TextStyle(
-                                        color: colors.foreground,
-                                      ),
-                                    ),
-                                  ),
-                                  const SizedBox(width: 12),
-                                  ElevatedButton(
-                                    onPressed: () {
-                                      Navigator.pop(context);
-                                      setState(() {
-                                        _messages.clear();
-                                        _addInitialMessages();
-                                      });
-                                    },
-                                    style: ElevatedButton.styleFrom(
-                                      backgroundColor: Colors.redAccent,
-                                      foregroundColor: Colors.white,
-                                      shape: RoundedRectangleBorder(
-                                        borderRadius: BorderRadius.circular(12),
-                                      ),
-                                    ),
-                                    child: Text(
-                                      context.t.common.actions.delete,
-                                    ),
-                                  ),
-                                ],
-                              ),
-                            ],
-                          ),
-                        ),
-                      ),
-                    );
-                  },
+                  title: context.t.tutorial.deleteChat,
+                  message: context.t.tutorial.areYouSureYouWantTo,
+                  confirmLabel: context.t.common.actions.delete,
+                  cancelLabel: context.t.tutorial.cancel,
+                  isDestructive: true,
+                  ref: ref,
                 );
+                if (confirmed) {
+                  setState(() {
+                    _messages.clear();
+                    _addInitialMessages();
+                  });
+                }
               },
 
               tooltip: context.t.ai.newChat,
@@ -952,19 +869,9 @@ class _AIChatScreenState extends ConsumerState<AIChatScreen> {
     final bubble = GestureDetector(
       onLongPress: () {
         Clipboard.setData(ClipboardData(text: message.text));
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(
-            content: Text(
-              context.t.tutorial.messageCopied,
-              style: TextStyle(color: colors.foreground),
-            ),
-            backgroundColor: colors.cardElevated,
-            behavior: SnackBarBehavior.floating,
-            duration: const Duration(seconds: 1),
-            shape: RoundedRectangleBorder(
-              borderRadius: BorderRadius.circular(12),
-            ),
-          ),
+        showEvolveToast(
+          context,
+          message: context.t.tutorial.messageCopied,
         );
         HapticFeedback.lightImpact();
       },

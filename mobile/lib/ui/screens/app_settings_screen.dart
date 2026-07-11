@@ -11,6 +11,9 @@ import '../../core/rtl.dart';
 import '../../i18n/translations.g.dart';
 import '../widgets/pro_features_modal.dart';
 import '../kit/evolve_color_picker.dart';
+import '../kit/evolve_sheet.dart';
+import '../kit/evolve_switch.dart';
+import '../kit/evolve_section_header.dart';
 
 class AppSettingsScreen extends ConsumerWidget {
   const AppSettingsScreen({super.key});
@@ -18,9 +21,7 @@ class AppSettingsScreen extends ConsumerWidget {
   static Route route() {
     // MaterialPageRoute so iOS gets the native Cupertino slide + edge-swipe-back
     // gesture for free (Android keeps its native Material transition).
-    return MaterialPageRoute(
-      builder: (context) => const AppSettingsScreen(),
-    );
+    return MaterialPageRoute(builder: (context) => const AppSettingsScreen());
   }
 
   @override
@@ -108,10 +109,7 @@ class AppSettingsScreen extends ConsumerWidget {
               ),
             ]),
             const SizedBox(height: 32),
-            _buildSectionHeader(
-              context,
-              context.t.settings.sections.calendar,
-            ),
+            _buildSectionHeader(context, context.t.settings.sections.calendar),
             _buildSettingsCard(context, [
               _buildActionRow(
                 context: context,
@@ -133,71 +131,93 @@ class AppSettingsScreen extends ConsumerWidget {
                 })().toUpperCase(),
                 onTap: () {
                   ref.hapticLight();
-                  showModalBottomSheet(
+                  showEvolveSheet<void>(
                     context: context,
-                    backgroundColor: Colors.transparent,
-                    builder: (context) => Container(
-                      decoration: BoxDecoration(
-                        color: context.appColors.card,
-                        borderRadius: const BorderRadius.vertical(
-                          top: Radius.circular(24),
-                        ),
-                        border: Border.all(color: context.appColors.border),
-                      ),
-                      child: Column(
-                        mainAxisSize: MainAxisSize.min,
+                    title: context.t.settings.calendar.defaultView,
+                    itemsBuilder: (sheetContext) => [
+                      EvolveListSection(
                         children: [
-                          const SizedBox(height: 12),
-                          Container(
-                            width: 40,
-                            height: 4,
-                            decoration: BoxDecoration(
-                              color: context.appColors.border,
-                              borderRadius: BorderRadius.circular(2),
+                          EvolveListRow(
+                            leading: EvolveIconTile(
+                              icon: LucideIcons.calendarDays,
+                              tint: context.appColors.mutedForeground,
                             ),
+                            title: context.t.common.calendarView.month,
+                            selected:
+                                settings.defaultCalendarView == 'mese' ||
+                                settings.defaultCalendarView == 'month',
+                            onTap: () {
+                              ref
+                                  .read(settingsProvider.notifier)
+                                  .updateSettings(
+                                    ref
+                                        .read(settingsProvider)
+                                        .copyWith(defaultCalendarView: 'mese'),
+                                  );
+                              Navigator.pop(sheetContext);
+                            },
                           ),
-                          const SizedBox(height: 24),
-                          Text(
-                            context.t.settings.calendar.defaultView,
-                            style: TextStyle(
-                              color: context.appColors.foreground,
-                              fontSize: 18,
-                              fontWeight: FontWeight.w700,
+                          EvolveListRow(
+                            leading: EvolveIconTile(
+                              icon: LucideIcons.calendarRange,
+                              tint: context.appColors.mutedForeground,
                             ),
+                            title: context.t.common.calendarView.week,
+                            selected:
+                                settings.defaultCalendarView == 'settimana' ||
+                                settings.defaultCalendarView == 'week',
+                            onTap: () {
+                              ref
+                                  .read(settingsProvider.notifier)
+                                  .updateSettings(
+                                    ref.read(settingsProvider).copyWith(
+                                      defaultCalendarView: 'settimana',
+                                    ),
+                                  );
+                              Navigator.pop(sheetContext);
+                            },
                           ),
-                          const SizedBox(height: 24),
-                          _buildViewOption(
-                            context,
-                            ref,
-                            context.t.common.calendarView.month,
-                            'mese',
-                            settings.defaultCalendarView,
+                          EvolveListRow(
+                            leading: EvolveIconTile(
+                              icon: LucideIcons.calendar,
+                              tint: context.appColors.mutedForeground,
+                            ),
+                            title: context.t.common.calendarView.year,
+                            selected:
+                                settings.defaultCalendarView == 'anno' ||
+                                settings.defaultCalendarView == 'year',
+                            onTap: () {
+                              ref
+                                  .read(settingsProvider.notifier)
+                                  .updateSettings(
+                                    ref
+                                        .read(settingsProvider)
+                                        .copyWith(defaultCalendarView: 'anno'),
+                                  );
+                              Navigator.pop(sheetContext);
+                            },
                           ),
-                          _buildViewOption(
-                            context,
-                            ref,
-                            context.t.common.calendarView.week,
-                            'settimana',
-                            settings.defaultCalendarView,
+                          EvolveListRow(
+                            leading: EvolveIconTile(
+                              icon: LucideIcons.infinity,
+                              tint: context.appColors.mutedForeground,
+                            ),
+                            title: context.t.common.calendarView.life,
+                            selected: settings.defaultCalendarView == 'vita',
+                            onTap: () {
+                              ref
+                                  .read(settingsProvider.notifier)
+                                  .updateSettings(
+                                    ref
+                                        .read(settingsProvider)
+                                        .copyWith(defaultCalendarView: 'vita'),
+                                  );
+                              Navigator.pop(sheetContext);
+                            },
                           ),
-                          _buildViewOption(
-                            context,
-                            ref,
-                            context.t.common.calendarView.year,
-                            'anno',
-                            settings.defaultCalendarView,
-                          ),
-                          _buildViewOption(
-                            context,
-                            ref,
-                            context.t.common.calendarView.life,
-                            'vita',
-                            settings.defaultCalendarView,
-                          ),
-                          const SizedBox(height: 40),
                         ],
                       ),
-                    ),
+                    ],
                   );
                 },
               ),
@@ -264,17 +284,9 @@ class AppSettingsScreen extends ConsumerWidget {
   }
 
   Widget _buildSectionHeader(BuildContext context, String title) {
-    return Padding(
+    return EvolveSectionHeader(
+      title,
       padding: const EdgeInsetsDirectional.only(start: 4, bottom: 12),
-      child: Text(
-        title,
-        style: TextStyle(
-          fontSize: 11,
-          fontWeight: FontWeight.w800,
-          color: context.appColors.mutedForeground,
-          letterSpacing: 1.5,
-        ),
-      ),
     );
   }
 
@@ -406,18 +418,7 @@ class AppSettingsScreen extends ConsumerWidget {
               ],
             ),
           ),
-          Transform.scale(
-            scale: 0.8,
-            child: Switch(
-              value: value,
-              onChanged: (val) =>
-                  onChanged(val), // Always interactive to allow modal trigger
-              activeTrackColor: primaryColor.withValues(alpha: 0.5),
-              activeThumbColor: primaryColor,
-              inactiveThumbColor: context.appColors.mutedForeground,
-              inactiveTrackColor: context.appColors.border,
-            ),
-          ),
+          EvolveSwitch(value: value, onChanged: onChanged),
         ],
       ),
     );
@@ -543,8 +544,9 @@ class AppSettingsScreen extends ConsumerWidget {
               child: EvolveColorSwatchGrid(
                 selected: currentColor,
                 palette: [
-                  for (final c
-                      in AppSettingsNotifier.premiumAccentColors.take(3))
+                  for (final c in AppSettingsNotifier.premiumAccentColors.take(
+                    3,
+                  ))
                     (settings.themeMode == 'light' &&
                             c.toARGB32() == 0xFFFAFAFA)
                         ? const Color(0xFF09090B)
@@ -745,44 +747,6 @@ class AppSettingsScreen extends ConsumerWidget {
     });
   }
 
-  Widget _buildViewOption(
-    BuildContext context,
-    WidgetRef ref,
-    String label,
-    String value,
-    String currentValue,
-  ) {
-    bool isSelected = value == currentValue;
-    if (currentValue == 'week' && value == 'settimana') isSelected = true;
-    if (currentValue == 'month' && value == 'mese') isSelected = true;
-    if (currentValue == 'year' && value == 'anno') isSelected = true;
-
-    final primaryColor = Theme.of(context).colorScheme.primary;
-    return ListTile(
-      onTap: () {
-        ref
-            .read(settingsProvider.notifier)
-            .updateSettings(
-              ref.read(settingsProvider).copyWith(defaultCalendarView: value),
-            );
-        ref.hapticMedium();
-        Navigator.pop(context);
-      },
-      contentPadding: const EdgeInsets.symmetric(horizontal: 24, vertical: 4),
-      title: Text(
-        label,
-        style: TextStyle(
-          color: isSelected ? primaryColor : context.appColors.foreground,
-          fontSize: 16,
-          fontWeight: isSelected ? FontWeight.w700 : FontWeight.w500,
-        ),
-      ),
-      trailing: isSelected
-          ? Icon(LucideIcons.check, color: primaryColor, size: 20)
-          : null,
-    );
-  }
-
   String _languagePreferenceLabel(BuildContext context, String language) {
     switch (AppLanguagePreference.normalize(language)) {
       case AppLanguagePreference.italian:
@@ -808,121 +772,50 @@ class AppSettingsScreen extends ConsumerWidget {
   ) {
     final currentPreference = AppLanguagePreference.normalize(currentLanguage);
 
-    showModalBottomSheet(
+    showEvolveSheet<void>(
       context: context,
-      backgroundColor: Colors.transparent,
-      builder: (context) => Container(
-        decoration: BoxDecoration(
-          color: context.appColors.card,
-          borderRadius: const BorderRadius.vertical(top: Radius.circular(24)),
-          border: Border.all(color: context.appColors.border),
-        ),
-        child: Column(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            const SizedBox(height: 12),
-            Container(
-              width: 40,
-              height: 4,
-              decoration: BoxDecoration(
-                color: context.appColors.border,
-                borderRadius: BorderRadius.circular(2),
-              ),
-            ),
-            const SizedBox(height: 24),
-            Text(
-              context.t.common.language,
-              style: TextStyle(
-                color: context.appColors.foreground,
-                fontSize: 18,
-                fontWeight: FontWeight.w700,
-              ),
-            ),
-            const SizedBox(height: 24),
-            _buildLanguageOption(
-              context,
-              ref,
-              AppLanguagePreference.system,
-              currentPreference,
-              subtitle: context.t.settings.language.systemDescription,
-            ),
-            _buildLanguageOption(
-              context,
-              ref,
-              AppLanguagePreference.italian,
-              currentPreference,
-            ),
-            _buildLanguageOption(
-              context,
-              ref,
-              AppLanguagePreference.english,
-              currentPreference,
-            ),
-            _buildLanguageOption(
-              context,
-              ref,
-              AppLanguagePreference.spanish,
-              currentPreference,
-            ),
-            _buildLanguageOption(
-              context,
-              ref,
-              AppLanguagePreference.german,
-              currentPreference,
-            ),
-            _buildLanguageOption(
-              context,
-              ref,
-              AppLanguagePreference.arabic,
-              currentPreference,
-            ),
-            const SizedBox(height: 40),
-          ],
-        ),
-      ),
-    );
-  }
-
-  Widget _buildLanguageOption(
-    BuildContext context,
-    WidgetRef ref,
-    String language,
-    String currentLanguage, {
-    String? subtitle,
-  }) {
-    final isSelected =
-        AppLanguagePreference.normalize(language) == currentLanguage;
-    final primaryColor = Theme.of(context).colorScheme.primary;
-    return ListTile(
-      onTap: () {
-        if (!isSelected) {
-          Navigator.pop(context);
-          _applyLanguageWithAnimation(context, ref, language);
-        } else {
-          Navigator.pop(context);
-        }
+      title: context.t.common.language,
+      itemsBuilder: (sheetContext) {
+        final options = <({String pref, String? subtitle})>[
+          (
+            pref: AppLanguagePreference.system,
+            subtitle: context.t.settings.language.systemDescription,
+          ),
+          (pref: AppLanguagePreference.italian, subtitle: null),
+          (pref: AppLanguagePreference.english, subtitle: null),
+          (pref: AppLanguagePreference.spanish, subtitle: null),
+          (pref: AppLanguagePreference.german, subtitle: null),
+          (pref: AppLanguagePreference.arabic, subtitle: null),
+        ];
+        return [
+          EvolveListSection(
+            children: options.map((opt) {
+              final isSelected =
+                  AppLanguagePreference.normalize(opt.pref) ==
+                  currentPreference;
+              return EvolveListRow(
+                leading: EvolveIconTile(
+                  icon: opt.pref == AppLanguagePreference.system
+                      ? LucideIcons.smartphone
+                      : LucideIcons.languages,
+                  tint: context.appColors.mutedForeground,
+                ),
+                title: _languagePreferenceLabel(context, opt.pref),
+                subtitle: opt.subtitle,
+                selected: isSelected,
+                onTap: () {
+                  if (!isSelected) {
+                    Navigator.pop(sheetContext);
+                    _applyLanguageWithAnimation(context, ref, opt.pref);
+                  } else {
+                    Navigator.pop(sheetContext);
+                  }
+                },
+              );
+            }).toList(),
+          ),
+        ];
       },
-      contentPadding: const EdgeInsets.symmetric(horizontal: 24, vertical: 4),
-      title: Text(
-        _languagePreferenceLabel(context, language),
-        style: TextStyle(
-          color: isSelected ? primaryColor : context.appColors.foreground,
-          fontSize: 16,
-          fontWeight: isSelected ? FontWeight.w700 : FontWeight.w500,
-        ),
-      ),
-      subtitle: subtitle == null
-          ? null
-          : Text(
-              subtitle,
-              style: TextStyle(
-                color: context.appColors.mutedForeground,
-                fontSize: 12,
-              ),
-            ),
-      trailing: isSelected
-          ? Icon(LucideIcons.check, color: primaryColor, size: 20)
-          : null,
     );
   }
 

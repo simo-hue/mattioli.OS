@@ -9,6 +9,8 @@ import '../../core/streak_utils.dart';
 import '../../core/haptics.dart';
 import 'habit_management_modal.dart';
 import '../../i18n/translations.g.dart';
+import '../kit/evolve_toast.dart';
+import '../kit/evolve_button.dart';
 
 class DayDetailsModal extends ConsumerWidget {
   final DateTime date;
@@ -118,33 +120,14 @@ class DayDetailsModal extends ConsumerWidget {
                           ),
                         ),
                         const SizedBox(height: 24),
-                        ElevatedButton.icon(
+                        EvolveButton(
+                          label: context.t.habits.createHabit,
+                          icon: LucideIcons.plus,
+                          expand: false,
                           onPressed: () {
                             Navigator.pop(context); // Close details modal
                             HabitManagementModal.show(context);
                           },
-                          icon: const Icon(LucideIcons.plus, size: 16),
-                          label: Text(context.t.habits.createHabit),
-                          style: ElevatedButton.styleFrom(
-                            backgroundColor: Theme.of(
-                              context,
-                            ).colorScheme.primary,
-                            foregroundColor:
-                                Theme.of(
-                                      context,
-                                    ).colorScheme.primary.computeLuminance() >
-                                    0.5
-                                ? Colors.black
-                                : Colors.white,
-                            shape: RoundedRectangleBorder(
-                              borderRadius: BorderRadius.circular(12),
-                            ),
-                            padding: const EdgeInsets.symmetric(
-                              horizontal: 16,
-                              vertical: 12,
-                            ),
-                            elevation: 0,
-                          ),
                         ),
                         const SizedBox(height: 20),
                       ],
@@ -188,13 +171,12 @@ class DayDetailsModal extends ConsumerWidget {
                           );
 
                           if (dateMidnight.isBefore(yesterday)) {
-                            ScaffoldMessenger.of(context).showSnackBar(
-                              SnackBar(
-                                content: Text(
+                            ref.hapticMedium();
+                            showEvolveToast(
+                              context,
+                              message:
                                   context.t.habits.youCanOnlyEditTodayAnd,
-                                ),
-                                backgroundColor: Colors.redAccent,
-                              ),
+                              kind: EvolveToastKind.error,
                             );
                             return;
                           }

@@ -2,6 +2,15 @@
 
 ## Recent Changes
 
+- [2026-07-11]: **Apple-Style UI — Phase 2: kit expansion + app-wide migration (mobile, in progress)**
+  - *Details*: Audited the whole mobile app (4 parallel read-only agents) → ~40 un-Apple surfaces that collapse into ~6 missing primitives. Built the primitive layer and migrated ~50 surfaces across 7 categories, primitive-first for full cross-platform coherence. Every batch verified: `flutter analyze` stays at 16 pre-existing issues (down from baseline 18; zero new), `flutter test` = 144 green. Visual QA is owner's. Full roadmap + resume state at `mobile/docs/apple-style-phase2-plan.md`.
+  - *Tech Notes*:
+    - New primitives in `lib/ui/kit/`: `evolve_dialog.dart` (`showEvolveConfirm`/`showEvolveAlert` over `CupertinoAlertDialog`, app-brightness-aware, rich `content:` slot), `evolve_button.dart` (`EvolveButton` — filled/tinted/secondary/destructive/plain, luminance-contrast text, `haptic` param), `evolve_switch.dart` (`EvolveSwitch`/`EvolveSwitchRow` — CupertinoSwitch + gated haptic), `evolve_segmented_control.dart` (`EvolveSegmentedControl<T>`, equal-width), `evolve_section_header.dart` (13px muted, no forced uppercase), `evolve_toast.dart` (`showEvolveToast` — root-overlay fading banner). Barrel `evolve_kit.dart`.
+    - Migrations: ~13 confirm/alert dialogs → showEvolveConfirm/Alert; 5 segmented pills → EvolveSegmentedControl; ~8 CTAs → EvolveButton; 4 settings switches → EvolveSwitch; section headers → EvolveSectionHeader (settings ×4 + the phase-1-deferred habit-modal field labels); 20 SnackBars → showEvolveToast; 5 selection sheets → showEvolveSheet (Pro-lock preserved).
+    - Correctness fixes en route: ~10 ungated `HapticFeedback.*` → gated `ref.haptic*`; dead `dart:ui`/`services` imports removed; hardcoded English `'Close'` localized.
+    - Deliberately preserved bespoke/brand: subscription success + `subscription_alert_modal` (hero/gradient), habit-modal gold Pro-upgrade CTA, dashboard onboarding CTAs, one-time tutorial coach-marks, consent legal-terms checkbox, `bottom_nav_bar`/chart CustomPaint.
+    - Remaining (see roadmap doc): complex sheet-chrome/editor conversions (accent picker, change-password, ai settings, sheet chromes, time/date pickers), settings-card list restructures, final cross-cutting cleanup + EvolveSpinner.
+
 - [2026-07-11]: **Apple-Style UI Kit — implemented (mobile)**
   - *Details*: Built the shared `lib/ui/kit/` and migrated the three named surfaces to it so they read as native iOS: the "Select Habit" sheet (statistics), the "Choose category" sheet + its editor + delete confirm (goals), and every colour picker (habit, category, accent). Cross-platform (no `Platform.isIOS` gating), built on the existing `context.appColors`. Verified: `flutter analyze` clean (no new issues) and full suite green (144 tests). Visual QA is owner's.
   - *Tech Notes*:

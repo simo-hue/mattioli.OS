@@ -9,6 +9,8 @@ import '../../core/app_logger.dart';
 import '../../core/theme.dart';
 import '../../core/rtl.dart';
 import '../../i18n/translations.g.dart';
+import '../kit/evolve_dialog.dart';
+import '../kit/evolve_toast.dart';
 
 /// Full-screen log viewer showing all in-memory log entries.
 /// Designed for technical users — shows timestamps, levels, stack traces, etc.
@@ -18,9 +20,7 @@ class AppLogsScreen extends StatefulWidget {
   static Route route() {
     // MaterialPageRoute so iOS gets the native Cupertino slide + edge-swipe-back
     // gesture for free (Android keeps its native Material transition).
-    return MaterialPageRoute(
-      builder: (context) => const AppLogsScreen(),
-    );
+    return MaterialPageRoute(builder: (context) => const AppLogsScreen());
   }
 
   @override
@@ -78,7 +78,9 @@ class _AppLogsScreenState extends State<AppLogsScreen> {
     buffer.writeln('');
 
     for (final entry in logs) {
-      buffer.writeln('[${entry.formattedTimestamp}] [${entry.levelLabel}] ${entry.message}');
+      buffer.writeln(
+        '[${entry.formattedTimestamp}] [${entry.levelLabel}] ${entry.message}',
+      );
       if (entry.error != null) {
         buffer.writeln('  Error: ${entry.error}');
       }
@@ -100,14 +102,10 @@ class _AppLogsScreenState extends State<AppLogsScreen> {
     final text = _formatLogs(AppLogger.logs);
     Clipboard.setData(ClipboardData(text: text));
     if (mounted) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(
-          content: Text(context.t.appLogs.copiedToClipboard),
-          backgroundColor: context.appColors.success,
-          behavior: SnackBarBehavior.floating,
-          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
-          duration: const Duration(seconds: 2),
-        ),
+      showEvolveToast(
+        context,
+        message: context.t.appLogs.copiedToClipboard,
+        kind: EvolveToastKind.success,
       );
     }
   }
@@ -115,57 +113,32 @@ class _AppLogsScreenState extends State<AppLogsScreen> {
   Future<void> _shareLogs() async {
     final text = _formatLogs(AppLogger.logs);
     final tempDir = await getTemporaryDirectory();
-    final file = File('${tempDir.path}/mattioli_logs_${DateTime.now().millisecondsSinceEpoch}.txt');
+    final file = File(
+      '${tempDir.path}/mattioli_logs_${DateTime.now().millisecondsSinceEpoch}.txt',
+    );
     await file.writeAsString(text);
-    
+
     if (!mounted) return;
     final box = context.findRenderObject() as RenderBox?;
     // ignore: deprecated_member_use
     await Share.shareXFiles(
       [XFile(file.path)],
       text: 'Exported App Logs',
-      sharePositionOrigin: box != null ? box.localToGlobal(Offset.zero) & box.size : null,
+      sharePositionOrigin: box != null
+          ? box.localToGlobal(Offset.zero) & box.size
+          : null,
     );
   }
 
-  void _confirmClearLogs() {
-    showDialog(
+  Future<void> _confirmClearLogs() async {
+    final confirmed = await showEvolveConfirm(
       context: context,
-      builder: (dialogContext) => AlertDialog(
-        backgroundColor: context.appColors.card,
-        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
-        title: Text(
-          context.t.appLogs.clearLogsTitle,
-          style: TextStyle(
-            color: context.appColors.foreground,
-            fontWeight: FontWeight.w700,
-          ),
-        ),
-        content: Text(
-          context.t.appLogs.clearLogsConfirm,
-          style: TextStyle(color: context.appColors.mutedForeground),
-        ),
-        actions: [
-          TextButton(
-            onPressed: () => Navigator.pop(dialogContext),
-            child: Text(
-              context.t.common.actions.cancel,
-              style: TextStyle(color: context.appColors.mutedForeground),
-            ),
-          ),
-          TextButton(
-            onPressed: () {
-              Navigator.pop(dialogContext);
-              AppLogger.clearLogs();
-            },
-            child: Text(
-              context.t.appLogs.clearLogsAction,
-              style: TextStyle(color: context.appColors.destructive),
-            ),
-          ),
-        ],
-      ),
+      title: context.t.appLogs.clearLogsTitle,
+      message: context.t.appLogs.clearLogsConfirm,
+      confirmLabel: context.t.appLogs.clearLogsAction,
+      isDestructive: true,
     );
+    if (confirmed) AppLogger.clearLogs();
   }
 
   @override
@@ -174,8 +147,9 @@ class _AppLogsScreenState extends State<AppLogsScreen> {
     final logs = _filteredLogs;
     final errorCount = AppLogger.errorCount;
     final warningCount = AppLogger.warningCount;
-    final infoCount =
-        AppLogger.logs.where((e) => e.level == AppLogLevel.info).length;
+    final infoCount = AppLogger.logs
+        .where((e) => e.level == AppLogLevel.info)
+        .length;
 
     return Scaffold(
       backgroundColor: colors.background,
@@ -259,7 +233,11 @@ class _AppLogsScreenState extends State<AppLogsScreen> {
                 value: 'clear',
                 child: Row(
                   children: [
-                    Icon(LucideIcons.trash2, size: 16, color: colors.destructive),
+                    Icon(
+                      LucideIcons.trash2,
+                      size: 16,
+                      color: colors.destructive,
+                    ),
                     const SizedBox(width: 10),
                     Text(
                       context.t.appLogs.clearLogsAction,
@@ -344,8 +322,11 @@ class _AppLogsScreenState extends State<AppLogsScreen> {
                   count: errorCount,
                   isActive: _activeFilter == AppLogLevel.error,
                   color: colors.destructive,
-                  onTap: () => setState(() => _activeFilter =
-                      _activeFilter == AppLogLevel.error ? null : AppLogLevel.error),
+                  onTap: () => setState(
+                    () => _activeFilter = _activeFilter == AppLogLevel.error
+                        ? null
+                        : AppLogLevel.error,
+                  ),
                 ),
                 const SizedBox(width: 8),
                 _buildFilterChip(
@@ -354,10 +335,11 @@ class _AppLogsScreenState extends State<AppLogsScreen> {
                   count: warningCount,
                   isActive: _activeFilter == AppLogLevel.warning,
                   color: const Color(0xFFEAB308),
-                  onTap: () => setState(() => _activeFilter =
-                      _activeFilter == AppLogLevel.warning
-                          ? null
-                          : AppLogLevel.warning),
+                  onTap: () => setState(
+                    () => _activeFilter = _activeFilter == AppLogLevel.warning
+                        ? null
+                        : AppLogLevel.warning,
+                  ),
                 ),
                 const SizedBox(width: 8),
                 _buildFilterChip(
@@ -366,8 +348,11 @@ class _AppLogsScreenState extends State<AppLogsScreen> {
                   count: infoCount,
                   isActive: _activeFilter == AppLogLevel.info,
                   color: const Color(0xFF3B82F6),
-                  onTap: () => setState(() => _activeFilter =
-                      _activeFilter == AppLogLevel.info ? null : AppLogLevel.info),
+                  onTap: () => setState(
+                    () => _activeFilter = _activeFilter == AppLogLevel.info
+                        ? null
+                        : AppLogLevel.info,
+                  ),
                 ),
               ],
             ),
@@ -466,9 +451,7 @@ class _AppLogsScreenState extends State<AppLogsScreen> {
             decoration: BoxDecoration(
               color: colors.card.withValues(alpha: 0.5),
               borderRadius: BorderRadius.circular(18),
-              border: Border.all(
-                color: colors.border.withValues(alpha: 0.3),
-              ),
+              border: Border.all(color: colors.border.withValues(alpha: 0.3)),
             ),
             child: Icon(
               LucideIcons.fileCheck,
@@ -677,12 +660,8 @@ class _AppLogsScreenState extends State<AppLogsScreen> {
         builder: (_, scrollController) => Container(
           decoration: BoxDecoration(
             color: colors.background,
-            borderRadius: const BorderRadius.vertical(
-              top: Radius.circular(24),
-            ),
-            border: Border.all(
-              color: colors.border.withValues(alpha: 0.5),
-            ),
+            borderRadius: const BorderRadius.vertical(top: Radius.circular(24)),
+            border: Border.all(color: colors.border.withValues(alpha: 0.5)),
           ),
           child: Column(
             children: [
@@ -757,15 +736,10 @@ class _AppLogsScreenState extends State<AppLogsScreen> {
                           ClipboardData(text: buffer.toString()),
                         );
                         Navigator.pop(sheetContext);
-                        ScaffoldMessenger.of(context).showSnackBar(
-                          SnackBar(
-                            content: Text(context.t.appLogs.copiedToClipboard),
-                            backgroundColor: colors.success,
-                            behavior: SnackBarBehavior.floating,
-                            shape: RoundedRectangleBorder(
-                              borderRadius: BorderRadius.circular(12),
-                            ),
-                          ),
+                        showEvolveToast(
+                          context,
+                          message: context.t.appLogs.copiedToClipboard,
+                          kind: EvolveToastKind.success,
                         );
                       },
                     ),

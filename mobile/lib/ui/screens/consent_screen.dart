@@ -12,6 +12,7 @@ import '../../core/data_mode.dart';
 import '../../providers/consent_provider.dart';
 import '../../providers/auth_provider.dart';
 import '../../core/theme.dart';
+import '../kit/evolve_toast.dart';
 import '../../core/haptics.dart';
 import '../../i18n/translations.g.dart';
 
@@ -55,12 +56,9 @@ class _ConsentScreenState extends ConsumerState<ConsentScreen> {
     final Uri url = Uri.parse(urlString);
     if (!await launchUrl(url, mode: LaunchMode.externalApplication)) {
       if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(
-            content: Text(
-              context.t.common.unableToOpenTheLink,
-            ),
-          ),
+        showEvolveToast(
+          context,
+          message: context.t.common.unableToOpenTheLink,
         );
       }
     }
@@ -69,8 +67,9 @@ class _ConsentScreenState extends ConsumerState<ConsentScreen> {
   Future<void> _handleContinue() async {
     if (!_acceptedTerms) {
       ref.hapticHeavy();
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text(context.t.consent.termsRequired)),
+      showEvolveToast(
+        context,
+        message: context.t.consent.termsRequired,
       );
       return;
     }

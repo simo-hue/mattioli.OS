@@ -10,6 +10,8 @@ import '../../core/notifications.dart';
 import '../../core/time_formatting.dart';
 import '../../core/rtl.dart';
 import '../../i18n/translations.g.dart';
+import '../kit/evolve_switch.dart';
+import '../kit/evolve_section_header.dart';
 
 class NotificationSettingsScreen extends ConsumerWidget {
   const NotificationSettingsScreen({super.key});
@@ -152,17 +154,9 @@ class NotificationSettingsScreen extends ConsumerWidget {
   }
 
   Widget _buildSectionHeader(BuildContext context, String title) {
-    return Padding(
+    return EvolveSectionHeader(
+      title,
       padding: const EdgeInsetsDirectional.only(start: 4, bottom: 12),
-      child: Text(
-        title.toUpperCase(),
-        style: GoogleFonts.inter(
-          color: context.appColors.mutedForeground,
-          fontSize: 12,
-          fontWeight: FontWeight.w700,
-          letterSpacing: 1.2,
-        ),
-      ),
     );
   }
 
@@ -329,18 +323,7 @@ class NotificationSettingsScreen extends ConsumerWidget {
               ],
             ),
           ),
-          Transform.scale(
-            scale: 0.8,
-            child: Switch(
-              value: value,
-              onChanged: (val) =>
-                  onChanged(val), // Always interactive to allow modal trigger
-              activeTrackColor: primaryColor.withValues(alpha: 0.5),
-              activeThumbColor: primaryColor,
-              inactiveThumbColor: context.appColors.mutedForeground,
-              inactiveTrackColor: context.appColors.border,
-            ),
-          ),
+          EvolveSwitch(value: value, onChanged: onChanged),
         ],
       ),
     );

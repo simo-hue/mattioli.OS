@@ -1,5 +1,4 @@
 import 'package:flutter/material.dart';
-import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:lucide_icons_flutter/lucide_icons.dart';
 import 'package:fl_chart/fl_chart.dart';
@@ -9,6 +8,7 @@ import '../../../providers/goal_provider.dart';
 import '../../../models/goal.dart';
 import '../../../i18n/translations.g.dart';
 import '../../../core/rtl.dart';
+import '../../kit/evolve_segmented_control.dart';
 
 class MoodChartWindow {
   final DateTime startDate;
@@ -128,71 +128,14 @@ class _GlobalMoodTabWidgetState extends ConsumerState<GlobalMoodTabWidget> {
   }
 
   Widget _buildTimeRangeSelector() {
-    final options = [
-      {'key': 'time_range_14d', 'label': '14D'},
-      {'key': 'time_range_30d', 'label': '30D'},
-      {'key': 'time_range_90d', 'label': '90D'},
-    ];
-
-    return Container(
-      width: double.infinity,
-      padding: const EdgeInsets.all(4),
-      decoration: BoxDecoration(
-        color: context.appColors.card.withValues(alpha: 0.3),
-        borderRadius: BorderRadius.circular(16),
-        border: Border.all(color: context.appColors.border, width: 1),
-      ),
-      child: Row(
-        children: options.map((opt) {
-          final isSelected = _timeRange == opt['key'];
-          return Expanded(
-            child: GestureDetector(
-              onTap: () {
-                if (!isSelected) {
-                  HapticFeedback.mediumImpact();
-                  setState(() {
-                    _timeRange = opt['key']!;
-                  });
-                }
-              },
-              child: AnimatedContainer(
-                duration: const Duration(milliseconds: 300),
-                curve: Curves.easeOutCubic,
-                padding: const EdgeInsets.symmetric(vertical: 10),
-                decoration: BoxDecoration(
-                  color: isSelected
-                      ? Theme.of(context).colorScheme.primary
-                      : Colors.transparent,
-                  borderRadius: BorderRadius.circular(12),
-                  boxShadow: isSelected
-                      ? [
-                          BoxShadow(
-                            color: Theme.of(
-                              context,
-                            ).colorScheme.primary.withValues(alpha: 0.2),
-                            blurRadius: 8,
-                            offset: const Offset(0, 4),
-                          ),
-                        ]
-                      : null,
-                ),
-                child: Text(
-                  opt['label']!,
-                  textAlign: TextAlign.center,
-                  style: TextStyle(
-                    fontFamily: 'Inter',
-                    fontSize: 12,
-                    fontWeight: isSelected ? FontWeight.w800 : FontWeight.w600,
-                    color: isSelected
-                        ? context.appColors.background
-                        : context.appColors.mutedForeground,
-                  ),
-                ),
-              ),
-            ),
-          );
-        }).toList(),
-      ),
+    return EvolveSegmentedControl<String>(
+      groupValue: _timeRange,
+      segments: const {
+        'time_range_14d': '14D',
+        'time_range_30d': '30D',
+        'time_range_90d': '90D',
+      },
+      onValueChanged: (key) => setState(() => _timeRange = key),
     );
   }
 

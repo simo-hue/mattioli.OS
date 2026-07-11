@@ -1,5 +1,3 @@
-import 'dart:ui';
-
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:google_fonts/google_fonts.dart';
@@ -11,6 +9,8 @@ import '../../core/private_sync_service.dart';
 import '../../core/rtl.dart';
 import '../../core/theme.dart';
 import '../../i18n/translations.g.dart';
+import '../kit/evolve_dialog.dart';
+import '../kit/evolve_switch.dart';
 
 /// iCloud Sync settings for Private Mode (iOS-only). Surfaces the
 /// [PrivateSyncService] state and lets the user enable/disable end-to-end
@@ -78,115 +78,13 @@ class _IcloudSyncScreenState extends ConsumerState<IcloudSyncScreen> {
     }
   }
 
-  Future<bool?> _showDisclosureDialog() {
-    return showDialog<bool>(
+  Future<bool> _showDisclosureDialog() {
+    return showEvolveConfirm(
       context: context,
-      builder: (context) {
-        return BackdropFilter(
-          filter: ImageFilter.blur(sigmaX: 12, sigmaY: 12),
-          child: Dialog(
-            backgroundColor: Colors.transparent,
-            elevation: 0,
-            child: Container(
-              padding: const EdgeInsets.all(24),
-              decoration: BoxDecoration(
-                color: context.appColors.card.withValues(alpha: 0.95),
-                borderRadius: BorderRadius.circular(24),
-                border: Border.all(
-                  color: context.appColors.border.withValues(alpha: 0.5),
-                  width: 1.5,
-                ),
-                boxShadow: [
-                  BoxShadow(
-                    color: Colors.black.withValues(alpha: 0.2),
-                    blurRadius: 20,
-                    spreadRadius: 5,
-                  ),
-                ],
-              ),
-              child: Column(
-                mainAxisSize: MainAxisSize.min,
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Row(
-                    children: [
-                      Icon(
-                        LucideIcons.shieldCheck,
-                        size: 22,
-                        color: Theme.of(context).colorScheme.primary,
-                      ),
-                      const SizedBox(width: 10),
-                      Expanded(
-                        child: Text(
-                          context.t.icloudSync.disclosureTitle,
-                          style: GoogleFonts.inter(
-                            fontSize: 18,
-                            fontWeight: FontWeight.w700,
-                            color: context.appColors.foreground,
-                          ),
-                        ),
-                      ),
-                    ],
-                  ),
-                  const SizedBox(height: 12),
-                  Text(
-                    context.t.icloudSync.disclosureBody,
-                    style: GoogleFonts.inter(
-                      fontSize: 13,
-                      height: 1.4,
-                      color: context.appColors.mutedForeground,
-                    ),
-                  ),
-                  const SizedBox(height: 24),
-                  Row(
-                    mainAxisAlignment: MainAxisAlignment.end,
-                    children: [
-                      TextButton(
-                        onPressed: () => Navigator.pop(context, false),
-                        child: Text(
-                          context.t.common.actions.cancel,
-                          style: GoogleFonts.inter(
-                            color: context.appColors.mutedForeground,
-                            fontWeight: FontWeight.w600,
-                          ),
-                        ),
-                      ),
-                      const SizedBox(width: 12),
-                      GestureDetector(
-                        onTap: () => Navigator.pop(context, true),
-                        child: Container(
-                          padding: const EdgeInsets.symmetric(
-                            horizontal: 20,
-                            vertical: 10,
-                          ),
-                          decoration: BoxDecoration(
-                            color: Theme.of(context).colorScheme.primary,
-                            borderRadius: BorderRadius.circular(10),
-                          ),
-                          child: Text(
-                            context.t.icloudSync.disclosureAccept,
-                            style: GoogleFonts.inter(
-                              color:
-                                  Theme.of(context)
-                                          .colorScheme
-                                          .primary
-                                          .computeLuminance() >
-                                      0.5
-                                  ? Colors.black
-                                  : Colors.white,
-                              fontWeight: FontWeight.w600,
-                            ),
-                          ),
-                        ),
-                      ),
-                    ],
-                  ),
-                ],
-              ),
-            ),
-          ),
-        );
-      },
+      title: context.t.icloudSync.disclosureTitle,
+      message: context.t.icloudSync.disclosureBody,
+      confirmLabel: context.t.icloudSync.disclosureAccept,
+      ref: ref,
     );
   }
 
@@ -267,8 +165,7 @@ class _IcloudSyncScreenState extends ConsumerState<IcloudSyncScreen> {
                       icon: LucideIcons.refreshCw,
                       title: context.t.icloudSync.syncNow,
                       subtitle: _lastSyncedLabel(context, status),
-                      enabled:
-                          !_busy && status.isEnabled && status.isAvailable,
+                      enabled: !_busy && status.isEnabled && status.isAvailable,
                       onTap: () => _runAction((service) => service.syncNow()),
                     ),
                   ]),
@@ -361,17 +258,7 @@ class _IcloudSyncScreenState extends ConsumerState<IcloudSyncScreen> {
               ],
             ),
           ),
-          Transform.scale(
-            scale: 0.8,
-            child: Switch(
-              value: value,
-              onChanged: onChanged,
-              activeTrackColor: primaryColor.withValues(alpha: 0.5),
-              activeThumbColor: primaryColor,
-              inactiveThumbColor: context.appColors.mutedForeground,
-              inactiveTrackColor: context.appColors.border,
-            ),
-          ),
+          EvolveSwitch(value: value, onChanged: onChanged),
         ],
       ),
     );

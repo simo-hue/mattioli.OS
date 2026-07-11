@@ -1,6 +1,6 @@
+import 'dart:async';
 import 'package:flutter/material.dart';
 import 'package:flutter/cupertino.dart';
-import 'dart:ui';
 import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:lucide_icons_flutter/lucide_icons.dart';
@@ -13,6 +13,9 @@ import '../../providers/settings_provider.dart';
 import '../screens/subscription_screen.dart';
 import '../../i18n/translations.g.dart';
 import '../kit/evolve_color_picker.dart';
+import '../kit/evolve_dialog.dart';
+import '../kit/evolve_button.dart';
+import '../kit/evolve_section_header.dart';
 
 class HabitManagementModal extends ConsumerStatefulWidget {
   const HabitManagementModal({super.key});
@@ -199,106 +202,18 @@ class _HabitManagementModalState extends ConsumerState<HabitManagementModal> {
     );
   }
 
-  void _showDeleteConfirmation(Goal habit) {
-    showDialog(
+  Future<void> _showDeleteConfirmation(Goal habit) async {
+    final confirmed = await showEvolveConfirm(
       context: context,
-      builder: (BuildContext context) {
-        return BackdropFilter(
-          filter: ImageFilter.blur(sigmaX: 5, sigmaY: 5),
-          child: Dialog(
-            backgroundColor: Colors.transparent,
-            elevation: 0,
-            child: Container(
-              padding: const EdgeInsets.all(24),
-              decoration: BoxDecoration(
-                color: context.appColors.card,
-                borderRadius: BorderRadius.circular(24),
-                border: Border.all(color: context.appColors.border, width: 1),
-              ),
-              child: Column(
-                mainAxisSize: MainAxisSize.min,
-                children: [
-                  Container(
-                    width: 48,
-                    height: 48,
-                    decoration: BoxDecoration(
-                      color: AppColors.destructive.withValues(alpha: 0.1),
-                      shape: BoxShape.circle,
-                    ),
-                    child: const Icon(
-                      LucideIcons.trash2,
-                      color: AppColors.destructive,
-                      size: 24,
-                    ),
-                  ),
-                  const SizedBox(height: 16),
-                  Text(
-                    context.t.habits.deleteHabit,
-                    style: TextStyle(
-                      fontFamily: 'Inter',
-                      fontSize: 18,
-                      fontWeight: FontWeight.w700,
-                      color: context.appColors.foreground,
-                    ),
-                  ),
-                  const SizedBox(height: 8),
-                  Text(
-                    '${context.t.habits.areYouSureYouWantTo} "${habit.title}"?',
-                    textAlign: TextAlign.center,
-                    style: TextStyle(
-                      fontFamily: 'Inter',
-                      fontSize: 14,
-                      color: context.appColors.mutedForeground,
-                    ),
-                  ),
-                  const SizedBox(height: 24),
-                  Row(
-                    children: [
-                      Expanded(
-                        child: CupertinoButton(
-                          padding: EdgeInsets.zero,
-                          child: Text(
-                            context.t.common.actions.cancel,
-                            style: TextStyle(
-                              color: context.appColors.mutedForeground,
-                            ),
-                          ),
-                          onPressed: () => Navigator.pop(context),
-                        ),
-                      ),
-                      const SizedBox(width: 12),
-                      Expanded(
-                        child: ElevatedButton(
-                          onPressed: () {
-                            ref
-                                .read(goalsProvider.notifier)
-                                .deleteHabit(habit.id);
-                            HapticFeedback.mediumImpact();
-                            Navigator.pop(context);
-                          },
-                          style: ElevatedButton.styleFrom(
-                            backgroundColor: AppColors.destructive,
-                            foregroundColor: Colors.white,
-                            shape: RoundedRectangleBorder(
-                              borderRadius: BorderRadius.circular(12),
-                            ),
-                            elevation: 0,
-                          ),
-                          child: Text(
-                            context.t.common.actions.delete,
-                            style: const TextStyle(fontWeight: FontWeight.w600),
-                          ),
-                        ),
-                      ),
-                    ],
-                  ),
-                ],
-              ),
-            ),
-          ),
-        );
-      },
+      title: context.t.habits.deleteHabit,
+      message: '${context.t.habits.areYouSureYouWantTo} "${habit.title}"?',
+      confirmLabel: context.t.common.actions.delete,
+      isDestructive: true,
+      ref: ref,
     );
+    if (confirmed) {
+      unawaited(ref.read(goalsProvider.notifier).deleteHabit(habit.id));
+    }
   }
 
   @override
@@ -405,14 +320,9 @@ class _HabitManagementModalState extends ConsumerState<HabitManagementModal> {
                         ],
                       ),
                       const SizedBox(height: 16),
-                      Text(
-                        context.t.habits.habitName.toUpperCase(),
-                        style: TextStyle(
-                          fontSize: 10,
-                          fontWeight: FontWeight.w600,
-                          color: context.appColors.mutedForeground,
-                          letterSpacing: 0.5,
-                        ),
+                      EvolveSectionHeader(
+                        context.t.habits.habitName,
+                        padding: EdgeInsets.zero,
                       ),
                       const SizedBox(height: 8),
                       TextField(
@@ -451,14 +361,9 @@ class _HabitManagementModalState extends ConsumerState<HabitManagementModal> {
                         ),
                       ),
                       const SizedBox(height: 16),
-                      Text(
-                        context.t.habits.color.toUpperCase(),
-                        style: TextStyle(
-                          fontSize: 10,
-                          fontWeight: FontWeight.w600,
-                          color: context.appColors.mutedForeground,
-                          letterSpacing: 0.5,
-                        ),
+                      EvolveSectionHeader(
+                        context.t.habits.color,
+                        padding: EdgeInsets.zero,
                       ),
                       const SizedBox(height: 10),
                       EvolveColorSwatchGrid(
@@ -467,14 +372,9 @@ class _HabitManagementModalState extends ConsumerState<HabitManagementModal> {
                             setState(() => _selectedColor = color),
                       ),
                       const SizedBox(height: 16),
-                      Text(
-                        context.t.habits.reminder.toUpperCase(),
-                        style: TextStyle(
-                          fontSize: 10,
-                          fontWeight: FontWeight.w600,
-                          color: context.appColors.mutedForeground,
-                          letterSpacing: 0.5,
-                        ),
+                      EvolveSectionHeader(
+                        context.t.habits.reminder,
+                        padding: EdgeInsets.zero,
                       ),
                       const SizedBox(height: 10),
                       InkWell(
@@ -535,64 +435,21 @@ class _HabitManagementModalState extends ConsumerState<HabitManagementModal> {
                         Row(
                           children: [
                             Expanded(
-                              child: OutlinedButton(
+                              child: EvolveButton(
+                                label: context.t.common.actions.cancel,
+                                style: EvolveButtonStyle.secondary,
                                 onPressed: () => setState(() {
                                   _editingHabit = null;
                                   _nameController.clear();
                                   _reminderTime = null;
                                 }),
-                                style: OutlinedButton.styleFrom(
-                                  padding: const EdgeInsets.symmetric(
-                                    vertical: 14,
-                                  ),
-                                  shape: RoundedRectangleBorder(
-                                    borderRadius: BorderRadius.circular(12),
-                                  ),
-                                  side: BorderSide(
-                                    color: context.appColors.border,
-                                  ),
-                                ),
-                                child: Text(
-                                  context.t.common.actions.cancel,
-                                  style: TextStyle(
-                                    color: context.appColors.mutedForeground,
-                                    fontWeight: FontWeight.w600,
-                                  ),
-                                ),
                               ),
                             ),
                             const SizedBox(width: 12),
                             Expanded(
-                              child: ElevatedButton(
+                              child: EvolveButton(
+                                label: context.t.habits.update,
                                 onPressed: _onSave,
-                                style: ElevatedButton.styleFrom(
-                                  backgroundColor: Theme.of(
-                                    context,
-                                  ).colorScheme.primary,
-                                  foregroundColor:
-                                      _selectedColor.computeLuminance() > 0.5
-                                      ? Colors.black
-                                      : Colors.white,
-                                  shape: RoundedRectangleBorder(
-                                    borderRadius: BorderRadius.circular(12),
-                                  ),
-                                  elevation: 0,
-                                  padding: const EdgeInsets.symmetric(
-                                    vertical: 14,
-                                  ),
-                                ),
-                                child: Text(
-                                  context.t.habits.update,
-                                  style: TextStyle(
-                                    fontWeight: FontWeight.w600,
-                                    color:
-                                        Theme.of(context).colorScheme.primary
-                                                .computeLuminance() >
-                                            0.5
-                                        ? Colors.black
-                                        : Colors.white,
-                                  ),
-                                ),
                               ),
                             ),
                           ],
@@ -739,7 +596,7 @@ class _HabitManagementModalState extends ConsumerState<HabitManagementModal> {
                 index: index,
                 habit: habit,
                 onEdit: () => _onEdit(habit),
-                onDelete: () => _showDeleteConfirmation(habit),
+                onDelete: () => unawaited(_showDeleteConfirmation(habit)),
               );
             },
           ),

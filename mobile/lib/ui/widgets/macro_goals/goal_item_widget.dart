@@ -13,6 +13,7 @@ import '../../../providers/settings_provider.dart';
 import 'category_picker_sheet.dart';
 import '../pro_features_modal.dart';
 import '../../../i18n/translations.g.dart';
+import '../../kit/evolve_dialog.dart';
 
 class GoalItemWidget extends ConsumerStatefulWidget {
   final MacroGoal goal;
@@ -183,53 +184,16 @@ class _GoalItemWidgetState extends ConsumerState<GoalItemWidget>
     );
   }
 
-  void _showDeleteConfirm() {
-    showDialog(
+  Future<void> _showDeleteConfirm() async {
+    final confirmed = await showEvolveConfirm(
       context: context,
-      builder: (_) => AlertDialog(
-        backgroundColor: context.appColors.card,
-        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
-        title: Text(
-          context.t.macroGoals.deleteGoal,
-          style: GoogleFonts.inter(
-            color: context.appColors.foreground,
-            fontWeight: FontWeight.w600,
-            fontSize: 16,
-          ),
-        ),
-        content: Text(
-          context.t.macroGoals.thisActionCannotBeUndone,
-          style: GoogleFonts.inter(
-            color: context.appColors.mutedForeground,
-            fontSize: 13,
-          ),
-        ),
-        actions: [
-          TextButton(
-            onPressed: () => Navigator.pop(context),
-            child: Text(
-              context.t.common.actions.cancel,
-              style: GoogleFonts.inter(
-                color: context.appColors.mutedForeground,
-              ),
-            ),
-          ),
-          TextButton(
-            onPressed: () {
-              Navigator.pop(context);
-              _delete();
-            },
-            child: Text(
-              context.t.common.actions.delete,
-              style: GoogleFonts.inter(
-                color: context.appColors.destructive,
-                fontWeight: FontWeight.w600,
-              ),
-            ),
-          ),
-        ],
-      ),
+      title: context.t.macroGoals.deleteGoal,
+      message: context.t.macroGoals.thisActionCannotBeUndone,
+      confirmLabel: context.t.common.actions.delete,
+      isDestructive: true,
+      ref: ref,
     );
+    if (confirmed) _delete();
   }
 
   void _showCategorySheet() {

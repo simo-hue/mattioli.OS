@@ -16,6 +16,7 @@ import '../../../providers/macro_goals_provider.dart';
 import '../../../providers/macro_goals_stats_provider.dart';
 import '../../../providers/macro_goal_categories_provider.dart';
 import '../pro_features_modal.dart';
+import '../../kit/evolve_sheet.dart';
 import '../../../i18n/translations.g.dart';
 
 class MacroGoalsStatsView extends ConsumerStatefulWidget {
@@ -413,107 +414,37 @@ class _MacroGoalsStatsViewState extends ConsumerState<MacroGoalsStatsView> {
   void _showYearPicker(List<int> years) {
     final settings = ref.read(settingsProvider);
     final isPro = settings.isPro;
-    final primaryColor = Theme.of(context).colorScheme.primary;
 
-    showModalBottomSheet(
+    showEvolveSheet<void>(
       context: context,
-      backgroundColor: context.appColors.card,
-      shape: const RoundedRectangleBorder(
-        borderRadius: BorderRadius.vertical(top: Radius.circular(24)),
-      ),
-      builder: (context) => SafeArea(
-        child: Column(
-          mainAxisSize: MainAxisSize.min,
+      title: context.t.macroGoals.selectYearHeader,
+      itemsBuilder: (sheetContext) => [
+        EvolveListSection(
           children: [
-            const SizedBox(height: 12),
-            Container(
-              width: 40,
-              height: 4,
-              decoration: BoxDecoration(
-                color: context.appColors.border,
-                borderRadius: BorderRadius.circular(2),
+            EvolveListRow(
+              leading: EvolveIconTile(
+                icon: LucideIcons.calendarRange,
+                tint: context.appColors.mutedForeground,
               ),
-            ),
-            const SizedBox(height: 20),
-            Padding(
-              padding: const EdgeInsets.only(bottom: 12),
-              child: Align(
-                alignment: Alignment.center,
-                child: Text(
-                  context.t.macroGoals.selectYearHeader,
-                  style: TextStyle(
-                    fontFamily: 'Inter',
-                    fontWeight: FontWeight.w800,
-                    color: context.appColors.mutedForeground,
-                    fontSize: 10,
-                    letterSpacing: 1.2,
-                  ),
-                ),
-              ),
-            ),
-            ListTile(
-              leading: Icon(
-                LucideIcons.calendarRange,
-                size: 20,
-                color: _selectedYear == 'all'
-                    ? primaryColor
-                    : context.appColors.mutedForeground.withValues(alpha: 0.6),
-              ),
-              title: Text(
-                context.t.macroGoals.allYears,
-                style: TextStyle(
-                  fontFamily: 'Inter',
-                  fontSize: 16,
-                  fontWeight: _selectedYear == 'all'
-                      ? FontWeight.w700
-                      : FontWeight.w500,
-                  color: _selectedYear == 'all'
-                      ? context.appColors.foreground
-                      : context.appColors.mutedForeground,
-                ),
-              ),
-              trailing: _selectedYear == 'all'
-                  ? Icon(LucideIcons.check, color: primaryColor, size: 20)
-                  : null,
+              title: context.t.macroGoals.allYears,
+              selected: _selectedYear == 'all',
               onTap: () {
-                HapticFeedback.selectionClick();
                 setState(() => _selectedYear = 'all');
-                Navigator.pop(context);
+                Navigator.pop(sheetContext);
               },
             ),
             ...years.map((y) {
               final isSel = _selectedYear == '$y';
-              return ListTile(
-                leading: Icon(
-                  isPro ? LucideIcons.calendar : LucideIcons.lock,
-                  size: 20,
-                  color: isSel
-                      ? primaryColor
-                      : context.appColors.mutedForeground.withValues(
-                          alpha: 0.6,
-                        ),
+              return EvolveListRow(
+                leading: EvolveIconTile(
+                  icon: LucideIcons.calendar,
+                  tint: context.appColors.mutedForeground,
                 ),
-                title: Text(
-                  '$y',
-                  style: TextStyle(
-                    fontFamily: 'Inter',
-                    fontSize: 16,
-                    fontWeight: isSel ? FontWeight.w700 : FontWeight.w500,
-                    color: isPro
-                        ? (isSel
-                              ? context.appColors.foreground
-                              : context.appColors.mutedForeground)
-                        : context.appColors.mutedForeground,
-                  ),
-                ),
+                title: '$y',
+                titleColor: isPro ? null : context.appColors.mutedForeground,
+                selected: isPro && isSel,
                 trailing: isPro
-                    ? (isSel
-                          ? Icon(
-                              LucideIcons.check,
-                              color: primaryColor,
-                              size: 20,
-                            )
-                          : null)
+                    ? null
                     : Icon(
                         LucideIcons.lock,
                         color: context.appColors.mutedForeground,
@@ -521,7 +452,7 @@ class _MacroGoalsStatsViewState extends ConsumerState<MacroGoalsStatsView> {
                       ),
                 onTap: () {
                   if (!isPro) {
-                    Navigator.pop(context);
+                    Navigator.pop(sheetContext);
                     ref.hapticHeavy();
                     ProFeaturesModal.show(context).then((_) {
                       if (mounted) {
@@ -529,17 +460,15 @@ class _MacroGoalsStatsViewState extends ConsumerState<MacroGoalsStatsView> {
                       }
                     });
                   } else {
-                    HapticFeedback.selectionClick();
                     setState(() => _selectedYear = '$y');
-                    Navigator.pop(context);
+                    Navigator.pop(sheetContext);
                   }
                 },
               );
             }),
-            const SizedBox(height: 20),
           ],
         ),
-      ),
+      ],
     );
   }
 

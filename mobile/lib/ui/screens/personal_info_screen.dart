@@ -6,6 +6,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:lucide_icons_flutter/lucide_icons.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 import '../../core/theme.dart';
+import '../kit/evolve_toast.dart';
 import '../../providers/user_provider.dart';
 import '../../core/data_mode.dart';
 import '../../core/app_logger.dart';
@@ -18,9 +19,7 @@ class PersonalInfoScreen extends ConsumerStatefulWidget {
   static Route route() {
     // MaterialPageRoute so iOS gets the native Cupertino slide + edge-swipe-back
     // gesture for free (Android keeps its native Material transition).
-    return MaterialPageRoute(
-      builder: (context) => const PersonalInfoScreen(),
-    );
+    return MaterialPageRoute(builder: (context) => const PersonalInfoScreen());
   }
 
   @override
@@ -77,15 +76,10 @@ class _PersonalInfoScreenState extends ConsumerState<PersonalInfoScreen> {
 
           if (mounted) {
             unawaited(HapticFeedback.mediumImpact());
-            ScaffoldMessenger.of(context).showSnackBar(
-              SnackBar(
-                content: Text(context.t.profile.personalInfo.saveSuccess),
-                backgroundColor: AppColors.success.withValues(alpha: 0.8),
-                behavior: SnackBarBehavior.floating,
-                shape: RoundedRectangleBorder(
-                  borderRadius: BorderRadius.circular(10),
-                ),
-              ),
+            showEvolveToast(
+              context,
+              message: context.t.profile.personalInfo.saveSuccess,
+              kind: EvolveToastKind.success,
             );
             Navigator.pop(context);
           }
@@ -121,15 +115,10 @@ class _PersonalInfoScreenState extends ConsumerState<PersonalInfoScreen> {
 
         if (mounted) {
           unawaited(HapticFeedback.mediumImpact());
-          ScaffoldMessenger.of(context).showSnackBar(
-            SnackBar(
-              content: Text(context.t.profile.personalInfo.saveSuccess),
-              backgroundColor: AppColors.success.withValues(alpha: 0.8),
-              behavior: SnackBarBehavior.floating,
-              shape: RoundedRectangleBorder(
-                borderRadius: BorderRadius.circular(10),
-              ),
-            ),
+          showEvolveToast(
+            context,
+            message: context.t.profile.personalInfo.saveSuccess,
+            kind: EvolveToastKind.success,
           );
           Navigator.pop(context);
         }
@@ -140,11 +129,10 @@ class _PersonalInfoScreenState extends ConsumerState<PersonalInfoScreen> {
           stack,
         );
         if (mounted) {
-          ScaffoldMessenger.of(context).showSnackBar(
-            SnackBar(
-              content: Text(context.t.profile.personalInfo.saveError),
-              backgroundColor: AppColors.destructive,
-            ),
+          showEvolveToast(
+            context,
+            message: context.t.profile.personalInfo.saveError,
+            kind: EvolveToastKind.error,
           );
         }
       }

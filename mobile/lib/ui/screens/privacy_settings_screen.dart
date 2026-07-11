@@ -7,6 +7,10 @@ import 'package:share_plus/share_plus.dart';
 import 'package:file_picker/file_picker.dart';
 import 'dart:convert';
 import '../../core/backup_import_service.dart';
+import '../kit/evolve_dialog.dart';
+import '../kit/evolve_toast.dart';
+import '../kit/evolve_switch.dart';
+import '../kit/evolve_section_header.dart';
 import '../../core/import_merge_stats.dart';
 import '../../providers/goal_provider.dart';
 import '../../providers/macro_goals_provider.dart';
@@ -37,10 +41,20 @@ class PrivacySettingsScreen extends ConsumerWidget {
   const PrivacySettingsScreen({super.key});
 
   static Route route() {
-    // MaterialPageRoute so iOS gets the native Cupertino slide + edge-swipe-back
-    // gesture for free (Android keeps its native Material transition).
-    return MaterialPageRoute(
-      builder: (context) => const PrivacySettingsScreen(),
+    return PageRouteBuilder(
+      pageBuilder: (context, animation, secondaryAnimation) =>
+          const PrivacySettingsScreen(),
+      transitionsBuilder: (context, animation, secondaryAnimation, child) {
+        const begin = Offset(1.0, 0.0);
+        const end = Offset.zero;
+        const curve = Curves.easeOutCubic;
+        final tween = Tween(
+          begin: begin,
+          end: end,
+        ).chain(CurveTween(curve: curve));
+        return SlideTransition(position: animation.drive(tween), child: child);
+      },
+      transitionDuration: const Duration(milliseconds: 400),
     );
   }
 
@@ -237,17 +251,9 @@ class PrivacySettingsScreen extends ConsumerWidget {
   }
 
   Widget _buildSectionHeader(BuildContext context, String title) {
-    return Padding(
+    return EvolveSectionHeader(
+      title,
       padding: const EdgeInsetsDirectional.only(start: 4, bottom: 12),
-      child: Text(
-        title.toUpperCase(),
-        style: GoogleFonts.inter(
-          color: context.appColors.mutedForeground,
-          fontSize: 12,
-          fontWeight: FontWeight.w700,
-          letterSpacing: 1.2,
-        ),
-      ),
     );
   }
 
@@ -429,18 +435,7 @@ class PrivacySettingsScreen extends ConsumerWidget {
               ],
             ),
           ),
-          Transform.scale(
-            scale: 0.8,
-            child: Switch(
-              value: value,
-              onChanged: (val) =>
-                  onChanged(val), // Always interactive to allow modal trigger
-              activeTrackColor: primaryColor.withValues(alpha: 0.5),
-              activeThumbColor: primaryColor,
-              inactiveThumbColor: context.appColors.mutedForeground,
-              inactiveTrackColor: context.appColors.border,
-            ),
-          ),
+          EvolveSwitch(value: value, onChanged: onChanged),
         ],
       ),
     );
@@ -646,14 +641,9 @@ class PrivacySettingsScreen extends ConsumerWidget {
 
                                         if (context.mounted) {
                                           Navigator.pop(context);
-                                          ScaffoldMessenger.of(
+                                          showEvolveToast(
                                             context,
-                                          ).showSnackBar(
-                                            SnackBar(
-                                              content: Text(
-                                                context.t.privacy.passwordUpdated,
-                                              ),
-                                            ),
+                                            message: context.t.privacy.passwordUpdated,
                                           );
                                         }
                                       } catch (e, stack) {
@@ -881,8 +871,9 @@ class PrivacySettingsScreen extends ConsumerWidget {
     } catch (e, stack) {
       AppLogger.error('Error exporting data', e, stack);
       if (context.mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text('${context.t.privacy.errors.exportPrefix}$e')),
+        showEvolveToast(
+          context,
+          message: '${context.t.privacy.errors.exportPrefix}$e',
         );
       }
     }
@@ -1071,60 +1062,30 @@ class PrivacySettingsScreen extends ConsumerWidget {
           progressShown = false;
         }
 
-        await showDialog(
+        await showEvolveAlert(
           context: context,
-          builder: (ctx) => AlertDialog(
-            backgroundColor: ctx.appColors.card,
-            shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(24)),
-            title: Row(
-              children: [
-                Icon(LucideIcons.check, color: AppColors.success, size: 28),
-                const SizedBox(width: 12),
-                Expanded(
-                  child: Text(
-                    ctx.t.privacy.importCompletedTitle,
-                    style: TextStyle(
-                      fontFamily: 'Inter',
-                      fontSize: 20,
-                      fontWeight: FontWeight.w700,
-                      color: ctx.appColors.foreground,
-                    ),
-                  ),
+          title: context.t.privacy.importCompletedTitle,
+          dismissLabel: context.t.privacy.importSummaryDone,
+          content: Column(
+            mainAxisSize: MainAxisSize.min,
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              const SizedBox(height: 8),
+              Text(
+                importResult.replaced
+                    ? context.t.privacy.importSummaryReplaced
+                    : context.t.privacy.importSummaryMerged,
+                style: GoogleFonts.inter(
+                  fontSize: 13,
+                  color: context.appColors.mutedForeground,
                 ),
-              ],
-            ),
-            content: Column(
-              mainAxisSize: MainAxisSize.min,
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Text(
-                  importResult.replaced
-                      ? ctx.t.privacy.importSummaryReplaced
-                      : ctx.t.privacy.importSummaryMerged,
-                  style: TextStyle(
-                    fontFamily: 'Inter',
-                    color: ctx.appColors.mutedForeground,
-                  ),
-                ),
-                const SizedBox(height: 16),
-                _buildSummaryRow(ctx, LucideIcons.check, _mergeRowText(ctx, importResult, importResult.habits, ctx.t.privacy.importEntityHabits)),
-                _buildSummaryRow(ctx, LucideIcons.history, _mergeRowText(ctx, importResult, importResult.logs, ctx.t.privacy.importEntityLogs)),
-                _buildSummaryRow(ctx, LucideIcons.target, _mergeRowText(ctx, importResult, importResult.macroGoals, ctx.t.privacy.importEntityMacroGoals)),
-                _buildSummaryRow(ctx, LucideIcons.folder, _mergeRowText(ctx, importResult, importResult.categories, ctx.t.privacy.importEntityCategories)),
-                _buildSummaryRow(ctx, LucideIcons.smile, _mergeRowText(ctx, importResult, importResult.moods, ctx.t.privacy.importEntityMoods)),
-              ],
-            ),
-            actions: [
-              FilledButton(
-                onPressed: () => Navigator.pop(ctx),
-                style: FilledButton.styleFrom(
-                  backgroundColor: Theme.of(ctx).colorScheme.primary,
-                  foregroundColor: Theme.of(ctx).colorScheme.primary.computeLuminance() > 0.5 ? Colors.black : Colors.white,
-                  shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
-                  padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 12),
-                ),
-                child: Text(ctx.t.privacy.importSummaryDone, style: const TextStyle(fontWeight: FontWeight.w600)),
               ),
+              const SizedBox(height: 12),
+              _buildSummaryRow(context, LucideIcons.check, _mergeRowText(context, importResult, importResult.habits, context.t.privacy.importEntityHabits)),
+              _buildSummaryRow(context, LucideIcons.history, _mergeRowText(context, importResult, importResult.logs, context.t.privacy.importEntityLogs)),
+              _buildSummaryRow(context, LucideIcons.target, _mergeRowText(context, importResult, importResult.macroGoals, context.t.privacy.importEntityMacroGoals)),
+              _buildSummaryRow(context, LucideIcons.folder, _mergeRowText(context, importResult, importResult.categories, context.t.privacy.importEntityCategories)),
+              _buildSummaryRow(context, LucideIcons.smile, _mergeRowText(context, importResult, importResult.moods, context.t.privacy.importEntityMoods)),
             ],
           ),
         );
@@ -1137,49 +1098,10 @@ class PrivacySettingsScreen extends ConsumerWidget {
           progressShown = false;
         }
 
-        await showDialog(
+        await showEvolveAlert(
           context: context,
-          builder: (ctx) => AlertDialog(
-            backgroundColor: ctx.appColors.card,
-            shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(24)),
-            title: Row(
-              children: [
-                Icon(LucideIcons.info, color: AppColors.destructive, size: 28),
-                const SizedBox(width: 12),
-                Expanded(
-                  child: Text(
-                    ctx.t.privacy.importFailedTitle,
-                    style: TextStyle(
-                      fontFamily: 'Inter',
-                      fontSize: 20,
-                      fontWeight: FontWeight.w700,
-                      color: ctx.appColors.foreground,
-                    ),
-                  ),
-                ),
-              ],
-            ),
-            content: Text(
-              e.toString(),
-              style: TextStyle(
-                fontFamily: 'Inter',
-                color: ctx.appColors.mutedForeground,
-              ),
-            ),
-            actions: [
-              FilledButton(
-                onPressed: () => Navigator.pop(ctx),
-                style: FilledButton.styleFrom(
-                  backgroundColor: ctx.appColors.card,
-                  foregroundColor: ctx.appColors.foreground,
-                  shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
-                  side: BorderSide(color: ctx.appColors.border),
-                  padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 12),
-                ),
-                child: const Text('Close', style: TextStyle(fontWeight: FontWeight.w600)),
-              ),
-            ],
-          ),
+          title: context.t.privacy.importFailedTitle,
+          message: e.toString(),
         );
       }
     }
@@ -1443,108 +1365,14 @@ class PrivacySettingsScreen extends ConsumerWidget {
     required VoidCallback onConfirm,
     bool isDestructive = false,
   }) {
-    showDialog(
+    showEvolveConfirm(
       context: context,
-      builder: (context) {
-        return BackdropFilter(
-          filter: ImageFilter.blur(sigmaX: 12, sigmaY: 12),
-          child: Dialog(
-            backgroundColor: Colors.transparent,
-            elevation: 0,
-            child: Container(
-              padding: const EdgeInsets.all(24),
-              decoration: BoxDecoration(
-                color: context.appColors.card.withValues(alpha: 0.95),
-                borderRadius: BorderRadius.circular(24),
-                border: Border.all(
-                  color: context.appColors.border.withValues(alpha: 0.5),
-                  width: 1.5,
-                ),
-                boxShadow: [
-                  BoxShadow(
-                    color: Colors.black.withValues(alpha: 0.2),
-                    blurRadius: 20,
-                    spreadRadius: 5,
-                  ),
-                ],
-              ),
-              child: Column(
-                mainAxisSize: MainAxisSize.min,
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Text(
-                    title,
-                    style: GoogleFonts.inter(
-                      fontSize: 18,
-                      fontWeight: FontWeight.w700,
-                      color: isDestructive
-                          ? AppColors.destructive
-                          : context.appColors.foreground,
-                    ),
-                  ),
-                  const SizedBox(height: 8),
-                  Text(
-                    message,
-                    style: GoogleFonts.inter(
-                      fontSize: 13,
-                      color: context.appColors.mutedForeground,
-                    ),
-                  ),
-                  const SizedBox(height: 24),
-                  Row(
-                    mainAxisAlignment: MainAxisAlignment.end,
-                    children: [
-                      TextButton(
-                        onPressed: () => Navigator.pop(context),
-                        child: Text(
-                          context.t.common.actions.cancel,
-                          style: GoogleFonts.inter(
-                            color: context.appColors.mutedForeground,
-                            fontWeight: FontWeight.w600,
-                          ),
-                        ),
-                      ),
-                      const SizedBox(width: 12),
-                      GestureDetector(
-                        onTap: () {
-                          Navigator.pop(context);
-                          onConfirm();
-                        },
-                        child: Container(
-                          padding: const EdgeInsets.symmetric(
-                            horizontal: 16,
-                            vertical: 8,
-                          ),
-                          decoration: BoxDecoration(
-                            color: isDestructive
-                                ? AppColors.destructive
-                                : Theme.of(context).colorScheme.primary,
-                            borderRadius: BorderRadius.circular(10),
-                          ),
-                          child: Text(
-                            context.t.common.actions.confirm,
-                            style: GoogleFonts.inter(
-                              color: isDestructive
-                                  ? Colors.white
-                                  : (Theme.of(context).colorScheme.primary
-                                                .computeLuminance() >
-                                            0.5
-                                        ? Colors.black
-                                        : Colors.white),
-                              fontWeight: FontWeight.w600,
-                            ),
-                          ),
-                        ),
-                      ),
-                    ],
-                  ),
-                ],
-              ),
-            ),
-          ),
-        );
-      },
-    );
+      title: title,
+      message: message,
+      isDestructive: isDestructive,
+    ).then((confirmed) {
+      if (confirmed) onConfirm();
+    });
   }
 
   Future<void> _resetData(BuildContext context, WidgetRef ref) async {
@@ -1579,12 +1407,9 @@ class PrivacySettingsScreen extends ConsumerWidget {
         ref.invalidate(userProfileProvider);
         ref.invalidate(settingsProvider);
         if (context.mounted) {
-          ScaffoldMessenger.of(context).showSnackBar(
-            SnackBar(
-              content: Text(
-                context.t.privacy.privateDataDeletedSuccess,
-              ),
-            ),
+          showEvolveToast(
+            context,
+            message: context.t.privacy.privateDataDeletedSuccess,
           );
         }
         return;
@@ -1604,19 +1429,17 @@ class PrivacySettingsScreen extends ConsumerWidget {
       ref.read(settingsProvider.notifier).resetToDefaults();
 
       if (context.mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(
-            content: Text(
-              context.t.privacy.dataResetSuccess,
-            ),
-          ),
+        showEvolveToast(
+          context,
+          message: context.t.privacy.dataResetSuccess,
         );
       }
     } catch (e, stack) {
       AppLogger.error('Errore durante reset dati', e, stack);
       if (context.mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text('${context.t.privacy.errors.resetPrefix}$e')),
+        showEvolveToast(
+          context,
+          message: '${context.t.privacy.errors.resetPrefix}$e',
         );
       }
     }
@@ -1634,19 +1457,17 @@ class PrivacySettingsScreen extends ConsumerWidget {
       await supabase.auth.signOut();
 
       if (context.mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(
-            content: Text(
-              context.t.privacy.accountDeletedSuccess,
-            ),
-          ),
+        showEvolveToast(
+          context,
+          message: context.t.privacy.accountDeletedSuccess,
         );
       }
     } catch (e, stack) {
       AppLogger.error('Errore durante eliminazione account', e, stack);
       if (context.mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text('${context.t.privacy.errors.deletePrefix}$e')),
+        showEvolveToast(
+          context,
+          message: '${context.t.privacy.errors.deletePrefix}$e',
         );
       }
     }

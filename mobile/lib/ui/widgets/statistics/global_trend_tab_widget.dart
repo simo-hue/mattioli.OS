@@ -1,5 +1,4 @@
 import 'package:flutter/material.dart';
-import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:lucide_icons_flutter/lucide_icons.dart';
 import 'package:fl_chart/fl_chart.dart';
@@ -8,6 +7,7 @@ import '../../../core/theme.dart';
 import '../../../models/goal.dart';
 import '../../../providers/goal_provider.dart';
 import '../../../i18n/translations.g.dart';
+import '../../kit/evolve_segmented_control.dart';
 
 class GlobalTrendTabWidget extends ConsumerStatefulWidget {
   const GlobalTrendTabWidget({super.key});
@@ -433,7 +433,6 @@ class _GlobalTrendTabWidgetState extends ConsumerState<GlobalTrendTabWidget> {
   }
 
   Widget _buildPremiumSelector() {
-    final options = ['week', 'month', 'year', 'all'];
     final selectedKey = _chartTimeframe == 'timeframe_week_short'
         ? 'week'
         : _chartTimeframe == 'timeframe_month_short'
@@ -441,81 +440,22 @@ class _GlobalTrendTabWidgetState extends ConsumerState<GlobalTrendTabWidget> {
         : _chartTimeframe == 'timeframe_year_short'
         ? 'year'
         : 'all';
-
-    final Map<String, String> italianLabels = {
-      'week': context.t.common.calendarView.week,
-      'month': context.t.common.calendarView.month,
-      'year': context.t.common.calendarView.year,
-      'all': context.t.statistics.all,
-    };
-
-    return Container(
-      width: double.infinity,
-      padding: const EdgeInsets.all(4),
-      decoration: BoxDecoration(
-        color: context.appColors.card.withValues(alpha: 0.3),
-        borderRadius: BorderRadius.circular(16),
-        border: Border.all(color: context.appColors.border, width: 1),
-      ),
-      child: Row(
-        children: options.map((opt) {
-          final isSelected = selectedKey == opt;
-          return Expanded(
-            child: GestureDetector(
-              onTap: () {
-                if (!isSelected) {
-                  HapticFeedback.mediumImpact();
-                  setState(() {
-                    if (opt == 'week') {
-                      _chartTimeframe = 'timeframe_week_short';
-                    } else if (opt == 'month') {
-                      _chartTimeframe = 'timeframe_month_short';
-                    } else if (opt == 'year') {
-                      _chartTimeframe = 'timeframe_year_short';
-                    } else {
-                      _chartTimeframe = 'timeframe_all';
-                    }
-                  });
-                }
-              },
-              child: AnimatedContainer(
-                duration: const Duration(milliseconds: 300),
-                curve: Curves.easeOutCubic,
-                padding: const EdgeInsets.symmetric(vertical: 10),
-                decoration: BoxDecoration(
-                  color: isSelected
-                      ? Theme.of(context).colorScheme.primary
-                      : Colors.transparent,
-                  borderRadius: BorderRadius.circular(12),
-                  boxShadow: isSelected
-                      ? [
-                          BoxShadow(
-                            color: Theme.of(
-                              context,
-                            ).colorScheme.primary.withValues(alpha: 0.2),
-                            blurRadius: 8,
-                            offset: const Offset(0, 4),
-                          ),
-                        ]
-                      : null,
-                ),
-                child: Text(
-                  italianLabels[opt] ?? opt,
-                  textAlign: TextAlign.center,
-                  style: TextStyle(
-                    fontFamily: 'Inter',
-                    fontSize: 12,
-                    fontWeight: isSelected ? FontWeight.w800 : FontWeight.w600,
-                    color: isSelected
-                        ? context.appColors.background
-                        : context.appColors.mutedForeground,
-                  ),
-                ),
-              ),
-            ),
-          );
-        }).toList(),
-      ),
+    return EvolveSegmentedControl<String>(
+      groupValue: selectedKey,
+      segments: {
+        'week': context.t.common.calendarView.week,
+        'month': context.t.common.calendarView.month,
+        'year': context.t.common.calendarView.year,
+        'all': context.t.statistics.all,
+      },
+      onValueChanged: (opt) => setState(() {
+        _chartTimeframe = switch (opt) {
+          'week' => 'timeframe_week_short',
+          'month' => 'timeframe_month_short',
+          'year' => 'timeframe_year_short',
+          _ => 'timeframe_all',
+        };
+      }),
     );
   }
 }

@@ -24,6 +24,7 @@ import '../widgets/statistics/global_mood_tab_widget.dart';
 import '../../i18n/translations.g.dart';
 import '../../core/l10n_dynamic.dart';
 import '../kit/evolve_sheet.dart';
+import '../kit/evolve_segmented_control.dart';
 
 class StatisticsScreen extends ConsumerStatefulWidget {
   final bool isActive;
@@ -601,64 +602,12 @@ class _StatisticsScreenState extends ConsumerState<StatisticsScreen>
   }
 
   Widget _buildTabs() {
-    return Container(
-      height: 44,
-      padding: const EdgeInsets.all(4),
-      decoration: BoxDecoration(
-        color: context.appColors.card.withValues(alpha: 0.3),
-        borderRadius: BorderRadius.circular(14),
-        border: Border.all(
-          color: context.appColors.border.withValues(alpha: 0.5),
-          width: 1,
-        ),
-      ),
-      child: Row(
-        children: _tabs.map((tab) {
-          final isSelected = _selectedTab == tab;
-          return Expanded(
-            child: GestureDetector(
-              onTap: () {
-                if (!isSelected) {
-                  ref.hapticSelection();
-                  setState(() => _selectedTab = tab);
-                }
-              },
-              behavior: HitTestBehavior.opaque,
-              child: AnimatedContainer(
-                duration: const Duration(milliseconds: 250),
-                curve: Curves.easeInOut,
-                decoration: BoxDecoration(
-                  color: isSelected
-                      ? Theme.of(context).colorScheme.primary
-                      : Colors.transparent,
-                  borderRadius: BorderRadius.circular(10),
-                  boxShadow: isSelected
-                      ? [
-                          BoxShadow(
-                            color: Colors.black.withValues(alpha: 0.3),
-                            blurRadius: 8,
-                            offset: const Offset(0, 2),
-                          ),
-                        ]
-                      : null,
-                ),
-                alignment: Alignment.center,
-                child: Text(
-                  tStatTab(context, tab),
-                  style: TextStyle(
-                    fontFamily: 'Inter',
-                    fontSize: 11,
-                    fontWeight: isSelected ? FontWeight.w800 : FontWeight.w600,
-                    color: isSelected
-                        ? context.appColors.background
-                        : context.appColors.mutedForeground,
-                  ),
-                ),
-              ),
-            ),
-          );
-        }).toList(),
-      ),
+    return EvolveSegmentedControl<String>(
+      groupValue: _selectedTab,
+      segments: {
+        for (final tab in _tabs) tab: tStatTab(context, tab),
+      },
+      onValueChanged: (tab) => setState(() => _selectedTab = tab),
     );
   }
 

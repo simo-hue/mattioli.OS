@@ -28,6 +28,7 @@ import 'statistics_screen.dart';
 import 'macro_goals_screen.dart';
 import 'profile_screen.dart';
 import '../../core/haptics.dart';
+import '../kit/evolve_button.dart';
 import 'package:tutorial_coach_mark/tutorial_coach_mark.dart';
 import '../../providers/tutorial_provider.dart';
 import '../../core/app_logger.dart';
@@ -924,31 +925,10 @@ class _HomeScreenState extends ConsumerState<HomeScreen>
                 ),
               ),
               const SizedBox(height: 32),
-              GestureDetector(
-                onTap: _authenticate,
-                child: Container(
-                  padding: const EdgeInsets.symmetric(
-                    horizontal: 24,
-                    vertical: 12,
-                  ),
-                  decoration: BoxDecoration(
-                    color: Theme.of(context).colorScheme.primary,
-                    borderRadius: BorderRadius.circular(12),
-                  ),
-                  child: Text(
-                    context.t.habits.retry,
-                    style: TextStyle(
-                      color:
-                          Theme.of(
-                                context,
-                              ).colorScheme.primary.computeLuminance() >
-                              0.5
-                          ? Colors.black
-                          : Colors.white,
-                      fontWeight: FontWeight.w700,
-                    ),
-                  ),
-                ),
+              EvolveButton(
+                label: context.t.habits.retry,
+                expand: false,
+                onPressed: _authenticate,
               ),
             ],
           ),
@@ -1129,31 +1109,13 @@ class _HomeScreenState extends ConsumerState<HomeScreen>
                       ),
                     ),
                     SizedBox(height: compact ? 18 : 32),
-                    ElevatedButton.icon(
+                    EvolveButton(
                       key: _addHabitKey,
-                      onPressed: () {
-                        ref.hapticMedium();
-                        HabitManagementModal.show(context);
-                      },
-                      icon: const Icon(LucideIcons.plus, size: 18),
-                      label: Text(
-                        context.t.habits.addHabit,
-                        style: const TextStyle(fontWeight: FontWeight.w700),
-                      ),
-                      style: ElevatedButton.styleFrom(
-                        backgroundColor: primaryColor,
-                        foregroundColor: primaryColor.computeLuminance() > 0.5
-                            ? Colors.black
-                            : Colors.white,
-                        shape: RoundedRectangleBorder(
-                          borderRadius: BorderRadius.circular(12),
-                        ),
-                        padding: const EdgeInsets.symmetric(
-                          horizontal: 24,
-                          vertical: 14,
-                        ),
-                        elevation: 0,
-                      ),
+                      label: context.t.habits.addHabit,
+                      icon: LucideIcons.plus,
+                      expand: false,
+                      haptic: EvolveButtonHaptic.medium,
+                      onPressed: () => HabitManagementModal.show(context),
                     ),
                   ],
                 ),

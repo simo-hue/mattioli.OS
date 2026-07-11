@@ -5,6 +5,7 @@ import 'package:lucide_icons_flutter/lucide_icons.dart';
 import 'package:url_launcher/url_launcher.dart';
 import 'package:google_fonts/google_fonts.dart';
 import '../../core/theme.dart';
+import '../kit/evolve_toast.dart';
 import '../../providers/auth_provider.dart';
 import '../../providers/settings_provider.dart';
 import '../../core/haptics.dart';
@@ -83,15 +84,10 @@ class _AuthScreenState extends ConsumerState<AuthScreen>
         if (success && mounted) {
           final error = ref.read(authProvider).error;
           if (error != null && error.contains('email')) {
-            ScaffoldMessenger.of(context).showSnackBar(
-              SnackBar(
-                content: Text(error),
-                backgroundColor: const Color(0xFF10B981),
-                behavior: SnackBarBehavior.floating,
-                shape: RoundedRectangleBorder(
-                  borderRadius: BorderRadius.circular(12),
-                ),
-              ),
+            showEvolveToast(
+              context,
+              message: error,
+              kind: EvolveToastKind.success,
             );
           }
         }
@@ -108,38 +104,21 @@ class _AuthScreenState extends ConsumerState<AuthScreen>
   Future<void> _handleForgotPassword() async {
     final email = _emailController.text.trim();
     if (email.isEmpty || !email.contains('@')) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(
-          content: Text(
-            context.t.auth.resetPasswordPrompt,
-          ),
-          backgroundColor: AppColors.card,
-          behavior: SnackBarBehavior.floating,
-          shape: RoundedRectangleBorder(
-            borderRadius: BorderRadius.circular(12),
-          ),
-        ),
+      showEvolveToast(
+        context,
+        message: context.t.auth.resetPasswordPrompt,
       );
       return;
     }
     ref.hapticLight();
     final success = await ref.read(authProvider.notifier).resetPassword(email);
     if (mounted) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(
-          content: Text(
-            success
-                ? context.t.auth.passwordResetEmailSent
-                : ref.read(authProvider).error ?? context.t.common.status.error,
-          ),
-          backgroundColor: success
-              ? const Color(0xFF10B981)
-              : AppColors.destructive,
-          behavior: SnackBarBehavior.floating,
-          shape: RoundedRectangleBorder(
-            borderRadius: BorderRadius.circular(12),
-          ),
-        ),
+      showEvolveToast(
+        context,
+        message: success
+            ? context.t.auth.passwordResetEmailSent
+            : ref.read(authProvider).error ?? context.t.common.status.error,
+        kind: success ? EvolveToastKind.success : EvolveToastKind.error,
       );
     }
   }
@@ -153,17 +132,10 @@ class _AuthScreenState extends ConsumerState<AuthScreen>
     final Uri url = Uri.parse(urlString);
     if (!await launchUrl(url, mode: LaunchMode.externalApplication)) {
       if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(
-            content: Text(
-              context.t.common.unableToOpenTheLink,
-            ),
-            backgroundColor: AppColors.destructive,
-            behavior: SnackBarBehavior.floating,
-            shape: RoundedRectangleBorder(
-              borderRadius: BorderRadius.circular(12),
-            ),
-          ),
+        showEvolveToast(
+          context,
+          message: context.t.common.unableToOpenTheLink,
+          kind: EvolveToastKind.error,
         );
       }
     }

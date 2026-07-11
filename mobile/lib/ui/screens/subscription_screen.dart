@@ -17,6 +17,7 @@ import '../../core/subscription_service.dart';
 import '../../providers/settings_provider.dart';
 import '../widgets/subscription_alert_modal.dart';
 import '../../i18n/translations.g.dart';
+import '../kit/evolve_dialog.dart';
 
 class SubscriptionScreen extends ConsumerStatefulWidget {
   const SubscriptionScreen({super.key});
@@ -24,9 +25,7 @@ class SubscriptionScreen extends ConsumerStatefulWidget {
   static Route route() {
     // MaterialPageRoute so iOS gets the native Cupertino slide + edge-swipe-back
     // gesture for free (Android keeps its native Material transition).
-    return MaterialPageRoute(
-      builder: (context) => const SubscriptionScreen(),
-    );
+    return MaterialPageRoute(builder: (context) => const SubscriptionScreen());
   }
 
   @override
@@ -90,7 +89,11 @@ class _SubscriptionScreenState extends ConsumerState<SubscriptionScreen> {
         });
       }
     } catch (e, stack) {
-      AppLogger.error('[Subscription] Secondary product fetch failed', e, stack);
+      AppLogger.error(
+        '[Subscription] Secondary product fetch failed',
+        e,
+        stack,
+      );
     }
 
     if (mounted) {
@@ -1173,141 +1176,18 @@ class _SubscriptionScreenState extends ConsumerState<SubscriptionScreen> {
   }
 
   void _showCancelDialog(BuildContext context) {
-    showDialog(
+    showEvolveConfirm(
       context: context,
-      builder: (dialogContext) => BackdropFilter(
-        filter: ImageFilter.blur(sigmaX: 10, sigmaY: 10),
-        child: Dialog(
-          backgroundColor: Colors.transparent,
-          elevation: 0,
-          child: Container(
-            padding: const EdgeInsets.all(28),
-            decoration: BoxDecoration(
-              color: context.appColors.card.withValues(alpha: 0.95),
-              borderRadius: BorderRadius.circular(24),
-              border: Border.all(
-                color: context.appColors.border.withValues(alpha: 0.5),
-                width: 1.5,
-              ),
-              boxShadow: [
-                BoxShadow(
-                  color: Colors.black.withValues(alpha: 0.1),
-                  blurRadius: 20,
-                  spreadRadius: 5,
-                ),
-              ],
-            ),
-            child: Column(
-              mainAxisSize: MainAxisSize.min,
-              children: [
-                Container(
-                  padding: const EdgeInsets.all(16),
-                  decoration: BoxDecoration(
-                    color: AppColors.destructive.withValues(alpha: 0.1),
-                    shape: BoxShape.circle,
-                  ),
-                  child: const Icon(
-                    Icons.warning_amber_rounded,
-                    size: 32,
-                    color: AppColors.destructive,
-                  ),
-                ),
-                const SizedBox(height: 24),
-                Text(
-                  context.t.subscription.actions.manage,
-                  style: TextStyle(
-                    fontFamily: 'Inter',
-                    fontSize: 20,
-                    fontWeight: FontWeight.w800,
-                    color: context.appColors.foreground,
-                    letterSpacing: -0.5,
-                  ),
-                ),
-                const SizedBox(height: 8),
-                Text(
-                  context.t.subscription.manageDisclaimer,
-                  textAlign: TextAlign.center,
-                  style: TextStyle(
-                    fontFamily: 'Inter',
-                    fontSize: 14,
-                    color: context.appColors.mutedForeground,
-                    fontWeight: FontWeight.w500,
-                  ),
-                ),
-                const SizedBox(height: 24),
-                Row(
-                  children: [
-                    Expanded(
-                      child: GestureDetector(
-                        onTap: () => Navigator.pop(dialogContext),
-                        child: Container(
-                          height: 50,
-                          decoration: BoxDecoration(
-                            color: context.appColors.background,
-                            borderRadius: BorderRadius.circular(14),
-                            border: Border.all(color: context.appColors.border),
-                          ),
-                          child: Center(
-                            child: Text(
-                              context.t.common.actions.cancel,
-                              style: TextStyle(
-                                color: context.appColors.foreground,
-                                fontSize: 14,
-                                fontWeight: FontWeight.w600,
-                                fontFamily: 'Inter',
-                              ),
-                            ),
-                          ),
-                        ),
-                      ),
-                    ),
-                    const SizedBox(width: 12),
-                    Expanded(
-                      child: GestureDetector(
-                        onTap: () {
-                          Navigator.pop(dialogContext);
-                          // Trigger the modern compliant Customer Center
-                          ref
-                              .read(subscriptionServiceProvider)
-                              .presentCustomerCenter();
-                        },
-                        child: Container(
-                          height: 50,
-                          decoration: BoxDecoration(
-                            color: AppColors.destructive,
-                            borderRadius: BorderRadius.circular(14),
-                            boxShadow: [
-                              BoxShadow(
-                                color: AppColors.destructive.withValues(
-                                  alpha: 0.3,
-                                ),
-                                blurRadius: 10,
-                                offset: const Offset(0, 4),
-                              ),
-                            ],
-                          ),
-                          child: Center(
-                            child: Text(
-                              context.t.subscription.continueButton,
-                              style: const TextStyle(
-                                color: Colors.white,
-                                fontSize: 14,
-                                fontWeight: FontWeight.w700,
-                                fontFamily: 'Inter',
-                              ),
-                            ),
-                          ),
-                        ),
-                      ),
-                    ),
-                  ],
-                ),
-              ],
-            ),
-          ),
-        ),
-      ),
-    );
+      title: context.t.subscription.actions.manage,
+      message: context.t.subscription.manageDisclaimer,
+      confirmLabel: context.t.subscription.continueButton,
+      isDestructive: true,
+      ref: ref,
+    ).then((confirmed) {
+      if (confirmed) {
+        ref.read(subscriptionServiceProvider).presentCustomerCenter();
+      }
+    });
   }
 
   Widget _buildMockPlanCard(

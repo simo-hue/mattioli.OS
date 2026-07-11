@@ -24,24 +24,24 @@ platform :ios do
     UI.message("Lingue da aggiornare: #{all_locales.join(', ')}")
     
     translations = {
-      "it" => "Importazione dati migliorata e correzioni",
-      "en" => "Smarter data import & fixes",
-      "fr" => "Import de données amélioré et corrections",
-      "vi" => "Nhập dữ liệu thông minh hơn và sửa lỗi",
-      "ko" => "더 똑똑해진 데이터 가져오기 및 버그 수정",
-      "es" => "Importación de datos mejorada y correcciones",
-      "id" => "Impor data lebih cerdas & perbaikan",
-      "de" => "Intelligenterer Datenimport & Fehlerbehebungen",
-      "sk" => "Inteligentnejší import údajov a opravy",
-      "sv" => "Smartare dataimport och buggfixar",
-      "da" => "Smartere dataimport og fejlrettelser",
-      "pt" => "Importação de dados mais inteligente e correções",
-      "he" => "ייבוא נתונים חכם יותר ותיקונים",
-      "el" => "Πιο έξυπνη εισαγωγή δεδομένων και διορθώσεις",
-      "zh" => "更智能的数据导入及问题修复",
-      "ja" => "よりスマートなデータインポートと修正",
-      "ru" => "Улучшенный импорт данных и исправления",
-      "ar" => "استيراد بيانات أذكى وإصلاحات"
+      "it" => "Nuova UI",
+      "en" => "New UI",
+      "fr" => "Nouvelle interface utilisateur",
+      "vi" => "Giao diện người dùng mới",
+      "ko" => "새로운 UI",
+      "es" => "Nueva interfaz de usuario",
+      "id" => "UI Baru",
+      "de" => "Neue Benutzeroberfläche",
+      "sk" => "Nové používateľské rozhranie",
+      "sv" => "Nytt användargränssnitt",
+      "da" => "Ny brugergrænseflade",
+      "pt" => "Nova interface de utilizador",
+      "he" => "ממשק משתמש חדש",
+      "el" => "Νέο περιβάλλον χρήστη",
+      "zh" => "全新的 UI 界面",
+      "ja" => "新しいUI",
+      "ru" => "Новый интерфейс",
+      "ar" => "واجهة مستخدم جديدة"
     }
     
     all_locales.each do |locale|

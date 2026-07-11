@@ -2,7 +2,7 @@
 - [ ] Local AI Models ( Ollama for desktop? Other solutions? For mobile what can we do? )
 - [ ] Widget for iPhone & MacOS
 - [ ] Implementing iPhone data's based like screen time, fitness ( Data iPhone already collect so I can read them )
-- [ ] 
+- [ ] /grill-me While trying the macOS implementation from another device ( not this one here ) when I clicked on the circular user’s profile image the Evolve desktop app suddently crashed
 
 ---
 

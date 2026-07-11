@@ -1,8 +1,8 @@
 import 'dart:math' as math;
 import 'package:flutter/material.dart';
-import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../core/theme.dart';
+import '../../core/haptics.dart';
 import '../../core/performance_color.dart';
 import '../../providers/goal_provider.dart';
 
@@ -27,7 +27,7 @@ class _YearlyViewWidgetState extends ConsumerState<YearlyViewWidget> {
       _slideDirection = -1;
       _currentYear--;
     });
-    HapticFeedback.lightImpact();
+    ref.hapticLight();
   }
 
   void _goToNext() {
@@ -35,7 +35,7 @@ class _YearlyViewWidgetState extends ConsumerState<YearlyViewWidget> {
       _slideDirection = 1;
       _currentYear++;
     });
-    HapticFeedback.lightImpact();
+    ref.hapticLight();
   }
 
   @override

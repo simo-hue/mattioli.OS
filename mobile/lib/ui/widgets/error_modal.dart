@@ -6,6 +6,7 @@ import '../../core/theme.dart';
 import '../../core/haptics.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../i18n/translations.g.dart';
+import '../kit/evolve_sheet.dart';
 
 class ErrorModal extends ConsumerWidget {
   final String title;
@@ -53,19 +54,12 @@ class ErrorModal extends ConsumerWidget {
         padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 28),
         decoration: BoxDecoration(
           color: colors.card.withValues(alpha: 0.98),
-          borderRadius: const BorderRadius.vertical(top: Radius.circular(32)),
+          borderRadius: const BorderRadius.vertical(top: Radius.circular(24)),
           border: Border.all(color: colors.border, width: 1.5),
         ),
         child: Column(
           children: [
-            Container(
-              width: 40,
-              height: 4,
-              decoration: BoxDecoration(
-                color: colors.border,
-                borderRadius: BorderRadius.circular(2),
-              ),
-            ),
+            const EvolveGrabber(),
             const SizedBox(height: 24),
             Expanded(
               child: SingleChildScrollView(

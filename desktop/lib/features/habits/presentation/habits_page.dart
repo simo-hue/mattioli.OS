@@ -1757,11 +1757,11 @@ class _HabitEditorDialogState extends State<_HabitEditorDialog> {
           mainAxisSize: MainAxisSize.min,
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            _FieldLabel(t.form.title),
+            EvolveFieldLabel(t.form.title),
             const SizedBox(height: 8),
             TextField(controller: _title, autofocus: true),
             const SizedBox(height: 16),
-            _FieldLabel(t.form.category),
+            EvolveFieldLabel(t.form.category),
             const SizedBox(height: 8),
             EvolveSelect<String>(
               value: _category,
@@ -1778,7 +1778,7 @@ class _HabitEditorDialogState extends State<_HabitEditorDialog> {
               onChanged: (value) => setState(() => _category = value),
             ),
             const SizedBox(height: 16),
-            _FieldLabel(t.habitsPage.optionalReminder),
+            EvolveFieldLabel(t.habitsPage.optionalReminder),
             const SizedBox(height: 8),
             TextField(
               controller: _reminder,
@@ -1809,7 +1809,7 @@ class _HabitEditorDialogState extends State<_HabitEditorDialog> {
               },
             ),
             const SizedBox(height: 20),
-            _FieldLabel(t.form.color),
+            EvolveFieldLabel(t.form.color),
             const SizedBox(height: 10),
             Wrap(
               spacing: 10,
@@ -1875,26 +1875,6 @@ class _HabitEditorDialogState extends State<_HabitEditorDialog> {
           child: Text(t.common.actions.save),
         ),
       ],
-    );
-  }
-}
-
-/// Uppercase micro-label above a form field ("HABIT NAME" on mobile).
-class _FieldLabel extends StatelessWidget {
-  const _FieldLabel(this.label);
-
-  final String label;
-
-  @override
-  Widget build(BuildContext context) {
-    return Text(
-      label.toUpperCase(),
-      style: TextStyle(
-        fontSize: 10,
-        fontWeight: FontWeight.w600,
-        color: context.evolveColors.muted,
-        letterSpacing: 0.5,
-      ),
     );
   }
 }

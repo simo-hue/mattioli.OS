@@ -1,5 +1,4 @@
 import 'package:flutter/material.dart';
-import 'dart:ui';
 import 'dart:io';
 import '../../core/rtl.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
@@ -11,6 +10,8 @@ import '../kit/evolve_dialog.dart';
 import '../kit/evolve_toast.dart';
 import '../kit/evolve_switch.dart';
 import '../kit/evolve_section_header.dart';
+import '../kit/evolve_sheet.dart';
+import '../kit/evolve_button.dart';
 import '../../core/import_merge_stats.dart';
 import '../../providers/goal_provider.dart';
 import '../../providers/macro_goals_provider.dart';
@@ -258,13 +259,8 @@ class PrivacySettingsScreen extends ConsumerWidget {
   }
 
   Widget _buildSettingsCard(BuildContext context, List<Widget> children) {
-    return Container(
-      decoration: BoxDecoration(
-        color: context.appColors.card,
-        borderRadius: BorderRadius.circular(20),
-        border: Border.all(color: context.appColors.border),
-      ),
-      child: Column(children: children),
+    return EvolveListSection(
+      children: children.where((c) => c is! Divider).toList(),
     );
   }
 
@@ -450,269 +446,157 @@ class PrivacySettingsScreen extends ConsumerWidget {
     String? errorMessage;
     bool isVerified = false;
 
-    showDialog(
+    showEvolveFormSheet<void>(
       context: context,
-      builder: (context) {
+      title: context.t.privacy.changePassword,
+      leading: EvolveTextAction(
+        label: context.t.common.actions.cancel,
+        onPressed: () => Navigator.pop(context),
+      ),
+      builder: (sheetContext) {
         return StatefulBuilder(
           builder: (context, setState) {
-            return BackdropFilter(
-              filter: ImageFilter.blur(sigmaX: 12, sigmaY: 12),
-              child: Dialog(
-                backgroundColor: Colors.transparent,
-                elevation: 0,
-                child: Container(
-                  padding: const EdgeInsets.all(24),
-                  decoration: BoxDecoration(
-                    color: context.appColors.card.withValues(alpha: 0.95),
-                    borderRadius: BorderRadius.circular(24),
-                    border: Border.all(
-                      color: context.appColors.border.withValues(alpha: 0.5),
-                      width: 1.5,
+            Future<void> onSubmit() async {
+              if (!isVerified) {
+                final currentPwd = currentPasswordController.text;
+                if (currentPwd.isEmpty) {
+                  setState(
+                    () => errorMessage =
+                        context.t.privacy.currentPasswordRequired,
+                  );
+                  return;
+                }
+                setState(() {
+                  isLoading = true;
+                  errorMessage = null;
+                });
+                try {
+                  final supabase = Supabase.instance.client;
+                  final email = supabase.auth.currentUser?.email;
+                  if (email == null) {
+                    throw Exception(context.t.privacy.userNotFound);
+                  }
+                  await supabase.auth.signInWithPassword(
+                    email: email,
+                    password: currentPwd,
+                  );
+                  setState(() {
+                    isLoading = false;
+                    isVerified = true;
+                    errorMessage = null;
+                  });
+                } catch (e) {
+                  setState(() {
+                    isLoading = false;
+                    errorMessage = context.t.privacy.currentPasswordIncorrect;
+                  });
+                }
+              } else {
+                final newPwd = newPasswordController.text;
+                final confirmPwd = confirmPasswordController.text;
+                if (newPwd.isEmpty || confirmPwd.isEmpty) {
+                  setState(
+                    () => errorMessage = context.t.privacy.allFieldsRequired,
+                  );
+                  return;
+                }
+                if (newPwd.length < 8) {
+                  setState(
+                    () => errorMessage = context.t.privacy.newPasswordMin8,
+                  );
+                  return;
+                }
+                if (newPwd != confirmPwd) {
+                  setState(
+                    () => errorMessage = context.t.privacy.passwordsDontMatch,
+                  );
+                  return;
+                }
+                setState(() {
+                  isLoading = true;
+                  errorMessage = null;
+                });
+                try {
+                  final supabase = Supabase.instance.client;
+                  await supabase.auth.updateUser(
+                    UserAttributes(password: newPwd),
+                  );
+                  if (context.mounted) {
+                    Navigator.pop(context);
+                    showEvolveToast(
+                      context,
+                      message: context.t.privacy.passwordUpdated,
+                    );
+                  }
+                } catch (e, stack) {
+                  AppLogger.error(
+                    'Errore durante aggiornamento password',
+                    e,
+                    stack,
+                  );
+                  setState(() {
+                    isLoading = false;
+                    errorMessage = e.toString().replaceAll('Exception: ', '');
+                  });
+                }
+              }
+            }
+
+            return Padding(
+              padding: const EdgeInsets.fromLTRB(16, 4, 16, 16),
+              child: Column(
+                mainAxisSize: MainAxisSize.min,
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text(
+                    isVerified
+                        ? context.t.privacy.enterNewPassword
+                        : context.t.privacy.enterCurrentPassword,
+                    style: GoogleFonts.inter(
+                      fontSize: 13,
+                      color: context.appColors.mutedForeground,
                     ),
-                    boxShadow: [
-                      BoxShadow(
-                        color: Colors.black.withValues(alpha: 0.2),
-                        blurRadius: 20,
-                        spreadRadius: 5,
-                      ),
-                    ],
                   ),
-                  child: Column(
-                    mainAxisSize: MainAxisSize.min,
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      Text(
-                        context.t.privacy.changePassword,
-                        style: GoogleFonts.inter(
-                          fontSize: 20,
-                          fontWeight: FontWeight.w700,
-                          color: context.appColors.foreground,
-                        ),
+                  const SizedBox(height: 20),
+                  if (!isVerified) ...[
+                    _buildPasswordField(
+                      controller: currentPasswordController,
+                      label: context.t.privacy.currentPassword,
+                      context: context,
+                    ),
+                  ] else ...[
+                    _buildPasswordField(
+                      controller: newPasswordController,
+                      label: context.t.privacy.newPassword,
+                      context: context,
+                    ),
+                    const SizedBox(height: 16),
+                    _buildPasswordField(
+                      controller: confirmPasswordController,
+                      label: context.t.privacy.confirmNewPassword,
+                      context: context,
+                    ),
+                  ],
+                  if (errorMessage != null) ...[
+                    const SizedBox(height: 12),
+                    Text(
+                      errorMessage!,
+                      style: GoogleFonts.inter(
+                        fontSize: 12,
+                        color: context.appColors.destructive,
+                        fontWeight: FontWeight.w500,
                       ),
-                      const SizedBox(height: 4),
-                      Text(
-                        isVerified
-                            ? context.t.privacy.enterNewPassword
-                            : context.t.privacy.enterCurrentPassword,
-                        style: GoogleFonts.inter(
-                          fontSize: 13,
-                          color: context.appColors.mutedForeground,
-                        ),
-                      ),
-                      const SizedBox(height: 20),
-
-                      if (!isVerified) ...[
-                        _buildPasswordField(
-                          controller: currentPasswordController,
-                          label: context.t.privacy.currentPassword,
-                          context: context,
-                        ),
-                      ] else ...[
-                        _buildPasswordField(
-                          controller: newPasswordController,
-                          label: context.t.privacy.newPassword,
-                          context: context,
-                        ),
-                        const SizedBox(height: 16),
-
-                        _buildPasswordField(
-                          controller: confirmPasswordController,
-                          label: context.t.privacy.confirmNewPassword,
-                          context: context,
-                        ),
-                      ],
-
-                      if (errorMessage != null) ...[
-                        const SizedBox(height: 12),
-                        Text(
-                          errorMessage!,
-                          style: GoogleFonts.inter(
-                            fontSize: 12,
-                            color: AppColors.destructive,
-                            fontWeight: FontWeight.w500,
-                          ),
-                        ),
-                      ],
-
-                      const SizedBox(height: 24),
-
-                      Row(
-                        mainAxisAlignment: MainAxisAlignment.end,
-                        children: [
-                          TextButton(
-                            onPressed: isLoading
-                                ? null
-                                : () => Navigator.pop(context),
-                            child: Text(
-                              context.t.common.actions.cancel,
-                              style: GoogleFonts.inter(
-                                color: context.appColors.mutedForeground,
-                                fontWeight: FontWeight.w600,
-                              ),
-                            ),
-                          ),
-                          const SizedBox(width: 12),
-                          GestureDetector(
-                            onTap: isLoading
-                                ? null
-                                : () async {
-                                    if (!isVerified) {
-                                      final currentPwd =
-                                          currentPasswordController.text;
-                                      if (currentPwd.isEmpty) {
-                                        setState(
-                                          () => errorMessage = context.t.privacy.currentPasswordRequired,
-                                        );
-                                        return;
-                                      }
-
-                                      setState(() {
-                                        isLoading = true;
-                                        errorMessage = null;
-                                      });
-
-                                      try {
-                                        final supabase =
-                                            Supabase.instance.client;
-                                        final email =
-                                            supabase.auth.currentUser?.email;
-
-                                        if (email == null) {
-                                          throw Exception(
-                                            context.t.privacy.userNotFound,
-                                          );
-                                        }
-
-                                        await supabase.auth.signInWithPassword(
-                                          email: email,
-                                          password: currentPwd,
-                                        );
-
-                                        setState(() {
-                                          isLoading = false;
-                                          isVerified = true;
-                                          errorMessage = null;
-                                        });
-                                      } catch (e) {
-                                        setState(() {
-                                          isLoading = false;
-                                          errorMessage = context.t.privacy.currentPasswordIncorrect;
-                                        });
-                                      }
-                                    } else {
-                                      final newPwd = newPasswordController.text;
-                                      final confirmPwd =
-                                          confirmPasswordController.text;
-
-                                      if (newPwd.isEmpty ||
-                                          confirmPwd.isEmpty) {
-                                        setState(
-                                          () => errorMessage = context.t.privacy.allFieldsRequired,
-                                        );
-                                        return;
-                                      }
-
-                                      if (newPwd.length < 8) {
-                                        setState(
-                                          () => errorMessage = context.t.privacy.newPasswordMin8,
-                                        );
-                                        return;
-                                      }
-
-                                      if (newPwd != confirmPwd) {
-                                        setState(
-                                          () => errorMessage = context.t.privacy.passwordsDontMatch,
-                                        );
-                                        return;
-                                      }
-
-                                      setState(() {
-                                        isLoading = true;
-                                        errorMessage = null;
-                                      });
-
-                                      try {
-                                        final supabase =
-                                            Supabase.instance.client;
-
-                                        await supabase.auth.updateUser(
-                                          UserAttributes(password: newPwd),
-                                        );
-
-                                        if (context.mounted) {
-                                          Navigator.pop(context);
-                                          showEvolveToast(
-                                            context,
-                                            message: context.t.privacy.passwordUpdated,
-                                          );
-                                        }
-                                      } catch (e, stack) {
-                                        AppLogger.error(
-                                          'Errore durante aggiornamento password',
-                                          e,
-                                          stack,
-                                        );
-                                        setState(() {
-                                          isLoading = false;
-                                          errorMessage = e
-                                              .toString()
-                                              .replaceAll('Exception: ', '');
-                                        });
-                                      }
-                                    }
-                                  },
-                            child: Container(
-                              padding: const EdgeInsets.symmetric(
-                                horizontal: 20,
-                                vertical: 10,
-                              ),
-                              decoration: BoxDecoration(
-                                color: Theme.of(context).colorScheme.primary,
-                                borderRadius: BorderRadius.circular(10),
-                                boxShadow: [
-                                  BoxShadow(
-                                    color: Theme.of(context).colorScheme.primary
-                                        .withValues(alpha: 0.3),
-                                    blurRadius: 8,
-                                    offset: const Offset(0, 2),
-                                  ),
-                                ],
-                              ),
-                              child: isLoading
-                                  ? const SizedBox(
-                                      width: 20,
-                                      height: 20,
-                                      child: CircularProgressIndicator(
-                                        strokeWidth: 2,
-                                        valueColor:
-                                            AlwaysStoppedAnimation<Color>(
-                                              Colors.white,
-                                            ),
-                                      ),
-                                    )
-                                  : Text(
-                                      isVerified
-                                          ? context.t.common.actions.save
-                                          : context.t.common.actions.verify,
-                                      style: GoogleFonts.inter(
-                                        color:
-                                            Theme.of(context)
-                                                    .colorScheme
-                                                    .primary
-                                                    .computeLuminance() >
-                                                0.5
-                                            ? Colors.black
-                                            : Colors.white,
-                                        fontWeight: FontWeight.w600,
-                                      ),
-                                    ),
-                            ),
-                          ),
-                        ],
-                      ),
-                    ],
+                    ),
+                  ],
+                  const SizedBox(height: 24),
+                  EvolveButton(
+                    label: isVerified
+                        ? context.t.common.actions.save
+                        : context.t.common.actions.verify,
+                    loading: isLoading,
+                    onPressed: onSubmit,
                   ),
-                ),
+                ],
               ),
             );
           },
@@ -915,7 +799,7 @@ class PrivacySettingsScreen extends ConsumerWidget {
                 backgroundColor: context.appColors.background,
                 title: Text(
                   context.t.privacy.importPreviewTitle,
-                  style: GoogleFonts.outfit(
+                  style: GoogleFonts.inter(
                     color: context.appColors.foreground,
                     fontWeight: FontWeight.w600,
                   ),
@@ -1152,211 +1036,85 @@ class PrivacySettingsScreen extends ConsumerWidget {
   void _showDeleteOrResetModal(BuildContext context, WidgetRef ref) {
     final isPrivateMode =
         ref.read(activeDataModeProvider) == AppDataMode.private;
-    showDialog(
+    showEvolveSheet<void>(
       context: context,
-      builder: (context) {
-        return BackdropFilter(
-          filter: ImageFilter.blur(sigmaX: 12, sigmaY: 12),
-          child: Dialog(
-            backgroundColor: Colors.transparent,
-            elevation: 0,
-            child: Container(
-              padding: const EdgeInsets.all(24),
-              decoration: BoxDecoration(
-                color: context.appColors.card.withValues(alpha: 0.95),
-                borderRadius: BorderRadius.circular(24),
-                border: Border.all(
-                  color: context.appColors.border.withValues(alpha: 0.5),
-                  width: 1.5,
-                ),
-                boxShadow: [
-                  BoxShadow(
-                    color: Colors.black.withValues(alpha: 0.2),
-                    blurRadius: 20,
-                    spreadRadius: 5,
-                  ),
-                ],
-              ),
-              child: Column(
-                mainAxisSize: MainAxisSize.min,
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Text(
-                    isPrivateMode
-                        ? context.t.privacy.privateDataManagement
-                        : context.t.privacy.accountDataManagement,
-                    style: GoogleFonts.inter(
-                      fontSize: 20,
-                      fontWeight: FontWeight.w700,
-                      color: context.appColors.foreground,
-                    ),
-                  ),
-                  const SizedBox(height: 4),
-                  Text(
-                    context.t.privacy.chooseOperation,
-                    style: GoogleFonts.inter(
-                      fontSize: 13,
-                      color: context.appColors.mutedForeground,
-                    ),
-                  ),
-                  const SizedBox(height: 24),
-
-                  if (isPrivateMode)
-                    _buildOptionCard(
-                      context: context,
-                      icon: LucideIcons.trash2,
-                      title: context.t.privacy.deletePrivateDataAction,
-                      subtitle: context.t.privacy.privateDataDescription,
-                      titleColor: AppColors.destructive,
-                      onTap: () {
-                        Navigator.pop(context);
-                        _showConfirmationDialog(
-                          context: context,
-                          title: context.t.privacy.confirmPrivateDataDeletion,
-                          message: context.t.privacy.confirmPrivateDataResetMessage,
-                          isDestructive: true,
-                          onConfirm: () async {
-                            await _resetData(context, ref);
-                          },
-                        );
-                      },
-                    )
-                  else ...[
-                    _buildOptionCard(
-                      context: context,
-                      icon: LucideIcons.refreshCw,
-                      title: context.t.privacy.resetData,
-                      subtitle: context.t.privacy.resetDataDescription,
-                      onTap: () {
-                        Navigator.pop(context);
-                        _showConfirmationDialog(
-                          context: context,
-                          title: context.t.privacy.confirmDataReset,
-                          message: context.t.privacy.confirmResetMessage,
-                          onConfirm: () async {
-                            await _resetData(context, ref);
-                          },
-                        );
-                      },
-                    ),
-                    const SizedBox(height: 16),
-                    _buildOptionCard(
-                      context: context,
-                      icon: LucideIcons.trash2,
-                      title: context.t.privacy.deleteAccount,
-                      subtitle: context.t.privacy.deleteAccountDescription,
-                      titleColor: AppColors.destructive,
-                      onTap: () {
-                        Navigator.pop(context);
-                        _showConfirmationDialog(
-                          context: context,
-                          title: context.t.privacy.confirmAccountDeletion,
-                          message: context.t.privacy.confirmDeleteAccountMessage,
-                          isDestructive: true,
-                          onConfirm: () async {
-                            await _deleteAccount(context, ref);
-                          },
-                        );
-                      },
-                    ),
-                  ],
-
-                  const SizedBox(height: 24),
-
-                  Row(
-                    mainAxisAlignment: MainAxisAlignment.end,
-                    children: [
-                      TextButton(
-                        onPressed: () => Navigator.pop(context),
-                        child: Text(
-                          context.t.common.actions.cancel,
-                          style: GoogleFonts.inter(
-                            color: context.appColors.mutedForeground,
-                            fontWeight: FontWeight.w600,
-                          ),
-                        ),
-                      ),
-                    ],
-                  ),
-                ],
-              ),
-            ),
-          ),
-        );
-      },
-    );
-  }
-
-  Widget _buildOptionCard({
-    required BuildContext context,
-    required IconData icon,
-    required String title,
-    required String subtitle,
-    required VoidCallback onTap,
-    Color? titleColor,
-  }) {
-    return GestureDetector(
-      onTap: onTap,
-      child: Container(
-        padding: const EdgeInsets.all(16),
-        decoration: BoxDecoration(
-          color: context.appColors.background.withValues(alpha: 0.5),
-          borderRadius: BorderRadius.circular(16),
-          border: Border.all(
-            color: context.appColors.border.withValues(alpha: 0.5),
-          ),
-        ),
-        child: Row(
+      title: isPrivateMode
+          ? context.t.privacy.privateDataManagement
+          : context.t.privacy.accountDataManagement,
+      itemsBuilder: (sheetContext) => [
+        EvolveListSection(
           children: [
-            Container(
-              padding: const EdgeInsets.all(10),
-              decoration: BoxDecoration(
-                color: (titleColor ?? context.appColors.foreground).withValues(
-                  alpha: 0.1,
+            if (isPrivateMode)
+              EvolveListRow(
+                leading: EvolveIconTile(
+                  icon: LucideIcons.trash2,
+                  tint: context.appColors.destructive,
                 ),
-                borderRadius: BorderRadius.circular(12),
+                title: context.t.privacy.deletePrivateDataAction,
+                subtitle: context.t.privacy.privateDataDescription,
+                titleColor: context.appColors.destructive,
+                onTap: () {
+                  Navigator.pop(sheetContext);
+                  _showConfirmationDialog(
+                    context: context,
+                    title: context.t.privacy.confirmPrivateDataDeletion,
+                    message: context.t.privacy.confirmPrivateDataResetMessage,
+                    isDestructive: true,
+                    onConfirm: () async {
+                      await _resetData(context, ref);
+                    },
+                  );
+                },
+              )
+            else ...[
+              EvolveListRow(
+                leading: EvolveIconTile(
+                  icon: LucideIcons.refreshCw,
+                  tint: Theme.of(context).colorScheme.primary,
+                ),
+                title: context.t.privacy.resetData,
+                subtitle: context.t.privacy.resetDataDescription,
+                onTap: () {
+                  Navigator.pop(sheetContext);
+                  _showConfirmationDialog(
+                    context: context,
+                    title: context.t.privacy.confirmDataReset,
+                    message: context.t.privacy.confirmResetMessage,
+                    onConfirm: () async {
+                      await _resetData(context, ref);
+                    },
+                  );
+                },
               ),
-              child: Icon(
-                icon,
-                color: titleColor ?? context.appColors.foreground,
-                size: 20,
+              EvolveListRow(
+                leading: EvolveIconTile(
+                  icon: LucideIcons.trash2,
+                  tint: context.appColors.destructive,
+                ),
+                title: context.t.privacy.deleteAccount,
+                subtitle: context.t.privacy.deleteAccountDescription,
+                titleColor: context.appColors.destructive,
+                onTap: () {
+                  Navigator.pop(sheetContext);
+                  _showConfirmationDialog(
+                    context: context,
+                    title: context.t.privacy.confirmAccountDeletion,
+                    message: context.t.privacy.confirmDeleteAccountMessage,
+                    isDestructive: true,
+                    onConfirm: () async {
+                      await _deleteAccount(context, ref);
+                    },
+                  );
+                },
               ),
-            ),
-            const SizedBox(width: 16),
-            Expanded(
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Text(
-                    title,
-                    style: GoogleFonts.inter(
-                      fontSize: 15,
-                      fontWeight: FontWeight.w600,
-                      color: titleColor ?? context.appColors.foreground,
-                    ),
-                  ),
-                  const SizedBox(height: 2),
-                  Text(
-                    subtitle,
-                    style: GoogleFonts.inter(
-                      fontSize: 12,
-                      color: context.appColors.mutedForeground,
-                    ),
-                  ),
-                ],
-              ),
-            ),
-            DirectionalIcon(
-              LucideIcons.chevronRight,
-              LucideIcons.chevronLeft,
-              color: context.appColors.mutedForeground,
-              size: 16,
-            ),
+            ],
           ],
         ),
-      ),
+      ],
     );
   }
+
+  
 
   void _showConfirmationDialog({
     required BuildContext context,

@@ -5,6 +5,7 @@ import 'package:evolve_desktop/core/app_logger.dart';
 import 'package:evolve_desktop/i18n/translations.g.dart';
 import 'package:evolve_desktop/shared/widgets/evolve_dialog.dart';
 import 'package:evolve_desktop/shared/widgets/evolve_panel.dart';
+import 'package:evolve_desktop/shared/widgets/evolve_toast.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:lucide_icons_flutter/lucide_icons.dart';
@@ -136,13 +137,7 @@ class _AppLogsDialogState extends State<_AppLogsDialog> {
 
   void _toast(String message) {
     if (!mounted) return;
-    ScaffoldMessenger.of(context).showSnackBar(
-      SnackBar(
-        content: Text(message),
-        behavior: SnackBarBehavior.floating,
-        duration: const Duration(seconds: 2),
-      ),
-    );
+    showEvolveToast(context, message: message);
   }
 
   Future<void> _confirmClear() async {

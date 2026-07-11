@@ -27,6 +27,7 @@ import '../../providers/tutorial_provider.dart';
 import '../../i18n/translations.g.dart';
 import '../kit/evolve_dialog.dart';
 import '../kit/evolve_section_header.dart';
+import '../kit/evolve_sheet.dart';
 
 class ProfileScreen extends ConsumerStatefulWidget {
   const ProfileScreen({super.key});
@@ -504,59 +505,21 @@ class _ProfileScreenState extends ConsumerState<ProfileScreen> {
     required String subtitle,
     required VoidCallback onTap,
   }) {
-    final primaryColor = Theme.of(context).colorScheme.primary;
-    return Container(
-      margin: const EdgeInsets.only(bottom: 8),
-      decoration: BoxDecoration(
-        color: context.appColors.card.withValues(alpha: 0.4),
-        borderRadius: BorderRadius.circular(16),
-        border: Border.all(
-          color: context.appColors.border.withValues(alpha: 0.5),
-          width: 1,
-        ),
-      ),
-      child: Material(
-        color: Colors.transparent,
-        child: ListTile(
-          contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 2),
-          leading: Container(
-            width: 36,
-            height: 36,
-            decoration: BoxDecoration(
-              color: context.appColors.card,
-              borderRadius: BorderRadius.circular(10),
-              border: Border.all(color: context.appColors.border),
+    return Padding(
+      padding: const EdgeInsets.only(bottom: 8),
+      child: EvolveListSection(
+        children: [
+          EvolveListRow(
+            leading: EvolveIconTile(
+              icon: icon,
+              tint: Theme.of(context).colorScheme.primary,
             ),
-            child: Icon(icon, size: 18, color: primaryColor),
+            title: title,
+            subtitle: subtitle,
+            showChevron: true,
+            onTap: onTap,
           ),
-          title: Text(
-            title,
-            style: TextStyle(
-              color: context.appColors.foreground,
-              fontSize: 15,
-              fontWeight: FontWeight.w700,
-              letterSpacing: -0.2,
-            ),
-          ),
-          subtitle: Text(
-            subtitle,
-            style: TextStyle(
-              color: context.appColors.mutedForeground.withValues(alpha: 0.8),
-              fontSize: 12,
-              fontWeight: FontWeight.w500,
-            ),
-          ),
-          trailing: DirectionalIcon(
-            LucideIcons.chevronRight,
-            LucideIcons.chevronLeft,
-            size: 18,
-            color: context.appColors.mutedForeground,
-          ),
-          onTap: () {
-            ref.hapticLight();
-            onTap();
-          },
-        ),
+        ],
       ),
     );
   }

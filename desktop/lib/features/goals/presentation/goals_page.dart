@@ -15,6 +15,7 @@ import 'package:evolve_desktop/shared/widgets/evolve_controls.dart';
 import 'package:evolve_desktop/shared/widgets/evolve_dialog.dart';
 import 'goals_stats_view.dart';
 import 'package:evolve_desktop/shared/widgets/evolve_panel.dart';
+import 'package:evolve_desktop/shared/widgets/evolve_toast.dart';
 import 'package:evolve_desktop/core/tutorial_provider.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
@@ -458,8 +459,10 @@ class _GoalsPageState extends ConsumerState<GoalsPage> {
                         .addCategory(category.label, category.color);
                   } catch (_) {
                     if (!context.mounted) return;
-                    ScaffoldMessenger.of(context).showSnackBar(
-                      SnackBar(content: Text(t.goalsPage.categoryCreateFailed)),
+                    showEvolveToast(
+                      context,
+                      message: t.goalsPage.categoryCreateFailed,
+                      kind: EvolveToastKind.error,
                     );
                     return;
                   }
@@ -558,8 +561,10 @@ class _GoalsPageState extends ConsumerState<GoalsPage> {
     } catch (_) {
       if (!mounted) return;
       setState(() => _archivedCategoryIds.remove(id));
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text(t.goalsPage.categoryArchiveFailed)),
+      showEvolveToast(
+        context,
+        message: t.goalsPage.categoryArchiveFailed,
+        kind: EvolveToastKind.error,
       );
     }
   }
@@ -579,9 +584,11 @@ class _GoalsPageState extends ConsumerState<GoalsPage> {
             .updateCategory(id, updated.label, updated.color);
       } catch (_) {
         if (!mounted) return;
-        ScaffoldMessenger.of(
+        showEvolveToast(
           context,
-        ).showSnackBar(SnackBar(content: Text(t.goalsPage.categoryEditFailed)));
+          message: t.goalsPage.categoryEditFailed,
+          kind: EvolveToastKind.error,
+        );
         return;
       }
     }
@@ -609,9 +616,11 @@ class _GoalsPageState extends ConsumerState<GoalsPage> {
           .addCategory(draft.label, draft.color);
     } catch (_) {
       if (!mounted) return;
-      ScaffoldMessenger.of(
+      showEvolveToast(
         context,
-      ).showSnackBar(SnackBar(content: Text(t.goalsPage.categoryCreateFailed)));
+        message: t.goalsPage.categoryCreateFailed,
+        kind: EvolveToastKind.error,
+      );
       return;
     }
     if (!mounted) return;
@@ -1528,7 +1537,7 @@ class _PeriodSummaryPanel extends StatelessWidget {
                 ),
                 const SizedBox(height: 8),
                 _StatusCountRow(
-                  label: t.goalsStats.active.toUpperCase(),
+                  label: t.goalsStats.active,
                   color: context.evolveAccent,
                   count: activeCount,
                 ),
@@ -1787,7 +1796,11 @@ class _QuickCategoryButton extends StatelessWidget {
           // opens the editor and auto-selects the new category.
           label: t.macroGoals.createNewCategory,
           accent: true,
-          leading: Icon(LucideIcons.plus, size: 16, color: context.evolveAccent),
+          leading: Icon(
+            LucideIcons.plus,
+            size: 16,
+            color: context.evolveAccent,
+          ),
           onTap: onCreateCategory,
         ),
       ],
@@ -1795,7 +1808,8 @@ class _QuickCategoryButton extends StatelessWidget {
         cursor: SystemMouseCursors.click,
         child: GestureDetector(
           behavior: HitTestBehavior.opaque,
-          onTap: () => controller.isOpen ? controller.close() : controller.open(),
+          onTap: () =>
+              controller.isOpen ? controller.close() : controller.open(),
           child: Container(
             width: 44,
             height: 44,

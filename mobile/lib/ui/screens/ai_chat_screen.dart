@@ -11,7 +11,6 @@ import '../../core/private_local_database.dart';
 import '../../core/rtl.dart';
 import 'package:flutter_markdown/flutter_markdown.dart';
 
-import 'dart:ui';
 
 import '../../models/macro_goal.dart';
 import '../../models/chat_message.dart';
@@ -21,6 +20,8 @@ import '../../providers/user_provider.dart';
 import '../../i18n/translations.g.dart';
 import '../kit/evolve_dialog.dart';
 import '../kit/evolve_toast.dart';
+import '../kit/evolve_sheet.dart';
+import '../kit/evolve_switch.dart';
 import '../../core/haptics.dart';
 
 class AIChatScreen extends ConsumerStatefulWidget {
@@ -60,160 +61,65 @@ class _AIChatScreenState extends ConsumerState<AIChatScreen> {
   }
 
   void _showSettingsDialog() {
-    final colors = context.appColors;
-    showDialog(
+    showEvolveFormSheet<void>(
       context: context,
-      builder: (context) => StatefulBuilder(
-        builder: (context, setDialogState) => Dialog(
-          backgroundColor: Colors.transparent,
-          child: BackdropFilter(
-            filter: ImageFilter.blur(sigmaX: 10, sigmaY: 10),
-            child: Container(
-              padding: const EdgeInsets.all(20),
-              decoration: BoxDecoration(
-                color: colors.card.withValues(alpha: 0.9),
-                borderRadius: BorderRadius.circular(24),
-                border: Border.all(color: colors.borderSubtle),
-              ),
+      title: context.t.tutorial.aiContextTitle,
+      trailing: EvolveTextAction(
+        label: context.t.common.actions.done,
+        emphasized: true,
+        onPressed: () => Navigator.pop(context),
+      ),
+      builder: (sheetContext) {
+        return StatefulBuilder(
+          builder: (context, setSheetState) {
+            return Padding(
+              padding: const EdgeInsets.fromLTRB(16, 0, 16, 16),
               child: Column(
                 mainAxisSize: MainAxisSize.min,
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  Text(
-                    context.t.tutorial.aiContextTitle,
-                    style: TextStyle(
-                      fontSize: 18,
-                      fontWeight: FontWeight.bold,
-                      color: colors.foreground,
-                    ),
-                  ),
-                  const SizedBox(height: 8),
-                  Text(
-                    context.t.tutorial.aiContextDesc,
-                    style: TextStyle(
-                      fontSize: 13,
-                      color: colors.mutedForeground,
-                    ),
-                  ),
-                  const SizedBox(height: 16),
-                  _buildContextSwitch(
-                    title: context.t.ai.dailyHabits,
-                    subtitle: context.t.ai.todayCompletion,
-                    value: _shareHabits,
-                    onChanged: (val) {
-                      setDialogState(() => _shareHabits = val);
-                      setState(() {});
-                    },
-                  ),
-                  const SizedBox(height: 12),
-                  _buildContextSwitch(
-                    title: context.t.ai.macroGoals,
-                    subtitle: context.t.ai.activeCompletedGoals,
-                    value: _shareGoals,
-                    onChanged: (val) {
-                      setDialogState(() => _shareGoals = val);
-                      setState(() {});
-                    },
-                  ),
-                  const SizedBox(height: 20),
-                  SizedBox(
-                    width: double.infinity,
-                    child: ElevatedButton(
-                      onPressed: () => Navigator.pop(context),
-                      style: ElevatedButton.styleFrom(
-                        backgroundColor: colors.primary,
-                        foregroundColor: const Color(
-                          0xFF0F172A,
-                        ), // Dark text for visibility
-
-                        shape: RoundedRectangleBorder(
-                          borderRadius: BorderRadius.circular(12),
-                        ),
-                        padding: const EdgeInsets.symmetric(vertical: 12),
+                  Padding(
+                    padding: const EdgeInsets.only(bottom: 12),
+                    child: Text(
+                      context.t.tutorial.aiContextDesc,
+                      style: TextStyle(
+                        fontSize: 13,
+                        color: context.appColors.mutedForeground,
                       ),
-                      child: Text(context.t.common.actions.save),
                     ),
+                  ),
+                  EvolveListSection(
+                    children: [
+                      EvolveSwitchRow(
+                        title: context.t.ai.dailyHabits,
+                        subtitle: context.t.ai.todayCompletion,
+                        value: _shareHabits,
+                        onChanged: (val) {
+                          setSheetState(() {});
+                          setState(() => _shareHabits = val);
+                        },
+                      ),
+                      EvolveSwitchRow(
+                        title: context.t.ai.macroGoals,
+                        subtitle: context.t.ai.activeCompletedGoals,
+                        value: _shareGoals,
+                        onChanged: (val) {
+                          setSheetState(() {});
+                          setState(() => _shareGoals = val);
+                        },
+                      ),
+                    ],
                   ),
                 ],
               ),
-            ),
-          ),
-        ),
-      ),
+            );
+          },
+        );
+      },
     );
   }
 
-  Widget _buildContextSwitch({
-    required String title,
-    required String subtitle,
-    required bool value,
-    required ValueChanged<bool> onChanged,
-  }) {
-    final colors = context.appColors;
-    return Row(
-      children: [
-        Expanded(
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              Text(
-                title,
-                style: TextStyle(
-                  fontSize: 14,
-                  fontWeight: FontWeight.w600,
-                  color: colors.foreground,
-                ),
-              ),
-              Text(
-                subtitle,
-                style: TextStyle(fontSize: 12, color: colors.mutedForeground),
-              ),
-            ],
-          ),
-        ),
-        GestureDetector(
-          onTap: () => onChanged(!value),
-          child: AnimatedContainer(
-            duration: const Duration(milliseconds: 200),
-            width: 44,
-            height: 24,
-            decoration: BoxDecoration(
-              borderRadius: BorderRadius.circular(12),
-              color: value
-                  ? colors.primary
-                  : colors.muted.withValues(alpha: 0.2),
-              border: Border.all(
-                color: value ? colors.primary : colors.borderSubtle,
-                width: 1,
-              ),
-            ),
-            child: AnimatedAlign(
-              duration: const Duration(milliseconds: 200),
-              alignment: value
-                  ? AlignmentDirectional.centerEnd
-                  : AlignmentDirectional.centerStart,
-              child: Container(
-                width: 20,
-                height: 20,
-                margin: const EdgeInsets.symmetric(horizontal: 1),
-                decoration: BoxDecoration(
-                  shape: BoxShape.circle,
-                  color: value ? const Color(0xFF0F172A) : colors.foreground,
-                  boxShadow: [
-                    BoxShadow(
-                      color: Colors.black.withValues(alpha: 0.1),
-                      blurRadius: 4,
-                      offset: const Offset(0, 2),
-                    ),
-                  ],
-                ),
-              ),
-            ),
-          ),
-        ),
-      ],
-    );
-  }
+  
 
   @override
   void dispose() {
@@ -227,7 +133,7 @@ class _AIChatScreenState extends ConsumerState<AIChatScreen> {
     if (!await _ensurePrivateAiConsent()) return;
     if (!mounted) return;
 
-    unawaited(HapticFeedback.mediumImpact());
+    ref.hapticMedium();
 
     setState(() {
       _messages.add(
@@ -259,7 +165,7 @@ class _AIChatScreenState extends ConsumerState<AIChatScreen> {
         if (!mounted) return;
         if (!receivedFirstToken && chunk.trim().isNotEmpty) {
           receivedFirstToken = true;
-          HapticFeedback.lightImpact();
+          ref.hapticLight();
           setState(() {
             _isTyping = false;
           });
@@ -690,7 +596,7 @@ class _AIChatScreenState extends ConsumerState<AIChatScreen> {
                       setState(() {
                         _showPrompts = !_showPrompts;
                       });
-                      HapticFeedback.lightImpact();
+                      ref.hapticLight();
                     },
                     child: Row(
                       children: [
@@ -803,7 +709,7 @@ class _AIChatScreenState extends ConsumerState<AIChatScreen> {
   Widget _buildSuggestedPrompt(String text, AppColorsExtension colors) {
     return GestureDetector(
       onTap: () {
-        HapticFeedback.lightImpact();
+        ref.hapticLight();
 
         // Rimuovi l'emoji iniziale se presente (tutto ciò che precede il primo spazio)
         String cleanText = text;
@@ -873,7 +779,7 @@ class _AIChatScreenState extends ConsumerState<AIChatScreen> {
           context,
           message: context.t.tutorial.messageCopied,
         );
-        HapticFeedback.lightImpact();
+        ref.hapticLight();
       },
       child: Container(
         padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),

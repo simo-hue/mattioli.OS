@@ -226,9 +226,7 @@ class _EvolveMenuItemState extends State<EvolveMenuItem> {
   @override
   Widget build(BuildContext context) {
     final colors = context.evolveColors;
-    final labelColor = widget.accent
-        ? context.evolveAccent
-        : colors.foreground;
+    final labelColor = widget.accent ? context.evolveAccent : colors.foreground;
     return MouseRegion(
       cursor: SystemMouseCursors.click,
       onEnter: (_) => setState(() => _hovered = true),
@@ -502,7 +500,7 @@ class _EvolveSelectState<T> extends State<EvolveSelect<T>> {
   }
 }
 
-/// Uppercase micro-label above a form field ("HABIT NAME" on mobile) — the
+/// Sentence-case field label above a form field (mobile de-capped these) — the
 /// shared version of the per-dialog `_FieldLabel` recipe.
 class EvolveFieldLabel extends StatelessWidget {
   const EvolveFieldLabel(this.label, {super.key});
@@ -512,12 +510,12 @@ class EvolveFieldLabel extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Text(
-      label.toUpperCase(),
+      label,
       style: TextStyle(
-        fontSize: 10,
-        fontWeight: FontWeight.w600,
+        fontSize: 13,
+        fontWeight: FontWeight.w500,
         color: context.evolveColors.muted,
-        letterSpacing: 0.5,
+        letterSpacing: -0.1,
       ),
     );
   }
@@ -720,10 +718,9 @@ class _EvolveTimePickerState extends State<EvolveTimePicker> {
   @override
   Widget build(BuildContext context) {
     final colors = context.evolveColors;
-    final label = MaterialLocalizations.of(context).formatTimeOfDay(
-      widget.value,
-      alwaysUse24HourFormat: widget.use24hFormat,
-    );
+    final label = MaterialLocalizations.of(
+      context,
+    ).formatTimeOfDay(widget.value, alwaysUse24HourFormat: widget.use24hFormat);
     return MouseRegion(
       cursor: _enabled ? SystemMouseCursors.click : MouseCursor.defer,
       onEnter: (_) => setState(() => _hovered = true),
@@ -823,8 +820,7 @@ class _EvolveTimePickerDialogState extends State<_EvolveTimePickerDialog> {
 
   bool get _isPm => _hour >= 12;
 
-  int get _displayHour =>
-      widget.use24hFormat ? _hour : ((_hour + 11) % 12) + 1;
+  int get _displayHour => widget.use24hFormat ? _hour : ((_hour + 11) % 12) + 1;
 
   void _setDisplayHour(int value) {
     if (widget.use24hFormat) {
@@ -909,10 +905,8 @@ class _EvolveTimePickerDialogState extends State<_EvolveTimePickerDialog> {
           child: Text(localizations.cancelButtonLabel),
         ),
         FilledButton(
-          onPressed: () => Navigator.pop(
-            context,
-            TimeOfDay(hour: _hour, minute: _minute),
-          ),
+          onPressed: () =>
+              Navigator.pop(context, TimeOfDay(hour: _hour, minute: _minute)),
           child: Text(localizations.okButtonLabel),
         ),
       ],
@@ -985,10 +979,13 @@ class _TimeStepperFieldState extends State<_TimeStepperField> {
     return Column(
       mainAxisSize: MainAxisSize.min,
       children: [
-        _StepperChevron(icon: LucideIcons.chevronUp, onTap: () {
-          _focusNode.unfocus();
-          widget.onStep(1);
-        }),
+        _StepperChevron(
+          icon: LucideIcons.chevronUp,
+          onTap: () {
+            _focusNode.unfocus();
+            widget.onStep(1);
+          },
+        ),
         const SizedBox(height: 6),
         SizedBox(
           width: 62,
@@ -1015,10 +1012,13 @@ class _TimeStepperFieldState extends State<_TimeStepperField> {
           ),
         ),
         const SizedBox(height: 6),
-        _StepperChevron(icon: LucideIcons.chevronDown, onTap: () {
-          _focusNode.unfocus();
-          widget.onStep(-1);
-        }),
+        _StepperChevron(
+          icon: LucideIcons.chevronDown,
+          onTap: () {
+            _focusNode.unfocus();
+            widget.onStep(-1);
+          },
+        ),
       ],
     );
   }
@@ -1202,11 +1202,7 @@ class EvolveDateField extends StatelessWidget {
                     color: colors.muted,
                     onPressed: () => onChanged!(null),
                   )
-                : Icon(
-                    LucideIcons.calendar,
-                    size: 16,
-                    color: colors.muted,
-                  ),
+                : Icon(LucideIcons.calendar, size: 16, color: colors.muted),
           ),
           child: text == null
               ? null
@@ -1273,12 +1269,18 @@ class _EvolveCalendarState extends State<_EvolveCalendar> {
 
   bool _inRange(DateTime day) =>
       !day.isBefore(
-        DateTime(widget.firstDate.year, widget.firstDate.month,
-            widget.firstDate.day),
+        DateTime(
+          widget.firstDate.year,
+          widget.firstDate.month,
+          widget.firstDate.day,
+        ),
       ) &&
       !day.isAfter(
         DateTime(
-            widget.lastDate.year, widget.lastDate.month, widget.lastDate.day),
+          widget.lastDate.year,
+          widget.lastDate.month,
+          widget.lastDate.day,
+        ),
       );
 
   void _shiftMonth(int months) {
@@ -1486,9 +1488,7 @@ class _CalendarNavButtonState extends State<_CalendarNavButton> {
                 : colors.panel,
             borderRadius: BorderRadius.circular(9),
             border: Border.all(
-              color: _hovered
-                  ? colors.borderStrong
-                  : colors.border,
+              color: _hovered ? colors.borderStrong : colors.border,
             ),
           ),
           child: Icon(
@@ -1527,7 +1527,8 @@ class _DayCellState extends State<_DayCell> {
     final colors = context.evolveColors;
     final accent = context.evolveAccent;
     final now = DateTime.now();
-    final isToday = widget.date.year == now.year &&
+    final isToday =
+        widget.date.year == now.year &&
         widget.date.month == now.month &&
         widget.date.day == now.day;
 

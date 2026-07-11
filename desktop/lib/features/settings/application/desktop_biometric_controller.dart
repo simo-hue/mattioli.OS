@@ -8,6 +8,7 @@ import 'package:evolve_desktop/core/secure_storage_utils.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:local_auth/local_auth.dart';
+import 'package:lucide_icons_flutter/lucide_icons.dart';
 
 class DesktopBiometricState {
   const DesktopBiometricState({
@@ -172,7 +173,7 @@ class DesktopBiometricGate extends ConsumerWidget {
         child: Column(
           mainAxisSize: MainAxisSize.min,
           children: [
-            const Icon(Icons.lock_outline_rounded, size: 62),
+            const Icon(LucideIcons.lock, size: 62),
             const SizedBox(height: 18),
             Text(
               t.biometricGate.appLocked,
@@ -194,7 +195,7 @@ class DesktopBiometricGate extends ConsumerWidget {
                   : () => ref
                         .read(desktopBiometricControllerProvider.notifier)
                         .unlock(),
-              icon: const Icon(Icons.fingerprint_rounded),
+              icon: const Icon(LucideIcons.fingerprint),
               label: Text(
                 biometric.isAuthenticating
                     ? t.biometricGate.verifying

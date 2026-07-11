@@ -1,7 +1,6 @@
 import 'dart:async';
 import 'package:flutter/material.dart';
 import 'package:flutter/cupertino.dart';
-import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:lucide_icons_flutter/lucide_icons.dart';
 import '../../core/theme.dart';
@@ -16,6 +15,7 @@ import '../kit/evolve_color_picker.dart';
 import '../kit/evolve_dialog.dart';
 import '../kit/evolve_button.dart';
 import '../kit/evolve_section_header.dart';
+import '../kit/evolve_sheet.dart';
 
 class HabitManagementModal extends ConsumerStatefulWidget {
   const HabitManagementModal({super.key});
@@ -112,7 +112,7 @@ class _HabitManagementModalState extends ConsumerState<HabitManagementModal> {
       _selectedColor = kEvolveDefaultPalette[0];
       _reminderTime = null;
     });
-    HapticFeedback.mediumImpact();
+    ref.hapticMedium();
   }
 
   void _onEdit(Goal habit) {
@@ -147,56 +147,33 @@ class _HabitManagementModalState extends ConsumerState<HabitManagementModal> {
       initialTime.minute,
     );
 
-    showCupertinoModalPopup(
+    showEvolveFormSheet<void>(
       context: context,
-      builder: (BuildContext context) => Container(
-        height: 250,
-        color: context.appColors.card,
-        child: Column(
-          children: [
-            Container(
-              color: context.appColors.border.withValues(alpha: 0.3),
-              child: Row(
-                mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                children: [
-                  CupertinoButton(
-                    child: Text(
-                      context.t.common.actions.cancel,
-                      style: TextStyle(
-                        color: context.appColors.mutedForeground,
-                      ),
-                    ),
-                    onPressed: () => Navigator.pop(context),
-                  ),
-                  CupertinoButton(
-                    child: Text(
-                      context.t.common.actions.confirm,
-                      style: TextStyle(
-                        color: Theme.of(context).colorScheme.primary,
-                      ),
-                    ),
-                    onPressed: () {
-                      final timeStr = AppTimeFormatting.serializeDateTime(
-                        initialDateTime,
-                      );
-                      setState(() => _reminderTime = timeStr);
-                      Navigator.pop(context);
-                    },
-                  ),
-                ],
-              ),
-            ),
-            Expanded(
-              child: CupertinoDatePicker(
-                mode: CupertinoDatePickerMode.time,
-                initialDateTime: initialDateTime,
-                use24hFormat: use24hFormat,
-                onDateTimeChanged: (DateTime newDateTime) {
-                  initialDateTime = newDateTime;
-                },
-              ),
-            ),
-          ],
+      title: context.t.habits.reminder,
+      leading: EvolveTextAction(
+        label: context.t.common.actions.cancel,
+        onPressed: () => Navigator.pop(context),
+      ),
+      trailing: EvolveTextAction(
+        label: context.t.common.actions.confirm,
+        emphasized: true,
+        onPressed: () {
+          final timeStr = AppTimeFormatting.serializeDateTime(
+            initialDateTime,
+          );
+          setState(() => _reminderTime = timeStr);
+          Navigator.pop(context);
+        },
+      ),
+      builder: (sheetContext) => SizedBox(
+        height: 216,
+        child: CupertinoDatePicker(
+          mode: CupertinoDatePickerMode.time,
+          initialDateTime: initialDateTime,
+          use24hFormat: use24hFormat,
+          onDateTimeChanged: (DateTime newDateTime) {
+            initialDateTime = newDateTime;
+          },
         ),
       ),
     );
@@ -239,6 +216,7 @@ class _HabitManagementModalState extends ConsumerState<HabitManagementModal> {
           SliverToBoxAdapter(
             child: Column(
               children: [
+                const EvolveGrabber(),
                 // Header
                 Row(
                   mainAxisAlignment: MainAxisAlignment.spaceBetween,
@@ -587,7 +565,7 @@ class _HabitManagementModalState extends ConsumerState<HabitManagementModal> {
             itemCount: habits.length,
             onReorderItem: (oldIndex, newIndex) {
               ref.read(goalsProvider.notifier).reorder(oldIndex, newIndex);
-              HapticFeedback.lightImpact();
+              ref.hapticLight();
             },
             itemBuilder: (context, index) {
               final habit = habits[index];

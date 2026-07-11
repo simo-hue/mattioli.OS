@@ -275,7 +275,9 @@ class _ProtocolloSection extends ConsumerWidget {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        const EvolveSectionLabel('Protocollo'),
+        // Branded home strip — kept uppercase to match the iOS 'PROTOCOLLO'
+        // header (EvolveSectionLabel no longer force-uppercases).
+        const EvolveSectionLabel('PROTOCOLLO'),
         const SizedBox(height: 14),
         // Guardrail: quick-action tiles cap at ~420px each so an ultra-wide
         // window grows the charts, not the buttons.

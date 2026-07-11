@@ -11,6 +11,7 @@ import '../../core/theme.dart';
 import '../../i18n/translations.g.dart';
 import '../kit/evolve_dialog.dart';
 import '../kit/evolve_switch.dart';
+import '../kit/evolve_sheet.dart';
 
 /// iCloud Sync settings for Private Mode (iOS-only). Surfaces the
 /// [PrivateSyncService] state and lets the user enable/disable end-to-end
@@ -179,13 +180,8 @@ class _IcloudSyncScreenState extends ConsumerState<IcloudSyncScreen> {
   }
 
   Widget _buildSettingsCard(BuildContext context, List<Widget> children) {
-    return Container(
-      decoration: BoxDecoration(
-        color: context.appColors.card,
-        borderRadius: BorderRadius.circular(20),
-        border: Border.all(color: context.appColors.border),
-      ),
-      child: Column(children: children),
+    return EvolveListSection(
+      children: children.where((c) => c is! Divider).toList(),
     );
   }
 

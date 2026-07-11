@@ -2,7 +2,9 @@ import 'package:evolve_desktop/app/theme/evolve_theme.dart';
 import 'package:evolve_desktop/features/dashboard/application/dashboard_controller.dart';
 import 'package:evolve_desktop/i18n/translations.g.dart';
 import 'package:evolve_desktop/shared/widgets/color_picker_dialog.dart';
+import 'package:evolve_desktop/shared/widgets/evolve_controls.dart';
 import 'package:evolve_desktop/shared/widgets/evolve_dialog.dart';
+import 'package:evolve_desktop/shared/widgets/evolve_spinner.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:lucide_icons_flutter/lucide_icons.dart';
@@ -88,7 +90,7 @@ class _CreateHabitDialogState extends ConsumerState<CreateHabitDialog> {
         mainAxisSize: MainAxisSize.min,
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          _FieldLabel(t.form.title),
+          EvolveFieldLabel(t.form.title),
           const SizedBox(height: 8),
           TextField(
             controller: _titleController,
@@ -97,7 +99,7 @@ class _CreateHabitDialogState extends ConsumerState<CreateHabitDialog> {
             textInputAction: TextInputAction.next,
           ),
           const SizedBox(height: 16),
-          _FieldLabel(t.form.category),
+          EvolveFieldLabel(t.form.category),
           const SizedBox(height: 8),
           TextField(
             controller: _categoryController,
@@ -106,7 +108,7 @@ class _CreateHabitDialogState extends ConsumerState<CreateHabitDialog> {
             onSubmitted: (_) => _save(),
           ),
           const SizedBox(height: 20),
-          _FieldLabel(t.form.color),
+          EvolveFieldLabel(t.form.color),
           const SizedBox(height: 10),
           Wrap(
             spacing: 10,
@@ -149,7 +151,7 @@ class _CreateHabitDialogState extends ConsumerState<CreateHabitDialog> {
             ],
           ),
           const SizedBox(height: 20),
-          _FieldLabel(t.createHabit.weeklyFrequency),
+          EvolveFieldLabel(t.createHabit.weeklyFrequency),
           const SizedBox(height: 10),
           Row(
             mainAxisAlignment: MainAxisAlignment.spaceBetween,
@@ -213,31 +215,11 @@ class _CreateHabitDialogState extends ConsumerState<CreateHabitDialog> {
           child: _isLoading
               ? const SizedBox.square(
                   dimension: 16,
-                  child: CircularProgressIndicator(strokeWidth: 2),
+                  child: EvolveSpinner(radius: 8),
                 )
               : Text(t.form.add),
         ),
       ],
-    );
-  }
-}
-
-/// Uppercase micro-label above a form field ("HABIT NAME" on mobile).
-class _FieldLabel extends StatelessWidget {
-  const _FieldLabel(this.label);
-
-  final String label;
-
-  @override
-  Widget build(BuildContext context) {
-    return Text(
-      label.toUpperCase(),
-      style: TextStyle(
-        fontSize: 10,
-        fontWeight: FontWeight.w600,
-        color: context.evolveColors.muted,
-        letterSpacing: 0.5,
-      ),
     );
   }
 }

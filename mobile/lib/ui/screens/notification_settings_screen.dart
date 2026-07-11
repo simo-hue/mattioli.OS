@@ -12,6 +12,7 @@ import '../../core/rtl.dart';
 import '../../i18n/translations.g.dart';
 import '../kit/evolve_switch.dart';
 import '../kit/evolve_section_header.dart';
+import '../kit/evolve_sheet.dart';
 
 class NotificationSettingsScreen extends ConsumerWidget {
   const NotificationSettingsScreen({super.key});
@@ -161,13 +162,8 @@ class NotificationSettingsScreen extends ConsumerWidget {
   }
 
   Widget _buildSettingsCard(BuildContext context, List<Widget> children) {
-    return Container(
-      decoration: BoxDecoration(
-        color: context.appColors.card,
-        borderRadius: BorderRadius.circular(20),
-        border: Border.all(color: context.appColors.border),
-      ),
-      child: Column(children: children),
+    return EvolveListSection(
+      children: children.where((c) => c is! Divider).toList(),
     );
   }
 
@@ -339,95 +335,45 @@ class NotificationSettingsScreen extends ConsumerWidget {
 
     String selectedTime = initialTime;
 
-    showCupertinoModalPopup(
+    showEvolveFormSheet<void>(
       context: context,
-      builder: (BuildContext modalContext) {
-        return Container(
-          height: 300,
-          decoration: BoxDecoration(
-            color: context.appColors.card,
-            borderRadius: const BorderRadius.vertical(top: Radius.circular(24)),
-            border: Border.all(
-              color: context.appColors.border.withValues(alpha: 0.5),
+      title: context.t.notifications.selectTime,
+      leading: EvolveTextAction(
+        label: context.t.common.actions.cancel,
+        onPressed: () => Navigator.pop(context),
+      ),
+      trailing: EvolveTextAction(
+        label: context.t.common.actions.done,
+        emphasized: true,
+        onPressed: () {
+          onTimeSelected(selectedTime);
+          Navigator.pop(context);
+        },
+      ),
+      builder: (sheetContext) => SizedBox(
+        height: 216,
+        child: CupertinoTheme(
+          data: CupertinoThemeData(
+            brightness: Theme.of(context).brightness,
+            textTheme: CupertinoTextThemeData(
+              dateTimePickerTextStyle: GoogleFonts.inter(
+                color: context.appColors.foreground,
+                fontSize: 20,
+              ),
             ),
           ),
-          child: SafeArea(
-            top: false,
-            child: Column(
-              children: [
-                Padding(
-                  padding: const EdgeInsets.symmetric(
-                    horizontal: 20.0,
-                    vertical: 12.0,
-                  ),
-                  child: Row(
-                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                    children: [
-                      GestureDetector(
-                        onTap: () => Navigator.pop(modalContext),
-                        child: Text(
-                          context.t.common.actions.cancel,
-                          style: GoogleFonts.inter(
-                            color: context.appColors.mutedForeground,
-                            fontSize: 16,
-                            fontWeight: FontWeight.w500,
-                          ),
-                        ),
-                      ),
-                      Text(
-                        context.t.notifications.selectTime,
-                        style: GoogleFonts.inter(
-                          color: context.appColors.foreground,
-                          fontSize: 16,
-                          fontWeight: FontWeight.w700,
-                        ),
-                      ),
-                      GestureDetector(
-                        onTap: () {
-                          onTimeSelected(selectedTime);
-                          Navigator.pop(modalContext);
-                        },
-                        child: Text(
-                          context.t.common.actions.done,
-                          style: GoogleFonts.inter(
-                            color: Theme.of(context).colorScheme.primary,
-                            fontSize: 16,
-                            fontWeight: FontWeight.w700,
-                          ),
-                        ),
-                      ),
-                    ],
-                  ),
-                ),
-                Divider(height: 1, color: context.appColors.border),
-                Expanded(
-                  child: CupertinoTheme(
-                    data: CupertinoThemeData(
-                      brightness: Theme.of(context).brightness,
-                      textTheme: CupertinoTextThemeData(
-                        dateTimePickerTextStyle: GoogleFonts.inter(
-                          color: context.appColors.foreground,
-                          fontSize: 20,
-                        ),
-                      ),
-                    ),
-                    child: CupertinoDatePicker(
-                      mode: CupertinoDatePickerMode.time,
-                      use24hFormat: use24hFormat,
-                      initialDateTime: initialDateTime,
-                      onDateTimeChanged: (DateTime newDateTime) {
-                        selectedTime = AppTimeFormatting.serializeDateTime(
-                          newDateTime,
-                        );
-                      },
-                    ),
-                  ),
-                ),
-              ],
-            ),
+          child: CupertinoDatePicker(
+            mode: CupertinoDatePickerMode.time,
+            use24hFormat: use24hFormat,
+            initialDateTime: initialDateTime,
+            onDateTimeChanged: (DateTime newDateTime) {
+              selectedTime = AppTimeFormatting.serializeDateTime(
+                newDateTime,
+              );
+            },
           ),
-        );
-      },
+        ),
+      ),
     );
   }
 }

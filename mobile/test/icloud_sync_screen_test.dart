@@ -7,6 +7,7 @@
 
 import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter/cupertino.dart';
 import 'package:flutter_local_notifications/flutter_local_notifications.dart';
 import 'package:flutter_localizations/flutter_localizations.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
@@ -184,7 +185,7 @@ void main() {
       await _pumpScreen(tester, fake);
 
       // Flip the switch ON.
-      await tester.tap(find.byType(Switch));
+      await tester.tap(find.byType(CupertinoSwitch));
       await tester.pumpAndSettle();
 
       // Disclosure dialog appears.
@@ -206,7 +207,7 @@ void main() {
       final fake = FakePrivateSyncService();
       await _pumpScreen(tester, fake);
 
-      await tester.tap(find.byType(Switch));
+      await tester.tap(find.byType(CupertinoSwitch));
       await tester.pumpAndSettle();
 
       await tester.tap(find.text('Cancel'));

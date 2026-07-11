@@ -2,12 +2,12 @@ import 'dart:async';
 
 import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
-import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:lucide_icons_flutter/lucide_icons.dart';
 
 import '../../../core/theme.dart';
+import '../../../core/haptics.dart';
 import '../../../models/macro_goal.dart';
 import '../../../providers/macro_goal_categories_provider.dart';
 import '../../../providers/macro_goals_provider.dart';
@@ -29,6 +29,7 @@ Future<void> showMacroGoalCategoryPicker({
   // stay valid even after the bottom-sheet's Consumer is disposed (used by the
   // "create new category" path, which pops the sheet first).
   final callerContext = context;
+  final callerRef = ref;
   final categoriesNotifier = ref.read(macroGoalCategoriesProvider.notifier);
 
   return showEvolveSheet<void>(
@@ -90,6 +91,7 @@ Future<void> showMacroGoalCategoryPicker({
                           ),
                           onPressed: () => _showCategoryEditor(
                             context: context,
+                            ref: ref,
                             notifier: ref.read(
                               macroGoalCategoriesProvider.notifier,
                             ),
@@ -140,6 +142,7 @@ Future<void> showMacroGoalCategoryPicker({
                     // touch the now-disposed Consumer ref.
                     final categoryId = await _showCategoryEditor(
                       context: callerContext,
+                      ref: callerRef,
                       notifier: categoriesNotifier,
                     );
                     if (categoryId != null) {
@@ -160,6 +163,7 @@ Future<void> showMacroGoalCategoryPicker({
 /// Returns the created/updated category id, or null if cancelled.
 Future<String?> _showCategoryEditor({
   required BuildContext context,
+  required WidgetRef ref,
   required MacroGoalCategoriesNotifier notifier,
   GoalCategory? category,
 }) {
@@ -200,7 +204,7 @@ Future<String?> _showCategoryEditor({
 
         if (categoryId != null && context.mounted) {
           Navigator.pop(context, categoryId);
-          unawaited(HapticFeedback.mediumImpact());
+          ref.hapticMedium();
         }
       },
     ),
@@ -303,7 +307,7 @@ Future<bool> _showDeleteCategory({
               Navigator.pop(dialogContext, success);
             }
             if (success) {
-              unawaited(HapticFeedback.mediumImpact());
+              ref.hapticMedium();
             }
           },
           child: Text(context.t.macroGoals.archive),

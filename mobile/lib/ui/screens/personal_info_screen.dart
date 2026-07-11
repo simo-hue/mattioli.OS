@@ -1,12 +1,13 @@
 import 'dart:async';
 import 'package:flutter/material.dart';
 import 'package:flutter/cupertino.dart';
-import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:lucide_icons_flutter/lucide_icons.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 import '../../core/theme.dart';
+import '../../core/haptics.dart';
 import '../kit/evolve_toast.dart';
+import '../kit/evolve_sheet.dart';
 import '../../providers/user_provider.dart';
 import '../../core/data_mode.dart';
 import '../../core/app_logger.dart';
@@ -75,7 +76,7 @@ class _PersonalInfoScreenState extends ConsumerState<PersonalInfoScreen> {
               );
 
           if (mounted) {
-            unawaited(HapticFeedback.mediumImpact());
+            ref.hapticMedium();
             showEvolveToast(
               context,
               message: context.t.profile.personalInfo.saveSuccess,
@@ -114,7 +115,7 @@ class _PersonalInfoScreenState extends ConsumerState<PersonalInfoScreen> {
         }
 
         if (mounted) {
-          unawaited(HapticFeedback.mediumImpact());
+          ref.hapticMedium();
           showEvolveToast(
             context,
             message: context.t.profile.personalInfo.saveSuccess,
@@ -318,47 +319,33 @@ class _PersonalInfoScreenState extends ConsumerState<PersonalInfoScreen> {
   }
 
   void _showDatePicker() {
-    showCupertinoModalPopup(
+    showEvolveFormSheet<void>(
       context: context,
-      builder: (_) => Container(
-        height: 300,
-        color: context.appColors.card,
-        child: Column(
-          children: [
-            Container(
-              height: 50,
-              color: context.appColors.background,
-              child: Row(
-                mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                children: [
-                  CupertinoButton(
-                    child: Text(context.t.common.actions.cancel),
-                    onPressed: () => Navigator.of(context).pop(),
-                  ),
-                  CupertinoButton(
-                    child: Text(context.t.common.actions.done),
-                    onPressed: () {
-                      _selectedDate ??= DateTime(2000, 1, 1);
-                      _dobController.text = _selectedDate!
-                          .toIso8601String()
-                          .substring(0, 10);
-                      Navigator.of(context).pop();
-                    },
-                  ),
-                ],
-              ),
-            ),
-            Expanded(
-              child: CupertinoDatePicker(
-                mode: CupertinoDatePickerMode.date,
-                initialDateTime: _selectedDate ?? DateTime(2000, 1, 1),
-                maximumDate: DateTime.now(),
-                onDateTimeChanged: (DateTime newDateTime) {
-                  _selectedDate = newDateTime;
-                },
-              ),
-            ),
-          ],
+      title: context.t.profile.personalInfo.dateOfBirth,
+      leading: EvolveTextAction(
+        label: context.t.common.actions.cancel,
+        onPressed: () => Navigator.pop(context),
+      ),
+      trailing: EvolveTextAction(
+        label: context.t.common.actions.done,
+        emphasized: true,
+        onPressed: () {
+          _selectedDate ??= DateTime(2000, 1, 1);
+          _dobController.text = _selectedDate!
+              .toIso8601String()
+              .substring(0, 10);
+          Navigator.pop(context);
+        },
+      ),
+      builder: (sheetContext) => SizedBox(
+        height: 216,
+        child: CupertinoDatePicker(
+          mode: CupertinoDatePickerMode.date,
+          initialDateTime: _selectedDate ?? DateTime(2000, 1, 1),
+          maximumDate: DateTime.now(),
+          onDateTimeChanged: (DateTime newDateTime) {
+            _selectedDate = newDateTime;
+          },
         ),
       ),
     );

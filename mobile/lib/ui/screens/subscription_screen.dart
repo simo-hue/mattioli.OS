@@ -18,6 +18,7 @@ import '../../providers/settings_provider.dart';
 import '../widgets/subscription_alert_modal.dart';
 import '../../i18n/translations.g.dart';
 import '../kit/evolve_dialog.dart';
+import '../kit/evolve_spinner.dart';
 
 class SubscriptionScreen extends ConsumerStatefulWidget {
   const SubscriptionScreen({super.key});
@@ -324,7 +325,7 @@ class _SubscriptionScreenState extends ConsumerState<SubscriptionScreen> {
           ),
           body: _isFetchingProducts
               ? const Center(
-                  child: CircularProgressIndicator(color: Colors.amber),
+                  child: EvolveSpinner(color: Colors.amber),
                 )
               : RefreshIndicator(
                   color: Colors.amber,
@@ -365,7 +366,7 @@ class _SubscriptionScreenState extends ConsumerState<SubscriptionScreen> {
           Container(
             color: Colors.black.withValues(alpha: 0.5),
             child: const Center(
-              child: CircularProgressIndicator(color: Colors.amber),
+              child: EvolveSpinner(color: Colors.amber),
             ),
           ),
       ],

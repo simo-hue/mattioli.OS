@@ -4,6 +4,7 @@ import 'package:evolve_desktop/features/settings/data/desktop_notification_servi
 import 'package:evolve_desktop/i18n/translations.g.dart';
 import 'package:evolve_desktop/shared/widgets/evolve_controls.dart';
 import 'package:evolve_desktop/shared/widgets/evolve_panel.dart';
+import 'package:evolve_desktop/shared/widgets/evolve_spinner.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:lucide_icons_flutter/lucide_icons.dart';
@@ -221,8 +222,8 @@ class _DesktopConsentPageState extends ConsumerState<DesktopConsentPage> {
                       child: _isSaving
                           ? SizedBox.square(
                               dimension: 18,
-                              child: CircularProgressIndicator(
-                                strokeWidth: 2,
+                              child: EvolveSpinner(
+                                radius: 9,
                                 color: Theme.of(context).colorScheme.onPrimary,
                               ),
                             )

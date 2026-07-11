@@ -120,12 +120,12 @@ class EvolveSectionLabel extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final text = Text(
-      label.toUpperCase(),
+      label,
       style: TextStyle(
-        fontSize: 10,
-        fontWeight: FontWeight.w800,
+        fontSize: 13,
+        fontWeight: FontWeight.w500,
         color: context.evolveColors.muted.withValues(alpha: 0.8),
-        letterSpacing: 1.5,
+        letterSpacing: -0.1,
       ),
     );
     if (!withRule) return text;

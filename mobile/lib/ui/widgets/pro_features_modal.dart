@@ -6,6 +6,7 @@ import '../../core/haptics.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../screens/subscription_screen.dart';
 import '../../i18n/translations.g.dart';
+import '../kit/evolve_sheet.dart';
 
 class ProFeaturesModal extends ConsumerWidget {
   const ProFeaturesModal({super.key});
@@ -26,21 +27,14 @@ class ProFeaturesModal extends ConsumerWidget {
       padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 32),
       decoration: BoxDecoration(
         color: context.appColors.card.withValues(alpha: 0.98),
-        borderRadius: const BorderRadius.vertical(top: Radius.circular(32)),
+        borderRadius: const BorderRadius.vertical(top: Radius.circular(24)),
         border: Border.all(color: context.appColors.border, width: 1.5),
       ),
       child: Column(
         mainAxisSize: MainAxisSize.min,
         children: [
           // Drag handle
-          Container(
-            width: 40,
-            height: 4,
-            decoration: BoxDecoration(
-              color: context.appColors.border,
-              borderRadius: BorderRadius.circular(2),
-            ),
-          ),
+          const EvolveGrabber(),
           const SizedBox(height: 32),
           
           // Premium Icon Header

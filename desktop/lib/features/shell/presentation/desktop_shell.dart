@@ -14,6 +14,7 @@ import 'package:evolve_desktop/features/statistics/presentation/statistics_page.
 import 'package:evolve_desktop/i18n/translations.g.dart';
 import 'package:evolve_desktop/shared/widgets/evolve_dialog.dart';
 import 'package:evolve_desktop/shared/widgets/evolve_panel.dart';
+import 'package:evolve_desktop/shared/widgets/evolve_spinner.dart';
 import 'package:flutter/gestures.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
@@ -573,7 +574,7 @@ class _TopBar extends ConsumerWidget {
               icon: dashboard.isRefreshing
                   ? const SizedBox.square(
                       dimension: 15,
-                      child: CircularProgressIndicator(strokeWidth: 2),
+                      child: EvolveSpinner(radius: 7.5),
                     )
                   : const Icon(LucideIcons.refreshCw, size: 16),
               style: IconButton.styleFrom(

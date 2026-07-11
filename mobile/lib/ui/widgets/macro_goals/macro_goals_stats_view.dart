@@ -1,5 +1,4 @@
 import 'package:flutter/material.dart';
-import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import 'package:fl_chart/fl_chart.dart';
@@ -367,7 +366,7 @@ class _MacroGoalsStatsViewState extends ConsumerState<MacroGoalsStatsView> {
 
     return GestureDetector(
       onTap: () {
-        HapticFeedback.lightImpact();
+        ref.hapticLight();
         _showYearPicker(years);
       },
       child: Container(

@@ -10,6 +10,7 @@ import 'package:evolve_desktop/shared/widgets/desktop_page.dart';
 import 'package:evolve_desktop/shared/widgets/evolve_controls.dart';
 import 'package:evolve_desktop/shared/widgets/evolve_dialog.dart';
 import 'package:evolve_desktop/shared/widgets/evolve_panel.dart';
+import 'package:evolve_desktop/shared/widgets/evolve_toast.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_markdown/flutter_markdown.dart';
@@ -280,9 +281,7 @@ class _AiCoachPageState extends ConsumerState<AiCoachPage> {
           timestamp: DateTime.now(),
         );
       });
-      ScaffoldMessenger.of(
-        context,
-      ).showSnackBar(SnackBar(content: Text(errorText)));
+      showEvolveToast(context, message: errorText, kind: EvolveToastKind.error);
     } finally {
       // Always release the typing lock so the input/FAB are re-enabled even
       // if the stream threw.

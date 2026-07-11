@@ -11,6 +11,7 @@ import 'habit_management_modal.dart';
 import '../../i18n/translations.g.dart';
 import '../kit/evolve_toast.dart';
 import '../kit/evolve_button.dart';
+import '../kit/evolve_sheet.dart';
 
 class DayDetailsModal extends ConsumerWidget {
   final DateTime date;
@@ -31,24 +32,15 @@ class DayDetailsModal extends ConsumerWidget {
     return Container(
       decoration: BoxDecoration(
         color: context.appColors.background,
-        borderRadius: const BorderRadius.vertical(top: Radius.circular(28)),
-        border: Border.all(color: AppColors.border, width: 1),
+        borderRadius: const BorderRadius.vertical(top: Radius.circular(24)),
+        border: Border.all(color: context.appColors.border, width: 1),
       ),
       padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 24),
       child: Column(
         mainAxisSize: MainAxisSize.min,
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          Center(
-            child: Container(
-              width: 40,
-              height: 4,
-              decoration: BoxDecoration(
-                color: AppColors.muted,
-                borderRadius: BorderRadius.circular(2),
-              ),
-            ),
-          ),
+          const Center(child: EvolveGrabber()),
           const SizedBox(height: 24),
           Row(
             mainAxisAlignment: MainAxisAlignment.spaceBetween,
@@ -60,27 +52,27 @@ class DayDetailsModal extends ConsumerWidget {
                     DateFormat.MMMMd(
                       LocaleSettings.currentLocale.languageCode,
                     ).format(date),
-                    style: const TextStyle(
+                    style: TextStyle(
                       fontFamily: 'Inter',
                       fontSize: 24,
                       fontWeight: FontWeight.w800,
-                      color: AppColors.foreground,
+                      color: context.appColors.foreground,
                       letterSpacing: -0.5,
                     ),
                   ),
                   Text(
                     context.t.habits.yourProgressForToday,
-                    style: const TextStyle(
+                    style: TextStyle(
                       fontFamily: 'Inter',
                       fontSize: 14,
-                      color: AppColors.mutedForeground,
+                      color: context.appColors.mutedForeground,
                     ),
                   ),
                 ],
               ),
               IconButton(
                 onPressed: () => Navigator.pop(context),
-                icon: const Icon(Icons.close, color: AppColors.mutedForeground),
+                icon: Icon(LucideIcons.x, color: context.appColors.mutedForeground),
               ),
             ],
           ),
@@ -95,28 +87,28 @@ class DayDetailsModal extends ConsumerWidget {
                         Icon(
                           LucideIcons.clipboardList,
                           size: 64,
-                          color: AppColors.mutedForeground.withValues(
+                          color: context.appColors.mutedForeground.withValues(
                             alpha: 0.5,
                           ),
                         ),
                         const SizedBox(height: 16),
                         Text(
                           context.t.habits.noHabit,
-                          style: const TextStyle(
+                          style: TextStyle(
                             fontFamily: 'Inter',
                             fontSize: 18,
                             fontWeight: FontWeight.w700,
-                            color: AppColors.foreground,
+                            color: context.appColors.foreground,
                           ),
                         ),
                         const SizedBox(height: 8),
                         Text(
                           context.t.habits.thereAreNoHabitsForThis,
                           textAlign: TextAlign.center,
-                          style: const TextStyle(
+                          style: TextStyle(
                             fontFamily: 'Inter',
                             fontSize: 14,
-                            color: AppColors.mutedForeground,
+                            color: context.appColors.mutedForeground,
                           ),
                         ),
                         const SizedBox(height: 24),
@@ -212,27 +204,27 @@ class GoalLogCard extends ConsumerWidget {
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
-    Color cardColor = AppColors.card;
-    Color borderColor = AppColors.border;
-    Color textColor = AppColors.foreground;
-    Color iconBgColor = AppColors.muted;
+    Color cardColor = context.appColors.card;
+    Color borderColor = context.appColors.border;
+    Color textColor = context.appColors.foreground;
+    Color iconBgColor = context.appColors.muted;
     IconData icon = LucideIcons.circle;
-    Color iconColor = AppColors.mutedForeground;
+    Color iconColor = context.appColors.mutedForeground;
     bool hasStrikethrough = false;
 
     if (status == 'done') {
-      cardColor = AppColors.success.withValues(alpha: 0.15);
-      borderColor = AppColors.success.withValues(alpha: 0.4);
-      textColor = AppColors.success;
-      iconBgColor = AppColors.success.withValues(alpha: 0.2);
-      iconColor = AppColors.success;
+      cardColor = context.appColors.success.withValues(alpha: 0.15);
+      borderColor = context.appColors.success.withValues(alpha: 0.4);
+      textColor = context.appColors.success;
+      iconBgColor = context.appColors.success.withValues(alpha: 0.2);
+      iconColor = context.appColors.success;
       icon = LucideIcons.check;
     } else if (status == 'missed') {
       cardColor = const Color(
         0xFF450A0A,
       ).withValues(alpha: 0.2); // Very dark red
       borderColor = const Color(0xFFEF4444).withValues(alpha: 0.4);
-      textColor = AppColors.mutedForeground;
+      textColor = context.appColors.mutedForeground;
       iconBgColor = const Color(0xFF450A0A).withValues(alpha: 0.4);
       iconColor = const Color(0xFFEF4444);
       icon = LucideIcons.x;
@@ -321,8 +313,8 @@ class StreakBadge extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    Color bgColor = AppColors.muted;
-    Color textColor = AppColors.mutedForeground;
+    Color bgColor = context.appColors.muted;
+    Color textColor = context.appColors.mutedForeground;
     IconData icon = LucideIcons.flame;
     Color iconColor = const Color(0xFFF97316); // Orange
 
@@ -332,8 +324,8 @@ class StreakBadge extends StatelessWidget {
       icon = LucideIcons.heartCrack;
       iconColor = const Color(0xFFEF4444);
     } else if (isDone) {
-      bgColor = AppColors.success.withValues(alpha: 0.2);
-      textColor = AppColors.success;
+      bgColor = context.appColors.success.withValues(alpha: 0.2);
+      textColor = context.appColors.success;
     }
 
     return Container(

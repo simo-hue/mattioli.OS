@@ -1,5 +1,4 @@
 import 'package:flutter/material.dart';
-import 'package:flutter/services.dart';
 import 'package:lucide_icons_flutter/lucide_icons.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
@@ -139,7 +138,7 @@ class _GlobalHabitsTabWidgetState extends ConsumerState<GlobalHabitsTabWidget> {
   Widget _buildSortDropdown() {
     return GestureDetector(
       onTap: () {
-        HapticFeedback.lightImpact();
+        ref.hapticLight();
         _showSortPicker();
       },
       child: AnimatedContainer(

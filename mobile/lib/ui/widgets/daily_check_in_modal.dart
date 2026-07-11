@@ -5,6 +5,7 @@ import '../../core/theme.dart';
 import '../../core/haptics.dart';
 import '../../providers/mood_provider.dart';
 import '../kit/evolve_button.dart';
+import '../kit/evolve_sheet.dart';
 import '../../i18n/translations.g.dart';
 
 class DailyCheckInModal extends ConsumerStatefulWidget {
@@ -76,14 +77,7 @@ class _DailyCheckInModalState extends ConsumerState<DailyCheckInModal> {
         mainAxisSize: MainAxisSize.min,
         children: [
           // Handle bar
-          Container(
-            width: 40,
-            height: 4,
-            decoration: BoxDecoration(
-              color: context.appColors.border,
-              borderRadius: BorderRadius.circular(2),
-            ),
-          ),
+          const EvolveGrabber(),
           const SizedBox(height: 24),
 
           // Header

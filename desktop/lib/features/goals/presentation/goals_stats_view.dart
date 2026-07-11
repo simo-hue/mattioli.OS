@@ -8,10 +8,11 @@ import 'package:evolve_desktop/features/settings/application/desktop_subscriptio
 import 'package:evolve_desktop/features/settings/presentation/pro_features_modal.dart';
 import 'package:evolve_desktop/features/statistics/data/statistics_rpc_providers.dart';
 import 'package:evolve_desktop/i18n/translations.g.dart';
+import 'package:evolve_desktop/shared/widgets/evolve_dialog.dart';
 import 'package:evolve_desktop/shared/widgets/evolve_panel.dart';
+import 'package:evolve_desktop/shared/widgets/evolve_spinner.dart';
 import 'package:fl_chart/fl_chart.dart';
 import 'package:flutter/material.dart';
-import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:lucide_icons_flutter/lucide_icons.dart';
 
@@ -131,10 +132,8 @@ class _GoalsStatsViewState extends ConsumerState<GoalsStatsView> {
           },
         );
       },
-      loading: () => const SizedBox(
-        height: 300,
-        child: Center(child: CircularProgressIndicator()),
-      ),
+      loading: () =>
+          const SizedBox(height: 300, child: Center(child: EvolveSpinner())),
       error: (err, stack) => SizedBox(
         height: 300,
         child: Center(
@@ -457,10 +456,7 @@ class _GoalsStatsViewState extends ConsumerState<GoalsStatsView> {
     return MouseRegion(
       cursor: SystemMouseCursors.click,
       child: GestureDetector(
-        onTap: () {
-          HapticFeedback.lightImpact();
-          _showYearPicker(years);
-        },
+        onTap: () => _showYearPicker(years),
         child: Container(
           height: 38,
           padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 8),
@@ -504,126 +500,63 @@ class _GoalsStatsViewState extends ConsumerState<GoalsStatsView> {
 
   void _showYearPicker(List<int> years) {
     final isPro = ref.read(desktopIsProProvider);
-    final primaryColor = Theme.of(context).colorScheme.primary;
-    // Captured before the sheet builder shadows `context`; the locked-year tap
-    // pops the sheet, so its own context is deactivated and can't host a dialog.
+    // Captured before the dialog builder shadows `context`; the locked-year tap
+    // pops the dialog, so its own context is deactivated and can't host the
+    // follow-up Pro dialog.
     final pageContext = context;
 
-    showModalBottomSheet(
+    showEvolveDialog<void>(
       context: context,
-      backgroundColor: context.evolveColors.panel,
-      shape: const RoundedRectangleBorder(
-        borderRadius: BorderRadius.vertical(top: Radius.circular(24)),
-      ),
-      builder: (context) => SafeArea(
+      builder: (dialogContext) => EvolveDialog(
+        maxWidth: 340,
         child: Column(
           mainAxisSize: MainAxisSize.min,
+          crossAxisAlignment: CrossAxisAlignment.stretch,
           children: [
-            const SizedBox(height: 12),
-            Container(
-              width: 40,
-              height: 4,
-              decoration: BoxDecoration(
-                color: context.evolveColors.border,
-                borderRadius: BorderRadius.circular(2),
-              ),
+            EvolveDialogHeader(
+              title: Text(t.macroGoals.selectYearHeader),
+              icon: LucideIcons.calendarRange,
             ),
-            const SizedBox(height: 20),
-            Padding(
-              padding: const EdgeInsets.only(bottom: 12),
-              child: Align(
-                alignment: Alignment.center,
-                child: Text(
-                  t.macroGoals.selectYearHeader,
-                  style: TextStyle(
-                    fontWeight: FontWeight.w800,
-                    color: context.evolveColors.muted,
-                    fontSize: 10,
-                    letterSpacing: 1.2,
-                  ),
-                ),
-              ),
-            ),
-            ListTile(
-              leading: Icon(
-                LucideIcons.calendarRange,
-                size: 20,
-                color: _selectedYear == 'all'
-                    ? primaryColor
-                    : context.evolveColors.muted.withValues(alpha: 0.6),
-              ),
-              title: Text(
-                t.macroGoals.allYears,
-                style: TextStyle(
-                  fontSize: 16,
-                  fontWeight: _selectedYear == 'all'
-                      ? FontWeight.w700
-                      : FontWeight.w500,
-                  color: _selectedYear == 'all'
-                      ? context.evolveColors.foreground
-                      : context.evolveColors.muted,
-                ),
-              ),
-              trailing: _selectedYear == 'all'
-                  ? Icon(LucideIcons.check, color: primaryColor, size: 20)
-                  : null,
-              onTap: () {
-                HapticFeedback.selectionClick();
-                setState(() => _selectedYear = 'all');
-                Navigator.pop(context);
-              },
-            ),
-            ...years.map((y) {
-              final isSel = _selectedYear == '$y';
-              return ListTile(
-                leading: Icon(
-                  isPro ? LucideIcons.calendar : LucideIcons.lock,
-                  size: 20,
-                  color: isSel
-                      ? primaryColor
-                      : context.evolveColors.muted.withValues(alpha: 0.6),
-                ),
-                title: Text(
-                  '$y',
-                  style: TextStyle(
-                    fontSize: 16,
-                    fontWeight: isSel ? FontWeight.w700 : FontWeight.w500,
-                    color: isPro
-                        ? (isSel
-                              ? context.evolveColors.foreground
-                              : context.evolveColors.muted)
-                        : context.evolveColors.muted,
-                  ),
-                ),
-                trailing: isPro
-                    ? (isSel
-                          ? Icon(
-                              LucideIcons.check,
-                              color: primaryColor,
-                              size: 20,
-                            )
-                          : null)
-                    : Icon(
-                        LucideIcons.lock,
-                        color: context.evolveColors.muted,
-                        size: 14,
+            Flexible(
+              child: SingleChildScrollView(
+                padding: const EdgeInsets.fromLTRB(10, 0, 10, 12),
+                child: Column(
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    _YearOption(
+                      label: t.macroGoals.allYears,
+                      icon: LucideIcons.calendarRange,
+                      selected: _selectedYear == 'all',
+                      onTap: () {
+                        setState(() => _selectedYear = 'all');
+                        Navigator.pop(dialogContext);
+                      },
+                    ),
+                    for (final y in years)
+                      _YearOption(
+                        label: '$y',
+                        icon: isPro ? LucideIcons.calendar : LucideIcons.lock,
+                        selected: _selectedYear == '$y',
+                        locked: !isPro,
+                        onTap: () {
+                          if (!isPro) {
+                            Navigator.pop(dialogContext);
+                            if (mounted) {
+                              setState(() => _selectedYear = 'all');
+                              unawaited(
+                                showProFeaturesDialog(pageContext, ref),
+                              );
+                            }
+                          } else {
+                            setState(() => _selectedYear = '$y');
+                            Navigator.pop(dialogContext);
+                          }
+                        },
                       ),
-                onTap: () {
-                  if (!isPro) {
-                    Navigator.pop(context);
-                    if (mounted) {
-                      setState(() => _selectedYear = 'all');
-                      unawaited(showProFeaturesDialog(pageContext, ref));
-                    }
-                  } else {
-                    HapticFeedback.selectionClick();
-                    setState(() => _selectedYear = '$y');
-                    Navigator.pop(context);
-                  }
-                },
-              );
-            }),
-            const SizedBox(height: 20),
+                  ],
+                ),
+              ),
+            ),
           ],
         ),
       ),
@@ -663,7 +596,7 @@ class _GoalsStatsViewState extends ConsumerState<GoalsStatsView> {
             children: [
               Expanded(
                 child: Text(
-                  title.toUpperCase(),
+                  title,
                   style: TextStyle(
                     fontSize: 10,
                     color: color.withValues(alpha: 0.8),
@@ -722,7 +655,7 @@ class _GoalsStatsViewState extends ConsumerState<GoalsStatsView> {
             children: [
               Expanded(
                 child: Text(
-                  title.toUpperCase(),
+                  title,
                   style: TextStyle(
                     fontSize: 10,
                     fontWeight: FontWeight.w600,
@@ -2329,4 +2262,85 @@ class _LegendItem {
   final String label;
   final Color color;
   _LegendItem(this.label, this.color);
+}
+
+/// One selectable row of the desktop year-picker dialog: hover highlight, a
+/// leading icon, the year label, and a trailing check (selected) or lock
+/// (Pro-gated). Mirrors the kit's menu-item density.
+class _YearOption extends StatefulWidget {
+  const _YearOption({
+    required this.label,
+    required this.icon,
+    required this.selected,
+    required this.onTap,
+    this.locked = false,
+  });
+
+  final String label;
+  final IconData icon;
+  final bool selected;
+  final bool locked;
+  final VoidCallback onTap;
+
+  @override
+  State<_YearOption> createState() => _YearOptionState();
+}
+
+class _YearOptionState extends State<_YearOption> {
+  bool _hovered = false;
+
+  @override
+  Widget build(BuildContext context) {
+    final colors = context.evolveColors;
+    final accent = context.evolveAccent;
+    return MouseRegion(
+      cursor: SystemMouseCursors.click,
+      onEnter: (_) => setState(() => _hovered = true),
+      onExit: (_) => setState(() => _hovered = false),
+      child: GestureDetector(
+        behavior: HitTestBehavior.opaque,
+        onTap: widget.onTap,
+        child: AnimatedContainer(
+          duration: const Duration(milliseconds: 120),
+          height: 42,
+          padding: const EdgeInsets.symmetric(horizontal: 12),
+          decoration: BoxDecoration(
+            color: _hovered
+                ? colors.foreground.withValues(alpha: 0.06)
+                : Colors.transparent,
+            borderRadius: BorderRadius.circular(10),
+          ),
+          child: Row(
+            children: [
+              Icon(
+                widget.icon,
+                size: 18,
+                color: widget.selected
+                    ? accent
+                    : colors.muted.withValues(alpha: 0.7),
+              ),
+              const SizedBox(width: 12),
+              Expanded(
+                child: Text(
+                  widget.label,
+                  style: TextStyle(
+                    fontSize: 14,
+                    fontWeight: widget.selected
+                        ? FontWeight.w700
+                        : FontWeight.w500,
+                    letterSpacing: -0.1,
+                    color: widget.selected ? colors.foreground : colors.muted,
+                  ),
+                ),
+              ),
+              if (widget.locked)
+                Icon(LucideIcons.lock, size: 14, color: colors.muted)
+              else if (widget.selected)
+                Icon(LucideIcons.check, size: 18, color: accent),
+            ],
+          ),
+        ),
+      ),
+    );
+  }
 }

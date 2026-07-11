@@ -1,7 +1,10 @@
 import 'package:evolve_desktop/app/theme/evolve_theme.dart';
 import 'package:evolve_desktop/features/auth/application/auth_controller.dart';
 import 'package:evolve_desktop/i18n/translations.g.dart';
+import 'package:evolve_desktop/shared/widgets/evolve_controls.dart';
 import 'package:evolve_desktop/shared/widgets/evolve_panel.dart';
+import 'package:evolve_desktop/shared/widgets/evolve_spinner.dart';
+import 'package:evolve_desktop/shared/widgets/evolve_toast.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:lucide_icons_flutter/lucide_icons.dart';
@@ -100,12 +103,12 @@ class _DesktopAuthPageState extends ConsumerState<DesktopAuthPage> {
                   ),
                   const SizedBox(height: 22),
                   if (_mode == _AuthMode.signUp) ...[
-                    _FieldLabel(t.auth.nameLabel),
+                    EvolveFieldLabel(t.auth.nameLabel),
                     const SizedBox(height: 8),
                     TextFormField(controller: _nameController),
                     const SizedBox(height: 14),
                   ],
-                  _FieldLabel(t.auth.emailLabel),
+                  EvolveFieldLabel(t.auth.emailLabel),
                   const SizedBox(height: 8),
                   TextFormField(
                     controller: _emailController,
@@ -116,7 +119,7 @@ class _DesktopAuthPageState extends ConsumerState<DesktopAuthPage> {
                   ),
                   if (_mode != _AuthMode.resetPassword) ...[
                     const SizedBox(height: 14),
-                    _FieldLabel(t.auth.password),
+                    EvolveFieldLabel(t.auth.password),
                     const SizedBox(height: 8),
                     TextFormField(
                       controller: _passwordController,
@@ -215,8 +218,8 @@ class _DesktopAuthPageState extends ConsumerState<DesktopAuthPage> {
                       child: auth.isLoading
                           ? SizedBox.square(
                               dimension: 18,
-                              child: CircularProgressIndicator(
-                                strokeWidth: 2,
+                              child: EvolveSpinner(
+                                radius: 9,
                                 color: Theme.of(context).colorScheme.onPrimary,
                               ),
                             )
@@ -385,29 +388,7 @@ class _DesktopAuthPageState extends ConsumerState<DesktopAuthPage> {
   }
 
   void _showMessage(String message) {
-    ScaffoldMessenger.of(
-      context,
-    ).showSnackBar(SnackBar(content: Text(message)));
-  }
-}
-
-/// Uppercase micro-label above a form field (mobile's "HABIT NAME" style).
-class _FieldLabel extends StatelessWidget {
-  const _FieldLabel(this.label);
-
-  final String label;
-
-  @override
-  Widget build(BuildContext context) {
-    return Text(
-      label.toUpperCase(),
-      style: TextStyle(
-        fontSize: 10,
-        fontWeight: FontWeight.w600,
-        color: context.evolveColors.muted,
-        letterSpacing: 0.5,
-      ),
-    );
+    showEvolveToast(context, message: message);
   }
 }
 

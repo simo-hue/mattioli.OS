@@ -11,6 +11,7 @@ import '../../core/rtl.dart';
 import '../../i18n/translations.g.dart';
 import '../kit/evolve_dialog.dart';
 import '../kit/evolve_toast.dart';
+import '../kit/evolve_sheet.dart';
 
 /// Full-screen log viewer showing all in-memory log entries.
 /// Designed for technical users — shows timestamps, levels, stack traces, etc.
@@ -649,144 +650,84 @@ class _AppLogsScreenState extends State<AppLogsScreen> {
         break;
     }
 
-    showModalBottomSheet(
+    showEvolveSheet<void>(
       context: context,
-      isScrollControlled: true,
-      backgroundColor: Colors.transparent,
-      builder: (sheetContext) => DraggableScrollableSheet(
-        initialChildSize: 0.75,
-        maxChildSize: 0.95,
-        minChildSize: 0.4,
-        builder: (_, scrollController) => Container(
-          decoration: BoxDecoration(
-            color: colors.background,
-            borderRadius: const BorderRadius.vertical(top: Radius.circular(24)),
-            border: Border.all(color: colors.border.withValues(alpha: 0.5)),
-          ),
-          child: Column(
-            children: [
-              // Handle bar
-              const SizedBox(height: 12),
-              Container(
-                width: 40,
-                height: 4,
-                decoration: BoxDecoration(
-                  color: colors.border,
-                  borderRadius: BorderRadius.circular(2),
+      title: entry.levelLabel,
+      itemsBuilder: (sheetContext) => [
+        Row(
+          children: [
+            Expanded(
+              child: Text(
+                entry.formattedTimestamp,
+                style: GoogleFonts.jetBrainsMono(
+                  color: colors.mutedForeground,
+                  fontSize: 12,
                 ),
               ),
-              // Header
-              Padding(
-                padding: const EdgeInsets.all(20),
-                child: Row(
-                  children: [
-                    Container(
-                      padding: const EdgeInsets.symmetric(
-                        horizontal: 10,
-                        vertical: 5,
-                      ),
-                      decoration: BoxDecoration(
-                        color: levelColor.withValues(alpha: 0.12),
-                        borderRadius: BorderRadius.circular(8),
-                        border: Border.all(
-                          color: levelColor.withValues(alpha: 0.25),
-                        ),
-                      ),
-                      child: Text(
-                        entry.levelLabel,
-                        style: GoogleFonts.jetBrainsMono(
-                          color: levelColor,
-                          fontSize: 12,
-                          fontWeight: FontWeight.w700,
-                        ),
-                      ),
-                    ),
-                    const SizedBox(width: 12),
-                    Expanded(
-                      child: Text(
-                        entry.formattedTimestamp,
-                        style: GoogleFonts.jetBrainsMono(
-                          color: colors.mutedForeground,
-                          fontSize: 12,
-                        ),
-                      ),
-                    ),
-                    IconButton(
-                      icon: Icon(
-                        LucideIcons.copy,
-                        size: 18,
-                        color: colors.mutedForeground,
-                      ),
-                      onPressed: () {
-                        final buffer = StringBuffer();
-                        buffer.writeln(
-                          '[${entry.formattedTimestamp}] [${entry.levelLabel}] ${entry.message}',
-                        );
-                        if (entry.error != null) {
-                          buffer.writeln('Error: ${entry.error}');
-                        }
-                        if (entry.extras != null) {
-                          buffer.writeln('Extras: ${entry.extras}');
-                        }
-                        if (entry.stackTrace != null) {
-                          buffer.writeln('Stack Trace:');
-                          buffer.writeln(entry.stackTrace);
-                        }
-                        Clipboard.setData(
-                          ClipboardData(text: buffer.toString()),
-                        );
-                        Navigator.pop(sheetContext);
-                        showEvolveToast(
-                          context,
-                          message: context.t.appLogs.copiedToClipboard,
-                          kind: EvolveToastKind.success,
-                        );
-                      },
-                    ),
-                  ],
-                ),
+            ),
+            IconButton(
+              icon: Icon(
+                LucideIcons.copy,
+                size: 18,
+                color: colors.mutedForeground,
               ),
-              // Content
-              Expanded(
-                child: ListView(
-                  controller: scrollController,
-                  padding: const EdgeInsets.symmetric(horizontal: 20),
-                  children: [
-                    _buildDetailSection(
-                      context,
-                      title: context.t.appLogs.detailMessage,
-                      content: entry.message,
-                    ),
-                    if (entry.error != null)
-                      _buildDetailSection(
-                        context,
-                        title: context.t.appLogs.detailError,
-                        content: entry.error!,
-                        color: levelColor,
-                      ),
-                    if (entry.extras != null && entry.extras!.isNotEmpty)
-                      _buildDetailSection(
-                        context,
-                        title: context.t.appLogs.detailExtras,
-                        content: entry.extras!.entries
-                            .map((e) => '${e.key}: ${e.value}')
-                            .join('\n'),
-                      ),
-                    if (entry.stackTrace != null)
-                      _buildDetailSection(
-                        context,
-                        title: context.t.appLogs.detailStackTrace,
-                        content: entry.stackTrace!,
-                        isStackTrace: true,
-                      ),
-                    const SizedBox(height: 40),
-                  ],
-                ),
-              ),
-            ],
-          ),
+              onPressed: () {
+                final buffer = StringBuffer();
+                buffer.writeln(
+                  '[${entry.formattedTimestamp}] [${entry.levelLabel}] ${entry.message}',
+                );
+                if (entry.error != null) {
+                  buffer.writeln('Error: ${entry.error}');
+                }
+                if (entry.extras != null) {
+                  buffer.writeln('Extras: ${entry.extras}');
+                }
+                if (entry.stackTrace != null) {
+                  buffer.writeln('Stack Trace:');
+                  buffer.writeln(entry.stackTrace);
+                }
+                Clipboard.setData(
+                  ClipboardData(text: buffer.toString()),
+                );
+                Navigator.pop(sheetContext);
+                showEvolveToast(
+                  context,
+                  message: context.t.appLogs.copiedToClipboard,
+                  kind: EvolveToastKind.success,
+                );
+              },
+            ),
+          ],
         ),
-      ),
+        _buildDetailSection(
+          context,
+          title: context.t.appLogs.detailMessage,
+          content: entry.message,
+        ),
+        if (entry.error != null)
+          _buildDetailSection(
+            context,
+            title: context.t.appLogs.detailError,
+            content: entry.error!,
+            color: levelColor,
+          ),
+        if (entry.extras != null && entry.extras!.isNotEmpty)
+          _buildDetailSection(
+            context,
+            title: context.t.appLogs.detailExtras,
+            content: entry.extras!.entries
+                .map((e) => '${e.key}: ${e.value}')
+                .join('\n'),
+          ),
+        if (entry.stackTrace != null)
+          _buildDetailSection(
+            context,
+            title: context.t.appLogs.detailStackTrace,
+            content: entry.stackTrace!,
+            isStackTrace: true,
+          ),
+        const SizedBox(height: 40),
+      ],
     );
   }
 

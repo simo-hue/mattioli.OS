@@ -10,6 +10,7 @@ import 'package:evolve_desktop/shared/widgets/coach_tutorial.dart';
 import 'package:evolve_desktop/shared/widgets/desktop_page.dart';
 import 'package:evolve_desktop/shared/widgets/evolve_controls.dart';
 import 'package:evolve_desktop/shared/widgets/evolve_panel.dart';
+import 'package:evolve_desktop/shared/widgets/evolve_spinner.dart';
 import 'package:fl_chart/fl_chart.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
@@ -747,7 +748,7 @@ class _TrendInsightCard extends StatelessWidget {
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
                 Text(
-                  label.toUpperCase(),
+                  label,
                   maxLines: 1,
                   overflow: TextOverflow.ellipsis,
                   style: TextStyle(
@@ -1473,7 +1474,7 @@ class _GlobalHabitsState extends ConsumerState<_GlobalHabits> {
               statsAsync.when(
                 loading: () => const Padding(
                   padding: EdgeInsets.symmetric(vertical: 24),
-                  child: Center(child: CircularProgressIndicator()),
+                  child: Center(child: EvolveSpinner()),
                 ),
                 error: (_, _) => _EmptyState(
                   icon: LucideIcons.listTodo,
@@ -1649,7 +1650,7 @@ class _StatBadge extends StatelessWidget {
           ),
         ),
         Text(
-          label.toUpperCase(),
+          label,
           style: TextStyle(
             color: context.evolveColors.muted.withValues(alpha: 0.8),
             fontSize: 9,
@@ -2026,7 +2027,7 @@ class _CalendarSummaryStat extends StatelessWidget {
           ),
         ),
         Text(
-          label.toUpperCase(),
+          label,
           style: TextStyle(
             color: context.evolveColors.muted.withValues(alpha: 0.8),
             fontSize: 10,
@@ -2863,7 +2864,7 @@ class _Metric extends StatelessWidget {
                 child: Padding(
                   padding: const EdgeInsets.only(top: 4),
                   child: Text(
-                    label.toUpperCase(),
+                    label,
                     maxLines: 2,
                     overflow: TextOverflow.ellipsis,
                     style: TextStyle(

@@ -1,5 +1,4 @@
 import 'package:flutter/material.dart';
-import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:lucide_icons_flutter/lucide_icons.dart';
 import 'package:flutter_colorpicker/flutter_colorpicker.dart';
@@ -128,7 +127,7 @@ class AppSettingsScreen extends ConsumerWidget {
                   }
                   if (v == 'vita') return context.t.common.calendarView.life;
                   return context.t.common.calendarView.week;
-                })().toUpperCase(),
+                })(),
                 onTap: () {
                   ref.hapticLight();
                   showEvolveSheet<void>(
@@ -291,17 +290,10 @@ class AppSettingsScreen extends ConsumerWidget {
   }
 
   Widget _buildSettingsCard(BuildContext context, List<Widget> children) {
-    final colors = context.appColors;
-    return Container(
-      decoration: BoxDecoration(
-        color: colors.card.withValues(alpha: 0.4),
-        borderRadius: BorderRadius.circular(20),
-        border: Border.all(
-          color: colors.border.withValues(alpha: 0.5),
-          width: 1,
-        ),
-      ),
-      child: Column(children: children),
+    // Grouped-inset card (kit look); EvolveListSection draws its own hairlines,
+    // so drop the legacy manual `_buildDivider` spacers.
+    return EvolveListSection(
+      children: children.where((c) => c is! Divider).toList(),
     );
   }
 
@@ -504,33 +496,17 @@ class AppSettingsScreen extends ConsumerWidget {
       backgroundColor: Colors.transparent,
       isScrollControlled: true,
       builder: (context) => Container(
-        padding: const EdgeInsets.all(24),
+        padding: const EdgeInsets.fromLTRB(24, 8, 24, 24),
         decoration: BoxDecoration(
           color: context.appColors.card,
-          borderRadius: const BorderRadius.vertical(top: Radius.circular(32)),
+          borderRadius: const BorderRadius.vertical(top: Radius.circular(24)),
           border: Border.all(color: context.appColors.border),
         ),
         child: Column(
           mainAxisSize: MainAxisSize.min,
           children: [
-            Container(
-              width: 40,
-              height: 4,
-              decoration: BoxDecoration(
-                color: context.appColors.border,
-                borderRadius: BorderRadius.circular(2),
-              ),
-            ),
-            const SizedBox(height: 24),
-            Text(
-              context.t.settings.appearance.accentColor,
-              style: TextStyle(
-                color: context.appColors.foreground,
-                fontSize: 20,
-                fontWeight: FontWeight.w800,
-                letterSpacing: -0.5,
-              ),
-            ),
+            const EvolveGrabber(),
+            EvolveSheetTitle(context.t.settings.appearance.accentColor),
             const SizedBox(height: 8),
             Text(
               context.t.settings.appearance.accentColorSubtitle,
@@ -563,7 +539,7 @@ class AppSettingsScreen extends ConsumerWidget {
                     ref.hapticHeavy();
                     ProFeaturesModal.show(context);
                   } else {
-                    HapticFeedback.mediumImpact();
+                    ref.hapticMedium();
                     _showFullColorPicker(context, ref, currentColor);
                   }
                 },

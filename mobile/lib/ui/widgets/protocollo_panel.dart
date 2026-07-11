@@ -1,5 +1,4 @@
 import 'package:flutter/material.dart';
-import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:lucide_icons_flutter/lucide_icons.dart';
 import '../../core/theme.dart';
@@ -10,6 +9,7 @@ import 'daily_check_in_modal.dart';
 import 'habit_management_modal.dart';
 import 'pro_features_modal.dart';
 import '../../i18n/translations.g.dart';
+import '../../core/haptics.dart';
 
 /// "Protocollo" command panel matching the PWA sidebar card
 class ProtocolloPanel extends ConsumerWidget {
@@ -121,7 +121,7 @@ class ProtocolloPanel extends ConsumerWidget {
   }
 }
 
-class _ActionTile extends StatefulWidget {
+class _ActionTile extends ConsumerStatefulWidget {
   final IconData icon;
   final String label;
   final String subtitle;
@@ -142,10 +142,10 @@ class _ActionTile extends StatefulWidget {
   });
 
   @override
-  State<_ActionTile> createState() => _ActionTileState();
+  ConsumerState<_ActionTile> createState() => _ActionTileState();
 }
 
-class _ActionTileState extends State<_ActionTile>
+class _ActionTileState extends ConsumerState<_ActionTile>
     with SingleTickerProviderStateMixin {
   AnimationController? _pulseController;
   Animation<double>? _pulseAnimation;
@@ -228,7 +228,7 @@ class _ActionTileState extends State<_ActionTile>
   Widget _buildTileContent(BuildContext context) {
     return GestureDetector(
       onTap: () {
-        HapticFeedback.lightImpact();
+        ref.hapticLight();
         widget.onTap();
       },
       child: Container(

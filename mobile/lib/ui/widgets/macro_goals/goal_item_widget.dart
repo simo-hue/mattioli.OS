@@ -14,6 +14,7 @@ import 'category_picker_sheet.dart';
 import '../pro_features_modal.dart';
 import '../../../i18n/translations.g.dart';
 import '../../kit/evolve_dialog.dart';
+import '../../kit/evolve_sheet.dart';
 
 class GoalItemWidget extends ConsumerStatefulWidget {
   final MacroGoal goal;
@@ -109,78 +110,58 @@ class _GoalItemWidgetState extends ConsumerState<GoalItemWidget>
 
   void _showEditDialog() {
     final ctrl = TextEditingController(text: widget.goal.title);
-    showDialog(
+    showEvolveFormSheet<void>(
       context: context,
-      builder: (_) => AlertDialog(
-        backgroundColor: context.appColors.card,
-        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
-        title: Text(
-          context.t.macroGoals.editGoal,
-          style: GoogleFonts.inter(
-            color: context.appColors.foreground,
-            fontWeight: FontWeight.w600,
-            fontSize: 16,
-          ),
-        ),
-        content: TextField(
-          controller: ctrl,
-          autofocus: true,
-          style: GoogleFonts.inter(
-            color: context.appColors.foreground,
-            fontSize: 14,
-          ),
-          decoration: InputDecoration(
-            hintText: context.t.macroGoals.goalTitle,
-            hintStyle: GoogleFonts.inter(
-              color: context.appColors.mutedForeground,
-            ),
-            enabledBorder: OutlineInputBorder(
-              borderSide: BorderSide(color: context.appColors.border),
-              borderRadius: BorderRadius.circular(10),
-            ),
-            focusedBorder: OutlineInputBorder(
-              borderSide: BorderSide(
-                color: context.appColors.foreground,
-                width: 1,
-              ),
-              borderRadius: BorderRadius.circular(10),
-            ),
-            contentPadding: const EdgeInsets.symmetric(
-              horizontal: 14,
-              vertical: 12,
-            ),
-          ),
-        ),
-        actions: [
-          TextButton(
-            onPressed: () => Navigator.pop(context),
-            child: Text(
-              context.t.common.actions.cancel,
-              style: GoogleFonts.inter(
-                color: context.appColors.mutedForeground,
-              ),
-            ),
-          ),
-          TextButton(
-            onPressed: () {
-              final t = ctrl.text.trim();
-              if (t.isNotEmpty) {
-                ref
-                    .read(macroGoalsProvider.notifier)
-                    .updateTitle(widget.goal.id, t);
-              }
-              Navigator.pop(context);
-            },
-            child: Text(
-              context.t.common.actions.save,
-              style: GoogleFonts.inter(
-                color: context.appColors.foreground,
-                fontWeight: FontWeight.w600,
-              ),
-            ),
-          ),
-        ],
+      title: context.t.macroGoals.editGoal,
+      leading: EvolveTextAction(
+        label: context.t.common.actions.cancel,
+        onPressed: () => Navigator.pop(context),
       ),
+      trailing: EvolveTextAction(
+        label: context.t.common.actions.save,
+        emphasized: true,
+        onPressed: () {
+          final t = ctrl.text.trim();
+          if (t.isNotEmpty) {
+            ref
+                .read(macroGoalsProvider.notifier)
+                .updateTitle(widget.goal.id, t);
+          }
+          Navigator.pop(context);
+        },
+      ),
+      builder: (sheetContext) {
+        return Padding(
+          padding: const EdgeInsets.fromLTRB(16, 8, 16, 16),
+          child: Container(
+            decoration: BoxDecoration(
+              color: context.appColors.cardElevated,
+              borderRadius: BorderRadius.circular(12),
+              border: Border.all(color: context.appColors.border),
+            ),
+            child: TextField(
+              controller: ctrl,
+              autofocus: true,
+              style: GoogleFonts.inter(
+                fontSize: 15,
+                color: context.appColors.foreground,
+              ),
+              decoration: InputDecoration(
+                contentPadding: const EdgeInsets.symmetric(
+                  horizontal: 16,
+                  vertical: 12,
+                ),
+                border: InputBorder.none,
+                hintText: context.t.macroGoals.goalTitle,
+                hintStyle: GoogleFonts.inter(
+                  fontSize: 15,
+                  color: context.appColors.mutedForeground,
+                ),
+              ),
+            ),
+          ),
+        );
+      },
     );
   }
 

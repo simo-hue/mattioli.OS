@@ -1,10 +1,10 @@
 import 'package:flutter/material.dart';
-import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:lucide_icons_flutter/lucide_icons.dart';
 
 import '../../../core/theme.dart';
+import '../../../core/haptics.dart';
 import '../../../models/macro_goal.dart';
 import '../../../providers/macro_goals_provider.dart';
 import '../../../providers/macro_goal_categories_provider.dart';
@@ -48,7 +48,7 @@ class _AddGoalBarState extends ConsumerState<AddGoalBar> {
 
     if (!isPro && currentGoalsCount >= 100) {
       FocusScope.of(context).unfocus();
-      HapticFeedback.heavyImpact();
+      ref.hapticHeavy();
       ProFeaturesModal.show(context);
       return;
     }
@@ -82,7 +82,7 @@ class _AddGoalBarState extends ConsumerState<AddGoalBar> {
     ref.read(macroGoalsProvider.notifier).addGoal(goal);
     _controller.clear();
     setState(() => _selectedCategory = null);
-    HapticFeedback.mediumImpact();
+    ref.hapticMedium();
   }
 
   void _showCategoryPicker() {

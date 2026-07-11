@@ -135,5 +135,33 @@ CTAs, subscription hero/gradient CTAs. Do **not** force the kit onto these.
 - `flutter test` = **144 passing** at every batch gate (T7→T14-partial).
 - **~50 surfaces migrated across tasks 7 → 14-partial.** Deliberately-preserved bespoke/brand surfaces are listed above under each task. Checkpointed here so the primitive layer can be visually QA'd before the riskier chrome/editor/list remainder (which all build on those primitives).
 
+## Post-QA continuation (owner confirmed the primitive layer is clean & good)
+- **T14 further progress:** `goal_item` edit → showEvolveFormSheet; ai_chat settings dialog → form sheet + EvolveSwitch (deleted `_buildContextSwitch`); app_settings accent-picker chrome → EvolveGrabber + EvolveSheetTitle (validated Pro flow untouched); privacy delete/reset chooser → showEvolveSheet (deleted `_buildOptionCard`); 5 modal sheet chromes (daily_check_in / day_details / habit_modal / error_modal / pro_features) → EvolveGrabber via subagent.
+- **T16 so far:** EvolveSpinner primitive built + paywall spinners swapped; `GoogleFonts.outfit`→inter; default-view trailing `.toUpperCase()` removed; accent-picker ungated haptic gated; ungated-haptic sweep (~9 files) + day_details static `AppColors`→`context.appColors` + `Icons.close`→Lucide running via subagents.
+- **Still open / deliberately deferred (optional polish, owner happy with current):** T15 full settings-card list restructure (→EvolveListSection — risky, moderate gain); privacy change-password editor (complex 2-step, works); notification time-picker / personal_info date-picker / app_logs detail sheet / habit reminder picker (Cupertino pickers, work fine); non-Consumer ungated haptics (protocollo tile, category-editor) needing widget refactor.
+
+## Final verification (all green)
+- Full `flutter analyze` = **16 issues, all pre-existing** (privacy RadioListTile ×4 [import replace/merge dialog — a `RadioListTile`, future segmented-control candidate], privacy `:997` unawaited, pulsing_sync_animation prefer_final, + gen/untouched files). Zero introduced across the whole effort.
+- Full `flutter test` = **144 passing.**
+- **Test fix:** `test/icloud_sync_screen_test.dart` used `find.byType(Switch)`; T11 intentionally migrated iCloud's toggle to `EvolveSwitch` (CupertinoSwitch), so the 2 disclosure tests needed `find.byType(CupertinoSwitch)`. **Lesson: earlier batch gates ran `flutter test | tail`, so the reported exit code was `tail`'s, not the test runner's — the break went unnoticed from T11. Verify the runner's own verdict line, never a piped exit code.**
+
+## MOBILE COMPLETE (owner asked to finish everything, then port to macOS)
+All deferred items done: settings-card grouped-inset (`_buildSettingsCard`→EvolveListSection ×4 + profile rows→EvolveListRow); change-password editor→showEvolveFormSheet (loading-aware EvolveButton, 2-step preserved); 4 Cupertino pickers/detail→kit chrome (notification time / personal_info date / habit reminder / app_logs detail, via subagent); last 2 ungated haptics gated (protocollo `_ActionTile`→ConsumerStatefulWidget; category editor→threaded `ref`). Final gate: `flutter analyze` = 16 (all pre-existing), `flutter test` = **144 passing** (real verdict). Only optional remainder noted: subscription Pro-detail rows + the pre-existing privacy import-Replace/Merge `RadioListTile` deprecation.
+
+## NEXT: macOS/desktop port (owner-requested, via subagent)
+Desktop = `desktop/` (macOS-only). Already has a partial Evolve kit in `shared/widgets/` (`evolve_controls`, `evolve_dialog`, `evolve_panel`) + feature-based structure (dashboard/goals/statistics/settings/habits/ai_coach/auth/shell). Build/test constraints: no Xcode — use dummy dart-defines for analyze/tests. Port = apply the same Apple-style design intent as the mobile Phase 2, extending the desktop kit per desktop conventions (not a literal widget copy — desktop uses dialogs/panels, not bottom sheets/mobile toasts).
+
+**Desktop baseline (before any port edits) — must not regress:**
+- `cd desktop && flutter analyze` = **clean (0 issues)**.
+- Desktop tests need dummy dart-defines. Verify command:
+  `flutter test --dart-define=EVOLVE_SUPABASE_URL=https://dummy.supabase.co --dart-define=EVOLVE_SUPABASE_PUBLISHABLE_KEY=sb_publishable_dummy_key_for_tests`
+- With those defines: **139 passing, 1 PRE-EXISTING failure** — `test/icloud_sync_card_test.dart: "delete private data runs the full sync reset and mentions the multi-device caveat"` (unrelated to UI; do not touch). Port target: keep analyze at 0, keep ≥139 passing.
+- Desktop config keys (String.fromEnvironment): `EVOLVE_SUPABASE_URL`, `EVOLVE_SUPABASE_PUBLISHABLE_KEY`, `EVOLVE_DESKTOP_OAUTH_REDIRECT_URL` (has default), `EVOLVE_DESKTOP_NATIVE_APPLE_SIGN_IN` (default false).
+
+## ✅ ALL COMPLETE (2026-07-11)
+- **Mobile (iOS):** Phase 2 fully done — primitive layer + all 7 migration categories + all deferred items (settings grouped-inset, change-password form sheet, 4 Cupertino pickers, all haptics gated). `flutter analyze` = 16 (all pre-existing), `flutter test` = **144 passing**.
+- **Desktop (macOS):** ported to match (audit → subagent implemented the clear wins: `EvolveSpinner`+10 spinners, `showEvolveToast`+9 SnackBars, field-label dedup, year-picker→dialog, Lucide icons; then owner-approved **label de-cap** to match iOS sentence-case, PROTOCOLLO/OR kept uppercase). `flutter analyze` = **clean**, `flutter test` (dummy defines) = **144 pass / 1 pre-existing unrelated fail**.
+- **Visual QA:** comprehensive iOS + macOS checklist written to `mobile/TO_SIMO_DO.md`; macOS detail in `desktop/TO_SIMO_DO.md`. Both trees uncommitted, ready for review.
+
 ## Resume instructions
 Read this file, then continue at **REMAINING T14** above. Kit primitives all exist in `lib/ui/kit/` (see the primitive table). Reference patterns: `category_picker_sheet.dart` (selection sheet), `statistics_screen._showGoalSelector` (Pro-lock sheet). The brace-matcher helper for large-method replacement is at `<scratchpad>/replace_method.py` (paren-matches params then body brace; sig must be unique).

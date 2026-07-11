@@ -30,6 +30,8 @@ import 'package:evolve_desktop/shared/widgets/desktop_page.dart';
 import 'package:evolve_desktop/shared/widgets/evolve_controls.dart';
 import 'package:evolve_desktop/shared/widgets/evolve_dialog.dart';
 import 'package:evolve_desktop/shared/widgets/evolve_panel.dart';
+import 'package:evolve_desktop/shared/widgets/evolve_spinner.dart';
+import 'package:evolve_desktop/shared/widgets/evolve_toast.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_colorpicker/flutter_colorpicker.dart';
@@ -1316,7 +1318,7 @@ class _SettingsPageState extends ConsumerState<SettingsPage> {
       // Refresh dashboard + category/profile providers so imported data shows.
       ref.invalidate(desktopGoalCategoriesControllerProvider);
       if (isPrivateMode) ref.invalidate(privateProfileProvider);
-      
+
       await Future.wait([
         ref.read(dashboardControllerProvider.notifier).refresh(),
         ref.read(desktopGoalCategoriesControllerProvider.future),
@@ -1335,11 +1337,10 @@ class _SettingsPageState extends ConsumerState<SettingsPage> {
       // Close loading if still open
       if (Navigator.canPop(context)) Navigator.pop(context);
 
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(
-          content: Text(t.settingsPage.importError(error: e)),
-          backgroundColor: Colors.red,
-        ),
+      showEvolveToast(
+        context,
+        message: t.settingsPage.importError(error: e),
+        kind: EvolveToastKind.error,
       );
     }
   }
@@ -1582,13 +1583,19 @@ class _SettingsPageState extends ConsumerState<SettingsPage> {
       await _refreshSyncStatus();
       if (mounted) {
         Navigator.pop(context); // close loading dialog
-        _showResultDialog(t.privateData.deleteTitle, t.privateData.deleteSuccess);
+        _showResultDialog(
+          t.privateData.deleteTitle,
+          t.privateData.deleteSuccess,
+        );
       }
     } catch (error, stack) {
       AppLogger.error('Unable to delete private database', error, stack);
       if (mounted) {
         Navigator.pop(context); // close loading dialog
-        _showResultDialog(t.privateData.deleteTitle, t.privateData.deleteFailed);
+        _showResultDialog(
+          t.privateData.deleteTitle,
+          t.privateData.deleteFailed,
+        );
       }
     }
   }
@@ -1814,9 +1821,7 @@ class _SettingsPageState extends ConsumerState<SettingsPage> {
   };
 
   void _showGate(String title, String detail) {
-    ScaffoldMessenger.of(
-      context,
-    ).showSnackBar(SnackBar(content: Text('$title: $detail')));
+    showEvolveToast(context, message: '$title: $detail');
   }
 
   void _showLoadingDialog(String message) {
@@ -1832,7 +1837,7 @@ class _SettingsPageState extends ConsumerState<SettingsPage> {
             children: [
               const SizedBox.square(
                 dimension: 28,
-                child: CircularProgressIndicator(strokeWidth: 3),
+                child: EvolveSpinner(radius: 14),
               ),
               const SizedBox(height: 16),
               Text(
@@ -3082,7 +3087,7 @@ class _PersonalInfoDialogState extends ConsumerState<_PersonalInfoDialog> {
           child: _isSaving
               ? const SizedBox.square(
                   dimension: 18,
-                  child: CircularProgressIndicator(strokeWidth: 2),
+                  child: EvolveSpinner(radius: 9),
                 )
               : Text(t.settingsPage.save),
         ),
@@ -3195,7 +3200,7 @@ class _ChangePasswordDialogState extends ConsumerState<_ChangePasswordDialog> {
           child: _isSaving
               ? const SizedBox.square(
                   dimension: 18,
-                  child: CircularProgressIndicator(strokeWidth: 2),
+                  child: EvolveSpinner(radius: 9),
                 )
               : Text(t.settingsPage.updatePassword),
         ),

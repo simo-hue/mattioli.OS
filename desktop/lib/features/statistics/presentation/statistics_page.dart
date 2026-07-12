@@ -5,6 +5,7 @@ import 'package:evolve_desktop/features/statistics/data/private_analytics.dart'
     show MoodCorrelation, kIsoDowTokens;
 import 'package:evolve_desktop/features/statistics/data/statistics_rpc_providers.dart';
 import 'package:evolve_desktop/core/tutorial_provider.dart';
+import 'package:evolve_desktop/features/shell/application/navigation_controller.dart';
 import 'package:evolve_desktop/i18n/translations.g.dart';
 import 'package:evolve_desktop/shared/widgets/coach_tutorial.dart';
 import 'package:evolve_desktop/shared/widgets/desktop_page.dart';
@@ -74,7 +75,12 @@ class _StatisticsPageState extends ConsumerState<StatisticsPage> {
     super.initState();
     WidgetsBinding.instance.addPostFrameCallback((_) {
       if (!mounted || _didFinishTour) return;
-      if (!ref.read(statsTutorialProvider)) {
+      
+      final mainSeen = ref.read(tutorialProvider);
+      final goalsSeen = ref.read(goalsTutorialProvider);
+      final statsSeen = ref.read(statsTutorialProvider);
+
+      if (mainSeen && goalsSeen && !statsSeen) {
         setState(() {
           _tourIndex = 0;
           _showTour = true;
@@ -103,6 +109,11 @@ class _StatisticsPageState extends ConsumerState<StatisticsPage> {
       _showTour = false;
     });
     ref.read(statsTutorialProvider.notifier).setTutorialSeen(true);
+    
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      if (!mounted) return;
+      ref.read(navigationControllerProvider.notifier).select(DesktopSection.overview);
+    });
   }
 
   @override
@@ -142,25 +153,12 @@ class _StatisticsPageState extends ConsumerState<StatisticsPage> {
             label: t.stats.last30Days,
             icon: LucideIcons.calendarClock,
           ),
-          const SizedBox(width: 12),
-          KeyedSubtree(
-            key: _filterKey,
-            child: SizedBox(
-              width: 360,
-              child: _HabitSelectorCard(
-                scope: _scope,
-                habits: snapshot.habits,
-                selectedHabit: selectedHabit,
-                onHabitChanged: (id) => setState(() => _habitId = id),
-              ),
-            ),
-          ),
         ],
       ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          _controlRow(),
+          _controlRow(snapshot, selectedHabit),
           const SizedBox(height: 18),
           AnimatedSwitcher(
             duration: const Duration(milliseconds: 200),
@@ -194,9 +192,9 @@ class _StatisticsPageState extends ConsumerState<StatisticsPage> {
   }
 
   /// The single chrome row under the header: the 5-tab selector absorbs the
-  /// width (Expanded) while the scope segmented control keeps a fixed compact
-  /// size; below 980 content width they stack (tabs above scope).
-  Widget _controlRow() {
+  /// width (Expanded) while the scope selector keeps a fixed compact size; 
+  /// below 980 content width they stack (tabs above scope).
+  Widget _controlRow(DashboardSnapshot snapshot, DashboardHabit? selectedHabit) {
     final Widget tabs = _scope == _AnalyticsScope.global
         ? _TabSelector<_GlobalTab>(
             selected: _globalTab,
@@ -211,15 +209,26 @@ class _StatisticsPageState extends ConsumerState<StatisticsPage> {
             onChanged: (tab) => setState(() => _habitTab = tab),
           );
     final keyedTabs = KeyedSubtree(key: _tabsKey, child: tabs);
-    final scopeControl = EvolveSegmentedControl<_AnalyticsScope>(
-      height: 44,
-      segments: {
-        _AnalyticsScope.global: t.stats.global,
-        _AnalyticsScope.habit: t.stats.singleHabit,
-      },
-      selected: _scope,
-      onSelected: (scope) => setState(() => _scope = scope),
+    
+    final scopeControl = KeyedSubtree(
+      key: _filterKey,
+      child: _HabitSelectorCard(
+        scope: _scope,
+        habits: snapshot.habits,
+        selectedHabit: selectedHabit,
+        onHabitChanged: (val) {
+          if (val == '_global') {
+            setState(() => _scope = _AnalyticsScope.global);
+          } else {
+            setState(() {
+              _scope = _AnalyticsScope.habit;
+              _habitId = val;
+            });
+          }
+        },
+      ),
     );
+    
     return LayoutBuilder(
       builder: (context, constraints) {
         if (constraints.maxWidth < 980) {
@@ -231,7 +240,7 @@ class _StatisticsPageState extends ConsumerState<StatisticsPage> {
           children: [
             Expanded(child: keyedTabs),
             const SizedBox(width: 12),
-            SizedBox(width: 300, child: scopeControl),
+            SizedBox(width: 360, child: scopeControl),
           ],
         );
       },
@@ -297,6 +306,8 @@ class _HabitSelectorCard extends StatelessWidget {
       letterSpacing: -0.2,
       color: colors.foreground,
     );
+    
+    final currentValue = isHabitScope && selectedHabit != null ? selectedHabit!.id : '_global';
 
     return EvolvePanel(
       color: colors.panel.withValues(alpha: 0.5),
@@ -310,47 +321,33 @@ class _HabitSelectorCard extends StatelessWidget {
             iconSize: 16,
           ),
           const SizedBox(width: 12),
-          if (!isHabitScope)
-            Expanded(
-              child: Text(
-                t.stats.global,
-                maxLines: 1,
-                overflow: TextOverflow.ellipsis,
-                style: titleStyle,
-              ),
-            )
-          else ...[
-            Expanded(
-              child: selectedHabit == null
-                  ? Text(
-                      t.stats.noHabit,
-                      maxLines: 1,
-                      overflow: TextOverflow.ellipsis,
-                      style: titleStyle.copyWith(color: colors.muted),
-                    )
-                  : EvolveSelect<String>(
-                      value: selectedHabit!.id,
-                      filled: false,
-                      expand: true,
-                      textStyle: titleStyle,
-                      options: [
-                        for (final habit in habits)
-                          EvolveSelectOption(
-                            value: habit.id,
-                            label: habit.title,
-                            leading: _HabitDot(color: habit.color),
-                          ),
-                      ],
-                      onChanged: onHabitChanged,
-                    ),
+          Expanded(
+            child: EvolveSelect<String>(
+              value: currentValue,
+              filled: false,
+              expand: true,
+              textStyle: titleStyle,
+              options: [
+                EvolveSelectOption(
+                  value: '_global',
+                  label: t.stats.global,
+                ),
+                for (final habit in habits)
+                  EvolveSelectOption(
+                    value: habit.id,
+                    label: habit.title,
+                    leading: _HabitDot(color: habit.color),
+                  ),
+              ],
+              onChanged: onHabitChanged,
             ),
-            const SizedBox(width: 12),
-            const StatusPill(
-              label: 'Evolve Pro',
-              color: EvolveColors.amber,
-              icon: LucideIcons.sparkles,
-            ),
-          ],
+          ),
+          const SizedBox(width: 12),
+          const StatusPill(
+            label: 'Evolve Pro',
+            color: EvolveColors.amber,
+            icon: LucideIcons.sparkles,
+          ),
         ],
       ),
     );
@@ -436,7 +433,7 @@ class _GlobalInfo extends ConsumerWidget {
               label: t.stats.bestStreakLabel,
               value: t.dashboard.streakDaysShort(n: snapshot.bestStreak),
               detail: _bestHabit(snapshot),
-              color: EvolveColors.amber,
+              color: EvolveColors.streakColor(snapshot.bestStreak),
               icon: LucideIcons.flame,
             ),
             _Metric(
@@ -1752,7 +1749,7 @@ class _HabitOverview extends ConsumerWidget {
               label: t.stats.currentStreak,
               value: t.dashboard.streakDaysShort(n: currentStreak),
               detail: t.stats.currentStreakDetail,
-              color: EvolveColors.amber,
+              color: EvolveColors.streakColor(currentStreak),
               icon: LucideIcons.flame,
             ),
             _Metric(

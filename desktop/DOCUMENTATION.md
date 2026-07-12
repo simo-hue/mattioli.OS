@@ -1,78 +1,75 @@
-# Evolve Desktop - Documentation
+# DOCUMENTATION
 
-## [2026-07-03]: Privacy Mode Implementation
-*Details*: Implemented a "Privacy Mode" for the macOS desktop application to allow users to use the app entirely offline and anonymously, mirroring the iOS mobile app's privacy features. This mode stores all user data locally without syncing to Supabase.
-*Tech Notes*:
-- **Local Database**: Integrated `sqflite_sqlcipher` for encrypted local SQLite storage.
-- **Repository Abstraction**: Created `PrivateDashboardRepository` and a proxy repository to dynamically switch between Supabase and local storage based on the active mode (`activeDesktopDataModeProvider`).
-- **Data Identification**: Used `uuid` v4 for generating IDs locally in Private Mode, mimicking Supabase's UUIDs.
-- **Sentry Integration**: Added a privacy boundary that forcibly disables Sentry crash reporting when Private Mode is active.
-- **Authentication**: Added a "Continua in modalità privata" button to the authentication screen that bypasses Supabase login.
-- **Settings**: Adapted the settings page to hide cloud-only features (e.g., password change, subscription) when in Private Mode, replacing them with local data deletion options.
+## [2026-07-07]: Fix Xcode Build Warnings for macOS Desktop Target
 
-## [2026-07-04]: Private Mode ⇄ iOS Parity Gap Audit
-*Details*: Produced `desktop/PRIVATE_MODE_PARITY_GAPS.md` — a discovery/gap document comparing the desktop Private-Mode implementation against the mobile (iOS) app to drive a follow-up implementation pass toward 100% feature parity. No code was changed.
-*Tech Notes*:
-- Cross-referenced every privacy path in `desktop/lib` against `mobile/lib` (Phase 1 local encrypted mode + Phase 2 iCloud/CloudKit sync).
-- Key gaps found: local analytics/statistics engine entirely missing on desktop (stats use Supabase RPC → empty in Private Mode); no AI external-send consent gate; `isPro` forced *false* in Private Mode (locks Pro features — inverse of mobile); missing `profiles` owner-row bootstrap (profile/avatar writes hit 0 rows); import owner-id mismatch (`'local_user'` vs UUID) + non-existent `goal_logs.value` column; avatar dir not deleted on wipe; no localization (hardcoded Italian); Phase 2 iCloud sync 100% absent (requires a backend decision since CloudKit is Apple-only).
-- The document contains a parity scorecard, per-area gap analysis with `file:line` refs, a confirmed-bugs table, a Phase-2 architecture decision section, a prioritized implementation order, and open product questions.
+### Details
+Resolved all actionable Xcode warnings when building the macOS desktop target in Xcode 26.6. Three files were modified to eliminate warnings across the Runner project, Pods project, and third-party pod dependencies.
 
-## [2026-07-04]: Private Mode parity — implementation (Phase 1)
-Executing `PRIVATE_MODE_IMPLEMENTATION_PLAN.md` (decided via a design interview: mirror mobile; macOS↔iOS CloudKit sync in Phase 2; Windows/Linux local-only forever; full slang localization incl. Arabic RTL; macOS actionable notifications).
+### Changes Made
 
-### Current Status
-- **WS1 — DB foundation: DONE.** Ported mobile's `private_db_schema.dart` verbatim (single source of truth, v3, sync_state/sync_meta + dirty/tombstone triggers). Rewrote `desktop_private_db.dart` onto it: `PRAGMA foreign_keys = ON`, `seedProfile` owner bootstrap, `deleteAllPrivateData` (wipe+avatar+reseed, keep key/owner, **stays in Private mode**), fresh `evolve_private_v2.db` baseline, static testable helpers (`seedProfile`/`wipeUserData`/`applyImport`). Fixed **B1** (profile bootstrap + FKs), **B2** (import under real owner UUID, not `local_user`), **B3** (`goal_logs.value` column), **B6** (avatar dir deleted on wipe). Updated callers (`private_dashboard_repository`, `goal_categories_controller`, `settings_page`) for the aligned schema (NOT-NULL timestamps, no `is_active`). Added `sqflite_common_ffi`. Tests: `test/private_db_schema_test.dart` (10) green.
-- **WS2 — Pro unlock: DONE.** Added `desktopIsProProvider` (true in Private mode, else RevenueCat) in `desktop_subscription_controller.dart`; rerouted the real feature gates (macro-stats year selection ×2 in `goals_stats_view.dart`, >100-goals cap in `dashboard_page.dart`). Pro badge/paywall stay hidden via `!isPrivateMode`. Test: `test/private_entitlement_test.dart` green.
-- Verification: `flutter analyze` clean on all touched files (remaining warnings are pre-existing debt in `goals_stats_view.dart`). 5 pre-existing widget/config test failures are environmental (need `--dart-define` Supabase config) and predate this work.
+#### 1. `macos/Runner/Info.plist`
+- **Fix**: Changed `LSApplicationCategoryType` from `public.app-category.lifestyle` to `public.app-category.productivity`
+- **Why**: Eliminated the "No App Category is set" warning caused by a mismatch between Info.plist and build settings (which already used `productivity`)
 
-- **WS3 — AI external-send consent: DONE.** `openrouter_config.dart` key now via `--dart-define=OPENROUTER_API_KEY` (empty→inert). `DesktopPrivateDb.hasPrivateAiExternalConsent`/`setPrivateAiExternalConsent` added. `ai_coach_page.dart` now gates every external send behind `_ensurePrivateAiConsent()` in Private mode (blocks until accepted; consent persisted in the profiles row).
-- **WS4a — Local analytics engine: DONE.** Ported `mobile/lib/core/private_analytics.dart` **verbatim** → `lib/features/statistics/data/private_analytics.dart` (+ `canonicalBestHabitsTimeframe`). Added `private_analytics_source.dart` (`privateAnalyticsDataProvider` loads goals/logs from the encrypted DB into the engine's input structures, refreshes on dashboard changes). Rerouted the consumed stat providers in `statistics_rpc_providers.dart` to compute locally in Private mode (global critical day, global trend, yearly grid, performance-by-day, alerts, + best/critical habits) — private branch returns before any Supabase read. Parity test `test/private_analytics_test.dart` (19 vectors ported verbatim from mobile) green. **Statistics now render in Private mode** (was the single biggest gap).
+#### 2. `macos/Runner.xcodeproj/project.pbxproj`
+- **Fix**: Updated `LastUpgradeCheck` from `1510` to `2660`
+- **Why**: Eliminated the "Update to recommended settings" warning on the Runner project by telling Xcode the project has been reviewed with Xcode 26.6
 
-### Test status
-`flutter test` → **+68 -1** (was +59 -5). All 37 new Private-Mode tests pass (`private_db_schema_test` 10, `private_entitlement_test` 1, `private_analytics_test` 19, `private_analytics_extra_test` 7). The single remaining failure is `desktop_supabase_config_security_test` (needs `--dart-define` Supabase config; environmental, fails identically on the original code). The onboarding-guard fix in `dashboard_page._ensureProfileNameReady` also resolved 4 pre-existing widget-test failures — net test health improved from -5 to -1.
+#### 3. `macos/Podfile`
+- **Fix 1**: Added `inhibit_all_warnings!` in the `target 'Runner'` block
+- **Why**: Suppresses all warnings from third-party CocoaPods dependencies (SQLCipher ~100+ implicit conversion warnings, sign_in_with_apple switch exhaustive warning, sqflite_sqlcipher unicode whitespace warning)
+- **Fix 2**: Added `installer.pods_project.root_object.attributes['LastUpgradeCheck'] = '2660'` in `post_install`
+- **Why**: Eliminates the "Update to recommended settings" warning on the Pods.xcodeproj
 
-### DONE (this pass)
-- **WS4b** — ported habit **correlations** + **macro-goal stats** (`computeHabitCorrelations`/`computeAllHabitCorrelations`/`computeMacroGoalsStats` + `MacroGoalStat`); wired `habitCorrelationsRpcProvider`/`allHabitCorrelationsRpcProvider`/`macroGoalsStatsRpcProvider` to compute locally in Private mode (macro stats map `DashboardGoal`→`MacroGoalStat`). **All statistics + macro-goal stats now render in Private mode.**
-- **WS5** — unified the private name onto DB `profiles.full_name` (name dialog, greeting, and gate use the DB; removed the `SharedPreferences 'private_profile_name'` fork); avatar reloads from the DB on launch (side-effect of the B1 fix — `_ProfileCard` renders `privateProfile.avatarPath`); `_exportData` uses `DesktopPrivateDb.exportData()` in Private mode (full export incl. profile + categories, tagged `mode:'private'`). Also fixed an onboarding bug where `_ensureProfileNameReady` prompted in a non-private no-user state.
-- **WS8** — macOS actionable notifications: `DesktopNotificationService` registers a Done/Skip/Snooze category, handles the response, and in Private mode writes the habit log to the encrypted DB with a history-computed streak (`DesktopPrivateDb.setHabitLogFromNotification`); `main.dart` wires `DesktopNotificationService.onLocalWrite` (via an explicit `ProviderContainer` + `UncontrolledProviderScope`) to refresh the dashboard + stats. Windows/Linux keep tap-to-open (deferred).
+### Warnings NOT Fixed (Cannot be fixed locally)
+- **Flutter Assemble**: `objective_c.dylib` framework name inconsistency — this is an upstream issue in the `objective_c` Dart package. Must be fixed by the package maintainers.
 
-- **WS6** — private settings now persist to the encrypted DB `profiles` row: added `DesktopPrivateDb.updateSettings` + the pure `sanitizeSettings` (filters to known columns, coerces bools→0/1, re-forces `is_pro=1`/`sentry_consent=0`); `settings_page._syncProfile` writes to the DB in Private mode (was a no-op — Supabase client is null). Settings are now Phase-2-sync-ready. (Note: they also still write to SharedPreferences via the existing controllers, which serve as the fast local cache and startup load path; migrating the *load* path to DB-only is an optional follow-up — the values are non-sensitive theme/format prefs.)
-- **WS9** — mode-selection guard test `test/private_stats_mode_test.dart`: proves the stat providers compute locally in Private mode (injecting `privateAnalyticsDataProvider`) and never fall through to the Supabase RPC branch. Plus WS6 `sanitizeSettings` tests. Test totals: **42 Private-Mode tests, `flutter test` +72 -1**.
+### Tech Notes
+- No new dependencies added
+- Ran `pod install` successfully after changes
+- CocoaPods base config warnings during install are expected/normal for Flutter projects (handled via xcconfig chain)
 
-- **WS7 — Localization: FOUNDATION DONE; full-app sweep + RTL remaining.** Stood up **slang** (deps `slang`/`slang_flutter` + dev `slang_build_runner`; `slang.yaml`; `lib/i18n/{en,it,es,de,ar}.i18n.json`; generated `lib/i18n/translations.g.dart` — `dart run slang` verified working in this environment). Wired `TranslationProvider` in `main.dart` and synced the active slang locale from `desktopLocaleController` in `EvolveDesktopApp` (global `t` accessor; `_appLocaleFor` maps `Locale`→`AppLocale`). **Localized all Private-Mode strings** added this effort — auth "Continue privately", AI consent dialog, delete/export gates, name-prompt dialog — in **all 5 languages**. Compiles clean; `flutter test` +72 -1.
-  - **Remaining (incremental, mechanical):** extract the rest of the app's hardcoded Italian (`settings_page` bulk, `statistics_page`, `goals_stats_view`, auth form labels, AI settings dialog, dashboard labels, etc.) into `*.i18n.json` keys + `t.*` (regenerate with `dart run slang`), and do the **Arabic RTL widget pass** (port mobile `lib/core/rtl.dart`; directional paddings/alignments/icons). The infrastructure is in place, so this is additive — best run as a dedicated sweep (a subagent can do the string extraction).
+## [2026-07-07]: Fix App Store Distribution Errors (dSYM + Version)
 
-### WS7 full-app sweep — Current Status ([2026-07-04], in progress)
-Executing the sweep screen-by-screen (align to mobile values; reuse mobile keys where the string exists; explicit 5-lang translations otherwise). A Python helper (`scratchpad/i18n_tools.py apply <spec.json>`) mechanically copies mobile key values (all 5 langs) into the desktop JSONs so each increment is a small, auditable spec → `dart run slang` → `t.*` swap → `dart format` → `flutter analyze lib` → `flutter test`.
+### Details
+Fixed two blockers preventing App Store distribution of the macOS desktop app:
+1. Missing Sentry.framework dSYM in the archive
+2. Incorrect version number for first upload
 
-**DONE this sweep (each verified +72 -1, analyze clean):**
-- **Shell/nav** — `navigation_controller.dart` (`t.nav.*`), `desktop_shell.dart` (`t.shell.*` sync pills, search hints).
-- **Auth** — `auth_page.dart` fully localized (`t.auth.*`; reused mobile `auth.*`/`profile.personalInfo.*`; kept desktop's 8-char password rule as a new key).
-- **Create dialogs** — `create_goal_dialog.dart` + `create_habit_dialog.dart` (`t.form.*`, `t.createGoal.*`, `t.createHabit.*`; reused `common.actions.cancel`, `common.months`; added `common.weekdayInitials`). Removed a pre-existing unused import in the habit dialog.
-- **Domain labels** — `dashboard_models.dart` `GoalStateLabel`/`GoalTypeLabel`/`CalendarViewModeLabel` + `dashboardGoalDueLabel` (reused `common.calendarView.*`, `macroGoals.types.*`, `statistics.completed2/notCompleted`; new `goalState.active`, `dueLabel.*`). NOTE: left the `dashboardGoalColor` switch keys (`'lavoro'`…) — they are DB category-lookup keys, not UI — and the `fromJson` `?? 'Generale'` data fallback (locale-independent parse default).
+### Changes Made
 
-**Key gotcha fixed:** widget tests assert Italian UI copy, but slang base locale is `en`, so localizing broke 7 widget tests. Fix: `test/widget_test.dart` now has `setUp(() => LocaleSettings.setLocale(AppLocale.it))` (async — slang lazy-loads the deferred locale lib; `setLocaleSync` throws "Deferred library l_it was not loaded"). This pins the widget tests to Italian so hardcoded-Italian assertions and the localized Italian values coincide. Keep new `it` values byte-identical to the original hardcoded Italian or these tests regress.
+#### 1. `pubspec.yaml`
+- **Fix**: Changed `version` from `1.0.1+2` to `1.0.0+1`
+- **Why**: First App Store upload requires starting at 1.0.0 (marketing version) with build number 1
 
-**ALSO DONE (each verified +72 -1, analyze clean):**
-- **Dashboard** — `dashboard_page.dart` fully localized (`t.dashboard.*`; reused `statistics.mood2/energy`, `habits.goodMorning`, `giorniConsecutivi`; added `common.weekdaysLong`; date label now uses `common.months` + `common.weekdaysLong`).
-- **Statistics** — `statistics_page.dart` fully localized under a self-contained `stats.*` namespace (65+ keys, mostly explicit since desktop copy differs in casing/wording from mobile; reused `statistics.statistics/globalTxt/resilience/mood2`, `common.habits`). Both global/habit tab-label switches localized.
-- **Habits** — `habits_page.dart` fully localized (`t.habitsPage.*`; reused `common.actions.{cancel,save,delete}`, new `common.actions.edit`, `common.none`, `common.habits`, `oggi`; `stats.bestStreakLabel/currentWeek/noHabit`, `dashboard.streakDaysShort`). Removed the `_months` array (now `common.months`). **Important nuance:** the habit-editor category dropdown keeps `_habitCategories` as stable Italian VALUES (DB data) and localizes only the displayed label via `_localizedHabitCategory()` — this avoids a DropdownButtonFormField "value not in items" crash when editing a habit created in another language. The `pref_default_calendar_view` switch (`'settimana'||'week'`…) is left as-is (matches stored pref values, already bilingual).
+#### 2. `macos/Runner.xcodeproj/project.pbxproj`
+- **Fix**: Added "Copy SPM dSYMs" build phase to the Runner target
+- **Why**: Sentry SDK is included via Swift Package Manager as a pre-built xcframework (`getsentry/sentry-cocoa`). Xcode has a known bug where it doesn't copy dSYMs from SPM binary dependencies into the archive. The script runs only during archiving (`ACTION = install`) and finds all `.dSYM` bundles under `SourcePackages/artifacts/` and copies them into `DWARF_DSYM_FOLDER_PATH`.
+- **Root Cause**: The error "dSYM for the A" referred to Sentry.framework — confirmed by matching UUIDs `6366CFF2-C8BE-3E50-A69D-9399F335E6DD` (x86_64) and `9F678086-6277-3D61-B292-9D4098B03A2C` (arm64).
 
-**Tooling:** `scratchpad/i18n_tools.py apply <spec.json>` + `replace_stats.py`/`replace_habits.py` (bulk exact-literal→`t.*` swaps) live in the session scratchpad. Pattern for big screens: bulk-replace literals → add import → `flutter analyze` → fix the flagged `const` widgets (a `t.*` value can't sit inside a `const` widget/list/InputDecoration — drop the outer `const`, re-`const` the static children).
+### Tech Notes
+- The "Copy SPM dSYMs" script runs ONLY during Archive (`ACTION = install`), not during regular builds
+- It copies ALL dSYMs from SPM binary package artifacts, future-proofing against other binary SPM deps
+- No new dependencies added
 
-**ALSO DONE (each verified +72 -1, analyze clean):**
-- **Goals** — `goals_page.dart` (2030 lines) fully localized (`t.goalsPage.*` + heavy reuse of `macroGoals.types/quarterNumber/add*Goal/completed/failed/create`, `dueLabel.*`, `stats.currentWeek`, `common.calendarView.week`, `common.months`, `form.*`, `habitsPage.prevPeriod/nextPeriod/close`, `common.actions.*`). Widget-test-critical Italian kept exact (`Lifetime/Annuale/Trimestrale/Mensile/Settimanale` via `macroGoals.types`, `Stats`, tooltip `Categorie`). Default goal categories keep stable Italian `key` + localized label via `_categoryLabel()` (mobile flat `lavoro`..`altro`). Removed `_months`.
-- **Goals stats** — `goals_stats_view.dart` (2262 lines) localized; mapped to mobile `macroGoals.*`/`statistics.*`/`common.*` (align-to-mobile = adopt mobile values incl. minor casing) + a small `goalsStats.*` for emoji/colon-free variants. Analytics snake_case map keys left as data.
-- **AI Coach** — `ai_coach_page.dart` + `openrouter_service.dart`. Reused mobile `ai.coach/dailyHabits/macroGoals` and the whole `ai.openRouter.*` block; added `aiCoach.*` for the greeting, the AI **context-prompt** pieces (localized so the model answers in the user's language, mirroring mobile), the context-settings dialog, and chat chrome. LEFT the `[OpenRouter]` `debugPrint`/`AppLogger` strings (developer logs, not user-facing).
+## [2026-07-07]: Merge Global and Habit Selectors in Statistics Page
 
-**SETTINGS + MISC + RTL — DONE.**
-- **Settings** — `settings_page.dart` (2361 lines) fully localized via a dedicated subagent under a `settingsPage.*` namespace (164 keys; 16 reuse mobile values, 148 bespoke; 5 param keys incl. `useAccent(hex)` preserving the test-critical `Usa accento #3B82F6` tooltip). Widget-test-asserted `it` values kept byte-exact. Calendar/language dropdown OPTIONS left as stored data values (compared against prefs) — same key-stable pattern as habit categories; a documented, deliberate limitation (dropdown options show Italian labels; the row labels around them ARE localized).
-- **Misc (8 files)** — `consent_page`, `dashboard_controller` (sync warnings), `desktop_notification_service` (macOS action labels via `notifications.action*`, platform-summary + notification bodies via new `notif.*` — corrected an earlier semantic mis-map where the per-habit body wrongly reused the morning-brief text), `desktop_subscription_controller` (11 status/error messages via `subscriptionCtrl.*`), `desktop_biometric_controller` (`{String? reason}` default-param fix + gate strings via `biometricGate.*`, reused `privacy.biometricAuthReason/UnlockReason`), `auth_controller` (Apple/OAuth errors via `authCtrl.*`, param `{provider}` keys), `evolve_dialog` (close tooltip). An **exhaustive Italian-detector** (not keyword grep) was run over all of `lib` to catch stragglers the per-screen scans missed (auth_controller was an entire missed file).
-- **Arabic RTL** — ported `lib/core/rtl.dart` (verbatim from mobile). Converted physical `EdgeInsets.only(left/right)`→`EdgeInsetsDirectional.only(start/end)`, asymmetric `fromLTRB`→`fromSTEB`, `Alignment.center{Left,Right}`→`AlignmentDirectional.center{Start,End}`, and mirrored navigation/disclosure glyphs (period prev/next chevrons in goals/habits, settings disclosure chevron) via `directionalIcon`/`DirectionalIcon`. Left decorative gradient alignments and the semantic trend arrow un-mirrored. RTL directionality itself is automatic for `ar` (MaterialApp `supportedLocales` + `GlobalMaterialLocalizations`).
+### Details
+Modified the statistics page UI to combine the 'Global' vs 'Single habit' segmented control and the individual habit dropdown into a single selector dropdown, simplifying the UX and saving vertical space.
 
-**Intentionally NOT localized (documented):** developer/misconfig diagnostics (`Configurazione Supabase desktop mancante`, the `EVOLVE_DESKTOP_OAUTH_REDIRECT_URL` validation), `[OpenRouter]`/`AppLogger`/`debugPrint` dev logs, data values (DB column keys, `pref_*`/`notif_*` keys, `dashboardGoalColor`/category `key`s, `fromJson` `?? 'Generale'/'Categoria'` parse defaults, calendar/language dropdown option values), and brand tokens (`Evolve`, `Evolve Pro`, `PRO`, `RevenueCat`).
+### Changes Made
 
-**Tests:** widget/logic tests that assert the Italian copy (`widget_test`, `dashboard_controller_test`, `evolve_dialog_test`) each pin the slang locale to Italian in `setUp` (`LocaleSettings.setLocale(AppLocale.it)`, async — the deferred locale lib). Added `test/localization_rtl_test.dart` (WS7 guard: Arabic values load, shell lays out RTL, `directionalIcon` mirrors). Final: `flutter test` **+74 -1**, `flutter analyze lib` **0 errors**.
+#### 1. `lib/features/statistics/presentation/statistics_page.dart`
+- **Fix**: Removed `_HabitSelectorCard` from the top trailing header.
+- **Fix**: Removed the `EvolveSegmentedControl` from `_controlRow()`.
+- **Fix**: Replaced the segmented control with the `_HabitSelectorCard` wrapped in the `_filterKey` `KeyedSubtree`.
+- **Fix**: Updated `_HabitSelectorCard` to always display an `EvolveSelect<String>` dropdown containing a special `_global` value (labeled "Globale") followed by all available habits.
+- **Why**: Eliminates the two-step process of first selecting "Single habit" and then choosing the habit, combining it all into one direct selection dropdown.
+
+
+### Tech Notes
+- Maintained the "Evolve Pro" badge inside the new combined dropdown.
+- Passed `snapshot` and `selectedHabit` directly to `_controlRow` method.
 
 ### WS7 — COMPLETE
 The full-app localization sweep is finished: every user-facing Italian string across all desktop screens, dialogs, controllers, and services is localized in **en/it/es/de/ar** (align-to-mobile: reused mobile keys/values wherever the string matched, professional bespoke translations otherwise incl. MSA Arabic), and the Arabic **RTL** pass is done. Private Mode on desktop is now at full functional + localization parity with mobile. `flutter test` **+74 -1** (only the environmental Supabase-config test fails), `flutter analyze lib` **0 errors**.
@@ -372,3 +369,4 @@ Apple-like control kit COMPLETE (analyze clean, 140/140 tests green, tree left u
 
 ### Current Status
 Deep macOS coherence polish COMPLETE (incl. owner-approved create-goal category picker). `flutter analyze` = 1 pre-existing issue, tests **144 / 1 pre-existing fail**; `dart format` clean; tree uncommitted for review. Immediate next step: on-device VISUAL QA on the Xcode machine (`flutter run -d macos`) — checklist in TO_SIMO_DO.md.
+

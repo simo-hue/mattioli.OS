@@ -1,5 +1,63 @@
 # TO_SIMO_DO.md
 - [ ] Local AI Models ( Ollama for desktop? Other solutions? For mobile what can we do? )
+
+
+## DESKTOP + MOBILE — iCloud sync cross-platform (needs your Xcode machine)
+
+All code is done and committed (see `desktop/ICLOUD_SYNC_PLAN.md` §3b). The steps
+below are the Apple-side setup and device QA that cannot be done from this dev
+environment (no Xcode here; the macOS Swift bridge is `swiftc`-typechecked but
+not compiled).
+
+### 1. Xcode capabilities (one-time)
+- [ ] **mobile/ios Runner target** → Signing & Capabilities → add **Keychain
+      Sharing** with group `com.simo.evolve.sync` (the entitlements file already
+      lists `$(AppIdentifierPrefix)com.simo.evolve` + `…sync`; the capability
+      toggle makes Xcode/provisioning accept it). iCloud/CloudKit capability is
+      already there from 1.0.8.
+- [ ] **desktop/macos Runner target** → Signing & Capabilities → add **iCloud
+      (CloudKit)** with container `iCloud.com.simo.evolve` (existing container,
+      same team) **and Keychain Sharing** with groups
+      `com.simo.evolve.evolveDesktop` + `com.simo.evolve.sync` — must match
+      DebugProfile.entitlements / Release.entitlements, which are already
+      updated. Signing team `8528AN28A3`.
+
+### 2. CloudKit Console (before ANY release with avatars)
+- [ ] In the `iCloud.com.simo.evolve` container: verify record type
+      `PrivateRecord` exists with fields `tableName(String)`, `updatedAt(Int64)`,
+      `deleted(Int64)`, `payload(Bytes)` **and `asset(Asset)`** in **Development**
+      (a dev-build sync with an avatar creates it automatically), then
+      **Deploy Schema Changes → Production**. The `asset` field is NEW in this
+      release — without promoting it, avatar sync fails in Production.
+
+### 3. Two-pass QA matrix (per the sequencing decision)
+Pass A — both apps Xcode-run (**Development** environment):
+- [ ] Mac first-enable: creates key/owner/keycheck; iPhone (dev build) adopts and pulls all.
+- [ ] iPhone-had-data + Mac-had-data → union merge, no data loss, owner unified.
+- [ ] Edit on iPhone → appears on Mac ≤15 min (periodic) or on window refocus / after-write on the other side.
+- [ ] Avatar: set on iPhone → appears on Mac (and reverse); remove propagates.
+- [ ] Edit-vs-delete LWW; offline edits converge on reconnect.
+- [ ] Delete private data on Mac with sync on → confirm dialog shows the multi-device note; zone wiped; iPhone stops syncing (keycheck/key gone); local iPhone copy intact.
+- [ ] Old-iOS simulation (1.0.9 build) + new Mac → Mac shows "Waiting for iCloud Keychain — make sure the app on your iPhone is up to date"; updating the iPhone app unblocks it.
+- [ ] macOS sandbox: avatar CKAsset upload/download temp files work (flagged risk).
+
+Pass B — **TestFlight iOS 1.0.10 + TestFlight Mac** (Production environment) — release gate:
+- [ ] Repeat the core matrix (fresh pull, merge, edit propagation, avatar, delete).
+
+## MOBILE
+- [ ] (nothing else pending)
+
+---
+
+fastlane ios update_notes
+
+## DESKTOP ONBOARDING TUTORIAL
+- [ ] Reset tutorials from Settings (or use a fresh install state).
+- [ ] Launch the app and verify the Overview (Dashboard) tutorial starts automatically.
+- [ ] Complete the Overview tutorial and confirm that pressing "Next" on the final step automatically switches the tab to "Goals".
+- [ ] Confirm the Goals tutorial starts immediately. Complete it and confirm the final step says "Next" and switches the tab to "Insights".
+- [ ] Confirm the Statistics (Insights) tutorial starts immediately. Complete it and confirm the final step says "Finish" and returns you to the "Overview" tab.
+
 - [ ] Widget for iPhone & MacOS
 - [ ] Implementing iPhone data's based like screen time, fitness ( Data iPhone already collect so I can read them )
 - [ ] /grill-me While trying the macOS implementation from another device ( not this one here ) when I clicked on the circular user’s profile image the Evolve desktop app suddently crashed
@@ -87,3 +145,4 @@ Setting the team wasn't enough: the Runner app target inherited `CODE_SIGN_IDENT
 - **Re-run the two QA repros on the iOS Simulator** (debug build) to confirm the crashes are gone. This machine has no Xcode, so both fixes were code-verified only — `flutter analyze` (16 pre-existing infos, 0 errors/warnings) and `flutter test` (**147 pass**, +3 new regression tests). No new env vars, dependencies, or setup; pure code fixes.
   1. **AI Coach opens cleanly**: from the home "Protocollo" panel, tap the AI Chat tile. The screen must open and show the "Hello! I'm your Discipline Coach…" greeting (previously crashed with an `InheritedLocaleData … before initState() completed` error). Also tap the trash/new-chat action and confirm it re-seeds the greeting fine.
   2. **Settings → back-to-login is crash-free, especially with a toast on screen**: trigger any toast (e.g. long-press-copy an AI Coach message, or a Settings import error) and, **within ~2s while the toast is still visible**, log out / go back to login (cloud logout via Settings, and the Private-mode "Go to login" path). No `_dependents.isEmpty is not true` assertion should fire. Confirm toasts still fade in/out normally elsewhere.
+

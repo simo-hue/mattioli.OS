@@ -210,7 +210,6 @@ class DesktopPrivateDb {
             'goal_id': l['goal_id'],
             'date': l['date'],
             'status': l['status'],
-            'value': l['value'],
             'created_at': l['created_at'],
             'updated_at': l['updated_at'],
             'streak': l['streak'],
@@ -872,7 +871,6 @@ class DesktopPrivateDb {
           'goal_id': goalId,
           'date': date,
           'status': l['status'] ?? 'done',
-          'value': l['value'],
           'streak': l['streak'] ?? 0,
           'created_at': l['created_at'] ?? now,
           'updated_at': l['updated_at'] ?? now,
@@ -889,7 +887,6 @@ class DesktopPrivateDb {
           'goal_logs',
           {
             'status': l['status'] ?? 'done',
-            'value': l['value'],
             'updated_at': l['updated_at'] ?? now,
           },
           where: 'id = ?',
@@ -1064,7 +1061,10 @@ class DesktopPrivateDb {
       dbPath,
       version: PrivateDbSchema.version,
       password: key,
-      onConfigure: PrivateDbSchema.onConfigure,
+      onConfigure: (db) async {
+        await PrivateDbSchema.onConfigure(db);
+        await db.execute('PRAGMA foreign_keys = ON;');
+      },
       onCreate: PrivateDbSchema.onCreate,
       onUpgrade: PrivateDbSchema.onUpgrade,
     );

@@ -1204,6 +1204,7 @@ class _Translations$common$actions$es extends Translations$common$actions$en {
 	@override String get save => 'Guardar';
 	@override String get delete => 'Eliminar';
 	@override String get edit => 'Editar';
+	@override String get pick => 'Elegir';
 }
 
 // Path: common.calendarView
@@ -1366,6 +1367,7 @@ extension on TranslationsEs {
 			'common.actions.save' => 'Guardar',
 			'common.actions.delete' => 'Eliminar',
 			'common.actions.edit' => 'Editar',
+			'common.actions.pick' => 'Elegir',
 			'common.months.0' => 'Enero',
 			'common.months.1' => 'Febrero',
 			'common.months.2' => 'Marzo',
@@ -1810,9 +1812,9 @@ extension on TranslationsEs {
 			'aiCoach.greeting' => '¡Hola! Soy Evolve AI Coach. Estoy aquí para ayudarte a optimizar tu protocolo y alcanzar tus objetivos. ¿Cómo puedo ayudarte hoy?',
 			'aiCoach.systemPersona' => 'Eres Evolve AI Coach, un asistente virtual para la disciplina personal.',
 			'aiCoach.habitsHeader' => 'HÁBITOS ACTIVOS:',
-			'aiCoach.noActiveHabits' => 'Sin hábitos activos.',
 			_ => null,
 		} ?? switch (path) {
+			'aiCoach.noActiveHabits' => 'Sin hábitos activos.',
 			'aiCoach.habitLine' => ({required Object title, required Object done, required Object streak}) => '${title} (Completado hoy: ${done}, Racha: ${streak})',
 			'aiCoach.goalsHeader' => 'OBJETIVOS:',
 			'aiCoach.noActiveGoals' => 'Sin objetivos a largo plazo activos.',

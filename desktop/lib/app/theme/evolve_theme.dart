@@ -32,6 +32,12 @@ abstract final class EvolveColors {
   static const success = Color(0xFF26C252);
   static const successBright = Color(0xFF22C55E);
   static const destructive = Color(0xFFEF4444);
+
+  static Color streakColor(int streak) {
+    if (streak > 0) return success;
+    if (streak < 0) return destructive;
+    return amber;
+  }
 }
 
 class EvolvePalette extends ThemeExtension<EvolvePalette> {

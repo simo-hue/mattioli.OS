@@ -81,7 +81,8 @@
       "cancel": "Abbrechen",
       "save": "Speichern",
       "delete": "Löschen",
-      "edit": "Bearbeiten"
+      "edit": "Bearbeiten",
+      "pick": "Auswählen"
     },
     "months": [
       "Januar",

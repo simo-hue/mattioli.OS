@@ -1,3 +1,5 @@
+import 'dart:io';
+
 import 'package:evolve_desktop/app/theme/evolve_theme.dart';
 import 'package:evolve_desktop/core/desktop_data_mode.dart';
 import 'package:evolve_desktop/features/ai_coach/presentation/ai_coach_page.dart';
@@ -431,9 +433,13 @@ class _TopBar extends ConsumerWidget {
     final syncPending = dashboard.errorMessage != null;
     final user = ref.watch(desktopAuthControllerProvider).user;
     final isPrivate = ref.watch(activeDesktopDataModeProvider).isPrivate;
+    final privateProfile = ref.watch(privateProfileProvider).value;
     final privateName = isPrivate
-        ? ref.watch(privateProfileProvider).value?.fullName
+        ? privateProfile?.fullName
         : null;
+    final avatarUrl = isPrivate
+        ? privateProfile?.avatarPath
+        : user?.userMetadata?['avatar_url'] as String?;
     final isPro = ref.watch(desktopIsProProvider);
 
     final name = user != null
@@ -588,6 +594,8 @@ class _TopBar extends ConsumerWidget {
                     (privateName != null ? {'full_name': privateName} : null),
                 user?.email,
               ),
+              avatarUrl: avatarUrl,
+              isPrivateMode: isPrivate,
               isPro: isPro,
               onTap: () => ref
                   .read(navigationControllerProvider.notifier)
@@ -603,11 +611,15 @@ class _TopBar extends ConsumerWidget {
 class _AvatarButton extends StatelessWidget {
   const _AvatarButton({
     required this.initials,
+    this.avatarUrl,
+    this.isPrivateMode = false,
     required this.isPro,
     required this.onTap,
   });
 
   final String initials;
+  final String? avatarUrl;
+  final bool isPrivateMode;
   final bool isPro;
   final VoidCallback onTap;
 
@@ -633,15 +645,24 @@ class _AvatarButton extends StatelessWidget {
             child: Container(
               color: context.evolveColors.panel,
               alignment: Alignment.center,
-              child: Text(
-                initials,
-                style: TextStyle(
-                  color: context.evolveColors.foreground,
-                  fontWeight: FontWeight.w800,
-                  fontSize: 10,
-                  letterSpacing: 0.2,
-                ),
-              ),
+              child: avatarUrl != null
+                  ? Image(
+                      image: isPrivateMode
+                          ? FileImage(File(avatarUrl!))
+                          : NetworkImage(avatarUrl!) as ImageProvider,
+                      fit: BoxFit.cover,
+                      width: double.infinity,
+                      height: double.infinity,
+                    )
+                  : Text(
+                      initials,
+                      style: TextStyle(
+                        color: context.evolveColors.foreground,
+                        fontWeight: FontWeight.w800,
+                        fontSize: 10,
+                        letterSpacing: 0.2,
+                      ),
+                    ),
             ),
           ),
         ),

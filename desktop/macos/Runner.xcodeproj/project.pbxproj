@@ -245,6 +245,7 @@
 				E0C0D3A10000000000000001 /* Check Required Dart Defines */,
 				3399D490228B24CF009A79C7 /* ShellScript */,
 				930B3787C9A7C9F265FDF783 /* [CP] Embed Pods Frameworks */,
+				A1B2C3D4E5F60000DEADBEEF /* Copy SPM dSYMs */,
 			);
 			buildRules = (
 			);
@@ -451,6 +452,24 @@
 			shellScript = "sh \"$SRCROOT/../scripts/check_required_dart_defines.sh\"\n";
 			showEnvVarsInLog = 0;
 		};
+		A1B2C3D4E5F60000DEADBEEF /* Copy SPM dSYMs */ = {
+			isa = PBXShellScriptBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+			);
+			inputFileListPaths = (
+			);
+			inputPaths = (
+			);
+			name = "Copy SPM dSYMs";
+			outputFileListPaths = (
+			);
+			outputPaths = (
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+			shellPath = /bin/sh;
+			shellScript = "# Copy dSYMs from SPM binary dependencies into the archive.\n# This fixes missing dSYMs for pre-built xcframeworks (e.g. Sentry).\nif [ \"${ACTION}\" = \"install\" ] && [ -d \"${DWARF_DSYM_FOLDER_PATH}\" ]; then\n  PACKAGES_PATH=\"${BUILD_DIR%Build/*}SourcePackages/artifacts\"\n  if [ -d \"${PACKAGES_PATH}\" ]; then\n    find \"${PACKAGES_PATH}\" -name \"*.dSYM\" -type d | while read dsym; do\n      echo \"Copying ${dsym} to ${DWARF_DSYM_FOLDER_PATH}\"\n      cp -a \"${dsym}\" \"${DWARF_DSYM_FOLDER_PATH}\"\n    done\n  fi\nfi\n";
+		};
 /* End PBXShellScriptBuildPhase section */
 
 /* Begin PBXSourcesBuildPhase section */
@@ -508,7 +527,7 @@
 				CURRENT_PROJECT_VERSION = 1;
 				GENERATE_INFOPLIST_FILE = YES;
 				MARKETING_VERSION = 1.0;
-				PRODUCT_BUNDLE_IDENTIFIER = com.simo.evolve.evolveDesktop.RunnerTests;
+				PRODUCT_BUNDLE_IDENTIFIER = com.simo.evolve.RunnerTests;
 				PRODUCT_NAME = "$(TARGET_NAME)";
 				SWIFT_VERSION = 5.0;
 				TEST_HOST = "$(BUILT_PRODUCTS_DIR)/evolve_desktop.app/$(BUNDLE_EXECUTABLE_FOLDER_PATH)/evolve_desktop";
@@ -523,7 +542,7 @@
 				CURRENT_PROJECT_VERSION = 1;
 				GENERATE_INFOPLIST_FILE = YES;
 				MARKETING_VERSION = 1.0;
-				PRODUCT_BUNDLE_IDENTIFIER = com.simo.evolve.evolveDesktop.RunnerTests;
+				PRODUCT_BUNDLE_IDENTIFIER = com.simo.evolve.RunnerTests;
 				PRODUCT_NAME = "$(TARGET_NAME)";
 				SWIFT_VERSION = 5.0;
 				TEST_HOST = "$(BUILT_PRODUCTS_DIR)/evolve_desktop.app/$(BUNDLE_EXECUTABLE_FOLDER_PATH)/evolve_desktop";
@@ -538,7 +557,7 @@
 				CURRENT_PROJECT_VERSION = 1;
 				GENERATE_INFOPLIST_FILE = YES;
 				MARKETING_VERSION = 1.0;
-				PRODUCT_BUNDLE_IDENTIFIER = com.simo.evolve.evolveDesktop.RunnerTests;
+				PRODUCT_BUNDLE_IDENTIFIER = com.simo.evolve.RunnerTests;
 				PRODUCT_NAME = "$(TARGET_NAME)";
 				SWIFT_VERSION = 5.0;
 				TEST_HOST = "$(BUILT_PRODUCTS_DIR)/evolve_desktop.app/$(BUNDLE_EXECUTABLE_FOLDER_PATH)/evolve_desktop";

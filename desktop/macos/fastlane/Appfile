@@ -1,0 +1,3 @@
+app_identifier("com.simo.evolve") # The bundle identifier of your app
+apple_id("mattioli.simone.10@gmail.com") # Your Apple Developer Portal username
+itc_team_id("128920131") # App Store Connect Team ID

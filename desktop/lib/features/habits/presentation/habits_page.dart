@@ -236,7 +236,7 @@ class _Summary extends StatelessWidget {
         label: t.stats.bestStreakLabel,
         value: t.dashboard.streakDaysShort(n: snapshot.bestStreak),
         icon: LucideIcons.flame,
-        color: EvolveColors.amber,
+        color: EvolveColors.streakColor(snapshot.bestStreak),
       ),
     ];
     return Row(
@@ -725,10 +725,10 @@ class _HabitRowState extends State<_HabitRow> {
               width: metrics.streakWidth,
               child: Row(
                 children: [
-                  const Icon(
+                  Icon(
                     LucideIcons.flame,
                     size: 12,
-                    color: EvolveColors.amber,
+                    color: EvolveColors.streakColor(habit.streak),
                   ),
                   const SizedBox(width: 4),
                   Flexible(
@@ -736,8 +736,8 @@ class _HabitRowState extends State<_HabitRow> {
                       t.habitsPage.streakDays(n: habit.streak),
                       maxLines: 1,
                       overflow: TextOverflow.ellipsis,
-                      style: const TextStyle(
-                        color: EvolveColors.amber,
+                      style: TextStyle(
+                        color: EvolveColors.streakColor(habit.streak),
                         fontSize: 12,
                         fontWeight: FontWeight.w700,
                       ),
@@ -1759,12 +1759,16 @@ class _DayHabitRow extends StatelessWidget {
             ),
           ),
           const SizedBox(width: 10),
-          const Icon(LucideIcons.flame, size: 13, color: EvolveColors.amber),
+          Icon(
+            LucideIcons.flame,
+            size: 13,
+            color: EvolveColors.streakColor(streak),
+          ),
           const SizedBox(width: 4),
           Text(
             '$streak',
-            style: const TextStyle(
-              color: EvolveColors.amber,
+            style: TextStyle(
+              color: EvolveColors.streakColor(streak),
               fontSize: 12,
               fontWeight: FontWeight.w700,
             ),

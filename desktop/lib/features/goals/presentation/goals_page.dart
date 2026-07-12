@@ -9,7 +9,7 @@ import 'package:evolve_desktop/features/settings/application/desktop_subscriptio
 import 'package:evolve_desktop/features/settings/presentation/pro_features_modal.dart';
 import 'package:evolve_desktop/i18n/translations.g.dart';
 import 'package:evolve_desktop/core/rtl.dart';
-import 'package:evolve_desktop/shared/widgets/color_picker_dialog.dart';
+import 'package:evolve_desktop/shared/widgets/color_picker_button.dart';
 import 'package:evolve_desktop/shared/widgets/desktop_page.dart';
 import 'package:evolve_desktop/shared/widgets/evolve_controls.dart';
 import 'package:evolve_desktop/shared/widgets/evolve_dialog.dart';
@@ -17,6 +17,7 @@ import 'goals_stats_view.dart';
 import 'package:evolve_desktop/shared/widgets/evolve_panel.dart';
 import 'package:evolve_desktop/shared/widgets/evolve_toast.dart';
 import 'package:evolve_desktop/core/tutorial_provider.dart';
+import 'package:evolve_desktop/features/shell/application/navigation_controller.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:lucide_icons_flutter/lucide_icons.dart';
@@ -102,8 +103,9 @@ class _GoalsPageState extends ConsumerState<GoalsPage> {
         .toList();
 
     final categories = _availableCategories;
+    final mainTutorialSeen = ref.watch(tutorialProvider);
     final hasSeenTutorial = ref.watch(goalsTutorialProvider);
-    final showTutorial = !hasSeenTutorial && !_didFinishGoalsTutorial;
+    final showTutorial = mainTutorialSeen && !hasSeenTutorial && !_didFinishGoalsTutorial;
 
     if (showTutorial && activeGoals.isEmpty) {
       activeGoals = [
@@ -730,7 +732,7 @@ class _GoalsPageState extends ConsumerState<GoalsPage> {
                           _goToGoalsTutorialStep(index - 1),
                       onNextPressed: () {
                         if (index == steps.length - 1) {
-                          _finishGoalsTutorial();
+                          _finishGoalsTutorial(advanceToStats: true);
                           return;
                         }
                         _goToGoalsTutorialStep(index + 1);
@@ -746,11 +748,18 @@ class _GoalsPageState extends ConsumerState<GoalsPage> {
     );
   }
 
-  void _finishGoalsTutorial() {
+  void _finishGoalsTutorial({bool advanceToStats = false}) {
     if (!mounted || _didFinishGoalsTutorial) return;
     _didFinishGoalsTutorial = true;
     _clearGoalsTutorialState();
     ref.read(goalsTutorialProvider.notifier).setTutorialSeen(true);
+
+    if (advanceToStats) {
+      WidgetsBinding.instance.addPostFrameCallback((_) {
+        if (!mounted) return;
+        ref.read(navigationControllerProvider.notifier).select(DesktopSection.insights);
+      });
+    }
   }
 
   void _goToGoalsTutorialStep(int index) {
@@ -896,7 +905,7 @@ class _GoalsPageState extends ConsumerState<GoalsPage> {
         showStats: true,
         title: t.goalsPage.tutStatsTitle,
         description: t.goalsPage.tutStatsDesc,
-        nextButtonLabel: t.goalsPage.finish,
+        nextButtonLabel: t.goalsPage.next,
       ),
     ];
   }
@@ -2487,28 +2496,11 @@ class _CategoryEditorDialogState extends State<_CategoryEditorDialog> {
               decoration: InputDecoration(labelText: t.goalsPage.nameLabel),
             ),
             const SizedBox(height: 14),
-            Wrap(
-              spacing: 9,
-              runSpacing: 9,
-              children: [
-                for (final color in _goalColors)
-                  InkWell(
-                    onTap: () => setState(() => _color = color),
-                    child: CircleAvatar(
-                      radius: 12,
-                      backgroundColor: color,
-                      child: _color == color
-                          ? const Icon(LucideIcons.check, size: 14)
-                          : null,
-                    ),
-                  ),
-                CustomColorSwatch(
-                  size: 24,
-                  initial: _color,
-                  isSelected: !_goalColors.contains(_color),
-                  onPicked: (color) => setState(() => _color = color),
-                ),
-              ],
+            ColorPickerButton(
+              size: 24,
+              color: _color,
+              onColorChanged: (color) => setState(() => _color = color),
+              presetColors: _goalColors,
             ),
           ],
         ),

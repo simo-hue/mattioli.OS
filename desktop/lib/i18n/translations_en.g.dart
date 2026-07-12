@@ -2727,6 +2727,9 @@ class Translations$common$actions$en {
 
 	/// en: 'Edit'
 	String get edit => 'Edit';
+
+	/// en: 'Pick'
+	String get pick => 'Pick';
 }
 
 // Path: common.calendarView
@@ -2969,6 +2972,7 @@ extension on Translations {
 			'common.actions.save' => 'Save',
 			'common.actions.delete' => 'Delete',
 			'common.actions.edit' => 'Edit',
+			'common.actions.pick' => 'Pick',
 			'common.months.0' => 'January',
 			'common.months.1' => 'February',
 			'common.months.2' => 'March',
@@ -3413,9 +3417,9 @@ extension on Translations {
 			'aiCoach.greeting' => 'Hi! I\'m Evolve AI Coach. I\'m here to help you optimize your protocol and reach your goals. How can I help you today?',
 			'aiCoach.systemPersona' => 'You are Evolve AI Coach, a virtual assistant for personal discipline.',
 			'aiCoach.habitsHeader' => 'ACTIVE HABITS:',
-			'aiCoach.noActiveHabits' => 'No active habits.',
 			_ => null,
 		} ?? switch (path) {
+			'aiCoach.noActiveHabits' => 'No active habits.',
 			'aiCoach.habitLine' => ({required Object title, required Object done, required Object streak}) => '${title} (Completed today: ${done}, Streak: ${streak})',
 			'aiCoach.goalsHeader' => 'GOALS:',
 			'aiCoach.noActiveGoals' => 'No active long-term goals.',

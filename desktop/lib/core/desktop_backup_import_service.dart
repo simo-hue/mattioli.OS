@@ -275,7 +275,6 @@ class DesktopBackupImportService {
         'goal_id': _sid(l['goal_id']),
         'date': l['date']?.toString(),
         'status': l['status'],
-        'value': l['value'],
         'created_at': l['created_at'],
         'updated_at': l['updated_at'],
         'streak': l['streak'],

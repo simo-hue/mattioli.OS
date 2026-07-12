@@ -1,7 +1,7 @@
 import 'package:evolve_desktop/app/theme/evolve_theme.dart';
 import 'package:evolve_desktop/features/dashboard/application/dashboard_controller.dart';
 import 'package:evolve_desktop/i18n/translations.g.dart';
-import 'package:evolve_desktop/shared/widgets/color_picker_dialog.dart';
+import 'package:evolve_desktop/shared/widgets/color_picker_button.dart';
 import 'package:evolve_desktop/shared/widgets/evolve_controls.dart';
 import 'package:evolve_desktop/shared/widgets/evolve_dialog.dart';
 import 'package:evolve_desktop/shared/widgets/evolve_spinner.dart';
@@ -110,45 +110,10 @@ class _CreateHabitDialogState extends ConsumerState<CreateHabitDialog> {
           const SizedBox(height: 20),
           EvolveFieldLabel(t.form.color),
           const SizedBox(height: 10),
-          Wrap(
-            spacing: 10,
-            runSpacing: 10,
-            children: [
-              for (final color in _presetColors)
-                GestureDetector(
-                  onTap: () => setState(() => _selectedColor = color),
-                  child: MouseRegion(
-                    cursor: SystemMouseCursors.click,
-                    child: Container(
-                      width: 28,
-                      height: 28,
-                      decoration: BoxDecoration(
-                        color: color,
-                        shape: BoxShape.circle,
-                        border: Border.all(
-                          color: _selectedColor == color
-                              ? Colors.white
-                              : Colors.transparent,
-                          width: 2,
-                        ),
-                        boxShadow: _selectedColor == color
-                            ? [
-                                BoxShadow(
-                                  color: color.withValues(alpha: 0.5),
-                                  blurRadius: 8,
-                                ),
-                              ]
-                            : null,
-                      ),
-                    ),
-                  ),
-                ),
-              CustomColorSwatch(
-                initial: _selectedColor,
-                isSelected: !_presetColors.contains(_selectedColor),
-                onPicked: (color) => setState(() => _selectedColor = color),
-              ),
-            ],
+          ColorPickerButton(
+            color: _selectedColor,
+            onColorChanged: (color) => setState(() => _selectedColor = color),
+            presetColors: _presetColors,
           ),
           const SizedBox(height: 20),
           EvolveFieldLabel(t.createHabit.weeklyFrequency),

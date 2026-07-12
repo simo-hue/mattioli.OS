@@ -23,7 +23,7 @@
 	     (SQLCipher key, owner UUID, Supabase session). -->
 	<key>keychain-access-groups</key>
 	<array>
-		<string>$(AppIdentifierPrefix)com.simo.evolve.evolveDesktop</string>
+		<string>$(AppIdentifierPrefix)com.simo.evolve</string>
 		<string>$(AppIdentifierPrefix)com.simo.evolve.sync</string>
 	</array>
 </dict>

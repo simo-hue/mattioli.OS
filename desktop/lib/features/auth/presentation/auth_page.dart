@@ -51,28 +51,12 @@ class _DesktopAuthPageState extends ConsumerState<DesktopAuthPage> {
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.stretch,
                 children: [
-                  // Hero mark: tinted circular chip on the near-black canvas.
+                  // Hero mark: real logo.
                   Center(
-                    child: Container(
+                    child: Image.asset(
+                      'assets/images/logo.png',
                       width: 76,
                       height: 76,
-                      alignment: Alignment.center,
-                      decoration: BoxDecoration(
-                        shape: BoxShape.circle,
-                        color: accent.withValues(alpha: 0.1),
-                        boxShadow: [
-                          BoxShadow(
-                            color: accent.withValues(alpha: 0.12),
-                            blurRadius: 30,
-                            offset: const Offset(0, 8),
-                          ),
-                        ],
-                      ),
-                      child: Icon(
-                        LucideIcons.sparkles,
-                        size: 32,
-                        color: accent,
-                      ),
                     ),
                   ),
                   const SizedBox(height: 20),

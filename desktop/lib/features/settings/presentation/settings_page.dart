@@ -34,7 +34,8 @@ import 'package:evolve_desktop/shared/widgets/evolve_spinner.dart';
 import 'package:evolve_desktop/shared/widgets/evolve_toast.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
-import 'package:flutter_colorpicker/flutter_colorpicker.dart';
+import 'package:evolve_desktop/shared/widgets/evolve_color_picker.dart';
+import 'package:evolve_desktop/shared/widgets/popover.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:image_picker/image_picker.dart';
 import 'package:lucide_icons_flutter/lucide_icons.dart';
@@ -228,9 +229,7 @@ class _SettingsPageState extends ConsumerState<SettingsPage> {
         _ProfileCard(
           user: auth.user,
           image: _profileImage,
-          isPro: isPrivateMode
-              ? false
-              : ref.watch(desktopSubscriptionControllerProvider).isPro,
+          isPro: ref.watch(desktopIsProProvider),
           onPickAvatar: _pickAvatar,
           isPrivateMode: isPrivateMode,
           privateProfile: isPrivateMode
@@ -2335,7 +2334,7 @@ class _ColorRow extends StatelessWidget {
                 Tooltip(
                   message: t.settingsPage.customColor,
                   child: InkWell(
-                    onTap: () => _showFullColorPicker(context),
+                    onTap: () => _showFullColorPicker(context, colors.toList()),
                     customBorder: const CircleBorder(),
                     child: _Swatch(
                       color: context.evolveColors.panelRaised,
@@ -2357,34 +2356,19 @@ class _ColorRow extends StatelessWidget {
     );
   }
 
-  Future<void> _showFullColorPicker(BuildContext context) async {
-    var color = selected;
-    final picked = await showEvolveDialog<Color>(
+  void _showFullColorPicker(BuildContext context, List<Color> colors) {
+    showPopover(
       context: context,
-      builder: (context) => EvolveAlertDialog(
-        icon: LucideIcons.palette,
-        title: Text(t.settingsPage.accentColor),
-        content: SingleChildScrollView(
-          child: ColorPicker(
-            pickerColor: color,
-            onColorChanged: (value) => color = value,
-            enableAlpha: false,
-            labelTypes: const [],
-          ),
-        ),
-        actions: [
-          TextButton(
-            onPressed: () => Navigator.pop(context),
-            child: Text(t.settingsPage.cancel),
-          ),
-          FilledButton(
-            onPressed: () => Navigator.pop(context, color),
-            child: Text(t.settingsPage.applyAction),
-          ),
-        ],
-      ),
+      targetAlignment: Alignment.bottomCenter,
+      popoverAlignment: Alignment.topCenter,
+      offset: const Offset(0, 8),
+      builder: (context) {
+        return EvolveColorPickerContent(
+          initialColor: selected,
+          onColorChanged: onChanged,
+        );
+      },
     );
-    if (picked != null) onChanged(picked);
   }
 
   Color _visibleAccent(BuildContext context, Color color) {

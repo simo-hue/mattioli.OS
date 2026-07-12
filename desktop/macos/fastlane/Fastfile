@@ -1,0 +1,20 @@
+default_platform(:mac)
+
+platform :mac do
+  desc "Build and upload a new macOS release to App Store Connect"
+  lane :release do
+    # Requires Xcode to be configured with "Automatically manage signing"
+    # and the Mac App Distribution profiles downloaded.
+    build_mac_app(
+      workspace: "Runner.xcworkspace",
+      scheme: "Runner",
+      export_method: "app-store"
+    )
+    
+    upload_to_app_store(
+      app_identifier: "com.simo.evolve",
+      submit_for_review: false,
+      force: true
+    )
+  end
+end

@@ -1,4 +1,7 @@
-# Manual Actions Required
+# TO_SIMO_DO
+
+
+## Manual Actions Required
 
 ## macOS visual QA — deep coherence polish (2026-07-12)
 This Mac has no Xcode, so the changes below were **code-verified** (`flutter analyze` clean of new issues; 144 pass / 1 pre-existing fail) but still need an on-device look on the Xcode machine (`flutter run -d macos`). All are pure presentation — no logic/data changes. Check each in **both light and dark** themes:
@@ -10,3 +13,4 @@ This Mac has no Xcode, so the changes below were **code-verified** (`flutter ana
 - [ ] **Settings → App logs** — the severity chip is now the shared `StatusPill`; the expanded "Additional context" label is now sentence-case (`EvolveFieldLabel`); confirm both render.
 - [ ] **Settings → Biometric error** — the error message text now uses the destructive token (was Material `redAccent`).
 - [ ] **Dashboard → "New goal" dialog** — the Category field is now a dropdown of your saved categories (color dot each) + a "New category" row that reveals an inline text field; confirm picking an existing category AND creating a new one both save correctly, and that a fresh account with no categories still shows a plain text field.
+

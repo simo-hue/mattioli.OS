@@ -225,10 +225,10 @@ class _DashboardPageState extends ConsumerState<DashboardPage> {
             steps: _dashboardTourSteps(),
             index: _tourIndex,
             onIndexChanged: (i) => setState(() => _tourIndex = i),
-            onFinish: _finishDashboardTour,
+            onFinish: () => _finishDashboardTour(advanceToGoals: true),
             backLabel: t.tutorial.back,
             nextLabel: t.tutorial.next,
-            finishLabel: t.tutorial.finish,
+            finishLabel: t.tutorial.next,
           ),
       ],
     );
@@ -252,13 +252,20 @@ class _DashboardPageState extends ConsumerState<DashboardPage> {
     ),
   ];
 
-  void _finishDashboardTour() {
+  void _finishDashboardTour({bool advanceToGoals = false}) {
     if (!mounted || _didFinishTour) return;
     setState(() {
       _didFinishTour = true;
       _showTour = false;
     });
     ref.read(tutorialProvider.notifier).setTutorialSeen(true);
+
+    if (advanceToGoals) {
+      WidgetsBinding.instance.addPostFrameCallback((_) {
+        if (!mounted) return;
+        ref.read(navigationControllerProvider.notifier).select(DesktopSection.goals);
+      });
+    }
   }
 }
 
@@ -587,7 +594,7 @@ class _MetricGrid extends StatelessWidget {
               label: t.dashboard.bestStreak,
               value: '${snapshot.bestStreak}',
               detail: t.dashboard.consecutiveDays,
-              color: EvolveColors.amber,
+              color: EvolveColors.streakColor(snapshot.bestStreak),
               icon: LucideIcons.flame,
             ),
             _MetricCard(
@@ -983,16 +990,16 @@ class _HabitRow extends StatelessWidget {
               child: Row(
                 mainAxisAlignment: MainAxisAlignment.end,
                 children: [
-                  const Icon(
+                  Icon(
                     LucideIcons.flame,
                     size: 11,
-                    color: EvolveColors.amber,
+                    color: EvolveColors.streakColor(habit.streak),
                   ),
                   const SizedBox(width: 3),
                   Text(
                     t.dashboard.streakDaysShort(n: habit.streak),
-                    style: const TextStyle(
-                      color: EvolveColors.amber,
+                    style: TextStyle(
+                      color: EvolveColors.streakColor(habit.streak),
                       fontSize: 11,
                       fontWeight: FontWeight.w700,
                     ),

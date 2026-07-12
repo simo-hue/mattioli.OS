@@ -751,6 +751,50 @@ NEXT ACTION: Ensure device is running the latest built version of the codebase.
     - *Details*: Three sub-agent-implemented, individually-reviewed-and-committed work items bringing the macOS desktop app to feature and polish parity: (S1) mobile settings ported (new "AI & System" and "Insights & reports" groups, Pro gating, Focus Mode now genuinely suppresses notification scheduling incl. the dashboard reschedule path, calendar-view persistence bug fixed, haptics hidden on macOS); (S2) import/export made fully working (identity-based last-write-wins merge replacing the silently-lossy ConflictAlgorithm.ignore + per-merge UUID minting, in-transaction streak recomputation, invalid-row validation with skipped counts surfaced in the UI, per-entity import summary, native macOS Save dialog, canonical camelCase export shape so desktop backups finally round-trip to the iPhone app); (S3) a shared Apple-style control kit (EvolveSwitch/Select/Menu/TimePicker/DateField/RadioRow/ProBadge) replacing every Material form control app-wide, RTL-safe with hover states.
     - *Tech Notes*: Entitlements user-selected read-only → read-write (Save dialog); file_picker ^11 + share_plus ^12 (mobile's pair — pod reinstall needed on the Xcode machine); new files desktop/lib/core/{calendar_view_preference,import_merge,import_merge_stats}.dart and desktop/lib/shared/widgets/evolve_controls.dart; i18n additions ×5 locales, slang regenerated. Desktop suite grew 94 → 140 tests (analyze clean); mobile 144 and evolve_sync 73 untouched. Visual QA checklist + device verifications tracked in desktop/TO_SIMO_DO.md; commits a553fe5, d4cdce7, cd0ce3f.
 
+
+
+- [2026-07-07]: macOS Universal Purchase & Fastlane Setup
+  - *Details*: Configured the macOS desktop app to use Universal Purchase by matching the bundle ID (com.simo.evolve) with the iOS app. Added Fastlane for macOS (Appfile, Fastfile) to automate App Store Connect uploads.
+  - *Tech Notes*: Modified AppInfo.xcconfig, Release.entitlements, DebugProfile.entitlements, and project.pbxproj to use com.simo.evolve.
+- [2026-07-07]: Fix Desktop Private Mode Parity Gaps (B1, B3, B4)
+  - *Details*: Fixed critical parity gaps and bugs in the Desktop Private Mode to ensure stability and feature consistency with mobile.
+  - *Tech Notes*:
+    - Replaced hardcoded `isPro: false` with `desktopIsProProvider` in `_ProfileCard` (`settings_page.dart`) to unlock pro features in Private Mode.
+    - Disabled the import of the `value` field from `goal_logs` in `desktop_backup_import_service.dart` and `desktop_private_db.dart` to fix the SQL schema error on importing mobile backups.
+    - Added `db.execute('PRAGMA foreign_keys = ON;');` in `PrivateDbSchema.onConfigure` (inside `desktop_private_db.dart`) to ensure referential integrity, matching mobile behavior and preventing silent database failures when profile rows are missing.
+    - Verified all fixes with `flutter analyze` which completed with zero issues.
+
+- [2026-07-07 10:19:00]: Unified Desktop Onboarding Tutorial
+  - *Details*: Refactored the desktop onboarding tutorial to be a contiguous, atomic flow across multiple tabs (Overview -> Goals -> Insights), matching the iOS behavior. The tutorial no longer gets fragmented or left pending on other pages.
+  - *Tech Notes*: 
+    - `dashboard_page.dart`: Updated `_finishDashboardTour` to optionally advance to the Goals tab.
+    - `goals_page.dart`: Adjusted tutorial trigger to require `tutorialProvider` (Dashboard tutorial) to be complete. Updated `_finishGoalsTutorial` to advance to the Insights tab.
+    - `statistics_page.dart`: Adjusted tutorial trigger to require `goalsTutorialProvider` to be complete. Updated `_finishStatsTour` to reset navigation back to Overview.
+    - Updated `nextButtonLabel` and `finishLabel` to correctly indicate progression ("Next" vs "Finish") during the flow.
+- [2026-07-07 10:47:00]: macOS-Style Color Picker Popover
+  - *Details*: Redesigned the color picker in the Desktop app to feature a clean, native-feeling macOS popover with segmented tabs for Presets and Custom color selections, dropping the old full-screen/modal dialog.
+  - *Tech Notes*:
+    - Created `popover.dart` containing `showPopover` and `PopupRoute` logic to anchor floating panels to a caller's `RenderBox`.
+    - Created `EvolveColorPickerContent` (`evolve_color_picker.dart`) providing segmented controls (Presets, Custom), custom color wheel via `flutter_colorpicker`, and a HEX text input.
+    - Created `ColorPickerButton` (`color_picker_button.dart`) to unify the color swatch interaction.
+    - Cleaned up inline preset circles in `create_habit_dialog.dart`, `create_goal_dialog.dart`, and `goals_page.dart`.
+    - Updated `settings_page.dart` (Accent Color Selector) to use `showPopover`.
+    - Removed legacy `color_picker_dialog.dart`.
+- [2026-07-07 10:50:00]: Popover Inline Presets Tweak
+  - *Details*: Modified `ColorPickerButton` to display the presets inline as a row of circles ending with a custom `+` gradient swatch, rather than just a single color circle.
+  - *Tech Notes*:
+    - The custom `+` swatch explicitly triggers the new popover containing the spectrum and Hex input. This retains the quick-select functionality of presets while elevating the advanced color picking experience to the new popover.
+    - Verified functionality with `flutter analyze`, yielding no errors.
+- [2026-07-07 10:59:00]: Popover Color Picker Rendering Fixes
+  - *Details*: Fixed a severe rendering issue where `flutter_colorpicker` was attempting to render its inner components as a landscape `Row` (overflowing by 342 pixels) which further triggered layout collapses and "No Material widget found" errors.
+  - *Tech Notes*:
+    - Set `portraitOnly: true` on the `ColorPicker` in `evolve_color_picker.dart` to strictly enforce a vertical `Column` layout, bypassing the library's wide aspect-ratio assumptions on desktop platforms.
+- [2026-07-07 11:02:00]: Popover "Pick" Button
+  - *Details*: Added a fully translated "Pick" confirmation button to the bottom of the custom color popover.
+  - *Tech Notes*:
+    - Injected `t.common.actions.pick` into all 5 language `.i18n.json` files and ran `dart run slang` to regenerate `translations.g.dart`.
+    - Added a `FilledButton` at the bottom of the `EvolveColorPickerContent` `Column` to manually close the popover upon selection.
+
 - [2026-07-11]: **Cross-platform "swipe back" navigation (iOS edge-swipe + macOS two-finger trackpad)**
     - *Details*: Made "swipe to go back" work from every back-navigable page, aligning the gesture across platforms. On mobile, the 7 settings/detail sub-pages (Personal Info, Subscription, App Settings, Notifications, Privacy, App Logs, iCloud Sync) could not be swiped back because each pushed itself with a custom `PageRouteBuilder` (a hand-rolled 400 ms slide), which does not wire up Flutter's iOS edge-swipe-back gesture — only the Profile ("settings") screen and AI Chat worked, since they use `MaterialPageRoute`. All 7 now use `MaterialPageRoute`, so iOS gets the native Cupertino slide + edge-swipe-back for free (RTL-aware) and Android keeps its native Material transition; every call site (`XxxScreen.route()`) is unchanged. On macOS the app has no page stack (a sidebar shell of 6 peer sections; settings is a single page), so "back" was given a concrete meaning: `NavigationController` now keeps a visited-section history plus a `back()`/`canGoBack`/`lastDirection` API; a two-finger trackpad swipe-right and ⌘[ both return to the previously visited section, and the shell's existing section `AnimatedSwitcher` became a directional slide+fade driven by the navigation direction.
     - *Tech Notes*:
@@ -779,3 +823,8 @@ NEXT ACTION: Ensure device is running the latest built version of the codebase.
 - [2026-07-11]: iOS Version Bump & Metadata
   - *Details*: Bumped the iOS app version to 1.1.0 in `mobile/pubspec.yaml` and updated the fastlane translations in `mobile/ios/fastlane/Fastfile` to include "New UI" as requested.
   - *Tech Notes*: Ran `fastlane update_notes` to sync the updated metadata to App Store Connect, but it failed with "Nessuna versione in stato editabile trovata!". The new version 1.1.0 must be created manually on App Store Connect first before the metadata can be updated.
+
+
+- [2026-07-12]: **Merge origin/main into local main**
+  - *Details*: Resolved merge conflicts between local macOS feature additions and remote Apple-Style UI Phase 2 refactorings.
+  - *Tech Notes*: Unified `ColorPickerButton` with `EvolveFieldLabel` in `create_habit_dialog.dart`. Reintegrated custom streak color logic into remote's `_DayHabitRow` in `habits_page.dart`. Reconciled macOS entitlements for both iCloud syncing and network server access. Regenerated translations via `slang`.

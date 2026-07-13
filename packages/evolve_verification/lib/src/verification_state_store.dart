@@ -36,6 +36,18 @@ abstract interface class VerificationStateStore {
   /// Clear a couldn't-verify marker once the day resolves to a real verdict.
   Future<void> resolveCouldNotVerify(String goalId, DateTime day);
 
+  /// The couldn't-verify days for [goalId] that have already fired a "did you
+  /// keep it?" nudge. Lets the caller suppress re-nudging the same day on every
+  /// foreground within the nag window (the notification id alone only prevents
+  /// *stacking*, not *re-alerting*).
+  Future<Set<DateTime>> nudgedDays(String goalId);
+
+  /// Mark a couldn't-verify [day] as already nudged. A no-op if the day is not
+  /// currently couldn't-verify (only a live "?" day can be nudged). The mark is
+  /// dropped automatically when the day resolves or is frozen manual, so a day
+  /// that lapses back into couldn't-verify can nudge afresh.
+  Future<void> markNudged(String goalId, DateTime day);
+
   /// Drop all bookkeeping for a deleted goal.
   Future<void> deleteGoal(String goalId);
 }

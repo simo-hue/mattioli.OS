@@ -8,6 +8,9 @@ class FakeVerificationStateStore implements VerificationStateStore {
   /// goalId -> set of couldn't-verify day (date-only).
   final Map<String, Set<DateTime>> cnv = {};
 
+  /// goalId -> set of couldn't-verify days already nudged (subset of [cnv]).
+  final Map<String, Set<DateTime>> nudged = {};
+
   static DateTime _d(DateTime x) => DateTime(x.year, x.month, x.day);
 
   @override
@@ -38,6 +41,7 @@ class FakeVerificationStateStore implements VerificationStateStore {
   Future<void> markManual(String goalId, DateTime day) async {
     (manual[goalId] ??= {}).add(_d(day));
     cnv[goalId]?.remove(_d(day));
+    nudged[goalId]?.remove(_d(day));
   }
 
   @override
@@ -54,11 +58,23 @@ class FakeVerificationStateStore implements VerificationStateStore {
   @override
   Future<void> resolveCouldNotVerify(String goalId, DateTime day) async {
     cnv[goalId]?.remove(_d(day));
+    nudged[goalId]?.remove(_d(day));
+  }
+
+  @override
+  Future<Set<DateTime>> nudgedDays(String goalId) async => {...?nudged[goalId]};
+
+  @override
+  Future<void> markNudged(String goalId, DateTime day) async {
+    // Only a live couldn't-verify day can be nudged.
+    if (!(cnv[goalId]?.contains(_d(day)) ?? false)) return;
+    (nudged[goalId] ??= {}).add(_d(day));
   }
 
   @override
   Future<void> deleteGoal(String goalId) async {
     manual.remove(goalId);
     cnv.remove(goalId);
+    nudged.remove(goalId);
   }
 }

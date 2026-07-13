@@ -123,4 +123,24 @@ void main() {
       isTrue,
     );
   });
+
+  test('report.writes carries the written verdicts (for D11 notifications)',
+      () async {
+    health.setQuantity('stepCount', daysAgo(1), 12000); // pass
+    final report = await controller.reconcile(
+        goals: [steps()], loggedOutcomes: const {}, today: today);
+    expect(report.writes, hasLength(1));
+    expect(report.writes.single.goalId, 'g');
+    expect(report.writes.single.day, daysAgo(1));
+    expect(report.writes.single.outcome, VerificationOutcome.pass);
+    expect(report.writes.single.value, 12000);
+    // A second identical pass is idempotent → no fresh writes to notify on.
+    final again = await controller.reconcile(
+        goals: [steps()],
+        loggedOutcomes: {
+          'g': {daysAgo(1): VerificationOutcome.pass},
+        },
+        today: today);
+    expect(again.writes, isEmpty);
+  });
 }

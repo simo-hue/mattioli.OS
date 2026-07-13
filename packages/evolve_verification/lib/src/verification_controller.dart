@@ -8,8 +8,12 @@ import 'verification_state_store.dart';
 /// Summary of one reconcile pass, for the caller (UI refresh + notifications).
 @immutable
 class ReconcileReport {
-  /// Verdicts written to `goal_logs` this pass.
-  final int written;
+  /// The verdicts written to `goal_logs` this pass. Because [VerificationService]
+  /// only emits a write when the verdict actually changed, this list is
+  /// naturally de-duplicated across foregrounds — the notification layer can
+  /// turn each one into a one-shot celebration/failure alert (D11) without its
+  /// own bookkeeping.
+  final List<LogWrite> writes;
 
   /// Days recorded as couldn't-verify this pass.
   final int couldNotVerify;
@@ -19,12 +23,15 @@ class ReconcileReport {
   final List<CouldNotVerifyEntry> nudges;
 
   const ReconcileReport({
-    this.written = 0,
+    this.writes = const [],
     this.couldNotVerify = 0,
     this.nudges = const [],
   });
 
-  bool get changedAnything => written > 0 || couldNotVerify > 0;
+  /// Count of verdicts written to `goal_logs` this pass.
+  int get written => writes.length;
+
+  bool get changedAnything => writes.isNotEmpty || couldNotVerify > 0;
 }
 
 /// Orchestrates one lazy-on-foreground reconcile (D3): it assembles the
@@ -114,7 +121,7 @@ class VerificationController {
     }
 
     return ReconcileReport(
-      written: plan.writes.length,
+      writes: plan.writes,
       couldNotVerify: plan.couldNotVerify.length,
       nudges: plan.couldNotVerify.where((c) => c.shouldNudge).toList(),
     );

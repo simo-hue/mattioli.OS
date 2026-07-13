@@ -224,6 +224,13 @@ packages:
       relative: true
     source: path
     version: "1.0.0"
+  evolve_verification:
+    dependency: "direct main"
+    description:
+      path: "../packages/evolve_verification"
+      relative: true
+    source: path
+    version: "1.0.0"
   fake_async:
     dependency: transitive
     description:

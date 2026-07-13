@@ -5,6 +5,7 @@ import 'package:evolve_desktop/core/desktop_private_db.dart';
 import 'package:evolve_desktop/core/streak_utils.dart';
 import 'package:evolve_desktop/features/dashboard/data/dashboard_repository.dart';
 import 'package:evolve_desktop/features/dashboard/domain/dashboard_models.dart';
+import 'package:evolve_verification/evolve_verification.dart';
 import 'package:sqflite_sqlcipher/sqflite.dart';
 import 'package:uuid/uuid.dart';
 
@@ -94,6 +95,7 @@ class PrivateDashboardRepository extends DashboardRepository {
       'end_date': habit.endDate?.toIso8601String(),
       'display_order': habit.displayOrder,
       'reminder_time': habit.reminderTime,
+      ...(habit.verificationRule?.toColumns() ?? VerificationRule.nullColumns),
       'created_at': now,
       'updated_at': now,
     });
@@ -119,6 +121,7 @@ class PrivateDashboardRepository extends DashboardRepository {
         'end_date': habit.endDate?.toIso8601String(),
         'display_order': habit.displayOrder,
         'reminder_time': habit.reminderTime,
+        ...(habit.verificationRule?.toColumns() ?? VerificationRule.nullColumns),
         'updated_at': _now(),
       },
       where: 'id = ?',
@@ -458,6 +461,7 @@ class PrivateDashboardRepository extends DashboardRepository {
       endDate: DateTime.tryParse(row['end_date'] as String? ?? ''),
       displayOrder: row['display_order'] as int?,
       reminderTime: row['reminder_time'] as String?,
+      verificationRule: VerificationRule.fromColumns(row),
       isActive: true,
     );
   }

@@ -17,7 +17,11 @@ class PrivateDbSchema {
   /// - v2: widen `long_term_goals.week_number` CHECK to 1..53.
   /// - v3: add `macro_goal_categories.updated_at`; add the `sync_state` /
   ///   `sync_meta` tables + per-table triggers that drive iCloud sync.
-  static const int version = 3;
+  /// - v4: add `goals.verify_*` columns (auto-verified habits rule; all
+  ///   nullable, null ⇒ ordinary manual habit). Left unconstrained (no CHECK)
+  ///   so a rule synced from a newer client with a future provider/metric is
+  ///   stored rather than rejected.
+  static const int version = 4;
 
   /// The user-data tables whose rows sync to iCloud. Each gets dirty/tombstone
   /// triggers that maintain [syncStateTable]. (Order matters for nothing here,
@@ -80,6 +84,27 @@ class PrivateDbSchema {
     }
     if (oldVersion < 3) {
       await _upgradeToV3(db);
+    }
+    if (oldVersion < 4) {
+      await _upgradeToV4(db);
+    }
+  }
+
+  // ── v4 migration ──────────────────────────────────────────────────────────
+
+  static Future<void> _upgradeToV4(DatabaseExecutor db) async {
+    // Auto-verified habits: nullable verification-rule columns on `goals`
+    // (null ⇒ manual habit). Additive, so plain ADD COLUMNs; existing rows get
+    // NULLs. Synced rows carry these automatically — the sync engine serializes
+    // whole rows (SELECT *), so no push/pull code changes are required.
+    for (final col in const [
+      'verify_provider TEXT',
+      'verify_metric TEXT',
+      'verify_comparator TEXT',
+      'verify_threshold REAL',
+      'verify_unit TEXT',
+    ]) {
+      await db.execute('ALTER TABLE goals ADD COLUMN $col');
     }
   }
 
@@ -214,7 +239,15 @@ CREATE TABLE goals (
   display_order INTEGER,
   created_at TEXT NOT NULL,
   updated_at TEXT NOT NULL,
-  reminder_time TEXT
+  reminder_time TEXT,
+  -- Auto-verified habits (v4): the verification rule, all null ⇒ manual habit.
+  -- Intentionally unconstrained so a future provider/metric from a newer client
+  -- round-trips through sync instead of being rejected.
+  verify_provider TEXT,
+  verify_metric TEXT,
+  verify_comparator TEXT,
+  verify_threshold REAL,
+  verify_unit TEXT
 )
 ''');
 

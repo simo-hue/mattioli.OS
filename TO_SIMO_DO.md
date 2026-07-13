@@ -18,7 +18,7 @@ not compiled).
 - [ ] **desktop/macos Runner target** → Signing & Capabilities → add **iCloud
       (CloudKit)** with container `iCloud.com.simo.evolve` (existing container,
       same team) **and Keychain Sharing** with groups
-      `com.simo.evolve.evolveDesktop` + `com.simo.evolve.sync` — must match
+      `com.simo.evolve` + `com.simo.evolve.sync` — must match
       DebugProfile.entitlements / Release.entitlements, which are already
       updated. Signing team `8528AN28A3`.
 
@@ -99,7 +99,7 @@ Full detail lives in **`desktop/TO_SIMO_DO.md`** ("Apple-style coherence pass �
 - **Rebuild the desktop app to apply the Keychain entitlement fix.** The Debug macOS build was missing `keychain-access-groups`, which caused the `-34018 "A required entitlement isn't present"` errors and the failed private-profile / analytics / macro-goal-categories loads. It's now added to `desktop/macos/Runner/DebugProfile.entitlements`. Because entitlements are baked in at code-sign time, **quit the running app and do a full `flutter run` (not hot reload / hot restart)** so it re-signs. If the `-34018` still appears, run `flutter clean` then `flutter run`. After launch, confirm the log no longer shows `-34018` and that `[DesktopPrivateDb] Opened schema v…` appears — this is the verification I could not run here (no Xcode on this machine, only the Command Line Tools).
 
 ### Update (2026-07-06) — desktop macOS signing wired in
-The Keychain entitlement needs a real signing certificate (ad-hoc `"-"` is rejected), so `DEVELOPMENT_TEAM = 8528AN28A3` (your mobile team) + automatic signing is now set on the desktop macOS Runner target. **Next step: just run `flutter run` again.** On first build, automatic signing registers `com.simo.evolve.evolveDesktop` and creates a development cert/profile.
+The Keychain entitlement needs a real signing certificate (ad-hoc `"-"` is rejected), so `DEVELOPMENT_TEAM = 8528AN28A3` (your mobile team) + automatic signing is now set on the desktop macOS Runner target. **Next step: just run `flutter run` again.** On first build, automatic signing registers `com.simo.evolve` and creates a development cert/profile.
 - If `flutter run` errors with a signing/provisioning failure (e.g. "No profiles / No signing certificate / requires a development team"), open `desktop/macos/Runner.xcworkspace` in Xcode → Runner target → **Signing & Capabilities** → ensure "Automatically manage signing" is checked and your team (`8528AN28A3`) is selected / you're signed into that Apple ID, then rerun.
 - Success check: no `-34018` in the logs and `[DesktopPrivateDb] Opened schema v…` appears.
 
@@ -158,3 +158,44 @@ The auto-verified-habits feature (HealthKit + Screen Time goals) is being built 
 5. **On-device / Apple Watch testing** (delegated to your Xcode machine): HealthKit goals need real Health data; **Stand hours + richer Exercise/Move require an Apple Watch**; Screen Time verdicts must be tested on a real device (the DeviceActivity extension does not fire reliably in the Simulator).
 6. **App Store privacy labels**: declare that raw Health/Screen-Time data stays on-device and is **not collected/transmitted** — only the derived `done`/`missed` verdict syncs via the user's own iCloud/Supabase.
 
+### The native Swift is now written — compile it in Xcode (2026-07-13)
+
+⚠️ **None of the verification Swift could be compiled or typechecked on the dev machine (no iOS SDK — Command Line Tools only).** It's a careful scaffold matching the verified Dart channel contract; expect to fix a few API details when you first build. Each file has an `UNVERIFIED` header.
+
+Files created:
+- `mobile/ios/Runner/VerificationAppGroup.swift` — shared App Group constant. **Must be a member of BOTH the Runner target AND the DeviceActivityMonitor extension target** (the extension references it). **Set `suiteName`** to the App Group id you actually create (currently the placeholder `group.com.simo.evolve.verification`).
+- `mobile/ios/Runner/HealthKitBridge.swift` — `evolve/healthkit` channel (Runner target). Needs the HealthKit capability.
+- `mobile/ios/Runner/ScreenTimeBridge.swift` — `evolve/screentime` channel (Runner target). Needs the Family Controls capability; iOS 16+.
+- `mobile/ios/DeviceActivityMonitorExtension/DeviceActivityMonitorExtension.swift` — the extension principal class (**new extension target**). Its Info.plist needs `NSExtensionPointIdentifier = com.apple.deviceactivity.monitor-extension` and `NSExtensionPrincipalClass = $(PRODUCT_MODULE_NAME).DeviceActivityMonitorExtension`.
+- `mobile/ios/Runner/AppDelegate.swift` — already registers both channels (no action; safe — the Dart side only invokes them when `VerificationConfig.enabled` is true).
+
+Steps:
+- Add `HealthKitBridge.swift`, `ScreenTimeBridge.swift`, `VerificationAppGroup.swift` to the **Runner** target; add `DeviceActivityMonitorExtension.swift` + `VerificationAppGroup.swift` to the **extension** target.
+- Build `Runner` (fix any HealthKit/DeviceActivity API drift the compiler flags), then build the extension.
+- Once green on device + the distribution entitlement is approved, flip `VerificationConfig.enabled = true` in `mobile/lib/core/verification_config.dart` to un-dark the feature (HealthKit can be enabled before Screen Time via the separate flags).
+
+---
+
+## Biometric (Face ID) lock fix — 2026-07-13
+
+The Face-ID app lock never engaged (dead state machine). Fixed in code; two
+manual checks remain, plus one device verification:
+
+1. **Verify the iOS plugin wiring before building.** In this checkout the
+   generated SPM package (`mobile/ios/Flutter/ephemeral/Packages/.../Package.swift`)
+   had an EMPTY plugin `dependencies` array and `ios/.symlinks/plugins` was
+   empty — if a build is produced from that state, `local_auth_darwin` is not
+   linked and every Face-ID call throws `MissingPluginException` (silently
+   caught → app stays unlocked). Run `flutter clean && flutter pub get` in
+   `mobile/`, then confirm `Package.swift` lists a `local_auth_darwin` entry
+   before archiving. (Likely just an incomplete `pub get` on this Xcode-less
+   Mac; verify on your build machine.)
+2. **Device test (needs a real iPhone with Face ID / Touch ID enrolled):**
+   Settings → Privacy → enable the biometric lock (prompts once). Then
+   force-quit & relaunch → app must show the lock screen and prompt Face ID.
+   Background the app (app switcher) & return → must re-prompt. Also confirm
+   the app-switcher snapshot shows the lock screen, not your data.
+3. **No Supabase migration required.** The `biometric_lock` column is now
+   treated as a per-device preference: it is still uploaded, but the local
+   value is authoritative on pull (a stale/false server row can no longer
+   silently disable a lock enabled on the device).

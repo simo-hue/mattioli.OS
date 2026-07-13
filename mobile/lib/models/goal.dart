@@ -1,3 +1,4 @@
+import 'package:evolve_verification/evolve_verification.dart';
 import 'package:flutter/material.dart';
 
 class Goal {
@@ -12,6 +13,10 @@ class Goal {
   final int? displayOrder;
   final String? reminderTime; // "HH:mm" or null
 
+  /// Auto-verification rule (null ⇒ ordinary manual habit). Round-tripped
+  /// through the `verify_*` columns; verification itself runs only on iOS.
+  final VerificationRule? verificationRule;
+
   const Goal({
     required this.id,
     required this.title,
@@ -23,7 +28,10 @@ class Goal {
     this.endDate,
     this.displayOrder,
     this.reminderTime,
+    this.verificationRule,
   });
+
+  bool get isVerified => verificationRule != null;
 
   /// Checks if the habit should be visible on a specific date.
   bool isActiveOn(DateTime date) {
@@ -57,6 +65,8 @@ class Goal {
     int? displayOrder,
     String? reminderTime,
     bool clearReminderTime = false,
+    VerificationRule? verificationRule,
+    bool clearVerificationRule = false,
   }) {
     return Goal(
       id: id ?? this.id,
@@ -69,6 +79,9 @@ class Goal {
       endDate: clearEndDate ? null : (endDate ?? this.endDate),
       displayOrder: displayOrder ?? this.displayOrder,
       reminderTime: clearReminderTime ? null : (reminderTime ?? this.reminderTime),
+      verificationRule: clearVerificationRule
+          ? null
+          : (verificationRule ?? this.verificationRule),
     );
   }
 
@@ -92,6 +105,7 @@ class Goal {
       endDate: json['end_date'] != null ? DateTime.parse(json['end_date'] as String) : null,
       displayOrder: json['display_order'] as int?,
       reminderTime: json['reminder_time'] as String?,
+      verificationRule: VerificationRule.fromColumns(json),
     );
   }
 
@@ -109,6 +123,10 @@ class Goal {
       if (endDate != null) 'end_date': endDate!.toIso8601String(),
       if (displayOrder != null) 'display_order': displayOrder,
       if (reminderTime != null) 'reminder_time': reminderTime,
+      // Only emitted for verified goals: keeps manual-habit writes free of the
+      // verify_* columns, so they don't depend on the Supabase migration having
+      // been applied yet. The private (SQLite) path always writes them.
+      if (verificationRule != null) ...verificationRule!.toColumns(),
     };
   }
 }

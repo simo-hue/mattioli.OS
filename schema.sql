@@ -67,6 +67,14 @@ CREATE TABLE public.goals (
     start_date timestamp with time zone NOT NULL,
     end_date timestamp with time zone,
     display_order integer,
+    -- Auto-verified habits: the verification rule (all null => manual habit).
+    -- Unconstrained by design so a future provider/metric round-trips instead
+    -- of being rejected; validity is enforced in the client.
+    verify_provider text,
+    verify_metric text,
+    verify_comparator text,
+    verify_threshold numeric,
+    verify_unit text,
     created_at timestamp with time zone DEFAULT now() NOT NULL,
     updated_at timestamp with time zone DEFAULT now() NOT NULL
 );

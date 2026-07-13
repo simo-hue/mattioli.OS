@@ -3,6 +3,7 @@ import 'dart:io';
 import 'dart:math';
 
 import 'package:evolve_sync/evolve_sync.dart';
+import 'package:evolve_verification/evolve_verification.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:path/path.dart' as p;
@@ -1374,6 +1375,11 @@ class PrivateLocalDatabase implements PrivateDataStore {
       'end_date': row['end_date'],
       'display_order': row['display_order'],
       'reminder_time': row['reminder_time'],
+      'verify_provider': row['verify_provider'],
+      'verify_metric': row['verify_metric'],
+      'verify_comparator': row['verify_comparator'],
+      'verify_threshold': row['verify_threshold'],
+      'verify_unit': row['verify_unit'],
     };
     return Goal.fromJson(json);
   }
@@ -1392,6 +1398,11 @@ class PrivateLocalDatabase implements PrivateDataStore {
       'end_date': goal.endDate?.toIso8601String(),
       'display_order': goal.displayOrder,
       'reminder_time': goal.reminderTime,
+      // Always write the verify_* columns (null when manual): upsertGoal uses
+      // ConflictAlgorithm.replace, so an omitted column would be wiped to NULL
+      // on every edit. The SQLite columns exist after the evolve_sync v4
+      // migration (run automatically on open).
+      ...(goal.verificationRule?.toColumns() ?? VerificationRule.nullColumns),
     };
   }
 

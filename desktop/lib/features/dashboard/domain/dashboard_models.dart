@@ -1,4 +1,5 @@
 import 'package:evolve_desktop/i18n/translations.g.dart';
+import 'package:evolve_verification/evolve_verification.dart';
 import 'package:flutter/material.dart';
 
 enum HabitState { pending, completed }
@@ -25,6 +26,7 @@ class DashboardHabit {
     this.endDate,
     this.displayOrder,
     this.reminderTime,
+    this.verificationRule,
     this.isActive = true,
   });
 
@@ -42,6 +44,11 @@ class DashboardHabit {
   final DateTime? endDate;
   final int? displayOrder;
   final String? reminderTime;
+
+  /// Auto-verification rule (null ⇒ manual habit). macOS never verifies — this
+  /// is carried through reads/writes so a desktop edit can't wipe a rule set on
+  /// iOS, and so the UI can show a read-only "auto-verified" badge.
+  final VerificationRule? verificationRule;
   final bool isActive;
 
   bool isActiveOn(DateTime date) {
@@ -74,6 +81,8 @@ class DashboardHabit {
     DateTime? startDate,
     DateTime? endDate,
     int? displayOrder,
+    VerificationRule? verificationRule,
+    bool clearVerificationRule = false,
   }) {
     return DashboardHabit(
       id: id ?? this.id,
@@ -90,6 +99,9 @@ class DashboardHabit {
       endDate: endDate ?? this.endDate,
       displayOrder: displayOrder ?? this.displayOrder,
       reminderTime: clearReminder ? null : (reminderTime ?? this.reminderTime),
+      verificationRule: clearVerificationRule
+          ? null
+          : (verificationRule ?? this.verificationRule),
       isActive: isActive ?? this.isActive,
     );
   }
@@ -105,6 +117,9 @@ class DashboardHabit {
     if (endDate != null) 'end_date': endDate!.toIso8601String(),
     if (displayOrder != null) 'display_order': displayOrder,
     if (reminderTime != null) 'reminder_time': reminderTime,
+    // Only for verified goals — keeps manual-habit writes independent of whether
+    // the Supabase verify_* migration has been applied yet.
+    if (verificationRule != null) ...verificationRule!.toColumns(),
   };
 
   factory DashboardHabit.fromRemoteJson(
@@ -130,6 +145,7 @@ class DashboardHabit {
       endDate: DateTime.tryParse(json['end_date'] as String? ?? ''),
       displayOrder: json['display_order'] as int?,
       reminderTime: json['reminder_time'] as String?,
+      verificationRule: VerificationRule.fromColumns(json),
     );
   }
 }

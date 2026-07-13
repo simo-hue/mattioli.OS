@@ -57,6 +57,10 @@ dependencies:
   # schema, sync service) — single source of truth with the macOS desktop app.
   evolve_sync:
     path: ../packages/evolve_sync
+  # Shared pure-Dart core for auto-verified habits (template catalog, rule model,
+  # reconcile/verdict engine, HealthKit + Screen Time bridge contracts).
+  evolve_verification:
+    path: ../packages/evolve_verification
   intl: ^0.20.2
   permission_handler: ^12.0.1
   tutorial_coach_mark: ^1.3.3

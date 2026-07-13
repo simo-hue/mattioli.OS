@@ -11,6 +11,11 @@ import UIKit
     if let registrar = self.registrar(forPlugin: "EvolvePlugin") {
       Self.registerPrivateStorageChannel(registrar.messenger())
       CloudKitSyncBridge.register(registrar.messenger())
+      // Auto-verified habits (compile-pending; see TO_SIMO_DO). Registering the
+      // channels is harmless — the Dart side only invokes them when the feature
+      // flag is on. Requires HealthKit + Family Controls capabilities to build.
+      HealthKitBridge.register(registrar.messenger())
+      ScreenTimeBridge.register(registrar.messenger())
     }
     return super.application(application, didFinishLaunchingWithOptions: launchOptions)
   }

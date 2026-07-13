@@ -57,6 +57,21 @@ void main() {
       await db.close();
     });
 
+    test('goals has the v4 verify_* verification-rule columns', () async {
+      final db = await openFreshV3();
+      expect(
+        await columnNames(db, 'goals'),
+        containsAll(<String>{
+          'verify_provider',
+          'verify_metric',
+          'verify_comparator',
+          'verify_threshold',
+          'verify_unit',
+        }),
+      );
+      await db.close();
+    });
+
     test('insert/update/delete on a synced table maintains sync_state', () async {
       final db = await openFreshV3();
       await seedProfile(db, 'owner1');
@@ -232,6 +247,73 @@ void main() {
           where: 'record_name = ?', whereArgs: ['goals:g1']);
       expect(s, hasLength(1));
       expect(s.first['dirty'], 1);
+      await db.close();
+    });
+  });
+
+  group('v3 -> v4 migration', () {
+    test('adds goals.verify_* columns, preserving existing rows', () async {
+      // v3-shaped goals table (no verify_* columns).
+      final db = await databaseFactory.openDatabase(
+        inMemoryDatabasePath,
+        options: OpenDatabaseOptions(
+          version: 3,
+          onCreate: (db, _) async {
+            await db.execute('''
+CREATE TABLE goals (
+  id TEXT PRIMARY KEY, user_id TEXT, title TEXT, description TEXT, color TEXT,
+  icon TEXT, frequency_days TEXT, start_date TEXT, end_date TEXT,
+  display_order INTEGER, created_at TEXT, updated_at TEXT, reminder_time TEXT
+)''');
+          },
+        ),
+      );
+      await db.insert('goals', {
+        'id': 'g1',
+        'user_id': 'o',
+        'title': 'Walk',
+        'color': '#FFFFFF',
+        'start_date': now,
+        'created_at': now,
+        'updated_at': now,
+      });
+
+      // oldVersion 3 -> only _upgradeToV4 runs.
+      await PrivateDbSchema.onUpgrade(db, 3, PrivateDbSchema.version);
+
+      expect(
+        await columnNames(db, 'goals'),
+        containsAll(<String>{
+          'verify_provider',
+          'verify_metric',
+          'verify_comparator',
+          'verify_threshold',
+          'verify_unit',
+        }),
+      );
+      // Existing row survives; new columns default to NULL.
+      final row =
+          (await db.query('goals', where: 'id = ?', whereArgs: ['g1'])).first;
+      expect(row['title'], 'Walk');
+      expect(row['verify_provider'], isNull);
+
+      // A rule can now be written and read back (incl. the REAL threshold).
+      await db.update(
+        'goals',
+        {
+          'verify_provider': 'healthkit',
+          'verify_metric': 'steps',
+          'verify_comparator': 'gte',
+          'verify_threshold': 10000.0,
+          'verify_unit': 'count',
+        },
+        where: 'id = ?',
+        whereArgs: ['g1'],
+      );
+      final updated =
+          (await db.query('goals', where: 'id = ?', whereArgs: ['g1'])).first;
+      expect(updated['verify_metric'], 'steps');
+      expect(updated['verify_threshold'], 10000.0);
       await db.close();
     });
   });

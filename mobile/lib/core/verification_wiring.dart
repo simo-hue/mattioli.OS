@@ -4,6 +4,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../models/goal.dart';
 import '../providers/goal_provider.dart';
 import 'app_logger.dart';
+import 'notifications.dart';
 import 'verification_config.dart';
 import 'verification_providers.dart';
 
@@ -74,6 +75,41 @@ List<ScreenTimeGoalSpec> screenTimeSpecsFrom(List<VerifiableGoal> goals) => [
             activeWeekdays: g.activeWeekdays,
           ),
     ];
+
+/// A single couldn't-verify nudge to surface to the user (D11).
+class VerificationNudge {
+  const VerificationNudge({
+    required this.goalId,
+    required this.title,
+    required this.day,
+  });
+
+  final String goalId;
+  final String title;
+  final DateTime day;
+}
+
+/// Reduces a [ReconcileReport]'s nudges to at most one per goal (its latest
+/// couldn't-verify day), dropping any goal with no known title. Keeping the
+/// mapping pure makes the "one banner per goal, not per day" policy testable.
+List<VerificationNudge> couldNotVerifyNudges(
+  ReconcileReport report,
+  Map<String, String> titlesById,
+) {
+  final latest = <String, DateTime>{};
+  for (final n in report.nudges) {
+    final current = latest[n.goalId];
+    if (current == null || n.day.isAfter(current)) latest[n.goalId] = n.day;
+  }
+  final out = <VerificationNudge>[];
+  latest.forEach((goalId, day) {
+    final title = titlesById[goalId];
+    if (title != null) {
+      out.add(VerificationNudge(goalId: goalId, title: title, day: day));
+    }
+  });
+  return out;
+}
 
 DateTime? _parseDate(String key) {
   final parts = key.split('-');
@@ -152,9 +188,24 @@ Future<ReconcileReport> runVerificationReconcile(WidgetRef ref) async {
     goals.map((g) => g.goalId).toSet(),
   );
 
-  return controller.reconcile(
+  final report = await controller.reconcile(
     goals: goals,
     loggedOutcomes: logged,
     today: DateTime.now(),
   );
+
+  // Fire couldn't-verify nudges (D11) — one banner per goal (latest day). The
+  // notification id is stable per goal, so re-running on a later foreground
+  // replaces rather than stacks.
+  if (report.nudges.isNotEmpty) {
+    final titles = {for (final g in ref.read(goalsProvider)) g.id: g.title};
+    for (final nudge in couldNotVerifyNudges(report, titles)) {
+      await NotificationService().showVerificationNudge(
+        goalId: nudge.goalId,
+        title: nudge.title,
+      );
+    }
+  }
+
+  return report;
 }

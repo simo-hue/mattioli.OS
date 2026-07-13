@@ -15,6 +15,7 @@
 
 import DeviceActivity
 import Foundation
+import UserNotifications
 
 class DeviceActivityMonitorExtension: DeviceActivityMonitor {
   override func eventDidReachThreshold(
@@ -23,11 +24,30 @@ class DeviceActivityMonitorExtension: DeviceActivityMonitor {
   ) {
     super.eventDidReachThreshold(event, activity: activity)
     appendSignal(goalId: activity.rawValue, kind: "reachedThreshold")
+    // Accountability-forward: alert the moment the limit is crossed (D11), in
+    // real time — this is the feature's highest-value notification and doesn't
+    // depend on the flaky interval-end callback. Requires the app to have
+    // requested notification permission.
+    postLimitReachedNotification()
   }
 
   override func intervalDidEnd(for activity: DeviceActivityName) {
     super.intervalDidEnd(for: activity)
     appendSignal(goalId: activity.rawValue, kind: "stayedUnder")
+  }
+
+  private func postLimitReachedNotification() {
+    let content = UNMutableNotificationContent()
+    content.title = "Screen time limit reached"
+    content.body = "You've hit your screen time goal for today."
+    content.sound = .default
+    // nil trigger ⇒ deliver immediately. Unique id per fire so it isn't coalesced.
+    let request = UNNotificationRequest(
+      identifier: "screentime_limit_\(UUID().uuidString)",
+      content: content,
+      trigger: nil
+    )
+    UNUserNotificationCenter.current().add(request)
   }
 
   private func appendSignal(goalId: String, kind: String) {

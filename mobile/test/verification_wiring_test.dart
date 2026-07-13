@@ -105,4 +105,29 @@ void main() {
     expect(dateKeyOf(DateTime(2026, 7, 5)), '2026-07-05');
     expect(dateKeyOf(DateTime(2026, 12, 31)), '2026-12-31');
   });
+
+  group('couldNotVerifyNudges', () {
+    test('collapses to one nudge per goal (latest day), drops untitled', () {
+      final report = ReconcileReport(couldNotVerify: 4, nudges: [
+        CouldNotVerifyEntry(
+            goalId: 'g', day: DateTime(2026, 7, 11), shouldNudge: true),
+        CouldNotVerifyEntry(
+            goalId: 'g', day: DateTime(2026, 7, 13), shouldNudge: true),
+        CouldNotVerifyEntry(
+            goalId: 'h', day: DateTime(2026, 7, 12), shouldNudge: true),
+        CouldNotVerifyEntry(
+            goalId: 'x', day: DateTime(2026, 7, 12), shouldNudge: true),
+      ]);
+      final nudges = couldNotVerifyNudges(report, {'g': 'Steps', 'h': 'Sleep'});
+      expect(nudges.map((n) => n.goalId).toSet(), {'g', 'h'}); // 'x' untitled
+      final g = nudges.firstWhere((n) => n.goalId == 'g');
+      expect(g.day, DateTime(2026, 7, 13)); // latest of g's two days
+      expect(g.title, 'Steps');
+    });
+
+    test('empty report yields no nudges', () {
+      expect(couldNotVerifyNudges(const ReconcileReport(), {'g': 'Steps'}),
+          isEmpty);
+    });
+  });
 }

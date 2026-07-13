@@ -442,6 +442,35 @@ class NotificationService {
     );
   }
 
+  /// Immediate "couldn't-verify — did you keep it?" nudge for an auto-verified
+  /// habit whose day ended without a definitive signal (D6/D11). The id is
+  /// stable per goal so re-firing on a later reconcile replaces the banner
+  /// rather than stacking a new one. (i18n of the copy + a dedicated settings
+  /// toggle are follow-ups — see TO_SIMO_DO; the feature is dark until then.)
+  Future<void> showVerificationNudge({
+    required String goalId,
+    required String title,
+  }) async {
+    const androidDetails = AndroidNotificationDetails(
+      'verification_nudges',
+      'Habit verification',
+      channelDescription: 'Prompts to resolve habits we could not auto-verify.',
+      importance: Importance.defaultImportance,
+      priority: Priority.defaultPriority,
+    );
+    const platformDetails = NotificationDetails(
+      android: androidDetails,
+      iOS: DarwinNotificationDetails(),
+    );
+    await _notifications.show(
+      id: 'verify_nudge_$goalId'.hashCode,
+      title: 'Evolve',
+      body: "Couldn't verify \"$title\" — did you keep it?",
+      notificationDetails: platformDetails,
+      payload: 'verify_nudge|$goalId',
+    );
+  }
+
   /// iOS silently drops scheduled notifications beyond 64 pending (NOTIF-4).
   /// Allow scheduling when there's headroom, or when [id] is already pending
   /// (a re-schedule replaces in place and doesn't grow the count). Fails open.

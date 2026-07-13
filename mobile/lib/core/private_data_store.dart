@@ -34,6 +34,7 @@ abstract interface class PrivateDataStore {
     required String date,
     required String status,
     int streak = 0,
+    double? value,
   });
 
   Future<void> deleteHabitLog({

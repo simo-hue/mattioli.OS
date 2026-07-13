@@ -8,6 +8,8 @@ import 'settings_provider.dart';
 import '../core/notifications.dart';
 import '../core/navigator_key.dart';
 import '../core/app_logger.dart';
+import '../core/verification_config.dart';
+import '../core/verification_providers.dart';
 import '../core/secure_storage_utils.dart';
 import '../core/data_mode.dart';
 import '../core/private_local_database.dart';
@@ -526,6 +528,13 @@ class HabitLogsNotifier extends Notifier<HabitLogsMap> {
     newState[dateKey] = dayLogs;
     state = newState;
 
+    // Auto-verified habits: a manual check-in freezes the day so the reconcile
+    // pass can't overwrite it with an auto verdict (D9). Fire-and-forget; gated
+    // and inert while the feature is off.
+    if (VerificationConfig.enabled) {
+      _markManualProvenance(habitId, date, set: nextStatus != null);
+    }
+
     // Deterministic streak for the toggled day, computed from the full ordered
     // log history (shared with the web app + Private Mode). See streak_utils.dart.
     final goal = ref
@@ -609,6 +618,89 @@ class HabitLogsNotifier extends Notifier<HabitLogsMap> {
           details: e.toString(),
         );
       }
+    }
+  }
+
+  /// Records (or clears) a manual-provenance freeze for a verified goal-day in
+  /// the local verification store, so a subsequent reconcile leaves it alone
+  /// (D9). Fire-and-forget — never blocks or fails the check-in.
+  void _markManualProvenance(String goalId, DateTime date, {required bool set}) {
+    final goal =
+        ref.read(goalsProvider).where((g) => g.id == goalId).firstOrNull;
+    if (!(goal?.isVerified ?? false)) return;
+    final day = DateTime(date.year, date.month, date.day);
+    () async {
+      try {
+        final store = await ref.read(verificationStateStoreProvider.future);
+        if (set) {
+          await store.markManual(goalId, day);
+        } else {
+          await store.clearManual(goalId, day);
+        }
+      } catch (e, stack) {
+        AppLogger.error('[Verification] markManual failed', e, stack);
+      }
+    }();
+  }
+
+  /// Applies an auto-verified verdict (D3/D4): sets the log to [status]
+  /// ('done'|'missed') directly (not cycling), carries the measured [value] to
+  /// `goal_logs.value`, recomputes the streak from full history, and persists to
+  /// the active backend. Driven by the verification reconcile pass, not the UI.
+  /// Idempotent at the caller (the controller only calls it on a changed verdict).
+  Future<void> applyAutoVerdict({
+    required String goalId,
+    required String dateKey,
+    required String status,
+    double? value,
+  }) async {
+    final isPrivateMode =
+        ref.read(activeDataModeProvider) == AppDataMode.private;
+    final user = isPrivateMode ? null : supabase.auth.currentUser;
+    if (!isPrivateMode && user == null) return;
+
+    final previousState = state;
+    final newState = Map<String, Map<String, String>>.from(state);
+    final dayLogs = Map<String, String>.from(newState[dateKey] ?? {});
+    dayLogs[goalId] = status;
+    newState[dateKey] = dayLogs;
+    state = newState;
+
+    final goal =
+        ref.read(goalsProvider).where((g) => g.id == goalId).firstOrNull;
+    final parsedDate = DateTime.tryParse(dateKey) ?? DateTime.now();
+    final newStreak = computeStreak(
+      habitId: goalId,
+      date: parsedDate,
+      logs: newState,
+      startDate: goal?.startDate ?? parsedDate,
+    );
+
+    try {
+      if (isPrivateMode) {
+        await ref.read(privateLocalDatabaseProvider).setHabitLog(
+              goalId: goalId,
+              date: dateKey,
+              status: status,
+              streak: newStreak,
+              value: value,
+            );
+      } else {
+        _saveToCache(newState);
+        await supabase.from('goal_logs').upsert({
+          'user_id': user!.id,
+          'goal_id': goalId,
+          'date': dateKey,
+          'status': status,
+          'streak': newStreak,
+          'value': value,
+        }, onConflict: 'goal_id, date');
+      }
+      ref.invalidate(habitStatsProvider);
+    } catch (e, stack) {
+      AppLogger.error('[HabitLogs] applyAutoVerdict error', e, stack);
+      state = previousState; // roll back the optimistic in-memory update
+      if (!isPrivateMode) _saveToCache(previousState);
     }
   }
 

@@ -265,6 +265,7 @@ class PrivateLocalDatabase implements PrivateDataStore {
     required String date,
     required String status,
     int streak = 0,
+    double? value,
   }) async {
     final db = await _database();
     final owner = await ownerId();
@@ -282,6 +283,10 @@ class PrivateLocalDatabase implements PrivateDataStore {
       'goal_id': goalId,
       'date': date,
       'status': status,
+      // The measured HealthKit quantity for an auto-verified verdict (null for
+      // manual check-ins and Screen Time). REPLACE rewrites the whole row, so we
+      // always set it — a manual toggle intentionally clears any prior value.
+      'value': value,
       'created_at': existing.isNotEmpty
           ? existing.first['created_at'] as String
           : now,

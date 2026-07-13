@@ -6,6 +6,8 @@
 	<array>
 		<string>Default</string>
 	</array>
+	<key>com.apple.developer.healthkit</key>
+	<true/>
 	<key>com.apple.developer.icloud-container-identifiers</key>
 	<array>
 		<string>iCloud.com.simo.evolve</string>
@@ -14,9 +16,6 @@
 	<array>
 		<string>CloudKit</string>
 	</array>
-	<!-- Sync secrets (E2E key + canonical owner) live in the shared group so
-	     the macOS app can read the same items; the app's own group stays first
-	     so it remains the default for group-less keychain writes. -->
 	<key>keychain-access-groups</key>
 	<array>
 		<string>$(AppIdentifierPrefix)com.simo.evolve</string>

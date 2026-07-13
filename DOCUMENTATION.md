@@ -1007,3 +1007,9 @@ NEXT ACTION: Ensure device is running the latest built version of the codebase.
     - Riverpod note: used `AsyncValue.asData?.value` (this pinned version lacks `valueOrNull`).
   - *Verification*: `flutter analyze` clean on all three files; new `goal_log_card_verification_test.dart` → **3 pass** (renders "?" + hint when couldNotVerify; hidden otherwise; tap fires the resolve callback). Full mobile suite re-run in the final slice.
   - *Current Status*: Calendar "?" wiring **complete + verified**. **Next**: the `applyAutoVerdict` provider-level integration test, then the full-suite + docs sweep.
+
+- [2026-07-14 12:00]: **Auto-Verified Habits — `applyAutoVerdict` provider-level integration test**
+  - *Details*: Replaces the "verified by inspection" note with a real test of the write path the reconcile drives (`GoalLogVerificationWriter` → `HabitLogsNotifier.applyAutoVerdict`).
+  - *Tech Notes*: `test/apply_auto_verdict_test.dart` stands up `habitLogsProvider` in Private mode over the shared `FakePrivateDataStore` (same `ProviderContainer` pattern as `private_mode_no_supabase_test`), never initialising Supabase. A `_RecordingStore` subclass captures `setHabitLog` args; a `_ThrowingStore` forces the failure branch. Three cases: (1) a `done` verdict persists `status='done'` + the measured `value` + a positive streak and updates the in-memory logs; (2) a `missed` verdict persists correctly; (3) a persistence failure rolls back the optimistic in-memory update (the expected `[HabitLogs] applyAutoVerdict error` log confirms the rollback path ran).
+  - *Verification*: `flutter analyze` clean; `flutter test test/apply_auto_verdict_test.dart` → **3 pass**.
+  - *Current Status*: `applyAutoVerdict` test slice **complete + verified**. All targeted deferred Dart follow-ups are now closed; final full-suite sweep + docs/memory/TO_SIMO_DO next.

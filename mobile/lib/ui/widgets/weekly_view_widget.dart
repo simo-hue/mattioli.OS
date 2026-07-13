@@ -129,12 +129,12 @@ class _WeeklyViewWidgetState extends ConsumerState<WeeklyViewWidget> {
     } else if (pastDaysCount > 0) {
       final bestDayName = DateFormat.E(LocaleSettings.currentLocale.languageCode)
           .format(_currentWeekStart.add(Duration(days: bestIndex)))
-          .toUpperCase();
+          .toLowerCase();
       final worstDayName = DateFormat.E(LocaleSettings.currentLocale.languageCode)
           .format(_currentWeekStart.add(Duration(days: worstIndex)))
-          .toUpperCase();
+          .toLowerCase();
       final avgPercent = (totalPercent / pastDaysCount).round();
-      summaryText = "Best: $bestDayName ${bestPercent.round()}%  •  Worst: $worstDayName ${worstPercent.round()}%  •  Avg: $avgPercent%";
+      summaryText = "BEST: $bestDayName ${bestPercent.round()}%  •  AVG: $avgPercent%  •  WORST: $worstDayName ${worstPercent.round()}%";
     } else {
       summaryText = "No data for this week yet";
     }

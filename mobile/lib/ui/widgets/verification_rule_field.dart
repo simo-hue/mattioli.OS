@@ -115,17 +115,27 @@ class VerificationRuleField extends StatelessWidget {
     super.key,
     required this.rule,
     required this.onChanged,
+    this.templates = VerificationCatalog.all,
   });
 
   final VerificationRule? rule;
   final ValueChanged<VerificationRule?> onChanged;
 
+  /// The templates the user may choose from — pass a provider-filtered subset
+  /// (e.g. HealthKit-only) so disabled providers aren't offered. Defaults to all.
+  final List<VerificationTemplate> templates;
+
   VerificationTemplate get _currentTemplate =>
-      rule?.template ?? VerificationCatalog.steps;
+      rule?.template ??
+      (templates.isNotEmpty ? templates.first : VerificationCatalog.steps);
 
   void _toggle(bool on) {
-    onChanged(on ? VerificationCatalog.steps.ruleWith(
-        VerificationCatalog.steps.defaultThreshold) : null);
+    if (!on || templates.isEmpty) {
+      onChanged(null);
+      return;
+    }
+    final first = templates.first;
+    onChanged(first.ruleWith(first.defaultThreshold));
   }
 
   void _selectTemplate(VerificationTemplate template) {
@@ -161,7 +171,7 @@ class VerificationRuleField extends StatelessWidget {
             spacing: 8,
             runSpacing: 8,
             children: [
-              for (final t in VerificationCatalog.all)
+              for (final t in templates)
                 ChoiceChip(
                   label: Text(verificationTemplateLabel(t.key)),
                   selected: t.key == r.metricKey,

@@ -139,6 +139,15 @@ class _HabitManagementModalState extends ConsumerState<HabitManagementModal> {
     );
   }
 
+  /// The verification templates to offer — only those whose provider is enabled
+  /// (HealthKit-only while Screen Time stays dark).
+  List<VerificationTemplate> get _availableTemplates => [
+        for (final t in VerificationCatalog.all)
+          if ((t.isHealthKit && VerificationConfig.healthKitEnabled) ||
+              (t.isScreenTime && VerificationConfig.screenTimeEnabled))
+            t,
+      ];
+
   void _grantHealthAccess() {
     final rule = _verificationRule;
     if (rule == null || !rule.isHealthKit) return;
@@ -432,6 +441,7 @@ class _HabitManagementModalState extends ConsumerState<HabitManagementModal> {
                         const SizedBox(height: 16),
                         VerificationRuleField(
                           rule: _verificationRule,
+                          templates: _availableTemplates,
                           onChanged: (r) =>
                               setState(() => _verificationRule = r),
                         ),

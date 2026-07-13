@@ -168,12 +168,16 @@ Future<ReconcileReport> runVerificationReconcile(WidgetRef ref) async {
   );
   if (goals.isEmpty) return const ReconcileReport();
 
-  // Keep DeviceActivity monitoring in sync with the current Screen Time goals.
-  final specs = screenTimeSpecsFrom(goals);
-  try {
-    await ref.read(screenTimeBridgeProvider).syncMonitoredGoals(specs);
-  } catch (e, stack) {
-    AppLogger.error('[Verification] syncMonitoredGoals failed', e, stack);
+  // Keep DeviceActivity monitoring in sync with the current Screen Time goals —
+  // but only when Screen Time is enabled, so a HealthKit-only build never calls
+  // into FamilyControls/DeviceActivity (no entitlement there yet).
+  if (VerificationConfig.screenTimeEnabled) {
+    final specs = screenTimeSpecsFrom(goals);
+    try {
+      await ref.read(screenTimeBridgeProvider).syncMonitoredGoals(specs);
+    } catch (e, stack) {
+      AppLogger.error('[Verification] syncMonitoredGoals failed', e, stack);
+    }
   }
 
   final store = await ref.read(verificationStateStoreProvider.future);

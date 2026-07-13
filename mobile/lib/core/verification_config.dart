@@ -9,13 +9,20 @@
 /// HealthKit and Screen Time are gated independently so HealthKit-verified goals
 /// can be switched on before Screen Time (HealthKit needs no Apple approval).
 abstract final class VerificationConfig {
-  /// Master switch. Flip to true only once the native layer is wired and tested.
-  static const bool enabled = false;
+  /// HealthKit-verified goals (steps, sleep, exercise, mindful minutes, …).
+  ///
+  /// PREREQUISITE (Xcode): the Runner target needs the **HealthKit** capability
+  /// and an **`NSHealthShareUsageDescription`** in Info.plist — without the
+  /// usage string, the first authorization request CRASHES. No Apple approval
+  /// is required, so this can go live before Screen Time.
+  static const bool healthKitEnabled = true;
 
-  /// HealthKit-verified goals (steps, sleep, mindful minutes, …).
-  static const bool healthKitEnabled = enabled;
+  /// Screen Time goals — additionally need the `DeviceActivityMonitor` extension
+  /// target + App Group + the **approved Family Controls distribution
+  /// entitlement** (required even for TestFlight). Kept dark until that lands.
+  static const bool screenTimeEnabled = false;
 
-  /// Screen Time goals — additionally requires the approved Family Controls
-  /// distribution entitlement to function on TestFlight / the App Store.
-  static const bool screenTimeEnabled = enabled;
+  /// Master switch — true when any provider is on. Gates the creation UI, the
+  /// reconcile-on-foreground hook and the manual-freeze bookkeeping.
+  static const bool enabled = healthKitEnabled || screenTimeEnabled;
 }

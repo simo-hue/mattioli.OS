@@ -1,5 +1,20 @@
 # DOCUMENTATION.md
 
+## [2026-07-13 22:12]: Fix — haptic crash on disposed `ref` + truncated import-summary dialog
+*Details*: Fixed a production crash (captured in real-device logs) where enabling/disabling iCloud sync and leaving the screen mid-operation threw `Bad state: Using "ref" ... unmounted`. Root cause: `AppHaptics._trigger` reads `settingsProvider` through `ref`, and a haptic fired from `_runAction`'s `finally` after the user popped the screen read a disposed `ref`. Also fixed the "Import Completed" summary dialog whose rows were clipped on the right edge — the row `Text` could not wrap inside the fixed-width Cupertino alert.
+*Tech Notes*:
+- **Hardened layer** — `lib/core/haptics.dart`: wrapped `_trigger`'s `ref.read` in try/catch so a purely cosmetic haptic can never crash the app; swallows the disposed-`ref` error with a `kDebugMode`-only `debugPrint` (silent in release, no Sentry noise). Added `package:flutter/foundation.dart` import.
+- **Crash call site** — `lib/ui/screens/icloud_sync_screen.dart` `_runAction`: moved `ref.hapticLight()` inside the existing `if (mounted)` guard in the `finally`.
+- **Targeted after-disposal audit** (all 131 haptic sites reviewed; only async/after-`await`/`finally`/callback sites touched — synchronous tap handlers left alone): added mounted guards at —
+  - `lib/ui/kit/evolve_color_picker.dart` (after `showEvolveColorPicker` await → `&& context.mounted`)
+  - `lib/ui/screens/privacy_settings_screen.dart` biometric-lock `onChanged` (after `_authenticate` await → `if (!context.mounted) return;`)
+  - `lib/ui/screens/profile_screen.dart` `_pickImage` (after gallery-picker await → `if (!mounted) return;`) and `_showLogoutConfirmationDialog` (after confirm await → `if (!mounted) return;`)
+  - `lib/ui/widgets/macro_goals/category_picker_sheet.dart` `_showDeleteCategory` (after `deleteCategory` await → `&& context.mounted`)
+  - `lib/ui/widgets/macro_goals/goal_item_widget.dart` `_showDeleteConfirm` (`if (confirmed && mounted)`)
+- **Dialog fix** — `lib/ui/screens/privacy_settings_screen.dart` `_buildSummaryRow`: wrapped the summary `Text` in `Expanded` and top-aligned the icon (`CrossAxisAlignment.start`) so each line wraps within the ~270pt fixed-width `CupertinoAlertDialog` instead of truncating.
+- **Verification**: `flutter analyze` on all touched files — clean (only pre-existing `info`-level lints). No new dependencies; no manual actions required.
+
+
 ## [2026-07-13 13:54]: App Version Bump
 *Details*: Bumped the mobile app version in `pubspec.yaml` from `1.1.0+15` to `1.1.1+16` for an upcoming IPA build and App Store Connect upload via Transporter.
 *Tech Notes*:

@@ -174,7 +174,7 @@ class _GoalItemWidgetState extends ConsumerState<GoalItemWidget>
       isDestructive: true,
       ref: ref,
     );
-    if (confirmed) _delete();
+    if (confirmed && mounted) _delete();
   }
 
   void _showCategorySheet() {

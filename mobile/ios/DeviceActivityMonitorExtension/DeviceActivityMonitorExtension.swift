@@ -1,9 +1,9 @@
 // Auto-verified habits — the DeviceActivityMonitor app-extension principal class.
 //
 // ⚠️ UNVERIFIED ON THIS DEV MACHINE (no iOS SDK). This file belongs to a SEPARATE
-// Xcode target you must create (see TO_SIMO_DO.md). `VerificationAppGroup.swift`
-// must be a member of BOTH the Runner and this extension target so the App Group
-// constant is shared. Keep the extension tiny — it runs under a ~6 MB memory cap.
+// Xcode target you must create (see TO_SIMO_DO.md). It is SELF-CONTAINED (its own
+// App Group constant below), so ONLY this one file needs to be added to the
+// extension target. Keep it tiny — it runs under a ~6 MB memory cap.
 //
 // It is woken by the system (surviving app force-quit / reboot, though not
 // perfectly reliably — the Dart engine tolerates missed/duplicate/late signals):
@@ -16,6 +16,14 @@
 import DeviceActivity
 import Foundation
 import UserNotifications
+
+/// Self-contained App Group bridge — the extension is a separate target and can't
+/// see the app's copy. `suiteName` + `pendingSignalsKey` MUST match
+/// `VerificationAppGroup` in Runner/AppDelegate.swift.
+private enum AppGroup {
+  static let suiteName = "group.com.simo.evolve.verification"
+  static let pendingSignalsKey = "pending_screen_time_signals"
+}
 
 class DeviceActivityMonitorExtension: DeviceActivityMonitor {
   override func eventDidReachThreshold(
@@ -51,10 +59,10 @@ class DeviceActivityMonitorExtension: DeviceActivityMonitor {
   }
 
   private func appendSignal(goalId: String, kind: String) {
-    guard let defaults = UserDefaults(suiteName: VerificationAppGroup.suiteName) else { return }
-    var pending = defaults.array(forKey: VerificationAppGroup.pendingSignalsKey) as? [[String: Any]] ?? []
+    guard let defaults = UserDefaults(suiteName: AppGroup.suiteName) else { return }
+    var pending = defaults.array(forKey: AppGroup.pendingSignalsKey) as? [[String: Any]] ?? []
     pending.append(["goalId": goalId, "date": Self.todayKey(), "kind": kind])
-    defaults.set(pending, forKey: VerificationAppGroup.pendingSignalsKey)
+    defaults.set(pending, forKey: AppGroup.pendingSignalsKey)
   }
 
   /// The local calendar day the signal is for. The interval ends at 23:59 (not

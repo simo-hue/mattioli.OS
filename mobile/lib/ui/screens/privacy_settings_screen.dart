@@ -109,6 +109,10 @@ class PrivacySettingsScreen extends ConsumerWidget {
                 onChanged: (val) async {
                   if (val) {
                     final authenticated = await _authenticate(context);
+                    // The biometric prompt is a system overlay during which the
+                    // user can background or pop the screen, disposing this
+                    // ConsumerWidget. Bail before reading `ref` on a dead tree.
+                    if (!context.mounted) return;
                     if (authenticated) {
                       // The user just authenticated to enable the lock, so count
                       // it as this session's unlock — the app-wide lock gate must

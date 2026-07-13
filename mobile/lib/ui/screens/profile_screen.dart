@@ -90,6 +90,10 @@ class _ProfileScreenState extends ConsumerState<ProfileScreen> {
               .read(userProfileProvider.notifier)
               .updatePrivateAvatar(selectedFile.path);
         }
+        // The gallery picker (and the private-avatar file work) are async gaps
+        // the user can abandon by leaving the screen — guard before setState /
+        // haptic touch this disposed State's `ref`.
+        if (!mounted) return;
         setState(() {
           _profileImage = selectedFile;
         });
@@ -109,6 +113,7 @@ class _ProfileScreenState extends ConsumerState<ProfileScreen> {
       isDestructive: true,
     );
     if (!confirmed) return;
+    if (!mounted) return;
     ref.hapticHeavy();
     await ref.read(authProvider.notifier).logout();
     if (context.mounted) {

@@ -306,7 +306,7 @@ Future<bool> _showDeleteCategory({
             if (dialogContext.mounted) {
               Navigator.pop(dialogContext, success);
             }
-            if (success) {
+            if (success && context.mounted) {
               ref.hapticMedium();
             }
           },

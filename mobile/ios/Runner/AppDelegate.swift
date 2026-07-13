@@ -1,5 +1,8 @@
 import CloudKit
+import DeviceActivity
+import FamilyControls
 import Flutter
+import HealthKit
 import UIKit
 
 @main
@@ -328,5 +331,289 @@ enum CloudKitSyncBridge {
   private static func flutterError(_ error: Error) -> FlutterError {
     let code = (error as? CKError)?.code.rawValue ?? -1
     return FlutterError(code: "cloudkit_\(code)", message: error.localizedDescription, details: nil)
+  }
+}
+
+// ── Auto-verified habits — native bridges (kept in this file, a Runner
+// target member, so they build without editing the Xcode project — mirrors
+// CloudKitSyncBridge). UNVERIFIED on the dev machine (no iOS SDK).
+
+enum VerificationAppGroup {
+  /// TODO(Simone): match the App Group id you create in Xcode.
+  static let suiteName = "group.com.simo.evolve.verification"
+
+  /// Key holding an array of pending signal dictionaries, each:
+  /// `["goalId": String, "date": "yyyy-MM-dd", "kind": "reachedThreshold" | "stayedUnder"]`.
+  static let pendingSignalsKey = "pending_screen_time_signals"
+
+  /// Key holding the app-written monitor specs the extension reads to know which
+  /// goal each DeviceActivity event maps to:
+  /// `["<eventName>": ["goalId": String]]`.
+  static let monitorSpecsKey = "screen_time_monitor_specs"
+
+  static var defaults: UserDefaults? { UserDefaults(suiteName: suiteName) }
+}
+
+enum HealthKitBridge {
+  private static let store = HKHealthStore()
+
+  static func register(_ messenger: FlutterBinaryMessenger) {
+    let channel = FlutterMethodChannel(name: "evolve/healthkit", binaryMessenger: messenger)
+    channel.setMethodCallHandler { call, result in handle(call, result) }
+  }
+
+  private static func handle(_ call: FlutterMethodCall, _ result: @escaping FlutterResult) {
+    let args = call.arguments as? [String: Any]
+    switch call.method {
+    case "isHealthDataAvailable":
+      result(HKHealthStore.isHealthDataAvailable())
+    case "requestAuthorization":
+      requestAuthorization(args, result)
+    case "dailyQuantity":
+      dailyQuantity(args, result)
+    case "hasRecentData":
+      hasRecentData(args, result)
+    default:
+      result(FlutterMethodNotImplemented)
+    }
+  }
+
+  // MARK: - Type mapping (wire identifier -> HK types)
+
+  private static func objectType(_ id: String) -> HKObjectType? {
+    switch id {
+    case "stepCount": return HKQuantityType.quantityType(forIdentifier: .stepCount)
+    case "appleExerciseTime": return HKQuantityType.quantityType(forIdentifier: .appleExerciseTime)
+    case "activeEnergyBurned": return HKQuantityType.quantityType(forIdentifier: .activeEnergyBurned)
+    case "distanceWalkingRunning": return HKQuantityType.quantityType(forIdentifier: .distanceWalkingRunning)
+    case "appleStandHour": return HKCategoryType.categoryType(forIdentifier: .appleStandHour)
+    case "mindfulSession": return HKCategoryType.categoryType(forIdentifier: .mindfulSession)
+    case "sleepAnalysis": return HKCategoryType.categoryType(forIdentifier: .sleepAnalysis)
+    case "workout": return HKObjectType.workoutType()
+    default: return nil
+    }
+  }
+
+  /// The unit each metric is returned in — MUST match the Dart template's
+  /// VerificationUnit so the threshold comparison is apples-to-apples.
+  private static func unit(_ id: String) -> HKUnit? {
+    switch id {
+    case "stepCount": return .count()
+    case "appleExerciseTime": return .minute()
+    case "activeEnergyBurned": return .kilocalorie()
+    case "distanceWalkingRunning": return .meterUnit(with: .kilo)
+    default: return nil // category / workout handled separately
+    }
+  }
+
+  // MARK: - Authorization
+
+  private static func requestAuthorization(_ args: [String: Any]?, _ result: @escaping FlutterResult) {
+    let ids = (args?["types"] as? [String]) ?? []
+    let readTypes = Set(ids.compactMap { objectType($0) })
+    guard !readTypes.isEmpty else { result(nil); return }
+    store.requestAuthorization(toShare: nil, read: readTypes) { _, _ in
+      // HealthKit deliberately never reports read denial, so we ignore the
+      // outcome and let a run of couldn't-verify days infer it later (D9).
+      main { result(nil) }
+    }
+  }
+
+  // MARK: - Daily aggregate
+
+  private static func dailyQuantity(_ args: [String: Any]?, _ result: @escaping FlutterResult) {
+    guard
+      let id = args?["type"] as? String,
+      let startMs = (args?["startMs"] as? NSNumber)?.doubleValue,
+      let endMs = (args?["endMs"] as? NSNumber)?.doubleValue,
+      let type = objectType(id)
+    else { result(nil); return }
+
+    let aggregation = (args?["aggregation"] as? String) ?? "sum"
+    let start = Date(timeIntervalSince1970: startMs / 1000.0)
+    let end = Date(timeIntervalSince1970: endMs / 1000.0)
+    let predicate = HKQuery.predicateForSamples(withStart: start, end: end, options: .strictStartDate)
+
+    if let quantityType = type as? HKQuantityType, let hkUnit = unit(id) {
+      let q = HKStatisticsQuery(quantityType: quantityType, quantitySamplePredicate: predicate, options: .cumulativeSum) { _, stats, _ in
+        let value = stats?.sumQuantity()?.doubleValue(for: hkUnit)
+        main { result(value) } // nil when there is no data
+      }
+      store.execute(q)
+      return
+    }
+
+    // Category types (sleep/mindful/stand) + workouts: run a sample query and
+    // aggregate ourselves (sum of minutes/hours, or a count).
+    let sampleType = (type as? HKSampleType) ?? HKObjectType.workoutType()
+    let q = HKSampleQuery(sampleType: sampleType, predicate: predicate, limit: HKObjectQueryNoLimit, sortDescriptors: nil) { _, samples, _ in
+      main { result(aggregate(id: id, aggregation: aggregation, samples: samples)) }
+    }
+    store.execute(q)
+  }
+
+  private static func aggregate(id: String, aggregation: String, samples: [HKSample]?) -> Double? {
+    guard let samples = samples else { return nil }
+    switch id {
+    case "sleepAnalysis":
+      // Sum "asleep" durations, in hours. (Night-window attribution is a known
+      // follow-up; for now we sum asleep samples overlapping the day window.)
+      let asleep = samples.compactMap { $0 as? HKCategorySample }.filter { isAsleep($0.value) }
+      if asleep.isEmpty { return nil }
+      let seconds = asleep.reduce(0.0) { $0 + $1.endDate.timeIntervalSince($1.startDate) }
+      return seconds / 3600.0
+    case "mindfulSession":
+      let mindful = samples.compactMap { $0 as? HKCategorySample }
+      if mindful.isEmpty { return nil }
+      let seconds = mindful.reduce(0.0) { $0 + $1.endDate.timeIntervalSince($1.startDate) }
+      return seconds / 60.0
+    case "appleStandHour":
+      // Count hours the user stood (value == .stood).
+      let stood = samples.compactMap { $0 as? HKCategorySample }
+        .filter { $0.value == HKCategoryValueAppleStandHour.stood.rawValue }
+      return Double(stood.count)
+    case "workout":
+      return aggregation == "count" ? Double(samples.count) : nil
+    default:
+      return nil
+    }
+  }
+
+  private static func isAsleep(_ value: Int) -> Bool {
+    if #available(iOS 16.0, *) {
+      return value == HKCategoryValueSleepAnalysis.asleepCore.rawValue
+        || value == HKCategoryValueSleepAnalysis.asleepDeep.rawValue
+        || value == HKCategoryValueSleepAnalysis.asleepREM.rawValue
+        || value == HKCategoryValueSleepAnalysis.asleepUnspecified.rawValue
+    }
+    return value == HKCategoryValueSleepAnalysis.asleep.rawValue
+  }
+
+  // MARK: - Recent-data probe (Watch-dependency warning)
+
+  private static func hasRecentData(_ args: [String: Any]?, _ result: @escaping FlutterResult) {
+    guard
+      let id = args?["type"] as? String,
+      let withinDays = (args?["withinDays"] as? NSNumber)?.intValue,
+      let type = objectType(id),
+      let sampleType = type as? HKSampleType
+    else { result(false); return }
+
+    let start = Calendar.current.date(byAdding: .day, value: -withinDays, to: Date())
+    let predicate = HKQuery.predicateForSamples(withStart: start, end: Date(), options: [])
+    let q = HKSampleQuery(sampleType: sampleType, predicate: predicate, limit: 1, sortDescriptors: nil) { _, samples, _ in
+      main { result((samples?.isEmpty == false)) }
+    }
+    store.execute(q)
+  }
+
+  private static func main(_ work: @escaping () -> Void) {
+    DispatchQueue.main.async(execute: work)
+  }
+}
+
+enum ScreenTimeBridge {
+  /// Single event name per activity; the DeviceActivityName IS the goalId, so
+  /// the extension maps signals back with `activity.rawValue`.
+  private static let eventName = DeviceActivityEvent.Name("limit")
+
+  static func register(_ messenger: FlutterBinaryMessenger) {
+    let channel = FlutterMethodChannel(name: "evolve/screentime", binaryMessenger: messenger)
+    channel.setMethodCallHandler { call, result in handle(call, result) }
+  }
+
+  private static func handle(_ call: FlutterMethodCall, _ result: @escaping FlutterResult) {
+    let args = call.arguments as? [String: Any]
+    switch call.method {
+    case "authorizationStatus": authorizationStatus(result)
+    case "requestIndividualAuthorization": requestIndividualAuthorization(result)
+    case "syncMonitoredGoals": syncMonitoredGoals(args, result)
+    case "drainSignals": drainSignals(result)
+    default: result(FlutterMethodNotImplemented)
+    }
+  }
+
+  // MARK: - Authorization
+
+  private static func authorizationStatus(_ result: @escaping FlutterResult) {
+    guard #available(iOS 16.0, *) else { result("notDetermined"); return }
+    switch AuthorizationCenter.shared.authorizationStatus {
+    case .approved: result("approved")
+    case .denied: result("denied")
+    default: result("notDetermined")
+    }
+  }
+
+  private static func requestIndividualAuthorization(_ result: @escaping FlutterResult) {
+    guard #available(iOS 16.0, *) else {
+      result(FlutterError(code: "unsupported", message: "iOS 16+ required", details: nil)); return
+    }
+    Task {
+      do {
+        try await AuthorizationCenter.shared.requestAuthorization(for: .individual)
+        main { result(nil) }
+      } catch {
+        main { result(FlutterError(code: "auth_failed", message: error.localizedDescription, details: nil)) }
+      }
+    }
+  }
+
+  // MARK: - Monitoring
+
+  private static func syncMonitoredGoals(_ args: [String: Any]?, _ result: @escaping FlutterResult) {
+    let goals = (args?["goals"] as? [[String: Any]]) ?? []
+    let center = DeviceActivityCenter()
+    // Reconcile by clearing everything and re-adding the current set (idempotent,
+    // simplest correct approach for the small v1 goal count).
+    center.stopMonitoring()
+    guard !goals.isEmpty else { result(nil); return }
+
+    let schedule = DeviceActivitySchedule(
+      intervalStart: DateComponents(hour: 0, minute: 0),
+      intervalEnd: DateComponents(hour: 23, minute: 59),
+      repeats: true
+    )
+    do {
+      for goal in goals {
+        guard
+          let goalId = goal["goalId"] as? String,
+          let minutes = (goal["thresholdMinutes"] as? NSNumber)?.intValue
+        else { continue }
+        let event = DeviceActivityEvent(
+          applications: [],
+          categories: [],
+          webDomains: [],
+          threshold: DateComponents(minute: minutes)
+        )
+        try center.startMonitoring(
+          DeviceActivityName(goalId),
+          during: schedule,
+          events: [eventName: event]
+        )
+      }
+      result(nil)
+    } catch {
+      // Surface Apple's 20-activity cap as the typed Dart exception; everything
+      // else is a generic monitoring failure.
+      if case DeviceActivityCenter.MonitoringError.excessiveActivities = error {
+        result(FlutterError(code: "monitor_limit", message: "\(error)",
+                            details: ["attempted": goals.count, "limit": 20]))
+      } else {
+        result(FlutterError(code: "monitoring_failed", message: "\(error)", details: nil))
+      }
+    }
+  }
+
+  // MARK: - Drain signals written by the extension
+
+  private static func drainSignals(_ result: @escaping FlutterResult) {
+    let defaults = VerificationAppGroup.defaults
+    let signals = defaults?.array(forKey: VerificationAppGroup.pendingSignalsKey) as? [[String: Any]] ?? []
+    defaults?.removeObject(forKey: VerificationAppGroup.pendingSignalsKey)
+    result(signals)
+  }
+
+  private static func main(_ work: @escaping () -> Void) {
+    DispatchQueue.main.async(execute: work)
   }
 }

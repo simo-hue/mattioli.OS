@@ -144,7 +144,7 @@ class EvolveColorSwatchGrid extends ConsumerWidget {
                     selected,
                     title: customTitle,
                   );
-                  if (picked != null) {
+                  if (picked != null && context.mounted) {
                     ref.hapticSelection();
                     onChanged(picked);
                   }

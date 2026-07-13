@@ -188,6 +188,13 @@ class DayDetailsModal extends ConsumerWidget {
                           ref
                               .read(habitLogsProvider.notifier)
                               .cycleStatus(date, habit.id);
+                          // Manually resolving a verified habit clears its
+                          // couldn't-verify marker in the store — refresh the
+                          // "?" source so a later un-resolve doesn't resurrect a
+                          // stale "?" from the cached provider.
+                          if (habit.isVerified) {
+                            ref.invalidate(couldNotVerifyDaysProvider);
+                          }
                         },
                       );
                     },

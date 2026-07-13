@@ -457,6 +457,9 @@
     "importRowMerge": "{label}: {added} añadidos, {updated} actualizados, {unchanged} sin cambios",
     "importRowSkipped": ", {count} omitidos",
     "importConfirm": "Importar",
+    "importReplaceConfirmTitle": "¿Reemplazar todos los datos?",
+    "importReplaceConfirmMessage": "Esto elimina permanentemente tus datos actuales (unos {count} registros) y conserva solo lo que hay en esta copia. No se puede deshacer.",
+    "importReplaceConfirmButton": "Eliminar y reemplazar",
     "importSuccess": "¡Datos importados con éxito!",
     "importError": "Fallo de importación: {error}",
     "importInProgress": "Importando datos...",
@@ -1103,7 +1106,7 @@
     "celebrationTitle": "Objetivo alcanzado",
     "celebrationBody": "Has alcanzado \"{title}\" hoy. ¡Buen trabajo!",
     "failureSummaryTitle": "Hábito no cumplido",
-    "failureSummaryBodyOne": "\"{title}\" no se completó hoy.",
+    "failureSummaryBodyOne": "\"{title}\" no se completó.",
     "failureSummaryBodyMany": "{count} hábitos de verificación automática quedaron sin completar.",
     "channelName": "Verificación de hábitos",
     "channelDescription": "Avisos y novedades de los hábitos con verificación automática."

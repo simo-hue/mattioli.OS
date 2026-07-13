@@ -457,6 +457,9 @@
     "importRowMerge": "{label}: {added} added, {updated} updated, {unchanged} unchanged",
     "importRowSkipped": ", {count} skipped",
     "importConfirm": "Import",
+    "importReplaceConfirmTitle": "Replace all data?",
+    "importReplaceConfirmMessage": "This permanently deletes your current data (about {count} habit logs) and keeps only what's in this backup. This can't be undone.",
+    "importReplaceConfirmButton": "Delete & Replace",
     "importSuccess": "Data imported successfully!",
     "importError": "Import failed: {error}",
     "importInProgress": "Importing data...",
@@ -1103,7 +1106,7 @@
     "celebrationTitle": "Goal reached",
     "celebrationBody": "You hit \"{title}\" today. Nice work!",
     "failureSummaryTitle": "Missed habit",
-    "failureSummaryBodyOne": "\"{title}\" wasn't completed today.",
+    "failureSummaryBodyOne": "\"{title}\" wasn't completed.",
     "failureSummaryBodyMany": "{count} auto-verified habits went uncompleted.",
     "channelName": "Habit verification",
     "channelDescription": "Prompts and updates for auto-verified habits."

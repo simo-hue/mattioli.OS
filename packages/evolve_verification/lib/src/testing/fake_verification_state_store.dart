@@ -62,6 +62,13 @@ class FakeVerificationStateStore implements VerificationStateStore {
   }
 
   @override
+  Future<void> pruneCouldNotVerifyBefore(String goalId, DateTime day) async {
+    final cut = _d(day);
+    cnv[goalId]?.removeWhere((d) => d.isBefore(cut));
+    nudged[goalId]?.removeWhere((d) => d.isBefore(cut));
+  }
+
+  @override
   Future<Set<DateTime>> nudgedDays(String goalId) async => {...?nudged[goalId]};
 
   @override

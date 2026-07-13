@@ -457,6 +457,9 @@
     "importRowMerge": "{label}: {added} hinzugefügt, {updated} aktualisiert, {unchanged} unverändert",
     "importRowSkipped": ", {count} übersprungen",
     "importConfirm": "Importieren",
+    "importReplaceConfirmTitle": "Alle Daten ersetzen?",
+    "importReplaceConfirmMessage": "Dies löscht deine aktuellen Daten endgültig (etwa {count} Einträge) und behält nur, was in diesem Backup ist. Das kann nicht rückgängig gemacht werden.",
+    "importReplaceConfirmButton": "Löschen & ersetzen",
     "importSuccess": "Daten erfolgreich importiert!",
     "importError": "Import fehlgeschlagen: {error}",
     "importInProgress": "Daten werden importiert...",
@@ -1103,7 +1106,7 @@
     "celebrationTitle": "Ziel erreicht",
     "celebrationBody": "Du hast \"{title}\" heute erreicht. Gut gemacht!",
     "failureSummaryTitle": "Gewohnheit verpasst",
-    "failureSummaryBodyOne": "\"{title}\" wurde heute nicht erledigt.",
+    "failureSummaryBodyOne": "\"{title}\" wurde nicht erledigt.",
     "failureSummaryBodyMany": "{count} automatisch geprüfte Gewohnheiten wurden nicht erledigt.",
     "channelName": "Gewohnheitsprüfung",
     "channelDescription": "Hinweise und Updates für automatisch geprüfte Gewohnheiten."

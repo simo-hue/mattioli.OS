@@ -36,6 +36,12 @@ abstract interface class VerificationStateStore {
   /// Clear a couldn't-verify marker once the day resolves to a real verdict.
   Future<void> resolveCouldNotVerify(String goalId, DateTime day);
 
+  /// Delete every couldn't-verify marker for [goalId] strictly before [day].
+  /// Reconcile calls this to drop markers that have aged out of the backfill
+  /// window (they can never resolve — reconcile no longer revisits them), so the
+  /// bookkeeping table doesn't grow without bound.
+  Future<void> pruneCouldNotVerifyBefore(String goalId, DateTime day);
+
   /// The couldn't-verify days for [goalId] that have already fired a "did you
   /// keep it?" nudge. Lets the caller suppress re-nudging the same day on every
   /// foreground within the nag window (the notification id alone only prevents

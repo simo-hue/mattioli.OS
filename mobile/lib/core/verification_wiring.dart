@@ -72,6 +72,11 @@ Map<String, Map<DateTime, VerificationOutcome>> loggedOutcomesFrom(
 /// goals, or the store can't open (e.g. in a widget test) — so the UI degrades
 /// to "no ?" rather than erroring. Reactive to goal changes; the reconcile
 /// entry point invalidates it after each pass so freshly recorded days appear.
+///
+/// The result is bounded to the **resolvable window** (today + yesterday, the
+/// same window the day-details check-in guard allows): a "?" only ever renders
+/// on a day the user can actually resolve, so the "tap to resolve" affordance
+/// never dead-ends on an older, non-editable day.
 final couldNotVerifyDaysProvider =
     FutureProvider<Map<String, Set<DateTime>>>((ref) async {
   if (!VerificationConfig.enabled) return const {};
@@ -81,11 +86,16 @@ final couldNotVerifyDaysProvider =
     screenTimeEnabled: VerificationConfig.screenTimeEnabled,
   );
   if (goals.isEmpty) return const {};
+  final now = DateTime.now();
+  final today = DateTime(now.year, now.month, now.day);
+  final yesterday = today.subtract(const Duration(days: 1));
   try {
     final store = await ref.watch(verificationStateStoreProvider.future);
     final out = <String, Set<DateTime>>{};
     for (final g in goals) {
-      final days = await store.couldNotVerifyDays(g.goalId);
+      final days = (await store.couldNotVerifyDays(g.goalId))
+          .where((d) => d == today || d == yesterday)
+          .toSet();
       if (days.isNotEmpty) out[g.goalId] = days;
     }
     return out;
@@ -321,14 +331,18 @@ Future<ReconcileReport> runVerificationReconcile(WidgetRef ref) async {
 
   // Opt-in end-of-day failure summary (D11) — one banner covering the fresh
   // `missed` verdicts this pass (all such writes are for completed past days).
+  // Count DISTINCT goals, not writes: a single habit that missed several
+  // backfilled days produces one fail write per day, and the copy speaks of
+  // "habits", not "days".
   if (settings.verificationFailureSummary) {
-    final fails = report.writes
+    final failedGoals = report.writes
         .where((w) => w.outcome == VerificationOutcome.fail)
-        .toList();
-    if (fails.isNotEmpty) {
+        .map((w) => w.goalId)
+        .toSet();
+    if (failedGoals.isNotEmpty) {
       await notifications.showVerificationFailureSummary(
-        count: fails.length,
-        title: titles[fails.first.goalId] ?? '',
+        count: failedGoals.length,
+        title: titles[failedGoals.first] ?? '',
       );
     }
   }

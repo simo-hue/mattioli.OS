@@ -124,6 +124,21 @@ void main() {
     );
   });
 
+  test('reconcile prunes couldn\'t-verify markers older than the window',
+      () async {
+    // A stale marker outside the 3-day backfill window (reconcile never revisits
+    // it, so it would otherwise linger forever).
+    await store.recordCouldNotVerify('g', daysAgo(10));
+    expect(await store.couldNotVerifyDays('g'), contains(daysAgo(10)));
+
+    await controller.reconcile(
+        goals: [steps()], loggedOutcomes: const {}, today: today);
+
+    final cnv = await store.couldNotVerifyDays('g');
+    expect(cnv.contains(daysAgo(10)), isFalse); // pruned
+    expect(cnv, contains(daysAgo(1))); // recent no-data day still recorded
+  });
+
   test('report.writes carries the written verdicts (for D11 notifications)',
       () async {
     health.setQuantity('stepCount', daysAgo(1), 12000); // pass

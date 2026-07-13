@@ -120,6 +120,12 @@ class VerificationController {
       await store.recordCouldNotVerify(c.goalId, c.day);
     }
 
+    // Drop couldn't-verify markers that have aged out of the backfill window —
+    // reconcile will never revisit them, so they'd otherwise linger forever.
+    for (final goal in goals) {
+      await store.pruneCouldNotVerifyBefore(goal.goalId, windowStart);
+    }
+
     return ReconcileReport(
       writes: plan.writes,
       couldNotVerify: plan.couldNotVerify.length,

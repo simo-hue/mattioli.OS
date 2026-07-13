@@ -42,4 +42,14 @@ void main() {
     await store.deleteGoal('g');
     expect(await store.nudgedDays('g'), isEmpty);
   });
+
+  test('pruneCouldNotVerifyBefore drops older markers (and their nudged marks)',
+      () async {
+    await store.recordCouldNotVerify('g', day(5));
+    await store.recordCouldNotVerify('g', day(10));
+    await store.markNudged('g', day(5));
+    await store.pruneCouldNotVerifyBefore('g', day(10)); // strictly before 10
+    expect(await store.couldNotVerifyDays('g'), {day(10)});
+    expect(await store.nudgedDays('g'), isEmpty); // day(5)'s nudged mark gone
+  });
 }

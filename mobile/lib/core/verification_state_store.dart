@@ -39,10 +39,16 @@ CREATE TABLE IF NOT EXISTS $table (
 
   /// v1 → v2 migration: add the nullable `nudged_at` column that records when a
   /// couldn't-verify day last fired a nudge (so it isn't re-nudged every
-  /// foreground). Guarded by a column probe so it is safe to run more than once
-  /// and on a fresh table that already has the column.
+  /// foreground). Guarded by a column probe so it is idempotent (safe to run
+  /// more than once, and on a table that already has the column).
+  ///
+  /// If the table does not exist yet (`PRAGMA table_info` returns no rows), this
+  /// is a no-op: the post-open [createTable] call already creates the table with
+  /// `nudged_at` present, so `ALTER TABLE` on a missing table (which would throw
+  /// and fail `openDatabase`) is deliberately avoided.
   static Future<void> migrateToV2(DatabaseExecutor db) async {
     final columns = await db.rawQuery('PRAGMA table_info($table)');
+    if (columns.isEmpty) return; // no table → createTable will build it fresh
     final hasNudgedAt = columns.any((c) => c['name'] == 'nudged_at');
     if (!hasNudgedAt) {
       await db.execute('ALTER TABLE $table ADD COLUMN nudged_at TEXT');
@@ -143,6 +149,17 @@ CREATE TABLE IF NOT EXISTS $table (
       table,
       where: 'goal_id = ? AND date = ? AND kind = ?',
       whereArgs: [goalId, _key(day), _cnv],
+    );
+  }
+
+  @override
+  Future<void> pruneCouldNotVerifyBefore(String goalId, DateTime day) async {
+    // `date` is stored as zero-padded `yyyy-MM-dd`, so lexicographic `<` matches
+    // chronological order.
+    await _db.delete(
+      table,
+      where: "goal_id = ? AND kind = '$_cnv' AND date < ?",
+      whereArgs: [goalId, _key(day)],
     );
   }
 

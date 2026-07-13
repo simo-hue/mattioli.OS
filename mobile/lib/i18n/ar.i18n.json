@@ -457,6 +457,9 @@
     "importRowMerge": "{label}: {added} مضافة، {updated} محدّثة، {unchanged} دون تغيير",
     "importRowSkipped": "، {count} تم تجاوزها",
     "importConfirm": "استيراد",
+    "importReplaceConfirmTitle": "استبدال جميع البيانات؟",
+    "importReplaceConfirmMessage": "سيؤدي هذا إلى حذف بياناتك الحالية نهائيًا (حوالي {count} سجل) والاحتفاظ فقط بما في هذه النسخة الاحتياطية. لا يمكن التراجع عن ذلك.",
+    "importReplaceConfirmButton": "حذف واستبدال",
     "importSuccess": "تم استيراد البيانات بنجاح!",
     "importError": "فشل الاستيراد: {error}",
     "importInProgress": "جاري استيراد البيانات...",
@@ -1087,7 +1090,7 @@
     "celebrationTitle": "تم تحقيق الهدف",
     "celebrationBody": "لقد حققت \"{title}\" اليوم. أحسنت!",
     "failureSummaryTitle": "عادة فائتة",
-    "failureSummaryBodyOne": "لم تكتمل \"{title}\" اليوم.",
+    "failureSummaryBodyOne": "لم تكتمل \"{title}\".",
     "failureSummaryBodyMany": "لم تكتمل {count} من العادات ذات التحقق التلقائي.",
     "channelName": "التحقق من العادات",
     "channelDescription": "تنبيهات وتحديثات للعادات ذات التحقق التلقائي."

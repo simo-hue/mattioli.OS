@@ -137,6 +137,17 @@ void main() {
     });
   });
 
+  test('pruneCouldNotVerifyBefore deletes markers strictly before the cutoff',
+      () async {
+    await store.recordCouldNotVerify('g', day(5));
+    await store.recordCouldNotVerify('g', day(9));
+    await store.recordCouldNotVerify('g', day(10));
+    await store.markNudged('g', day(5));
+    await store.pruneCouldNotVerifyBefore('g', day(10));
+    expect(await store.couldNotVerifyDays('g'), {day(10)}); // 5 + 9 pruned
+    expect(await store.nudgedDays('g'), isEmpty); // day(5)'s nudged mark gone
+  });
+
   test('migrateToV2 adds nudged_at to a pre-existing v1 table', () async {
     // Rebuild the table with the original v1 schema (no nudged_at column).
     await db.execute('DROP TABLE IF EXISTS verification_state');
@@ -156,5 +167,18 @@ CREATE TABLE verification_state (
     await store.recordCouldNotVerify('g', day(10));
     await store.markNudged('g', day(10));
     expect(await store.nudgedDays('g'), {day(10)});
+  });
+
+  test('migrateToV2 is a no-op (no throw) when the table is absent', () async {
+    // Simulates a v1 DB whose table doesn't exist yet: PRAGMA returns no rows,
+    // so an ALTER would throw "no such table" and fail openDatabase. The guard
+    // must skip it and leave table creation to createTable.
+    await db.execute('DROP TABLE IF EXISTS verification_state');
+    await SqfliteVerificationStateStore.migrateToV2(db); // must not throw
+    // createTable (as the provider calls post-open) then builds it with nudged_at.
+    await SqfliteVerificationStateStore.createTable(db);
+    await store.recordCouldNotVerify('g', day(1));
+    await store.markNudged('g', day(1));
+    expect(await store.nudgedDays('g'), {day(1)});
   });
 }

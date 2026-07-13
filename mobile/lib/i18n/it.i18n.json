@@ -457,6 +457,9 @@
     "importRowMerge": "{label}: {added} aggiunti, {updated} aggiornati, {unchanged} invariati",
     "importRowSkipped": ", {count} ignorati",
     "importConfirm": "Importa",
+    "importReplaceConfirmTitle": "Sostituire tutti i dati?",
+    "importReplaceConfirmMessage": "Questa operazione elimina definitivamente i tuoi dati attuali (circa {count} registrazioni) e mantiene solo ciò che è in questo backup. Non è reversibile.",
+    "importReplaceConfirmButton": "Elimina e sostituisci",
     "importSuccess": "Dati importati con successo!",
     "importError": "Importazione fallita: {error}",
     "importInProgress": "Importazione in corso...",
@@ -1103,7 +1106,7 @@
     "celebrationTitle": "Obiettivo raggiunto",
     "celebrationBody": "Hai raggiunto \"{title}\" oggi. Ottimo lavoro!",
     "failureSummaryTitle": "Abitudine mancata",
-    "failureSummaryBodyOne": "\"{title}\" non è stata completata oggi.",
+    "failureSummaryBodyOne": "\"{title}\" non è stata completata.",
     "failureSummaryBodyMany": "{count} abitudini a verifica automatica non sono state completate.",
     "channelName": "Verifica abitudini",
     "channelDescription": "Promemoria e aggiornamenti per le abitudini a verifica automatica."

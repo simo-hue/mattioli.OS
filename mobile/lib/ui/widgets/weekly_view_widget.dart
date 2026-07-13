@@ -314,8 +314,11 @@ class _WeeklyViewWidgetState extends ConsumerState<WeeklyViewWidget> {
               const SizedBox(height: 16),
               // Summary
               Padding(
-                padding: const EdgeInsets.symmetric(horizontal: 16),
-                child: summaryWidget,
+                padding: const EdgeInsets.symmetric(horizontal: 4),
+                child: FittedBox(
+                  fit: BoxFit.scaleDown,
+                  child: summaryWidget,
+                ),
               ),
             ],
           ),

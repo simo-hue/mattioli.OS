@@ -56,7 +56,7 @@ class AppBottomNavBar extends ConsumerWidget {
         }
       },
       child: Container(
-        margin: EdgeInsets.fromLTRB(16, 0, 16, bottomPadding > 0 ? 12.0 : 16.0),
+        margin: EdgeInsets.fromLTRB(16, 0, 16, bottomPadding > 0 ? 24.0 : 28.0),
         child: ClipRRect(
           borderRadius: BorderRadius.circular(28),
           child: BackdropFilter(

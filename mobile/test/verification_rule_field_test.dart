@@ -100,4 +100,14 @@ void main() {
     ));
     expect(find.byIcon(Icons.verified), findsOneWidget);
   });
+
+  testWidgets('CouldNotVerifyChip shows "?" and is tappable', (tester) async {
+    var tapped = 0;
+    await tester.pumpWidget(MaterialApp(
+      home: Scaffold(body: CouldNotVerifyChip(onTap: () => tapped++)),
+    ));
+    expect(find.text('?'), findsOneWidget);
+    await tester.tap(find.byType(CouldNotVerifyChip));
+    expect(tapped, 1);
+  });
 }

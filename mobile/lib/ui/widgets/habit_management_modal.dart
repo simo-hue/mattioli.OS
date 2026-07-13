@@ -7,6 +7,7 @@ import 'package:lucide_icons_flutter/lucide_icons.dart';
 import '../../core/theme.dart';
 import '../../core/haptics.dart';
 import '../../core/verification_config.dart';
+import '../../core/verification_providers.dart';
 import 'verification_rule_field.dart';
 import '../../core/time_formatting.dart';
 import '../../models/goal.dart';
@@ -136,6 +137,14 @@ class _HabitManagementModalState extends ConsumerState<HabitManagementModal> {
       duration: const Duration(milliseconds: 500),
       curve: Curves.easeInOut,
     );
+  }
+
+  void _grantHealthAccess() {
+    final rule = _verificationRule;
+    if (rule == null || !rule.isHealthKit) return;
+    final typeId = rule.template?.healthKitTypeIdentifier ?? rule.metricKey;
+    ref.read(healthKitBridgeProvider).requestAuthorization({typeId});
+    ref.hapticMedium();
   }
 
   void _showCupertinoTimePicker() {
@@ -426,6 +435,17 @@ class _HabitManagementModalState extends ConsumerState<HabitManagementModal> {
                           onChanged: (r) =>
                               setState(() => _verificationRule = r),
                         ),
+                        // Proactive "grant Health access" affordance (D9) for
+                        // HealthKit rules — requests read access up front instead
+                        // of waiting to infer denial from couldn't-verify days.
+                        if (_verificationRule?.isHealthKit ?? false) ...[
+                          const SizedBox(height: 8),
+                          EvolveButton(
+                            label: 'Grant Health access',
+                            style: EvolveButtonStyle.secondary,
+                            onPressed: _grantHealthAccess,
+                          ),
+                        ],
                       ],
                       const SizedBox(height: 24),
                       if (_editingHabit != null)

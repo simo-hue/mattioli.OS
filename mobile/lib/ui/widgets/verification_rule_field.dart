@@ -52,6 +52,42 @@ String verificationRuleSummary(VerificationRule rule) {
   return '$comparator $amount ${verificationTemplateLabel(rule.metricKey)}';
 }
 
+/// A "?" indicator for a day whose auto-verification couldn't be determined
+/// (D6) — permission off, no data, or the extension never fired. Tappable so the
+/// user can resolve the day by hand. Ready to drop into the habit calendar's day
+/// cells (that wiring is a follow-up — see DOCUMENTATION).
+class CouldNotVerifyChip extends StatelessWidget {
+  const CouldNotVerifyChip({super.key, this.onTap, this.size = 18});
+
+  final VoidCallback? onTap;
+  final double size;
+
+  @override
+  Widget build(BuildContext context) {
+    final color = Theme.of(context).colorScheme.outline;
+    return Tooltip(
+      message: "Couldn't verify — tap to resolve",
+      child: InkResponse(
+        onTap: onTap,
+        radius: size,
+        child: Container(
+          width: size,
+          height: size,
+          alignment: Alignment.center,
+          decoration: BoxDecoration(
+            shape: BoxShape.circle,
+            border: Border.all(color: color),
+          ),
+          child: Text(
+            '?',
+            style: TextStyle(fontSize: size * 0.66, color: color, height: 1),
+          ),
+        ),
+      ),
+    );
+  }
+}
+
 /// A small "auto-verified" indicator shown on verified habits.
 class VerificationBadge extends StatelessWidget {
   const VerificationBadge({super.key, this.size = 15});

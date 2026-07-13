@@ -96,6 +96,14 @@ class AppSettings {
   final bool weeklyReports;
   final bool eveningReview;
 
+  // Auto-verified habits notifications (D11). Device-local (iOS-only) — kept in
+  // SharedPreferences like [biometricLock] to avoid a settings-schema migration,
+  // and not synced to Supabase. Nudges default on; celebration + failure summary
+  // are opt-in.
+  final bool verificationNudges;
+  final bool verificationCelebrations;
+  final bool verificationFailureSummary;
+
   // Privacy
   final bool biometricLock;
 
@@ -124,6 +132,9 @@ class AppSettings {
     required this.deepWorkInsights,
     required this.biometricLock,
     required this.eveningReview,
+    required this.verificationNudges,
+    required this.verificationCelebrations,
+    required this.verificationFailureSummary,
     required this.morningBriefTime,
     required this.eveningReviewTime,
     required this.statsHabitFilter,
@@ -150,6 +161,9 @@ class AppSettings {
     bool? deepWorkInsights,
     bool? biometricLock,
     bool? eveningReview,
+    bool? verificationNudges,
+    bool? verificationCelebrations,
+    bool? verificationFailureSummary,
     String? morningBriefTime,
     String? eveningReviewTime,
     String? statsHabitFilter,
@@ -172,6 +186,11 @@ class AppSettings {
       deepWorkInsights: deepWorkInsights ?? this.deepWorkInsights,
       biometricLock: biometricLock ?? this.biometricLock,
       eveningReview: eveningReview ?? this.eveningReview,
+      verificationNudges: verificationNudges ?? this.verificationNudges,
+      verificationCelebrations:
+          verificationCelebrations ?? this.verificationCelebrations,
+      verificationFailureSummary:
+          verificationFailureSummary ?? this.verificationFailureSummary,
       morningBriefTime: morningBriefTime ?? this.morningBriefTime,
       eveningReviewTime: eveningReviewTime ?? this.eveningReviewTime,
       statsHabitFilter: statsHabitFilter ?? this.statsHabitFilter,
@@ -432,6 +451,11 @@ class AppSettingsNotifier extends Notifier<AppSettings> {
       aiInsights: prefs.getBool('notif_ai_insights') ?? false,
       weeklyReports: prefs.getBool('notif_weekly_reports') ?? false,
       eveningReview: prefs.getBool('notif_evening_review') ?? true,
+      verificationNudges: prefs.getBool('notif_verification_nudges') ?? true,
+      verificationCelebrations:
+          prefs.getBool('notif_verification_celebrations') ?? false,
+      verificationFailureSummary:
+          prefs.getBool('notif_verification_failure_summary') ?? false,
 
       biometricLock: prefs.getBool('pref_biometric_lock') ?? false,
 
@@ -460,6 +484,9 @@ class AppSettingsNotifier extends Notifier<AppSettings> {
       aiInsights: false,
       weeklyReports: false,
       eveningReview: true,
+      verificationNudges: true,
+      verificationCelebrations: false,
+      verificationFailureSummary: false,
       biometricLock: false,
       morningBriefTime: '09:00',
       eveningReviewTime: '21:00',
@@ -506,6 +533,18 @@ class AppSettingsNotifier extends Notifier<AppSettings> {
       deepWorkInsights: boolValue('pref_deep_work_insights', false),
       biometricLock: boolValue('biometric_lock', false),
       eveningReview: boolValue('notif_evening_review', true),
+      // Device-local (SharedPreferences), not part of the private settings row.
+      verificationNudges:
+          ref.read(sharedPrefsProvider).getBool('notif_verification_nudges') ??
+              true,
+      verificationCelebrations: ref
+              .read(sharedPrefsProvider)
+              .getBool('notif_verification_celebrations') ??
+          false,
+      verificationFailureSummary: ref
+              .read(sharedPrefsProvider)
+              .getBool('notif_verification_failure_summary') ??
+          false,
       morningBriefTime: row['morning_brief_time'] as String? ?? '09:00',
       eveningReviewTime: row['evening_review_time'] as String? ?? '21:00',
       statsHabitFilter: ref.read(sharedPrefsProvider).getString('pref_stats_habit_filter') ?? 'active',
@@ -518,6 +557,16 @@ class AppSettingsNotifier extends Notifier<AppSettings> {
     // Mirror the biometric lock flag for a synchronous first-frame read on the
     // next cold start (the private DB row loads asynchronously).
     ref.read(sharedPrefsProvider).setBool('pref_biometric_lock', s.biometricLock);
+    // Auto-verification notification prefs are device-local, so they live only
+    // in SharedPreferences (not the private settings row).
+    ref
+        .read(sharedPrefsProvider)
+        .setBool('notif_verification_nudges', s.verificationNudges);
+    ref
+        .read(sharedPrefsProvider)
+        .setBool('notif_verification_celebrations', s.verificationCelebrations);
+    ref.read(sharedPrefsProvider).setBool(
+        'notif_verification_failure_summary', s.verificationFailureSummary);
 
     String toHex(Color color) =>
         '#${color.toARGB32().toRadixString(16).substring(2, 8).toUpperCase()}';
@@ -574,6 +623,11 @@ class AppSettingsNotifier extends Notifier<AppSettings> {
     prefs.setBool('notif_ai_insights', s.aiInsights);
     prefs.setBool('notif_weekly_reports', s.weeklyReports);
     prefs.setBool('notif_evening_review', s.eveningReview);
+    prefs.setBool('notif_verification_nudges', s.verificationNudges);
+    prefs.setBool(
+        'notif_verification_celebrations', s.verificationCelebrations);
+    prefs.setBool(
+        'notif_verification_failure_summary', s.verificationFailureSummary);
 
     prefs.setBool('pref_biometric_lock', s.biometricLock);
 

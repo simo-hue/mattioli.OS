@@ -9,6 +9,7 @@ import '../../core/haptics.dart';
 import '../../core/notifications.dart';
 import '../../core/time_formatting.dart';
 import '../../core/rtl.dart';
+import '../../core/verification_config.dart';
 import '../../i18n/translations.g.dart';
 import '../kit/evolve_switch.dart';
 import '../kit/evolve_section_header.dart';
@@ -147,6 +148,69 @@ class NotificationSettingsScreen extends ConsumerWidget {
                   },
                 ),
             ]),
+            // Auto-verified habits (D11). Only shown when the feature is live;
+            // nudges default on, celebration + failure summary are opt-in.
+            if (VerificationConfig.enabled) ...[
+              const SizedBox(height: 32),
+              _buildSectionHeader(
+                context,
+                context.t.notifications.verificationHeader,
+              ),
+              _buildSettingsCard(context, [
+                _buildSwitchRow(
+                  context: context,
+                  ref: ref,
+                  icon: LucideIcons.badgeCheck,
+                  title: context.t.notifications.verificationNudges,
+                  subtitle: context.t.notifications.verificationNudgesSubtitle,
+                  value: settings.verificationNudges,
+                  onChanged: (val) {
+                    if (val) NotificationService().requestPermissions();
+                    final current = ref.read(settingsProvider);
+                    notifier.updateSettings(
+                      current.copyWith(verificationNudges: val),
+                    );
+                    ref.hapticLight();
+                  },
+                ),
+                _buildDivider(context),
+                _buildSwitchRow(
+                  context: context,
+                  ref: ref,
+                  icon: LucideIcons.partyPopper,
+                  title: context.t.notifications.verificationCelebrations,
+                  subtitle:
+                      context.t.notifications.verificationCelebrationsSubtitle,
+                  value: settings.verificationCelebrations,
+                  onChanged: (val) {
+                    if (val) NotificationService().requestPermissions();
+                    final current = ref.read(settingsProvider);
+                    notifier.updateSettings(
+                      current.copyWith(verificationCelebrations: val),
+                    );
+                    ref.hapticLight();
+                  },
+                ),
+                _buildDivider(context),
+                _buildSwitchRow(
+                  context: context,
+                  ref: ref,
+                  icon: LucideIcons.triangleAlert,
+                  title: context.t.notifications.verificationFailureSummary,
+                  subtitle: context
+                      .t.notifications.verificationFailureSummarySubtitle,
+                  value: settings.verificationFailureSummary,
+                  onChanged: (val) {
+                    if (val) NotificationService().requestPermissions();
+                    final current = ref.read(settingsProvider);
+                    notifier.updateSettings(
+                      current.copyWith(verificationFailureSummary: val),
+                    );
+                    ref.hapticLight();
+                  },
+                ),
+              ]),
+            ],
             const SizedBox(height: 32),
           ],
         ),

@@ -253,7 +253,7 @@ class _WeeklyViewWidgetState extends ConsumerState<WeeklyViewWidget> {
                             return;
                           }
                           if (event is FlTapUpEvent) {
-                            final index = response.touchedSpot!.touchedSpotIndex;
+                            final index = response.touchedSpot!.touchedRadarEntryIndex;
                             final dayDate = _currentWeekStart.add(Duration(days: index));
                             if (!dayDate.isAfter(DateTime.now())) {
                               showModalBottomSheet(

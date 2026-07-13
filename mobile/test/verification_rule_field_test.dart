@@ -50,7 +50,43 @@ void main() {
     });
   });
 
+  group('groupTemplatesByCategory', () {
+    test('groups in category order, preserves within-group order', () {
+      final groups = groupTemplatesByCategory(VerificationCatalog.all);
+      expect(groups.map((g) => g.key), [
+        VerificationCategory.activity,
+        VerificationCategory.mindfulness,
+        VerificationCategory.sleep,
+        VerificationCategory.screenTime,
+      ]);
+      expect(groups.first.value.map((t) => t.key), [
+        'steps',
+        'exercise_minutes',
+        'active_energy',
+        'stand_hours',
+        'distance',
+        'workout',
+      ]);
+    });
+
+    test('a HealthKit-only subset omits the empty Screen Time group', () {
+      final hk = VerificationCatalog.all.where((t) => t.isHealthKit).toList();
+      final groups = groupTemplatesByCategory(hk);
+      expect(groups.map((g) => g.key),
+          isNot(contains(VerificationCategory.screenTime)));
+    });
+  });
+
   group('VerificationRuleField', () {
+    testWidgets('renders localized category section headers', (tester) async {
+      await tester
+          .pumpWidget(_Harness(VerificationCatalog.steps.ruleWith(10000)));
+      await tester.pumpAndSettle();
+      expect(find.text('ACTIVITY'), findsOneWidget);
+      expect(find.text('SLEEP'), findsOneWidget);
+      expect(find.text('SCREEN TIME'), findsOneWidget);
+    });
+
     testWidgets('manual by default — switch off, no template chips',
         (tester) async {
       await tester.pumpWidget(const _Harness(null));

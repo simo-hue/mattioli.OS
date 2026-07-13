@@ -15,6 +15,10 @@ class VerificationTemplate {
   /// Stable identifier persisted in `goals.verify_metric`. NEVER rename.
   final String key;
   final VerificationProvider provider;
+
+  /// Display grouping for the creation UI (presentational only — not persisted).
+  final VerificationCategory category;
+
   final VerificationComparator comparator;
   final VerificationUnit unit;
   final VerificationAggregation aggregation;
@@ -38,6 +42,7 @@ class VerificationTemplate {
   const VerificationTemplate({
     required this.key,
     required this.provider,
+    required this.category,
     required this.comparator,
     required this.unit,
     required this.aggregation,
@@ -77,6 +82,7 @@ abstract final class VerificationCatalog {
   static const steps = VerificationTemplate(
     key: 'steps',
     provider: VerificationProvider.healthKit,
+    category: VerificationCategory.activity,
     comparator: VerificationComparator.atLeast,
     unit: VerificationUnit.count,
     aggregation: VerificationAggregation.sum,
@@ -90,6 +96,7 @@ abstract final class VerificationCatalog {
   static const exerciseMinutes = VerificationTemplate(
     key: 'exercise_minutes',
     provider: VerificationProvider.healthKit,
+    category: VerificationCategory.activity,
     comparator: VerificationComparator.atLeast,
     unit: VerificationUnit.minutes,
     aggregation: VerificationAggregation.sum,
@@ -103,6 +110,7 @@ abstract final class VerificationCatalog {
   static const activeEnergy = VerificationTemplate(
     key: 'active_energy',
     provider: VerificationProvider.healthKit,
+    category: VerificationCategory.activity,
     comparator: VerificationComparator.atLeast,
     unit: VerificationUnit.kilocalories,
     aggregation: VerificationAggregation.sum,
@@ -116,6 +124,7 @@ abstract final class VerificationCatalog {
   static const standHours = VerificationTemplate(
     key: 'stand_hours',
     provider: VerificationProvider.healthKit,
+    category: VerificationCategory.activity,
     comparator: VerificationComparator.atLeast,
     unit: VerificationUnit.count,
     aggregation: VerificationAggregation.count,
@@ -130,6 +139,7 @@ abstract final class VerificationCatalog {
   static const distance = VerificationTemplate(
     key: 'distance',
     provider: VerificationProvider.healthKit,
+    category: VerificationCategory.activity,
     comparator: VerificationComparator.atLeast,
     unit: VerificationUnit.kilometers,
     aggregation: VerificationAggregation.sum,
@@ -143,6 +153,7 @@ abstract final class VerificationCatalog {
   static const mindfulMinutes = VerificationTemplate(
     key: 'mindful_minutes',
     provider: VerificationProvider.healthKit,
+    category: VerificationCategory.mindfulness,
     comparator: VerificationComparator.atLeast,
     unit: VerificationUnit.minutes,
     aggregation: VerificationAggregation.sum,
@@ -156,6 +167,7 @@ abstract final class VerificationCatalog {
   static const sleepHours = VerificationTemplate(
     key: 'sleep_hours',
     provider: VerificationProvider.healthKit,
+    category: VerificationCategory.sleep,
     comparator: VerificationComparator.atLeast,
     unit: VerificationUnit.hours,
     aggregation: VerificationAggregation.sum,
@@ -169,6 +181,7 @@ abstract final class VerificationCatalog {
   static const workout = VerificationTemplate(
     key: 'workout',
     provider: VerificationProvider.healthKit,
+    category: VerificationCategory.activity,
     comparator: VerificationComparator.atLeast,
     unit: VerificationUnit.count,
     aggregation: VerificationAggregation.count,
@@ -184,6 +197,7 @@ abstract final class VerificationCatalog {
   static const screenTimeTotal = VerificationTemplate(
     key: 'screen_time_total',
     provider: VerificationProvider.screenTime,
+    category: VerificationCategory.screenTime,
     comparator: VerificationComparator.atMost,
     unit: VerificationUnit.minutes,
     aggregation: VerificationAggregation.sum,

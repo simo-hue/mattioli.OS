@@ -1093,6 +1093,12 @@
     "failureSummaryBodyOne": "لم تكتمل \"{title}\".",
     "failureSummaryBodyMany": "لم تكتمل {count} من العادات ذات التحقق التلقائي.",
     "channelName": "التحقق من العادات",
-    "channelDescription": "تنبيهات وتحديثات للعادات ذات التحقق التلقائي."
+    "channelDescription": "تنبيهات وتحديثات للعادات ذات التحقق التلقائي.",
+    "categories": {
+      "activity": "النشاط",
+      "mindfulness": "اليقظة الذهنية",
+      "sleep": "النوم",
+      "screenTime": "وقت الشاشة"
+    }
   }
 }

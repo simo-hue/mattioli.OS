@@ -526,7 +526,9 @@
     "statusNoAccount": "Bei iCloud anmelden, um zu synchronisieren",
     "statusUnavailable": "iCloud ist derzeit nicht verfügbar",
     "lastSyncedNever": "Noch nie synchronisiert",
-    "lastSyncedAt": "Zuletzt synchronisiert {time}"
+    "lastSyncedAt": "Zuletzt synchronisiert {time}",
+    "bannerText": "iCloud-Sync ist aus — deine Gewohnheiten liegen nur auf diesem Gerät und gehen verloren, wenn du dein Telefon wechselst oder zurücksetzt.",
+    "bannerAction": "Aktivieren"
   },
   "consent": {
     "systemNotifications": "Systembenachrichtigungen",
@@ -1109,6 +1111,12 @@
     "failureSummaryBodyOne": "\"{title}\" wurde nicht erledigt.",
     "failureSummaryBodyMany": "{count} automatisch geprüfte Gewohnheiten wurden nicht erledigt.",
     "channelName": "Gewohnheitsprüfung",
-    "channelDescription": "Hinweise und Updates für automatisch geprüfte Gewohnheiten."
+    "channelDescription": "Hinweise und Updates für automatisch geprüfte Gewohnheiten.",
+    "categories": {
+      "activity": "Aktivität",
+      "mindfulness": "Achtsamkeit",
+      "sleep": "Schlaf",
+      "screenTime": "Bildschirmzeit"
+    }
   }
 }

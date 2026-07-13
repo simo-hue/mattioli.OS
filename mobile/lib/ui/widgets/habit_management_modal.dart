@@ -148,12 +148,26 @@ class _HabitManagementModalState extends ConsumerState<HabitManagementModal> {
             t,
       ];
 
-  void _grantHealthAccess() {
+  Future<void> _grantHealthAccess() async {
     final rule = _verificationRule;
     if (rule == null || !rule.isHealthKit) return;
     final typeId = rule.template?.healthKitTypeIdentifier ?? rule.metricKey;
-    ref.read(healthKitBridgeProvider).requestAuthorization({typeId});
     ref.hapticMedium();
+    await ref.read(healthKitBridgeProvider).requestAuthorization({typeId});
+    // iOS can't report read-grant, so treat "prompt shown" as done: remember it
+    // so the button disappears for this metric from now on.
+    await ref
+        .read(healthAuthRequestedTypesProvider.notifier)
+        .markRequested(typeId);
+  }
+
+  /// Whether to show the proactive "Grant Health access" button: only for a
+  /// HealthKit rule whose metric hasn't been requested yet.
+  bool get _showGrantHealthAccess {
+    final rule = _verificationRule;
+    if (rule == null || !rule.isHealthKit) return false;
+    final typeId = rule.template?.healthKitTypeIdentifier ?? rule.metricKey;
+    return !ref.watch(healthAuthRequestedTypesProvider).contains(typeId);
   }
 
   void _showCupertinoTimePicker() {
@@ -448,7 +462,8 @@ class _HabitManagementModalState extends ConsumerState<HabitManagementModal> {
                         // Proactive "grant Health access" affordance (D9) for
                         // HealthKit rules — requests read access up front instead
                         // of waiting to infer denial from couldn't-verify days.
-                        if (_verificationRule?.isHealthKit ?? false) ...[
+                        // Hidden once this metric's permission has been requested.
+                        if (_showGrantHealthAccess) ...[
                           const SizedBox(height: 8),
                           EvolveButton(
                             label: context.t.verification.grantHealthAccess,

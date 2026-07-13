@@ -48,6 +48,30 @@ String _formatThreshold(double value, VerificationUnit unit) {
   return number;
 }
 
+/// Localized header for a template [category] (Activity / Mindfulness / …).
+String verificationCategoryLabel(Translations t, VerificationCategory c) =>
+    switch (c) {
+      VerificationCategory.activity => t.verification.categories.activity,
+      VerificationCategory.mindfulness => t.verification.categories.mindfulness,
+      VerificationCategory.sleep => t.verification.categories.sleep,
+      VerificationCategory.screenTime => t.verification.categories.screenTime,
+    };
+
+/// Groups [templates] by [VerificationCategory] in enum-declaration order,
+/// preserving each template's order within its group and omitting empty groups.
+/// Pure so the "organized into sections" layout is testable.
+List<MapEntry<VerificationCategory, List<VerificationTemplate>>>
+    groupTemplatesByCategory(List<VerificationTemplate> templates) {
+  final byCategory = <VerificationCategory, List<VerificationTemplate>>{};
+  for (final t in templates) {
+    (byCategory[t.category] ??= <VerificationTemplate>[]).add(t);
+  }
+  return [
+    for (final c in VerificationCategory.values)
+      if (byCategory[c] != null) MapEntry(c, byCategory[c]!),
+  ];
+}
+
 /// Human summary of a rule, e.g. "≥ 10,000 Steps" or "≤ 120 min Screen time".
 String verificationRuleSummary(Translations t, VerificationRule rule) {
   final comparator =
@@ -173,19 +197,34 @@ class VerificationRuleField extends StatelessWidget {
           ],
         ),
         if (r != null) ...[
-          const SizedBox(height: 8),
-          Wrap(
-            spacing: 8,
-            runSpacing: 8,
-            children: [
-              for (final template in templates)
-                ChoiceChip(
-                  label: Text(verificationTemplateLabel(tr, template.key)),
-                  selected: template.key == r.metricKey,
-                  onSelected: (_) => _selectTemplate(template),
+          const SizedBox(height: 4),
+          // Templates grouped into labelled sections (Activity / Mindfulness /
+          // Sleep / Screen Time) for a scannable, organized picker.
+          for (final group in groupTemplatesByCategory(templates)) ...[
+            Padding(
+              padding: const EdgeInsets.only(top: 8, bottom: 6),
+              child: Text(
+                verificationCategoryLabel(tr, group.key).toUpperCase(),
+                style: theme.textTheme.labelSmall?.copyWith(
+                  color: theme.colorScheme.onSurfaceVariant,
+                  fontWeight: FontWeight.w700,
+                  letterSpacing: 0.8,
                 ),
-            ],
-          ),
+              ),
+            ),
+            Wrap(
+              spacing: 8,
+              runSpacing: 8,
+              children: [
+                for (final template in group.value)
+                  ChoiceChip(
+                    label: Text(verificationTemplateLabel(tr, template.key)),
+                    selected: template.key == r.metricKey,
+                    onSelected: (_) => _selectTemplate(template),
+                  ),
+              ],
+            ),
+          ],
           const SizedBox(height: 12),
           Row(
             children: [

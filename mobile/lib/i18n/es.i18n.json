@@ -526,7 +526,9 @@
     "statusNoAccount": "Inicia sesión en iCloud para sincronizar",
     "statusUnavailable": "iCloud no está disponible ahora",
     "lastSyncedNever": "Nunca sincronizado",
-    "lastSyncedAt": "Última sincronización {time}"
+    "lastSyncedAt": "Última sincronización {time}",
+    "bannerText": "La sincronización con iCloud está desactivada: tus hábitos solo están en este dispositivo y se perderán si cambias o restableces el teléfono.",
+    "bannerAction": "Activar"
   },
   "consent": {
     "systemNotifications": "Notificaciones del sistema",
@@ -1109,6 +1111,12 @@
     "failureSummaryBodyOne": "\"{title}\" no se completó.",
     "failureSummaryBodyMany": "{count} hábitos de verificación automática quedaron sin completar.",
     "channelName": "Verificación de hábitos",
-    "channelDescription": "Avisos y novedades de los hábitos con verificación automática."
+    "channelDescription": "Avisos y novedades de los hábitos con verificación automática.",
+    "categories": {
+      "activity": "Actividad",
+      "mindfulness": "Mindfulness",
+      "sleep": "Sueño",
+      "screenTime": "Tiempo de pantalla"
+    }
   }
 }

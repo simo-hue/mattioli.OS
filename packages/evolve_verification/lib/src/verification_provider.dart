@@ -53,6 +53,16 @@ enum VerificationAggregation {
           .firstWhere((a) => a.name == value, orElse: () => VerificationAggregation.sum);
 }
 
+/// A display grouping for verification templates in the creation UI. Purely
+/// presentational (never persisted), so values may be reordered or renamed
+/// freely. Declaration order is the section display order.
+enum VerificationCategory {
+  activity,
+  mindfulness,
+  sleep,
+  screenTime,
+}
+
 /// Physical unit of a metric, used for threshold formatting + display. Distance
 /// is stored canonically in kilometers; the UI may localise to miles.
 enum VerificationUnit {

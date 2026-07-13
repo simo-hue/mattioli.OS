@@ -3,6 +3,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:path/path.dart' as p;
 import 'package:sqflite_sqlcipher/sqflite.dart';
 
+import '../providers/shared_prefs_provider.dart';
 import 'method_channel_health_kit_bridge.dart';
 import 'method_channel_screen_time_bridge.dart';
 import 'verification_state_store.dart';
@@ -20,6 +21,34 @@ final healthKitBridgeProvider = Provider<HealthKitBridge>(
 final screenTimeBridgeProvider = Provider<ScreenTimeBridge>(
   (_) => const MethodChannelScreenTimeBridge(),
 );
+
+/// The HealthKit sample identifiers the user has already been prompted to
+/// authorize. iOS deliberately never reports read-authorization grant status,
+/// so "has the permission sheet been shown for this type" is the honest signal
+/// for hiding the proactive "Grant Health access" button. Device-local
+/// (SharedPreferences); persists across sessions.
+final healthAuthRequestedTypesProvider =
+    NotifierProvider<HealthAuthRequestedTypesNotifier, Set<String>>(
+  HealthAuthRequestedTypesNotifier.new,
+);
+
+class HealthAuthRequestedTypesNotifier extends Notifier<Set<String>> {
+  static const String prefsKey = 'health_auth_requested_types';
+
+  @override
+  Set<String> build() =>
+      ref.read(sharedPrefsProvider).getStringList(prefsKey)?.toSet() ??
+      <String>{};
+
+  /// Record that the Health authorization prompt has been shown for [typeId].
+  /// Idempotent; persists the updated set.
+  Future<void> markRequested(String typeId) async {
+    if (state.contains(typeId)) return;
+    final next = {...state, typeId};
+    state = next;
+    await ref.read(sharedPrefsProvider).setStringList(prefsKey, next.toList());
+  }
+}
 
 /// The pure reconcile/verdict engine, composed over the two bridges.
 final verificationServiceProvider = Provider<VerificationService>(

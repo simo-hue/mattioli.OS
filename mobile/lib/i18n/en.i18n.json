@@ -526,7 +526,9 @@
     "statusNoAccount": "Sign in to iCloud to sync",
     "statusUnavailable": "iCloud is unavailable right now",
     "lastSyncedNever": "Never synced",
-    "lastSyncedAt": "Last synced {time}"
+    "lastSyncedAt": "Last synced {time}",
+    "bannerText": "iCloud sync is off — your habits live only on this device and are lost if you change or reset your phone.",
+    "bannerAction": "Turn on"
   },
   "consent": {
     "systemNotifications": "System Notifications",
@@ -1109,6 +1111,12 @@
     "failureSummaryBodyOne": "\"{title}\" wasn't completed.",
     "failureSummaryBodyMany": "{count} auto-verified habits went uncompleted.",
     "channelName": "Habit verification",
-    "channelDescription": "Prompts and updates for auto-verified habits."
+    "channelDescription": "Prompts and updates for auto-verified habits.",
+    "categories": {
+      "activity": "Activity",
+      "mindfulness": "Mindfulness",
+      "sleep": "Sleep",
+      "screenTime": "Screen Time"
+    }
   }
 }

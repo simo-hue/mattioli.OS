@@ -43,10 +43,6 @@ Pass A — both apps Xcode-run (**Development** environment):
 
 Pass B — **TestFlight iOS 1.0.10 + TestFlight Mac** (Production environment) — release gate:
 - [ ] Repeat the core matrix (fresh pull, merge, edit propagation, avatar, delete).
-
-## MOBILE
-- [ ] (nothing else pending)
-
 ---
 
 fastlane ios update_notes

@@ -1,5 +1,11 @@
 # DOCUMENTATION.md
 
+## [2026-07-13 13:54]: App Version Bump
+*Details*: Bumped the mobile app version in `pubspec.yaml` from `1.1.0+15` to `1.1.1+16` for an upcoming IPA build and App Store Connect upload via Transporter.
+*Tech Notes*:
+- Modified `pubspec.yaml` `version` field.
+
+
 ## [2026-07-02 12:33]: Feature - In-App Log Viewer (App Logs Screen)
 *Details*: Added a full in-app log viewer accessible from the Profile → System section. The feature captures all errors, warnings, and info-level logs in an in-memory ring buffer (500 entries max) and presents them in a developer-console–style UI with JetBrains Mono monospace font, color-coded severity badges, filterable chips, full-text search, and expandable detail sheets with selectable text for stack traces. Designed for technical users to diagnose issues without external tools.
 *Tech Notes*:

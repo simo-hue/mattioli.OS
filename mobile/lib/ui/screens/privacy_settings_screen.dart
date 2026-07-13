@@ -1022,16 +1022,27 @@ class PrivacySettingsScreen extends ConsumerWidget {
   Widget _buildSummaryRow(BuildContext context, IconData icon, String text) {
     return Padding(
       padding: const EdgeInsets.symmetric(vertical: 4),
+      // The host CupertinoAlertDialog is fixed-width (~270pt) by iOS design, so
+      // the summary text must wrap rather than clip. Top-align the icon and let
+      // the text take the remaining width with Expanded so long rows flow onto
+      // multiple lines instead of being cut off at the dialog edge.
       child: Row(
+        crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          Icon(icon, size: 16, color: Theme.of(context).colorScheme.primary),
+          Padding(
+            padding: const EdgeInsets.only(top: 1),
+            child: Icon(icon,
+                size: 16, color: Theme.of(context).colorScheme.primary),
+          ),
           const SizedBox(width: 12),
-          Text(
-            text,
-            style: TextStyle(
-              fontFamily: 'Inter',
-              fontWeight: FontWeight.w500,
-              color: context.appColors.foreground,
+          Expanded(
+            child: Text(
+              text,
+              style: TextStyle(
+                fontFamily: 'Inter',
+                fontWeight: FontWeight.w500,
+                color: context.appColors.foreground,
+              ),
             ),
           ),
         ],

@@ -64,8 +64,13 @@ class _IcloudSyncScreenState extends ConsumerState<IcloudSyncScreen> {
       // Re-read so the UI reflects the real state after a failure.
       await _refresh();
     } finally {
-      if (mounted) setState(() => _busy = false);
-      ref.hapticLight();
+      // Guard both the setState and the haptic: the user may have popped this
+      // screen while the async action was in flight, disposing the widget.
+      // Firing the haptic here would read a provider through a dead `ref`.
+      if (mounted) {
+        setState(() => _busy = false);
+        ref.hapticLight();
+      }
     }
   }
 

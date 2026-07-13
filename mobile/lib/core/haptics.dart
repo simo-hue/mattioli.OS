@@ -1,3 +1,4 @@
+import 'package:flutter/foundation.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'dart:io';
@@ -23,9 +24,24 @@ class AppHaptics {
   }
 
   static void _trigger(WidgetRef ref, Future<void> Function() hapticFn) {
-    final enabled = ref.read(settingsProvider).hapticFeedback;
-    if (enabled) {
-      hapticFn();
+    // Haptics are purely cosmetic and must never crash the app. Reading a
+    // provider through `ref` after the owning widget has been disposed — e.g.
+    // a haptic fired from a `finally` block once the user popped the screen —
+    // throws "Bad state: Using ref ... unmounted". Swallow it here so no call
+    // site can turn a missing buzz into a fatal exception. Call sites should
+    // still guard with `if (mounted)` where possible; this is the backstop.
+    try {
+      final enabled = ref.read(settingsProvider).hapticFeedback;
+      if (enabled) {
+        hapticFn();
+      }
+    } catch (e) {
+      // Debug-only: surface the misuse during development, stay silent (and
+      // out of Sentry) in release builds.
+      if (kDebugMode) {
+        debugPrint('[AppHaptics] Skipped haptic: ref unavailable '
+            '(widget disposed?): $e');
+      }
     }
   }
 

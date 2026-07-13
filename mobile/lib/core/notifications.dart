@@ -473,6 +473,42 @@ class NotificationService {
         iOS: const DarwinNotificationDetails(),
       );
 
+  /// Opt-in "goal reached" celebration for an auto-verified habit that passed
+  /// today (D11 — OFF by default). Id keyed to goal + day so a re-fire replaces
+  /// rather than stacks; the caller only fires it on a fresh verdict write, so
+  /// it can't repeat.
+  Future<void> showVerificationCelebration({
+    required String goalId,
+    required String dateKey,
+    required String title,
+  }) async {
+    await _notifications.show(
+      id: 'verify_celebrate_${goalId}_$dateKey'.hashCode,
+      title: t.verification.celebrationTitle,
+      body: t.verification.celebrationBody(title: title),
+      notificationDetails: _verificationDetails,
+      payload: 'verify_celebrate|$goalId',
+    );
+  }
+
+  /// Opt-in summary when auto-verified habits ended a past day missed (D11 — OFF
+  /// by default). [count] is the number of fresh `missed` verdicts this pass;
+  /// [title] names a representative habit (used when [count] == 1).
+  Future<void> showVerificationFailureSummary({
+    required int count,
+    required String title,
+  }) async {
+    await _notifications.show(
+      id: 'verify_fail_summary'.hashCode,
+      title: t.verification.failureSummaryTitle,
+      body: count == 1
+          ? t.verification.failureSummaryBodyOne(title: title)
+          : t.verification.failureSummaryBodyMany(count: count),
+      notificationDetails: _verificationDetails,
+      payload: 'verify_fail_summary',
+    );
+  }
+
   /// iOS silently drops scheduled notifications beyond 64 pending (NOTIF-4).
   /// Allow scheduling when there's headroom, or when [id] is already pending
   /// (a re-schedule replaces in place and doesn't grow the count). Fails open.

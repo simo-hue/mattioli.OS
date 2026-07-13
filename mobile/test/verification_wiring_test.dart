@@ -130,4 +130,64 @@ void main() {
           isEmpty);
     });
   });
+
+  group('unnudgedNudges', () {
+    VerificationNudge nudge(String g, DateTime d) =>
+        VerificationNudge(goalId: g, title: g, day: d);
+
+    test('drops candidates whose goal+day was already nudged', () {
+      final candidates = [
+        nudge('g', DateTime(2026, 7, 13)),
+        nudge('h', DateTime(2026, 7, 13)),
+      ];
+      final already = {
+        'g': {DateTime(2026, 7, 13)},
+      };
+      expect(unnudgedNudges(candidates, already).map((n) => n.goalId), ['h']);
+    });
+
+    test('a later day for the same goal still nudges', () {
+      final candidates = [nudge('g', DateTime(2026, 7, 14))];
+      final already = {
+        'g': {DateTime(2026, 7, 13)},
+      };
+      expect(unnudgedNudges(candidates, already), hasLength(1));
+    });
+
+    test('empty already-nudged keeps everything', () {
+      expect(
+        unnudgedNudges([nudge('g', DateTime(2026, 7, 13))], const {}),
+        hasLength(1),
+      );
+    });
+  });
+
+  group('celebrationNotices', () {
+    LogWrite write(String g, DateTime d, VerificationOutcome o) =>
+        LogWrite(goalId: g, day: d, outcome: o);
+
+    test('celebrates only today passes with a known title', () {
+      final writes = [
+        write('g', DateTime(2026, 7, 13), VerificationOutcome.pass), // today
+        write('past', DateTime(2026, 7, 11), VerificationOutcome.pass), // old
+        write('fail', DateTime(2026, 7, 13), VerificationOutcome.fail), // fail
+        write('x', DateTime(2026, 7, 13), VerificationOutcome.pass), // untitled
+      ];
+      final notices = celebrationNotices(
+        writes,
+        {'g': 'Steps', 'past': 'Sleep', 'fail': 'Screen'},
+        '2026-07-13',
+      );
+      expect(notices.map((n) => n.goalId), ['g']);
+      expect(notices.single.title, 'Steps');
+      expect(notices.single.dateKey, '2026-07-13');
+    });
+
+    test('no passes today yields nothing', () {
+      final writes = [
+        write('g', DateTime(2026, 7, 11), VerificationOutcome.pass),
+      ];
+      expect(celebrationNotices(writes, {'g': 'Steps'}, '2026-07-13'), isEmpty);
+    });
+  });
 }

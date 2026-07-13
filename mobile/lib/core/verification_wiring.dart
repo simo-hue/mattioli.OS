@@ -3,6 +3,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../models/goal.dart';
 import '../providers/goal_provider.dart';
+import '../providers/settings_provider.dart';
 import 'app_logger.dart';
 import 'notifications.dart';
 import 'verification_config.dart';
@@ -111,6 +112,56 @@ List<VerificationNudge> couldNotVerifyNudges(
   return out;
 }
 
+/// Drops nudge [candidates] whose (goalId, day) has already fired a nudge, per
+/// [alreadyNudged] (goalId → nudged days). Keeps the cross-foreground de-dup
+/// policy pure and testable (the persisted marker lives in the state store).
+List<VerificationNudge> unnudgedNudges(
+  List<VerificationNudge> candidates,
+  Map<String, Set<DateTime>> alreadyNudged,
+) =>
+    [
+      for (final n in candidates)
+        if (!(alreadyNudged[n.goalId]
+                ?.contains(DateTime(n.day.year, n.day.month, n.day.day)) ??
+            false))
+          n,
+    ];
+
+/// A verdict worth a celebration/failure notification (D11), with its habit
+/// title resolved.
+class VerificationVerdictNotice {
+  const VerificationVerdictNotice({
+    required this.goalId,
+    required this.dateKey,
+    required this.title,
+  });
+
+  final String goalId;
+  final String dateKey;
+  final String title;
+}
+
+/// Today's celebratable passes (D11): a `pass` write dated [todayKey] whose goal
+/// has a known title. Backfilled passes from earlier days are intentionally not
+/// celebrated (only a goal reached *today* is fresh news).
+List<VerificationVerdictNotice> celebrationNotices(
+  List<LogWrite> writes,
+  Map<String, String> titles,
+  String todayKey,
+) {
+  final out = <VerificationVerdictNotice>[];
+  for (final w in writes) {
+    if (w.outcome != VerificationOutcome.pass) continue;
+    final key = dateKeyOf(w.day);
+    if (key != todayKey) continue;
+    final title = titles[w.goalId];
+    if (title == null) continue;
+    out.add(VerificationVerdictNotice(
+        goalId: w.goalId, dateKey: key, title: title));
+  }
+  return out;
+}
+
 DateTime? _parseDate(String key) {
   final parts = key.split('-');
   if (parts.length != 3) return null;
@@ -192,21 +243,60 @@ Future<ReconcileReport> runVerificationReconcile(WidgetRef ref) async {
     goals.map((g) => g.goalId).toSet(),
   );
 
+  final now = DateTime.now();
   final report = await controller.reconcile(
     goals: goals,
     loggedOutcomes: logged,
-    today: DateTime.now(),
+    today: now,
   );
 
-  // Fire couldn't-verify nudges (D11) — one banner per goal (latest day). The
-  // notification id is stable per goal, so re-running on a later foreground
-  // replaces rather than stacks.
-  if (report.nudges.isNotEmpty) {
-    final titles = {for (final g in ref.read(goalsProvider)) g.id: g.title};
-    for (final nudge in couldNotVerifyNudges(report, titles)) {
-      await NotificationService().showVerificationNudge(
+  if (report.nudges.isEmpty && report.writes.isEmpty) return report;
+
+  final settings = ref.read(settingsProvider);
+  final titles = {for (final g in ref.read(goalsProvider)) g.id: g.title};
+  final notifications = NotificationService();
+
+  // Couldn't-verify nudges (D6/D11) — one banner per goal (latest day), gated by
+  // the user pref and de-duped across foregrounds via the store's nudged marker
+  // so an unresolved day isn't re-alerted every time the app opens.
+  if (settings.verificationNudges && report.nudges.isNotEmpty) {
+    final candidates = couldNotVerifyNudges(report, titles);
+    final alreadyNudged = <String, Set<DateTime>>{};
+    for (final c in candidates) {
+      alreadyNudged[c.goalId] = await store.nudgedDays(c.goalId);
+    }
+    for (final nudge in unnudgedNudges(candidates, alreadyNudged)) {
+      await notifications.showVerificationNudge(
         goalId: nudge.goalId,
         title: nudge.title,
+      );
+      await store.markNudged(nudge.goalId, nudge.day);
+    }
+  }
+
+  // Opt-in celebration for goals reached today (D11). Driven by the idempotent
+  // write list, so each pass celebrates at most once.
+  if (settings.verificationCelebrations) {
+    final todayKey = dateKeyOf(now);
+    for (final notice in celebrationNotices(report.writes, titles, todayKey)) {
+      await notifications.showVerificationCelebration(
+        goalId: notice.goalId,
+        dateKey: notice.dateKey,
+        title: notice.title,
+      );
+    }
+  }
+
+  // Opt-in end-of-day failure summary (D11) — one banner covering the fresh
+  // `missed` verdicts this pass (all such writes are for completed past days).
+  if (settings.verificationFailureSummary) {
+    final fails = report.writes
+        .where((w) => w.outcome == VerificationOutcome.fail)
+        .toList();
+    if (fails.isNotEmpty) {
+      await notifications.showVerificationFailureSummary(
+        count: fails.length,
+        title: titles[fails.first.goalId] ?? '',
       );
     }
   }

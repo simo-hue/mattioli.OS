@@ -21,7 +21,7 @@
 - **771 keys** per locale (5 locales: en/it/es/de/ar), fully populated; Arabic is real Arabic script.
 - Legacy `translate()` shim: **641** Italian-string `case`s in `lib/core/localization.dart`, used at **675** call sites across **38** UI files.
 - The shim returns the raw key (Italian) on a miss → **silent Italian leak** to every other language. This is the core defect we're removing.
-- Underlying system today is Flutter `gen_l10n` (`l10n.yaml` → `AppLocalizations`); slang replaces it.
+- Underlying system today is Flutter `gen_l10n` (`l10n.yaml` → `AppLocalizations`); slang replaces it. _(Superseded 2026-07-13: this described the pre-migration baseline; slang has since fully replaced gen_l10n — `l10n.yaml` and the `generated/` output are removed.)_
 
 ## Architecture (target)
 
@@ -85,7 +85,7 @@ For each feature namespace — migrate only **screen-exclusive** keys; keys shar
 - ✅ **`ai`** — `ai_chat_screen` (33 keys incl. 20 `ai.suggestions.*` chips, 36 sites) + 3 new latent-bug keys (private-mode AI consent). 12 dynamic `translate(var)` calls left on shim.
 
 - ✅ **`macroGoals`** — cluster (`macro_goals_screen` + 4 widgets, 104 sites): 73 literals (auto English keys) + 12 getters → `t.macroGoals.*`/`types.*`. Fixed `quarterNumber` positional→named arg.
-- 🟡 **`statistics`** (partial) — cluster (`statistics_screen` + 10 widgets, 139 sites): 96 existing-key literals + 11 getters + 6 single-param method getters → `t.statistics.*`. **Deferred (next):** 33 untranslated `MISSING` strings (incl. day names — need EN/IT/ES/DE authored), the 2 three-param correlation methods (`habit{Positive,Negative}CorrelationDescription` — manual named-arg conversion), and ~9 dynamic `translate(var)` calls.
+- ✅ **`statistics`** — cluster (`statistics_screen` + 10 widgets, 139 sites): 96 existing-key literals + 11 getters + 6 single-param method getters → `t.statistics.*`. _(Superseded 2026-07-13: no longer partial — the previously-deferred `MISSING` strings, day names, three-param correlation methods, and ~9 dynamic `translate(var)` calls are all resolved; day names / tabs / sort keys now resolve via `lib/core/l10n_dynamic.dart`.)_ **~~Deferred (next):~~** ~~33 untranslated `MISSING` strings (incl. day names — need EN/IT/ES/DE authored), the 2 three-param correlation methods (`habit{Positive,Negative}CorrelationDescription` — manual named-arg conversion), and ~9 dynamic `translate(var)` calls.~~
 
 **Toolchain note:** `flutter`/`dart` are now available at `/opt/homebrew/bin`; verification (`dart run slang && flutter analyze && flutter test`) is run after **every** phase — all green so far (35 tests).
 
@@ -100,6 +100,7 @@ For each feature namespace — migrate only **screen-exclusive** keys; keys shar
 `grep "context.l10n.translate(\s*'"` → **0**. Every static literal + getter across the app is now type-safe `context.t.*` / global `t.*` (15 namespaces: common, settings, auth, profile, notifications, privacy, consent, subscription, ai, macroGoals, statistics, habits — plus the providers). Reusable migrator at `tool/migrate_cluster.py`. ~30 latent untranslated bugs fixed along the way (incl. day names, AI/private-mode consent, subscription/privacy dialogs). All phases verified green (35 tests).
 
 ### Remaining before final demolition
+> _(Superseded 2026-07-13: essentially done. (1) Dynamic `translate(<var>)` calls were refactored through slang via the typed helper `lib/core/l10n_dynamic.dart` (`tWeekday`, `tWeekdayShort`, `tStatTab`, `tSortBy`) — `grep 'l10n.translate('` → 0 (only a comment remains). (2) `localeName` / `language` removed — `grep 'localeName'` → 0. (3) Demolition done: `translate()`, `AppLocalizationsCompatibility`, `lib/core/localization.dart`, the `gen_l10n` `generated/` output, and `l10n.yaml`/`generate:` are all deleted; only `lib/l10n/app_ar.arb` remains on disk (kept until Arabic's flat ARB is retired).)_
 1. **78 dynamic `context.l10n.translate(<var>)`** calls (macro_goals_screen 22, dashboard 20, ai_chat 12, statistics 10, …): the arg is computed at runtime, so it can't be a static key. **Refactor each** to resolve the dynamic value through slang (e.g. map a status/day/category value → a `t.*` lookup), or keep a tiny typed helper.
 2. **12 `context.l10n.localeName` / `language`** (return the runtime locale name) → replace with `LocaleSettings.currentLocale.languageCode` / a localized language-name map.
 3. **Then demolition**: delete `translate()`, `AppLocalizationsCompatibility`, `lib/core/localization.dart` legacy bits, `lib/l10n/app_*.arb`, the `gen_l10n` `generated/` output, and the `l10n.yaml`/`generate:` wiring. Gate: `grep "l10n.translate(" lib` → 0.

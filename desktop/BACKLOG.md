@@ -119,4 +119,4 @@ Missing entirely on desktop (`AppLogger` exists but has no viewer UI).
 ---
 
 ## Out of scope (do NOT implement)
-- **Phase-2 iCloud/CloudKit sync** — deferred by decision (macOS reuses the iOS CloudKit container; Windows/Linux stay local-only; needs Apple provisioning). Tracked on the mobile `fix/icloud-sync-privacy-bugs` branch, not here.
+- ~~**Phase-2 iCloud/CloudKit sync** — deferred by decision (macOS reuses the iOS CloudKit container; Windows/Linux stay local-only; needs Apple provisioning). Tracked on the mobile `fix/icloud-sync-privacy-bugs` branch, not here.~~ _(Superseded 2026-07-13: **DONE** — implemented and user-facing on macOS Private mode: Settings → Privacy iCloud sync card (enable toggle + Sync now + status/last-synced), backed by `CloudKitPrivateSyncService` (`core/desktop_private_sync_service.dart`, macOS-only) and `desktop_sync_lifecycle.dart`. macOS still reuses the iOS CloudKit container `iCloud.com.simo.evolve`; Windows/Linux stay local-only via a NoOp sync service.)_

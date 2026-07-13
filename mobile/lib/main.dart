@@ -18,6 +18,7 @@ import 'providers/auth_provider.dart';
 import 'ui/screens/dashboard_screen.dart';
 import 'ui/screens/auth_screen.dart';
 import 'ui/screens/consent_screen.dart';
+import 'ui/widgets/biometric_lock_gate.dart';
 import 'providers/consent_provider.dart';
 import 'core/notifications.dart';
 import 'ui/widgets/error_modal.dart';
@@ -29,6 +30,8 @@ import 'core/secure_storage_utils.dart';
 import 'package:flutter_localizations/flutter_localizations.dart';
 import 'core/data_mode.dart';
 import 'core/private_local_database.dart';
+import 'core/verification_config.dart';
+import 'core/verification_wiring.dart';
 import 'core/private_sync_service.dart';
 import 'providers/sync_refresh.dart';
 import 'i18n/translations.g.dart';
@@ -348,6 +351,20 @@ class _EvolveAppState extends ConsumerState<EvolveApp>
         ref.read(activeDataModeProvider) == AppDataMode.private) {
       unawaited(_syncAndRefresh());
     }
+
+    // Auto-verified habits: lazy reconcile on foreground is the authoritative
+    // verdict path (D3). Gated by the feature flag (off ⇒ dead code) and
+    // fire-and-forget so it never affects the UI; it no-ops when nothing is
+    // verifiable and applies verdicts through the habit-log providers itself.
+    if (state == AppLifecycleState.resumed && VerificationConfig.enabled) {
+      unawaited(() async {
+        try {
+          await runVerificationReconcile(ref);
+        } catch (e, stack) {
+          AppLogger.error('[Verification] foreground reconcile failed', e, stack);
+        }
+      }());
+    }
   }
 
   Future<void> _syncAndRefresh() async {
@@ -396,7 +413,9 @@ class _EvolveAppState extends ConsumerState<EvolveApp>
           data: mediaQuery.copyWith(
             alwaysUse24HourFormat: settings.timeFormat24h,
           ),
-          child: child,
+          // App-wide biometric (Face ID / Touch ID) lock. Wraps every route,
+          // covers content while locked/backgrounded, and re-arms on resume.
+          child: BiometricLockGate(child: child),
         );
       },
     );

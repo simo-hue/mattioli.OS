@@ -3,7 +3,7 @@
 > **Purpose**: A deep, exhaustive audit of the `mobile/` (iOS) app to drive a future "make it professional" fix-it iteration. Every finding has a **location**, a **why it matters**, and a **recommended fix**. Work top-down by severity.
 >
 > **Audit date**: 2026-06-22 · **Scope**: `mobile/lib` (35,405 LOC Dart), `mobile/ios` native, `mobile/test`, `pubspec.yaml`, build config.
-> **App**: "Evolve" (`mattioli_os`, bundle `com.simo.evolve`, v1.0.4+8). Flutter + Riverpod + Supabase + RevenueCat + Sentry, with an encrypted offline **Private Mode** (SQLCipher).
+> **App**: "Evolve" (`mattioli_os`, bundle `com.simo.evolve`, v1.1.1+16). Flutter + Riverpod + Supabase + RevenueCat + Sentry, with an encrypted offline **Private Mode** (SQLCipher).
 
 ## How to read this
 
@@ -20,7 +20,7 @@ The app is **substantially more mature than a hobby project**: it has a clean Ri
 
 But several things stand between it and "professional, App-Store-grade":
 
-1. **Localization is built on a 641-case runtime `translate()` shim keyed by Italian strings** that silently leaks Italian to every other language on any miss. This is the single biggest quality/maintainability problem (`I18N-1`).
+1. **Localization is built on a 641-case runtime `translate()` shim keyed by Italian strings** that silently leaks Italian to every other language on any miss. This is the single biggest quality/maintainability problem (`I18N-1`). _(Superseded 2026-07-13: the `translate()` shim was removed — localization now uses the `slang` package with source locales in `lib/i18n/*.i18n.json` (ar/de/en/es/it) and ~1011 `t.` accessor call sites.)_
 2. **Streak calculation is incorrect** for historical edits and uses confused negative-streak math (`DATA-1`).
 3. **Optimistic writes never roll back on failure**, so the UI and DB silently diverge (`DATA-2`).
 4. **Background notification actions (Done/Skip) almost certainly fail when the app is terminated** — the headline "act from the notification" feature (`NOTIF-1`).
@@ -29,7 +29,7 @@ But several things stand between it and "professional, App-Store-grade":
 7. **Accessibility is effectively absent** — zero `Semantics`/`semanticLabel` in 35K LOC (`A11Y-1`).
 8. **Testing is ~2% of the codebase** and the core logic (auth, sync, streaks, private DB) is untested (`TEST-1`).
 
-Counts from the scan: **94** TODO/FIXME, **25** empty/swallowed catches, **113** `as` casts, **23** force-unwraps (`!`), **675** `l10n.translate(...)` call sites, **0** `Semantics` widgets, **0** explicit Dynamic-Type handling.
+Counts from the scan: **94** TODO/FIXME, **25** empty/swallowed catches, **113** `as` casts, **23** force-unwraps (`!`), **675** `l10n.translate(...)` call sites _(Superseded 2026-07-13: no `l10n.translate(...)` call sites remain; this metric referred to the removed shim — the only `.translate(` uses left in lib are `Transform.translate`)_, **0** `Semantics` widgets, **0** explicit Dynamic-Type handling.
 
 ---
 
@@ -139,6 +139,7 @@ Counts from the scan: **94** TODO/FIXME, **25** empty/swallowed catches, **113**
 **Fix**: Add a comment with the reason + a link, and re-test removing it on the next upgrade.
 
 ### `TOOL-7` — Placeholder project description · **P3**
+_(Superseded 2026-07-13: resolved — `pubspec.yaml:2` now has a real description: "Evolve — build better habits and reach your goals, with a privacy-first encrypted offline mode.")_
 **Where**: `pubspec.yaml:2` (`description: "A new Flutter project."`).
 **Fix**: Replace with a real description (cosmetic but it's the kind of thing reviewers notice).
 
@@ -147,6 +148,7 @@ Counts from the scan: **94** TODO/FIXME, **25** empty/swallowed catches, **113**
 ## 4. Localization & Internationalization
 
 ### `I18N-1` — The whole UI is localized through a 641-case `translate()` shim keyed by Italian strings · **P1**
+_(Superseded 2026-07-13: this entire finding describes a removed architecture — `lib/core/localization.dart` no longer exists, the `translate()` switch shim is gone, and the app now uses `slang`-generated getters. The coexisting gen_l10n + shim problem no longer applies.)_
 **Where**: `lib/core/localization.dart` (1,300 LOC; `String translate(String key) { switch(key) {...} return key; }`), called **675** times across `lib/ui`. Default branch `return key;` (line ~end of switch).
 **Why**: This is the dominant maintainability problem.
 - Italian literals are the de-facto source keys scattered across every screen (`context.l10n.translate('Salva')`).
@@ -155,11 +157,13 @@ Counts from the scan: **94** TODO/FIXME, **25** empty/swallowed catches, **113**
 **Fix**: Migrate call sites to real ARB keys (`context.l10n.salva`) and delete `translate()` + the `AppLocalizationsCompatibility` extension. This can be mechanical (the switch already maps each Italian string → its getter, so it's a find/replace table). Add an ARB lint/CI check for missing keys.
 
 ### `I18N-2` — Auth error messages are hardcoded Italian · **P2**
+_(Superseded 2026-07-13: `_mapAuthError` (now at `auth_provider.dart:522`) returns localized slang keys — `t.auth.errors.invalidCredentials`, `.emailNotConfirmed`, `.accountExists`, `.passwordMinSix`, `.rateLimited`, `.signupsDisabled`, `.generic` — not hardcoded Italian.)_
 **Where**: `lib/providers/auth_provider.dart:521 _mapAuthError(...)` returns Italian strings; also `'Errore di rete. Riprova.'` at `:210/:251/:275/:485/:513`, `'Accesso non riuscito...'` `:195`, `'Impossibile avviare la modalità privata.'` `:309`.
 **Why**: Login/signup/reset is the first screen a non-Italian user hits, and the errors are Italian-only.
 **Fix**: Route these through ARB keys; map Supabase error codes → localized messages.
 
 ### `I18N-3` — Global error modal & `ErrorWidget` are Italian-only · **P2**
+_(Superseded 2026-07-13: none of these Italian literals ('Ops! Qualcosa è andato storto.', 'Si è verificato un errore', long Italian body) exist in `lib/main.dart` anymore — they were removed in the slang migration.)_
 **Where**: `lib/main.dart:124` (`'Ops! Qualcosa è andato storto.'`), `:159` (`'Si è verificato un errore'`), `:161` (long Italian body).
 **Fix**: Localize (and see `SEC-7` for hiding raw details).
 

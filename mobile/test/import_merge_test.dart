@@ -4,6 +4,7 @@
 // logic, so this exercises identity matching, last-write-wins, category dedup,
 // orphan/FK handling and streak recomputation without SQLCipher or the network.
 import 'package:flutter_test/flutter_test.dart';
+import 'package:evolve_verification/evolve_verification.dart';
 import 'package:mattioli_os/core/import_merge.dart';
 import 'package:mattioli_os/core/import_merge_stats.dart';
 import 'package:evolve_sync/evolve_sync.dart';
@@ -179,6 +180,42 @@ void main() {
       expect(s2.logs.unchanged, 1);
       expect((await db.query('goals')).length, 1, reason: 'no duplicate goal');
       expect((await db.query('goal_logs')).length, 1, reason: 'no duplicate log');
+      await db.close();
+    });
+
+    test('round-trips the verification rule (verify_* columns)', () async {
+      final db = await openDb();
+      final canonical = normalizeBackup({
+        'mode': 'private',
+        'habits': [
+          {
+            'id': 'gv',
+            'title': 'Steps',
+            'color': '#3B82F6',
+            'start_date': '2026-01-01',
+            'updated_at': now,
+            'verify_provider': 'healthkit',
+            'verify_metric': 'steps',
+            'verify_comparator': 'gte',
+            'verify_threshold': 10000,
+            'verify_unit': 'count',
+          },
+        ],
+      });
+      await merge(db, canonical);
+
+      final row =
+          (await db.query('goals', where: 'id = ?', whereArgs: ['gv'])).single;
+      expect(row['verify_provider'], 'healthkit');
+      expect(row['verify_metric'], 'steps');
+      expect(row['verify_comparator'], 'gte');
+      expect(row['verify_threshold'], 10000.0);
+      expect(row['verify_unit'], 'count');
+      // And it reconstructs into a VerificationRule (the model round-trips too).
+      final rule = VerificationRule.fromColumns(row);
+      expect(rule, isNotNull);
+      expect(rule!.metricKey, 'steps');
+      expect(rule.threshold, 10000.0);
       await db.close();
     });
 

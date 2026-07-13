@@ -3,7 +3,7 @@
 Guida completa per sviluppatori o per chi desidera ospitare l'applicazione autonomamente.
 
 ## 📋 Requisiti
-- **Node.js** (Versione 18 o superiore)
+- **Node.js** (Versione 20 o superiore)
 - **NPM** o **Bun**
 - Un account **Supabase** (Gratuito)
 
@@ -35,7 +35,7 @@ Questa app utilizza Supabase per il database e l'autenticazione.
 
 ```env
 VITE_SUPABASE_URL=tuo_url_supabase
-VITE_SUPABASE_ANON_KEY=tua_chiave_anon
+VITE_SUPABASE_ANON=tua_chiave_anon
 ```
 
 > [!IMPORTANT]
@@ -64,8 +64,8 @@ La cartella `dist` conterrà i file statici pronti per essere caricati su Vercel
 
 ## 🗄 Struttura del Progetto
 - `/src/components`: Componenti UI riutilizzabili.
-- `/src/hooks`: Logica personalizzata (es. `useHabits`).
-- `/src/lib/supabase.ts`: Configurazione del client database.
+- `/src/hooks`: Logica personalizzata (es. `useGoals`).
+- `/src/integrations/supabase/client.ts`: Configurazione del client database.
 - `/src/pages`: Le pagine principali dell'applicazione.
 
 Per dettagli sull'architettura, vedi [TECHNICAL_DEEP_DIVE.md](./TECHNICAL_DEEP_DIVE.md).

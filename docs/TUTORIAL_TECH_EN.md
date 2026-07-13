@@ -3,7 +3,7 @@
 Complete guide for developers or anyone wishing to self-host the application.
 
 ## 📋 Requirements
-- **Node.js** (Version 18 or higher)
+- **Node.js** (Version 20.19+ or 22.12+, required by Vite 7)
 - **NPM** or **Bun**
 - A **Supabase** account (Free tier is sufficient)
 
@@ -14,8 +14,8 @@ Complete guide for developers or anyone wishing to self-host the application.
 ### 1. Clone the Repository
 Download the source code to your machine.
 ```bash
-git clone https://github.com/simo-hue/habit-tracker.git
-cd habit-tracker
+git clone https://github.com/simo-hue/mattioli.OS.git
+cd mattioli.OS
 ```
 
 ### 2. Install Dependencies
@@ -35,7 +35,7 @@ This app uses Supabase for the database and authentication.
 
 ```env
 VITE_SUPABASE_URL=your_supabase_url
-VITE_SUPABASE_ANON_KEY=your_anon_key
+VITE_SUPABASE_ANON=your_anon_key
 ```
 
 > [!IMPORTANT]
@@ -64,8 +64,8 @@ The `dist` folder will contain the static files ready to be uploaded to Vercel, 
 
 ## 🗄 Project Structure
 - `/src/components`: Reusable UI components.
-- `/src/hooks`: Custom business logic (e.g., `useHabits`).
-- `/src/lib/supabase.ts`: Database client configuration.
+- `/src/hooks`: Custom business logic (e.g., `useGoals`).
+- `/src/integrations/supabase/client.ts`: Database client configuration.
 - `/src/pages`: Main application pages.
 
 For architecture details, see [TECHNICAL_DEEP_DIVE.md](./TECHNICAL_DEEP_DIVE.md).

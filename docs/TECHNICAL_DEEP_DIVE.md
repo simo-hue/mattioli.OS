@@ -69,10 +69,10 @@ Key tables in Supabase:
 
 | Table Table | Description | Key Relationships |
 | :--- | :--- | :--- |
-| `users` | Profile data (avatars, xp, level) | Links to `auth.users` |
-| `habits` | Definition of habits (title, frequency) | `user_id` |
-| `habit_logs` | Daily completion records | `habit_id`, `date` |
-| `goals` | Long term macro goals | `user_id` |
+| `goals` | Habit definitions (title, color, frequency_days, verify_* rule) | `user_id` → `auth.users` |
+| `goal_logs` | Daily completion records (status done/missed/skipped) | `goal_id`, `date` |
+| `long_term_goals` | Long-term / macro goals (annual, monthly, weekly, quarterly, lifetime) | `user_id` |
+| `daily_moods` | Daily mood & energy scores (1-5) | `user_id` |
 
 ---
 
@@ -87,7 +87,7 @@ Key tables in Supabase:
 ## 🐛 Troubleshooting Common Issues
 
 ### "Supabase Key Missing"
-Ensure your `.env` file exists and has `VITE_SUPABASE_URL` and `VITE_SUPABASE_ANON_KEY`.
+Ensure your `.env` file exists and has `VITE_SUPABASE_URL` and `VITE_SUPABASE_ANON` (a `VITE_SUPABASE_PUBLISHABLE_KEY` fallback is also accepted).
 
 ### "Typescript Errors on Build"
-Run `npx supabase gen types typescript --project-id "your-id" > src/lib/database.types.ts` to sync local types with your remote DB schema.
+Run `npx supabase gen types typescript --project-id "your-id" > src/integrations/supabase/types.ts` to sync local types with your remote DB schema.

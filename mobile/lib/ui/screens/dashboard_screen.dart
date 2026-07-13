@@ -5,8 +5,8 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:intl/intl.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import 'package:local_auth/local_auth.dart';
 import '../../providers/settings_provider.dart';
+import '../widgets/biometric_lock_gate.dart';
 
 
 import '../../core/theme.dart';
@@ -47,7 +47,6 @@ class _HomeScreenState extends ConsumerState<HomeScreen>
   late PageController _pageController;
   late AnimationController _fadeController;
   late Animation<double> _fadeAnimation;
-  bool _isBiometricAuthenticated = true;
 
   final GlobalKey _checkInKey = GlobalKey();
   final GlobalKey _aiChatKey = GlobalKey();
@@ -88,8 +87,12 @@ class _HomeScreenState extends ConsumerState<HomeScreen>
     );
 
     // Profile setup must finish before any tutorial overlay is allowed to run.
+    // Don't start it behind the biometric lock — the build() listener resumes
+    // the flow once the lock overlay is dismissed.
     WidgetsBinding.instance.addPostFrameCallback((_) {
-      _runStartupOnboardingFlow();
+      if (!ref.read(biometricLockActiveProvider)) {
+        _runStartupOnboardingFlow();
+      }
     });
   }
 
@@ -136,7 +139,7 @@ class _HomeScreenState extends ConsumerState<HomeScreen>
     final hasSeenTutorial = ref.read(tutorialProvider);
     if (!hasSeenTutorial &&
         mounted &&
-        _isBiometricAuthenticated &&
+        !ref.read(biometricLockActiveProvider) &&
         !_isNameDialogOpen &&
         !_isWelcomeDialogOpen &&
         !_isDashboardTutorialShowing) {
@@ -751,37 +754,6 @@ class _HomeScreenState extends ConsumerState<HomeScreen>
     }
   }
 
-  Future<void> _authenticate() async {
-    final LocalAuthentication auth = LocalAuthentication();
-    final String unlockReason = context.t.privacy.biometricUnlockReason;
-    try {
-      final bool canAuthenticateWithBiometrics = await auth.canCheckBiometrics;
-      final bool canAuthenticate =
-          canAuthenticateWithBiometrics || await auth.isDeviceSupported();
-
-      if (!canAuthenticate) {
-        if (mounted) {
-          setState(() => _isBiometricAuthenticated = true);
-        }
-        return;
-      }
-
-      final bool didAuthenticate = await auth.authenticate(
-        localizedReason: unlockReason,
-        biometricOnly: true,
-        persistAcrossBackgrounding: true,
-      );
-
-      if (didAuthenticate) {
-        if (mounted) {
-          setState(() => _isBiometricAuthenticated = true);
-        }
-      }
-    } catch (e, stack) {
-      AppLogger.error('Biometric authentication error', e, stack);
-    }
-  }
-
   @override
   void dispose() {
     _dashboardTutorialStartTimer?.cancel();
@@ -871,70 +843,22 @@ class _HomeScreenState extends ConsumerState<HomeScreen>
         !hasSeenDashboardTutorial ||
         !hasSeenGoalsTutorial ||
         !hasSeenStatsTutorial;
-    final isLocked = ref.watch(
-      settingsProvider.select((settings) => settings.biometricLock),
-    );
 
-    // Auto-authenticate when lock is active
-    ref.listen<bool>(settingsProvider.select((s) => s.biometricLock), (
-      prev,
-      next,
-    ) {
-      if (next && !_isBiometricAuthenticated) {
-        _authenticate();
+    // The app-wide biometric lock lives above this screen (BiometricLockGate).
+    // Resume the deferred onboarding/tutorial flow once the lock is cleared.
+    ref.listen<bool>(biometricLockActiveProvider, (previous, next) {
+      if (previous == true && next == false && mounted) {
+        _runStartupOnboardingFlow();
       }
     });
 
     // Listen for tutorial reset
     ref.listen<bool>(tutorialProvider, (previous, next) {
-      if (next == false && mounted && _isBiometricAuthenticated) {
+      if (next == false && mounted && !ref.read(biometricLockActiveProvider)) {
         _clearDashboardTutorialState(removeOverlay: true);
         _runStartupOnboardingFlow();
       }
     });
-
-    if (isLocked && !_isBiometricAuthenticated) {
-      return Scaffold(
-        backgroundColor: context.appColors.background,
-        body: Center(
-          child: Column(
-            mainAxisAlignment: MainAxisAlignment.center,
-            children: [
-              Icon(
-                Icons.lock_outline,
-                size: 64,
-                color: Theme.of(context).colorScheme.primary,
-              ),
-              const SizedBox(height: 24),
-              Text(
-                context.t.habits.appLocked,
-                style: TextStyle(
-                  fontFamily: 'Inter',
-                  fontSize: 22,
-                  fontWeight: FontWeight.w800,
-                  color: context.appColors.foreground,
-                ),
-              ),
-              const SizedBox(height: 8),
-              Text(
-                context.t.habits.unlockWithBiometricsToContinue,
-                style: TextStyle(
-                  fontFamily: 'Inter',
-                  fontSize: 14,
-                  color: context.appColors.mutedForeground,
-                ),
-              ),
-              const SizedBox(height: 32),
-              EvolveButton(
-                label: context.t.habits.retry,
-                expand: false,
-                onPressed: _authenticate,
-              ),
-            ],
-          ),
-        ),
-      );
-    }
 
     return Scaffold(
       backgroundColor: context.appColors.background,

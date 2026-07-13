@@ -24,13 +24,6 @@ L'app divide gli obiettivi in due categorie per aiutarti a non perdere il focus:
 
 Vai nella sezione **Goals** e clicca su "Nuovo Obiettivo" per iniziare. Puoi assegnare una categoria (Es. Salute, Business, Studio) e un colore per distinguerli facilmente.
 
-### 3. Gamification & Missioni 🎮
-Per rendere la disciplina divertente, abbiamo integrato un sistema di **Missioni**.
-- Guadagna **XP (Punti Esperienza)** completando le tue abitudini.
-- Sblocca nuove regioni e badge nella mappa interattiva.
-- **Livelli**: Sali di livello man mano che mantieni la costanza.
-
-
 ---
 
 ## 💡 Consigli per l'Uso

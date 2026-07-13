@@ -2124,6 +2124,7 @@
 - No new runtime dependencies, endpoints, or migrations. New files: `lib/i18n/ar.i18n.json`, `lib/core/rtl.dart` (+ slang-generated `lib/i18n/translations_ar.g.dart`).
 
 ## Current Status
+_(Superseded 2026-07-13: this block is stale — later 2026-06/2026-07 entries below report the suite growing from 110 to 194 tests.)_
 Phase 1 Private Mode is feature-complete, localized (en/it/es/de/**ar**), and regression-guarded (110 tests). Arabic translations + the structural RTL pass are done in code and green; the only remaining Arabic work is human/device-gated (native-Arabic + VoiceOver visual QA, human translation review, and confirming the 3 intentionally-skipped physical spots) — see TO_SIMO_DO.md. Other immediate next steps if resumed: the remaining manual items in TO_SIMO_DO.md (AI key / Phase 2 CloudKit), none of which are code-only.
 
 ## [2026-06-23]: iCloud Sync (Private Mode Phase 2) — implementation
@@ -2138,6 +2139,7 @@ Phase 1 Private Mode is feature-complete, localized (en/it/es/de/**ar**), and re
 - Deps promoted transitive→direct: `sqflite_common_ffi` (dev), `pointycastle`.
 
 ## Current Status
+_(Superseded 2026-07-13: see later entries below — the debounced-write trigger and avatar CKAsset sync refinements have since shipped, the schema is now v4, and the test suite has grown to 194.)_
 iCloud Sync core is implemented, unit-tested (160), and iOS-compiling. Remaining: after-write debounced trigger + avatar CKAsset sync (refinements), and Apple provisioning + two-device device QA (manual, TO_SIMO_DO.md). Local Private Mode (Phase 1) remains complete.
 
 ## [2026-07-01 08:08]: Bugfix - Scrollable Habit Selector in Statistics

@@ -24,13 +24,6 @@ The app divides goals into two categories to help you stay focused:
 
 Navigate to the **Goals** section and click "New Goal" to start. You can assign a category (e.g., Health, Business, Study) and a color to distinguish them easily.
 
-### 3. Gamification & Missions 🎮
-To make discipline fun, we've integrated a **Mission** system.
-- Earn **XP (Experience Points)** by completing your habits.
-- Unlock new regions and badges on the interactive map.
-- **Levels**: Level up as you maintain consistency.
-
-
 ---
 
 ## 💡 Pro Tips

@@ -8,7 +8,7 @@ Stuck? Here are the most common issues and how to solve them.
 **Cause**: The application cannot find your environment variables.
 **Fix**:
 1. Check that `.env` exists in the root directory (not `src/`).
-2. Ensure it contains `VITE_SUPABASE_URL` and `VITE_SUPABASE_ANON_KEY`.
+2. Ensure it contains `VITE_SUPABASE_URL` and `VITE_SUPABASE_ANON` (or `VITE_SUPABASE_PUBLISHABLE_KEY`).
 3. Restart the dev server (`Ctrl+C` then `npm run dev`).
 
 ### "Row Level Security Policy Violation"

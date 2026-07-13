@@ -630,3 +630,5 @@ Before releasing Private mode:
 ## Immediate Next Step
 
 Start Phase 1 implementation by introducing the active data mode foundation and local encrypted database layer, before touching feature providers.
+
+_(Superseded 2026-07-13: Phase 1 local Private mode and Phase 2 iCloud/CloudKit sync are both implemented — see `mobile/lib/core/{data_mode,private_local_database,private_data_store,private_sync_service}.dart` and `mobile/lib/ui/screens/icloud_sync_screen.dart`; the shared private DB schema is at v4 in `packages/evolve_sync/lib/src/private_db_schema.dart`.)_

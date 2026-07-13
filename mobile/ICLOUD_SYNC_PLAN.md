@@ -39,7 +39,7 @@ Scope: Flutter mobile app (`mobile/`), iOS only. Supersedes the high-level "Phas
 
 **Determined (recommended) defaults:**
 - Container `iCloud.com.simo.evolve`, **private database** scope; CloudKit *Development* during build, **promote schema to Production before App Store release**.
-- Entitlements (manual): iCloud + CloudKit + the container. **No** push capability (deferred), **no** keychain-access-groups (`synchronizable` needs none).
+- Entitlements (manual): iCloud + CloudKit + the container. **No** push capability (deferred). ~~**no** keychain-access-groups (`synchronizable` needs none).~~ _(Superseded 2026-07-06: the shared sync engine now requires keychain-access-groups `$(AppIdentifierPrefix)com.simo.evolve` + `$(AppIdentifierPrefix)com.simo.evolve.sync` — the sync secrets live in the shared `…com.simo.evolve.sync` group so the macOS app can read them; see the note at the end of this doc.)_
 - Record payload = the full row as JSON, encrypted (excludes the device-local `avatar_url` path). Apply = upsert-by-id with LWW.
 - Disable sync = stop syncing, **leave** CloudKit data; re-enable resumes. (Cloud wipe is only via the delete action.)
 - Settings UI is private-mode + iOS only; hidden on Android/Supabase.
@@ -253,7 +253,7 @@ New section in `privacy_settings_screen.dart` (or a dedicated screen), shown onl
 - **Sync now** button (disabled while syncing / not enabled).
 - **Status row:** last-synced timestamp + state (idle/syncing/error/waiting/no-account).
 - Hidden entirely on Android and in Supabase mode.
-- All new strings localized **en/it/es/de** (slang); regenerate.
+- All new strings localized **en/it/es/de/ar** (slang; ar is RTL, see `lib/core/rtl.dart`); regenerate.
 
 ---
 

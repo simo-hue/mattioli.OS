@@ -18,7 +18,7 @@ L'architettura dell'applicazione è progettata seguendo i migliori standard dell
 *   **Local Storage:** `Shared Preferences` (per le preferenze dell'app e stati leggeri) e `Flutter Secure Storage` (per chiavi e dati sensibili cifrati).
 *   **Visualizzazione Dati:** `FL Chart (^0.69.0)` per grafici vettoriali premium, interattivi e con supporto alle gesture.
 *   **Design & Visuals:** `Google Fonts` (Inter, Playfair Display) e `Lucide Icons Flutter` per un'estetica moderna "minimal-tech".
-*   **Localizzazione:** Rilevamento automatico della lingua del dispositivo con supporto dinamico completo per **Italiano** e **Inglese**.
+*   **Localizzazione:** Rilevamento automatico della lingua del dispositivo con supporto dinamico completo per **Italiano**, **Inglese**, **Spagnolo**, **Tedesco** e **Arabo** (con supporto RTL).
 
 ### 🔐 Sicurezza & System Integration
 *   **Autenticazione Biometrica:** `Local Auth (^3.0.1)` per il blocco biometrico (Face ID / Touch ID) all'avvio dell'applicazione.
@@ -42,11 +42,11 @@ Per ottimizzare la batteria dello smartphone e velocizzare i tempi di risposta, 
 *   `get_macro_goals_stats`: Calcola le performance, stagionalità e distribuzione degli obiettivi a lungo termine.
 
 ### 🔐 Sicurezza RLS (Row Level Security)
-Il database implementa policy RLS rigorose. Ogni tabella (`profiles`, `goals`, `goal_logs`, `macro_goals`, `daily_moods`) applica un isolamento totale basato sul JWT dell'utente autenticato:
+Il database implementa policy RLS rigorose. Ogni tabella (`profiles`, `goals`, `goal_logs`, `long_term_goals`, `daily_moods`) applica un isolamento totale basato sul JWT dell'utente autenticato:
 ```sql
-ALTER TABLE macro_goals ENABLE ROW LEVEL SECURITY;
+ALTER TABLE long_term_goals ENABLE ROW LEVEL SECURITY;
 CREATE POLICY "Users can only access their own data" 
-ON macro_goals FOR ALL USING (auth.uid() = user_id);
+ON long_term_goals FOR ALL USING (auth.uid() = user_id);
 ```
 
 ---

@@ -626,6 +626,13 @@ class PrivateLocalDatabase implements PrivateDataStore {
             'created_at': g['created_at'],
             'updated_at': g['updated_at'],
             'reminder_time': g['reminder_time'],
+            // Auto-verified habits: round-trip the verification rule so a
+            // backup→restore doesn't silently turn a verified goal manual.
+            'verify_provider': g['verify_provider'],
+            'verify_metric': g['verify_metric'],
+            'verify_comparator': g['verify_comparator'],
+            'verify_threshold': g['verify_threshold'],
+            'verify_unit': g['verify_unit'],
           },
       ],
       'habitLogs': [

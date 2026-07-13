@@ -108,6 +108,11 @@ Map<String, dynamic> _normalizeWeb(Map<String, dynamic> raw) {
       'created_at': g['created_at'],
       'updated_at': g['updated_at'],
       'reminder_time': g['reminder_time'],
+      'verify_provider': g['verify_provider'],
+      'verify_metric': g['verify_metric'],
+      'verify_comparator': g['verify_comparator'],
+      'verify_threshold': g['verify_threshold'],
+      'verify_unit': g['verify_unit'],
     });
   }
 
@@ -183,6 +188,11 @@ Map<String, dynamic> _normalizeNative(Map<String, dynamic> raw) {
       'created_at': g['created_at'],
       'updated_at': g['updated_at'],
       'reminder_time': g['reminder_time'],
+      'verify_provider': g['verify_provider'],
+      'verify_metric': g['verify_metric'],
+      'verify_comparator': g['verify_comparator'],
+      'verify_threshold': g['verify_threshold'],
+      'verify_unit': g['verify_unit'],
     });
   }
 
@@ -436,6 +446,11 @@ ValidatedBackup validateCanonical(Map<String, dynamic> canonical) {
       'created_at': _str(g['created_at']),
       'updated_at': _str(g['updated_at']),
       'reminder_time': _str(g['reminder_time']),
+      'verify_provider': _str(g['verify_provider']),
+      'verify_metric': _str(g['verify_metric']),
+      'verify_comparator': _str(g['verify_comparator']),
+      'verify_threshold': (g['verify_threshold'] as num?)?.toDouble(),
+      'verify_unit': _str(g['verify_unit']),
     });
   }
 
@@ -874,6 +889,11 @@ Map<String, Object?> _goalRow(
     'created_at': createdAt,
     'updated_at': g['updated_at'] ?? updatedAt,
     'reminder_time': g['reminder_time'],
+    'verify_provider': g['verify_provider'],
+    'verify_metric': g['verify_metric'],
+    'verify_comparator': g['verify_comparator'],
+    'verify_threshold': g['verify_threshold'],
+    'verify_unit': g['verify_unit'],
   };
 }
 

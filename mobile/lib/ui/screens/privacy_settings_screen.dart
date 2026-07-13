@@ -33,6 +33,7 @@ import '../../core/notifications.dart';
 import '../widgets/animations/pulsing_sync_animation.dart';
 import 'icloud_sync_screen.dart';
 import '../../providers/settings_provider.dart';
+import '../widgets/biometric_lock_gate.dart';
 import '../../providers/consent_provider.dart';
 import '../../core/haptics.dart';
 import '../../core/app_logger.dart';
@@ -109,6 +110,11 @@ class PrivacySettingsScreen extends ConsumerWidget {
                   if (val) {
                     final authenticated = await _authenticate(context);
                     if (authenticated) {
+                      // The user just authenticated to enable the lock, so count
+                      // it as this session's unlock — the app-wide lock gate must
+                      // not immediately prompt again. Set this BEFORE enabling so
+                      // the gate never observes an armed-but-unauthenticated state.
+                      ref.read(biometricUnlockedProvider.notifier).set(true);
                       final currentSettings = ref.read(settingsProvider);
                       notifier.updateSettings(
                         currentSettings.copyWith(biometricLock: true),

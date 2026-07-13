@@ -37,7 +37,7 @@ repositories or seeded dashboard data.
 | Notifications | `Local` + `Platform gate` | macOS schedules recurring notifications; Windows and Linux retain platform limits. |
 | Biometric lock | `Local` + `Platform gate` | Active on macOS and Windows. |
 | RevenueCat purchases | `Cloud` + `Platform gate` | Active on macOS; Windows and Linux require a commercial channel decision. |
-| AI Coach | `Surface` | Simulated answers were removed. Enable only with a secure backend adapter. |
+| AI Coach | `Cloud` | OpenRouter-backed streaming chat via `OpenRouterService.generateStreamResponse`; requires an `OPENROUTER_API_KEY` supplied at build time (empty key → inert). |
 
 ## Production schema notes
 

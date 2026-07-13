@@ -46,6 +46,8 @@ See **Known limitations (accepted)** near the end for #10, #11, and the identity
 - `lib/core/private_local_database.dart` → `_open()` `onConfigure` sets `PRAGMA foreign_keys = ON`
 - `lib/core/private_db_schema.dart` → all child tables declare `... REFERENCES profiles(id) ON DELETE CASCADE` (and `goal_logs` also `REFERENCES goals(id) ON DELETE CASCADE`), plus the `*_sync_ad` DELETE triggers.
 
+_(Note 2026-07-13: the iCloud sync layer was extracted into the shared `evolve_sync` package. `sync_local_store.dart`, `private_db_schema.dart`, `sync_engine.dart`, `cloudkit_private_sync_service.dart`, and `sync_key_store.dart` now live under `packages/evolve_sync/lib/src/`, not `mobile/lib/core/`. Only `private_local_database.dart` remains at `mobile/lib/core/`. Adjust all `lib/core/...` paths below accordingly.)_
+
 **What's wrong:**
 `applyUpsert` writes pulled rows with `ConflictAlgorithm.replace` (= `INSERT OR REPLACE`). In SQLite, when the primary key already exists, `INSERT OR REPLACE` **deletes the existing row first, then inserts**. With `foreign_keys = ON` (set in `onConfigure`), that delete triggers `ON DELETE CASCADE` on every child table.
 

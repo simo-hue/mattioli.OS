@@ -5,7 +5,7 @@
 ### **Master Your Discipline. Own Your Data. Gamify Your Growth.**
 
 [![Watch the Tutorial](https://img.shields.io/badge/▶_Watch_Tutorial-YouTube-red?style=for-the-badge&logo=youtube)](YOUR_YOUTUBE_VIDEO_LINK_HERE)
-[![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg?style=for-the-badge)](https://opensource.org/licenses/MIT)
+[![License: PolyForm NC](https://img.shields.io/badge/License-PolyForm_Noncommercial_1.0.0-yellow.svg?style=for-the-badge)](./LICENSE)
 [![Stack](https://img.shields.io/badge/Tech-React%20|%20Supabase%20|%20Tailwind-blue?style=for-the-badge)](./docs/TECHNICAL_DEEP_DIVE.md)
 [![Status](https://img.shields.io/badge/Status-Active_Development-success?style=for-the-badge)]()
 
@@ -30,10 +30,10 @@ Get up and running in **seconds**.
 
 ```bash
 # 1. Clone the repo
-git clone https://github.com/simo-hue/habit-tracker.git
+git clone https://github.com/simo-hue/mattioli.OS.git
 
 # 2. Enter the directory
-cd habit-tracker
+cd mattioli.OS
 
 # 3. Install dependencies
 npm install

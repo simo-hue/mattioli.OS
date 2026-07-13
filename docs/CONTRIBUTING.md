@@ -34,11 +34,6 @@ This section guides you through submitting an enhancement suggestion, including 
 *   Interfaces over Types where possible.
 *   **Tailwind** for all styling. Avoid custom CSS files unless necessary.
 
-## 🎁 Gamification Logic
-If you are touching the XP/Leveling logic, please be careful. This is the core "fun" loop for users.
-- `src/utils/gamification.ts` contains the core math.
-- Always verify that XP is awarded *after* the optimistic update allows it.
-
 ---
 
 Thanks! ❤️

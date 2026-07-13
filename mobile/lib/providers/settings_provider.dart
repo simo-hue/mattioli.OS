@@ -197,7 +197,15 @@ class AppSettingsNotifier extends Notifier<AppSettings> {
     final dataMode = ref.watch(activeDataModeProvider);
     // 1. Caricamento sincrono iniziale da SharedPreferences (Offline-First)
     final state = dataMode == AppDataMode.private
-        ? _defaultSettings().copyWith(isPro: true)
+        ? _defaultSettings().copyWith(
+            isPro: true,
+            // Seed the biometric lock synchronously so the lock engages on the
+            // very first frame — the private settings row loads asynchronously
+            // and would otherwise leave the app briefly unlocked on launch.
+            biometricLock:
+                ref.read(sharedPrefsProvider).getBool('pref_biometric_lock') ??
+                false,
+          )
         : _loadFromPrefs();
 
     if (dataMode == AppDataMode.private) {
@@ -279,6 +287,11 @@ class AppSettingsNotifier extends Notifier<AppSettings> {
           .read(privateLocalDatabaseProvider)
           .loadSettingsRow();
       state = _settingsFromPrivateRow(row);
+      // Mirror the biometric lock flag into SharedPreferences so the next cold
+      // start can read it synchronously before the DB row loads (see build()).
+      await ref
+          .read(sharedPrefsProvider)
+          .setBool('pref_biometric_lock', state.biometricLock);
       syncNotifications();
     } catch (e, stack) {
       AppLogger.error('[Settings] Private settings load error', e, stack);
@@ -502,6 +515,9 @@ class AppSettingsNotifier extends Notifier<AppSettings> {
   void _saveToPrivate(AppSettings s) {
     // Save UI-only preferences to SharedPreferences to avoid SQLite schema migrations
     ref.read(sharedPrefsProvider).setString('pref_stats_habit_filter', s.statsHabitFilter);
+    // Mirror the biometric lock flag for a synchronous first-frame read on the
+    // next cold start (the private DB row loads asynchronously).
+    ref.read(sharedPrefsProvider).setBool('pref_biometric_lock', s.biometricLock);
 
     String toHex(Color color) =>
         '#${color.toARGB32().toRadixString(16).substring(2, 8).toUpperCase()}';
@@ -638,7 +654,11 @@ class AppSettingsNotifier extends Notifier<AppSettings> {
           aiInsights: data['notif_ai_insights'] ?? state.aiInsights,
           weeklyReports: data['notif_weekly_reports'] ?? state.weeklyReports,
           eveningReview: data['notif_evening_review'] ?? state.eveningReview,
-          biometricLock: data['biometric_lock'] ?? state.biometricLock,
+          // Biometric lock is a per-device security preference: a Face ID lock
+          // set on THIS phone must not be silently disabled by a stale value —
+          // or a value from another device — pulled from the server. Keep the
+          // local value authoritative instead of letting the server win.
+          biometricLock: state.biometricLock,
           morningBriefTime:
               data['morning_brief_time'] ?? state.morningBriefTime,
           eveningReviewTime:

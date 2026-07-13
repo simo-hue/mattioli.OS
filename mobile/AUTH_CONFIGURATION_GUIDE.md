@@ -2,7 +2,7 @@
 
 Ciao Simo! Ora che hai aggiunto la **Capability "Sign in with Apple"** su Xcode, sei a metà strada per avere i due flussi di login nativi più performanti e premium su iOS.
 
-In Flutter, l'integrazione è già interamente implementata nel codice ([auth_provider.dart](file:///Users/simo/Downloads/DEV/mattioli.OS/mobile/lib/providers/auth_provider.dart#L187-L277)) ed è configurata in modo **nativo** (utilizzando i token d'identità diretti). Questo significa che l'esperienza utente sarà istantanea e utilizzerà FaceID/TouchID in modo integrato.
+In Flutter, l'integrazione è già interamente implementata nel codice ([auth_provider.dart](file:///Users/simone.mattioli/Developer/mattioli.OS/mobile/lib/providers/auth_provider.dart#L326-L455)) ed è configurata in modo **nativo** (utilizzando i token d'identità diretti). Questo significa che l'esperienza utente sarà istantanea e utilizzerà FaceID/TouchID in modo integrato.
 
 Ecco esattamente cosa devi fare adesso su **Supabase**, **Apple Developer Portal** e **Google Cloud Console**.
 
@@ -31,7 +31,7 @@ Questa è la parte migliore dell'integrazione nativa con Supabase:
 
 ## 🔑 2. CONFIGURAZIONE: GOOGLE SIGN-IN
 
-Nel tuo codice Flutter sono già impostati i Client ID di Google in [supabase_config.dart](file:///Users/simo/Downloads/DEV/mattioli.OS/mobile/lib/core/supabase_config.dart#L5-L6):
+Nel tuo codice Flutter sono già impostati i Client ID di Google in [supabase_config.dart](file:///Users/simone.mattioli/Developer/mattioli.OS/mobile/lib/core/supabase_config.dart#L6-L7):
 *   `googleWebClientId`: `11071263331-b674gunj429vs8isnkoms7r6rnqukbm5.apps.googleusercontent.com`
 *   `googleIosClientId`: `11071263331-qepubluq93tojdo3vti51ah3h09ss57m.apps.googleusercontent.com`
 

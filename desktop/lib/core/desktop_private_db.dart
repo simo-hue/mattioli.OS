@@ -201,6 +201,12 @@ class DesktopPrivateDb {
             'created_at': g['created_at'],
             'updated_at': g['updated_at'],
             'reminder_time': g['reminder_time'],
+            // Round-trip the auto-verification rule so backup/restore keeps it.
+            'verify_provider': g['verify_provider'],
+            'verify_metric': g['verify_metric'],
+            'verify_comparator': g['verify_comparator'],
+            'verify_threshold': g['verify_threshold'],
+            'verify_unit': g['verify_unit'],
           },
       ],
       'habitLogs': [
@@ -1016,6 +1022,11 @@ class DesktopPrivateDb {
       'end_date': g['end_date'],
       'display_order': g['display_order'],
       'reminder_time': g['reminder_time'],
+      'verify_provider': g['verify_provider'],
+      'verify_metric': g['verify_metric'],
+      'verify_comparator': g['verify_comparator'],
+      'verify_threshold': g['verify_threshold'],
+      'verify_unit': g['verify_unit'],
       'created_at': createdAt,
       'updated_at': g['updated_at'] ?? updatedAt,
     };

@@ -17,6 +17,7 @@ Per garantire affidabilità e costi prevedibili, l'architettura si basa su **Sup
     *   **Google Play:** $25 (una tantum).
 3.  **AI Logic (Pay-as-you-go):**
     *   Utilizzo di OpenAI GPT-4o-mini via Edge Functions (~$0.10 per 1000 interazioni medie).
+        *   _(Nota 2026-07-13: nessuna Edge Function AI OpenAI è in uso. L'unica Supabase Edge Function è `revenuecat-webhook`; il mobile chiama direttamente OpenRouter (`OpenRouterService`, `/chat/completions`) e il web usa Google Gemini più un'integrazione Ollama locale. L'AI non passa dalle Supabase Edge Functions.)_
 
 ---
 
@@ -26,10 +27,11 @@ La struttura è relazionale e ottimizzata per le performance. Ogni tabella utili
 
 ### Principali Entità:
 *   **`profiles`**: Dati utente, preferenze, lingua, impostazioni abbonamento.
-*   **`macro_goals`**: Obiettivi principali (Titolo, Colore, Scadenza, User_ID).
-*   **`habits`**: Abitudini collegate ai macro goal (Frequenza, Streak).
-*   **`daily_logs`**: Record giornalieri che collegano Mood, Note e completamento Abitudini.
-*   **`ai_insights`**: Cache delle analisi generate dall'AI per risparmiare token e tempo di caricamento.
+*   **`goals`**: Le abitudini/obiettivi (Titolo, Colore, Icona, Frequenza, User_ID, regole di verifica opzionali).
+*   **`long_term_goals`**: Obiettivi a lungo termine / macro-goal (annuale, mensile, settimanale, trimestrale, lifetime).
+*   **`goal_logs`**: Record giornalieri di completamento abitudini (status done/missed/skipped, note, value).
+*   **`daily_moods`**: Registrazioni giornaliere di umore ed energia (1-5) con nota.
+*   **`user_memos`**: Memo personali dell'utente.
 
 ---
 
@@ -40,11 +42,11 @@ Il cuore della sicurezza non è nel codice Flutter, ma nel Database. Ogni tabell
 **Esempio di Policy di Sicurezza:**
 ```sql
 -- Abilita RLS sulla tabella goals
-ALTER TABLE macro_goals ENABLE ROW LEVEL SECURITY;
+ALTER TABLE goals ENABLE ROW LEVEL SECURITY;
 
 -- Crea una policy che permette agli utenti di vedere solo i propri dati
 CREATE POLICY "Users can only access their own data"
-ON macro_goals
+ON goals
 FOR ALL -- SELECT, INSERT, UPDATE, DELETE
 USING (auth.uid() = user_id);
 ```
@@ -67,7 +69,7 @@ Per mantenere segrete le API Key e non pesare sulla batteria dello smartphone, l
 ## 🔄 5. Sincronizzazione & Stato Offline
 
 L'app mobile deve essere "Offline-First" per una UX fluida.
-*   **Local Cache:** Utilizzo di **Isar/Hive** per salvare i dati localmente.
+*   **Local Cache:** Utilizzo di un database SQLite cifrato (**sqflite_sqlcipher / SQLCipher**) per salvare i dati localmente.
 *   **Sync Strategy:** All'avvio, l'app confronta il `last_updated_at` locale con quello del server.
 *   **Real-time:** Utilizzo dei **Postgres Changes** di Supabase per aggiornare la UI istantaneamente se l'utente modifica qualcosa da un altro dispositivo (es. iPad o Web).
 

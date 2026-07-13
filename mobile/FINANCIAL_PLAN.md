@@ -11,7 +11,7 @@ Questo documento analizza nel dettaglio ogni aspetto economico di **Evolve**, da
 | :--- | :--- | :--- |
 | **Supabase Pro** | Database, Auth, Realtime, Backup. | $25/mese |
 | **Compute Add-on** | Upgrade CPU/RAM (necessario sopra i 5k utenti). | +$10-50/mese |
-| **AI LLM Usage** | Costo API OpenAI (GPT-4o/o-mini) basato sull'uso. | $0.05 - $0.50 / utente attivo |
+| **AI LLM Usage** | Costo API OpenRouter (attualmente google/gemini-2.5-flash) basato sull'uso. | $0.05 - $0.50 / utente attivo |
 | **Sentry/Logging** | Monitoraggio crash e performance in produzione. | $0 (Piano Free) -> $26/mese |
 
 ### 🍏 Costi di Distribuzione

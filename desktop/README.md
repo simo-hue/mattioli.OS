@@ -1,7 +1,10 @@
 # Evolve Desktop
 
-Native Flutter desktop client for Evolve. The application is self-contained
-inside this directory and uses the production Supabase backend directly.
+Native Flutter desktop client for Evolve. The desktop client depends on two
+local packages under `../packages/` (`evolve_sync` and `evolve_verification`)
+and supports two data modes: in Cloud mode it uses the production Supabase
+backend directly, while in Private mode it stores data in a local
+SQLCipher-encrypted database with optional CloudKit/iCloud sync on macOS.
 
 ## Supported targets
 
@@ -26,9 +29,11 @@ lib/
   shared/widgets/       reusable desktop components
 ```
 
-`DashboardRepository` is the boundary for data access. Runtime builds always
-use `SupabaseDashboardRepository` with the production `goals`, `goal_logs`,
-`daily_moods`, `long_term_goals` and `profiles` contract. Auth sessions and the
+`DashboardRepository` is the boundary for data access. In Cloud mode runtime
+builds use `SupabaseDashboardRepository` with the production `goals`,
+`goal_logs`, `daily_moods`, `long_term_goals` and `profiles` contract; in
+Private mode they use `PrivateDashboardRepository` backed by a local
+SQLCipher-encrypted database (`DesktopPrivateDb`). Auth sessions and the
 dashboard cache use the platform credential store through
 `flutter_secure_storage`. Retryable mutations are queued per user in encrypted
 storage and replayed before the next cloud refresh. Test-only fakes live under

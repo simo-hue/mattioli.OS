@@ -1,5 +1,7 @@
 # App Store publish checklist — Evolve 1.0.9 (build 13)
 
+_(Note 2026-07-13: superseded — `mobile/pubspec.yaml` now declares 1.1.1+16, and 1.0.9/build 13 has already shipped. This checklist targets an old version.)_
+
 Steps to do before submitting. Code is done (194/194 tests, `flutter analyze`
 clean); everything below is setup/verification that can't be done from the repo.
 
@@ -26,6 +28,7 @@ clean); everything below is setup/verification that can't be done from the repo.
 
 ## 3. App Store Connect & submit
 - [ ] Create/prepare the **1.0.9** version in App Store Connect.
+      _(Note 2026-07-13: app is now at 1.1.1 (build 16); this 1.0.9 step is stale.)_
 - [ ] Publish release notes: `cd mobile/ios && fastlane ios update_notes`
       (needs the editable 1.0.9 version to exist + Apple ID login). Notes:
       "Smarter data import & fixes" (localized across 18 languages).

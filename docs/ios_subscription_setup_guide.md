@@ -25,6 +25,7 @@ Tutti gli abbonamenti auto-ricorrenti su iOS devono appartenere a un "Gruppo di 
 
 ### Step 3: Creare i Prodotti In-App (Mensile, Annuale, Lifetime)
 Dobbiamo creare i 3 prodotti che abbiamo definito nel codice Flutter.
+_(Nota 2026-07-13: il codice Flutter attuale definisce solo DUE prodotti Pro, mensile e annuale (`proProductIds` in `mobile/lib/core/subscription_service.dart` contiene solo `com.simo.evolve.pro.monthly` e `com.simo.evolve.pro.yearly`, e `subscription_screen.dart` gestisce solo i pacchetti mensile/annuale). Il prodotto Lifetime (`com.simo.evolve.pro.lifetime`) non è supportato dal codice: crealo solo se prima aggiungi il relativo supporto nell'app.)_
 
 #### A. Prodotto Mensile (Abbonamento Auto-Rinnovabile)
 1. Dentro il gruppo di abbonamenti appena creato, sotto la sezione **Subscriptions**, clicca su **Create** (o sul pulsante **+**).
@@ -163,6 +164,7 @@ Hai la possibilità di usare il fantastico builder visivo di RevenueCat direttam
 4. Personalizza i colori (puoi usare i codici esatti del tema scuro di Evolve), le icone, i testi dei vantaggi Pro e inserisci le immagini di sfondo.
 5. Fai clic su **Save and Publish**.
 6. Quando gli utenti cliccheranno su *"Mostra Paywall Grafico di RevenueCat"* all'interno della schermata dell'abbonamento nell'app Evolve, vedranno apparire istantaneamente questo paywall caricato dal cloud!
+_(Nota 2026-07-13: nel codice attuale questo pulsante non esiste. I metodi `presentPaywall()`/`presentPaywallIfNeeded()` sono definiti in `subscription_service.dart` ma non vengono richiamati da nessuna schermata, quindi il paywall grafico non è ancora collegato all'interfaccia. È invece collegato il `presentCustomerCenter()`.)_
 
 ### Step 7: Configurare il "Customer Center"
 Il Customer Center è lo strumento moderno che gestisce rimborsi e cancellazioni per te senza scrivere codice.

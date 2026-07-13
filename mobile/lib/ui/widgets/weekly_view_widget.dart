@@ -2,8 +2,10 @@ import 'dart:math' as math;
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:intl/intl.dart';
+import 'package:fl_chart/fl_chart.dart';
 import '../../core/theme.dart';
 import '../../providers/goal_provider.dart';
+import '../../models/goal.dart';
 import 'day_details_modal.dart';
 import '../../core/haptics.dart';
 import '../../i18n/translations.g.dart';
@@ -17,7 +19,7 @@ class WeeklyViewWidget extends ConsumerStatefulWidget {
 
 class _WeeklyViewWidgetState extends ConsumerState<WeeklyViewWidget> {
   late DateTime _currentWeekStart;
-  int _slideDirection = 1; // 1 for next, -1 for prev
+  int _slideDirection = 1;
 
   @override
   void initState() {
@@ -58,11 +60,84 @@ class _WeeklyViewWidgetState extends ConsumerState<WeeklyViewWidget> {
   String _dateKey(DateTime date) =>
       '${date.year}-${date.month.toString().padLeft(2, '0')}-${date.day.toString().padLeft(2, '0')}';
 
+  List<double> _calculateDailyCompletion(List<Goal> habits, Map<String, dynamic> logs) {
+    List<double> completion = List.filled(7, 0.0);
+    
+    for (int i = 0; i < 7; i++) {
+      final dayDate = _currentWeekStart.add(Duration(days: i));
+      if (dayDate.isAfter(DateTime.now())) {
+        completion[i] = -1.0; 
+        continue;
+      }
+      
+      final dayKey = _dateKey(dayDate);
+      int activeCount = 0;
+      int doneCount = 0;
+      
+      for (final habit in habits) {
+        if (habit.isActiveOn(dayDate)) {
+          activeCount++;
+          if (logs[dayKey]?[habit.id] == 'done') {
+            doneCount++;
+          }
+        }
+      }
+      
+      if (activeCount == 0) {
+        completion[i] = 0.0;
+      } else {
+        completion[i] = (doneCount / activeCount) * 100;
+      }
+    }
+    return completion;
+  }
+
   @override
   Widget build(BuildContext context) {
     final habits = ref.watch(goalsProvider);
     final logs = ref.watch(habitLogsProvider);
     final isPrivacy = ref.watch(privacyModeProvider);
+    
+    final completionData = _calculateDailyCompletion(habits, logs);
+
+    // Compute summary
+    double bestPercent = -1.0;
+    int bestIndex = -1;
+    double worstPercent = 101.0;
+    int worstIndex = -1;
+    double totalPercent = 0.0;
+    int pastDaysCount = 0;
+
+    for (int i = 0; i < 7; i++) {
+      if (completionData[i] >= 0) {
+        pastDaysCount++;
+        totalPercent += completionData[i];
+        if (completionData[i] > bestPercent) {
+          bestPercent = completionData[i];
+          bestIndex = i;
+        }
+        if (completionData[i] < worstPercent) {
+          worstPercent = completionData[i];
+          worstIndex = i;
+        }
+      }
+    }
+
+    String summaryText = "";
+    if (isPrivacy) {
+      summaryText = "Privacy Mode";
+    } else if (pastDaysCount > 0) {
+      final bestDayName = DateFormat.E(LocaleSettings.currentLocale.languageCode)
+          .format(_currentWeekStart.add(Duration(days: bestIndex)))
+          .toUpperCase();
+      final worstDayName = DateFormat.E(LocaleSettings.currentLocale.languageCode)
+          .format(_currentWeekStart.add(Duration(days: worstIndex)))
+          .toUpperCase();
+      final avgPercent = (totalPercent / pastDaysCount).round();
+      summaryText = "Best: $bestDayName ${bestPercent.round()}%  •  Worst: $worstDayName ${worstPercent.round()}%  •  Avg: $avgPercent%";
+    } else {
+      summaryText = "No data for this week yet";
+    }
 
     return GestureDetector(
       onHorizontalDragEnd: (details) {
@@ -81,24 +156,16 @@ class _WeeklyViewWidgetState extends ConsumerState<WeeklyViewWidget> {
           switchInCurve: Curves.easeOutQuart,
           switchOutCurve: Curves.easeOutQuart,
           transitionBuilder: (child, animation) {
-            final isIncoming =
-                child.key == ValueKey(_dateKey(_currentWeekStart));
-
+            final isIncoming = child.key == ValueKey(_dateKey(_currentWeekStart));
             return AnimatedBuilder(
               animation: animation,
               builder: (context, child) {
-                // Perspective Fold Logic (3D Flip)
                 final double rotation = isIncoming
                     ? (1.0 - animation.value) * (math.pi / 2) * _slideDirection
                     : animation.value * -(math.pi / 2) * _slideDirection;
-
                 final alignment = isIncoming
-                    ? (_slideDirection > 0
-                          ? Alignment.centerRight
-                          : Alignment.centerLeft)
-                    : (_slideDirection > 0
-                          ? Alignment.centerLeft
-                          : Alignment.centerRight);
+                    ? (_slideDirection > 0 ? Alignment.centerRight : Alignment.centerLeft)
+                    : (_slideDirection > 0 ? Alignment.centerLeft : Alignment.centerRight);
 
                 return Transform(
                   transform: Matrix4.identity()
@@ -144,142 +211,82 @@ class _WeeklyViewWidgetState extends ConsumerState<WeeklyViewWidget> {
                 ),
               ),
               const SizedBox(height: 20),
-
-              // Days labels
-              Row(
-                children: List.generate(7, (index) {
-                  final dayDate = _currentWeekStart.add(Duration(days: index));
-                  final isToday = _dateKey(dayDate) == _dateKey(DateTime.now());
-
-                  return Expanded(
-                    child: Column(
-                      children: [
-                        Text(
-                          DateFormat.E(
-                            LocaleSettings.currentLocale.languageCode,
-                          ).format(dayDate).toUpperCase(),
-                          style: TextStyle(
-                            fontFamily: 'Inter',
-                            fontSize: 10,
-                            fontWeight: FontWeight.w600,
-                            color: isToday
-                                ? context.appColors.mutedForeground
-                                : context.appColors.mutedForeground.withValues(
-                                    alpha: 0.5,
-                                  ),
-                            letterSpacing: 0.5,
-                          ),
-                        ),
-                        const SizedBox(height: 4),
-                        Container(
-                          padding: const EdgeInsets.symmetric(
-                            vertical: 4,
-                            horizontal: 8,
-                          ),
-                          decoration: isToday
-                              ? BoxDecoration(
-                                  color: context.appColors.card,
-                                  borderRadius: BorderRadius.circular(8),
-                                  border: Border.all(
-                                    color: context.appColors.border,
-                                    width: 1,
-                                  ),
-                                  boxShadow: [
-                                    BoxShadow(
-                                      color: Colors.black.withValues(
-                                        alpha: 0.3,
-                                      ),
-                                      blurRadius: 10,
-                                      offset: const Offset(0, 4),
-                                    ),
-                                  ],
-                                )
-                              : null,
-                          child: Text(
-                            '${dayDate.day}',
-                            style: TextStyle(
-                              fontFamily: 'Inter',
-                              fontSize: 16,
-                              fontWeight: isToday
-                                  ? FontWeight.w700
-                                  : FontWeight.w600,
-                              color: isToday
-                                  ? context.appColors.foreground
-                                  : context.appColors.mutedForeground,
-                            ),
-                          ),
+              
+              Expanded(
+                child: AspectRatio(
+                  aspectRatio: 1,
+                  child: RadarChart(
+                    RadarChartData(
+                      dataSets: [
+                        RadarDataSet(
+                          fillColor: isPrivacy 
+                              ? context.appColors.mutedForeground.withValues(alpha: 0.2) 
+                              : context.appColors.primary.withValues(alpha: 0.2),
+                          borderColor: isPrivacy 
+                              ? context.appColors.mutedForeground 
+                              : context.appColors.primary.withValues(alpha: 0.8),
+                          entryRadius: 4,
+                          dataEntries: completionData.map((val) => RadarEntry(value: val < 0 ? 0 : val)).toList(),
+                          borderWidth: 2,
                         ),
                       ],
-                    ),
-                  );
-                }),
-              ),
-              const SizedBox(height: 16),
-
-              // Habit Stacks - Scrollable if too many
-              Expanded(
-                child: SingleChildScrollView(
-                  physics: const BouncingScrollPhysics(),
-                  child: Column(
-                    children: [
-                      ...habits.asMap().entries.map((entry) {
-                        final habit = entry.value;
-
-                        return Column(
-                          children: [
-                            Row(
-                              children: List.generate(7, (dayIdx) {
-                                final dayDate = _currentWeekStart.add(
-                                  Duration(days: dayIdx),
-                                );
-                                final dayKey = _dateKey(dayDate);
-                                final status = logs[dayKey]?[habit.id];
-                                final isFuture = dayDate.isAfter(
-                                  DateTime.now(),
-                                );
-                                final isActive = habit.isActiveOn(dayDate);
-
-                                return Expanded(
-                                  child: Padding(
-                                    padding: const EdgeInsets.symmetric(
-                                      horizontal: 4,
-                                      vertical: 4,
-                                    ),
-                                    child: Opacity(
-                                      opacity: isActive ? 1.0 : 0.0,
-                                      child: _HabitCapsule(
-                                        status: status,
-                                        isFuture: isFuture,
-                                        isPrivacy: isPrivacy,
-                                        onTap: (isFuture || !isActive)
-                                            ? null
-                                            : () {
-                                                showModalBottomSheet(
-                                                  context: context,
-                                                  backgroundColor:
-                                                      Colors.transparent,
-                                                  isScrollControlled: true,
-                                                  builder: (context) =>
-                                                      DayDetailsModal(
-                                                        date: dayDate,
-                                                      ),
-                                                );
-                                                ref.hapticAction();
-                                              },
-                                      ),
-                                    ),
-                                  ),
-                                );
-                              }),
-                            ),
-                            // Optional spacing between groups
-                            if (entry.key == 2 || entry.key == 6)
-                              const SizedBox(height: 12),
-                          ],
+                      radarBackgroundColor: Colors.transparent,
+                      borderData: FlBorderData(show: false),
+                      radarBorderData: const BorderSide(color: Colors.transparent),
+                      titlePositionPercentageOffset: 0.15,
+                      titleTextStyle: TextStyle(color: context.appColors.mutedForeground, fontSize: 12),
+                      getTitle: (index, angle) {
+                        final dayDate = _currentWeekStart.add(Duration(days: index));
+                        return RadarChartTitle(
+                          text: DateFormat.E(LocaleSettings.currentLocale.languageCode).format(dayDate).toUpperCase(),
+                          angle: 0,
                         );
-                      }),
-                    ],
+                      },
+                      tickCount: 4,
+                      ticksTextStyle: const TextStyle(color: Colors.transparent, fontSize: 10),
+                      tickBorderData: BorderSide(color: context.appColors.border.withValues(alpha: 0.5), width: 1),
+                      gridBorderData: BorderSide(color: context.appColors.border.withValues(alpha: 0.5), width: 1),
+                      radarShape: RadarShape.polygon,
+                      radarTouchData: RadarTouchData(
+                        touchCallback: (FlTouchEvent event, RadarTouchResponse? response) {
+                          if (!event.isInterestedForInteractions || response == null || response.touchedSpot == null) {
+                            return;
+                          }
+                          if (event is FlTapUpEvent) {
+                            final index = response.touchedSpot!.touchedSpotIndex;
+                            final dayDate = _currentWeekStart.add(Duration(days: index));
+                            if (!dayDate.isAfter(DateTime.now())) {
+                              showModalBottomSheet(
+                                context: context,
+                                backgroundColor: Colors.transparent,
+                                isScrollControlled: true,
+                                builder: (context) => DayDetailsModal(date: dayDate),
+                              );
+                              ref.hapticAction();
+                            }
+                          }
+                        },
+                      ),
+                    ),
+                    duration: const Duration(milliseconds: 400),
+                    curve: Curves.easeInOut,
                   ),
+                ),
+              ),
+              
+              const SizedBox(height: 16),
+              // Summary
+              Padding(
+                padding: const EdgeInsets.symmetric(horizontal: 16),
+                child: Text(
+                  summaryText,
+                  style: TextStyle(
+                    fontFamily: 'Inter',
+                    fontSize: 12,
+                    fontWeight: FontWeight.w600,
+                    color: isPrivacy ? Colors.transparent : context.appColors.mutedForeground,
+                  ),
+                  textAlign: TextAlign.center,
                 ),
               ),
             ],
@@ -307,65 +314,6 @@ class _NavButton extends StatelessWidget {
           borderRadius: BorderRadius.circular(6),
         ),
         child: Icon(icon, size: 20, color: context.appColors.foreground),
-      ),
-    );
-  }
-}
-
-class _HabitCapsule extends StatelessWidget {
-  final String? status;
-  final bool isFuture;
-  final bool isPrivacy;
-  final VoidCallback? onTap;
-
-  const _HabitCapsule({
-    this.status,
-    required this.isFuture,
-    required this.isPrivacy,
-    this.onTap,
-  });
-
-  @override
-  Widget build(BuildContext context) {
-    final bool isDone = status == 'done';
-    final bool isMissed = status == 'missed';
-
-    Color capsuleColor = Colors.transparent;
-    Color borderColor = context.appColors.border.withValues(alpha: 0.5);
-    List<BoxShadow>? shadows;
-
-    if (isDone) {
-      capsuleColor = isPrivacy
-          ? context.appColors.mutedForeground.withValues(alpha: 0.2)
-          : context.appColors.primary;
-      borderColor = isPrivacy
-          ? context.appColors.border
-          : context.appColors.primary.withValues(alpha: 0.5);
-      if (!isPrivacy) {
-        shadows = [
-          BoxShadow(
-            color: context.appColors.primary.withValues(alpha: 0.4),
-            blurRadius: 8,
-            spreadRadius: -1,
-          ),
-        ];
-      }
-    } else if (isMissed) {
-      capsuleColor = context.appColors.destructive.withValues(alpha: 0.2);
-      borderColor = context.appColors.destructive.withValues(alpha: 0.5);
-    }
-
-    return GestureDetector(
-      onTap: onTap,
-      child: AnimatedContainer(
-        duration: const Duration(milliseconds: 200),
-        height: 16,
-        decoration: BoxDecoration(
-          color: capsuleColor,
-          borderRadius: BorderRadius.circular(8),
-          border: Border.all(color: borderColor, width: 1),
-          boxShadow: shadows,
-        ),
       ),
     );
   }

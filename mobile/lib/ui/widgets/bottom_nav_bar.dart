@@ -56,14 +56,14 @@ class AppBottomNavBar extends ConsumerWidget {
         }
       },
       child: Container(
-        margin: EdgeInsets.fromLTRB(16, 0, 16, bottomPadding + 3),
+        margin: EdgeInsets.fromLTRB(16, 0, 16, bottomPadding > 0 ? 12.0 : 16.0),
         child: ClipRRect(
           borderRadius: BorderRadius.circular(28),
           child: BackdropFilter(
             filter: ImageFilter.blur(sigmaX: 30, sigmaY: 30),
             child: Container(
               width: double.infinity,
-              height: 68,
+              height: 58,
               decoration: BoxDecoration(
                 color: context.appColors.card.withValues(alpha: 0.8),
                 borderRadius: BorderRadius.circular(28),
@@ -118,7 +118,7 @@ class AppBottomNavBar extends ConsumerWidget {
 
                       // Nav Items
                       SizedBox(
-                        height: 68,
+                        height: 58,
                         child: Row(
                           mainAxisAlignment: MainAxisAlignment.spaceAround,
                           children: List.generate(items.length, (index) {
@@ -186,7 +186,7 @@ class _NavBarItem extends StatelessWidget {
           child: Column(
             mainAxisAlignment: MainAxisAlignment.center,
             children: [
-              const SizedBox(height: 8),
+              const SizedBox(height: 6),
               AnimatedContainer(
                 duration: const Duration(milliseconds: 300),
                 curve: Curves.easeOutBack,
@@ -203,7 +203,7 @@ class _NavBarItem extends StatelessWidget {
                       : context.appColors.mutedForeground,
                 ),
               ),
-              const SizedBox(height: 6),
+              const SizedBox(height: 2),
               Text(
                 label,
                 style: GoogleFonts.inter(

@@ -27,8 +27,21 @@ class _GlobalHabitsTabWidgetState extends ConsumerState<GlobalHabitsTabWidget> {
   List<Map<String, dynamic>> _mapStatsToHabits(
     List<Map<String, dynamic>> stats,
     List<Goal> goals,
+    String filter,
   ) {
-    return stats.map((stat) {
+    return stats.where((stat) {
+      final goalId = stat['goal_id'] as String;
+      final goal = goals.cast<Goal?>().firstWhere(
+        (g) => g?.id == goalId,
+        orElse: () => null,
+      );
+      if (goal == null) return false;
+      
+      if (filter == 'active') {
+        return goal.isActiveOn(DateTime.now());
+      }
+      return true;
+    }).map((stat) {
       final goalId = stat['goal_id'] as String;
       final goal = goals.cast<Goal?>().firstWhere(
         (g) => g?.id == goalId,
@@ -74,18 +87,24 @@ class _GlobalHabitsTabWidgetState extends ConsumerState<GlobalHabitsTabWidget> {
   Widget build(BuildContext context) {
     final goals = ref.watch(goalsProvider);
     final statsAsync = ref.watch(habitStatsProvider);
+    final settings = ref.watch(settingsProvider);
 
     return statsAsync.when(
       data: (stats) {
-        final habits = _mapStatsToHabits(stats, goals);
+        final habits = _mapStatsToHabits(stats, goals, settings.statsHabitFilter);
         final sortedHabits = _getSortedHabits(habits);
 
         return Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            Row(
-              mainAxisAlignment: MainAxisAlignment.spaceBetween,
-              children: [
+            SizedBox(
+              width: double.infinity,
+              child: Wrap(
+                alignment: WrapAlignment.spaceBetween,
+                crossAxisAlignment: WrapCrossAlignment.center,
+                spacing: 12,
+                runSpacing: 16,
+                children: [
                 Text(
                   context.t.statistics.habitDetails,
                   style: TextStyle(
@@ -95,9 +114,17 @@ class _GlobalHabitsTabWidgetState extends ConsumerState<GlobalHabitsTabWidget> {
                     color: context.appColors.foreground,
                   ),
                 ),
-                _buildSortDropdown(),
+                Row(
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    _buildFilterDropdown(settings.statsHabitFilter),
+                    const SizedBox(width: 8),
+                    _buildSortDropdown(),
+                  ],
+                ),
               ],
             ),
+          ),
             const SizedBox(height: 20),
             sortedHabits.isEmpty
                 ? Center(
@@ -237,6 +264,95 @@ class _GlobalHabitsTabWidgetState extends ConsumerState<GlobalHabitsTabWidget> {
       default:
         return LucideIcons.trendingUp;
     }
+  }
+
+  Widget _buildFilterDropdown(String filter) {
+    return GestureDetector(
+      onTap: () {
+        ref.hapticLight();
+        _showFilterPicker(filter);
+      },
+      child: AnimatedContainer(
+        duration: const Duration(milliseconds: 200),
+        padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 8),
+        decoration: BoxDecoration(
+          color: context.appColors.card,
+          borderRadius: BorderRadius.circular(20),
+          border: Border.all(
+            color: context.appColors.foreground.withValues(alpha: 0.08),
+            width: 1,
+          ),
+          boxShadow: [
+            BoxShadow(
+              color: Colors.black.withValues(alpha: 0.1),
+              blurRadius: 10,
+              offset: const Offset(0, 4),
+            ),
+          ],
+        ),
+        child: Row(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            Icon(
+              filter == 'active' ? LucideIcons.activity : LucideIcons.layers,
+              size: 14,
+              color: Theme.of(context).colorScheme.primary,
+            ),
+            const SizedBox(width: 8),
+            Text(
+              filter == 'active'
+                  ? context.t.statistics.filterActive
+                  : context.t.statistics.filterAll,
+              style: TextStyle(
+                fontFamily: 'Inter',
+                fontSize: 12,
+                fontWeight: FontWeight.w600,
+                color: context.appColors.foreground,
+              ),
+            ),
+            const SizedBox(width: 6),
+            Icon(
+              LucideIcons.chevronDown,
+              size: 12,
+              color: context.appColors.mutedForeground.withValues(alpha: 0.5),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
+  void _showFilterPicker(String currentFilter) {
+    final options = [
+      (val: 'active', icon: LucideIcons.activity, label: context.t.statistics.filterActive),
+      (val: 'all', icon: LucideIcons.layers, label: context.t.statistics.filterAll),
+    ];
+
+    showEvolveSheet<void>(
+      context: context,
+      title: context.t.statistics.habitDetails,
+      itemsBuilder: (sheetContext) => [
+        EvolveListSection(
+          children: options.map((opt) {
+            return EvolveListRow(
+              leading: EvolveIconTile(
+                icon: opt.icon,
+                tint: context.appColors.mutedForeground,
+              ),
+              title: opt.label,
+              selected: currentFilter == opt.val,
+              onTap: () {
+                final settingsNotifier = ref.read(settingsProvider.notifier);
+                settingsNotifier.updateSettings(
+                  ref.read(settingsProvider).copyWith(statsHabitFilter: opt.val),
+                );
+                Navigator.pop(sheetContext);
+              },
+            );
+          }).toList(),
+        ),
+      ],
+    );
   }
 }
 

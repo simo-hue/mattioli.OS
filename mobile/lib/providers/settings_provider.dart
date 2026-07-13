@@ -103,6 +103,9 @@ class AppSettings {
   final String morningBriefTime;
   final String eveningReviewTime;
 
+  // Local UI State
+  final String statsHabitFilter;
+
   const AppSettings({
     required this.themeMode,
     required this.accentColor,
@@ -123,6 +126,7 @@ class AppSettings {
     required this.eveningReview,
     required this.morningBriefTime,
     required this.eveningReviewTime,
+    required this.statsHabitFilter,
   });
 
   Locale? get localeOverride =>
@@ -148,6 +152,7 @@ class AppSettings {
     bool? eveningReview,
     String? morningBriefTime,
     String? eveningReviewTime,
+    String? statsHabitFilter,
   }) {
     return AppSettings(
       themeMode: themeMode ?? this.themeMode,
@@ -169,6 +174,7 @@ class AppSettings {
       eveningReview: eveningReview ?? this.eveningReview,
       morningBriefTime: morningBriefTime ?? this.morningBriefTime,
       eveningReviewTime: eveningReviewTime ?? this.eveningReviewTime,
+      statsHabitFilter: statsHabitFilter ?? this.statsHabitFilter,
     );
   }
 }
@@ -419,6 +425,7 @@ class AppSettingsNotifier extends Notifier<AppSettings> {
       morningBriefTime: prefs.getString('notif_morning_brief_time') ?? '09:00',
       eveningReviewTime:
           prefs.getString('notif_evening_review_time') ?? '21:00',
+      statsHabitFilter: prefs.getString('pref_stats_habit_filter') ?? 'active',
     );
   }
 
@@ -443,6 +450,7 @@ class AppSettingsNotifier extends Notifier<AppSettings> {
       biometricLock: false,
       morningBriefTime: '09:00',
       eveningReviewTime: '21:00',
+      statsHabitFilter: 'active',
     );
   }
 
@@ -487,10 +495,14 @@ class AppSettingsNotifier extends Notifier<AppSettings> {
       eveningReview: boolValue('notif_evening_review', true),
       morningBriefTime: row['morning_brief_time'] as String? ?? '09:00',
       eveningReviewTime: row['evening_review_time'] as String? ?? '21:00',
+      statsHabitFilter: ref.read(sharedPrefsProvider).getString('pref_stats_habit_filter') ?? 'active',
     );
   }
 
   void _saveToPrivate(AppSettings s) {
+    // Save UI-only preferences to SharedPreferences to avoid SQLite schema migrations
+    ref.read(sharedPrefsProvider).setString('pref_stats_habit_filter', s.statsHabitFilter);
+
     String toHex(Color color) =>
         '#${color.toARGB32().toRadixString(16).substring(2, 8).toUpperCase()}';
 
@@ -583,6 +595,7 @@ class AppSettingsNotifier extends Notifier<AppSettings> {
 
     prefs.setString('notif_morning_brief_time', s.morningBriefTime);
     prefs.setString('notif_evening_review_time', s.eveningReviewTime);
+    prefs.setString('pref_stats_habit_filter', s.statsHabitFilter);
   }
 
   // ── Sincronizzazione Supabase (Profiles) ──────────────────────────────────

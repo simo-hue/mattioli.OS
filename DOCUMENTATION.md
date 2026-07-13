@@ -2,6 +2,14 @@
 
 ## Recent Changes
 
+- [2026-07-13]: **Active vs All Habits Filter**
+  - *Details*: Added a persistent, local-only filter to the global statistics "Abitudini" tab, allowing users to switch between viewing only active habits or all habits (including removed/past ones).
+  - *Tech Notes*:
+    - Added `statsHabitFilter` to `AppSettings` in `settings_provider.dart`, saving to SharedPreferences but excluded from Supabase sync to avoid DB migration.
+    - Updated `GlobalHabitsTabWidget` with a new `_buildFilterDropdown` UI element using `showEvolveSheet` next to the sorting dropdown.
+    - Filter logic checks `goal.isActiveOn(DateTime.now())`.
+    - Added `filterActive` and `filterAll` translation keys across all languages and generated `.g.dart` files using slang.
+
 - [2026-07-11]: **Apple-Style UI — Phase 2: kit expansion + app-wide migration (mobile, in progress)**
   - *Details*: Audited the whole mobile app (4 parallel read-only agents) → ~40 un-Apple surfaces that collapse into ~6 missing primitives. Built the primitive layer and migrated ~50 surfaces across 7 categories, primitive-first for full cross-platform coherence. Every batch verified: `flutter analyze` stays at 16 pre-existing issues (down from baseline 18; zero new), `flutter test` = 144 green. Visual QA is owner's. Full roadmap + resume state at `mobile/docs/apple-style-phase2-plan.md`.
   - *Tech Notes*:

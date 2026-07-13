@@ -2,7 +2,14 @@ import 'package:evolve_verification/evolve_verification.dart';
 import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
+import 'package:mattioli_os/i18n/translations.g.dart';
 import 'package:mattioli_os/ui/widgets/verification_rule_field.dart';
+
+/// Wraps [child] in the TranslationProvider the verification widgets now need
+/// for `context.t` (localized labels/tooltips).
+Widget _app(Widget child) => TranslationProvider(
+      child: MaterialApp(home: Scaffold(body: child)),
+    );
 
 class _Harness extends StatefulWidget {
   const _Harness(this.initial);
@@ -14,30 +21,30 @@ class _Harness extends StatefulWidget {
 class _HarnessState extends State<_Harness> {
   late VerificationRule? rule = widget.initial;
   @override
-  Widget build(BuildContext context) => MaterialApp(
-        home: Scaffold(
-          body: VerificationRuleField(
-            rule: rule,
-            onChanged: (r) => setState(() => rule = r),
-          ),
+  Widget build(BuildContext context) => _app(
+        VerificationRuleField(
+          rule: rule,
+          onChanged: (r) => setState(() => rule = r),
         ),
       );
 }
 
 void main() {
+  final t = AppLocale.en.buildSync();
+
   group('verificationRuleSummary', () {
     test('formats HealthKit and Screen Time rules', () {
       expect(
-        verificationRuleSummary(VerificationCatalog.steps.ruleWith(10000)),
+        verificationRuleSummary(t, VerificationCatalog.steps.ruleWith(10000)),
         '≥ 10,000 Steps',
       );
       expect(
         verificationRuleSummary(
-            VerificationCatalog.screenTimeTotal.ruleWith(120)),
+            t, VerificationCatalog.screenTimeTotal.ruleWith(120)),
         '≤ 120 min Screen time',
       );
       expect(
-        verificationRuleSummary(VerificationCatalog.sleepHours.ruleWith(8)),
+        verificationRuleSummary(t, VerificationCatalog.sleepHours.ruleWith(8)),
         '≥ 8 h Sleep hours',
       );
     });
@@ -95,17 +102,13 @@ void main() {
   });
 
   testWidgets('VerificationBadge renders a verified indicator', (tester) async {
-    await tester.pumpWidget(const MaterialApp(
-      home: Scaffold(body: VerificationBadge()),
-    ));
+    await tester.pumpWidget(_app(const VerificationBadge()));
     expect(find.byIcon(Icons.verified), findsOneWidget);
   });
 
   testWidgets('CouldNotVerifyChip shows "?" and is tappable', (tester) async {
     var tapped = 0;
-    await tester.pumpWidget(MaterialApp(
-      home: Scaffold(body: CouldNotVerifyChip(onTap: () => tapped++)),
-    ));
+    await tester.pumpWidget(_app(CouldNotVerifyChip(onTap: () => tapped++)));
     expect(find.text('?'), findsOneWidget);
     await tester.tap(find.byType(CouldNotVerifyChip));
     expect(tapped, 1);

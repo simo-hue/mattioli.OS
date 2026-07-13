@@ -2,28 +2,32 @@ import 'package:evolve_verification/evolve_verification.dart';
 import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
 
-/// Display helpers for a verification template/rule — English fallbacks. i18n of
-/// these labels is a documented follow-up (see TO_SIMO_DO); the whole field is
-/// dark behind VerificationConfig until then.
-String verificationTemplateLabel(String key) => switch (key) {
-      'steps' => 'Steps',
-      'exercise_minutes' => 'Exercise minutes',
-      'active_energy' => 'Active energy',
-      'stand_hours' => 'Stand hours',
-      'distance' => 'Distance',
-      'mindful_minutes' => 'Mindful minutes',
-      'sleep_hours' => 'Sleep hours',
-      'workout' => 'Workout',
-      'screen_time_total' => 'Screen time',
+import '../../i18n/translations.g.dart';
+
+/// Display helpers for a verification template/rule. Localized via slang — the
+/// [Translations] instance is passed in so the pure helpers stay testable
+/// (`AppLocale.en.buildSync()`) and usable outside a widget.
+String verificationTemplateLabel(Translations t, String key) => switch (key) {
+      'steps' => t.verification.templates.steps,
+      'exercise_minutes' => t.verification.templates.exerciseMinutes,
+      'active_energy' => t.verification.templates.activeEnergy,
+      'stand_hours' => t.verification.templates.standHours,
+      'distance' => t.verification.templates.distance,
+      'mindful_minutes' => t.verification.templates.mindfulMinutes,
+      'sleep_hours' => t.verification.templates.sleepHours,
+      'workout' => t.verification.templates.workout,
+      'screen_time_total' => t.verification.templates.screenTimeTotal,
       _ => key,
     };
 
-String verificationUnitSuffix(VerificationUnit unit) => switch (unit) {
+/// The unit token for [unit] (e.g. "min", "h"), or empty for a plain count.
+String verificationUnitSuffix(Translations t, VerificationUnit unit) =>
+    switch (unit) {
       VerificationUnit.count => '',
-      VerificationUnit.minutes => ' min',
-      VerificationUnit.hours => ' h',
-      VerificationUnit.kilocalories => ' kcal',
-      VerificationUnit.kilometers => ' km',
+      VerificationUnit.minutes => t.verification.units.minutes,
+      VerificationUnit.hours => t.verification.units.hours,
+      VerificationUnit.kilocalories => t.verification.units.kilocalories,
+      VerificationUnit.kilometers => t.verification.units.kilometers,
     };
 
 String _formatThreshold(double value, VerificationUnit unit) {
@@ -45,11 +49,13 @@ String _formatThreshold(double value, VerificationUnit unit) {
 }
 
 /// Human summary of a rule, e.g. "≥ 10,000 Steps" or "≤ 120 min Screen time".
-String verificationRuleSummary(VerificationRule rule) {
-  final comparator = rule.comparator == VerificationComparator.atLeast ? '≥' : '≤';
-  final amount = '${_formatThreshold(rule.threshold, rule.unit)}'
-      '${verificationUnitSuffix(rule.unit)}';
-  return '$comparator $amount ${verificationTemplateLabel(rule.metricKey)}';
+String verificationRuleSummary(Translations t, VerificationRule rule) {
+  final comparator =
+      rule.comparator == VerificationComparator.atLeast ? '≥' : '≤';
+  final number = _formatThreshold(rule.threshold, rule.unit);
+  final unit = verificationUnitSuffix(t, rule.unit);
+  final amount = unit.isEmpty ? number : '$number $unit';
+  return '$comparator $amount ${verificationTemplateLabel(t, rule.metricKey)}';
 }
 
 /// A "?" indicator for a day whose auto-verification couldn't be determined
@@ -66,7 +72,7 @@ class CouldNotVerifyChip extends StatelessWidget {
   Widget build(BuildContext context) {
     final color = Theme.of(context).colorScheme.outline;
     return Tooltip(
-      message: "Couldn't verify — tap to resolve",
+      message: context.t.verification.couldNotVerifyTapToResolve,
       child: InkResponse(
         onTap: onTap,
         radius: size,
@@ -97,7 +103,7 @@ class VerificationBadge extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Tooltip(
-      message: 'Auto-verified',
+      message: context.t.verification.autoVerified,
       child: Icon(
         Icons.verified,
         size: size,
@@ -155,13 +161,14 @@ class VerificationRuleField extends StatelessWidget {
   Widget build(BuildContext context) {
     final r = rule;
     final theme = Theme.of(context);
+    final tr = context.t;
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
         Row(
           mainAxisAlignment: MainAxisAlignment.spaceBetween,
           children: [
-            Text('Auto-verify', style: theme.textTheme.titleSmall),
+            Text(tr.verification.autoVerify, style: theme.textTheme.titleSmall),
             CupertinoSwitch(value: r != null, onChanged: _toggle),
           ],
         ),
@@ -171,11 +178,11 @@ class VerificationRuleField extends StatelessWidget {
             spacing: 8,
             runSpacing: 8,
             children: [
-              for (final t in templates)
+              for (final template in templates)
                 ChoiceChip(
-                  label: Text(verificationTemplateLabel(t.key)),
-                  selected: t.key == r.metricKey,
-                  onSelected: (_) => _selectTemplate(t),
+                  label: Text(verificationTemplateLabel(tr, template.key)),
+                  selected: template.key == r.metricKey,
+                  onSelected: (_) => _selectTemplate(template),
                 ),
             ],
           ),
@@ -191,7 +198,7 @@ class VerificationRuleField extends StatelessWidget {
               ),
               Expanded(
                 child: Text(
-                  verificationRuleSummary(r),
+                  verificationRuleSummary(tr, r),
                   textAlign: TextAlign.center,
                   style: theme.textTheme.titleMedium,
                 ),
@@ -209,7 +216,7 @@ class VerificationRuleField extends StatelessWidget {
             Padding(
               padding: const EdgeInsets.only(top: 4),
               child: Text(
-                'Needs an Apple Watch to auto-verify',
+                tr.verification.needsAppleWatch,
                 style: theme.textTheme.bodySmall,
               ),
             ),

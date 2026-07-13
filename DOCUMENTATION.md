@@ -967,3 +967,14 @@ NEXT ACTION: Ensure device is running the latest built version of the codebase.
     - `nudgedDays(goalId)` selects couldn't-verify rows with `nudged_at IS NOT NULL`; `markNudged(goalId, day)` UPDATEs the live couldn't-verify row's `nudged_at`, so it no-ops once the day resolves/freezes (the row is gone) — matching the fake's semantics.
   - *Verification*: `flutter test test/verification_state_store_test.dart` → **15 pass** (10 baseline + 4 nudged-marker tests + 1 v1→v2 migration test proving the ALTER is idempotent and the column works). `flutter analyze` clean on the touched files.
   - *Current Status*: Mobile store slice **complete + verified**. **Next**: i18n foundation for the verification UI + notification copy, then the settings toggles and the wiring behaviour that consumes `nudgedDays`/`markNudged`.
+
+- [2026-07-14 10:00]: **Auto-Verified Habits — i18n of the verification UI + notification copy**
+  - *Details*: Closed the "English-only fallbacks" follow-up. Every user-facing verification string is now a slang key across all five locales (en/it/es/de/ar), plus the seven notification-settings labels the next slice will render. (Arabic verification copy is machine-authored MSA and flagged in `TO_SIMO_DO` for a native review pass.)
+  - *Tech Notes*:
+    - New top-level `verification` i18n section (16 keys incl. nested `templates` [9 metric labels] + `units` [4]) and 7 `notifications.verification*` keys, injected append-only into all five `*.i18n.json` and regenerated with `dart run slang`.
+    - `verification_rule_field.dart`: the pure helpers `verificationTemplateLabel` / `verificationUnitSuffix` / `verificationRuleSummary` now take a `Translations` argument (keeps them testable via `AppLocale.en.buildSync()` and usable off-widget); the widgets read `context.t.verification.*`. Summary assembly reworked so the unit joins with a space only when present — output is byte-identical to before for en (`≥ 10,000 Steps`, `≤ 120 min Screen time`).
+    - `notifications.showVerificationNudge` now pulls its title/body/channel name+description from `t.verification.*` (global `t`, isolate-safe); extracted a shared `_verificationDetails` getter the celebration/failure notifications will reuse.
+    - `habit_management_modal.dart`: the "Grant Health access" button label is localized.
+    - Widget tests that render the now-localized widgets are wrapped in `TranslationProvider` (required for `context.t`).
+  - *Verification*: `flutter analyze` clean on the touched files; `flutter test test/verification_rule_field_test.dart` → **9 pass** (helper tests pass an explicit `Translations`; widget tests render en). Generated `translations*.g.dart` remain gitignored (regenerated on checkout).
+  - *Current Status*: i18n slice **complete + verified**. **Next**: the three notification-settings toggles (nudges on by default; celebration + failure-summary opt-in) wired to new `notif_*` prefs.

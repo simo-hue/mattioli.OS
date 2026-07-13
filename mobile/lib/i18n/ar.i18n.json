@@ -412,7 +412,14 @@
     "habitReminderMessage12": "هل أنجزت \"{title}\" من قائمتك اليوم؟",
     "habitReminderMessage13": "قدّر وقتك: حان وقت \"{title}\".",
     "habitReminderMessage14": "تحدَّ نفسك مجدداً اليوم مع \"{title}\".",
-    "habitReminderMessage15": "جهد بسيط فقط لإكمال \"{title}\"."
+    "habitReminderMessage15": "جهد بسيط فقط لإكمال \"{title}\".",
+    "verificationHeader": "التحقق من العادات",
+    "verificationNudges": "تذكيرات التحقق",
+    "verificationNudgesSubtitle": "اطلب مني تأكيد العادات التي تعذّر التحقق منها تلقائيًا",
+    "verificationCelebrations": "احتفالات الأهداف",
+    "verificationCelebrationsSubtitle": "احتفل عند تحقيق هدف مُتحقَّق منه",
+    "verificationFailureSummary": "تنبيهات العادات الفائتة",
+    "verificationFailureSummarySubtitle": "أعلمني عند تفويت عادة مُتحقَّق منها"
   },
   "privacy": {
     "biometricLock": "القفل بالقياسات الحيوية",
@@ -1051,5 +1058,38 @@
     "worst": "الأسوأ",
     "privacyMode": "وضع الخصوصية",
     "noData": "لا توجد بيانات لهذا الأسبوع بعد"
+  },
+  "verification": {
+    "autoVerify": "التحقق التلقائي",
+    "autoVerified": "تم التحقق تلقائيًا",
+    "couldNotVerifyTapToResolve": "تعذّر التحقق — اضغط للحل",
+    "needsAppleWatch": "يتطلب Apple Watch للتحقق التلقائي",
+    "grantHealthAccess": "السماح بالوصول إلى الصحة",
+    "templates": {
+      "steps": "الخطوات",
+      "exerciseMinutes": "دقائق التمرين",
+      "activeEnergy": "الطاقة النشطة",
+      "standHours": "ساعات الوقوف",
+      "distance": "المسافة",
+      "mindfulMinutes": "دقائق التأمل",
+      "sleepHours": "ساعات النوم",
+      "workout": "التمرين",
+      "screenTimeTotal": "وقت الشاشة"
+    },
+    "units": {
+      "minutes": "دقيقة",
+      "hours": "ساعة",
+      "kilocalories": "سعرة",
+      "kilometers": "كم"
+    },
+    "nudgeTitle": "Evolve",
+    "nudgeBody": "تعذّر التحقق من \"{title}\" — هل أتممتها؟",
+    "celebrationTitle": "تم تحقيق الهدف",
+    "celebrationBody": "لقد حققت \"{title}\" اليوم. أحسنت!",
+    "failureSummaryTitle": "عادة فائتة",
+    "failureSummaryBodyOne": "لم تكتمل \"{title}\" اليوم.",
+    "failureSummaryBodyMany": "لم تكتمل {count} من العادات ذات التحقق التلقائي.",
+    "channelName": "التحقق من العادات",
+    "channelDescription": "تنبيهات وتحديثات للعادات ذات التحقق التلقائي."
   }
 }

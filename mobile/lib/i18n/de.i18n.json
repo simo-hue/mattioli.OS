@@ -412,7 +412,14 @@
     "habitReminderMessage12": "Haben Sie heute „{title}“ von Ihrer Liste gestrichen?",
     "habitReminderMessage13": "Schätzen Sie Ihre Zeit: Es ist Zeit für „{title}“.",
     "habitReminderMessage14": "Fordern Sie sich heute erneut mit „{title}“ heraus.",
-    "habitReminderMessage15": "Nur ein kleiner Aufwand, um „{title}“ zu vervollständigen."
+    "habitReminderMessage15": "Nur ein kleiner Aufwand, um „{title}“ zu vervollständigen.",
+    "verificationHeader": "GEWOHNHEITSPRÜFUNG",
+    "verificationNudges": "Prüf-Erinnerungen",
+    "verificationNudgesSubtitle": "Mich bitten, nicht automatisch prüfbare Gewohnheiten zu bestätigen",
+    "verificationCelebrations": "Ziel-Feiern",
+    "verificationCelebrationsSubtitle": "Feiern, wenn ein geprüftes Ziel erreicht wird",
+    "verificationFailureSummary": "Warnungen bei verpassten Gewohnheiten",
+    "verificationFailureSummarySubtitle": "Benachrichtigen, wenn eine geprüfte Gewohnheit verpasst wird"
   },
   "privacy": {
     "biometricLock": "Biometrische Sperre",
@@ -1067,5 +1074,38 @@
     "worst": "SCHLECHTESTE",
     "privacyMode": "Datenschutzmodus",
     "noData": "Noch keine Daten für diese Woche"
+  },
+  "verification": {
+    "autoVerify": "Automatisch prüfen",
+    "autoVerified": "Automatisch geprüft",
+    "couldNotVerifyTapToResolve": "Konnte nicht geprüft werden — zum Auflösen tippen",
+    "needsAppleWatch": "Erfordert eine Apple Watch zur automatischen Prüfung",
+    "grantHealthAccess": "Health-Zugriff erlauben",
+    "templates": {
+      "steps": "Schritte",
+      "exerciseMinutes": "Trainingsminuten",
+      "activeEnergy": "Aktive Energie",
+      "standHours": "Stehstunden",
+      "distance": "Distanz",
+      "mindfulMinutes": "Achtsamkeitsminuten",
+      "sleepHours": "Schlafstunden",
+      "workout": "Training",
+      "screenTimeTotal": "Bildschirmzeit"
+    },
+    "units": {
+      "minutes": "Min.",
+      "hours": "Std.",
+      "kilocalories": "kcal",
+      "kilometers": "km"
+    },
+    "nudgeTitle": "Evolve",
+    "nudgeBody": "\"{title}\" konnte nicht geprüft werden — hast du sie erledigt?",
+    "celebrationTitle": "Ziel erreicht",
+    "celebrationBody": "Du hast \"{title}\" heute erreicht. Gut gemacht!",
+    "failureSummaryTitle": "Gewohnheit verpasst",
+    "failureSummaryBodyOne": "\"{title}\" wurde heute nicht erledigt.",
+    "failureSummaryBodyMany": "{count} automatisch geprüfte Gewohnheiten wurden nicht erledigt.",
+    "channelName": "Gewohnheitsprüfung",
+    "channelDescription": "Hinweise und Updates für automatisch geprüfte Gewohnheiten."
   }
 }

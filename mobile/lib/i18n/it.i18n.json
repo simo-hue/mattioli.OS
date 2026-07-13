@@ -412,7 +412,14 @@
     "habitReminderMessage12": "Hai già spuntato \"{title}\" dalla tua lista oggi?",
     "habitReminderMessage13": "Dai valore al tuo tempo: è ora di \"{title}\".",
     "habitReminderMessage14": "Mettiti alla prova anche oggi con \"{title}\".",
-    "habitReminderMessage15": "Solo un piccolo sforzo per completare \"{title}\"."
+    "habitReminderMessage15": "Solo un piccolo sforzo per completare \"{title}\".",
+    "verificationHeader": "VERIFICA ABITUDINI",
+    "verificationNudges": "Promemoria di verifica",
+    "verificationNudgesSubtitle": "Chiedimi di confermare le abitudini non verificabili automaticamente",
+    "verificationCelebrations": "Celebrazioni obiettivi",
+    "verificationCelebrationsSubtitle": "Festeggia quando un obiettivo verificato viene raggiunto",
+    "verificationFailureSummary": "Avvisi abitudini mancate",
+    "verificationFailureSummarySubtitle": "Avvisa quando un'abitudine verificata non viene completata"
   },
   "privacy": {
     "biometricLock": "Blocco Biometrico",
@@ -1067,5 +1074,38 @@
     "worst": "PEGGIORE",
     "privacyMode": "Modalità Privacy",
     "noData": "Nessun dato per questa settimana"
+  },
+  "verification": {
+    "autoVerify": "Verifica automatica",
+    "autoVerified": "Verificato automaticamente",
+    "couldNotVerifyTapToResolve": "Impossibile verificare — tocca per risolvere",
+    "needsAppleWatch": "Richiede un Apple Watch per la verifica automatica",
+    "grantHealthAccess": "Consenti accesso a Salute",
+    "templates": {
+      "steps": "Passi",
+      "exerciseMinutes": "Minuti di attività",
+      "activeEnergy": "Energia attiva",
+      "standHours": "Ore in piedi",
+      "distance": "Distanza",
+      "mindfulMinutes": "Minuti di mindfulness",
+      "sleepHours": "Ore di sonno",
+      "workout": "Allenamento",
+      "screenTimeTotal": "Tempo di utilizzo"
+    },
+    "units": {
+      "minutes": "min",
+      "hours": "h",
+      "kilocalories": "kcal",
+      "kilometers": "km"
+    },
+    "nudgeTitle": "Evolve",
+    "nudgeBody": "Impossibile verificare \"{title}\" — l'hai portata a termine?",
+    "celebrationTitle": "Obiettivo raggiunto",
+    "celebrationBody": "Hai raggiunto \"{title}\" oggi. Ottimo lavoro!",
+    "failureSummaryTitle": "Abitudine mancata",
+    "failureSummaryBodyOne": "\"{title}\" non è stata completata oggi.",
+    "failureSummaryBodyMany": "{count} abitudini a verifica automatica non sono state completate.",
+    "channelName": "Verifica abitudini",
+    "channelDescription": "Promemoria e aggiornamenti per le abitudini a verifica automatica."
   }
 }

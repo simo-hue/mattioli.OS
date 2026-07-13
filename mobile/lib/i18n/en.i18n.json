@@ -412,7 +412,14 @@
     "habitReminderMessage12": "Have you checked \"{title}\" off your list today?",
     "habitReminderMessage13": "Value your time: it is time for \"{title}\".",
     "habitReminderMessage14": "Challenge yourself again today with \"{title}\".",
-    "habitReminderMessage15": "Just a small effort to complete \"{title}\"."
+    "habitReminderMessage15": "Just a small effort to complete \"{title}\".",
+    "verificationHeader": "HABIT VERIFICATION",
+    "verificationNudges": "Couldn't-verify nudges",
+    "verificationNudgesSubtitle": "Ask me to confirm habits we couldn't auto-verify",
+    "verificationCelebrations": "Goal celebrations",
+    "verificationCelebrationsSubtitle": "Celebrate when an auto-verified goal is reached",
+    "verificationFailureSummary": "Missed-habit alerts",
+    "verificationFailureSummarySubtitle": "Notify when an auto-verified habit is missed"
   },
   "privacy": {
     "biometricLock": "Biometric Lock",
@@ -1067,5 +1074,38 @@
     "worst": "WORST",
     "privacyMode": "Privacy Mode",
     "noData": "No data for this week yet"
+  },
+  "verification": {
+    "autoVerify": "Auto-verify",
+    "autoVerified": "Auto-verified",
+    "couldNotVerifyTapToResolve": "Couldn't verify — tap to resolve",
+    "needsAppleWatch": "Needs an Apple Watch to auto-verify",
+    "grantHealthAccess": "Grant Health access",
+    "templates": {
+      "steps": "Steps",
+      "exerciseMinutes": "Exercise minutes",
+      "activeEnergy": "Active energy",
+      "standHours": "Stand hours",
+      "distance": "Distance",
+      "mindfulMinutes": "Mindful minutes",
+      "sleepHours": "Sleep hours",
+      "workout": "Workout",
+      "screenTimeTotal": "Screen time"
+    },
+    "units": {
+      "minutes": "min",
+      "hours": "h",
+      "kilocalories": "kcal",
+      "kilometers": "km"
+    },
+    "nudgeTitle": "Evolve",
+    "nudgeBody": "Couldn't verify \"{title}\" — did you keep it?",
+    "celebrationTitle": "Goal reached",
+    "celebrationBody": "You hit \"{title}\" today. Nice work!",
+    "failureSummaryTitle": "Missed habit",
+    "failureSummaryBodyOne": "\"{title}\" wasn't completed today.",
+    "failureSummaryBodyMany": "{count} auto-verified habits went uncompleted.",
+    "channelName": "Habit verification",
+    "channelDescription": "Prompts and updates for auto-verified habits."
   }
 }

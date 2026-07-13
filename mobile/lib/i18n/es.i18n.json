@@ -412,7 +412,14 @@
     "habitReminderMessage12": "¿Has marcado \"{title}\" de tu lista hoy?",
     "habitReminderMessage13": "Valora tu tiempo: es hora de \"{title}\".",
     "habitReminderMessage14": "Ponte a prueba nuevamente hoy con \"{title}\".",
-    "habitReminderMessage15": "Sólo un pequeño esfuerzo para completar \"{title}\"."
+    "habitReminderMessage15": "Sólo un pequeño esfuerzo para completar \"{title}\".",
+    "verificationHeader": "VERIFICACIÓN DE HÁBITOS",
+    "verificationNudges": "Avisos de verificación",
+    "verificationNudgesSubtitle": "Pídeme confirmar los hábitos que no pudimos verificar automáticamente",
+    "verificationCelebrations": "Celebraciones de objetivos",
+    "verificationCelebrationsSubtitle": "Celebra cuando se alcanza un objetivo verificado",
+    "verificationFailureSummary": "Alertas de hábitos no cumplidos",
+    "verificationFailureSummarySubtitle": "Avisa cuando no se completa un hábito verificado"
   },
   "privacy": {
     "biometricLock": "Bloqueo biométrico",
@@ -1067,5 +1074,38 @@
     "worst": "PEOR",
     "privacyMode": "Modo de Privacidad",
     "noData": "Aún no hay datos para esta semana"
+  },
+  "verification": {
+    "autoVerify": "Verificación automática",
+    "autoVerified": "Verificado automáticamente",
+    "couldNotVerifyTapToResolve": "No se pudo verificar — toca para resolver",
+    "needsAppleWatch": "Requiere un Apple Watch para la verificación automática",
+    "grantHealthAccess": "Permitir acceso a Salud",
+    "templates": {
+      "steps": "Pasos",
+      "exerciseMinutes": "Minutos de ejercicio",
+      "activeEnergy": "Energía activa",
+      "standHours": "Horas de pie",
+      "distance": "Distancia",
+      "mindfulMinutes": "Minutos de mindfulness",
+      "sleepHours": "Horas de sueño",
+      "workout": "Entrenamiento",
+      "screenTimeTotal": "Tiempo de pantalla"
+    },
+    "units": {
+      "minutes": "min",
+      "hours": "h",
+      "kilocalories": "kcal",
+      "kilometers": "km"
+    },
+    "nudgeTitle": "Evolve",
+    "nudgeBody": "No se pudo verificar \"{title}\" — ¿la cumpliste?",
+    "celebrationTitle": "Objetivo alcanzado",
+    "celebrationBody": "Has alcanzado \"{title}\" hoy. ¡Buen trabajo!",
+    "failureSummaryTitle": "Hábito no cumplido",
+    "failureSummaryBodyOne": "\"{title}\" no se completó hoy.",
+    "failureSummaryBodyMany": "{count} hábitos de verificación automática quedaron sin completar.",
+    "channelName": "Verificación de hábitos",
+    "channelDescription": "Avisos y novedades de los hábitos con verificación automática."
   }
 }

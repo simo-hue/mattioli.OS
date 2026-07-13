@@ -451,7 +451,7 @@ class _HabitManagementModalState extends ConsumerState<HabitManagementModal> {
                         if (_verificationRule?.isHealthKit ?? false) ...[
                           const SizedBox(height: 8),
                           EvolveButton(
-                            label: 'Grant Health access',
+                            label: context.t.verification.grantHealthAccess,
                             style: EvolveButtonStyle.secondary,
                             onPressed: _grantHealthAccess,
                           ),

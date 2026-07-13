@@ -28,12 +28,25 @@ CREATE TABLE IF NOT EXISTS $table (
   date TEXT NOT NULL,
   kind TEXT NOT NULL CHECK (kind IN ('$_manual', '$_cnv')),
   recorded_at TEXT NOT NULL,
+  nudged_at TEXT,
   PRIMARY KEY (goal_id, date, kind)
 )
 ''');
     await db.execute(
       'CREATE INDEX IF NOT EXISTS idx_vstate_goal_kind ON $table (goal_id, kind)',
     );
+  }
+
+  /// v1 → v2 migration: add the nullable `nudged_at` column that records when a
+  /// couldn't-verify day last fired a nudge (so it isn't re-nudged every
+  /// foreground). Guarded by a column probe so it is safe to run more than once
+  /// and on a fresh table that already has the column.
+  static Future<void> migrateToV2(DatabaseExecutor db) async {
+    final columns = await db.rawQuery('PRAGMA table_info($table)');
+    final hasNudgedAt = columns.any((c) => c['name'] == 'nudged_at');
+    if (!hasNudgedAt) {
+      await db.execute('ALTER TABLE $table ADD COLUMN nudged_at TEXT');
+    }
   }
 
   static String _key(DateTime d) =>
@@ -128,6 +141,29 @@ CREATE TABLE IF NOT EXISTS $table (
   Future<void> resolveCouldNotVerify(String goalId, DateTime day) async {
     await _db.delete(
       table,
+      where: 'goal_id = ? AND date = ? AND kind = ?',
+      whereArgs: [goalId, _key(day), _cnv],
+    );
+  }
+
+  @override
+  Future<Set<DateTime>> nudgedDays(String goalId) async {
+    final rows = await _db.query(
+      table,
+      columns: ['date'],
+      where: "goal_id = ? AND kind = '$_cnv' AND nudged_at IS NOT NULL",
+      whereArgs: [goalId],
+    );
+    return rows.map((r) => _parse(r['date'] as String)).toSet();
+  }
+
+  @override
+  Future<void> markNudged(String goalId, DateTime day) async {
+    // UPDATE targets only the live couldn't-verify row, so it is a no-op once
+    // the day has resolved or been frozen manual (the row is gone).
+    await _db.update(
+      table,
+      {'nudged_at': _now()},
       where: 'goal_id = ? AND date = ? AND kind = ?',
       whereArgs: [goalId, _key(day), _cnv],
     );

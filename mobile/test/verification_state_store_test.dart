@@ -100,4 +100,61 @@ void main() {
         await store.manualDays(goalIds: ['g'], from: day(1), to: day(31));
     expect(res['g'], contains(day(9)));
   });
+
+  group('nudged marker (couldn\'t-verify de-dup)', () {
+    test('markNudged records only for a live couldn\'t-verify day', () async {
+      // No couldn't-verify row yet → the UPDATE is a no-op.
+      await store.markNudged('g', day(10));
+      expect(await store.nudgedDays('g'), isEmpty);
+
+      await store.recordCouldNotVerify('g', day(10));
+      expect(await store.nudgedDays('g'), isEmpty); // recorded, not yet nudged
+      await store.markNudged('g', day(10));
+      expect(await store.nudgedDays('g'), {day(10)});
+    });
+
+    test('resolving a couldn\'t-verify day drops its nudged mark', () async {
+      await store.recordCouldNotVerify('g', day(10));
+      await store.markNudged('g', day(10));
+      await store.resolveCouldNotVerify('g', day(10));
+      expect(await store.nudgedDays('g'), isEmpty);
+    });
+
+    test('a manual freeze drops the nudged mark', () async {
+      await store.recordCouldNotVerify('g', day(10));
+      await store.markNudged('g', day(10));
+      await store.markManual('g', day(10));
+      expect(await store.nudgedDays('g'), isEmpty);
+    });
+
+    test('nudged marks are per goal + day', () async {
+      await store.recordCouldNotVerify('g', day(10));
+      await store.recordCouldNotVerify('g', day(11));
+      await store.recordCouldNotVerify('other', day(10));
+      await store.markNudged('g', day(10));
+      expect(await store.nudgedDays('g'), {day(10)}); // day(11) not nudged
+      expect(await store.nudgedDays('other'), isEmpty);
+    });
+  });
+
+  test('migrateToV2 adds nudged_at to a pre-existing v1 table', () async {
+    // Rebuild the table with the original v1 schema (no nudged_at column).
+    await db.execute('DROP TABLE IF EXISTS verification_state');
+    await db.execute('''
+CREATE TABLE verification_state (
+  goal_id TEXT NOT NULL,
+  date TEXT NOT NULL,
+  kind TEXT NOT NULL CHECK (kind IN ('manual', 'could_not_verify')),
+  recorded_at TEXT NOT NULL,
+  PRIMARY KEY (goal_id, date, kind)
+)
+''');
+    // Migration is idempotent — running twice must not throw.
+    await SqfliteVerificationStateStore.migrateToV2(db);
+    await SqfliteVerificationStateStore.migrateToV2(db);
+
+    await store.recordCouldNotVerify('g', day(10));
+    await store.markNudged('g', day(10));
+    expect(await store.nudgedDays('g'), {day(10)});
+  });
 }

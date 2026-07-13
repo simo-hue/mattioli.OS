@@ -37,8 +37,12 @@ final verificationStateStoreProvider =
   final path = p.join(await getDatabasesPath(), 'verification_state.db');
   final db = await openDatabase(
     path,
-    version: 1,
+    version: 2,
     onCreate: (db, _) => SqfliteVerificationStateStore.createTable(db),
+    onUpgrade: (db, oldVersion, _) async {
+      // v1 → v2 added the `nudged_at` column (couldn't-verify nudge de-dup).
+      if (oldVersion < 2) await SqfliteVerificationStateStore.migrateToV2(db);
+    },
   );
   // Idempotent — also creates the table for a DB opened at an existing version.
   await SqfliteVerificationStateStore.createTable(db);

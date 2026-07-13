@@ -3,6 +3,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:lucide_icons_flutter/lucide_icons.dart';
 import '../../core/theme.dart';
 import '../../core/performance_color.dart';
+import '../../core/verification_wiring.dart';
 import '../../models/goal.dart';
 import '../../providers/goal_provider.dart';
 import 'day_details_modal.dart';
@@ -94,6 +95,8 @@ class _HabitCalendarWidgetState extends ConsumerState<HabitCalendarWidget> {
     final habits = ref.watch(goalsProvider);
     final logs = ref.watch(habitLogsProvider);
     final isPrivacy = ref.watch(privacyModeProvider);
+    final couldNotVerifyByGoal =
+        ref.watch(couldNotVerifyDaysProvider).asData?.value ?? const {};
 
     return Container(
       decoration: AppTheme.glassPanelDecoration(context, radius: 14),
@@ -134,14 +137,16 @@ class _HabitCalendarWidgetState extends ConsumerState<HabitCalendarWidget> {
                 ),
               );
             },
-            child: _buildCalendarPage(targetDate, habits, logs, isPrivacy),
+            child: _buildCalendarPage(
+                targetDate, habits, logs, isPrivacy, couldNotVerifyByGoal),
           );
         },
       ),
     );
   }
 
-  Widget _buildCalendarPage(DateTime date, List<Goal> habits, Map logs, bool isPrivacy) {
+  Widget _buildCalendarPage(DateTime date, List<Goal> habits, Map logs,
+      bool isPrivacy, Map<String, Set<DateTime>> couldNotVerifyByGoal) {
     final year = date.year;
     final month = date.month;
 
@@ -280,6 +285,14 @@ class _HabitCalendarWidgetState extends ConsumerState<HabitCalendarWidget> {
                         ? completedCount / totalHabits
                         : 0.0;
 
+                    // Any auto-verified habit this day still unresolved (no
+                    // terminal status + a couldn't-verify marker).
+                    final couldNotVerify = !future &&
+                        validHabits.any((h) =>
+                            dayRecord[h.id] == null &&
+                            (couldNotVerifyByGoal[h.id]?.contains(dayDate) ??
+                                false));
+
                     return Expanded(
                       child: Padding(
                         padding: const EdgeInsets.all(2),
@@ -291,6 +304,7 @@ class _HabitCalendarWidgetState extends ConsumerState<HabitCalendarWidget> {
                           hasActivity: hasActivity,
                           completionPct: completionPct,
                           isPrivacy: isPrivacy,
+                          couldNotVerify: couldNotVerify,
                           onTap: future
                               ? null
                               : () => _showDayDetails(DateTime(year, month, day)),
@@ -362,6 +376,7 @@ class _DayCell extends StatelessWidget {
   final bool hasActivity;
   final double completionPct;
   final bool isPrivacy;
+  final bool couldNotVerify;
   final VoidCallback? onTap;
 
   const _DayCell({
@@ -372,6 +387,7 @@ class _DayCell extends StatelessWidget {
     required this.hasActivity,
     required this.completionPct,
     required this.isPrivacy,
+    this.couldNotVerify = false,
     this.onTap,
   });
 
@@ -438,27 +454,61 @@ class _DayCell extends StatelessWidget {
             ),
             // A single centered day number over the performance-colored cell —
             // the per-habit "dots" were removed (redundant with the color and
-            // visually noisy).
-            child: Center(
-              child: AnimatedDefaultTextStyle(
-                duration: const Duration(milliseconds: 200),
-                style: TextStyle(
-                  fontFamily: 'Inter',
-                  fontSize: 11,
-                  fontWeight: isToday ? FontWeight.w700 : FontWeight.w500,
-                  color: isToday
-                      ? Theme.of(context).colorScheme.primary
-                      : hasActivity
-                          ? context.appColors.foreground
-                          : context.appColors.mutedForeground,
+            // visually noisy). A corner "?" flags an unresolved auto-verification.
+            child: Stack(
+              children: [
+                Center(
+                  child: AnimatedDefaultTextStyle(
+                    duration: const Duration(milliseconds: 200),
+                    style: TextStyle(
+                      fontFamily: 'Inter',
+                      fontSize: 11,
+                      fontWeight: isToday ? FontWeight.w700 : FontWeight.w500,
+                      color: isToday
+                          ? Theme.of(context).colorScheme.primary
+                          : hasActivity
+                              ? context.appColors.foreground
+                              : context.appColors.mutedForeground,
+                    ),
+                    child: Text(
+                      '$day',
+                      style: isPrivacy
+                          ? const TextStyle(color: Colors.transparent)
+                          : null,
+                    ),
+                  ),
                 ),
-                child: Text(
-                  '$day',
-                  style: isPrivacy
-                      ? const TextStyle(color: Colors.transparent)
-                      : null,
-                ),
-              ),
+                if (couldNotVerify && !isPrivacy)
+                  PositionedDirectional(
+                    top: 3,
+                    end: 3,
+                    child: Container(
+                      width: 12,
+                      height: 12,
+                      alignment: Alignment.center,
+                      decoration: BoxDecoration(
+                        color: context.appColors.background,
+                        shape: BoxShape.circle,
+                        border: Border.all(
+                          color: Theme.of(context)
+                              .colorScheme
+                              .primary
+                              .withValues(alpha: 0.6),
+                        ),
+                      ),
+                      child: Text(
+                        '?',
+                        style: TextStyle(
+                          fontFamily: 'Inter',
+                          fontSize: 8,
+                          height: 1,
+                          fontWeight: FontWeight.w800,
+                          color: Theme.of(context).colorScheme.primary,
+                        ),
+                      ),
+                    ),
+                  ),
+              ],
             ),
           ),
         ),

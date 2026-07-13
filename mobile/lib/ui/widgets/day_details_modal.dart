@@ -6,6 +6,7 @@ import '../../core/theme.dart';
 import '../../models/goal.dart';
 import '../../providers/goal_provider.dart';
 import '../../core/streak_utils.dart';
+import '../../core/verification_wiring.dart';
 import '../../core/haptics.dart';
 import 'habit_management_modal.dart';
 import '../../i18n/translations.g.dart';
@@ -25,6 +26,10 @@ class DayDetailsModal extends ConsumerWidget {
     final dateKey =
         '${date.year}-${date.month.toString().padLeft(2, '0')}-${date.day.toString().padLeft(2, '0')}';
     final dayRecord = logs[dateKey] ?? {};
+    final dateMidnight = DateTime(date.year, date.month, date.day);
+    // Days an auto-verified habit couldn't be verified (drives the "?" state).
+    final couldNotVerifyByGoal =
+        ref.watch(couldNotVerifyDaysProvider).asData?.value ?? const {};
 
     // Filter habits active on this date
     final activeHabits = habits.where((h) => h.isActiveOn(date)).toList();
@@ -133,6 +138,12 @@ class DayDetailsModal extends ConsumerWidget {
                     itemBuilder: (context, index) {
                       final habit = activeHabits[index];
                       final status = dayRecord[habit.id];
+                      // An unresolved auto-verification for this habit-day: no
+                      // terminal status yet + a couldn't-verify marker.
+                      final couldNotVerify = status == null &&
+                          (couldNotVerifyByGoal[habit.id]
+                                  ?.contains(dateMidnight) ??
+                              false);
 
                       // Signed streak via the shared, deterministic helper
                       // (same logic as cloud + Private Mode + the web app).
@@ -147,6 +158,7 @@ class DayDetailsModal extends ConsumerWidget {
                         habit: habit,
                         status: status,
                         streak: streak,
+                        couldNotVerify: couldNotVerify,
                         onTap: () {
                           final today = DateTime(
                             DateTime.now().year,
@@ -194,16 +206,22 @@ class GoalLogCard extends ConsumerWidget {
   final int streak;
   final VoidCallback onTap;
 
+  /// True when this is an auto-verified habit whose day couldn't be verified
+  /// (D6): renders the "?" resolve affordance in place of the pending circle.
+  final bool couldNotVerify;
+
   const GoalLogCard({
     super.key,
     required this.habit,
     required this.status,
     required this.streak,
     required this.onTap,
+    this.couldNotVerify = false,
   });
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
+    final primary = Theme.of(context).colorScheme.primary;
     Color cardColor = context.appColors.card;
     Color borderColor = context.appColors.border;
     Color textColor = context.appColors.foreground;
@@ -229,12 +247,20 @@ class GoalLogCard extends ConsumerWidget {
       iconColor = const Color(0xFFEF4444);
       icon = LucideIcons.x;
       hasStrikethrough = true;
+    } else if (couldNotVerify) {
+      // Actionable "?" state — subtle primary tint (like an editable cell).
+      cardColor = primary.withValues(alpha: 0.06);
+      borderColor = primary.withValues(alpha: 0.3);
+      iconBgColor = primary.withValues(alpha: 0.12);
+      iconColor = primary;
     }
 
     final a11yStatus = status == 'done'
         ? context.t.a11y.statusDone
         : status == 'missed'
         ? context.t.a11y.statusMissed
+        : couldNotVerify
+        ? context.t.verification.couldNotVerifyTapToResolve
         : context.t.a11y.statusPending;
 
     return Semantics(
@@ -261,29 +287,58 @@ class GoalLogCard extends ConsumerWidget {
               Container(
                 width: 44,
                 height: 44,
+                alignment: Alignment.center,
                 decoration: BoxDecoration(
                   color: iconBgColor,
                   borderRadius: BorderRadius.circular(12),
                 ),
-                child: Icon(icon, color: iconColor, size: 20),
+                child: couldNotVerify
+                    ? Text(
+                        '?',
+                        style: TextStyle(
+                          fontFamily: 'Inter',
+                          fontSize: 20,
+                          fontWeight: FontWeight.w800,
+                          color: iconColor,
+                          height: 1,
+                        ),
+                      )
+                    : Icon(icon, color: iconColor, size: 20),
               ),
               const SizedBox(width: 14),
               Expanded(
-                child: Text(
-                  habit.title,
-                  style: TextStyle(
-                    fontFamily: 'Inter',
-                    fontSize: 17,
-                    fontWeight: FontWeight.w600,
-                    color: textColor,
-                    decoration: hasStrikethrough
-                        ? TextDecoration.lineThrough
-                        : null,
-                    decorationColor: const Color(
-                      0xFFEF4444,
-                    ).withValues(alpha: 0.5),
-                    decorationThickness: 2,
-                  ),
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    Text(
+                      habit.title,
+                      style: TextStyle(
+                        fontFamily: 'Inter',
+                        fontSize: 17,
+                        fontWeight: FontWeight.w600,
+                        color: textColor,
+                        decoration: hasStrikethrough
+                            ? TextDecoration.lineThrough
+                            : null,
+                        decorationColor: const Color(
+                          0xFFEF4444,
+                        ).withValues(alpha: 0.5),
+                        decorationThickness: 2,
+                      ),
+                    ),
+                    if (couldNotVerify) ...[
+                      const SizedBox(height: 2),
+                      Text(
+                        context.t.verification.couldNotVerifyTapToResolve,
+                        style: TextStyle(
+                          fontFamily: 'Inter',
+                          fontSize: 12,
+                          color: context.appColors.mutedForeground,
+                        ),
+                      ),
+                    ],
+                  ],
                 ),
               ),
               StreakBadge(

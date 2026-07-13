@@ -66,6 +66,35 @@ Map<String, Map<DateTime, VerificationOutcome>> loggedOutcomesFrom(
   return out;
 }
 
+/// Couldn't-verify days per goal (goalId → date-only days) for the "?"
+/// affordance (D6), read from the local bookkeeping store for the currently
+/// verified goals. Returns empty when the feature is off, there are no verified
+/// goals, or the store can't open (e.g. in a widget test) — so the UI degrades
+/// to "no ?" rather than erroring. Reactive to goal changes; the reconcile
+/// entry point invalidates it after each pass so freshly recorded days appear.
+final couldNotVerifyDaysProvider =
+    FutureProvider<Map<String, Set<DateTime>>>((ref) async {
+  if (!VerificationConfig.enabled) return const {};
+  final goals = verifiableGoalsFrom(
+    ref.watch(goalsProvider),
+    healthKitEnabled: VerificationConfig.healthKitEnabled,
+    screenTimeEnabled: VerificationConfig.screenTimeEnabled,
+  );
+  if (goals.isEmpty) return const {};
+  try {
+    final store = await ref.watch(verificationStateStoreProvider.future);
+    final out = <String, Set<DateTime>>{};
+    for (final g in goals) {
+      final days = await store.couldNotVerifyDays(g.goalId);
+      if (days.isNotEmpty) out[g.goalId] = days;
+    }
+    return out;
+  } catch (e, stack) {
+    AppLogger.error('[Verification] couldNotVerifyDays load failed', e, stack);
+    return const {};
+  }
+});
+
 /// The DeviceActivity monitor specs for the current Screen Time goals.
 List<ScreenTimeGoalSpec> screenTimeSpecsFrom(List<VerifiableGoal> goals) => [
       for (final g in goals)
@@ -249,6 +278,9 @@ Future<ReconcileReport> runVerificationReconcile(WidgetRef ref) async {
     loggedOutcomes: logged,
     today: now,
   );
+
+  // Refresh the "?" affordance with any days this pass recorded / resolved.
+  if (report.changedAnything) ref.invalidate(couldNotVerifyDaysProvider);
 
   if (report.nudges.isEmpty && report.writes.isEmpty) return report;
 

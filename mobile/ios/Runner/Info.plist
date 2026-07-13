@@ -55,6 +55,8 @@
 	<string>Questa app richiede l'accesso al FaceID per proteggere i tuoi dati personali.</string>
 	<key>NSPhotoLibraryUsageDescription</key>
 	<string>Questa app richiede l'accesso alla galleria per permetterti di caricare la tua foto profilo.</string>
+	<key>NSHealthShareUsageDescription</key>
+	<string>Questa app accede ai tuoi dati su salute e fitness per verificare automaticamente le abitudini, come i passi, l'attività e il sonno.</string>
 	<key>UIApplicationSceneManifest</key>
 	<dict>
 		<key>UIApplicationSupportsMultipleScenes</key>

@@ -1058,5 +1058,12 @@
     "detailError": "ERROR",
     "detailExtras": "CONTEXTO ADICIONAL",
     "detailStackTrace": "STACK TRACE"
+  },
+  "weeklyView": {
+    "best": "MEJOR",
+    "avg": "PROM",
+    "worst": "PEOR",
+    "privacyMode": "Modo de Privacidad",
+    "noData": "Aún no hay datos para esta semana"
   }
 }

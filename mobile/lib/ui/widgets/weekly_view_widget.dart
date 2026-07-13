@@ -125,9 +125,9 @@ class _WeeklyViewWidgetState extends ConsumerState<WeeklyViewWidget> {
 
     Widget summaryWidget;
     if (isPrivacy) {
-      summaryWidget = const Text(
-        "Privacy Mode",
-        style: TextStyle(
+      summaryWidget = Text(
+        t.weeklyView.privacyMode,
+        style: const TextStyle(
           fontFamily: 'Inter',
           fontSize: 12,
           fontWeight: FontWeight.w600,
@@ -154,18 +154,18 @@ class _WeeklyViewWidgetState extends ConsumerState<WeeklyViewWidget> {
             color: context.appColors.mutedForeground,
           ),
           children: [
-            TextSpan(text: "BEST", style: TextStyle(color: context.appColors.success)),
+            TextSpan(text: t.weeklyView.best, style: TextStyle(color: context.appColors.success)),
             TextSpan(text: ": $bestDayName ${bestPercent.round()}%  •  "),
-            TextSpan(text: "AVG", style: TextStyle(color: Colors.amber)),
+            TextSpan(text: t.weeklyView.avg, style: const TextStyle(color: Colors.amber)),
             TextSpan(text: ": $avgPercent%  •  "),
-            TextSpan(text: "WORST", style: TextStyle(color: context.appColors.destructive)),
+            TextSpan(text: t.weeklyView.worst, style: TextStyle(color: context.appColors.destructive)),
             TextSpan(text: ": $worstDayName ${worstPercent.round()}%"),
           ],
         ),
       );
     } else {
       summaryWidget = Text(
-        "No data for this week yet",
+        t.weeklyView.noData,
         style: TextStyle(
           fontFamily: 'Inter',
           fontSize: 12,

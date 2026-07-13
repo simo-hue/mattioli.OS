@@ -30,3 +30,7 @@ supabase/migrations/*_import_notion_goals_*.sql
 # ---
 
 mobile/back_up_template/*
+
+# Build artifacts and debug symbols
+*.dSYM/
+*.dSYM.zip

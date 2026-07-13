@@ -1,0 +1,27 @@
+name: evolve_verification
+description: >-
+  Pure-Dart core for auto-verified habits on the Evolve apps (iOS `mobile/`
+  + macOS `desktop/`). Owns the verification template catalog, the goal
+  verification-rule model, the provider bridge contracts (HealthKit + Screen
+  Time) and the reconcile/verdict engine — so verification semantics (what
+  makes a day done / missed / couldn't-verify) can never drift between
+  platforms. iOS provides the native MethodChannel bridge implementations;
+  this package stays device-free and fully unit-testable. macOS imports the
+  models only, to display synced verified goals (it never verifies).
+publish_to: none
+version: 1.0.0
+
+environment:
+  sdk: ^3.11.5
+  flutter: '>=3.0.0'
+
+dependencies:
+  # Only `@immutable` / foundation annotations — no material, no platform
+  # channels. The native bridges live in `mobile/`, not here.
+  flutter:
+    sdk: flutter
+
+dev_dependencies:
+  flutter_test:
+    sdk: flutter
+  flutter_lints: ^6.0.0

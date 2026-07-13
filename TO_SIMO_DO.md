@@ -142,3 +142,19 @@ Setting the team wasn't enough: the Runner app target inherited `CODE_SIGN_IDENT
   1. **AI Coach opens cleanly**: from the home "Protocollo" panel, tap the AI Chat tile. The screen must open and show the "Hello! I'm your Discipline Coach…" greeting (previously crashed with an `InheritedLocaleData … before initState() completed` error). Also tap the trash/new-chat action and confirm it re-seeds the greeting fine.
   2. **Settings → back-to-login is crash-free, especially with a toast on screen**: trigger any toast (e.g. long-press-copy an AI Coach message, or a Settings import error) and, **within ~2s while the toast is still visible**, log out / go back to login (cloud logout via Settings, and the Private-mode "Go to login" path). No `_dependents.isEmpty is not true` assertion should fire. Confirm toasts still fade in/out normally elsewhere.
 
+## Auto-Verified Habits — front-loaded Apple setup (2026-07-13)
+
+The auto-verified-habits feature (HealthKit + Screen Time goals) is being built behind a feature flag. The **Screen Time distribution entitlement is the launch long-pole** — Apple approval takes ~2 weeks–1 month, is required even for **TestFlight** (not just App Store), and must be requested **once per extension bundle ID**. **Please start item 1 as early as possible — the code can be finished while it's pending.** None of this blocks the current pure-Dart core (it builds + tests here); these are needed before the feature can run on-device or ship.
+
+1. **[DO FIRST — long lead time] Request the Family Controls *distribution* entitlement.** In Xcode create the `DeviceActivityMonitor` app-extension target first (so its bundle ID exists), then file the request for **both** bundle IDs (the Runner app *and* the extension) at <https://developer.apple.com/contact/request/family-controls-distribution> (or the Capabilities requests tab in the developer portal — must be filed by the **Account Holder**). Describe it as an **individual self-monitoring** focus/habit app (not parental/MDM). Two separate requests.
+2. **Xcode target + capabilities** (this machine has no Xcode, so all of this is yours):
+   - Create the **`DeviceActivityMonitor`** app-extension target in the Runner project (deployment target iOS 16+).
+   - Create an **App Group** (e.g. `group.<your-bundle>.evolve`) and add it to **both** the Runner and the extension entitlements — it's how the extension hands verdicts back to the app.
+   - Enable the **Family Controls** capability on both Runner and the extension (the free *development* entitlement; the *distribution* one comes from item 1).
+   - Enable the **HealthKit** capability on the Runner (no Apple approval needed — HealthKit only).
+3. **Info.plist usage strings** (App Store rejects vague ones):
+   - `NSHealthShareUsageDescription` — why the app reads Health data (read-only; we never write, so no `NSHealthUpdateUsageDescription`). Make it specific: "to automatically verify your health habits (steps, exercise, sleep…)".
+4. **Supabase migration**: apply the additive `goals` verification-rule columns migration (will be added under `migrations/` in the schema slice) to the cloud project, and confirm RLS still passes.
+5. **On-device / Apple Watch testing** (delegated to your Xcode machine): HealthKit goals need real Health data; **Stand hours + richer Exercise/Move require an Apple Watch**; Screen Time verdicts must be tested on a real device (the DeviceActivity extension does not fire reliably in the Simulator).
+6. **App Store privacy labels**: declare that raw Health/Screen-Time data stays on-device and is **not collected/transmitted** — only the derived `done`/`missed` verdict syncs via the user's own iCloud/Supabase.
+

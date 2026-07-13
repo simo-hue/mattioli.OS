@@ -1,0 +1,9 @@
+# Mirrors the apps' baseline (recommended Flutter lints). This package is
+# shared, correctness-critical logic, so lints are kept strict even though it
+# has no UI.
+include: package:flutter_lints/flutter.yaml
+
+analyzer:
+  language:
+    strict-casts: true
+    strict-raw-types: true

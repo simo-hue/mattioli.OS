@@ -828,3 +828,7 @@ NEXT ACTION: Ensure device is running the latest built version of the codebase.
 - [2026-07-12]: **Merge origin/main into local main**
   - *Details*: Resolved merge conflicts between local macOS feature additions and remote Apple-Style UI Phase 2 refactorings.
   - *Tech Notes*: Unified `ColorPickerButton` with `EvolveFieldLabel` in `create_habit_dialog.dart`. Reintegrated custom streak color logic into remote's `_DayHabitRow` in `habits_page.dart`. Reconciled macOS entitlements for both iCloud syncing and network server access. Regenerated translations via `slang`.
+
+- [2026-07-13 11:34]: Weekly View Redesign (Variants A & B)
+  - *Details*: Replaced the previous capsule-based weekly view with two modern chart alternatives using `fl_chart`. Variant A (`weekly-view/radar-chart`) uses a Radar chart to show the shape of the week's completion. Variant B (`weekly-view/stacked-bars`) uses a stacked bar chart showing individual habit completion per day. Both share the same navigation, summary row, privacy mode handling, and tap-to-show day details interaction. Both are implemented on separate git branches for testing.
+  - *Tech Notes*: Uses `fl_chart` v0.69.0. Implemented on `weekly_view_widget.dart` on two different branches.

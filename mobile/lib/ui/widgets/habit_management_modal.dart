@@ -2,9 +2,12 @@ import 'dart:async';
 import 'package:flutter/material.dart';
 import 'package:flutter/cupertino.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:evolve_verification/evolve_verification.dart';
 import 'package:lucide_icons_flutter/lucide_icons.dart';
 import '../../core/theme.dart';
 import '../../core/haptics.dart';
+import '../../core/verification_config.dart';
+import 'verification_rule_field.dart';
 import '../../core/time_formatting.dart';
 import '../../models/goal.dart';
 import '../../providers/goal_provider.dart';
@@ -40,6 +43,7 @@ class _HabitManagementModalState extends ConsumerState<HabitManagementModal> {
   late Color _selectedColor;
   Goal? _editingHabit;
   String? _reminderTime;
+  VerificationRule? _verificationRule;
 
   @override
   void initState() {
@@ -72,6 +76,8 @@ class _HabitManagementModalState extends ConsumerState<HabitManagementModal> {
         color: _selectedColor,
         reminderTime: _reminderTime,
         clearReminderTime: _reminderTime == null,
+        verificationRule: _verificationRule,
+        clearVerificationRule: _verificationRule == null,
       );
       ref.read(goalsProvider.notifier).updateHabit(updated);
     } else {
@@ -102,6 +108,7 @@ class _HabitManagementModalState extends ConsumerState<HabitManagementModal> {
           DateTime.now().day,
         ),
         reminderTime: _reminderTime,
+        verificationRule: _verificationRule,
       );
       ref.read(goalsProvider.notifier).addHabit(newHabit);
     }
@@ -111,6 +118,7 @@ class _HabitManagementModalState extends ConsumerState<HabitManagementModal> {
       _editingHabit = null;
       _selectedColor = kEvolveDefaultPalette[0];
       _reminderTime = null;
+      _verificationRule = null;
     });
     ref.hapticMedium();
   }
@@ -121,6 +129,7 @@ class _HabitManagementModalState extends ConsumerState<HabitManagementModal> {
       _nameController.text = habit.title;
       _selectedColor = habit.color;
       _reminderTime = habit.reminderTime;
+      _verificationRule = habit.verificationRule;
     });
     _scrollController.animateTo(
       0,
@@ -408,6 +417,16 @@ class _HabitManagementModalState extends ConsumerState<HabitManagementModal> {
                           ),
                         ),
                       ),
+                      // Auto-verified habits (D5) — rendered only when the
+                      // feature is enabled; dark otherwise.
+                      if (VerificationConfig.enabled) ...[
+                        const SizedBox(height: 16),
+                        VerificationRuleField(
+                          rule: _verificationRule,
+                          onChanged: (r) =>
+                              setState(() => _verificationRule = r),
+                        ),
+                      ],
                       const SizedBox(height: 24),
                       if (_editingHabit != null)
                         Row(
@@ -420,6 +439,7 @@ class _HabitManagementModalState extends ConsumerState<HabitManagementModal> {
                                   _editingHabit = null;
                                   _nameController.clear();
                                   _reminderTime = null;
+                                  _verificationRule = null;
                                 }),
                               ),
                             ),
@@ -651,6 +671,10 @@ class _HabitListItem extends StatelessWidget {
               ),
             ),
           ),
+          if (habit.isVerified) ...[
+            const VerificationBadge(),
+            const SizedBox(width: 4),
+          ],
           IconButton(
             onPressed: onEdit,
             icon: Icon(

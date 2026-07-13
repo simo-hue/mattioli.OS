@@ -123,9 +123,18 @@ class _WeeklyViewWidgetState extends ConsumerState<WeeklyViewWidget> {
       }
     }
 
-    String summaryText = "";
+    Widget summaryWidget;
     if (isPrivacy) {
-      summaryText = "Privacy Mode";
+      summaryWidget = const Text(
+        "Privacy Mode",
+        style: TextStyle(
+          fontFamily: 'Inter',
+          fontSize: 12,
+          fontWeight: FontWeight.w600,
+          color: Colors.transparent,
+        ),
+        textAlign: TextAlign.center,
+      );
     } else if (pastDaysCount > 0) {
       final bestDayName = DateFormat.E(LocaleSettings.currentLocale.languageCode)
           .format(_currentWeekStart.add(Duration(days: bestIndex)))
@@ -134,9 +143,37 @@ class _WeeklyViewWidgetState extends ConsumerState<WeeklyViewWidget> {
           .format(_currentWeekStart.add(Duration(days: worstIndex)))
           .toLowerCase();
       final avgPercent = (totalPercent / pastDaysCount).round();
-      summaryText = "BEST: $bestDayName ${bestPercent.round()}%  •  AVG: $avgPercent%  •  WORST: $worstDayName ${worstPercent.round()}%";
+      
+      summaryWidget = RichText(
+        textAlign: TextAlign.center,
+        text: TextSpan(
+          style: TextStyle(
+            fontFamily: 'Inter',
+            fontSize: 12,
+            fontWeight: FontWeight.w600,
+            color: context.appColors.mutedForeground,
+          ),
+          children: [
+            TextSpan(text: "BEST", style: TextStyle(color: context.appColors.success)),
+            TextSpan(text: ": $bestDayName ${bestPercent.round()}%  •  "),
+            TextSpan(text: "AVG", style: TextStyle(color: Colors.amber)),
+            TextSpan(text: ": $avgPercent%  •  "),
+            TextSpan(text: "WORST", style: TextStyle(color: context.appColors.destructive)),
+            TextSpan(text: ": $worstDayName ${worstPercent.round()}%"),
+          ],
+        ),
+      );
     } else {
-      summaryText = "No data for this week yet";
+      summaryWidget = Text(
+        "No data for this week yet",
+        style: TextStyle(
+          fontFamily: 'Inter',
+          fontSize: 12,
+          fontWeight: FontWeight.w600,
+          color: context.appColors.mutedForeground,
+        ),
+        textAlign: TextAlign.center,
+      );
     }
 
     return GestureDetector(
@@ -278,16 +315,7 @@ class _WeeklyViewWidgetState extends ConsumerState<WeeklyViewWidget> {
               // Summary
               Padding(
                 padding: const EdgeInsets.symmetric(horizontal: 16),
-                child: Text(
-                  summaryText,
-                  style: TextStyle(
-                    fontFamily: 'Inter',
-                    fontSize: 12,
-                    fontWeight: FontWeight.w600,
-                    color: isPrivacy ? Colors.transparent : context.appColors.mutedForeground,
-                  ),
-                  textAlign: TextAlign.center,
-                ),
+                child: summaryWidget,
               ),
             ],
           ),

@@ -645,6 +645,105 @@ plus the earlier DB-reset / backup-exclusion checks.
     slang`. Momentum ring uses `CircularProgressIndicator`; radar uses fl_chart
     1.2.0 `RadarChart`; other charts are Flutter primitives. New test
     `test/analytics_extra_test.dart` (21 cases). Verified: `flutter analyze`
-    clean; full suite 267 pass / 1 pre-existing env failure
+    clean; full suite 268 pass / 1 pre-existing env failure
     (`icloud_sync_card_test` Postgrest network). On-device QA pending — no Xcode
     on this Mac.
+  - *Post-review*: A 12-agent adversarial review (4 dimensions × per-finding
+    verification) confirmed 4 issues; 3 fixed, 1 documented. **Fixed**: (1)
+    `computeDangerZone` now scans through `skipped` between a `done` and a
+    `missed` (was undercounting breaks, inconsistent with `computeBounceBackRate`);
+    (2) cloud Momentum sourced its current-streak from the session-cached
+    `habit_stats` view while rate7 was live — now the reactive dashboard snapshot
+    drives the current streak in both modes (best-streak still from `habit_stats`),
+    restoring Private/Cloud parity; (3) `buildAnalyticsDataFromSnapshot` now skips
+    empty `dateKey -> {}` maps the optimistic snapshot can retain, which had
+    inflated activeDays / skewed keystone. **Documented (not fixed)**: the
+    local-midnight `difference().inDays` day-count can be off by one across a
+    spring-forward DST span — kept to match the mobile-mirrored
+    `computeHabitStatsRow` so the Consistency % stays consistent with per-habit
+    rates (in-code comment added).
+
+
+- [2026-07-14 15:20]: Statistics — per-habit (Pro) tabs enriched
+  - *Details*: The per-habit scope's 5 tabs were sparse (Calendar was a single
+    heatmap). Kept the 5-tab structure and enriched each for the wide desktop
+    canvas. **Overview** is now a hero: a per-habit **Momentum ring** + an
+    8-tile grid (Completion, Current streak, Record, Missed, Total done,
+    Bounce-back, Consistency, Days-tracked) + a "vs your other habits"
+    percentile pill, keeping the 30-day grid + correlations. **Calendar** adds
+    gap analysis (avg / longest / days-since-last-done), monthly **seasonality**
+    bars and **this-month-vs-last**, beside the yearly heatmap. **Performance**
+    adds **weekday/weekend** split and **rolling 7/30-day** rates with trend
+    arrows. **Improvement** adds Bounce-back / Consistency / At-risk / Danger-day
+    tiles + a **streak-history** bar strip + a **schedule-adherence** panel.
+    **Mood** adds a **next-day mood-impact** panel (mood/energy the day after a
+    done vs a miss).
+  - *Tech Notes*: 5 new pure functions in `analytics_extra.dart`
+    (computeGapStats, computeAdherence, computeStreakHistory,
+    computeNextDayMoodImpact, computeHabitMilestones) + their classes; one family
+    provider `habitAnalyticsBundleProvider(habitId)` computes the whole per-habit
+    bundle in a single pass from `unifiedAnalyticsDataProvider` +
+    `habitStatsRpcProvider`, so it's Private/Cloud-aware with no backend changes
+    (global bounce-back/consistency/danger-zone/seasonality/weekday-weekend reused
+    by scoping to `{habitId: logs}`; percentile derived from the habit_stats
+    rows). New per-habit widgets in `statistics_extras.dart` wired into the
+    `_Habit*` tab widgets. 28 new `stats.*` keys × 5 locales + `dart run slang`.
+    10 new unit tests (30 total in the file). Verified: `flutter analyze` clean;
+    suite 276 pass / 1 pre-existing env failure. Per-habit scope stays
+    Pro-gated; on-device QA pending — no Xcode on this Mac.
+  - *Post-review*: A 10-agent adversarial review confirmed 5 issues, all fixed.
+    (1) **[high→fixed]** `computeStreakHistory` grouped `done` logs by status
+    only, merging runs across unlogged-day gaps and inflating "longest streak";
+    now calendar-contiguous, matching `computeStreak` (streak_utils.dart) — added
+    a regression test. (2) **[medium→fixed]** per-habit Momentum sourced the
+    current streak from the session-cached `habit_stats` view while rate7 was
+    live (Cloud-stale, non-parity); now reads the reactive dashboard-snapshot
+    streak in both modes (also for the Overview current-streak tile).
+    (3) **[low→fixed]** percentile counted the habit against itself (`<=`); now
+    excludes self, strict `<`, divided by (n−1). (4,5) **[low→fixed]**
+    `computeGapStats` and `computeHabitMilestones` used local `difference().inDays`
+    (DST off-by-one); switched to a DST-safe UTC-midnight day helper, consistent
+    with `computeAdherence`/`computeNextDayMoodImpact`. Re-verified: analyze
+    clean; suite 277 pass / 1 pre-existing env failure.
+
+## [2026-07-14]: Goals board — linear single-column layout with top ring header
+
+### Details
+Reworked the Goals page board so completed/failed goals no longer move into a
+right-hand rail. The board is now a single linear column at every window width:
+a header band pins the completion ring, the period heading, and the per-status
+counts to the top of the box; active goals flow beneath as single-line rows; and
+completed then failed goals settle at the bottom under their existing labeled
+`COMPLETED` (green) / `FAILED` (red) status dividers, so each row's inline
+check/X status mark reads on its own line. This effectively promotes the former
+narrow-width single-column flow to all widths and deletes the wide-only card
+grid + right rail.
+
+### Changes Made
+#### 1. `lib/features/goals/presentation/goals_page.dart`
+- `_GoalBoard.build` replaced the `LayoutBuilder` wide/narrow fork with one
+  `EvolvePanel` "main box": `_boardHeader` → hairline → active rows → COMPLETED
+  divider + rows → FAILED divider + rows (sections still render only when
+  non-empty; empty-state unchanged).
+- Added `_boardHeader(context)`: ring (`_PeriodProgressRing`, completion =
+  completed ÷ total) on the leading edge, `_periodHeading` in an `Expanded`
+  middle, and a fixed 160px column of the three `_StatusCountRow`s
+  (Completed/Failed/Active) on the trailing edge.
+- Removed now-dead code: `_activeGrid`, `_PeriodSummaryPanel` (its ring + counts
+  are reused inline by the header), `_GoalItem.asCard` + `_cardLayout`, and
+  `_GoalCategoryChip`. `_activeItem` lost its `asCard` param; `_GoalItem.build`
+  always uses `_rowLayout` with a constant 12px vertical padding.
+
+### Tech Notes
+- No controller/logic changes: complete/fail still cycles via the existing
+  2-second debounce in `_GoalItemState`, after which the goal drops into its
+  bottom section. Tour target keys (first-active-item checkbox spotlight) intact.
+- No new i18n strings — dividers and counts reuse `t.macroGoals.completed` /
+  `t.macroGoals.failed` / `t.goalsStats.active`. No locale files touched.
+- Full-bleed by design (chosen over a capped column) to stay aligned with the
+  command bar and the fluid `DesktopPage` (no max-width cap) sibling pages.
+- Verified: `flutter analyze` clean (only the unrelated pre-existing
+  `main.dart` secure-storage warning); suite 276 pass / 1 pre-existing env
+  failure (`icloud_sync_card_test`, Postgrest network — unrelated to goals); the
+  goals-rendering `tour_flow_test` passes. On-device visual QA pending (no Xcode
+  on this Mac).

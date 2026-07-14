@@ -1769,58 +1769,14 @@ class _HabitOverview extends ConsumerWidget {
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
-    final stats = ref.watch(habitStatsRpcProvider).value ?? const [];
-    final stat = stats.where((s) => s['goal_id'] == habit.id).firstOrNull ?? {};
-    final grid = ref.watch(habitYearlyGridRpcProvider(habit.id)).value;
-    final last30 = grid == null
+    final yearly = ref.watch(habitYearlyGridRpcProvider(habit.id)).value;
+    final last30 = yearly == null
         ? const <int>[]
-        : (grid.length >= 30 ? grid.sublist(grid.length - 30) : grid);
-
-    final completionRate = (stat['rate'] as num?)?.round() ?? 0;
-    final currentStreak =
-        (stat['current_streak'] as num?)?.toInt() ?? habit.streak;
-    final bestStreak = (stat['best_streak'] as num?)?.toInt() ?? 0;
-    final totalCompletions = (stat['total_completions'] as num?)?.toInt() ?? 0;
-    final totalActiveDays = (stat['total_active_days'] as num?)?.toInt() ?? 1;
-    final missedDays = (stat['missed_days'] as num?)?.toInt() ?? 0;
+        : (yearly.length >= 30 ? yearly.sublist(yearly.length - 30) : yearly);
 
     return Column(
       children: [
-        _MetricGrid(
-          tiles: [
-            _Metric(
-              label: t.stats.completion,
-              value: '$completionRate%',
-              detail: t.stats.actionsFraction(
-                done: totalCompletions,
-                total: totalActiveDays,
-              ),
-              color: habit.color,
-              icon: LucideIcons.target,
-            ),
-            _Metric(
-              label: t.stats.currentStreak,
-              value: t.dashboard.streakDaysShort(n: currentStreak),
-              detail: t.stats.currentStreakDetail,
-              color: EvolveColors.streakColor(currentStreak),
-              icon: LucideIcons.flame,
-            ),
-            _Metric(
-              label: t.stats.recordLabel,
-              value: t.dashboard.streakDaysShort(n: bestStreak),
-              detail: t.stats.recordDetail,
-              color: EvolveColors.amber,
-              icon: LucideIcons.trophy,
-            ),
-            _Metric(
-              label: t.statistics.missed,
-              value: '$missedDays',
-              detail: t.stats.trend30Detail,
-              color: EvolveColors.rose,
-              icon: LucideIcons.circleAlert,
-            ),
-          ],
-        ),
+        _HabitHero(habit: habit),
         const SizedBox(height: 18),
         LayoutBuilder(
           builder: (context, constraints) {
@@ -1976,11 +1932,16 @@ class _HabitCalendar extends ConsumerWidget {
     final statuses = (yearlyGrid == null || yearlyGrid.isEmpty)
         ? _habitYearlyStatuses(snapshot, habit.id)
         : yearlyGrid;
-    return _YearlyHabitHeatmap(
-      title: t.stats.yearlyCalendar,
-      subtitle: t.stats.yearlyCalendarSubtitle(habit: habit.title),
-      color: habit.color,
-      statuses: statuses,
+    return Column(
+      children: [
+        _YearlyHabitHeatmap(
+          title: t.stats.yearlyCalendar,
+          subtitle: t.stats.yearlyCalendarSubtitle(habit: habit.title),
+          color: habit.color,
+          statuses: statuses,
+        ),
+        _HabitCalendarExtras(habit: habit, snapshot: snapshot),
+      ],
     );
   }
 }
@@ -2304,7 +2265,7 @@ class _HabitPerformance extends ConsumerWidget {
         ),
     ];
 
-    return LayoutBuilder(
+    final layout = LayoutBuilder(
       builder: (context, constraints) {
         if (constraints.maxWidth < 1120 || highlights.isEmpty) {
           return Column(
@@ -2337,6 +2298,13 @@ class _HabitPerformance extends ConsumerWidget {
           ],
         );
       },
+    );
+
+    return Column(
+      children: [
+        layout,
+        _HabitPerformanceExtras(habit: habit, snapshot: snapshot),
+      ],
     );
   }
 }
@@ -2515,7 +2483,7 @@ class _HabitImprovement extends ConsumerWidget {
       ),
     );
 
-    return LayoutBuilder(
+    final layout = LayoutBuilder(
       builder: (context, constraints) {
         if (constraints.maxWidth < 1120) {
           return Column(
@@ -2532,6 +2500,13 @@ class _HabitImprovement extends ConsumerWidget {
           ],
         );
       },
+    );
+
+    return Column(
+      children: [
+        layout,
+        _HabitImprovementExtras(habit: habit),
+      ],
     );
   }
 }
@@ -2640,6 +2615,7 @@ class _HabitMood extends ConsumerWidget {
             );
           },
         ),
+        _HabitMoodExtras(habit: habit),
         const SizedBox(height: 16),
         Center(
           child: Text(

@@ -92,3 +92,22 @@ No Xcode on this Mac → **code-verified only** (`flutter analyze` clean; full s
 - [ ] **Per-habit → Overview** shows **4** tiles including **Record**.
 - [ ] **Translations** — review the 82 new `stats.*` keys in **de / es / ar** (en + it were authored carefully; the other three are best-effort machine translations).
 
+## Per-habit statistics enrichment — on-device QA (2026-07-14)
+The per-habit (a specific habit selected) view is **Pro-gated** — sign in as Pro (or toggle the entitlement) to reach it. Code-verified only (no Xcode). `flutter run -d macos`, both light/dark, both data modes:
+- [ ] **Overview** — the Momentum ring + 8-tile grid render; the "Ahead of X% of your habits" pill shows only when you have ≥2 habits; tiles show "—" gracefully for a brand-new habit with no data.
+- [ ] **Calendar** — gap analysis (avg / longest / since-last), monthly seasonality bars, and This-month-vs-last render below the yearly heatmap; empty states appear for a fresh habit.
+- [ ] **Performance** — weekday/weekend split + rolling 7/30-day rows with up/down arrows appear under the weekday bars.
+- [ ] **Improvement** — Bounce-back / Consistency / At-risk / Danger-day tiles + the **streak-history bar strip** (confirm it doesn't overflow with a habit that has many short runs) + the schedule-adherence panel.
+- [ ] **Mood** — the **next-day mood impact** panel appears only when there's mood data both after dones and after misses; the lift pill is green/red correctly.
+- [ ] Sanity: switch between two habits and confirm every panel updates to the selected habit (no stale data), in Private and Cloud modes.
+
+## Goals board — linear layout on-device QA (2026-07-14)
+Reworked the Goals page: completed/failed goals no longer go to a right rail — the board is now one linear column at all widths, with the completion ring + period heading + Completed/Failed/Active counts in a header band at the top, and completed/failed goals at the bottom under the `COMPLETED`/`FAILED` dividers. Code-verified only (no Xcode here): `flutter analyze` clean; suite 276 pass / 1 pre-existing env fail; `tour_flow_test` (renders the goals page) passes. Run `flutter run -d macos`, check **both light and dark** and **Private + Cloud** modes:
+- [ ] **Header band** — the ring shows the completion %; heading (period title/subtitle) sits beside it; the three counts (Completed/Failed/Active) render on the right and stay readable at the **narrowest** window (~960px) without overflowing or clipping.
+- [ ] **Active goals** — render as single-line rows beneath the header hairline; the target-icon chip + title + hover actions (reschedule/edit/delete) look right; hover dimming still works.
+- [ ] **Complete a goal** — after the ~2s debounce it drops from the active list down under the green `COMPLETED` divider, shows the green check + strikethrough inline on its row, and the ring/counts update.
+- [ ] **Fail a goal** — same, under the red `FAILED` divider with the red X inline.
+- [ ] **Wide window** — on a large/maximized window the rows go full-width (edge-to-edge, aligned with the command bar); confirm this reads OK to you (we chose full-width over a capped column — say if you'd prefer it capped/centered).
+- [ ] **Empty & mixed states** — no active goals but some completed/failed (active empty-state shows, sections still appear); and a period with zero goals (ring at 0%, empty-add state).
+- [ ] **Tour** — the goals step of the product tour still spotlights the first active goal's checkbox.
+

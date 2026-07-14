@@ -302,6 +302,19 @@ void main() {
       ];
       expect(computeDangerZone(_byGoal(logs)), isNull);
     });
+
+    test('scans through a skipped log between the done and the miss', () {
+      // done Thu(01) -> skipped Fri(02) -> missed Sat(03): still a break on Sat.
+      final logs = [
+        _log('g1', '2026-01-01', 'done'),
+        _log('g1', '2026-01-02', 'skipped'),
+        _log('g1', '2026-01-03', 'missed'),
+      ];
+      final d = computeDangerZone(_byGoal(logs));
+      expect(d, isNotNull);
+      expect(d!.weekday, 6); // Saturday
+      expect(d.totalBreaks, 1);
+    });
   });
 
   group('computeMomentumScore', () {
@@ -332,6 +345,132 @@ void main() {
       // trend = clamp(0.5 + 0.5) = 1.0; streakHealth = 0.5
       // 0.5*0.8 + 0.3*0.5 + 0.2*1.0 = 0.4 + 0.15 + 0.2 = 0.75
       expect(m.score, closeTo(75, 0.001));
+    });
+  });
+
+  group('computeGapStats', () {
+    test('avg, longest and days-since-last-done', () {
+      final logs = [
+        _log('g1', '2026-01-01', 'done'),
+        _log('g1', '2026-01-03', 'done'), // gap 2
+        _log('g1', '2026-01-08', 'done'), // gap 5
+        _log('g1', '2026-01-04', 'missed'), // ignored
+      ];
+      final g = computeGapStats(logs, DateTime.parse('2026-01-10'));
+      expect(g.doneCount, 3);
+      expect(g.avgGap, closeTo(3.5, 0.001)); // (2+5)/2
+      expect(g.longestGap, 5);
+      expect(g.daysSinceLastDone, 2); // 10 - 08
+    });
+
+    test('no completions -> empty', () {
+      final g = computeGapStats([
+        _log('g1', '2026-01-01', 'missed'),
+      ], DateTime.parse('2026-01-10'));
+      expect(g.hasData, isFalse);
+    });
+  });
+
+  group('computeAdherence', () {
+    test('only scheduled days count', () {
+      // 2026-01-01 Thu; frequency Thursdays only. Thursdays 01,08,15.
+      final logs = [
+        _log('g1', '2026-01-01', 'done'),
+        _log('g1', '2026-01-08', 'done'),
+      ];
+      final a = computeAdherence(
+        logs: logs,
+        goal: _goal('g1', '2026-01-01', freq: [4]),
+        today: DateTime.parse('2026-01-15'),
+      );
+      expect(a.scheduledDays, 3); // 01, 08, 15
+      expect(a.doneOnScheduled, 2);
+      expect(a.rate, closeTo(66.67, 0.1));
+    });
+  });
+
+  group('computeStreakHistory', () {
+    test('groups consecutive done runs', () {
+      final logs = [
+        _log('g1', '2026-01-01', 'done'),
+        _log('g1', '2026-01-02', 'done'),
+        _log('g1', '2026-01-03', 'missed'),
+        _log('g1', '2026-01-05', 'done'),
+        _log('g1', '2026-01-06', 'done'),
+        _log('g1', '2026-01-07', 'done'),
+      ];
+      final runs = computeStreakHistory(logs);
+      expect(runs, hasLength(2));
+      expect(runs[0].length, 2);
+      expect(runs[0].start, DateTime.parse('2026-01-01'));
+      expect(runs[1].length, 3);
+      expect(runs[1].end, DateTime.parse('2026-01-07'));
+    });
+
+    test('a gap of unlogged days ends the run (calendar-contiguous)', () {
+      final runs = computeStreakHistory([
+        _log('g1', '2026-01-01', 'done'),
+        _log('g1', '2026-01-10', 'done'), // 8 unlogged days between
+      ]);
+      expect(runs, hasLength(2));
+      expect(runs.every((r) => r.length == 1), isTrue);
+    });
+  });
+
+  group('computeNextDayMoodImpact', () {
+    test('mood the day after done vs after missed', () {
+      final logs = [
+        _log('g1', '2026-01-01', 'done'),
+        _log('g1', '2026-01-03', 'missed'),
+      ];
+      final moods = {
+        '2026-01-02': const MoodEntry(moodScore: 8, energyScore: 7),
+        '2026-01-04': const MoodEntry(moodScore: 3, energyScore: 2),
+      };
+      final n = computeNextDayMoodImpact(logs: logs, moodsByDate: moods);
+      expect(n.hasData, isTrue);
+      expect(n.moodAfterDone, 8);
+      expect(n.moodAfterMissed, 3);
+      expect(n.moodLift, 5);
+      expect(n.energyLift, 5);
+      expect(n.sampleDone, 1);
+      expect(n.sampleMissed, 1);
+    });
+
+    test('no next-day mood -> no data', () {
+      final n = computeNextDayMoodImpact(
+        logs: [_log('g1', '2026-01-01', 'done')],
+        moodsByDate: const {},
+      );
+      expect(n.hasData, isFalse);
+    });
+  });
+
+  group('computeHabitMilestones', () {
+    test('first log, totals, next streak milestone', () {
+      final logs = [
+        _log('g1', '2026-01-01', 'done'),
+        _log('g1', '2026-01-02', 'done'),
+        _log('g1', '2026-01-03', 'done'),
+      ];
+      final m = computeHabitMilestones(
+        logs: logs,
+        today: DateTime.parse('2026-01-10'),
+        currentStreak: 5,
+      );
+      expect(m.firstLogDate, DateTime.parse('2026-01-01'));
+      expect(m.totalCompletions, 3);
+      expect(m.daysSinceStart, 10); // Jan 1..10 inclusive
+      expect(m.nextStreakMilestone, 7);
+    });
+
+    test('past the top milestone -> null', () {
+      final m = computeHabitMilestones(
+        logs: const [],
+        today: DateTime.parse('2026-01-10'),
+        currentStreak: 400,
+      );
+      expect(m.nextStreakMilestone, isNull);
     });
   });
 }

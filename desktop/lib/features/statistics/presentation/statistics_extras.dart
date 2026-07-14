@@ -2189,3 +2189,774 @@ class _MoodCorrelationAnalysisPanel extends StatelessWidget {
     );
   }
 }
+
+// ═══ PER-HABIT ENRICHMENTS ═══════════════════════════════════════════════════
+
+/// Completion of one habit over an inclusive days-ago window, counting only its
+/// scheduled (frequency-matched, non-skipped) days. Snapshot-backed ⇒ works in
+/// both data modes.
+double _habitWindowRate(
+  DashboardSnapshot s,
+  DashboardHabit h,
+  int startAgo,
+  int endAgo,
+) {
+  final now = DateTime.now();
+  final today = DateTime(now.year, now.month, now.day);
+  var done = 0;
+  var active = 0;
+  for (var ago = startAgo; ago <= endAgo; ago++) {
+    final date = DateTime(today.year, today.month, today.day - ago);
+    final freqOk =
+        h.frequencyDays == null || h.frequencyDays!.contains(date.weekday);
+    if (!h.isActiveOn(date) || !freqOk) continue;
+    final st = s.habitStatusFor(h.id, date);
+    if (st == 'skipped') continue;
+    active++;
+    if (st == 'done') done++;
+  }
+  return active > 0 ? done / active : 0;
+}
+
+/// Completion of one habit over an inclusive [from]…[to] date range (scheduled,
+/// non-skipped days only).
+double _habitRangeRate(
+  DashboardSnapshot s,
+  DashboardHabit h,
+  DateTime from,
+  DateTime to,
+) {
+  var done = 0;
+  var active = 0;
+  var d = DateTime(from.year, from.month, from.day);
+  final end = DateTime(to.year, to.month, to.day);
+  while (!d.isAfter(end)) {
+    final freqOk =
+        h.frequencyDays == null || h.frequencyDays!.contains(d.weekday);
+    if (h.isActiveOn(d) && freqOk) {
+      final st = s.habitStatusFor(h.id, d);
+      if (st != 'skipped') {
+        active++;
+        if (st == 'done') done++;
+      }
+    }
+    d = DateTime(d.year, d.month, d.day + 1);
+  }
+  return active > 0 ? done / active : 0;
+}
+
+/// Overview hero: Momentum ring + an 8-tile stat grid + a "vs your other
+/// habits" percentile pill.
+class _HabitHero extends ConsumerWidget {
+  const _HabitHero({required this.habit});
+
+  final DashboardHabit habit;
+
+  @override
+  Widget build(BuildContext context, WidgetRef ref) {
+    final stats = ref.watch(habitStatsRpcProvider).value ?? const [];
+    final stat = stats.where((s) => s['goal_id'] == habit.id).firstOrNull ?? {};
+    final bundle =
+        ref.watch(habitAnalyticsBundleProvider(habit.id)).value ??
+        HabitAnalyticsBundle.empty;
+
+    final completion = (stat['rate'] as num?)?.round() ?? 0;
+    final current = habit.streak; // reactive current streak (updates on toggle)
+    final best = (stat['best_streak'] as num?)?.toInt() ?? 0;
+    final totalCompletions = (stat['total_completions'] as num?)?.toInt() ?? 0;
+    final missed = (stat['missed_days'] as num?)?.toInt() ?? 0;
+
+    final tiles = _MetricGrid(
+      tiles: [
+        _Metric(
+          label: t.stats.completion,
+          value: '$completion%',
+          detail: t.stats.actionsFraction(
+            done: totalCompletions,
+            total: (stat['total_active_days'] as num?)?.toInt() ?? 1,
+          ),
+          color: habit.color,
+          icon: LucideIcons.target,
+        ),
+        _Metric(
+          label: t.stats.currentStreak,
+          value: t.dashboard.streakDaysShort(n: current),
+          detail: t.stats.currentStreakDetail,
+          color: EvolveColors.streakColor(current),
+          icon: LucideIcons.flame,
+        ),
+        _Metric(
+          label: t.stats.recordLabel,
+          value: t.dashboard.streakDaysShort(n: best),
+          detail: t.stats.recordDetail,
+          color: EvolveColors.amber,
+          icon: LucideIcons.trophy,
+        ),
+        _Metric(
+          label: t.statistics.missed,
+          value: '$missed',
+          detail: t.stats.trend30Detail,
+          color: EvolveColors.rose,
+          icon: LucideIcons.circleAlert,
+        ),
+        _Metric(
+          label: t.stats.lifetimeTotalDone,
+          value: '$totalCompletions',
+          detail: t.stats.allTimeBest,
+          color: EvolveColors.success,
+          icon: LucideIcons.circleCheck,
+        ),
+        _Metric(
+          label: t.stats.habitBounceBackShort,
+          value: bundle.bounceBack.opportunities > 0
+              ? '${bundle.bounceBack.globalRate.round()}%'
+              : '—',
+          detail: t.stats.bounceBackSubtitle,
+          color: EvolveColors.cyan,
+          icon: LucideIcons.undo2,
+        ),
+        _Metric(
+          label: t.stats.consistencyTitle,
+          value: bundle.consistency != null
+              ? '${bundle.consistency!.score.round()}'
+              : '—',
+          detail: t.stats.habitConsistencyDetail,
+          color: EvolveColors.violet,
+          icon: LucideIcons.activity,
+        ),
+        _Metric(
+          label: t.stats.lifetimeDaysTracked,
+          value: '${bundle.milestones.daysSinceStart}',
+          detail: t.stats.lifetimeDaysTrackedDetail,
+          color: context.evolveAccent,
+          icon: LucideIcons.calendarDays,
+        ),
+      ],
+    );
+
+    final hero = LayoutBuilder(
+      builder: (context, constraints) {
+        final ring = _MomentumRing(momentum: bundle.momentum);
+        if (constraints.maxWidth < 920) {
+          return Column(children: [ring, const SizedBox(height: 18), tiles]);
+        }
+        return Row(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            SizedBox(width: 300, child: ring),
+            const SizedBox(width: 18),
+            Expanded(child: tiles),
+          ],
+        );
+      },
+    );
+
+    if (bundle.percentileRank == null) return hero;
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        hero,
+        const SizedBox(height: 12),
+        StatusPill(
+          label: t.stats.habitPercentile(pct: bundle.percentileRank!),
+          color: EvolveColors.success,
+          icon: LucideIcons.trendingUp,
+        ),
+      ],
+    );
+  }
+}
+
+/// Calendar-tab extras: gap analysis, monthly seasonality, this-vs-last month.
+class _HabitCalendarExtras extends ConsumerWidget {
+  const _HabitCalendarExtras({required this.habit, required this.snapshot});
+
+  final DashboardHabit habit;
+  final DashboardSnapshot snapshot;
+
+  @override
+  Widget build(BuildContext context, WidgetRef ref) {
+    final bundle =
+        ref.watch(habitAnalyticsBundleProvider(habit.id)).value ??
+        HabitAnalyticsBundle.empty;
+    return Column(
+      children: [
+        const SizedBox(height: 18),
+        _twoUp(
+          _HabitGapPanel(gap: bundle.gap),
+          _HabitMonthComparePanel(habit: habit, snapshot: snapshot),
+        ),
+        const SizedBox(height: 18),
+        _HabitSeasonalityPanel(
+          seasonality: bundle.seasonality,
+          color: habit.color,
+        ),
+      ],
+    );
+  }
+}
+
+class _HabitGapPanel extends StatelessWidget {
+  const _HabitGapPanel({required this.gap});
+
+  final GapStats gap;
+
+  @override
+  Widget build(BuildContext context) {
+    return EvolvePanel(
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          SectionHeading(
+            title: t.stats.gapTitle,
+            subtitle: t.stats.gapSubtitle,
+          ),
+          const SizedBox(height: 18),
+          if (!gap.hasData)
+            _EmptyState(
+              icon: LucideIcons.calendarClock,
+              title: t.stats.moreLogsNeeded,
+            )
+          else
+            Row(
+              mainAxisAlignment: MainAxisAlignment.spaceBetween,
+              children: [
+                _MicroStat(
+                  label: t.stats.gapAvg,
+                  value: '${gap.avgGap.toStringAsFixed(1)}${t.stats.daysUnit}',
+                  color: context.evolveColors.foreground,
+                ),
+                _MicroStat(
+                  label: t.stats.gapLongest,
+                  value: '${gap.longestGap}${t.stats.daysUnit}',
+                  color: EvolveColors.amber,
+                ),
+                _MicroStat(
+                  label: t.stats.gapSince,
+                  value: '${gap.daysSinceLastDone}${t.stats.daysUnit}',
+                  color: gap.daysSinceLastDone > gap.avgGap * 1.5
+                      ? EvolveColors.rose
+                      : EvolveColors.success,
+                ),
+              ],
+            ),
+        ],
+      ),
+    );
+  }
+}
+
+class _HabitSeasonalityPanel extends StatelessWidget {
+  const _HabitSeasonalityPanel({
+    required this.seasonality,
+    required this.color,
+  });
+
+  final List<MonthPerf> seasonality;
+  final Color color;
+
+  @override
+  Widget build(BuildContext context) {
+    final withData = seasonality.where((r) => r.total > 0).toList();
+    final maxRate = withData.fold<double>(0, (m, r) => r.rate > m ? r.rate : m);
+    return EvolvePanel(
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          SectionHeading(
+            title: t.stats.seasonalityTitle,
+            subtitle: t.stats.seasonalitySubtitle,
+          ),
+          const SizedBox(height: 18),
+          if (withData.isEmpty)
+            _EmptyState(
+              icon: LucideIcons.calendarRange,
+              title: t.stats.moreLogsNeeded,
+            )
+          else
+            SizedBox(
+              height: 150,
+              child: Row(
+                crossAxisAlignment: CrossAxisAlignment.end,
+                children: [
+                  for (final r in seasonality)
+                    Expanded(
+                      child: _SeasonBar(
+                        month: r.month,
+                        rate: r.rate,
+                        hasData: r.total > 0,
+                        isBest: maxRate > 0 && r.rate == maxRate && r.total > 0,
+                      ),
+                    ),
+                ],
+              ),
+            ),
+        ],
+      ),
+    );
+  }
+}
+
+class _HabitMonthComparePanel extends StatelessWidget {
+  const _HabitMonthComparePanel({required this.habit, required this.snapshot});
+
+  final DashboardHabit habit;
+  final DashboardSnapshot snapshot;
+
+  @override
+  Widget build(BuildContext context) {
+    final now = DateTime.now();
+    final thisMonthStart = DateTime(now.year, now.month, 1);
+    final lastMonthStart = DateTime(now.year, now.month - 1, 1);
+    final lastMonthEnd = thisMonthStart.subtract(const Duration(days: 1));
+    final thisRate = _habitRangeRate(snapshot, habit, thisMonthStart, now);
+    final lastRate = _habitRangeRate(
+      snapshot,
+      habit,
+      lastMonthStart,
+      lastMonthEnd,
+    );
+    return EvolvePanel(
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          SectionHeading(
+            title: t.stats.monthVsTitle,
+            subtitle: t.stats.monthVsSubtitle,
+          ),
+          const SizedBox(height: 18),
+          _LevelBar(
+            label: t.stats.thisMonthLabel,
+            percentage: (thisRate * 100).round(),
+            color: habit.color,
+          ),
+          const SizedBox(height: 14),
+          _LevelBar(
+            label: t.stats.lastMonthLabel,
+            percentage: (lastRate * 100).round(),
+            color: EvolveColors.violet,
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+/// Performance-tab extras: weekday/weekend split, rolling rates, week-vs-average.
+class _HabitPerformanceExtras extends ConsumerWidget {
+  const _HabitPerformanceExtras({required this.habit, required this.snapshot});
+
+  final DashboardHabit habit;
+  final DashboardSnapshot snapshot;
+
+  @override
+  Widget build(BuildContext context, WidgetRef ref) {
+    final bundle =
+        ref.watch(habitAnalyticsBundleProvider(habit.id)).value ??
+        HabitAnalyticsBundle.empty;
+    final split = bundle.weekdayWeekend;
+
+    final r7 = _habitWindowRate(snapshot, habit, 0, 6);
+    final r7p = _habitWindowRate(snapshot, habit, 7, 13);
+    final r30 = _habitWindowRate(snapshot, habit, 0, 29);
+    final r30p = _habitWindowRate(snapshot, habit, 30, 59);
+
+    final rolling = EvolvePanel(
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          SectionHeading(
+            title: t.stats.rollingTitle,
+            subtitle: t.stats.rollingSubtitle,
+          ),
+          const SizedBox(height: 18),
+          _RollingRow(label: t.stats.rolling7, rate: r7, delta: r7 - r7p),
+          const SizedBox(height: 16),
+          _RollingRow(label: t.stats.rolling30, rate: r30, delta: r30 - r30p),
+        ],
+      ),
+    );
+
+    final weekend = EvolvePanel(
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          SectionHeading(
+            title: t.stats.weekdayWeekendTitle,
+            subtitle: t.stats.weekdayWeekendSubtitle,
+          ),
+          const SizedBox(height: 18),
+          if (!split.hasData)
+            _EmptyState(
+              icon: LucideIcons.calendar,
+              title: t.stats.moreLogsNeeded,
+            )
+          else ...[
+            _LevelBar(
+              label: t.stats.weekdaysLabel,
+              percentage: split.weekdayRate.round(),
+              color: habit.color,
+            ),
+            const SizedBox(height: 16),
+            _LevelBar(
+              label: t.stats.weekendLabel,
+              percentage: split.weekendRate.round(),
+              color: EvolveColors.violet,
+            ),
+          ],
+        ],
+      ),
+    );
+
+    return Column(
+      children: [const SizedBox(height: 18), _twoUp(rolling, weekend)],
+    );
+  }
+}
+
+/// Improvement-tab extras: bounce-back, consistency, danger day, at-risk,
+/// streak history and schedule adherence.
+class _HabitImprovementExtras extends ConsumerWidget {
+  const _HabitImprovementExtras({required this.habit});
+
+  final DashboardHabit habit;
+
+  @override
+  Widget build(BuildContext context, WidgetRef ref) {
+    final bundle =
+        ref.watch(habitAnalyticsBundleProvider(habit.id)).value ??
+        HabitAnalyticsBundle.empty;
+
+    final bounce = bundle.bounceBack;
+    final consistency = bundle.consistency;
+    final atRisk =
+        bundle.gap.hasData &&
+        bundle.gap.daysSinceLastDone > bundle.gap.avgGap * 1.5 &&
+        bundle.gap.daysSinceLastDone > 2;
+
+    final tiles = _MetricGrid(
+      tiles: [
+        _Metric(
+          label: t.stats.habitBounceBackShort,
+          value: bounce.opportunities > 0
+              ? '${bounce.globalRate.round()}%'
+              : '—',
+          detail: t.stats.bounceBackDetail(
+            recoveries: bounce.recoveries,
+            opportunities: bounce.opportunities,
+          ),
+          color: EvolveColors.cyan,
+          icon: LucideIcons.undo2,
+        ),
+        _Metric(
+          label: t.stats.consistencyTitle,
+          value: consistency != null ? '${consistency.score.round()}' : '—',
+          detail: t.stats.habitConsistencyDetail,
+          color: EvolveColors.violet,
+          icon: LucideIcons.activity,
+        ),
+        _Metric(
+          label: t.stats.atRiskTitle,
+          value: atRisk ? t.stats.atRiskYes : t.stats.atRiskNo,
+          detail: t.stats.atRiskDetail(days: bundle.gap.daysSinceLastDone),
+          color: atRisk ? EvolveColors.rose : EvolveColors.success,
+          icon: atRisk ? LucideIcons.triangleAlert : LucideIcons.shieldCheck,
+        ),
+        _Metric(
+          label: t.stats.dangerZoneTitle,
+          value: bundle.dangerDay != null
+              ? _weekdayShort(bundle.dangerDay!.weekday)
+              : '—',
+          detail: t.stats.dangerZoneSubtitle,
+          color: EvolveColors.amber,
+          icon: LucideIcons.calendarX,
+        ),
+      ],
+    );
+
+    return Column(
+      children: [
+        const SizedBox(height: 18),
+        tiles,
+        const SizedBox(height: 18),
+        _twoUp(
+          _HabitStreakHistoryPanel(
+            runs: bundle.streakHistory,
+            color: habit.color,
+          ),
+          _HabitAdherencePanel(adherence: bundle.adherence),
+        ),
+      ],
+    );
+  }
+}
+
+class _HabitStreakHistoryPanel extends StatelessWidget {
+  const _HabitStreakHistoryPanel({required this.runs, required this.color});
+
+  final List<StreakRun> runs;
+  final Color color;
+
+  @override
+  Widget build(BuildContext context) {
+    final longest = runs.fold<int>(0, (m, r) => r.length > m ? r.length : m);
+    // Show the most recent runs (chronological), capped so the strip fits.
+    final shown = runs.length > 24 ? runs.sublist(runs.length - 24) : runs;
+    return EvolvePanel(
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          SectionHeading(
+            title: t.stats.streakHistoryTitle,
+            subtitle: t.stats.streakHistorySubtitle,
+          ),
+          const SizedBox(height: 18),
+          if (runs.isEmpty)
+            _EmptyState(icon: LucideIcons.flame, title: t.stats.moreLogsNeeded)
+          else ...[
+            SizedBox(
+              height: 90,
+              child: Row(
+                crossAxisAlignment: CrossAxisAlignment.end,
+                children: [
+                  for (final r in shown)
+                    Expanded(
+                      child: Padding(
+                        padding: const EdgeInsets.symmetric(horizontal: 2),
+                        child: FractionallySizedBox(
+                          heightFactor: longest > 0
+                              ? (r.length / longest).clamp(0.08, 1.0)
+                              : 0.08,
+                          alignment: Alignment.bottomCenter,
+                          child: Container(
+                            decoration: BoxDecoration(
+                              color: r.length == longest
+                                  ? EvolveColors.success
+                                  : color.withValues(alpha: 0.7),
+                              borderRadius: const BorderRadius.vertical(
+                                top: Radius.circular(3),
+                              ),
+                            ),
+                          ),
+                        ),
+                      ),
+                    ),
+                ],
+              ),
+            ),
+            const SizedBox(height: 12),
+            Text(
+              t.stats.streakHistoryDetail(count: runs.length, longest: longest),
+              style: Theme.of(context).textTheme.bodySmall,
+            ),
+          ],
+        ],
+      ),
+    );
+  }
+}
+
+class _HabitAdherencePanel extends StatelessWidget {
+  const _HabitAdherencePanel({required this.adherence});
+
+  final Adherence adherence;
+
+  @override
+  Widget build(BuildContext context) {
+    return EvolvePanel(
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          SectionHeading(
+            title: t.stats.adherenceTitle,
+            subtitle: t.stats.adherenceSubtitle,
+          ),
+          const SizedBox(height: 18),
+          if (!adherence.hasData)
+            _EmptyState(
+              icon: LucideIcons.calendarCheck,
+              title: t.stats.moreLogsNeeded,
+            )
+          else ...[
+            Row(
+              crossAxisAlignment: CrossAxisAlignment.end,
+              children: [
+                Text(
+                  '${adherence.rate.round()}%',
+                  style: TextStyle(
+                    fontSize: 40,
+                    fontWeight: FontWeight.w900,
+                    letterSpacing: -1,
+                    height: 1,
+                    color: context.evolveAccent,
+                  ),
+                ),
+                const SizedBox(width: 12),
+                Expanded(
+                  child: Padding(
+                    padding: const EdgeInsets.only(bottom: 4),
+                    child: Text(
+                      t.stats.adherenceDetail(
+                        done: adherence.doneOnScheduled,
+                        scheduled: adherence.scheduledDays,
+                      ),
+                      style: Theme.of(context).textTheme.bodySmall,
+                    ),
+                  ),
+                ),
+              ],
+            ),
+            const SizedBox(height: 14),
+            ClipRRect(
+              borderRadius: BorderRadius.circular(3),
+              child: LinearProgressIndicator(
+                value: (adherence.rate / 100).clamp(0.0, 1.0),
+                minHeight: 8,
+                color: context.evolveAccent,
+                backgroundColor: context.evolveColors.panelSoft,
+              ),
+            ),
+          ],
+        ],
+      ),
+    );
+  }
+}
+
+/// Mood-tab extra: next-day mood/energy impact of doing this habit.
+class _HabitMoodExtras extends ConsumerWidget {
+  const _HabitMoodExtras({required this.habit});
+
+  final DashboardHabit habit;
+
+  @override
+  Widget build(BuildContext context, WidgetRef ref) {
+    final bundle =
+        ref.watch(habitAnalyticsBundleProvider(habit.id)).value ??
+        HabitAnalyticsBundle.empty;
+    final n = bundle.nextDayMood;
+    if (!n.hasData) return const SizedBox.shrink();
+
+    return Padding(
+      padding: const EdgeInsets.only(top: 18),
+      child: EvolvePanel(
+        glowColor: EvolveColors.violet,
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            SectionHeading(
+              title: t.stats.nextDayMoodTitle,
+              subtitle: t.stats.nextDayMoodSubtitle,
+            ),
+            const SizedBox(height: 16),
+            Row(
+              children: [
+                Expanded(
+                  child: _NextDayStat(
+                    label: t.stats.nextDayAfterDone,
+                    mood: n.moodAfterDone,
+                    energy: n.energyAfterDone,
+                    highlight: true,
+                  ),
+                ),
+                const SizedBox(width: 14),
+                Expanded(
+                  child: _NextDayStat(
+                    label: t.stats.nextDayAfterMissed,
+                    mood: n.moodAfterMissed,
+                    energy: n.energyAfterMissed,
+                    highlight: false,
+                  ),
+                ),
+              ],
+            ),
+            const SizedBox(height: 14),
+            StatusPill(
+              label: t.stats.nextDayMoodLift(
+                value: n.moodLift.toStringAsFixed(1),
+              ),
+              color: n.moodLift >= 0
+                  ? EvolveColors.success
+                  : EvolveColors.destructive,
+              icon: n.moodLift >= 0
+                  ? LucideIcons.trendingUp
+                  : LucideIcons.trendingDown,
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+}
+
+class _NextDayStat extends StatelessWidget {
+  const _NextDayStat({
+    required this.label,
+    required this.mood,
+    required this.energy,
+    required this.highlight,
+  });
+
+  final String label;
+  final double mood;
+  final double energy;
+  final bool highlight;
+
+  @override
+  Widget build(BuildContext context) {
+    return _RaisedCard(
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Text(
+            label,
+            style: TextStyle(
+              fontSize: 11,
+              fontWeight: FontWeight.w700,
+              letterSpacing: 0.3,
+              color: context.evolveColors.muted,
+            ),
+          ),
+          const SizedBox(height: 10),
+          Row(
+            children: [
+              Icon(
+                LucideIcons.smile,
+                size: 15,
+                color: highlight
+                    ? EvolveColors.violet
+                    : context.evolveColors.muted,
+              ),
+              const SizedBox(width: 6),
+              Text(
+                mood.toStringAsFixed(1),
+                style: TextStyle(
+                  fontSize: 18,
+                  fontWeight: FontWeight.w800,
+                  color: context.evolveColors.foreground,
+                ),
+              ),
+              const SizedBox(width: 14),
+              Icon(
+                LucideIcons.zap,
+                size: 15,
+                color: highlight
+                    ? EvolveColors.amber
+                    : context.evolveColors.muted,
+              ),
+              const SizedBox(width: 6),
+              Text(
+                energy.toStringAsFixed(1),
+                style: TextStyle(
+                  fontSize: 18,
+                  fontWeight: FontWeight.w800,
+                  color: context.evolveColors.foreground,
+                ),
+              ),
+            ],
+          ),
+        ],
+      ),
+    );
+  }
+}

@@ -681,6 +681,34 @@ class _Translations$stats$ar extends Translations$stats$en {
 	@override String get currentStreakShort => 'الآن';
 	@override String get recordLabel => 'الرقم القياسي';
 	@override String get recordDetail => 'أطول سلسلة على الإطلاق';
+	@override String get adherenceTitle => 'الالتزام بالجدول';
+	@override String get adherenceSubtitle => 'من الأيام المقررة';
+	@override String adherenceDetail({required Object done, required Object scheduled}) => '${done} من ${scheduled} يومًا مقررًا';
+	@override String get atRiskTitle => 'في خطر';
+	@override String get atRiskYes => 'نعم';
+	@override String get atRiskNo => 'على المسار';
+	@override String atRiskDetail({required Object days}) => '${days} يومًا منذ آخر مرة';
+	@override String get daysUnit => 'ي';
+	@override String get gapTitle => 'الفواصل';
+	@override String get gapSubtitle => 'الأيام بين الإنجازات';
+	@override String get gapAvg => 'المتوسط';
+	@override String get gapLongest => 'الأطول';
+	@override String get gapSince => 'منذ الأخير';
+	@override String get habitBounceBackShort => 'التعافي';
+	@override String get habitConsistencyDetail => 'درجة الانتظام';
+	@override String habitPercentile({required Object pct}) => 'أفضل من ${pct}% من عاداتك';
+	@override String get monthVsTitle => 'هذا الشهر مقابل السابق';
+	@override String get monthVsSubtitle => 'الإنجاز شهرًا بشهر';
+	@override String get thisMonthLabel => 'هذا الشهر';
+	@override String get lastMonthLabel => 'الشهر الماضي';
+	@override String get nextDayMoodTitle => 'تأثير مزاج اليوم التالي';
+	@override String get nextDayMoodSubtitle => 'المزاج والطاقة في اليوم التالي';
+	@override String get nextDayAfterDone => 'بعد فعلها';
+	@override String get nextDayAfterMissed => 'بعد تفويتها';
+	@override String nextDayMoodLift({required Object value}) => '${value} تحسّن في المزاج';
+	@override String get streakHistoryTitle => 'سجل السلاسل';
+	@override String get streakHistorySubtitle => 'كل سلسلة أيام متتالية';
+	@override String streakHistoryDetail({required Object count, required Object longest}) => '${count} سلسلة · الأطول ${longest} يومًا';
 }
 
 // Path: habitsPage
@@ -1958,6 +1986,34 @@ extension on TranslationsAr {
 			'stats.currentStreakShort' => 'الآن',
 			'stats.recordLabel' => 'الرقم القياسي',
 			'stats.recordDetail' => 'أطول سلسلة على الإطلاق',
+			'stats.adherenceTitle' => 'الالتزام بالجدول',
+			'stats.adherenceSubtitle' => 'من الأيام المقررة',
+			'stats.adherenceDetail' => ({required Object done, required Object scheduled}) => '${done} من ${scheduled} يومًا مقررًا',
+			'stats.atRiskTitle' => 'في خطر',
+			'stats.atRiskYes' => 'نعم',
+			'stats.atRiskNo' => 'على المسار',
+			'stats.atRiskDetail' => ({required Object days}) => '${days} يومًا منذ آخر مرة',
+			'stats.daysUnit' => 'ي',
+			'stats.gapTitle' => 'الفواصل',
+			'stats.gapSubtitle' => 'الأيام بين الإنجازات',
+			'stats.gapAvg' => 'المتوسط',
+			'stats.gapLongest' => 'الأطول',
+			'stats.gapSince' => 'منذ الأخير',
+			'stats.habitBounceBackShort' => 'التعافي',
+			'stats.habitConsistencyDetail' => 'درجة الانتظام',
+			'stats.habitPercentile' => ({required Object pct}) => 'أفضل من ${pct}% من عاداتك',
+			'stats.monthVsTitle' => 'هذا الشهر مقابل السابق',
+			'stats.monthVsSubtitle' => 'الإنجاز شهرًا بشهر',
+			'stats.thisMonthLabel' => 'هذا الشهر',
+			'stats.lastMonthLabel' => 'الشهر الماضي',
+			'stats.nextDayMoodTitle' => 'تأثير مزاج اليوم التالي',
+			'stats.nextDayMoodSubtitle' => 'المزاج والطاقة في اليوم التالي',
+			'stats.nextDayAfterDone' => 'بعد فعلها',
+			'stats.nextDayAfterMissed' => 'بعد تفويتها',
+			'stats.nextDayMoodLift' => ({required Object value}) => '${value} تحسّن في المزاج',
+			'stats.streakHistoryTitle' => 'سجل السلاسل',
+			'stats.streakHistorySubtitle' => 'كل سلسلة أيام متتالية',
+			'stats.streakHistoryDetail' => ({required Object count, required Object longest}) => '${count} سلسلة · الأطول ${longest} يومًا',
 			'habitsPage.today' => 'اليوم',
 			'habitsPage.subtitle' => 'ابنِ بروتوكولك اليومي وراقب الاتساق عبر الزمن.',
 			'habitsPage.tabProtocol' => 'البروتوكول',
@@ -1992,6 +2048,8 @@ extension on TranslationsAr {
 			'habitsPage.editHabit' => 'تعديل العادة',
 			'habitsPage.newHabit' => 'عادة جديدة',
 			'habitsPage.optionalReminder' => 'تذكير اختياري',
+			_ => null,
+		} ?? switch (path) {
 			'habitsPage.reminderHint' => 'مثال: 08:30',
 			'habitsPage.close' => 'إغلاق',
 			'habitsPage.statusDone' => ({required Object category}) => '${category} · مكتملة',
@@ -2020,8 +2078,6 @@ extension on TranslationsAr {
 			'goalsPage.subtitleLifetime' => 'أهداف مدى الحياة',
 			'goalsPage.subtitleAnnual' => 'الأهداف السنوية',
 			'goalsPage.subtitleQuarterly' => 'الأهداف الربع سنوية',
-			_ => null,
-		} ?? switch (path) {
 			'goalsPage.subtitleMonthly' => 'الأهداف الشهرية',
 			'goalsPage.subtitleWeekly' => 'الأهداف الأسبوعية',
 			'goalsPage.statsTab' => 'إحصاء',
@@ -2506,6 +2562,8 @@ extension on TranslationsAr {
 			'tour.habitsCalendarTitle' => 'عرض التقويم',
 			'tour.habitsCalendarDesc' => 'انتقل إلى التقويم لمراجعة سجلك حسب الأسبوع أو الشهر أو السنة — أو حياتك كلها.',
 			'tour.insightsOrientationTitle' => 'إحصاءاتك',
+			_ => null,
+		} ?? switch (path) {
 			'tour.insightsOrientationDesc' => 'تابع اتجاه عاداتك وأهدافك عبر الزمن وأين تنحرف.',
 			'tour.insightsFilterTitle' => 'التصفية حسب العادة',
 			'tour.insightsFilterDesc' => 'ركّز الإحصاءات على عادة واحدة أو أبقِ النظرة الشاملة.',

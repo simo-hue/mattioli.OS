@@ -1,5 +1,6 @@
 # TO_SIMO_DO.md
 - [ ] Widget for iPhone & MacOS
+- [ ] I want to use the arrows keys to navigate between the goals page. For example to move into the next week, previous week, next month, previous month.
 
 
 ## DESKTOP + MOBILE — iCloud sync cross-platform (needs your Xcode machine)

@@ -363,6 +363,11 @@ PrivateAnalyticsData buildAnalyticsDataFromSnapshot(
   final logsByGoal = <String, List<HabitLogEntry>>{};
   final logsByDate = <String, Map<String, String>>{};
   snapshot.habitLogs.forEach((dk, habits) {
+    // Skip empty per-date maps: the optimistic dashboard state can retain a
+    // `dateKey -> {}` entry after the last habit on a day is cleared, which the
+    // SQLite-backed private path never has. Keeping them would inflate
+    // activeDays and add spurious zero-completion days to keystone/perfect-days.
+    if (habits.isEmpty) return;
     final date = DateTime.tryParse(dk);
     if (date == null) return;
     logsByDate[dk] = Map<String, String>.from(habits);
@@ -471,12 +476,22 @@ final dangerZoneProvider = FutureProvider<DangerZone?>((ref) async {
 
 final momentumProvider = FutureProvider<MomentumScore>((ref) async {
   final data = await ref.watch(unifiedAnalyticsDataProvider.future);
+  // Current streak comes from the REACTIVE dashboard snapshot (updates
+  // immediately on a habit toggle in both modes), not from habitStatsRpcProvider
+  // — whose cloud branch reads the habit_stats view once and caches it for the
+  // session, which would leave streakHealth frozen while rate7 moves. Best
+  // streak (slow-moving, only grows) is still sourced from habit_stats.
+  final snapshot = ref.watch(dashboardControllerProvider);
   final stats = await ref.watch(habitStatsRpcProvider.future);
-  final streaks = [
+  final bestById = {
     for (final r in stats)
+      (r['goal_id'] as String? ?? ''): (r['best_streak'] as num?)?.toInt() ?? 0,
+  };
+  final streaks = [
+    for (final h in snapshot.habits)
       (
-        current: (r['current_streak'] as num?)?.toInt() ?? 0,
-        best: (r['best_streak'] as num?)?.toInt() ?? 0,
+        current: h.streak,
+        best: bestById[h.id] ?? (h.streak > 0 ? h.streak : 0),
       ),
   ];
   final today = DateTime.now();
@@ -512,3 +527,182 @@ double _windowCompletionRate(
   }
   return active > 0 ? done / active : 0.0;
 }
+
+// ─── Per-habit analytics bundle ──────────────────────────────────────────────
+//
+// One family provider (keyed by habitId) computes every enriched per-habit stat
+// in a single pass from the shared [unifiedAnalyticsDataProvider] (Private/Cloud
+// aware) plus this habit's [habitStatsRpcProvider] row. The per-habit tab
+// widgets watch this and read the fields they need.
+
+class HabitAnalyticsBundle {
+  final GapStats gap;
+  final Adherence adherence;
+  final List<StreakRun> streakHistory;
+  final NextDayMood nextDayMood;
+  final HabitMilestones milestones;
+
+  /// Bounce-back for this habit only ([BounceBackStats.globalRate] == its rate).
+  final BounceBackStats bounceBack;
+  final ConsistencyScore? consistency;
+  final List<MonthPerf> seasonality;
+  final WeekdaySplit weekdayWeekend;
+  final MomentumScore momentum;
+  final DangerZone? dangerDay;
+
+  /// This habit's completion-rate percentile among all habits (null if <2).
+  final int? percentileRank;
+  final int currentStreak;
+  final int bestStreak;
+  final double rate;
+
+  const HabitAnalyticsBundle({
+    required this.gap,
+    required this.adherence,
+    required this.streakHistory,
+    required this.nextDayMood,
+    required this.milestones,
+    required this.bounceBack,
+    required this.consistency,
+    required this.seasonality,
+    required this.weekdayWeekend,
+    required this.momentum,
+    required this.dangerDay,
+    required this.percentileRank,
+    required this.currentStreak,
+    required this.bestStreak,
+    required this.rate,
+  });
+
+  static final empty = HabitAnalyticsBundle(
+    gap: GapStats.empty,
+    adherence: Adherence.empty,
+    streakHistory: const [],
+    nextDayMood: NextDayMood.empty,
+    milestones: const HabitMilestones(
+      firstLogDate: null,
+      totalCompletions: 0,
+      daysSinceStart: 0,
+      currentStreak: 0,
+      nextStreakMilestone: null,
+    ),
+    bounceBack: BounceBackStats.empty,
+    consistency: null,
+    seasonality: const [],
+    weekdayWeekend: const WeekdaySplit(
+      weekdayRate: 0,
+      weekendRate: 0,
+      weekdayDone: 0,
+      weekdayTotal: 0,
+      weekendDone: 0,
+      weekendTotal: 0,
+    ),
+    momentum: MomentumScore.empty,
+    dangerDay: null,
+    percentileRank: null,
+    currentStreak: 0,
+    bestStreak: 0,
+    rate: 0,
+  );
+}
+
+final habitAnalyticsBundleProvider =
+    FutureProvider.family<HabitAnalyticsBundle, String>((ref, habitId) async {
+      final data = await ref.watch(unifiedAnalyticsDataProvider.future);
+      final stats = await ref.watch(habitStatsRpcProvider.future);
+      final today = DateTime.now();
+
+      final logs = data.logsByGoal[habitId] ?? const <HabitLogEntry>[];
+      GoalInput? found;
+      for (final g in data.goals) {
+        if (g.id == habitId) {
+          found = g;
+          break;
+        }
+      }
+      final goal = found ?? GoalInput(id: habitId, startDate: today);
+
+      Map<String, dynamic>? row;
+      for (final r in stats) {
+        if (r['goal_id'] == habitId) {
+          row = r;
+          break;
+        }
+      }
+      final best = (row?['best_streak'] as num?)?.toInt() ?? 0;
+      final rate = (row?['rate'] as num?)?.toDouble() ?? 0;
+
+      // Current streak from the REACTIVE dashboard snapshot (updates on a toggle
+      // in both modes); the habit_stats view is session-cached in Cloud mode and
+      // would leave the momentum gauge's streak term stale while rate7 moves.
+      final snapshot = ref.watch(dashboardControllerProvider);
+      var current = (row?['current_streak'] as num?)?.toInt() ?? 0;
+      for (final h in snapshot.habits) {
+        if (h.id == habitId) {
+          current = h.streak;
+          break;
+        }
+      }
+
+      // Percentile "ahead of X% of your OTHER habits": exclude self, strict <.
+      int? percentile;
+      if (stats.length >= 2) {
+        var below = 0;
+        for (final r in stats) {
+          if (identical(r, row)) continue;
+          if (((r['rate'] as num?)?.toDouble() ?? 0) < rate) below++;
+        }
+        percentile = (below * 100 / (stats.length - 1)).round();
+      }
+
+      // Per-habit momentum: completion of THIS habit over its scheduled days.
+      final byDate = <String, String>{
+        for (final l in logs) dateKey(l.date): l.status,
+      };
+      double windowRate(int startAgo, int endAgo) {
+        final t = DateTime(today.year, today.month, today.day);
+        var done = 0;
+        var active = 0;
+        for (var ago = startAgo; ago <= endAgo; ago++) {
+          final date = DateTime(t.year, t.month, t.day - ago);
+          if (!isGoalActiveOn(goal, date)) continue;
+          final st = byDate[dateKey(date)];
+          if (st == 'skipped') continue;
+          active++;
+          if (st == 'done') done++;
+        }
+        return active > 0 ? done / active : 0.0;
+      }
+
+      final oneGoal = {habitId: logs};
+      final consistencyList = computeConsistencyScores(oneGoal);
+
+      return HabitAnalyticsBundle(
+        gap: computeGapStats(logs, today),
+        adherence: computeAdherence(logs: logs, goal: goal, today: today),
+        streakHistory: computeStreakHistory(logs),
+        nextDayMood: computeNextDayMoodImpact(
+          logs: logs,
+          moodsByDate: data.moodsByDate,
+        ),
+        milestones: computeHabitMilestones(
+          logs: logs,
+          today: today,
+          currentStreak: current,
+        ),
+        bounceBack: computeBounceBackRate(logsByGoal: oneGoal),
+        consistency: consistencyList.isEmpty ? null : consistencyList.first,
+        seasonality: computeSeasonality(logs),
+        weekdayWeekend: computeWeekdayWeekendSplit(logs),
+        momentum: computeMomentumScore(
+          rate7: windowRate(0, 6),
+          ratePrev7: windowRate(7, 13),
+          streaks: [(current: current, best: best)],
+        ),
+        dangerDay: computeDangerZone(oneGoal),
+        percentileRank: percentile,
+        currentStreak: current,
+        bestStreak: best,
+        rate: rate,
+      );
+    });

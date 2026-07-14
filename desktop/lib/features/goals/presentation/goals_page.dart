@@ -1007,11 +1007,7 @@ class _GoalBoard extends StatelessWidget {
   /// Active goal item. The tutorial checkbox GlobalKey attaches to the FIRST
   /// active item only so the spotlight has a single stable target (and the tree
   /// never holds duplicate GlobalKeys when several goals are visible).
-  Widget _activeItem(
-    DashboardGoal goal, {
-    required bool isFirst,
-    bool asCard = false,
-  }) {
+  Widget _activeItem(DashboardGoal goal, {required bool isFirst}) {
     return _GoalItem(
       key: ValueKey(goal.id),
       goal: goal,
@@ -1021,7 +1017,6 @@ class _GoalBoard extends StatelessWidget {
       onEdit: onEdit,
       onReschedule: onReschedule,
       onDelete: onDelete,
-      asCard: asCard,
     );
   }
 
@@ -1030,48 +1025,6 @@ class _GoalBoard extends StatelessWidget {
     return Padding(
       padding: const EdgeInsets.only(bottom: 10),
       child: _activeItem(goal, isFirst: isFirst),
-    );
-  }
-
-  /// Adaptive card grid for the active goals: rows are chunked to [columns]
-  /// cells with 14px gaps and stretched per row so cards in the same run share
-  /// a height (LAYOUT_SPEC card-grid recipe).
-  Widget _activeGrid(int columns) {
-    const gap = 14.0;
-    final rows = <Widget>[];
-    for (var start = 0; start < activeGoals.length; start += columns) {
-      final chunk = activeGoals.sublist(
-        start,
-        math.min(start + columns, activeGoals.length),
-      );
-      rows.add(
-        Padding(
-          padding: EdgeInsets.only(top: start == 0 ? 0 : gap),
-          child: IntrinsicHeight(
-            child: Row(
-              crossAxisAlignment: CrossAxisAlignment.stretch,
-              children: [
-                for (var i = 0; i < columns; i++) ...[
-                  if (i > 0) const SizedBox(width: gap),
-                  Expanded(
-                    child: i < chunk.length
-                        ? _activeItem(
-                            chunk[i],
-                            isFirst: start + i == 0,
-                            asCard: true,
-                          )
-                        : const SizedBox.shrink(),
-                  ),
-                ],
-              ],
-            ),
-          ),
-        ),
-      );
-    }
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.stretch,
-      children: rows,
     );
   }
 
@@ -1115,6 +1068,49 @@ class _GoalBoard extends StatelessWidget {
     );
   }
 
+  /// Header band pinned to the top of the box: completion ring on the leading
+  /// edge, the period heading in the middle, and the per-status counts on the
+  /// trailing edge. This replaces the old right-rail summary now that completed
+  /// and failed goals live at the bottom of this same box.
+  Widget _boardHeader(BuildContext context) {
+    final total =
+        activeGoals.length + completedGoals.length + failedGoals.length;
+    final completion = total == 0 ? 0.0 : completedGoals.length / total;
+    return Row(
+      children: [
+        _PeriodProgressRing(value: completion),
+        const SizedBox(width: 16),
+        Expanded(child: _periodHeading(context)),
+        const SizedBox(width: 16),
+        SizedBox(
+          width: 160,
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              _StatusCountRow(
+                label: t.macroGoals.completed,
+                color: EvolveColors.success,
+                count: completedGoals.length,
+              ),
+              const SizedBox(height: 8),
+              _StatusCountRow(
+                label: t.macroGoals.failed,
+                color: EvolveColors.destructive,
+                count: failedGoals.length,
+              ),
+              const SizedBox(height: 8),
+              _StatusCountRow(
+                label: t.goalsStats.active,
+                color: context.evolveAccent,
+                count: activeGoals.length,
+              ),
+            ],
+          ),
+        ),
+      ],
+    );
+  }
+
   @override
   Widget build(BuildContext context) {
     final hasAnyGoal =
@@ -1122,174 +1118,49 @@ class _GoalBoard extends StatelessWidget {
         completedGoals.isNotEmpty ||
         failedGoals.isNotEmpty;
 
-    return LayoutBuilder(
-      builder: (context, constraints) {
-        final contentWidth = constraints.maxWidth;
-        final useColumns = contentWidth >= 1120;
-        if (!useColumns) {
-          // Narrow: the original single-column flow with status dividers.
-          return Column(
-            crossAxisAlignment: CrossAxisAlignment.stretch,
-            children: [
-              _periodHeading(context),
-              const SizedBox(height: 18),
-              if (activeGoals.isEmpty)
-                _GoalEmptyState(hasAnyGoal: hasAnyGoal)
-              else
-                for (var i = 0; i < activeGoals.length; i++)
-                  _activeListItem(activeGoals[i], isFirst: i == 0),
-              if (completedGoals.isNotEmpty) ...[
-                const SizedBox(height: 22),
-                _StatusDivider(
-                  label: t.macroGoals.completed,
-                  color: EvolveColors.success,
-                ),
-                const SizedBox(height: 12),
-                for (final goal in completedGoals) _archivedItem(goal),
-              ],
-              if (failedGoals.isNotEmpty) ...[
-                const SizedBox(height: 22),
-                _StatusDivider(
-                  label: t.macroGoals.failed,
-                  color: EvolveColors.destructive,
-                ),
-                const SizedBox(height: 12),
-                for (final goal in failedGoals) _archivedItem(goal),
-              ],
-            ],
-          );
-        }
-
-        // Wide: active goals in the primary panel — as an adaptive card grid
-        // once the content width allows it — with the period summary plus the
-        // completed/failed archives in a proportional right rail.
-        final gridColumns = contentWidth >= 1760
-            ? 3
-            : contentWidth >= 1400
-            ? 2
-            : 1;
-        final railWidth = (contentWidth * 0.26).clamp(350.0, 440.0);
-        final primary = EvolvePanel(
-          padding: gridColumns > 1
-              ? const EdgeInsets.all(18)
-              : const EdgeInsets.fromLTRB(18, 18, 18, 8),
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.stretch,
-            children: [
-              _periodHeading(context),
-              const SizedBox(height: 16),
-              if (activeGoals.isEmpty)
-                Padding(
-                  padding: EdgeInsets.only(bottom: gridColumns > 1 ? 0 : 10),
-                  child: _GoalEmptyState(hasAnyGoal: hasAnyGoal),
-                )
-              else if (gridColumns > 1)
-                _activeGrid(gridColumns)
-              else
-                for (var i = 0; i < activeGoals.length; i++)
-                  _activeListItem(activeGoals[i], isFirst: i == 0),
-            ],
-          ),
-        );
-
-        final secondary = Column(
-          children: [
-            _PeriodSummaryPanel(
-              activeCount: activeGoals.length,
-              completedCount: completedGoals.length,
-              failedCount: failedGoals.length,
-            ),
-            if (completedGoals.isNotEmpty) ...[
-              const SizedBox(height: 18),
-              EvolvePanel(
-                padding: const EdgeInsets.fromLTRB(18, 18, 18, 8),
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.stretch,
-                  children: [
-                    SectionHeading(title: t.macroGoals.completed),
-                    const SizedBox(height: 12),
-                    for (final goal in completedGoals) _archivedItem(goal),
-                  ],
-                ),
-              ),
-            ],
-            if (failedGoals.isNotEmpty) ...[
-              const SizedBox(height: 18),
-              EvolvePanel(
-                padding: const EdgeInsets.fromLTRB(18, 18, 18, 8),
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.stretch,
-                  children: [
-                    SectionHeading(title: t.macroGoals.failed),
-                    const SizedBox(height: 12),
-                    for (final goal in failedGoals) _archivedItem(goal),
-                  ],
-                ),
-              ),
-            ],
-          ],
-        );
-
-        return Row(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            Expanded(child: primary),
-            const SizedBox(width: 18),
-            SizedBox(width: railWidth, child: secondary),
-          ],
-        );
-      },
-    );
-  }
-}
-
-/// Right-rail summary for the visible period: completion ring (dashboard
-/// weekly-review pattern) plus per-status counts, computed from the same goal
-/// lists the board already renders.
-class _PeriodSummaryPanel extends StatelessWidget {
-  const _PeriodSummaryPanel({
-    required this.activeCount,
-    required this.completedCount,
-    required this.failedCount,
-  });
-
-  final int activeCount;
-  final int completedCount;
-  final int failedCount;
-
-  @override
-  Widget build(BuildContext context) {
-    final total = activeCount + completedCount + failedCount;
-    final completion = total == 0 ? 0.0 : completedCount / total;
+    // One linear column at every width: the completion ring + heading + counts
+    // ride a header band at the top of the box, active goals flow beneath it,
+    // and completed/failed goals settle at the bottom under their own labeled
+    // dividers (LAYOUT_SPEC status-divider recipe) so each row's check/X reads
+    // inline. The old wide-only card grid and right rail are gone.
     return EvolvePanel(
-      child: Row(
+      padding: const EdgeInsets.fromLTRB(18, 18, 18, 8),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.stretch,
         children: [
-          _PeriodProgressRing(value: completion),
-          const SizedBox(width: 14),
-          Expanded(
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                _StatusCountRow(
-                  label: t.macroGoals.completed,
-                  color: EvolveColors.success,
-                  count: completedCount,
-                ),
-                const SizedBox(height: 8),
-                _StatusCountRow(
-                  label: t.macroGoals.failed,
-                  color: EvolveColors.destructive,
-                  count: failedCount,
-                ),
-                const SizedBox(height: 8),
-                _StatusCountRow(
-                  label: t.goalsStats.active,
-                  color: context.evolveAccent,
-                  count: activeCount,
-                ),
-              ],
-            ),
+          _boardHeader(context),
+          const SizedBox(height: 16),
+          Container(
+            height: 1,
+            color: context.evolveColors.border.withValues(alpha: 0.6),
           ),
+          const SizedBox(height: 16),
+          if (activeGoals.isEmpty)
+            Padding(
+              padding: const EdgeInsets.only(bottom: 10),
+              child: _GoalEmptyState(hasAnyGoal: hasAnyGoal),
+            )
+          else
+            for (var i = 0; i < activeGoals.length; i++)
+              _activeListItem(activeGoals[i], isFirst: i == 0),
+          if (completedGoals.isNotEmpty) ...[
+            const SizedBox(height: 22),
+            _StatusDivider(
+              label: t.macroGoals.completed,
+              color: EvolveColors.success,
+            ),
+            const SizedBox(height: 12),
+            for (final goal in completedGoals) _archivedItem(goal),
+          ],
+          if (failedGoals.isNotEmpty) ...[
+            const SizedBox(height: 22),
+            _StatusDivider(
+              label: t.macroGoals.failed,
+              color: EvolveColors.destructive,
+            ),
+            const SizedBox(height: 12),
+            for (final goal in failedGoals) _archivedItem(goal),
+          ],
         ],
       ),
     );
@@ -1638,7 +1509,6 @@ class _GoalItem extends StatefulWidget {
     required this.onEdit,
     required this.onReschedule,
     required this.onDelete,
-    this.asCard = false,
   });
 
   final DashboardGoal goal;
@@ -1648,12 +1518,6 @@ class _GoalItem extends StatefulWidget {
   final ValueChanged<DashboardGoal> onEdit;
   final ValueChanged<DashboardGoal> onReschedule;
   final ValueChanged<DashboardGoal> onDelete;
-
-  /// Grid cells render the stacked CARD layout (check + title on top,
-  /// category chip + due label + hover actions pinned below); the default row
-  /// layout keeps the compact list look used by the narrow flow and the
-  /// archive rail.
-  final bool asCard;
 
   @override
   State<_GoalItem> createState() => _GoalItemState();
@@ -1811,84 +1675,6 @@ class _GoalItemState extends State<_GoalItem> {
     );
   }
 
-  /// Stacked CARD layout for the adaptive grid: check + two-line title on
-  /// top, category chip + due label + hover actions pinned to the bottom so
-  /// cards sharing a stretched grid row stay aligned.
-  Widget _cardLayout(
-    BuildContext context, {
-    required _GoalCategory category,
-    required GoalState currentState,
-    required bool completed,
-    required bool failed,
-    required Color statusColor,
-  }) {
-    final goal = widget.goal;
-    return Column(
-      mainAxisAlignment: MainAxisAlignment.spaceBetween,
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: [
-        Padding(
-          padding: const EdgeInsets.only(bottom: 12),
-          child: Row(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              _checkButton(currentState),
-              const SizedBox(width: 12),
-              Expanded(
-                child: Text(
-                  goal.title,
-                  maxLines: 2,
-                  overflow: TextOverflow.ellipsis,
-                  style: _titleStyle(
-                    context,
-                    completed: completed,
-                    failed: failed,
-                    statusColor: statusColor,
-                  ),
-                ),
-              ),
-            ],
-          ),
-        ),
-        Row(
-          children: [
-            Expanded(
-              child: Row(
-                children: [
-                  Flexible(
-                    child: _GoalCategoryChip(
-                      label: _categoryLabel(category),
-                      color: category.color,
-                    ),
-                  ),
-                  if (goal.dueLabel.isNotEmpty) ...[
-                    const SizedBox(width: 10),
-                    Flexible(
-                      child: Text(
-                        goal.dueLabel,
-                        maxLines: 1,
-                        overflow: TextOverflow.ellipsis,
-                        style: TextStyle(
-                          fontSize: 11,
-                          fontWeight: FontWeight.w500,
-                          color: context.evolveColors.muted.withValues(
-                            alpha: 0.8,
-                          ),
-                        ),
-                      ),
-                    ),
-                  ],
-                ],
-              ),
-            ),
-            const SizedBox(width: 8),
-            _hoverActions(context),
-          ],
-        ),
-      ],
-    );
-  }
-
   @override
   Widget build(BuildContext context) {
     final goal = widget.goal;
@@ -1908,10 +1694,7 @@ class _GoalItemState extends State<_GoalItem> {
       child: AnimatedContainer(
         duration: const Duration(milliseconds: 250),
         constraints: const BoxConstraints(minHeight: 64),
-        padding: EdgeInsets.symmetric(
-          horizontal: 16,
-          vertical: widget.asCard ? 14 : 12,
-        ),
+        padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
         decoration: BoxDecoration(
           color: statusColor.withValues(
             alpha: completed
@@ -1931,69 +1714,14 @@ class _GoalItemState extends State<_GoalItem> {
             ),
           ),
         ),
-        child: widget.asCard
-            ? _cardLayout(
-                context,
-                category: category,
-                currentState: currentState,
-                completed: completed,
-                failed: failed,
-                statusColor: statusColor,
-              )
-            : _rowLayout(
-                context,
-                category: category,
-                currentState: currentState,
-                completed: completed,
-                failed: failed,
-                statusColor: statusColor,
-              ),
-      ),
-    );
-  }
-}
-
-/// Small category pill for the goal cards: colored dot + localized label,
-/// mirroring the shared StatusPill recipe but with ellipsis protection so
-/// long category names never overflow a grid cell.
-class _GoalCategoryChip extends StatelessWidget {
-  const _GoalCategoryChip({required this.label, required this.color});
-
-  final String label;
-  final Color color;
-
-  @override
-  Widget build(BuildContext context) {
-    return Container(
-      padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 5),
-      decoration: BoxDecoration(
-        color: color.withValues(alpha: 0.12),
-        borderRadius: BorderRadius.circular(100),
-        border: Border.all(color: color.withValues(alpha: 0.22)),
-      ),
-      child: Row(
-        mainAxisSize: MainAxisSize.min,
-        children: [
-          Container(
-            width: 7,
-            height: 7,
-            decoration: BoxDecoration(shape: BoxShape.circle, color: color),
-          ),
-          const SizedBox(width: 6),
-          Flexible(
-            child: Text(
-              label,
-              maxLines: 1,
-              overflow: TextOverflow.ellipsis,
-              style: TextStyle(
-                color: color,
-                fontSize: 11,
-                fontWeight: FontWeight.w700,
-                letterSpacing: -0.1,
-              ),
-            ),
-          ),
-        ],
+        child: _rowLayout(
+          context,
+          category: category,
+          currentState: currentState,
+          completed: completed,
+          failed: failed,
+          statusColor: statusColor,
+        ),
       ),
     );
   }

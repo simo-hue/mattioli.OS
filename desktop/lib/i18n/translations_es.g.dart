@@ -681,6 +681,34 @@ class _Translations$stats$es extends Translations$stats$en {
 	@override String get currentStreakShort => 'Ahora';
 	@override String get recordLabel => 'Récord';
 	@override String get recordDetail => 'Mejor racha de siempre';
+	@override String get adherenceTitle => 'Adherencia al plan';
+	@override String get adherenceSubtitle => 'De los días programados';
+	@override String adherenceDetail({required Object done, required Object scheduled}) => '${done} de ${scheduled} días programados';
+	@override String get atRiskTitle => 'En riesgo';
+	@override String get atRiskYes => 'Sí';
+	@override String get atRiskNo => 'En marcha';
+	@override String atRiskDetail({required Object days}) => '${days} días desde la última vez';
+	@override String get daysUnit => 'd';
+	@override String get gapTitle => 'Intervalos';
+	@override String get gapSubtitle => 'Días entre completados';
+	@override String get gapAvg => 'Media';
+	@override String get gapLongest => 'Máximo';
+	@override String get gapSince => 'Desde el último';
+	@override String get habitBounceBackShort => 'Recuperación';
+	@override String get habitConsistencyDetail => 'Puntuación de regularidad';
+	@override String habitPercentile({required Object pct}) => 'Mejor que el ${pct}% de tus hábitos';
+	@override String get monthVsTitle => 'Este mes vs anterior';
+	@override String get monthVsSubtitle => 'Completado mes a mes';
+	@override String get thisMonthLabel => 'Este mes';
+	@override String get lastMonthLabel => 'Mes pasado';
+	@override String get nextDayMoodTitle => 'Impacto en el ánimo del día siguiente';
+	@override String get nextDayMoodSubtitle => 'Ánimo y energía al día siguiente';
+	@override String get nextDayAfterDone => 'Tras hacerlo';
+	@override String get nextDayAfterMissed => 'Tras fallarlo';
+	@override String nextDayMoodLift({required Object value}) => '${value} más de ánimo';
+	@override String get streakHistoryTitle => 'Historial de rachas';
+	@override String get streakHistorySubtitle => 'Cada serie de días consecutivos';
+	@override String streakHistoryDetail({required Object count, required Object longest}) => '${count} rachas · la más larga ${longest} días';
 }
 
 // Path: habitsPage
@@ -1958,6 +1986,34 @@ extension on TranslationsEs {
 			'stats.currentStreakShort' => 'Ahora',
 			'stats.recordLabel' => 'Récord',
 			'stats.recordDetail' => 'Mejor racha de siempre',
+			'stats.adherenceTitle' => 'Adherencia al plan',
+			'stats.adherenceSubtitle' => 'De los días programados',
+			'stats.adherenceDetail' => ({required Object done, required Object scheduled}) => '${done} de ${scheduled} días programados',
+			'stats.atRiskTitle' => 'En riesgo',
+			'stats.atRiskYes' => 'Sí',
+			'stats.atRiskNo' => 'En marcha',
+			'stats.atRiskDetail' => ({required Object days}) => '${days} días desde la última vez',
+			'stats.daysUnit' => 'd',
+			'stats.gapTitle' => 'Intervalos',
+			'stats.gapSubtitle' => 'Días entre completados',
+			'stats.gapAvg' => 'Media',
+			'stats.gapLongest' => 'Máximo',
+			'stats.gapSince' => 'Desde el último',
+			'stats.habitBounceBackShort' => 'Recuperación',
+			'stats.habitConsistencyDetail' => 'Puntuación de regularidad',
+			'stats.habitPercentile' => ({required Object pct}) => 'Mejor que el ${pct}% de tus hábitos',
+			'stats.monthVsTitle' => 'Este mes vs anterior',
+			'stats.monthVsSubtitle' => 'Completado mes a mes',
+			'stats.thisMonthLabel' => 'Este mes',
+			'stats.lastMonthLabel' => 'Mes pasado',
+			'stats.nextDayMoodTitle' => 'Impacto en el ánimo del día siguiente',
+			'stats.nextDayMoodSubtitle' => 'Ánimo y energía al día siguiente',
+			'stats.nextDayAfterDone' => 'Tras hacerlo',
+			'stats.nextDayAfterMissed' => 'Tras fallarlo',
+			'stats.nextDayMoodLift' => ({required Object value}) => '${value} más de ánimo',
+			'stats.streakHistoryTitle' => 'Historial de rachas',
+			'stats.streakHistorySubtitle' => 'Cada serie de días consecutivos',
+			'stats.streakHistoryDetail' => ({required Object count, required Object longest}) => '${count} rachas · la más larga ${longest} días',
 			'habitsPage.today' => 'Hoy',
 			'habitsPage.subtitle' => 'Construye tu protocolo diario y observa la constancia a lo largo del tiempo.',
 			'habitsPage.tabProtocol' => 'Protocolo',
@@ -1992,6 +2048,8 @@ extension on TranslationsEs {
 			'habitsPage.editHabit' => 'Editar hábito',
 			'habitsPage.newHabit' => 'Nuevo hábito',
 			'habitsPage.optionalReminder' => 'Recordatorio opcional',
+			_ => null,
+		} ?? switch (path) {
 			'habitsPage.reminderHint' => 'p. ej. 08:30',
 			'habitsPage.close' => 'Cerrar',
 			'habitsPage.statusDone' => ({required Object category}) => '${category} · Completada',
@@ -2020,8 +2078,6 @@ extension on TranslationsEs {
 			'goalsPage.subtitleLifetime' => 'Objetivos Lifetime',
 			'goalsPage.subtitleAnnual' => 'Objetivos anuales',
 			'goalsPage.subtitleQuarterly' => 'Objetivos trimestrales',
-			_ => null,
-		} ?? switch (path) {
 			'goalsPage.subtitleMonthly' => 'Objetivos mensuales',
 			'goalsPage.subtitleWeekly' => 'Objetivos semanales',
 			'goalsPage.statsTab' => 'Stats',
@@ -2506,6 +2562,8 @@ extension on TranslationsEs {
 			'tour.habitsCalendarTitle' => 'Vista de calendario',
 			'tour.habitsCalendarDesc' => 'Cambia al Calendario para revisar tu historial por semana, mes, año — o toda tu vida.',
 			'tour.insightsOrientationTitle' => 'Tus Estadísticas',
+			_ => null,
+		} ?? switch (path) {
 			'tour.insightsOrientationDesc' => 'Observa la evolución de tus hábitos y metas en el tiempo y dónde te desvías.',
 			'tour.insightsFilterTitle' => 'Filtrar por hábito',
 			'tour.insightsFilterDesc' => 'Enfoca las estadísticas en un solo hábito o mantén la vista global.',

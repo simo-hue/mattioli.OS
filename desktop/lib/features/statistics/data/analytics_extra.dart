@@ -14,6 +14,14 @@ import 'package:evolve_desktop/features/statistics/data/private_analytics.dart';
 double _mean(List<double> xs) =>
     xs.isEmpty ? 0 : xs.reduce((a, b) => a + b) / xs.length;
 
+/// Whole calendar days from [from] to [to], DST-safe (computed on UTC midnights
+/// so a span crossing a spring-forward transition isn't truncated by an hour).
+int _calDays(DateTime from, DateTime to) => DateTime.utc(
+  to.year,
+  to.month,
+  to.day,
+).difference(DateTime.utc(from.year, from.month, from.day)).inDays;
+
 /// Whether [g] is scheduled/active on [date] — start/end window plus the
 /// weekday frequency mask (null frequency = every day). Mirrors the active-day
 /// test inside `computeGlobalTrend`.
@@ -99,6 +107,10 @@ LifetimeSummary computeLifetimeSummary({
     if (firstLog == null || l.date.isBefore(firstLog)) firstLog = l.date;
   }
 
+  // Active-day count uses the same local-midnight `difference().inDays + 1` as
+  // the mobile-mirrored `computeHabitStatsRow`, so the Consistency % here stays
+  // consistent with the per-habit rates. (Shared caveat: a span crossing a
+  // spring-forward DST boundary can under-count by a day — accepted for parity.)
   var sumDone = 0;
   var sumActive = 0;
   DateTime? earliestStart;
@@ -485,15 +497,21 @@ class DangerZone {
   });
 }
 
-/// The weekday on which streaks most often break — a `missed` that directly
-/// follows a `done` for the same habit. Returns null when nothing has broken.
+/// The weekday on which streaks most often break — a `missed` whose previous
+/// tracked (non-`skipped`) log was `done`. Skipped days are neutral and scanned
+/// through, matching [computeBounceBackRate]. Returns null when nothing broke.
 DangerZone? computeDangerZone(Map<String, List<HabitLogEntry>> logsByGoal) {
   final byWeekday = <int, int>{};
   var total = 0;
   logsByGoal.forEach((_, logs) {
     final sorted = [...logs]..sort((a, b) => a.date.compareTo(b.date));
-    for (var i = 1; i < sorted.length; i++) {
-      if (sorted[i].status == 'missed' && sorted[i - 1].status == 'done') {
+    for (var i = 0; i < sorted.length; i++) {
+      if (sorted[i].status != 'missed') continue;
+      var j = i - 1;
+      while (j >= 0 && sorted[j].status == 'skipped') {
+        j--;
+      }
+      if (j >= 0 && sorted[j].status == 'done') {
         byWeekday.update(
           sorted[i].date.weekday,
           (v) => v + 1,
@@ -557,5 +575,267 @@ MomentumScore computeMomentumScore({
     rate7: r7,
     streakHealth: streakHealth,
     trend: trend,
+  );
+}
+
+// ─── Per-habit: gap analysis ─────────────────────────────────────────────────
+
+class GapStats {
+  /// Mean calendar days between consecutive completions.
+  final double avgGap;
+
+  /// Longest calendar-day gap between two consecutive completions.
+  final int longestGap;
+
+  /// Days since the most recent completion (0 if done today).
+  final int daysSinceLastDone;
+  final int doneCount;
+
+  const GapStats({
+    required this.avgGap,
+    required this.longestGap,
+    required this.daysSinceLastDone,
+    required this.doneCount,
+  });
+
+  static const empty = GapStats(
+    avgGap: 0,
+    longestGap: 0,
+    daysSinceLastDone: 0,
+    doneCount: 0,
+  );
+
+  bool get hasData => doneCount > 0;
+}
+
+GapStats computeGapStats(List<HabitLogEntry> logs, DateTime today) {
+  final t = DateTime(today.year, today.month, today.day);
+  final dates =
+      logs.where((l) => l.status == 'done').map((l) => l.date).toList()..sort();
+  if (dates.isEmpty) return GapStats.empty;
+  var longest = 0;
+  var sum = 0;
+  for (var i = 1; i < dates.length; i++) {
+    final g = _calDays(dates[i - 1], dates[i]);
+    sum += g;
+    if (g > longest) longest = g;
+  }
+  final avg = dates.length >= 2 ? sum / (dates.length - 1) : 0.0;
+  final since = _calDays(dates.last, t);
+  return GapStats(
+    avgGap: avg,
+    longestGap: longest,
+    daysSinceLastDone: since < 0 ? 0 : since,
+    doneCount: dates.length,
+  );
+}
+
+// ─── Per-habit: adherence to the frequency schedule ──────────────────────────
+
+class Adherence {
+  final int scheduledDays;
+  final int doneOnScheduled;
+  final double rate; // 0–100
+
+  const Adherence({
+    required this.scheduledDays,
+    required this.doneOnScheduled,
+    required this.rate,
+  });
+
+  static const empty = Adherence(scheduledDays: 0, doneOnScheduled: 0, rate: 0);
+
+  bool get hasData => scheduledDays > 0;
+}
+
+/// Of the days this habit was actually SCHEDULED (start→today, honouring
+/// `frequency_days`), what fraction were completed. Unlike the headline
+/// completion rate this ignores days the habit wasn't due.
+Adherence computeAdherence({
+  required List<HabitLogEntry> logs,
+  required GoalInput goal,
+  required DateTime today,
+}) {
+  final t = DateTime(today.year, today.month, today.day);
+  final doneDates = <String>{
+    for (final l in logs)
+      if (l.status == 'done') dateKey(l.date),
+  };
+  var scheduled = 0;
+  var done = 0;
+  var d = DateTime(
+    goal.startDate.year,
+    goal.startDate.month,
+    goal.startDate.day,
+  );
+  if (d.isAfter(t)) return Adherence.empty;
+  while (!d.isAfter(t)) {
+    if (isGoalActiveOn(goal, d)) {
+      scheduled++;
+      if (doneDates.contains(dateKey(d))) done++;
+    }
+    d = DateTime(d.year, d.month, d.day + 1); // DST-safe day step
+  }
+  return Adherence(
+    scheduledDays: scheduled,
+    doneOnScheduled: done,
+    rate: scheduled > 0 ? done * 100.0 / scheduled : 0,
+  );
+}
+
+// ─── Per-habit: streak history ───────────────────────────────────────────────
+
+class StreakRun {
+  final int length;
+  final DateTime start;
+  final DateTime end;
+
+  const StreakRun({
+    required this.length,
+    required this.start,
+    required this.end,
+  });
+}
+
+/// Every run of consecutive-CALENDAR-DAY `done` completions (chronological),
+/// each with its length and start/end dates. Matches `computeStreak`
+/// (streak_utils.dart): a run breaks on any day that isn't the immediate next
+/// calendar day, so an unlogged / missed / skipped gap ends it — the same
+/// definition as the signed 🔥 streak. `frequency_days` is intentionally not
+/// consulted, mirroring the canonical streak.
+List<StreakRun> computeStreakHistory(List<HabitLogEntry> logs) {
+  final dates =
+      logs.where((l) => l.status == 'done').map((l) => l.date).toList()..sort();
+  final runs = <StreakRun>[];
+  var i = 0;
+  while (i < dates.length) {
+    var j = i;
+    while (j + 1 < dates.length &&
+        dates[j + 1].isAtSameMomentAs(
+          DateTime(dates[j].year, dates[j].month, dates[j].day + 1),
+        )) {
+      j++;
+    }
+    runs.add(StreakRun(length: j - i + 1, start: dates[i], end: dates[j]));
+    i = j + 1;
+  }
+  return runs;
+}
+
+// ─── Per-habit: next-day mood impact ─────────────────────────────────────────
+
+class NextDayMood {
+  final double moodAfterDone;
+  final double moodAfterMissed;
+  final double energyAfterDone;
+  final double energyAfterMissed;
+  final int sampleDone;
+  final int sampleMissed;
+
+  const NextDayMood({
+    required this.moodAfterDone,
+    required this.moodAfterMissed,
+    required this.energyAfterDone,
+    required this.energyAfterMissed,
+    required this.sampleDone,
+    required this.sampleMissed,
+  });
+
+  static const empty = NextDayMood(
+    moodAfterDone: 0,
+    moodAfterMissed: 0,
+    energyAfterDone: 0,
+    energyAfterMissed: 0,
+    sampleDone: 0,
+    sampleMissed: 0,
+  );
+
+  double get moodLift => moodAfterDone - moodAfterMissed;
+  double get energyLift => energyAfterDone - energyAfterMissed;
+  bool get hasData => sampleDone > 0 && sampleMissed > 0;
+}
+
+/// Lag correlation: the average mood/energy on the day AFTER this habit was
+/// done vs the day after it was missed (0–10 scale). A positive lift suggests
+/// doing the habit lifts tomorrow's mood.
+NextDayMood computeNextDayMoodImpact({
+  required List<HabitLogEntry> logs,
+  required Map<String, MoodEntry> moodsByDate,
+}) {
+  var mdSum = 0.0, mdN = 0, edSum = 0.0;
+  var mmSum = 0.0, mmN = 0, emSum = 0.0;
+  for (final l in logs) {
+    if (l.status != 'done' && l.status != 'missed') continue;
+    final next = DateTime(l.date.year, l.date.month, l.date.day + 1);
+    final m = moodsByDate[dateKey(next)];
+    if (m == null) continue;
+    if (l.status == 'done') {
+      mdSum += m.moodScore;
+      edSum += m.energyScore;
+      mdN++;
+    } else {
+      mmSum += m.moodScore;
+      emSum += m.energyScore;
+      mmN++;
+    }
+  }
+  return NextDayMood(
+    moodAfterDone: mdN > 0 ? mdSum / mdN : 0,
+    moodAfterMissed: mmN > 0 ? mmSum / mmN : 0,
+    energyAfterDone: mdN > 0 ? edSum / mdN : 0,
+    energyAfterMissed: mmN > 0 ? emSum / mmN : 0,
+    sampleDone: mdN,
+    sampleMissed: mmN,
+  );
+}
+
+// ─── Per-habit: milestones ───────────────────────────────────────────────────
+
+class HabitMilestones {
+  final DateTime? firstLogDate;
+  final int totalCompletions;
+  final int daysSinceStart;
+  final int currentStreak;
+
+  /// The next streak milestone above [currentStreak], or null past the top one.
+  final int? nextStreakMilestone;
+
+  const HabitMilestones({
+    required this.firstLogDate,
+    required this.totalCompletions,
+    required this.daysSinceStart,
+    required this.currentStreak,
+    required this.nextStreakMilestone,
+  });
+}
+
+const List<int> kStreakMilestones = [7, 14, 30, 60, 100, 180, 365];
+
+HabitMilestones computeHabitMilestones({
+  required List<HabitLogEntry> logs,
+  required DateTime today,
+  required int currentStreak,
+}) {
+  final t = DateTime(today.year, today.month, today.day);
+  DateTime? first;
+  var total = 0;
+  for (final l in logs) {
+    if (l.status == 'done') total++;
+    if (first == null || l.date.isBefore(first)) first = l.date;
+  }
+  final days = first == null ? 0 : _calDays(first, t) + 1;
+  int? next;
+  for (final m in kStreakMilestones) {
+    if (m > currentStreak) {
+      next = m;
+      break;
+    }
+  }
+  return HabitMilestones(
+    firstLogDate: first,
+    totalCompletions: total,
+    daysSinceStart: days < 0 ? 0 : days,
+    currentStreak: currentStreak,
+    nextStreakMilestone: next,
   );
 }

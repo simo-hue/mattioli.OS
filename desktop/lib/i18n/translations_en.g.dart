@@ -1518,6 +1518,90 @@ class Translations$stats$en {
 
 	/// en: 'Best streak ever'
 	String get recordDetail => 'Best streak ever';
+
+	/// en: 'Schedule adherence'
+	String get adherenceTitle => 'Schedule adherence';
+
+	/// en: 'Of the days it was due'
+	String get adherenceSubtitle => 'Of the days it was due';
+
+	/// en: '{done} of {scheduled} scheduled days'
+	String adherenceDetail({required Object done, required Object scheduled}) => '${done} of ${scheduled} scheduled days';
+
+	/// en: 'At risk'
+	String get atRiskTitle => 'At risk';
+
+	/// en: 'Yes'
+	String get atRiskYes => 'Yes';
+
+	/// en: 'On track'
+	String get atRiskNo => 'On track';
+
+	/// en: '{days} days since last done'
+	String atRiskDetail({required Object days}) => '${days} days since last done';
+
+	/// en: 'd'
+	String get daysUnit => 'd';
+
+	/// en: 'Timing gaps'
+	String get gapTitle => 'Timing gaps';
+
+	/// en: 'Days between completions'
+	String get gapSubtitle => 'Days between completions';
+
+	/// en: 'Avg gap'
+	String get gapAvg => 'Avg gap';
+
+	/// en: 'Longest'
+	String get gapLongest => 'Longest';
+
+	/// en: 'Since last'
+	String get gapSince => 'Since last';
+
+	/// en: 'Bounce-back'
+	String get habitBounceBackShort => 'Bounce-back';
+
+	/// en: 'Regularity score'
+	String get habitConsistencyDetail => 'Regularity score';
+
+	/// en: 'Ahead of {pct}% of your habits'
+	String habitPercentile({required Object pct}) => 'Ahead of ${pct}% of your habits';
+
+	/// en: 'This month vs last'
+	String get monthVsTitle => 'This month vs last';
+
+	/// en: 'Completion, month over month'
+	String get monthVsSubtitle => 'Completion, month over month';
+
+	/// en: 'This month'
+	String get thisMonthLabel => 'This month';
+
+	/// en: 'Last month'
+	String get lastMonthLabel => 'Last month';
+
+	/// en: 'Next-day mood impact'
+	String get nextDayMoodTitle => 'Next-day mood impact';
+
+	/// en: 'Mood & energy the day after'
+	String get nextDayMoodSubtitle => 'Mood & energy the day after';
+
+	/// en: 'After doing it'
+	String get nextDayAfterDone => 'After doing it';
+
+	/// en: 'After missing it'
+	String get nextDayAfterMissed => 'After missing it';
+
+	/// en: '{value} mood lift'
+	String nextDayMoodLift({required Object value}) => '${value} mood lift';
+
+	/// en: 'Streak history'
+	String get streakHistoryTitle => 'Streak history';
+
+	/// en: 'Every run of consecutive days'
+	String get streakHistorySubtitle => 'Every run of consecutive days';
+
+	/// en: '{count} streaks · longest {longest} days'
+	String streakHistoryDetail({required Object count, required Object longest}) => '${count} streaks · longest ${longest} days';
 }
 
 // Path: habitsPage
@@ -3939,6 +4023,34 @@ extension on Translations {
 			'stats.currentStreakShort' => 'Now',
 			'stats.recordLabel' => 'Record',
 			'stats.recordDetail' => 'Best streak ever',
+			'stats.adherenceTitle' => 'Schedule adherence',
+			'stats.adherenceSubtitle' => 'Of the days it was due',
+			'stats.adherenceDetail' => ({required Object done, required Object scheduled}) => '${done} of ${scheduled} scheduled days',
+			'stats.atRiskTitle' => 'At risk',
+			'stats.atRiskYes' => 'Yes',
+			'stats.atRiskNo' => 'On track',
+			'stats.atRiskDetail' => ({required Object days}) => '${days} days since last done',
+			'stats.daysUnit' => 'd',
+			'stats.gapTitle' => 'Timing gaps',
+			'stats.gapSubtitle' => 'Days between completions',
+			'stats.gapAvg' => 'Avg gap',
+			'stats.gapLongest' => 'Longest',
+			'stats.gapSince' => 'Since last',
+			'stats.habitBounceBackShort' => 'Bounce-back',
+			'stats.habitConsistencyDetail' => 'Regularity score',
+			'stats.habitPercentile' => ({required Object pct}) => 'Ahead of ${pct}% of your habits',
+			'stats.monthVsTitle' => 'This month vs last',
+			'stats.monthVsSubtitle' => 'Completion, month over month',
+			'stats.thisMonthLabel' => 'This month',
+			'stats.lastMonthLabel' => 'Last month',
+			'stats.nextDayMoodTitle' => 'Next-day mood impact',
+			'stats.nextDayMoodSubtitle' => 'Mood & energy the day after',
+			'stats.nextDayAfterDone' => 'After doing it',
+			'stats.nextDayAfterMissed' => 'After missing it',
+			'stats.nextDayMoodLift' => ({required Object value}) => '${value} mood lift',
+			'stats.streakHistoryTitle' => 'Streak history',
+			'stats.streakHistorySubtitle' => 'Every run of consecutive days',
+			'stats.streakHistoryDetail' => ({required Object count, required Object longest}) => '${count} streaks · longest ${longest} days',
 			'habitsPage.today' => 'Today',
 			'habitsPage.subtitle' => 'Build your daily protocol and watch consistency over time.',
 			'habitsPage.tabProtocol' => 'Protocol',
@@ -3973,6 +4085,8 @@ extension on Translations {
 			'habitsPage.editHabit' => 'Edit habit',
 			'habitsPage.newHabit' => 'New habit',
 			'habitsPage.optionalReminder' => 'Optional reminder',
+			_ => null,
+		} ?? switch (path) {
 			'habitsPage.reminderHint' => 'e.g. 08:30',
 			'habitsPage.close' => 'Close',
 			'habitsPage.statusDone' => ({required Object category}) => '${category} · Completed',
@@ -4001,8 +4115,6 @@ extension on Translations {
 			'goalsPage.subtitleLifetime' => 'Lifetime goals',
 			'goalsPage.subtitleAnnual' => 'Annual goals',
 			'goalsPage.subtitleQuarterly' => 'Quarterly goals',
-			_ => null,
-		} ?? switch (path) {
 			'goalsPage.subtitleMonthly' => 'Monthly goals',
 			'goalsPage.subtitleWeekly' => 'Weekly goals',
 			'goalsPage.statsTab' => 'Stats',
@@ -4487,6 +4599,8 @@ extension on Translations {
 			'tour.habitsCalendarTitle' => 'Calendar view',
 			'tour.habitsCalendarDesc' => 'Switch to the Calendar to review your history by week, month, year — or your whole life.',
 			'tour.insightsOrientationTitle' => 'Your Insights',
+			_ => null,
+		} ?? switch (path) {
 			'tour.insightsOrientationDesc' => 'See how your habits and goals trend over time, and where you\'re drifting.',
 			'tour.insightsFilterTitle' => 'Filter by habit',
 			'tour.insightsFilterDesc' => 'Focus the statistics on a single habit, or keep the global overview.',

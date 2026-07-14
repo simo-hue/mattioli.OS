@@ -10,6 +10,7 @@ import 'package:evolve_desktop/features/dashboard/application/dashboard_controll
 import 'package:evolve_desktop/features/dashboard/presentation/dashboard_page.dart';
 import 'package:evolve_desktop/features/goals/presentation/goals_page.dart';
 import 'package:evolve_desktop/features/habits/presentation/habits_page.dart';
+import 'package:evolve_desktop/features/search/presentation/command_palette.dart';
 import 'package:evolve_desktop/features/settings/application/desktop_subscription_controller.dart';
 import 'package:evolve_desktop/features/settings/presentation/settings_page.dart';
 import 'package:evolve_desktop/features/shell/application/navigation_controller.dart';
@@ -228,7 +229,7 @@ class _DesktopShellState extends ConsumerState<DesktopShell> {
     if (ref.read(tourControllerProvider).active) return;
     await showEvolveDialog<void>(
       context: context,
-      builder: (context) => const _CommandPalette(),
+      builder: (context) => const CommandPalette(),
     );
     if (mounted) _focusNode.requestFocus();
   }
@@ -705,51 +706,4 @@ String _initials(Map<String, dynamic>? metadata, String? email) {
   return parts.isEmpty
       ? '--'
       : parts.map((part) => part[0].toUpperCase()).join();
-}
-
-class _CommandPalette extends ConsumerWidget {
-  const _CommandPalette();
-
-  @override
-  Widget build(BuildContext context, WidgetRef ref) {
-    return EvolveDialog(
-      alignment: const Alignment(0, -0.55),
-      maxWidth: 520,
-      child: Padding(
-        padding: const EdgeInsets.all(10),
-        child: Column(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            TextField(
-              autofocus: true,
-              decoration: InputDecoration(
-                prefixIcon: const Icon(LucideIcons.search, size: 17),
-                hintText: t.shell.searchSectionHint,
-              ),
-            ),
-            const SizedBox(height: 10),
-            for (final section in DesktopSection.values)
-              ListTile(
-                dense: true,
-                leading: Icon(section.icon, size: 19),
-                title: Text(section.label),
-                trailing: Text(
-                  section.shortcut,
-                  style: Theme.of(context).textTheme.bodySmall,
-                ),
-                shape: RoundedRectangleBorder(
-                  borderRadius: BorderRadius.circular(9),
-                ),
-                onTap: () {
-                  ref
-                      .read(navigationControllerProvider.notifier)
-                      .select(section);
-                  Navigator.pop(context);
-                },
-              ),
-          ],
-        ),
-      ),
-    );
-  }
 }

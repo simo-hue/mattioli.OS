@@ -149,7 +149,8 @@
     "longTerm": "طويل الأمد (Lifetime)",
     "dueLifetime": "مدى الحياة",
     "dueByYear": "بحلول {year}",
-    "defaultCategory": "هدف"
+    "defaultCategory": "هدف",
+    "periodWhen": "متى"
   },
   "createHabit": {
     "title": "عادة جديدة",
@@ -1133,5 +1134,35 @@
     "coachSuggestionsDesc": "لا تعرف من أين تبدأ؟ اضغط أحد هذه الاقتراحات للانطلاق.",
     "coachInputTitle": "اسأل أي شيء",
     "coachInputDesc": "اكتب سؤالك هنا واضغط إرسال. بهذا تنتهي الجولة — استمتع بـ Evolve!"
+  },
+  "palette": {
+    "searchHint": "ابحث عن الأهداف والعادات والإجراءات…",
+    "groupSuggested": "مقترحات",
+    "groupThisWeek": "هذا الأسبوع",
+    "groupGoals": "الأهداف",
+    "groupHabits": "العادات",
+    "groupActions": "إجراءات",
+    "groupSections": "الانتقال إلى",
+    "goToThisWeek": "الانتقال إلى هذا الأسبوع",
+    "createGoalBlank": "إنشاء هدف",
+    "createGoal": "إنشاء هدف «{title}»",
+    "createHabit": "إنشاء عادة «{title}»",
+    "goToPeriod": "الانتقال إلى {period}",
+    "switchToDark": "التبديل إلى المظهر الداكن",
+    "switchToLight": "التبديل إلى المظهر الفاتح",
+    "manageCategories": "إدارة فئات الأهداف",
+    "replayTour": "إعادة الجولة التعريفية",
+    "noResults": "لا نتائج لـ «{query}»",
+    "rowOpen": "فتح",
+    "rowComplete": "وضع علامة مكتمل",
+    "rowReschedule": "إعادة الجدولة للفترة التالية",
+    "deleteGoalTitle": "حذف الهدف؟",
+    "deleteGoalMessage": "سيتم حذف «{title}» نهائيًا.",
+    "deleteHabitTitle": "حذف العادة؟",
+    "deleteHabitMessage": "سيتم حذف «{title}» نهائيًا.",
+    "footerNavigate": "تنقل",
+    "footerOpen": "فتح",
+    "footerMenu": "قائمة",
+    "footerClose": "إغلاق"
   }
 }

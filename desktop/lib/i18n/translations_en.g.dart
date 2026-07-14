@@ -101,6 +101,7 @@ class Translations with BaseTranslations<AppLocale, Translations> {
 	late final Translations$appLogs$en appLogs = Translations$appLogs$en.internal(_root);
 	late final Translations$coachSettings$en coachSettings = Translations$coachSettings$en.internal(_root);
 	late final Translations$tour$en tour = Translations$tour$en.internal(_root);
+	late final Translations$palette$en palette = Translations$palette$en.internal(_root);
 }
 
 // Path: auth
@@ -479,6 +480,9 @@ class Translations$createGoal$en {
 
 	/// en: 'Goal'
 	String get defaultCategory => 'Goal';
+
+	/// en: 'When'
+	String get periodWhen => 'When';
 }
 
 // Path: createHabit
@@ -3325,6 +3329,99 @@ class Translations$tour$en {
 	String get coachInputDesc => 'Type your question here and press send. That\'s the end of the tour — enjoy Evolve!';
 }
 
+// Path: palette
+class Translations$palette$en {
+	Translations$palette$en.internal(this._root);
+
+	final Translations _root; // ignore: unused_field
+
+	// Translations
+
+	/// en: 'Search goals, habits, actions…'
+	String get searchHint => 'Search goals, habits, actions…';
+
+	/// en: 'Suggested'
+	String get groupSuggested => 'Suggested';
+
+	/// en: 'This week'
+	String get groupThisWeek => 'This week';
+
+	/// en: 'Goals'
+	String get groupGoals => 'Goals';
+
+	/// en: 'Habits'
+	String get groupHabits => 'Habits';
+
+	/// en: 'Actions'
+	String get groupActions => 'Actions';
+
+	/// en: 'Go to'
+	String get groupSections => 'Go to';
+
+	/// en: 'Go to this week'
+	String get goToThisWeek => 'Go to this week';
+
+	/// en: 'Create goal'
+	String get createGoalBlank => 'Create goal';
+
+	/// en: 'Create goal “{title}”'
+	String createGoal({required Object title}) => 'Create goal “${title}”';
+
+	/// en: 'Create habit “{title}”'
+	String createHabit({required Object title}) => 'Create habit “${title}”';
+
+	/// en: 'Go to {period}'
+	String goToPeriod({required Object period}) => 'Go to ${period}';
+
+	/// en: 'Switch to dark theme'
+	String get switchToDark => 'Switch to dark theme';
+
+	/// en: 'Switch to light theme'
+	String get switchToLight => 'Switch to light theme';
+
+	/// en: 'Manage goal categories'
+	String get manageCategories => 'Manage goal categories';
+
+	/// en: 'Replay guided tour'
+	String get replayTour => 'Replay guided tour';
+
+	/// en: 'No results for “{query}”'
+	String noResults({required Object query}) => 'No results for “${query}”';
+
+	/// en: 'Open'
+	String get rowOpen => 'Open';
+
+	/// en: 'Mark complete'
+	String get rowComplete => 'Mark complete';
+
+	/// en: 'Reschedule to next period'
+	String get rowReschedule => 'Reschedule to next period';
+
+	/// en: 'Delete goal?'
+	String get deleteGoalTitle => 'Delete goal?';
+
+	/// en: '“{title}” will be permanently deleted.'
+	String deleteGoalMessage({required Object title}) => '“${title}” will be permanently deleted.';
+
+	/// en: 'Delete habit?'
+	String get deleteHabitTitle => 'Delete habit?';
+
+	/// en: '“{title}” will be permanently deleted.'
+	String deleteHabitMessage({required Object title}) => '“${title}” will be permanently deleted.';
+
+	/// en: 'navigate'
+	String get footerNavigate => 'navigate';
+
+	/// en: 'open'
+	String get footerOpen => 'open';
+
+	/// en: 'menu'
+	String get footerMenu => 'menu';
+
+	/// en: 'close'
+	String get footerClose => 'close';
+}
+
 // Path: common.actions
 class Translations$common$actions$en {
 	Translations$common$actions$en.internal(this._root);
@@ -3669,6 +3766,7 @@ extension on Translations {
 			'createGoal.dueLifetime' => 'Whole life',
 			'createGoal.dueByYear' => ({required Object year}) => 'By ${year}',
 			'createGoal.defaultCategory' => 'Goal',
+			'createGoal.periodWhen' => 'When',
 			'createHabit.title' => 'New Habit',
 			'createHabit.subtitle' => 'Define your new habit.',
 			'createHabit.titleHint' => 'e.g. Meditation',
@@ -4060,9 +4158,9 @@ extension on Translations {
 			'habitsPage.reminderHint' => 'e.g. 08:30',
 			'habitsPage.close' => 'Close',
 			'habitsPage.statusDone' => 'Completed',
-			'habitsPage.statusSkipped' => 'Skipped',
 			_ => null,
 		} ?? switch (path) {
+			'habitsPage.statusSkipped' => 'Skipped',
 			'habitsPage.statusUnrecorded' => 'Not recorded',
 			'habitsPage.weekOf' => ({required Object day, required Object month}) => 'Week of ${day} ${month}',
 			'habitsPage.lifeWeeks' => 'Weeks of your journey',
@@ -4574,9 +4672,9 @@ extension on Translations {
 			'tour.insightsTabsDesc' => 'Switch between the sections for trends, alerts, habit progress and your mood.',
 			'tour.goalsOrientationTitle' => 'The Goals page',
 			'tour.goalsOrientationDesc' => 'Set and track your bigger objectives — the things your daily habits build toward.',
-			'tour.goalsPlanTitle' => 'Planning type',
 			_ => null,
 		} ?? switch (path) {
+			'tour.goalsPlanTitle' => 'Planning type',
 			'tour.goalsPlanDesc' => 'Choose how you plan — daily, weekly or longer — to match how you think about your goals.',
 			'tour.goalsAddTitle' => 'Add a goal',
 			'tour.goalsAddDesc' => 'Create a new goal here and give it a target to work toward.',
@@ -4594,6 +4692,34 @@ extension on Translations {
 			'tour.coachSuggestionsDesc' => 'Not sure where to begin? Tap one of these suggestions to get going.',
 			'tour.coachInputTitle' => 'Ask anything',
 			'tour.coachInputDesc' => 'Type your question here and press send. That\'s the end of the tour — enjoy Evolve!',
+			'palette.searchHint' => 'Search goals, habits, actions…',
+			'palette.groupSuggested' => 'Suggested',
+			'palette.groupThisWeek' => 'This week',
+			'palette.groupGoals' => 'Goals',
+			'palette.groupHabits' => 'Habits',
+			'palette.groupActions' => 'Actions',
+			'palette.groupSections' => 'Go to',
+			'palette.goToThisWeek' => 'Go to this week',
+			'palette.createGoalBlank' => 'Create goal',
+			'palette.createGoal' => ({required Object title}) => 'Create goal “${title}”',
+			'palette.createHabit' => ({required Object title}) => 'Create habit “${title}”',
+			'palette.goToPeriod' => ({required Object period}) => 'Go to ${period}',
+			'palette.switchToDark' => 'Switch to dark theme',
+			'palette.switchToLight' => 'Switch to light theme',
+			'palette.manageCategories' => 'Manage goal categories',
+			'palette.replayTour' => 'Replay guided tour',
+			'palette.noResults' => ({required Object query}) => 'No results for “${query}”',
+			'palette.rowOpen' => 'Open',
+			'palette.rowComplete' => 'Mark complete',
+			'palette.rowReschedule' => 'Reschedule to next period',
+			'palette.deleteGoalTitle' => 'Delete goal?',
+			'palette.deleteGoalMessage' => ({required Object title}) => '“${title}” will be permanently deleted.',
+			'palette.deleteHabitTitle' => 'Delete habit?',
+			'palette.deleteHabitMessage' => ({required Object title}) => '“${title}” will be permanently deleted.',
+			'palette.footerNavigate' => 'navigate',
+			'palette.footerOpen' => 'open',
+			'palette.footerMenu' => 'menu',
+			'palette.footerClose' => 'close',
 			_ => null,
 		};
 	}

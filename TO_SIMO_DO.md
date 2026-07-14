@@ -2,6 +2,7 @@
 - [ ] Widget for iPhone & MacOS
 - [ ] Update for the habits to decide the day of the week to decide when it should be completed and obviously when it should appear on the day's pop up calendar view. The desktop UI element is already in place but from mobile is totally missing
 - [ ] In the habits protocol tab view I want to see only the current habits and not also the past ones
+- [ ] MacOS app doesn't have the log in phase, I want to have the same logic of the mobile iOS app as it's professional and complete
 
 
 ## DESKTOP + MOBILE — iCloud sync cross-platform (needs your Xcode machine)
@@ -162,3 +163,24 @@ reset-and-import round-trip could not be run here.
       but `desktop/lib/features/settings/presentation/settings_page.dart` and the two new
       `{desktop,mobile}/test/private_db_recovery_test.dart` files are still uncommitted in the working tree —
       review `git diff` / `git status` and commit them.
+
+
+## DESKTOP — ⌘K command palette on-device QA (needs your Xcode machine)
+Built + `flutter analyze`-clean + unit-tested here, but no Xcode on this Mac means interaction/visual QA is
+pending. Run `flutter run -d macos` and verify:
+- [ ] **⌘K opens** the new palette; typing filters live (goals/habits/sections/actions grouped, goals first).
+- [ ] **Arrow-key nav works while typing**: ↑/↓ move the highlight (they must NOT just move the text caret),
+      ↵ activates the highlighted row, esc closes. This relies on the palette's `Shortcuts` out-ranking the
+      text field's default arrow handling — the one thing I couldn't verify without running it.
+- [ ] **Goal jump**: search a goal in a NON-current period → ↵ → Goals opens on that exact week/month/year and
+      the row glows + scrolls into view. Test it both when starting from another section AND when already on
+      the Goals page (the in-place `ref.listen` path).
+- [ ] **Per-row menu**: the ⋯ button (and ⌘↵ on the highlighted row) opens Open/Complete/Reschedule/Edit/
+      Delete for a goal; **Delete shows a confirmation dialog** before removing. Habits show Open/Delete.
+- [ ] **Create-with-period**: type a new goal name → "Create goal “…”" → dialog is prefilled, pick an
+      arbitrary year/month/week → save → it lands on that period. Repeat for "Create habit".
+- [ ] **Actions**: "week 2 march"/"q2 2026"/"march" surface a Go-to-period row; toggle theme; manage
+      categories; replay tour; go to this week.
+- [ ] **BOTH DATA MODES**: run the above once in Cloud (Supabase) mode and once in Private mode — behaviour
+      should be identical (search is in-memory; writes go through the active repository).
+- [ ] **RTL**: with Arabic UI, confirm the palette + new period pickers read correctly.

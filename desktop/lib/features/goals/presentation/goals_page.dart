@@ -5,6 +5,8 @@ import 'package:evolve_desktop/core/macro_goal_calendar.dart';
 import 'package:evolve_desktop/features/dashboard/application/dashboard_controller.dart';
 import 'package:evolve_desktop/features/dashboard/domain/dashboard_models.dart';
 import 'package:evolve_desktop/features/goals/application/goal_categories_controller.dart';
+import 'package:evolve_desktop/features/goals/application/goals_page_command.dart';
+import 'package:evolve_desktop/features/search/application/goal_nav_target.dart';
 import 'package:evolve_desktop/features/settings/application/desktop_subscription_controller.dart';
 import 'package:evolve_desktop/features/settings/presentation/pro_features_modal.dart';
 import 'package:evolve_desktop/i18n/translations.g.dart';
@@ -72,6 +74,19 @@ class _GoalsPageState extends ConsumerState<GoalsPage> {
   // driving the direction of the goal board's slide+fade transition.
   int _lastDirection = 0;
 
+  // One-shot deep-link support: when the ⌘K command palette jumps here it drops
+  // a [GoalNavTarget]. [initState] seeds the period from it and records which
+  // goal to spotlight; the board attaches [_highlightRowKey] to that row so it
+  // can be glowed + scrolled into view exactly once.
+  String? _highlightGoalId;
+  final GlobalKey _highlightRowKey = GlobalKey(
+    debugLabel: 'goals-highlight-row',
+  );
+
+  /// Set when a ⌘K "Edit" jump lands here: after scrolling the goal into view we
+  /// open its editor (reusing this page's own editor + category context).
+  bool _pendingOpenEditor = false;
+
   /// Structural identity of the shown period: any visible change (type, year,
   /// quarter, month or week) flips it, which drives the board transition.
   Object get _periodSignature => (
@@ -86,20 +101,93 @@ class _GoalsPageState extends ConsumerState<GoalsPage> {
   void initState() {
     super.initState();
     final now = DateTime.now();
+    // Default to the current week...
     _selectedType = GoalType.weekly;
     _selectedYear = now.year;
     _selectedQuarter = ((now.month - 1) ~/ 3) + 1;
     _selectedMonth = now.month;
     _selectedWeek = logicalWeekOfMonth(now);
+
+    // ...unless the command palette queued a one-shot jump to a specific goal's
+    // period. We only READ the target here — clearing a provider while a parent
+    // is mid-build would throw — and consume (clear) it in the post-frame
+    // callback below, so an ordinary later open still lands on today's week. The
+    // already-mounted case (a jump while Goals is already on screen) is handled
+    // by the `ref.listen` in [build].
+    final target = ref.read(goalNavTargetProvider);
+    if (target != null) _seedFrom(target);
+
     // Claim keyboard focus after the first frame so arrow-key period paging is
     // live immediately — but never yank focus away from the guided tour
     // overlay, which drives the keyboard itself while it runs.
     WidgetsBinding.instance.addPostFrameCallback((_) {
       if (!mounted) return;
+      // Applied — drop the one-shot palette intents so they can't replay.
+      ref.read(goalNavTargetProvider.notifier).consume();
+      final command = ref.read(goalsPageCommandProvider.notifier).consume();
       if (!ref.read(tourControllerProvider).active) {
         _periodFocusNode.requestFocus();
       }
+      _revealHighlightedGoal();
+      _maybeOpenPendingEditor();
+      if (command != null) _runPageCommand(command);
     });
+  }
+
+  /// Copy a [GoalNavTarget]'s period into the page's selection and record what
+  /// to do on arrival (spotlight a row, open its editor). Caller is responsible
+  /// for the surrounding setState when applied to a live page.
+  void _seedFrom(GoalNavTarget target) {
+    _selectedType = target.type;
+    _selectedYear = target.year ?? _selectedYear;
+    _selectedQuarter = target.quarter ?? _selectedQuarter;
+    _selectedMonth = target.month ?? _selectedMonth;
+    _selectedWeek = target.week ?? _selectedWeek;
+    _highlightGoalId = target.highlightGoalId;
+    _pendingOpenEditor = target.openEditor;
+  }
+
+  /// If a ⌘K "Edit" jump requested it, open the spotlighted goal's editor.
+  void _maybeOpenPendingEditor() {
+    if (!_pendingOpenEditor) return;
+    _pendingOpenEditor = false;
+    final id = _highlightGoalId;
+    if (id == null) return;
+    for (final goal in ref.read(dashboardControllerProvider).goals) {
+      if (goal.id == id) {
+        _openGoalEditorFor(goal);
+        return;
+      }
+    }
+  }
+
+  void _runPageCommand(GoalsPageCommand command) {
+    switch (command) {
+      case GoalsPageCommand.openCategoryManager:
+        _openCategoryManager();
+    }
+  }
+
+  /// Scrolls the spotlighted goal (if any) into view once the board has laid
+  /// out. The row's transient glow is driven by the row widget itself; here we
+  /// only make sure it's on screen. Retries a couple of frames in case the
+  /// board's slide-in transition hasn't settled its geometry yet.
+  void _revealHighlightedGoal([int attempt = 0]) {
+    if (_highlightGoalId == null) return;
+    final ctx = _highlightRowKey.currentContext;
+    if (ctx == null) {
+      if (attempt >= 3) return;
+      WidgetsBinding.instance.addPostFrameCallback(
+        (_) => _revealHighlightedGoal(attempt + 1),
+      );
+      return;
+    }
+    Scrollable.ensureVisible(
+      ctx,
+      duration: const Duration(milliseconds: 320),
+      curve: Curves.easeOutCubic,
+      alignment: 0.3,
+    );
   }
 
   @override
@@ -112,6 +200,31 @@ class _GoalsPageState extends ConsumerState<GoalsPage> {
   @override
   Widget build(BuildContext context) {
     ref.watch(desktopGoalCategoriesControllerProvider);
+
+    // A ⌘K jump/edit that arrives while Goals is ALREADY on screen: [initState]
+    // only fires on a fresh mount, so react to the target changing here too.
+    ref.listen<GoalNavTarget?>(goalNavTargetProvider, (previous, next) {
+      if (next == null) return;
+      setState(() {
+        _lastDirection = 0; // neutral fade — the jump isn't a ‹ › step
+        _seedFrom(next);
+      });
+      WidgetsBinding.instance.addPostFrameCallback((_) {
+        if (!mounted) return;
+        ref.read(goalNavTargetProvider.notifier).consume();
+        _revealHighlightedGoal();
+        _maybeOpenPendingEditor();
+      });
+    });
+    ref.listen<GoalsPageCommand?>(goalsPageCommandProvider, (previous, next) {
+      if (next == null) return;
+      WidgetsBinding.instance.addPostFrameCallback((_) {
+        if (!mounted) return;
+        final command = ref.read(goalsPageCommandProvider.notifier).consume();
+        if (command != null) _runPageCommand(command);
+      });
+    });
+
     final allGoals = ref.watch(dashboardControllerProvider).goals;
     final goals = allGoals.where(_matchesPeriod).toList()..sort(_sortGoals);
 
@@ -236,6 +349,8 @@ class _GoalsPageState extends ConsumerState<GoalsPage> {
                       tutorialCheckboxKey: showTour
                           ? _tutorialCheckboxKey
                           : null,
+                      highlightGoalId: _highlightGoalId,
+                      highlightRowKey: _highlightRowKey,
                       categories: categories,
                       activeGoals: activeGoals,
                       completedGoals: completedGoals,
@@ -1119,6 +1234,8 @@ class _GoalBoard extends StatelessWidget {
     required this.periodTitle,
     required this.periodSubtitle,
     this.tutorialCheckboxKey,
+    this.highlightGoalId,
+    this.highlightRowKey,
     required this.categories,
     required this.activeGoals,
     required this.completedGoals,
@@ -1132,6 +1249,12 @@ class _GoalBoard extends StatelessWidget {
   final String periodTitle;
   final String periodSubtitle;
   final GlobalKey? tutorialCheckboxKey;
+
+  /// Id of the goal to spotlight (glow + scroll-into-view) after a ⌘K jump, or
+  /// null for an ordinary open. [highlightRowKey] is attached to that one row so
+  /// the page can scroll it into view.
+  final String? highlightGoalId;
+  final GlobalKey? highlightRowKey;
   final List<_GoalCategory> categories;
   final List<DashboardGoal> activeGoals;
   final List<DashboardGoal> completedGoals;
@@ -1148,6 +1271,7 @@ class _GoalBoard extends StatelessWidget {
     return _GoalItem(
       key: ValueKey(goal.id),
       goal: goal,
+      highlight: goal.id == highlightGoalId,
       checkboxKey: isFirst ? tutorialCheckboxKey : null,
       categories: categories,
       onToggleStatus: onToggleStatus,
@@ -1157,9 +1281,12 @@ class _GoalBoard extends StatelessWidget {
     );
   }
 
-  /// Single-column flavor of [_activeItem] with the list row spacing.
+  /// Single-column flavor of [_activeItem] with the list row spacing. The
+  /// spotlighted row carries [highlightRowKey] (on the outer Padding) so the
+  /// page can scroll it into view after a ⌘K jump.
   Widget _activeListItem(DashboardGoal goal, {required bool isFirst}) {
     return Padding(
+      key: goal.id == highlightGoalId ? highlightRowKey : null,
       padding: const EdgeInsets.only(bottom: 10),
       child: _activeItem(goal, isFirst: isFirst),
     );
@@ -1167,10 +1294,12 @@ class _GoalBoard extends StatelessWidget {
 
   Widget _archivedItem(DashboardGoal goal) {
     return Padding(
+      key: goal.id == highlightGoalId ? highlightRowKey : null,
       padding: const EdgeInsets.only(bottom: 10),
       child: _GoalItem(
         key: ValueKey(goal.id),
         goal: goal,
+        highlight: goal.id == highlightGoalId,
         categories: categories,
         onToggleStatus: onToggleStatus,
         onEdit: onEdit,
@@ -1653,6 +1782,7 @@ class _GoalItem extends StatefulWidget {
   const _GoalItem({
     super.key,
     required this.goal,
+    this.highlight = false,
     this.checkboxKey,
     required this.categories,
     required this.onToggleStatus,
@@ -1662,6 +1792,10 @@ class _GoalItem extends StatefulWidget {
   });
 
   final DashboardGoal goal;
+
+  /// When true this row was just navigated to via ⌘K — pulse a fading accent
+  /// ring so the eye lands on it.
+  final bool highlight;
   final GlobalKey? checkboxKey;
   final List<_GoalCategory> categories;
   final void Function(DashboardGoal, GoalState) onToggleStatus;
@@ -1855,7 +1989,7 @@ class _GoalItemState extends State<_GoalItem> {
         ? EvolveColors.destructive
         : category.color;
 
-    return MouseRegion(
+    final row = MouseRegion(
       onEnter: (_) => setState(() => _hovered = true),
       onExit: (_) => setState(() => _hovered = false),
       child: AnimatedContainer(
@@ -1890,6 +2024,40 @@ class _GoalItemState extends State<_GoalItem> {
           statusColor: statusColor,
         ),
       ),
+    );
+    if (!widget.highlight) return row;
+    // Freshly navigated-to via ⌘K: pulse a one-shot accent ring + glow that
+    // fades over ~1.3s, drawing the eye to the goal the user searched for. The
+    // foreground border paints over the row edge (no layout shift); the shadow
+    // sits behind. TweenAnimationBuilder plays once when the row first mounts.
+    return TweenAnimationBuilder<double>(
+      tween: Tween<double>(begin: 1, end: 0),
+      duration: const Duration(milliseconds: 1300),
+      curve: Curves.easeOutCubic,
+      builder: (context, glow, child) => DecoratedBox(
+        position: DecorationPosition.foreground,
+        decoration: BoxDecoration(
+          borderRadius: BorderRadius.circular(16),
+          border: Border.all(
+            color: context.evolveAccent.withValues(alpha: 0.9 * glow),
+            width: 2,
+          ),
+        ),
+        child: DecoratedBox(
+          decoration: BoxDecoration(
+            borderRadius: BorderRadius.circular(16),
+            boxShadow: [
+              BoxShadow(
+                color: context.evolveAccent.withValues(alpha: 0.5 * glow),
+                blurRadius: 24 * glow,
+                spreadRadius: 2 * glow,
+              ),
+            ],
+          ),
+          child: child,
+        ),
+      ),
+      child: row,
     );
   }
 }

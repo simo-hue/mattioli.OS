@@ -1154,7 +1154,3 @@ NEXT ACTION: Ensure device is running the latest built version of the codebase.
 - [2026-07-14 21:41]: Settings Subtitle Update
   - *Details*: Changed the Personal Information subtitle to display the translated field names (First name, Last name, Date of birth) instead of the user's actual data as requested.
   - *Tech Notes*: Updated `profile_screen.dart` to use `context.t.profile.personalInfo` string values.
-
-- [2026-07-14 22:02]: macOS App Name Fix
-  - *Details*: Changed `CFBundleName` in `macos/Runner/Info.plist` from `$(PRODUCT_NAME)` (evolve_desktop) to `Evolve` to ensure the app is correctly named in the macOS App Switcher (Cmd+Tab) and Menu Bar.
-  - *Tech Notes*: This resolves the issue where the app appeared as 'evolve_Desktop' in the App Switcher. To see this change, the running instance of the macOS app must be restarted.

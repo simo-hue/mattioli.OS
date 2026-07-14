@@ -952,7 +952,18 @@
     "temperatureLower": "خفض درجة الحرارة",
     "temperatureRaise": "رفع درجة الحرارة",
     "sendMessage": "إرسال",
-    "stopResponse": "إيقاف"
+    "stopResponse": "إيقاف",
+    "startOllama": "تشغيل Ollama",
+    "getOllama": "الحصول على Ollama",
+    "startingOllama": "جارٍ تشغيل Ollama…",
+    "ollamaOfflineTitle": "Ollama غير مُشغّل",
+    "ollamaOfflineBody": "شغّل خادمك المحلي للدردشة بخصوصية — دون الحاجة إلى الطرفية.",
+    "ollamaNotInstalledTitle": "Ollama غير مُثبَّت",
+    "ollamaNotInstalledBody": "ثبّت تطبيق Ollama المجاني ثم اضغط تشغيل.",
+    "ollamaStartTimeout": "يستغرق وقتًا أطول من المتوقع — تحقّق من أيقونة Ollama في شريط القوائم (قد يتطلب التشغيل الأول موافقة).",
+    "ollamaStartingBody": "قد يستغرق ذلك بضع ثوانٍ…",
+    "ollamaStartFailed": "تعذّر تشغيل Ollama — جرّب فتحه من مجلد التطبيقات.",
+    "ollamaDownloadFailed": "تعذّر فتح المتصفح — تفضّل بزيارة ollama.com/download"
   },
   "tour": {
     "back": "رجوع",

@@ -9,17 +9,26 @@ class SecureStorageUtils {
   static const FlutterSecureStorage storage = FlutterSecureStorage();
 
   /// Storage for Private-Mode device-local secrets: the SQLCipher database key
-  /// and the owner UUID. `first_unlock_this_device` keeps these items on THIS
-  /// Mac only — never synced to the user's iCloud Keychain nor restored onto
-  /// another device — matching the local-only, backup-excluded Private database
-  /// so the key can never outlive or migrate away from its data. Mirrors
-  /// mobile's device-local tier and is deliberately the OPPOSITE of
-  /// [DesktopSyncSecretStore] (the only secret allowed to sync).
-  static const FlutterSecureStorage _deviceLocalStorage = FlutterSecureStorage(
-    mOptions: MacOsOptions(
-      accessibility: KeychainAccessibility.first_unlock_this_device,
-    ),
-  );
+  /// and the owner UUID.
+  ///
+  /// IMPORTANT — this uses the DEFAULT keychain options, NOT an accessibility
+  /// pin, and it MUST stay that way. On macOS, `flutter_secure_storage` puts
+  /// `kSecAttrAccessible` into the LOOKUP query (see the darwin plugin's
+  /// `baseQuery`), so reading with an accessibility that differs from how the
+  /// item was WRITTEN silently misses it (`errSecItemNotFound`). Desktop's
+  /// private-mode secrets have always been written with default options, so
+  /// pinning this to e.g. `first_unlock_this_device` makes an existing key
+  /// unreadable — after which the fail-closed guard in
+  /// [DesktopPrivateDb] fires and locks the user out of their intact data on the
+  /// very next update. Default options already keep the key device-local
+  /// (`whenUnlocked` + non-synchronizable ⇒ never in the iCloud Keychain), and
+  /// the DB file itself is separately backup-excluded — so the pin bought almost
+  /// nothing while risking a mass lockout. Kept as a distinct handle so callers
+  /// read as intent-revealing and any future migration (read-heal into a pinned
+  /// store) has a single home. Unlike mobile — which shipped its device-local
+  /// tier pinned from day one (no legacy items to migrate) — desktop cannot
+  /// retroactively change the accessibility of already-written keys.
+  static const FlutterSecureStorage _deviceLocalStorage = FlutterSecureStorage();
 
   static Future<String?> read(String key) => storage.read(key: key);
 

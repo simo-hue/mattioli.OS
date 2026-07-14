@@ -1217,6 +1217,17 @@ class _Translations$coachSettings$de extends Translations$coachSettings$en {
 	@override String get temperatureRaise => 'Temperatur erhöhen';
 	@override String get sendMessage => 'Senden';
 	@override String get stopResponse => 'Stopp';
+	@override String get startOllama => 'Ollama starten';
+	@override String get getOllama => 'Ollama installieren';
+	@override String get startingOllama => 'Ollama wird gestartet…';
+	@override String get ollamaOfflineTitle => 'Ollama läuft nicht';
+	@override String get ollamaOfflineBody => 'Starte deinen lokalen Server, um privat zu chatten — ganz ohne Terminal.';
+	@override String get ollamaNotInstalledTitle => 'Ollama ist nicht installiert';
+	@override String get ollamaNotInstalledBody => 'Installiere die kostenlose Ollama-App und drücke dann Start.';
+	@override String get ollamaStartTimeout => 'Dauert länger als erwartet — prüfe das Ollama-Symbol in der Menüleiste (der erste Start braucht evtl. eine Freigabe).';
+	@override String get ollamaStartingBody => 'Das kann ein paar Sekunden dauern…';
+	@override String get ollamaStartFailed => 'Ollama konnte nicht gestartet werden — versuche, es aus dem Programme-Ordner zu öffnen.';
+	@override String get ollamaDownloadFailed => 'Browser konnte nicht geöffnet werden — besuche ollama.com/download';
 }
 
 // Path: tour
@@ -2269,6 +2280,17 @@ extension on TranslationsDe {
 			'coachSettings.temperatureRaise' => 'Temperatur erhöhen',
 			'coachSettings.sendMessage' => 'Senden',
 			'coachSettings.stopResponse' => 'Stopp',
+			'coachSettings.startOllama' => 'Ollama starten',
+			'coachSettings.getOllama' => 'Ollama installieren',
+			'coachSettings.startingOllama' => 'Ollama wird gestartet…',
+			'coachSettings.ollamaOfflineTitle' => 'Ollama läuft nicht',
+			'coachSettings.ollamaOfflineBody' => 'Starte deinen lokalen Server, um privat zu chatten — ganz ohne Terminal.',
+			'coachSettings.ollamaNotInstalledTitle' => 'Ollama ist nicht installiert',
+			'coachSettings.ollamaNotInstalledBody' => 'Installiere die kostenlose Ollama-App und drücke dann Start.',
+			'coachSettings.ollamaStartTimeout' => 'Dauert länger als erwartet — prüfe das Ollama-Symbol in der Menüleiste (der erste Start braucht evtl. eine Freigabe).',
+			'coachSettings.ollamaStartingBody' => 'Das kann ein paar Sekunden dauern…',
+			'coachSettings.ollamaStartFailed' => 'Ollama konnte nicht gestartet werden — versuche, es aus dem Programme-Ordner zu öffnen.',
+			'coachSettings.ollamaDownloadFailed' => 'Browser konnte nicht geöffnet werden — besuche ollama.com/download',
 			'tour.back' => 'Zurück',
 			'tour.next' => 'Weiter',
 			'tour.continueLabel' => 'Weiter',

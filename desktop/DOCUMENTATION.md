@@ -568,3 +568,28 @@ remaining: on-device QA on the Xcode machine (TO_SIMO_DO.md) — visual pass on 
 verified badge + smoke test of notifications / biometric re-lock / Pro gates,
 plus the earlier DB-reset / backup-exclusion checks.
 
+- [2026-07-14]: HOTFIX — reverted the device-local `first_unlock_this_device` pin (it was a lockout regression)
+  - *Symptom*: on-device import of a real iOS backup threw `Bad state: Private
+    database key unavailable while the database file exists; refusing to
+    regenerate it` (the fail-closed guard firing).
+  - *Root cause*: the earlier secret-storage parity port pinned
+    `SecureStorageUtils._deviceLocalStorage` to `first_unlock_this_device`. On
+    macOS the `flutter_secure_storage_darwin` `baseQuery` (used by BOTH read and
+    write) puts `kSecAttrAccessible` INTO the lookup query, so an item WRITTEN
+    with the old default accessibility is NOT matched when READ with a different
+    one → `read` returns null → the guard concludes the key is gone. Desktop's
+    private-mode secrets were all written with default options, so the pin made
+    the existing key (and owner id) unreadable. This would have locked out EVERY
+    existing desktop private-mode user on the update, not just import.
+  - *Fix*: `_deviceLocalStorage` reverted to default options (`FlutterSecureStorage()`)
+    — identical to how desktop always wrote these secrets, so existing keys read
+    again. Default options already keep the key device-local (`whenUnlocked`,
+    non-synchronizable ⇒ never iCloud-synced) and the DB file is separately
+    backup-excluded, so the pin bought ~nothing. The important fixes from that
+    port (fail-closed guard, scoped `-25299` recovery, no `deleteAll`, backup
+    exclusion) are UNAFFECTED. Corrected the class doc claims in
+    `secure_storage_utils.dart` + `desktop_private_db.dart`. Verified: analyze
+    clean; DB/sync tests 28 pass. NOTE: mobile keeps its pin (it shipped pinned
+    from day one — no legacy items to migrate); desktop can't retroactively
+    change already-written keys.
+

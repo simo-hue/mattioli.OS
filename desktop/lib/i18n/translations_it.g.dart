@@ -1217,6 +1217,17 @@ class _Translations$coachSettings$it extends Translations$coachSettings$en {
 	@override String get temperatureRaise => 'Aumenta la temperatura';
 	@override String get sendMessage => 'Invia';
 	@override String get stopResponse => 'Ferma';
+	@override String get startOllama => 'Avvia Ollama';
+	@override String get getOllama => 'Ottieni Ollama';
+	@override String get startingOllama => 'Avvio di Ollama…';
+	@override String get ollamaOfflineTitle => 'Ollama non è in esecuzione';
+	@override String get ollamaOfflineBody => 'Avvia il server locale per chattare in privato — senza terminale.';
+	@override String get ollamaNotInstalledTitle => 'Ollama non è installato';
+	@override String get ollamaNotInstalledBody => 'Installa l\'app gratuita Ollama, poi premi Avvia.';
+	@override String get ollamaStartTimeout => 'Sta impiegando più tempo del previsto — controlla l\'icona di Ollama nella barra dei menu (il primo avvio potrebbe richiedere un\'autorizzazione).';
+	@override String get ollamaStartingBody => 'Può richiedere qualche secondo…';
+	@override String get ollamaStartFailed => 'Impossibile avviare Ollama — prova ad aprirlo dalla cartella Applicazioni.';
+	@override String get ollamaDownloadFailed => 'Impossibile aprire il browser — visita ollama.com/download';
 }
 
 // Path: tour
@@ -2269,6 +2280,17 @@ extension on TranslationsIt {
 			'coachSettings.temperatureRaise' => 'Aumenta la temperatura',
 			'coachSettings.sendMessage' => 'Invia',
 			'coachSettings.stopResponse' => 'Ferma',
+			'coachSettings.startOllama' => 'Avvia Ollama',
+			'coachSettings.getOllama' => 'Ottieni Ollama',
+			'coachSettings.startingOllama' => 'Avvio di Ollama…',
+			'coachSettings.ollamaOfflineTitle' => 'Ollama non è in esecuzione',
+			'coachSettings.ollamaOfflineBody' => 'Avvia il server locale per chattare in privato — senza terminale.',
+			'coachSettings.ollamaNotInstalledTitle' => 'Ollama non è installato',
+			'coachSettings.ollamaNotInstalledBody' => 'Installa l\'app gratuita Ollama, poi premi Avvia.',
+			'coachSettings.ollamaStartTimeout' => 'Sta impiegando più tempo del previsto — controlla l\'icona di Ollama nella barra dei menu (il primo avvio potrebbe richiedere un\'autorizzazione).',
+			'coachSettings.ollamaStartingBody' => 'Può richiedere qualche secondo…',
+			'coachSettings.ollamaStartFailed' => 'Impossibile avviare Ollama — prova ad aprirlo dalla cartella Applicazioni.',
+			'coachSettings.ollamaDownloadFailed' => 'Impossibile aprire il browser — visita ollama.com/download',
 			'tour.back' => 'Indietro',
 			'tour.next' => 'Avanti',
 			'tour.continueLabel' => 'Continua',

@@ -2780,6 +2780,39 @@ class Translations$coachSettings$en {
 
 	/// en: 'Stop'
 	String get stopResponse => 'Stop';
+
+	/// en: 'Start Ollama'
+	String get startOllama => 'Start Ollama';
+
+	/// en: 'Get Ollama'
+	String get getOllama => 'Get Ollama';
+
+	/// en: 'Starting Ollama…'
+	String get startingOllama => 'Starting Ollama…';
+
+	/// en: 'Ollama isn't running'
+	String get ollamaOfflineTitle => 'Ollama isn\'t running';
+
+	/// en: 'Start your local server to chat privately — no terminal needed.'
+	String get ollamaOfflineBody => 'Start your local server to chat privately — no terminal needed.';
+
+	/// en: 'Ollama isn't installed'
+	String get ollamaNotInstalledTitle => 'Ollama isn\'t installed';
+
+	/// en: 'Install the free Ollama app, then press Start.'
+	String get ollamaNotInstalledBody => 'Install the free Ollama app, then press Start.';
+
+	/// en: 'Taking longer than expected — check the Ollama icon in your menu bar (a first launch may need approval).'
+	String get ollamaStartTimeout => 'Taking longer than expected — check the Ollama icon in your menu bar (a first launch may need approval).';
+
+	/// en: 'This can take a few seconds…'
+	String get ollamaStartingBody => 'This can take a few seconds…';
+
+	/// en: 'Couldn't start Ollama — try opening it from your Applications folder.'
+	String get ollamaStartFailed => 'Couldn\'t start Ollama — try opening it from your Applications folder.';
+
+	/// en: 'Couldn't open the browser — visit ollama.com/download'
+	String get ollamaDownloadFailed => 'Couldn\'t open the browser — visit ollama.com/download';
 }
 
 // Path: tour
@@ -4042,6 +4075,17 @@ extension on Translations {
 			'coachSettings.temperatureRaise' => 'Raise temperature',
 			'coachSettings.sendMessage' => 'Send',
 			'coachSettings.stopResponse' => 'Stop',
+			'coachSettings.startOllama' => 'Start Ollama',
+			'coachSettings.getOllama' => 'Get Ollama',
+			'coachSettings.startingOllama' => 'Starting Ollama…',
+			'coachSettings.ollamaOfflineTitle' => 'Ollama isn\'t running',
+			'coachSettings.ollamaOfflineBody' => 'Start your local server to chat privately — no terminal needed.',
+			'coachSettings.ollamaNotInstalledTitle' => 'Ollama isn\'t installed',
+			'coachSettings.ollamaNotInstalledBody' => 'Install the free Ollama app, then press Start.',
+			'coachSettings.ollamaStartTimeout' => 'Taking longer than expected — check the Ollama icon in your menu bar (a first launch may need approval).',
+			'coachSettings.ollamaStartingBody' => 'This can take a few seconds…',
+			'coachSettings.ollamaStartFailed' => 'Couldn\'t start Ollama — try opening it from your Applications folder.',
+			'coachSettings.ollamaDownloadFailed' => 'Couldn\'t open the browser — visit ollama.com/download',
 			'tour.back' => 'Back',
 			'tour.next' => 'Next',
 			'tour.continueLabel' => 'Continue',

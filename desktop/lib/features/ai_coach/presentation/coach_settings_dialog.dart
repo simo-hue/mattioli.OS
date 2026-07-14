@@ -9,9 +9,11 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:lucide_icons_flutter/lucide_icons.dart';
 
 import '../application/coach_controllers.dart';
+import '../application/ollama_start_controller.dart';
 import '../data/cloud_coach_backend.dart';
 import '../domain/coach_backend.dart';
 import '../domain/coach_config.dart';
+import 'start_ollama_button.dart';
 
 /// Opens the reusable coach-engine configuration dialog (backend, local server,
 /// model discovery, system prompt, temperature). Used from both the chat header
@@ -271,6 +273,7 @@ class _LocalServerSection extends ConsumerWidget {
             _ReachabilityPill(baseUrl: config.localBaseUrl),
           ],
         ),
+        _OllamaStartRow(config: config, preset: preset),
         const SizedBox(height: 14),
         EvolveFieldLabel(t.coachSettings.baseUrlLabel),
         const SizedBox(height: 8),
@@ -295,6 +298,56 @@ class _LocalServerSection extends ConsumerWidget {
           manualModelController: manualModelController,
         ),
       ],
+    );
+  }
+}
+
+/// In-dialog "Start Ollama" affordance — shown below the status pill only when
+/// the local Ollama server is unreachable, with a soft hint on timeout.
+class _OllamaStartRow extends ConsumerWidget {
+  const _OllamaStartRow({required this.config, required this.preset});
+
+  final CoachConfig config;
+  final LocalServerPreset preset;
+
+  @override
+  Widget build(BuildContext context, WidgetRef ref) {
+    final reachable = ref
+        .watch(coachLocalReachableProvider(config.localBaseUrl))
+        .asData
+        ?.value;
+    if (reachable == null) return const SizedBox.shrink();
+    if (!shouldOfferOllamaStart(
+      backend: config.backend,
+      preset: preset,
+      reachable: reachable,
+    )) {
+      return const SizedBox.shrink();
+    }
+    final hint = switch (ref.watch(ollamaStartControllerProvider)) {
+      OllamaStartStatus.timedOut => t.coachSettings.ollamaStartTimeout,
+      OllamaStartStatus.failed => t.coachSettings.ollamaStartFailed,
+      _ => null,
+    };
+    return Padding(
+      padding: const EdgeInsets.only(top: 12),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          const StartOllamaButton(),
+          if (hint != null) ...[
+            const SizedBox(height: 8),
+            Text(
+              hint,
+              style: TextStyle(
+                color: context.evolveColors.muted,
+                fontSize: 11.5,
+                height: 1.35,
+              ),
+            ),
+          ],
+        ],
+      ),
     );
   }
 }

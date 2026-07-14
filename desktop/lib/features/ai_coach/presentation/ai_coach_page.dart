@@ -23,9 +23,12 @@ import 'package:flutter_markdown/flutter_markdown.dart';
 import 'package:lucide_icons_flutter/lucide_icons.dart';
 
 import '../application/coach_controllers.dart';
+import '../application/ollama_start_controller.dart';
 import '../domain/chat_message.dart';
 import '../domain/coach_backend.dart';
+import '../domain/coach_config.dart';
 import 'coach_model_chip.dart';
+import 'start_ollama_button.dart';
 
 /// Pure prompt-suggestion selection (time of day + which context switches are
 /// on), extracted for testing. Returns up to four unique suggestions, chosen
@@ -544,6 +547,7 @@ class _AiCoachPageState extends ConsumerState<AiCoachPage> {
             dismissed: _localNudgeDismissed,
             onDismiss: _dismissLocalNudge,
           ),
+          const _LocalOfflineBanner(),
           // Pinned chat surface: the panel absorbs all remaining viewport
           // height (no page scroll). The thread scrolls internally and the
           // message column is centered at max 900 so bubbles never span an
@@ -1178,6 +1182,147 @@ class _LocalDetectedBanner extends ConsumerWidget {
               },
               child: Text(t.coachSettings.detectedAction),
             ),
+          ],
+        ),
+      ),
+    );
+  }
+}
+
+/// Shown when the coach is on the local Ollama backend but the server is down:
+/// offers a one-tap "Start Ollama" (or "Get Ollama" if it isn't installed),
+/// with a soft hint if a launch takes too long. Hides itself the moment the
+/// server becomes reachable.
+class _LocalOfflineBanner extends ConsumerStatefulWidget {
+  const _LocalOfflineBanner();
+
+  @override
+  ConsumerState<_LocalOfflineBanner> createState() =>
+      _LocalOfflineBannerState();
+}
+
+class _LocalOfflineBannerState extends ConsumerState<_LocalOfflineBanner> {
+  Timer? _timer;
+
+  @override
+  void initState() {
+    super.initState();
+    // While the coach page is open, re-probe the local server (and install
+    // state) every few seconds so the banner self-heals when Ollama comes up
+    // out-of-band or is installed mid-session. Cheap and idle unless we're on
+    // the local Ollama backend AND not already connected.
+    _timer = Timer.periodic(const Duration(seconds: 3), (_) {
+      final config = ref.read(coachConfigProvider);
+      if (config.backend != CoachBackendKind.local) return;
+      if (LocalServerPreset.match(config.localBaseUrl) !=
+          LocalServerPreset.ollama) {
+        return;
+      }
+      final reachable = ref
+          .read(coachLocalReachableProvider(config.localBaseUrl))
+          .asData
+          ?.value;
+      if (reachable == true) return; // already connected — nothing to heal
+      ref.invalidate(coachLocalReachableProvider(config.localBaseUrl));
+      ref.invalidate(ollamaInstalledProvider);
+    });
+  }
+
+  @override
+  void dispose() {
+    _timer?.cancel();
+    super.dispose();
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final config = ref.watch(coachConfigProvider);
+    // Gate on backend/preset BEFORE touching the reachability probe, so cloud
+    // (or a non-Ollama local server) never triggers a localhost probe here.
+    if (config.backend != CoachBackendKind.local) {
+      return const SizedBox.shrink();
+    }
+    final preset = LocalServerPreset.match(config.localBaseUrl);
+    if (preset != LocalServerPreset.ollama) return const SizedBox.shrink();
+    // Don't render until reachability resolves (avoids a flash on open).
+    final reachable = ref
+        .watch(coachLocalReachableProvider(config.localBaseUrl))
+        .asData
+        ?.value;
+    if (reachable == null || reachable) return const SizedBox.shrink();
+
+    final status = ref.watch(ollamaStartControllerProvider);
+    final installed = ref.watch(ollamaInstalledProvider).asData?.value ?? true;
+
+    final colors = context.evolveColors;
+    final (title, body) = switch ((installed, status)) {
+      (false, _) => (
+        t.coachSettings.ollamaNotInstalledTitle,
+        t.coachSettings.ollamaNotInstalledBody,
+      ),
+      (true, OllamaStartStatus.starting) => (
+        t.coachSettings.startingOllama,
+        t.coachSettings.ollamaStartingBody,
+      ),
+      (true, OllamaStartStatus.timedOut) => (
+        t.coachSettings.ollamaOfflineTitle,
+        t.coachSettings.ollamaStartTimeout,
+      ),
+      (true, OllamaStartStatus.failed) => (
+        t.coachSettings.ollamaOfflineTitle,
+        t.coachSettings.ollamaStartFailed,
+      ),
+      _ => (
+        t.coachSettings.ollamaOfflineTitle,
+        t.coachSettings.ollamaOfflineBody,
+      ),
+    };
+
+    return Padding(
+      padding: const EdgeInsets.only(bottom: 16),
+      child: Container(
+        padding: const EdgeInsetsDirectional.fromSTEB(14, 12, 12, 12),
+        decoration: BoxDecoration(
+          color: EvolveColors.amber.withValues(alpha: 0.08),
+          borderRadius: BorderRadius.circular(14),
+          border: Border.all(color: EvolveColors.amber.withValues(alpha: 0.3)),
+        ),
+        child: Row(
+          children: [
+            const EvolveIconChip(
+              icon: LucideIcons.serverOff,
+              color: EvolveColors.amber,
+              size: 34,
+              iconSize: 16,
+            ),
+            const SizedBox(width: 12),
+            Expanded(
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text(
+                    title,
+                    style: TextStyle(
+                      color: colors.foreground,
+                      fontSize: 13.5,
+                      fontWeight: FontWeight.w700,
+                    ),
+                  ),
+                  const SizedBox(height: 2),
+                  Text(
+                    body,
+                    style: TextStyle(
+                      color: colors.muted,
+                      fontSize: 12,
+                      fontWeight: FontWeight.w500,
+                      height: 1.35,
+                    ),
+                  ),
+                ],
+              ),
+            ),
+            const SizedBox(width: 12),
+            const StartOllamaButton(),
           ],
         ),
       ),

@@ -952,7 +952,18 @@
     "temperatureLower": "Lower temperature",
     "temperatureRaise": "Raise temperature",
     "sendMessage": "Send",
-    "stopResponse": "Stop"
+    "stopResponse": "Stop",
+    "startOllama": "Start Ollama",
+    "getOllama": "Get Ollama",
+    "startingOllama": "Starting Ollama…",
+    "ollamaOfflineTitle": "Ollama isn't running",
+    "ollamaOfflineBody": "Start your local server to chat privately — no terminal needed.",
+    "ollamaNotInstalledTitle": "Ollama isn't installed",
+    "ollamaNotInstalledBody": "Install the free Ollama app, then press Start.",
+    "ollamaStartTimeout": "Taking longer than expected — check the Ollama icon in your menu bar (a first launch may need approval).",
+    "ollamaStartingBody": "This can take a few seconds…",
+    "ollamaStartFailed": "Couldn't start Ollama — try opening it from your Applications folder.",
+    "ollamaDownloadFailed": "Couldn't open the browser — visit ollama.com/download"
   },
   "tour": {
     "back": "Back",

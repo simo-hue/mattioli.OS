@@ -63,6 +63,9 @@ local needs no key).
 ## Desktop continuous product tour (2026-07-14) — on-device QA
 No Xcode on this Mac, so the tour was code-verified (analyze clean + `flutter test` green for all
 tour suites) but NOT run on a real macOS build. Please run the desktop app and check:
+- [ ] **Name popup fires once** (the fixed bug): in Private mode with no name yet, the profile-name
+      prompt appears exactly ONCE (not twice at startup), and after you enter your name it never comes
+      back when you navigate away from and back to Overview. Same for the welcome dialog.
 - [ ] **First launch**: welcome dialog appears → "Start tour" → the tour runs continuously through
       **Overview → Habits → Insights → Goals → AI Coach**, then the "You're all set" completion dialog
       returns you to Overview. Confirm each of the 22 spotlights lands on the right widget (especially
@@ -78,6 +81,31 @@ tour suites) but NOT run on a real macOS build. Please run the desktop app and c
 - [ ] **Existing install**: because legacy `has_seen_*` flags are purged, an install that had already
       seen the old (broken) tutorial will see the new full tour once — confirm that's acceptable.
 - [ ] **Native review** of the `t.tour.*` Spanish/German/Arabic copy (esp. `ar`, RTL) — machine-authored.
+
+
+## In-app "Start Ollama" launcher — on-device QA (desktop macOS, sandboxed)
+
+The app launches the installed Ollama desktop app via `NSWorkspace` (sandbox blocks running
+`ollama serve` directly). Code-verified here (Swift typechecks, Dart tests green) but the real
+launch can only be checked on your Mac. Requires the Ollama **desktop app** installed (not a
+Homebrew CLI-only install).
+
+- [ ] **#1 risk — confirm the sandbox actually allows the launch.** Quit Ollama from its menu-bar
+      icon, open the coach on the local **Ollama** preset (server down) → the amber "Ollama isn't
+      running" banner appears → tap **Start Ollama**. If the daemon comes up (pill flips Connected
+      within ~30s, banner disappears), the sandbox `NSWorkspace.openApplication` path works. If it
+      silently does nothing (status "failed"), we likely need a temporary-exception entitlement —
+      tell me and I'll add it.
+- [ ] **Confirm the Ollama bundle id.** Run `osascript -e 'id of app "Ollama"'`. If it's NOT one of
+      `com.electron.ollama` / `ai.ollama.app` / `com.ollama.ollama` / `com.ollama.app` in
+      `LocalLlmBridge.ollamaBundleIds` (`macos/Runner/AppDelegate.swift`), the path fallback may or
+      may not fire under the sandbox — send me the real id and I'll make it the primary.
+- [ ] **First-ever launch** may trigger a Gatekeeper / "downloaded from the internet" prompt or take
+      longer — confirm the soft timeout hint copy ("check the Ollama icon in your menu bar…") reads well.
+- [ ] **Not-installed fallback**: temporarily rename `/Applications/Ollama.app` → the button becomes
+      **Get Ollama** and opens `ollama.com/download` in the browser.
+- [ ] **Both surfaces**: the affordance shows on the coach page banner AND in Settings → AI Coach →
+      Server settings (below the Offline status pill) — both only while local+Ollama+unreachable.
 
 Note: running the FULL `flutter test` suite needs dummy dart-defines
 (`--dart-define=EVOLVE_SUPABASE_URL=… --dart-define=EVOLVE_SUPABASE_ANON_KEY=… --dart-define=OPENROUTER_API_KEY=…`).

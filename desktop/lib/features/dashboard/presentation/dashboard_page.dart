@@ -54,10 +54,25 @@ class _DashboardPageState extends ConsumerState<DashboardPage> {
 
   Future<void> _runStartupOnboardingFlow() async {
     if (_isRunningStartupOnboardingFlow || !mounted) return;
+    // Run the first-launch flow (name capture + tour welcome) at most ONCE per
+    // app session. The dashboard remounts every time the user returns to
+    // Overview — and again while the biometric gate resolves at startup — so
+    // without this guard the name prompt / welcome dialog re-fire on every
+    // mount (the reported "pop-up every time / twice" bug). Claimed up-front so
+    // a concurrent remount can't stack a second prompt; released below if we
+    // couldn't complete (name still needed).
+    if (ref.read(startupOnboardingHandledProvider)) return;
     _isRunningStartupOnboardingFlow = true;
+    ref.read(startupOnboardingHandledProvider.notifier).set(true);
     try {
       final isProfileReady = await _ensureProfileNameReady();
-      if (!isProfileReady || !mounted) return;
+      if (!mounted) return;
+      if (!isProfileReady) {
+        // Didn't finish (name still required) — release so a later mount can
+        // retry rather than silently skipping the prompt for the whole session.
+        ref.read(startupOnboardingHandledProvider.notifier).set(false);
+        return;
+      }
       _checkTutorial();
     } finally {
       _isRunningStartupOnboardingFlow = false;

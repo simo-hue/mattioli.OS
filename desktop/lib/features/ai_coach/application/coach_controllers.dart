@@ -139,7 +139,7 @@ final coachLocalModelsProvider = FutureProvider.autoDispose
 /// resolves quickly instead of hanging on the default 15s connect budget.
 final coachLocalReachableProvider = FutureProvider.autoDispose
     .family<bool, String>((ref, baseUrl) async {
-      return _probeReachable(baseUrl);
+      return probeLocalReachable(baseUrl);
     });
 
 /// Best-effort local-server auto-detection for the first-run nudge: probes the
@@ -150,15 +150,16 @@ final coachLocalDetectionProvider = FutureProvider.autoDispose<String?>((
 ) async {
   for (final port in kLocalProbePorts) {
     final baseUrl = 'http://localhost:$port/v1';
-    if (await _probeReachable(baseUrl)) return baseUrl;
+    if (await probeLocalReachable(baseUrl)) return baseUrl;
   }
   return null;
 });
 
-/// A short-timeout reachability probe used only by auto-detection. The error
-/// strings are irrelevant here (reachability never surfaces them), so a shared
-/// empty set keeps this allocation-light.
-Future<bool> _probeReachable(String baseUrl) {
+/// A short-timeout reachability probe shared by auto-detection, the status
+/// pill, and the start-and-poll flow. The error strings are irrelevant here
+/// (reachability never surfaces them), so a shared empty set keeps this
+/// allocation-light.
+Future<bool> probeLocalReachable(String baseUrl) {
   return OpenAiCompatibleClient(
     baseUrl: baseUrl,
     headers: const {'Authorization': 'Bearer local'},

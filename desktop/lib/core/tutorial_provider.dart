@@ -145,9 +145,11 @@ class TourController extends Notifier<TourState> {
 
   /// Reset for a replay from Settings: clear completion and rewind to Overview.
   /// The caller navigates to Overview and re-runs the welcome dialog +
-  /// [activate].
+  /// [activate]. Also clears the per-session startup guard so the Dashboard
+  /// re-runs its onboarding flow (welcome dialog) on the replay navigation.
   Future<void> resetForReplay() async {
     state = const TourState(completed: false, active: false, segmentIndex: 0);
+    ref.read(startupOnboardingHandledProvider.notifier).set(false);
     final prefs = ref.read(sharedPreferencesProvider);
     await prefs?.setBool(_completedKey, false);
     await prefs?.setInt(_segmentKey, 0);
@@ -157,3 +159,22 @@ class TourController extends Notifier<TourState> {
 final tourControllerProvider = NotifierProvider<TourController, TourState>(
   TourController.new,
 );
+
+/// Set once the Dashboard's first-launch startup flow (profile-name capture +
+/// tour welcome) has been handled this app session. The Dashboard remounts
+/// every time the user returns to Overview — and again while the biometric gate
+/// resolves at startup — so without this guard the name prompt and the welcome
+/// dialog would re-fire on every mount. Deliberately NOT persisted: a fresh
+/// launch re-evaluates (and resumes an unfinished tour). Reset by "Repeat
+/// tutorial" via [TourController.resetForReplay].
+class StartupOnboardingHandledNotifier extends Notifier<bool> {
+  @override
+  bool build() => false;
+
+  void set(bool value) => state = value;
+}
+
+final startupOnboardingHandledProvider =
+    NotifierProvider<StartupOnboardingHandledNotifier, bool>(
+      StartupOnboardingHandledNotifier.new,
+    );

@@ -1217,6 +1217,17 @@ class _Translations$coachSettings$ar extends Translations$coachSettings$en {
 	@override String get temperatureRaise => 'رفع درجة الحرارة';
 	@override String get sendMessage => 'إرسال';
 	@override String get stopResponse => 'إيقاف';
+	@override String get startOllama => 'تشغيل Ollama';
+	@override String get getOllama => 'الحصول على Ollama';
+	@override String get startingOllama => 'جارٍ تشغيل Ollama…';
+	@override String get ollamaOfflineTitle => 'Ollama غير مُشغّل';
+	@override String get ollamaOfflineBody => 'شغّل خادمك المحلي للدردشة بخصوصية — دون الحاجة إلى الطرفية.';
+	@override String get ollamaNotInstalledTitle => 'Ollama غير مُثبَّت';
+	@override String get ollamaNotInstalledBody => 'ثبّت تطبيق Ollama المجاني ثم اضغط تشغيل.';
+	@override String get ollamaStartTimeout => 'يستغرق وقتًا أطول من المتوقع — تحقّق من أيقونة Ollama في شريط القوائم (قد يتطلب التشغيل الأول موافقة).';
+	@override String get ollamaStartingBody => 'قد يستغرق ذلك بضع ثوانٍ…';
+	@override String get ollamaStartFailed => 'تعذّر تشغيل Ollama — جرّب فتحه من مجلد التطبيقات.';
+	@override String get ollamaDownloadFailed => 'تعذّر فتح المتصفح — تفضّل بزيارة ollama.com/download';
 }
 
 // Path: tour
@@ -2269,6 +2280,17 @@ extension on TranslationsAr {
 			'coachSettings.temperatureRaise' => 'رفع درجة الحرارة',
 			'coachSettings.sendMessage' => 'إرسال',
 			'coachSettings.stopResponse' => 'إيقاف',
+			'coachSettings.startOllama' => 'تشغيل Ollama',
+			'coachSettings.getOllama' => 'الحصول على Ollama',
+			'coachSettings.startingOllama' => 'جارٍ تشغيل Ollama…',
+			'coachSettings.ollamaOfflineTitle' => 'Ollama غير مُشغّل',
+			'coachSettings.ollamaOfflineBody' => 'شغّل خادمك المحلي للدردشة بخصوصية — دون الحاجة إلى الطرفية.',
+			'coachSettings.ollamaNotInstalledTitle' => 'Ollama غير مُثبَّت',
+			'coachSettings.ollamaNotInstalledBody' => 'ثبّت تطبيق Ollama المجاني ثم اضغط تشغيل.',
+			'coachSettings.ollamaStartTimeout' => 'يستغرق وقتًا أطول من المتوقع — تحقّق من أيقونة Ollama في شريط القوائم (قد يتطلب التشغيل الأول موافقة).',
+			'coachSettings.ollamaStartingBody' => 'قد يستغرق ذلك بضع ثوانٍ…',
+			'coachSettings.ollamaStartFailed' => 'تعذّر تشغيل Ollama — جرّب فتحه من مجلد التطبيقات.',
+			'coachSettings.ollamaDownloadFailed' => 'تعذّر فتح المتصفح — تفضّل بزيارة ollama.com/download',
 			'tour.back' => 'رجوع',
 			'tour.next' => 'التالي',
 			'tour.continueLabel' => 'متابعة',

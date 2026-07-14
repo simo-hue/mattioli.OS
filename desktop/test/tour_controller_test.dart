@@ -119,6 +119,20 @@ void main() {
     expect(s.shouldOnboard, isTrue);
   });
 
+  test('resetForReplay() also clears the per-session startup guard', () async {
+    final c = await _containerWith({'tour_completed': true});
+    addTearDown(c.dispose);
+    // Simulate the dashboard having already handled startup onboarding.
+    c.read(startupOnboardingHandledProvider.notifier).set(true);
+
+    await c.read(tourControllerProvider.notifier).resetForReplay();
+    expect(
+      c.read(startupOnboardingHandledProvider),
+      isFalse,
+      reason: 'replay must let the dashboard re-run its onboarding flow',
+    );
+  });
+
   test('purges legacy per-page tutorial keys on first build', () async {
     final c = await _containerWith({
       'has_seen_tutorial': true,

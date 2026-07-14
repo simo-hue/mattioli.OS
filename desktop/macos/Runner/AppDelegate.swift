@@ -333,3 +333,72 @@ enum CloudKitSyncBridge {
     return FlutterError(code: "cloudkit_\(code)", message: error.localizedDescription, details: nil)
   }
 }
+
+/// Native half of the "start the local LLM server from inside the app" feature
+/// (`evolve/local_llm`). The app is sandboxed, so it CANNOT spawn `ollama serve`
+/// or any shell/binary — but it CAN ask LaunchServices (via NSWorkspace) to
+/// launch the already-installed Ollama desktop app, which in turn starts the
+/// `ollama serve` daemon on localhost:11434. No new entitlement is needed:
+/// launching another app is LaunchServices-mediated and sandbox-legal.
+///
+/// Kept in this file (already a Runner target member) so it builds without
+/// editing the Xcode project — same convention as the bridges above.
+enum LocalLlmBridge {
+  /// Candidate bundle identifiers for the Ollama macOS app, most-likely first.
+  /// The exact id must be confirmed on-device (`osascript -e 'id of app "Ollama"'`);
+  /// the `/Applications/Ollama.app` path is a last-resort fallback.
+  private static let ollamaBundleIds = [
+    "com.electron.ollama",
+    "ai.ollama.app",
+    "com.ollama.ollama",
+    "com.ollama.app",
+  ]
+
+  static func register(_ messenger: FlutterBinaryMessenger) {
+    let channel = FlutterMethodChannel(
+      name: "evolve/local_llm",
+      binaryMessenger: messenger
+    )
+    channel.setMethodCallHandler { call, result in
+      switch call.method {
+      case "ollamaInstalled":
+        result(ollamaAppURL() != nil)
+      case "launchOllama":
+        launchOllama(result)
+      default:
+        result(FlutterMethodNotImplemented)
+      }
+    }
+  }
+
+  /// Resolves the installed Ollama app's URL via LaunchServices (sandbox-safe),
+  /// falling back to the conventional install path. Returns nil when not found.
+  private static func ollamaAppURL() -> URL? {
+    let workspace = NSWorkspace.shared
+    for identifier in ollamaBundleIds {
+      if let url = workspace.urlForApplication(withBundleIdentifier: identifier) {
+        return url
+      }
+    }
+    let conventionalPath = "/Applications/Ollama.app"
+    if FileManager.default.fileExists(atPath: conventionalPath) {
+      return URL(fileURLWithPath: conventionalPath)
+    }
+    return nil
+  }
+
+  private static func launchOllama(_ result: @escaping FlutterResult) {
+    guard let url = ollamaAppURL() else {
+      result("notInstalled")
+      return
+    }
+    let configuration = NSWorkspace.OpenConfiguration()
+    // Start the daemon in the background without stealing focus from Evolve.
+    configuration.activates = false
+    NSWorkspace.shared.openApplication(at: url, configuration: configuration) { _, error in
+      DispatchQueue.main.async {
+        result(error == nil ? "launched" : "failed")
+      }
+    }
+  }
+}

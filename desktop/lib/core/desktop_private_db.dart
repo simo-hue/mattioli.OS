@@ -21,9 +21,8 @@ import 'package:uuid/uuid.dart';
 /// both clients share one source of truth (identical tables/columns/constraints
 /// and the iCloud-sync bookkeeping objects). The database is encrypted at rest
 /// via SQLCipher; the key and the stable owner UUID live in the macOS Keychain
-/// (via [SecureStorageUtils]'s `first_unlock_this_device` device-local tier)
-/// and are device-local — they never leave the device and are never wiped by
-/// "delete private data".
+/// (via [SecureStorageUtils]'s device-local tier) and are device-local — they
+/// never leave the device and are never wiped by "delete private data".
 ///
 /// The row-level lifecycle logic (seed / wipe / import) is exposed as static
 /// helpers that operate on any [DatabaseExecutor], so it can be exercised

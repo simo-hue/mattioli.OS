@@ -13,6 +13,7 @@ import 'package:evolve_desktop/features/settings/presentation/pro_features_modal
 import 'package:evolve_desktop/i18n/translations.g.dart';
 import 'package:evolve_desktop/core/rtl.dart';
 import 'package:evolve_desktop/shared/widgets/coach_tutorial.dart';
+import 'package:evolve_desktop/shared/widgets/color_picker_button.dart';
 import 'package:evolve_desktop/shared/widgets/desktop_page.dart';
 import 'package:evolve_desktop/shared/widgets/evolve_controls.dart';
 import 'package:evolve_desktop/shared/widgets/evolve_dialog.dart';
@@ -2092,42 +2093,10 @@ class _HabitEditorDialogState extends State<_HabitEditorDialog> {
             const SizedBox(height: 20),
             EvolveFieldLabel(t.form.color),
             const SizedBox(height: 10),
-            Wrap(
-              spacing: 10,
-              runSpacing: 10,
-              children: [
-                for (final color in _habitColors)
-                  GestureDetector(
-                    onTap: () => setState(() => _color = color),
-                    child: MouseRegion(
-                      cursor: SystemMouseCursors.click,
-                      child: Container(
-                        width: 28,
-                        height: 28,
-                        decoration: BoxDecoration(
-                          color: color,
-                          shape: BoxShape.circle,
-                          border: Border.all(
-                            color: _color == color
-                                ? (color.computeLuminance() > 0.7
-                                      ? Colors.black.withValues(alpha: 0.2)
-                                      : Colors.white)
-                                : Colors.transparent,
-                            width: 2,
-                          ),
-                          boxShadow: _color == color
-                              ? [
-                                  BoxShadow(
-                                    color: color.withValues(alpha: 0.5),
-                                    blurRadius: 8,
-                                  ),
-                                ]
-                              : null,
-                        ),
-                      ),
-                    ),
-                  ),
-              ],
+            ColorPickerButton(
+              color: _color,
+              onColorChanged: (color) => setState(() => _color = color),
+              presetColors: _habitColors,
             ),
           ],
         ),

@@ -3,6 +3,8 @@ import 'package:evolve_desktop/core/macro_goal_calendar.dart';
 import 'package:evolve_desktop/features/dashboard/application/dashboard_controller.dart';
 import 'package:evolve_desktop/features/dashboard/domain/dashboard_models.dart';
 import 'package:evolve_desktop/features/goals/application/goal_categories_controller.dart';
+import 'package:evolve_desktop/features/search/application/goal_nav_target.dart';
+import 'package:evolve_desktop/features/shell/application/navigation_controller.dart';
 import 'package:evolve_desktop/i18n/translations.g.dart';
 import 'package:evolve_desktop/shared/widgets/color_picker_button.dart';
 import 'package:evolve_desktop/shared/widgets/evolve_controls.dart';
@@ -13,7 +15,18 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:lucide_icons_flutter/lucide_icons.dart';
 
 class CreateGoalDialog extends ConsumerStatefulWidget {
-  const CreateGoalDialog({super.key});
+  const CreateGoalDialog({
+    super.key,
+    this.initialTitle,
+    this.jumpAfterCreate = false,
+  });
+
+  /// Pre-fills the title field — used by the ⌘K "Create goal “…”" row.
+  final String? initialTitle;
+
+  /// When true, after a successful save the Goals page jumps to the new goal's
+  /// period. The palette sets this; the dashboard's own + button leaves it off.
+  final bool jumpAfterCreate;
 
   @override
   ConsumerState<CreateGoalDialog> createState() => _CreateGoalDialogState();
@@ -41,31 +54,33 @@ class _CreateGoalDialogState extends ConsumerState<CreateGoalDialog> {
   bool _isNewCategory = false;
   String? _selectedCategoryLabel;
 
+  // The exact period the goal is filed under. Defaults to the current period
+  // (initState) but the user can now pick any year/quarter/month/week.
+  late int _selectedYear;
+  late int _selectedQuarter;
+  late int _selectedMonth;
+  late int _selectedWeek;
+
   /// Sentinel option value for the "create new category" row in the picker.
   static const _kNewCategory = '__evolve_new_category__';
+
+  @override
+  void initState() {
+    super.initState();
+    final now = DateTime.now();
+    _selectedYear = now.year;
+    _selectedQuarter = ((now.month - 1) ~/ 3) + 1;
+    _selectedMonth = now.month;
+    _selectedWeek = logicalWeekOfMonth(now);
+    final initial = widget.initialTitle?.trim() ?? '';
+    if (initial.isNotEmpty) _titleController.text = initial;
+  }
 
   @override
   void dispose() {
     _titleController.dispose();
     _categoryController.dispose();
     super.dispose();
-  }
-
-  String _getDueLabelFor(GoalType type) {
-    final now = DateTime.now();
-    switch (type) {
-      case GoalType.lifetime:
-        return t.createGoal.dueLifetime;
-      case GoalType.annual:
-        return t.createGoal.dueByYear(year: now.year);
-      case GoalType.quarterly:
-        final q = (now.month / 3).ceil();
-        return 'Q$q ${now.year}';
-      case GoalType.monthly:
-        return '${t.common.months[now.month - 1]} ${now.year}';
-      case GoalType.weekly:
-        return t.createGoal.thisWeek;
-    }
   }
 
   List<DesktopGoalCategory> _activeCategories() =>
@@ -166,18 +181,22 @@ class _CreateGoalDialogState extends ConsumerState<CreateGoalDialog> {
 
     setState(() => _isLoading = true);
 
-    final now = DateTime.now();
-    int? year = now.year;
-    int? quarter;
-    int? month;
-    int? weekNumber;
-
-    if (_selectedType == GoalType.quarterly) quarter = (now.month / 3).ceil();
-    if (_selectedType == GoalType.monthly) month = now.month;
-    if (_selectedType == GoalType.weekly) {
-      month = now.month;
-      weekNumber = logicalWeekOfMonth(now);
-    }
+    // Only the sub-fields meaningful for the chosen type are sent; the rest stay
+    // null (the controller normalises anyway).
+    final type = _selectedType;
+    final year = type == GoalType.lifetime ? null : _selectedYear;
+    final quarter = type == GoalType.quarterly ? _selectedQuarter : null;
+    final month = (type == GoalType.monthly || type == GoalType.weekly)
+        ? _selectedMonth
+        : null;
+    final weekNumber = type == GoalType.weekly ? _selectedWeek : null;
+    final dueLabel = dashboardGoalDueLabel(
+      type: type,
+      year: year,
+      quarter: quarter,
+      month: month,
+      weekNumber: weekNumber,
+    );
 
     try {
       await ref
@@ -186,17 +205,138 @@ class _CreateGoalDialogState extends ConsumerState<CreateGoalDialog> {
             title: title,
             category: category,
             color: _selectedColor,
-            type: _selectedType,
-            dueLabel: _getDueLabelFor(_selectedType),
+            type: type,
+            dueLabel: dueLabel,
             year: year,
             quarter: quarter,
             month: month,
             weekNumber: weekNumber,
           );
+      if (widget.jumpAfterCreate) {
+        // Land the Goals page on exactly the period we just filed under (no id
+        // highlight — the created goal's id can be swapped by the server sync).
+        ref
+            .read(goalNavTargetProvider.notifier)
+            .set(
+              GoalNavTarget(
+                type: type,
+                year: year,
+                quarter: quarter,
+                month: month,
+                week: weekNumber,
+              ),
+            );
+        ref
+            .read(navigationControllerProvider.notifier)
+            .select(DesktopSection.goals);
+      }
       if (mounted) Navigator.pop(context);
     } catch (e) {
       if (mounted) setState(() => _isLoading = false);
     }
+  }
+
+  /// Period selectors, shown only for time-bound goal types. Which selectors
+  /// appear depends on the chosen [GoalType]: annual→year, quarterly→year+Q,
+  /// monthly→year+month, weekly→year+month+week.
+  Widget _periodPicker(BuildContext context) {
+    if (_selectedType == GoalType.lifetime) return const SizedBox.shrink();
+    final now = DateTime.now();
+    final years = [for (var y = now.year - 1; y <= now.year + 5; y++) y];
+    final fill = context.evolveColors.background.withValues(alpha: 0.5);
+
+    final row = <Widget>[
+      Expanded(
+        child: EvolveSelect<int>(
+          value: _selectedYear,
+          expand: true,
+          height: 46,
+          fillColor: fill,
+          options: [
+            for (final y in years) EvolveSelectOption(value: y, label: '$y'),
+          ],
+          onChanged: (y) => setState(() {
+            _selectedYear = y;
+            _clampWeek();
+          }),
+        ),
+      ),
+    ];
+    if (_selectedType == GoalType.quarterly) {
+      row.add(const SizedBox(width: 8));
+      row.add(
+        Expanded(
+          child: EvolveSelect<int>(
+            value: _selectedQuarter,
+            expand: true,
+            height: 46,
+            fillColor: fill,
+            options: [
+              for (var q = 1; q <= 4; q++)
+                EvolveSelectOption(value: q, label: 'Q$q'),
+            ],
+            onChanged: (q) => setState(() => _selectedQuarter = q),
+          ),
+        ),
+      );
+    }
+    if (_selectedType == GoalType.monthly || _selectedType == GoalType.weekly) {
+      row.add(const SizedBox(width: 8));
+      row.add(
+        Expanded(
+          child: EvolveSelect<int>(
+            value: _selectedMonth,
+            expand: true,
+            height: 46,
+            fillColor: fill,
+            options: [
+              for (var m = 1; m <= 12; m++)
+                EvolveSelectOption(value: m, label: t.common.months[m - 1]),
+            ],
+            onChanged: (m) => setState(() {
+              _selectedMonth = m;
+              _clampWeek();
+            }),
+          ),
+        ),
+      );
+    }
+    if (_selectedType == GoalType.weekly) {
+      final weeks = logicalWeeksInMonth(_selectedYear, _selectedMonth);
+      row.add(const SizedBox(width: 8));
+      row.add(
+        Expanded(
+          child: EvolveSelect<int>(
+            value: _selectedWeek,
+            expand: true,
+            height: 46,
+            fillColor: fill,
+            options: [
+              for (var w = 1; w <= weeks; w++)
+                EvolveSelectOption(
+                  value: w,
+                  label: '${t.common.calendarView.week} $w',
+                ),
+            ],
+            onChanged: (w) => setState(() => _selectedWeek = w),
+          ),
+        ),
+      );
+    }
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        const SizedBox(height: 16),
+        EvolveFieldLabel(t.createGoal.periodWhen),
+        const SizedBox(height: 8),
+        Row(children: row),
+      ],
+    );
+  }
+
+  void _clampWeek() {
+    final weeks = logicalWeeksInMonth(_selectedYear, _selectedMonth);
+    if (_selectedWeek > weeks) _selectedWeek = weeks;
   }
 
   @override
@@ -259,6 +399,7 @@ class _CreateGoalDialogState extends ConsumerState<CreateGoalDialog> {
             ],
             onChanged: (val) => setState(() => _selectedType = val),
           ),
+          _periodPicker(context),
           const SizedBox(height: 20),
           EvolveFieldLabel(t.form.color),
           const SizedBox(height: 10),

@@ -10,6 +10,7 @@ import 'package:evolve_desktop/features/auth/application/desktop_profile_control
 import 'package:evolve_desktop/features/dashboard/application/dashboard_controller.dart';
 import 'package:evolve_desktop/features/dashboard/domain/dashboard_models.dart';
 import 'package:evolve_desktop/features/settings/presentation/pro_features_modal.dart';
+import 'package:evolve_desktop/features/shell/application/navigation_controller.dart';
 import 'package:evolve_desktop/i18n/translations.g.dart';
 import 'package:evolve_desktop/core/rtl.dart';
 import 'package:evolve_desktop/shared/widgets/coach_tutorial.dart';
@@ -2003,10 +2004,41 @@ class _DayHabitRow extends StatelessWidget {
   }
 }
 
+/// Opens the habit editor (optionally title-prefilled) and creates the habit —
+/// the public entry point for the ⌘K palette's "Create habit" action. Mirrors
+/// [_HabitsPageState._openHabitEditor]'s create branch (including the free-tier
+/// paywall), then navigates to Habits so the new one is visible.
+Future<void> showCreateHabitDialog(
+  BuildContext context,
+  WidgetRef ref, {
+  String? initialTitle,
+}) async {
+  final draft = await showEvolveDialog<_HabitDraft>(
+    context: context,
+    builder: (context) => _HabitEditorDialog(initialTitle: initialTitle),
+  );
+  if (draft == null) return;
+  final added = await ref
+      .read(dashboardControllerProvider.notifier)
+      .addHabit(
+        title: draft.title,
+        color: draft.color,
+        reminderTime: draft.reminderTime,
+      );
+  if (!added) {
+    if (context.mounted) await showProFeaturesDialog(context, ref);
+    return;
+  }
+  ref.read(navigationControllerProvider.notifier).select(DesktopSection.habits);
+}
+
 class _HabitEditorDialog extends StatefulWidget {
-  const _HabitEditorDialog({this.habit});
+  const _HabitEditorDialog({this.habit, this.initialTitle});
 
   final DashboardHabit? habit;
+
+  /// Seeds the title in create mode (habit == null). Ignored when editing.
+  final String? initialTitle;
 
   @override
   State<_HabitEditorDialog> createState() => _HabitEditorDialogState();
@@ -2021,7 +2053,9 @@ class _HabitEditorDialogState extends State<_HabitEditorDialog> {
   @override
   void initState() {
     super.initState();
-    _title = TextEditingController(text: widget.habit?.title);
+    _title = TextEditingController(
+      text: widget.habit?.title ?? widget.initialTitle,
+    );
     _reminder = TextEditingController(text: widget.habit?.reminderTime);
     _usesDefaultColor = widget.habit == null;
     _color = widget.habit?.color ?? EvolveColors.primaryStrong;

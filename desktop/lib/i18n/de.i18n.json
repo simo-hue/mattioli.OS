@@ -149,7 +149,8 @@
     "longTerm": "Langfristig (Lifetime)",
     "dueLifetime": "Ganzes Leben",
     "dueByYear": "Bis {year}",
-    "defaultCategory": "Ziel"
+    "defaultCategory": "Ziel",
+    "periodWhen": "Wann"
   },
   "createHabit": {
     "title": "Neue Gewohnheit",
@@ -1133,5 +1134,35 @@
     "coachSuggestionsDesc": "Nicht sicher, wo du anfangen sollst? Tippe auf einen dieser Vorschläge, um loszulegen.",
     "coachInputTitle": "Frag alles",
     "coachInputDesc": "Gib hier deine Frage ein und drücke Senden. Damit endet die Tour — viel Freude mit Evolve!"
+  },
+  "palette": {
+    "searchHint": "Ziele, Gewohnheiten, Aktionen suchen…",
+    "groupSuggested": "Vorschläge",
+    "groupThisWeek": "Diese Woche",
+    "groupGoals": "Ziele",
+    "groupHabits": "Gewohnheiten",
+    "groupActions": "Aktionen",
+    "groupSections": "Gehe zu",
+    "goToThisWeek": "Zu dieser Woche",
+    "createGoalBlank": "Ziel erstellen",
+    "createGoal": "Ziel „{title}“ erstellen",
+    "createHabit": "Gewohnheit „{title}“ erstellen",
+    "goToPeriod": "Gehe zu {period}",
+    "switchToDark": "Zum dunklen Design wechseln",
+    "switchToLight": "Zum hellen Design wechseln",
+    "manageCategories": "Zielkategorien verwalten",
+    "replayTour": "Geführte Tour wiederholen",
+    "noResults": "Keine Ergebnisse für „{query}“",
+    "rowOpen": "Öffnen",
+    "rowComplete": "Als erledigt markieren",
+    "rowReschedule": "Auf nächste Periode verschieben",
+    "deleteGoalTitle": "Ziel löschen?",
+    "deleteGoalMessage": "„{title}“ wird dauerhaft gelöscht.",
+    "deleteHabitTitle": "Gewohnheit löschen?",
+    "deleteHabitMessage": "„{title}“ wird dauerhaft gelöscht.",
+    "footerNavigate": "navigieren",
+    "footerOpen": "öffnen",
+    "footerMenu": "Menü",
+    "footerClose": "schließen"
   }
 }

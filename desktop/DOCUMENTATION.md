@@ -891,6 +891,21 @@ heading ellipsizing. `flutter analyze` clean; `tour_flow_test` still passes.
     warning); `flutter test` = 284 passed, same 2 pre-existing environmental
     failures (supabase build-time defines; icloud_sync_card pumpAndSettle).
 
+- [2026-07-14 18:50]: Add color picker to the Habits-page add/edit habit dialog (desktop macOS)
+  - *Details*: The Habits-page habit dialog (`_HabitEditorDialog`, shown when adding
+    a new habit or editing one from the Habits page) only offered 5 fixed preset
+    color swatches — there was no way to pick a custom color. Replaced that plain
+    swatch row with the shared `ColorPickerButton` (the same control the dashboard
+    "New Habit" dialog and the goal dialogs already use), which shows the presets
+    PLUS a custom-color swatch that opens the full `EvolveColorPickerContent` popover
+    (any color / hex).
+  - *Tech Notes*: `habits_page.dart` — imported `color_picker_button.dart` and
+    swapped the manual `Wrap` of `_habitColors` circles for
+    `ColorPickerButton(color: _color, onColorChanged: …, presetColors: _habitColors)`
+    (the existing 5-color palette is kept as the presets). No new deps. Verified:
+    `flutter analyze` clean (only the pre-existing main.dart warning); `flutter test`
+    = 284 passed, same 2 pre-existing environmental failures.
+
 - 2026-07-14: Period navigation — animation + Habits calendar arrow keys
   - *Details*: (A) New reusable `EvolvePeriodSwitcher`
     (`lib/shared/widgets/evolve_period_switcher.dart`): a directional slide

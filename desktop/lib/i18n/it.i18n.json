@@ -149,7 +149,8 @@
     "longTerm": "Lungo termine (Lifetime)",
     "dueLifetime": "Tutta la vita",
     "dueByYear": "Entro il {year}",
-    "defaultCategory": "Obiettivo"
+    "defaultCategory": "Obiettivo",
+    "periodWhen": "Quando"
   },
   "createHabit": {
     "title": "Nuova Abitudine",
@@ -1133,5 +1134,35 @@
     "coachSuggestionsDesc": "Non sai da dove iniziare? Tocca uno di questi suggerimenti per partire.",
     "coachInputTitle": "Chiedi qualsiasi cosa",
     "coachInputDesc": "Scrivi qui la tua domanda e premi invia. Il tour finisce qui — buon Evolve!"
+  },
+  "palette": {
+    "searchHint": "Cerca obiettivi, abitudini, azioni…",
+    "groupSuggested": "Suggeriti",
+    "groupThisWeek": "Questa settimana",
+    "groupGoals": "Obiettivi",
+    "groupHabits": "Abitudini",
+    "groupActions": "Azioni",
+    "groupSections": "Vai a",
+    "goToThisWeek": "Vai a questa settimana",
+    "createGoalBlank": "Crea obiettivo",
+    "createGoal": "Crea obiettivo «{title}»",
+    "createHabit": "Crea abitudine «{title}»",
+    "goToPeriod": "Vai a {period}",
+    "switchToDark": "Passa al tema scuro",
+    "switchToLight": "Passa al tema chiaro",
+    "manageCategories": "Gestisci categorie obiettivi",
+    "replayTour": "Rivedi il tour guidato",
+    "noResults": "Nessun risultato per «{query}»",
+    "rowOpen": "Apri",
+    "rowComplete": "Segna come completato",
+    "rowReschedule": "Riprogramma al periodo successivo",
+    "deleteGoalTitle": "Eliminare l'obiettivo?",
+    "deleteGoalMessage": "«{title}» verrà eliminato definitivamente.",
+    "deleteHabitTitle": "Eliminare l'abitudine?",
+    "deleteHabitMessage": "«{title}» verrà eliminata definitivamente.",
+    "footerNavigate": "naviga",
+    "footerOpen": "apri",
+    "footerMenu": "menu",
+    "footerClose": "chiudi"
   }
 }

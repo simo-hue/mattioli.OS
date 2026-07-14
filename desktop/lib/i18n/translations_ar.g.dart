@@ -83,6 +83,7 @@ class TranslationsAr extends Translations with BaseTranslations<AppLocale, Trans
 	@override late final _Translations$appLogs$ar appLogs = _Translations$appLogs$ar._(_root);
 	@override late final _Translations$coachSettings$ar coachSettings = _Translations$coachSettings$ar._(_root);
 	@override late final _Translations$tour$ar tour = _Translations$tour$ar._(_root);
+	@override late final _Translations$palette$ar palette = _Translations$palette$ar._(_root);
 }
 
 // Path: auth
@@ -292,6 +293,7 @@ class _Translations$createGoal$ar extends Translations$createGoal$en {
 	@override String get dueLifetime => 'مدى الحياة';
 	@override String dueByYear({required Object year}) => 'بحلول ${year}';
 	@override String get defaultCategory => 'هدف';
+	@override String get periodWhen => 'متى';
 }
 
 // Path: createHabit
@@ -1406,6 +1408,43 @@ class _Translations$tour$ar extends Translations$tour$en {
 	@override String get coachInputDesc => 'اكتب سؤالك هنا واضغط إرسال. بهذا تنتهي الجولة — استمتع بـ Evolve!';
 }
 
+// Path: palette
+class _Translations$palette$ar extends Translations$palette$en {
+	_Translations$palette$ar._(TranslationsAr root) : this._root = root, super.internal(root);
+
+	final TranslationsAr _root; // ignore: unused_field
+
+	// Translations
+	@override String get searchHint => 'ابحث عن الأهداف والعادات والإجراءات…';
+	@override String get groupSuggested => 'مقترحات';
+	@override String get groupThisWeek => 'هذا الأسبوع';
+	@override String get groupGoals => 'الأهداف';
+	@override String get groupHabits => 'العادات';
+	@override String get groupActions => 'إجراءات';
+	@override String get groupSections => 'الانتقال إلى';
+	@override String get goToThisWeek => 'الانتقال إلى هذا الأسبوع';
+	@override String get createGoalBlank => 'إنشاء هدف';
+	@override String createGoal({required Object title}) => 'إنشاء هدف «${title}»';
+	@override String createHabit({required Object title}) => 'إنشاء عادة «${title}»';
+	@override String goToPeriod({required Object period}) => 'الانتقال إلى ${period}';
+	@override String get switchToDark => 'التبديل إلى المظهر الداكن';
+	@override String get switchToLight => 'التبديل إلى المظهر الفاتح';
+	@override String get manageCategories => 'إدارة فئات الأهداف';
+	@override String get replayTour => 'إعادة الجولة التعريفية';
+	@override String noResults({required Object query}) => 'لا نتائج لـ «${query}»';
+	@override String get rowOpen => 'فتح';
+	@override String get rowComplete => 'وضع علامة مكتمل';
+	@override String get rowReschedule => 'إعادة الجدولة للفترة التالية';
+	@override String get deleteGoalTitle => 'حذف الهدف؟';
+	@override String deleteGoalMessage({required Object title}) => 'سيتم حذف «${title}» نهائيًا.';
+	@override String get deleteHabitTitle => 'حذف العادة؟';
+	@override String deleteHabitMessage({required Object title}) => 'سيتم حذف «${title}» نهائيًا.';
+	@override String get footerNavigate => 'تنقل';
+	@override String get footerOpen => 'فتح';
+	@override String get footerMenu => 'قائمة';
+	@override String get footerClose => 'إغلاق';
+}
+
 // Path: common.actions
 class _Translations$common$actions$ar extends Translations$common$actions$en {
 	_Translations$common$actions$ar._(TranslationsAr root) : this._root = root, super.internal(root);
@@ -1648,6 +1687,7 @@ extension on TranslationsAr {
 			'createGoal.dueLifetime' => 'مدى الحياة',
 			'createGoal.dueByYear' => ({required Object year}) => 'بحلول ${year}',
 			'createGoal.defaultCategory' => 'هدف',
+			'createGoal.periodWhen' => 'متى',
 			'createHabit.title' => 'عادة جديدة',
 			'createHabit.subtitle' => 'حدّد عادتك الجديدة.',
 			'createHabit.titleHint' => 'مثال: التأمل',
@@ -2039,9 +2079,9 @@ extension on TranslationsAr {
 			'habitsPage.reminderHint' => 'مثال: 08:30',
 			'habitsPage.close' => 'إغلاق',
 			'habitsPage.statusDone' => 'مكتملة',
-			'habitsPage.statusSkipped' => 'متخطاة',
 			_ => null,
 		} ?? switch (path) {
+			'habitsPage.statusSkipped' => 'متخطاة',
 			'habitsPage.statusUnrecorded' => 'غير مسجلة',
 			'habitsPage.weekOf' => ({required Object day, required Object month}) => 'أسبوع ${day} ${month}',
 			'habitsPage.lifeWeeks' => 'أسابيع مسارك',
@@ -2553,9 +2593,9 @@ extension on TranslationsAr {
 			'tour.insightsTabsDesc' => 'بدّل بين الأقسام للاتجاهات والتنبيهات وتقدّم العادات ومزاجك.',
 			'tour.goalsOrientationTitle' => 'صفحة الأهداف',
 			'tour.goalsOrientationDesc' => 'حدّد وتابع أهدافك الأكبر — ما تبني نحوه عاداتك اليومية.',
-			'tour.goalsPlanTitle' => 'نوع التخطيط',
 			_ => null,
 		} ?? switch (path) {
+			'tour.goalsPlanTitle' => 'نوع التخطيط',
 			'tour.goalsPlanDesc' => 'اختر كيف تخطّط — يوميًا أو أسبوعيًا أو لمدى أطول — بما يناسب طريقة تفكيرك في أهدافك.',
 			'tour.goalsAddTitle' => 'أضف هدفًا',
 			'tour.goalsAddDesc' => 'أنشئ هدفًا جديدًا هنا وامنحه غاية تسعى إليها.',
@@ -2573,6 +2613,34 @@ extension on TranslationsAr {
 			'tour.coachSuggestionsDesc' => 'لا تعرف من أين تبدأ؟ اضغط أحد هذه الاقتراحات للانطلاق.',
 			'tour.coachInputTitle' => 'اسأل أي شيء',
 			'tour.coachInputDesc' => 'اكتب سؤالك هنا واضغط إرسال. بهذا تنتهي الجولة — استمتع بـ Evolve!',
+			'palette.searchHint' => 'ابحث عن الأهداف والعادات والإجراءات…',
+			'palette.groupSuggested' => 'مقترحات',
+			'palette.groupThisWeek' => 'هذا الأسبوع',
+			'palette.groupGoals' => 'الأهداف',
+			'palette.groupHabits' => 'العادات',
+			'palette.groupActions' => 'إجراءات',
+			'palette.groupSections' => 'الانتقال إلى',
+			'palette.goToThisWeek' => 'الانتقال إلى هذا الأسبوع',
+			'palette.createGoalBlank' => 'إنشاء هدف',
+			'palette.createGoal' => ({required Object title}) => 'إنشاء هدف «${title}»',
+			'palette.createHabit' => ({required Object title}) => 'إنشاء عادة «${title}»',
+			'palette.goToPeriod' => ({required Object period}) => 'الانتقال إلى ${period}',
+			'palette.switchToDark' => 'التبديل إلى المظهر الداكن',
+			'palette.switchToLight' => 'التبديل إلى المظهر الفاتح',
+			'palette.manageCategories' => 'إدارة فئات الأهداف',
+			'palette.replayTour' => 'إعادة الجولة التعريفية',
+			'palette.noResults' => ({required Object query}) => 'لا نتائج لـ «${query}»',
+			'palette.rowOpen' => 'فتح',
+			'palette.rowComplete' => 'وضع علامة مكتمل',
+			'palette.rowReschedule' => 'إعادة الجدولة للفترة التالية',
+			'palette.deleteGoalTitle' => 'حذف الهدف؟',
+			'palette.deleteGoalMessage' => ({required Object title}) => 'سيتم حذف «${title}» نهائيًا.',
+			'palette.deleteHabitTitle' => 'حذف العادة؟',
+			'palette.deleteHabitMessage' => ({required Object title}) => 'سيتم حذف «${title}» نهائيًا.',
+			'palette.footerNavigate' => 'تنقل',
+			'palette.footerOpen' => 'فتح',
+			'palette.footerMenu' => 'قائمة',
+			'palette.footerClose' => 'إغلاق',
 			_ => null,
 		};
 	}

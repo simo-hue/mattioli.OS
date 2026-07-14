@@ -83,6 +83,7 @@ class TranslationsEs extends Translations with BaseTranslations<AppLocale, Trans
 	@override late final _Translations$appLogs$es appLogs = _Translations$appLogs$es._(_root);
 	@override late final _Translations$coachSettings$es coachSettings = _Translations$coachSettings$es._(_root);
 	@override late final _Translations$tour$es tour = _Translations$tour$es._(_root);
+	@override late final _Translations$palette$es palette = _Translations$palette$es._(_root);
 }
 
 // Path: auth
@@ -292,6 +293,7 @@ class _Translations$createGoal$es extends Translations$createGoal$en {
 	@override String get dueLifetime => 'Toda la vida';
 	@override String dueByYear({required Object year}) => 'Antes de ${year}';
 	@override String get defaultCategory => 'Objetivo';
+	@override String get periodWhen => 'Cuándo';
 }
 
 // Path: createHabit
@@ -1406,6 +1408,43 @@ class _Translations$tour$es extends Translations$tour$en {
 	@override String get coachInputDesc => 'Escribe aquí tu pregunta y pulsa enviar. Aquí termina el recorrido — ¡disfruta Evolve!';
 }
 
+// Path: palette
+class _Translations$palette$es extends Translations$palette$en {
+	_Translations$palette$es._(TranslationsEs root) : this._root = root, super.internal(root);
+
+	final TranslationsEs _root; // ignore: unused_field
+
+	// Translations
+	@override String get searchHint => 'Busca objetivos, hábitos, acciones…';
+	@override String get groupSuggested => 'Sugeridos';
+	@override String get groupThisWeek => 'Esta semana';
+	@override String get groupGoals => 'Objetivos';
+	@override String get groupHabits => 'Hábitos';
+	@override String get groupActions => 'Acciones';
+	@override String get groupSections => 'Ir a';
+	@override String get goToThisWeek => 'Ir a esta semana';
+	@override String get createGoalBlank => 'Crear objetivo';
+	@override String createGoal({required Object title}) => 'Crear objetivo «${title}»';
+	@override String createHabit({required Object title}) => 'Crear hábito «${title}»';
+	@override String goToPeriod({required Object period}) => 'Ir a ${period}';
+	@override String get switchToDark => 'Cambiar a tema oscuro';
+	@override String get switchToLight => 'Cambiar a tema claro';
+	@override String get manageCategories => 'Gestionar categorías de objetivos';
+	@override String get replayTour => 'Repetir el tour guiado';
+	@override String noResults({required Object query}) => 'Sin resultados para «${query}»';
+	@override String get rowOpen => 'Abrir';
+	@override String get rowComplete => 'Marcar como completado';
+	@override String get rowReschedule => 'Reprogramar al siguiente periodo';
+	@override String get deleteGoalTitle => '¿Eliminar objetivo?';
+	@override String deleteGoalMessage({required Object title}) => '«${title}» se eliminará permanentemente.';
+	@override String get deleteHabitTitle => '¿Eliminar hábito?';
+	@override String deleteHabitMessage({required Object title}) => '«${title}» se eliminará permanentemente.';
+	@override String get footerNavigate => 'navegar';
+	@override String get footerOpen => 'abrir';
+	@override String get footerMenu => 'menú';
+	@override String get footerClose => 'cerrar';
+}
+
 // Path: common.actions
 class _Translations$common$actions$es extends Translations$common$actions$en {
 	_Translations$common$actions$es._(TranslationsEs root) : this._root = root, super.internal(root);
@@ -1648,6 +1687,7 @@ extension on TranslationsEs {
 			'createGoal.dueLifetime' => 'Toda la vida',
 			'createGoal.dueByYear' => ({required Object year}) => 'Antes de ${year}',
 			'createGoal.defaultCategory' => 'Objetivo',
+			'createGoal.periodWhen' => 'Cuándo',
 			'createHabit.title' => 'Nuevo hábito',
 			'createHabit.subtitle' => 'Define tu nuevo hábito.',
 			'createHabit.titleHint' => 'p. ej. Meditación',
@@ -2039,9 +2079,9 @@ extension on TranslationsEs {
 			'habitsPage.reminderHint' => 'p. ej. 08:30',
 			'habitsPage.close' => 'Cerrar',
 			'habitsPage.statusDone' => 'Completada',
-			'habitsPage.statusSkipped' => 'Omitida',
 			_ => null,
 		} ?? switch (path) {
+			'habitsPage.statusSkipped' => 'Omitida',
 			'habitsPage.statusUnrecorded' => 'No registrada',
 			'habitsPage.weekOf' => ({required Object day, required Object month}) => 'Semana del ${day} ${month}',
 			'habitsPage.lifeWeeks' => 'Semanas de tu camino',
@@ -2553,9 +2593,9 @@ extension on TranslationsEs {
 			'tour.insightsTabsDesc' => 'Cambia entre las secciones para tendencias, alertas, progreso de hábitos y tu ánimo.',
 			'tour.goalsOrientationTitle' => 'La página de Metas',
 			'tour.goalsOrientationDesc' => 'Define y controla tus objetivos más grandes — aquello hacia lo que construyen tus hábitos diarios.',
-			'tour.goalsPlanTitle' => 'Tipo de planificación',
 			_ => null,
 		} ?? switch (path) {
+			'tour.goalsPlanTitle' => 'Tipo de planificación',
 			'tour.goalsPlanDesc' => 'Elige cómo planificas — diaria, semanal o más larga — según cómo pienses tus metas.',
 			'tour.goalsAddTitle' => 'Añadir una meta',
 			'tour.goalsAddDesc' => 'Crea aquí una nueva meta y dale un objetivo por alcanzar.',
@@ -2573,6 +2613,34 @@ extension on TranslationsEs {
 			'tour.coachSuggestionsDesc' => '¿No sabes por dónde empezar? Toca una de estas sugerencias para arrancar.',
 			'tour.coachInputTitle' => 'Pregunta lo que sea',
 			'tour.coachInputDesc' => 'Escribe aquí tu pregunta y pulsa enviar. Aquí termina el recorrido — ¡disfruta Evolve!',
+			'palette.searchHint' => 'Busca objetivos, hábitos, acciones…',
+			'palette.groupSuggested' => 'Sugeridos',
+			'palette.groupThisWeek' => 'Esta semana',
+			'palette.groupGoals' => 'Objetivos',
+			'palette.groupHabits' => 'Hábitos',
+			'palette.groupActions' => 'Acciones',
+			'palette.groupSections' => 'Ir a',
+			'palette.goToThisWeek' => 'Ir a esta semana',
+			'palette.createGoalBlank' => 'Crear objetivo',
+			'palette.createGoal' => ({required Object title}) => 'Crear objetivo «${title}»',
+			'palette.createHabit' => ({required Object title}) => 'Crear hábito «${title}»',
+			'palette.goToPeriod' => ({required Object period}) => 'Ir a ${period}',
+			'palette.switchToDark' => 'Cambiar a tema oscuro',
+			'palette.switchToLight' => 'Cambiar a tema claro',
+			'palette.manageCategories' => 'Gestionar categorías de objetivos',
+			'palette.replayTour' => 'Repetir el tour guiado',
+			'palette.noResults' => ({required Object query}) => 'Sin resultados para «${query}»',
+			'palette.rowOpen' => 'Abrir',
+			'palette.rowComplete' => 'Marcar como completado',
+			'palette.rowReschedule' => 'Reprogramar al siguiente periodo',
+			'palette.deleteGoalTitle' => '¿Eliminar objetivo?',
+			'palette.deleteGoalMessage' => ({required Object title}) => '«${title}» se eliminará permanentemente.',
+			'palette.deleteHabitTitle' => '¿Eliminar hábito?',
+			'palette.deleteHabitMessage' => ({required Object title}) => '«${title}» se eliminará permanentemente.',
+			'palette.footerNavigate' => 'navegar',
+			'palette.footerOpen' => 'abrir',
+			'palette.footerMenu' => 'menú',
+			'palette.footerClose' => 'cerrar',
 			_ => null,
 		};
 	}

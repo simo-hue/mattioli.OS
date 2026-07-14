@@ -149,7 +149,8 @@
     "longTerm": "Long-term (Lifetime)",
     "dueLifetime": "Whole life",
     "dueByYear": "By {year}",
-    "defaultCategory": "Goal"
+    "defaultCategory": "Goal",
+    "periodWhen": "When"
   },
   "createHabit": {
     "title": "New Habit",
@@ -1133,5 +1134,35 @@
     "coachSuggestionsDesc": "Not sure where to begin? Tap one of these suggestions to get going.",
     "coachInputTitle": "Ask anything",
     "coachInputDesc": "Type your question here and press send. That's the end of the tour — enjoy Evolve!"
+  },
+  "palette": {
+    "searchHint": "Search goals, habits, actions…",
+    "groupSuggested": "Suggested",
+    "groupThisWeek": "This week",
+    "groupGoals": "Goals",
+    "groupHabits": "Habits",
+    "groupActions": "Actions",
+    "groupSections": "Go to",
+    "goToThisWeek": "Go to this week",
+    "createGoalBlank": "Create goal",
+    "createGoal": "Create goal “{title}”",
+    "createHabit": "Create habit “{title}”",
+    "goToPeriod": "Go to {period}",
+    "switchToDark": "Switch to dark theme",
+    "switchToLight": "Switch to light theme",
+    "manageCategories": "Manage goal categories",
+    "replayTour": "Replay guided tour",
+    "noResults": "No results for “{query}”",
+    "rowOpen": "Open",
+    "rowComplete": "Mark complete",
+    "rowReschedule": "Reschedule to next period",
+    "deleteGoalTitle": "Delete goal?",
+    "deleteGoalMessage": "“{title}” will be permanently deleted.",
+    "deleteHabitTitle": "Delete habit?",
+    "deleteHabitMessage": "“{title}” will be permanently deleted.",
+    "footerNavigate": "navigate",
+    "footerOpen": "open",
+    "footerMenu": "menu",
+    "footerClose": "close"
   }
 }

@@ -980,7 +980,10 @@
     "productiveLifeTitle": "Mi vida productiva",
     "aiChat": "Chat AI",
     "manager": "Gestión",
-    "reminder": "Recordatorio"
+    "reminder": "Recordatorio",
+    "nameRequired": "Escribe un nombre para tu hábito",
+    "habitAdded": "Hábito añadido",
+    "habitUpdated": "Hábito actualizado"
   },
   "tutorial": {
     "aiChat": "Chat AI",

@@ -962,7 +962,10 @@
     "productiveLifeTitle": "حياتي المنتجة",
     "aiChat": "محادثة AI",
     "manager": "الإدارة",
-    "reminder": "تذكير"
+    "reminder": "تذكير",
+    "nameRequired": "الرجاء إدخال اسم للعادة",
+    "habitAdded": "تمت إضافة العادة",
+    "habitUpdated": "تم تحديث العادة"
   },
   "tutorial": {
     "aiChat": "محادثة AI",

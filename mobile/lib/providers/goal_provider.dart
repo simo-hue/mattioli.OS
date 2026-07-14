@@ -158,7 +158,10 @@ class GoalsNotifier extends Notifier<List<Goal>> {
     }
   }
 
-  Future<void> addHabit(Goal habit) async {
+  /// Adds [habit], returning true only when it was persisted (so the caller can
+  /// confirm success and never show "added ✓" over a failure — failures already
+  /// surface their own error modal + optimistic rollback here).
+  Future<bool> addHabit(Goal habit) async {
     // Snapshot for optimistic rollback if persistence fails.
     final previousGoals = state;
     final newGoals = [...state, habit];
@@ -184,14 +187,15 @@ class GoalsNotifier extends Notifier<List<Goal>> {
           t.common.habitSaveFailed,
           e,
         );
+        return false;
       }
-      return;
+      return true;
     }
 
     _saveToCache(newGoals);
 
     final user = supabase.auth.currentUser;
-    if (user == null) return;
+    if (user == null) return false;
 
     try {
       final payload = habit.toJson();
@@ -221,6 +225,7 @@ class GoalsNotifier extends Notifier<List<Goal>> {
           ),
         );
       }
+      return true;
     } catch (e, stack) {
       AppLogger.error('[Goals] Insert error', e, stack);
       // Remove the optimistic (temp-id) ghost row on failure.
@@ -231,10 +236,11 @@ class GoalsNotifier extends Notifier<List<Goal>> {
         t.common.habitSaveFailed,
         e,
       );
+      return false;
     }
   }
 
-  Future<void> updateHabit(Goal updatedHabit) async {
+  Future<bool> updateHabit(Goal updatedHabit) async {
     // Snapshot for optimistic rollback if persistence fails.
     final previousGoals = state;
     final newGoals = state
@@ -263,8 +269,9 @@ class GoalsNotifier extends Notifier<List<Goal>> {
           t.common.habitUpdateFailed,
           e,
         );
+        return false;
       }
-      return;
+      return true;
     }
 
     _saveToCache(newGoals);
@@ -285,6 +292,7 @@ class GoalsNotifier extends Notifier<List<Goal>> {
           ),
         );
       }
+      return true;
     } catch (e, stack) {
       AppLogger.error('[Goals] Update error', e, stack);
       state = previousGoals;
@@ -294,6 +302,7 @@ class GoalsNotifier extends Notifier<List<Goal>> {
         t.common.habitUpdateFailed,
         e,
       );
+      return false;
     }
   }
 

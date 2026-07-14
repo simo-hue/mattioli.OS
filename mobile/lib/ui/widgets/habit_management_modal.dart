@@ -20,6 +20,7 @@ import '../kit/evolve_dialog.dart';
 import '../kit/evolve_button.dart';
 import '../kit/evolve_section_header.dart';
 import '../kit/evolve_sheet.dart';
+import '../kit/evolve_toast.dart';
 
 class HabitManagementModal extends ConsumerStatefulWidget {
   const HabitManagementModal({super.key});
@@ -46,6 +47,14 @@ class _HabitManagementModalState extends ConsumerState<HabitManagementModal> {
   String? _reminderTime;
   VerificationRule? _verificationRule;
 
+  /// Inline validation message for the name field (null = valid). Drives the red
+  /// border + helper text.
+  String? _nameError;
+
+  /// True while the name still holds a template-derived default (so switching
+  /// the metric can update it, but a name the user typed is never overwritten).
+  bool _nameAutoFilled = false;
+
   @override
   void initState() {
     super.initState();
@@ -68,23 +77,33 @@ class _HabitManagementModalState extends ConsumerState<HabitManagementModal> {
     }
   }
 
-  void _onSave() {
-    var name = _nameController.text.trim();
-    // An auto-verified habit's metric already names it (e.g. "Exercise
-    // minutes"), so the text field is optional for these: default the title
-    // from the chosen template instead of silently doing nothing. The user can
-    // still type a custom name to override.
-    if (name.isEmpty && _verificationRule != null) {
-      name = verificationTemplateLabel(context.t, _verificationRule!.metricKey);
-    }
+  Future<void> _onSave() async {
+    final name = _nameController.text.trim();
+    // Required-field validation: show an inline red-bordered error instead of a
+    // silent no-op. (Auto-verified habits pre-fill the name from their metric,
+    // so they rarely reach this.)
     if (name.isEmpty) {
-      // A plain manual habit still needs a name — give tactile feedback so the
-      // tap isn't a silent no-op.
       ref.hapticMedium();
+      setState(() => _nameError = context.t.habits.nameRequired);
+      // Reveal the name field (it may be scrolled above the Add button) so the
+      // red error is actually seen.
+      if (_scrollController.hasClients) {
+        unawaited(_scrollController.animateTo(
+          0,
+          duration: const Duration(milliseconds: 300),
+          curve: Curves.easeOut,
+        ));
+      }
       return;
     }
 
-    if (_editingHabit != null) {
+    final isEditing = _editingHabit != null;
+    final successMessage = isEditing
+        ? context.t.habits.habitUpdated
+        : context.t.habits.habitAdded;
+
+    final bool ok;
+    if (isEditing) {
       final updated = _editingHabit!.copyWith(
         title: name,
         color: _selectedColor,
@@ -93,7 +112,7 @@ class _HabitManagementModalState extends ConsumerState<HabitManagementModal> {
         verificationRule: _verificationRule,
         clearVerificationRule: _verificationRule == null,
       );
-      ref.read(goalsProvider.notifier).updateHabit(updated);
+      ok = await ref.read(goalsProvider.notifier).updateHabit(updated);
     } else {
       final settings = ref.read(settingsProvider);
       final isPro = settings.isPro;
@@ -103,9 +122,11 @@ class _HabitManagementModalState extends ConsumerState<HabitManagementModal> {
         FocusScope.of(context).unfocus();
         ref.hapticHeavy();
         Navigator.pop(context); // Close the habit management sheet
-        Navigator.push(
-          context,
-          SubscriptionScreen.route(),
+        unawaited(
+          Navigator.push(
+            context,
+            SubscriptionScreen.route(),
+          ),
         ); // Redirect to payment!
         return;
       }
@@ -124,8 +145,12 @@ class _HabitManagementModalState extends ConsumerState<HabitManagementModal> {
         reminderTime: _reminderTime,
         verificationRule: _verificationRule,
       );
-      ref.read(goalsProvider.notifier).addHabit(newHabit);
+      ok = await ref.read(goalsProvider.notifier).addHabit(newHabit);
     }
+
+    // On failure the provider already surfaced its own error modal + rolled the
+    // optimistic add back, so we neither reset the form nor confirm success.
+    if (!ok || !mounted) return;
 
     _nameController.clear();
     setState(() {
@@ -133,8 +158,15 @@ class _HabitManagementModalState extends ConsumerState<HabitManagementModal> {
       _selectedColor = kEvolveDefaultPalette[0];
       _reminderTime = null;
       _verificationRule = null;
+      _nameError = null;
+      _nameAutoFilled = false;
     });
     ref.hapticMedium();
+    showEvolveToast(
+      context,
+      message: successMessage,
+      kind: EvolveToastKind.success,
+    );
   }
 
   void _onEdit(Goal habit) {
@@ -144,6 +176,8 @@ class _HabitManagementModalState extends ConsumerState<HabitManagementModal> {
       _selectedColor = habit.color;
       _reminderTime = habit.reminderTime;
       _verificationRule = habit.verificationRule;
+      _nameError = null;
+      _nameAutoFilled = false; // the loaded title is the user's real name
     });
     _scrollController.animateTo(
       0,
@@ -359,6 +393,17 @@ class _HabitManagementModalState extends ConsumerState<HabitManagementModal> {
                       const SizedBox(height: 8),
                       TextField(
                         controller: _nameController,
+                        textInputAction: TextInputAction.done,
+                        onChanged: (_) {
+                          // The user is now the author of the name; stop
+                          // auto-updating it from the metric, and clear any
+                          // pending validation error as they type.
+                          _nameAutoFilled = false;
+                          if (_nameError != null) {
+                            setState(() => _nameError = null);
+                          }
+                        },
+                        onSubmitted: (_) => unawaited(_onSave()),
                         style: TextStyle(
                           color: context.appColors.foreground,
                           fontSize: 15,
@@ -378,6 +423,13 @@ class _HabitManagementModalState extends ConsumerState<HabitManagementModal> {
                             horizontal: 16,
                             vertical: 12,
                           ),
+                          // Inline validation: a red rounded border + message
+                          // when the name is missing.
+                          errorText: _nameError,
+                          errorStyle: TextStyle(
+                            color: Theme.of(context).colorScheme.error,
+                            fontSize: 12,
+                          ),
                           enabledBorder: OutlineInputBorder(
                             borderRadius: BorderRadius.circular(12),
                             borderSide: BorderSide(
@@ -388,6 +440,20 @@ class _HabitManagementModalState extends ConsumerState<HabitManagementModal> {
                             borderRadius: BorderRadius.circular(12),
                             borderSide: BorderSide(
                               color: Theme.of(context).colorScheme.primary,
+                            ),
+                          ),
+                          errorBorder: OutlineInputBorder(
+                            borderRadius: BorderRadius.circular(12),
+                            borderSide: BorderSide(
+                              color: Theme.of(context).colorScheme.error,
+                              width: 1.5,
+                            ),
+                          ),
+                          focusedErrorBorder: OutlineInputBorder(
+                            borderRadius: BorderRadius.circular(12),
+                            borderSide: BorderSide(
+                              color: Theme.of(context).colorScheme.error,
+                              width: 1.5,
                             ),
                           ),
                         ),
@@ -469,8 +535,26 @@ class _HabitManagementModalState extends ConsumerState<HabitManagementModal> {
                         VerificationRuleField(
                           rule: _verificationRule,
                           templates: _availableTemplates,
-                          onChanged: (r) =>
-                              setState(() => _verificationRule = r),
+                          onChanged: (r) {
+                            final prevKey = _verificationRule?.metricKey;
+                            setState(() {
+                              _verificationRule = r;
+                              // Offer the metric's label as a default name when
+                              // the metric changes — but only while the field is
+                              // empty or still holds an untouched auto-fill, so a
+                              // name the user typed is never overwritten.
+                              if (r != null && r.metricKey != prevKey) {
+                                if (_nameController.text.trim().isEmpty ||
+                                    _nameAutoFilled) {
+                                  _nameController.text =
+                                      verificationTemplateLabel(
+                                          context.t, r.metricKey);
+                                  _nameAutoFilled = true;
+                                  _nameError = null;
+                                }
+                              }
+                            });
+                          },
                         ),
                         // Proactive "grant Health access" affordance (D9) for
                         // HealthKit rules — requests read access up front instead
@@ -498,6 +582,8 @@ class _HabitManagementModalState extends ConsumerState<HabitManagementModal> {
                                   _nameController.clear();
                                   _reminderTime = null;
                                   _verificationRule = null;
+                                  _nameError = null;
+                                  _nameAutoFilled = false;
                                 }),
                               ),
                             ),

@@ -14,7 +14,6 @@ class DashboardHabit {
   const DashboardHabit({
     required this.id,
     required this.title,
-    required this.category,
     required this.color,
     required this.streak,
     required this.weeklyProgress,
@@ -32,7 +31,6 @@ class DashboardHabit {
 
   final String id;
   final String title;
-  final String category;
   final Color color;
   final int streak;
   final List<bool> weeklyProgress;
@@ -67,7 +65,6 @@ class DashboardHabit {
   DashboardHabit copyWith({
     String? id,
     String? title,
-    String? category,
     Color? color,
     int? streak,
     List<bool>? weeklyProgress,
@@ -87,7 +84,6 @@ class DashboardHabit {
     return DashboardHabit(
       id: id ?? this.id,
       title: title ?? this.title,
-      category: category ?? this.category,
       color: color ?? this.color,
       streak: streak ?? this.streak,
       weeklyProgress: weeklyProgress ?? this.weeklyProgress,
@@ -109,7 +105,7 @@ class DashboardHabit {
   Map<String, dynamic> toRemoteJson() => {
     if (id.isNotEmpty) 'id': id,
     'title': title,
-    'description': category,
+    'description': description,
     if (icon != null) 'icon': icon,
     'color': dashboardColorToHex(color),
     if (frequencyDays != null) 'frequency_days': frequencyDays,
@@ -131,7 +127,6 @@ class DashboardHabit {
     return DashboardHabit(
       id: json['id'] as String,
       title: json['title'] as String,
-      category: json['description'] as String? ?? 'Generale',
       color: dashboardColorFromHex(json['color'] as String?),
       streak: streak,
       weeklyProgress: weeklyProgress,

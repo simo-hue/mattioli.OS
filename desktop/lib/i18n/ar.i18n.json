@@ -155,9 +155,7 @@
     "title": "عادة جديدة",
     "subtitle": "حدّد عادتك الجديدة.",
     "titleHint": "مثال: التأمل",
-    "categoryHint": "مثال: العافية",
-    "weeklyFrequency": "التكرار الأسبوعي",
-    "defaultCategory": "عام"
+    "weeklyFrequency": "التكرار الأسبوعي"
   },
   "macroGoals": {
     "types": {
@@ -479,8 +477,6 @@
     "neverMissedEmpty": "لا عادات مثالية بعد",
     "distributionTitle": "التوزيع",
     "distributionSubtitle": "العادات حسب معدل النجاح",
-    "categoryTitle": "حسب الفئة",
-    "categorySubtitle": "الإنجاز لكل فئة",
     "synergyTitle": "تآزر العادات",
     "synergySubtitle": "أي العادات تسير معًا",
     "moodSensitiveTitle": "حساسة للمزاج",
@@ -564,15 +560,11 @@
     "optionalReminder": "تذكير اختياري",
     "reminderHint": "مثال: 08:30",
     "close": "إغلاق",
-    "statusDone": "{category} · مكتملة",
-    "statusSkipped": "{category} · متخطاة",
-    "statusUnrecorded": "{category} · غير مسجلة",
+    "statusDone": "مكتملة",
+    "statusSkipped": "متخطاة",
+    "statusUnrecorded": "غير مسجلة",
     "weekOf": "أسبوع {day} {month}",
     "lifeWeeks": "أسابيع مسارك",
-    "catWellness": "العافية",
-    "catProductivity": "الإنتاجية",
-    "catEducation": "التعليم",
-    "catHealth": "الصحة",
     "catMindfulness": "اليقظة الذهنية",
     "editableHint": "يمكن تعديل اليوم والأمس فقط."
   },

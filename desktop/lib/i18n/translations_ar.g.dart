@@ -304,9 +304,7 @@ class _Translations$createHabit$ar extends Translations$createHabit$en {
 	@override String get title => 'عادة جديدة';
 	@override String get subtitle => 'حدّد عادتك الجديدة.';
 	@override String get titleHint => 'مثال: التأمل';
-	@override String get categoryHint => 'مثال: العافية';
 	@override String get weeklyFrequency => 'التكرار الأسبوعي';
-	@override String get defaultCategory => 'عام';
 }
 
 // Path: macroGoals
@@ -664,8 +662,6 @@ class _Translations$stats$ar extends Translations$stats$en {
 	@override String get neverMissedEmpty => 'لا عادات مثالية بعد';
 	@override String get distributionTitle => 'التوزيع';
 	@override String get distributionSubtitle => 'العادات حسب معدل النجاح';
-	@override String get categoryTitle => 'حسب الفئة';
-	@override String get categorySubtitle => 'الإنجاز لكل فئة';
 	@override String get synergyTitle => 'تآزر العادات';
 	@override String get synergySubtitle => 'أي العادات تسير معًا';
 	@override String get moodSensitiveTitle => 'حساسة للمزاج';
@@ -756,15 +752,11 @@ class _Translations$habitsPage$ar extends Translations$habitsPage$en {
 	@override String get optionalReminder => 'تذكير اختياري';
 	@override String get reminderHint => 'مثال: 08:30';
 	@override String get close => 'إغلاق';
-	@override String statusDone({required Object category}) => '${category} · مكتملة';
-	@override String statusSkipped({required Object category}) => '${category} · متخطاة';
-	@override String statusUnrecorded({required Object category}) => '${category} · غير مسجلة';
+	@override String get statusDone => 'مكتملة';
+	@override String get statusSkipped => 'متخطاة';
+	@override String get statusUnrecorded => 'غير مسجلة';
 	@override String weekOf({required Object day, required Object month}) => 'أسبوع ${day} ${month}';
 	@override String get lifeWeeks => 'أسابيع مسارك';
-	@override String get catWellness => 'العافية';
-	@override String get catProductivity => 'الإنتاجية';
-	@override String get catEducation => 'التعليم';
-	@override String get catHealth => 'الصحة';
 	@override String get catMindfulness => 'اليقظة الذهنية';
 	@override String get editableHint => 'يمكن تعديل اليوم والأمس فقط.';
 }
@@ -1659,9 +1651,7 @@ extension on TranslationsAr {
 			'createHabit.title' => 'عادة جديدة',
 			'createHabit.subtitle' => 'حدّد عادتك الجديدة.',
 			'createHabit.titleHint' => 'مثال: التأمل',
-			'createHabit.categoryHint' => 'مثال: العافية',
 			'createHabit.weeklyFrequency' => 'التكرار الأسبوعي',
-			'createHabit.defaultCategory' => 'عام',
 			'macroGoals.types.annual' => 'سنوي',
 			'macroGoals.types.quarterly' => 'ربع سنوي',
 			'macroGoals.types.monthly' => 'شهري',
@@ -1969,8 +1959,6 @@ extension on TranslationsAr {
 			'stats.neverMissedEmpty' => 'لا عادات مثالية بعد',
 			'stats.distributionTitle' => 'التوزيع',
 			'stats.distributionSubtitle' => 'العادات حسب معدل النجاح',
-			'stats.categoryTitle' => 'حسب الفئة',
-			'stats.categorySubtitle' => 'الإنجاز لكل فئة',
 			'stats.synergyTitle' => 'تآزر العادات',
 			'stats.synergySubtitle' => 'أي العادات تسير معًا',
 			'stats.moodSensitiveTitle' => 'حساسة للمزاج',
@@ -2048,19 +2036,15 @@ extension on TranslationsAr {
 			'habitsPage.editHabit' => 'تعديل العادة',
 			'habitsPage.newHabit' => 'عادة جديدة',
 			'habitsPage.optionalReminder' => 'تذكير اختياري',
-			_ => null,
-		} ?? switch (path) {
 			'habitsPage.reminderHint' => 'مثال: 08:30',
 			'habitsPage.close' => 'إغلاق',
-			'habitsPage.statusDone' => ({required Object category}) => '${category} · مكتملة',
-			'habitsPage.statusSkipped' => ({required Object category}) => '${category} · متخطاة',
-			'habitsPage.statusUnrecorded' => ({required Object category}) => '${category} · غير مسجلة',
+			'habitsPage.statusDone' => 'مكتملة',
+			'habitsPage.statusSkipped' => 'متخطاة',
+			_ => null,
+		} ?? switch (path) {
+			'habitsPage.statusUnrecorded' => 'غير مسجلة',
 			'habitsPage.weekOf' => ({required Object day, required Object month}) => 'أسبوع ${day} ${month}',
 			'habitsPage.lifeWeeks' => 'أسابيع مسارك',
-			'habitsPage.catWellness' => 'العافية',
-			'habitsPage.catProductivity' => 'الإنتاجية',
-			'habitsPage.catEducation' => 'التعليم',
-			'habitsPage.catHealth' => 'الصحة',
 			'habitsPage.catMindfulness' => 'اليقظة الذهنية',
 			'habitsPage.editableHint' => 'يمكن تعديل اليوم والأمس فقط.',
 			'lavoro' => 'العمل',
@@ -2562,8 +2546,6 @@ extension on TranslationsAr {
 			'tour.habitsCalendarTitle' => 'عرض التقويم',
 			'tour.habitsCalendarDesc' => 'انتقل إلى التقويم لمراجعة سجلك حسب الأسبوع أو الشهر أو السنة — أو حياتك كلها.',
 			'tour.insightsOrientationTitle' => 'إحصاءاتك',
-			_ => null,
-		} ?? switch (path) {
 			'tour.insightsOrientationDesc' => 'تابع اتجاه عاداتك وأهدافك عبر الزمن وأين تنحرف.',
 			'tour.insightsFilterTitle' => 'التصفية حسب العادة',
 			'tour.insightsFilterDesc' => 'ركّز الإحصاءات على عادة واحدة أو أبقِ النظرة الشاملة.',
@@ -2572,6 +2554,8 @@ extension on TranslationsAr {
 			'tour.goalsOrientationTitle' => 'صفحة الأهداف',
 			'tour.goalsOrientationDesc' => 'حدّد وتابع أهدافك الأكبر — ما تبني نحوه عاداتك اليومية.',
 			'tour.goalsPlanTitle' => 'نوع التخطيط',
+			_ => null,
+		} ?? switch (path) {
 			'tour.goalsPlanDesc' => 'اختر كيف تخطّط — يوميًا أو أسبوعيًا أو لمدى أطول — بما يناسب طريقة تفكيرك في أهدافك.',
 			'tour.goalsAddTitle' => 'أضف هدفًا',
 			'tour.goalsAddDesc' => 'أنشئ هدفًا جديدًا هنا وامنحه غاية تسعى إليها.',

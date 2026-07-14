@@ -155,9 +155,7 @@
     "title": "Nuevo hábito",
     "subtitle": "Define tu nuevo hábito.",
     "titleHint": "p. ej. Meditación",
-    "categoryHint": "p. ej. Bienestar",
-    "weeklyFrequency": "Frecuencia semanal",
-    "defaultCategory": "General"
+    "weeklyFrequency": "Frecuencia semanal"
   },
   "macroGoals": {
     "types": {
@@ -479,8 +477,6 @@
     "neverMissedEmpty": "Aún no hay hábitos perfectos",
     "distributionTitle": "Distribución",
     "distributionSubtitle": "Hábitos por tasa de éxito",
-    "categoryTitle": "Por categoría",
-    "categorySubtitle": "Completado por categoría",
     "synergyTitle": "Sinergia de hábitos",
     "synergySubtitle": "Qué hábitos van juntos",
     "moodSensitiveTitle": "Sensibles al ánimo",
@@ -564,15 +560,11 @@
     "optionalReminder": "Recordatorio opcional",
     "reminderHint": "p. ej. 08:30",
     "close": "Cerrar",
-    "statusDone": "{category} · Completada",
-    "statusSkipped": "{category} · Omitida",
-    "statusUnrecorded": "{category} · No registrada",
+    "statusDone": "Completada",
+    "statusSkipped": "Omitida",
+    "statusUnrecorded": "No registrada",
     "weekOf": "Semana del {day} {month}",
     "lifeWeeks": "Semanas de tu camino",
-    "catWellness": "Bienestar",
-    "catProductivity": "Productividad",
-    "catEducation": "Formación",
-    "catHealth": "Salud",
     "catMindfulness": "Mindfulness",
     "editableHint": "Solo se pueden editar hoy y ayer."
   },

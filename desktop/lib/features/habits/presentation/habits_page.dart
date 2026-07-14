@@ -230,7 +230,6 @@ class _HabitsPageState extends ConsumerState<HabitsPage> {
     if (habit == null) {
       final added = await controller.addHabit(
         title: draft.title,
-        category: draft.category,
         color: draft.color,
         reminderTime: draft.reminderTime,
       );
@@ -242,7 +241,6 @@ class _HabitsPageState extends ConsumerState<HabitsPage> {
       await controller.updateHabit(
         id: habit.id,
         title: draft.title,
-        category: draft.category,
         color: draft.color,
         reminderTime: draft.reminderTime,
       );
@@ -302,7 +300,6 @@ Widget _expandedSwitcherLayout(
 DashboardHabit _tutorialDemoHabit() => DashboardHabit(
   id: 'tutorial_fake_habit',
   title: t.habitsPage.catMindfulness,
-  category: _localizedHabitCategory('Benessere'),
   color: EvolveColors.cyan,
   streak: 5,
   weeklyProgress: const [true, true, false, true, true, false, false],
@@ -840,19 +837,6 @@ class _HabitRowState extends State<_HabitRow> {
                               const VerifiedHabitBadge(),
                             ],
                           ],
-                        ),
-                        const SizedBox(height: 3),
-                        Text(
-                          habit.category,
-                          maxLines: 1,
-                          overflow: TextOverflow.ellipsis,
-                          style: TextStyle(
-                            color: context.evolveColors.muted.withValues(
-                              alpha: 0.8,
-                            ),
-                            fontSize: 12,
-                            fontWeight: FontWeight.w500,
-                          ),
                         ),
                       ],
                     ),
@@ -1938,7 +1922,6 @@ class _HabitEditorDialog extends StatefulWidget {
 class _HabitEditorDialogState extends State<_HabitEditorDialog> {
   late final TextEditingController _title;
   late final TextEditingController _reminder;
-  late String _category;
   late Color _color;
   var _usesDefaultColor = false;
 
@@ -1947,7 +1930,6 @@ class _HabitEditorDialogState extends State<_HabitEditorDialog> {
     super.initState();
     _title = TextEditingController(text: widget.habit?.title);
     _reminder = TextEditingController(text: widget.habit?.reminderTime);
-    _category = widget.habit?.category ?? 'Benessere';
     _usesDefaultColor = widget.habit == null;
     _color = widget.habit?.color ?? EvolveColors.primaryStrong;
   }
@@ -1984,23 +1966,6 @@ class _HabitEditorDialogState extends State<_HabitEditorDialog> {
             EvolveFieldLabel(t.form.title),
             const SizedBox(height: 8),
             TextField(controller: _title, autofocus: true),
-            const SizedBox(height: 16),
-            EvolveFieldLabel(t.form.category),
-            const SizedBox(height: 8),
-            EvolveSelect<String>(
-              value: _category,
-              expand: true,
-              height: 46,
-              fillColor: context.evolveColors.background.withValues(alpha: 0.5),
-              options: [
-                for (final value in _habitCategories)
-                  EvolveSelectOption(
-                    value: value,
-                    label: _localizedHabitCategory(value),
-                  ),
-              ],
-              onChanged: (value) => setState(() => _category = value),
-            ),
             const SizedBox(height: 16),
             EvolveFieldLabel(t.habitsPage.optionalReminder),
             const SizedBox(height: 8),
@@ -2088,7 +2053,6 @@ class _HabitEditorDialogState extends State<_HabitEditorDialog> {
               context,
               _HabitDraft(
                 title: title,
-                category: _category,
                 color: _color,
                 reminderTime: _reminder.text.trim().isEmpty
                     ? null
@@ -2125,13 +2089,11 @@ String _formatReminderTime(TimeOfDay time) =>
 class _HabitDraft {
   const _HabitDraft({
     required this.title,
-    required this.category,
     required this.color,
     this.reminderTime,
   });
 
   final String title;
-  final String category;
   final Color color;
   final String? reminderTime;
 }
@@ -2170,9 +2132,9 @@ String _habitStatusLabel(
   DashboardHabit habit,
 ) {
   return switch (_habitStatus(snapshot, habitId, date, habit)) {
-    'done' => t.habitsPage.statusDone(category: habit.category),
-    'missed' => t.habitsPage.statusSkipped(category: habit.category),
-    _ => t.habitsPage.statusUnrecorded(category: habit.category),
+    'done' => t.habitsPage.statusDone,
+    'missed' => t.habitsPage.statusSkipped,
+    _ => t.habitsPage.statusUnrecorded,
   };
 }
 
@@ -2193,26 +2155,6 @@ String _periodLabel(DateTime anchor, CalendarViewMode view) => switch (view) {
   ),
   CalendarViewMode.year => '${anchor.year}',
   CalendarViewMode.life => t.habitsPage.lifeWeeks,
-};
-
-// Preset category identifiers are kept stable (Italian) so they remain the
-// values stored in the DB and match existing rows; only the displayed label is
-// localized via [_localizedHabitCategory].
-const _habitCategories = [
-  'Benessere',
-  'Produttivita',
-  'Formazione',
-  'Salute',
-  'Mindfulness',
-];
-
-String _localizedHabitCategory(String value) => switch (value) {
-  'Benessere' => t.habitsPage.catWellness,
-  'Produttivita' => t.habitsPage.catProductivity,
-  'Formazione' => t.habitsPage.catEducation,
-  'Salute' => t.habitsPage.catHealth,
-  'Mindfulness' => t.habitsPage.catMindfulness,
-  _ => value,
 };
 
 const _habitColors = [

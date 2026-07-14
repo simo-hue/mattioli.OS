@@ -155,9 +155,7 @@
     "title": "Neue Gewohnheit",
     "subtitle": "Definiere deine neue Gewohnheit.",
     "titleHint": "z. B. Meditation",
-    "categoryHint": "z. B. Wohlbefinden",
-    "weeklyFrequency": "Wöchentliche Häufigkeit",
-    "defaultCategory": "Allgemein"
+    "weeklyFrequency": "Wöchentliche Häufigkeit"
   },
   "macroGoals": {
     "types": {
@@ -479,8 +477,6 @@
     "neverMissedEmpty": "Noch keine perfekten Gewohnheiten",
     "distributionTitle": "Verteilung",
     "distributionSubtitle": "Gewohnheiten nach Erfolgsrate",
-    "categoryTitle": "Nach Kategorie",
-    "categorySubtitle": "Abschluss pro Kategorie",
     "synergyTitle": "Gewohnheits-Synergie",
     "synergySubtitle": "Welche Gewohnheiten zusammen laufen",
     "moodSensitiveTitle": "Stimmungsabhängig",
@@ -564,15 +560,11 @@
     "optionalReminder": "Optionale Erinnerung",
     "reminderHint": "z. B. 08:30",
     "close": "Schließen",
-    "statusDone": "{category} · Erledigt",
-    "statusSkipped": "{category} · Übersprungen",
-    "statusUnrecorded": "{category} · Nicht erfasst",
+    "statusDone": "Erledigt",
+    "statusSkipped": "Übersprungen",
+    "statusUnrecorded": "Nicht erfasst",
     "weekOf": "Woche vom {day}. {month}",
     "lifeWeeks": "Wochen deines Weges",
-    "catWellness": "Wohlbefinden",
-    "catProductivity": "Produktivität",
-    "catEducation": "Bildung",
-    "catHealth": "Gesundheit",
     "catMindfulness": "Achtsamkeit",
     "editableHint": "Nur heute und gestern können bearbeitet werden."
   },

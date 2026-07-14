@@ -19,9 +19,6 @@ class CreateHabitDialog extends ConsumerStatefulWidget {
 
 class _CreateHabitDialogState extends ConsumerState<CreateHabitDialog> {
   final _titleController = TextEditingController();
-  final _categoryController = TextEditingController(
-    text: t.createHabit.defaultCategory,
-  );
   // Mobile "Add Habit" preset palette (habit_management_modal.dart).
   static const _presetColors = [
     Color(0xFF30A661),
@@ -40,7 +37,6 @@ class _CreateHabitDialogState extends ConsumerState<CreateHabitDialog> {
   @override
   void dispose() {
     _titleController.dispose();
-    _categoryController.dispose();
     super.dispose();
   }
 
@@ -68,7 +64,6 @@ class _CreateHabitDialogState extends ConsumerState<CreateHabitDialog> {
           .read(dashboardControllerProvider.notifier)
           .addHabit(
             title: title,
-            category: _categoryController.text.trim(),
             color: _selectedColor,
           );
       if (!added) {
@@ -105,18 +100,10 @@ class _CreateHabitDialogState extends ConsumerState<CreateHabitDialog> {
             controller: _titleController,
             decoration: InputDecoration(hintText: t.createHabit.titleHint),
             autofocus: true,
-            textInputAction: TextInputAction.next,
-          ),
-          const SizedBox(height: 16),
-          EvolveFieldLabel(t.form.category),
-          const SizedBox(height: 8),
-          TextField(
-            controller: _categoryController,
-            decoration: InputDecoration(hintText: t.createHabit.categoryHint),
             textInputAction: TextInputAction.done,
             onSubmitted: (_) => _save(),
           ),
-          const SizedBox(height: 20),
+          const SizedBox(height: 16),
           EvolveFieldLabel(t.form.color),
           const SizedBox(height: 10),
           ColorPickerButton(

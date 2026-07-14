@@ -155,9 +155,7 @@
     "title": "New Habit",
     "subtitle": "Define your new habit.",
     "titleHint": "e.g. Meditation",
-    "categoryHint": "e.g. Wellness",
-    "weeklyFrequency": "Weekly frequency",
-    "defaultCategory": "General"
+    "weeklyFrequency": "Weekly frequency"
   },
   "macroGoals": {
     "types": {
@@ -479,8 +477,6 @@
     "neverMissedEmpty": "No perfect habits yet",
     "distributionTitle": "Completion spread",
     "distributionSubtitle": "Habits by success rate",
-    "categoryTitle": "By category",
-    "categorySubtitle": "Completion per category",
     "synergyTitle": "Habit synergy",
     "synergySubtitle": "Which habits move together",
     "moodSensitiveTitle": "Mood-sensitive",
@@ -564,15 +560,11 @@
     "optionalReminder": "Optional reminder",
     "reminderHint": "e.g. 08:30",
     "close": "Close",
-    "statusDone": "{category} · Completed",
-    "statusSkipped": "{category} · Skipped",
-    "statusUnrecorded": "{category} · Not recorded",
+    "statusDone": "Completed",
+    "statusSkipped": "Skipped",
+    "statusUnrecorded": "Not recorded",
     "weekOf": "Week of {day} {month}",
     "lifeWeeks": "Weeks of your journey",
-    "catWellness": "Wellness",
-    "catProductivity": "Productivity",
-    "catEducation": "Education",
-    "catHealth": "Health",
     "catMindfulness": "Mindfulness",
     "editableHint": "Only today and yesterday can be edited."
   },

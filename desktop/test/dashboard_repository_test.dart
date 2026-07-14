@@ -28,7 +28,6 @@ void main() {
       final habit = DashboardHabit(
         id: 'd710cf5c-45f7-4eb9-af81-a344c7f2546f',
         title: 'Lettura serale',
-        category: 'Formazione',
         color: EvolveColors.violet,
         streak: 0,
         weeklyProgress: const [false, false, false, false, false, false, false],

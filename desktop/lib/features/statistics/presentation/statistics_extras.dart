@@ -1411,10 +1411,7 @@ class _HabitsExtras extends ConsumerWidget {
           _MedalsPanel(snapshot: snapshot, stats: stats),
         ),
         const SizedBox(height: 18),
-        _twoUp(
-          _DistributionPanel(stats: stats),
-          _CategoryBreakdownPanel(snapshot: snapshot, stats: stats),
-        ),
+        _DistributionPanel(stats: stats),
         const SizedBox(height: 18),
         _SynergyMatrixPanel(snapshot: snapshot),
       ],
@@ -1726,57 +1723,6 @@ class _DistributionPanel extends StatelessWidget {
   }
 }
 
-/// Completion rate per habit category. Hidden unless ≥2 distinct categories.
-class _CategoryBreakdownPanel extends StatelessWidget {
-  const _CategoryBreakdownPanel({required this.snapshot, required this.stats});
-
-  final DashboardSnapshot snapshot;
-  final List<Map<String, dynamic>> stats;
-
-  @override
-  Widget build(BuildContext context) {
-    final categoryOf = {for (final h in snapshot.habits) h.id: h.category};
-    final done = <String, int>{};
-    final active = <String, int>{};
-    for (final row in stats) {
-      final id = row['goal_id'] as String?;
-      final cat = id == null ? null : categoryOf[id];
-      if (cat == null || cat.isEmpty) continue;
-      done[cat] =
-          (done[cat] ?? 0) + ((row['total_completions'] as num?) ?? 0).toInt();
-      active[cat] =
-          (active[cat] ?? 0) +
-          ((row['total_active_days'] as num?) ?? 0).toInt();
-    }
-    if (done.length < 2) return const SizedBox.shrink();
-
-    final entries = done.keys.map((cat) {
-      final a = active[cat] ?? 0;
-      return (category: cat, rate: a > 0 ? (done[cat]! * 100 / a) : 0.0);
-    }).toList()..sort((x, y) => y.rate.compareTo(x.rate));
-
-    return EvolvePanel(
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          SectionHeading(
-            title: t.stats.categoryTitle,
-            subtitle: t.stats.categorySubtitle,
-          ),
-          const SizedBox(height: 16),
-          for (final e in entries) ...[
-            _LevelBar(
-              label: e.category,
-              percentage: e.rate.round(),
-              color: context.evolveAccent,
-            ),
-            const SizedBox(height: 14),
-          ],
-        ],
-      ),
-    );
-  }
-}
 
 /// N×N habit co-completion matrix — which pairs of habits move together.
 class _SynergyMatrixPanel extends ConsumerWidget {

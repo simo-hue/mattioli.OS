@@ -695,7 +695,6 @@ class SupabaseDashboardRepository extends DashboardRepository {
       for (final habit in snapshot.habits)
         {
           ...habit.toRemoteJson(),
-          'category': habit.category,
           'streak': habit.streak,
           'weekly_progress': habit.weeklyProgress,
           'state': habit.state.name,

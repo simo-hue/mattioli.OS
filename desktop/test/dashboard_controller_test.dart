@@ -56,7 +56,6 @@ void main() {
 
     await controller.addHabit(
       title: 'Passeggiata serale',
-      category: 'Salute',
       color: EvolveColors.cyan,
       reminderTime: '19:00',
     );
@@ -70,7 +69,6 @@ void main() {
     await controller.updateHabit(
       id: habit.id,
       title: 'Passeggiata',
-      category: 'Benessere',
       color: EvolveColors.primaryStrong,
     );
 
@@ -79,7 +77,6 @@ void main() {
         .habits
         .firstWhere((item) => item.id == habit.id);
     expect(habit.title, 'Passeggiata');
-    expect(habit.category, 'Benessere');
     expect(habit.reminderTime, isNull);
 
     await controller.deleteHabit(habit.id);
@@ -158,7 +155,6 @@ void main() {
         DashboardHabit(
           id: 'walk',
           title: 'Passeggiata',
-          category: 'Salute',
           color: EvolveColors.primaryStrong,
           streak: 0,
           weeklyProgress: const [
@@ -206,7 +202,6 @@ void main() {
     DashboardHabit habit(String id, int order) => DashboardHabit(
       id: id,
       title: id,
-      category: 'Cat',
       color: EvolveColors.primaryStrong,
       streak: 0,
       weeklyProgress: const [false, false, false, false, false, false, false],
@@ -245,7 +240,6 @@ void main() {
         DashboardHabit(
           id: 'read',
           title: 'Leggere',
-          category: 'Formazione',
           color: EvolveColors.violet,
           streak: 1,
           weeklyProgress: const [
@@ -280,7 +274,6 @@ void main() {
         DashboardHabit(
           id: 'read',
           title: 'Leggere',
-          category: 'Formazione',
           color: EvolveColors.violet,
           streak: 1,
           weeklyProgress: const [
@@ -318,7 +311,6 @@ void main() {
         const DashboardHabit(
           id: 'active',
           title: 'Attiva',
-          category: 'Salute',
           color: EvolveColors.cyan,
           streak: 1,
           weeklyProgress: [true, true, true, true, true, true, true],
@@ -327,7 +319,6 @@ void main() {
         DashboardHabit(
           id: 'future',
           title: 'Futura',
-          category: 'Salute',
           color: EvolveColors.cyan,
           streak: 0,
           weeklyProgress: const [
@@ -412,7 +403,6 @@ void main() {
         .read(dashboardControllerProvider.notifier)
         .addHabit(
           title: 'Lettura serale',
-          category: 'Formazione',
           color: EvolveColors.violet,
         );
 
@@ -476,7 +466,6 @@ void main() {
         DashboardHabit(
           id: 'walk',
           title: 'Passeggiata',
-          category: 'Salute',
           color: EvolveColors.primaryStrong,
           streak: 0,
           weeklyProgress: const [
@@ -526,7 +515,6 @@ DashboardSnapshot _singleHabitSnapshot() {
       DashboardHabit(
         id: 'walk',
         title: 'Passeggiata',
-        category: 'Salute',
         color: EvolveColors.primaryStrong,
         streak: 0,
         weeklyProgress: [false, false, false, false, false, false, false],
@@ -589,7 +577,6 @@ class _CachedOfflineDashboardRepository extends DashboardRepository {
       DashboardHabit(
         id: 'cached',
         title: 'Cache cifrata',
-        category: 'Sistema',
         color: EvolveColors.primaryStrong,
         streak: 0,
         weeklyProgress: [false, false, false, false, false, false, false],

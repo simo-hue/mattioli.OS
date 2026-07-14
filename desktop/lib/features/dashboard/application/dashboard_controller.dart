@@ -120,7 +120,6 @@ class DashboardController extends Notifier<DashboardSnapshot> {
   /// so it is never capped. Mirrors mobile's habit gate.
   Future<bool> addHabit({
     required String title,
-    required String category,
     required Color color,
     String? reminderTime,
   }) async {
@@ -130,7 +129,6 @@ class DashboardController extends Notifier<DashboardSnapshot> {
     final draft = DashboardHabit(
       id: _newLocalId(),
       title: title,
-      category: category,
       color: color,
       streak: 0,
       weeklyProgress: const [false, false, false, false, false, false, false],
@@ -159,7 +157,6 @@ class DashboardController extends Notifier<DashboardSnapshot> {
   Future<void> updateHabit({
     required String id,
     required String title,
-    required String category,
     required Color color,
     String? reminderTime,
   }) async {
@@ -168,7 +165,6 @@ class DashboardController extends Notifier<DashboardSnapshot> {
         if (habit.id == id)
           habit.copyWith(
             title: title,
-            category: category,
             color: color,
             reminderTime: reminderTime,
             clearReminder: reminderTime == null,

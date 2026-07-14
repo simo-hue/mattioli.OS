@@ -87,7 +87,7 @@ class PrivateDashboardRepository extends DashboardRepository {
       'id': id,
       'user_id': ownerId,
       'title': habit.title,
-      'description': habit.category,
+      'description': habit.description,
       'icon': habit.icon,
       'color': dashboardColorToHex(habit.color),
       'frequency_days': frequencyDays,
@@ -113,7 +113,7 @@ class PrivateDashboardRepository extends DashboardRepository {
       'goals',
       {
         'title': habit.title,
-        'description': habit.category,
+        'description': habit.description,
         'icon': habit.icon,
         'color': dashboardColorToHex(habit.color),
         'frequency_days': frequencyDays,
@@ -438,7 +438,6 @@ class PrivateDashboardRepository extends DashboardRepository {
     return DashboardHabit(
       id: id,
       title: row['title'] as String,
-      category: row['description'] as String? ?? 'Generale',
       color: dashboardColorFromHex(row['color'] as String?),
       streak: computeStreak(
         habitId: id,

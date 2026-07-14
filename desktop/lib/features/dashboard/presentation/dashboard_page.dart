@@ -992,11 +992,6 @@ class _HabitRow extends StatelessWidget {
                       ],
                     ],
                   ),
-                  const SizedBox(height: 3),
-                  Text(
-                    habit.category,
-                    style: Theme.of(context).textTheme.bodySmall,
-                  ),
                 ],
               ),
             ),

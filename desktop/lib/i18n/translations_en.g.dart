@@ -498,14 +498,8 @@ class Translations$createHabit$en {
 	/// en: 'e.g. Meditation'
 	String get titleHint => 'e.g. Meditation';
 
-	/// en: 'e.g. Wellness'
-	String get categoryHint => 'e.g. Wellness';
-
 	/// en: 'Weekly frequency'
 	String get weeklyFrequency => 'Weekly frequency';
-
-	/// en: 'General'
-	String get defaultCategory => 'General';
 }
 
 // Path: macroGoals
@@ -1468,12 +1462,6 @@ class Translations$stats$en {
 	/// en: 'Habits by success rate'
 	String get distributionSubtitle => 'Habits by success rate';
 
-	/// en: 'By category'
-	String get categoryTitle => 'By category';
-
-	/// en: 'Completion per category'
-	String get categorySubtitle => 'Completion per category';
-
 	/// en: 'Habit synergy'
 	String get synergyTitle => 'Habit synergy';
 
@@ -1709,32 +1697,20 @@ class Translations$habitsPage$en {
 	/// en: 'Close'
 	String get close => 'Close';
 
-	/// en: '{category} · Completed'
-	String statusDone({required Object category}) => '${category} · Completed';
+	/// en: 'Completed'
+	String get statusDone => 'Completed';
 
-	/// en: '{category} · Skipped'
-	String statusSkipped({required Object category}) => '${category} · Skipped';
+	/// en: 'Skipped'
+	String get statusSkipped => 'Skipped';
 
-	/// en: '{category} · Not recorded'
-	String statusUnrecorded({required Object category}) => '${category} · Not recorded';
+	/// en: 'Not recorded'
+	String get statusUnrecorded => 'Not recorded';
 
 	/// en: 'Week of {day} {month}'
 	String weekOf({required Object day, required Object month}) => 'Week of ${day} ${month}';
 
 	/// en: 'Weeks of your journey'
 	String get lifeWeeks => 'Weeks of your journey';
-
-	/// en: 'Wellness'
-	String get catWellness => 'Wellness';
-
-	/// en: 'Productivity'
-	String get catProductivity => 'Productivity';
-
-	/// en: 'Education'
-	String get catEducation => 'Education';
-
-	/// en: 'Health'
-	String get catHealth => 'Health';
 
 	/// en: 'Mindfulness'
 	String get catMindfulness => 'Mindfulness';
@@ -3696,9 +3672,7 @@ extension on Translations {
 			'createHabit.title' => 'New Habit',
 			'createHabit.subtitle' => 'Define your new habit.',
 			'createHabit.titleHint' => 'e.g. Meditation',
-			'createHabit.categoryHint' => 'e.g. Wellness',
 			'createHabit.weeklyFrequency' => 'Weekly frequency',
-			'createHabit.defaultCategory' => 'General',
 			'macroGoals.types.annual' => 'Annual',
 			'macroGoals.types.quarterly' => 'Quarterly',
 			'macroGoals.types.monthly' => 'Monthly',
@@ -4006,8 +3980,6 @@ extension on Translations {
 			'stats.neverMissedEmpty' => 'No perfect habits yet',
 			'stats.distributionTitle' => 'Completion spread',
 			'stats.distributionSubtitle' => 'Habits by success rate',
-			'stats.categoryTitle' => 'By category',
-			'stats.categorySubtitle' => 'Completion per category',
 			'stats.synergyTitle' => 'Habit synergy',
 			'stats.synergySubtitle' => 'Which habits move together',
 			'stats.moodSensitiveTitle' => 'Mood-sensitive',
@@ -4085,19 +4057,15 @@ extension on Translations {
 			'habitsPage.editHabit' => 'Edit habit',
 			'habitsPage.newHabit' => 'New habit',
 			'habitsPage.optionalReminder' => 'Optional reminder',
-			_ => null,
-		} ?? switch (path) {
 			'habitsPage.reminderHint' => 'e.g. 08:30',
 			'habitsPage.close' => 'Close',
-			'habitsPage.statusDone' => ({required Object category}) => '${category} · Completed',
-			'habitsPage.statusSkipped' => ({required Object category}) => '${category} · Skipped',
-			'habitsPage.statusUnrecorded' => ({required Object category}) => '${category} · Not recorded',
+			'habitsPage.statusDone' => 'Completed',
+			'habitsPage.statusSkipped' => 'Skipped',
+			_ => null,
+		} ?? switch (path) {
+			'habitsPage.statusUnrecorded' => 'Not recorded',
 			'habitsPage.weekOf' => ({required Object day, required Object month}) => 'Week of ${day} ${month}',
 			'habitsPage.lifeWeeks' => 'Weeks of your journey',
-			'habitsPage.catWellness' => 'Wellness',
-			'habitsPage.catProductivity' => 'Productivity',
-			'habitsPage.catEducation' => 'Education',
-			'habitsPage.catHealth' => 'Health',
 			'habitsPage.catMindfulness' => 'Mindfulness',
 			'habitsPage.editableHint' => 'Only today and yesterday can be edited.',
 			'lavoro' => 'Work',
@@ -4599,8 +4567,6 @@ extension on Translations {
 			'tour.habitsCalendarTitle' => 'Calendar view',
 			'tour.habitsCalendarDesc' => 'Switch to the Calendar to review your history by week, month, year — or your whole life.',
 			'tour.insightsOrientationTitle' => 'Your Insights',
-			_ => null,
-		} ?? switch (path) {
 			'tour.insightsOrientationDesc' => 'See how your habits and goals trend over time, and where you\'re drifting.',
 			'tour.insightsFilterTitle' => 'Filter by habit',
 			'tour.insightsFilterDesc' => 'Focus the statistics on a single habit, or keep the global overview.',
@@ -4609,6 +4575,8 @@ extension on Translations {
 			'tour.goalsOrientationTitle' => 'The Goals page',
 			'tour.goalsOrientationDesc' => 'Set and track your bigger objectives — the things your daily habits build toward.',
 			'tour.goalsPlanTitle' => 'Planning type',
+			_ => null,
+		} ?? switch (path) {
 			'tour.goalsPlanDesc' => 'Choose how you plan — daily, weekly or longer — to match how you think about your goals.',
 			'tour.goalsAddTitle' => 'Add a goal',
 			'tour.goalsAddDesc' => 'Create a new goal here and give it a target to work toward.',

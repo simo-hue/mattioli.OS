@@ -304,9 +304,7 @@ class _Translations$createHabit$it extends Translations$createHabit$en {
 	@override String get title => 'Nuova Abitudine';
 	@override String get subtitle => 'Definisci la tua nuova abitudine.';
 	@override String get titleHint => 'es. Meditazione';
-	@override String get categoryHint => 'es. Benessere';
 	@override String get weeklyFrequency => 'Frequenza settimanale';
-	@override String get defaultCategory => 'Generale';
 }
 
 // Path: macroGoals
@@ -664,8 +662,6 @@ class _Translations$stats$it extends Translations$stats$en {
 	@override String get neverMissedEmpty => 'Nessuna abitudine perfetta';
 	@override String get distributionTitle => 'Distribuzione';
 	@override String get distributionSubtitle => 'Abitudini per tasso di successo';
-	@override String get categoryTitle => 'Per categoria';
-	@override String get categorySubtitle => 'Completamento per categoria';
 	@override String get synergyTitle => 'Sinergia abitudini';
 	@override String get synergySubtitle => 'Quali abitudini vanno insieme';
 	@override String get moodSensitiveTitle => 'Sensibili all\'umore';
@@ -756,15 +752,11 @@ class _Translations$habitsPage$it extends Translations$habitsPage$en {
 	@override String get optionalReminder => 'Promemoria opzionale';
 	@override String get reminderHint => 'es. 08:30';
 	@override String get close => 'Chiudi';
-	@override String statusDone({required Object category}) => '${category} · Completata';
-	@override String statusSkipped({required Object category}) => '${category} · Saltata';
-	@override String statusUnrecorded({required Object category}) => '${category} · Non registrata';
+	@override String get statusDone => 'Completata';
+	@override String get statusSkipped => 'Saltata';
+	@override String get statusUnrecorded => 'Non registrata';
 	@override String weekOf({required Object day, required Object month}) => 'Settimana del ${day} ${month}';
 	@override String get lifeWeeks => 'Settimane del tuo percorso';
-	@override String get catWellness => 'Benessere';
-	@override String get catProductivity => 'Produttività';
-	@override String get catEducation => 'Formazione';
-	@override String get catHealth => 'Salute';
 	@override String get catMindfulness => 'Mindfulness';
 	@override String get editableHint => 'Puoi modificare solo oggi e ieri.';
 }
@@ -1659,9 +1651,7 @@ extension on TranslationsIt {
 			'createHabit.title' => 'Nuova Abitudine',
 			'createHabit.subtitle' => 'Definisci la tua nuova abitudine.',
 			'createHabit.titleHint' => 'es. Meditazione',
-			'createHabit.categoryHint' => 'es. Benessere',
 			'createHabit.weeklyFrequency' => 'Frequenza settimanale',
-			'createHabit.defaultCategory' => 'Generale',
 			'macroGoals.types.annual' => 'Annuale',
 			'macroGoals.types.quarterly' => 'Trimestrale',
 			'macroGoals.types.monthly' => 'Mensile',
@@ -1969,8 +1959,6 @@ extension on TranslationsIt {
 			'stats.neverMissedEmpty' => 'Nessuna abitudine perfetta',
 			'stats.distributionTitle' => 'Distribuzione',
 			'stats.distributionSubtitle' => 'Abitudini per tasso di successo',
-			'stats.categoryTitle' => 'Per categoria',
-			'stats.categorySubtitle' => 'Completamento per categoria',
 			'stats.synergyTitle' => 'Sinergia abitudini',
 			'stats.synergySubtitle' => 'Quali abitudini vanno insieme',
 			'stats.moodSensitiveTitle' => 'Sensibili all\'umore',
@@ -2048,19 +2036,15 @@ extension on TranslationsIt {
 			'habitsPage.editHabit' => 'Modifica abitudine',
 			'habitsPage.newHabit' => 'Nuova abitudine',
 			'habitsPage.optionalReminder' => 'Promemoria opzionale',
-			_ => null,
-		} ?? switch (path) {
 			'habitsPage.reminderHint' => 'es. 08:30',
 			'habitsPage.close' => 'Chiudi',
-			'habitsPage.statusDone' => ({required Object category}) => '${category} · Completata',
-			'habitsPage.statusSkipped' => ({required Object category}) => '${category} · Saltata',
-			'habitsPage.statusUnrecorded' => ({required Object category}) => '${category} · Non registrata',
+			'habitsPage.statusDone' => 'Completata',
+			'habitsPage.statusSkipped' => 'Saltata',
+			_ => null,
+		} ?? switch (path) {
+			'habitsPage.statusUnrecorded' => 'Non registrata',
 			'habitsPage.weekOf' => ({required Object day, required Object month}) => 'Settimana del ${day} ${month}',
 			'habitsPage.lifeWeeks' => 'Settimane del tuo percorso',
-			'habitsPage.catWellness' => 'Benessere',
-			'habitsPage.catProductivity' => 'Produttività',
-			'habitsPage.catEducation' => 'Formazione',
-			'habitsPage.catHealth' => 'Salute',
 			'habitsPage.catMindfulness' => 'Mindfulness',
 			'habitsPage.editableHint' => 'Puoi modificare solo oggi e ieri.',
 			'lavoro' => 'Lavoro',
@@ -2562,8 +2546,6 @@ extension on TranslationsIt {
 			'tour.habitsCalendarTitle' => 'Vista Calendario',
 			'tour.habitsCalendarDesc' => 'Passa al Calendario per rivedere la cronologia per settimana, mese, anno — o tutta la vita.',
 			'tour.insightsOrientationTitle' => 'Le tue Statistiche',
-			_ => null,
-		} ?? switch (path) {
 			'tour.insightsOrientationDesc' => 'Osserva l\'andamento di abitudini e obiettivi nel tempo e dove stai perdendo il ritmo.',
 			'tour.insightsFilterTitle' => 'Filtra per abitudine',
 			'tour.insightsFilterDesc' => 'Concentra le statistiche su una singola abitudine o mantieni la vista globale.',
@@ -2572,6 +2554,8 @@ extension on TranslationsIt {
 			'tour.goalsOrientationTitle' => 'La pagina Obiettivi',
 			'tour.goalsOrientationDesc' => 'Imposta e monitora i tuoi obiettivi più grandi — ciò a cui puntano le tue abitudini quotidiane.',
 			'tour.goalsPlanTitle' => 'Tipo di pianificazione',
+			_ => null,
+		} ?? switch (path) {
 			'tour.goalsPlanDesc' => 'Scegli come pianificare — giornaliera, settimanale o più lunga — in base a come pensi i tuoi obiettivi.',
 			'tour.goalsAddTitle' => 'Aggiungi un obiettivo',
 			'tour.goalsAddDesc' => 'Crea qui un nuovo obiettivo e dagli un traguardo da raggiungere.',

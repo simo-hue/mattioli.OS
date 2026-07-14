@@ -837,3 +837,35 @@ heading ellipsizing. `flutter analyze` clean; `tour_flow_test` still passes.
     shared-widget change). One pre-existing unrelated failure remains in
     icloud_sync_card_test (pumpAndSettle timeout, fails with this change reverted).
     On-device visual QA still pending (no Xcode on this Mac) — see TO_SIMO_DO.md.
+
+- [2026-07-14 18:15]: Remove habit "category" field completely (desktop macOS)
+  - *Details*: Removed the "category" field from the habit **Add/Edit** pop-ups —
+    both the dashboard `CreateHabitDialog` (free-text field) and the Habits-page
+    `_HabitEditorDialog` (preset dropdown). Per the "remove forever" request, also
+    stripped it everywhere downstream: the two habit-card subtitles (dashboard +
+    habits page), the day-status labels (now plain "Completed / Skipped / Not
+    recorded", no `{category}` prefix), the seed/tutorial habit, and the Statistics
+    **"Completion per habit category"** panel (`_CategoryBreakdownPanel`), which had
+    nothing left to group by. The **goal** category system (`category_key`/
+    `category_id`, goal stats, GoalCategorySettings) is a separate feature and was
+    deliberately left untouched.
+  - *Tech Notes*: `DashboardHabit.category` removed from the model. The shared
+    Supabase/private-DB `description` column (which physically stored the habit
+    category) is preserved and now round-tripped through the model's existing
+    nullable `description` field — **no schema change, no destructive migration**;
+    existing rows keep their data, new habits write null. Touched: dashboard_models,
+    dashboard_controller (addHabit/updateHabit drop the `category` param),
+    private_dashboard_repository + dashboard_repository (+ removed a dead cache key),
+    create_habit_dialog, dashboard_page, habits_page (removed `_habitCategories` /
+    `_localizedHabitCategory` / `_HabitDraft.category`), statistics_extras (panel
+    deleted; `_DistributionPanel` now full-width). i18n: dropped orphaned
+    habit-category keys (createHabit.categoryHint/defaultCategory,
+    stats.categoryTitle/Subtitle, habitsPage.catWellness/Productivity/Education/
+    Health) across all 5 locales, reworded the status strings, kept `form.category`
+    (shared with goals) and `catMindfulness` (tutorial title); regenerated via
+    `dart run slang`. Tests: removed habit `category:` args from
+    dashboard_controller_test/dashboard_repository_test. No new deps/endpoints.
+    Verified: `flutter analyze` clean (only the pre-existing lib/main.dart
+    setMockInitialValues warning); `flutter test` = 280 passed, 2 pre-existing
+    environmental failures (desktop_supabase_config_security build-time defines;
+    icloud_sync_card pumpAndSettle) that fail identically with this change reverted.

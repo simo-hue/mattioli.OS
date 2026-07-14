@@ -69,11 +69,24 @@ class _HabitManagementModalState extends ConsumerState<HabitManagementModal> {
   }
 
   void _onSave() {
-    if (_nameController.text.trim().isEmpty) return;
+    var name = _nameController.text.trim();
+    // An auto-verified habit's metric already names it (e.g. "Exercise
+    // minutes"), so the text field is optional for these: default the title
+    // from the chosen template instead of silently doing nothing. The user can
+    // still type a custom name to override.
+    if (name.isEmpty && _verificationRule != null) {
+      name = verificationTemplateLabel(context.t, _verificationRule!.metricKey);
+    }
+    if (name.isEmpty) {
+      // A plain manual habit still needs a name — give tactile feedback so the
+      // tap isn't a silent no-op.
+      ref.hapticMedium();
+      return;
+    }
 
     if (_editingHabit != null) {
       final updated = _editingHabit!.copyWith(
-        title: _nameController.text.trim(),
+        title: name,
         color: _selectedColor,
         reminderTime: _reminderTime,
         clearReminderTime: _reminderTime == null,
@@ -99,7 +112,7 @@ class _HabitManagementModalState extends ConsumerState<HabitManagementModal> {
 
       final newHabit = Goal(
         id: DateTime.now().millisecondsSinceEpoch.toString(),
-        title: _nameController.text.trim(),
+        title: name,
         description: '',
         icon: 'circle',
         color: _selectedColor,

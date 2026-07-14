@@ -2,6 +2,12 @@
 
 ## Recent Changes
 
+- [2026-07-14 17:15]: **AI Coach UI Layout Fix**
+  - *Details*: Fixed a UI issue in the desktop AI Coach page where the chat message container was constrained to 900px, creating a visual disconnect with the full-width input dock. The message container now spans the full width of the panel, and individual chat bubbles have been widened for improved readability.
+  - *Tech Notes*:
+    - Removed `ConstrainedBox(maxWidth: 900)` and `Center` wrappers from the `ListView.builder` inside `ai_coach_page.dart`.
+    - Increased the `maxWidth` constraint of individual `_MessageBubble` containers from 640px to 800px.
+
 - [2026-07-13]: **Active vs All Habits Filter**
   - *Details*: Added a persistent, local-only filter to the global statistics "Abitudini" tab, allowing users to switch between viewing only active habits or all habits (including removed/past ones).
   - *Tech Notes*:

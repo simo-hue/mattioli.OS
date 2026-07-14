@@ -225,7 +225,11 @@ KeystoneInsight? computeKeystoneHabit({
       );
     }
   }
-  return best;
+  // "Keystone" only means something when the effect is POSITIVE — a habit whose
+  // best lift is ≤0 (its done-days coincide with LOWER completion of the rest)
+  // is not a keystone. Return null so the card hides rather than surfacing an
+  // anti-keystone.
+  return (best != null && best.lift > 0) ? best : null;
 }
 
 // ─── Bounce-back (recovery after a miss) ─────────────────────────────────────

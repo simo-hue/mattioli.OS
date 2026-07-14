@@ -103,7 +103,7 @@ The per-habit (a specific habit selected) view is **Pro-gated** — sign in as P
 
 ## Goals board — linear layout on-device QA (2026-07-14)
 Reworked the Goals page: completed/failed goals no longer go to a right rail — the board is now one linear column at all widths, with the completion ring + period heading + Completed/Failed/Active counts in a header band at the top, and completed/failed goals at the bottom under the `COMPLETED`/`FAILED` dividers. Code-verified only (no Xcode here): `flutter analyze` clean; suite 276 pass / 1 pre-existing env fail; `tour_flow_test` (renders the goals page) passes. Run `flutter run -d macos`, check **both light and dark** and **Private + Cloud** modes:
-- [ ] **Header band** — the ring shows the completion %; heading (period title/subtitle) sits beside it; the three counts (Completed/Failed/Active) render on the right and stay readable at the **narrowest** window (~960px) without overflowing or clipping.
+- [ ] **Header band** — the ring shows the completion %; heading (period title/subtitle) sits beside it; the three counts render on **one line** right-aligned (`COMPLETED n | FAILED n | ACTIVE n`, color-coded, pipe-separated) and stay readable at the **narrowest** window (~960px) without overflowing or clipping — check **German** (longest labels) especially.
 - [ ] **Active goals** — render as single-line rows beneath the header hairline; the target-icon chip + title + hover actions (reschedule/edit/delete) look right; hover dimming still works.
 - [ ] **Complete a goal** — after the ~2s debounce it drops from the active list down under the green `COMPLETED` divider, shows the green check + strikethrough inline on its row, and the ring/counts update.
 - [ ] **Fail a goal** — same, under the red `FAILED` divider with the red X inline.
@@ -111,3 +111,21 @@ Reworked the Goals page: completed/failed goals no longer go to a right rail —
 - [ ] **Empty & mixed states** — no active goals but some completed/failed (active empty-state shows, sections still appear); and a period with zero goals (ring at 0%, empty-add state).
 - [ ] **Tour** — the goals step of the product tour still spotlights the first active goal's checkbox.
 
+
+## Habit-stats audit — manual actions (2026-07-14)
+Full analysis + fix status: `docs/HABIT_STATS_AUDIT.md`.
+- [ ] **Deploy the SQL migration** `migrations/20260714_fix_get_global_trend_year_all.sql`
+      to Supabase (fixes the cloud-mode Trend chart for the **Year** and **All**
+      timeframes — they previously dropped empty days/months from the average).
+      Review the SQL first; it's a `CREATE OR REPLACE FUNCTION` (WEEK/MONTH branches
+      unchanged, only YEAR/ALL fixed). No data migration, safe to re-run.
+- [ ] **Rebuild + test the iOS app** — the shared `private_analytics.dart` DST fix
+      and the `_calculateRecuperoData` sort fix were applied to `mobile/` and pass
+      `flutter analyze` + `mobile/test/private_analytics_test.dart` here, but the
+      full iOS app was not built on this Mac. Run `flutter analyze` + `flutter test`
+      + a device build for mobile to confirm.
+- [ ] **(Optional, web app)** The web client (`src/hooks/useGoals.ts`
+      `toggleLogMutation`) never writes `goal_logs.streak`, so the cloud
+      `habit_stats` view reports 0/stale streaks for habits last toggled from the
+      web. macOS & iOS persist it correctly. Patch the web write path if web-logged
+      cloud streaks matter.

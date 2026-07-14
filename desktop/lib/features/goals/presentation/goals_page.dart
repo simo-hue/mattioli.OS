@@ -1069,9 +1069,10 @@ class _GoalBoard extends StatelessWidget {
   }
 
   /// Header band pinned to the top of the box: completion ring on the leading
-  /// edge, the period heading in the middle, and the per-status counts on the
-  /// trailing edge. This replaces the old right-rail summary now that completed
-  /// and failed goals live at the bottom of this same box.
+  /// edge, the period heading in the middle, and the per-status counts as a
+  /// single inline strip on the trailing edge. This replaces the old right-rail
+  /// summary now that completed and failed goals live at the bottom of this
+  /// same box.
   Widget _boardHeader(BuildContext context) {
     final total =
         activeGoals.length + completedGoals.length + failedGoals.length;
@@ -1082,32 +1083,80 @@ class _GoalBoard extends StatelessWidget {
         const SizedBox(width: 16),
         Expanded(child: _periodHeading(context)),
         const SizedBox(width: 16),
-        SizedBox(
-          width: 160,
-          child: Column(
-            mainAxisSize: MainAxisSize.min,
-            children: [
-              _StatusCountRow(
-                label: t.macroGoals.completed,
-                color: EvolveColors.success,
-                count: completedGoals.length,
-              ),
-              const SizedBox(height: 8),
-              _StatusCountRow(
-                label: t.macroGoals.failed,
-                color: EvolveColors.destructive,
-                count: failedGoals.length,
-              ),
-              const SizedBox(height: 8),
-              _StatusCountRow(
-                label: t.goalsStats.active,
-                color: context.evolveAccent,
-                count: activeGoals.length,
-              ),
-            ],
+        // Counts on one line: COMPLETED n | FAILED n | ACTIVE n, each label in
+        // its status color (tying to the green check / red X on the rows below)
+        // with a hairline pipe between them.
+        Row(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            _countItem(
+              context,
+              label: t.macroGoals.completed,
+              color: EvolveColors.success,
+              count: completedGoals.length,
+            ),
+            _countDivider(context),
+            _countItem(
+              context,
+              label: t.macroGoals.failed,
+              color: EvolveColors.destructive,
+              count: failedGoals.length,
+            ),
+            _countDivider(context),
+            _countItem(
+              context,
+              label: t.goalsStats.active,
+              color: context.evolveAccent,
+              count: activeGoals.length,
+            ),
+          ],
+        ),
+      ],
+    );
+  }
+
+  /// One `LABEL n` unit of the header count strip: colored micro-label + bold
+  /// count.
+  Widget _countItem(
+    BuildContext context, {
+    required String label,
+    required Color color,
+    required int count,
+  }) {
+    return Row(
+      mainAxisSize: MainAxisSize.min,
+      children: [
+        Text(
+          label,
+          style: TextStyle(
+            color: color.withValues(alpha: 0.7),
+            fontSize: 10,
+            fontWeight: FontWeight.w700,
+            letterSpacing: 1.5,
+          ),
+        ),
+        const SizedBox(width: 8),
+        Text(
+          '$count',
+          style: TextStyle(
+            color: context.evolveColors.foreground,
+            fontSize: 13,
+            fontWeight: FontWeight.w800,
           ),
         ),
       ],
+    );
+  }
+
+  /// Hairline pipe separating two count units.
+  Widget _countDivider(BuildContext context) {
+    return Padding(
+      padding: const EdgeInsets.symmetric(horizontal: 12),
+      child: Container(
+        width: 1,
+        height: 12,
+        color: context.evolveColors.border,
+      ),
     );
   }
 
@@ -1163,48 +1212,6 @@ class _GoalBoard extends StatelessWidget {
           ],
         ],
       ),
-    );
-  }
-}
-
-class _StatusCountRow extends StatelessWidget {
-  const _StatusCountRow({
-    required this.label,
-    required this.color,
-    required this.count,
-  });
-
-  final String label;
-  final Color color;
-  final int count;
-
-  @override
-  Widget build(BuildContext context) {
-    return Row(
-      children: [
-        Expanded(
-          child: Text(
-            label,
-            maxLines: 1,
-            overflow: TextOverflow.ellipsis,
-            style: TextStyle(
-              color: color.withValues(alpha: 0.7),
-              fontSize: 10,
-              fontWeight: FontWeight.w700,
-              letterSpacing: 1.5,
-            ),
-          ),
-        ),
-        const SizedBox(width: 8),
-        Text(
-          '$count',
-          style: TextStyle(
-            color: context.evolveColors.foreground,
-            fontSize: 13,
-            fontWeight: FontWeight.w800,
-          ),
-        ),
-      ],
     );
   }
 }

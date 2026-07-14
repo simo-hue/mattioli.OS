@@ -72,6 +72,21 @@ DateTime _firstOfMonth(DateTime d) => DateTime(d.year, d.month, 1);
 DateTime _addMonths(DateTime monthStart, int delta) =>
     DateTime(monthStart.year, monthStart.month + delta, 1);
 
+/// Calendar days from [from] to [to], DST-safe: measured on UTC midnights so a
+/// span crossing a spring-forward (23h) or fall-back (25h) day is not truncated
+/// by the missing/extra hour. Replaces `a.difference(b).inDays` on local dates,
+/// which under-counts by a day across a DST boundary and can push rate>100%.
+int _daysBetween(DateTime from, DateTime to) => DateTime.utc(
+  to.year,
+  to.month,
+  to.day,
+).difference(DateTime.utc(from.year, from.month, from.day)).inDays;
+
+/// [d] shifted by [n] calendar days, landing on local midnight (DST-safe).
+/// Replaces `d.add(Duration(days: n))`, which can land at 23:00/01:00 of an
+/// adjacent day across a DST transition and mis-key the calendar day.
+DateTime _shiftDays(DateTime d, int n) => DateTime(d.year, d.month, d.day + n);
+
 // ─── habit_stats view ────────────────────────────────────────────────────────
 
 /// One row of the `habit_stats` view for a single goal. [logs] must be only the
@@ -103,10 +118,7 @@ Map<String, dynamic> computeHabitStatsRow({
     }
   }
 
-  final totalActiveDays = math.max(
-    _dateOnly(today).difference(_dateOnly(startDate)).inDays + 1,
-    1,
-  );
+  final totalActiveDays = math.max(_daysBetween(startDate, today) + 1, 1);
   final rate = totalActiveDays == 0
       ? 0.0
       : totalCompletions * 100.0 / totalActiveDays;
@@ -132,9 +144,9 @@ List<int> computeYearlyGrid(List<HabitLogEntry> logs, DateTime today) {
   final byDate = <String, String>{
     for (final l in logs) dateKey(l.date): l.status,
   };
-  final start = _dateOnly(today).subtract(const Duration(days: 364));
+  final start = _shiftDays(today, -364);
   return List.generate(365, (i) {
-    final s = byDate[dateKey(start.add(Duration(days: i)))];
+    final s = byDate[dateKey(_shiftDays(start, i))];
     return switch (s) {
       'done' => 1,
       'missed' => 2,
@@ -249,7 +261,7 @@ Map<String, dynamic> computeAnalyticsRow({
   if (doneDates.length >= 2) {
     var sum = 0;
     for (var k = 1; k < doneDates.length; k++) {
-      sum += doneDates[k].difference(doneDates[k - 1]).inDays - 1;
+      sum += _daysBetween(doneDates[k - 1], doneDates[k]) - 1;
     }
     avgRecovery = sum / (doneDates.length - 1);
   }
@@ -307,7 +319,7 @@ List<Map<String, dynamic>> computeCriticalHabits({
     DateTime? lastDone;
 
     for (final l in logs) {
-      final age = t.difference(l.date).inDays;
+      final age = _daysBetween(l.date, t);
       if (age > 14) continue; // recent 14-day window
       if (age <= 7) {
         twTotal++;
@@ -325,7 +337,7 @@ List<Map<String, dynamic>> computeCriticalHabits({
     final twRate = twTotal > 0 ? twDone / twTotal : 0.0;
     final lwRate = lwTotal > 0 ? lwDone / lwTotal : 0.0;
     final drop = (lwRate - twRate) * 100;
-    final negStreak = lastDone == null ? 14 : t.difference(lastDone).inDays;
+    final negStreak = lastDone == null ? 14 : _daysBetween(lastDone, t);
 
     if (drop > 0 || negStreak > 3) {
       result.add({'goal_id': g.id, 'drop': drop, 'neg_streak': negStreak});
@@ -377,7 +389,7 @@ List<Map<String, dynamic>> computeBestHabits({
           ? true
           : windowDays == -1
           ? false
-          : t.difference(l.date).inDays <= windowDays;
+          : _daysBetween(l.date, t) <= windowDays;
       if (inWindow) {
         total++;
         if (l.status == 'done') done++;

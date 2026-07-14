@@ -708,7 +708,9 @@ class _RollingTrendPanel extends StatelessWidget {
     var sum = 0.0;
     var n = 0;
     for (var ago = startAgo; ago <= endAgo; ago++) {
-      sum += snapshot.completionFor(today.subtract(Duration(days: ago)));
+      sum += snapshot.completionFor(
+        DateTime(today.year, today.month, today.day - ago),
+      );
       n++;
     }
     return n == 0 ? 0 : sum / n;
@@ -833,7 +835,9 @@ class _WeekVsAveragePanel extends StatelessWidget {
     final today = DateTime(now.year, now.month, now.day);
     var sum = 0.0;
     for (var i = 0; i < 56; i++) {
-      sum += snapshot.completionFor(today.subtract(Duration(days: i)));
+      sum += snapshot.completionFor(
+        DateTime(today.year, today.month, today.day - i),
+      );
     }
     final average = sum / 56;
     final diff = thisWeek - average;
@@ -1289,14 +1293,11 @@ List<Widget> _performanceComparisonCards(
   DashboardSnapshot snapshot,
   List<Map<String, dynamic>> stats,
 ) {
-  final rows = [...stats]
-    ..sort(
-      (a, b) => ((b['best_streak'] as num?) ?? 0).compareTo(
-        (a['best_streak'] as num?) ?? 0,
-      ),
-    );
-  final cards = <Widget>[];
-  for (final row in rows.take(3)) {
+  // Rank by the SAME best-vs-worst-streak gap that's displayed (mobile parity),
+  // and clamp a negative gap (worst > best) to 0 rather than surfacing a
+  // nonsensical negative percentage.
+  final scored = <({DashboardHabit habit, int best, int worst, int gap})>[];
+  for (final row in stats) {
     final id = row['goal_id'] as String?;
     if (id == null) continue;
     final habit = snapshot.habits.where((h) => h.id == id).firstOrNull;
@@ -1304,16 +1305,20 @@ List<Widget> _performanceComparisonCards(
     final best = ((row['best_streak'] as num?) ?? 0).toInt();
     final worst = ((row['worst_streak'] as num?) ?? 0).toInt();
     if (best <= 0) continue;
-    cards.add(
-      _PerformanceComparisonCard(
-        title: habit.title,
-        best: best,
-        worst: worst,
-        color: habit.color,
-      ),
-    );
+    final gap = (((best - worst) / best) * 100).round().clamp(0, 100);
+    scored.add((habit: habit, best: best, worst: worst, gap: gap));
   }
-  return cards;
+  scored.sort((a, b) => b.gap.compareTo(a.gap));
+  return [
+    for (final s in scored.take(3))
+      _PerformanceComparisonCard(
+        title: s.habit.title,
+        best: s.best,
+        worst: s.worst,
+        gap: s.gap,
+        color: s.habit.color,
+      ),
+  ];
 }
 
 class _PerformanceComparisonCard extends StatelessWidget {
@@ -1321,17 +1326,18 @@ class _PerformanceComparisonCard extends StatelessWidget {
     required this.title,
     required this.best,
     required this.worst,
+    required this.gap,
     required this.color,
   });
 
   final String title;
   final int best;
   final int worst;
+  final int gap; // pre-clamped best-vs-worst gap %
   final Color color;
 
   @override
   Widget build(BuildContext context) {
-    final gap = best > 0 ? ((best - worst) / best * 100).round() : 0;
     return _RaisedCard(
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,

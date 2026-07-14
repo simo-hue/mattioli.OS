@@ -143,6 +143,25 @@ void main() {
       );
       expect(k, isNull); // <3 done-days
     });
+
+    test('null when the best lift is non-positive (anti-keystone)', () {
+      // g1's done days coincide with g2 MISSED, and vice versa → negative lift.
+      final logs = [
+        for (final d in ['2026-01-01', '2026-01-02', '2026-01-03']) ...[
+          _log('g1', d, 'done'),
+          _log('g2', d, 'missed'),
+        ],
+        for (final d in ['2026-01-04', '2026-01-05']) ...[
+          _log('g1', d, 'missed'),
+          _log('g2', d, 'done'),
+        ],
+      ];
+      final k = computeKeystoneHabit(
+        goals: [_goal('g1', '2026-01-01'), _goal('g2', '2026-01-01')],
+        logsByDate: _byDate(logs),
+      );
+      expect(k, isNull);
+    });
   });
 
   group('computeBounceBackRate', () {

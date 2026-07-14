@@ -747,3 +747,63 @@ grid + right rail.
   failure (`icloud_sync_card_test`, Postgrest network — unrelated to goals); the
   goals-rendering `tour_flow_test` passes. On-device visual QA pending (no Xcode
   on this Mac).
+
+### Follow-up: counts as a single inline strip
+Per feedback, the three header counts no longer stack vertically. `_boardHeader`
+now renders them on one line, right-aligned on the heading row: `COMPLETED n |
+FAILED n | ACTIVE n`, each label in its status color (green / red / accent) with
+a hairline pipe (`_countDivider`) between the `_countItem` units. Removed the
+now-unused `_StatusCountRow`. Verified the strip fits every locale (longest is
+German `FEHLGESCHLAGEN`, ~345px total) down to the 960px minimum window with the
+heading ellipsizing. `flutter analyze` clean; `tour_flow_test` still passes.
+
+
+- [2026-07-14 16:10]: Statistics — mathematical audit (3-way: cloud SQL vs mobile vs desktop) + desktop fixes
+  - *Details*: Ran a 38-agent audit deriving the exact formula for 54 habit
+    statistics across all three implementations (cloud SQL migrations/*.sql,
+    mobile Dart, desktop Dart) with per-finding adversarial verification. Result:
+    21 exact 3-way matches, 15 divergences, 18 desktop-only; 19 confirmed issues.
+    Full reference in docs/HABIT_STATS_AUDIT.md. Fixed the four clearly-desktop
+    bugs: (a) [high] the cloud get_best_habits caller passed the raw UI timeframe
+    token to a SQL RPC that filters on week|month|year|all -> all-zero Best-Habits
+    rates in cloud mode; now canonicalised. (b) [low] computeKeystoneHabit had no
+    positivity gate and could surface an anti-keystone; added lift>0. (c) [medium]
+    _performanceComparisonCards sorted by best_streak but showed the gap (could be
+    negative); now ranks by the clamped gap (mobile parity). (d) [low] three
+    desktop window-rate helpers used today.subtract(Duration(days:n)) (DST-unsafe);
+    switched to calendar-day stepping.
+  - *Tech Notes*: statistics_rpc_providers.dart, analytics_extra.dart (+keystone
+    test), statistics_extras.dart. Verified: analyze clean; suite 278 pass / 1
+    pre-existing env fail; 32 analytics unit tests. STILL OPEN (cross-codebase,
+    tracked in docs/HABIT_STATS_AUDIT.md + TO_SIMO_DO.md): (A) shared Dart
+    DST/timezone edge in the byte-identical private_analytics.dart mirror
+    (total_active_days/rate/avg_recovery_days/yearly-grid/critical-habits
+    under-count 1 day across spring-forward; mobile+desktop equal, private mode);
+    (B) two cloud-SQL get_global_trend bugs (YEAR & ALL drop empty days/months,
+    Dart correct) need a migration; (C) the WEB client never persists
+    goal_logs.streak, so cloud habit_stats reports 0/stale streaks for web-toggled
+    habits; (D) a mobile _recoveryPatterns string-sort bug (desktop correct).
+
+
+- [2026-07-14 16:40]: Statistics audit — cross-codebase fixes applied (A, B, D)
+  - *Details*: Applied the audit's approved cross-cutting fixes. (A) DST-safe date
+    math in the byte-identical private_analytics.dart mirror on BOTH mobile +
+    desktop: added _daysBetween (UTC-midnight calendar-day count) + _shiftDays
+    helpers and replaced the .difference().inDays / .add(Duration(days:)) sites in
+    total_active_days (->rate), avg_recovery_days, computeYearlyGrid walk,
+    computeCriticalHabits age/neg-streak, and computeBestHabits window — so these
+    match the cloud SQL calendar arithmetic across a DST boundary (previously
+    under-counted a day, and rate could exceed 100%). (D) Mobile
+    _calculateRecuperoData now sorts recovery times numerically (was string-
+    sorting "10"<"2", mislabelling the slowest habit fastest). (B) Wrote
+    migrations/20260714_fix_get_global_trend_year_all.sql fixing the YEAR & ALL
+    timeframes to LEFT JOIN the full day range (empty day = 100%) so the cloud
+    trend series matches the correct Dart series.
+  - *Tech Notes*: desktop private_analytics.dart, mobile private_analytics.dart
+    (identical semantic change), mobile global_alerts_tab_widget.dart, new SQL
+    migration. Verified: desktop analyze clean + full suite 278 pass / 1
+    pre-existing env fail (private_analytics_test 24 pass); mobile analyze clean +
+    private_analytics_test 19 pass. The SQL migration needs review + deploy to
+    Supabase (can't run Postgres here). NOT done (web app, out of scope): the web
+    client doesn't persist goal_logs.streak -> cloud habit_stats streaks wrong for
+    web-toggled habits. Full audit + fix status in ../docs/HABIT_STATS_AUDIT.md.

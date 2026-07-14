@@ -83,10 +83,13 @@ final bestHabitsRpcProvider =
           today: DateTime.now(),
         );
       }
+      // The cloud RPC (like the private mirror) filters on the canonical
+      // 'week'|'month'|'year'|'all' tokens, NOT the UI's 'timeframe_*' vocab —
+      // passing the raw token silently returns all-zero rates.
       return _listRpc(
         ref,
         'get_best_habits',
-        extraParams: {'p_timeframe': timeframe},
+        extraParams: {'p_timeframe': canonicalBestHabitsTimeframe(timeframe)},
       );
     });
 
@@ -515,7 +518,7 @@ double _windowCompletionRate(
   var done = 0;
   var active = 0;
   for (var ago = startAgo; ago <= endAgo; ago++) {
-    final date = t.subtract(Duration(days: ago));
+    final date = DateTime(t.year, t.month, t.day - ago); // DST-safe day step
     final dayLogs = data.logsByDate[dateKey(date)] ?? const <String, String>{};
     for (final g in data.goals) {
       if (!isGoalActiveOn(g, date)) continue;

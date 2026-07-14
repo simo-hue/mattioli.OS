@@ -259,7 +259,7 @@ class GlobalAlertsTabWidget extends ConsumerWidget {
     Map<String, Map<String, dynamic>> analytics,
     BuildContext context,
   ) {
-    final List<RecuperoData> items = [];
+    final List<({num recovery, RecuperoData data})> entries = [];
     num totalGlobalRecovery = 0;
     int globalCount = 0;
 
@@ -271,17 +271,22 @@ class GlobalAlertsTabWidget extends ConsumerWidget {
 
       final progress = avgRecovery > 0 ? 1.0 / avgRecovery : 1.0;
 
-      items.add(
-        RecuperoData(
+      entries.add((
+        recovery: avgRecovery,
+        data: RecuperoData(
           title: goal.title,
           time: '${avgRecovery.round()} ${context.t.statistics.daysShortUnit}',
           color: goal.color,
           progress: progress.clamp(0.0, 1.0),
         ),
-      );
+      ));
     }
 
-    items.sort((a, b) => a.time.compareTo(b.time));
+    // Sort by NUMERIC recovery time ascending (fastest first). The previous
+    // `a.time.compareTo(b.time)` sorted the FORMATTED string, so '10 days' < '2
+    // days' lexicographically and mislabelled the slowest habit as fastest.
+    entries.sort((a, b) => a.recovery.compareTo(b.recovery));
+    final items = entries.map((e) => e.data).toList();
 
     final avgGlobal = globalCount > 0
         ? (totalGlobalRecovery / globalCount).round()

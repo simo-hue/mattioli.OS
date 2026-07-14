@@ -672,36 +672,30 @@ class _AiCoachPageState extends ConsumerState<AiCoachPage> {
                   Expanded(
                     child: Scrollbar(
                       controller: _scrollController,
-                      child: Center(
-                        child: ConstrainedBox(
-                          constraints: const BoxConstraints(maxWidth: 900),
-                          // Suppress the platform auto-scrollbar so only the
-                          // panel-edge Scrollbar above shows (no duplicate thumb
-                          // on wide windows where the list is inset to 900).
-                          child: ScrollConfiguration(
-                            behavior: ScrollConfiguration.of(
-                              context,
-                            ).copyWith(scrollbars: false),
-                            child: ListView.builder(
-                              controller: _scrollController,
-                              padding: const EdgeInsets.all(24),
-                              itemCount: _messages.length,
-                              itemBuilder: (context, index) {
-                                final msg = _messages[index];
-                                final isStreaming =
-                                    _isTyping &&
-                                    !msg.isUser &&
-                                    index == _messages.length - 1;
-                                return _MessageEntrance(
-                                  key: ValueKey('$_chatGeneration:$index'),
-                                  child: _MessageBubble(
-                                    message: msg,
-                                    isStreaming: isStreaming,
-                                  ),
-                                );
-                              },
-                            ),
-                          ),
+                      // Suppress the platform auto-scrollbar so only the
+                      // panel-edge Scrollbar above shows.
+                      child: ScrollConfiguration(
+                        behavior: ScrollConfiguration.of(
+                          context,
+                        ).copyWith(scrollbars: false),
+                        child: ListView.builder(
+                          controller: _scrollController,
+                          padding: const EdgeInsets.all(24),
+                          itemCount: _messages.length,
+                          itemBuilder: (context, index) {
+                            final msg = _messages[index];
+                            final isStreaming =
+                                _isTyping &&
+                                !msg.isUser &&
+                                index == _messages.length - 1;
+                            return _MessageEntrance(
+                              key: ValueKey('$_chatGeneration:$index'),
+                              child: _MessageBubble(
+                                message: msg,
+                                isStreaming: isStreaming,
+                              ),
+                            );
+                          },
                         ),
                       ),
                     ),
@@ -1120,7 +1114,7 @@ class _MessageBubbleState extends State<_MessageBubble> {
     }
 
     final bubble = Container(
-      constraints: const BoxConstraints(maxWidth: 640),
+      constraints: const BoxConstraints(maxWidth: 800),
       padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
       decoration: BoxDecoration(
         color: isUser ? accent : colors.panel.withValues(alpha: 0.4),

@@ -1,0 +1,17 @@
+DEFINE SCHEMA
+
+    RECORD TYPE PrivateRecord (
+        "___createTime" TIMESTAMP,
+        "___createdBy"  REFERENCE,
+        "___etag"       STRING,
+        "___modTime"    TIMESTAMP,
+        "___modifiedBy" REFERENCE,
+        "___recordID"   REFERENCE,
+        asset           ASSET,
+        deleted         INT64,
+        payload         BYTES,
+        tableName       STRING,
+        updatedAt       INT64,
+        GRANT WRITE TO "_creator",
+        GRANT READ TO "_creator"
+    );

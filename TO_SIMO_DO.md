@@ -8,12 +8,17 @@
 ## DESKTOP + MOBILE — iCloud sync cross-platform (needs your Xcode machine)
 
 ### 2. CloudKit Console (before ANY release with avatars)
-- [ ] In the `iCloud.com.simo.evolve` container: verify record type
-      `PrivateRecord` exists with fields `tableName(String)`, `updatedAt(Int64)`,
-      `deleted(Int64)`, `payload(Bytes)` **and `asset(Asset)`** in **Development**
-      (a dev-build sync with an avatar creates it automatically), then
-      **Deploy Schema Changes → Production**. The `asset` field is NEW in this
-      release — without promoting it, avatar sync fails in Production.
+- [ ] Deploy the CloudKit schema for `iCloud.com.simo.evolve` using the explicit,
+      importable file + runbook at **`packages/evolve_sync/cloudkit/`**
+      (`cloudkit-production.ckdb` + `DEPLOY.md`) — deterministic, and it purges the
+      stray `Users.roles` leftover from the old Development export. Short version:
+      **(1)** in Development, delete the `roles` field from `Users` (or Reset the
+      Development environment); **(2)** Import `cloudkit-production.ckdb` (adds the
+      single `PrivateRecord` type: `tableName` String, `updatedAt` Int64, `deleted`
+      Int64, `payload` Bytes, **`asset` Asset**); **(3)** verify; **(4)** Deploy
+      Schema Changes → Production. The `asset` field is required for avatar sync —
+      without promoting it, avatars fail in Production. Reminder: fields/indexes are
+      **unremovable** once in Production, so purge `roles` *before* deploying.
 
 
 ## Auto-Verified Habits — Xcode setup (feature is dark behind `VerificationConfig.enabled`)

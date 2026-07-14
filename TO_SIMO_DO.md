@@ -184,3 +184,19 @@ pending. Run `flutter run -d macos` and verify:
 - [ ] **BOTH DATA MODES**: run the above once in Cloud (Supabase) mode and once in Private mode — behaviour
       should be identical (search is in-memory; writes go through the active repository).
 - [ ] **RTL**: with Arabic UI, confirm the palette + new period pickers read correctly.
+
+
+## DESKTOP — Private-mode category create: recover the locked device + on-device QA
+The graceful-failure code change (category create mirrors mobile's swallow-return-null) is `flutter analyze`-clean
+but was NOT run here (no Xcode / you run macOS on another Mac). On that Mac:
+- [ ] **Recover the locked device FIRST** — the code only makes the *failure* graceful; the private DB is still
+      locked (SQLCipher key orphaned by a signing/team-prefix rotation — see the 2026-07-14 20:30 doc entry).
+      Get back in via **Settings → Private data → Delete** (falls back to `resetLockedDatabase()`), or restore the
+      original `Apple Development` signing identity/team so the key reads again. NOTE: reset is **destructive** to
+      the local private data (its key is gone) — prefer the signing fix if the data matters and iCloud sync
+      hadn't already pushed it.
+- [ ] **QA the graceful failure**: in a locked-DB state, adding a category from BOTH the add-goal picker action
+      and the inline "+ category" now shows the "category create failed" toast (no red screen, no console-spammed
+      `PrivateDatabaseLockedException`) and leaves **no phantom category** in the picker.
+- [ ] **QA the happy path**: on a healthy Private DB (and in Cloud mode), category create + auto-select still
+      works and the new category persists across an app restart.

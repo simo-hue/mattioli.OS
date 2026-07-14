@@ -687,17 +687,23 @@ class _GoalsPageState extends ConsumerState<GoalsPage> {
                     );
                     return;
                   }
-                  setState(() {
-                    _categories.add(
-                      cloudCategory == null
-                          ? category
-                          : _GoalCategory(
-                              id: cloudCategory.id,
-                              label: cloudCategory.label,
-                              color: cloudCategory.color,
-                            ),
+                  if (cloudCategory == null) {
+                    // Write didn't persist (e.g. locked private DB); mirror
+                    // mobile and surface a failure instead of a phantom add.
+                    if (!context.mounted) return;
+                    showEvolveToast(
+                      context,
+                      message: t.goalsPage.categoryCreateFailed,
+                      kind: EvolveToastKind.error,
                     );
-                  });
+                    return;
+                  }
+                  final created = _GoalCategory(
+                    id: cloudCategory.id,
+                    label: cloudCategory.label,
+                    color: cloudCategory.color,
+                  );
+                  setState(() => _categories.add(created));
                   setDialogState(() {});
                 },
                 icon: const Icon(LucideIcons.plus, size: 16),
@@ -845,9 +851,19 @@ class _GoalsPageState extends ConsumerState<GoalsPage> {
       return;
     }
     if (!mounted) return;
-    final created = cloud == null
-        ? draft
-        : _GoalCategory(id: cloud.id, label: cloud.label, color: cloud.color);
+    if (cloud == null) {
+      // The write didn't persist (e.g. a locked private DB). Mirror mobile's
+      // category_picker_sheet, which only commits on a non-null result — don't
+      // optimistically add a category that isn't in the database.
+      showEvolveToast(
+        context,
+        message: t.goalsPage.categoryCreateFailed,
+        kind: EvolveToastKind.error,
+      );
+      return;
+    }
+    final created =
+        _GoalCategory(id: cloud.id, label: cloud.label, color: cloud.color);
     setState(() {
       _categories.add(created);
       _quickGoalCategory = created; // auto-select the new category

@@ -213,8 +213,13 @@ class DesktopGoalCategoriesController
       ref.invalidateSelf();
       return DesktopGoalCategory(id: id, label: label, color: color);
     } catch (error, stack) {
+      // Mirror mobile's MacroGoalCategoriesNotifier.addCategory private branch:
+      // the controller is the error boundary — log and return null (e.g. a
+      // locked private DB / PrivateDatabaseLockedException) instead of
+      // rethrowing, so a private-mode write can never surface as an uncaught
+      // async error. The call site turns null into a failure toast.
       AppLogger.error('Unable to create local category', error, stack);
-      rethrow;
+      return null;
     }
   }
 

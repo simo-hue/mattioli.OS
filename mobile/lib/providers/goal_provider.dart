@@ -127,6 +127,9 @@ class GoalsNotifier extends Notifier<List<Goal>> {
         title: title,
         message: message,
         details: error.toString(),
+        // Surface the real exception on-device (even in release/TestFlight) so a
+        // habit-save failure is self-diagnosing instead of a silent no-op.
+        forceDetails: true,
       );
     }
   }

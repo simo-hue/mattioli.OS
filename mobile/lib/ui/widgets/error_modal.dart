@@ -13,11 +13,17 @@ class ErrorModal extends ConsumerWidget {
   final String message;
   final String? details;
 
+  /// Show [details] even outside debug builds. Off by default (SEC-7: raw error
+  /// text may leak internals). Opt in only for developer/QA-facing failures the
+  /// user is expected to diagnose or report (e.g. habit-save errors).
+  final bool forceDetails;
+
   const ErrorModal({
     super.key,
     required this.title,
     required this.message,
     this.details,
+    this.forceDetails = false,
   });
 
   static void show(
@@ -25,6 +31,7 @@ class ErrorModal extends ConsumerWidget {
     required String title,
     required String message,
     String? details,
+    bool forceDetails = false,
   }) {
     showModalBottomSheet(
       context: context,
@@ -36,7 +43,12 @@ class ErrorModal extends ConsumerWidget {
           padding: EdgeInsets.only(
             bottom: MediaQuery.viewInsetsOf(context).bottom,
           ),
-          child: ErrorModal(title: title, message: message, details: details),
+          child: ErrorModal(
+            title: title,
+            message: message,
+            details: details,
+            forceDetails: forceDetails,
+          ),
         ),
       ),
     );
@@ -119,10 +131,12 @@ class ErrorModal extends ConsumerWidget {
                       ),
                     ),
                     // Raw error text is technical and may leak internals, so
-                    // only ever show it in debug builds. Release users see just
+                    // only show it in debug builds — or when the call site opts
+                    // in via [forceDetails] for a developer/QA-facing failure
+                    // the user must diagnose. Release users otherwise see just
                     // the title + message; the error is still reported to
                     // Sentry by the call site's AppLogger.error (SEC-7).
-                    if (kDebugMode && details != null) ...[
+                    if ((kDebugMode || forceDetails) && details != null) ...[
                       const SizedBox(height: 24),
                       Container(
                         width: double.infinity,

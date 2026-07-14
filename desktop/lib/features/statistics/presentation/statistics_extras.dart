@@ -199,69 +199,6 @@ class _MomentumFactor extends StatelessWidget {
   }
 }
 
-/// The Info-tab hero: momentum ring beside the all-time lifetime tiles.
-class _InfoHero extends ConsumerWidget {
-  const _InfoHero({required this.snapshot});
-
-  final DashboardSnapshot snapshot;
-
-  @override
-  Widget build(BuildContext context, WidgetRef ref) {
-    final momentum = ref.watch(momentumProvider).value ?? MomentumScore.empty;
-    final lifetime =
-        ref.watch(lifetimeSummaryProvider).value ?? LifetimeSummary.empty;
-
-    final tiles = _MetricGrid(
-      tiles: [
-        _Metric(
-          label: t.stats.lifetimeConsistency,
-          value: '${lifetime.consistency.round()}%',
-          detail: t.stats.lifetimeConsistencyDetail,
-          color: context.evolveAccent,
-          icon: LucideIcons.target,
-        ),
-        _Metric(
-          label: t.stats.lifetimeTotalDone,
-          value: '${lifetime.totalCompletions}',
-          detail: t.stats.lifetimeTotalDoneDetail,
-          color: EvolveColors.success,
-          icon: LucideIcons.circleCheck,
-        ),
-        _Metric(
-          label: t.stats.lifetimePerfectDays,
-          value: '${lifetime.perfectDays}',
-          detail: t.stats.lifetimePerfectDaysDetail,
-          color: EvolveColors.amber,
-          icon: LucideIcons.star,
-        ),
-        _Metric(
-          label: t.stats.lifetimeDaysTracked,
-          value: '${lifetime.trackedDays}',
-          detail: t.stats.lifetimeDaysTrackedDetail,
-          color: EvolveColors.violet,
-          icon: LucideIcons.calendarDays,
-        ),
-      ],
-    );
-
-    return LayoutBuilder(
-      builder: (context, constraints) {
-        final ring = _MomentumRing(momentum: momentum);
-        if (constraints.maxWidth < 920) {
-          return Column(children: [ring, const SizedBox(height: 18), tiles]);
-        }
-        return Row(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            SizedBox(width: 300, child: ring),
-            const SizedBox(width: 18),
-            Expanded(child: tiles),
-          ],
-        );
-      },
-    );
-  }
-}
 
 /// The Keystone-habit insight card: the habit whose completion most lifts all
 /// others. Hidden entirely when there isn't enough signal.

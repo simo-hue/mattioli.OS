@@ -1272,6 +1272,252 @@ class Translations$stats$en {
 
 	/// en: 'Worst'
 	String get worstStreakLabel => 'Worst';
+
+	/// en: 'Momentum'
+	String get momentumTitle => 'Momentum';
+
+	/// en: 'Your current form'
+	String get momentumSubtitle => 'Your current form';
+
+	/// en: 'FORM'
+	String get momentumForm => 'FORM';
+
+	/// en: '7-day'
+	String get momentumRate => '7-day';
+
+	/// en: 'Streaks'
+	String get momentumStreakHealth => 'Streaks';
+
+	/// en: 'Trend'
+	String get momentumTrend => 'Trend';
+
+	/// en: 'Improving'
+	String get rollingImproving => 'Improving';
+
+	/// en: 'Declining'
+	String get rollingDeclining => 'Declining';
+
+	/// en: 'Steady'
+	String get rollingSteady => 'Steady';
+
+	/// en: 'Consistency'
+	String get lifetimeConsistency => 'Consistency';
+
+	/// en: 'All-time completion'
+	String get lifetimeConsistencyDetail => 'All-time completion';
+
+	/// en: 'Total done'
+	String get lifetimeTotalDone => 'Total done';
+
+	/// en: 'Habits checked off'
+	String get lifetimeTotalDoneDetail => 'Habits checked off';
+
+	/// en: 'Perfect days'
+	String get lifetimePerfectDays => 'Perfect days';
+
+	/// en: 'Everything completed'
+	String get lifetimePerfectDaysDetail => 'Everything completed';
+
+	/// en: 'Days tracked'
+	String get lifetimeDaysTracked => 'Days tracked';
+
+	/// en: 'Since you started'
+	String get lifetimeDaysTrackedDetail => 'Since you started';
+
+	/// en: 'KEYSTONE HABIT'
+	String get keystoneTitle => 'KEYSTONE HABIT';
+
+	/// en: 'On its days you complete {withPct}% of your other habits, vs {withoutPct}% otherwise.'
+	String keystoneImpact({required Object withPct, required Object withoutPct}) => 'On its days you complete ${withPct}% of your other habits, vs ${withoutPct}% otherwise.';
+
+	/// en: '365-day activity'
+	String get yearActivity => '365-day activity';
+
+	/// en: 'Every habit, every day'
+	String get yearActivitySubtitle => 'Every habit, every day';
+
+	/// en: '{count} active days'
+	String activeDaysCount({required Object count}) => '${count} active days';
+
+	/// en: 'Less'
+	String get heatmapLess => 'Less';
+
+	/// en: 'More'
+	String get heatmapMore => 'More';
+
+	/// en: 'Best habits'
+	String get bestHabitsTitle => 'Best habits';
+
+	/// en: 'Needs attention'
+	String get criticalHabitsTitle => 'Needs attention';
+
+	/// en: '{days}d idle'
+	String criticalStalled({required Object days}) => '${days}d idle';
+
+	/// en: 'Rolling completion'
+	String get rollingTitle => 'Rolling completion';
+
+	/// en: '7-day and 30-day rate'
+	String get rollingSubtitle => '7-day and 30-day rate';
+
+	/// en: '7-day'
+	String get rolling7 => '7-day';
+
+	/// en: '30-day'
+	String get rolling30 => '30-day';
+
+	/// en: 'This week vs average'
+	String get weekVsAvgTitle => 'This week vs average';
+
+	/// en: 'How this week compares'
+	String get weekVsAvgSubtitle => 'How this week compares';
+
+	/// en: 'This week'
+	String get thisWeek => 'This week';
+
+	/// en: 'Your average'
+	String get yourAverage => 'Your average';
+
+	/// en: 'Weekly rhythm'
+	String get weekdayShapeTitle => 'Weekly rhythm';
+
+	/// en: 'Completion by weekday'
+	String get weekdayShapeSubtitle => 'Completion by weekday';
+
+	/// en: 'Weekday vs weekend'
+	String get weekdayWeekendTitle => 'Weekday vs weekend';
+
+	/// en: 'Where you're strongest'
+	String get weekdayWeekendSubtitle => 'Where you\'re strongest';
+
+	/// en: 'Weekdays'
+	String get weekdaysLabel => 'Weekdays';
+
+	/// en: 'Weekend'
+	String get weekendLabel => 'Weekend';
+
+	/// en: 'Seasonality'
+	String get seasonalityTitle => 'Seasonality';
+
+	/// en: 'Completion by month'
+	String get seasonalitySubtitle => 'Completion by month';
+
+	/// en: 'Bounce-back rate'
+	String get bounceBackTitle => 'Bounce-back rate';
+
+	/// en: 'Recovery after a miss'
+	String get bounceBackSubtitle => 'Recovery after a miss';
+
+	/// en: 'Recovered {recoveries} of {opportunities} times'
+	String bounceBackDetail({required Object recoveries, required Object opportunities}) => 'Recovered ${recoveries} of ${opportunities} times';
+
+	/// en: 'Danger zone'
+	String get dangerZoneTitle => 'Danger zone';
+
+	/// en: 'When streaks break'
+	String get dangerZoneSubtitle => 'When streaks break';
+
+	/// en: 'No broken streaks yet'
+	String get dangerZoneNone => 'No broken streaks yet';
+
+	/// en: '{breaks} of {total} breaks land here'
+	String dangerZoneDetail({required Object breaks, required Object total}) => '${breaks} of ${total} breaks land here';
+
+	/// en: 'Performance comparison'
+	String get performanceComparisonTitle => 'Performance comparison';
+
+	/// en: 'Best vs worst streak'
+	String get performanceComparisonSubtitle => 'Best vs worst streak';
+
+	/// en: '{pct}% gap'
+	String perfCompGap({required Object pct}) => '${pct}% gap';
+
+	/// en: 'Best'
+	String get perfCompBest => 'Best';
+
+	/// en: 'Worst'
+	String get perfCompWorst => 'Worst';
+
+	/// en: 'Consistency'
+	String get consistencyTitle => 'Consistency';
+
+	/// en: 'Most regular habits'
+	String get consistencySubtitle => 'Most regular habits';
+
+	/// en: 'Steadiest'
+	String get consistencySteadiest => 'Steadiest';
+
+	/// en: 'Most erratic'
+	String get consistencyErratic => 'Most erratic';
+
+	/// en: 'Streak leaderboard'
+	String get medalsTitle => 'Streak leaderboard';
+
+	/// en: 'Longest current streaks'
+	String get medalsSubtitle => 'Longest current streaks';
+
+	/// en: 'Never missed'
+	String get neverMissedTitle => 'Never missed';
+
+	/// en: 'No perfect habits yet'
+	String get neverMissedEmpty => 'No perfect habits yet';
+
+	/// en: 'Completion spread'
+	String get distributionTitle => 'Completion spread';
+
+	/// en: 'Habits by success rate'
+	String get distributionSubtitle => 'Habits by success rate';
+
+	/// en: 'By category'
+	String get categoryTitle => 'By category';
+
+	/// en: 'Completion per category'
+	String get categorySubtitle => 'Completion per category';
+
+	/// en: 'Habit synergy'
+	String get synergyTitle => 'Habit synergy';
+
+	/// en: 'Which habits move together'
+	String get synergySubtitle => 'Which habits move together';
+
+	/// en: 'Mood-sensitive'
+	String get moodSensitiveTitle => 'Mood-sensitive';
+
+	/// en: 'Swayed most by your mood'
+	String get moodSensitiveSubtitle => 'Swayed most by your mood';
+
+	/// en: 'Resilient habits'
+	String get resilientHabitsTitle => 'Resilient habits';
+
+	/// en: 'Done even on low days'
+	String get resilientHabitsSubtitle => 'Done even on low days';
+
+	/// en: 'Mood correlation'
+	String get correlationAnalysisTitle => 'Mood correlation';
+
+	/// en: 'Low vs high mood completion'
+	String get correlationAnalysisSubtitle => 'Low vs high mood completion';
+
+	/// en: 'Mood & energy'
+	String get moodEnergyTrendTitle => 'Mood & energy';
+
+	/// en: 'Last {days} days'
+	String moodEnergyTrendSubtitle({required Object days}) => 'Last ${days} days';
+
+	/// en: 'All-time record'
+	String get allTimeBest => 'All-time record';
+
+	/// en: 'Top performer'
+	String get topPerformerLabel => 'Top performer';
+
+	/// en: 'Now'
+	String get currentStreakShort => 'Now';
+
+	/// en: 'Record'
+	String get recordLabel => 'Record';
+
+	/// en: 'Best streak ever'
+	String get recordDetail => 'Best streak ever';
 }
 
 // Path: habitsPage
@@ -3611,6 +3857,88 @@ extension on Translations {
 			'stats.sortStreak' => 'Streak',
 			'stats.sortName' => 'Name',
 			'stats.worstStreakLabel' => 'Worst',
+			'stats.momentumTitle' => 'Momentum',
+			'stats.momentumSubtitle' => 'Your current form',
+			'stats.momentumForm' => 'FORM',
+			'stats.momentumRate' => '7-day',
+			'stats.momentumStreakHealth' => 'Streaks',
+			'stats.momentumTrend' => 'Trend',
+			'stats.rollingImproving' => 'Improving',
+			'stats.rollingDeclining' => 'Declining',
+			'stats.rollingSteady' => 'Steady',
+			'stats.lifetimeConsistency' => 'Consistency',
+			'stats.lifetimeConsistencyDetail' => 'All-time completion',
+			'stats.lifetimeTotalDone' => 'Total done',
+			'stats.lifetimeTotalDoneDetail' => 'Habits checked off',
+			'stats.lifetimePerfectDays' => 'Perfect days',
+			'stats.lifetimePerfectDaysDetail' => 'Everything completed',
+			'stats.lifetimeDaysTracked' => 'Days tracked',
+			'stats.lifetimeDaysTrackedDetail' => 'Since you started',
+			'stats.keystoneTitle' => 'KEYSTONE HABIT',
+			'stats.keystoneImpact' => ({required Object withPct, required Object withoutPct}) => 'On its days you complete ${withPct}% of your other habits, vs ${withoutPct}% otherwise.',
+			'stats.yearActivity' => '365-day activity',
+			'stats.yearActivitySubtitle' => 'Every habit, every day',
+			'stats.activeDaysCount' => ({required Object count}) => '${count} active days',
+			'stats.heatmapLess' => 'Less',
+			'stats.heatmapMore' => 'More',
+			'stats.bestHabitsTitle' => 'Best habits',
+			'stats.criticalHabitsTitle' => 'Needs attention',
+			'stats.criticalStalled' => ({required Object days}) => '${days}d idle',
+			'stats.rollingTitle' => 'Rolling completion',
+			'stats.rollingSubtitle' => '7-day and 30-day rate',
+			'stats.rolling7' => '7-day',
+			'stats.rolling30' => '30-day',
+			'stats.weekVsAvgTitle' => 'This week vs average',
+			'stats.weekVsAvgSubtitle' => 'How this week compares',
+			'stats.thisWeek' => 'This week',
+			'stats.yourAverage' => 'Your average',
+			'stats.weekdayShapeTitle' => 'Weekly rhythm',
+			'stats.weekdayShapeSubtitle' => 'Completion by weekday',
+			'stats.weekdayWeekendTitle' => 'Weekday vs weekend',
+			'stats.weekdayWeekendSubtitle' => 'Where you\'re strongest',
+			'stats.weekdaysLabel' => 'Weekdays',
+			'stats.weekendLabel' => 'Weekend',
+			'stats.seasonalityTitle' => 'Seasonality',
+			'stats.seasonalitySubtitle' => 'Completion by month',
+			'stats.bounceBackTitle' => 'Bounce-back rate',
+			'stats.bounceBackSubtitle' => 'Recovery after a miss',
+			'stats.bounceBackDetail' => ({required Object recoveries, required Object opportunities}) => 'Recovered ${recoveries} of ${opportunities} times',
+			'stats.dangerZoneTitle' => 'Danger zone',
+			'stats.dangerZoneSubtitle' => 'When streaks break',
+			'stats.dangerZoneNone' => 'No broken streaks yet',
+			'stats.dangerZoneDetail' => ({required Object breaks, required Object total}) => '${breaks} of ${total} breaks land here',
+			'stats.performanceComparisonTitle' => 'Performance comparison',
+			'stats.performanceComparisonSubtitle' => 'Best vs worst streak',
+			'stats.perfCompGap' => ({required Object pct}) => '${pct}% gap',
+			'stats.perfCompBest' => 'Best',
+			'stats.perfCompWorst' => 'Worst',
+			'stats.consistencyTitle' => 'Consistency',
+			'stats.consistencySubtitle' => 'Most regular habits',
+			'stats.consistencySteadiest' => 'Steadiest',
+			'stats.consistencyErratic' => 'Most erratic',
+			'stats.medalsTitle' => 'Streak leaderboard',
+			'stats.medalsSubtitle' => 'Longest current streaks',
+			'stats.neverMissedTitle' => 'Never missed',
+			'stats.neverMissedEmpty' => 'No perfect habits yet',
+			'stats.distributionTitle' => 'Completion spread',
+			'stats.distributionSubtitle' => 'Habits by success rate',
+			'stats.categoryTitle' => 'By category',
+			'stats.categorySubtitle' => 'Completion per category',
+			'stats.synergyTitle' => 'Habit synergy',
+			'stats.synergySubtitle' => 'Which habits move together',
+			'stats.moodSensitiveTitle' => 'Mood-sensitive',
+			'stats.moodSensitiveSubtitle' => 'Swayed most by your mood',
+			'stats.resilientHabitsTitle' => 'Resilient habits',
+			'stats.resilientHabitsSubtitle' => 'Done even on low days',
+			'stats.correlationAnalysisTitle' => 'Mood correlation',
+			'stats.correlationAnalysisSubtitle' => 'Low vs high mood completion',
+			'stats.moodEnergyTrendTitle' => 'Mood & energy',
+			'stats.moodEnergyTrendSubtitle' => ({required Object days}) => 'Last ${days} days',
+			'stats.allTimeBest' => 'All-time record',
+			'stats.topPerformerLabel' => 'Top performer',
+			'stats.currentStreakShort' => 'Now',
+			'stats.recordLabel' => 'Record',
+			'stats.recordDetail' => 'Best streak ever',
 			'habitsPage.today' => 'Today',
 			'habitsPage.subtitle' => 'Build your daily protocol and watch consistency over time.',
 			'habitsPage.tabProtocol' => 'Protocol',
@@ -3673,6 +4001,8 @@ extension on Translations {
 			'goalsPage.subtitleLifetime' => 'Lifetime goals',
 			'goalsPage.subtitleAnnual' => 'Annual goals',
 			'goalsPage.subtitleQuarterly' => 'Quarterly goals',
+			_ => null,
+		} ?? switch (path) {
 			'goalsPage.subtitleMonthly' => 'Monthly goals',
 			'goalsPage.subtitleWeekly' => 'Weekly goals',
 			'goalsPage.statsTab' => 'Stats',
@@ -3755,8 +4085,6 @@ extension on Translations {
 			'aiCoach.noActiveGoals' => 'No active long-term goals.',
 			'aiCoach.goalLine' => ({required Object title, required Object due}) => '${title} (Due: ${due})',
 			'aiCoach.contextTitle' => 'AI Context',
-			_ => null,
-		} ?? switch (path) {
 			'aiCoach.contextBody' => 'Choose which data to share with the AI Coach to get personalized advice.',
 			'aiCoach.shareHabitsDesc' => 'Shares your active habits, streaks and today\'s completion status.',
 			'aiCoach.shareGoalsDesc' => 'Shares your active long-term goals.',

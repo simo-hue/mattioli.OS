@@ -607,3 +607,44 @@ plus the earlier DB-reset / backup-exclusion checks.
     width (bubbles are still individually capped at 640). No new deps, no API
     changes, layout-only. Verified: `flutter analyze` clean; `ai_suggestions`
     tests 5 pass.
+
+
+- [2026-07-14 14:40]: Statistics — major Insights enrichment (parity fills + new metrics + surprise stats)
+  - *Details*: The desktop Insights screen felt sparse next to mobile. Enriched
+    all five global tabs plus the per-habit Overview WITHOUT adding tabs.
+    **Info**: bold hero (Momentum/Form ring + lifetime tiles — consistency %,
+    total done, perfect days, days tracked), all-time best-streak + Top
+    Performer + Critical Day tiles, a Keystone-habit insight card, and the old
+    90-day heatmap upgraded to a 365-day GitHub-style contribution grid.
+    **Trend**: Best/Critical habits are now ranked lists (were single cards),
+    plus rolling 7/30-day rate with trend arrows, this-week-vs-average,
+    weekly-rhythm radar, weekday-vs-weekend, and monthly seasonality bars.
+    **Alerts**: Performance Comparison (best-vs-worst streak gap), Bounce-back
+    rate (recovery after a miss), and Danger Zone (weekday streaks break most).
+    **Habits**: current-streak column added to the table; consistency
+    (regularity) ranking; streak medals + Never-Missed badges; completion-rate
+    distribution histogram; per-category breakdown (auto-hides with <2
+    categories); and an N×N habit synergy matrix. **Mood**: the mobile-parity
+    fills — mood/energy line chart, Mood-Sensitive list, Resilient Habits list,
+    and per-habit low/high-mood correlation analysis. **Per-habit Overview**:
+    added the Record (best-streak) tile (was 3 tiles, now 4).
+  - *Tech Notes*: New pure engine `lib/features/statistics/data/analytics_extra.dart`
+    (computeLifetimeSummary, computeKeystoneHabit, computeBounceBackRate,
+    computeWeekdayWeekendSplit, computeGlobalWeekdayPerformance,
+    computeSeasonality, computeConsistencyScores, computeDangerZone,
+    computeMomentumScore, isGoalActiveOn) — deliberately kept OUT of the
+    byte-for-byte mobile mirror `private_analytics.dart`. New widgets live in
+    `statistics_extras.dart` (`part of statistics_page.dart`, reusing its
+    private primitives). In `statistics_rpc_providers.dart` a mode-aware
+    `unifiedAnalyticsDataProvider` (Private → encrypted DB; Cloud →
+    `buildAnalyticsDataFromSnapshot` over the dashboard snapshot, which already
+    holds the full `goal_logs` history) routes every new stat through the same
+    pure functions — NO new Supabase RPCs / SQL / migrations. Momentum =
+    `0.5·rate7 + 0.3·streakHealth + 0.2·trend`. 82 new `stats.*` i18n keys added
+    to all five locales (en/it authored; de/es/ar best-effort) + `dart run
+    slang`. Momentum ring uses `CircularProgressIndicator`; radar uses fl_chart
+    1.2.0 `RadarChart`; other charts are Flutter primitives. New test
+    `test/analytics_extra_test.dart` (21 cases). Verified: `flutter analyze`
+    clean; full suite 267 pass / 1 pre-existing env failure
+    (`icloud_sync_card_test` Postgrest network). On-device QA pending — no Xcode
+    on this Mac.

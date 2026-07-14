@@ -81,3 +81,14 @@ This Mac has no Xcode, so the changes below were **code-verified** (`flutter ana
 - [ ] **Settings → Biometric error** — the error message text now uses the destructive token (was Material `redAccent`).
 - [ ] **Dashboard → "New goal" dialog** — the Category field is now a dropdown of your saved categories (color dot each) + a "New category" row that reveals an inline text field; confirm picking an existing category AND creating a new one both save correctly, and that a fresh account with no categories still shows a plain text field.
 
+## Statistics enrichment — on-device QA + translation review (2026-07-14)
+No Xcode on this Mac → **code-verified only** (`flutter analyze` clean; full suite 267 pass / 1 pre-existing env fail). Needs `flutter run -d macos` on the Xcode machine. All new content is read-only analytics over existing data (no writes, no new backend). Check in **both light and dark**, and in **both Private and Cloud** data modes (they share the compute):
+
+- [ ] **Info tab** — Momentum ring shows a sane 0–100 with a sensible color band; the lifetime hero tiles (consistency %, total done, perfect days, days tracked) populate; the **365-day contribution heatmap** renders and scrolls horizontally without making the page overflow; the **Keystone** card appears only when there are ≥2 habits with enough signal (and is hidden otherwise, no empty gap).
+- [ ] **Trend tab** — Best/Critical **ranked lists** (not single cards); rolling 7/30-day rows with up/down arrows; **weekly-rhythm radar** (renders with real data, shows an empty-state when there are no logs — confirm it does NOT crash on all-zero data); seasonality + weekday/weekend bars.
+- [ ] **Alerts tab** — Performance Comparison cards, Bounce-back %, Danger Zone (or their empty states).
+- [ ] **Habits tab** — the new **current-streak badge** does not overflow the row on the narrowest window; consistency / medals / distribution / category (only if you actually categorize habits) / **synergy matrix** render; the synergy matrix scrolls horizontally when you have many habits.
+- [ ] **Mood tab** — mood/energy **line chart**, Mood-Sensitive + Resilient lists, correlation analysis.
+- [ ] **Per-habit → Overview** shows **4** tiles including **Record**.
+- [ ] **Translations** — review the 82 new `stats.*` keys in **de / es / ar** (en + it were authored carefully; the other three are best-effort machine translations).
+

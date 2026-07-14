@@ -3,6 +3,8 @@ import 'package:evolve_desktop/core/app_logger.dart';
 import 'package:evolve_desktop/core/desktop_data_mode.dart';
 import 'package:evolve_desktop/features/auth/application/auth_controller.dart';
 import 'package:evolve_desktop/features/dashboard/application/dashboard_controller.dart';
+import 'package:evolve_desktop/features/dashboard/domain/dashboard_models.dart';
+import 'package:evolve_desktop/features/statistics/data/analytics_extra.dart';
 import 'package:evolve_desktop/features/statistics/data/private_analytics.dart';
 import 'package:evolve_desktop/features/statistics/data/private_analytics_source.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
@@ -341,4 +343,172 @@ class _RpcContext {
     if (client == null || userId == null) return null;
     return _RpcContext(client: client, userId: userId);
   }
+}
+
+// ─── Net-new desktop statistics (analytics_extra) ────────────────────────────
+//
+// These have no cloud RPC (mobile doesn't compute them either). Both modes feed
+// the pure engine in analytics_extra.dart the SAME normalised inputs via
+// [unifiedAnalyticsDataProvider]: Private reads the encrypted DB
+// ([privateAnalyticsDataProvider]); Cloud reconstructs them from the dashboard
+// snapshot, whose habitLogs already carry the full history.
+
+/// Rebuilds the analytics inputs from a cloud [DashboardSnapshot]. The signed
+/// per-log streak is unavailable here (defaults to 0), which the extra stats do
+/// not use; anything streak-accurate goes through [habitStatsRpcProvider].
+PrivateAnalyticsData buildAnalyticsDataFromSnapshot(
+  DashboardSnapshot snapshot,
+) {
+  final allLogs = <HabitLogEntry>[];
+  final logsByGoal = <String, List<HabitLogEntry>>{};
+  final logsByDate = <String, Map<String, String>>{};
+  snapshot.habitLogs.forEach((dk, habits) {
+    final date = DateTime.tryParse(dk);
+    if (date == null) return;
+    logsByDate[dk] = Map<String, String>.from(habits);
+    habits.forEach((goalId, status) {
+      final entry = HabitLogEntry(goalId: goalId, date: date, status: status);
+      allLogs.add(entry);
+      logsByGoal.putIfAbsent(goalId, () => []).add(entry);
+    });
+  });
+
+  final goals = <GoalInput>[];
+  final startDates = <String, DateTime>{};
+  final titles = <String, String?>{};
+  for (final h in snapshot.habits) {
+    final start = h.startDate ?? DateTime.now();
+    goals.add(
+      GoalInput(
+        id: h.id,
+        startDate: start,
+        endDate: h.endDate,
+        frequencyDays: h.frequencyDays,
+      ),
+    );
+    startDates[h.id] = start;
+    titles[h.id] = h.title;
+  }
+
+  final moodsByDate = <String, MoodEntry>{};
+  snapshot.moods.forEach((dk, checkIn) {
+    moodsByDate[dk] = MoodEntry(
+      moodScore: checkIn.mood ?? 0,
+      energyScore: checkIn.energy ?? 0,
+    );
+  });
+
+  return PrivateAnalyticsData(
+    allLogs: allLogs,
+    logsByGoal: logsByGoal,
+    logsByDate: logsByDate,
+    goals: goals,
+    startDates: startDates,
+    titles: titles,
+    moodsByDate: moodsByDate,
+  );
+}
+
+/// The shared analytics inputs for every net-new stat, mode-aware in one place.
+final unifiedAnalyticsDataProvider = FutureProvider<PrivateAnalyticsData>((
+  ref,
+) async {
+  if (ref.watch(activeDesktopDataModeProvider).isPrivate) {
+    return ref.watch(privateAnalyticsDataProvider.future);
+  }
+  final snapshot = ref.watch(dashboardControllerProvider);
+  return buildAnalyticsDataFromSnapshot(snapshot);
+});
+
+final lifetimeSummaryProvider = FutureProvider<LifetimeSummary>((ref) async {
+  final data = await ref.watch(unifiedAnalyticsDataProvider.future);
+  return computeLifetimeSummary(
+    allLogs: data.allLogs,
+    goals: data.goals,
+    logsByDate: data.logsByDate,
+    today: DateTime.now(),
+  );
+});
+
+final keystoneHabitProvider = FutureProvider<KeystoneInsight?>((ref) async {
+  final data = await ref.watch(unifiedAnalyticsDataProvider.future);
+  return computeKeystoneHabit(goals: data.goals, logsByDate: data.logsByDate);
+});
+
+final bounceBackProvider = FutureProvider<BounceBackStats>((ref) async {
+  final data = await ref.watch(unifiedAnalyticsDataProvider.future);
+  return computeBounceBackRate(logsByGoal: data.logsByGoal);
+});
+
+final weekdayWeekendProvider = FutureProvider<WeekdaySplit>((ref) async {
+  final data = await ref.watch(unifiedAnalyticsDataProvider.future);
+  return computeWeekdayWeekendSplit(data.allLogs);
+});
+
+final globalWeekdayPerformanceProvider = FutureProvider<List<WeekdayPerf>>((
+  ref,
+) async {
+  final data = await ref.watch(unifiedAnalyticsDataProvider.future);
+  return computeGlobalWeekdayPerformance(data.allLogs);
+});
+
+final seasonalityProvider = FutureProvider<List<MonthPerf>>((ref) async {
+  final data = await ref.watch(unifiedAnalyticsDataProvider.future);
+  return computeSeasonality(data.allLogs);
+});
+
+final consistencyScoresProvider = FutureProvider<List<ConsistencyScore>>((
+  ref,
+) async {
+  final data = await ref.watch(unifiedAnalyticsDataProvider.future);
+  return computeConsistencyScores(data.logsByGoal);
+});
+
+final dangerZoneProvider = FutureProvider<DangerZone?>((ref) async {
+  final data = await ref.watch(unifiedAnalyticsDataProvider.future);
+  return computeDangerZone(data.logsByGoal);
+});
+
+final momentumProvider = FutureProvider<MomentumScore>((ref) async {
+  final data = await ref.watch(unifiedAnalyticsDataProvider.future);
+  final stats = await ref.watch(habitStatsRpcProvider.future);
+  final streaks = [
+    for (final r in stats)
+      (
+        current: (r['current_streak'] as num?)?.toInt() ?? 0,
+        best: (r['best_streak'] as num?)?.toInt() ?? 0,
+      ),
+  ];
+  final today = DateTime.now();
+  return computeMomentumScore(
+    rate7: _windowCompletionRate(data, today, 0, 6),
+    ratePrev7: _windowCompletionRate(data, today, 7, 13),
+    streaks: streaks,
+  );
+});
+
+/// Completion fraction (0–1) over an inclusive [startAgo]…[endAgo] window of
+/// days-ago from [today], counting scheduled non-skipped habit-days. Returns 0
+/// when nothing was scheduled in the window.
+double _windowCompletionRate(
+  PrivateAnalyticsData data,
+  DateTime today,
+  int startAgo,
+  int endAgo,
+) {
+  final t = DateTime(today.year, today.month, today.day);
+  var done = 0;
+  var active = 0;
+  for (var ago = startAgo; ago <= endAgo; ago++) {
+    final date = t.subtract(Duration(days: ago));
+    final dayLogs = data.logsByDate[dateKey(date)] ?? const <String, String>{};
+    for (final g in data.goals) {
+      if (!isGoalActiveOn(g, date)) continue;
+      final status = dayLogs[g.id];
+      if (status == 'skipped') continue;
+      active++;
+      if (status == 'done') done++;
+    }
+  }
+  return active > 0 ? done / active : 0.0;
 }

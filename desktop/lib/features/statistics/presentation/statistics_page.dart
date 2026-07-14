@@ -5,6 +5,7 @@ import 'package:evolve_desktop/features/dashboard/application/dashboard_controll
 import 'package:evolve_desktop/features/settings/application/desktop_subscription_controller.dart';
 import 'package:evolve_desktop/features/settings/presentation/pro_features_modal.dart';
 import 'package:evolve_desktop/features/dashboard/domain/dashboard_models.dart';
+import 'package:evolve_desktop/features/statistics/data/analytics_extra.dart';
 import 'package:evolve_desktop/features/statistics/data/private_analytics.dart'
     show MoodCorrelation, kIsoDowTokens;
 import 'package:evolve_desktop/features/statistics/data/statistics_rpc_providers.dart';
@@ -19,6 +20,8 @@ import 'package:fl_chart/fl_chart.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:lucide_icons_flutter/lucide_icons.dart';
+
+part 'statistics_extras.dart';
 
 enum _AnalyticsScope { global, habit }
 
@@ -403,8 +406,17 @@ class _GlobalInfo extends ConsumerWidget {
   Widget build(BuildContext context, WidgetRef ref) {
     final criticalDay =
         ref.watch(globalCriticalDayRpcProvider).value ?? _criticalDay(snapshot);
+    final stats = ref.watch(habitStatsRpcProvider).value ?? const [];
+    final topPerformer = _topPerformer(snapshot, stats);
+    final bestStreak = _maxBestStreak(stats);
+    final keystone = ref.watch(keystoneHabitProvider).value;
+    final showKeystone =
+        keystone != null && _habitTitleFor(snapshot, keystone.goalId) != null;
+
     return Column(
       children: [
+        _InfoHero(snapshot: snapshot),
+        const SizedBox(height: 18),
         _MetricGrid(
           tiles: [
             _Metric(
@@ -419,10 +431,19 @@ class _GlobalInfo extends ConsumerWidget {
             ),
             _Metric(
               label: t.stats.bestStreakLabel,
-              value: t.dashboard.streakDaysShort(n: snapshot.bestStreak),
-              detail: _bestHabit(snapshot),
-              color: EvolveColors.streakColor(snapshot.bestStreak),
+              value: t.dashboard.streakDaysShort(n: bestStreak),
+              detail: t.stats.allTimeBest,
+              color: EvolveColors.streakColor(bestStreak),
               icon: LucideIcons.flame,
+            ),
+            _Metric(
+              label: t.stats.topPerformerLabel,
+              value: topPerformer?.title ?? _bestHabit(snapshot),
+              detail: topPerformer != null
+                  ? t.stats.successRate(rate: topPerformer.rate)
+                  : t.stats.completedEvenHardDays,
+              color: EvolveColors.success,
+              icon: LucideIcons.trophy,
             ),
             _Metric(
               label: t.stats.criticalDay,
@@ -434,13 +455,13 @@ class _GlobalInfo extends ConsumerWidget {
           ],
         ),
         const SizedBox(height: 18),
+        if (showKeystone) ...[
+          _KeystoneCard(snapshot: snapshot),
+          const SizedBox(height: 18),
+        ],
         LayoutBuilder(
           builder: (context, constraints) {
-            final heatmap = _HeatmapPanel(
-              title: t.stats.recentActivity,
-              subtitle: t.stats.recentActivitySubtitle,
-              values: _activityValues(snapshot, 90),
-            );
+            final heatmap = _YearContributionHeatmap(snapshot: snapshot);
             final correlations = _CorrelationPanel(snapshot: snapshot);
             if (constraints.maxWidth < 1120) {
               return Column(
@@ -502,7 +523,7 @@ class _GlobalTrend extends ConsumerWidget {
       fallback: _criticalHabit(snapshot),
     );
 
-    return LayoutBuilder(
+    final heroLayout = LayoutBuilder(
       builder: (context, constraints) {
         final width = constraints.maxWidth;
         Widget hero({required double chartHeight, Widget? footer}) =>
@@ -598,6 +619,14 @@ class _GlobalTrend extends ConsumerWidget {
           ),
         );
       },
+    );
+
+    return Column(
+      children: [
+        heroLayout,
+        const SizedBox(height: 18),
+        _TrendExtras(snapshot: snapshot, timeframe: timeframe),
+      ],
     );
   }
 }
@@ -919,8 +948,12 @@ class _GlobalAlerts extends ConsumerWidget {
     final improvement = _improvementAreas(snapshot, stats, analytics);
     final failures = _failureAnalysis(snapshot, stats);
     final recovery = _recoveryPatterns(snapshot, analytics);
+    final comparison = _performanceComparisonCards(snapshot, stats);
 
-    if (improvement.isEmpty && failures.isEmpty && recovery.isEmpty) {
+    if (improvement.isEmpty &&
+        failures.isEmpty &&
+        recovery.isEmpty &&
+        comparison.isEmpty) {
       return EvolvePanel(
         child: _EmptyState(
           icon: LucideIcons.circleAlert,
@@ -958,9 +991,17 @@ class _GlobalAlerts extends ConsumerWidget {
           subtitle: t.statistics.recoverySpeed,
           children: [for (final item in recovery) _RecoveryCard(item: item)],
         ),
+      if (comparison.isNotEmpty)
+        _AlertsSection(
+          icon: LucideIcons.scale,
+          iconColor: EvolveColors.amber,
+          title: t.stats.performanceComparisonTitle,
+          subtitle: t.stats.performanceComparisonSubtitle,
+          children: comparison,
+        ),
     ];
 
-    return LayoutBuilder(
+    final sectionsLayout = LayoutBuilder(
       builder: (context, constraints) {
         // Wide: all section cards in one 18px-gapped row of equal columns.
         if (constraints.maxWidth >= 1120) {
@@ -1004,6 +1045,14 @@ class _GlobalAlerts extends ConsumerWidget {
           ],
         );
       },
+    );
+
+    return Column(
+      children: [
+        sectionsLayout,
+        const SizedBox(height: 18),
+        _AlertsExtras(snapshot: snapshot),
+      ],
     );
   }
 }
@@ -1404,7 +1453,7 @@ class _GlobalHabitsState extends ConsumerState<_GlobalHabits> {
     final statsAsync = ref.watch(habitStatsRpcProvider);
     final habitsById = {for (final h in widget.snapshot.habits) h.id: h};
 
-    return LayoutBuilder(
+    final tableLayout = LayoutBuilder(
       builder: (context, pageConstraints) {
         // Desktop-table mode (>=1440 content width): roomier paddings and
         // column gaps; the progress column absorbs the extra width — badges
@@ -1501,6 +1550,13 @@ class _GlobalHabitsState extends ConsumerState<_GlobalHabits> {
         );
       },
     );
+
+    return Column(
+      children: [
+        tableLayout,
+        _HabitsExtras(snapshot: widget.snapshot),
+      ],
+    );
   }
 }
 
@@ -1533,6 +1589,7 @@ class _HabitStatsRowState extends State<_HabitStatsRow> {
     final rate = ((widget.row['rate'] as num?) ?? 0).toDouble();
     final best = ((widget.row['best_streak'] as num?) ?? 0).toInt();
     final worst = ((widget.row['worst_streak'] as num?) ?? 0).toInt();
+    final current = ((widget.row['current_streak'] as num?) ?? 0).toInt();
     final title = (widget.row['title'] as String?) ?? '';
     final wide = widget.wide;
     return MouseRegion(
@@ -1593,6 +1650,12 @@ class _HabitStatsRowState extends State<_HabitStatsRow> {
             ),
             SizedBox(width: wide ? 28 : 16),
             _StatBadge(
+              label: t.stats.currentStreakShort,
+              value: '$current',
+              color: EvolveColors.streakColor(current),
+            ),
+            SizedBox(width: wide ? 24 : 12),
+            _StatBadge(
               label: t.stats.bestStreakLabel,
               value: '$best',
               color: EvolveColors.amber,
@@ -1648,13 +1711,13 @@ class _StatBadge extends StatelessWidget {
   }
 }
 
-class _GlobalMood extends StatelessWidget {
+class _GlobalMood extends ConsumerWidget {
   const _GlobalMood({required this.snapshot});
 
   final DashboardSnapshot snapshot;
 
   @override
-  Widget build(BuildContext context) {
+  Widget build(BuildContext context, WidgetRef ref) {
     final moods = snapshot.moods.values.toList();
     final averageMood = _averageCheckIn(moods, (mood) => mood.mood);
     final averageEnergy = _averageCheckIn(moods, (mood) => mood.energy);
@@ -1692,6 +1755,7 @@ class _GlobalMood extends StatelessWidget {
           color: EvolveColors.violet,
           values: _moodValues(snapshot, 90),
         ),
+        _MoodExtras(snapshot: snapshot),
       ],
     );
   }
@@ -1715,6 +1779,7 @@ class _HabitOverview extends ConsumerWidget {
     final completionRate = (stat['rate'] as num?)?.round() ?? 0;
     final currentStreak =
         (stat['current_streak'] as num?)?.toInt() ?? habit.streak;
+    final bestStreak = (stat['best_streak'] as num?)?.toInt() ?? 0;
     final totalCompletions = (stat['total_completions'] as num?)?.toInt() ?? 0;
     final totalActiveDays = (stat['total_active_days'] as num?)?.toInt() ?? 1;
     final missedDays = (stat['missed_days'] as num?)?.toInt() ?? 0;
@@ -1739,6 +1804,13 @@ class _HabitOverview extends ConsumerWidget {
               detail: t.stats.currentStreakDetail,
               color: EvolveColors.streakColor(currentStreak),
               icon: LucideIcons.flame,
+            ),
+            _Metric(
+              label: t.stats.recordLabel,
+              value: t.dashboard.streakDaysShort(n: bestStreak),
+              detail: t.stats.recordDetail,
+              color: EvolveColors.amber,
+              icon: LucideIcons.trophy,
             ),
             _Metric(
               label: t.statistics.missed,
@@ -3171,10 +3243,6 @@ class _EmptyState extends StatelessWidget {
       ),
     );
   }
-}
-
-List<double> _activityValues(DashboardSnapshot snapshot, int count) {
-  return [for (final date in _lastDays(count)) snapshot.completionFor(date)];
 }
 
 List<double> _moodValues(DashboardSnapshot snapshot, int count) {

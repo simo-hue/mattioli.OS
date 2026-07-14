@@ -869,3 +869,36 @@ heading ellipsizing. `flutter analyze` clean; `tour_flow_test` still passes.
     setMockInitialValues warning); `flutter test` = 280 passed, 2 pre-existing
     environmental failures (desktop_supabase_config_security build-time defines;
     icloud_sync_card pumpAndSettle) that fail identically with this change reverted.
+
+- 2026-07-14: Period navigation — animation + Habits calendar arrow keys
+  - *Details*: (A) New reusable `EvolvePeriodSwitcher`
+    (`lib/shared/widgets/evolve_period_switcher.dart`): a directional slide
+    (0.08 offset) + cross-fade AnimatedSwitcher wrapper that plays whenever its
+    `periodKey` changes, so period navigation — arrow keys OR the ‹ › buttons —
+    is always visibly reflected (prevents "did my mis-click do anything?"). RTL
+    aware; `direction` (+1/-1/0) sets the drift; `expand` toggles a StackFit.expand
+    vs top-aligned flow layout. (B) Wired it into the Goals board (keyed on a
+    (type,year,quarter,month,week) record; `_lastDirection` set in `_movePeriod`
+    and the dropdown/type handlers). (C) Habits Calendar surface: added ←/→
+    arrow-key paging (month/week/year) via a page-level `Focus`+`_handleCalendarKey`
+    (same guards as Goals: text-field / tour / surface / Life-view), and swapped
+    the calendar's view-only AnimatedSwitcher for `EvolvePeriodSwitcher` keyed on
+    the DISPLAYED period so paging the anchor animates too. (D) Date-picker
+    `_EvolveCalendar`: the day grid slides on ‹ › month nav, wrapped in
+    `AnimatedSize` so the dialog height settles smoothly across 5↔6-row months.
+    Insights was left as-is (discrete timeframe selector, already cross-fades, no
+    prev/next). Also fixed 3 review findings: (1 medium) marking a goal complete
+    then navigating within the 2s debounce no longer drops the toggle —
+    `_GoalItemState.dispose` now flushes the pending status (post-frame, guarded);
+    (2) the date-picker height snap (AnimatedSize); (3) Habits "Today" no longer
+    replays a slide for an unchanged period (granularity-normalized periodKey).
+  - *Tech Notes*: Files: new evolve_period_switcher.dart; goals_page.dart;
+    habits_page.dart; evolve_controls.dart (date picker). No new deps/providers/
+    RPCs. Verified: `flutter analyze` clean (only the pre-existing lib/main.dart
+    warning); new tests — test/goals_page_keyboard_test.dart (6: nav, caret,
+    picker-open, transition-plays, mark-then-navigate-persists) and
+    test/habits_page_keyboard_test.dart (2: →pages month, inert-on-Protocol) pass;
+    full suite 285 pass / 1 pre-existing unrelated fail (icloud_sync_card). A
+    3-lens adversarial review (find→verify) confirmed the 3 findings above, now
+    fixed. On-device visual QA of the animations still pending (no Xcode here) —
+    see TO_SIMO_DO.md.

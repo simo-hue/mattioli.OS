@@ -3,6 +3,7 @@
 // while NEVER hijacking the caret when the quick-add field is being edited.
 import 'package:evolve_desktop/app/theme/evolve_theme.dart';
 import 'package:evolve_desktop/core/macro_goal_calendar.dart';
+import 'package:evolve_desktop/features/dashboard/application/dashboard_controller.dart';
 import 'package:evolve_desktop/features/dashboard/data/dashboard_repository.dart';
 import 'package:evolve_desktop/features/dashboard/domain/dashboard_models.dart';
 import 'package:evolve_desktop/features/goals/application/goal_categories_controller.dart';
@@ -19,6 +20,17 @@ class _EmptyDashboardRepository extends DashboardRepository {
   @override
   DashboardSnapshot load() => DashboardSnapshot.empty;
 
+  @override
+  Future<void> save(DashboardSnapshot snapshot) async {}
+}
+
+/// Serves a single active weekly goal for the current period so the board
+/// renders one checkbox.
+class _OneGoalRepository extends DashboardRepository {
+  _OneGoalRepository(this._snapshot);
+  final DashboardSnapshot _snapshot;
+  @override
+  DashboardSnapshot load() => _snapshot;
   @override
   Future<void> save(DashboardSnapshot snapshot) async {}
 }
@@ -145,6 +157,106 @@ void main() {
       weekLabel(initialWeek),
       findsWidgets,
       reason: 'the period must not change while a picker is open',
+    );
+  });
+
+  testWidgets('navigating plays a transition (old board lingers mid-animation)', (
+    tester,
+  ) async {
+    await tester.binding.setSurfaceSize(const Size(1200, 900));
+    addTearDown(() => tester.binding.setSurfaceSize(null));
+
+    final now = DateTime.now();
+    final initialWeek = logicalWeekOfMonth(now);
+
+    await _pumpGoalsPage(tester);
+    expect(weekLabel(initialWeek), findsWidgets);
+
+    // Start the transition, then advance only partway through it.
+    await tester.sendKeyEvent(LogicalKeyboardKey.arrowRight);
+    await tester.pump(); // kick off the AnimatedSwitcher
+    await tester.pump(const Duration(milliseconds: 90));
+
+    // The OUTGOING board is still on screen mid-transition — the visible proof
+    // that a slide+fade is playing (without it, the old week would vanish at
+    // once). weekLabel matches the board heading, which is inside the switcher.
+    expect(
+      weekLabel(initialWeek),
+      findsWidgets,
+      reason: 'the previous board should still be fading out mid-transition',
+    );
+
+    // Once settled, the outgoing board is gone.
+    await tester.pumpAndSettle();
+    expect(weekLabel(initialWeek), findsNothing);
+  });
+
+  testWidgets('marking a goal then navigating away still persists the toggle', (
+    tester,
+  ) async {
+    await tester.binding.setSurfaceSize(const Size(1200, 900));
+    addTearDown(() => tester.binding.setSurfaceSize(null));
+
+    final now = DateTime.now();
+    final goal = DashboardGoal(
+      id: 'g1',
+      title: 'Ship the thing',
+      category: '',
+      color: EvolveColors.cyan,
+      state: GoalState.active,
+      type: GoalType.weekly,
+      createdAt: DateTime(2020),
+      dueLabel: '',
+      year: now.year,
+      quarter: ((now.month - 1) ~/ 3) + 1,
+      month: now.month,
+      weekNumber: logicalWeekOfMonth(now),
+      progress: 0,
+    );
+
+    await tester.pumpWidget(
+      ProviderScope(
+        overrides: [
+          dashboardRepositoryProvider.overrideWithValue(
+            _OneGoalRepository(DashboardSnapshot.empty.copyWith(goals: [goal])),
+          ),
+          desktopGoalCategoriesControllerProvider.overrideWith(
+            _NoCategoriesController.new,
+          ),
+        ],
+        child: MaterialApp(
+          theme: EvolveTheme.dark(),
+          home: const Scaffold(body: GoalsPage()),
+        ),
+      ),
+    );
+    await tester.pumpAndSettle();
+
+    final container = ProviderScope.containerOf(
+      tester.element(find.byType(GoalsPage)),
+    );
+    expect(container.read(dashboardControllerProvider).goals.single.state,
+        GoalState.active);
+
+    // The goal's check button: an InkWell with the check button's radius.
+    final checkbox = find.byWidgetPredicate(
+      (w) => w is InkWell && w.borderRadius == BorderRadius.circular(5),
+    );
+    expect(checkbox, findsOneWidget);
+
+    // Mark it complete (starts a 2s debounce that is what persists it)...
+    await tester.tap(checkbox);
+    await tester.pump();
+    // ...then navigate to the next week WELL within that debounce window.
+    await tester.sendKeyEvent(LogicalKeyboardKey.arrowRight);
+    await tester.pumpAndSettle();
+
+    // The board re-keyed and tore down the row mid-debounce, but the toggle
+    // must have been flushed on dispose rather than silently dropped.
+    expect(
+      container.read(dashboardControllerProvider).goals.single.state,
+      GoalState.completed,
+      reason: 'navigating away mid-debounce must not lose the completion',
     );
   });
 }

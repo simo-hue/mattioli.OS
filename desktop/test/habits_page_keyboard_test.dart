@@ -1,0 +1,101 @@
+// Verifies the desktop Habits page calendar keyboard navigation: on the
+// Calendar surface, ← / → page the period (month/week/year) exactly like the
+// ‹ › buttons, and each change plays a transition.
+import 'package:evolve_desktop/app/theme/evolve_theme.dart';
+import 'package:evolve_desktop/features/dashboard/data/dashboard_repository.dart';
+import 'package:evolve_desktop/features/dashboard/domain/dashboard_models.dart';
+import 'package:evolve_desktop/features/habits/presentation/habits_page.dart';
+import 'package:evolve_desktop/i18n/translations.g.dart';
+import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:flutter_test/flutter_test.dart';
+
+class _EmptyDashboardRepository extends DashboardRepository {
+  @override
+  DashboardSnapshot load() => DashboardSnapshot.empty;
+
+  @override
+  Future<void> save(DashboardSnapshot snapshot) async {}
+}
+
+Future<void> _pumpHabitsPage(WidgetTester tester) async {
+  await tester.pumpWidget(
+    ProviderScope(
+      overrides: [
+        dashboardRepositoryProvider.overrideWithValue(
+          _EmptyDashboardRepository(),
+        ),
+      ],
+      child: MaterialApp(
+        theme: EvolveTheme.dark(),
+        home: const Scaffold(body: HabitsPage()),
+      ),
+    ),
+  );
+  await tester.pumpAndSettle();
+}
+
+/// Switches to the Calendar surface, Month view.
+Future<void> _openMonthCalendar(WidgetTester tester) async {
+  await tester.tap(find.text(t.habitsPage.tabCalendar));
+  await tester.pumpAndSettle();
+  await tester.tap(find.text(t.common.calendarView.month));
+  await tester.pumpAndSettle();
+}
+
+void main() {
+  testWidgets('→ pages to the next month on the calendar surface', (
+    tester,
+  ) async {
+    await tester.binding.setSurfaceSize(const Size(1280, 900));
+    addTearDown(() => tester.binding.setSurfaceSize(null));
+
+    await _pumpHabitsPage(tester);
+    await _openMonthCalendar(tester);
+
+    final now = DateTime.now();
+    final thisMonth = t.common.months[now.month - 1];
+    final next = DateTime(now.year, now.month + 1, 1);
+    final nextMonth = t.common.months[next.month - 1];
+
+    expect(find.text(thisMonth), findsWidgets);
+
+    await tester.sendKeyEvent(LogicalKeyboardKey.arrowRight);
+    await tester.pumpAndSettle();
+
+    expect(find.text(nextMonth), findsWidgets);
+    expect(find.text(thisMonth), findsNothing);
+
+    // ← returns to the starting month.
+    await tester.sendKeyEvent(LogicalKeyboardKey.arrowLeft);
+    await tester.pumpAndSettle();
+    expect(find.text(thisMonth), findsWidgets);
+  });
+
+  testWidgets('arrows are inert on the Protocol surface', (tester) async {
+    await tester.binding.setSurfaceSize(const Size(1280, 900));
+    addTearDown(() => tester.binding.setSurfaceSize(null));
+
+    await _pumpHabitsPage(tester);
+    // Default surface is Protocol; switch to Calendar+Month only to learn the
+    // current month label, then go back to Protocol.
+    await _openMonthCalendar(tester);
+    final now = DateTime.now();
+    final thisMonth = t.common.months[now.month - 1];
+    await tester.tap(find.text(t.habitsPage.tabProtocol));
+    await tester.pumpAndSettle();
+
+    // On Protocol, arrows must not page the (hidden) calendar period.
+    await tester.sendKeyEvent(LogicalKeyboardKey.arrowRight);
+    await tester.pumpAndSettle();
+
+    await tester.tap(find.text(t.habitsPage.tabCalendar));
+    await tester.pumpAndSettle();
+    expect(
+      find.text(thisMonth),
+      findsWidgets,
+      reason: 'the period must be unchanged — arrows are calendar-only',
+    );
+  });
+}

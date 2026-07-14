@@ -1,6 +1,7 @@
 import 'package:evolve_desktop/app/theme/evolve_theme.dart';
 import 'package:evolve_desktop/core/rtl.dart';
 import 'package:evolve_desktop/shared/widgets/evolve_dialog.dart';
+import 'package:evolve_desktop/shared/widgets/evolve_period_switcher.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:lucide_icons_flutter/lucide_icons.dart';
@@ -1300,8 +1301,13 @@ class _EvolveCalendarState extends State<_EvolveCalendar> {
         ),
       );
 
+  // Last month-navigation direction (+1 later, -1 earlier), driving the day
+  // grid's slide+fade transition.
+  int _monthDirection = 0;
+
   void _shiftMonth(int months) {
     setState(() {
+      _monthDirection = months.sign;
       _visibleMonth = DateTime(
         _visibleMonth.year,
         _visibleMonth.month + months,
@@ -1384,7 +1390,23 @@ class _EvolveCalendarState extends State<_EvolveCalendar> {
               const SizedBox(height: 12),
               _weekdayHeader(localizations, colors),
               const SizedBox(height: 4),
-              ..._weekRows(localizations, colors),
+              // Slide+fade the day grid when the month changes so ‹ › ‹‹ ››
+              // navigation is clearly reflected (the weekday header stays put).
+              // AnimatedSize tweens the dialog height between months with a
+              // different week-row count so it settles smoothly, never snaps.
+              AnimatedSize(
+                duration: const Duration(milliseconds: 280),
+                curve: Curves.easeOutCubic,
+                alignment: Alignment.topCenter,
+                child: EvolvePeriodSwitcher(
+                  periodKey: (_visibleMonth.year, _visibleMonth.month),
+                  direction: _monthDirection,
+                  child: Column(
+                    mainAxisSize: MainAxisSize.min,
+                    children: _weekRows(localizations, colors),
+                  ),
+                ),
+              ),
             ],
           ),
         ),

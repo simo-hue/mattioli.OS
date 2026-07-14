@@ -15,6 +15,7 @@ import 'package:evolve_desktop/shared/widgets/evolve_controls.dart';
 import 'package:evolve_desktop/shared/widgets/evolve_dialog.dart';
 import 'goals_stats_view.dart';
 import 'package:evolve_desktop/shared/widgets/evolve_panel.dart';
+import 'package:evolve_desktop/shared/widgets/evolve_period_switcher.dart';
 import 'package:evolve_desktop/shared/widgets/evolve_toast.dart';
 import 'package:evolve_desktop/core/tutorial_provider.dart';
 import 'package:evolve_desktop/shared/widgets/coach_tutorial.dart';
@@ -62,6 +63,20 @@ class _GoalsPageState extends ConsumerState<GoalsPage> {
   // open the arrow keys must not page the timeline behind it (the popups keep
   // the page node focused, so this is the only signal that one is up).
   int _openMenus = 0;
+
+  // Last period-navigation direction (+1 next, -1 previous, 0 neutral jump),
+  // driving the direction of the goal board's slide+fade transition.
+  int _lastDirection = 0;
+
+  /// Structural identity of the shown period: any visible change (type, year,
+  /// quarter, month or week) flips it, which drives the board transition.
+  Object get _periodSignature => (
+    _selectedType,
+    _selectedYear,
+    _selectedQuarter,
+    _selectedMonth,
+    _selectedWeek,
+  );
 
   @override
   void initState() {
@@ -150,6 +165,7 @@ class _GoalsPageState extends ConsumerState<GoalsPage> {
                   selectedType: _selectedType,
                   showStats: _showStats,
                   onTypeChanged: (type) => setState(() {
+                    _lastDirection = 0; // plan switch — neutral fade
                     _selectedType = type;
                     _showStats = false;
                   }),
@@ -166,19 +182,26 @@ class _GoalsPageState extends ConsumerState<GoalsPage> {
                   selectedMonth: _selectedMonth,
                   selectedWeek: _selectedWeek,
                   onYearChanged: (year) => setState(() {
+                    _lastDirection = year.compareTo(_selectedYear);
                     _selectedYear = year;
                     _selectedWeek = _selectedWeek.clamp(
                       1,
                       logicalWeeksInMonth(_selectedYear, _selectedMonth),
                     );
                   }),
-                  onQuarterChanged: (quarter) =>
-                      setState(() => _selectedQuarter = quarter),
+                  onQuarterChanged: (quarter) => setState(() {
+                    _lastDirection = quarter.compareTo(_selectedQuarter);
+                    _selectedQuarter = quarter;
+                  }),
                   onMonthChanged: (month) => setState(() {
+                    _lastDirection = month.compareTo(_selectedMonth);
                     _selectedMonth = month;
                     _selectedWeek = 1;
                   }),
-                  onWeekChanged: (week) => setState(() => _selectedWeek = week),
+                  onWeekChanged: (week) => setState(() {
+                    _lastDirection = week.compareTo(_selectedWeek);
+                    _selectedWeek = week;
+                  }),
                   onPrevious: () => _movePeriod(-1),
                   onNext: () => _movePeriod(1),
                   onManageCategories: _openCategoryManager,
@@ -196,22 +219,32 @@ class _GoalsPageState extends ConsumerState<GoalsPage> {
                 if (_showStats)
                   const GoalsStatsView()
                 else
-                  _GoalBoard(
-                    periodTitle: _periodTitle,
-                    periodSubtitle: _periodSubtitle,
-                    tutorialCheckboxKey: _tutorialCheckboxKey,
-                    categories: categories,
-                    activeGoals: activeGoals,
-                    completedGoals: completedGoals,
-                    failedGoals: failedGoals,
-                    onToggleStatus: _cycleGoalStatus,
-                    onEdit: _openGoalEditorFor,
-                    onReschedule: (goal) => ref
-                        .read(dashboardControllerProvider.notifier)
-                        .rescheduleGoal(goal.id),
-                    onDelete: (goal) => ref
-                        .read(dashboardControllerProvider.notifier)
-                        .deleteGoal(goal.id),
+                  // Slide+fade the board on every period change so arrow-key /
+                  // ‹ › navigation is always visibly reflected. The tutorial
+                  // GlobalKey is attached only during the tour so the brief
+                  // two-board overlap of a transition can't duplicate it.
+                  EvolvePeriodSwitcher(
+                    periodKey: _periodSignature,
+                    direction: _lastDirection,
+                    child: _GoalBoard(
+                      periodTitle: _periodTitle,
+                      periodSubtitle: _periodSubtitle,
+                      tutorialCheckboxKey: showTour
+                          ? _tutorialCheckboxKey
+                          : null,
+                      categories: categories,
+                      activeGoals: activeGoals,
+                      completedGoals: completedGoals,
+                      failedGoals: failedGoals,
+                      onToggleStatus: _cycleGoalStatus,
+                      onEdit: _openGoalEditorFor,
+                      onReschedule: (goal) => ref
+                          .read(dashboardControllerProvider.notifier)
+                          .rescheduleGoal(goal.id),
+                      onDelete: (goal) => ref
+                          .read(dashboardControllerProvider.notifier)
+                          .deleteGoal(goal.id),
+                    ),
                   ),
               ],
             ),
@@ -343,6 +376,7 @@ class _GoalsPageState extends ConsumerState<GoalsPage> {
 
   void _movePeriod(int direction) {
     setState(() {
+      _lastDirection = direction;
       switch (_selectedType) {
         case GoalType.lifetime:
           return;
@@ -1643,6 +1677,23 @@ class _GoalItemState extends State<_GoalItem> {
 
   @override
   void dispose() {
+    // If a status toggle is still mid-debounce when this row is torn down —
+    // e.g. the board re-keys because the user navigated the period within the
+    // 2s window — persist it instead of dropping it on the floor. Deferred to
+    // after the frame so we never mutate a provider during the unmount that is
+    // disposing us.
+    final pending = _visualStatusOverride;
+    if ((_debounceTimer?.isActive ?? false) && pending != null) {
+      final goal = widget.goal;
+      final onToggleStatus = widget.onToggleStatus;
+      WidgetsBinding.instance.addPostFrameCallback((_) {
+        // Best-effort: if the whole page (not just this row) was torn down, the
+        // callback's ref is already dead — there's nothing left to persist to.
+        try {
+          onToggleStatus(goal, pending);
+        } catch (_) {}
+      });
+    }
     _debounceTimer?.cancel();
     super.dispose();
   }

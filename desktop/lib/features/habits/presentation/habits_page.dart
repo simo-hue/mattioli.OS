@@ -17,8 +17,10 @@ import 'package:evolve_desktop/shared/widgets/desktop_page.dart';
 import 'package:evolve_desktop/shared/widgets/evolve_controls.dart';
 import 'package:evolve_desktop/shared/widgets/evolve_dialog.dart';
 import 'package:evolve_desktop/shared/widgets/evolve_panel.dart';
+import 'package:evolve_desktop/shared/widgets/evolve_period_switcher.dart';
 import 'package:evolve_desktop/shared/widgets/verified_habit_badge.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:lucide_icons_flutter/lucide_icons.dart';
 
@@ -35,6 +37,14 @@ class _HabitsPageState extends ConsumerState<HabitsPage> {
   _HabitSurface _surface = _HabitSurface.protocol;
   CalendarViewMode _calendarView = CalendarViewMode.month;
   DateTime _anchor = DateTime.now();
+
+  // Last calendar-navigation direction (+1 next, -1 previous, 0 neutral),
+  // driving the direction of the calendar's slide+fade transition.
+  int _navDirection = 0;
+
+  // Holds page-level keyboard focus so ←/→ page the calendar (see
+  // [_handleCalendarKey]) without the user clicking in first.
+  final _periodFocusNode = FocusNode(debugLabel: 'habits-period-nav');
 
   // Habits segment of the continuous product tour. The central
   // [tourControllerProvider] owns whether this segment is active; this page owns
@@ -60,6 +70,54 @@ class _HabitsPageState extends ConsumerState<HabitsPage> {
       kCalendarViewLife => CalendarViewMode.life,
       _ => CalendarViewMode.week,
     };
+    // Claim keyboard focus after the first frame so ←/→ paging on the calendar
+    // is live immediately — but never yank focus from the guided tour overlay.
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      if (!mounted) return;
+      if (!ref.read(tourControllerProvider).active) {
+        _periodFocusNode.requestFocus();
+      }
+    });
+  }
+
+  @override
+  void dispose() {
+    _periodFocusNode.dispose();
+    super.dispose();
+  }
+
+  /// Left/right arrow keys page the calendar (previous / next month·week·year),
+  /// mirroring the ‹ › buttons. Active only on the Calendar surface with a
+  /// pageable view; it steps aside while editing text, during the tour, or on
+  /// the Life view. RTL-aware.
+  KeyEventResult _handleCalendarKey(FocusNode node, KeyEvent event) {
+    if (event is! KeyDownEvent && event is! KeyRepeatEvent) {
+      return KeyEventResult.ignored;
+    }
+    final key = event.logicalKey;
+    final isLeft = key == LogicalKeyboardKey.arrowLeft;
+    final isRight = key == LogicalKeyboardKey.arrowRight;
+    if (!isLeft && !isRight) return KeyEventResult.ignored;
+    if (_surface != _HabitSurface.calendar) return KeyEventResult.ignored;
+    if (_calendarView == CalendarViewMode.life) return KeyEventResult.ignored;
+    if (_isTextFieldFocused()) return KeyEventResult.ignored;
+    if (ref.read(tourControllerProvider).active) return KeyEventResult.ignored;
+    final isRtl = Directionality.of(context) == TextDirection.rtl;
+    final forward = isRight != isRtl;
+    setState(() {
+      _navDirection = forward ? 1 : -1;
+      _anchor = _shiftAnchor(_navDirection);
+    });
+    return KeyEventResult.handled;
+  }
+
+  /// True while a text field owns the primary focus, so arrow keys should move
+  /// the caret instead of paging the calendar.
+  bool _isTextFieldFocused() {
+    final ctx = FocusManager.instance.primaryFocus?.context;
+    if (ctx == null) return false;
+    return ctx.widget is EditableText ||
+        ctx.findAncestorStateOfType<EditableTextState>() != null;
   }
 
   @override
@@ -129,21 +187,26 @@ class _HabitsPageState extends ConsumerState<HabitsPage> {
       ),
     );
 
-    return Stack(
-      children: [
-        page,
-        if (showTour)
-          CoachTutorialOverlay(
-            steps: _habitsTourSteps(),
-            index: _tourIndex,
-            onIndexChanged: (i) => setState(() => _tourIndex = i),
-            // Last Habits step advances the tour to the Insights segment.
-            onFinish: () => ref.read(tourControllerProvider.notifier).advance(),
-            backLabel: t.tour.back,
-            nextLabel: t.tour.next,
-            finishLabel: t.tour.continueLabel,
-          ),
-      ],
+    return Focus(
+      focusNode: _periodFocusNode,
+      onKeyEvent: _handleCalendarKey,
+      child: Stack(
+        children: [
+          page,
+          if (showTour)
+            CoachTutorialOverlay(
+              steps: _habitsTourSteps(),
+              index: _tourIndex,
+              onIndexChanged: (i) => setState(() => _tourIndex = i),
+              // Last Habits step advances the tour to the Insights segment.
+              onFinish: () =>
+                  ref.read(tourControllerProvider.notifier).advance(),
+              backLabel: t.tour.back,
+              nextLabel: t.tour.next,
+              finishLabel: t.tour.continueLabel,
+            ),
+        ],
+      ),
     );
   }
 
@@ -200,10 +263,24 @@ class _HabitsPageState extends ConsumerState<HabitsPage> {
       snapshot: snapshot,
       anchor: _anchor,
       view: _calendarView,
-      onViewChanged: (view) => setState(() => _calendarView = view),
-      onPrevious: () => setState(() => _anchor = _shiftAnchor(-1)),
-      onNext: () => setState(() => _anchor = _shiftAnchor(1)),
-      onToday: () => setState(() => _anchor = DateTime.now()),
+      direction: _navDirection,
+      onViewChanged: (view) => setState(() {
+        _navDirection = 0; // view switch — neutral fade
+        _calendarView = view;
+      }),
+      onPrevious: () => setState(() {
+        _navDirection = -1;
+        _anchor = _shiftAnchor(-1);
+      }),
+      onNext: () => setState(() {
+        _navDirection = 1;
+        _anchor = _shiftAnchor(1);
+      }),
+      onToday: () => setState(() {
+        final today = DateTime.now();
+        _navDirection = today.compareTo(_anchor).sign;
+        _anchor = today;
+      }),
       onSelectDay: _openDayDetails,
     );
   }
@@ -999,6 +1076,7 @@ class _CalendarPanel extends StatelessWidget {
     required this.snapshot,
     required this.anchor,
     required this.view,
+    required this.direction,
     required this.onViewChanged,
     required this.onPrevious,
     required this.onNext,
@@ -1009,7 +1087,17 @@ class _CalendarPanel extends StatelessWidget {
   final DashboardSnapshot snapshot;
   final DateTime anchor;
   final CalendarViewMode view;
+  final int direction;
   final ValueChanged<CalendarViewMode> onViewChanged;
+
+  /// Identity of the visible period at the granularity actually rendered, so
+  /// two anchors that display the same period share a key (no spurious slide).
+  Object get _periodKey => switch (view) {
+    CalendarViewMode.month => (view, anchor.year, anchor.month),
+    CalendarViewMode.year => (view, anchor.year),
+    CalendarViewMode.week => (view, anchor.year, anchor.month, anchor.day),
+    CalendarViewMode.life => view,
+  };
   final VoidCallback onPrevious;
   final VoidCallback onNext;
   final VoidCallback onToday;
@@ -1066,12 +1154,16 @@ class _CalendarPanel extends StatelessWidget {
           ),
           const SizedBox(height: 16),
           Expanded(
-            child: AnimatedSwitcher(
-              duration: const Duration(milliseconds: 200),
-              switchInCurve: Curves.easeOutCubic,
-              switchOutCurve: Curves.easeOutCubic,
-              layoutBuilder: _expandedSwitcherLayout,
-              child: KeyedSubtree(key: ValueKey(view), child: body),
+            // Keyed on the DISPLAYED period (not the raw anchor, which carries
+            // a time-of-day) so paging the period — not just switching
+            // Mese/Settimana/Anno — plays the directional slide+fade, while a
+            // same-period jump like "Today" stays put instead of sliding for no
+            // visible change.
+            child: EvolvePeriodSwitcher(
+              periodKey: _periodKey,
+              direction: direction,
+              expand: true,
+              child: body,
             ),
           ),
         ],

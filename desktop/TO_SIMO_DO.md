@@ -138,4 +138,14 @@ Full analysis + fix status: `docs/HABIT_STATS_AUDIT.md`.
       it; (4) arrows are inert during the guided tour and on the Lifetime tab; (5)
       RTL (Arabic locale): ← advances, → rewinds. Optional: mirror the same
       ←/→ paging on the Habits page (it uses the identical `_shiftAnchor(±1)` prev/
-      next idiom) for cross-page coherence.
+      next idiom) for cross-page coherence. [DONE — Habits calendar now has ←/→.]
+- [ ] **On-device QA — period-change animation (desktop).** Logic is test-covered,
+      but the slide+fade needs a human eye on the Mac (no Xcode here). Check:
+      (1) Goals board and Habits calendar visibly slide+fade on every ←/→ AND
+      ‹ › click AND dropdown jump — direction matches (next drifts from the
+      trailing edge); (2) date picker: day grid slides on ‹ › month nav and the
+      dialog height settles smoothly (no snap) between 5↔6-row months; (3) RTL
+      (Arabic) mirrors the slide direction; (4) no flicker/jump on the Goals board
+      when the goal count differs between periods; (5) marking a goal complete then
+      immediately pressing ←/→ still persists the completion (was a silent-loss
+      bug, now fixed + regression-tested).

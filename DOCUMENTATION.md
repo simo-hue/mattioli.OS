@@ -1146,3 +1146,11 @@ NEXT ACTION: Ensure device is running the latest built version of the codebase.
 - [2026-07-14 21:24]: Statistics Page Layout Fix
   - *Details*: Combined the "Lifetime" and "Current" metrics cards into a single grid to the right of the Momentum ring card to fill out the empty space and improve professionalism.
   - *Tech Notes*: Moved layout logic from `_InfoHero` inside `statistics_extras.dart` directly into `_GlobalInfo` in `statistics_page.dart`. Rendered all 8 metrics within a single `_MetricGrid` and deleted the unused `_InfoHero` component.
+
+- [2026-07-14 21:36]: Settings Subtitle Fix
+  - *Details*: Displayed the user's first name, last name, and date of birth as the subtitle for the 'Personal Information' menu item in the mobile settings page. It falls back to the email address if these fields are not set.
+  - *Tech Notes*: Updated `profile_screen.dart` to dynamically calculate the subtitle string from the `userProfile` object.
+
+- [2026-07-14 21:41]: Settings Subtitle Update
+  - *Details*: Changed the Personal Information subtitle to display the translated field names (First name, Last name, Date of birth) instead of the user's actual data as requested.
+  - *Tech Notes*: Updated `profile_screen.dart` to use `context.t.profile.personalInfo` string values.

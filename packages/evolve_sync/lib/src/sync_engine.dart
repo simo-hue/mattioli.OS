@@ -18,15 +18,30 @@ class SyncResult {
   /// unaffected.
   final CloudAccountStatus? blockedBy;
 
+  /// Set by [SyncEngine.enable] when the shared E2E key has synced to this
+  /// device but the canonical-owner Keychain item hasn't yet. Enable is DEFERRED
+  /// (not failed): retry on a later trigger once the owner propagates. The
+  /// device deliberately does NOT self-elect a competing owner (split-identity
+  /// guard), so no data is touched.
+  final bool ownerPending;
+
+  /// The canonical sync-owner id [SyncEngine.enable] resolved and (on a second
+  /// device) re-keyed local rows onto. The service adopts THIS exact value as
+  /// the device owner id, so its adoption can't diverge from a second Keychain
+  /// read. Null on syncNow / blocked / deferred results.
+  final String? canonicalOwner;
+
   const SyncResult({
     this.pushed = 0,
     this.applied = 0,
     this.skipped = 0,
     this.wiped = false,
     this.blockedBy,
+    this.ownerPending = false,
+    this.canonicalOwner,
   });
 
-  bool get ran => blockedBy == null;
+  bool get ran => blockedBy == null && !ownerPending;
 }
 
 /// The Dart-side sync brain: pushes dirty rows, pulls remote changes, resolves
@@ -80,8 +95,17 @@ class SyncEngine {
     if (status != CloudAccountStatus.available) {
       return SyncResult(blockedBy: status);
     }
-    final key = await keys.getOrCreateKey();
-    final canonical = await keys.getOrSetCanonicalOwner(localOwner);
+    final k = await keys.getOrCreateKeyReporting();
+    final canonical = await keys.resolveCanonicalOwner(
+      localOwner,
+      isFirstDevice: k.created,
+    );
+    if (canonical == null) {
+      // Key synced from another device but the canonical owner hasn't yet.
+      // Defer rather than self-electing this device's owner (split-identity
+      // guard). Nothing local is touched; a later enable completes the merge.
+      return const SyncResult(ownerPending: true);
+    }
     if (canonical != localOwner) {
       // Second device: unify identity (also clears+rebuilds sync_state dirty).
       await store.reKeyOwner(localOwner, canonical);
@@ -89,7 +113,15 @@ class SyncEngine {
       // First device: upload the data that pre-dates sync.
       await store.markAllDirty();
     }
-    return syncNow(key);
+    final r = await syncNow(k.key);
+    return SyncResult(
+      pushed: r.pushed,
+      applied: r.applied,
+      skipped: r.skipped,
+      wiped: r.wiped,
+      blockedBy: r.blockedBy,
+      canonicalOwner: canonical,
+    );
   }
 
   Future<SyncResult> syncNow(Uint8List key) async {

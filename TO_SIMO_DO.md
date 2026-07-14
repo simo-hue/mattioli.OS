@@ -85,3 +85,9 @@ Code fixes are done + tested (see DOCUMENTATION.md). These need YOU:
 - [ ] **Encourage backups**: the private DB is excluded from device backups and its key is
       device-only, so a new phone / erase-restore loses everything unless iCloud sync is on.
       The new dashboard banner nudges this; consider prompting an export before risky ops.
+- [ ] **Two-device sync QA (Private mode)**: with the same Apple ID on two devices, enable
+      iCloud sync on device A, then on device B, and confirm both end up showing the UNION of
+      habits/logs under one identity (no "my other device's logs never arrived" split). If you
+      enable on B in the brief window before iCloud Keychain has delivered the owner id, B now
+      DEFERS (sync stays off); tapping Enable again a moment later completes the merge. This is
+      expected behavior, not a failure.

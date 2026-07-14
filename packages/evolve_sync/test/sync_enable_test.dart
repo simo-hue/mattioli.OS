@@ -136,6 +136,51 @@ void main() {
     await dbB.close();
   });
 
+  test(
+      'second device DEFERS (no split identity) when the key synced but the '
+      'canonical owner has not, then merges once the owner arrives', () async {
+    final cloud = FakeCloudKitBridge();
+    final secrets = _FakeSecretStore(); // shared iCloud Keychain
+    final keysA = SyncKeyStore(secrets, crypto: crypto);
+    final keysB = SyncKeyStore(secrets, crypto: crypto);
+
+    final dbA = await openFreshV3();
+    final dbB = await openFreshV3();
+    await seed(dbA, 'ownerA', 'gA');
+    await seed(dbB, 'ownerB', 'gB');
+
+    // A enables first -> publishes key + canonical owner = ownerA.
+    await engine(dbA, cloud).enable(keys: keysA, localOwner: 'ownerA');
+    expect(secrets.values[SyncKeyStore.ownerKey], 'ownerA');
+
+    // Simulate iCloud Keychain delivering the KEY to B but NOT yet the OWNER
+    // (the two items sync independently with no ordering guarantee).
+    secrets.values.remove(SyncKeyStore.ownerKey);
+
+    // B enables IN THAT WINDOW: must defer, must NOT self-elect ownerB.
+    final resB =
+        await engine(dbB, cloud).enable(keys: keysB, localOwner: 'ownerB');
+    expect(resB.ran, isFalse);
+    expect(resB.ownerPending, isTrue);
+    // No competing canonical published; B's rows untouched under ownerB.
+    expect(secrets.values[SyncKeyStore.ownerKey], isNull);
+    expect((await goals(dbB)).single['user_id'], 'ownerB');
+
+    // The canonical owner finally propagates; B re-enables and merges.
+    secrets.values[SyncKeyStore.ownerKey] = 'ownerA';
+    final resB2 =
+        await engine(dbB, cloud).enable(keys: keysB, localOwner: 'ownerB');
+    expect(resB2.ran, isTrue);
+    expect(resB2.canonicalOwner, 'ownerA');
+    final bGoals = await goals(dbB);
+    expect(bGoals.map((g) => g['id']), containsAll(['gA', 'gB']));
+    expect(bGoals.every((g) => g['user_id'] == 'ownerA'), isTrue);
+    expect(await SyncLocalStore(dbB).foreignKeyCheck(), isEmpty);
+
+    await dbA.close();
+    await dbB.close();
+  });
+
   test('enable is a no-op when iCloud is unavailable', () async {
     final cloud = FakeCloudKitBridge()..status = CloudAccountStatus.noAccount;
     final keys = SyncKeyStore(_FakeSecretStore(), crypto: crypto);

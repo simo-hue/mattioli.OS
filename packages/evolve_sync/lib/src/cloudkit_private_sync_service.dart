@@ -123,17 +123,32 @@ class CloudKitPrivateSyncService implements PrivateSyncService {
       final localOwner = await ownerProvider();
       final res = await engine.enable(keys: keys, localOwner: localOwner);
       if (res.ran) {
-        await enabledStore.setEnabled(true);
-        logger.info('[CloudKit] Sync enabled successfully');
-        
         // On a second device the engine re-keyed every local row onto the
         // canonical sync-owner. Persist it as THIS device's owner id too, or
         // ownerId() would keep returning the old device-local id and every data
         // query (which filters by owner) would miss the re-keyed rows.
-        final canonical = await keys.readCanonicalOwner();
-        if (canonical != null && canonical.isNotEmpty && canonical != localOwner) {
+        //
+        // Adopt the EXACT canonical the engine used (res.canonicalOwner), and do
+        // it BEFORE setEnabled(true): re-reading the Keychain here could observe
+        // a different value mid-propagation, and if this write failed AFTER
+        // enabling, sync would read as "on" with the owner unadopted (all rows
+        // hidden). Ordering adoption first means a failure just leaves sync off,
+        // and a retry (or the app's on-open owner self-heal) repairs it.
+        final canonical = res.canonicalOwner;
+        if (canonical != null &&
+            canonical.isNotEmpty &&
+            canonical != localOwner) {
           await ownerWriter(canonical);
         }
+        await enabledStore.setEnabled(true);
+        logger.info('[CloudKit] Sync enabled successfully');
+      } else if (res.ownerPending) {
+        // Key synced but the canonical owner hasn't yet: leave sync disabled so
+        // a later enable retry completes the merge once the owner propagates.
+        logger.info(
+          '[CloudKit] Sync enable deferred: canonical owner not yet synced '
+          'from iCloud Keychain',
+        );
       } else {
         logger.info('[CloudKit] Sync enable skipped (blocked by: ${res.blockedBy})');
       }

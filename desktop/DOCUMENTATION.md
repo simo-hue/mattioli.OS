@@ -1,5 +1,34 @@
 # DOCUMENTATION
 
+## [2026-07-14]: Fix Goals Page Quick Add Text Field Vertical Alignment
+
+### Details
+Fixed an issue where the placeholder text in the quick add goal text field was not vertically centered.
+
+### Changes Made
+- **File**: `lib/features/goals/presentation/goals_page.dart`
+- **Fix**: Removed the explicit vertical `contentPadding` (`vertical: 12`) from the `TextField`'s `InputDecoration` inside `_QuickGoalBar`.
+- **Why**: The fixed height container (`height: 44`) combined with vertical padding was overriding Flutter's `TextAlignVertical.center` behavior. Removing the vertical padding allows the text to naturally center itself within the container height.
+
+### Tech Notes
+- No new dependencies added.
+- The UI can be tested by running `flutter run -d macos`.
+
+## [2026-07-14]: Rename Desktop App to Evolve
+
+### Details
+Fixed an issue where the macOS app was still displaying as `evolve_desktop` in the Dock and App Switcher instead of `Evolve`.
+
+### Changes Made
+- **File**: `macos/Runner/Configs/AppInfo.xcconfig`
+- **Fix**: Changed `PRODUCT_NAME` from `evolve_desktop` to `Evolve`.
+- **File**: `macos/Runner.xcodeproj/project.pbxproj`
+- **Fix**: Updated internal references from `evolve_desktop.app` to `Evolve.app` and `TEST_HOST` paths to match the new executable name.
+- **Why**: While `CFBundleDisplayName` was already `Evolve`, macOS relies on the `PRODUCT_NAME` for the executable and bundle name, which defaults to `evolve_desktop` unless explicitly changed.
+
+### Tech Notes
+- Re-run the macOS build to apply the new bundle name.
+
 ## [2026-07-07]: Fix Xcode Build Warnings for macOS Desktop Target
 
 ### Details

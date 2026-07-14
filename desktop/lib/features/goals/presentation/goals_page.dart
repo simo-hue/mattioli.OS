@@ -1481,7 +1481,6 @@ class _QuickGoalBar extends StatelessWidget {
                 ),
                 contentPadding: const EdgeInsets.symmetric(
                   horizontal: 14,
-                  vertical: 12,
                 ),
               ),
             ),

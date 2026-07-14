@@ -593,3 +593,17 @@ plus the earlier DB-reset / backup-exclusion checks.
     from day one — no legacy items to migrate); desktop can't retroactively
     change already-written keys.
 
+
+- [2026-07-14 13:10]: AI Coach — full-width composer on wide desktop windows
+  - *Details*: On large screens the AI Coach input bar felt fixed-width and the
+    prompt suggestion chips were clipped by a hard right-edge "wall". Both were
+    caused by the bottom dock (suggestion strip + input bar) being wrapped in a
+    `Center` + `ConstrainedBox(maxWidth: 900)` — the same cap used for the
+    message thread. Removed that cap from the dock only so the composer and the
+    horizontal suggestion `ListView` now span the full panel width (minus the
+    existing 20px side padding) and grow with the window.
+  - *Tech Notes*: `lib/features/ai_coach/presentation/ai_coach_page.dart`. The
+    message thread `ListView` keeps its centered `maxWidth: 900` for reading
+    width (bubbles are still individually capped at 640). No new deps, no API
+    changes, layout-only. Verified: `flutter analyze` clean; `ai_suggestions`
+    tests 5 pass.

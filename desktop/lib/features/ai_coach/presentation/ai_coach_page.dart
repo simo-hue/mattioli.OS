@@ -660,7 +660,8 @@ class _AiCoachPageState extends ConsumerState<AiCoachPage> {
           // Pinned chat surface: the panel absorbs all remaining viewport
           // height (no page scroll). The thread scrolls internally and the
           // message column is centered at max 900 so bubbles never span an
-          // ultra-wide window while the panel itself stays full width.
+          // ultra-wide window; the panel and the bottom input dock stay full
+          // width so the composer grows with the window on wide desktops.
           Expanded(
             child: EvolvePanel(
               padding: EdgeInsets.zero,
@@ -706,160 +707,150 @@ class _AiCoachPageState extends ConsumerState<AiCoachPage> {
                     ),
                   ),
                   // Bottom dock (fixed below the thread): typing status or
-                  // suggestion pills, then the input bar — centered on the
-                  // same 900 column as the messages.
-                  Center(
-                    child: ConstrainedBox(
-                      constraints: const BoxConstraints(maxWidth: 900),
-                      child: Column(
-                        crossAxisAlignment: CrossAxisAlignment.stretch,
-                        children: [
-                          // The "answering" feedback now lives in the assistant
-                          // bubble (animated dots → text). The suggestion strip
-                          // hides while a reply streams; AnimatedSize smooths the
-                          // height change so the input bar doesn't jump.
-                          AnimatedSize(
-                            duration: const Duration(milliseconds: 180),
-                            curve: Curves.easeOut,
-                            alignment: Alignment.bottomCenter,
-                            child: Builder(
-                              builder: (context) {
-                                if (_isTyping) return const SizedBox.shrink();
-                                final suggestions = _dynamicSuggestions();
-                                if (suggestions.isEmpty) {
-                                  return const SizedBox.shrink();
-                                }
-                                return KeyedSubtree(
-                                  key: _suggestionsKey,
-                                  child: SizedBox(
-                                    height: 42,
-                                    child: ListView(
-                                      scrollDirection: Axis.horizontal,
-                                      padding:
-                                          const EdgeInsetsDirectional.fromSTEB(
-                                            20,
-                                            0,
-                                            20,
-                                            10,
-                                          ),
-                                      children: [
-                                        for (final s in suggestions) ...[
-                                          _SuggestionChip(
-                                            label: s,
-                                            onTap: () => _onSuggestionTap(s),
-                                          ),
-                                          const SizedBox(width: 8),
-                                        ],
-                                      ],
-                                    ),
+                  // suggestion pills, then the input bar. Spans the full panel
+                  // width (only the 20px side padding on each row) so the
+                  // composer and the suggestion strip stretch edge to edge on
+                  // wide windows instead of being pinned to a fixed column.
+                  Column(
+                    crossAxisAlignment: CrossAxisAlignment.stretch,
+                    children: [
+                      // The "answering" feedback now lives in the assistant
+                      // bubble (animated dots → text). The suggestion strip
+                      // hides while a reply streams; AnimatedSize smooths the
+                      // height change so the input bar doesn't jump.
+                      AnimatedSize(
+                        duration: const Duration(milliseconds: 180),
+                        curve: Curves.easeOut,
+                        alignment: Alignment.bottomCenter,
+                        child: Builder(
+                          builder: (context) {
+                            if (_isTyping) return const SizedBox.shrink();
+                            final suggestions = _dynamicSuggestions();
+                            if (suggestions.isEmpty) {
+                              return const SizedBox.shrink();
+                            }
+                            return KeyedSubtree(
+                              key: _suggestionsKey,
+                              child: SizedBox(
+                                height: 42,
+                                child: ListView(
+                                  scrollDirection: Axis.horizontal,
+                                  padding: const EdgeInsetsDirectional.fromSTEB(
+                                    20,
+                                    0,
+                                    20,
+                                    10,
                                   ),
-                                );
-                              },
-                            ),
-                          ),
-                          // Input bar: translucent rounded card + circular send button.
-                          Padding(
-                            padding: const EdgeInsetsDirectional.fromSTEB(
-                              20,
-                              4,
-                              20,
-                              20,
-                            ),
-                            child: KeyedSubtree(
-                              key: _inputKey,
-                              child: Row(
-                                children: [
-                                  Expanded(
-                                    child: Container(
-                                      decoration: BoxDecoration(
-                                        color: colors.panel.withValues(
-                                          alpha: 0.4,
-                                        ),
-                                        borderRadius: BorderRadius.circular(16),
-                                        border: Border.all(
-                                          color: colors.border.withValues(
-                                            alpha: 0.5,
-                                          ),
-                                        ),
+                                  children: [
+                                    for (final s in suggestions) ...[
+                                      _SuggestionChip(
+                                        label: s,
+                                        onTap: () => _onSuggestionTap(s),
                                       ),
-                                      // Enter sends; Shift+Enter inserts a
-                                      // newline (intercepted before the
-                                      // multiline field treats Enter as one).
-                                      child: Focus(
-                                        // Pure key interceptor — not a focus
-                                        // stop of its own.
-                                        canRequestFocus: false,
-                                        skipTraversal: true,
-                                        onKeyEvent: (node, event) {
-                                          final isEnter =
-                                              event.logicalKey ==
-                                                  LogicalKeyboardKey.enter ||
-                                              event.logicalKey ==
-                                                  LogicalKeyboardKey.numpadEnter;
-                                          if (!isEnter) {
-                                            return KeyEventResult.ignored;
-                                          }
-                                          if (event is! KeyDownEvent &&
-                                              event is! KeyRepeatEvent) {
-                                            return KeyEventResult.ignored;
-                                          }
-                                          // Shift+Enter, an active IME
-                                          // composition commit, or a reply
-                                          // already streaming → let the field
-                                          // insert a newline instead of sending.
-                                          if (HardwareKeyboard
-                                                  .instance
-                                                  .isShiftPressed ||
-                                              _controller
-                                                  .value
-                                                  .composing
-                                                  .isValid ||
-                                              _isTyping) {
-                                            return KeyEventResult.ignored;
-                                          }
-                                          _sendMessage();
-                                          return KeyEventResult.handled;
-                                        },
-                                        child: TextField(
-                                          controller: _controller,
-                                          minLines: 1,
-                                          maxLines: 5,
-                                          keyboardType: TextInputType.multiline,
-                                          textInputAction:
-                                              TextInputAction.newline,
-                                          style: TextStyle(
-                                            color: colors.foreground,
-                                            fontSize: 14,
-                                          ),
-                                          decoration: InputDecoration(
-                                            hintText: t.aiCoach.inputHint,
-                                            filled: false,
-                                            border: InputBorder.none,
-                                            enabledBorder: InputBorder.none,
-                                            focusedBorder: InputBorder.none,
-                                            contentPadding:
-                                                const EdgeInsets.symmetric(
-                                                  horizontal: 18,
-                                                  vertical: 13,
-                                                ),
-                                          ),
-                                        ),
-                                      ),
-                                    ),
-                                  ),
-                                  const SizedBox(width: 10),
-                                  _SendButton(
-                                    isStreaming: _isTyping,
-                                    onSend: _sendMessage,
-                                    onStop: _stopStreaming,
-                                  ),
-                                ],
+                                      const SizedBox(width: 8),
+                                    ],
+                                  ],
+                                ),
                               ),
-                            ),
-                          ),
-                        ],
+                            );
+                          },
+                        ),
                       ),
-                    ),
+                      // Input bar: translucent rounded card + circular send button.
+                      Padding(
+                        padding: const EdgeInsetsDirectional.fromSTEB(
+                          20,
+                          4,
+                          20,
+                          20,
+                        ),
+                        child: KeyedSubtree(
+                          key: _inputKey,
+                          child: Row(
+                            children: [
+                              Expanded(
+                                child: Container(
+                                  decoration: BoxDecoration(
+                                    color: colors.panel.withValues(alpha: 0.4),
+                                    borderRadius: BorderRadius.circular(16),
+                                    border: Border.all(
+                                      color: colors.border.withValues(
+                                        alpha: 0.5,
+                                      ),
+                                    ),
+                                  ),
+                                  // Enter sends; Shift+Enter inserts a
+                                  // newline (intercepted before the
+                                  // multiline field treats Enter as one).
+                                  child: Focus(
+                                    // Pure key interceptor — not a focus
+                                    // stop of its own.
+                                    canRequestFocus: false,
+                                    skipTraversal: true,
+                                    onKeyEvent: (node, event) {
+                                      final isEnter =
+                                          event.logicalKey ==
+                                              LogicalKeyboardKey.enter ||
+                                          event.logicalKey ==
+                                              LogicalKeyboardKey.numpadEnter;
+                                      if (!isEnter) {
+                                        return KeyEventResult.ignored;
+                                      }
+                                      if (event is! KeyDownEvent &&
+                                          event is! KeyRepeatEvent) {
+                                        return KeyEventResult.ignored;
+                                      }
+                                      // Shift+Enter, an active IME
+                                      // composition commit, or a reply
+                                      // already streaming → let the field
+                                      // insert a newline instead of sending.
+                                      if (HardwareKeyboard
+                                              .instance
+                                              .isShiftPressed ||
+                                          _controller.value.composing.isValid ||
+                                          _isTyping) {
+                                        return KeyEventResult.ignored;
+                                      }
+                                      _sendMessage();
+                                      return KeyEventResult.handled;
+                                    },
+                                    child: TextField(
+                                      controller: _controller,
+                                      minLines: 1,
+                                      maxLines: 5,
+                                      keyboardType: TextInputType.multiline,
+                                      textInputAction: TextInputAction.newline,
+                                      style: TextStyle(
+                                        color: colors.foreground,
+                                        fontSize: 14,
+                                      ),
+                                      decoration: InputDecoration(
+                                        hintText: t.aiCoach.inputHint,
+                                        filled: false,
+                                        border: InputBorder.none,
+                                        enabledBorder: InputBorder.none,
+                                        focusedBorder: InputBorder.none,
+                                        contentPadding:
+                                            const EdgeInsets.symmetric(
+                                              horizontal: 18,
+                                              vertical: 13,
+                                            ),
+                                      ),
+                                    ),
+                                  ),
+                                ),
+                              ),
+                              const SizedBox(width: 10),
+                              _SendButton(
+                                isStreaming: _isTyping,
+                                onSend: _sendMessage,
+                                onStop: _stopStreaming,
+                              ),
+                            ],
+                          ),
+                        ),
+                      ),
+                    ],
                   ),
                 ],
               ),
@@ -1226,7 +1217,10 @@ class _MessageEntrance extends StatelessWidget {
       curve: Curves.easeOut,
       builder: (context, t, child) => Opacity(
         opacity: t,
-        child: Transform.translate(offset: Offset(0, 8 * (1 - t)), child: child),
+        child: Transform.translate(
+          offset: Offset(0, 8 * (1 - t)),
+          child: child,
+        ),
       ),
       child: child,
     );
@@ -1285,7 +1279,10 @@ class _AssistantMarkdown extends StatelessWidget {
           fontSize: 14,
           height: 1.45,
         ),
-        strong: TextStyle(color: colors.foreground, fontWeight: FontWeight.w700),
+        strong: TextStyle(
+          color: colors.foreground,
+          fontWeight: FontWeight.w700,
+        ),
         code: TextStyle(
           color: colors.foreground,
           fontSize: 13,

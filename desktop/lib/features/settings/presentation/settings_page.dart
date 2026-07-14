@@ -1084,6 +1084,7 @@ class _SettingsPageState extends ConsumerState<SettingsPage> {
     required String title,
     required String message,
     bool destructive = false,
+    String? confirmLabel,
   }) async {
     return await showEvolveDialog<bool>(
           context: context,
@@ -1106,7 +1107,7 @@ class _SettingsPageState extends ConsumerState<SettingsPage> {
                         backgroundColor: EvolveColors.destructive,
                       )
                     : null,
-                child: Text(t.settingsPage.confirm),
+                child: Text(confirmLabel ?? t.settingsPage.confirm),
               ),
             ],
           ),
@@ -1187,6 +1188,24 @@ class _SettingsPageState extends ConsumerState<SettingsPage> {
         privateStore,
         isPrivateMode ? null : Supabase.instance.client,
       );
+
+      // Private-mode import needs the encrypted local DB to open. If its key is
+      // unreadable (after a migration or a code-signing change that rotated the
+      // Keychain access group) the DB is LOCKED and every write throws
+      // PrivateDatabaseLockedException. Detect it up front and offer an explicit
+      // reset-and-import — the old local data is unrecoverable (its key is
+      // gone), but the user's backup imports cleanly onto a fresh key.
+      if (isPrivateMode && await privateStore.isDatabaseLocked()) {
+        if (!mounted) return;
+        final recover = await _confirm(
+          title: t.settingsPage.importLockedTitle,
+          message: t.settingsPage.importLockedMessage,
+          destructive: true,
+          confirmLabel: t.settingsPage.importLockedResetButton,
+        );
+        if (!recover) return;
+        await privateStore.resetLockedDatabase();
+      }
 
       // 1. Preview (accepts both the web `.zip` and native `.json` backups).
       final preview = await importService.parsePreview(path);
@@ -1571,6 +1590,46 @@ class _SettingsPageState extends ConsumerState<SettingsPage> {
   }
 
   Future<void> _deletePrivateData() async {
+    // Locked-DB recovery: if the encrypted DB can't be unlocked (its key is
+    // gone), the normal row-wipe below can't even open it — every step would
+    // throw PrivateDatabaseLockedException. Fall back to a file-level reset so
+    // "delete private data" still works as the recovery path for a user who has
+    // no backup to import. The local data is unrecoverable anyway (key lost),
+    // which is exactly what this action promises to remove.
+    if (await DesktopPrivateDb.instance.isDatabaseLocked()) {
+      final confirmed = await _confirm(
+        title: t.privateData.deleteTitle,
+        message: t.privateData.deleteMessage,
+        destructive: true,
+      );
+      if (!confirmed) return;
+      _showLoadingDialog(t.privateData.deleteTitle);
+      try {
+        await DesktopPrivateDb.instance.resetLockedDatabase();
+        await ref.read(dashboardControllerProvider.notifier).refresh();
+        ref.invalidate(privateProfileProvider);
+        ref.invalidate(desktopGoalCategoriesControllerProvider);
+        await _refreshSyncStatus();
+        if (mounted) {
+          Navigator.pop(context); // close loading dialog
+          _showResultDialog(
+            t.privateData.deleteTitle,
+            t.privateData.deleteSuccess,
+          );
+        }
+      } catch (error, stack) {
+        AppLogger.error('Unable to reset locked private database', error, stack);
+        if (mounted) {
+          Navigator.pop(context); // close loading dialog
+          _showResultDialog(
+            t.privateData.deleteTitle,
+            t.privateData.deleteFailed,
+          );
+        }
+      }
+      return;
+    }
+
     // With sync on, deleting is a FULL reset (local + the user's iCloud copy);
     // the disclosure must also say other devices keep their local copy.
     final syncEnabled = _syncStatus?.isEnabled ?? false;

@@ -15,6 +15,27 @@ import 'package:path_provider/path_provider.dart';
 import 'package:sqflite_sqlcipher/sqflite.dart';
 import 'package:uuid/uuid.dart';
 
+/// Thrown when the SQLCipher key needed to open the encrypted private database
+/// is unreadable from the Keychain while the database file still exists on
+/// disk. This is a *recoverable* lockout, not a crash bug: the existing local
+/// data can't be decrypted (its key is gone — typically after a device
+/// migration or a change to the app's code-signing identity, which rotates the
+/// Keychain access group the key lives under), but the file is intact enough
+/// that regenerating the key would silently brick it (SQLCipher error 26). The
+/// guard fails closed and throws this instead; callers offer the user an
+/// explicit reset via [DesktopPrivateDb.resetLockedDatabase] and continue.
+/// Mirrors mobile's `PrivateDatabaseLockedException`.
+class PrivateDatabaseLockedException implements Exception {
+  const PrivateDatabaseLockedException();
+
+  // Kept byte-identical to the original StateError message so any UI that
+  // surfaces `error.toString()` (and mobile parity) is unchanged.
+  @override
+  String toString() =>
+      'Private database key unavailable while the database file exists; '
+      'refusing to regenerate it so the data stays recoverable.';
+}
+
 /// Manages the encrypted local SQLite database used by Private mode.
 ///
 /// The schema is [PrivateDbSchema], ported verbatim from the mobile client so
@@ -114,6 +135,83 @@ class DesktopPrivateDb {
   // ---------------------------------------------------------------------------
   // Lifecycle: delete / export / import
   // ---------------------------------------------------------------------------
+
+  /// Whether the private database is in the recoverable *locked* state: the
+  /// encrypted file exists on disk but its SQLCipher key is unreadable from the
+  /// Keychain, so [database] would throw [PrivateDatabaseLockedException].
+  /// Lets callers offer an in-app recovery affordance instead of a dead end.
+  /// Cheap (one file stat + one Keychain read); safe to call before an import
+  /// or from a settings screen.
+  Future<bool> isDatabaseLocked() async {
+    try {
+      final dir = await getApplicationSupportDirectory();
+      final dbFileExists = await File(p.join(dir.path, _dbFileName)).exists();
+      if (!dbFileExists) return false;
+      final key = await SecureStorageUtils.readDeviceLocal(_keyStorageKey);
+      return key == null || key.length < 32;
+    } catch (error, stack) {
+      // A probe failure must never itself block the user; treat as "not locked"
+      // and let the real open surface any genuine problem.
+      AppLogger.warning('[DesktopPrivateDb] lock probe failed', error, stack);
+      return false;
+    }
+  }
+
+  /// Recovers from a [PrivateDatabaseLockedException] by deleting the orphaned
+  /// encrypted database FILE (+ its `-wal`/`-shm` sidecars) and the avatar
+  /// folder, and clearing any unreadable key remnant — so the next [database]
+  /// open mints a fresh key over an empty schema. The device-local owner id is
+  /// intentionally KEPT so identity stays stable across the reset.
+  ///
+  /// DESTRUCTIVE and irreversible: the existing local private data cannot be
+  /// decrypted (its key is gone), so this must ONLY run behind an explicit,
+  /// user-confirmed recovery action — never automatically (a merely transient
+  /// Keychain miss would otherwise nuke recoverable data). Best-effort per
+  /// file; a missing sidecar is not an error.
+  Future<void> resetLockedDatabase() async {
+    try {
+      await _db?.close();
+    } catch (_) {
+      // A locked DB was never opened; closing a stale handle is best-effort.
+    }
+    _db = null;
+
+    final dir = await getApplicationSupportDirectory();
+    final dbPath = p.join(dir.path, _dbFileName);
+    for (final path in [dbPath, '$dbPath-wal', '$dbPath-shm']) {
+      try {
+        final file = File(path);
+        if (await file.exists()) await file.delete();
+      } catch (error, stack) {
+        AppLogger.error(
+          '[DesktopPrivateDb] locked reset: could not delete $path',
+          error,
+          stack,
+        );
+      }
+    }
+
+    await _deletePrivateProfileFiles();
+
+    // Drop a short/stale key remnant so the next open takes the first-run path
+    // and writes a fresh key under the CURRENT Keychain access group. A key
+    // that is present-but-unreadable (rotated access group) is invisible to
+    // delete too — harmless no-op; the next read misses it and mints fresh.
+    try {
+      await SecureStorageUtils.deleteDeviceLocal(_keyStorageKey);
+    } catch (error, stack) {
+      AppLogger.warning(
+        '[DesktopPrivateDb] locked reset: key remnant delete failed',
+        error,
+        stack,
+      );
+    }
+
+    AppLogger.warning(
+      '[DesktopPrivateDb] locked database reset: orphaned file + key cleared; '
+      'the next open mints a fresh key.',
+    );
+  }
 
   /// Deletes all private data — wipes every user-data row and the avatar files,
   /// then re-seeds an empty owner profile so the app stays usable **and stays in
@@ -1266,10 +1364,7 @@ class DesktopPrivateDb {
     // db file) may generate a fresh key. Mirrors mobile's PrivateLocalDatabase
     // `_databasePassword` guard.
     if (dbFileExists) {
-      throw StateError(
-        'Private database key unavailable while the database file exists; '
-        'refusing to regenerate it so the data stays recoverable.',
-      );
+      throw const PrivateDatabaseLockedException();
     }
 
     final key = _generateKey();

@@ -37,6 +37,22 @@ class PrivateLocalDatabase implements PrivateDataStore {
   static const _dbPasswordKey = 'private_mode_db_password_v1';
   static const _ownerIdKey = 'private_mode_owner_id_v1';
 
+  /// Whether the encrypted private database file already exists on disk.
+  ///
+  /// Used at bootstrap to detect a private-mode user whose `active_data_mode`
+  /// preference was lost or reset (NSUserDefaults cleared, etc.): without this
+  /// the app silently defaults to Supabase mode and never queries the intact
+  /// local data, so the user's habits look gone. File presence is a reliable
+  /// signal because this file is only ever created when private mode is used.
+  static Future<bool> databaseFileExists() async {
+    try {
+      final dir = await getApplicationSupportDirectory();
+      return File(p.join(dir.path, _dbName)).exists();
+    } catch (_) {
+      return false;
+    }
+  }
+
   final _uuid = const Uuid();
   static const _platform = MethodChannel('evolve/private_storage');
   Database? _db;
@@ -113,9 +129,11 @@ class PrivateLocalDatabase implements PrivateDataStore {
     final dir = await getApplicationSupportDirectory();
     await dir.create(recursive: true);
     final dbPath = p.join(dir.path, _dbName);
-    await _excludeFromBackup(File(dbPath));
+    final dbFile = File(dbPath);
+    final dbFileExists = await dbFile.exists();
+    await _excludeFromBackup(dbFile);
 
-    final password = await _databasePassword();
+    final password = await _databasePassword(dbFileExists: dbFileExists);
     final db = await openDatabase(
       dbPath,
       password: password,
@@ -128,12 +146,127 @@ class PrivateLocalDatabase implements PrivateDataStore {
     );
     _db = db;
     await _ensureProfile(db);
+    await _reconcileOrphanedOwner(db);
     return db;
   }
 
-  Future<String> _databasePassword() async {
+  /// Self-heals orphaned data. If the current owner id matches ZERO data rows
+  /// but exactly ONE other `user_id` owns all the data, adopt that id so every
+  /// owner-filtered query finds the rows again.
+  ///
+  /// This rescues two silent-loss situations where the rows are still on disk
+  /// but keyed to an id `ownerId()` no longer returns:
+  ///  • the device-local owner id was regenerated after a Keychain read
+  ///    transiently returned null (the old rows keep the previous id);
+  ///  • a second-device iCloud-sync re-key moved every row onto the canonical
+  ///    owner but the follow-up `adoptOwner` Keychain write didn't land.
+  ///
+  /// A genuinely empty database (true first run) and the normal steady state
+  /// (current owner already owns rows) are both left untouched. Best-effort and
+  /// idempotent — safe to run on every open. Refuses to act when the data is
+  /// split across more than one foreign owner (ambiguous — never guess).
+  Future<void> _reconcileOrphanedOwner(Database db) async {
+    const dataTables = [
+      'goals',
+      'goal_logs',
+      'daily_moods',
+      'long_term_goals',
+      'macro_goal_categories',
+    ];
+    try {
+      final current = await ownerId();
+
+      // If the current owner already owns any data, we're in steady state.
+      for (final t in dataTables) {
+        final mine = await db.query(
+          t,
+          columns: ['user_id'],
+          where: 'user_id = ?',
+          whereArgs: [current],
+          limit: 1,
+        );
+        if (mine.isNotEmpty) return;
+      }
+
+      // Collect the distinct OTHER owners that actually hold data.
+      final others = <String>{};
+      for (final t in dataTables) {
+        final rows = await db.rawQuery(
+          'SELECT DISTINCT user_id FROM $t WHERE user_id != ?',
+          [current],
+        );
+        for (final r in rows) {
+          final id = r['user_id'] as String?;
+          if (id != null && id.isNotEmpty) others.add(id);
+        }
+      }
+
+      if (others.isEmpty) return; // genuinely empty / first run
+      if (others.length > 1) {
+        AppLogger.warning(
+          '[PrivateDB] owner reconcile skipped: data split across '
+          '${others.length} owners (ambiguous)',
+        );
+        return;
+      }
+
+      final recovered = others.first;
+      // A profiles row for the recovered owner should already exist via FK, but
+      // make sure — the queries below and future writes need it.
+      final now = _now();
+      await db.insert('profiles', {
+        'id': recovered,
+        'language': 'system',
+        'theme_mode': 'dark',
+        'accent_color': '#FFFFFF',
+        'pref_default_calendar_view': 'settimana',
+        'is_pro': 1,
+        'created_at': now,
+        'updated_at': now,
+        'sentry_consent': 0,
+      }, conflictAlgorithm: ConflictAlgorithm.ignore);
+
+      AppLogger.warning(
+        '[PrivateDB] recovering orphaned habit data: adopting the owner id '
+        'that owns the rows (current owner matched no data)',
+      );
+      _ownerId = recovered;
+      // Persist best-effort; if the Keychain write fails we self-heal again on
+      // the next open (the in-memory adoption already fixes this session).
+      try {
+        await SecureStorageUtils.writeDeviceLocal(
+          _ownerIdKey,
+          recovered,
+          context: '[PrivateDB] owner reconcile',
+        );
+      } catch (e, stack) {
+        AppLogger.error(
+          '[PrivateDB] owner reconcile Keychain write failed (retries next open)',
+          e,
+          stack,
+        );
+      }
+    } catch (e, stack) {
+      AppLogger.error('[PrivateDB] owner reconcile failed', e, stack);
+    }
+  }
+
+  Future<String> _databasePassword({required bool dbFileExists}) async {
     final existing = await SecureStorageUtils.readDeviceLocal(_dbPasswordKey);
     if (existing != null && existing.length >= 32) return existing;
+
+    // Fail closed: the encryption key is absent but an encrypted database file
+    // already exists on disk. Minting a NEW key here would make that database
+    // permanently undecryptable (and could overwrite a key a later launch can
+    // read). Surface a distinct, recoverable error and let a future launch retry
+    // rather than silently bricking the user's data. Only a true first run (no
+    // db file) is allowed to generate a fresh key.
+    if (dbFileExists) {
+      throw StateError(
+        'Private database key unavailable while the database file exists; '
+        'refusing to regenerate it so the data stays recoverable.',
+      );
+    }
 
     final random = Random.secure();
     final bytes = List<int>.generate(48, (_) => random.nextInt(256));
@@ -214,7 +347,43 @@ class PrivateLocalDatabase implements PrivateDataStore {
   Future<void> upsertGoal(Goal goal) async {
     final db = await _database();
     final owner = await ownerId();
+    await _writeGoal(db, goal, owner, _now());
+    _notifyWrite();
+  }
+
+  /// Persist multiple goals (used by drag-reorder) in ONE transaction, so a
+  /// partial failure can't leave display_order half-applied and so the write is
+  /// a single atomic unit rather than N separate ones.
+  @override
+  Future<void> reorderGoals(List<Goal> goals) async {
+    final db = await _database();
+    final owner = await ownerId();
     final now = _now();
+    await db.transaction((txn) async {
+      for (final goal in goals) {
+        await _writeGoal(txn, goal, owner, now);
+      }
+    });
+    _notifyWrite();
+  }
+
+  /// Writes a single goal row WITHOUT ever deleting the existing one.
+  ///
+  /// CRITICAL (data-loss guard): `goal_logs.goal_id` is `ON DELETE CASCADE`
+  /// (see [PrivateDbSchema]), so writing a goal with `ConflictAlgorithm.replace`
+  /// (`INSERT OR REPLACE`) on an EXISTING id first DELETEs the old `goals` row —
+  /// which cascades away every one of that habit's `goal_logs`, and (with sync
+  /// on) tombstones them to iCloud. A plain rename/reorder would silently wipe
+  /// the habit's entire history. So we branch: UPDATE an existing row (no delete,
+  /// no cascade), INSERT a brand-new one. `created_at` is preserved on update.
+  /// The AFTER UPDATE / AFTER INSERT sync triggers still mark the goal dirty for
+  /// push, so sync is unaffected.
+  Future<void> _writeGoal(
+    DatabaseExecutor db,
+    Goal goal,
+    String owner,
+    String now,
+  ) async {
     final existing = await db.query(
       'goals',
       columns: ['created_at'],
@@ -222,15 +391,23 @@ class PrivateLocalDatabase implements PrivateDataStore {
       whereArgs: [goal.id],
       limit: 1,
     );
-    await db.insert('goals', {
+    final row = {
       ..._goalToRow(goal),
       'user_id': owner,
-      'created_at': existing.isNotEmpty
-          ? existing.first['created_at'] as String
-          : now,
       'updated_at': now,
-    }, conflictAlgorithm: ConflictAlgorithm.replace);
-    _notifyWrite();
+    };
+    if (existing.isNotEmpty) {
+      row['created_at'] = existing.first['created_at'] as String;
+      await db.update(
+        'goals',
+        row,
+        where: 'id = ?',
+        whereArgs: [row['id']],
+      );
+    } else {
+      row['created_at'] = now;
+      await db.insert('goals', row);
+    }
   }
 
   @override
@@ -373,7 +550,7 @@ class PrivateLocalDatabase implements PrivateDataStore {
       whereArgs: [goal.id],
       limit: 1,
     );
-    await db.insert('long_term_goals', {
+    final row = {
       'id': goal.id,
       'user_id': owner,
       'title': goal.title,
@@ -385,11 +562,24 @@ class PrivateLocalDatabase implements PrivateDataStore {
       'quarter': goal.quarter,
       'category_key': goal.categoryKey,
       'category_id': goal.categoryId,
-      'created_at': existing.isNotEmpty
-          ? existing.first['created_at'] as String
-          : goal.createdAt.toIso8601String(),
       'updated_at': now,
-    }, conflictAlgorithm: ConflictAlgorithm.replace);
+    };
+    // UPDATE-or-INSERT rather than INSERT OR REPLACE. `long_term_goals` has no
+    // child rows today, but a REPLACE still needlessly DELETE+re-INSERTs (extra
+    // sync tombstone churn) and would become a cascade footgun the day a child
+    // table is added. Same safe pattern as [_writeGoal].
+    if (existing.isNotEmpty) {
+      row['created_at'] = existing.first['created_at'] as String;
+      await db.update(
+        'long_term_goals',
+        row,
+        where: 'id = ?',
+        whereArgs: [goal.id],
+      );
+    } else {
+      row['created_at'] = goal.createdAt.toIso8601String();
+      await db.insert('long_term_goals', row);
+    }
     _notifyWrite();
   }
 

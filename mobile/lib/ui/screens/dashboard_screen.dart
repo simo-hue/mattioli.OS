@@ -16,6 +16,7 @@ import '../../providers/auth_provider.dart';
 import '../../core/data_mode.dart';
 import '../widgets/bottom_nav_bar.dart';
 import '../widgets/profile_avatar_image.dart';
+import '../widgets/sync_off_banner.dart';
 import '../widgets/protocollo_panel.dart';
 import '../widgets/view_tab_bar.dart';
 import 'package:lucide_icons_flutter/lucide_icons.dart';
@@ -937,6 +938,7 @@ class _HomeScreenState extends ConsumerState<HomeScreen>
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
+                const SyncOffBanner(),
                 ProtocolloPanel(
                   checkInKey: _checkInKey,
                   aiChatKey: _aiChatKey,

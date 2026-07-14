@@ -47,6 +47,22 @@ void main() async {
 
   // ── SharedPreferences init ───────────────────────────────────────────────
   final prefs = await SharedPreferences.getInstance();
+  final savedDataMode = prefs.getString('active_data_mode');
+
+  // Recover a private-mode user whose data-mode preference was lost/reset. If
+  // the preference is ABSENT (not an explicit 'supabase') but the encrypted
+  // private database is still on disk, the user is a Private-mode user whose
+  // NSUserDefaults didn't survive; default to Supabase here would silently hide
+  // their intact local data behind a logged-out cloud view. Restore the mode so
+  // the local DB is queried again (they can still switch in Settings).
+  if (savedDataMode == null && await PrivateLocalDatabase.databaseFileExists()) {
+    await prefs.setString('active_data_mode', AppDataMode.private.name);
+    AppLogger.warning(
+      '[Startup] Restored Private mode from the on-disk database after a '
+      'missing data-mode preference',
+    );
+  }
+
   final startsInPrivateMode =
       prefs.getString('active_data_mode') == AppDataMode.private.name;
   AppLogger.setExternalReportingDisabled(startsInPrivateMode);

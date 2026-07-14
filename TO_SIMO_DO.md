@@ -55,3 +55,33 @@ for when you run the HealthKit build (`VerificationConfig.healthKitEnabled` is a
 - [ ] **Still deferred (intentionally, Screen Time only)**: `syncMonitoredGoals` diffing —
       not needed until `screenTimeEnabled` flips; the streak-tail cross-pass recompute is
       documented as acceptable (single-day, writes apply ascending).
+
+## Habit-log data-loss hardening (2026-07-13) — manual items
+
+Code fixes are done + tested (see DOCUMENTATION.md). These need YOU:
+
+- [ ] **iOS build/QA (no Xcode here)**: compile + run on device, then verify the fixes:
+      (1) in Private mode, add a habit and log a few days → **edit** the habit (rename/color)
+      → logs must **survive** (this was the main bug); (2) **drag-reorder** habits → all
+      histories survive; (3) Import dialog now defaults to **Merge**, and choosing
+      **Replace** shows a second "Delete & Replace" confirmation with a live count;
+      (4) a Private-mode user with iCloud sync OFF sees the red "sync is off" banner on the
+      dashboard.
+- [ ] **Supabase config — `db-max-rows`**: confirm the project's PostgREST `db-max-rows` is
+      **≥ 1000**. The `goal_logs` sync pages in 1000-row slices and (intentionally) stops on
+      the first short page; if an admin lowered the cap below 1000, long histories would
+      silently truncate. If you must lower it, also lower `kGoalLogsSyncPageSize`
+      (`mobile/lib/providers/goal_provider.dart`) below the cap.
+- [ ] **Already-lost data (cloud accounts)**: if any account was emptied by the OLD
+      delete-then-upsert replace-import, check whether Supabase **point-in-time recovery /
+      backups** can restore `goal_logs` for that user (server-side, owner-only — I can't do
+      this). The new import order can't cause this going forward.
+- [ ] **Already-lost data (private mode)**: logs destroyed by the OLD cascade bug are gone
+      and can't be recovered in-app (the rows were DELETEd, and with sync on, tombstoned to
+      iCloud). If an affected user has an **export file**, import it in **Merge** mode (never
+      Replace) to restore. The new owner self-heal *does* auto-recover data that was merely
+      *orphaned* (owner-id regeneration / interrupted second-device sync) on next launch —
+      no action needed for that class.
+- [ ] **Encourage backups**: the private DB is excluded from device backups and its key is
+      device-only, so a new phone / erase-restore loses everything unless iCloud sync is on.
+      The new dashboard banner nudges this; consider prompting an export before risky ops.

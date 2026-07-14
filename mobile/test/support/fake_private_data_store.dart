@@ -51,6 +51,11 @@ class FakePrivateDataStore implements PrivateDataStore {
   }
 
   @override
+  Future<void> reorderGoals(List<Goal> goals) async {
+    calls.add('reorderGoals');
+  }
+
+  @override
   Future<void> deleteGoal(String id) async {
     calls.add('deleteGoal');
   }

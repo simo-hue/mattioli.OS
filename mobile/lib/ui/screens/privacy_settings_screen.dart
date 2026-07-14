@@ -798,8 +798,10 @@ class PrivacySettingsScreen extends ConsumerWidget {
 
       if (!context.mounted) return;
 
-      // 2. Ask for Replace/Merge
-      bool replaceExisting = true;
+      // 2. Ask for Replace/Merge. Default to the NON-destructive Merge: Replace
+      // wipes every existing record not in the backup, so it must be an explicit
+      // opt-in, never the pre-selected one-tap default.
+      bool replaceExisting = false;
       final confirm = await showDialog<bool>(
         context: context,
         builder: (ctx) {
@@ -838,20 +840,22 @@ class PrivacySettingsScreen extends ConsumerWidget {
                           ),
                         ),
                       const SizedBox(height: 24),
-                      RadioListTile<bool>(
-                        title: Text(context.t.privacy.importModeReplace, style: TextStyle(color: context.appColors.foreground)),
-                        subtitle: Text(context.t.privacy.importModeReplaceDesc, style: TextStyle(color: context.appColors.mutedForeground, fontSize: 12)),
-                        value: true,
-                        groupValue: replaceExisting,
-                        activeColor: Theme.of(context).colorScheme.primary,
-                        onChanged: (val) => setState(() => replaceExisting = val!),
-                      ),
+                      // Merge first (the safe, default choice); Replace below and
+                      // marked destructive so it can't be tapped by reflex.
                       RadioListTile<bool>(
                         title: Text(context.t.privacy.importModeMerge, style: TextStyle(color: context.appColors.foreground)),
                         subtitle: Text(context.t.privacy.importModeMergeDesc, style: TextStyle(color: context.appColors.mutedForeground, fontSize: 12)),
                         value: false,
                         groupValue: replaceExisting,
                         activeColor: Theme.of(context).colorScheme.primary,
+                        onChanged: (val) => setState(() => replaceExisting = val!),
+                      ),
+                      RadioListTile<bool>(
+                        title: Text(context.t.privacy.importModeReplace, style: const TextStyle(color: AppColors.destructive)),
+                        subtitle: Text(context.t.privacy.importModeReplaceDesc, style: TextStyle(color: context.appColors.mutedForeground, fontSize: 12)),
+                        value: true,
+                        groupValue: replaceExisting,
+                        activeColor: AppColors.destructive,
                         onChanged: (val) => setState(() => replaceExisting = val!),
                       ),
                     ],
@@ -885,6 +889,27 @@ class PrivacySettingsScreen extends ConsumerWidget {
 
       if (confirm != true) return;
       if (!context.mounted) return;
+
+      // Replace is destructive: it deletes every existing record not in the
+      // backup. Require a second, explicit confirmation that names the loss with
+      // a real count (the logs currently loaded in memory, both modes), so a
+      // stale/partial backup can't silently wipe a full history.
+      if (replaceExisting) {
+        final logCount = ref
+            .read(habitLogsProvider)
+            .values
+            .fold<int>(0, (sum, day) => sum + day.length);
+        final proceed = await showEvolveConfirm(
+          context: context,
+          title: context.t.privacy.importReplaceConfirmTitle,
+          message: context.t.privacy.importReplaceConfirmMessage(count: logCount),
+          confirmLabel: context.t.privacy.importReplaceConfirmButton,
+          isDestructive: true,
+          ref: ref,
+        );
+        if (!proceed) return;
+        if (!context.mounted) return;
+      }
 
       progressShown = true;
       showDialog(

@@ -20,6 +20,35 @@ import '../i18n/translations.g.dart';
 final initialGoalsProvider = Provider<String>((ref) => '[]');
 final initialLogsProvider = Provider<String>((ref) => '{}');
 
+/// The Supabase `user.id` the offline caches ('goals_cache' / 'goal_logs_cache')
+/// currently belong to. Used to refuse overwriting one account's populated cache
+/// with a DIFFERENT account's empty fetch result (which otherwise reads as "my
+/// logs vanished"). A single, non-user-keyed cache is shared across accounts, so
+/// this marker is what distinguishes a genuine same-user clear from cross-account
+/// contamination.
+const String kCacheOwnerKey = 'cache_owner_user_id';
+
+/// Whether a fetched result for [userId] may overwrite the on-disk cache.
+/// A non-empty result always may (it's this account's real data). An EMPTY
+/// result may only when it belongs to the same account the cache already holds
+/// (a genuine "all cleared" for this user) — never when a DIFFERENT account
+/// returns nothing, which would clobber the current cache and read as data loss.
+/// A first-ever write (no recorded owner) is allowed.
+Future<bool> cacheOverwriteAllowed(
+  String userId, {
+  required bool isEmptyResult,
+}) async {
+  if (!isEmptyResult) return true;
+  final owner = await SecureStorageUtils.read(kCacheOwnerKey);
+  return owner == null || owner == userId;
+}
+
+Future<void> rememberCacheOwner(String userId) => SecureStorageUtils.tryWrite(
+      kCacheOwnerKey,
+      userId,
+      context: 'cache owner',
+    );
+
 // ─── Goals Provider (Offline-First) ─────────────────────────────────────────
 
 class GoalsNotifier extends Notifier<List<Goal>> {
@@ -39,8 +68,13 @@ class GoalsNotifier extends Notifier<List<Goal>> {
       if (next.isLoggedIn && next.user != null) {
         _syncFromSupabase();
       } else if (!next.isLoggedIn) {
+        // Clear only the in-memory state for the /login redirect. Do NOT wipe the
+        // on-disk cache: a transient logout (refresh-token expiry / rotation
+        // race) would otherwise destroy the offline mirror, so the user opens to
+        // an empty app even though their data is safe in the cloud. The cache is
+        // refreshed on the next successful sync and only replaced on a real
+        // account switch (see _syncFromSupabase) or explicit reset (clearAll).
         state = [];
-        _saveToCache([]);
       }
     });
 
@@ -112,7 +146,10 @@ class GoalsNotifier extends Notifier<List<Goal>> {
 
       final goals = (response as List).map((j) => Goal.fromJson(j)).toList();
       state = goals;
-      _saveToCache(goals);
+      if (await cacheOverwriteAllowed(user.id, isEmptyResult: goals.isEmpty)) {
+        _saveToCache(goals);
+        await rememberCacheOwner(user.id);
+      }
     } catch (e, stack) {
       AppLogger.error('[Goals] Sync error', e, stack);
     }
@@ -315,10 +352,7 @@ class GoalsNotifier extends Notifier<List<Goal>> {
 
     if (ref.read(activeDataModeProvider) == AppDataMode.private) {
       try {
-        final db = ref.read(privateLocalDatabaseProvider);
-        for (final goal in list) {
-          await db.upsertGoal(goal);
-        }
+        await ref.read(privateLocalDatabaseProvider).reorderGoals(list);
       } catch (e, stack) {
         AppLogger.error('[Goals] Private reorder error', e, stack);
         state = previousGoals;
@@ -418,8 +452,10 @@ class HabitLogsNotifier extends Notifier<HabitLogsMap> {
       if (next.isLoggedIn && next.user != null) {
         _syncFromSupabase();
       } else if (!next.isLoggedIn) {
+        // Clear only in-memory state for the /login redirect; keep the on-disk
+        // cache so a transient logout doesn't destroy the offline mirror (see
+        // GoalsNotifier for the full rationale).
         state = {};
-        _saveToCache({});
       }
     });
 
@@ -487,7 +523,10 @@ class HabitLogsNotifier extends Notifier<HabitLogsMap> {
       });
 
       state = newLogs;
-      _saveToCache(newLogs);
+      if (await cacheOverwriteAllowed(user.id, isEmptyResult: newLogs.isEmpty)) {
+        _saveToCache(newLogs);
+        await rememberCacheOwner(user.id);
+      }
     } catch (e, stack) {
       AppLogger.error('[HabitLogs] Sync error', e, stack);
     }

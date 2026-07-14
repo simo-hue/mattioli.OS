@@ -25,6 +25,10 @@ abstract interface class PrivateDataStore {
 
   Future<void> upsertGoal(Goal goal);
 
+  /// Persists a reordered list of goals atomically (one transaction). Used by
+  /// drag-reorder so a partial failure can't leave `display_order` half-applied.
+  Future<void> reorderGoals(List<Goal> goals);
+
   Future<void> deleteGoal(String id);
 
   Future<Map<String, Map<String, String>>> loadHabitLogs();

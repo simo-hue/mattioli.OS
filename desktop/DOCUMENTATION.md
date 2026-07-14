@@ -870,6 +870,27 @@ heading ellipsizing. `flutter analyze` clean; `tour_flow_test` still passes.
     environmental failures (desktop_supabase_config_security build-time defines;
     icloud_sync_card pumpAndSettle) that fail identically with this change reverted.
 
+- [2026-07-14 18:35]: Remove hard-coded default goal categories (desktop macOS)
+  - *Details*: The goals feature shipped 8 hard-coded preset categories (Lavoro,
+    Salute, Finanza, Relazioni, Formazione, Hobby, Spirituale, Altro) that were
+    injected into every goals-page picker (quick-add bar, goal editor, "Manage
+    Categories") on top of the user's own categories. Per request, removed those
+    presets so the pickers now show **only user-created categories**, plus the
+    implicit **"Default"** bucket for goals with no specific category. User-created
+    categories and existing goals are untouched.
+  - *Tech Notes*: Deleted the `_defaultGoalCategories` const and changed
+    `_categories` in `goals_page.dart` to start empty, so `_availableCategories` =
+    user/remote categories only. The dashboard `CreateGoalDialog` was already
+    remote-only (`desktopGoalCategoriesControllerProvider`), so it needed no change.
+    **Kept** as backward-compat for any EXISTING goals still holding a legacy preset
+    key: the `_categoryLabel` (goals_page) + `dashboardGoalColor` (dashboard_models)
+    switches and the `lavoro/salute/…` i18n labels — these only format
+    already-stored data and add no selectable category; `_categoryForGoal` returns
+    the "Default" bucket for an empty category. No schema/persistence change, no new
+    deps. Verified: `flutter analyze` clean (only the pre-existing main.dart
+    warning); `flutter test` = 284 passed, same 2 pre-existing environmental
+    failures (supabase build-time defines; icloud_sync_card pumpAndSettle).
+
 - 2026-07-14: Period navigation — animation + Habits calendar arrow keys
   - *Details*: (A) New reusable `EvolvePeriodSwitcher`
     (`lib/shared/widgets/evolve_period_switcher.dart`): a directional slide

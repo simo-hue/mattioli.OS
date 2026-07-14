@@ -40,7 +40,11 @@ class _GoalsPageState extends ConsumerState<GoalsPage> {
   bool _showStats = false;
   final _quickGoalController = TextEditingController();
   _GoalCategory? _quickGoalCategory;
-  final _categories = [..._defaultGoalCategories];
+  // User-created goal categories only — the previous hard-coded/default preset
+  // categories (lavoro, salute, …) were removed; the picker now starts empty and
+  // is populated purely from the user's own saved categories (remote), plus the
+  // implicit "Default" bucket for goals with no specific category.
+  final _categories = <_GoalCategory>[];
   final _archivedCategoryIds = <String>{};
 
   // Goals segment of the continuous product tour. The central
@@ -2200,57 +2204,6 @@ const _goalColors = [
   EvolveColors.violet,
   EvolveColors.amber,
   EvolveColors.rose,
-];
-
-const _defaultGoalCategories = [
-  _GoalCategory(
-    key: 'lavoro',
-    label: 'Lavoro',
-    color: EvolveColors.cyan,
-    isDefault: true,
-  ),
-  _GoalCategory(
-    key: 'salute',
-    label: 'Salute',
-    color: EvolveColors.primaryStrong,
-    isDefault: true,
-  ),
-  _GoalCategory(
-    key: 'finanza',
-    label: 'Finanza',
-    color: EvolveColors.amber,
-    isDefault: true,
-  ),
-  _GoalCategory(
-    key: 'relazioni',
-    label: 'Relazioni',
-    color: EvolveColors.rose,
-    isDefault: true,
-  ),
-  _GoalCategory(
-    key: 'formazione',
-    label: 'Formazione',
-    color: EvolveColors.violet,
-    isDefault: true,
-  ),
-  _GoalCategory(
-    key: 'hobby',
-    label: 'Hobby',
-    color: EvolveColors.cyan,
-    isDefault: true,
-  ),
-  _GoalCategory(
-    key: 'spirituale',
-    label: 'Spirituale',
-    color: Color(0xFFF97316),
-    isDefault: true,
-  ),
-  _GoalCategory(
-    key: 'altro',
-    label: 'Altro',
-    color: Color(0xFF6B7280),
-    isDefault: true,
-  ),
 ];
 
 _GoalCategory _categoryForGoal(

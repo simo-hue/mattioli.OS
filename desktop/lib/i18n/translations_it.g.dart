@@ -762,6 +762,14 @@ class _Translations$aiCoach$it extends Translations$aiCoach$en {
 	@override String activeGoalsCount({required Object count}) => '- Obiettivi attivi: ${count}';
 	@override String completedGoalsCount({required Object count}) => '- Obiettivi completati: ${count}';
 	@override String todayCompletion({required Object completed, required Object total}) => '- Abitudini oggi: ${completed} completate su ${total} totali.';
+	@override String get newChatTooltip => 'Nuova chat';
+	@override String get clearConfirmTitle => 'Iniziare una nuova chat?';
+	@override String get clearConfirmBody => 'Questo cancella la conversazione attuale — non viene salvata.';
+	@override String get clearConfirmCancel => 'Annulla';
+	@override String get clearConfirmAccept => 'Nuova chat';
+	@override String get copyTooltip => 'Copia';
+	@override String get copiedToast => 'Copiato negli appunti';
+	@override String get linkOpenFailed => 'Impossibile aprire il link.';
 }
 
 // Path: settingsPage
@@ -1358,7 +1366,7 @@ class _Translations$ai$openRouter$it extends Translations$ai$openRouter$en {
 	@override String get connectionError => '❌ Errore di connessione. Assicurati di essere online e riprova.';
 	@override String get connectionErrorShort => '❌ Errore di connessione.';
 	@override String get connectionCheckTimeout => '❌ Errore: la verifica della connessione ha impiegato troppo tempo.';
-	@override String get contextTooLong => '⚠️ Limite di memoria superato o richiesta non valida. La conversazione potrebbe essere troppo lunga o complessa. Usa l’icona del cestino in alto per svuotare la chat e ricominciare.';
+	@override String get contextTooLong => '⚠️ Questa conversazione è diventata troppo lunga per il modello. Inizia una nuova chat (in alto a destra) per continuare.';
 	@override String get noInternet => '❌ Errore: nessuna connessione a internet. Verifica la rete.';
 	@override String get serverTimeout => '❌ Errore: il server sta impiegando troppo tempo a rispondere. Riprova.';
 	@override String apiError({required Object code}) => '❌ Errore API: ${code} (verifica Sentry per i dettagli)';
@@ -1889,7 +1897,7 @@ extension on TranslationsIt {
 			'ai.openRouter.connectionError' => '❌ Errore di connessione. Assicurati di essere online e riprova.',
 			'ai.openRouter.connectionErrorShort' => '❌ Errore di connessione.',
 			'ai.openRouter.connectionCheckTimeout' => '❌ Errore: la verifica della connessione ha impiegato troppo tempo.',
-			'ai.openRouter.contextTooLong' => '⚠️ Limite di memoria superato o richiesta non valida. La conversazione potrebbe essere troppo lunga o complessa. Usa l’icona del cestino in alto per svuotare la chat e ricominciare.',
+			'ai.openRouter.contextTooLong' => '⚠️ Questa conversazione è diventata troppo lunga per il modello. Inizia una nuova chat (in alto a destra) per continuare.',
 			'ai.openRouter.noInternet' => '❌ Errore: nessuna connessione a internet. Verifica la rete.',
 			'ai.openRouter.serverTimeout' => '❌ Errore: il server sta impiegando troppo tempo a rispondere. Riprova.',
 			'ai.openRouter.apiError' => ({required Object code}) => '❌ Errore API: ${code} (verifica Sentry per i dettagli)',
@@ -1942,6 +1950,14 @@ extension on TranslationsIt {
 			'aiCoach.activeGoalsCount' => ({required Object count}) => '- Obiettivi attivi: ${count}',
 			'aiCoach.completedGoalsCount' => ({required Object count}) => '- Obiettivi completati: ${count}',
 			'aiCoach.todayCompletion' => ({required Object completed, required Object total}) => '- Abitudini oggi: ${completed} completate su ${total} totali.',
+			'aiCoach.newChatTooltip' => 'Nuova chat',
+			'aiCoach.clearConfirmTitle' => 'Iniziare una nuova chat?',
+			'aiCoach.clearConfirmBody' => 'Questo cancella la conversazione attuale — non viene salvata.',
+			'aiCoach.clearConfirmCancel' => 'Annulla',
+			'aiCoach.clearConfirmAccept' => 'Nuova chat',
+			'aiCoach.copyTooltip' => 'Copia',
+			'aiCoach.copiedToast' => 'Copiato negli appunti',
+			'aiCoach.linkOpenFailed' => 'Impossibile aprire il link.',
 			'settingsPage.account' => 'Account',
 			'settingsPage.notifications' => 'Notifiche',
 			'settingsPage.language' => 'Lingua',

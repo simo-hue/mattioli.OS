@@ -1,4 +1,5 @@
 import 'dart:async';
+import 'dart:math' as math;
 
 import 'package:evolve_desktop/app/theme/evolve_theme.dart';
 import 'package:evolve_desktop/core/app_bootstrap.dart';
@@ -18,14 +19,17 @@ import 'package:evolve_desktop/shared/widgets/evolve_dialog.dart';
 import 'package:evolve_desktop/shared/widgets/evolve_panel.dart';
 import 'package:evolve_desktop/shared/widgets/evolve_toast.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_markdown/flutter_markdown.dart';
 import 'package:lucide_icons_flutter/lucide_icons.dart';
+import 'package:url_launcher/url_launcher.dart';
 
 import '../application/coach_controllers.dart';
 import '../application/ollama_start_controller.dart';
 import '../domain/chat_message.dart';
 import '../domain/coach_backend.dart';
+import '../domain/coach_chat_logic.dart';
 import '../domain/coach_config.dart';
 import 'coach_model_chip.dart';
 import 'start_ollama_button.dart';
@@ -116,6 +120,12 @@ class _AiCoachPageState extends ConsumerState<AiCoachPage> {
   bool _shareGoals = false;
   bool _localNudgeDismissed = false;
   StreamSubscription<String>? _responseSub;
+  // Synchronous in-flight guard, armed BEFORE the async consent gap so two
+  // rapid Enters can't both slip through and start overlapping streams.
+  bool _sending = false;
+  // Bumped on "new chat" so entrance keys change and the fresh greeting
+  // re-animates (positional index alone would reuse the completed tween).
+  int _chatGeneration = 0;
 
   // Coach segment of the continuous product tour (the FINAL segment). The
   // central [tourControllerProvider] owns whether this segment is active; the
@@ -217,9 +227,10 @@ class _AiCoachPageState extends ConsumerState<AiCoachPage> {
     // Guard against concurrent sends: the chat TextField's onSubmitted is not
     // gated like the FAB, so pressing Enter mid-stream could start a second
     // run that captures an overlapping responseIndex and corrupts bubbles.
-    if (_isTyping) return;
+    if (_isTyping || _sending) return;
     final text = _controller.text.trim();
     if (text.isEmpty) return;
+    _sending = true;
 
     final coachConfig = ref.read(coachConfigProvider);
     final backend = ref.read(activeCoachBackendProvider);
@@ -228,9 +239,15 @@ class _AiCoachPageState extends ConsumerState<AiCoachPage> {
     // Cloud sends leave the device, so in Private mode they require explicit
     // consent. Local sends never leave the device → no consent gate, no
     // internet check.
-    if (isCloud && !await _ensurePrivateAiConsent()) return;
+    if (isCloud && !await _ensurePrivateAiConsent()) {
+      _sending = false;
+      return;
+    }
     // The consent dialog is async; bail if the page went away meanwhile.
-    if (!mounted) return;
+    if (!mounted) {
+      _sending = false;
+      return;
+    }
 
     _controller.clear();
     setState(() {
@@ -239,8 +256,10 @@ class _AiCoachPageState extends ConsumerState<AiCoachPage> {
       );
       _isTyping = true;
     });
+    // _isTyping now serves as the in-flight guard.
+    _sending = false;
 
-    _scrollToBottom();
+    _animateToBottom();
 
     // Inietta contesto se abilitato
     final snapshot = ref.read(dashboardControllerProvider);
@@ -293,10 +312,11 @@ class _AiCoachPageState extends ConsumerState<AiCoachPage> {
       contextPrompt += "${t.aiCoach.completedGoalsCount(count: completed)}\n";
     }
 
-    // Risposta in streaming — send the FULL conversation (user + assistant
-    // turns) so follow-ups keep context, not just the user's messages.
+    // Stream the recent conversation (user + assistant turns) so follow-ups keep
+    // context. Capped to the last N messages so a long chat doesn't grow
+    // unboundedly into the model's context-length limit.
     final stream = backend.streamResponse(
-      List<ChatMessage>.from(_messages),
+      trimHistory(_messages),
       systemPrompt: contextPrompt,
       model: coachConfig.activeModel,
       temperature: coachConfig.temperature,
@@ -318,6 +338,7 @@ class _AiCoachPageState extends ConsumerState<AiCoachPage> {
     _responseSub = stream.listen(
       (chunk) {
         if (!mounted) return;
+        final follow = _isPinnedToBottom();
         currentResponse += chunk;
         setState(() {
           _messages[responseIndex] = ChatMessage(
@@ -326,12 +347,13 @@ class _AiCoachPageState extends ConsumerState<AiCoachPage> {
             timestamp: DateTime.now(),
           );
         });
-        _scrollToBottom();
+        if (follow) _followBottom();
       },
       onError: (Object error) {
         if (!mounted) return;
         // Surface the failure in the current bubble and via a toast so the user
         // is never left staring at an empty/partial reply.
+        final follow = _isPinnedToBottom();
         final errorText = t.ai.openRouter.connectionErrorShort;
         setState(() {
           _messages[responseIndex] = ChatMessage(
@@ -344,6 +366,7 @@ class _AiCoachPageState extends ConsumerState<AiCoachPage> {
           _isTyping = false;
           _responseSub = null;
         });
+        if (follow) _followBottom();
         showEvolveToast(
           context,
           message: errorText,
@@ -352,11 +375,12 @@ class _AiCoachPageState extends ConsumerState<AiCoachPage> {
       },
       onDone: () {
         if (!mounted) return;
+        final follow = _isPinnedToBottom();
         setState(() {
           _isTyping = false;
           _responseSub = null;
         });
-        _scrollToBottom();
+        if (follow) _followBottom();
       },
       cancelOnError: true,
     );
@@ -419,15 +443,92 @@ class _AiCoachPageState extends ConsumerState<AiCoachPage> {
     _sendMessage();
   }
 
-  void _scrollToBottom() {
-    Future.delayed(const Duration(milliseconds: 100), () {
-      if (_scrollController.hasClients) {
+  /// Whether the thread is currently pinned near the bottom. MUST be read
+  /// BEFORE a new chunk grows the list — otherwise a single tall chunk inflates
+  /// maxScrollExtent and gets mistaken for the user having scrolled up, which
+  /// would permanently detach auto-follow for the rest of the reply.
+  bool _isPinnedToBottom() {
+    if (!_scrollController.hasClients) return true;
+    final position = _scrollController.position;
+    return isNearBottom(position.pixels, position.maxScrollExtent);
+  }
+
+  /// Jumps to the bottom once the grown content is laid out. Only call when
+  /// [_isPinnedToBottom] was true before the growth (so re-reading isn't
+  /// interrupted). jumpTo (not a per-chunk animation) avoids overlapping-anim jank.
+  void _followBottom() {
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      if (!mounted || !_scrollController.hasClients) return;
+      _scrollController.jumpTo(_scrollController.position.maxScrollExtent);
+    });
+  }
+
+  /// Smoothly scrolls to the bottom after the user sends (they expect to follow
+  /// their own message + the reply). Respects Reduce Motion.
+  void _animateToBottom() {
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      if (!mounted || !_scrollController.hasClients) return;
+      final target = _scrollController.position.maxScrollExtent;
+      if (MediaQuery.of(context).disableAnimations) {
+        _scrollController.jumpTo(target);
+      } else {
         _scrollController.animateTo(
-          _scrollController.position.maxScrollExtent,
-          duration: const Duration(milliseconds: 300),
+          target,
+          duration: const Duration(milliseconds: 250),
           curve: Curves.easeOut,
         );
       }
+    });
+  }
+
+  /// Clears the conversation and starts fresh (header "new chat" button).
+  /// Confirms first only when there's a real conversation beyond the greeting.
+  Future<void> _newChat() async {
+    if (_messages.length > 1) {
+      final confirmed = await showEvolveDialog<bool>(
+        context: context,
+        builder: (context) => EvolveAlertDialog(
+          icon: LucideIcons.messageSquarePlus,
+          title: Text(t.aiCoach.clearConfirmTitle),
+          content: Text(
+            t.aiCoach.clearConfirmBody,
+            style: TextStyle(
+              color: context.evolveColors.muted,
+              fontSize: 13,
+              fontWeight: FontWeight.w500,
+              height: 1.5,
+            ),
+          ),
+          actions: [
+            TextButton(
+              onPressed: () => Navigator.pop(context, false),
+              child: Text(t.aiCoach.clearConfirmCancel),
+            ),
+            FilledButton(
+              onPressed: () => Navigator.pop(context, true),
+              child: Text(t.aiCoach.clearConfirmAccept),
+            ),
+          ],
+        ),
+      );
+      if (confirmed != true || !mounted) return;
+    }
+    _responseSub?.cancel();
+    _responseSub = null;
+    _controller.clear();
+    setState(() {
+      _messages
+        ..clear()
+        ..add(
+          ChatMessage(
+            text: t.aiCoach.greeting,
+            isUser: false,
+            timestamp: DateTime.now(),
+          ),
+        );
+      _isTyping = false;
+      _sending = false;
+      _chatGeneration++;
     });
   }
 
@@ -540,6 +641,14 @@ class _AiCoachPageState extends ConsumerState<AiCoachPage> {
                   onPressed: _showSettingsDialog,
                 ),
               ),
+              const SizedBox(width: 10),
+              EvolveSquareIconButton(
+                icon: LucideIcons.messageSquarePlus,
+                tooltip: t.aiCoach.newChatTooltip,
+                onTap: _newChat,
+                size: 40,
+                iconSize: 18,
+              ),
             ],
           ),
           const SizedBox(height: 20),
@@ -565,14 +674,32 @@ class _AiCoachPageState extends ConsumerState<AiCoachPage> {
                       child: Center(
                         child: ConstrainedBox(
                           constraints: const BoxConstraints(maxWidth: 900),
-                          child: ListView.builder(
-                            controller: _scrollController,
-                            padding: const EdgeInsets.all(24),
-                            itemCount: _messages.length,
-                            itemBuilder: (context, index) {
-                              final msg = _messages[index];
-                              return _MessageBubble(message: msg);
-                            },
+                          // Suppress the platform auto-scrollbar so only the
+                          // panel-edge Scrollbar above shows (no duplicate thumb
+                          // on wide windows where the list is inset to 900).
+                          child: ScrollConfiguration(
+                            behavior: ScrollConfiguration.of(
+                              context,
+                            ).copyWith(scrollbars: false),
+                            child: ListView.builder(
+                              controller: _scrollController,
+                              padding: const EdgeInsets.all(24),
+                              itemCount: _messages.length,
+                              itemBuilder: (context, index) {
+                                final msg = _messages[index];
+                                final isStreaming =
+                                    _isTyping &&
+                                    !msg.isUser &&
+                                    index == _messages.length - 1;
+                                return _MessageEntrance(
+                                  key: ValueKey('$_chatGeneration:$index'),
+                                  child: _MessageBubble(
+                                    message: msg,
+                                    isStreaming: isStreaming,
+                                  ),
+                                );
+                              },
+                            ),
                           ),
                         ),
                       ),
@@ -587,27 +714,17 @@ class _AiCoachPageState extends ConsumerState<AiCoachPage> {
                       child: Column(
                         crossAxisAlignment: CrossAxisAlignment.stretch,
                         children: [
-                          if (_isTyping)
-                            Padding(
-                              padding: const EdgeInsets.symmetric(
-                                horizontal: 24,
-                                vertical: 8,
-                              ),
-                              child: Align(
-                                alignment: AlignmentDirectional.centerStart,
-                                child: Text(
-                                  t.aiCoach.typing,
-                                  style: TextStyle(
-                                    color: colors.muted,
-                                    fontSize: 12,
-                                    fontWeight: FontWeight.w500,
-                                  ),
-                                ),
-                              ),
-                            ),
-                          if (!_isTyping)
-                            Builder(
+                          // The "answering" feedback now lives in the assistant
+                          // bubble (animated dots → text). The suggestion strip
+                          // hides while a reply streams; AnimatedSize smooths the
+                          // height change so the input bar doesn't jump.
+                          AnimatedSize(
+                            duration: const Duration(milliseconds: 180),
+                            curve: Curves.easeOut,
+                            alignment: Alignment.bottomCenter,
+                            child: Builder(
                               builder: (context) {
+                                if (_isTyping) return const SizedBox.shrink();
                                 final suggestions = _dynamicSuggestions();
                                 if (suggestions.isEmpty) {
                                   return const SizedBox.shrink();
@@ -639,6 +756,7 @@ class _AiCoachPageState extends ConsumerState<AiCoachPage> {
                                 );
                               },
                             ),
+                          ),
                           // Input bar: translucent rounded card + circular send button.
                           Padding(
                             padding: const EdgeInsetsDirectional.fromSTEB(
@@ -664,25 +782,68 @@ class _AiCoachPageState extends ConsumerState<AiCoachPage> {
                                           ),
                                         ),
                                       ),
-                                      child: TextField(
-                                        controller: _controller,
-                                        style: TextStyle(
-                                          color: colors.foreground,
-                                          fontSize: 14,
+                                      // Enter sends; Shift+Enter inserts a
+                                      // newline (intercepted before the
+                                      // multiline field treats Enter as one).
+                                      child: Focus(
+                                        // Pure key interceptor — not a focus
+                                        // stop of its own.
+                                        canRequestFocus: false,
+                                        skipTraversal: true,
+                                        onKeyEvent: (node, event) {
+                                          final isEnter =
+                                              event.logicalKey ==
+                                                  LogicalKeyboardKey.enter ||
+                                              event.logicalKey ==
+                                                  LogicalKeyboardKey.numpadEnter;
+                                          if (!isEnter) {
+                                            return KeyEventResult.ignored;
+                                          }
+                                          if (event is! KeyDownEvent &&
+                                              event is! KeyRepeatEvent) {
+                                            return KeyEventResult.ignored;
+                                          }
+                                          // Shift+Enter, an active IME
+                                          // composition commit, or a reply
+                                          // already streaming → let the field
+                                          // insert a newline instead of sending.
+                                          if (HardwareKeyboard
+                                                  .instance
+                                                  .isShiftPressed ||
+                                              _controller
+                                                  .value
+                                                  .composing
+                                                  .isValid ||
+                                              _isTyping) {
+                                            return KeyEventResult.ignored;
+                                          }
+                                          _sendMessage();
+                                          return KeyEventResult.handled;
+                                        },
+                                        child: TextField(
+                                          controller: _controller,
+                                          minLines: 1,
+                                          maxLines: 5,
+                                          keyboardType: TextInputType.multiline,
+                                          textInputAction:
+                                              TextInputAction.newline,
+                                          style: TextStyle(
+                                            color: colors.foreground,
+                                            fontSize: 14,
+                                          ),
+                                          decoration: InputDecoration(
+                                            hintText: t.aiCoach.inputHint,
+                                            filled: false,
+                                            border: InputBorder.none,
+                                            enabledBorder: InputBorder.none,
+                                            focusedBorder: InputBorder.none,
+                                            contentPadding:
+                                                const EdgeInsets.symmetric(
+                                                  horizontal: 18,
+                                                  vertical: 13,
+                                                ),
+                                          ),
                                         ),
-                                        decoration: InputDecoration(
-                                          hintText: t.aiCoach.inputHint,
-                                          filled: false,
-                                          border: InputBorder.none,
-                                          enabledBorder: InputBorder.none,
-                                          focusedBorder: InputBorder.none,
-                                          contentPadding:
-                                              const EdgeInsets.symmetric(
-                                                horizontal: 18,
-                                                vertical: 13,
-                                              ),
-                                        ),
-                                        onSubmitted: (_) => _sendMessage(),
                                       ),
                                     ),
                                   ),
@@ -914,16 +1075,58 @@ class _SuggestionChipState extends State<_SuggestionChip> {
   }
 }
 
-class _MessageBubble extends StatelessWidget {
+class _MessageBubble extends StatefulWidget {
+  const _MessageBubble({required this.message, this.isStreaming = false});
+
   final ChatMessage message;
 
-  const _MessageBubble({required this.message});
+  /// True for the assistant bubble currently receiving a streamed reply.
+  final bool isStreaming;
+
+  @override
+  State<_MessageBubble> createState() => _MessageBubbleState();
+}
+
+class _MessageBubbleState extends State<_MessageBubble> {
+  bool _hovered = false;
 
   @override
   Widget build(BuildContext context) {
     final colors = context.evolveColors;
     final accent = context.evolveAccent;
+    final message = widget.message;
     final isUser = message.isUser;
+    final isWaiting = !isUser && widget.isStreaming && message.text.isEmpty;
+
+    final Widget bubbleChild;
+    if (isWaiting) {
+      bubbleChild = const _TypingDots();
+    } else if (isUser) {
+      bubbleChild = Text(
+        message.text,
+        style: TextStyle(
+          color: Theme.of(context).colorScheme.onPrimary,
+          fontSize: 14,
+          fontWeight: FontWeight.w500,
+          height: 1.45,
+        ),
+      );
+    } else if (widget.isStreaming) {
+      // Caret is a separate decorative widget, NOT injected into the markdown
+      // source — so it can't trigger reparses, clear a selection, or reflow at
+      // block boundaries.
+      bubbleChild = Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          _AssistantMarkdown(text: message.text),
+          const SizedBox(height: 3),
+          const _StreamingCaret(),
+        ],
+      );
+    } else {
+      bubbleChild = _AssistantMarkdown(text: message.text);
+    }
 
     final bubble = Container(
       constraints: const BoxConstraints(maxWidth: 640),
@@ -940,76 +1143,331 @@ class _MessageBubble extends StatelessWidget {
             ? null
             : Border.all(color: colors.border.withValues(alpha: 0.5)),
       ),
-      child: isUser
-          ? Text(
-              message.text,
-              style: TextStyle(
-                color: Theme.of(context).colorScheme.onPrimary,
-                fontSize: 14,
-                fontWeight: FontWeight.w500,
-                height: 1.45,
-              ),
-            )
-          : MarkdownBody(
-              data: message.text,
-              styleSheet: MarkdownStyleSheet(
-                p: TextStyle(
-                  color: colors.foreground,
-                  fontSize: 14,
-                  height: 1.45,
-                ),
-                h1: TextStyle(
-                  color: colors.foreground,
-                  fontWeight: FontWeight.w800,
-                ),
-                h2: TextStyle(
-                  color: colors.foreground,
-                  fontWeight: FontWeight.w800,
-                ),
-                h3: TextStyle(
-                  color: colors.foreground,
-                  fontWeight: FontWeight.w800,
-                ),
-                listBullet: TextStyle(
-                  color: colors.foreground,
-                  fontSize: 14,
-                  height: 1.45,
-                ),
-                strong: TextStyle(
-                  color: colors.foreground,
-                  fontWeight: FontWeight.w700,
-                ),
-              ),
-            ),
+      child: bubbleChild,
     );
 
-    return Padding(
-      padding: const EdgeInsets.only(bottom: 16),
-      child: Row(
-        mainAxisAlignment: isUser
-            ? MainAxisAlignment.end
-            : MainAxisAlignment.start,
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          if (!isUser) ...[
-            _AvatarDot(
-              icon: LucideIcons.sparkles,
-              background: EvolveColors.violet.withValues(alpha: 0.12),
-              iconColor: EvolveColors.violet,
-            ),
-            const SizedBox(width: 10),
+    // Assistant bubbles get a hover-revealed copy affordance below them.
+    final showCopy = !isUser && !isWaiting && message.text.isNotEmpty;
+    final Widget content = isUser
+        ? bubble
+        : Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              bubble,
+              if (showCopy)
+                SizedBox(
+                  height: 24,
+                  // Visually revealed on hover, but always kept in the semantics
+                  // tree so screen-reader / keyboard users can reach it too.
+                  child: AnimatedOpacity(
+                    opacity: _hovered ? 1 : 0,
+                    duration: const Duration(milliseconds: 120),
+                    alwaysIncludeSemantics: true,
+                    child: Align(
+                      alignment: AlignmentDirectional.centerStart,
+                      child: _CopyButton(text: message.text),
+                    ),
+                  ),
+                ),
+            ],
+          );
+
+    return MouseRegion(
+      onEnter: (_) => setState(() => _hovered = true),
+      onExit: (_) => setState(() => _hovered = false),
+      child: Padding(
+        padding: const EdgeInsets.only(bottom: 12),
+        child: Row(
+          mainAxisAlignment: isUser
+              ? MainAxisAlignment.end
+              : MainAxisAlignment.start,
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            if (!isUser) ...[
+              _AvatarDot(
+                icon: LucideIcons.sparkles,
+                background: EvolveColors.violet.withValues(alpha: 0.12),
+                iconColor: EvolveColors.violet,
+              ),
+              const SizedBox(width: 10),
+            ],
+            Flexible(child: content),
+            if (isUser) ...[
+              const SizedBox(width: 10),
+              _AvatarDot(
+                icon: LucideIcons.user,
+                background: colors.panel,
+                iconColor: colors.foreground,
+                bordered: true,
+              ),
+            ],
           ],
-          Flexible(child: bubble),
-          if (isUser) ...[
-            const SizedBox(width: 10),
-            _AvatarDot(
-              icon: LucideIcons.user,
-              background: colors.panel,
-              iconColor: colors.foreground,
-              bordered: true,
-            ),
+        ),
+      ),
+    );
+  }
+}
+
+/// One-time fade + slide-up entrance for a newly-added bubble. Uses a
+/// TweenAnimationBuilder (end never changes) so it plays exactly once — the
+/// streaming bubble's chunk rebuilds don't re-trigger it. Respects Reduce Motion.
+class _MessageEntrance extends StatelessWidget {
+  const _MessageEntrance({required this.child, super.key});
+
+  final Widget child;
+
+  @override
+  Widget build(BuildContext context) {
+    if (MediaQuery.of(context).disableAnimations) return child;
+    return TweenAnimationBuilder<double>(
+      tween: Tween(begin: 0, end: 1),
+      duration: const Duration(milliseconds: 220),
+      curve: Curves.easeOut,
+      builder: (context, t, child) => Opacity(
+        opacity: t,
+        child: Transform.translate(offset: Offset(0, 8 * (1 - t)), child: child),
+      ),
+      child: child,
+    );
+  }
+}
+
+/// Assistant markdown with clickable (scheme-checked) links, styled code, and
+/// selectable text. The streaming caret is a separate sibling widget so it never
+/// touches the markdown source.
+class _AssistantMarkdown extends StatelessWidget {
+  const _AssistantMarkdown({required this.text});
+
+  final String text;
+
+  static const _allowedSchemes = {'http', 'https', 'mailto'};
+
+  Future<void> _openLink(BuildContext context, String? href) async {
+    final uri = href == null ? null : Uri.tryParse(href);
+    // LLM output is data, not a command — only ever launch safe web schemes.
+    if (uri == null || !_allowedSchemes.contains(uri.scheme.toLowerCase())) {
+      return;
+    }
+    var opened = false;
+    try {
+      opened = await launchUrl(uri, mode: LaunchMode.externalApplication);
+    } catch (_) {
+      opened = false;
+    }
+    if (!opened && context.mounted) {
+      showEvolveToast(
+        context,
+        message: t.aiCoach.linkOpenFailed,
+        kind: EvolveToastKind.error,
+      );
+    }
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final colors = context.evolveColors;
+    return MarkdownBody(
+      data: text,
+      selectable: true,
+      onTapLink: (linkText, href, title) => _openLink(context, href),
+      styleSheet: MarkdownStyleSheet(
+        p: TextStyle(color: colors.foreground, fontSize: 14, height: 1.45),
+        a: TextStyle(
+          color: context.evolveAccent,
+          decoration: TextDecoration.underline,
+        ),
+        h1: TextStyle(color: colors.foreground, fontWeight: FontWeight.w800),
+        h2: TextStyle(color: colors.foreground, fontWeight: FontWeight.w800),
+        h3: TextStyle(color: colors.foreground, fontWeight: FontWeight.w800),
+        listBullet: TextStyle(
+          color: colors.foreground,
+          fontSize: 14,
+          height: 1.45,
+        ),
+        strong: TextStyle(color: colors.foreground, fontWeight: FontWeight.w700),
+        code: TextStyle(
+          color: colors.foreground,
+          fontSize: 13,
+          height: 1.4,
+          fontFamily: 'monospace',
+          backgroundColor: colors.panelSoft.withValues(alpha: 0.6),
+        ),
+        codeblockPadding: const EdgeInsets.all(12),
+        codeblockDecoration: BoxDecoration(
+          color: colors.panelSoft.withValues(alpha: 0.6),
+          borderRadius: BorderRadius.circular(10),
+          border: Border.all(color: colors.border.withValues(alpha: 0.5)),
+        ),
+      ),
+    );
+  }
+}
+
+/// Blinking cursor bar at the end of a streaming reply — a decorative sibling of
+/// the markdown (never part of the selectable text). Respects Reduce Motion.
+class _StreamingCaret extends StatefulWidget {
+  const _StreamingCaret();
+
+  @override
+  State<_StreamingCaret> createState() => _StreamingCaretState();
+}
+
+class _StreamingCaretState extends State<_StreamingCaret>
+    with SingleTickerProviderStateMixin {
+  late final AnimationController _controller = AnimationController(
+    vsync: this,
+    duration: const Duration(milliseconds: 1060),
+  );
+
+  @override
+  void dispose() {
+    _controller.dispose();
+    super.dispose();
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final bar = Container(
+      width: 2,
+      height: 14,
+      decoration: BoxDecoration(
+        color: context.evolveColors.foreground.withValues(alpha: 0.75),
+        borderRadius: BorderRadius.circular(1),
+      ),
+    );
+    if (MediaQuery.of(context).disableAnimations) {
+      if (_controller.isAnimating) _controller.stop();
+      return bar;
+    }
+    if (!_controller.isAnimating) _controller.repeat(reverse: true);
+    return FadeTransition(opacity: _controller, child: bar);
+  }
+}
+
+/// Animated three-dot "thinking" indicator shown in the assistant bubble while
+/// awaiting the first token. Respects Reduce Motion (renders steady dots).
+class _TypingDots extends StatefulWidget {
+  const _TypingDots();
+
+  @override
+  State<_TypingDots> createState() => _TypingDotsState();
+}
+
+class _TypingDotsState extends State<_TypingDots>
+    with SingleTickerProviderStateMixin {
+  late final AnimationController _controller = AnimationController(
+    vsync: this,
+    duration: const Duration(milliseconds: 1100),
+  );
+
+  @override
+  void dispose() {
+    _controller.dispose();
+    super.dispose();
+  }
+
+  Widget _dot(double opacity) => Container(
+    width: 7,
+    height: 7,
+    decoration: BoxDecoration(
+      shape: BoxShape.circle,
+      color: EvolveColors.violet.withValues(alpha: opacity),
+    ),
+  );
+
+  @override
+  Widget build(BuildContext context) {
+    // Announce the "thinking" state to screen readers.
+    final Widget dots;
+    if (MediaQuery.of(context).disableAnimations) {
+      // Don't drive a ticker for motion nobody renders.
+      if (_controller.isAnimating) _controller.stop();
+      dots = Row(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          for (var i = 0; i < 3; i++) ...[
+            _dot(0.65),
+            if (i < 2) const SizedBox(width: 5),
           ],
         ],
+      );
+    } else {
+      if (!_controller.isAnimating) _controller.repeat();
+      dots = AnimatedBuilder(
+        animation: _controller,
+        builder: (context, _) {
+          return Row(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              for (var i = 0; i < 3; i++) ...[
+                _dot(_opacityFor(i, _controller.value)),
+                if (i < 2) const SizedBox(width: 5),
+              ],
+            ],
+          );
+        },
+      );
+    }
+    return Semantics(
+      liveRegion: true,
+      label: t.aiCoach.typing,
+      child: ExcludeSemantics(child: dots),
+    );
+  }
+
+  double _opacityFor(int index, double t) {
+    final phase = (t + index * 0.18) % 1.0;
+    final wave = (math.sin(phase * 2 * math.pi) + 1) / 2; // 0..1
+    return 0.3 + 0.6 * wave;
+  }
+}
+
+/// Hover-revealed "copy" button under an assistant reply. Copies the raw
+/// markdown and confirms with a toast.
+class _CopyButton extends StatelessWidget {
+  const _CopyButton({required this.text});
+
+  final String text;
+
+  @override
+  Widget build(BuildContext context) {
+    final colors = context.evolveColors;
+    // Keyboard/AT-activatable (InkWell + Semantics button); the visible label
+    // makes a tooltip redundant.
+    return Semantics(
+      button: true,
+      label: t.aiCoach.copyTooltip,
+      child: InkWell(
+        onTap: () async {
+          await Clipboard.setData(ClipboardData(text: text));
+          if (context.mounted) {
+            showEvolveToast(
+              context,
+              message: t.aiCoach.copiedToast,
+              kind: EvolveToastKind.success,
+            );
+          }
+        },
+        borderRadius: BorderRadius.circular(6),
+        child: Padding(
+          padding: const EdgeInsets.symmetric(horizontal: 4, vertical: 2),
+          child: Row(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              Icon(LucideIcons.copy, size: 12, color: colors.muted),
+              const SizedBox(width: 5),
+              Text(
+                t.aiCoach.copyTooltip,
+                style: TextStyle(
+                  color: colors.muted,
+                  fontSize: 11.5,
+                  fontWeight: FontWeight.w600,
+                ),
+              ),
+            ],
+          ),
+        ),
       ),
     );
   }

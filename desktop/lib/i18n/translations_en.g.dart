@@ -1649,6 +1649,30 @@ class Translations$aiCoach$en {
 
 	/// en: '- Habits today: {completed} completed out of {total} total.'
 	String todayCompletion({required Object completed, required Object total}) => '- Habits today: ${completed} completed out of ${total} total.';
+
+	/// en: 'New chat'
+	String get newChatTooltip => 'New chat';
+
+	/// en: 'Start a new chat?'
+	String get clearConfirmTitle => 'Start a new chat?';
+
+	/// en: 'This clears the current conversation — it isn't saved.'
+	String get clearConfirmBody => 'This clears the current conversation — it isn\'t saved.';
+
+	/// en: 'Cancel'
+	String get clearConfirmCancel => 'Cancel';
+
+	/// en: 'New chat'
+	String get clearConfirmAccept => 'New chat';
+
+	/// en: 'Copy'
+	String get copyTooltip => 'Copy';
+
+	/// en: 'Copied to clipboard'
+	String get copiedToast => 'Copied to clipboard';
+
+	/// en: 'Couldn't open the link.'
+	String get linkOpenFailed => 'Couldn\'t open the link.';
 }
 
 // Path: settingsPage
@@ -3096,8 +3120,8 @@ class Translations$ai$openRouter$en {
 	/// en: '❌ Error: Connection check took too long.'
 	String get connectionCheckTimeout => '❌ Error: Connection check took too long.';
 
-	/// en: '⚠️ Memory limit exceeded or invalid request. The conversation may be too long or complex. Use the trash icon at the top to clear the chat and start again.'
-	String get contextTooLong => '⚠️ Memory limit exceeded or invalid request. The conversation may be too long or complex. Use the trash icon at the top to clear the chat and start again.';
+	/// en: '⚠️ This conversation got too long for the model. Start a new chat (top right) to continue.'
+	String get contextTooLong => '⚠️ This conversation got too long for the model. Start a new chat (top right) to continue.';
 
 	/// en: '❌ Error: No internet connection. Check your network.'
 	String get noInternet => '❌ Error: No internet connection. Check your network.';
@@ -3684,7 +3708,7 @@ extension on Translations {
 			'ai.openRouter.connectionError' => '❌ Connection error. Make sure you are online and try again.',
 			'ai.openRouter.connectionErrorShort' => '❌ Connection error.',
 			'ai.openRouter.connectionCheckTimeout' => '❌ Error: Connection check took too long.',
-			'ai.openRouter.contextTooLong' => '⚠️ Memory limit exceeded or invalid request. The conversation may be too long or complex. Use the trash icon at the top to clear the chat and start again.',
+			'ai.openRouter.contextTooLong' => '⚠️ This conversation got too long for the model. Start a new chat (top right) to continue.',
 			'ai.openRouter.noInternet' => '❌ Error: No internet connection. Check your network.',
 			'ai.openRouter.serverTimeout' => '❌ Error: The server is taking too long to respond. Try again.',
 			'ai.openRouter.apiError' => ({required Object code}) => '❌ API error: ${code} (check Sentry for details)',
@@ -3737,6 +3761,14 @@ extension on Translations {
 			'aiCoach.activeGoalsCount' => ({required Object count}) => '- Active goals: ${count}',
 			'aiCoach.completedGoalsCount' => ({required Object count}) => '- Completed goals: ${count}',
 			'aiCoach.todayCompletion' => ({required Object completed, required Object total}) => '- Habits today: ${completed} completed out of ${total} total.',
+			'aiCoach.newChatTooltip' => 'New chat',
+			'aiCoach.clearConfirmTitle' => 'Start a new chat?',
+			'aiCoach.clearConfirmBody' => 'This clears the current conversation — it isn\'t saved.',
+			'aiCoach.clearConfirmCancel' => 'Cancel',
+			'aiCoach.clearConfirmAccept' => 'New chat',
+			'aiCoach.copyTooltip' => 'Copy',
+			'aiCoach.copiedToast' => 'Copied to clipboard',
+			'aiCoach.linkOpenFailed' => 'Couldn\'t open the link.',
 			'settingsPage.account' => 'Account',
 			'settingsPage.notifications' => 'Notifications',
 			'settingsPage.language' => 'Language',

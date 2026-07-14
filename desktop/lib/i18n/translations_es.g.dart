@@ -762,6 +762,14 @@ class _Translations$aiCoach$es extends Translations$aiCoach$en {
 	@override String activeGoalsCount({required Object count}) => '- Objetivos activos: ${count}';
 	@override String completedGoalsCount({required Object count}) => '- Objetivos completados: ${count}';
 	@override String todayCompletion({required Object completed, required Object total}) => '- Hábitos de hoy: ${completed} completados de ${total} en total.';
+	@override String get newChatTooltip => 'Nuevo chat';
+	@override String get clearConfirmTitle => '¿Iniciar un nuevo chat?';
+	@override String get clearConfirmBody => 'Esto borra la conversación actual — no se guarda.';
+	@override String get clearConfirmCancel => 'Cancelar';
+	@override String get clearConfirmAccept => 'Nuevo chat';
+	@override String get copyTooltip => 'Copiar';
+	@override String get copiedToast => 'Copiado al portapapeles';
+	@override String get linkOpenFailed => 'No se pudo abrir el enlace.';
 }
 
 // Path: settingsPage
@@ -1358,7 +1366,7 @@ class _Translations$ai$openRouter$es extends Translations$ai$openRouter$en {
 	@override String get connectionError => '❌ Error de conexión. Asegúrate de estar online e inténtalo de nuevo.';
 	@override String get connectionErrorShort => '❌ Error de conexión.';
 	@override String get connectionCheckTimeout => '❌ Error: la comprobación de conexión tardó demasiado.';
-	@override String get contextTooLong => '⚠️ Límite de memoria superado o solicitud no válida. La conversación puede ser demasiado larga o compleja. Usa el icono de papelera arriba para borrar el chat y empezar de nuevo.';
+	@override String get contextTooLong => '⚠️ Esta conversación se volvió demasiado larga para el modelo. Inicia un nuevo chat (arriba a la derecha) para continuar.';
 	@override String get noInternet => '❌ Error: no hay conexión a internet. Revisa tu red.';
 	@override String get serverTimeout => '❌ Error: el servidor tarda demasiado en responder. Inténtalo de nuevo.';
 	@override String apiError({required Object code}) => '❌ Error de API: ${code} (consulta Sentry para más detalles)';
@@ -1889,7 +1897,7 @@ extension on TranslationsEs {
 			'ai.openRouter.connectionError' => '❌ Error de conexión. Asegúrate de estar online e inténtalo de nuevo.',
 			'ai.openRouter.connectionErrorShort' => '❌ Error de conexión.',
 			'ai.openRouter.connectionCheckTimeout' => '❌ Error: la comprobación de conexión tardó demasiado.',
-			'ai.openRouter.contextTooLong' => '⚠️ Límite de memoria superado o solicitud no válida. La conversación puede ser demasiado larga o compleja. Usa el icono de papelera arriba para borrar el chat y empezar de nuevo.',
+			'ai.openRouter.contextTooLong' => '⚠️ Esta conversación se volvió demasiado larga para el modelo. Inicia un nuevo chat (arriba a la derecha) para continuar.',
 			'ai.openRouter.noInternet' => '❌ Error: no hay conexión a internet. Revisa tu red.',
 			'ai.openRouter.serverTimeout' => '❌ Error: el servidor tarda demasiado en responder. Inténtalo de nuevo.',
 			'ai.openRouter.apiError' => ({required Object code}) => '❌ Error de API: ${code} (consulta Sentry para más detalles)',
@@ -1942,6 +1950,14 @@ extension on TranslationsEs {
 			'aiCoach.activeGoalsCount' => ({required Object count}) => '- Objetivos activos: ${count}',
 			'aiCoach.completedGoalsCount' => ({required Object count}) => '- Objetivos completados: ${count}',
 			'aiCoach.todayCompletion' => ({required Object completed, required Object total}) => '- Hábitos de hoy: ${completed} completados de ${total} en total.',
+			'aiCoach.newChatTooltip' => 'Nuevo chat',
+			'aiCoach.clearConfirmTitle' => '¿Iniciar un nuevo chat?',
+			'aiCoach.clearConfirmBody' => 'Esto borra la conversación actual — no se guarda.',
+			'aiCoach.clearConfirmCancel' => 'Cancelar',
+			'aiCoach.clearConfirmAccept' => 'Nuevo chat',
+			'aiCoach.copyTooltip' => 'Copiar',
+			'aiCoach.copiedToast' => 'Copiado al portapapeles',
+			'aiCoach.linkOpenFailed' => 'No se pudo abrir el enlace.',
 			'settingsPage.account' => 'Cuenta',
 			'settingsPage.notifications' => 'Notificaciones',
 			'settingsPage.language' => 'Idioma',

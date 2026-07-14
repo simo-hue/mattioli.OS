@@ -531,7 +531,7 @@
       "connectionError": "❌ Connection error. Make sure you are online and try again.",
       "connectionErrorShort": "❌ Connection error.",
       "connectionCheckTimeout": "❌ Error: Connection check took too long.",
-      "contextTooLong": "⚠️ Memory limit exceeded or invalid request. The conversation may be too long or complex. Use the trash icon at the top to clear the chat and start again.",
+      "contextTooLong": "⚠️ This conversation got too long for the model. Start a new chat (top right) to continue.",
       "noInternet": "❌ Error: No internet connection. Check your network.",
       "serverTimeout": "❌ Error: The server is taking too long to respond. Try again.",
       "apiError": "❌ API error: {code} (check Sentry for details)"
@@ -588,7 +588,15 @@
     "userNameLine": "- Name: {userName}",
     "activeGoalsCount": "- Active goals: {count}",
     "completedGoalsCount": "- Completed goals: {count}",
-    "todayCompletion": "- Habits today: {completed} completed out of {total} total."
+    "todayCompletion": "- Habits today: {completed} completed out of {total} total.",
+    "newChatTooltip": "New chat",
+    "clearConfirmTitle": "Start a new chat?",
+    "clearConfirmBody": "This clears the current conversation — it isn't saved.",
+    "clearConfirmCancel": "Cancel",
+    "clearConfirmAccept": "New chat",
+    "copyTooltip": "Copy",
+    "copiedToast": "Copied to clipboard",
+    "linkOpenFailed": "Couldn't open the link."
   },
   "settingsPage": {
     "account": "Account",

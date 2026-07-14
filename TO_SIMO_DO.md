@@ -111,3 +111,24 @@ Note: running the FULL `flutter test` suite needs dummy dart-defines
 (`--dart-define=EVOLVE_SUPABASE_URL=… --dart-define=EVOLVE_SUPABASE_ANON_KEY=… --dart-define=OPENROUTER_API_KEY=…`).
 Two failures are PRE-EXISTING and unrelated to the tour: `desktop_supabase_config_security_test`
 (credential-defines check) and `icloud_sync_card_test` (pumpAndSettle timeout).
+
+
+## AI Coach panel polish — on-device QA (visual + keyboard, no macOS build here)
+
+- [ ] **Scrollbar**: with a long chat, confirm there is now exactly ONE scrollbar (at the panel's right
+      edge), not two.
+- [ ] **Answering animation**: send a message → the assistant bubble shows animated dots while waiting,
+      then streams text with a blinking caret; new bubbles fade+slide in. Verify it feels smooth on both a
+      fast cloud reply and a slow cold local model.
+- [ ] **Enter vs Shift+Enter** (the one behavior I couldn't verify without a run): **Enter sends**,
+      **Shift+Enter inserts a newline**, and the input grows to ~5 lines then scrolls. If Enter instead
+      inserts a newline (i.e. the `Focus(onKeyEvent)` interception doesn't beat the multiline field), tell me
+      and I'll switch to a `Shortcuts`/`Actions` intercept. Also check an IME/accented compose doesn't send.
+- [ ] **Smart scroll**: while a reply streams, scroll UP to re-read — confirm you are NOT yanked back to the
+      bottom; when near the bottom it should stick.
+- [ ] **New chat**: the header new-chat button clears the thread (with a confirm when there's a real
+      conversation) and cancels an in-flight reply.
+- [ ] **Copy / links / code**: hover an assistant reply → a "Copy" affordance appears and copies the text;
+      a link in a reply opens the browser; a code block renders monospaced/tinted.
+- [ ] **Reduce Motion**: with macOS System Settings → Accessibility → Display → Reduce Motion ON, confirm
+      the dots/caret/entrance degrade to static (no animation).

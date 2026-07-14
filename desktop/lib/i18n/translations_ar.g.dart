@@ -762,6 +762,14 @@ class _Translations$aiCoach$ar extends Translations$aiCoach$en {
 	@override String activeGoalsCount({required Object count}) => '- الأهداف النشطة: ${count}';
 	@override String completedGoalsCount({required Object count}) => '- الأهداف المكتملة: ${count}';
 	@override String todayCompletion({required Object completed, required Object total}) => '- عادات اليوم: ${completed} مكتملة من أصل ${total}.';
+	@override String get newChatTooltip => 'محادثة جديدة';
+	@override String get clearConfirmTitle => 'بدء محادثة جديدة؟';
+	@override String get clearConfirmBody => 'سيؤدي ذلك إلى مسح المحادثة الحالية — لا يتم حفظها.';
+	@override String get clearConfirmCancel => 'إلغاء';
+	@override String get clearConfirmAccept => 'محادثة جديدة';
+	@override String get copyTooltip => 'نسخ';
+	@override String get copiedToast => 'تم النسخ إلى الحافظة';
+	@override String get linkOpenFailed => 'تعذّر فتح الرابط.';
 }
 
 // Path: settingsPage
@@ -1358,7 +1366,7 @@ class _Translations$ai$openRouter$ar extends Translations$ai$openRouter$en {
 	@override String get connectionError => '❌ خطأ في الاتصال. تأكّد من اتصالك بالإنترنت وحاول مرة أخرى.';
 	@override String get connectionErrorShort => '❌ خطأ في الاتصال.';
 	@override String get connectionCheckTimeout => '❌ خطأ: استغرق فحص الاتصال وقتاً طويلاً.';
-	@override String get contextTooLong => '⚠️ تم تجاوز حدّ الذاكرة أو الطلب غير صالح. قد تكون المحادثة طويلة أو معقّدة جداً. استخدم أيقونة سلة المهملات في الأعلى لمسح المحادثة والبدء من جديد.';
+	@override String get contextTooLong => '⚠️ أصبحت هذه المحادثة أطول من اللازم بالنسبة للنموذج. ابدأ محادثة جديدة من أعلى الصفحة للمتابعة.';
 	@override String get noInternet => '❌ خطأ: لا يوجد اتصال بالإنترنت. تحقّق من شبكتك.';
 	@override String get serverTimeout => '❌ خطأ: يستغرق الخادم وقتاً طويلاً للرد. حاول مرة أخرى.';
 	@override String apiError({required Object code}) => '❌ خطأ في API: ${code} (راجع Sentry للتفاصيل)';
@@ -1889,7 +1897,7 @@ extension on TranslationsAr {
 			'ai.openRouter.connectionError' => '❌ خطأ في الاتصال. تأكّد من اتصالك بالإنترنت وحاول مرة أخرى.',
 			'ai.openRouter.connectionErrorShort' => '❌ خطأ في الاتصال.',
 			'ai.openRouter.connectionCheckTimeout' => '❌ خطأ: استغرق فحص الاتصال وقتاً طويلاً.',
-			'ai.openRouter.contextTooLong' => '⚠️ تم تجاوز حدّ الذاكرة أو الطلب غير صالح. قد تكون المحادثة طويلة أو معقّدة جداً. استخدم أيقونة سلة المهملات في الأعلى لمسح المحادثة والبدء من جديد.',
+			'ai.openRouter.contextTooLong' => '⚠️ أصبحت هذه المحادثة أطول من اللازم بالنسبة للنموذج. ابدأ محادثة جديدة من أعلى الصفحة للمتابعة.',
 			'ai.openRouter.noInternet' => '❌ خطأ: لا يوجد اتصال بالإنترنت. تحقّق من شبكتك.',
 			'ai.openRouter.serverTimeout' => '❌ خطأ: يستغرق الخادم وقتاً طويلاً للرد. حاول مرة أخرى.',
 			'ai.openRouter.apiError' => ({required Object code}) => '❌ خطأ في API: ${code} (راجع Sentry للتفاصيل)',
@@ -1942,6 +1950,14 @@ extension on TranslationsAr {
 			'aiCoach.activeGoalsCount' => ({required Object count}) => '- الأهداف النشطة: ${count}',
 			'aiCoach.completedGoalsCount' => ({required Object count}) => '- الأهداف المكتملة: ${count}',
 			'aiCoach.todayCompletion' => ({required Object completed, required Object total}) => '- عادات اليوم: ${completed} مكتملة من أصل ${total}.',
+			'aiCoach.newChatTooltip' => 'محادثة جديدة',
+			'aiCoach.clearConfirmTitle' => 'بدء محادثة جديدة؟',
+			'aiCoach.clearConfirmBody' => 'سيؤدي ذلك إلى مسح المحادثة الحالية — لا يتم حفظها.',
+			'aiCoach.clearConfirmCancel' => 'إلغاء',
+			'aiCoach.clearConfirmAccept' => 'محادثة جديدة',
+			'aiCoach.copyTooltip' => 'نسخ',
+			'aiCoach.copiedToast' => 'تم النسخ إلى الحافظة',
+			'aiCoach.linkOpenFailed' => 'تعذّر فتح الرابط.',
 			'settingsPage.account' => 'الحساب',
 			'settingsPage.notifications' => 'الإشعارات',
 			'settingsPage.language' => 'اللغة',

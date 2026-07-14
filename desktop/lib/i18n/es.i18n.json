@@ -531,7 +531,7 @@
       "connectionError": "❌ Error de conexión. Asegúrate de estar online e inténtalo de nuevo.",
       "connectionErrorShort": "❌ Error de conexión.",
       "connectionCheckTimeout": "❌ Error: la comprobación de conexión tardó demasiado.",
-      "contextTooLong": "⚠️ Límite de memoria superado o solicitud no válida. La conversación puede ser demasiado larga o compleja. Usa el icono de papelera arriba para borrar el chat y empezar de nuevo.",
+      "contextTooLong": "⚠️ Esta conversación se volvió demasiado larga para el modelo. Inicia un nuevo chat (arriba a la derecha) para continuar.",
       "noInternet": "❌ Error: no hay conexión a internet. Revisa tu red.",
       "serverTimeout": "❌ Error: el servidor tarda demasiado en responder. Inténtalo de nuevo.",
       "apiError": "❌ Error de API: {code} (consulta Sentry para más detalles)"
@@ -588,7 +588,15 @@
     "userNameLine": "- Nombre: {userName}",
     "activeGoalsCount": "- Objetivos activos: {count}",
     "completedGoalsCount": "- Objetivos completados: {count}",
-    "todayCompletion": "- Hábitos de hoy: {completed} completados de {total} en total."
+    "todayCompletion": "- Hábitos de hoy: {completed} completados de {total} en total.",
+    "newChatTooltip": "Nuevo chat",
+    "clearConfirmTitle": "¿Iniciar un nuevo chat?",
+    "clearConfirmBody": "Esto borra la conversación actual — no se guarda.",
+    "clearConfirmCancel": "Cancelar",
+    "clearConfirmAccept": "Nuevo chat",
+    "copyTooltip": "Copiar",
+    "copiedToast": "Copiado al portapapeles",
+    "linkOpenFailed": "No se pudo abrir el enlace."
   },
   "settingsPage": {
     "account": "Cuenta",

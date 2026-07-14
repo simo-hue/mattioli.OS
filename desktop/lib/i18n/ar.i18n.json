@@ -531,7 +531,7 @@
       "connectionError": "❌ خطأ في الاتصال. تأكّد من اتصالك بالإنترنت وحاول مرة أخرى.",
       "connectionErrorShort": "❌ خطأ في الاتصال.",
       "connectionCheckTimeout": "❌ خطأ: استغرق فحص الاتصال وقتاً طويلاً.",
-      "contextTooLong": "⚠️ تم تجاوز حدّ الذاكرة أو الطلب غير صالح. قد تكون المحادثة طويلة أو معقّدة جداً. استخدم أيقونة سلة المهملات في الأعلى لمسح المحادثة والبدء من جديد.",
+      "contextTooLong": "⚠️ أصبحت هذه المحادثة أطول من اللازم بالنسبة للنموذج. ابدأ محادثة جديدة من أعلى الصفحة للمتابعة.",
       "noInternet": "❌ خطأ: لا يوجد اتصال بالإنترنت. تحقّق من شبكتك.",
       "serverTimeout": "❌ خطأ: يستغرق الخادم وقتاً طويلاً للرد. حاول مرة أخرى.",
       "apiError": "❌ خطأ في API: {code} (راجع Sentry للتفاصيل)"
@@ -588,7 +588,15 @@
     "userNameLine": "- الاسم: {userName}",
     "activeGoalsCount": "- الأهداف النشطة: {count}",
     "completedGoalsCount": "- الأهداف المكتملة: {count}",
-    "todayCompletion": "- عادات اليوم: {completed} مكتملة من أصل {total}."
+    "todayCompletion": "- عادات اليوم: {completed} مكتملة من أصل {total}.",
+    "newChatTooltip": "محادثة جديدة",
+    "clearConfirmTitle": "بدء محادثة جديدة؟",
+    "clearConfirmBody": "سيؤدي ذلك إلى مسح المحادثة الحالية — لا يتم حفظها.",
+    "clearConfirmCancel": "إلغاء",
+    "clearConfirmAccept": "محادثة جديدة",
+    "copyTooltip": "نسخ",
+    "copiedToast": "تم النسخ إلى الحافظة",
+    "linkOpenFailed": "تعذّر فتح الرابط."
   },
   "settingsPage": {
     "account": "الحساب",

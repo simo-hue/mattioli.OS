@@ -130,6 +130,13 @@ class _ProfileScreenState extends ConsumerState<ProfileScreen> {
     final settings = ref.watch(settingsProvider);
     final isPro = settings.isPro && !isPrivateMode;
 
+    final String dobRaw = context.t.profile.personalInfo.dateOfBirth;
+    final String dobCapitalized = dobRaw.isNotEmpty 
+        ? '${dobRaw[0].toUpperCase()}${dobRaw.substring(1).toLowerCase()}' 
+        : dobRaw;
+
+    final personalInfoSubtitle = '${context.t.profile.personalInfo.firstName}, ${context.t.profile.personalInfo.lastName}, $dobCapitalized';
+
     return Scaffold(
       backgroundColor: context.appColors.background,
       body: CustomScrollView(
@@ -328,7 +335,7 @@ class _ProfileScreenState extends ConsumerState<ProfileScreen> {
                   context: context,
                   icon: LucideIcons.user,
                   title: context.t.profile.personalInfoTitle,
-                  subtitle: userProfile.email ?? '',
+                  subtitle: personalInfoSubtitle,
                   onTap: () {
                     Navigator.push(context, PersonalInfoScreen.route());
                   },

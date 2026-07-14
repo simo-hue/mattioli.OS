@@ -412,48 +412,96 @@ class _GlobalInfo extends ConsumerWidget {
     final keystone = ref.watch(keystoneHabitProvider).value;
     final showKeystone =
         keystone != null && _habitTitleFor(snapshot, keystone.goalId) != null;
+    final momentum = ref.watch(momentumProvider).value ?? MomentumScore.empty;
+    final lifetime =
+        ref.watch(lifetimeSummaryProvider).value ?? LifetimeSummary.empty;
+
+    final tiles = _MetricGrid(
+      tiles: [
+        _Metric(
+          label: t.stats.lifetimeConsistency,
+          value: '${lifetime.consistency.round()}%',
+          detail: t.stats.lifetimeConsistencyDetail,
+          color: context.evolveAccent,
+          icon: LucideIcons.target,
+        ),
+        _Metric(
+          label: t.stats.lifetimeTotalDone,
+          value: '${lifetime.totalCompletions}',
+          detail: t.stats.lifetimeTotalDoneDetail,
+          color: EvolveColors.success,
+          icon: LucideIcons.circleCheck,
+        ),
+        _Metric(
+          label: t.stats.lifetimePerfectDays,
+          value: '${lifetime.perfectDays}',
+          detail: t.stats.lifetimePerfectDaysDetail,
+          color: EvolveColors.amber,
+          icon: LucideIcons.star,
+        ),
+        _Metric(
+          label: t.stats.lifetimeDaysTracked,
+          value: '${lifetime.trackedDays}',
+          detail: t.stats.lifetimeDaysTrackedDetail,
+          color: EvolveColors.violet,
+          icon: LucideIcons.calendarDays,
+        ),
+        _Metric(
+          label: t.stats.completionToday,
+          value: '${(snapshot.completionRate * 100).round()}%',
+          detail: t.stats.actionsFraction(
+            done: snapshot.completedHabits,
+            total: snapshot.totalHabits,
+          ),
+          color: context.evolveAccent,
+          icon: LucideIcons.activity,
+        ),
+        _Metric(
+          label: t.stats.bestStreakLabel,
+          value: t.dashboard.streakDaysShort(n: bestStreak),
+          detail: t.stats.allTimeBest,
+          color: EvolveColors.streakColor(bestStreak),
+          icon: LucideIcons.flame,
+        ),
+        _Metric(
+          label: t.stats.topPerformerLabel,
+          value: topPerformer?.title ?? _bestHabit(snapshot),
+          detail: topPerformer != null
+              ? t.stats.successRate(rate: topPerformer.rate)
+              : t.stats.completedEvenHardDays,
+          color: EvolveColors.success,
+          icon: LucideIcons.trophy,
+        ),
+        _Metric(
+          label: t.stats.criticalDay,
+          value: _criticalDayLabel(criticalDay),
+          detail: t.stats.completePrioritiesFirst,
+          color: EvolveColors.rose,
+          icon: LucideIcons.circleAlert,
+        ),
+      ],
+    );
+
+    final ringAndTiles = LayoutBuilder(
+      builder: (context, constraints) {
+        final ring = _MomentumRing(momentum: momentum);
+        if (constraints.maxWidth < 920) {
+          return Column(children: [ring, const SizedBox(height: 18), tiles]);
+        }
+        return Row(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            SizedBox(width: 300, child: ring),
+            const SizedBox(width: 18),
+            Expanded(child: tiles),
+          ],
+        );
+      },
+    );
 
     return Column(
       children: [
-        _InfoHero(snapshot: snapshot),
-        const SizedBox(height: 18),
-        _MetricGrid(
-          tiles: [
-            _Metric(
-              label: t.stats.completionToday,
-              value: '${(snapshot.completionRate * 100).round()}%',
-              detail: t.stats.actionsFraction(
-                done: snapshot.completedHabits,
-                total: snapshot.totalHabits,
-              ),
-              color: context.evolveAccent,
-              icon: LucideIcons.activity,
-            ),
-            _Metric(
-              label: t.stats.bestStreakLabel,
-              value: t.dashboard.streakDaysShort(n: bestStreak),
-              detail: t.stats.allTimeBest,
-              color: EvolveColors.streakColor(bestStreak),
-              icon: LucideIcons.flame,
-            ),
-            _Metric(
-              label: t.stats.topPerformerLabel,
-              value: topPerformer?.title ?? _bestHabit(snapshot),
-              detail: topPerformer != null
-                  ? t.stats.successRate(rate: topPerformer.rate)
-                  : t.stats.completedEvenHardDays,
-              color: EvolveColors.success,
-              icon: LucideIcons.trophy,
-            ),
-            _Metric(
-              label: t.stats.criticalDay,
-              value: _criticalDayLabel(criticalDay),
-              detail: t.stats.completePrioritiesFirst,
-              color: EvolveColors.rose,
-              icon: LucideIcons.circleAlert,
-            ),
-          ],
-        ),
+        ringAndTiles,
         const SizedBox(height: 18),
         if (showKeystone) ...[
           _KeystoneCard(snapshot: snapshot),

@@ -1142,3 +1142,15 @@ NEXT ACTION: Ensure device is running the latest built version of the codebase.
     - **No new dependencies.**
   - *Verification*: `flutter analyze` clean on both (only the pre-existing desktop `main.dart` warning; zero new errors/warnings). New channel-mocked unit tests `desktop/test/private_db_recovery_test.dart` + `mobile/test/private_db_recovery_test.dart` (6 each, green) covering the probe truth-table and the file/sidecar/avatar/key deletion. Regression-checked by diffing the full-suite failing set against pristine HEAD: **desktop 239 pass / same 2 pre-existing fails** (`desktop_supabase_config_security_test` = dart-define env, `icloud_sync_card_test` = env) — **zero new failures**; **mobile 222 pass / 0 fail**. Cannot build/run either app here (no Xcode) → the dialog copy + the actual reset-and-import round-trip need on-device QA (`TO_SIMO_DO.md`).
   - *Current Status*: **Complete and verified in Dart on both platforms.** NOTE: a concurrent session's commits (`7e2c3da` "ai coach", `c491c3a` "UI bugs") swept most of these edits into HEAD mid-work; `desktop/lib/features/settings/presentation/settings_page.dart` and the two new `private_db_recovery_test.dart` files remain **uncommitted** in the working tree.
+
+- [2026-07-14 21:24]: Statistics Page Layout Fix
+  - *Details*: Combined the "Lifetime" and "Current" metrics cards into a single grid to the right of the Momentum ring card to fill out the empty space and improve professionalism.
+  - *Tech Notes*: Moved layout logic from `_InfoHero` inside `statistics_extras.dart` directly into `_GlobalInfo` in `statistics_page.dart`. Rendered all 8 metrics within a single `_MetricGrid` and deleted the unused `_InfoHero` component.
+
+- [2026-07-14 21:36]: Settings Subtitle Fix
+  - *Details*: Displayed the user's first name, last name, and date of birth as the subtitle for the 'Personal Information' menu item in the mobile settings page. It falls back to the email address if these fields are not set.
+  - *Tech Notes*: Updated `profile_screen.dart` to dynamically calculate the subtitle string from the `userProfile` object.
+
+- [2026-07-14 21:41]: Settings Subtitle Update
+  - *Details*: Changed the Personal Information subtitle to display the translated field names (First name, Last name, Date of birth) instead of the user's actual data as requested.
+  - *Tech Notes*: Updated `profile_screen.dart` to use `context.t.profile.personalInfo` string values.

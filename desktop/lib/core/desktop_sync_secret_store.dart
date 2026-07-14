@@ -1,7 +1,7 @@
 import 'package:evolve_sync/evolve_sync.dart';
 import 'package:flutter_secure_storage/flutter_secure_storage.dart';
 
-import 'app_logger.dart';
+import 'secure_storage_utils.dart';
 
 /// macOS [SyncSecretStore]: the E2E sync key + canonical owner id in the
 /// user's iCloud Keychain (`synchronizable`), inside the SHARED access group
@@ -28,14 +28,17 @@ class DesktopSyncSecretStore implements SyncSecretStore {
   Future<String?> read(String key) => _storage.read(key: key);
 
   @override
-  Future<void> write(String key, String value) async {
-    try {
-      await _storage.write(key: key, value: value);
-    } catch (error, stack) {
-      AppLogger.error('[Sync] keychain write failed for "$key"', error, stack);
-      rethrow;
-    }
-  }
+  Future<void> write(String key, String value) =>
+      // Route through the shared scoped writer so a duplicate-item (-25299) on
+      // this collision-prone synchronizable/shared-group store self-heals
+      // (scoped delete+rewrite, never deleteAll) instead of aborting sync —
+      // matching mobile's synced-tier write.
+      SecureStorageUtils.writeScoped(
+        _storage,
+        key,
+        value,
+        context: '[Sync] keychain',
+      );
 
   @override
   Future<void> delete(String key) => _storage.delete(key: key);

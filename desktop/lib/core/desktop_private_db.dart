@@ -5,10 +5,11 @@ import 'dart:math';
 import 'package:evolve_desktop/core/app_logger.dart';
 import 'package:evolve_desktop/core/import_merge.dart';
 import 'package:evolve_desktop/core/import_merge_stats.dart';
+import 'package:evolve_desktop/core/secure_storage_utils.dart';
 import 'package:evolve_sync/evolve_sync.dart';
 import 'package:evolve_desktop/core/streak_utils.dart';
 import 'package:flutter/foundation.dart';
-import 'package:flutter_secure_storage/flutter_secure_storage.dart';
+import 'package:flutter/services.dart';
 import 'package:path/path.dart' as p;
 import 'package:path_provider/path_provider.dart';
 import 'package:sqflite_sqlcipher/sqflite.dart';
@@ -20,8 +21,9 @@ import 'package:uuid/uuid.dart';
 /// both clients share one source of truth (identical tables/columns/constraints
 /// and the iCloud-sync bookkeeping objects). The database is encrypted at rest
 /// via SQLCipher; the key and the stable owner UUID live in the macOS Keychain
-/// (via [FlutterSecureStorage]) and are device-local — they never leave the
-/// device and are never wiped by "delete private data".
+/// (via [SecureStorageUtils]'s `first_unlock_this_device` device-local tier)
+/// and are device-local — they never leave the device and are never wiped by
+/// "delete private data".
 ///
 /// The row-level lifecycle logic (seed / wipe / import) is exposed as static
 /// helpers that operate on any [DatabaseExecutor], so it can be exercised
@@ -33,11 +35,19 @@ class DesktopPrivateDb {
   Database? _db;
   Future<Database>? _opening;
 
+  /// In-memory cache of the owner id so an adopted/reconciled owner sticks for
+  /// the session even if the Keychain write fails (mirrors mobile's `_ownerId`).
+  String? _cachedOwnerId;
+
   /// New baseline file name — the pre-alignment mock used `evolve_private.db`.
   static const _dbFileName = 'evolve_private_v2.db';
   static const _keyStorageKey = 'evolve_private_db_key';
   static const _ownerStorageKey = 'evolve_private_owner_id';
   static const _avatarDirName = 'private_profile';
+
+  /// Native bridge that flags the private-data directory as backup-excluded.
+  /// Same channel contract as the iOS bridge (`evolve/private_storage`).
+  static const _privateStorageChannel = MethodChannel('evolve/private_storage');
 
   static DesktopPrivateDb get instance {
     _instance ??= DesktopPrivateDb._();
@@ -62,8 +72,8 @@ class DesktopPrivateDb {
   /// merge). Without this, [ownerId] keeps returning the old device-local id
   /// and every owner-filtered query misses the re-keyed rows.
   Future<void> adoptOwner(String canonical) async {
-    const storage = FlutterSecureStorage();
-    await storage.write(key: _ownerStorageKey, value: canonical);
+    _cachedOwnerId = canonical;
+    await SecureStorageUtils.writeDeviceLocal(_ownerStorageKey, canonical);
   }
 
   /// Returns the open database, initializing it on first call. The open is
@@ -77,12 +87,14 @@ class DesktopPrivateDb {
   /// The stable local owner UUID (created once, reused forever). Kept in the
   /// Keychain so it survives a data wipe and stays stable across restarts.
   Future<String> get ownerId async {
-    const storage = FlutterSecureStorage();
-    var id = await storage.read(key: _ownerStorageKey);
+    final cached = _cachedOwnerId;
+    if (cached != null && cached.isNotEmpty) return cached;
+    var id = await SecureStorageUtils.readDeviceLocal(_ownerStorageKey);
     if (id == null || id.isEmpty) {
       id = const Uuid().v4();
-      await storage.write(key: _ownerStorageKey, value: id);
+      await SecureStorageUtils.writeDeviceLocal(_ownerStorageKey, id);
     }
+    _cachedOwnerId = id;
     return id;
   }
 
@@ -90,6 +102,14 @@ class DesktopPrivateDb {
   Future<void> close() async {
     await _db?.close();
     _db = null;
+  }
+
+  /// Whether the encrypted private database file exists on disk. Used at startup
+  /// to recover a Private-mode user whose data-mode preference was lost (mirrors
+  /// mobile's `PrivateLocalDatabase.databaseFileExists`).
+  static Future<bool> databaseFileExists() async {
+    final dir = await getApplicationSupportDirectory();
+    return File(p.join(dir.path, _dbFileName)).exists();
   }
 
   // ---------------------------------------------------------------------------
@@ -216,6 +236,7 @@ class DesktopPrivateDb {
             'goal_id': l['goal_id'],
             'date': l['date'],
             'status': l['status'],
+            'value': l['value'],
             'created_at': l['created_at'],
             'updated_at': l['updated_at'],
             'streak': l['streak'],
@@ -593,6 +614,18 @@ class DesktopPrivateDb {
   }) async {
     await db.insert('profiles', {
       'id': owner,
+      // Seed the same preference columns mobile's _ensureProfile writes so a
+      // freshly-seeded (and CloudKit-synced) profile row is byte-identical
+      // across platforms. Critically `language: 'system'` — the schema DEFAULT
+      // is 'it', which would otherwise propagate via last-write-wins and flip a
+      // synced device's language to Italian. Only applied on first creation
+      // (ConflictAlgorithm.ignore), never overwriting an existing choice.
+      'language': 'system',
+      'theme_mode': 'dark',
+      'accent_color': '#FFFFFF',
+      'pref_default_calendar_view': 'settimana',
+      'is_pro': 1,
+      'sentry_consent': 0,
       'created_at': now,
       'updated_at': now,
     }, conflictAlgorithm: ConflictAlgorithm.ignore);
@@ -877,6 +910,7 @@ class DesktopPrivateDb {
           'goal_id': goalId,
           'date': date,
           'status': l['status'] ?? 'done',
+          'value': l['value'],
           'streak': l['streak'] ?? 0,
           'created_at': l['created_at'] ?? now,
           'updated_at': l['updated_at'] ?? now,
@@ -893,6 +927,7 @@ class DesktopPrivateDb {
           'goal_logs',
           {
             'status': l['status'] ?? 'done',
+            'value': l['value'],
             'updated_at': l['updated_at'] ?? now,
           },
           where: 'id = ?',
@@ -980,8 +1015,14 @@ class DesktopPrivateDb {
     // Wrapped so a single out-of-domain value from a foreign/older client (e.g.
     // an unknown theme_mode failing the CHECK) can't roll back the whole import,
     // honoring the same row-level resilience as the data inserts above.
+    //
+    // Applied ONLY on a REPLACE import (a deliberate full restore). A MERGE
+    // import must NOT silently flip the active user's theme/language/name to the
+    // backup's values — the file is being brought in ALONGSIDE the live profile,
+    // not restored over it (mobile parity: mobile never re-applies the profile
+    // block on import).
     final profile = backupData['profile'];
-    if (profile is Map) {
+    if (replaceExisting && profile is Map) {
       final sanitized = sanitizeSettings(Map<String, dynamic>.from(profile));
       if (sanitized.isNotEmpty) {
         try {
@@ -1066,7 +1107,9 @@ class DesktopPrivateDb {
   Future<Database> _open() async {
     final dir = await getApplicationSupportDirectory();
     final dbPath = p.join(dir.path, _dbFileName);
-    final key = await _encryptionKey();
+    final dbFileExists = await File(dbPath).exists();
+    await _excludeFromBackup(dir);
+    final key = await _encryptionKey(dbFileExists: dbFileExists);
 
     final db = await openDatabase(
       dbPath,
@@ -1080,9 +1123,123 @@ class DesktopPrivateDb {
       onUpgrade: PrivateDbSchema.onUpgrade,
     );
     await seedProfile(db, owner: await ownerId, now: _now());
+    await _reconcileOrphanedOwner(db);
     _db = db;
     debugPrint('[DesktopPrivateDb] Opened schema v${PrivateDbSchema.version}.');
     return db;
+  }
+
+  /// Self-heals an "orphaned owner": if this device's current owner id owns no
+  /// rows but exactly one OTHER user_id owns all the data, adopt that id so
+  /// owner-filtered queries find the data again. Guards two silent-loss
+  /// preconditions — a transient Keychain miss that minted a fresh owner UUID,
+  /// or a second-device iCloud re-key whose best-effort [adoptOwner] write
+  /// failed. Ambiguous splits (data across >1 owner) are left untouched.
+  /// Mirrors mobile's `PrivateLocalDatabase._reconcileOrphanedOwner`.
+  Future<void> _reconcileOrphanedOwner(Database db) async {
+    const dataTables = [
+      'goals',
+      'goal_logs',
+      'daily_moods',
+      'long_term_goals',
+      'macro_goal_categories',
+    ];
+    try {
+      final current = await ownerId;
+
+      // If the current owner already owns any data, we're in steady state.
+      for (final t in dataTables) {
+        final mine = await db.query(
+          t,
+          columns: ['user_id'],
+          where: 'user_id = ?',
+          whereArgs: [current],
+          limit: 1,
+        );
+        if (mine.isNotEmpty) return;
+      }
+
+      // Collect the distinct OTHER owners that actually hold data.
+      final others = <String>{};
+      for (final t in dataTables) {
+        final rows = await db.rawQuery(
+          'SELECT DISTINCT user_id FROM $t WHERE user_id != ?',
+          [current],
+        );
+        for (final r in rows) {
+          final id = r['user_id'] as String?;
+          if (id != null && id.isNotEmpty) others.add(id);
+        }
+      }
+
+      if (others.isEmpty) return; // genuinely empty / first run
+      if (others.length > 1) {
+        AppLogger.warning(
+          '[DesktopPrivateDb] owner reconcile skipped: data split across '
+          '${others.length} owners (ambiguous)',
+        );
+        return;
+      }
+
+      final recovered = others.first;
+      // Ensure the recovered owner has its FK parent rows before adopting.
+      await seedProfile(db, owner: recovered, now: _now());
+
+      AppLogger.warning(
+        '[DesktopPrivateDb] recovering orphaned habit data: adopting the owner '
+        'id that owns the rows (current owner matched no data)',
+      );
+      _cachedOwnerId = recovered;
+      // Persist best-effort; if the Keychain write fails we self-heal again on
+      // the next open (the in-memory adoption already fixes this session).
+      try {
+        await SecureStorageUtils.writeDeviceLocal(
+          _ownerStorageKey,
+          recovered,
+          context: '[DesktopPrivateDb] owner reconcile',
+        );
+      } catch (e, stack) {
+        AppLogger.error(
+          '[DesktopPrivateDb] owner reconcile Keychain write failed '
+          '(retries next open)',
+          e,
+          stack,
+        );
+      }
+    } catch (e, stack) {
+      AppLogger.error('[DesktopPrivateDb] owner reconcile failed', e, stack);
+    }
+  }
+
+  /// Flags the private-data directory as excluded from device backups (Time
+  /// Machine / iCloud) via the native `evolve/private_storage` channel. The
+  /// whole Application Support directory is excluded rather than the single
+  /// `.db` file so it also covers SQLite's `-wal`/`-shm` sidecars (which may not
+  /// exist yet) and the `private_profile` avatar folder — exactly the
+  /// device-local Private data that must never ride a backup onto another
+  /// device where the SQLCipher key (device-local, see [SecureStorageUtils])
+  /// doesn't exist. Best-effort: failures are logged, not fatal. Mirrors
+  /// mobile's `PrivateLocalDatabase._excludeFromBackup`.
+  Future<void> _excludeFromBackup(Directory dir) async {
+    if (!Platform.isMacOS) return;
+    try {
+      await dir.create(recursive: true);
+      await _privateStorageChannel.invokeMethod<void>('excludeFromBackup', {
+        'path': dir.path,
+      });
+      final marker = File(p.join(dir.path, '.private_mode_local_only'));
+      if (!await marker.exists()) {
+        await marker.writeAsString(
+          'Private mode database. Exclude this directory from device backups.',
+        );
+      }
+    } catch (error, stack) {
+      AppLogger.warning(
+        '[DesktopPrivateDb] backup exclusion failed',
+        error,
+        stack,
+      );
+    }
   }
 
   Future<void> _deletePrivateProfileFiles() async {
@@ -1097,12 +1254,27 @@ class DesktopPrivateDb {
     }
   }
 
-  Future<String> _encryptionKey() async {
-    const storage = FlutterSecureStorage();
-    final existing = await storage.read(key: _keyStorageKey);
+  Future<String> _encryptionKey({required bool dbFileExists}) async {
+    final existing = await SecureStorageUtils.readDeviceLocal(_keyStorageKey);
     if (existing != null && existing.length >= 32) return existing;
+
+    // Fail closed: the encryption key is absent but an encrypted database file
+    // already exists on disk. Minting a NEW key here would make that database
+    // permanently undecryptable — SQLCipher reports error 26 "file is not a
+    // database" — and would overwrite a key a later launch might still read.
+    // Surface a distinct, recoverable error and let a future launch retry
+    // instead of silently bricking the user's data. Only a true first run (no
+    // db file) may generate a fresh key. Mirrors mobile's PrivateLocalDatabase
+    // `_databasePassword` guard.
+    if (dbFileExists) {
+      throw StateError(
+        'Private database key unavailable while the database file exists; '
+        'refusing to regenerate it so the data stays recoverable.',
+      );
+    }
+
     final key = _generateKey();
-    await storage.write(key: _keyStorageKey, value: key);
+    await SecureStorageUtils.writeDeviceLocal(_keyStorageKey, key);
     return key;
   }
 

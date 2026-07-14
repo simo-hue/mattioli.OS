@@ -6,6 +6,7 @@ import 'package:evolve_desktop/core/app_bootstrap.dart';
 import 'package:evolve_desktop/i18n/translations.g.dart';
 import 'package:evolve_desktop/core/app_logger.dart';
 import 'package:evolve_desktop/core/desktop_data_mode.dart';
+import 'package:evolve_desktop/core/desktop_private_db.dart';
 import 'package:evolve_desktop/core/desktop_supabase_config.dart';
 import 'package:evolve_desktop/core/secure_storage_utils.dart';
 import 'package:evolve_desktop/features/auth/application/consent_controller.dart';
@@ -202,7 +203,23 @@ class DesktopAuthController extends Notifier<DesktopAuthState> {
 
   /// Enter Private mode — no Supabase session required.
   Future<void> enterPrivateMode() async {
-    await ref.read(activeDesktopDataModeProvider.notifier).enterPrivateMode();
+    // Ensure the encrypted DB actually OPENS before flipping the mode, so a
+    // failed open (e.g. the fail-closed key guard firing when the SQLCipher key
+    // is missing but the DB file exists) leaves us in Supabase mode with an
+    // error instead of stranding the app in Private mode — persisted across
+    // restarts — on an empty dashboard. Mirrors mobile's `startPrivateMode`.
+    state = state.copyWith(isLoading: true, clearError: true);
+    try {
+      await DesktopPrivateDb.instance.database;
+      await ref.read(activeDesktopDataModeProvider.notifier).enterPrivateMode();
+      state = state.copyWith(isLoading: false);
+    } catch (error, stack) {
+      AppLogger.error('[Auth] Private mode startup error', error, stack);
+      state = state.copyWith(
+        isLoading: false,
+        errorMessage: t.authCtrl.operationFailed,
+      );
+    }
   }
 
   /// Exit Private mode without deleting private data.

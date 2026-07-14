@@ -13,6 +13,52 @@ class AppDelegate: FlutterAppDelegate {
   }
 }
 
+/// Native half of Private mode's local-only guarantee: a thin MethodChannel
+/// (`evolve/private_storage`) whose sole job is to flag the Private-data
+/// directory as excluded from device backups (Time Machine / iCloud). The
+/// SQLCipher key is device-local (see `SecureStorageUtils`), so the encrypted
+/// data must never ride a backup onto another device where that key doesn't
+/// exist. Line-for-line port of the iOS bridge in
+/// `mobile/ios/Runner/AppDelegate.swift` (same channel + method contract). Kept
+/// in this file (already a Runner target member) so it builds without editing
+/// the Xcode project.
+enum PrivateStorageBridge {
+  static func register(_ messenger: FlutterBinaryMessenger) {
+    let channel = FlutterMethodChannel(
+      name: "evolve/private_storage",
+      binaryMessenger: messenger
+    )
+    channel.setMethodCallHandler { call, result in
+      guard call.method == "excludeFromBackup" else {
+        result(FlutterMethodNotImplemented)
+        return
+      }
+
+      guard
+        let args = call.arguments as? [String: Any],
+        let path = args["path"] as? String
+      else {
+        result(FlutterError(code: "bad_args", message: "Missing path", details: nil))
+        return
+      }
+
+      var url = URL(fileURLWithPath: path)
+      do {
+        var resourceValues = URLResourceValues()
+        resourceValues.isExcludedFromBackup = true
+        try url.setResourceValues(resourceValues)
+        result(nil)
+      } catch {
+        result(FlutterError(
+          code: "exclude_failed",
+          message: error.localizedDescription,
+          details: nil
+        ))
+      }
+    }
+  }
+}
+
 /// Native half of the iCloud sync feature: a thin MethodChannel
 /// (`evolve/cloudkit`) over CloudKit's private database + a custom zone. It only
 /// transports the contract — all sync logic (encryption, LWW, merge) lives in

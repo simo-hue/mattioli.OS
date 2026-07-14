@@ -17,7 +17,7 @@ import 'goals_stats_view.dart';
 import 'package:evolve_desktop/shared/widgets/evolve_panel.dart';
 import 'package:evolve_desktop/shared/widgets/evolve_toast.dart';
 import 'package:evolve_desktop/core/tutorial_provider.dart';
-import 'package:evolve_desktop/features/shell/application/navigation_controller.dart';
+import 'package:evolve_desktop/shared/widgets/coach_tutorial.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:lucide_icons_flutter/lucide_icons.dart';
@@ -41,21 +41,16 @@ class _GoalsPageState extends ConsumerState<GoalsPage> {
   final _categories = [..._defaultGoalCategories];
   final _archivedCategoryIds = <String>{};
 
-  // Tutorial State
-  bool _didFinishGoalsTutorial = false;
-  int _goalsTutorialIndex = 0;
-  bool _isRefreshingGoalsTutorialGeometry = false;
+  // Goals segment of the continuous product tour. The central
+  // [tourControllerProvider] owns whether this segment is active; the page only
+  // owns the step index within the segment and the spotlight target keys.
+  int _tourIndex = 0;
 
-  // Tutorial Keys
-  final _goalsTutorialOverlayKey = GlobalKey();
+  // Tour target keys (one per spotlighted step).
   final _planSelectorKey = GlobalKey();
   final _performanceToggleKey = GlobalKey();
   final _addGoalKey = GlobalKey();
   final _tutorialCheckboxKey = GlobalKey();
-  final _tutorialCategoryKey = GlobalKey();
-  final _tutorialRescheduleKey = GlobalKey();
-  final _tutorialEditKey = GlobalKey();
-  final _tutorialDeleteKey = GlobalKey();
 
   @override
   void initState() {
@@ -66,18 +61,6 @@ class _GoalsPageState extends ConsumerState<GoalsPage> {
     _selectedQuarter = ((now.month - 1) ~/ 3) + 1;
     _selectedMonth = now.month;
     _selectedWeek = logicalWeekOfMonth(now);
-
-    WidgetsBinding.instance.addPostFrameCallback((_) {
-      _checkTutorial();
-    });
-  }
-
-  void _checkTutorial() {
-    if (!mounted || _didFinishGoalsTutorial) return;
-    final hasSeenTutorial = ref.read(goalsTutorialProvider);
-    if (!hasSeenTutorial) {
-      setState(() {});
-    }
   }
 
   @override
@@ -103,11 +86,14 @@ class _GoalsPageState extends ConsumerState<GoalsPage> {
         .toList();
 
     final categories = _availableCategories;
-    final mainTutorialSeen = ref.watch(tutorialProvider);
-    final hasSeenTutorial = ref.watch(goalsTutorialProvider);
-    final showTutorial = mainTutorialSeen && !hasSeenTutorial && !_didFinishGoalsTutorial;
+    // The Goals segment of the continuous tour is active. The demo goal below
+    // gives the "complete/miss" step something to spotlight when the user has
+    // no real goals for the selected period yet.
+    final showTour = ref
+        .watch(tourControllerProvider)
+        .isSegmentActive(TourSegment.goals);
 
-    if (showTutorial && activeGoals.isEmpty) {
+    if (showTour && activeGoals.isEmpty) {
       activeGoals = [
         DashboardGoal(
           id: 'tutorial_fake_goal',
@@ -149,7 +135,6 @@ class _GoalsPageState extends ConsumerState<GoalsPage> {
               _GoalCommandBar(
                 periodClusterKey: _planSelectorKey,
                 addGoalKey: _addGoalKey,
-                tutorialCategoryKey: _tutorialCategoryKey,
                 selectedType: _selectedType,
                 selectedYear: _selectedYear,
                 selectedQuarter: _selectedQuarter,
@@ -190,9 +175,6 @@ class _GoalsPageState extends ConsumerState<GoalsPage> {
                   periodTitle: _periodTitle,
                   periodSubtitle: _periodSubtitle,
                   tutorialCheckboxKey: _tutorialCheckboxKey,
-                  tutorialRescheduleKey: _tutorialRescheduleKey,
-                  tutorialEditKey: _tutorialEditKey,
-                  tutorialDeleteKey: _tutorialDeleteKey,
                   categories: categories,
                   activeGoals: activeGoals,
                   completedGoals: completedGoals,
@@ -208,7 +190,18 @@ class _GoalsPageState extends ConsumerState<GoalsPage> {
                 ),
             ],
           ),
-          if (showTutorial) _buildGoalsTutorialOverlay(),
+          if (showTour)
+            CoachTutorialOverlay(
+              steps: _goalsTourSteps(),
+              index: _tourIndex,
+              onIndexChanged: (i) => setState(() => _tourIndex = i),
+              // The last Goals step advances the tour to the Coach segment.
+              onFinish: () =>
+                  ref.read(tourControllerProvider.notifier).advance(),
+              backLabel: t.tour.back,
+              nextLabel: t.tour.next,
+              finishLabel: t.tour.continueLabel,
+            ),
         ],
       ),
     );
@@ -635,280 +628,36 @@ class _GoalsPageState extends ConsumerState<GoalsPage> {
     });
   }
 
-  // --- Tutorial Methods ---
-
-  Rect? _targetRectForKey(GlobalKey? targetKey) {
-    final overlayContext = _goalsTutorialOverlayKey.currentContext;
-    final targetContext = targetKey?.currentContext;
-    if (overlayContext == null || targetContext == null) return null;
-
-    final overlayObject = overlayContext.findRenderObject();
-    final targetObject = targetContext.findRenderObject();
-    if (overlayObject is! RenderBox ||
-        targetObject is! RenderBox ||
-        !overlayObject.attached ||
-        !targetObject.attached ||
-        !targetObject.hasSize) {
-      return null;
-    }
-
-    final targetSize = targetObject.size;
-    if (targetSize.width <= 1 || targetSize.height <= 1) return null;
-
-    final targetOffset = targetObject.localToGlobal(
-      Offset.zero,
-      ancestor: overlayObject,
-    );
-    return targetOffset & targetSize;
-  }
-
-  void _clearGoalsTutorialState() {
-    _goalsTutorialIndex = 0;
-    _showStats = false;
-  }
-
-  Widget _buildGoalsTutorialOverlay() {
-    final steps = _buildGoalsTutorialSteps();
-    final index = _goalsTutorialIndex.clamp(0, steps.length - 1).toInt();
-    final step = steps[index];
-    final targetRect = _targetRectForKey(step.targetKey);
-
-    if (step.targetKey != null && targetRect == null) {
-      _scheduleGoalsTutorialGeometryRefresh();
-    }
-
-    return Positioned.fill(
-      child: Material(
-        key: _goalsTutorialOverlayKey,
-        color: Colors.transparent,
-        child: LayoutBuilder(
-          builder: (context, constraints) {
-            final overlaySize = Size(
-              constraints.maxWidth,
-              constraints.maxHeight,
-            );
-            final showCardAtTop =
-                targetRect != null &&
-                targetRect.center.dy > overlaySize.height * 0.52;
-
-            return Stack(
-              children: [
-                Positioned.fill(
-                  child: CustomPaint(
-                    painter: _GoalsTutorialScrimPainter(targetRect),
-                  ),
-                ),
-                if (targetRect != null)
-                  Positioned.fromRect(
-                    rect: targetRect.inflate(8),
-                    child: IgnorePointer(
-                      child: DecoratedBox(
-                        decoration: BoxDecoration(
-                          borderRadius: BorderRadius.circular(16),
-                          border: Border.all(
-                            color: context.evolveAccent,
-                            width: 2,
-                          ),
-                        ),
-                      ),
-                    ),
-                  ),
-                Align(
-                  alignment: showCardAtTop
-                      ? Alignment.topCenter
-                      : Alignment.bottomCenter,
-                  child: Padding(
-                    padding: const EdgeInsets.symmetric(
-                      horizontal: 20,
-                      vertical: 40,
-                    ),
-                    child: _buildTutorialContent(
-                      step.title,
-                      step.description,
-                      isFirst: index == 0,
-                      isLast: index == steps.length - 1,
-                      nextButtonLabel: step.nextButtonLabel,
-                      onPreviousPressed: () =>
-                          _goToGoalsTutorialStep(index - 1),
-                      onNextPressed: () {
-                        if (index == steps.length - 1) {
-                          _finishGoalsTutorial(advanceToStats: true);
-                          return;
-                        }
-                        _goToGoalsTutorialStep(index + 1);
-                      },
-                    ),
-                  ),
-                ),
-              ],
-            );
-          },
-        ),
-      ),
-    );
-  }
-
-  void _finishGoalsTutorial({bool advanceToStats = false}) {
-    if (!mounted || _didFinishGoalsTutorial) return;
-    _didFinishGoalsTutorial = true;
-    _clearGoalsTutorialState();
-    ref.read(goalsTutorialProvider.notifier).setTutorialSeen(true);
-
-    if (advanceToStats) {
-      WidgetsBinding.instance.addPostFrameCallback((_) {
-        if (!mounted) return;
-        ref.read(navigationControllerProvider.notifier).select(DesktopSection.insights);
-      });
-    }
-  }
-
-  void _goToGoalsTutorialStep(int index) {
-    if (index < 0) return;
-    final steps = _buildGoalsTutorialSteps();
-    if (index >= steps.length) {
-      _finishGoalsTutorial();
-      return;
-    }
-
-    setState(() {
-      _goalsTutorialIndex = index;
-      _showStats = steps[index].showStats;
-    });
-    _scheduleGoalsTutorialGeometryRefresh();
-  }
-
-  void _scheduleGoalsTutorialGeometryRefresh() {
-    if (_isRefreshingGoalsTutorialGeometry) return;
-    _isRefreshingGoalsTutorialGeometry = true;
-    WidgetsBinding.instance.addPostFrameCallback((_) {
-      _isRefreshingGoalsTutorialGeometry = false;
-      if (!mounted || _didFinishGoalsTutorial) return;
-      setState(() {});
-    });
-  }
-
-  Widget _buildTutorialContent(
-    String title,
-    String description, {
-    required bool isFirst,
-    required bool isLast,
-    String? nextButtonLabel,
-    required VoidCallback onPreviousPressed,
-    required VoidCallback onNextPressed,
-  }) {
-    return ConstrainedBox(
-      constraints: const BoxConstraints(maxWidth: 400),
-      child: DecoratedBox(
-        decoration: BoxDecoration(
-          color: context.evolveColors.panelRaised,
-          borderRadius: BorderRadius.circular(20),
-          border: Border.all(color: context.evolveColors.border),
-          boxShadow: [
-            BoxShadow(
-              color: Colors.black.withValues(alpha: 0.2),
-              blurRadius: 16,
-              offset: const Offset(0, 8),
-            ),
-          ],
-        ),
-        child: Padding(
-          padding: const EdgeInsets.all(24),
-          child: Column(
-            mainAxisSize: MainAxisSize.min,
-            children: [
-              Text(
-                title,
-                textAlign: TextAlign.center,
-                style: const TextStyle(
-                  fontSize: 18,
-                  fontWeight: FontWeight.w800,
-                  letterSpacing: -0.4,
-                ),
-              ),
-              const SizedBox(height: 12),
-              Text(
-                description,
-                textAlign: TextAlign.center,
-                style: TextStyle(
-                  fontSize: 13,
-                  fontWeight: FontWeight.w500,
-                  height: 1.5,
-                  color: context.evolveColors.muted,
-                ),
-              ),
-              const SizedBox(height: 24),
-              Row(
-                mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                children: [
-                  if (!isFirst)
-                    TextButton(
-                      onPressed: onPreviousPressed,
-                      child: Text(t.goalsPage.back),
-                    )
-                  else
-                    const SizedBox.shrink(),
-                  FilledButton(
-                    onPressed: onNextPressed,
-                    child: Text(
-                      nextButtonLabel ??
-                          (isLast ? t.goalsPage.finish : t.goalsPage.next),
-                    ),
-                  ),
-                ],
-              ),
-            ],
-          ),
-        ),
-      ),
-    );
-  }
-
-  List<_GoalsTutorialStep> _buildGoalsTutorialSteps() {
-    return [
-      _GoalsTutorialStep(
-        targetKey: _planSelectorKey,
-        title: t.goalsPage.tutPlanningTitle,
-        description: t.goalsPage.tutPlanningDesc,
-      ),
-      _GoalsTutorialStep(
-        targetKey: _addGoalKey,
-        title: t.goalsPage.newGoal,
-        description: t.goalsPage.tutNewGoalDesc,
-      ),
-      _GoalsTutorialStep(
-        targetKey: _tutorialCheckboxKey,
-        title: t.goalsPage.tutCompleteTitle,
-        description: t.goalsPage.tutCompleteDesc,
-      ),
-      _GoalsTutorialStep(
-        targetKey: _tutorialCategoryKey,
-        title: t.form.category,
-        description: t.goalsPage.tutCategoryDesc,
-      ),
-      _GoalsTutorialStep(
-        targetKey: _tutorialRescheduleKey,
-        title: t.goalsPage.tutRescheduleTitle,
-        description: t.goalsPage.tutRescheduleDesc,
-      ),
-      _GoalsTutorialStep(
-        targetKey: _tutorialEditKey,
-        title: t.common.actions.edit,
-        description: t.goalsPage.tutEditDesc,
-      ),
-      _GoalsTutorialStep(
-        targetKey: _tutorialDeleteKey,
-        title: t.common.actions.delete,
-        description: t.goalsPage.tutDeleteDesc,
-      ),
-      _GoalsTutorialStep(
-        targetKey: _performanceToggleKey,
-        showStats: true,
-        title: t.goalsPage.tutStatsTitle,
-        description: t.goalsPage.tutStatsDesc,
-        nextButtonLabel: t.goalsPage.next,
-      ),
-    ];
-  }
+  // Goals segment of the continuous tour, trimmed to five steps: an
+  // orientation card, then four spotlighted targets. The shared
+  // [CoachTutorialOverlay] owns scrim/spotlight/keyboard/tap-blocking.
+  List<CoachStep> _goalsTourSteps() => [
+    // Orientation-first: a centered card (no spotlight) announcing the page.
+    CoachStep(
+      title: t.tour.goalsOrientationTitle,
+      description: t.tour.goalsOrientationDesc,
+    ),
+    CoachStep(
+      targetKey: _planSelectorKey,
+      title: t.tour.goalsPlanTitle,
+      description: t.tour.goalsPlanDesc,
+    ),
+    CoachStep(
+      targetKey: _addGoalKey,
+      title: t.tour.goalsAddTitle,
+      description: t.tour.goalsAddDesc,
+    ),
+    CoachStep(
+      targetKey: _tutorialCheckboxKey,
+      title: t.tour.goalsCheckTitle,
+      description: t.tour.goalsCheckDesc,
+    ),
+    CoachStep(
+      targetKey: _performanceToggleKey,
+      title: t.tour.goalsStatsTitle,
+      description: t.tour.goalsStatsDesc,
+    ),
+  ];
 }
 
 class _GoalToolbar extends StatelessWidget {
@@ -965,7 +714,6 @@ class _GoalCommandBar extends StatelessWidget {
   const _GoalCommandBar({
     this.periodClusterKey,
     this.addGoalKey,
-    this.tutorialCategoryKey,
     required this.selectedType,
     required this.selectedYear,
     required this.selectedQuarter,
@@ -990,7 +738,6 @@ class _GoalCommandBar extends StatelessWidget {
 
   final GlobalKey? periodClusterKey;
   final GlobalKey? addGoalKey;
-  final GlobalKey? tutorialCategoryKey;
   final GoalType selectedType;
   final int selectedYear;
   final int selectedQuarter;
@@ -1157,7 +904,6 @@ class _GoalCommandBar extends StatelessWidget {
   Widget _quickBar() {
     return _QuickGoalBar(
       key: addGoalKey,
-      tutorialCategoryKey: tutorialCategoryKey,
       controller: quickGoalController,
       selectedCategory: quickGoalCategory,
       categories: categories,
@@ -1236,9 +982,6 @@ class _GoalBoard extends StatelessWidget {
     required this.periodTitle,
     required this.periodSubtitle,
     this.tutorialCheckboxKey,
-    this.tutorialRescheduleKey,
-    this.tutorialEditKey,
-    this.tutorialDeleteKey,
     required this.categories,
     required this.activeGoals,
     required this.completedGoals,
@@ -1252,9 +995,6 @@ class _GoalBoard extends StatelessWidget {
   final String periodTitle;
   final String periodSubtitle;
   final GlobalKey? tutorialCheckboxKey;
-  final GlobalKey? tutorialRescheduleKey;
-  final GlobalKey? tutorialEditKey;
-  final GlobalKey? tutorialDeleteKey;
   final List<_GoalCategory> categories;
   final List<DashboardGoal> activeGoals;
   final List<DashboardGoal> completedGoals;
@@ -1264,9 +1004,9 @@ class _GoalBoard extends StatelessWidget {
   final ValueChanged<DashboardGoal> onReschedule;
   final ValueChanged<DashboardGoal> onDelete;
 
-  /// Active goal item. The tutorial GlobalKeys attach to the FIRST active
-  /// item only so the spotlight has a single stable target (and the tree never
-  /// holds duplicate GlobalKeys when several goals are visible).
+  /// Active goal item. The tutorial checkbox GlobalKey attaches to the FIRST
+  /// active item only so the spotlight has a single stable target (and the tree
+  /// never holds duplicate GlobalKeys when several goals are visible).
   Widget _activeItem(
     DashboardGoal goal, {
     required bool isFirst,
@@ -1276,9 +1016,6 @@ class _GoalBoard extends StatelessWidget {
       key: ValueKey(goal.id),
       goal: goal,
       checkboxKey: isFirst ? tutorialCheckboxKey : null,
-      rescheduleKey: isFirst ? tutorialRescheduleKey : null,
-      editKey: isFirst ? tutorialEditKey : null,
-      deleteKey: isFirst ? tutorialDeleteKey : null,
       categories: categories,
       onToggleStatus: onToggleStatus,
       onEdit: onEdit,
@@ -1681,7 +1418,6 @@ class _PeriodRingPainter extends CustomPainter {
 class _QuickGoalBar extends StatelessWidget {
   const _QuickGoalBar({
     super.key,
-    this.tutorialCategoryKey,
     required this.controller,
     required this.selectedCategory,
     required this.categories,
@@ -1691,7 +1427,6 @@ class _QuickGoalBar extends StatelessWidget {
     required this.hintText,
   });
 
-  final GlobalKey? tutorialCategoryKey;
   final TextEditingController controller;
   final _GoalCategory? selectedCategory;
   final List<_GoalCategory> categories;
@@ -1736,14 +1471,11 @@ class _QuickGoalBar extends StatelessWidget {
           ),
         ),
         const SizedBox(width: 8),
-        Container(
-          key: tutorialCategoryKey,
-          child: _QuickCategoryButton(
-            selectedCategory: selectedCategory,
-            categories: categories,
-            onCategoryChanged: onCategoryChanged,
-            onCreateCategory: onCreateCategory,
-          ),
+        _QuickCategoryButton(
+          selectedCategory: selectedCategory,
+          categories: categories,
+          onCategoryChanged: onCategoryChanged,
+          onCreateCategory: onCreateCategory,
         ),
         const SizedBox(width: 8),
         Material(
@@ -1901,9 +1633,6 @@ class _GoalItem extends StatefulWidget {
     super.key,
     required this.goal,
     this.checkboxKey,
-    this.rescheduleKey,
-    this.editKey,
-    this.deleteKey,
     required this.categories,
     required this.onToggleStatus,
     required this.onEdit,
@@ -1914,9 +1643,6 @@ class _GoalItem extends StatefulWidget {
 
   final DashboardGoal goal;
   final GlobalKey? checkboxKey;
-  final GlobalKey? rescheduleKey;
-  final GlobalKey? editKey;
-  final GlobalKey? deleteKey;
   final List<_GoalCategory> categories;
   final void Function(DashboardGoal, GoalState) onToggleStatus;
   final ValueChanged<DashboardGoal> onEdit;
@@ -2009,7 +1735,6 @@ class _GoalItemState extends State<_GoalItem> {
         children: [
           if (goal.type != GoalType.lifetime)
             IconButton(
-              key: widget.rescheduleKey,
               tooltip: t.goalsPage.rescheduleTooltip,
               onPressed: () => widget.onReschedule(goal),
               icon: const Icon(LucideIcons.calendarClock, size: 16),
@@ -2018,7 +1743,6 @@ class _GoalItemState extends State<_GoalItem> {
               ),
             ),
           IconButton(
-            key: widget.editKey,
             tooltip: t.common.actions.edit,
             onPressed: () => widget.onEdit(goal),
             icon: const Icon(LucideIcons.pencil, size: 16),
@@ -2027,7 +1751,6 @@ class _GoalItemState extends State<_GoalItem> {
             ),
           ),
           IconButton(
-            key: widget.deleteKey,
             tooltip: t.common.actions.delete,
             onPressed: () => widget.onDelete(goal),
             icon: const Icon(LucideIcons.trash2, size: 16),
@@ -2655,59 +2378,4 @@ _GoalCategory _categoryForGoal(
     label: goal.category.isEmpty ? 'Default' : goal.category,
     color: goal.color,
   );
-}
-
-class _GoalsTutorialStep {
-  const _GoalsTutorialStep({
-    this.targetKey,
-    this.showStats = false,
-    required this.title,
-    required this.description,
-    this.nextButtonLabel,
-  });
-
-  final GlobalKey? targetKey;
-  final bool showStats;
-  final String title;
-  final String description;
-  final String? nextButtonLabel;
-}
-
-class _GoalsTutorialScrimPainter extends CustomPainter {
-  const _GoalsTutorialScrimPainter(this.targetRect);
-
-  final Rect? targetRect;
-
-  @override
-  void paint(Canvas canvas, Size size) {
-    final overlayBounds = Offset.zero & size;
-    final scrimPaint = Paint()..color = Colors.black.withValues(alpha: 0.82);
-    final target = targetRect;
-
-    if (target == null) {
-      canvas.drawRect(overlayBounds, scrimPaint);
-      return;
-    }
-
-    final highlightedRect = target.inflate(10).intersect(overlayBounds);
-    if (highlightedRect.isEmpty) {
-      canvas.drawRect(overlayBounds, scrimPaint);
-      return;
-    }
-
-    final overlayPath = Path()..addRect(overlayBounds);
-    final highlightPath = Path()
-      ..addRRect(
-        RRect.fromRectAndRadius(highlightedRect, const Radius.circular(16)),
-      );
-    canvas.drawPath(
-      Path.combine(PathOperation.difference, overlayPath, highlightPath),
-      scrimPaint,
-    );
-  }
-
-  @override
-  bool shouldRepaint(covariant _GoalsTutorialScrimPainter oldDelegate) {
-    return oldDelegate.targetRect != targetRect;
-  }
 }

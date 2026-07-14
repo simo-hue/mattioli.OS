@@ -14,6 +14,7 @@ import 'package:evolve_desktop/features/dashboard/domain/dashboard_models.dart';
 import 'package:evolve_desktop/i18n/translations.g.dart';
 import 'package:evolve_desktop/shared/widgets/coach_tutorial.dart';
 import 'package:evolve_desktop/shared/widgets/desktop_page.dart';
+import 'package:evolve_desktop/shared/widgets/verified_habit_badge.dart';
 import 'package:evolve_desktop/shared/widgets/evolve_dialog.dart';
 import 'package:evolve_desktop/shared/widgets/evolve_panel.dart';
 import 'package:evolve_desktop/features/dashboard/presentation/create_goal_dialog.dart';
@@ -35,9 +36,9 @@ class _DashboardPageState extends ConsumerState<DashboardPage> {
   bool _isNameDialogOpen = false;
   bool _isWelcomeDialogOpen = false;
 
-  // Coach-mark onboarding tour (starts after the welcome dialog on first run).
-  bool _showTour = false;
-  bool _didFinishTour = false;
+  // Overview segment of the continuous product tour. The central
+  // [tourControllerProvider] owns whether this segment is active; the page only
+  // owns the target keys and the step index within the segment.
   int _tourIndex = 0;
   final _checkInKey = GlobalKey();
   final _habitsKey = GlobalKey();
@@ -102,9 +103,15 @@ class _DashboardPageState extends ConsumerState<DashboardPage> {
   void _checkTutorial() {
     if (!mounted || _isWelcomeDialogOpen || _isNameDialogOpen) return;
 
-    final hasSeenTutorial = ref.read(tutorialProvider);
-    if (!hasSeenTutorial) {
+    final tour = ref.read(tourControllerProvider);
+    if (!tour.shouldOnboard) return;
+    if (tour.segmentIndex == 0) {
+      // Fresh start: welcome dialog gates the tour.
       _showWelcomeScreen();
+    } else {
+      // Resume an interrupted run at the incomplete segment — no welcome.
+      // activate() jumps navigation straight to that segment's page.
+      ref.read(tourControllerProvider.notifier).activate();
     }
   }
 
@@ -118,26 +125,24 @@ class _DashboardPageState extends ConsumerState<DashboardPage> {
         barrierDismissible: false,
         builder: (context) => EvolveAlertDialog(
           icon: LucideIcons.sparkles,
-          title: Text(t.dashboard.welcomeTitle),
+          title: Text(t.tour.welcomeTitle),
           subtitle: t.dashboard.welcomeSubtitle,
           content: Column(
             mainAxisSize: MainAxisSize.min,
             children: [
-              Text(t.dashboard.welcomeBody),
+              Text(t.tour.welcomeBody),
               const SizedBox(height: 24),
               SizedBox(
                 width: double.infinity,
                 child: FilledButton(
                   onPressed: () {
                     Navigator.pop(context);
-                    if (mounted) {
-                      setState(() {
-                        _tourIndex = 0;
-                        _showTour = true;
-                      });
-                    }
+                    // Start the continuous tour: locks navigation and shows the
+                    // Overview segment. There is no skip — pressing Start tour
+                    // is the only way past this dialog.
+                    ref.read(tourControllerProvider.notifier).activate();
                   },
-                  child: Text(t.dashboard.welcomeStart),
+                  child: Text(t.tour.welcomeStart),
                 ),
               ),
             ],
@@ -217,56 +222,50 @@ class _DashboardPageState extends ConsumerState<DashboardPage> {
       ),
     );
 
+    final showTour = ref
+        .watch(tourControllerProvider)
+        .isSegmentActive(TourSegment.overview);
+
     return Stack(
       children: [
         page,
-        if (_showTour && !_didFinishTour)
+        if (showTour)
           CoachTutorialOverlay(
-            steps: _dashboardTourSteps(),
+            steps: _overviewTourSteps(),
             index: _tourIndex,
             onIndexChanged: (i) => setState(() => _tourIndex = i),
-            onFinish: () => _finishDashboardTour(advanceToGoals: true),
-            backLabel: t.tutorial.back,
-            nextLabel: t.tutorial.next,
-            finishLabel: t.tutorial.next,
+            // Last Overview step advances the tour to the Habits segment.
+            onFinish: () => ref.read(tourControllerProvider.notifier).advance(),
+            backLabel: t.tour.back,
+            nextLabel: t.tour.next,
+            finishLabel: t.tour.continueLabel,
           ),
       ],
     );
   }
 
-  List<CoachStep> _dashboardTourSteps() => [
+  List<CoachStep> _overviewTourSteps() => [
+    // Orientation-first: a centered card (no spotlight) announcing the page.
+    CoachStep(
+      title: t.tour.overviewOrientationTitle,
+      description: t.tour.overviewOrientationDesc,
+    ),
     CoachStep(
       targetKey: _checkInKey,
-      title: t.tutorial.dailyCheckIn,
-      description: t.tutorial.dailyCheckinDesc,
+      title: t.tour.overviewCheckinTitle,
+      description: t.tour.overviewCheckinDesc,
     ),
     CoachStep(
       targetKey: _habitsKey,
-      title: t.tutorial.manageHabits,
-      description: t.tutorial.addEditOrDeleteDailyHabits,
+      title: t.tour.overviewHabitsTitle,
+      description: t.tour.overviewHabitsDesc,
     ),
     CoachStep(
       targetKey: _focusGoalsKey,
-      title: t.tutorial.movingToGoals,
-      description: t.tutorial.goalsPageDesc,
+      title: t.tour.overviewGoalsTitle,
+      description: t.tour.overviewGoalsDesc,
     ),
   ];
-
-  void _finishDashboardTour({bool advanceToGoals = false}) {
-    if (!mounted || _didFinishTour) return;
-    setState(() {
-      _didFinishTour = true;
-      _showTour = false;
-    });
-    ref.read(tutorialProvider.notifier).setTutorialSeen(true);
-
-    if (advanceToGoals) {
-      WidgetsBinding.instance.addPostFrameCallback((_) {
-        if (!mounted) return;
-        ref.read(navigationControllerProvider.notifier).select(DesktopSection.goals);
-      });
-    }
-  }
 }
 
 /// The mobile home's "PROTOCOLLO" strip: uppercase label with fading rule and
@@ -953,16 +952,30 @@ class _HabitRow extends StatelessWidget {
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  Text(
-                    habit.title,
-                    style: TextStyle(
-                      color: isDone
-                          ? context.evolveColors.muted
-                          : context.evolveColors.foreground,
-                      fontSize: 13,
-                      fontWeight: FontWeight.w600,
-                      decoration: isDone ? TextDecoration.lineThrough : null,
-                    ),
+                  Row(
+                    children: [
+                      Flexible(
+                        child: Text(
+                          habit.title,
+                          style: TextStyle(
+                            color: isDone
+                                ? context.evolveColors.muted
+                                : context.evolveColors.foreground,
+                            fontSize: 13,
+                            fontWeight: FontWeight.w600,
+                            decoration: isDone
+                                ? TextDecoration.lineThrough
+                                : null,
+                          ),
+                        ),
+                      ),
+                      // Read-only marker for iPhone-verified habits (mobile
+                      // parity), so they don't look identical to manual ones.
+                      if (habit.verificationRule != null) ...[
+                        const SizedBox(width: 6),
+                        const VerifiedHabitBadge(),
+                      ],
+                    ],
                   ),
                   const SizedBox(height: 3),
                   Text(

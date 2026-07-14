@@ -2,6 +2,7 @@ import 'dart:io';
 
 import 'package:evolve_desktop/app/theme/evolve_theme.dart';
 import 'package:evolve_desktop/core/desktop_data_mode.dart';
+import 'package:evolve_desktop/core/tutorial_provider.dart';
 import 'package:evolve_desktop/features/ai_coach/presentation/ai_coach_page.dart';
 import 'package:evolve_desktop/features/auth/application/auth_controller.dart';
 import 'package:evolve_desktop/features/auth/application/desktop_profile_controller.dart';
@@ -83,6 +84,11 @@ class _DesktopShellState extends ConsumerState<DesktopShell> {
     final navigation = ref.read(navigationControllerProvider.notifier);
     final select = navigation.select;
     final isRtl = Directionality.of(context) == TextDirection.rtl;
+    // While the guided tour runs, navigation is locked (all six vectors route
+    // through the controller, which no-ops). Here we also dim + freeze the
+    // chrome the page-level tour overlay can't reach (sidebar, top bar) and
+    // collapse the page-switch animation so spotlight geometry settles at once.
+    final tourActive = ref.watch(tourControllerProvider).active;
 
     return CallbackShortcuts(
       bindings: {
@@ -118,7 +124,14 @@ class _DesktopShellState extends ConsumerState<DesktopShell> {
               final collapsed = constraints.maxWidth < 1080;
               return Row(
                 children: [
-                  _DesktopSidebar(collapsed: collapsed),
+                  IgnorePointer(
+                    ignoring: tourActive,
+                    child: AnimatedOpacity(
+                      duration: const Duration(milliseconds: 150),
+                      opacity: tourActive ? 0.35 : 1,
+                      child: _DesktopSidebar(collapsed: collapsed),
+                    ),
+                  ),
                   VerticalDivider(
                     width: 1,
                     color: context.evolveColors.border.withValues(alpha: 0.5),
@@ -132,10 +145,19 @@ class _DesktopShellState extends ConsumerState<DesktopShell> {
                       onPointerPanZoomEnd: _onTrackpadPanEnd,
                       child: Column(
                         children: [
-                          _TopBar(onOpenSearch: _showCommandPalette),
+                          IgnorePointer(
+                            ignoring: tourActive,
+                            child: AnimatedOpacity(
+                              duration: const Duration(milliseconds: 150),
+                              opacity: tourActive ? 0.35 : 1,
+                              child: _TopBar(onOpenSearch: _showCommandPalette),
+                            ),
+                          ),
                           Expanded(
                             child: AnimatedSwitcher(
-                              duration: const Duration(milliseconds: 220),
+                              duration: tourActive
+                                  ? Duration.zero
+                                  : const Duration(milliseconds: 220),
                               switchInCurve: Curves.easeOutCubic,
                               switchOutCurve: Curves.easeOutCubic,
                               // Directional slide + fade: a forward navigation
@@ -201,6 +223,9 @@ class _DesktopShellState extends ConsumerState<DesktopShell> {
   };
 
   Future<void> _showCommandPalette() async {
+    // The command palette is a navigation vector; it stays sealed during the
+    // guided tour like the sidebar and shortcuts.
+    if (ref.read(tourControllerProvider).active) return;
     await showEvolveDialog<void>(
       context: context,
       builder: (context) => const _CommandPalette(),
@@ -434,9 +459,7 @@ class _TopBar extends ConsumerWidget {
     final user = ref.watch(desktopAuthControllerProvider).user;
     final isPrivate = ref.watch(activeDesktopDataModeProvider).isPrivate;
     final privateProfile = ref.watch(privateProfileProvider).value;
-    final privateName = isPrivate
-        ? privateProfile?.fullName
-        : null;
+    final privateName = isPrivate ? privateProfile?.fullName : null;
     final avatarUrl = isPrivate
         ? privateProfile?.avatarPath
         : user?.userMetadata?['avatar_url'] as String?;

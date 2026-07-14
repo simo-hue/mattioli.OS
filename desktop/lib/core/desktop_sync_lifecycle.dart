@@ -3,11 +3,10 @@ import 'dart:async';
 import 'package:flutter/widgets.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
-import '../features/dashboard/application/dashboard_controller.dart';
-import '../features/statistics/data/private_analytics_source.dart';
 import 'desktop_data_mode.dart';
 import 'desktop_private_db.dart';
 import 'desktop_private_sync_service.dart';
+import 'private_data_refresh.dart';
 
 /// Hosts the automatic iCloud-sync triggers for the desktop app. Wraps the
 /// widget tree once (from `EvolveDesktopApp`'s builder) and owns:
@@ -81,11 +80,11 @@ class _DesktopSyncLifecycleState extends ConsumerState<DesktopSyncLifecycle> {
     final status =
         await ref.read(desktopPrivateSyncServiceProvider).syncNow();
     // The engine writes pulled records straight to the encrypted DB, bypassing
-    // the controllers — refresh the same providers the notification-write hook
-    // refreshes so the UI shows them.
+    // the controllers — refresh the same full private surface the manual
+    // "Sync now" and notification-write paths refresh (incl. profile +
+    // categories), so a cross-device profile/category edit shows up too.
     if (mounted && status.appliedChanges > 0) {
-      ref.read(dashboardControllerProvider.notifier).refresh();
-      ref.invalidate(privateAnalyticsDataProvider);
+      refreshPrivateAfterPull(ProviderScope.containerOf(context, listen: false));
     }
   }
 

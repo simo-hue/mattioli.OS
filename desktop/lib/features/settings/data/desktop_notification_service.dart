@@ -124,6 +124,20 @@ class DesktopNotificationService {
     if (focusMode) return;
     if (!canScheduleDaily) return;
 
+    // Request notification permission before scheduling — covers the habit
+    // add/edit path (mobile requests it in scheduleHabitReminder). macOS only
+    // shows the dialog when authorization is notDetermined; otherwise this is a
+    // no-op returning the current status.
+    final willSchedule =
+        habitReminders ||
+        eveningReview ||
+        habits.any((h) => h.reminderTime != null);
+    if (willSchedule) {
+      await requestPermissions();
+    }
+
+    // The 'Habit Reminders' toggle controls ONLY the Morning Brief (mobile
+    // parity gates just the 09:00 brief on this flag).
     if (habitReminders) {
       await _scheduleDaily(
         id: 0,
@@ -131,18 +145,31 @@ class DesktopNotificationService {
         title: 'Evolve - ${t.notifications.morningBrief}',
         body: t.notif.morningBody,
       );
-      for (final habit in habits) {
-        final reminderTime = habit.reminderTime;
-        if (reminderTime == null) continue;
-        await _scheduleDaily(
-          id: habit.id.hashCode,
-          time: reminderTime,
-          title: 'Evolve - ${habit.title}',
-          body: t.notif.habitReminderBody,
-          payload: 'habit|${habit.id}|${habit.title}',
-          categoryId: _habitCategoryId,
+    }
+
+    // Per-goal reminders schedule INDEPENDENTLY of the Morning Brief toggle —
+    // turning off 'Habit Reminders' must not silence them (mobile parity).
+    // Guarded by the macOS 64 pending-notification cap so overflow is
+    // deterministic + logged instead of silently dropped by the OS.
+    for (final habit in habits) {
+      final reminderTime = habit.reminderTime;
+      if (reminderTime == null) continue;
+      final id = habit.id.hashCode;
+      if (!await _canSchedule(id)) {
+        AppLogger.warning(
+          '[Notifications] pending cap reached; skipping reminder for '
+          '${habit.id}',
         );
+        continue;
       }
+      await _scheduleDaily(
+        id: id,
+        time: reminderTime,
+        title: 'Evolve - ${habit.title}',
+        body: t.notif.habitReminderBody,
+        payload: 'habit|${habit.id}|${habit.title}',
+        categoryId: _habitCategoryId,
+      );
     }
 
     if (eveningReview) {
@@ -183,9 +210,24 @@ class DesktopNotificationService {
     );
   }
 
-  /// Foreground handler for notification actions (macOS Done/Skip). Snooze /
-  /// dismiss carry no write. Runs in the app isolate (the desktop app is a
-  /// long-lived process), so a straight local write + UI refresh is enough.
+  /// macOS silently drops scheduled notifications beyond 64 pending. Allow
+  /// scheduling when there's headroom, or when [id] is already pending (a
+  /// re-schedule replaces in place, not growing the count). Fails open. Mirrors
+  /// mobile's `_canSchedule`.
+  Future<bool> _canSchedule(int id) async {
+    try {
+      final pending = await _notifications.pendingNotificationRequests();
+      if (pending.any((p) => p.id == id)) return true;
+      return pending.length < 64;
+    } catch (e, stack) {
+      AppLogger.error('[Notifications] pending-cap check failed', e, stack);
+      return true;
+    }
+  }
+
+  /// Foreground handler for notification actions (macOS Done/Skip/Snooze). Runs
+  /// in the app isolate (the desktop app is a long-lived process), so a straight
+  /// local write + UI refresh is enough; Snooze re-fires the reminder in 10 min.
   void _onNotificationResponse(NotificationResponse response) {
     final actionId = response.actionId;
     final payload = response.payload;
@@ -193,13 +235,44 @@ class DesktopNotificationService {
     final parts = payload.split('|');
     if (parts.length < 2 || parts.first != 'habit') return;
     final goalId = parts[1];
+    final title = parts.length > 2 ? parts[2] : '';
+
+    if (actionId == 'snooze') {
+      unawaited(_snoozeHabit(goalId, title));
+      return;
+    }
+
     final status = switch (actionId) {
       'done' => 'done',
       'skip' => 'missed',
-      _ => null, // 'snooze' / default -> no write
+      _ => null,
     };
     if (status == null) return;
     unawaited(_handleHabitAction(goalId, status));
+  }
+
+  /// Re-fires the habit reminder ~10 minutes from now (mobile parity). Uses a
+  /// distinct id (daily id + 1000) so it can't collide with the daily schedule.
+  Future<void> _snoozeHabit(String goalId, String title) async {
+    try {
+      await init();
+      if (!_initialized || !canScheduleDaily) return;
+      final when = tz.TZDateTime.now(tz.local).add(const Duration(minutes: 10));
+      await _notifications.zonedSchedule(
+        id: goalId.hashCode + 1000,
+        title: 'Evolve - $title',
+        body: t.notif.habitReminderBody,
+        scheduledDate: when,
+        notificationDetails: NotificationDetails(
+          macOS: DarwinNotificationDetails(categoryIdentifier: _habitCategoryId),
+          windows: const WindowsNotificationDetails(),
+        ),
+        androidScheduleMode: AndroidScheduleMode.inexactAllowWhileIdle,
+        payload: 'habit|$goalId|$title',
+      );
+    } catch (error, stack) {
+      AppLogger.error('Notification snooze failed', error, stack);
+    }
   }
 
   Future<void> _handleHabitAction(String goalId, String status) async {

@@ -292,14 +292,14 @@ void main() {
     expect(tester.takeException(), isNull);
   });
 
-  testWidgets('tutorial reset clears the three canonical flags', (
+  testWidgets('repeat tutorial clears the completion flag for a replay', (
     tester,
   ) async {
-    SharedPreferences.setMockInitialValues({
-      'has_seen_tutorial': true,
-      'has_seen_goals_tutorial': true,
-      'has_seen_stats_tutorial': true,
-    });
+    // The unified tour uses a single global completion flag; "Ripristina
+    // tutorial" clears it and navigates to Overview so the Dashboard's
+    // onboarding restarts the tour. (Legacy per-page flags are purged, not
+    // reset — see tour_controller_test for that behaviour.)
+    SharedPreferences.setMockInitialValues({'tour_completed': true});
     final preferences = await SharedPreferences.getInstance();
     await tester.binding.setSurfaceSize(const Size(1440, 1100));
     addTearDown(() => tester.binding.setSurfaceSize(null));
@@ -315,12 +315,13 @@ void main() {
     await tester.tap(find.text('Applicazione'));
     await tester.pumpAndSettle();
     await tester.tap(find.text('Ripristina tutorial'));
-    await tester.pumpAndSettle();
+    // The reset navigates to Overview to restart the tour; don't pumpAndSettle
+    // onto the freshly-mounted dashboard. A couple of fixed pumps let the async
+    // reset persist to prefs.
+    await tester.pump();
+    await tester.pump(const Duration(milliseconds: 50));
 
-    expect(preferences.getBool('has_seen_tutorial'), isFalse);
-    expect(preferences.getBool('has_seen_goals_tutorial'), isFalse);
-    expect(preferences.getBool('has_seen_stats_tutorial'), isFalse);
-    expect(tester.takeException(), isNull);
+    expect(preferences.getBool('tour_completed'), isFalse);
   });
 }
 

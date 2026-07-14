@@ -748,6 +748,65 @@ void main() {
     });
   });
 
+  group('profile restore is gated to REPLACE imports (#12)', () {
+    Map<String, dynamic> profileOnlyBackup() => {
+      'goals': <Map<String, dynamic>>[],
+      'goal_logs': <Map<String, dynamic>>[],
+      'long_term_goals': <Map<String, dynamic>>[],
+      'macro_goal_categories': <Map<String, dynamic>>[],
+      'daily_moods': <Map<String, dynamic>>[],
+      'profile': {
+        'full_name': 'Backup User',
+        'theme_mode': 'dark',
+        'language': 'it',
+      },
+    };
+
+    test('a MERGE import does not overwrite the live profile', () async {
+      final db = await seeded();
+      addTearDown(db.close);
+      await db.update(
+        'profiles',
+        {'full_name': 'Local User', 'theme_mode': 'light', 'language': 'en'},
+        where: 'id = ?',
+        whereArgs: [owner],
+      );
+
+      await apply(db, profileOnlyBackup()); // replace: false (merge)
+
+      final profile = (await db.query(
+        'profiles',
+        where: 'id = ?',
+        whereArgs: [owner],
+      )).single;
+      expect(profile['full_name'], 'Local User');
+      expect(profile['theme_mode'], 'light');
+      expect(profile['language'], 'en');
+    });
+
+    test('a REPLACE import still restores the backup profile', () async {
+      final db = await seeded();
+      addTearDown(db.close);
+      await db.update(
+        'profiles',
+        {'full_name': 'Local User', 'theme_mode': 'light', 'language': 'en'},
+        where: 'id = ?',
+        whereArgs: [owner],
+      );
+
+      await apply(db, profileOnlyBackup(), replace: true);
+
+      final profile = (await db.query(
+        'profiles',
+        where: 'id = ?',
+        whereArgs: [owner],
+      )).single;
+      expect(profile['full_name'], 'Backup User');
+      expect(profile['theme_mode'], 'dark');
+      expect(profile['language'], 'it');
+    });
+  });
+
   group('sync bookkeeping stays consistent after imports', () {
     Future<Map<String, Map<String, Object?>>> syncState(Database db) async => {
       for (final r in await db.query(PrivateDbSchema.syncStateTable))

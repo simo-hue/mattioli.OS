@@ -8,6 +8,7 @@ import 'package:evolve_desktop/core/desktop_data_mode.dart';
 import 'package:evolve_desktop/core/desktop_revenuecat_config.dart';
 import 'package:evolve_desktop/features/auth/application/auth_controller.dart';
 import 'package:flutter/foundation.dart';
+import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:purchases_flutter/purchases_flutter.dart';
 import 'package:url_launcher/url_launcher.dart';
@@ -76,6 +77,7 @@ class DesktopSubscriptionController extends Notifier<DesktopSubscriptionState> {
   };
 
   String? _configuredUserId;
+  bool _customerInfoListenerRegistered = false;
 
   @override
   DesktopSubscriptionState build() {
@@ -84,9 +86,15 @@ class DesktopSubscriptionController extends Notifier<DesktopSubscriptionState> {
     ref.listen(desktopAuthControllerProvider, (_, next) {
       if (next.user != null) unawaited(refresh());
     });
+    // Seed isPro offline-first from the cached pref so a paying user launching
+    // offline (or during a transient RevenueCat failure) keeps Pro until the
+    // async refresh resolves — mobile hydrates the same way. Self-heals online.
+    final cachedPro =
+        ref.read(sharedPreferencesProvider)?.getBool('pref_is_pro') ?? false;
     final initial = DesktopSubscriptionState(
       isSupportedPlatform: supported,
       isConfigured: configured,
+      isPro: cachedPro,
     );
     if (ref.read(desktopAuthControllerProvider).user != null) {
       unawaited(Future<void>.microtask(refresh));
@@ -126,7 +134,25 @@ class DesktopSubscriptionController extends Notifier<DesktopSubscriptionState> {
       final purchase = await Purchases.purchase(
         PurchaseParams.package(package),
       );
-      final isPro = _hasActiveProAccess(purchase.customerInfo);
+      var isPro = _hasActiveProAccess(purchase.customerInfo);
+
+      // RevenueCat's CustomerInfo cache is eventually-consistent, so a real
+      // purchase can momentarily read back as not-Pro. Sync + invalidate +
+      // refetch before believing that (mobile parity).
+      if (!isPro) {
+        try {
+          await Purchases.syncPurchases();
+          await Purchases.invalidateCustomerInfoCache();
+          isPro = _hasActiveProAccess(await Purchases.getCustomerInfo());
+        } catch (e, stack) {
+          AppLogger.warning(
+            'Purchase completed but the RevenueCat sync fallback failed',
+            e,
+            stack,
+          );
+        }
+      }
+
       state = state.copyWith(
         isLoading: false,
         isPro: isPro,
@@ -136,6 +162,20 @@ class DesktopSubscriptionController extends Notifier<DesktopSubscriptionState> {
       );
       await _persistProStatus(isPro);
       return isPro;
+    } on PlatformException catch (error, stack) {
+      // Already-purchased (re-buying an active sub) → auto-restore instead of
+      // surfacing a failure (mobile parity).
+      if (PurchasesErrorHelper.getErrorCode(error) ==
+          PurchasesErrorCode.productAlreadyPurchasedError) {
+        AppLogger.info('Product already purchased; auto-restoring');
+        return restore();
+      }
+      AppLogger.error('RevenueCat purchase failed', error, stack);
+      state = state.copyWith(
+        isLoading: false,
+        message: t.subscriptionCtrl.purchaseIncomplete,
+      );
+      return false;
     } catch (error, stack) {
       AppLogger.error('RevenueCat purchase failed', error, stack);
       state = state.copyWith(
@@ -152,7 +192,23 @@ class DesktopSubscriptionController extends Notifier<DesktopSubscriptionState> {
     try {
       await _configure();
       final customerInfo = await Purchases.restorePurchases();
-      final isPro = _hasActiveProAccess(customerInfo);
+      var isPro = _hasActiveProAccess(customerInfo);
+
+      // Refresh once against a cleared cache before concluding "no active sub"
+      // (mobile parity), to avoid a stale false-negative right after restore.
+      if (!isPro) {
+        try {
+          await Purchases.invalidateCustomerInfoCache();
+          isPro = _hasActiveProAccess(await Purchases.getCustomerInfo());
+        } catch (e, stack) {
+          AppLogger.warning(
+            'Restore completed but the CustomerInfo refresh failed',
+            e,
+            stack,
+          );
+        }
+      }
+
       state = state.copyWith(
         isLoading: false,
         isPro: isPro,
@@ -209,6 +265,21 @@ class DesktopSubscriptionController extends Notifier<DesktopSubscriptionState> {
       await Purchases.configure(configuration);
     }
     _configuredUserId = userId;
+    _ensureCustomerInfoListener();
+  }
+
+  /// Keeps isPro live: RevenueCat pushes CustomerInfo on renewal, expiry,
+  /// cross-device purchase, or billing lapse — without this, desktop only
+  /// recomputes on auth change or an explicit refresh/purchase/restore. Mirrors
+  /// mobile's `addCustomerInfoUpdateListener`. Registered once.
+  void _ensureCustomerInfoListener() {
+    if (_customerInfoListenerRegistered) return;
+    Purchases.addCustomerInfoUpdateListener((customerInfo) {
+      final isPro = _hasActiveProAccess(customerInfo);
+      state = state.copyWith(isPro: isPro);
+      unawaited(_persistProStatus(isPro));
+    });
+    _customerInfoListenerRegistered = true;
   }
 
   bool _hasActiveProAccess(CustomerInfo customerInfo) {
@@ -218,7 +289,20 @@ class DesktopSubscriptionController extends Notifier<DesktopSubscriptionState> {
     for (final entitlement in customerInfo.entitlements.active.values) {
       if (proProductIds.contains(entitlement.productIdentifier)) return true;
     }
-    return customerInfo.activeSubscriptions.any(proProductIds.contains);
+    if (customerInfo.activeSubscriptions.any(proProductIds.contains)) {
+      return true;
+    }
+
+    // Fallback (mobile parity): ANY active entitlement grants Pro. Covers a
+    // renamed / mis-whitelisted entitlement so a legitimately-paying user isn't
+    // locked out of Pro after a real purchase.
+    if (customerInfo.entitlements.active.isNotEmpty) {
+      AppLogger.warning(
+        '[Subscription] granting Pro via a non-whitelisted active entitlement',
+      );
+      return true;
+    }
+    return false;
   }
 
   Future<void> _persistProStatus(bool isPro) async {

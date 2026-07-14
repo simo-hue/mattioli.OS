@@ -80,8 +80,9 @@ class TranslationsDe extends Translations with BaseTranslations<AppLocale, Trans
 	@override late final _Translations$subscriptionCtrl$de subscriptionCtrl = _Translations$subscriptionCtrl$de._(_root);
 	@override late final _Translations$authCtrl$de authCtrl = _Translations$authCtrl$de._(_root);
 	@override late final _Translations$proModal$de proModal = _Translations$proModal$de._(_root);
-	@override late final _Translations$tutorial$de tutorial = _Translations$tutorial$de._(_root);
 	@override late final _Translations$appLogs$de appLogs = _Translations$appLogs$de._(_root);
+	@override late final _Translations$coachSettings$de coachSettings = _Translations$coachSettings$de._(_root);
+	@override late final _Translations$tour$de tour = _Translations$tour$de._(_root);
 }
 
 // Path: auth
@@ -700,18 +701,6 @@ class _Translations$goalsPage$de extends Translations$goalsPage$en {
 	@override String weekPeriodLabel({required Object week, required Object month, required Object year}) => 'Woche ${week}, ${month} ${year}';
 	@override String get currentQuarter => 'Aktuelles Quartal';
 	@override String get currentMonth => 'Aktueller Monat';
-	@override String get tutPlanningTitle => 'Planungstyp';
-	@override String get tutPlanningDesc => 'Hier kannst du den Zeithorizont deiner Ziele auswählen.';
-	@override String get tutNewGoalDesc => 'Von hier aus kannst du schnell ein neues Ziel hinzufügen.';
-	@override String get tutCompleteTitle => 'Abschließen oder scheitern';
-	@override String get tutCompleteDesc => 'Markiere das Ziel mit einem Klick als abgeschlossen oder gescheitert.';
-	@override String get tutCategoryDesc => 'Verwalte Kategorien und verknüpfe sie mit deinen Zielen.';
-	@override String get tutRescheduleTitle => 'Verschieben';
-	@override String get tutRescheduleDesc => 'Verschiebe das Ziel in den nächsten Zeitraum, wenn du es nicht abschließen konntest.';
-	@override String get tutEditDesc => 'Bearbeite die Details deines Ziels.';
-	@override String get tutDeleteDesc => 'Lösche ein Ziel, wenn es nicht mehr relevant ist.';
-	@override String get tutStatsTitle => 'Analyse und Statistiken';
-	@override String get tutStatsDesc => 'Wechsle zur Statistikansicht, um deine Leistung im Zeitverlauf zu analysieren.';
 }
 
 // Path: goalsStats
@@ -741,6 +730,7 @@ class _Translations$ai$de extends Translations$ai$en {
 	@override String get macroGoals => 'Makroziele';
 	@override late final _Translations$ai$openRouter$de openRouter = _Translations$ai$openRouter$de._(_root);
 	@override late final _Translations$ai$suggestions$de suggestions = _Translations$ai$suggestions$de._(_root);
+	@override late final _Translations$ai$local$de local = _Translations$ai$local$de._(_root);
 }
 
 // Path: aiCoach
@@ -1142,28 +1132,6 @@ class _Translations$proModal$de extends Translations$proModal$en {
 	@override String get viewPlans => 'Pro-Abos ansehen';
 }
 
-// Path: tutorial
-class _Translations$tutorial$de extends Translations$tutorial$en {
-	_Translations$tutorial$de._(TranslationsDe root) : this._root = root, super.internal(root);
-
-	final TranslationsDe _root; // ignore: unused_field
-
-	// Translations
-	@override String get back => 'Zurück';
-	@override String get next => 'Weiter';
-	@override String get finish => 'Fertig';
-	@override String get dailyCheckIn => 'Täglicher Check-in';
-	@override String get dailyCheckinDesc => 'Hier kannst du deine tägliche Stimmung festhalten, um dein Wohlbefinden zu verfolgen und mit dem Erreichen deiner Ziele zu verknüpfen.';
-	@override String get manageHabits => 'Gewohnheiten verwalten';
-	@override String get addEditOrDeleteDailyHabits => 'Fügen Sie schnell und einfach tägliche Gewohnheiten hinzu, bearbeiten oder löschen Sie sie.';
-	@override String get movingToGoals => 'Weiter zu den Zielen';
-	@override String get goalsPageDesc => 'Die Seite, auf der du deine langfristigen Ziele und deren Leistung verwaltest.';
-	@override String get filterByHabit => 'Nach Gewohnheit filtern';
-	@override String get filterHabitDesc => 'Von hier aus kannst du eine bestimmte Gewohnheit für Details auswählen oder \'Alle Gewohnheiten\' für einen Gesamtüberblick.';
-	@override String get statisticsSections => 'Statistikbereiche';
-	@override String get statsSectionsDesc => 'Navigiere zwischen den Tabs, um Trends, Leistungs-Warnungen, den Verlauf deiner Gewohnheiten und deine Stimmung zu sehen.';
-}
-
 // Path: appLogs
 class _Translations$appLogs$de extends Translations$appLogs$en {
 	_Translations$appLogs$de._(TranslationsDe root) : this._root = root, super.internal(root);
@@ -1191,6 +1159,127 @@ class _Translations$appLogs$de extends Translations$appLogs$en {
 	@override String get detailStackTrace => 'STACK-TRACE';
 	@override String get shareLogs => 'Protokolldatei teilen';
 	@override String get exportDone => 'Protokolle exportiert';
+}
+
+// Path: coachSettings
+class _Translations$coachSettings$de extends Translations$coachSettings$en {
+	_Translations$coachSettings$de._(TranslationsDe root) : this._root = root, super.internal(root);
+
+	final TranslationsDe _root; // ignore: unused_field
+
+	// Translations
+	@override String get title => 'KI-Coach-Engine';
+	@override String get subtitle => 'Wähle, wo der Coach läuft. Lokale Modelle behalten jede Nachricht auf diesem Gerät.';
+	@override String get backendCloud => 'Cloud';
+	@override String get backendLocal => 'Lokal · privat';
+	@override String get cloudDesc => 'Google Gemini über OpenRouter. Schnell, ohne Einrichtung — der geteilte Kontext wird an den Anbieter gesendet.';
+	@override String get localDesc => 'Dein eigenes Modell über Ollama, LM Studio oder einen beliebigen OpenAI-kompatiblen Server. Nichts verlässt dieses Gerät.';
+	@override String get presetLabel => 'Server';
+	@override String get presetOllama => 'Ollama';
+	@override String get presetLmStudio => 'LM Studio';
+	@override String get presetCustom => 'Benutzerdefiniert…';
+	@override String get baseUrlLabel => 'Basis-URL';
+	@override String get baseUrlHint => 'http://localhost:11434/v1';
+	@override String get modelLabel => 'Modell';
+	@override String get modelHint => 'z. B. llama3.1:8b';
+	@override String get refreshModels => 'Modelle aktualisieren';
+	@override String get discovering => 'Suche nach Modellen…';
+	@override String get noModelsFound => 'Keine Modelle gefunden — gib unten manuell eine Modell-ID ein.';
+	@override String get manualModelLabel => 'Modell-ID';
+	@override String get manualModelAdd => 'Dieses Modell verwenden';
+	@override String get statusConnected => 'Verbunden';
+	@override String get statusOffline => 'Server offline';
+	@override String get statusChecking => 'Wird geprüft…';
+	@override String get remoteBadge => 'Extern';
+	@override String get remoteWarning => 'Dieser Endpunkt ist keine lokale Adresse — Nachrichten verlassen dieses Gerät.';
+	@override String get advanced => 'Erweitert';
+	@override String get systemPromptLabel => 'System-Prompt';
+	@override String get systemPromptHint => 'Coach-Persona überschreiben (leer lassen für Standard)';
+	@override String get systemPromptReset => 'Zurücksetzen';
+	@override String get temperatureLabel => 'Temperatur';
+	@override String get save => 'Fertig';
+	@override String get detectedTitle => 'Lokales Modell erkannt';
+	@override String get detectedBody => 'Auf diesem Mac läuft ein lokaler KI-Server. Den Coach zu 100 % privat ausführen?';
+	@override String get detectedAction => 'Lokal verwenden';
+	@override String get detectedDismiss => 'Jetzt nicht';
+	@override String activeCloud({required Object model}) => 'Cloud · ${model}';
+	@override String activeLocal({required Object model}) => 'Lokal · ${model}';
+	@override String get activeLocalNoModel => 'Lokal · Modell wählen';
+	@override String get cloudSection => 'Cloud';
+	@override String get serverSettings => 'Servereinstellungen…';
+	@override String get settingsSectionLabel => 'KI-Coach';
+	@override String get settingsTitle => 'KI-Coach';
+	@override String get settingsSubtitle => 'Wähle die Engine für deinen Coach und verbinde sie für volle Privatsphäre mit einem lokalen Server.';
+	@override String get settingsRowStatus => 'Aktive Engine';
+	@override String get settingsRowConfigure => 'Engine & lokaler Server';
+	@override String get cloudKeyMissing => 'Cloud-API-Schlüssel ist nicht konfiguriert — Cloud-Antworten schlagen fehl. Wechsle zu einem lokalen Server oder setze OPENROUTER_API_KEY.';
+	@override String get temperatureLower => 'Temperatur senken';
+	@override String get temperatureRaise => 'Temperatur erhöhen';
+	@override String get sendMessage => 'Senden';
+	@override String get stopResponse => 'Stopp';
+}
+
+// Path: tour
+class _Translations$tour$de extends Translations$tour$en {
+	_Translations$tour$de._(TranslationsDe root) : this._root = root, super.internal(root);
+
+	final TranslationsDe _root; // ignore: unused_field
+
+	// Translations
+	@override String get back => 'Zurück';
+	@override String get next => 'Weiter';
+	@override String get continueLabel => 'Weiter';
+	@override String get finish => 'Fertig';
+	@override String get welcomeTitle => 'Willkommen bei Evolve';
+	@override String get welcomeBody => 'Machen wir eine kurze Tour durch deinen Arbeitsbereich — von der täglichen Übersicht bis zu deinem KI-Coach. Es dauert nur einen Moment.';
+	@override String get welcomeStart => 'Tour starten';
+	@override String get doneTitle => 'Alles bereit';
+	@override String get doneBody => 'Das ist die ganze App. Starte über die Seitenleiste, wo du willst — und du kannst die Tour jederzeit in den Einstellungen wiederholen.';
+	@override String get doneButton => 'Loslegen';
+	@override String get overviewOrientationTitle => 'Deine Übersicht';
+	@override String get overviewOrientationDesc => 'Das ist deine tägliche Basis — ein Überblick über heute, sobald du Evolve öffnest.';
+	@override String get overviewCheckinTitle => 'Täglicher Check-in';
+	@override String get overviewCheckinDesc => 'Halte fest, wie dein Tag läuft. Mit der Zeit zeigt sich, wie deine Stimmung mit Gewohnheiten und Zielen zusammenhängt.';
+	@override String get overviewHabitsTitle => 'Heutige Gewohnheiten';
+	@override String get overviewHabitsDesc => 'Die für heute geplanten Gewohnheiten stehen hier — hake sie nach und nach ab.';
+	@override String get overviewGoalsTitle => 'Fokus-Ziele';
+	@override String get overviewGoalsDesc => 'Die Ziele, auf die du dich konzentrierst, erscheinen hier, damit nichts untergeht.';
+	@override String get habitsOrientationTitle => 'Die Gewohnheiten-Seite';
+	@override String get habitsOrientationDesc => 'Hier baust du dein tägliches Protokoll auf und verfolgst deine Beständigkeit.';
+	@override String get habitsAddTitle => 'Gewohnheit hinzufügen';
+	@override String get habitsAddDesc => 'Erstelle hier eine neue Gewohnheit — mit Name, Kategorie, Farbe und optionaler Erinnerung.';
+	@override String get habitsCheckoffTitle => 'Als erledigt markieren';
+	@override String get habitsCheckoffDesc => 'Setze hier ein Häkchen, um eine Gewohnheit für heute abzuschließen. Mehr braucht es nicht, um eine Serie am Leben zu halten.';
+	@override String get habitsStreakTitle => 'Serien & Verlauf';
+	@override String get habitsStreakDesc => 'Sieh deine Serie wachsen und deine letzten sieben Tage auf einen Blick.';
+	@override String get habitsCalendarTitle => 'Kalenderansicht';
+	@override String get habitsCalendarDesc => 'Wechsle zum Kalender, um deinen Verlauf nach Woche, Monat, Jahr — oder deinem ganzen Leben zu sehen.';
+	@override String get insightsOrientationTitle => 'Deine Statistiken';
+	@override String get insightsOrientationDesc => 'Sieh, wie sich Gewohnheiten und Ziele über die Zeit entwickeln und wo du abweichst.';
+	@override String get insightsFilterTitle => 'Nach Gewohnheit filtern';
+	@override String get insightsFilterDesc => 'Konzentriere die Statistik auf eine einzelne Gewohnheit oder behalte den Gesamtüberblick.';
+	@override String get insightsTabsTitle => 'Statistik-Bereiche';
+	@override String get insightsTabsDesc => 'Wechsle zwischen den Bereichen für Trends, Hinweise, Gewohnheits-Fortschritt und deine Stimmung.';
+	@override String get goalsOrientationTitle => 'Die Ziele-Seite';
+	@override String get goalsOrientationDesc => 'Setze und verfolge deine größeren Ziele — das, worauf deine täglichen Gewohnheiten hinarbeiten.';
+	@override String get goalsPlanTitle => 'Planungsart';
+	@override String get goalsPlanDesc => 'Wähle, wie du planst — täglich, wöchentlich oder länger — passend zu deiner Denkweise über Ziele.';
+	@override String get goalsAddTitle => 'Ziel hinzufügen';
+	@override String get goalsAddDesc => 'Erstelle hier ein neues Ziel und gib ihm eine Vorgabe, auf die du hinarbeitest.';
+	@override String get goalsCheckTitle => 'Erreichen oder verfehlen';
+	@override String get goalsCheckDesc => 'Markiere ein Ziel als erreicht oder verfehlt. Jedes Ergebnis fließt mit der Zeit in deine Leistung ein.';
+	@override String get goalsStatsTitle => 'Leistung';
+	@override String get goalsStatsDesc => 'Schalte die Leistungsstatistik ein, um zu sehen, wie du bei deinen Zielen stehst.';
+	@override String get coachOrientationTitle => 'Dein KI-Coach';
+	@override String get coachOrientationDesc => 'Persönliche Begleitung auf Basis deiner echten Gewohnheiten und Ziele — direkt auf deinem Mac.';
+	@override String get coachModelTitle => 'Wähle die Engine';
+	@override String get coachModelDesc => 'Wähle das KI-Modell — unsere Cloud oder ein lokales Modell, das privat auf deinem Mac läuft. Auch die Servereinstellungen sind hier.';
+	@override String get coachContextTitle => 'Was der Coach sieht';
+	@override String get coachContextDesc => 'Bestimme, ob der Coach deine Gewohnheiten und Ziele nutzen darf, um seine Ratschläge anzupassen.';
+	@override String get coachSuggestionsTitle => 'Erste Impulse';
+	@override String get coachSuggestionsDesc => 'Nicht sicher, wo du anfangen sollst? Tippe auf einen dieser Vorschläge, um loszulegen.';
+	@override String get coachInputTitle => 'Frag alles';
+	@override String get coachInputDesc => 'Gib hier deine Frage ein und drücke Senden. Damit endet die Tour — viel Freude mit Evolve!';
 }
 
 // Path: common.actions
@@ -1290,6 +1379,21 @@ class _Translations$ai$suggestions$de extends Translations$ai$suggestions$en {
 	@override String get reviewGoalsHabits => '📊 Überprüfe meine Ziele und Gewohnheiten';
 	@override String get disciplineAdvice => '🔥 Disziplin-Tipp';
 	@override String get createNewHabit => '💡 Wie kann ich eine neue Gewohnheit aufbauen?';
+}
+
+// Path: ai.local
+class _Translations$ai$local$de extends Translations$ai$local$en {
+	_Translations$ai$local$de._(TranslationsDe root) : this._root = root, super.internal(root);
+
+	final TranslationsDe _root; // ignore: unused_field
+
+	// Translations
+	@override String notReachable({required Object url}) => '❌ Lokaler KI-Server unter ${url} nicht erreichbar. Stelle sicher, dass Ollama oder LM Studio läuft.';
+	@override String get modelMissing => '⚠️ Wähle zuerst ein lokales Modell — öffne oben die Modellauswahl.';
+	@override String requestFailed({required Object code}) => '❌ Fehler des lokalen Modells (Code: ${code}).';
+	@override String get streamError => '❌ Verbindung zum lokalen Modell fehlgeschlagen.';
+	@override String get timeout => '❌ Das lokale Modell braucht zu lange — es wird möglicherweise noch geladen. Versuche es erneut.';
+	@override String get modelNotFound => '❌ Dieses Modell ist auf dem Server nicht verfügbar. Öffne die Modellauswahl, um eines zu wählen oder zu laden.';
 }
 
 /// The flat map containing all translations for locale <de>.
@@ -1758,18 +1862,6 @@ extension on TranslationsDe {
 			'goalsPage.weekPeriodLabel' => ({required Object week, required Object month, required Object year}) => 'Woche ${week}, ${month} ${year}',
 			'goalsPage.currentQuarter' => 'Aktuelles Quartal',
 			'goalsPage.currentMonth' => 'Aktueller Monat',
-			'goalsPage.tutPlanningTitle' => 'Planungstyp',
-			'goalsPage.tutPlanningDesc' => 'Hier kannst du den Zeithorizont deiner Ziele auswählen.',
-			'goalsPage.tutNewGoalDesc' => 'Von hier aus kannst du schnell ein neues Ziel hinzufügen.',
-			'goalsPage.tutCompleteTitle' => 'Abschließen oder scheitern',
-			'goalsPage.tutCompleteDesc' => 'Markiere das Ziel mit einem Klick als abgeschlossen oder gescheitert.',
-			'goalsPage.tutCategoryDesc' => 'Verwalte Kategorien und verknüpfe sie mit deinen Zielen.',
-			'goalsPage.tutRescheduleTitle' => 'Verschieben',
-			'goalsPage.tutRescheduleDesc' => 'Verschiebe das Ziel in den nächsten Zeitraum, wenn du es nicht abschließen konntest.',
-			'goalsPage.tutEditDesc' => 'Bearbeite die Details deines Ziels.',
-			'goalsPage.tutDeleteDesc' => 'Lösche ein Ziel, wenn es nicht mehr relevant ist.',
-			'goalsPage.tutStatsTitle' => 'Analyse und Statistiken',
-			'goalsPage.tutStatsDesc' => 'Wechsle zur Statistikansicht, um deine Leistung im Zeitverlauf zu analysieren.',
 			'goalsStats.proRequired' => 'Pro-Funktion erforderlich',
 			'goalsStats.active' => 'Aktiv',
 			'goalsStats.failed' => 'Gescheitert',
@@ -1809,17 +1901,23 @@ extension on TranslationsDe {
 			'ai.suggestions.reviewGoalsHabits' => '📊 Überprüfe meine Ziele und Gewohnheiten',
 			'ai.suggestions.disciplineAdvice' => '🔥 Disziplin-Tipp',
 			'ai.suggestions.createNewHabit' => '💡 Wie kann ich eine neue Gewohnheit aufbauen?',
+			'ai.local.notReachable' => ({required Object url}) => '❌ Lokaler KI-Server unter ${url} nicht erreichbar. Stelle sicher, dass Ollama oder LM Studio läuft.',
+			'ai.local.modelMissing' => '⚠️ Wähle zuerst ein lokales Modell — öffne oben die Modellauswahl.',
+			'ai.local.requestFailed' => ({required Object code}) => '❌ Fehler des lokalen Modells (Code: ${code}).',
+			'ai.local.streamError' => '❌ Verbindung zum lokalen Modell fehlgeschlagen.',
+			'ai.local.timeout' => '❌ Das lokale Modell braucht zu lange — es wird möglicherweise noch geladen. Versuche es erneut.',
+			'ai.local.modelNotFound' => '❌ Dieses Modell ist auf dem Server nicht verfügbar. Öffne die Modellauswahl, um eines zu wählen oder zu laden.',
 			'aiCoach.greeting' => 'Hallo! Ich bin Evolve AI Coach. Ich helfe dir, dein Protokoll zu optimieren und deine Ziele zu erreichen. Wie kann ich dir heute helfen?',
 			'aiCoach.systemPersona' => 'Du bist Evolve AI Coach, ein virtueller Assistent für persönliche Disziplin.',
 			'aiCoach.habitsHeader' => 'AKTIVE GEWOHNHEITEN:',
-			_ => null,
-		} ?? switch (path) {
 			'aiCoach.noActiveHabits' => 'Keine aktiven Gewohnheiten.',
 			'aiCoach.habitLine' => ({required Object title, required Object done, required Object streak}) => '${title} (Heute erledigt: ${done}, Serie: ${streak})',
 			'aiCoach.goalsHeader' => 'ZIELE:',
 			'aiCoach.noActiveGoals' => 'Keine aktiven langfristigen Ziele.',
 			'aiCoach.goalLine' => ({required Object title, required Object due}) => '${title} (Fällig: ${due})',
 			'aiCoach.contextTitle' => 'KI-Kontext',
+			_ => null,
+		} ?? switch (path) {
 			'aiCoach.contextBody' => 'Wähle, welche Daten du mit dem KI-Coach teilst, um personalisierte Ratschläge zu erhalten.',
 			'aiCoach.shareHabitsDesc' => 'Teilt deine aktiven Gewohnheiten, Serien und den heutigen Abschlussstatus.',
 			'aiCoach.shareGoalsDesc' => 'Teilt deine aktiven langfristigen Ziele.',
@@ -2102,19 +2200,6 @@ extension on TranslationsDe {
 			'proModal.unlimitedDesc' => 'Erstellen und verfolgen Sie alle gewünschten Gewohnheiten ohne Einschränkungen.',
 			'proModal.maybeLater' => 'Vielleicht später',
 			'proModal.viewPlans' => 'Pro-Abos ansehen',
-			'tutorial.back' => 'Zurück',
-			'tutorial.next' => 'Weiter',
-			'tutorial.finish' => 'Fertig',
-			'tutorial.dailyCheckIn' => 'Täglicher Check-in',
-			'tutorial.dailyCheckinDesc' => 'Hier kannst du deine tägliche Stimmung festhalten, um dein Wohlbefinden zu verfolgen und mit dem Erreichen deiner Ziele zu verknüpfen.',
-			'tutorial.manageHabits' => 'Gewohnheiten verwalten',
-			'tutorial.addEditOrDeleteDailyHabits' => 'Fügen Sie schnell und einfach tägliche Gewohnheiten hinzu, bearbeiten oder löschen Sie sie.',
-			'tutorial.movingToGoals' => 'Weiter zu den Zielen',
-			'tutorial.goalsPageDesc' => 'Die Seite, auf der du deine langfristigen Ziele und deren Leistung verwaltest.',
-			'tutorial.filterByHabit' => 'Nach Gewohnheit filtern',
-			'tutorial.filterHabitDesc' => 'Von hier aus kannst du eine bestimmte Gewohnheit für Details auswählen oder \'Alle Gewohnheiten\' für einen Gesamtüberblick.',
-			'tutorial.statisticsSections' => 'Statistikbereiche',
-			'tutorial.statsSectionsDesc' => 'Navigiere zwischen den Tabs, um Trends, Leistungs-Warnungen, den Verlauf deiner Gewohnheiten und deine Stimmung zu sehen.',
 			'appLogs.title' => 'App-Protokolle',
 			'appLogs.copiedToClipboard' => 'Protokolle in die Zwischenablage kopiert',
 			'appLogs.clearLogsTitle' => 'Protokolle löschen',
@@ -2135,6 +2220,109 @@ extension on TranslationsDe {
 			'appLogs.detailStackTrace' => 'STACK-TRACE',
 			'appLogs.shareLogs' => 'Protokolldatei teilen',
 			'appLogs.exportDone' => 'Protokolle exportiert',
+			'coachSettings.title' => 'KI-Coach-Engine',
+			'coachSettings.subtitle' => 'Wähle, wo der Coach läuft. Lokale Modelle behalten jede Nachricht auf diesem Gerät.',
+			'coachSettings.backendCloud' => 'Cloud',
+			'coachSettings.backendLocal' => 'Lokal · privat',
+			'coachSettings.cloudDesc' => 'Google Gemini über OpenRouter. Schnell, ohne Einrichtung — der geteilte Kontext wird an den Anbieter gesendet.',
+			'coachSettings.localDesc' => 'Dein eigenes Modell über Ollama, LM Studio oder einen beliebigen OpenAI-kompatiblen Server. Nichts verlässt dieses Gerät.',
+			'coachSettings.presetLabel' => 'Server',
+			'coachSettings.presetOllama' => 'Ollama',
+			'coachSettings.presetLmStudio' => 'LM Studio',
+			'coachSettings.presetCustom' => 'Benutzerdefiniert…',
+			'coachSettings.baseUrlLabel' => 'Basis-URL',
+			'coachSettings.baseUrlHint' => 'http://localhost:11434/v1',
+			'coachSettings.modelLabel' => 'Modell',
+			'coachSettings.modelHint' => 'z. B. llama3.1:8b',
+			'coachSettings.refreshModels' => 'Modelle aktualisieren',
+			'coachSettings.discovering' => 'Suche nach Modellen…',
+			'coachSettings.noModelsFound' => 'Keine Modelle gefunden — gib unten manuell eine Modell-ID ein.',
+			'coachSettings.manualModelLabel' => 'Modell-ID',
+			'coachSettings.manualModelAdd' => 'Dieses Modell verwenden',
+			'coachSettings.statusConnected' => 'Verbunden',
+			'coachSettings.statusOffline' => 'Server offline',
+			'coachSettings.statusChecking' => 'Wird geprüft…',
+			'coachSettings.remoteBadge' => 'Extern',
+			'coachSettings.remoteWarning' => 'Dieser Endpunkt ist keine lokale Adresse — Nachrichten verlassen dieses Gerät.',
+			'coachSettings.advanced' => 'Erweitert',
+			'coachSettings.systemPromptLabel' => 'System-Prompt',
+			'coachSettings.systemPromptHint' => 'Coach-Persona überschreiben (leer lassen für Standard)',
+			'coachSettings.systemPromptReset' => 'Zurücksetzen',
+			'coachSettings.temperatureLabel' => 'Temperatur',
+			'coachSettings.save' => 'Fertig',
+			'coachSettings.detectedTitle' => 'Lokales Modell erkannt',
+			'coachSettings.detectedBody' => 'Auf diesem Mac läuft ein lokaler KI-Server. Den Coach zu 100 % privat ausführen?',
+			'coachSettings.detectedAction' => 'Lokal verwenden',
+			'coachSettings.detectedDismiss' => 'Jetzt nicht',
+			'coachSettings.activeCloud' => ({required Object model}) => 'Cloud · ${model}',
+			'coachSettings.activeLocal' => ({required Object model}) => 'Lokal · ${model}',
+			'coachSettings.activeLocalNoModel' => 'Lokal · Modell wählen',
+			'coachSettings.cloudSection' => 'Cloud',
+			'coachSettings.serverSettings' => 'Servereinstellungen…',
+			'coachSettings.settingsSectionLabel' => 'KI-Coach',
+			'coachSettings.settingsTitle' => 'KI-Coach',
+			'coachSettings.settingsSubtitle' => 'Wähle die Engine für deinen Coach und verbinde sie für volle Privatsphäre mit einem lokalen Server.',
+			'coachSettings.settingsRowStatus' => 'Aktive Engine',
+			'coachSettings.settingsRowConfigure' => 'Engine & lokaler Server',
+			'coachSettings.cloudKeyMissing' => 'Cloud-API-Schlüssel ist nicht konfiguriert — Cloud-Antworten schlagen fehl. Wechsle zu einem lokalen Server oder setze OPENROUTER_API_KEY.',
+			'coachSettings.temperatureLower' => 'Temperatur senken',
+			'coachSettings.temperatureRaise' => 'Temperatur erhöhen',
+			'coachSettings.sendMessage' => 'Senden',
+			'coachSettings.stopResponse' => 'Stopp',
+			'tour.back' => 'Zurück',
+			'tour.next' => 'Weiter',
+			'tour.continueLabel' => 'Weiter',
+			'tour.finish' => 'Fertig',
+			'tour.welcomeTitle' => 'Willkommen bei Evolve',
+			'tour.welcomeBody' => 'Machen wir eine kurze Tour durch deinen Arbeitsbereich — von der täglichen Übersicht bis zu deinem KI-Coach. Es dauert nur einen Moment.',
+			'tour.welcomeStart' => 'Tour starten',
+			'tour.doneTitle' => 'Alles bereit',
+			'tour.doneBody' => 'Das ist die ganze App. Starte über die Seitenleiste, wo du willst — und du kannst die Tour jederzeit in den Einstellungen wiederholen.',
+			'tour.doneButton' => 'Loslegen',
+			'tour.overviewOrientationTitle' => 'Deine Übersicht',
+			'tour.overviewOrientationDesc' => 'Das ist deine tägliche Basis — ein Überblick über heute, sobald du Evolve öffnest.',
+			'tour.overviewCheckinTitle' => 'Täglicher Check-in',
+			'tour.overviewCheckinDesc' => 'Halte fest, wie dein Tag läuft. Mit der Zeit zeigt sich, wie deine Stimmung mit Gewohnheiten und Zielen zusammenhängt.',
+			'tour.overviewHabitsTitle' => 'Heutige Gewohnheiten',
+			'tour.overviewHabitsDesc' => 'Die für heute geplanten Gewohnheiten stehen hier — hake sie nach und nach ab.',
+			'tour.overviewGoalsTitle' => 'Fokus-Ziele',
+			'tour.overviewGoalsDesc' => 'Die Ziele, auf die du dich konzentrierst, erscheinen hier, damit nichts untergeht.',
+			'tour.habitsOrientationTitle' => 'Die Gewohnheiten-Seite',
+			'tour.habitsOrientationDesc' => 'Hier baust du dein tägliches Protokoll auf und verfolgst deine Beständigkeit.',
+			'tour.habitsAddTitle' => 'Gewohnheit hinzufügen',
+			'tour.habitsAddDesc' => 'Erstelle hier eine neue Gewohnheit — mit Name, Kategorie, Farbe und optionaler Erinnerung.',
+			'tour.habitsCheckoffTitle' => 'Als erledigt markieren',
+			'tour.habitsCheckoffDesc' => 'Setze hier ein Häkchen, um eine Gewohnheit für heute abzuschließen. Mehr braucht es nicht, um eine Serie am Leben zu halten.',
+			'tour.habitsStreakTitle' => 'Serien & Verlauf',
+			'tour.habitsStreakDesc' => 'Sieh deine Serie wachsen und deine letzten sieben Tage auf einen Blick.',
+			'tour.habitsCalendarTitle' => 'Kalenderansicht',
+			'tour.habitsCalendarDesc' => 'Wechsle zum Kalender, um deinen Verlauf nach Woche, Monat, Jahr — oder deinem ganzen Leben zu sehen.',
+			'tour.insightsOrientationTitle' => 'Deine Statistiken',
+			'tour.insightsOrientationDesc' => 'Sieh, wie sich Gewohnheiten und Ziele über die Zeit entwickeln und wo du abweichst.',
+			'tour.insightsFilterTitle' => 'Nach Gewohnheit filtern',
+			'tour.insightsFilterDesc' => 'Konzentriere die Statistik auf eine einzelne Gewohnheit oder behalte den Gesamtüberblick.',
+			'tour.insightsTabsTitle' => 'Statistik-Bereiche',
+			'tour.insightsTabsDesc' => 'Wechsle zwischen den Bereichen für Trends, Hinweise, Gewohnheits-Fortschritt und deine Stimmung.',
+			'tour.goalsOrientationTitle' => 'Die Ziele-Seite',
+			'tour.goalsOrientationDesc' => 'Setze und verfolge deine größeren Ziele — das, worauf deine täglichen Gewohnheiten hinarbeiten.',
+			'tour.goalsPlanTitle' => 'Planungsart',
+			'tour.goalsPlanDesc' => 'Wähle, wie du planst — täglich, wöchentlich oder länger — passend zu deiner Denkweise über Ziele.',
+			'tour.goalsAddTitle' => 'Ziel hinzufügen',
+			'tour.goalsAddDesc' => 'Erstelle hier ein neues Ziel und gib ihm eine Vorgabe, auf die du hinarbeitest.',
+			'tour.goalsCheckTitle' => 'Erreichen oder verfehlen',
+			'tour.goalsCheckDesc' => 'Markiere ein Ziel als erreicht oder verfehlt. Jedes Ergebnis fließt mit der Zeit in deine Leistung ein.',
+			'tour.goalsStatsTitle' => 'Leistung',
+			'tour.goalsStatsDesc' => 'Schalte die Leistungsstatistik ein, um zu sehen, wie du bei deinen Zielen stehst.',
+			'tour.coachOrientationTitle' => 'Dein KI-Coach',
+			'tour.coachOrientationDesc' => 'Persönliche Begleitung auf Basis deiner echten Gewohnheiten und Ziele — direkt auf deinem Mac.',
+			'tour.coachModelTitle' => 'Wähle die Engine',
+			'tour.coachModelDesc' => 'Wähle das KI-Modell — unsere Cloud oder ein lokales Modell, das privat auf deinem Mac läuft. Auch die Servereinstellungen sind hier.',
+			'tour.coachContextTitle' => 'Was der Coach sieht',
+			'tour.coachContextDesc' => 'Bestimme, ob der Coach deine Gewohnheiten und Ziele nutzen darf, um seine Ratschläge anzupassen.',
+			'tour.coachSuggestionsTitle' => 'Erste Impulse',
+			'tour.coachSuggestionsDesc' => 'Nicht sicher, wo du anfangen sollst? Tippe auf einen dieser Vorschläge, um loszulegen.',
+			'tour.coachInputTitle' => 'Frag alles',
+			'tour.coachInputDesc' => 'Gib hier deine Frage ein und drücke Senden. Damit endet die Tour — viel Freude mit Evolve!',
 			_ => null,
 		};
 	}

@@ -1,5 +1,6 @@
 import 'package:evolve_desktop/app/theme/evolve_theme.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 
 /// One step of a coach-mark tour: an optional [targetKey] to spotlight plus the
 /// copy shown in the step card.
@@ -122,6 +123,32 @@ class _CoachTutorialOverlayState extends State<CoachTutorialOverlay> {
     });
   }
 
+  /// Keyboard navigation for the tour: → / Enter advance (or finish on the last
+  /// step), ← goes back, Esc is deliberately inert (it must never become a
+  /// hidden skip). All other keys pass through.
+  KeyEventResult _handleKey(KeyEvent event, int index, int count) {
+    if (event is! KeyDownEvent) return KeyEventResult.ignored;
+    final key = event.logicalKey;
+    if (key == LogicalKeyboardKey.arrowRight ||
+        key == LogicalKeyboardKey.enter ||
+        key == LogicalKeyboardKey.numpadEnter) {
+      if (index >= count - 1) {
+        widget.onFinish();
+      } else {
+        widget.onIndexChanged(index + 1);
+      }
+      return KeyEventResult.handled;
+    }
+    if (key == LogicalKeyboardKey.arrowLeft) {
+      if (index > 0) widget.onIndexChanged(index - 1);
+      return KeyEventResult.handled;
+    }
+    if (key == LogicalKeyboardKey.escape) {
+      return KeyEventResult.handled; // swallow — the tour can't be dismissed
+    }
+    return KeyEventResult.ignored;
+  }
+
   @override
   Widget build(BuildContext context) {
     final steps = widget.steps;
@@ -138,70 +165,87 @@ class _CoachTutorialOverlayState extends State<CoachTutorialOverlay> {
     }
 
     return Positioned.fill(
-      child: Material(
-        key: _overlayKey,
-        color: Colors.transparent,
-        child: LayoutBuilder(
-          builder: (context, constraints) {
-            final overlaySize = Size(
-              constraints.maxWidth,
-              constraints.maxHeight,
-            );
-            final showCardAtTop =
-                targetRect != null &&
-                targetRect.center.dy > overlaySize.height * 0.52;
+      child: Focus(
+        autofocus: true,
+        onKeyEvent: (node, event) => _handleKey(event, index, steps.length),
+        child: Material(
+          key: _overlayKey,
+          color: Colors.transparent,
+          child: LayoutBuilder(
+            builder: (context, constraints) {
+              final overlaySize = Size(
+                constraints.maxWidth,
+                constraints.maxHeight,
+              );
+              final showCardAtTop =
+                  targetRect != null &&
+                  targetRect.center.dy > overlaySize.height * 0.52;
+              // Watch-only tour: the scrim swallows every tap so nothing on the
+              // page behind it can be triggered (add, delete, send, navigate).
+              // When there's no resolvable target we degrade to a centered card
+              // over a full scrim rather than stalling or skipping the step.
+              final cardAlignment = targetRect == null
+                  ? Alignment.center
+                  : (showCardAtTop
+                        ? Alignment.topCenter
+                        : Alignment.bottomCenter);
 
-            return Stack(
-              children: [
-                Positioned.fill(
-                  child: CustomPaint(painter: _CoachScrimPainter(targetRect)),
-                ),
-                if (targetRect != null)
-                  Positioned.fromRect(
-                    rect: targetRect.inflate(8),
-                    child: IgnorePointer(
-                      child: DecoratedBox(
-                        decoration: BoxDecoration(
-                          borderRadius: BorderRadius.circular(16),
-                          border: Border.all(
-                            color: context.evolveAccent,
-                            width: 2,
+              return Stack(
+                children: [
+                  Positioned.fill(
+                    child: GestureDetector(
+                      behavior: HitTestBehavior.opaque,
+                      onTap: () {},
+                      child: CustomPaint(
+                        painter: _CoachScrimPainter(targetRect),
+                      ),
+                    ),
+                  ),
+                  if (targetRect != null)
+                    Positioned.fromRect(
+                      rect: targetRect.inflate(8),
+                      child: IgnorePointer(
+                        child: DecoratedBox(
+                          decoration: BoxDecoration(
+                            borderRadius: BorderRadius.circular(16),
+                            border: Border.all(
+                              color: context.evolveAccent,
+                              width: 2,
+                            ),
                           ),
                         ),
                       ),
                     ),
-                  ),
-                Align(
-                  alignment: showCardAtTop
-                      ? Alignment.topCenter
-                      : Alignment.bottomCenter,
-                  child: Padding(
-                    padding: const EdgeInsets.symmetric(
-                      horizontal: 20,
-                      vertical: 40,
-                    ),
-                    child: _CoachCard(
-                      title: step.title,
-                      description: step.description,
-                      isFirst: index == 0,
-                      isLast: index == steps.length - 1,
-                      backLabel: widget.backLabel,
-                      nextLabel: widget.nextLabel,
-                      finishLabel: widget.finishLabel,
-                      onBack: () => widget.onIndexChanged(index - 1),
-                      onNext: () {
-                        if (index == steps.length - 1) {
-                          widget.onFinish();
-                        } else {
-                          widget.onIndexChanged(index + 1);
-                        }
-                      },
+                  Align(
+                    alignment: cardAlignment,
+                    child: Padding(
+                      padding: const EdgeInsets.symmetric(
+                        horizontal: 20,
+                        vertical: 40,
+                      ),
+                      child: _CoachCard(
+                        title: step.title,
+                        description: step.description,
+                        isFirst: index == 0,
+                        isLast: index == steps.length - 1,
+                        backLabel: widget.backLabel,
+                        nextLabel: widget.nextLabel,
+                        finishLabel: widget.finishLabel,
+                        onBack: () => widget.onIndexChanged(index - 1),
+                        onNext: () {
+                          if (index == steps.length - 1) {
+                            widget.onFinish();
+                          } else {
+                            widget.onIndexChanged(index + 1);
+                          }
+                        },
+                      ),
                     ),
                   ),
-                ),
-              ],
-            );
-          },
+                ],
+              );
+            },
+          ),
         ),
       ),
     );

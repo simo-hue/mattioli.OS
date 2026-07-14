@@ -280,6 +280,10 @@ class DesktopBackupImportService {
         'goal_id': _sid(l['goal_id']),
         'date': l['date']?.toString(),
         'status': l['status'],
+        // Preserve the quantitative log value (steps/minutes/reps, incl.
+        // HealthKit-measured quantities) so it survives the round-trip — mobile
+        // carries this too; dropping it here silently loses the column.
+        'value': l['value'],
         'created_at': l['created_at'],
         'updated_at': l['updated_at'],
         'streak': l['streak'],
@@ -600,9 +604,12 @@ class DesktopBackupImportService {
     await _recomputeCloudStreaks(client, userId, plan.affectedGoals);
 
     // Restore the profile last, under a conservative allow-list (identity and
-    // entitlement columns are never overwritten).
+    // entitlement columns are never overwritten). ONLY on a REPLACE import: a
+    // MERGE brings the file in alongside the live profile and must not silently
+    // overwrite the active user's name/DOB (mobile parity — see the private-mode
+    // path in DesktopPrivateDb.applyImport).
     final profile = canonical[kProfileKey];
-    if (profile is Map) {
+    if (replaceExisting && profile is Map) {
       final updates = <String, dynamic>{};
       for (final col in _cloudProfileImportColumns) {
         if (profile[col] != null) updates[col] = profile[col];

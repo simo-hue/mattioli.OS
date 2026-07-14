@@ -17,6 +17,9 @@ import 'package:evolve_desktop/core/desktop_private_sync_service.dart';
 import 'package:evolve_desktop/features/auth/application/auth_controller.dart';
 import 'package:evolve_desktop/features/auth/application/consent_controller.dart';
 import 'package:evolve_desktop/core/desktop_data_mode.dart';
+import 'package:evolve_desktop/features/ai_coach/application/coach_controllers.dart';
+import 'package:evolve_desktop/features/ai_coach/domain/coach_backend.dart';
+import 'package:evolve_desktop/features/ai_coach/presentation/coach_settings_dialog.dart';
 import 'package:evolve_desktop/features/dashboard/application/dashboard_controller.dart';
 import 'package:evolve_desktop/features/dashboard/domain/dashboard_models.dart';
 import 'package:evolve_desktop/features/settings/application/desktop_biometric_controller.dart';
@@ -26,6 +29,7 @@ import 'package:evolve_desktop/features/settings/data/desktop_system_settings_se
 import 'package:evolve_desktop/features/settings/presentation/app_logs_dialog.dart';
 import 'package:evolve_desktop/features/statistics/data/private_analytics_source.dart';
 import 'package:evolve_desktop/features/settings/presentation/pro_features_modal.dart';
+import 'package:evolve_desktop/features/shell/application/navigation_controller.dart';
 import 'package:evolve_desktop/shared/widgets/desktop_page.dart';
 import 'package:evolve_desktop/shared/widgets/evolve_controls.dart';
 import 'package:evolve_desktop/shared/widgets/evolve_dialog.dart';
@@ -52,6 +56,7 @@ enum _SettingsSection {
   profile,
   appearance,
   notifications,
+  aiCoach,
   privacy,
   subscription,
 }
@@ -198,6 +203,7 @@ class _SettingsPageState extends ConsumerState<SettingsPage> {
                           _SettingsSection.notifications => _notifications(
                             twoColumn,
                           ),
+                          _SettingsSection.aiCoach => _aiCoach(twoColumn),
                           _SettingsSection.privacy => _privacy(twoColumn),
                           _SettingsSection.subscription =>
                             _SubscriptionSettings(twoColumn: twoColumn),
@@ -375,6 +381,11 @@ class _SettingsPageState extends ConsumerState<SettingsPage> {
                       }),
                     );
                   },
+                  // Custom accent color is Pro (mobile parity). Private mode is
+                  // always Pro via desktopIsProProvider, so it's never locked.
+                  customLocked: !ref.watch(desktopIsProProvider),
+                  onCustomLocked: () =>
+                      unawaited(showProFeaturesDialog(context, ref)),
                 ),
                 _SelectRow(
                   icon: LucideIcons.calendar,
@@ -903,6 +914,11 @@ class _SettingsPageState extends ConsumerState<SettingsPage> {
           p.join(avatarDir.path, 'avatar${p.extension(image.path)}'),
         );
         final selectedFile = await File(image.path).copy(avatarFile.path);
+        // Evict the (path-keyed) cached decode so the UI re-reads the new bytes.
+        // The avatar is written to a STABLE path (avatar.<ext>), so an in-place
+        // overwrite otherwise keeps showing the previous photo (settings avatar
+        // + shell header) until cache pressure or restart. Mirrors mobile.
+        await FileImage(selectedFile).evict();
         await ref
             .read(privateProfileProvider.notifier)
             .updateAvatar(selectedFile.path);
@@ -1007,11 +1023,13 @@ class _SettingsPageState extends ConsumerState<SettingsPage> {
   }
 
   Future<void> _resetTutorials() async {
-    await Future.wait([
-      ref.read(tutorialProvider.notifier).setTutorialSeen(false),
-      ref.read(goalsTutorialProvider.notifier).setTutorialSeen(false),
-      ref.read(statsTutorialProvider.notifier).setTutorialSeen(false),
-    ]);
+    // Clear the completion flag and rewind the central tour to Overview, then
+    // navigate to the Dashboard. The Dashboard's existing onboarding flow
+    // watches tourControllerProvider and re-triggers the welcome dialog + tour.
+    await ref.read(tourControllerProvider.notifier).resetForReplay();
+    ref
+        .read(navigationControllerProvider.notifier)
+        .select(DesktopSection.overview);
     if (mounted) {
       _showGate(
         t.settingsPage.tutorialResetTitle,
@@ -1579,6 +1597,12 @@ class _SettingsPageState extends ConsumerState<SettingsPage> {
       await ref.read(dashboardControllerProvider.notifier).refresh();
       ref.invalidate(privateProfileProvider);
       ref.invalidate(desktopGoalCategoriesControllerProvider);
+      // Cancel the now-orphaned per-habit reminders: the habits were just wiped,
+      // so re-syncing with the (empty) habit list clears every scheduled
+      // notification. Without this, deleted habits keep firing reminders (and
+      // their Done/Skip actions would re-write phantom logs). Mirrors mobile's
+      // cancelAll() on delete.
+      await _syncNotifications();
       await _refreshSyncStatus();
       if (mounted) {
         Navigator.pop(context); // close loading dialog
@@ -1947,6 +1971,55 @@ class _SettingsDestination extends StatelessWidget {
   }
 }
 
+extension _AiCoachSection on _SettingsPageState {
+  /// AI Coach engine settings: current engine at a glance + an entry into the
+  /// full backend/local-server/model configuration dialog (the single config
+  /// editor shared with the chat header).
+  Widget _aiCoach(bool twoColumn) {
+    final config = ref.watch(coachConfigProvider);
+    final isLocal = config.backend == CoachBackendKind.local;
+    final localModel = config.localModel;
+    final engineValue = isLocal
+        ? ((localModel == null || localModel.isEmpty)
+              ? t.coachSettings.activeLocalNoModel
+              : t.coachSettings.activeLocal(model: localModel))
+        : t.coachSettings.activeCloud(model: config.cloudModel);
+
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        _SettingsHeading(
+          title: t.coachSettings.settingsTitle,
+          subtitle: t.coachSettings.settingsSubtitle,
+        ),
+        const SizedBox(height: 20),
+        _GroupGrid(
+          twoColumn: twoColumn,
+          groups: [
+            _SettingsGroup(
+              // Distinct from the section heading ("AI Coach") above it.
+              title: t.coachSettings.title,
+              children: [
+                _InfoRow(
+                  icon: isLocal ? LucideIcons.cpu : LucideIcons.cloud,
+                  label: t.coachSettings.settingsRowStatus,
+                  value: engineValue,
+                ),
+                _ActionRow(
+                  icon: LucideIcons.slidersHorizontal,
+                  title: t.coachSettings.settingsRowConfigure,
+                  detail: t.coachSettings.subtitle,
+                  onTap: () => showCoachSettingsDialog(context),
+                ),
+              ],
+            ),
+          ],
+        ),
+      ],
+    );
+  }
+}
+
 class _SettingsHeading extends StatelessWidget {
   const _SettingsHeading({required this.title, required this.subtitle});
 
@@ -2277,6 +2350,8 @@ class _ColorRow extends StatelessWidget {
     required this.detail,
     required this.selected,
     required this.onChanged,
+    this.customLocked = false,
+    this.onCustomLocked,
   });
 
   final IconData icon;
@@ -2284,6 +2359,11 @@ class _ColorRow extends StatelessWidget {
   final String detail;
   final Color selected;
   final ValueChanged<Color> onChanged;
+
+  /// When true, the custom-color swatch is a Pro feature (mobile parity): it
+  /// shows a lock and invokes [onCustomLocked] instead of opening the picker.
+  final bool customLocked;
+  final VoidCallback? onCustomLocked;
 
   @override
   Widget build(BuildContext context) {
@@ -2334,14 +2414,16 @@ class _ColorRow extends StatelessWidget {
                 Tooltip(
                   message: t.settingsPage.customColor,
                   child: InkWell(
-                    onTap: () => _showFullColorPicker(context, colors.toList()),
+                    onTap: customLocked
+                        ? onCustomLocked
+                        : () => _showFullColorPicker(context, colors.toList()),
                     customBorder: const CircleBorder(),
                     child: _Swatch(
                       color: context.evolveColors.panelRaised,
                       isSelected: false,
                       outlined: true,
                       child: Icon(
-                        LucideIcons.plus,
+                        customLocked ? LucideIcons.lock : LucideIcons.plus,
                         size: 14,
                         color: context.evolveColors.foreground,
                       ),
@@ -3233,6 +3315,7 @@ extension on _SettingsSection {
     _SettingsSection.profile => t.settingsPage.profileLabel,
     _SettingsSection.appearance => t.settingsPage.sectionApplication,
     _SettingsSection.notifications => t.settingsPage.notifications,
+    _SettingsSection.aiCoach => t.coachSettings.settingsSectionLabel,
     _SettingsSection.privacy => t.settingsPage.sectionPrivacy,
     _SettingsSection.subscription => t.settingsPage.subscription,
   };
@@ -3241,6 +3324,7 @@ extension on _SettingsSection {
     _SettingsSection.profile => LucideIcons.user,
     _SettingsSection.appearance => LucideIcons.settings,
     _SettingsSection.notifications => LucideIcons.bell,
+    _SettingsSection.aiCoach => LucideIcons.bot,
     _SettingsSection.privacy => LucideIcons.shield,
     _SettingsSection.subscription => LucideIcons.sparkles,
   };

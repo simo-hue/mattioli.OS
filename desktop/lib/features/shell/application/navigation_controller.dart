@@ -63,8 +63,21 @@ class NavigationController extends Notifier<DesktopSection> {
 
   NavDirection _lastDirection = NavDirection.forward;
 
+  /// While locked (the guided tour is running), every user-initiated navigation
+  /// vector — [select], [back], [forward] — is a no-op. The tour engine moves
+  /// between pages via [selectForTour], which bypasses the lock. This is the
+  /// single choke point that seals sidebar taps, ⌘1–5/⌘,, ⌘[/], the trackpad
+  /// swipe, and the command palette all at once, since they all route here.
+  bool _locked = false;
+
   @override
   DesktopSection build() => DesktopSection.overview;
+
+  /// Whether navigation is currently locked by the guided tour.
+  bool get isLocked => _locked;
+
+  /// Engage or release the tour navigation lock. Called by the tour controller.
+  void setLocked(bool value) => _locked = value;
 
   /// Direction of the most recent navigation (forward = a newly selected
   /// section, back = returned to a previously visited one).
@@ -81,6 +94,7 @@ class NavigationController extends Notifier<DesktopSection> {
   /// Navigate to [section], recording the current one so it can be returned to
   /// with [back]. Selecting the already-current section is a no-op.
   void select(DesktopSection section) {
+    if (_locked) return;
     if (section == state) return;
     _history.add(state);
     if (_history.length > _maxHistory) {
@@ -91,10 +105,21 @@ class NavigationController extends Notifier<DesktopSection> {
     state = section;
   }
 
+  /// Privileged navigation used by the guided tour to move between segment
+  /// pages. Bypasses the lock and deliberately does NOT touch the back/forward
+  /// history, so the tour's page hops don't pollute the user's navigation
+  /// stack once the tour ends.
+  void selectForTour(DesktopSection section) {
+    if (section == state) return;
+    _lastDirection = NavDirection.forward;
+    state = section;
+  }
+
   /// Return to the most recently visited section, if any. Mirrors the mobile
   /// swipe-back gesture — bound on macOS to ⌘[ and the two-finger trackpad
   /// swipe. No-op at the root of the history.
   void back() {
+    if (_locked) return;
     if (_history.isEmpty) return;
     _forward.add(state);
     _lastDirection = NavDirection.back;
@@ -105,6 +130,7 @@ class NavigationController extends Notifier<DesktopSection> {
   /// current one back onto the history. Bound on macOS to ⌘] and the
   /// two-finger trackpad swipe-left. No-op when there is nothing ahead.
   void forward() {
+    if (_locked) return;
     if (_forward.isEmpty) return;
     _history.add(state);
     _lastDirection = NavDirection.forward;

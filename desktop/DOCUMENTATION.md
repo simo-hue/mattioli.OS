@@ -367,6 +367,204 @@ Apple-like control kit COMPLETE (analyze clean, 140/140 tests green, tree left u
     - **create_goal_dialog category** (owner chose "dropdown + New"): the free-text field is now an `EvolveSelect` of the saved categories (`desktopGoalCategoriesControllerProvider`, non-archived, color-dot leading) plus a "New category" row that reveals an inline autofocus text field — matching the goal editor while preserving free-entry. Empty-categories accounts still get the plain text field. `addGoal(category: String)` unchanged (passes the selected label or typed name); reuses the existing `goalsPage.newCategory` key (no i18n/regen).
     - **Verification**: `flutter analyze` → 1 issue, the pre-existing `main.dart:20 setMockInitialValues` (0 new); `flutter test` (dummy Supabase dart-defines) → **144 pass / 1 pre-existing fail** (`icloud_sync_card_test`); `dart run slang` regen clean.
 
+- [2026-07-14]: Fix — private DB "file is not a database" (error 26) crash-loop on macOS
+  - *Details*: `flutter run -d macos` crashed on boot with SQLCipher error 26
+    (`open_failed evolve_private_v2.db`), thrown up through
+    `CloudKitPrivateSyncService._syncNow → DesktopPrivateDb.syncStore → _open`.
+    Root cause: `DesktopPrivateDb._encryptionKey()` unconditionally minted **and
+    persisted** a fresh SQLCipher key whenever the Keychain read returned
+    null/short. On a dev Mac a Keychain read-miss (re-sign / access-group change
+    between builds is the usual trigger) therefore generated a new key, overwrote
+    the stored one, and tried to open the pre-existing encrypted file with it →
+    header won't decrypt → error 26 → unhandled exception every launch. Desktop
+    had diverged from mobile, whose `PrivateLocalDatabase._databasePassword`
+    already fails closed for exactly this reason.
+  - *Tech Notes*:
+    - `desktop_private_db.dart` `_open()` now computes `dbFileExists =
+      await File(dbPath).exists()` and passes it to `_encryptionKey`.
+    - `_encryptionKey({required bool dbFileExists})` now **fails closed**: if the
+      key is absent (read null/<32 chars) **and** a DB file already exists, it
+      throws `StateError` instead of minting a new key — so a transient Keychain
+      miss can no longer orphan the encrypted data, and a later launch that can
+      read the key still recovers. Only a true first run (no db file) generates a
+      key. Mirrors mobile verbatim in intent.
+    - Does NOT auto-recover an already-orphaned file: the manual one-time reset
+      (delete `evolve_private_v2.db*`) is logged in TO_SIMO_DO.md.
+    - Remaining desktop↔mobile coherence gaps (flagged, NOT yet done): desktop
+      uses raw `FlutterSecureStorage()` — no `first_unlock_this_device`
+      accessibility pin and no duplicate-item (`-25299`) write recovery, both of
+      which mobile's `SecureStorageUtils` has. Pinning accessibility would reduce
+      read-miss frequency; the guard above prevents the catastrophic outcome
+      regardless.
+    - *Verification*: `flutter analyze lib/core/desktop_private_db.dart` clean;
+      DB/sync tests green except one **pre-existing** unrelated fail
+      (`import_merge_lww_test` "mobile 1.0.10 export → desktop import", confirmed
+      red without this change via `git stash`).
+
+- [2026-07-14]: Full desktop↔mobile parity port for Private-mode secret storage
+  - *Details*: Owner-approved follow-up to the error-26 fix. Closed the remaining
+    coherence gaps between desktop's private-DB secret handling and mobile's
+    hardened `SecureStorageUtils` / `PrivateLocalDatabase`. The private-mode
+    secrets (SQLCipher key + owner UUID) were the ONLY desktop keychain consumers
+    still on bare `FlutterSecureStorage()` — no accessibility pin, no duplicate
+    recovery, and the DB was not backup-excluded (mobile excludes it). No new
+    deps; one native macOS channel added (mirrors the existing iOS one).
+  - *Tech Notes*:
+    - `secure_storage_utils.dart` — added a **device-local tier**
+      (`_deviceLocalStorage`, `readDeviceLocal`/`writeDeviceLocal`/
+      `deleteDeviceLocal`) pinned to `MacOsOptions(accessibility:
+      first_unlock_this_device)` — on-this-Mac-only, never iCloud-synced,
+      matching mobile's `_deviceLocalStorage`. `writeDeviceLocal` has -25299
+      duplicate-item recovery scoped to the single key and **never** falls back
+      to `deleteAll()` (that keychain holds the SQLCipher key; wiping it = perma
+      data loss — mirrors mobile's SEC-6 note). Existing default-option items
+      stay readable (accessibility isn't part of the read query; synchronizable
+      stays false).
+    - `desktop_private_db.dart` — routed all three private-secret touchpoints
+      (`_encryptionKey`, `ownerId`, `adoptOwner`) through the device-local tier
+      and dropped the bare `const FlutterSecureStorage()` (+ its import). Combined
+      with the 07-14 fail-closed guard, the private key now has the same lifecycle
+      protections as mobile.
+    - **Backup exclusion** (new): `_open()` now calls `_excludeFromBackup(dir)`,
+      which flags the whole private Application Support directory (DB +
+      `-wal`/`-shm` sidecars + `private_profile` avatars) as
+      `isExcludedFromBackup` via a new native `evolve/private_storage`
+      MethodChannel, and drops a `.private_mode_local_only` marker file.
+      Best-effort (failures logged via `AppLogger.warning`, non-fatal). Native
+      half added as `PrivateStorageBridge` in `macos/Runner/AppDelegate.swift`
+      (a line-for-line port of the iOS handler) and registered in
+      `MainFlutterWindow.swift` next to `CloudKitSyncBridge`. Kept in the existing
+      Runner-target file so it builds without editing the Xcode project.
+    - *Verification*: `flutter analyze lib` → 0 new issues (only the pre-existing
+      `main.dart:20 setMockInitialValues` warning); Swift `swiftc -typecheck` of
+      both Runner sources → clean; `flutter test` (dummy dart-defines) → **189
+      pass / 2 pre-existing fails** (`icloud_sync_card_test`, `import_merge_lww`
+      — both confirmed red without these changes via `git stash`). The native
+      backup-exclusion behavior itself needs an on-device check on the Xcode
+      machine (logged in TO_SIMO_DO.md) — it can't run in this headless env.
+
+- [2026-07-14]: Mobile↔desktop parity AUDIT + Tranche 1 (data-integrity core)
+  - *Details*: Owner wants desktop to "act, behave and reason the same way" as
+    the finished mobile iOS app. Ran a 44-agent parity audit (13 subsystems,
+    per-finding adversarial verification) → 28 confirmed high/medium + 4 low
+    divergences, all app-level and portable (none macOS-capability-limited).
+    Full report saved to `desktop/PARITY_AUDIT.md`. Agreed fix order:
+    1) data-integrity, 2) notifications+biometric, 3) privacy+affordances,
+    4) monetization/Pro-gates LAST. This entry covers Tranche 1.
+  - *Tech Notes (Tranche 1 — 9 fixes, all faithful ports of mobile logic)*:
+    - **#1 goal_logs.value drop** (data loss): added `'value': l['value']` to the
+      import parse (`desktop_backup_import_service.dart` `_processData`), the
+      private-merge INSERT + LWW UPDATE, and the `exportSnapshot` habitLogs
+      projection (`desktop_private_db.dart`). Fixes the failing round-trip test.
+    - **#4 orphaned-owner self-heal**: ported `_reconcileOrphanedOwner` (called
+      from `_open` after seed) + an in-memory owner-id cache (`_cachedOwnerId`)
+      so an adopted owner sticks even if the Keychain write fails.
+    - **#26 seedProfile language**: seed `language:'system'` (+ the other prefs
+      mobile seeds) so a fresh/synced profile row is byte-identical and the
+      schema DEFAULT `'it'` can't propagate via LWW.
+    - **#3 deleteAll footgun**: `SecureStorageUtils` refactored to a shared
+      `writeScoped` (scoped -25299 recovery, NEVER `deleteAll`); removed the
+      `clearAllOnDuplicateFailure`/`deleteAll` paths + the session-persist call's
+      use of it (`secure_local_storage.dart`). A session-key write can no longer
+      wipe the co-located Private-Mode SQLCipher key.
+    - **#16 synced-secret self-heal**: `DesktopSyncSecretStore.write` now
+      delegates to `writeScoped` so a -25299 on the collision-prone shared-group
+      store self-heals instead of aborting sync.
+    - **#10 mode recovery**: added `DesktopPrivateDb.databaseFileExists()` +
+      `main.dart` restore of `active_data_mode=private` when the pref is null but
+      the DB file exists.
+    - **#11 refresh-after-pull**: new `refreshPrivateAfterPull(container)` helper
+      (dashboard+analytics+profile+categories), wired into the sync-lifecycle
+      `_sync` and the notification `onLocalWrite` so auto-pulls surface
+      cross-device profile/category edits (was dashboard+analytics only).
+    - **#13 ensureReady on enter-private**: `DesktopAuthController.enterPrivateMode`
+      now opens the DB inside try/catch and only flips the mode on success (else
+      stays in Supabase mode + `t.authCtrl.operationFailed`), so a failed open
+      can't strand the app in Private mode.
+    - **#14 notif cleanup on delete**: `_deletePrivateData` now calls
+      `_syncNotifications()` after the wipe so orphaned per-habit reminders are
+      cancelled.
+    - *Verification*: my 10 changed files are `flutter analyze`-clean (0 errors).
+      Ran the pure-logic test files (widget tests are blocked — see below):
+      **22 test files pass**, incl. the previously-RED
+      `import_merge_lww` "mobile 1.0.10 export → desktop import ... losslessly"
+      (now green, +12). No genuine failures introduced.
+  - *⚠️ BLOCKER (concurrent work, NOT this change)*: the in-flight **AI-coach**
+    feature currently leaves the app NON-COMPILING, so `flutter run -d macos` and
+    all widget tests fail regardless of these fixes. Two independent breakages,
+    both in files this change never touched: (a) `lib/features/ai_coach/**` has 5
+    compile errors (missing i18n keys `coachSettings.cloudKeyMissing`, undefined
+    `CloudCoachBackend`, `modelNotFound`/`baseUrlFocus`/`onCommitSystemPrompt`
+    param mismatches); (b) `lib/core/tutorial_provider.dart` was modified to
+    remove/rename `tutorialProvider`, but `settings_page.dart:1016` and
+    `dashboard_page.dart:105` still reference it. Must be resolved (by whoever
+    owns the AI-coach branch) before on-device verification of ANY desktop work.
+
+- [2026-07-14]: Parity Tranches 2–4 (notifications+biometric / privacy / monetization)
+  - *Details*: Continued the mobile→desktop parity port. The concurrent AI-coach
+    compile breakage (ai_coach errors + `tutorialProvider` refactor) was resolved
+    by that session mid-way, so the full suite + widget tests run again.
+  - *Tech Notes*:
+    - **Tranche 2 — notifications + biometric (7)**: #7 per-goal reminders now
+      schedule independently of the 'Habit Reminders' toggle (only the Morning
+      Brief is gated); #21 Snooze reschedules +10 min (id+1000) instead of no-op;
+      #22 `_canSchedule` 64-pending cap guard (fail-open); #23 `requestPermissions`
+      on any scheduling path (covers the habit editor); #15 biometric unlock fails
+      OPEN when no biometrics are enrolled (no macOS lockout); #8 gate is now
+      stateful (`AppLifecycleListener`) and re-arms (`rearm()`) on
+      inactive/hidden/paused; #30 auto-prompts on cold start + resume + async-arm.
+    - **Tranche 3 — privacy + affordances**: #2 ported `PrivacyUtils` and scrub
+      message+extras in `AppLogger.info/warning` before Sentry (error() left raw,
+      mobile parity); #31 placeholder DSN now treated as UNCONFIGURED + default
+      `tracesSampleRate` 1.0→0.2; #27 avatar `FileImage.evict()` after in-place
+      overwrite. #25 (verified-habit badge) DEFERRED — substantial UI needing
+      visual QA.
+    - **Tranche 4 — monetization/Pro-gates (6)**: #5 free-tier 5-habit cap
+      (`addHabit` returns bool; both callers show `showProFeaturesDialog`); #6
+      per-habit statistics gated (scope switch → paywall for non-Pro); #17 generic
+      "any active entitlement → Pro" fallback; #18 isPro seeded from cached
+      `pref_is_pro` at build (offline cold-start); #19 purchase/restore sync+
+      invalidate+refetch retry + already-purchased auto-restore; #20
+      `addCustomerInfoUpdateListener` keeps isPro live. #29 (accent-color gate)
+      NOT done — needs an owner policy decision.
+    - *Verification*: `flutter analyze lib` → 0 errors (only the pre-existing
+      `main.dart:21 setMockInitialValues` warning); `flutter test` → **214 pass /
+      1 pre-existing fail** (`icloud_sync_card_test`, a `pumpAndSettle` timeout
+      confirmed RED without any of these changes). The 07-14 `import_merge_lww`
+      round-trip that was RED is now GREEN. New files: `privacy_utils.dart`,
+      `private_data_refresh.dart`.
+  - *Owner decisions still needed (not code)*: #12 should a MERGE-import be
+    allowed to overwrite the active profile/theme/language (desktop does, mobile
+    doesn't)?; #29 Pro-gate the custom accent color like mobile, or leave it free
+    on desktop?; #9 is a MOBILE-side fix (its cloud-import drops verify_* rules);
+    #28 D8 verified-habit manual-override is a documented shared-design limit.
+
+- [2026-07-14]: Owner-approved finishers — #12, #29, #25
+  - **#12 import profile gate** (owner: match mobile): the profile/settings block
+    is now applied ONLY on a REPLACE import, both private
+    (`desktop_private_db.dart` applyImport, gated on `replaceExisting`) and cloud
+    (`desktop_backup_import_service.dart`). A MERGE import no longer overwrites
+    the active user's theme/language/name. Added 2 tests (merge preserves / replace
+    restores) — green.
+  - **#29 accent Pro-gate** (owner: Pro-gate it): `_ColorRow` gained
+    `customLocked`/`onCustomLocked`; the custom '+' swatch now shows a lock and
+    opens the paywall for non-Pro (Private mode always Pro). Presets stay free.
+  - **#25 verified badge** (owner: do it now): new shared `VerifiedHabitBadge`
+    (shield-check + reused `t.settingsPage.verified`, no slang regen to avoid the
+    concurrent i18n churn); rendered next to the habit title in both the dashboard
+    and habits `_HabitRow` when `habit.verificationRule != null`. Still wants a
+    visual pass on device (badge copy/placement).
+
 ### Current Status
-Deep macOS coherence polish COMPLETE (incl. owner-approved create-goal category picker). `flutter analyze` = 1 pre-existing issue, tests **144 / 1 pre-existing fail**; `dart format` clean; tree uncommitted for review. Immediate next step: on-device VISUAL QA on the Xcode machine (`flutter run -d macos`) — checklist in TO_SIMO_DO.md.
+**Full mobile↔desktop under-the-hood parity port COMPLETE** — all 4 tranches +
+the three owner-approved finishers (#12/#29/#25). Of the 32 audited divergences,
+the only two NOT changed are #9 (a MOBILE-side fix; desktop already correct) and
+#28 (a documented shared-design limitation, no code). Code-verified: `analyze
+lib` → 0 errors (1 pre-existing warning); `flutter test` → **216 pass / 1
+pre-existing fail** (`icloud_sync_card_test`, confirmed RED without any of these
+changes). Tree uncommitted for review — NOTE it also contains the concurrent
+AI-coach feature + i18n regen, so commit the parity files separately. Only
+remaining: on-device QA on the Xcode machine (TO_SIMO_DO.md) — visual pass on the
+verified badge + smoke test of notifications / biometric re-lock / Pro gates,
+plus the earlier DB-reset / backup-exclusion checks.
 

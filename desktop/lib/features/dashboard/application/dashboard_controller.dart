@@ -7,6 +7,7 @@ import 'package:evolve_desktop/core/streak_utils.dart';
 import 'package:evolve_desktop/i18n/translations.g.dart';
 import 'package:evolve_desktop/core/macro_goal_calendar.dart';
 import 'package:evolve_desktop/features/dashboard/data/dashboard_repository.dart';
+import 'package:evolve_desktop/features/settings/application/desktop_subscription_controller.dart';
 import 'package:evolve_desktop/features/settings/data/desktop_notification_service.dart';
 import 'package:evolve_desktop/features/dashboard/domain/dashboard_models.dart';
 import 'package:flutter/material.dart';
@@ -113,12 +114,19 @@ class DashboardController extends Notifier<DashboardSnapshot> {
     );
   }
 
-  Future<void> addHabit({
+  /// Creates a habit. Returns `false` — without persisting — when the free-tier
+  /// 5-habit cap is reached, so the caller (which has a BuildContext) can
+  /// present the paywall. Private mode is always Pro via [desktopIsProProvider],
+  /// so it is never capped. Mirrors mobile's habit gate.
+  Future<bool> addHabit({
     required String title,
     required String category,
     required Color color,
     String? reminderTime,
   }) async {
+    if (!ref.read(desktopIsProProvider) && state.habits.length >= 5) {
+      return false;
+    }
     final draft = DashboardHabit(
       id: _newLocalId(),
       title: title,
@@ -145,6 +153,7 @@ class DashboardController extends Notifier<DashboardSnapshot> {
     } catch (error, stack) {
       _recordSyncError('Unable to sync the new habit', error, stack);
     }
+    return true;
   }
 
   Future<void> updateHabit({

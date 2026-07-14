@@ -4,16 +4,20 @@ import 'package:evolve_desktop/core/macro_goal_calendar.dart';
 import 'package:evolve_desktop/core/app_bootstrap.dart';
 import 'package:evolve_desktop/core/desktop_data_mode.dart';
 import 'package:evolve_desktop/core/performance_color.dart';
+import 'package:evolve_desktop/core/tutorial_provider.dart';
 import 'package:evolve_desktop/features/auth/application/auth_controller.dart';
 import 'package:evolve_desktop/features/auth/application/desktop_profile_controller.dart';
 import 'package:evolve_desktop/features/dashboard/application/dashboard_controller.dart';
 import 'package:evolve_desktop/features/dashboard/domain/dashboard_models.dart';
+import 'package:evolve_desktop/features/settings/presentation/pro_features_modal.dart';
 import 'package:evolve_desktop/i18n/translations.g.dart';
 import 'package:evolve_desktop/core/rtl.dart';
+import 'package:evolve_desktop/shared/widgets/coach_tutorial.dart';
 import 'package:evolve_desktop/shared/widgets/desktop_page.dart';
 import 'package:evolve_desktop/shared/widgets/evolve_controls.dart';
 import 'package:evolve_desktop/shared/widgets/evolve_dialog.dart';
 import 'package:evolve_desktop/shared/widgets/evolve_panel.dart';
+import 'package:evolve_desktop/shared/widgets/verified_habit_badge.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:lucide_icons_flutter/lucide_icons.dart';
@@ -31,6 +35,15 @@ class _HabitsPageState extends ConsumerState<HabitsPage> {
   _HabitSurface _surface = _HabitSurface.protocol;
   CalendarViewMode _calendarView = CalendarViewMode.month;
   DateTime _anchor = DateTime.now();
+
+  // Habits segment of the continuous product tour. The central
+  // [tourControllerProvider] owns whether this segment is active; this page owns
+  // the step index within the segment and the spotlight target keys.
+  int _tourIndex = 0;
+  final _addKey = GlobalKey();
+  final _checkoffKey = GlobalKey();
+  final _streakKey = GlobalKey();
+  final _surfaceKey = GlobalKey();
 
   @override
   void initState() {
@@ -52,33 +65,50 @@ class _HabitsPageState extends ConsumerState<HabitsPage> {
   @override
   Widget build(BuildContext context) {
     final snapshot = ref.watch(dashboardControllerProvider);
+    final showTour = ref
+        .watch(tourControllerProvider)
+        .isSegmentActive(TourSegment.habits);
+
+    // During the Habits tour, when the user has no real habits yet, inject a
+    // single view-only demo row so the check-off (step 3) and streak (step 4)
+    // coach-marks have a target to spotlight. It is never persisted — it is
+    // built at the widget layer only and the tour scrim blocks interaction.
+    final demoHabits = showTour && snapshot.habits.isEmpty
+        ? <DashboardHabit>[_tutorialDemoHabit()]
+        : null;
 
     // App-like workspace: the page is pinned to the viewport. Fixed chrome
     // (metrics + the Protocollo/Calendario switch) sits on top and the active
     // view fills the remaining height, scrolling internally where needed.
-    return DesktopPage(
+    final page = DesktopPage(
       pinned: true,
       title: t.common.habits,
       subtitle: t.habitsPage.subtitle,
-      trailing: PageActionButton(
-        label: t.habitsPage.newHabit,
-        icon: LucideIcons.plus,
-        primary: true,
-        onPressed: () => _openHabitEditor(),
+      trailing: KeyedSubtree(
+        key: _addKey,
+        child: PageActionButton(
+          label: t.habitsPage.newHabit,
+          icon: LucideIcons.plus,
+          primary: true,
+          onPressed: () => _openHabitEditor(),
+        ),
       ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.stretch,
         children: [
           _Summary(snapshot: snapshot),
           const SizedBox(height: 14),
-          EvolveSegmentedControl<_HabitSurface>(
-            height: 44,
-            segments: {
-              _HabitSurface.protocol: t.habitsPage.tabProtocol,
-              _HabitSurface.calendar: t.habitsPage.tabCalendar,
-            },
-            selected: _surface,
-            onSelected: (surface) => setState(() => _surface = surface),
+          KeyedSubtree(
+            key: _surfaceKey,
+            child: EvolveSegmentedControl<_HabitSurface>(
+              height: 44,
+              segments: {
+                _HabitSurface.protocol: t.habitsPage.tabProtocol,
+                _HabitSurface.calendar: t.habitsPage.tabCalendar,
+              },
+              selected: _surface,
+              onSelected: (surface) => setState(() => _surface = surface),
+            ),
           ),
           const SizedBox(height: 14),
           Expanded(
@@ -90,7 +120,7 @@ class _HabitsPageState extends ConsumerState<HabitsPage> {
               child: KeyedSubtree(
                 key: ValueKey(_surface),
                 child: _surface == _HabitSurface.protocol
-                    ? _protocolSurface(snapshot)
+                    ? _protocolSurface(snapshot, demoHabits)
                     : _calendarSurface(snapshot),
               ),
             ),
@@ -98,11 +128,62 @@ class _HabitsPageState extends ConsumerState<HabitsPage> {
         ],
       ),
     );
+
+    return Stack(
+      children: [
+        page,
+        if (showTour)
+          CoachTutorialOverlay(
+            steps: _habitsTourSteps(),
+            index: _tourIndex,
+            onIndexChanged: (i) => setState(() => _tourIndex = i),
+            // Last Habits step advances the tour to the Insights segment.
+            onFinish: () => ref.read(tourControllerProvider.notifier).advance(),
+            backLabel: t.tour.back,
+            nextLabel: t.tour.next,
+            finishLabel: t.tour.continueLabel,
+          ),
+      ],
+    );
   }
 
-  Widget _protocolSurface(DashboardSnapshot snapshot) {
+  List<CoachStep> _habitsTourSteps() => [
+    // Orientation-first: a centered card (no spotlight) announcing the page.
+    CoachStep(
+      title: t.tour.habitsOrientationTitle,
+      description: t.tour.habitsOrientationDesc,
+    ),
+    CoachStep(
+      targetKey: _addKey,
+      title: t.tour.habitsAddTitle,
+      description: t.tour.habitsAddDesc,
+    ),
+    CoachStep(
+      targetKey: _checkoffKey,
+      title: t.tour.habitsCheckoffTitle,
+      description: t.tour.habitsCheckoffDesc,
+    ),
+    CoachStep(
+      targetKey: _streakKey,
+      title: t.tour.habitsStreakTitle,
+      description: t.tour.habitsStreakDesc,
+    ),
+    CoachStep(
+      targetKey: _surfaceKey,
+      title: t.tour.habitsCalendarTitle,
+      description: t.tour.habitsCalendarDesc,
+    ),
+  ];
+
+  Widget _protocolSurface(
+    DashboardSnapshot snapshot,
+    List<DashboardHabit>? demoHabits,
+  ) {
     return _ProtocolPanel(
       snapshot: snapshot,
+      habitsOverride: demoHabits,
+      checkoffKey: _checkoffKey,
+      streakKey: _streakKey,
       onToggle: (id) =>
           ref.read(dashboardControllerProvider.notifier).toggleHabit(id),
       onAdd: () => _openHabitEditor(),
@@ -147,12 +228,16 @@ class _HabitsPageState extends ConsumerState<HabitsPage> {
 
     final controller = ref.read(dashboardControllerProvider.notifier);
     if (habit == null) {
-      await controller.addHabit(
+      final added = await controller.addHabit(
         title: draft.title,
         category: draft.category,
         color: draft.color,
         reminderTime: draft.reminderTime,
       );
+      if (!added && mounted) {
+        // Free-tier 5-habit cap reached → present the paywall (mobile parity).
+        await showProFeaturesDialog(context, ref);
+      }
     } else {
       await controller.updateHabit(
         id: habit.id,
@@ -208,6 +293,21 @@ Widget _expandedSwitcherLayout(
     children: [...previousChildren, ?currentChild],
   );
 }
+
+/// A single view-only habit injected into the Protocol table during the Habits
+/// tour when the user has no real habits yet, so the check-off (step 3) and the
+/// streak/heatmap (step 4) coach-marks have a row to spotlight. It is never
+/// written to the controller — [_ProtocolPanel] renders it and the tour scrim
+/// blocks interaction, so its callbacks can't fire.
+DashboardHabit _tutorialDemoHabit() => DashboardHabit(
+  id: 'tutorial_fake_habit',
+  title: t.habitsPage.catMindfulness,
+  category: _localizedHabitCategory('Benessere'),
+  color: EvolveColors.cyan,
+  streak: 5,
+  weeklyProgress: const [true, true, false, true, true, false, false],
+  state: HabitState.completed,
+);
 
 /// Compact metric strip: the three summary cards share one row of fixed
 /// chrome. They are secondary info, so they stay ~72px tall and stop growing
@@ -324,6 +424,9 @@ class _ProtocolPanel extends StatefulWidget {
     required this.onEdit,
     required this.onDelete,
     required this.onReorder,
+    this.habitsOverride,
+    this.checkoffKey,
+    this.streakKey,
   });
 
   final DashboardSnapshot snapshot;
@@ -334,6 +437,16 @@ class _ProtocolPanel extends StatefulWidget {
 
   /// Quick-add action shown next to the status pill.
   final VoidCallback onAdd;
+
+  /// Tour-only replacement for the real habit list: when non-null it is
+  /// rendered instead of `snapshot.habits` so the coach-marks have a row to
+  /// point at. Never written back to the controller.
+  final List<DashboardHabit>? habitsOverride;
+
+  /// Spotlight targets threaded to the FIRST habit row (check-off square /
+  /// streak cluster) for the Habits tour. Null on non-tour renders.
+  final GlobalKey? checkoffKey;
+  final GlobalKey? streakKey;
 
   @override
   State<_ProtocolPanel> createState() => _ProtocolPanelState();
@@ -350,7 +463,7 @@ class _ProtocolPanelState extends State<_ProtocolPanel> {
 
   @override
   Widget build(BuildContext context) {
-    final habits = widget.snapshot.habits;
+    final habits = widget.habitsOverride ?? widget.snapshot.habits;
     const metrics = _HabitRowMetrics.comfortable();
     return EvolvePanel(
       radius: 20,
@@ -393,10 +506,14 @@ class _ProtocolPanelState extends State<_ProtocolPanel> {
                       onReorderItem: widget.onReorder,
                       itemBuilder: (context, index) {
                         final habit = habits[index];
+                        // Only the first row carries the tour spotlight keys.
+                        final isFirst = index == 0;
                         return _HabitRow(
                           key: ValueKey(habit.id),
                           habit: habit,
                           metrics: metrics,
+                          checkoffKey: isFirst ? widget.checkoffKey : null,
+                          streakKey: isFirst ? widget.streakKey : null,
                           onToggle: () => widget.onToggle(habit.id),
                           onEdit: () => widget.onEdit(habit),
                           onDelete: () => widget.onDelete(habit),
@@ -583,6 +700,8 @@ class _HabitRow extends StatefulWidget {
     required this.onEdit,
     required this.onDelete,
     this.dragHandle,
+    this.checkoffKey,
+    this.streakKey,
     super.key,
   });
 
@@ -592,6 +711,11 @@ class _HabitRow extends StatefulWidget {
   final VoidCallback onToggle;
   final VoidCallback onEdit;
   final VoidCallback onDelete;
+
+  /// Habits-tour spotlight targets: the check-off square and the streak/heatmap
+  /// stat cluster. Non-null only on the first row while the tour is active.
+  final GlobalKey? checkoffKey;
+  final GlobalKey? streakKey;
 
   @override
   State<_HabitRow> createState() => _HabitRowState();
@@ -642,29 +766,32 @@ class _HabitRowState extends State<_HabitRow> {
               width: 32,
               child: Align(
                 alignment: AlignmentDirectional.centerStart,
-                child: InkWell(
-                  onTap: widget.onToggle,
-                  borderRadius: BorderRadius.circular(8),
-                  child: AnimatedContainer(
-                    duration: const Duration(milliseconds: 160),
-                    width: 22,
-                    height: 22,
-                    decoration: BoxDecoration(
-                      color: completed ? habit.color : Colors.transparent,
-                      border: Border.all(
-                        color: completed
-                            ? habit.color
-                            : context.evolveColors.borderStrong,
+                child: KeyedSubtree(
+                  key: widget.checkoffKey,
+                  child: InkWell(
+                    onTap: widget.onToggle,
+                    borderRadius: BorderRadius.circular(8),
+                    child: AnimatedContainer(
+                      duration: const Duration(milliseconds: 160),
+                      width: 22,
+                      height: 22,
+                      decoration: BoxDecoration(
+                        color: completed ? habit.color : Colors.transparent,
+                        border: Border.all(
+                          color: completed
+                              ? habit.color
+                              : context.evolveColors.borderStrong,
+                        ),
+                        borderRadius: BorderRadius.circular(7),
                       ),
-                      borderRadius: BorderRadius.circular(7),
+                      child: completed
+                          ? const Icon(
+                              LucideIcons.check,
+                              color: Color(0xFF092113),
+                              size: 14,
+                            )
+                          : null,
                     ),
-                    child: completed
-                        ? const Icon(
-                            LucideIcons.check,
-                            color: Color(0xFF092113),
-                            size: 14,
-                          )
-                        : null,
                   ),
                 ),
               ),
@@ -691,16 +818,28 @@ class _HabitRowState extends State<_HabitRow> {
                     child: Column(
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
-                        Text(
-                          habit.title,
-                          maxLines: 1,
-                          overflow: TextOverflow.ellipsis,
-                          style: TextStyle(
-                            color: context.evolveColors.foreground,
-                            fontSize: 15,
-                            fontWeight: FontWeight.w700,
-                            letterSpacing: -0.2,
-                          ),
+                        Row(
+                          children: [
+                            Flexible(
+                              child: Text(
+                                habit.title,
+                                maxLines: 1,
+                                overflow: TextOverflow.ellipsis,
+                                style: TextStyle(
+                                  color: context.evolveColors.foreground,
+                                  fontSize: 15,
+                                  fontWeight: FontWeight.w700,
+                                  letterSpacing: -0.2,
+                                ),
+                              ),
+                            ),
+                            // Read-only marker for iPhone-verified habits
+                            // (mobile parity).
+                            if (habit.verificationRule != null) ...[
+                              const SizedBox(width: 6),
+                              const VerifiedHabitBadge(),
+                            ],
+                          ],
                         ),
                         const SizedBox(height: 3),
                         Text(
@@ -721,49 +860,57 @@ class _HabitRowState extends State<_HabitRow> {
                 ],
               ),
             ),
-            SizedBox(
-              width: metrics.streakWidth,
+            KeyedSubtree(
+              key: widget.streakKey,
               child: Row(
+                mainAxisSize: MainAxisSize.min,
                 children: [
-                  Icon(
-                    LucideIcons.flame,
-                    size: 12,
-                    color: EvolveColors.streakColor(habit.streak),
-                  ),
-                  const SizedBox(width: 4),
-                  Flexible(
-                    child: Text(
-                      t.habitsPage.streakDays(n: habit.streak),
-                      maxLines: 1,
-                      overflow: TextOverflow.ellipsis,
-                      style: TextStyle(
-                        color: EvolveColors.streakColor(habit.streak),
-                        fontSize: 12,
-                        fontWeight: FontWeight.w700,
-                      ),
+                  SizedBox(
+                    width: metrics.streakWidth,
+                    child: Row(
+                      children: [
+                        Icon(
+                          LucideIcons.flame,
+                          size: 12,
+                          color: EvolveColors.streakColor(habit.streak),
+                        ),
+                        const SizedBox(width: 4),
+                        Flexible(
+                          child: Text(
+                            t.habitsPage.streakDays(n: habit.streak),
+                            maxLines: 1,
+                            overflow: TextOverflow.ellipsis,
+                            style: TextStyle(
+                              color: EvolveColors.streakColor(habit.streak),
+                              fontSize: 12,
+                              fontWeight: FontWeight.w700,
+                            ),
+                          ),
+                        ),
+                      ],
                     ),
                   ),
-                ],
-              ),
-            ),
-            SizedBox(
-              width: metrics.weekWidth,
-              child: Row(
-                children: [
-                  for (final done in habit.weeklyProgress)
-                    Container(
-                      width: metrics.daySquareSize,
-                      height: metrics.daySquareSize,
-                      margin: EdgeInsetsDirectional.only(
-                        end: metrics.daySquareGap,
-                      ),
-                      decoration: BoxDecoration(
-                        color: done
-                            ? habit.color.withValues(alpha: 0.86)
-                            : context.evolveColors.panelSoft,
-                        borderRadius: BorderRadius.circular(5),
-                      ),
+                  SizedBox(
+                    width: metrics.weekWidth,
+                    child: Row(
+                      children: [
+                        for (final done in habit.weeklyProgress)
+                          Container(
+                            width: metrics.daySquareSize,
+                            height: metrics.daySquareSize,
+                            margin: EdgeInsetsDirectional.only(
+                              end: metrics.daySquareGap,
+                            ),
+                            decoration: BoxDecoration(
+                              color: done
+                                  ? habit.color.withValues(alpha: 0.86)
+                                  : context.evolveColors.panelSoft,
+                              borderRadius: BorderRadius.circular(5),
+                            ),
+                          ),
+                      ],
                     ),
+                  ),
                 ],
               ),
             ),

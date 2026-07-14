@@ -4,22 +4,33 @@ import 'package:sentry_flutter/sentry_flutter.dart';
 class DesktopSentryService {
   const DesktopSentryService._();
 
+  /// DSN baked into local/dev builds when EVOLVE_SENTRY_DSN isn't provided.
+  /// Treated as UNCONFIGURED (see [isConfigured]) so Sentry stays OFF without a
+  /// real project — it points at a bogus project that can't deliver events
+  /// anyway, and this mirrors mobile's empty-DSN stub.
+  static const _placeholderDsn = 'https://default_placeholder@sentry.io/12345';
+
   static const _dsn = String.fromEnvironment(
     'EVOLVE_SENTRY_DSN',
-    defaultValue: 'https://default_placeholder@sentry.io/12345',
+    defaultValue: _placeholderDsn,
   );
   static const _environment = String.fromEnvironment(
     'EVOLVE_SENTRY_ENVIRONMENT',
     defaultValue: 'development',
   );
+  // Matches mobile's production sample rate (0.2); its stub is 0.0. Previously
+  // defaulted to 1.0 (100% transaction sampling) when unset.
   static const _tracesSampleRateValue = String.fromEnvironment(
     'EVOLVE_SENTRY_TRACES_SAMPLE_RATE',
-    defaultValue: '1.0',
+    defaultValue: '0.2',
   );
 
   static bool _initialized = false;
 
-  static bool get isConfigured => _dsn.trim().isNotEmpty;
+  static bool get isConfigured {
+    final dsn = _dsn.trim();
+    return dsn.isNotEmpty && dsn != _placeholderDsn;
+  }
 
   static Future<void> setEnabled(bool enabled) async {
     if (enabled) {
@@ -38,7 +49,7 @@ class DesktopSentryService {
         options
           ..dsn = _dsn
           ..environment = _environment
-          ..tracesSampleRate = double.tryParse(_tracesSampleRateValue) ?? 0.1
+          ..tracesSampleRate = double.tryParse(_tracesSampleRateValue) ?? 0.2
           ..reportPackages = true
           ..beforeSend = _sanitizeEvent;
       });

@@ -80,8 +80,9 @@ class TranslationsAr extends Translations with BaseTranslations<AppLocale, Trans
 	@override late final _Translations$subscriptionCtrl$ar subscriptionCtrl = _Translations$subscriptionCtrl$ar._(_root);
 	@override late final _Translations$authCtrl$ar authCtrl = _Translations$authCtrl$ar._(_root);
 	@override late final _Translations$proModal$ar proModal = _Translations$proModal$ar._(_root);
-	@override late final _Translations$tutorial$ar tutorial = _Translations$tutorial$ar._(_root);
 	@override late final _Translations$appLogs$ar appLogs = _Translations$appLogs$ar._(_root);
+	@override late final _Translations$coachSettings$ar coachSettings = _Translations$coachSettings$ar._(_root);
+	@override late final _Translations$tour$ar tour = _Translations$tour$ar._(_root);
 }
 
 // Path: auth
@@ -700,18 +701,6 @@ class _Translations$goalsPage$ar extends Translations$goalsPage$en {
 	@override String weekPeriodLabel({required Object week, required Object month, required Object year}) => 'الأسبوع ${week}، ${month} ${year}';
 	@override String get currentQuarter => 'الربع الحالي';
 	@override String get currentMonth => 'الشهر الحالي';
-	@override String get tutPlanningTitle => 'نوع التخطيط';
-	@override String get tutPlanningDesc => 'هنا يمكنك تحديد الأفق الزمني لأهدافك.';
-	@override String get tutNewGoalDesc => 'من هنا يمكنك إضافة هدف جديد بسرعة.';
-	@override String get tutCompleteTitle => 'أكمل أو أخفق';
-	@override String get tutCompleteDesc => 'ضع علامة على الهدف كمكتمل أو فاشل بنقرة واحدة.';
-	@override String get tutCategoryDesc => 'أدر الفئات واربطها بأهدافك.';
-	@override String get tutRescheduleTitle => 'إعادة جدولة';
-	@override String get tutRescheduleDesc => 'انقل الهدف إلى الفترة التالية إذا لم تتمكن من إكماله.';
-	@override String get tutEditDesc => 'عدّل تفاصيل هدفك.';
-	@override String get tutDeleteDesc => 'احذف هدفًا إذا لم يعد ذا صلة.';
-	@override String get tutStatsTitle => 'التحليل والإحصاءات';
-	@override String get tutStatsDesc => 'انتقل إلى عرض الإحصاءات لتحليل أدائك عبر الزمن.';
 }
 
 // Path: goalsStats
@@ -741,6 +730,7 @@ class _Translations$ai$ar extends Translations$ai$en {
 	@override String get macroGoals => 'الأهداف الكبرى';
 	@override late final _Translations$ai$openRouter$ar openRouter = _Translations$ai$openRouter$ar._(_root);
 	@override late final _Translations$ai$suggestions$ar suggestions = _Translations$ai$suggestions$ar._(_root);
+	@override late final _Translations$ai$local$ar local = _Translations$ai$local$ar._(_root);
 }
 
 // Path: aiCoach
@@ -1142,28 +1132,6 @@ class _Translations$proModal$ar extends Translations$proModal$en {
 	@override String get viewPlans => 'عرض خطط Pro';
 }
 
-// Path: tutorial
-class _Translations$tutorial$ar extends Translations$tutorial$en {
-	_Translations$tutorial$ar._(TranslationsAr root) : this._root = root, super.internal(root);
-
-	final TranslationsAr _root; // ignore: unused_field
-
-	// Translations
-	@override String get back => 'رجوع';
-	@override String get next => 'التالي';
-	@override String get finish => 'إنهاء';
-	@override String get dailyCheckIn => 'تسجيل الوصول اليومي';
-	@override String get dailyCheckinDesc => 'هنا يمكنك تسجيل مزاجك اليومي لتتبّع رفاهيتك بمرور الوقت، وقبل كل شيء ربطها بإكمال أهدافك.';
-	@override String get manageHabits => 'إدارة العادات';
-	@override String get addEditOrDeleteDailyHabits => 'أضف عاداتك اليومية التي تريد المواظبة عليها أو عدّلها أو احذفها بسرعة وسهولة.';
-	@override String get movingToGoals => 'الانتقال إلى الأهداف';
-	@override String get goalsPageDesc => 'الصفحة التي يمكنك فيها إدارة أهدافك طويلة المدى وأدائها.';
-	@override String get filterByHabit => 'التصفية حسب العادة';
-	@override String get filterHabitDesc => 'من هنا يمكنك اختيار عادة معيّنة لعرض تفاصيلها، أو "كل العادات" للحصول على نظرة عامة شاملة.';
-	@override String get statisticsSections => 'أقسام الإحصاءات';
-	@override String get statsSectionsDesc => 'تنقّل بين التبويبات لعرض الاتجاهات وتنبيهات الأداء وتقدّم عاداتك ومزاجك.';
-}
-
 // Path: appLogs
 class _Translations$appLogs$ar extends Translations$appLogs$en {
 	_Translations$appLogs$ar._(TranslationsAr root) : this._root = root, super.internal(root);
@@ -1191,6 +1159,127 @@ class _Translations$appLogs$ar extends Translations$appLogs$en {
 	@override String get detailStackTrace => 'تتبع المكدس';
 	@override String get shareLogs => 'مشاركة ملف السجلات';
 	@override String get exportDone => 'تم تصدير السجلات';
+}
+
+// Path: coachSettings
+class _Translations$coachSettings$ar extends Translations$coachSettings$en {
+	_Translations$coachSettings$ar._(TranslationsAr root) : this._root = root, super.internal(root);
+
+	final TranslationsAr _root; // ignore: unused_field
+
+	// Translations
+	@override String get title => 'محرّك مدرّب الذكاء الاصطناعي';
+	@override String get subtitle => 'اختر مكان تشغيل المدرّب. تُبقي النماذج المحلية كل رسالة على هذا الجهاز.';
+	@override String get backendCloud => 'السحابة';
+	@override String get backendLocal => 'محلي · خاص';
+	@override String get cloudDesc => 'Google Gemini عبر OpenRouter. سريع وبدون إعداد — يُرسَل السياق الذي تشاركه إلى المزوّد.';
+	@override String get localDesc => 'نموذجك الخاص عبر Ollama أو LM Studio أو أي خادم متوافق مع OpenAI. لا شيء يغادر هذا الجهاز.';
+	@override String get presetLabel => 'الخادم';
+	@override String get presetOllama => 'Ollama';
+	@override String get presetLmStudio => 'LM Studio';
+	@override String get presetCustom => 'مخصّص…';
+	@override String get baseUrlLabel => 'عنوان URL الأساسي';
+	@override String get baseUrlHint => 'http://localhost:11434/v1';
+	@override String get modelLabel => 'النموذج';
+	@override String get modelHint => 'مثال: llama3.1:8b';
+	@override String get refreshModels => 'تحديث النماذج';
+	@override String get discovering => 'جارٍ البحث عن النماذج…';
+	@override String get noModelsFound => 'لم يُعثَر على نماذج — اكتب معرّف نموذج يدويًا أدناه.';
+	@override String get manualModelLabel => 'معرّف النموذج';
+	@override String get manualModelAdd => 'استخدام هذا النموذج';
+	@override String get statusConnected => 'متّصل';
+	@override String get statusOffline => 'الخادم غير متّصل';
+	@override String get statusChecking => 'جارٍ التحقّق…';
+	@override String get remoteBadge => 'بعيد';
+	@override String get remoteWarning => 'هذا الـ endpoint ليس عنوانًا محليًا — ستغادر الرسائل هذا الجهاز.';
+	@override String get advanced => 'متقدّم';
+	@override String get systemPromptLabel => 'موجّه النظام';
+	@override String get systemPromptHint => 'استبدل شخصية المدرّب (اتركه فارغًا للوضع الافتراضي)';
+	@override String get systemPromptReset => 'إعادة تعيين';
+	@override String get temperatureLabel => 'درجة الحرارة';
+	@override String get save => 'تم';
+	@override String get detectedTitle => 'تم اكتشاف نموذج محلي';
+	@override String get detectedBody => 'يعمل خادم ذكاء اصطناعي محلي على هذا الـ Mac. هل تريد تشغيل المدرّب بخصوصية كاملة؟';
+	@override String get detectedAction => 'استخدام المحلي';
+	@override String get detectedDismiss => 'ليس الآن';
+	@override String activeCloud({required Object model}) => 'السحابة · ${model}';
+	@override String activeLocal({required Object model}) => 'محلي · ${model}';
+	@override String get activeLocalNoModel => 'محلي · اختر نموذجًا';
+	@override String get cloudSection => 'السحابة';
+	@override String get serverSettings => 'إعدادات الخادم…';
+	@override String get settingsSectionLabel => 'مدرّب الذكاء الاصطناعي';
+	@override String get settingsTitle => 'مدرّب الذكاء الاصطناعي';
+	@override String get settingsSubtitle => 'اختر المحرّك الذي يشغّل مدرّبك ووجّهه إلى خادم محلي لخصوصية كاملة.';
+	@override String get settingsRowStatus => 'المحرّك النشط';
+	@override String get settingsRowConfigure => 'المحرّك والخادم المحلي';
+	@override String get cloudKeyMissing => 'مفتاح واجهة برمجة التطبيقات السحابي غير مُهيّأ — ستفشل الردود السحابية. بدّل إلى خادم محلي أو عيّن OPENROUTER_API_KEY.';
+	@override String get temperatureLower => 'خفض درجة الحرارة';
+	@override String get temperatureRaise => 'رفع درجة الحرارة';
+	@override String get sendMessage => 'إرسال';
+	@override String get stopResponse => 'إيقاف';
+}
+
+// Path: tour
+class _Translations$tour$ar extends Translations$tour$en {
+	_Translations$tour$ar._(TranslationsAr root) : this._root = root, super.internal(root);
+
+	final TranslationsAr _root; // ignore: unused_field
+
+	// Translations
+	@override String get back => 'رجوع';
+	@override String get next => 'التالي';
+	@override String get continueLabel => 'متابعة';
+	@override String get finish => 'إنهاء';
+	@override String get welcomeTitle => 'مرحبًا بك في Evolve';
+	@override String get welcomeBody => 'لنقم بجولة سريعة في مساحة عملك — من نظرتك اليومية العامة وصولًا إلى مدرّب الذكاء الاصطناعي. لن يستغرق الأمر سوى لحظات.';
+	@override String get welcomeStart => 'ابدأ الجولة';
+	@override String get doneTitle => 'كل شيء جاهز';
+	@override String get doneBody => 'هذا كل التطبيق. ابدأ من أي مكان عبر الشريط الجانبي — ويمكنك إعادة الجولة في أي وقت من الإعدادات.';
+	@override String get doneButton => 'ابدأ الآن';
+	@override String get overviewOrientationTitle => 'نظرتك العامة';
+	@override String get overviewOrientationDesc => 'هذه قاعدتك اليومية — لمحة عن يومك بمجرد فتح Evolve.';
+	@override String get overviewCheckinTitle => 'تسجيل الوصول اليومي';
+	@override String get overviewCheckinDesc => 'سجّل كيف يسير يومك. مع الوقت يكشف كيف ترتبط حالتك المزاجية بعاداتك وأهدافك.';
+	@override String get overviewHabitsTitle => 'عادات اليوم';
+	@override String get overviewHabitsDesc => 'العادات التي خططت لها اليوم موجودة هنا — علّمها عند إنجازها.';
+	@override String get overviewGoalsTitle => 'الأهداف قيد التركيز';
+	@override String get overviewGoalsDesc => 'تظهر هنا الأهداف التي تركّز عليها حتى لا يفوتك شيء.';
+	@override String get habitsOrientationTitle => 'صفحة العادات';
+	@override String get habitsOrientationDesc => 'هنا تبني بروتوكولك اليومي وتتابع مدى انتظامك.';
+	@override String get habitsAddTitle => 'أضف عادة';
+	@override String get habitsAddDesc => 'أنشئ عادة جديدة هنا — بالاسم والفئة واللون وتذكير اختياري.';
+	@override String get habitsCheckoffTitle => 'علّمها كمنجزة';
+	@override String get habitsCheckoffDesc => 'علّم هذا المربع لإكمال عادة اليوم. هذا كل ما يلزم للحفاظ على السلسلة.';
+	@override String get habitsStreakTitle => 'السلاسل والسجل';
+	@override String get habitsStreakDesc => 'شاهد سلسلتك تنمو وألقِ نظرة على آخر سبعة أيام دفعة واحدة.';
+	@override String get habitsCalendarTitle => 'عرض التقويم';
+	@override String get habitsCalendarDesc => 'انتقل إلى التقويم لمراجعة سجلك حسب الأسبوع أو الشهر أو السنة — أو حياتك كلها.';
+	@override String get insightsOrientationTitle => 'إحصاءاتك';
+	@override String get insightsOrientationDesc => 'تابع اتجاه عاداتك وأهدافك عبر الزمن وأين تنحرف.';
+	@override String get insightsFilterTitle => 'التصفية حسب العادة';
+	@override String get insightsFilterDesc => 'ركّز الإحصاءات على عادة واحدة أو أبقِ النظرة الشاملة.';
+	@override String get insightsTabsTitle => 'أقسام الإحصاءات';
+	@override String get insightsTabsDesc => 'بدّل بين الأقسام للاتجاهات والتنبيهات وتقدّم العادات ومزاجك.';
+	@override String get goalsOrientationTitle => 'صفحة الأهداف';
+	@override String get goalsOrientationDesc => 'حدّد وتابع أهدافك الأكبر — ما تبني نحوه عاداتك اليومية.';
+	@override String get goalsPlanTitle => 'نوع التخطيط';
+	@override String get goalsPlanDesc => 'اختر كيف تخطّط — يوميًا أو أسبوعيًا أو لمدى أطول — بما يناسب طريقة تفكيرك في أهدافك.';
+	@override String get goalsAddTitle => 'أضف هدفًا';
+	@override String get goalsAddDesc => 'أنشئ هدفًا جديدًا هنا وامنحه غاية تسعى إليها.';
+	@override String get goalsCheckTitle => 'إنجاز أو إخفاق';
+	@override String get goalsCheckDesc => 'علّم الهدف كمنجز أو فائت. كل نتيجة تغذّي أداءك مع الوقت.';
+	@override String get goalsStatsTitle => 'الأداء';
+	@override String get goalsStatsDesc => 'فعّل إحصاءات الأداء لترى مستواك مقابل أهدافك.';
+	@override String get coachOrientationTitle => 'مدرّبك بالذكاء الاصطناعي';
+	@override String get coachOrientationDesc => 'إرشاد مخصّص مبني على عاداتك وأهدافك الحقيقية — هنا على جهاز Mac الخاص بك.';
+	@override String get coachModelTitle => 'اختر المحرّك';
+	@override String get coachModelDesc => 'اختر نموذج الذكاء الاصطناعي — سحابتنا أو نموذج محلي يعمل بخصوصية على جهاز Mac. إعدادات الخادم هنا أيضًا.';
+	@override String get coachContextTitle => 'ما يراه المدرّب';
+	@override String get coachContextDesc => 'تحكّم في ما إذا كان بإمكان المدرّب استخدام عاداتك وأهدافك لتخصيص نصائحه.';
+	@override String get coachSuggestionsTitle => 'مقترحات للبدء';
+	@override String get coachSuggestionsDesc => 'لا تعرف من أين تبدأ؟ اضغط أحد هذه الاقتراحات للانطلاق.';
+	@override String get coachInputTitle => 'اسأل أي شيء';
+	@override String get coachInputDesc => 'اكتب سؤالك هنا واضغط إرسال. بهذا تنتهي الجولة — استمتع بـ Evolve!';
 }
 
 // Path: common.actions
@@ -1290,6 +1379,21 @@ class _Translations$ai$suggestions$ar extends Translations$ai$suggestions$en {
 	@override String get reviewGoalsHabits => '📊 راجع أهدافي وعاداتي';
 	@override String get disciplineAdvice => '🔥 نصيحة عن الانضباط';
 	@override String get createNewHabit => '💡 كيف أنشئ عادة جديدة؟';
+}
+
+// Path: ai.local
+class _Translations$ai$local$ar extends Translations$ai$local$en {
+	_Translations$ai$local$ar._(TranslationsAr root) : this._root = root, super.internal(root);
+
+	final TranslationsAr _root; // ignore: unused_field
+
+	// Translations
+	@override String notReachable({required Object url}) => '❌ تعذّر الوصول إلى خادم الذكاء الاصطناعي المحلي على ${url}. تأكّد من تشغيل Ollama أو LM Studio.';
+	@override String get modelMissing => '⚠️ اختر نموذجًا محليًا أولًا — افتح مُحدِّد النماذج في الأعلى.';
+	@override String requestFailed({required Object code}) => '❌ خطأ في النموذج المحلي (الرمز: ${code}).';
+	@override String get streamError => '❌ فشل الاتصال بالنموذج المحلي.';
+	@override String get timeout => '❌ النموذج المحلي يستغرق وقتًا طويلًا — قد يكون ما زال قيد التحميل. حاول مرة أخرى.';
+	@override String get modelNotFound => '❌ هذا النموذج غير متوفر على الخادم. افتح مُحدِّد النماذج لاختيار نموذج أو تحميله.';
 }
 
 /// The flat map containing all translations for locale <ar>.
@@ -1758,18 +1862,6 @@ extension on TranslationsAr {
 			'goalsPage.weekPeriodLabel' => ({required Object week, required Object month, required Object year}) => 'الأسبوع ${week}، ${month} ${year}',
 			'goalsPage.currentQuarter' => 'الربع الحالي',
 			'goalsPage.currentMonth' => 'الشهر الحالي',
-			'goalsPage.tutPlanningTitle' => 'نوع التخطيط',
-			'goalsPage.tutPlanningDesc' => 'هنا يمكنك تحديد الأفق الزمني لأهدافك.',
-			'goalsPage.tutNewGoalDesc' => 'من هنا يمكنك إضافة هدف جديد بسرعة.',
-			'goalsPage.tutCompleteTitle' => 'أكمل أو أخفق',
-			'goalsPage.tutCompleteDesc' => 'ضع علامة على الهدف كمكتمل أو فاشل بنقرة واحدة.',
-			'goalsPage.tutCategoryDesc' => 'أدر الفئات واربطها بأهدافك.',
-			'goalsPage.tutRescheduleTitle' => 'إعادة جدولة',
-			'goalsPage.tutRescheduleDesc' => 'انقل الهدف إلى الفترة التالية إذا لم تتمكن من إكماله.',
-			'goalsPage.tutEditDesc' => 'عدّل تفاصيل هدفك.',
-			'goalsPage.tutDeleteDesc' => 'احذف هدفًا إذا لم يعد ذا صلة.',
-			'goalsPage.tutStatsTitle' => 'التحليل والإحصاءات',
-			'goalsPage.tutStatsDesc' => 'انتقل إلى عرض الإحصاءات لتحليل أدائك عبر الزمن.',
 			'goalsStats.proRequired' => 'ميزة Pro مطلوبة',
 			'goalsStats.active' => 'نشطة',
 			'goalsStats.failed' => 'فاشلة',
@@ -1809,17 +1901,23 @@ extension on TranslationsAr {
 			'ai.suggestions.reviewGoalsHabits' => '📊 راجع أهدافي وعاداتي',
 			'ai.suggestions.disciplineAdvice' => '🔥 نصيحة عن الانضباط',
 			'ai.suggestions.createNewHabit' => '💡 كيف أنشئ عادة جديدة؟',
+			'ai.local.notReachable' => ({required Object url}) => '❌ تعذّر الوصول إلى خادم الذكاء الاصطناعي المحلي على ${url}. تأكّد من تشغيل Ollama أو LM Studio.',
+			'ai.local.modelMissing' => '⚠️ اختر نموذجًا محليًا أولًا — افتح مُحدِّد النماذج في الأعلى.',
+			'ai.local.requestFailed' => ({required Object code}) => '❌ خطأ في النموذج المحلي (الرمز: ${code}).',
+			'ai.local.streamError' => '❌ فشل الاتصال بالنموذج المحلي.',
+			'ai.local.timeout' => '❌ النموذج المحلي يستغرق وقتًا طويلًا — قد يكون ما زال قيد التحميل. حاول مرة أخرى.',
+			'ai.local.modelNotFound' => '❌ هذا النموذج غير متوفر على الخادم. افتح مُحدِّد النماذج لاختيار نموذج أو تحميله.',
 			'aiCoach.greeting' => 'مرحبًا! أنا Evolve AI Coach. أنا هنا لمساعدتك على تحسين بروتوكولك وتحقيق أهدافك. كيف يمكنني مساعدتك اليوم؟',
 			'aiCoach.systemPersona' => 'أنت Evolve AI Coach، مساعد افتراضي للانضباط الشخصي.',
 			'aiCoach.habitsHeader' => 'العادات النشطة:',
-			_ => null,
-		} ?? switch (path) {
 			'aiCoach.noActiveHabits' => 'لا توجد عادات نشطة.',
 			'aiCoach.habitLine' => ({required Object title, required Object done, required Object streak}) => '${title} (أُنجزت اليوم: ${done}، السلسلة: ${streak})',
 			'aiCoach.goalsHeader' => 'الأهداف:',
 			'aiCoach.noActiveGoals' => 'لا توجد أهداف طويلة المدى نشطة.',
 			'aiCoach.goalLine' => ({required Object title, required Object due}) => '${title} (الاستحقاق: ${due})',
 			'aiCoach.contextTitle' => 'سياق الذكاء الاصطناعي',
+			_ => null,
+		} ?? switch (path) {
 			'aiCoach.contextBody' => 'اختر البيانات التي تريد مشاركتها مع مدرّب الذكاء الاصطناعي للحصول على نصائح مخصّصة.',
 			'aiCoach.shareHabitsDesc' => 'يشارك عاداتك النشطة والسلاسل وحالة الإنجاز اليوم.',
 			'aiCoach.shareGoalsDesc' => 'يشارك أهدافك النشطة طويلة المدى.',
@@ -2102,19 +2200,6 @@ extension on TranslationsAr {
 			'proModal.unlimitedDesc' => 'أنشئ وتتبّع كل العادات التي تريدها دون أي حدود.',
 			'proModal.maybeLater' => 'ربما لاحقاً',
 			'proModal.viewPlans' => 'عرض خطط Pro',
-			'tutorial.back' => 'رجوع',
-			'tutorial.next' => 'التالي',
-			'tutorial.finish' => 'إنهاء',
-			'tutorial.dailyCheckIn' => 'تسجيل الوصول اليومي',
-			'tutorial.dailyCheckinDesc' => 'هنا يمكنك تسجيل مزاجك اليومي لتتبّع رفاهيتك بمرور الوقت، وقبل كل شيء ربطها بإكمال أهدافك.',
-			'tutorial.manageHabits' => 'إدارة العادات',
-			'tutorial.addEditOrDeleteDailyHabits' => 'أضف عاداتك اليومية التي تريد المواظبة عليها أو عدّلها أو احذفها بسرعة وسهولة.',
-			'tutorial.movingToGoals' => 'الانتقال إلى الأهداف',
-			'tutorial.goalsPageDesc' => 'الصفحة التي يمكنك فيها إدارة أهدافك طويلة المدى وأدائها.',
-			'tutorial.filterByHabit' => 'التصفية حسب العادة',
-			'tutorial.filterHabitDesc' => 'من هنا يمكنك اختيار عادة معيّنة لعرض تفاصيلها، أو "كل العادات" للحصول على نظرة عامة شاملة.',
-			'tutorial.statisticsSections' => 'أقسام الإحصاءات',
-			'tutorial.statsSectionsDesc' => 'تنقّل بين التبويبات لعرض الاتجاهات وتنبيهات الأداء وتقدّم عاداتك ومزاجك.',
 			'appLogs.title' => 'سجلات التطبيق',
 			'appLogs.copiedToClipboard' => 'تم نسخ السجلات إلى الحافظة',
 			'appLogs.clearLogsTitle' => 'مسح السجلات',
@@ -2135,6 +2220,109 @@ extension on TranslationsAr {
 			'appLogs.detailStackTrace' => 'تتبع المكدس',
 			'appLogs.shareLogs' => 'مشاركة ملف السجلات',
 			'appLogs.exportDone' => 'تم تصدير السجلات',
+			'coachSettings.title' => 'محرّك مدرّب الذكاء الاصطناعي',
+			'coachSettings.subtitle' => 'اختر مكان تشغيل المدرّب. تُبقي النماذج المحلية كل رسالة على هذا الجهاز.',
+			'coachSettings.backendCloud' => 'السحابة',
+			'coachSettings.backendLocal' => 'محلي · خاص',
+			'coachSettings.cloudDesc' => 'Google Gemini عبر OpenRouter. سريع وبدون إعداد — يُرسَل السياق الذي تشاركه إلى المزوّد.',
+			'coachSettings.localDesc' => 'نموذجك الخاص عبر Ollama أو LM Studio أو أي خادم متوافق مع OpenAI. لا شيء يغادر هذا الجهاز.',
+			'coachSettings.presetLabel' => 'الخادم',
+			'coachSettings.presetOllama' => 'Ollama',
+			'coachSettings.presetLmStudio' => 'LM Studio',
+			'coachSettings.presetCustom' => 'مخصّص…',
+			'coachSettings.baseUrlLabel' => 'عنوان URL الأساسي',
+			'coachSettings.baseUrlHint' => 'http://localhost:11434/v1',
+			'coachSettings.modelLabel' => 'النموذج',
+			'coachSettings.modelHint' => 'مثال: llama3.1:8b',
+			'coachSettings.refreshModels' => 'تحديث النماذج',
+			'coachSettings.discovering' => 'جارٍ البحث عن النماذج…',
+			'coachSettings.noModelsFound' => 'لم يُعثَر على نماذج — اكتب معرّف نموذج يدويًا أدناه.',
+			'coachSettings.manualModelLabel' => 'معرّف النموذج',
+			'coachSettings.manualModelAdd' => 'استخدام هذا النموذج',
+			'coachSettings.statusConnected' => 'متّصل',
+			'coachSettings.statusOffline' => 'الخادم غير متّصل',
+			'coachSettings.statusChecking' => 'جارٍ التحقّق…',
+			'coachSettings.remoteBadge' => 'بعيد',
+			'coachSettings.remoteWarning' => 'هذا الـ endpoint ليس عنوانًا محليًا — ستغادر الرسائل هذا الجهاز.',
+			'coachSettings.advanced' => 'متقدّم',
+			'coachSettings.systemPromptLabel' => 'موجّه النظام',
+			'coachSettings.systemPromptHint' => 'استبدل شخصية المدرّب (اتركه فارغًا للوضع الافتراضي)',
+			'coachSettings.systemPromptReset' => 'إعادة تعيين',
+			'coachSettings.temperatureLabel' => 'درجة الحرارة',
+			'coachSettings.save' => 'تم',
+			'coachSettings.detectedTitle' => 'تم اكتشاف نموذج محلي',
+			'coachSettings.detectedBody' => 'يعمل خادم ذكاء اصطناعي محلي على هذا الـ Mac. هل تريد تشغيل المدرّب بخصوصية كاملة؟',
+			'coachSettings.detectedAction' => 'استخدام المحلي',
+			'coachSettings.detectedDismiss' => 'ليس الآن',
+			'coachSettings.activeCloud' => ({required Object model}) => 'السحابة · ${model}',
+			'coachSettings.activeLocal' => ({required Object model}) => 'محلي · ${model}',
+			'coachSettings.activeLocalNoModel' => 'محلي · اختر نموذجًا',
+			'coachSettings.cloudSection' => 'السحابة',
+			'coachSettings.serverSettings' => 'إعدادات الخادم…',
+			'coachSettings.settingsSectionLabel' => 'مدرّب الذكاء الاصطناعي',
+			'coachSettings.settingsTitle' => 'مدرّب الذكاء الاصطناعي',
+			'coachSettings.settingsSubtitle' => 'اختر المحرّك الذي يشغّل مدرّبك ووجّهه إلى خادم محلي لخصوصية كاملة.',
+			'coachSettings.settingsRowStatus' => 'المحرّك النشط',
+			'coachSettings.settingsRowConfigure' => 'المحرّك والخادم المحلي',
+			'coachSettings.cloudKeyMissing' => 'مفتاح واجهة برمجة التطبيقات السحابي غير مُهيّأ — ستفشل الردود السحابية. بدّل إلى خادم محلي أو عيّن OPENROUTER_API_KEY.',
+			'coachSettings.temperatureLower' => 'خفض درجة الحرارة',
+			'coachSettings.temperatureRaise' => 'رفع درجة الحرارة',
+			'coachSettings.sendMessage' => 'إرسال',
+			'coachSettings.stopResponse' => 'إيقاف',
+			'tour.back' => 'رجوع',
+			'tour.next' => 'التالي',
+			'tour.continueLabel' => 'متابعة',
+			'tour.finish' => 'إنهاء',
+			'tour.welcomeTitle' => 'مرحبًا بك في Evolve',
+			'tour.welcomeBody' => 'لنقم بجولة سريعة في مساحة عملك — من نظرتك اليومية العامة وصولًا إلى مدرّب الذكاء الاصطناعي. لن يستغرق الأمر سوى لحظات.',
+			'tour.welcomeStart' => 'ابدأ الجولة',
+			'tour.doneTitle' => 'كل شيء جاهز',
+			'tour.doneBody' => 'هذا كل التطبيق. ابدأ من أي مكان عبر الشريط الجانبي — ويمكنك إعادة الجولة في أي وقت من الإعدادات.',
+			'tour.doneButton' => 'ابدأ الآن',
+			'tour.overviewOrientationTitle' => 'نظرتك العامة',
+			'tour.overviewOrientationDesc' => 'هذه قاعدتك اليومية — لمحة عن يومك بمجرد فتح Evolve.',
+			'tour.overviewCheckinTitle' => 'تسجيل الوصول اليومي',
+			'tour.overviewCheckinDesc' => 'سجّل كيف يسير يومك. مع الوقت يكشف كيف ترتبط حالتك المزاجية بعاداتك وأهدافك.',
+			'tour.overviewHabitsTitle' => 'عادات اليوم',
+			'tour.overviewHabitsDesc' => 'العادات التي خططت لها اليوم موجودة هنا — علّمها عند إنجازها.',
+			'tour.overviewGoalsTitle' => 'الأهداف قيد التركيز',
+			'tour.overviewGoalsDesc' => 'تظهر هنا الأهداف التي تركّز عليها حتى لا يفوتك شيء.',
+			'tour.habitsOrientationTitle' => 'صفحة العادات',
+			'tour.habitsOrientationDesc' => 'هنا تبني بروتوكولك اليومي وتتابع مدى انتظامك.',
+			'tour.habitsAddTitle' => 'أضف عادة',
+			'tour.habitsAddDesc' => 'أنشئ عادة جديدة هنا — بالاسم والفئة واللون وتذكير اختياري.',
+			'tour.habitsCheckoffTitle' => 'علّمها كمنجزة',
+			'tour.habitsCheckoffDesc' => 'علّم هذا المربع لإكمال عادة اليوم. هذا كل ما يلزم للحفاظ على السلسلة.',
+			'tour.habitsStreakTitle' => 'السلاسل والسجل',
+			'tour.habitsStreakDesc' => 'شاهد سلسلتك تنمو وألقِ نظرة على آخر سبعة أيام دفعة واحدة.',
+			'tour.habitsCalendarTitle' => 'عرض التقويم',
+			'tour.habitsCalendarDesc' => 'انتقل إلى التقويم لمراجعة سجلك حسب الأسبوع أو الشهر أو السنة — أو حياتك كلها.',
+			'tour.insightsOrientationTitle' => 'إحصاءاتك',
+			'tour.insightsOrientationDesc' => 'تابع اتجاه عاداتك وأهدافك عبر الزمن وأين تنحرف.',
+			'tour.insightsFilterTitle' => 'التصفية حسب العادة',
+			'tour.insightsFilterDesc' => 'ركّز الإحصاءات على عادة واحدة أو أبقِ النظرة الشاملة.',
+			'tour.insightsTabsTitle' => 'أقسام الإحصاءات',
+			'tour.insightsTabsDesc' => 'بدّل بين الأقسام للاتجاهات والتنبيهات وتقدّم العادات ومزاجك.',
+			'tour.goalsOrientationTitle' => 'صفحة الأهداف',
+			'tour.goalsOrientationDesc' => 'حدّد وتابع أهدافك الأكبر — ما تبني نحوه عاداتك اليومية.',
+			'tour.goalsPlanTitle' => 'نوع التخطيط',
+			'tour.goalsPlanDesc' => 'اختر كيف تخطّط — يوميًا أو أسبوعيًا أو لمدى أطول — بما يناسب طريقة تفكيرك في أهدافك.',
+			'tour.goalsAddTitle' => 'أضف هدفًا',
+			'tour.goalsAddDesc' => 'أنشئ هدفًا جديدًا هنا وامنحه غاية تسعى إليها.',
+			'tour.goalsCheckTitle' => 'إنجاز أو إخفاق',
+			'tour.goalsCheckDesc' => 'علّم الهدف كمنجز أو فائت. كل نتيجة تغذّي أداءك مع الوقت.',
+			'tour.goalsStatsTitle' => 'الأداء',
+			'tour.goalsStatsDesc' => 'فعّل إحصاءات الأداء لترى مستواك مقابل أهدافك.',
+			'tour.coachOrientationTitle' => 'مدرّبك بالذكاء الاصطناعي',
+			'tour.coachOrientationDesc' => 'إرشاد مخصّص مبني على عاداتك وأهدافك الحقيقية — هنا على جهاز Mac الخاص بك.',
+			'tour.coachModelTitle' => 'اختر المحرّك',
+			'tour.coachModelDesc' => 'اختر نموذج الذكاء الاصطناعي — سحابتنا أو نموذج محلي يعمل بخصوصية على جهاز Mac. إعدادات الخادم هنا أيضًا.',
+			'tour.coachContextTitle' => 'ما يراه المدرّب',
+			'tour.coachContextDesc' => 'تحكّم في ما إذا كان بإمكان المدرّب استخدام عاداتك وأهدافك لتخصيص نصائحه.',
+			'tour.coachSuggestionsTitle' => 'مقترحات للبدء',
+			'tour.coachSuggestionsDesc' => 'لا تعرف من أين تبدأ؟ اضغط أحد هذه الاقتراحات للانطلاق.',
+			'tour.coachInputTitle' => 'اسأل أي شيء',
+			'tour.coachInputDesc' => 'اكتب سؤالك هنا واضغط إرسال. بهذا تنتهي الجولة — استمتع بـ Evolve!',
 			_ => null,
 		};
 	}

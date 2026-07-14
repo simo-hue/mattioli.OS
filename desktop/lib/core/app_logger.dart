@@ -1,6 +1,8 @@
 import 'package:flutter/foundation.dart';
 import 'package:sentry_flutter/sentry_flutter.dart';
 
+import 'privacy_utils.dart';
+
 /// Severity level for log entries.
 enum AppLogLevel { info, warning, error }
 
@@ -133,51 +135,67 @@ class AppLogger {
   }
 
   /// Logs a non-blocking warning.
+  ///
+  /// The message is PII-scrubbed (emails, JWTs, secret key/values) everywhere —
+  /// buffer, debug print, and Sentry — and extras are scrubbed before leaving
+  /// the device. `error()` is deliberately NOT scrubbed (matches mobile: it
+  /// captures exception objects, not free-form user text). Mirrors mobile's
+  /// `AppLogger.warning`.
   static void warning(
     String message, [
     Object? error,
     StackTrace? stackTrace,
     Map<String, dynamic>? extras,
   ]) {
+    final sanitizedMessage = PrivacyUtils.sanitizeString(message);
     _addEntry(
       LogEntry(
         timestamp: DateTime.now(),
         level: AppLogLevel.warning,
-        message: message,
+        message: sanitizedMessage,
         error: error?.toString(),
         stackTrace: stackTrace?.toString(),
         extras: extras,
       ),
     );
-    debugPrint('[Warning] $message${error != null ? ': $error' : ''}');
+    debugPrint(
+      '[Warning] $sanitizedMessage${error != null ? ': $error' : ''}',
+    );
     if (kReleaseMode && !_externalReportingDisabled) {
       Sentry.captureMessage(
-        message,
+        sanitizedMessage,
         level: SentryLevel.warning,
         withScope: (scope) {
           if (error != null) {
             scope.setContexts('error_details', {'error': error.toString()});
           }
-          if (extras != null) scope.setContexts('extras', extras);
+          if (extras != null) {
+            scope.setContexts('extras', PrivacyUtils.sanitizeMap(extras)!);
+          }
         },
       );
     }
   }
 
-  /// Logs an informational breadcrumb (no error).
+  /// Logs an informational breadcrumb (no error). PII-scrubbed like [warning].
   static void info(String message, {Map<String, dynamic>? extras}) {
+    final sanitizedMessage = PrivacyUtils.sanitizeString(message);
     _addEntry(
       LogEntry(
         timestamp: DateTime.now(),
         level: AppLogLevel.info,
-        message: message,
+        message: sanitizedMessage,
         extras: extras,
       ),
     );
-    if (kDebugMode) debugPrint('[Info] $message');
+    if (kDebugMode) debugPrint('[Info] $sanitizedMessage');
     if (kReleaseMode && !_externalReportingDisabled) {
       Sentry.addBreadcrumb(
-        Breadcrumb(message: message, level: SentryLevel.info, data: extras),
+        Breadcrumb(
+          message: sanitizedMessage,
+          level: SentryLevel.info,
+          data: PrivacyUtils.sanitizeMap(extras),
+        ),
       );
     }
   }

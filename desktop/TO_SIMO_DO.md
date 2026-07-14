@@ -3,6 +3,73 @@
 
 ## Manual Actions Required
 
+## Parity Tranches 2–4 — on-device QA on the Xcode machine (2026-07-14)
+Code-verified (analyze 0 errors, `flutter test` 214 pass / 1 pre-existing fail).
+(The earlier AI-coach compile blocker resolved itself — the concurrent session
+fixed the ai_coach errors + `tutorialProvider` references; app compiles again.)
+Smoke-test the new behaviors on device (`flutter run -d macos`):
+- [ ] **Notifications** — set a per-goal reminder, then turn OFF 'Habit
+      Reminders' in Settings: the per-goal reminder must STILL fire (only the
+      09:00 Morning Brief should stop). Tap **Snooze** on a habit notification →
+      it re-fires ~10 min later. With no notification permission yet, setting a
+      reminder from the habit editor should trigger the macOS permission prompt.
+- [ ] **Biometric lock** — enable it, unlock, then hide/minimize the app (or
+      Mission Control) and return: it must re-prompt (walk-away re-lock). Cold
+      start auto-prompts (no manual Unlock click). On a Mac with no Touch ID it
+      must NOT lock you out (fails open).
+- [ ] **Pro gates** (cloud mode, non-Pro account) — creating a 6th habit shows
+      the paywall; switching Statistics to a specific habit shows the paywall.
+      Confirm Private mode is unaffected (always Pro).
+- [ ] **Privacy** — Settings → App logs: warnings/info with an email or token no
+      longer show it raw (redacted).
+- [ ] **Avatar** — pick a new avatar of the SAME file type twice; the header +
+      settings avatar must update immediately (no stale photo).
+- [ ] **Accent color (#29)** — as a non-Pro cloud account, the custom '+' accent
+      swatch shows a lock and opens the paywall; presets still work. Private mode
+      is unaffected (always Pro).
+- [ ] **Verified badge (#25)** — a habit created/verified on the iPhone
+      (verify rule set) shows the "Verified" shield badge next to its title on
+      both the dashboard and Habits pages. **Visual pass wanted**: confirm the
+      badge size/placement/copy read well; refine if needed.
+- [ ] **Import profile (#12)** — a MERGE import must NOT change your current
+      theme/language/name; a REPLACE (full restore) still applies the backup's.
+
+## Unblock the corrupted private DB — one-time reset on the Mac mini (2026-07-14)
+`flutter run -d macos` crash-loops with `DB Error: 26 "file is not a database"` on
+`evolve_private_v2.db`. Root cause: a Keychain read-miss made the (now-fixed)
+desktop key logic mint+persist a NEW SQLCipher key, orphaning the existing file.
+The code fix prevents recurrence but CANNOT recover the already-orphaned file
+(the original key was overwritten in the Keychain and is gone).
+
+Do this on the Mac mini (`/Users/simo`), app quit first:
+- [ ] Quit the running app (`q` in the `flutter run` terminal).
+- [ ] Delete the unreadable DB + its WAL/SHM sidecars:
+      `rm -f ~/Library/Containers/com.simo.evolve/Data/Library/Application\ Support/com.simo.evolve/evolve_private_v2.db*`
+      (This discards the local private data — which is already undecryptable, so
+      nothing readable is lost. Owner id + Keychain entries are kept.)
+- [ ] Re-run `flutter run -d macos --dart-define-from-file=.env`; a fresh empty
+      encrypted DB is created with the current key and the crash is gone.
+- [ ] (Optional, only if you want to attempt recovery first) Check whether the
+      old key still exists before deleting:
+      `security find-generic-password -a evolve_private_db_key -g` — if it prints
+      no password, the key is gone and recovery is impossible; proceed with the delete.
+
+## Verify Private-mode secret-storage parity port — on Xcode machine (2026-07-14)
+Native + Dart change (device-local keychain pin, dup-item recovery, **backup
+exclusion**). Code-verified here (analyze 0-new, Swift typecheck clean, tests
+189/2-pre-existing) but the native backup-exclusion can only be confirmed on
+device. After the DB reset above, `flutter run -d macos --dart-define-from-file=.env`:
+- [ ] App boots cleanly (error-26 crash gone; a fresh `evolve_private_v2.db` is created).
+- [ ] The private data dir is flagged backup-excluded. Check either:
+      `mdls -name com_apple_backup_excludeItem ~/Library/Containers/com.simo.evolve/Data/Library/Application\ Support/com.simo.evolve`
+      (or `xattr -l` on the dir) — should show the exclusion set; and the marker
+      file `.private_mode_local_only` should exist in that dir.
+- [ ] No `[Warning] [DesktopPrivateDb] backup exclusion failed` in **Settings → App logs**
+      (would mean the native `evolve/private_storage` channel didn't register).
+- [ ] Sanity: sign-in, private-mode data, and iCloud sync still work (the owner id
+      now reads from the `first_unlock_this_device` tier — confirm it's stable across
+      relaunch, i.e. you're not treated as a new owner).
+
 ## macOS visual QA — deep coherence polish (2026-07-12)
 This Mac has no Xcode, so the changes below were **code-verified** (`flutter analyze` clean of new issues; 144 pass / 1 pre-existing fail) but still need an on-device look on the Xcode machine (`flutter run -d macos`). All are pure presentation — no logic/data changes. Check each in **both light and dark** themes:
 

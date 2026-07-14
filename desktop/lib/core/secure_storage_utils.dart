@@ -8,45 +8,90 @@ class SecureStorageUtils {
 
   static const FlutterSecureStorage storage = FlutterSecureStorage();
 
+  /// Storage for Private-Mode device-local secrets: the SQLCipher database key
+  /// and the owner UUID. `first_unlock_this_device` keeps these items on THIS
+  /// Mac only — never synced to the user's iCloud Keychain nor restored onto
+  /// another device — matching the local-only, backup-excluded Private database
+  /// so the key can never outlive or migrate away from its data. Mirrors
+  /// mobile's device-local tier and is deliberately the OPPOSITE of
+  /// [DesktopSyncSecretStore] (the only secret allowed to sync).
+  static const FlutterSecureStorage _deviceLocalStorage = FlutterSecureStorage(
+    mOptions: MacOsOptions(
+      accessibility: KeychainAccessibility.first_unlock_this_device,
+    ),
+  );
+
   static Future<String?> read(String key) => storage.read(key: key);
 
   static Future<bool> containsKey(String key) => storage.containsKey(key: key);
 
   static Future<void> delete(String key) => storage.delete(key: key);
 
-  static Future<void> deleteAll() => storage.deleteAll();
-
-  static Future<void> write(
+  /// Write [value] under [key] to [store], recovering from a duplicate-item
+  /// (-25299) error with a delete+rewrite scoped to [key]. NEVER calls
+  /// `deleteAll()`: several secrets — including the Private-Mode SQLCipher key —
+  /// can share one macOS keychain service (they differ only by accessibility,
+  /// which delete ignores, and macOS ignores access groups), so a blanket wipe
+  /// would destroy unrelated, unrecoverable data. Rethrows on unrecoverable
+  /// failure so callers can fail closed. Mirrors mobile's `_writeTo`.
+  static Future<void> writeScoped(
+    FlutterSecureStorage store,
     String key,
     String value, {
     String context = 'SecureStorage',
-    bool clearAllOnDuplicateFailure = false,
   }) async {
     try {
-      await storage.write(key: key, value: value);
+      await store.write(key: key, value: value);
     } catch (error, stack) {
       if (!_isDuplicateKeychainItem(error)) {
         AppLogger.error('$context write failed for "$key"', error, stack);
         rethrow;
       }
 
+      AppLogger.error(
+        '$context found a duplicate Keychain item for "$key"; recreating it.',
+        error,
+        stack,
+      );
+
       try {
-        await storage.delete(key: key);
-        await storage.write(key: key, value: value);
+        await store.delete(key: key);
+        await store.write(key: key, value: value);
       } catch (retryError, retryStack) {
         AppLogger.error(
           '$context duplicate recovery failed for "$key"',
           retryError,
           retryStack,
         );
-        if (!clearAllOnDuplicateFailure) {
-          rethrow;
-        }
-        await storage.deleteAll();
-        await storage.write(key: key, value: value);
+        rethrow;
       }
     }
   }
+
+  /// Write a general secret (default keychain tier) with scoped -25299 recovery.
+  static Future<void> write(
+    String key,
+    String value, {
+    String context = 'SecureStorage',
+  }) =>
+      writeScoped(storage, key, value, context: context);
+
+  /// Read a Private-Mode device-local secret (see [_deviceLocalStorage]).
+  static Future<String?> readDeviceLocal(String key) =>
+      _deviceLocalStorage.read(key: key);
+
+  /// Delete a Private-Mode device-local secret (see [_deviceLocalStorage]).
+  static Future<void> deleteDeviceLocal(String key) =>
+      _deviceLocalStorage.delete(key: key);
+
+  /// Write a Private-Mode device-local secret (see [_deviceLocalStorage]) with
+  /// scoped -25299 recovery (never `deleteAll`).
+  static Future<void> writeDeviceLocal(
+    String key,
+    String value, {
+    String context = 'SecureStorage(device-local)',
+  }) =>
+      writeScoped(_deviceLocalStorage, key, value, context: context);
 
   static bool _isDuplicateKeychainItem(Object error) {
     if (error is! PlatformException) return false;

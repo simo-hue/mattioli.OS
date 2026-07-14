@@ -1,11 +1,14 @@
+import 'dart:async';
+
 import 'package:evolve_desktop/app/theme/evolve_theme.dart';
 import 'package:evolve_desktop/features/dashboard/application/dashboard_controller.dart';
+import 'package:evolve_desktop/features/settings/application/desktop_subscription_controller.dart';
+import 'package:evolve_desktop/features/settings/presentation/pro_features_modal.dart';
 import 'package:evolve_desktop/features/dashboard/domain/dashboard_models.dart';
 import 'package:evolve_desktop/features/statistics/data/private_analytics.dart'
     show MoodCorrelation, kIsoDowTokens;
 import 'package:evolve_desktop/features/statistics/data/statistics_rpc_providers.dart';
 import 'package:evolve_desktop/core/tutorial_provider.dart';
-import 'package:evolve_desktop/features/shell/application/navigation_controller.dart';
 import 'package:evolve_desktop/i18n/translations.g.dart';
 import 'package:evolve_desktop/shared/widgets/coach_tutorial.dart';
 import 'package:evolve_desktop/shared/widgets/desktop_page.dart';
@@ -63,58 +66,30 @@ class _StatisticsPageState extends ConsumerState<StatisticsPage> {
   _TrendTimeframe _trendTimeframe = _TrendTimeframe.week;
   String? _habitId;
 
-  // First-run coach-mark tour (wires the previously-dead statsTutorialProvider).
-  bool _showTour = false;
-  bool _didFinishTour = false;
+  // Insights segment of the continuous product tour. The central
+  // [tourControllerProvider] owns whether this segment is active; the page only
+  // owns the target keys and the step index within the segment.
   int _tourIndex = 0;
   final _filterKey = GlobalKey();
   final _tabsKey = GlobalKey();
 
-  @override
-  void initState() {
-    super.initState();
-    WidgetsBinding.instance.addPostFrameCallback((_) {
-      if (!mounted || _didFinishTour) return;
-      
-      final mainSeen = ref.read(tutorialProvider);
-      final goalsSeen = ref.read(goalsTutorialProvider);
-      final statsSeen = ref.read(statsTutorialProvider);
-
-      if (mainSeen && goalsSeen && !statsSeen) {
-        setState(() {
-          _tourIndex = 0;
-          _showTour = true;
-        });
-      }
-    });
-  }
-
-  List<CoachStep> _statsTourSteps() => [
+  List<CoachStep> _insightsTourSteps() => [
+    // Orientation-first: a centered card (no spotlight) announcing the page.
+    CoachStep(
+      title: t.tour.insightsOrientationTitle,
+      description: t.tour.insightsOrientationDesc,
+    ),
     CoachStep(
       targetKey: _filterKey,
-      title: t.tutorial.filterByHabit,
-      description: t.tutorial.filterHabitDesc,
+      title: t.tour.insightsFilterTitle,
+      description: t.tour.insightsFilterDesc,
     ),
     CoachStep(
       targetKey: _tabsKey,
-      title: t.tutorial.statisticsSections,
-      description: t.tutorial.statsSectionsDesc,
+      title: t.tour.insightsTabsTitle,
+      description: t.tour.insightsTabsDesc,
     ),
   ];
-
-  void _finishStatsTour() {
-    if (!mounted || _didFinishTour) return;
-    setState(() {
-      _didFinishTour = true;
-      _showTour = false;
-    });
-    ref.read(statsTutorialProvider.notifier).setTutorialSeen(true);
-    
-    WidgetsBinding.instance.addPostFrameCallback((_) {
-      if (!mounted) return;
-      ref.read(navigationControllerProvider.notifier).select(DesktopSection.overview);
-    });
-  }
 
   @override
   Widget build(BuildContext context) {
@@ -174,27 +149,35 @@ class _StatisticsPageState extends ConsumerState<StatisticsPage> {
       ),
     );
 
+    final showTour = ref
+        .watch(tourControllerProvider)
+        .isSegmentActive(TourSegment.insights);
+
     return Stack(
       children: [
         page,
-        if (_showTour && !_didFinishTour)
+        if (showTour)
           CoachTutorialOverlay(
-            steps: _statsTourSteps(),
+            steps: _insightsTourSteps(),
             index: _tourIndex,
             onIndexChanged: (i) => setState(() => _tourIndex = i),
-            onFinish: _finishStatsTour,
-            backLabel: t.tutorial.back,
-            nextLabel: t.tutorial.next,
-            finishLabel: t.tutorial.finish,
+            // Last Insights step advances the tour to the Goals segment.
+            onFinish: () => ref.read(tourControllerProvider.notifier).advance(),
+            backLabel: t.tour.back,
+            nextLabel: t.tour.next,
+            finishLabel: t.tour.continueLabel,
           ),
       ],
     );
   }
 
   /// The single chrome row under the header: the 5-tab selector absorbs the
-  /// width (Expanded) while the scope selector keeps a fixed compact size; 
+  /// width (Expanded) while the scope selector keeps a fixed compact size;
   /// below 980 content width they stack (tabs above scope).
-  Widget _controlRow(DashboardSnapshot snapshot, DashboardHabit? selectedHabit) {
+  Widget _controlRow(
+    DashboardSnapshot snapshot,
+    DashboardHabit? selectedHabit,
+  ) {
     final Widget tabs = _scope == _AnalyticsScope.global
         ? _TabSelector<_GlobalTab>(
             selected: _globalTab,
@@ -209,7 +192,7 @@ class _StatisticsPageState extends ConsumerState<StatisticsPage> {
             onChanged: (tab) => setState(() => _habitTab = tab),
           );
     final keyedTabs = KeyedSubtree(key: _tabsKey, child: tabs);
-    
+
     final scopeControl = KeyedSubtree(
       key: _filterKey,
       child: _HabitSelectorCard(
@@ -220,6 +203,12 @@ class _StatisticsPageState extends ConsumerState<StatisticsPage> {
           if (val == '_global') {
             setState(() => _scope = _AnalyticsScope.global);
           } else {
+            // Per-habit statistics are a Pro feature (mobile parity). Free users
+            // get the paywall and stay on the global scope.
+            if (!ref.read(desktopIsProProvider)) {
+              unawaited(showProFeaturesDialog(context, ref));
+              return;
+            }
             setState(() {
               _scope = _AnalyticsScope.habit;
               _habitId = val;
@@ -228,7 +217,7 @@ class _StatisticsPageState extends ConsumerState<StatisticsPage> {
         },
       ),
     );
-    
+
     return LayoutBuilder(
       builder: (context, constraints) {
         if (constraints.maxWidth < 980) {
@@ -306,8 +295,10 @@ class _HabitSelectorCard extends StatelessWidget {
       letterSpacing: -0.2,
       color: colors.foreground,
     );
-    
-    final currentValue = isHabitScope && selectedHabit != null ? selectedHabit!.id : '_global';
+
+    final currentValue = isHabitScope && selectedHabit != null
+        ? selectedHabit!.id
+        : '_global';
 
     return EvolvePanel(
       color: colors.panel.withValues(alpha: 0.5),
@@ -328,10 +319,7 @@ class _HabitSelectorCard extends StatelessWidget {
               expand: true,
               textStyle: titleStyle,
               options: [
-                EvolveSelectOption(
-                  value: '_global',
-                  label: t.stats.global,
-                ),
+                EvolveSelectOption(value: '_global', label: t.stats.global),
                 for (final habit in habits)
                   EvolveSelectOption(
                     value: habit.id,

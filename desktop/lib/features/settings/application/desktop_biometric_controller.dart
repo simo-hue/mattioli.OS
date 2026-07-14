@@ -84,6 +84,15 @@ class DesktopBiometricController extends Notifier<DesktopBiometricState> {
     await _persist(enabled);
   }
 
+  /// Re-arms the lock (e.g. when the app leaves the foreground) so the next
+  /// foreground requires a fresh authentication — the walk-away protection that
+  /// is the feature's whole point. Mirrors mobile's re-arm-on-background.
+  void rearm() {
+    if (state.enabled && state.unlocked) {
+      state = state.copyWith(unlocked: false, clearError: true);
+    }
+  }
+
   Future<bool> unlock({String? reason}) async {
     if (!isSupportedPlatform) {
       state = state.copyWith(errorMessage: t.biometricGate.notSupportedLinux);
@@ -92,15 +101,26 @@ class DesktopBiometricController extends Notifier<DesktopBiometricState> {
 
     state = state.copyWith(isAuthenticating: true, clearError: true);
     try {
-      final supported =
-          await _authentication.canCheckBiometrics ||
-          await _authentication.isDeviceSupported();
-      if (!supported) {
-        state = state.copyWith(
-          isAuthenticating: false,
-          errorMessage: t.biometricGate.noLocalAuth,
-        );
-        return false;
+      // Fail OPEN when a biometric-only prompt is required (macOS) but this
+      // device has no usable biometrics enrolled — a Mac with no Touch ID
+      // (Mac mini/Studio, clamshell, hardware fault) or a biometric_lock synced
+      // from the iPhone. Requiring an impossible prompt would lock the user out
+      // of their own data with no recourse. Mirrors mobile's gate. (Enrolling
+      // Touch ID needs the account password, so this doesn't meaningfully weaken
+      // the lock against someone who lacks it.)
+      if (!Platform.isWindows) {
+        final canCheck = await _authentication.canCheckBiometrics;
+        final enrolled =
+            canCheck &&
+            (await _authentication.getAvailableBiometrics()).isNotEmpty;
+        if (!enrolled) {
+          state = state.copyWith(
+            unlocked: true,
+            isAuthenticating: false,
+            clearError: true,
+          );
+          return true;
+        }
       }
       final authenticated = await _authentication.authenticate(
         localizedReason: reason ?? t.privacy.biometricUnlockReason,
@@ -159,15 +179,82 @@ class DesktopBiometricController extends Notifier<DesktopBiometricState> {
   }
 }
 
-class DesktopBiometricGate extends ConsumerWidget {
+class DesktopBiometricGate extends ConsumerStatefulWidget {
   const DesktopBiometricGate({required this.child, super.key});
 
   final Widget child;
 
   @override
-  Widget build(BuildContext context, WidgetRef ref) {
+  ConsumerState<DesktopBiometricGate> createState() =>
+      _DesktopBiometricGateState();
+}
+
+class _DesktopBiometricGateState extends ConsumerState<DesktopBiometricGate> {
+  AppLifecycleListener? _lifecycle;
+
+  /// Guards overlapping prompts — the system sheet itself briefly moves the app
+  /// out of `resumed`, which must not spawn a second prompt.
+  bool _promptInFlight = false;
+
+  @override
+  void initState() {
+    super.initState();
+    _lifecycle = AppLifecycleListener(onStateChange: _onLifecycle);
+    // Cold start: auto-prompt once the first frame is on screen if locked
+    // (mobile prompts immediately; desktop previously required a manual click).
+    WidgetsBinding.instance.addPostFrameCallback((_) => _maybePrompt());
+  }
+
+  @override
+  void dispose() {
+    _lifecycle?.dispose();
+    super.dispose();
+  }
+
+  void _onLifecycle(AppLifecycleState state) {
+    if (!mounted) return;
+    if (state == AppLifecycleState.inactive ||
+        state == AppLifecycleState.hidden ||
+        state == AppLifecycleState.paused) {
+      // Left the foreground (hidden/blurred/Mission Control/sleep) → re-arm so
+      // returning requires a fresh auth. Mirrors mobile's re-arm-on-paused.
+      ref.read(desktopBiometricControllerProvider.notifier).rearm();
+    } else if (state == AppLifecycleState.resumed) {
+      _maybePrompt();
+    }
+  }
+
+  Future<void> _maybePrompt() async {
+    if (!mounted || _promptInFlight) return;
+    final biometric = ref.read(desktopBiometricControllerProvider);
+    if (!biometric.enabled || biometric.unlocked) return;
+    _promptInFlight = true;
+    try {
+      await ref.read(desktopBiometricControllerProvider.notifier).unlock();
+    } finally {
+      _promptInFlight = false;
+    }
+  }
+
+  @override
+  Widget build(BuildContext context) {
     final biometric = ref.watch(desktopBiometricControllerProvider);
-    if (!biometric.enabled || biometric.unlocked) return child;
+
+    // React to the lock arming while already foregrounded — the user toggling
+    // it on, or the enabled flag resolving `true` after the async secure-prefs
+    // load (private mode). Prompt immediately, matching mobile.
+    ref.listen<DesktopBiometricState>(desktopBiometricControllerProvider, (
+      prev,
+      next,
+    ) {
+      final nowLocked = next.enabled && !next.unlocked;
+      final wasLocked = (prev?.enabled ?? false) && !(prev?.unlocked ?? true);
+      if (nowLocked && !wasLocked && !next.isAuthenticating) {
+        unawaited(_maybePrompt());
+      }
+    });
+
+    if (!biometric.enabled || biometric.unlocked) return widget.child;
 
     return Scaffold(
       body: Center(

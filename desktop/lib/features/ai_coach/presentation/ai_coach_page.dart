@@ -1,11 +1,17 @@
+import 'dart:async';
+
 import 'package:evolve_desktop/app/theme/evolve_theme.dart';
+import 'package:evolve_desktop/core/app_bootstrap.dart';
 import 'package:evolve_desktop/core/desktop_data_mode.dart';
 import 'package:evolve_desktop/i18n/translations.g.dart';
 import 'package:evolve_desktop/core/desktop_private_db.dart';
+import 'package:evolve_desktop/core/tutorial_provider.dart';
 import 'package:evolve_desktop/features/auth/application/auth_controller.dart';
 import 'package:evolve_desktop/features/auth/application/desktop_profile_controller.dart';
 import 'package:evolve_desktop/features/dashboard/application/dashboard_controller.dart';
 import 'package:evolve_desktop/features/dashboard/domain/dashboard_models.dart';
+import 'package:evolve_desktop/features/shell/application/navigation_controller.dart';
+import 'package:evolve_desktop/shared/widgets/coach_tutorial.dart';
 import 'package:evolve_desktop/shared/widgets/desktop_page.dart';
 import 'package:evolve_desktop/shared/widgets/evolve_controls.dart';
 import 'package:evolve_desktop/shared/widgets/evolve_dialog.dart';
@@ -16,8 +22,10 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_markdown/flutter_markdown.dart';
 import 'package:lucide_icons_flutter/lucide_icons.dart';
 
+import '../application/coach_controllers.dart';
 import '../domain/chat_message.dart';
-import '../data/openrouter_service.dart';
+import '../domain/coach_backend.dart';
+import 'coach_model_chip.dart';
 
 /// Pure prompt-suggestion selection (time of day + which context switches are
 /// on), extracted for testing. Returns up to four unique suggestions, chosen
@@ -103,6 +111,21 @@ class _AiCoachPageState extends ConsumerState<AiCoachPage> {
   bool _isTyping = false;
   bool _shareHabits = true;
   bool _shareGoals = false;
+  bool _localNudgeDismissed = false;
+  StreamSubscription<String>? _responseSub;
+
+  // Coach segment of the continuous product tour (the FINAL segment). The
+  // central [tourControllerProvider] owns whether this segment is active; the
+  // page only owns the target keys and the step index within the segment.
+  int _tourIndex = 0;
+  final _modelKey = GlobalKey();
+  final _contextKey = GlobalKey();
+  final _suggestionsKey = GlobalKey();
+  final _inputKey = GlobalKey();
+
+  static const _kNudgeDismissed = 'coach_detect_nudge_dismissed';
+  static const _kShareHabits = 'coach_share_habits';
+  static const _kShareGoals = 'coach_share_goals';
 
   @override
   void initState() {
@@ -114,10 +137,32 @@ class _AiCoachPageState extends ConsumerState<AiCoachPage> {
         timestamp: DateTime.now(),
       ),
     );
+    final prefs = ref.read(sharedPreferencesProvider);
+    _localNudgeDismissed = prefs?.getBool(_kNudgeDismissed) ?? false;
+    // Persisted so a data-sharing choice the user turned off survives tab
+    // switches and restarts instead of silently reverting to the defaults.
+    _shareHabits = prefs?.getBool(_kShareHabits) ?? true;
+    _shareGoals = prefs?.getBool(_kShareGoals) ?? false;
+  }
+
+  void _dismissLocalNudge() {
+    setState(() => _localNudgeDismissed = true);
+    ref.read(sharedPreferencesProvider)?.setBool(_kNudgeDismissed, true);
+  }
+
+  void _setShareHabits(bool value) {
+    setState(() => _shareHabits = value);
+    ref.read(sharedPreferencesProvider)?.setBool(_kShareHabits, value);
+  }
+
+  void _setShareGoals(bool value) {
+    setState(() => _shareGoals = value);
+    ref.read(sharedPreferencesProvider)?.setBool(_kShareGoals, value);
   }
 
   @override
   void dispose() {
+    _responseSub?.cancel();
     _controller.dispose();
     _scrollController.dispose();
     super.dispose();
@@ -173,8 +218,16 @@ class _AiCoachPageState extends ConsumerState<AiCoachPage> {
     final text = _controller.text.trim();
     if (text.isEmpty) return;
 
-    // Private mode: require explicit consent before any external AI send.
-    if (!await _ensurePrivateAiConsent()) return;
+    final coachConfig = ref.read(coachConfigProvider);
+    final backend = ref.read(activeCoachBackendProvider);
+    final isCloud = coachConfig.backend == CoachBackendKind.cloud;
+
+    // Cloud sends leave the device, so in Private mode they require explicit
+    // consent. Local sends never leave the device → no consent gate, no
+    // internet check.
+    if (isCloud && !await _ensurePrivateAiConsent()) return;
+    // The consent dialog is async; bail if the page went away meanwhile.
+    if (!mounted) return;
 
     _controller.clear();
     setState(() {
@@ -190,7 +243,10 @@ class _AiCoachPageState extends ConsumerState<AiCoachPage> {
     final snapshot = ref.read(dashboardControllerProvider);
     final now = DateTime.now();
     final userName = _userName();
-    String contextPrompt = "${t.aiCoach.systemPersona}\n";
+    // A user-authored system prompt (Advanced settings) replaces the default
+    // coach persona; the personal context below is still appended.
+    final persona = coachConfig.systemPromptOverride ?? t.aiCoach.systemPersona;
+    String contextPrompt = "$persona\n";
     // Always personalize with the user's name.
     contextPrompt += "${t.aiCoach.userNameLine(userName: userName)}\n";
 
@@ -236,12 +292,14 @@ class _AiCoachPageState extends ConsumerState<AiCoachPage> {
 
     // Risposta in streaming — send the FULL conversation (user + assistant
     // turns) so follow-ups keep context, not just the user's messages.
-    final stream = OpenRouterService.generateStreamResponse(
+    final stream = backend.streamResponse(
       List<ChatMessage>.from(_messages),
       systemPrompt: contextPrompt,
+      model: coachConfig.activeModel,
+      temperature: coachConfig.temperature,
     );
 
-    // Placeholder per la risposta
+    // Placeholder per la risposta.
     final responseIndex = _messages.length;
     setState(() {
       _messages.add(
@@ -249,10 +307,13 @@ class _AiCoachPageState extends ConsumerState<AiCoachPage> {
       );
     });
 
-    String currentResponse = '';
-
-    try {
-      await for (final chunk in stream) {
+    var currentResponse = '';
+    // Listen rather than await-for so the send can be cancelled mid-stream: the
+    // Stop button cancels this subscription, which propagates to the backend's
+    // async* generator and closes the HTTP client. A long cold local model load
+    // (up to 60s) no longer locks the user out.
+    _responseSub = stream.listen(
+      (chunk) {
         if (!mounted) return;
         currentResponse += chunk;
         setState(() {
@@ -263,34 +324,48 @@ class _AiCoachPageState extends ConsumerState<AiCoachPage> {
           );
         });
         _scrollToBottom();
-      }
-
-      if (!mounted) return;
-      _scrollToBottom();
-    } catch (_) {
-      if (!mounted) return;
-      // Surface the failure both in the current assistant bubble and via a
-      // SnackBar so the user is never left staring at an empty/partial reply.
-      final errorText = t.ai.openRouter.connectionErrorShort;
-      setState(() {
-        _messages[responseIndex] = ChatMessage(
-          text: currentResponse.isEmpty
-              ? errorText
-              : '$currentResponse\n\n$errorText',
-          isUser: false,
-          timestamp: DateTime.now(),
+      },
+      onError: (Object error) {
+        if (!mounted) return;
+        // Surface the failure in the current bubble and via a toast so the user
+        // is never left staring at an empty/partial reply.
+        final errorText = t.ai.openRouter.connectionErrorShort;
+        setState(() {
+          _messages[responseIndex] = ChatMessage(
+            text: currentResponse.isEmpty
+                ? errorText
+                : '$currentResponse\n\n$errorText',
+            isUser: false,
+            timestamp: DateTime.now(),
+          );
+          _isTyping = false;
+          _responseSub = null;
+        });
+        showEvolveToast(
+          context,
+          message: errorText,
+          kind: EvolveToastKind.error,
         );
-      });
-      showEvolveToast(context, message: errorText, kind: EvolveToastKind.error);
-    } finally {
-      // Always release the typing lock so the input/FAB are re-enabled even
-      // if the stream threw.
-      if (mounted) {
+      },
+      onDone: () {
+        if (!mounted) return;
         setState(() {
           _isTyping = false;
+          _responseSub = null;
         });
-      }
-    }
+        _scrollToBottom();
+      },
+      cancelOnError: true,
+    );
+  }
+
+  /// Cancels an in-flight response (Stop button). Cancelling the subscription
+  /// propagates to the backend generator, closing the HTTP connection; whatever
+  /// streamed so far stays in the bubble.
+  void _stopStreaming() {
+    _responseSub?.cancel();
+    _responseSub = null;
+    if (mounted) setState(() => _isTyping = false);
   }
 
   /// The user's first name (private profile or cloud metadata), for the coach
@@ -380,7 +455,7 @@ class _AiCoachPageState extends ConsumerState<AiCoachPage> {
                 value: _shareHabits,
                 onChanged: (val) {
                   setDialogState(() => _shareHabits = val);
-                  setState(() => _shareHabits = val);
+                  _setShareHabits(val);
                 },
               ),
               const SizedBox(height: 10),
@@ -390,7 +465,7 @@ class _AiCoachPageState extends ConsumerState<AiCoachPage> {
                 value: _shareGoals,
                 onChanged: (val) {
                   setDialogState(() => _shareGoals = val);
-                  setState(() => _shareGoals = val);
+                  _setShareGoals(val);
                 },
               ),
             ],
@@ -410,7 +485,7 @@ class _AiCoachPageState extends ConsumerState<AiCoachPage> {
   Widget build(BuildContext context) {
     final colors = context.evolveColors;
 
-    return DesktopPage(
+    final page = DesktopPage(
       pinned: true,
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.stretch,
@@ -452,14 +527,23 @@ class _AiCoachPageState extends ConsumerState<AiCoachPage> {
                 ),
               ),
               const SizedBox(width: 12),
-              PageActionButton(
-                label: t.aiCoach.contextButton,
-                icon: LucideIcons.brain,
-                onPressed: _showSettingsDialog,
+              KeyedSubtree(key: _modelKey, child: const CoachModelChip()),
+              const SizedBox(width: 10),
+              KeyedSubtree(
+                key: _contextKey,
+                child: PageActionButton(
+                  label: t.aiCoach.contextButton,
+                  icon: LucideIcons.brain,
+                  onPressed: _showSettingsDialog,
+                ),
               ),
             ],
           ),
           const SizedBox(height: 20),
+          _LocalDetectedBanner(
+            dismissed: _localNudgeDismissed,
+            onDismiss: _dismissLocalNudge,
+          ),
           // Pinned chat surface: the panel absorbs all remaining viewport
           // height (no page scroll). The thread scrolls internally and the
           // message column is centered at max 900 so bubbles never span an
@@ -524,26 +608,29 @@ class _AiCoachPageState extends ConsumerState<AiCoachPage> {
                                 if (suggestions.isEmpty) {
                                   return const SizedBox.shrink();
                                 }
-                                return SizedBox(
-                                  height: 42,
-                                  child: ListView(
-                                    scrollDirection: Axis.horizontal,
-                                    padding:
-                                        const EdgeInsetsDirectional.fromSTEB(
-                                          20,
-                                          0,
-                                          20,
-                                          10,
-                                        ),
-                                    children: [
-                                      for (final s in suggestions) ...[
-                                        _SuggestionChip(
-                                          label: s,
-                                          onTap: () => _onSuggestionTap(s),
-                                        ),
-                                        const SizedBox(width: 8),
+                                return KeyedSubtree(
+                                  key: _suggestionsKey,
+                                  child: SizedBox(
+                                    height: 42,
+                                    child: ListView(
+                                      scrollDirection: Axis.horizontal,
+                                      padding:
+                                          const EdgeInsetsDirectional.fromSTEB(
+                                            20,
+                                            0,
+                                            20,
+                                            10,
+                                          ),
+                                      children: [
+                                        for (final s in suggestions) ...[
+                                          _SuggestionChip(
+                                            label: s,
+                                            onTap: () => _onSuggestionTap(s),
+                                          ),
+                                          const SizedBox(width: 8),
+                                        ],
                                       ],
-                                    ],
+                                    ),
                                   ),
                                 );
                               },
@@ -556,49 +643,53 @@ class _AiCoachPageState extends ConsumerState<AiCoachPage> {
                               20,
                               20,
                             ),
-                            child: Row(
-                              children: [
-                                Expanded(
-                                  child: Container(
-                                    decoration: BoxDecoration(
-                                      color: colors.panel.withValues(
-                                        alpha: 0.4,
-                                      ),
-                                      borderRadius: BorderRadius.circular(16),
-                                      border: Border.all(
-                                        color: colors.border.withValues(
-                                          alpha: 0.5,
+                            child: KeyedSubtree(
+                              key: _inputKey,
+                              child: Row(
+                                children: [
+                                  Expanded(
+                                    child: Container(
+                                      decoration: BoxDecoration(
+                                        color: colors.panel.withValues(
+                                          alpha: 0.4,
+                                        ),
+                                        borderRadius: BorderRadius.circular(16),
+                                        border: Border.all(
+                                          color: colors.border.withValues(
+                                            alpha: 0.5,
+                                          ),
                                         ),
                                       ),
-                                    ),
-                                    child: TextField(
-                                      controller: _controller,
-                                      style: TextStyle(
-                                        color: colors.foreground,
-                                        fontSize: 14,
+                                      child: TextField(
+                                        controller: _controller,
+                                        style: TextStyle(
+                                          color: colors.foreground,
+                                          fontSize: 14,
+                                        ),
+                                        decoration: InputDecoration(
+                                          hintText: t.aiCoach.inputHint,
+                                          filled: false,
+                                          border: InputBorder.none,
+                                          enabledBorder: InputBorder.none,
+                                          focusedBorder: InputBorder.none,
+                                          contentPadding:
+                                              const EdgeInsets.symmetric(
+                                                horizontal: 18,
+                                                vertical: 13,
+                                              ),
+                                        ),
+                                        onSubmitted: (_) => _sendMessage(),
                                       ),
-                                      decoration: InputDecoration(
-                                        hintText: t.aiCoach.inputHint,
-                                        filled: false,
-                                        border: InputBorder.none,
-                                        enabledBorder: InputBorder.none,
-                                        focusedBorder: InputBorder.none,
-                                        contentPadding:
-                                            const EdgeInsets.symmetric(
-                                              horizontal: 18,
-                                              vertical: 13,
-                                            ),
-                                      ),
-                                      onSubmitted: (_) => _sendMessage(),
                                     ),
                                   ),
-                                ),
-                                const SizedBox(width: 10),
-                                _SendButton(
-                                  enabled: !_isTyping,
-                                  onTap: _sendMessage,
-                                ),
-                              ],
+                                  const SizedBox(width: 10),
+                                  _SendButton(
+                                    isStreaming: _isTyping,
+                                    onSend: _sendMessage,
+                                    onStop: _stopStreaming,
+                                  ),
+                                ],
+                              ),
                             ),
                           ),
                         ],
@@ -612,17 +703,106 @@ class _AiCoachPageState extends ConsumerState<AiCoachPage> {
         ],
       ),
     );
+
+    final showTour = ref
+        .watch(tourControllerProvider)
+        .isSegmentActive(TourSegment.coach);
+
+    return Stack(
+      children: [
+        page,
+        if (showTour)
+          CoachTutorialOverlay(
+            steps: _coachTourSteps(),
+            index: _tourIndex,
+            onIndexChanged: (i) => setState(() => _tourIndex = i),
+            // Final segment: finishing completes the whole tour and unlocks
+            // navigation (see [_finishCoachTour]).
+            onFinish: _finishCoachTour,
+            backLabel: t.tour.back,
+            nextLabel: t.tour.next,
+            finishLabel: t.tour.finish,
+          ),
+      ],
+    );
+  }
+
+  List<CoachStep> _coachTourSteps() => [
+    // Orientation-first: a centered card (no spotlight) announcing the page.
+    CoachStep(
+      title: t.tour.coachOrientationTitle,
+      description: t.tour.coachOrientationDesc,
+    ),
+    CoachStep(
+      targetKey: _modelKey,
+      title: t.tour.coachModelTitle,
+      description: t.tour.coachModelDesc,
+    ),
+    CoachStep(
+      targetKey: _contextKey,
+      title: t.tour.coachContextTitle,
+      description: t.tour.coachContextDesc,
+    ),
+    CoachStep(
+      targetKey: _suggestionsKey,
+      title: t.tour.coachSuggestionsTitle,
+      description: t.tour.coachSuggestionsDesc,
+    ),
+    CoachStep(
+      targetKey: _inputKey,
+      title: t.tour.coachInputTitle,
+      description: t.tour.coachInputDesc,
+    ),
+  ];
+
+  /// Finishes the FINAL tour segment: marks the whole tour done (unlocking
+  /// navigation), shows a completion dialog, then returns the user to Overview.
+  Future<void> _finishCoachTour() async {
+    await ref.read(tourControllerProvider.notifier).complete();
+    if (!mounted) return;
+    await showEvolveDialog<void>(
+      context: context,
+      barrierDismissible: false,
+      builder: (context) => EvolveAlertDialog(
+        icon: LucideIcons.sparkles,
+        title: Text(t.tour.doneTitle),
+        content: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            Text(t.tour.doneBody),
+            const SizedBox(height: 24),
+            SizedBox(
+              width: double.infinity,
+              child: FilledButton(
+                onPressed: () => Navigator.pop(context),
+                child: Text(t.tour.doneButton),
+              ),
+            ),
+          ],
+        ),
+      ),
+    );
+    if (!mounted) return;
+    ref
+        .read(navigationControllerProvider.notifier)
+        .select(DesktopSection.overview);
   }
 }
 
-/// Circular accent send button (white pill look); panelSoft + muted when the
-/// coach is still streaming a reply. Desktop affordances: pointer cursor and
-/// a stronger accent glow on hover.
+/// Circular accent action button: sends the message when idle, and turns into a
+/// Stop control while a reply is streaming (cancelling the in-flight response —
+/// important given a cold local model can take up to 60s to first-token).
+/// Labelled for screen readers.
 class _SendButton extends StatefulWidget {
-  const _SendButton({required this.enabled, required this.onTap});
+  const _SendButton({
+    required this.isStreaming,
+    required this.onSend,
+    required this.onStop,
+  });
 
-  final bool enabled;
-  final VoidCallback onTap;
+  final bool isStreaming;
+  final VoidCallback onSend;
+  final VoidCallback onStop;
 
   @override
   State<_SendButton> createState() => _SendButtonState();
@@ -633,41 +813,45 @@ class _SendButtonState extends State<_SendButton> {
 
   @override
   Widget build(BuildContext context) {
-    final colors = context.evolveColors;
     final accent = context.evolveAccent;
-    final enabled = widget.enabled;
-    final lifted = enabled && _hovered;
-    return MouseRegion(
-      cursor: enabled ? SystemMouseCursors.click : MouseCursor.defer,
-      onEnter: (_) => setState(() => _hovered = true),
-      onExit: (_) => setState(() => _hovered = false),
-      child: InkWell(
-        onTap: enabled ? widget.onTap : null,
-        customBorder: const CircleBorder(),
-        child: AnimatedContainer(
-          duration: const Duration(milliseconds: 150),
-          width: 38,
-          height: 38,
-          alignment: Alignment.center,
-          decoration: BoxDecoration(
-            shape: BoxShape.circle,
-            color: enabled ? accent : colors.panelSoft,
-            boxShadow: enabled
-                ? [
-                    BoxShadow(
-                      color: accent.withValues(alpha: lifted ? 0.4 : 0.25),
-                      blurRadius: lifted ? 16 : 12,
-                      offset: const Offset(0, 4),
-                    ),
-                  ]
-                : null,
-          ),
-          child: Icon(
-            LucideIcons.send,
-            size: 16,
-            color: enabled
-                ? Theme.of(context).colorScheme.onPrimary
-                : colors.muted,
+    final streaming = widget.isStreaming;
+    final label = streaming
+        ? t.coachSettings.stopResponse
+        : t.coachSettings.sendMessage;
+    return Tooltip(
+      message: label,
+      child: Semantics(
+        button: true,
+        label: label,
+        child: MouseRegion(
+          cursor: SystemMouseCursors.click,
+          onEnter: (_) => setState(() => _hovered = true),
+          onExit: (_) => setState(() => _hovered = false),
+          child: InkWell(
+            onTap: streaming ? widget.onStop : widget.onSend,
+            customBorder: const CircleBorder(),
+            child: AnimatedContainer(
+              duration: const Duration(milliseconds: 150),
+              width: 38,
+              height: 38,
+              alignment: Alignment.center,
+              decoration: BoxDecoration(
+                shape: BoxShape.circle,
+                color: accent,
+                boxShadow: [
+                  BoxShadow(
+                    color: accent.withValues(alpha: _hovered ? 0.4 : 0.25),
+                    blurRadius: _hovered ? 16 : 12,
+                    offset: const Offset(0, 4),
+                  ),
+                ],
+              ),
+              child: Icon(
+                streaming ? LucideIcons.square : LucideIcons.send,
+                size: streaming ? 14 : 16,
+                color: Theme.of(context).colorScheme.onPrimary,
+              ),
+            ),
           ),
         ),
       ),
@@ -910,6 +1094,93 @@ class _ContextSwitchRow extends StatelessWidget {
           child: EvolveSwitch(value: value, onChanged: onChanged),
         ),
       ],
+    );
+  }
+}
+
+/// First-run privacy nudge: when the coach is on Cloud and a local AI server is
+/// detected on this machine, offer a one-tap switch to running 100% privately.
+/// Only probes while it could actually show (Cloud + not yet dismissed).
+class _LocalDetectedBanner extends ConsumerWidget {
+  const _LocalDetectedBanner({
+    required this.dismissed,
+    required this.onDismiss,
+  });
+
+  final bool dismissed;
+  final VoidCallback onDismiss;
+
+  @override
+  Widget build(BuildContext context, WidgetRef ref) {
+    if (dismissed) return const SizedBox.shrink();
+    final backend = ref.watch(coachConfigProvider.select((c) => c.backend));
+    if (backend != CoachBackendKind.cloud) return const SizedBox.shrink();
+    final detected = ref.watch(coachLocalDetectionProvider).asData?.value;
+    if (detected == null) return const SizedBox.shrink();
+
+    final colors = context.evolveColors;
+    return Padding(
+      padding: const EdgeInsets.only(bottom: 16),
+      child: Container(
+        padding: const EdgeInsetsDirectional.fromSTEB(14, 12, 12, 12),
+        decoration: BoxDecoration(
+          color: EvolveColors.violet.withValues(alpha: 0.08),
+          borderRadius: BorderRadius.circular(14),
+          border: Border.all(color: EvolveColors.violet.withValues(alpha: 0.3)),
+        ),
+        child: Row(
+          children: [
+            const EvolveIconChip(
+              icon: LucideIcons.cpu,
+              color: EvolveColors.violet,
+              size: 34,
+              iconSize: 16,
+            ),
+            const SizedBox(width: 12),
+            Expanded(
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text(
+                    t.coachSettings.detectedTitle,
+                    style: TextStyle(
+                      color: colors.foreground,
+                      fontSize: 13.5,
+                      fontWeight: FontWeight.w700,
+                    ),
+                  ),
+                  const SizedBox(height: 2),
+                  Text(
+                    t.coachSettings.detectedBody,
+                    style: TextStyle(
+                      color: colors.muted,
+                      fontSize: 12,
+                      fontWeight: FontWeight.w500,
+                      height: 1.35,
+                    ),
+                  ),
+                ],
+              ),
+            ),
+            const SizedBox(width: 12),
+            TextButton(
+              onPressed: onDismiss,
+              child: Text(
+                t.coachSettings.detectedDismiss,
+                style: TextStyle(color: colors.muted, fontSize: 12.5),
+              ),
+            ),
+            const SizedBox(width: 6),
+            FilledButton(
+              onPressed: () {
+                ref.read(coachConfigProvider.notifier).useLocalServer(detected);
+                onDismiss();
+              },
+              child: Text(t.coachSettings.detectedAction),
+            ),
+          ],
+        ),
+      ),
     );
   }
 }

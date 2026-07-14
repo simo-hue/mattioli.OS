@@ -1,5 +1,6 @@
 import 'package:evolve_desktop/app/theme/evolve_theme.dart';
 import 'package:evolve_desktop/features/dashboard/application/dashboard_controller.dart';
+import 'package:evolve_desktop/features/settings/presentation/pro_features_modal.dart';
 import 'package:evolve_desktop/i18n/translations.g.dart';
 import 'package:evolve_desktop/shared/widgets/color_picker_button.dart';
 import 'package:evolve_desktop/shared/widgets/evolve_controls.dart';
@@ -63,13 +64,21 @@ class _CreateHabitDialogState extends ConsumerState<CreateHabitDialog> {
     setState(() => _isLoading = true);
 
     try {
-      await ref
+      final added = await ref
           .read(dashboardControllerProvider.notifier)
           .addHabit(
             title: title,
             category: _categoryController.text.trim(),
             color: _selectedColor,
           );
+      if (!added) {
+        // Free-tier 5-habit cap reached → present the paywall, keep the dialog.
+        if (mounted) {
+          setState(() => _isLoading = false);
+          await showProFeaturesDialog(context, ref);
+        }
+        return;
+      }
       if (mounted) Navigator.pop(context);
     } catch (e) {
       // Error is logged in controller

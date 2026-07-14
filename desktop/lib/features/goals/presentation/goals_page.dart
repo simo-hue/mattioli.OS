@@ -19,6 +19,7 @@ import 'package:evolve_desktop/shared/widgets/evolve_toast.dart';
 import 'package:evolve_desktop/core/tutorial_provider.dart';
 import 'package:evolve_desktop/shared/widgets/coach_tutorial.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:lucide_icons_flutter/lucide_icons.dart';
 
@@ -52,6 +53,16 @@ class _GoalsPageState extends ConsumerState<GoalsPage> {
   final _addGoalKey = GlobalKey();
   final _tutorialCheckboxKey = GlobalKey();
 
+  // Holds page-level keyboard focus so ←/→ page through the selected plan's
+  // timeline (see [_handlePeriodKey]) the moment the page opens, without the
+  // user having to click into it first.
+  final _periodFocusNode = FocusNode(debugLabel: 'goals-period-nav');
+
+  // Count of period pickers / menus currently open on the page. While any is
+  // open the arrow keys must not page the timeline behind it (the popups keep
+  // the page node focused, so this is the only signal that one is up).
+  int _openMenus = 0;
+
   @override
   void initState() {
     super.initState();
@@ -61,11 +72,21 @@ class _GoalsPageState extends ConsumerState<GoalsPage> {
     _selectedQuarter = ((now.month - 1) ~/ 3) + 1;
     _selectedMonth = now.month;
     _selectedWeek = logicalWeekOfMonth(now);
+    // Claim keyboard focus after the first frame so arrow-key period paging is
+    // live immediately — but never yank focus away from the guided tour
+    // overlay, which drives the keyboard itself while it runs.
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      if (!mounted) return;
+      if (!ref.read(tourControllerProvider).active) {
+        _periodFocusNode.requestFocus();
+      }
+    });
   }
 
   @override
   void dispose() {
     _quickGoalController.dispose();
+    _periodFocusNode.dispose();
     super.dispose();
   }
 
@@ -113,98 +134,150 @@ class _GoalsPageState extends ConsumerState<GoalsPage> {
       ];
     }
 
-    return DesktopPage(
-      title: t.goalsPage.title,
-      subtitle: t.goalsPage.subtitle,
-      child: Stack(
-        children: [
-          Column(
-            crossAxisAlignment: CrossAxisAlignment.stretch,
-            children: [
-              _GoalToolbar(
-                statsToggleKey: _performanceToggleKey,
-                selectedType: _selectedType,
-                showStats: _showStats,
-                onTypeChanged: (type) => setState(() {
-                  _selectedType = type;
-                  _showStats = false;
-                }),
-                onShowStats: () => setState(() => _showStats = true),
-              ),
-              const SizedBox(height: 22),
-              _GoalCommandBar(
-                periodClusterKey: _planSelectorKey,
-                addGoalKey: _addGoalKey,
-                selectedType: _selectedType,
-                selectedYear: _selectedYear,
-                selectedQuarter: _selectedQuarter,
-                selectedMonth: _selectedMonth,
-                selectedWeek: _selectedWeek,
-                onYearChanged: (year) => setState(() {
-                  _selectedYear = year;
-                  _selectedWeek = _selectedWeek.clamp(
-                    1,
-                    logicalWeeksInMonth(_selectedYear, _selectedMonth),
-                  );
-                }),
-                onQuarterChanged: (quarter) =>
-                    setState(() => _selectedQuarter = quarter),
-                onMonthChanged: (month) => setState(() {
-                  _selectedMonth = month;
-                  _selectedWeek = 1;
-                }),
-                onWeekChanged: (week) => setState(() => _selectedWeek = week),
-                onPrevious: () => _movePeriod(-1),
-                onNext: () => _movePeriod(1),
-                onManageCategories: _openCategoryManager,
-                showQuickAdd: !_showStats,
-                quickGoalController: _quickGoalController,
-                quickGoalCategory: _quickGoalCategory,
-                categories: categories,
-                onQuickCategoryChanged: (category) =>
-                    setState(() => _quickGoalCategory = category),
-                onCreateCategory: _createCategoryInline,
-                onQuickSubmit: _submitQuickGoal,
-                quickGoalHint: _quickGoalHint,
-              ),
-              const SizedBox(height: 22),
-              if (_showStats)
-                const GoalsStatsView()
-              else
-                _GoalBoard(
-                  periodTitle: _periodTitle,
-                  periodSubtitle: _periodSubtitle,
-                  tutorialCheckboxKey: _tutorialCheckboxKey,
-                  categories: categories,
-                  activeGoals: activeGoals,
-                  completedGoals: completedGoals,
-                  failedGoals: failedGoals,
-                  onToggleStatus: _cycleGoalStatus,
-                  onEdit: _openGoalEditorFor,
-                  onReschedule: (goal) => ref
-                      .read(dashboardControllerProvider.notifier)
-                      .rescheduleGoal(goal.id),
-                  onDelete: (goal) => ref
-                      .read(dashboardControllerProvider.notifier)
-                      .deleteGoal(goal.id),
+    return Focus(
+      focusNode: _periodFocusNode,
+      onKeyEvent: _handlePeriodKey,
+      child: DesktopPage(
+        title: t.goalsPage.title,
+        subtitle: t.goalsPage.subtitle,
+        child: Stack(
+          children: [
+            Column(
+              crossAxisAlignment: CrossAxisAlignment.stretch,
+              children: [
+                _GoalToolbar(
+                  statsToggleKey: _performanceToggleKey,
+                  selectedType: _selectedType,
+                  showStats: _showStats,
+                  onTypeChanged: (type) => setState(() {
+                    _selectedType = type;
+                    _showStats = false;
+                  }),
+                  onShowStats: () => setState(() => _showStats = true),
                 ),
-            ],
-          ),
-          if (showTour)
-            CoachTutorialOverlay(
-              steps: _goalsTourSteps(),
-              index: _tourIndex,
-              onIndexChanged: (i) => setState(() => _tourIndex = i),
-              // The last Goals step advances the tour to the Coach segment.
-              onFinish: () =>
-                  ref.read(tourControllerProvider.notifier).advance(),
-              backLabel: t.tour.back,
-              nextLabel: t.tour.next,
-              finishLabel: t.tour.continueLabel,
+                const SizedBox(height: 22),
+                _GoalCommandBar(
+                  periodClusterKey: _planSelectorKey,
+                  addGoalKey: _addGoalKey,
+                  onMenuOpenChanged: _onMenuOpenChanged,
+                  selectedType: _selectedType,
+                  selectedYear: _selectedYear,
+                  selectedQuarter: _selectedQuarter,
+                  selectedMonth: _selectedMonth,
+                  selectedWeek: _selectedWeek,
+                  onYearChanged: (year) => setState(() {
+                    _selectedYear = year;
+                    _selectedWeek = _selectedWeek.clamp(
+                      1,
+                      logicalWeeksInMonth(_selectedYear, _selectedMonth),
+                    );
+                  }),
+                  onQuarterChanged: (quarter) =>
+                      setState(() => _selectedQuarter = quarter),
+                  onMonthChanged: (month) => setState(() {
+                    _selectedMonth = month;
+                    _selectedWeek = 1;
+                  }),
+                  onWeekChanged: (week) => setState(() => _selectedWeek = week),
+                  onPrevious: () => _movePeriod(-1),
+                  onNext: () => _movePeriod(1),
+                  onManageCategories: _openCategoryManager,
+                  showQuickAdd: !_showStats,
+                  quickGoalController: _quickGoalController,
+                  quickGoalCategory: _quickGoalCategory,
+                  categories: categories,
+                  onQuickCategoryChanged: (category) =>
+                      setState(() => _quickGoalCategory = category),
+                  onCreateCategory: _createCategoryInline,
+                  onQuickSubmit: _submitQuickGoal,
+                  quickGoalHint: _quickGoalHint,
+                ),
+                const SizedBox(height: 22),
+                if (_showStats)
+                  const GoalsStatsView()
+                else
+                  _GoalBoard(
+                    periodTitle: _periodTitle,
+                    periodSubtitle: _periodSubtitle,
+                    tutorialCheckboxKey: _tutorialCheckboxKey,
+                    categories: categories,
+                    activeGoals: activeGoals,
+                    completedGoals: completedGoals,
+                    failedGoals: failedGoals,
+                    onToggleStatus: _cycleGoalStatus,
+                    onEdit: _openGoalEditorFor,
+                    onReschedule: (goal) => ref
+                        .read(dashboardControllerProvider.notifier)
+                        .rescheduleGoal(goal.id),
+                    onDelete: (goal) => ref
+                        .read(dashboardControllerProvider.notifier)
+                        .deleteGoal(goal.id),
+                  ),
+              ],
             ),
-        ],
+            if (showTour)
+              CoachTutorialOverlay(
+                steps: _goalsTourSteps(),
+                index: _tourIndex,
+                onIndexChanged: (i) => setState(() => _tourIndex = i),
+                // The last Goals step advances the tour to the Coach segment.
+                onFinish: () =>
+                    ref.read(tourControllerProvider.notifier).advance(),
+                backLabel: t.tour.back,
+                nextLabel: t.tour.next,
+                finishLabel: t.tour.continueLabel,
+              ),
+          ],
+        ),
       ),
     );
+  }
+
+  /// Left/right arrow keys page through the selected plan's timeline (previous
+  /// / next week, month, quarter or year), mirroring the ‹ › buttons in the
+  /// command bar via [_movePeriod]. This handler sits on an ancestor [Focus],
+  /// so it also fires while a goal row or nav button holds focus — but it
+  /// deliberately steps aside (returns [KeyEventResult.ignored]) while a text
+  /// field is being edited (so the quick-add caret keeps moving), while a
+  /// period picker is open (so it doesn't page behind the menu), while the
+  /// guided tour owns the keyboard, and for lifetime goals (no timeline).
+  KeyEventResult _handlePeriodKey(FocusNode node, KeyEvent event) {
+    // Repeat events let the user hold the key to fly through periods.
+    if (event is! KeyDownEvent && event is! KeyRepeatEvent) {
+      return KeyEventResult.ignored;
+    }
+    final key = event.logicalKey;
+    final isLeft = key == LogicalKeyboardKey.arrowLeft;
+    final isRight = key == LogicalKeyboardKey.arrowRight;
+    if (!isLeft && !isRight) return KeyEventResult.ignored;
+    if (_selectedType == GoalType.lifetime) return KeyEventResult.ignored;
+    if (_openMenus > 0) return KeyEventResult.ignored;
+    if (_isTextFieldFocused()) return KeyEventResult.ignored;
+    if (ref.read(tourControllerProvider).active) return KeyEventResult.ignored;
+    // RTL flips the arrows: in a right-to-left layout the timeline runs
+    // leftwards, so ← advances and → rewinds (the same rule the shell's
+    // two-finger trackpad swipe uses).
+    final isRtl = Directionality.of(context) == TextDirection.rtl;
+    final forward = isRight != isRtl;
+    _movePeriod(forward ? 1 : -1);
+    return KeyEventResult.handled;
+  }
+
+  /// True while a text field owns the primary focus, so the arrow keys should
+  /// move the caret instead of paging the period.
+  bool _isTextFieldFocused() {
+    final ctx = FocusManager.instance.primaryFocus?.context;
+    if (ctx == null) return false;
+    return ctx.widget is EditableText ||
+        ctx.findAncestorStateOfType<EditableTextState>() != null;
+  }
+
+  /// Tracks how many period pickers / menus are open so [_handlePeriodKey] can
+  /// stand down while one is up (the popups don't take focus, so a counter is
+  /// the only reliable signal). No [setState]: the value is only read
+  /// synchronously inside the key handler.
+  void _onMenuOpenChanged(bool open) {
+    _openMenus = (_openMenus + (open ? 1 : -1)).clamp(0, 1 << 20);
   }
 
   String get _periodLabel {
@@ -714,6 +787,7 @@ class _GoalCommandBar extends StatelessWidget {
   const _GoalCommandBar({
     this.periodClusterKey,
     this.addGoalKey,
+    required this.onMenuOpenChanged,
     required this.selectedType,
     required this.selectedYear,
     required this.selectedQuarter,
@@ -738,6 +812,10 @@ class _GoalCommandBar extends StatelessWidget {
 
   final GlobalKey? periodClusterKey;
   final GlobalKey? addGoalKey;
+
+  /// Reports each period-picker / category-menu open (true) and close (false)
+  /// so the page can suspend arrow-key period paging while one is up.
+  final ValueChanged<bool> onMenuOpenChanged;
   final GoalType selectedType;
   final int selectedYear;
   final int selectedQuarter;
@@ -786,16 +864,13 @@ class _GoalCommandBar extends StatelessWidget {
     return [
       _PeriodDropdown(
         value: selectedYear,
-        values: [
-          for (
-            var year = DateTime.now().year - 10;
-            year <= DateTime.now().year + 10;
-            year++
-          )
-            year,
-        ],
+        // Always include the current selection so paging past the ±10 window
+        // (e.g. holding → on the Annual plan) never renders a blank year pill.
+        values: _yearOptions(selectedYear),
         labelFor: (value) => '$value',
         onChanged: onYearChanged,
+        onOpen: () => onMenuOpenChanged(true),
+        onClose: () => onMenuOpenChanged(false),
       ),
       if (selectedType == GoalType.quarterly)
         _PeriodDropdown(
@@ -803,6 +878,8 @@ class _GoalCommandBar extends StatelessWidget {
           values: const [1, 2, 3, 4],
           labelFor: (value) => 'Q$value',
           onChanged: onQuarterChanged,
+          onOpen: () => onMenuOpenChanged(true),
+          onClose: () => onMenuOpenChanged(false),
         ),
       if (selectedType == GoalType.monthly || selectedType == GoalType.weekly)
         _PeriodDropdown(
@@ -810,6 +887,8 @@ class _GoalCommandBar extends StatelessWidget {
           values: [for (var month = 1; month <= 12; month++) month],
           labelFor: (value) => t.common.months[value - 1],
           onChanged: onMonthChanged,
+          onOpen: () => onMenuOpenChanged(true),
+          onClose: () => onMenuOpenChanged(false),
         ),
       if (selectedType == GoalType.weekly)
         _PeriodDropdown(
@@ -824,8 +903,21 @@ class _GoalCommandBar extends StatelessWidget {
           ],
           labelFor: (value) => '${t.common.calendarView.week} $value',
           onChanged: onWeekChanged,
+          onOpen: () => onMenuOpenChanged(true),
+          onClose: () => onMenuOpenChanged(false),
         ),
     ];
+  }
+
+  /// The ±10-year window around today, guaranteed to contain [selected] so the
+  /// year selector always has a matching option to render.
+  List<int> _yearOptions(int selected) {
+    final base = DateTime.now().year;
+    final years = <int>{
+      for (var year = base - 10; year <= base + 10; year++) year,
+      selected,
+    }.toList()..sort();
+    return years;
   }
 
   List<Widget> _navButtons(BuildContext context) {
@@ -911,6 +1003,7 @@ class _GoalCommandBar extends StatelessWidget {
       onCreateCategory: onCreateCategory,
       onSubmit: onQuickSubmit,
       hintText: quickGoalHint,
+      onMenuOpenChanged: onMenuOpenChanged,
     );
   }
 
@@ -952,12 +1045,16 @@ class _PeriodDropdown extends StatelessWidget {
     required this.values,
     required this.labelFor,
     required this.onChanged,
+    this.onOpen,
+    this.onClose,
   });
 
   final int value;
   final List<int> values;
   final String Function(int value) labelFor;
   final ValueChanged<int> onChanged;
+  final VoidCallback? onOpen;
+  final VoidCallback? onClose;
 
   @override
   Widget build(BuildContext context) {
@@ -973,6 +1070,8 @@ class _PeriodDropdown extends StatelessWidget {
           EvolveSelectOption(value: item, label: labelFor(item)),
       ],
       onChanged: onChanged,
+      onOpen: onOpen,
+      onClose: onClose,
     );
   }
 }
@@ -1303,6 +1402,7 @@ class _QuickGoalBar extends StatelessWidget {
     required this.onCreateCategory,
     required this.onSubmit,
     required this.hintText,
+    required this.onMenuOpenChanged,
   });
 
   final TextEditingController controller;
@@ -1312,6 +1412,7 @@ class _QuickGoalBar extends StatelessWidget {
   final ValueChanged<_GoalCategory?> onCategoryChanged;
   final VoidCallback onCreateCategory;
   final VoidCallback onSubmit;
+  final ValueChanged<bool> onMenuOpenChanged;
 
   @override
   Widget build(BuildContext context) {
@@ -1354,6 +1455,7 @@ class _QuickGoalBar extends StatelessWidget {
           categories: categories,
           onCategoryChanged: onCategoryChanged,
           onCreateCategory: onCreateCategory,
+          onMenuOpenChanged: onMenuOpenChanged,
         ),
         const SizedBox(width: 8),
         Material(
@@ -1384,18 +1486,22 @@ class _QuickCategoryButton extends StatelessWidget {
     required this.categories,
     required this.onCategoryChanged,
     required this.onCreateCategory,
+    required this.onMenuOpenChanged,
   });
 
   final _GoalCategory? selectedCategory;
   final List<_GoalCategory> categories;
   final ValueChanged<_GoalCategory?> onCategoryChanged;
   final VoidCallback onCreateCategory;
+  final ValueChanged<bool> onMenuOpenChanged;
 
   @override
   Widget build(BuildContext context) {
     final color = selectedCategory?.color;
     return EvolveMenu(
       tooltip: t.form.category,
+      onOpen: () => onMenuOpenChanged(true),
+      onClose: () => onMenuOpenChanged(false),
       children: [
         EvolveMenuItem(
           label: t.goalsPage.defaultCategory,

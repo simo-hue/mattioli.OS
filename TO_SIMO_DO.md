@@ -1,6 +1,7 @@
 # TO_SIMO_DO.md
 - [ ] Widget for iPhone & MacOS
-- [ ] I want to use the arrows keys to navigate between the goals page. For example to move into the next week, previous week, next month, previous month.
+- [ ] Update for the habits to decide the day of the week to decide when it should be completed and obviously when it should appear on the day's pop up calendar view. The desktop UI element is already in place but from mobile is totally missing
+- [ ] In the habits protocol tab view I want to see only the current habits and not also the past ones
 
 
 ## DESKTOP + MOBILE — iCloud sync cross-platform (needs your Xcode machine)

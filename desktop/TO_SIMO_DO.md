@@ -129,3 +129,13 @@ Full analysis + fix status: `docs/HABIT_STATS_AUDIT.md`.
       `habit_stats` view reports 0/stale streaks for habits last toggled from the
       web. macOS & iOS persist it correctly. Patch the web write path if web-logged
       cloud streaks matter.
+- [ ] **On-device QA — Goals arrow-key navigation (desktop).** Logic is covered by
+      `test/goals_page_keyboard_test.dart`, but the app can't be run here (no Xcode).
+      On the Mac, open Goals and confirm: (1) ←/→ page the timeline for each plan
+      (weekly/monthly/quarterly/annual), including month/week rollover; (2) typing
+      in the quick-add field, arrows move the caret (don't change the period);
+      (3) with a year/month/week or category picker open, arrows don't page behind
+      it; (4) arrows are inert during the guided tour and on the Lifetime tab; (5)
+      RTL (Arabic locale): ← advances, → rewinds. Optional: mirror the same
+      ←/→ paging on the Habits page (it uses the identical `_shiftAnchor(±1)` prev/
+      next idiom) for cross-page coherence.

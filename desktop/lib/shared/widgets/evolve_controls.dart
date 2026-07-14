@@ -131,6 +131,8 @@ class EvolveMenu extends StatelessWidget {
     super.key,
     this.tooltip,
     this.minWidth,
+    this.onOpen,
+    this.onClose,
   });
 
   /// Builds the always-visible trigger. Call `controller.open()` /
@@ -148,11 +150,18 @@ class EvolveMenu extends StatelessWidget {
   /// trigger width).
   final double? minWidth;
 
+  /// Fired when the popup opens / closes (including outside-tap dismissal), so
+  /// hosts can e.g. suspend page-level keyboard shortcuts while it is open.
+  final VoidCallback? onOpen;
+  final VoidCallback? onClose;
+
   @override
   Widget build(BuildContext context) {
     final colors = context.evolveColors;
     final isDark = Theme.of(context).brightness == Brightness.dark;
     return MenuAnchor(
+      onOpen: onOpen,
+      onClose: onClose,
       style: MenuStyle(
         backgroundColor: WidgetStatePropertyAll(colors.panelRaised),
         surfaceTintColor: const WidgetStatePropertyAll(Colors.transparent),
@@ -341,10 +350,16 @@ class EvolveSelect<T> extends StatefulWidget {
     this.fillColor,
     this.textStyle,
     this.tooltip,
+    this.onOpen,
+    this.onClose,
   });
 
   final T? value;
   final List<EvolveSelectOption<T>> options;
+
+  /// Fired when the options popup opens / closes, forwarded from [EvolveMenu].
+  final VoidCallback? onOpen;
+  final VoidCallback? onClose;
 
   /// Null disables the control.
   final ValueChanged<T>? onChanged;
@@ -394,6 +409,8 @@ class _EvolveSelectState<T> extends State<EvolveSelect<T>> {
     final control = EvolveMenu(
       tooltip: widget.tooltip,
       minWidth: widget.expand ? _menuMinWidth : null,
+      onOpen: widget.onOpen,
+      onClose: widget.onClose,
       triggerBuilder: (context, controller) {
         return MouseRegion(
           cursor: _enabled ? SystemMouseCursors.click : MouseCursor.defer,

@@ -807,3 +807,33 @@ heading ellipsizing. `flutter analyze` clean; `tour_flow_test` still passes.
     Supabase (can't run Postgres here). NOT done (web app, out of scope): the web
     client doesn't persist goal_logs.streak -> cloud habit_stats streaks wrong for
     web-toggled habits. Full audit + fix status in ../docs/HABIT_STATS_AUDIT.md.
+
+- 2026-07-14: Goals page — arrow-key period navigation (desktop)
+  - *Details*: On the desktop Goals page, ←/→ now page through the selected
+    plan's timeline (previous/next week, month, quarter or year, per the active
+    tab), mirroring the ‹ › chevron buttons by reusing the existing
+    `_movePeriod(±1)`. The page grabs keyboard focus on entry (post-frame
+    `requestFocus`, skipped while the guided tour is active) so the arrows work
+    without clicking in first. The handler steps aside (KeyEventResult.ignored)
+    while the quick-add field is being edited (caret keeps moving), while any
+    period picker / category menu is open (so it can't page behind the popup),
+    during the guided tour, and for lifetime goals. RTL-aware: ← advances and →
+    rewinds in a right-to-left layout (same rule as the shell's trackpad swipe).
+    Also fixed a latent blank-year-pill: the year selector now always includes
+    the current selection, so paging past the ±10-year window can't leave it
+    empty (fixes both arrows and the chevrons).
+  - *Tech Notes*: Only `lib/features/goals/presentation/goals_page.dart` and
+    `lib/shared/widgets/evolve_controls.dart` changed. Added a page-level
+    `Focus(onKeyEvent: _handlePeriodKey)` + `_periodFocusNode`; `_isTextFieldFocused()`
+    guards caret editing; an `_openMenus` counter (fed by `_onMenuOpenChanged`)
+    suspends paging while a picker is open. To get the open/close signal,
+    `EvolveMenu` and `EvolveSelect` gained optional `onOpen`/`onClose` callbacks
+    that forward `MenuAnchor.onOpen/onClose` (backward-compatible; existing call
+    sites unaffected). No new deps, providers, RPCs or endpoints. Verified:
+    `flutter analyze` clean (only the pre-existing lib/main.dart
+    setMockInitialValues warning remains); new `test/goals_page_keyboard_test.dart`
+    (3 tests: advance/rewind, caret-not-stolen, no-page-behind-open-picker) green;
+    evolve_controls/tour_flow/navigation_lock suites green (no regression from the
+    shared-widget change). One pre-existing unrelated failure remains in
+    icloud_sync_card_test (pumpAndSettle timeout, fails with this change reverted).
+    On-device visual QA still pending (no Xcode on this Mac) — see TO_SIMO_DO.md.

@@ -793,6 +793,27 @@ class PrivacySettingsScreen extends ConsumerWidget {
       final supabase = isPrivateMode ? null : Supabase.instance.client;
       final importService = BackupImportService(privateStore, supabase);
 
+      // Private-mode import needs the encrypted local DB to open. If its key is
+      // unreadable (after moving to a new device or a change to the app's
+      // signing that rotated the Keychain access group) the DB is LOCKED and
+      // every write throws PrivateDatabaseLockedException. Detect it up front
+      // and offer an explicit reset-and-import — the old local data is
+      // unrecoverable (its key is gone), but the backup imports onto a fresh key.
+      if (isPrivateMode && await privateStore.isDatabaseLocked()) {
+        if (!context.mounted) return;
+        final recover = await showEvolveConfirm(
+          context: context,
+          title: context.t.privacy.importLockedTitle,
+          message: context.t.privacy.importLockedMessage,
+          confirmLabel: context.t.privacy.importLockedResetButton,
+          isDestructive: true,
+          ref: ref,
+        );
+        if (!recover) return;
+        if (!context.mounted) return;
+        await privateStore.resetLockedDatabase();
+      }
+
       // 1. Preview
       final preview = await importService.parsePreview(path);
 
@@ -1182,6 +1203,27 @@ class PrivacySettingsScreen extends ConsumerWidget {
   Future<void> _resetData(BuildContext context, WidgetRef ref) async {
     try {
       if (ref.read(activeDataModeProvider) == AppDataMode.private) {
+        final privateStore = ref.read(privateLocalDatabaseProvider);
+
+        // Locked-DB recovery: if the encrypted DB can't be unlocked (its key is
+        // gone), the row-wipe below can't even open it — every step would throw
+        // PrivateDatabaseLockedException. Fall back to a file-level reset so
+        // "delete private data" still recovers a locked device for a user with
+        // no backup to import. The local data is unrecoverable anyway (key
+        // lost), which is exactly what this action promises to remove.
+        if (await privateStore.isDatabaseLocked()) {
+          await NotificationService().cancelAll();
+          await privateStore.resetLockedDatabase();
+          invalidatePrivateDataProviders(ref);
+          if (context.mounted) {
+            showEvolveToast(
+              context,
+              message: context.t.privacy.privateDataDeletedSuccess,
+            );
+          }
+          return;
+        }
+
         await NotificationService().cancelAll();
         // Wipe the iCloud zone + encryption keys when sync was on. Best-effort:
         // a failure here must never block the local data wipe below.
@@ -1190,7 +1232,7 @@ class PrivacySettingsScreen extends ConsumerWidget {
         } catch (e, stack) {
           AppLogger.error('iCloud full reset failed during delete', e, stack);
         }
-        await ref.read(privateLocalDatabaseProvider).deleteAllPrivateData();
+        await privateStore.deleteAllPrivateData();
         ref.invalidate(goalsProvider);
         ref.invalidate(habitLogsProvider);
         ref.invalidate(habitStatsProvider);

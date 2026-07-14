@@ -2115,6 +2115,15 @@ class Translations$settingsPage$en {
 	/// en: 'Error during import: {error}'
 	String importError({required Object error}) => 'Error during import: ${error}';
 
+	/// en: 'Reset locked private database?'
+	String get importLockedTitle => 'Reset locked private database?';
+
+	/// en: 'This device can't unlock your local private database — its encryption key is missing (this happens after moving to a new Mac or a change to the app's signing). The existing local data can't be recovered, but you can reset it and import this backup onto a fresh, empty database. This can't be undone.'
+	String get importLockedMessage => 'This device can\'t unlock your local private database — its encryption key is missing (this happens after moving to a new Mac or a change to the app\'s signing). The existing local data can\'t be recovered, but you can reset it and import this backup onto a fresh, empty database. This can\'t be undone.';
+
+	/// en: 'Reset & import'
+	String get importLockedResetButton => 'Reset & import';
+
 	/// en: '⚠ {count} invalid record(s) will be skipped'
 	String importPreviewSkipped({required Object count}) => '⚠ ${count} invalid record(s) will be skipped';
 
@@ -3913,6 +3922,9 @@ extension on Translations {
 			'settingsPage.importConfirmButton' => 'Confirm import',
 			'settingsPage.importSuccess' => 'Import completed successfully!',
 			'settingsPage.importError' => ({required Object error}) => 'Error during import: ${error}',
+			'settingsPage.importLockedTitle' => 'Reset locked private database?',
+			'settingsPage.importLockedMessage' => 'This device can\'t unlock your local private database — its encryption key is missing (this happens after moving to a new Mac or a change to the app\'s signing). The existing local data can\'t be recovered, but you can reset it and import this backup onto a fresh, empty database. This can\'t be undone.',
+			'settingsPage.importLockedResetButton' => 'Reset & import',
 			'settingsPage.importPreviewSkipped' => ({required Object count}) => '⚠ ${count} invalid record(s) will be skipped',
 			'settingsPage.importCompletedTitle' => 'Import Completed',
 			'settingsPage.importSummaryReplaced' => 'Your data was replaced with the backup. Summary:',

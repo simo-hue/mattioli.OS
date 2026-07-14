@@ -923,6 +923,9 @@ class _Translations$settingsPage$it extends Translations$settingsPage$en {
 	@override String get importConfirmButton => 'Conferma Importazione';
 	@override String get importSuccess => 'Importazione completata con successo!';
 	@override String importError({required Object error}) => 'Errore durante importazione: ${error}';
+	@override String get importLockedTitle => 'Ripristinare il database privato bloccato?';
+	@override String get importLockedMessage => 'Questo dispositivo non riesce a sbloccare il database privato locale: la sua chiave di crittografia è mancante (succede dopo il passaggio a un nuovo Mac o una modifica alla firma dell\'app). I dati locali esistenti non sono recuperabili, ma puoi ripristinarli e importare questo backup su un database nuovo e vuoto. L\'operazione non può essere annullata.';
+	@override String get importLockedResetButton => 'Ripristina e importa';
 	@override String importPreviewSkipped({required Object count}) => '⚠ ${count} record non validi verranno ignorati';
 	@override String get importCompletedTitle => 'Importazione completata';
 	@override String get importSummaryReplaced => 'I tuoi dati sono stati sostituiti con il backup. Riepilogo:';
@@ -2102,6 +2105,9 @@ extension on TranslationsIt {
 			'settingsPage.importConfirmButton' => 'Conferma Importazione',
 			'settingsPage.importSuccess' => 'Importazione completata con successo!',
 			'settingsPage.importError' => ({required Object error}) => 'Errore durante importazione: ${error}',
+			'settingsPage.importLockedTitle' => 'Ripristinare il database privato bloccato?',
+			'settingsPage.importLockedMessage' => 'Questo dispositivo non riesce a sbloccare il database privato locale: la sua chiave di crittografia è mancante (succede dopo il passaggio a un nuovo Mac o una modifica alla firma dell\'app). I dati locali esistenti non sono recuperabili, ma puoi ripristinarli e importare questo backup su un database nuovo e vuoto. L\'operazione non può essere annullata.',
+			'settingsPage.importLockedResetButton' => 'Ripristina e importa',
 			'settingsPage.importPreviewSkipped' => ({required Object count}) => '⚠ ${count} record non validi verranno ignorati',
 			'settingsPage.importCompletedTitle' => 'Importazione completata',
 			'settingsPage.importSummaryReplaced' => 'I tuoi dati sono stati sostituiti con il backup. Riepilogo:',

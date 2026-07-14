@@ -923,6 +923,9 @@ class _Translations$settingsPage$ar extends Translations$settingsPage$en {
 	@override String get importConfirmButton => 'تأكيد الاستيراد';
 	@override String get importSuccess => 'اكتمل الاستيراد بنجاح!';
 	@override String importError({required Object error}) => 'خطأ أثناء الاستيراد: ${error}';
+	@override String get importLockedTitle => 'إعادة تعيين قاعدة البيانات الخاصة المقفلة؟';
+	@override String get importLockedMessage => 'لا يستطيع هذا الجهاز فتح قاعدة بياناتك الخاصة المحلية — مفتاح التشفير الخاص بها مفقود (يحدث هذا بعد الانتقال إلى جهاز Mac جديد أو تغيير توقيع التطبيق). لا يمكن استرداد البيانات المحلية الحالية، لكن يمكنك إعادة تعيينها واستيراد هذه النسخة الاحتياطية إلى قاعدة بيانات جديدة فارغة. لا يمكن التراجع عن هذا الإجراء.';
+	@override String get importLockedResetButton => 'إعادة التعيين والاستيراد';
 	@override String importPreviewSkipped({required Object count}) => '⚠ سيتم تجاوز ${count} سجلات غير صالحة';
 	@override String get importCompletedTitle => 'اكتمل الاستيراد';
 	@override String get importSummaryReplaced => 'تم استبدال بياناتك بالنسخة الاحتياطية. الملخص:';
@@ -2102,6 +2105,9 @@ extension on TranslationsAr {
 			'settingsPage.importConfirmButton' => 'تأكيد الاستيراد',
 			'settingsPage.importSuccess' => 'اكتمل الاستيراد بنجاح!',
 			'settingsPage.importError' => ({required Object error}) => 'خطأ أثناء الاستيراد: ${error}',
+			'settingsPage.importLockedTitle' => 'إعادة تعيين قاعدة البيانات الخاصة المقفلة؟',
+			'settingsPage.importLockedMessage' => 'لا يستطيع هذا الجهاز فتح قاعدة بياناتك الخاصة المحلية — مفتاح التشفير الخاص بها مفقود (يحدث هذا بعد الانتقال إلى جهاز Mac جديد أو تغيير توقيع التطبيق). لا يمكن استرداد البيانات المحلية الحالية، لكن يمكنك إعادة تعيينها واستيراد هذه النسخة الاحتياطية إلى قاعدة بيانات جديدة فارغة. لا يمكن التراجع عن هذا الإجراء.',
+			'settingsPage.importLockedResetButton' => 'إعادة التعيين والاستيراد',
 			'settingsPage.importPreviewSkipped' => ({required Object count}) => '⚠ سيتم تجاوز ${count} سجلات غير صالحة',
 			'settingsPage.importCompletedTitle' => 'اكتمل الاستيراد',
 			'settingsPage.importSummaryReplaced' => 'تم استبدال بياناتك بالنسخة الاحتياطية. الملخص:',

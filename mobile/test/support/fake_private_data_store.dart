@@ -195,6 +195,21 @@ class FakePrivateDataStore implements PrivateDataStore {
     calls.add('deleteAllPrivateData');
   }
 
+  /// Simulated lock state for recovery-flow tests; defaults to unlocked.
+  bool locked = false;
+
+  @override
+  Future<bool> isDatabaseLocked() async {
+    calls.add('isDatabaseLocked');
+    return locked;
+  }
+
+  @override
+  Future<void> resetLockedDatabase() async {
+    calls.add('resetLockedDatabase');
+    locked = false;
+  }
+
   // ── Analytics (return harmless empties so the fake stays reusable) ───────
   @override
   Future<List<Map<String, dynamic>>> habitStats() async =>

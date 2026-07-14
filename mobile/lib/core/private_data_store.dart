@@ -99,6 +99,18 @@ abstract interface class PrivateDataStore {
 
   Future<void> deleteAllPrivateData();
 
+  /// Whether the encrypted private database is in the recoverable *locked*
+  /// state — the file exists on disk but its key is unreadable from the
+  /// Keychain, so opening it would throw `PrivateDatabaseLockedException`. See
+  /// `PrivateLocalDatabase.isDatabaseLocked`.
+  Future<bool> isDatabaseLocked();
+
+  /// Deletes the orphaned encrypted database file (+ sidecars + avatar folder)
+  /// so the next open mints a fresh key over an empty schema. DESTRUCTIVE —
+  /// only behind an explicit, user-confirmed recovery action. See
+  /// `PrivateLocalDatabase.resetLockedDatabase`.
+  Future<void> resetLockedDatabase();
+
   Future<List<Map<String, dynamic>>> habitStats();
 
   Future<Map<String, Map<String, dynamic>>> habitAnalytics();

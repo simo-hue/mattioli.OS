@@ -923,6 +923,9 @@ class _Translations$settingsPage$es extends Translations$settingsPage$en {
 	@override String get importConfirmButton => 'Confirmar importación';
 	@override String get importSuccess => '¡Importación completada correctamente!';
 	@override String importError({required Object error}) => 'Error durante la importación: ${error}';
+	@override String get importLockedTitle => '¿Restablecer la base de datos privada bloqueada?';
+	@override String get importLockedMessage => 'Este dispositivo no puede desbloquear tu base de datos privada local: falta su clave de cifrado (ocurre tras cambiar de Mac o modificar la firma de la app). Los datos locales existentes no se pueden recuperar, pero puedes restablecerlos e importar esta copia de seguridad en una base de datos nueva y vacía. Esta acción no se puede deshacer.';
+	@override String get importLockedResetButton => 'Restablecer e importar';
 	@override String importPreviewSkipped({required Object count}) => '⚠ Se omitirán ${count} registros no válidos';
 	@override String get importCompletedTitle => 'Importación completada';
 	@override String get importSummaryReplaced => 'Tus datos se reemplazaron con la copia de seguridad. Resumen:';
@@ -2102,6 +2105,9 @@ extension on TranslationsEs {
 			'settingsPage.importConfirmButton' => 'Confirmar importación',
 			'settingsPage.importSuccess' => '¡Importación completada correctamente!',
 			'settingsPage.importError' => ({required Object error}) => 'Error durante la importación: ${error}',
+			'settingsPage.importLockedTitle' => '¿Restablecer la base de datos privada bloqueada?',
+			'settingsPage.importLockedMessage' => 'Este dispositivo no puede desbloquear tu base de datos privada local: falta su clave de cifrado (ocurre tras cambiar de Mac o modificar la firma de la app). Los datos locales existentes no se pueden recuperar, pero puedes restablecerlos e importar esta copia de seguridad en una base de datos nueva y vacía. Esta acción no se puede deshacer.',
+			'settingsPage.importLockedResetButton' => 'Restablecer e importar',
 			'settingsPage.importPreviewSkipped' => ({required Object count}) => '⚠ Se omitirán ${count} registros no válidos',
 			'settingsPage.importCompletedTitle' => 'Importación completada',
 			'settingsPage.importSummaryReplaced' => 'Tus datos se reemplazaron con la copia de seguridad. Resumen:',

@@ -923,6 +923,9 @@ class _Translations$settingsPage$de extends Translations$settingsPage$en {
 	@override String get importConfirmButton => 'Import bestätigen';
 	@override String get importSuccess => 'Import erfolgreich abgeschlossen!';
 	@override String importError({required Object error}) => 'Fehler beim Import: ${error}';
+	@override String get importLockedTitle => 'Gesperrte private Datenbank zurücksetzen?';
+	@override String get importLockedMessage => 'Dieses Gerät kann deine lokale private Datenbank nicht entsperren – ihr Verschlüsselungsschlüssel fehlt (das passiert nach dem Wechsel auf einen neuen Mac oder einer Änderung der App-Signierung). Die vorhandenen lokalen Daten sind nicht wiederherstellbar, aber du kannst sie zurücksetzen und dieses Backup in eine neue, leere Datenbank importieren. Dies kann nicht rückgängig gemacht werden.';
+	@override String get importLockedResetButton => 'Zurücksetzen & importieren';
 	@override String importPreviewSkipped({required Object count}) => '⚠ ${count} ungültige Datensätze werden übersprungen';
 	@override String get importCompletedTitle => 'Import abgeschlossen';
 	@override String get importSummaryReplaced => 'Deine Daten wurden durch das Backup ersetzt. Zusammenfassung:';
@@ -2102,6 +2105,9 @@ extension on TranslationsDe {
 			'settingsPage.importConfirmButton' => 'Import bestätigen',
 			'settingsPage.importSuccess' => 'Import erfolgreich abgeschlossen!',
 			'settingsPage.importError' => ({required Object error}) => 'Fehler beim Import: ${error}',
+			'settingsPage.importLockedTitle' => 'Gesperrte private Datenbank zurücksetzen?',
+			'settingsPage.importLockedMessage' => 'Dieses Gerät kann deine lokale private Datenbank nicht entsperren – ihr Verschlüsselungsschlüssel fehlt (das passiert nach dem Wechsel auf einen neuen Mac oder einer Änderung der App-Signierung). Die vorhandenen lokalen Daten sind nicht wiederherstellbar, aber du kannst sie zurücksetzen und dieses Backup in eine neue, leere Datenbank importieren. Dies kann nicht rückgängig gemacht werden.',
+			'settingsPage.importLockedResetButton' => 'Zurücksetzen & importieren',
 			'settingsPage.importPreviewSkipped' => ({required Object count}) => '⚠ ${count} ungültige Datensätze werden übersprungen',
 			'settingsPage.importCompletedTitle' => 'Import abgeschlossen',
 			'settingsPage.importSummaryReplaced' => 'Deine Daten wurden durch das Backup ersetzt. Zusammenfassung:',

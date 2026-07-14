@@ -175,6 +175,7 @@ class DesktopPrivateDb {
       // A locked DB was never opened; closing a stale handle is best-effort.
     }
     _db = null;
+    _opening = null;
 
     final dir = await getApplicationSupportDirectory();
     final dbPath = p.join(dir.path, _dbFileName);

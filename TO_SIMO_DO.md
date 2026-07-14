@@ -132,3 +132,31 @@ Two failures are PRE-EXISTING and unrelated to the tour: `desktop_supabase_confi
       a link in a reply opens the browser; a code block renders monospaced/tinted.
 - [ ] **Reduce Motion**: with macOS System Settings → Accessibility → Display → Reduce Motion ON, confirm
       the dots/caret/entrance degrade to static (no animation).
+
+
+## Private DB locked-key recovery — on-device QA + hardening (no build here)
+
+Context: the "Private database key unavailable while the database file exists" lockout now has an in-app
+recovery flow (desktop + mobile). Verified in Dart (analyze + unit tests) but the dialogs and the real
+reset-and-import round-trip could not be run here.
+
+- [ ] **Reproduce the lockout** (desktop): with an existing `~/Library/Containers/com.simo.evolve/Data/
+      Library/Application Support/com.simo.evolve/evolve_private_v2.db`, remove the Keychain key (or trigger a
+      signing change) so the app is locked, then relaunch.
+- [ ] **Import recovery**: Settings → Import a backup in Private mode → confirm the new "Reset locked private
+      database?" dialog appears, and that confirming resets + imports cleanly onto a fresh key (habits/logs
+      show up, and sync/categories/analytics stop erroring).
+- [ ] **Delete-private-data recovery** (no-backup path): while locked, tap "Delete private data" → confirm it
+      succeeds (file-level reset) instead of erroring, and the app is usable in Private mode afterward.
+- [ ] **Cancel path**: decline the reset dialog → confirm nothing is deleted and the app stays as-is.
+- [ ] **Mobile**: repeat the import + delete recovery checks on iOS.
+- [ ] **PREVENT RECURRENCE (signing)**: the dev-machine lockout is caused by Debug builds flipping between
+      ad-hoc (`CODE_SIGN_IDENTITY = "-"`) and `Apple Development` (team `8528AN28A3`), which rotates the
+      Keychain access-group prefix and orphans the SQLCipher key. Keep every macOS build on ONE signing
+      identity — ensure the `Apple Development` cert/team is always available so it never silently falls back
+      to ad-hoc. (The `CODE_SIGN_IDENTITY[sdk=macosx*] = "Apple Development"` override should already force
+      this; just don't build without the team.)
+- [ ] **Commit the uncommitted work**: a concurrent session's commits swept most of these edits into HEAD,
+      but `desktop/lib/features/settings/presentation/settings_page.dart` and the two new
+      `{desktop,mobile}/test/private_db_recovery_test.dart` files are still uncommitted in the working tree —
+      review `git diff` / `git status` and commit them.

@@ -1590,46 +1590,6 @@ class _SettingsPageState extends ConsumerState<SettingsPage> {
   }
 
   Future<void> _deletePrivateData() async {
-    // Locked-DB recovery: if the encrypted DB can't be unlocked (its key is
-    // gone), the normal row-wipe below can't even open it — every step would
-    // throw PrivateDatabaseLockedException. Fall back to a file-level reset so
-    // "delete private data" still works as the recovery path for a user who has
-    // no backup to import. The local data is unrecoverable anyway (key lost),
-    // which is exactly what this action promises to remove.
-    if (await DesktopPrivateDb.instance.isDatabaseLocked()) {
-      final confirmed = await _confirm(
-        title: t.privateData.deleteTitle,
-        message: t.privateData.deleteMessage,
-        destructive: true,
-      );
-      if (!confirmed) return;
-      _showLoadingDialog(t.privateData.deleteTitle);
-      try {
-        await DesktopPrivateDb.instance.resetLockedDatabase();
-        await ref.read(dashboardControllerProvider.notifier).refresh();
-        ref.invalidate(privateProfileProvider);
-        ref.invalidate(desktopGoalCategoriesControllerProvider);
-        await _refreshSyncStatus();
-        if (mounted) {
-          Navigator.pop(context); // close loading dialog
-          _showResultDialog(
-            t.privateData.deleteTitle,
-            t.privateData.deleteSuccess,
-          );
-        }
-      } catch (error, stack) {
-        AppLogger.error('Unable to reset locked private database', error, stack);
-        if (mounted) {
-          Navigator.pop(context); // close loading dialog
-          _showResultDialog(
-            t.privateData.deleteTitle,
-            t.privateData.deleteFailed,
-          );
-        }
-      }
-      return;
-    }
-
     // With sync on, deleting is a FULL reset (local + the user's iCloud copy);
     // the disclosure must also say other devices keep their local copy.
     final syncEnabled = _syncStatus?.isEnabled ?? false;
@@ -1669,6 +1629,36 @@ class _SettingsPageState extends ConsumerState<SettingsPage> {
           t.privateData.deleteTitle,
           t.privateData.deleteSuccess,
         );
+      }
+    } on PrivateDatabaseLockedException {
+      // Locked-DB recovery: the encrypted DB can't be unlocked (its key is
+      // gone), so the wipe above couldn't even open it. Fall back to a
+      // file-level reset so "delete private data" still recovers a locked
+      // device for a user with no backup to import — the local data is
+      // unrecoverable anyway (key lost), which is exactly what this removes.
+      // Kept as a fallback (not a pre-check) so the common path adds no latency.
+      try {
+        await DesktopPrivateDb.instance.resetLockedDatabase();
+        await ref.read(dashboardControllerProvider.notifier).refresh();
+        ref.invalidate(privateProfileProvider);
+        ref.invalidate(desktopGoalCategoriesControllerProvider);
+        await _refreshSyncStatus();
+        if (mounted) {
+          Navigator.pop(context); // close loading dialog
+          _showResultDialog(
+            t.privateData.deleteTitle,
+            t.privateData.deleteSuccess,
+          );
+        }
+      } catch (error, stack) {
+        AppLogger.error('Unable to reset locked private database', error, stack);
+        if (mounted) {
+          Navigator.pop(context); // close loading dialog
+          _showResultDialog(
+            t.privateData.deleteTitle,
+            t.privateData.deleteFailed,
+          );
+        }
       }
     } catch (error, stack) {
       AppLogger.error('Unable to delete private database', error, stack);

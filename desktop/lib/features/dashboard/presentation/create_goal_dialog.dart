@@ -6,7 +6,6 @@ import 'package:evolve_desktop/features/goals/application/goal_categories_contro
 import 'package:evolve_desktop/features/search/application/goal_nav_target.dart';
 import 'package:evolve_desktop/features/shell/application/navigation_controller.dart';
 import 'package:evolve_desktop/i18n/translations.g.dart';
-import 'package:evolve_desktop/shared/widgets/color_picker_button.dart';
 import 'package:evolve_desktop/shared/widgets/evolve_controls.dart';
 import 'package:evolve_desktop/shared/widgets/evolve_dialog.dart';
 import 'package:evolve_desktop/shared/widgets/evolve_spinner.dart';
@@ -37,18 +36,7 @@ class _CreateGoalDialogState extends ConsumerState<CreateGoalDialog> {
   final _categoryController = TextEditingController(
     text: t.createGoal.defaultCategory,
   );
-  // Mobile "Add Habit" preset palette (habit_management_modal.dart).
-  static const _presetColors = [
-    Color(0xFF30A661),
-    Color(0xFF3B82F6),
-    Color(0xFF7C3AED),
-    Color(0xFFEC4899),
-    Color(0xFFEF4444),
-    Color(0xFFF59E0B),
-    Color(0xFF10B981),
-  ];
 
-  Color _selectedColor = EvolveColors.amber;
   GoalType _selectedType = GoalType.monthly;
   bool _isLoading = false;
   bool _isNewCategory = false;
@@ -99,6 +87,21 @@ class _CreateGoalDialogState extends ConsumerState<CreateGoalDialog> {
       return typed.isEmpty ? t.createGoal.defaultCategory : typed;
     }
     return _selectedCategoryLabel ?? categories.first.label;
+  }
+
+  /// A goal has no colour of its own — [DashboardGoal] re-derives it from its
+  /// category on every load (`dashboardGoalColor`), so the goal's colour IS its
+  /// category's colour. Mirror the quick-add bar (`goals_page`): use the selected
+  /// category's colour, else the built-in mapping for a typed/new category.
+  Color _resolveGoalColor() {
+    final categories = _activeCategories();
+    if (!(categories.isEmpty || _isNewCategory)) {
+      final label = _selectedCategoryLabel ?? categories.first.label;
+      for (final category in categories) {
+        if (category.label == label) return category.color;
+      }
+    }
+    return dashboardGoalColor(_resolveCategory());
   }
 
   /// Category picker — an [EvolveSelect] of the saved categories plus a
@@ -204,7 +207,7 @@ class _CreateGoalDialogState extends ConsumerState<CreateGoalDialog> {
           .addGoal(
             title: title,
             category: category,
-            color: _selectedColor,
+            color: _resolveGoalColor(),
             type: type,
             dueLabel: dueLabel,
             year: year,
@@ -400,14 +403,6 @@ class _CreateGoalDialogState extends ConsumerState<CreateGoalDialog> {
             onChanged: (val) => setState(() => _selectedType = val),
           ),
           _periodPicker(context),
-          const SizedBox(height: 20),
-          EvolveFieldLabel(t.form.color),
-          const SizedBox(height: 10),
-          ColorPickerButton(
-            color: _selectedColor,
-            onColorChanged: (color) => setState(() => _selectedColor = color),
-            presetColors: _presetColors,
-          ),
         ],
       ),
       actions: [

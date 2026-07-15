@@ -89,3 +89,24 @@ The Dart change-token-hold fix already prevents the *data loss* from the first t
 - [ ] **Honor CKError backoff** (`flutterError`, ~line 331): pass `(error as? CKError)?.retryAfterSeconds` in
       `FlutterError.details` and have the Dart service defer the next sync by that interval, so a rate-limit
       isn't immediately re-hit. Optionally add a small bounded native retry for transient CKErrors.
+
+## FIX (2026-07-15 11:30) — desktop RELEASE grey screen in Private mode — VERIFY on Mac Mini
+Real production ship-blocker, fixed in `desktop/lib/core/app_bootstrap.dart` (one line:
+`on AssertionError` → `catch (_)` in `supabaseClientProvider`). Root cause: Private mode skips
+`Supabase.initialize()`, and in a RELEASE build `Supabase.instance.client` throws
+`LateInitializationError` (not `AssertionError`, because release strips asserts), which the old
+narrow catch let escape → the app root crashed to a grey window for every Private-mode release user.
+
+- [ ] **Get the fix onto the Mac Mini** (the edit is in the `/Users/simone.mattioli` working copy).
+      If the Mini's repo isn't git-synced with it, apply the one-liner directly:
+      in `desktop/lib/core/app_bootstrap.dart`, change `} on AssertionError {` to `} catch (_) {`.
+- [ ] **Verify the grey screen is gone**: `flutter build macos --release --dart-define-from-file=.env`
+      then `open build/macos/Build/Products/Release/Evolve.app` → it must now RENDER into Private mode
+      (the recovery/home screen), not a blank grey window.
+- [ ] **Then settle the keychain question (now unblocked)**: with the release build rendering, add a
+      habit, Cmd-Q, and `open` the SAME .app again with NO rebuild → the habit must persist. If it does,
+      the SQLCipher key is stable for a shipped binary (the every-launch lockout was only the
+      `flutter run` re-signing loop). Signing was already verified correct (Apple Development, team
+      8528AN28A3, keychain groups resolve WITH the prefix, provisioning profile embedded).
+- [ ] If you want the dev `flutter run` loop to stop nagging with the reset screen, ask for the
+      debug-only auto-reset (kDebugMode + macOS) — zero effect on release.

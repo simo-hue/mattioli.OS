@@ -44,6 +44,23 @@ enum DesktopSection {
 /// swipe-back gesture on macOS).
 enum NavDirection { forward, back }
 
+/// One-shot request to open the Settings page directly on its Privacy
+/// (iCloud-sync) section. The data-loss `SyncOffBanner` calls [request] before
+/// navigating to Settings; `SettingsPage` reads the flag on mount, jumps to the
+/// Privacy section, then [consume]s it so a later manual visit still opens on
+/// Profile.
+class PrivacySettingsRequest extends Notifier<bool> {
+  @override
+  bool build() => false;
+
+  void request() => state = true;
+
+  void consume() => state = false;
+}
+
+final privacySettingsRequestProvider =
+    NotifierProvider<PrivacySettingsRequest, bool>(PrivacySettingsRequest.new);
+
 final navigationControllerProvider =
     NotifierProvider<NavigationController, DesktopSection>(
       NavigationController.new,

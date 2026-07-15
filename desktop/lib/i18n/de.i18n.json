@@ -52,7 +52,9 @@
     "statusWaitingKeychain": "Warte auf den iCloud-Schlüsselbund — stelle sicher, dass die App auf deinem iPhone aktuell ist",
     "lastSyncedNever": "Noch nie synchronisiert",
     "lastSyncedAt": "Zuletzt synchronisiert {time}",
-    "deleteSyncNote": "Die iCloud-Synchronisierung ist aktiv: Dabei wird auch die synchronisierte Kopie in deiner iCloud gelöscht und die Synchronisierung deaktiviert. Andere Geräte behalten ihre lokale Kopie — führe dies auf jedem Gerät aus, um überall zu löschen."
+    "deleteSyncNote": "Die iCloud-Synchronisierung ist aktiv: Dabei wird auch die synchronisierte Kopie in deiner iCloud gelöscht und die Synchronisierung deaktiviert. Andere Geräte behalten ihre lokale Kopie — führe dies auf jedem Gerät aus, um überall zu löschen.",
+    "bannerText": "iCloud-Sync ist aus — deine Gewohnheiten liegen nur auf diesem Gerät und gehen verloren, wenn du es zurücksetzt oder ersetzt.",
+    "bannerAction": "Aktivieren"
   },
   "privateRecovery": {
     "preparing": "Dein privater Bereich wird vorbereitet…",
@@ -97,7 +99,8 @@
       "save": "Speichern",
       "delete": "Löschen",
       "edit": "Bearbeiten",
-      "pick": "Auswählen"
+      "pick": "Auswählen",
+      "gotIt": "Verstanden"
     },
     "months": [
       "Januar",
@@ -143,7 +146,9 @@
       "error": "Fehler"
     },
     "total": "Gesamt",
-    "completed": "Abgeschlossen"
+    "completed": "Abgeschlossen",
+    "unexpectedErrorTitle": "Etwas ist schiefgelaufen",
+    "unexpectedErrorMessage": "Ein unerwarteter Fehler ist aufgetreten. Bitte versuche es erneut."
   },
   "form": {
     "title": "Titel",

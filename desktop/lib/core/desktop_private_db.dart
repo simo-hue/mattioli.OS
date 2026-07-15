@@ -803,16 +803,38 @@ class DesktopPrivateDb implements PrivateRecoveryStore {
       startDate: startDate,
     );
 
-    await db.insert('goal_logs', {
-      'id': const Uuid().v4(),
-      'user_id': owner,
-      'goal_id': goalId,
-      'date': dayKey,
-      'status': status,
-      'streak': streak,
-      'created_at': now,
-      'updated_at': now,
-    }, conflictAlgorithm: ConflictAlgorithm.replace);
+    // Upsert by (goal_id, date) with an explicit update-or-insert rather than
+    // INSERT OR REPLACE: on a UNIQUE conflict OR REPLACE does DELETE+INSERT,
+    // which fires the AFTER-DELETE sync-tombstone trigger and pushes a fresh id
+    // to iCloud (churn). Reusing the stable row id keeps only the AFTER-UPDATE
+    // (dirty) trigger — matching the foreground toggle in
+    // PrivateDashboardRepository.setHabitStatus.
+    final existing = await db.query(
+      'goal_logs',
+      columns: ['id'],
+      where: 'goal_id = ? AND date = ?',
+      whereArgs: [goalId, dayKey],
+      limit: 1,
+    );
+    if (existing.isNotEmpty) {
+      await db.update(
+        'goal_logs',
+        {'status': status, 'streak': streak, 'updated_at': now},
+        where: 'goal_id = ? AND date = ?',
+        whereArgs: [goalId, dayKey],
+      );
+    } else {
+      await db.insert('goal_logs', {
+        'id': const Uuid().v4(),
+        'user_id': owner,
+        'goal_id': goalId,
+        'date': dayKey,
+        'status': status,
+        'streak': streak,
+        'created_at': now,
+        'updated_at': now,
+      });
+    }
     notifyWrite();
   }
 

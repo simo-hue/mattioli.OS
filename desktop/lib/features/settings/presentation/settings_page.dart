@@ -100,6 +100,18 @@ class _SettingsPageState extends ConsumerState<SettingsPage> {
   @override
   void initState() {
     super.initState();
+    // Deep-link: the data-loss SyncOffBanner asked to open straight on the
+    // Privacy (iCloud-sync) section. Honour it here (pre-first-build, so no
+    // setState needed) and clear the one-shot flag after the frame so a normal
+    // visit still opens on Profile.
+    if (ref.read(privacySettingsRequestProvider)) {
+      _section = _SettingsSection.privacy;
+      WidgetsBinding.instance.addPostFrameCallback((_) {
+        if (mounted) {
+          ref.read(privacySettingsRequestProvider.notifier).consume();
+        }
+      });
+    }
     unawaited(_refreshSyncStatus());
     final preferences = ref.read(sharedPreferencesProvider);
     final appearance = ref.read(desktopAppearanceControllerProvider);
@@ -1542,6 +1554,10 @@ class _SettingsPageState extends ConsumerState<SettingsPage> {
     } else {
       await _runSyncAction((service) => service.disable());
     }
+    // The reactive data-loss banner watches desktopSyncEnabledProvider (a plain
+    // prefs bool whose instance identity never changes); invalidate so it
+    // clears/returns immediately instead of after an app restart.
+    if (mounted) refreshDesktopSyncEnabled(ref);
   }
 
   Future<void> _onSyncNow() async {
@@ -1609,7 +1625,12 @@ class _SettingsPageState extends ConsumerState<SettingsPage> {
       // shared keychain secrets FIRST (requestFullReset sets pending_zone_wipe,
       // which deleteAllPrivateData preserves if the wipe must wait for
       // connectivity), then wipe the local space.
-      await ref.read(desktopPrivateSyncServiceProvider).requestFullReset();
+      // Best-effort: a failure here must never block the local data wipe below.
+      try {
+        await ref.read(desktopPrivateSyncServiceProvider).requestFullReset();
+      } catch (error, stack) {
+        AppLogger.error('iCloud full reset failed during delete', error, stack);
+      }
       // Wipe all private data but stay in Private mode with a fresh, empty
       // profile (mirrors the mobile client — non-destructive to the mode).
       await DesktopPrivateDb.instance.deleteAllPrivateData();

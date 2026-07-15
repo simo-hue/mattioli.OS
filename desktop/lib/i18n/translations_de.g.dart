@@ -168,6 +168,8 @@ class _Translations$icloudSync$de extends Translations$icloudSync$en {
 	@override String get lastSyncedNever => 'Noch nie synchronisiert';
 	@override String lastSyncedAt({required Object time}) => 'Zuletzt synchronisiert ${time}';
 	@override String get deleteSyncNote => 'Die iCloud-Synchronisierung ist aktiv: Dabei wird auch die synchronisierte Kopie in deiner iCloud gelöscht und die Synchronisierung deaktiviert. Andere Geräte behalten ihre lokale Kopie — führe dies auf jedem Gerät aus, um überall zu löschen.';
+	@override String get bannerText => 'iCloud-Sync ist aus — deine Gewohnheiten liegen nur auf diesem Gerät und gehen verloren, wenn du es zurücksetzt oder ersetzt.';
+	@override String get bannerAction => 'Aktivieren';
 }
 
 // Path: privateRecovery
@@ -281,6 +283,8 @@ class _Translations$common$de extends Translations$common$en {
 	@override late final _Translations$common$status$de status = _Translations$common$status$de._(_root);
 	@override String get total => 'Gesamt';
 	@override String get completed => 'Abgeschlossen';
+	@override String get unexpectedErrorTitle => 'Etwas ist schiefgelaufen';
+	@override String get unexpectedErrorMessage => 'Ein unerwarteter Fehler ist aufgetreten. Bitte versuche es erneut.';
 }
 
 // Path: form
@@ -1480,6 +1484,7 @@ class _Translations$common$actions$de extends Translations$common$actions$en {
 	@override String get delete => 'Löschen';
 	@override String get edit => 'Bearbeiten';
 	@override String get pick => 'Auswählen';
+	@override String get gotIt => 'Verstanden';
 }
 
 // Path: common.calendarView
@@ -1637,6 +1642,8 @@ extension on TranslationsDe {
 			'icloudSync.lastSyncedNever' => 'Noch nie synchronisiert',
 			'icloudSync.lastSyncedAt' => ({required Object time}) => 'Zuletzt synchronisiert ${time}',
 			'icloudSync.deleteSyncNote' => 'Die iCloud-Synchronisierung ist aktiv: Dabei wird auch die synchronisierte Kopie in deiner iCloud gelöscht und die Synchronisierung deaktiviert. Andere Geräte behalten ihre lokale Kopie — führe dies auf jedem Gerät aus, um überall zu löschen.',
+			'icloudSync.bannerText' => 'iCloud-Sync ist aus — deine Gewohnheiten liegen nur auf diesem Gerät und gehen verloren, wenn du es zurücksetzt oder ersetzt.',
+			'icloudSync.bannerAction' => 'Aktivieren',
 			'privateRecovery.preparing' => 'Dein privater Bereich wird vorbereitet…',
 			'privateRecovery.restoredFromCloudToast' => 'Lokale Datenbank konnte nicht entsperrt werden – deine Daten wurden aus iCloud wiederhergestellt.',
 			'privateRecovery.waitingTitle' => 'Warten auf iCloud',
@@ -1671,6 +1678,7 @@ extension on TranslationsDe {
 			'common.actions.delete' => 'Löschen',
 			'common.actions.edit' => 'Bearbeiten',
 			'common.actions.pick' => 'Auswählen',
+			'common.actions.gotIt' => 'Verstanden',
 			'common.months.0' => 'Januar',
 			'common.months.1' => 'Februar',
 			'common.months.2' => 'März',
@@ -1706,6 +1714,8 @@ extension on TranslationsDe {
 			'common.status.error' => 'Fehler',
 			'common.total' => 'Gesamt',
 			'common.completed' => 'Abgeschlossen',
+			'common.unexpectedErrorTitle' => 'Etwas ist schiefgelaufen',
+			'common.unexpectedErrorMessage' => 'Ein unerwarteter Fehler ist aufgetreten. Bitte versuche es erneut.',
 			'form.title' => 'Titel',
 			'form.category' => 'Kategorie',
 			'form.color' => 'Farbe',
@@ -2097,13 +2107,13 @@ extension on TranslationsDe {
 			'habitsPage.nextPeriod' => 'Nächster Zeitraum',
 			'habitsPage.weekdayAbbrevUpper.0' => 'MO',
 			'habitsPage.weekdayAbbrevUpper.1' => 'DI',
+			_ => null,
+		} ?? switch (path) {
 			'habitsPage.weekdayAbbrevUpper.2' => 'MI',
 			'habitsPage.weekdayAbbrevUpper.3' => 'DO',
 			'habitsPage.weekdayAbbrevUpper.4' => 'FR',
 			'habitsPage.weekdayAbbrevUpper.5' => 'SA',
 			'habitsPage.weekdayAbbrevUpper.6' => 'SO',
-			_ => null,
-		} ?? switch (path) {
 			'habitsPage.lifeView' => 'Lebensansicht',
 			'habitsPage.lifeViewSubtitle' => 'Eine Zelle steht für einen Monat des Weges bis zum Alter von 85.',
 			'habitsPage.monthsLived' => 'Gelebte Monate',
@@ -2611,13 +2621,13 @@ extension on TranslationsDe {
 			'tour.overviewHabitsDesc' => 'Die für heute geplanten Gewohnheiten stehen hier — hake sie nach und nach ab.',
 			'tour.overviewGoalsTitle' => 'Fokus-Ziele',
 			'tour.overviewGoalsDesc' => 'Die Ziele, auf die du dich konzentrierst, erscheinen hier, damit nichts untergeht.',
+			_ => null,
+		} ?? switch (path) {
 			'tour.habitsOrientationTitle' => 'Die Gewohnheiten-Seite',
 			'tour.habitsOrientationDesc' => 'Hier baust du dein tägliches Protokoll auf und verfolgst deine Beständigkeit.',
 			'tour.habitsAddTitle' => 'Gewohnheit hinzufügen',
 			'tour.habitsAddDesc' => 'Erstelle hier eine neue Gewohnheit — mit Name, Kategorie, Farbe und optionaler Erinnerung.',
 			'tour.habitsCheckoffTitle' => 'Als erledigt markieren',
-			_ => null,
-		} ?? switch (path) {
 			'tour.habitsCheckoffDesc' => 'Setze hier ein Häkchen, um eine Gewohnheit für heute abzuschließen. Mehr braucht es nicht, um eine Serie am Leben zu halten.',
 			'tour.habitsStreakTitle' => 'Serien & Verlauf',
 			'tour.habitsStreakDesc' => 'Sieh deine Serie wachsen und deine letzten sieben Tage auf einen Blick.',

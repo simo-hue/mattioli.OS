@@ -52,7 +52,9 @@
     "statusWaitingKeychain": "In attesa del Portachiavi iCloud — assicurati che l'app sul tuo iPhone sia aggiornata",
     "lastSyncedNever": "Mai sincronizzato",
     "lastSyncedAt": "Ultima sincronizzazione {time}",
-    "deleteSyncNote": "La sincronizzazione iCloud è attiva: verrà eliminata anche la copia sincronizzata nel tuo iCloud e la sincronizzazione verrà disattivata. Gli altri dispositivi conservano la loro copia locale — esegui questa operazione su ciascun dispositivo per eliminare tutto ovunque."
+    "deleteSyncNote": "La sincronizzazione iCloud è attiva: verrà eliminata anche la copia sincronizzata nel tuo iCloud e la sincronizzazione verrà disattivata. Gli altri dispositivi conservano la loro copia locale — esegui questa operazione su ciascun dispositivo per eliminare tutto ovunque.",
+    "bannerText": "La sincronizzazione iCloud è disattivata: le tue abitudini sono solo su questo dispositivo e vanno perse se lo ripristini o lo sostituisci.",
+    "bannerAction": "Attiva"
   },
   "privateRecovery": {
     "preparing": "Preparazione del tuo spazio privato…",
@@ -97,7 +99,8 @@
       "save": "Salva",
       "delete": "Elimina",
       "edit": "Modifica",
-      "pick": "Scegli"
+      "pick": "Scegli",
+      "gotIt": "Ho capito"
     },
     "months": [
       "Gennaio",
@@ -143,7 +146,9 @@
       "error": "Errore"
     },
     "total": "Totale",
-    "completed": "Completati"
+    "completed": "Completati",
+    "unexpectedErrorTitle": "Qualcosa è andato storto",
+    "unexpectedErrorMessage": "Si è verificato un errore imprevisto. Riprova."
   },
   "form": {
     "title": "Titolo",

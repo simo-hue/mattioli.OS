@@ -280,6 +280,12 @@ class Translations$icloudSync$en {
 
 	/// en: 'iCloud Sync is on: this also deletes the synced copy in your iCloud and turns sync off. Other devices keep their local copy — run this on each device to erase everywhere.'
 	String get deleteSyncNote => 'iCloud Sync is on: this also deletes the synced copy in your iCloud and turns sync off. Other devices keep their local copy — run this on each device to erase everywhere.';
+
+	/// en: 'iCloud sync is off — your habits live only on this device and are lost if you reset or replace it.'
+	String get bannerText => 'iCloud sync is off — your habits live only on this device and are lost if you reset or replace it.';
+
+	/// en: 'Turn on'
+	String get bannerAction => 'Turn on';
 }
 
 // Path: privateRecovery
@@ -460,6 +466,12 @@ class Translations$common$en {
 
 	/// en: 'Completed'
 	String get completed => 'Completed';
+
+	/// en: 'Something went wrong'
+	String get unexpectedErrorTitle => 'Something went wrong';
+
+	/// en: 'An unexpected error occurred. Please try again.'
+	String get unexpectedErrorMessage => 'An unexpected error occurred. Please try again.';
 }
 
 // Path: form
@@ -3493,6 +3505,9 @@ class Translations$common$actions$en {
 
 	/// en: 'Pick'
 	String get pick => 'Pick';
+
+	/// en: 'Got it'
+	String get gotIt => 'Got it';
 }
 
 // Path: common.calendarView
@@ -3742,6 +3757,8 @@ extension on Translations {
 			'icloudSync.lastSyncedNever' => 'Never synced',
 			'icloudSync.lastSyncedAt' => ({required Object time}) => 'Last synced ${time}',
 			'icloudSync.deleteSyncNote' => 'iCloud Sync is on: this also deletes the synced copy in your iCloud and turns sync off. Other devices keep their local copy — run this on each device to erase everywhere.',
+			'icloudSync.bannerText' => 'iCloud sync is off — your habits live only on this device and are lost if you reset or replace it.',
+			'icloudSync.bannerAction' => 'Turn on',
 			'privateRecovery.preparing' => 'Preparing your private space…',
 			'privateRecovery.restoredFromCloudToast' => 'Couldn\'t unlock the local database — restored your data from iCloud.',
 			'privateRecovery.waitingTitle' => 'Waiting for iCloud',
@@ -3776,6 +3793,7 @@ extension on Translations {
 			'common.actions.delete' => 'Delete',
 			'common.actions.edit' => 'Edit',
 			'common.actions.pick' => 'Pick',
+			'common.actions.gotIt' => 'Got it',
 			'common.months.0' => 'January',
 			'common.months.1' => 'February',
 			'common.months.2' => 'March',
@@ -3811,6 +3829,8 @@ extension on Translations {
 			'common.status.error' => 'Error',
 			'common.total' => 'Total',
 			'common.completed' => 'Completed',
+			'common.unexpectedErrorTitle' => 'Something went wrong',
+			'common.unexpectedErrorMessage' => 'An unexpected error occurred. Please try again.',
 			'form.title' => 'Title',
 			'form.category' => 'Category',
 			'form.color' => 'Color',
@@ -4202,13 +4222,13 @@ extension on Translations {
 			'habitsPage.nextPeriod' => 'Next period',
 			'habitsPage.weekdayAbbrevUpper.0' => 'MON',
 			'habitsPage.weekdayAbbrevUpper.1' => 'TUE',
+			_ => null,
+		} ?? switch (path) {
 			'habitsPage.weekdayAbbrevUpper.2' => 'WED',
 			'habitsPage.weekdayAbbrevUpper.3' => 'THU',
 			'habitsPage.weekdayAbbrevUpper.4' => 'FRI',
 			'habitsPage.weekdayAbbrevUpper.5' => 'SAT',
 			'habitsPage.weekdayAbbrevUpper.6' => 'SUN',
-			_ => null,
-		} ?? switch (path) {
 			'habitsPage.lifeView' => 'Life view',
 			'habitsPage.lifeViewSubtitle' => 'One cell represents a month of the journey up to age 85.',
 			'habitsPage.monthsLived' => 'Months lived',
@@ -4716,13 +4736,13 @@ extension on Translations {
 			'tour.overviewHabitsDesc' => 'The habits you\'ve planned for today live here — tick them off as you go.',
 			'tour.overviewGoalsTitle' => 'Focus goals',
 			'tour.overviewGoalsDesc' => 'The goals you\'re focused on surface here so nothing slips.',
+			_ => null,
+		} ?? switch (path) {
 			'tour.habitsOrientationTitle' => 'The Habits page',
 			'tour.habitsOrientationDesc' => 'This is where you build your daily protocol and track how consistent you are.',
 			'tour.habitsAddTitle' => 'Add a habit',
 			'tour.habitsAddDesc' => 'Create a new habit here — give it a name, a category, a colour and an optional reminder.',
 			'tour.habitsCheckoffTitle' => 'Mark it done',
-			_ => null,
-		} ?? switch (path) {
 			'tour.habitsCheckoffDesc' => 'Tick this box to complete a habit for today. That\'s all it takes to keep a streak alive.',
 			'tour.habitsStreakTitle' => 'Streaks & history',
 			'tour.habitsStreakDesc' => 'Watch your streak grow, and see your last seven days at a glance.',

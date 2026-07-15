@@ -35,6 +35,27 @@ class DesktopSyncLogger extends SyncLogger {
       AppLogger.error(message, error, stackTrace, extras);
 }
 
+/// The SharedPreferences key the sync core's [PrefsSyncEnabledStore] writes
+/// (`enable`/`disable`). Kept identical to `PrefsSyncEnabledStore._key` in the
+/// evolve_sync package.
+const String kSyncEnabledPrefKey = 'private_sync_enabled_v1';
+
+/// Reactive mirror of the per-device "iCloud sync enabled" flag. Reading the
+/// SharedPreferences bool directly inside `build()` is NOT reactive (the
+/// SharedPreferences instance identity never changes), so widgets that must
+/// reflect the toggle — e.g. the data-loss `SyncOffBanner` — watch THIS provider
+/// and the settings toggle calls [refreshDesktopSyncEnabled] to force a rebuild.
+/// Mirrors mobile's `syncEnabledProvider`.
+final desktopSyncEnabledProvider = Provider<bool>((ref) {
+  final prefs = ref.watch(sharedPreferencesProvider);
+  return prefs?.getBool(kSyncEnabledPrefKey) ?? false;
+});
+
+/// Re-read [desktopSyncEnabledProvider] after sync has been enabled/disabled so
+/// any widget watching it rebuilds. Call from the settings iCloud-sync toggle.
+void refreshDesktopSyncEnabled(WidgetRef ref) =>
+    ref.invalidate(desktopSyncEnabledProvider);
+
 final desktopPrivateSyncServiceProvider = Provider<PrivateSyncService>((ref) {
   // macOS-only: Windows/Linux Private mode is local-only (no CloudKit).
   if (!Platform.isMacOS) return const NoOpPrivateSyncService();

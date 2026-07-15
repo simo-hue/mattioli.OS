@@ -144,3 +144,16 @@ No Xcode/CloudKit here, so confirm the real flows on the Mac Mini:
 - [ ] **Locked DB + iCloud unavailable** → "can't unlock" recovery screen, data intact (stash restored).
 - [ ] **Locked DB + full auto-recover works** → "restored from iCloud" notice, data back, `.recovery-bak` gone.
 - [ ] **Coherence** — confirm desktop and mobile behave identically across all of the above.
+
+## Desktop pre-release parity fixes (2026-07-15) — on-device QA
+Audit found + fixed 5 desktop-vs-mobile gaps (analyze clean, 317/317). Confirm the two with real UX on the Mac Mini:
+- [ ] **Cloud-mode "Replace" restore (#1, was CRITICAL)**: in Supabase mode, restore a backup with "Replace"
+      selected → data replaces correctly AND (sanity) killing the app mid-import no longer leaves the account
+      empty (upserts now run before any prune).
+- [ ] **Sync-off banner (#2)**: enter Private mode with iCloud sync OFF → the red "your data lives only on this
+      device" banner shows on the dashboard; tapping its action opens Settings → Privacy (iCloud sync); enabling
+      sync clears the banner immediately; dismiss hides it for the session.
+- [ ] **Delete private data (#3)**: with a transient iCloud/keychain hiccup, "delete private data" still wipes
+      the LOCAL data (not just a "failed" toast).
+- [ ] **Global error boundary (#4)**: a forced error shows a friendly localized dialog (no raw stack) in a
+      release build, not Flutter's grey box.

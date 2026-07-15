@@ -52,7 +52,9 @@
     "statusWaitingKeychain": "Waiting for iCloud Keychain — make sure the app on your iPhone is up to date",
     "lastSyncedNever": "Never synced",
     "lastSyncedAt": "Last synced {time}",
-    "deleteSyncNote": "iCloud Sync is on: this also deletes the synced copy in your iCloud and turns sync off. Other devices keep their local copy — run this on each device to erase everywhere."
+    "deleteSyncNote": "iCloud Sync is on: this also deletes the synced copy in your iCloud and turns sync off. Other devices keep their local copy — run this on each device to erase everywhere.",
+    "bannerText": "iCloud sync is off — your habits live only on this device and are lost if you reset or replace it.",
+    "bannerAction": "Turn on"
   },
   "privateRecovery": {
     "preparing": "Preparing your private space…",
@@ -97,7 +99,8 @@
       "save": "Save",
       "delete": "Delete",
       "edit": "Edit",
-      "pick": "Pick"
+      "pick": "Pick",
+      "gotIt": "Got it"
     },
     "months": [
       "January",
@@ -143,7 +146,9 @@
       "error": "Error"
     },
     "total": "Total",
-    "completed": "Completed"
+    "completed": "Completed",
+    "unexpectedErrorTitle": "Something went wrong",
+    "unexpectedErrorMessage": "An unexpected error occurred. Please try again."
   },
   "form": {
     "title": "Title",

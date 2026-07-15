@@ -168,6 +168,8 @@ class _Translations$icloudSync$it extends Translations$icloudSync$en {
 	@override String get lastSyncedNever => 'Mai sincronizzato';
 	@override String lastSyncedAt({required Object time}) => 'Ultima sincronizzazione ${time}';
 	@override String get deleteSyncNote => 'La sincronizzazione iCloud è attiva: verrà eliminata anche la copia sincronizzata nel tuo iCloud e la sincronizzazione verrà disattivata. Gli altri dispositivi conservano la loro copia locale — esegui questa operazione su ciascun dispositivo per eliminare tutto ovunque.';
+	@override String get bannerText => 'La sincronizzazione iCloud è disattivata: le tue abitudini sono solo su questo dispositivo e vanno perse se lo ripristini o lo sostituisci.';
+	@override String get bannerAction => 'Attiva';
 }
 
 // Path: privateRecovery
@@ -281,6 +283,8 @@ class _Translations$common$it extends Translations$common$en {
 	@override late final _Translations$common$status$it status = _Translations$common$status$it._(_root);
 	@override String get total => 'Totale';
 	@override String get completed => 'Completati';
+	@override String get unexpectedErrorTitle => 'Qualcosa è andato storto';
+	@override String get unexpectedErrorMessage => 'Si è verificato un errore imprevisto. Riprova.';
 }
 
 // Path: form
@@ -1480,6 +1484,7 @@ class _Translations$common$actions$it extends Translations$common$actions$en {
 	@override String get delete => 'Elimina';
 	@override String get edit => 'Modifica';
 	@override String get pick => 'Scegli';
+	@override String get gotIt => 'Ho capito';
 }
 
 // Path: common.calendarView
@@ -1637,6 +1642,8 @@ extension on TranslationsIt {
 			'icloudSync.lastSyncedNever' => 'Mai sincronizzato',
 			'icloudSync.lastSyncedAt' => ({required Object time}) => 'Ultima sincronizzazione ${time}',
 			'icloudSync.deleteSyncNote' => 'La sincronizzazione iCloud è attiva: verrà eliminata anche la copia sincronizzata nel tuo iCloud e la sincronizzazione verrà disattivata. Gli altri dispositivi conservano la loro copia locale — esegui questa operazione su ciascun dispositivo per eliminare tutto ovunque.',
+			'icloudSync.bannerText' => 'La sincronizzazione iCloud è disattivata: le tue abitudini sono solo su questo dispositivo e vanno perse se lo ripristini o lo sostituisci.',
+			'icloudSync.bannerAction' => 'Attiva',
 			'privateRecovery.preparing' => 'Preparazione del tuo spazio privato…',
 			'privateRecovery.restoredFromCloudToast' => 'Impossibile sbloccare il database locale: i tuoi dati sono stati ripristinati da iCloud.',
 			'privateRecovery.waitingTitle' => 'In attesa di iCloud',
@@ -1671,6 +1678,7 @@ extension on TranslationsIt {
 			'common.actions.delete' => 'Elimina',
 			'common.actions.edit' => 'Modifica',
 			'common.actions.pick' => 'Scegli',
+			'common.actions.gotIt' => 'Ho capito',
 			'common.months.0' => 'Gennaio',
 			'common.months.1' => 'Febbraio',
 			'common.months.2' => 'Marzo',
@@ -1706,6 +1714,8 @@ extension on TranslationsIt {
 			'common.status.error' => 'Errore',
 			'common.total' => 'Totale',
 			'common.completed' => 'Completati',
+			'common.unexpectedErrorTitle' => 'Qualcosa è andato storto',
+			'common.unexpectedErrorMessage' => 'Si è verificato un errore imprevisto. Riprova.',
 			'form.title' => 'Titolo',
 			'form.category' => 'Categoria',
 			'form.color' => 'Colore',
@@ -2097,13 +2107,13 @@ extension on TranslationsIt {
 			'habitsPage.nextPeriod' => 'Periodo successivo',
 			'habitsPage.weekdayAbbrevUpper.0' => 'LUN',
 			'habitsPage.weekdayAbbrevUpper.1' => 'MAR',
+			_ => null,
+		} ?? switch (path) {
 			'habitsPage.weekdayAbbrevUpper.2' => 'MER',
 			'habitsPage.weekdayAbbrevUpper.3' => 'GIO',
 			'habitsPage.weekdayAbbrevUpper.4' => 'VEN',
 			'habitsPage.weekdayAbbrevUpper.5' => 'SAB',
 			'habitsPage.weekdayAbbrevUpper.6' => 'DOM',
-			_ => null,
-		} ?? switch (path) {
 			'habitsPage.lifeView' => 'Vista vita',
 			'habitsPage.lifeViewSubtitle' => 'Una cella rappresenta un mese del percorso fino a 85 anni.',
 			'habitsPage.monthsLived' => 'Mesi vissuti',
@@ -2611,13 +2621,13 @@ extension on TranslationsIt {
 			'tour.overviewHabitsDesc' => 'Le abitudini che hai pianificato per oggi sono qui — spuntale man mano.',
 			'tour.overviewGoalsTitle' => 'Obiettivi in focus',
 			'tour.overviewGoalsDesc' => 'Gli obiettivi su cui ti stai concentrando compaiono qui, così non ti sfugge nulla.',
+			_ => null,
+		} ?? switch (path) {
 			'tour.habitsOrientationTitle' => 'La pagina Abitudini',
 			'tour.habitsOrientationDesc' => 'Qui costruisci il tuo protocollo quotidiano e monitori la tua costanza.',
 			'tour.habitsAddTitle' => 'Aggiungi un\'abitudine',
 			'tour.habitsAddDesc' => 'Crea una nuova abitudine qui — nome, categoria, colore e un promemoria opzionale.',
 			'tour.habitsCheckoffTitle' => 'Segnala come fatta',
-			_ => null,
-		} ?? switch (path) {
 			'tour.habitsCheckoffDesc' => 'Spunta questa casella per completare un\'abitudine oggi. Basta questo per mantenere viva una serie.',
 			'tour.habitsStreakTitle' => 'Serie e cronologia',
 			'tour.habitsStreakDesc' => 'Guarda crescere la tua serie e vedi gli ultimi sette giorni a colpo d\'occhio.',

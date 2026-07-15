@@ -4,6 +4,7 @@ import 'package:evolve_desktop/app/localization/desktop_locale_controller.dart';
 import 'package:evolve_desktop/core/app_bootstrap.dart';
 import 'package:evolve_desktop/core/desktop_data_mode.dart';
 import 'package:evolve_desktop/core/desktop_sync_lifecycle.dart';
+import 'package:evolve_desktop/core/navigator_key.dart';
 import 'package:evolve_desktop/features/auth/application/auth_controller.dart';
 import 'package:evolve_desktop/features/auth/application/consent_controller.dart';
 import 'package:evolve_desktop/features/auth/presentation/auth_page.dart';
@@ -54,6 +55,7 @@ class EvolveDesktopApp extends ConsumerWidget {
     final isPrivateMode = dataMode.isPrivate;
 
     return MaterialApp(
+      navigatorKey: navigatorKey,
       title: 'Evolve Desktop',
       debugShowCheckedModeBanner: false,
       theme: EvolveTheme.light(appearance.accentColor),

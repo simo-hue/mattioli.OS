@@ -52,7 +52,9 @@
     "statusWaitingKeychain": "Esperando el Llavero de iCloud — asegúrate de que la app de tu iPhone esté actualizada",
     "lastSyncedNever": "Nunca sincronizado",
     "lastSyncedAt": "Última sincronización {time}",
-    "deleteSyncNote": "La sincronización de iCloud está activada: también se eliminará la copia sincronizada de tu iCloud y se desactivará la sincronización. Los demás dispositivos conservan su copia local — ejecuta esta acción en cada dispositivo para borrarlo todo en todas partes."
+    "deleteSyncNote": "La sincronización de iCloud está activada: también se eliminará la copia sincronizada de tu iCloud y se desactivará la sincronización. Los demás dispositivos conservan su copia local — ejecuta esta acción en cada dispositivo para borrarlo todo en todas partes.",
+    "bannerText": "La sincronización con iCloud está desactivada: tus hábitos solo están en este dispositivo y se perderán si lo restableces o lo reemplazas.",
+    "bannerAction": "Activar"
   },
   "privateRecovery": {
     "preparing": "Preparando tu espacio privado…",
@@ -97,7 +99,8 @@
       "save": "Guardar",
       "delete": "Eliminar",
       "edit": "Editar",
-      "pick": "Elegir"
+      "pick": "Elegir",
+      "gotIt": "Entendido"
     },
     "months": [
       "Enero",
@@ -143,7 +146,9 @@
       "error": "Error"
     },
     "total": "Total",
-    "completed": "Completados"
+    "completed": "Completados",
+    "unexpectedErrorTitle": "Algo salió mal",
+    "unexpectedErrorMessage": "Se ha producido un error inesperado. Inténtalo de nuevo."
   },
   "form": {
     "title": "Título",

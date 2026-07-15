@@ -168,6 +168,8 @@ class _Translations$icloudSync$ar extends Translations$icloudSync$en {
 	@override String get lastSyncedNever => 'لم تتم المزامنة مطلقًا';
 	@override String lastSyncedAt({required Object time}) => 'آخر مزامنة ${time}';
 	@override String get deleteSyncNote => 'مزامنة iCloud مفعّلة: سيؤدي هذا أيضًا إلى حذف النسخة المتزامنة من iCloud الخاص بك وإيقاف المزامنة. تحتفظ الأجهزة الأخرى بنسختها المحلية — نفّذ هذا الإجراء على كل جهاز للحذف في كل مكان.';
+	@override String get bannerText => 'مزامنة iCloud متوقفة — عاداتك موجودة فقط على هذا الجهاز وستُفقد إذا أعدت ضبطه أو استبدلته.';
+	@override String get bannerAction => 'تفعيل';
 }
 
 // Path: privateRecovery
@@ -281,6 +283,8 @@ class _Translations$common$ar extends Translations$common$en {
 	@override late final _Translations$common$status$ar status = _Translations$common$status$ar._(_root);
 	@override String get total => 'الإجمالي';
 	@override String get completed => 'مكتمل';
+	@override String get unexpectedErrorTitle => 'حدث خطأ ما';
+	@override String get unexpectedErrorMessage => 'حدث خطأ غير متوقع. حاول مرة أخرى.';
 }
 
 // Path: form
@@ -1480,6 +1484,7 @@ class _Translations$common$actions$ar extends Translations$common$actions$en {
 	@override String get delete => 'حذف';
 	@override String get edit => 'تعديل';
 	@override String get pick => 'اختيار';
+	@override String get gotIt => 'حسناً';
 }
 
 // Path: common.calendarView
@@ -1637,6 +1642,8 @@ extension on TranslationsAr {
 			'icloudSync.lastSyncedNever' => 'لم تتم المزامنة مطلقًا',
 			'icloudSync.lastSyncedAt' => ({required Object time}) => 'آخر مزامنة ${time}',
 			'icloudSync.deleteSyncNote' => 'مزامنة iCloud مفعّلة: سيؤدي هذا أيضًا إلى حذف النسخة المتزامنة من iCloud الخاص بك وإيقاف المزامنة. تحتفظ الأجهزة الأخرى بنسختها المحلية — نفّذ هذا الإجراء على كل جهاز للحذف في كل مكان.',
+			'icloudSync.bannerText' => 'مزامنة iCloud متوقفة — عاداتك موجودة فقط على هذا الجهاز وستُفقد إذا أعدت ضبطه أو استبدلته.',
+			'icloudSync.bannerAction' => 'تفعيل',
 			'privateRecovery.preparing' => 'جارٍ تجهيز مساحتك الخاصة…',
 			'privateRecovery.restoredFromCloudToast' => 'تعذّر فتح قاعدة البيانات المحلية — تمت استعادة بياناتك من iCloud.',
 			'privateRecovery.waitingTitle' => 'بانتظار iCloud',
@@ -1671,6 +1678,7 @@ extension on TranslationsAr {
 			'common.actions.delete' => 'حذف',
 			'common.actions.edit' => 'تعديل',
 			'common.actions.pick' => 'اختيار',
+			'common.actions.gotIt' => 'حسناً',
 			'common.months.0' => 'يناير',
 			'common.months.1' => 'فبراير',
 			'common.months.2' => 'مارس',
@@ -1706,6 +1714,8 @@ extension on TranslationsAr {
 			'common.status.error' => 'خطأ',
 			'common.total' => 'الإجمالي',
 			'common.completed' => 'مكتمل',
+			'common.unexpectedErrorTitle' => 'حدث خطأ ما',
+			'common.unexpectedErrorMessage' => 'حدث خطأ غير متوقع. حاول مرة أخرى.',
 			'form.title' => 'العنوان',
 			'form.category' => 'الفئة',
 			'form.color' => 'اللون',
@@ -2097,13 +2107,13 @@ extension on TranslationsAr {
 			'habitsPage.nextPeriod' => 'الفترة التالية',
 			'habitsPage.weekdayAbbrevUpper.0' => 'اثن',
 			'habitsPage.weekdayAbbrevUpper.1' => 'ثلا',
+			_ => null,
+		} ?? switch (path) {
 			'habitsPage.weekdayAbbrevUpper.2' => 'أرب',
 			'habitsPage.weekdayAbbrevUpper.3' => 'خمي',
 			'habitsPage.weekdayAbbrevUpper.4' => 'جمع',
 			'habitsPage.weekdayAbbrevUpper.5' => 'سبت',
 			'habitsPage.weekdayAbbrevUpper.6' => 'أحد',
-			_ => null,
-		} ?? switch (path) {
 			'habitsPage.lifeView' => 'عرض الحياة',
 			'habitsPage.lifeViewSubtitle' => 'تمثّل كل خلية شهرًا من المسار حتى سن 85.',
 			'habitsPage.monthsLived' => 'الأشهر المُعاشة',
@@ -2611,13 +2621,13 @@ extension on TranslationsAr {
 			'tour.overviewHabitsDesc' => 'العادات التي خططت لها اليوم موجودة هنا — علّمها عند إنجازها.',
 			'tour.overviewGoalsTitle' => 'الأهداف قيد التركيز',
 			'tour.overviewGoalsDesc' => 'تظهر هنا الأهداف التي تركّز عليها حتى لا يفوتك شيء.',
+			_ => null,
+		} ?? switch (path) {
 			'tour.habitsOrientationTitle' => 'صفحة العادات',
 			'tour.habitsOrientationDesc' => 'هنا تبني بروتوكولك اليومي وتتابع مدى انتظامك.',
 			'tour.habitsAddTitle' => 'أضف عادة',
 			'tour.habitsAddDesc' => 'أنشئ عادة جديدة هنا — بالاسم والفئة واللون وتذكير اختياري.',
 			'tour.habitsCheckoffTitle' => 'علّمها كمنجزة',
-			_ => null,
-		} ?? switch (path) {
 			'tour.habitsCheckoffDesc' => 'علّم هذا المربع لإكمال عادة اليوم. هذا كل ما يلزم للحفاظ على السلسلة.',
 			'tour.habitsStreakTitle' => 'السلاسل والسجل',
 			'tour.habitsStreakDesc' => 'شاهد سلسلتك تنمو وألقِ نظرة على آخر سبعة أيام دفعة واحدة.',

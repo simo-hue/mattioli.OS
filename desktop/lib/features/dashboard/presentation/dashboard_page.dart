@@ -19,6 +19,7 @@ import 'package:evolve_desktop/shared/widgets/evolve_dialog.dart';
 import 'package:evolve_desktop/shared/widgets/evolve_panel.dart';
 import 'package:evolve_desktop/features/dashboard/presentation/create_goal_dialog.dart';
 import 'package:evolve_desktop/features/dashboard/presentation/create_habit_dialog.dart';
+import 'package:evolve_desktop/features/dashboard/presentation/sync_off_banner.dart';
 import 'package:evolve_desktop/features/shell/application/navigation_controller.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
@@ -177,6 +178,9 @@ class _DashboardPageState extends ConsumerState<DashboardPage> {
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
+          // Data-loss warning for Private-mode users on macOS who haven't turned
+          // on iCloud sync. Collapses to zero height when not applicable.
+          const SyncOffBanner(),
           KeyedSubtree(
             key: _checkInKey,
             child: _ProtocolloSection(checkIn: snapshot.checkIn),

@@ -573,15 +573,6 @@ class DesktopBackupImportService {
       newId: () => _uuid.v4(),
     );
 
-    // Only now mutate the server (children first, so FKs never block).
-    if (replaceExisting) {
-      await client.from('goal_logs').delete().eq('user_id', userId);
-      await client.from('daily_moods').delete().eq('user_id', userId);
-      await client.from('long_term_goals').delete().eq('user_id', userId);
-      await client.from('macro_goal_categories').delete().eq('user_id', userId);
-      await client.from('goals').delete().eq('user_id', userId);
-    }
-
     // Fill archived_at on existing categories — bare update, no updated_at
     // (the cloud macro_goal_categories table has no such column).
     for (final f in plan.categoryArchiveFills) {
@@ -591,15 +582,36 @@ class DesktopBackupImportService {
           .eq('id', f.id);
     }
 
-    // Write parents before children so foreign keys resolve. The plan reuses
-    // existing row ids for updates and drops intra-file duplicates, so
-    // conflicting on `id` can never trip the secondary UNIQUE constraints
-    // (goal_logs (goal_id,date), daily_moods (user_id,date)).
+    // Write parents before children so foreign keys resolve. In REPLACE mode we
+    // upsert the backup rows FIRST and only AFTERWARDS delete the rows the backup
+    // doesn't contain — so a mid-import failure (network drop, RLS error, app
+    // kill) leaves a superset (a few stale rows), never an emptied account.
+    // The previous order deleted everything first, so any failure before the
+    // re-insert wiped the data with no client-side transaction to roll it back.
+    // The plan reuses existing row ids for updates and drops intra-file
+    // duplicates, so conflicting on `id` can never trip the secondary UNIQUE
+    // constraints (goal_logs (goal_id,date), daily_moods (user_id,date)).
     await _bulkUpsert(client, 'macro_goal_categories', plan.categories);
     await _bulkUpsert(client, 'goals', plan.goals);
     await _bulkUpsert(client, 'long_term_goals', plan.macros);
     await _bulkUpsert(client, 'goal_logs', plan.logs);
     await _bulkUpsert(client, 'daily_moods', plan.moods);
+
+    if (replaceExisting) {
+      // Remove this user's rows that aren't part of the backup, children before
+      // parents so foreign keys resolve. Each table is pruned to exactly the
+      // backup's rows without ever passing through an empty state.
+      await _deleteComplement(client, 'goal_logs', userId, plan.logs);
+      await _deleteComplement(client, 'daily_moods', userId, plan.moods);
+      await _deleteComplement(client, 'long_term_goals', userId, plan.macros);
+      await _deleteComplement(client, 'goals', userId, plan.goals);
+      await _deleteComplement(
+        client,
+        'macro_goal_categories',
+        userId,
+        plan.categories,
+      );
+    }
 
     await _recomputeCloudStreaks(client, userId, plan.affectedGoals);
 
@@ -621,6 +633,34 @@ class DesktopBackupImportService {
     }
 
     return plan.stats;
+  }
+
+  /// Deletes the user's rows in [table] whose id is NOT among the just-upserted
+  /// backup rows [keep]. Fetches the existing ids and deletes only the
+  /// difference (in id chunks), so replacing never empties the table first — the
+  /// atomicity guarantee the delete-then-upsert order lacked.
+  Future<void> _deleteComplement(
+    SupabaseClient client,
+    String table,
+    String userId,
+    List<Map<String, dynamic>> keep,
+  ) async {
+    final keepIds = keep.map((r) => r['id'] as String).toSet();
+    final existing = await client.from(table).select('id').eq('user_id', userId);
+    final toDelete = (existing as List)
+        .map((e) => (e as Map)['id'] as String)
+        .where((id) => !keepIds.contains(id))
+        .toList();
+    if (toDelete.isEmpty) return;
+    const chunk = 200;
+    for (var i = 0; i < toDelete.length; i += chunk) {
+      final end = (i + chunk < toDelete.length) ? i + chunk : toDelete.length;
+      await client
+          .from(table)
+          .delete()
+          .eq('user_id', userId)
+          .inFilter('id', toDelete.sublist(i, end));
+    }
   }
 
   /// Chunked bulk upsert (Supabase caps request sizes around ~1000 rows).

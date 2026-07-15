@@ -110,3 +110,13 @@ narrow catch let escape → the app root crashed to a grey window for every Priv
       8528AN28A3, keychain groups resolve WITH the prefix, provisioning profile embedded).
 - [ ] If you want the dev `flutter run` loop to stop nagging with the reset screen, ask for the
       debug-only auto-reset (kDebugMode + macOS) — zero effect on release.
+
+## Desktop test suite (2026-07-15) — run WITH the Supabase defines
+Fixed the last hanging desktop test (`icloud_sync_card_test` "delete private data" — was a
+loading-spinner `pumpAndSettle` hang; now verifies the card's contract with bounded pumps, no
+product code change). The full desktop suite is **311/311 green** — but you must run it the same
+way you run the app, or one intentional security guard (`desktop_supabase_config_security_test`,
+which asserts the Supabase config is present via build-time defines) reports a false failure:
+- [ ] Run desktop tests as: `cd desktop && flutter test --dart-define-from-file=.env`
+      (a bare `flutter test` "fails" only that config-presence guard — by design, not a bug).
+      Make sure CI passes the same defines.

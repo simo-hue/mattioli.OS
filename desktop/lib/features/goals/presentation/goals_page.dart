@@ -1604,28 +1604,40 @@ class _QuickGoalBar extends StatelessWidget {
         Expanded(
           child: Container(
             height: 44,
+            // Center the (collapsed) field's glyph line in the pill ourselves.
+            // A tight 44px external height makes the InputDecorator ignore
+            // textAlignVertical and pin the text to the top, so we let the
+            // Container do the centering — which can't drift with font metrics.
+            alignment: Alignment.center,
             decoration: BoxDecoration(
               color: context.evolveColors.panel.withValues(alpha: 0.5),
               borderRadius: BorderRadius.circular(12),
               border: Border.all(color: context.evolveColors.border),
             ),
-            child: TextField(
-              controller: controller,
-              onSubmitted: (_) => onSubmit(),
-              textAlignVertical: TextAlignVertical.center,
-              style: const TextStyle(fontSize: 13),
-              decoration: InputDecoration(
-                filled: false,
-                border: InputBorder.none,
-                enabledBorder: InputBorder.none,
-                focusedBorder: InputBorder.none,
-                hintText: hintText,
-                hintStyle: TextStyle(
-                  fontSize: 13,
-                  color: context.evolveColors.muted.withValues(alpha: 0.5),
-                ),
-                contentPadding: const EdgeInsets.symmetric(
-                  horizontal: 14,
+            // isCollapsed shrinks the field to exactly its text line so the
+            // Alignment.center above centers the glyphs, not a padded decorator
+            // box; SizedBox keeps it full-width (Container.alignment would
+            // otherwise shrink-wrap it and break the left-aligned caret).
+            child: SizedBox(
+              width: double.infinity,
+              child: TextField(
+                controller: controller,
+                onSubmitted: (_) => onSubmit(),
+                style: const TextStyle(fontSize: 13),
+                decoration: InputDecoration(
+                  filled: false,
+                  border: InputBorder.none,
+                  enabledBorder: InputBorder.none,
+                  focusedBorder: InputBorder.none,
+                  isCollapsed: true,
+                  hintText: hintText,
+                  hintStyle: TextStyle(
+                    fontSize: 13,
+                    color: context.evolveColors.muted.withValues(alpha: 0.5),
+                  ),
+                  contentPadding: const EdgeInsets.symmetric(
+                    horizontal: 14,
+                  ),
                 ),
               ),
             ),

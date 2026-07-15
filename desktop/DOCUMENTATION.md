@@ -967,3 +967,28 @@ heading ellipsizing. `flutter analyze` clean; `tour_flow_test` still passes.
     3-lens adversarial review (find→verify) confirmed the 3 findings above, now
     fixed. On-device visual QA of the animations still pending (no Xcode here) —
     see TO_SIMO_DO.md.
+
+- [2026-07-15 11:48]: Goals quick-add — vertically center the typed text in its pill (desktop macOS)
+  - *Details*: The Goals command-bar quick-add composer (`_QuickGoalBar`) rendered
+    the typed goal text (and the placeholder hint) pinned to the TOP of its 44px
+    pill instead of centered — subtle but visible once you look (measured ~14.5px
+    off the centerline). Root cause: the field is a borderless `TextField` inside a
+    tight `height: 44` `Container`; a tight *external* height makes the
+    `InputDecorator` ignore `textAlignVertical.center` and top-align the glyph
+    line (confirmed empirically — collapsing alone just flipped it to ~11.5px
+    high). Fix: collapse the field to its own line box (`isCollapsed: true`) and
+    center that line with the Container itself (`alignment: Alignment.center`),
+    keeping it full-width via `SizedBox(width: double.infinity)` (Container
+    alignment would otherwise shrink-wrap the field and break the left-aligned
+    caret). The now-inert `textAlignVertical` was removed. Centering is done
+    geometrically, so it cannot drift with font metrics/DPI.
+  - *Tech Notes*: File: `lib/features/goals/presentation/goals_page.dart`
+    (`_QuickGoalBar.build`). No new deps/providers/RPCs; no change to the pill's
+    44px size or its `○`/`+` siblings. Verified with a new deterministic widget
+    test `test/goals_quick_add_centering_test.dart` — pumps the real `GoalsPage`
+    at 1200×900, types into the composer, and asserts the editable's centerline
+    equals the pill Container's (delta < 1px; measured 0.0 after the fix vs 14.5
+    before). `flutter analyze` clean on both files; the existing
+    `test/goals_page_keyboard_test.dart` (5 tests, incl. the quick-add caret
+    guard) still passes. On-device visual glance pending (no Xcode here) — see
+    TO_SIMO_DO.md.

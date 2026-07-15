@@ -179,6 +179,11 @@ void main() {
   testWidgets(
       'delete private data runs the full sync reset and mentions the '
       'multi-device caveat', (tester) async {
+    // Delete-private-data confirms → shows a loading spinner → runs the REAL
+    // DesktopPrivateDb wipe. Back it with an FFI DB + mocked native channels so
+    // the wipe completes and the spinner closes (otherwise pumpAndSettle hangs).
+    await _installPrivateDbHarness(tester);
+
     final fake = _FakeSyncService(
       const PrivateSyncStatus(
           isAvailable: true,

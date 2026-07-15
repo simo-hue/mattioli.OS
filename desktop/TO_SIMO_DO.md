@@ -30,3 +30,12 @@ Smoke-test the new behaviors on device (`flutter run -d macos`):
       badge size/placement/copy read well; refine if needed.
 - [ ] **Import profile (#12)** — a MERGE import must NOT change your current
       theme/language/name; a REPLACE (full restore) still applies the backup's.
+
+## Goals quick-add text centering — on-device glance (2026-07-15)
+Code-verified geometrically (new `test/goals_quick_add_centering_test.dart`
+asserts the typed text's centerline == the pill's, delta 0.0px; analyze clean).
+The widget test runs on the headless test font/DPI, so one real-render glance is
+worth it (`flutter run -d macos`):
+- [ ] **Goals page → quick-add bar** — type a goal into the composer (the
+      "ERFD" field): the text must sit on the pill's vertical centerline (not
+      riding high), and the placeholder hint too. Caret/selection still behave.

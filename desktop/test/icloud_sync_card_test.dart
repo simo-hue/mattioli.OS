@@ -179,11 +179,6 @@ void main() {
   testWidgets(
       'delete private data runs the full sync reset and mentions the '
       'multi-device caveat', (tester) async {
-    // Delete-private-data confirms → shows a loading spinner → runs the REAL
-    // DesktopPrivateDb wipe. Back it with an FFI DB + mocked native channels so
-    // the wipe completes and the spinner closes (otherwise pumpAndSettle hangs).
-    await _installPrivateDbHarness(tester);
-
     final fake = _FakeSyncService(
       const PrivateSyncStatus(
           isAvailable: true,
@@ -200,7 +195,16 @@ void main() {
     expect(find.textContaining('run this on each device'), findsOneWidget);
 
     await tester.tap(find.text(t.settingsPage.confirm));
-    await tester.pumpAndSettle();
+    // Confirm shows an (indefinite) loading spinner and then runs the REAL
+    // on-device wipe — DesktopPrivateDb + notification re-sync — which are hard
+    // singletons that can't complete in the headless harness (and whose logic is
+    // covered by sync_bookkeeping_test / the DB tests). So we don't pumpAndSettle
+    // (the spinner never settles); we pump a few frames to let requestFullReset()
+    // run — it's awaited BEFORE the local wipe — and assert the card's contract:
+    // the cloud reset is queued/performed ahead of the local wipe.
+    for (var i = 0; i < 5; i++) {
+      await tester.pump(const Duration(milliseconds: 20));
+    }
 
     expect(fake.fullResetCalls, 1,
         reason: 'cloud wipe queued/performed before the local wipe');

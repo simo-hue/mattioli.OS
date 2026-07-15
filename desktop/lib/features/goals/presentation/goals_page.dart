@@ -1945,7 +1945,33 @@ class _GoalItemState extends State<_GoalItem> {
           ),
           IconButton(
             tooltip: t.common.actions.delete,
-            onPressed: () => widget.onDelete(goal),
+            onPressed: () async {
+              final confirmed = await showEvolveDialog<bool>(
+                context: context,
+                builder: (ctx) => EvolveAlertDialog(
+                  icon: LucideIcons.trash2,
+                  iconColor: EvolveColors.destructive,
+                  title: Text(t.palette.deleteGoalTitle),
+                  content: Text(t.palette.deleteGoalMessage(title: goal.title)),
+                  actions: [
+                    TextButton(
+                      onPressed: () => Navigator.pop(ctx, false),
+                      child: Text(t.common.actions.cancel),
+                    ),
+                    FilledButton(
+                      style: FilledButton.styleFrom(
+                        backgroundColor: EvolveColors.destructive,
+                      ),
+                      onPressed: () => Navigator.pop(ctx, true),
+                      child: Text(t.common.actions.delete),
+                    ),
+                  ],
+                ),
+              );
+              if (confirmed == true && context.mounted) {
+                widget.onDelete(goal);
+              }
+            },
             icon: const Icon(LucideIcons.trash2, size: 16),
             style: IconButton.styleFrom(
               foregroundColor: EvolveColors.destructive.withValues(alpha: 0.7),

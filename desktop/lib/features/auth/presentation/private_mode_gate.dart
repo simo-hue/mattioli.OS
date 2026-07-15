@@ -1,5 +1,6 @@
 import 'package:evolve_desktop/app/theme/evolve_theme.dart';
 import 'package:evolve_desktop/core/app_bootstrap.dart';
+import 'package:evolve_desktop/core/app_logger.dart';
 import 'package:evolve_desktop/core/desktop_data_mode.dart';
 import 'package:evolve_desktop/core/desktop_private_sync_service.dart';
 import 'package:evolve_desktop/core/private_data_refresh.dart';
@@ -67,47 +68,58 @@ class _PrivateModeGateState extends ConsumerState<PrivateModeGate> {
   static const _syncPromptKey = 'private_sync_onboarding_shown_v1';
 
   Future<void> _maybePromptSync() async {
-    final prefs = ref.read(sharedPreferencesProvider);
-    if (prefs == null) return;
-    if (prefs.getBool(_syncPromptKey) ?? false) return;
-    final sync = ref.read(desktopPrivateSyncServiceProvider);
-    final probe = await sync.probe();
-    if (probe.isEnabled) {
+    // Runs fire-and-forget from _run (itself launched in initState). probe() and
+    // enable() reach the Keychain / CloudKit and can throw; a throw here would
+    // become an unhandled async error at the global handler. Contain it — the
+    // one-time onboarding prompt must never crash entry into Private mode.
+    // (Mirrors mobile's PrivateModeGate._maybePromptSync guard.)
+    try {
+      final prefs = ref.read(sharedPreferencesProvider);
+      if (prefs == null) return;
+      if (prefs.getBool(_syncPromptKey) ?? false) return;
+      final sync = ref.read(desktopPrivateSyncServiceProvider);
+      final probe = await sync.probe();
+      if (!mounted) return;
+      if (probe.isEnabled) {
+        await prefs.setBool(_syncPromptKey, true);
+        return;
+      }
+      // No iCloud account yet — don't burn the one-time prompt; offer again later.
+      if (!probe.isAvailable) return;
       await prefs.setBool(_syncPromptKey, true);
-      return;
+      if (!mounted) return;
+      final enable = await showEvolveDialog<bool>(
+        context: context,
+        builder: (ctx) => EvolveAlertDialog(
+          icon: LucideIcons.cloud,
+          iconColor: context.evolveAccent,
+          title: Text(t.icloudSync.disclosureTitle),
+          subtitle: t.icloudSync.disclosureBody,
+          actions: [
+            TextButton(
+              onPressed: () => Navigator.pop(ctx, false),
+              child: Text(t.common.actions.cancel),
+            ),
+            FilledButton(
+              onPressed: () => Navigator.pop(ctx, true),
+              child: Text(t.icloudSync.disclosureAccept),
+            ),
+          ],
+        ),
+      );
+      if (enable != true || !mounted) return;
+      await ref.read(desktopPrivateSyncServiceProvider).enable();
+      if (!mounted) return;
+      refreshPrivateAfterPull(
+          ProviderScope.containerOf(context, listen: false));
+      showEvolveToast(
+        context,
+        message: t.icloudSync.statusIdle,
+        kind: EvolveToastKind.success,
+      );
+    } catch (e, stack) {
+      AppLogger.error('Private-mode sync onboarding failed', e, stack);
     }
-    // No iCloud account yet — don't burn the one-time prompt; offer again later.
-    if (!probe.isAvailable || !mounted) return;
-    await prefs.setBool(_syncPromptKey, true);
-    if (!mounted) return;
-    final enable = await showEvolveDialog<bool>(
-      context: context,
-      builder: (ctx) => EvolveAlertDialog(
-        icon: LucideIcons.cloud,
-        iconColor: context.evolveAccent,
-        title: Text(t.icloudSync.disclosureTitle),
-        subtitle: t.icloudSync.disclosureBody,
-        actions: [
-          TextButton(
-            onPressed: () => Navigator.pop(ctx, false),
-            child: Text(t.common.actions.cancel),
-          ),
-          FilledButton(
-            onPressed: () => Navigator.pop(ctx, true),
-            child: Text(t.icloudSync.disclosureAccept),
-          ),
-        ],
-      ),
-    );
-    if (enable != true || !mounted) return;
-    await ref.read(desktopPrivateSyncServiceProvider).enable();
-    if (!mounted) return;
-    refreshPrivateAfterPull(ProviderScope.containerOf(context, listen: false));
-    showEvolveToast(
-      context,
-      message: t.icloudSync.statusIdle,
-      kind: EvolveToastKind.success,
-    );
   }
 
   Future<void> _reset({required bool enableSync}) async {

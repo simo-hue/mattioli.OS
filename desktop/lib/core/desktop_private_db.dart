@@ -36,6 +36,36 @@ class PrivateDatabaseLockedException implements Exception {
       'refusing to regenerate it so the data stays recoverable.';
 }
 
+/// The slice of the private store the locked-DB recovery flow needs. Extracted
+/// so the recovery POLICY ([openOrRecoverPrivate]) is unit-testable with a fake,
+/// mirroring mobile's `PrivateDataStore`. [DesktopPrivateDb] is the production
+/// implementation.
+abstract interface class PrivateRecoveryStore {
+  /// Opens the encrypted DB, running the owner self-heal. Throws
+  /// [PrivateDatabaseLockedException] when the file exists but its key is gone.
+  Future<void> ensureReady();
+
+  /// Hard-deletes the orphaned encrypted file (+ sidecars + avatar folder) so
+  /// the next open mints a fresh key. DESTRUCTIVE — only behind an explicit,
+  /// user-confirmed action. Never throws.
+  Future<void> resetLockedDatabase();
+
+  /// Auto-recovery: renames the locked DB (+ sidecars) ASIDE to a `.bak` set and
+  /// clears the key, so a fresh empty DB can be re-pulled from iCloud. Reversible
+  /// via [restoreStashedDatabase]. Returns true if a DB file was stashed. Never
+  /// throws.
+  Future<bool> stashLockedDatabase();
+
+  /// Undo [stashLockedDatabase]: discards the fresh (empty) DB and restores the
+  /// stashed copy, leaving it LOCKED again so a later launch retries recovery.
+  /// Never throws.
+  Future<void> restoreStashedDatabase();
+
+  /// Commit [stashLockedDatabase]: the cloud re-pull succeeded, so delete the
+  /// stashed `.bak` set for good. Never throws.
+  Future<void> discardStashedDatabase();
+}
+
 /// Manages the encrypted local SQLite database used by Private mode.
 ///
 /// The schema is [PrivateDbSchema], ported verbatim from the mobile client so
@@ -48,12 +78,18 @@ class PrivateDatabaseLockedException implements Exception {
 /// The row-level lifecycle logic (seed / wipe / import) is exposed as static
 /// helpers that operate on any [DatabaseExecutor], so it can be exercised
 /// against an in-memory `sqflite_common_ffi` database in tests.
-class DesktopPrivateDb {
+class DesktopPrivateDb implements PrivateRecoveryStore {
   DesktopPrivateDb._();
 
   static DesktopPrivateDb? _instance;
   Database? _db;
   Future<Database>? _opening;
+
+  /// Bumped whenever the DB file is reset/stashed/restored out from under an
+  /// in-flight [_open]. An open that started before the bump discards its handle
+  /// instead of caching one that points at a since-renamed/deleted (or freshly
+  /// re-created empty) file. Mirrors mobile's `_openGeneration`.
+  int _openGeneration = 0;
 
   /// In-memory cache of the owner id so an adopted/reconciled owner sticks for
   /// the session even if the Keychain write fails (mirrors mobile's `_ownerId`).
@@ -64,6 +100,10 @@ class DesktopPrivateDb {
   static const _keyStorageKey = 'evolve_private_db_key';
   static const _ownerStorageKey = 'evolve_private_owner_id';
   static const _avatarDirName = 'private_profile';
+
+  /// Suffix for the temporary "stashed" copy of a locked DB kept during an
+  /// auto-recovery cloud re-pull so it can be restored if the pull didn't run.
+  static const _bakSuffix = '.recovery-bak';
 
   /// Native bridge that flags the private-data directory as backup-excluded.
   /// Same channel contract as the iOS bridge (`evolve/private_storage`).
@@ -102,6 +142,15 @@ class DesktopPrivateDb {
     final existing = _db;
     if (existing != null && existing.isOpen) return existing;
     return _opening ??= _open().whenComplete(() => _opening = null);
+  }
+
+  /// Opens the DB (running the owner self-heal) without exposing the handle —
+  /// the recovery flow only needs "did it open, or is it locked?". Throws
+  /// [PrivateDatabaseLockedException] when the file exists but its key is gone.
+  /// Mirrors mobile's `PrivateDataStore.ensureReady`.
+  @override
+  Future<void> ensureReady() async {
+    await database;
   }
 
   /// The stable local owner UUID (created once, reused forever). Kept in the
@@ -168,14 +217,9 @@ class DesktopPrivateDb {
   /// user-confirmed recovery action — never automatically (a merely transient
   /// Keychain miss would otherwise nuke recoverable data). Best-effort per
   /// file; a missing sidecar is not an error.
+  @override
   Future<void> resetLockedDatabase() async {
-    try {
-      await _db?.close();
-    } catch (_) {
-      // A locked DB was never opened; closing a stale handle is best-effort.
-    }
-    _db = null;
-    _opening = null;
+    await _quiesceForFileMutation();
 
     final dir = await getApplicationSupportDirectory();
     final dbPath = p.join(dir.path, _dbFileName);
@@ -212,6 +256,103 @@ class DesktopPrivateDb {
       '[DesktopPrivateDb] locked database reset: orphaned file + key cleared; '
       'the next open mints a fresh key.',
     );
+  }
+
+  /// Bump the open generation, wait out any in-flight [_open] (so it can't
+  /// re-create a file we're about to move/delete), and drop the cached handle.
+  /// Shared by [resetLockedDatabase]/[stashLockedDatabase]/[restoreStashedDatabase],
+  /// which all mutate the DB file directly. Mirrors mobile's
+  /// `_quiesceForFileMutation`.
+  Future<void> _quiesceForFileMutation() async {
+    _openGeneration++;
+    final pending = _opening;
+    if (pending != null) {
+      try {
+        await pending;
+      } catch (_) {
+        // The in-flight open observes the generation bump and throws; ignore.
+      }
+    }
+    try {
+      await _db?.close();
+    } catch (_) {
+      // Best-effort: a locked DB was never opened / the handle is already dead.
+    }
+    _db = null;
+    _opening = null;
+  }
+
+  @override
+  Future<bool> stashLockedDatabase() async {
+    await _quiesceForFileMutation();
+    final dir = await getApplicationSupportDirectory();
+    final dbPath = p.join(dir.path, _dbFileName);
+    var stashed = false;
+    for (final suffix in ['', '-wal', '-shm']) {
+      final src = File('$dbPath$suffix');
+      final dst = File('$dbPath$suffix$_bakSuffix');
+      try {
+        if (await dst.exists()) await dst.delete();
+        if (await src.exists()) {
+          await src.rename(dst.path);
+          if (suffix.isEmpty) stashed = true;
+        }
+      } catch (error, stack) {
+        AppLogger.error('[DesktopPrivateDb] stash failed for $suffix', error, stack);
+      }
+    }
+    // Drop the unreadable key remnant so the next open mints a fresh key for the
+    // empty DB the cloud re-pull will populate. The stashed .bak still holds the
+    // real (old-key-encrypted) data until we discard or restore it.
+    try {
+      await SecureStorageUtils.deleteDeviceLocal(_keyStorageKey);
+    } catch (error, stack) {
+      AppLogger.warning(
+        '[DesktopPrivateDb] stash: key remnant delete failed', error, stack);
+    }
+    return stashed;
+  }
+
+  @override
+  Future<void> restoreStashedDatabase() async {
+    await _quiesceForFileMutation();
+    final dir = await getApplicationSupportDirectory();
+    final dbPath = p.join(dir.path, _dbFileName);
+    for (final suffix in ['', '-wal', '-shm']) {
+      final fresh = File('$dbPath$suffix');
+      final bak = File('$dbPath$suffix$_bakSuffix');
+      try {
+        if (await fresh.exists()) await fresh.delete();
+        if (await bak.exists()) await bak.rename(fresh.path);
+      } catch (error, stack) {
+        AppLogger.error(
+          '[DesktopPrivateDb] restore failed for $suffix', error, stack);
+      }
+    }
+    // The restored DB is encrypted with the OLD (now-lost) key; drop the fresh
+    // key minted for the discarded empty DB so isDatabaseLocked() reads true
+    // again and a later launch re-enters the recovery flow.
+    try {
+      await SecureStorageUtils.deleteDeviceLocal(_keyStorageKey);
+    } catch (error, stack) {
+      AppLogger.warning(
+        '[DesktopPrivateDb] restore: key remnant delete failed', error, stack);
+    }
+  }
+
+  @override
+  Future<void> discardStashedDatabase() async {
+    final dir = await getApplicationSupportDirectory();
+    final dbPath = p.join(dir.path, _dbFileName);
+    for (final suffix in ['', '-wal', '-shm']) {
+      final bak = File('$dbPath$suffix$_bakSuffix');
+      try {
+        if (await bak.exists()) await bak.delete();
+      } catch (error, stack) {
+        AppLogger.warning(
+          '[DesktopPrivateDb] discard stash failed for $suffix', error, stack);
+      }
+    }
   }
 
   /// Deletes all private data — wipes every user-data row and the avatar files,
@@ -1203,6 +1344,7 @@ class DesktopPrivateDb {
   // ---------------------------------------------------------------------------
 
   Future<Database> _open() async {
+    final gen = _openGeneration;
     final dir = await getApplicationSupportDirectory();
     final dbPath = p.join(dir.path, _dbFileName);
     final dbFileExists = await File(dbPath).exists();
@@ -1220,8 +1362,26 @@ class DesktopPrivateDb {
       onCreate: PrivateDbSchema.onCreate,
       onUpgrade: PrivateDbSchema.onUpgrade,
     );
-    await seedProfile(db, owner: await ownerId, now: _now());
-    await _reconcileOrphanedOwner(db);
+    // A reset/stash/restore may have run WHILE this open was in flight (those
+    // paths mutate the DB file outside any lock). If so, this handle points at a
+    // since-renamed/deleted (or re-created empty) file — discard it rather than
+    // caching a stale/empty handle, and surface it as a lock so the caller
+    // re-opens cleanly. Mirrors mobile's `_openGeneration` guard.
+    if (gen != _openGeneration) {
+      await db.close().catchError((_) {});
+      throw const PrivateDatabaseLockedException();
+    }
+    // Publish the handle only AFTER init succeeds. If seedProfile throws, a
+    // half-initialized handle must NOT be cached — that would permanently skip
+    // the orphaned-owner self-heal below. (_reconcileOrphanedOwner swallows its
+    // own errors, so only seedProfile can throw here.)
+    try {
+      await seedProfile(db, owner: await ownerId, now: _now());
+      await _reconcileOrphanedOwner(db);
+    } catch (_) {
+      await db.close().catchError((_) {});
+      rethrow;
+    }
     _db = db;
     debugPrint('[DesktopPrivateDb] Opened schema v${PrivateDbSchema.version}.');
     return db;

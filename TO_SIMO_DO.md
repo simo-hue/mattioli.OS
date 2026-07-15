@@ -130,3 +130,17 @@ by analyze + full suite (317/317) but the GUI can't run here. On the Mac Mini:
       a blank/grey dialog. Saving must keep the goal's category intact.
 - [ ] Sanity check the normal path too: with several saved categories, editing a goal still shows
       its current category pre-selected and lets you switch it.
+
+## Desktop recovery-hardening — mirrored from mobile (2026-07-15) — on-device QA
+The desktop macOS locked-DB auto-recovery now behaves IDENTICALLY to the hardened mobile app:
+stash-and-restore instead of destroy-before-confirm, `enable()`'s result is captured (no false
+"restored from iCloud" over an empty DB), honest waiting/needs-choice states, `_open` publish-after-init
++ generation guard, and the fire-and-forget onboarding try/catch guard. Verified: analyze clean + full
+desktop suite **317/317** (with the Supabase defines) + a desktop-vs-mobile adversarial parity review.
+No Xcode/CloudKit here, so confirm the real flows on the Mac Mini:
+- [ ] **Locked DB + sync ON, canonical owner not yet propagated** (enable defers) → the recovery screen
+      shows "waiting for iCloud key" and the LOCAL data is preserved (a `.recovery-bak` set exists, not
+      deleted); a later retry recovers the real data — NOT a "restored from iCloud" notice over empty data.
+- [ ] **Locked DB + iCloud unavailable** → "can't unlock" recovery screen, data intact (stash restored).
+- [ ] **Locked DB + full auto-recover works** → "restored from iCloud" notice, data back, `.recovery-bak` gone.
+- [ ] **Coherence** — confirm desktop and mobile behave identically across all of the above.

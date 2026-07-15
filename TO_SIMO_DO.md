@@ -71,3 +71,11 @@ OR delete `~/Library/Containers/com.simo.evolve/.../evolve_private_v2.db*`. Then
 - [ ] **Coherence**: confirm desktop and mobile behave identically for all of the above.
 - [ ] **Signing (prevention)**: keep the `Apple Development` cert/team `8528AN28A3` present on BOTH Macs so
       `flutter run` never falls back to ad-hoc (`CODE_SIGN_IDENTITY = "-"`), which is what orphans the key.
+
+### Follow-up fix (2026-07-15): recovery-screen crash via automatic sync — RE-VERIFY on-device
+The **Back to sign in** / recovery-screen flows above were crashing on a locked DB: the automatic iCloud-sync
+lifecycle (`DesktopSyncLifecycle`, which wraps the recovery screen) fired `syncNow()` on window refocus / its
+15-min timer / launch and let `PrivateDatabaseLockedException` escape unhandled (`_sync()` now try/catches it).
+Fixed + Dart-verified here; confirm on the actual different Mac (the one that showed the crash):
+- [ ] With a locked DB, sit on the recovery screen, click away and back to the window (triggers refocus sync),
+      then click **Back to sign in** → it must reach the login page with **no crash** in the `flutter run` console.

@@ -124,6 +124,20 @@ void main() {
     },
   );
 
+  test(
+    'syncStore throws PrivateDatabaseLockedException on a locked DB — the exact '
+    'crash path CloudKitPrivateSyncService._syncNow → storeProvider takes, and '
+    'the typed exception DesktopSyncLifecycle._sync must catch to no-op instead '
+    'of surfacing an unhandled zone crash',
+    () async {
+      await dbFile().writeAsString('encrypted-bytes'); // file exists, key gone
+      await expectLater(
+        db.syncStore(), // → database → _open → _encryptionKey (throws)
+        throwsA(isA<PrivateDatabaseLockedException>()),
+      );
+    },
+  );
+
   test('the guard throws the typed PrivateDatabaseLockedException', () {
     // toString stays byte-identical to the historical StateError message so any
     // UI surfacing error.toString() (and mobile parity) is unchanged.

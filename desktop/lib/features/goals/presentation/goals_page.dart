@@ -2181,17 +2181,26 @@ class _GoalEditorDialog extends StatefulWidget {
 
 class _GoalEditorDialogState extends State<_GoalEditorDialog> {
   final _title = TextEditingController();
+  late final List<_GoalCategory> _options;
   late _GoalCategory _category;
 
   @override
   void initState() {
     super.initState();
     _title.text = widget.goal?.title ?? '';
-    _category =
-        widget.categories
-            .where((item) => item == widget.initialCategory)
-            .firstOrNull ??
-        widget.categories.first;
+    // The goal's resolved category may not be part of the picker list: it can be
+    // a fallback derived from the goal itself when its own category was archived
+    // or removed, and the list can even be empty (categories start empty and are
+    // populated only from the user's own saved ones). Guarantee it's always an
+    // option so editing never crashes on `first` and the goal keeps its real
+    // category selected.
+    final initial = widget.initialCategory;
+    final options = [...widget.categories];
+    if (initial != null && !options.contains(initial)) {
+      options.insert(0, initial);
+    }
+    _options = options;
+    _category = initial ?? _options.first;
   }
 
   @override
@@ -2225,7 +2234,7 @@ class _GoalEditorDialogState extends State<_GoalEditorDialog> {
               height: 46,
               fillColor: context.evolveColors.background.withValues(alpha: 0.5),
               options: [
-                for (final category in widget.categories)
+                for (final category in _options)
                   EvolveSelectOption(
                     value: category,
                     label: _categoryLabel(category),

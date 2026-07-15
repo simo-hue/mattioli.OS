@@ -120,3 +120,13 @@ which asserts the Supabase config is present via build-time defines) reports a f
 - [ ] Run desktop tests as: `cd desktop && flutter test --dart-define-from-file=.env`
       (a bare `flutter test` "fails" only that config-presence guard — by design, not a bug).
       Make sure CI passes the same defines.
+
+## Desktop goal-editor crash fix (2026-07-15) — on-device QA
+Fixed a crash where editing an already-inserted goal threw `Bad state: No element` and blanked
+the editor dialog (empty/unmatched category picker → `categories.first` on an empty list). Verified
+by analyze + full suite (317/317) but the GUI can't run here. On the Mac Mini:
+- [ ] With **no saved goal categories**, create a goal, then reopen it via edit → the editor must
+      open normally (title + category picker populated with the goal's own category), NOT crash to
+      a blank/grey dialog. Saving must keep the goal's category intact.
+- [ ] Sanity check the normal path too: with several saved categories, editing a goal still shows
+      its current category pre-selected and lets you switch it.

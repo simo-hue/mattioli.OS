@@ -9,6 +9,7 @@ import '../../core/private_sync_service.dart';
 import '../../core/rtl.dart';
 import '../../core/theme.dart';
 import '../../i18n/translations.g.dart';
+import '../../providers/sync_refresh.dart'; // refreshSyncEnabled
 import '../kit/evolve_dialog.dart';
 import '../kit/evolve_switch.dart';
 import '../kit/evolve_sheet.dart';
@@ -45,9 +46,20 @@ class _IcloudSyncScreenState extends ConsumerState<IcloudSyncScreen> {
   }
 
   Future<void> _refresh() async {
-    final status = await ref.read(privateSyncServiceProvider).status();
+    // Guard `ref` up front: _refresh runs from initState AND from _runAction's
+    // catch path, where the user may already have popped this screen during the
+    // async gap — reading a provider through a disposed `ref` throws the "Using
+    // ref … unmounted" StateError (the reported crash class). Bail before
+    // touching `ref`, and never let a status() failure escape as an unhandled
+    // async error (it would reach the global handler and crash).
     if (!mounted) return;
-    setState(() => _status = status);
+    try {
+      final status = await ref.read(privateSyncServiceProvider).status();
+      if (!mounted) return;
+      setState(() => _status = status);
+    } catch (e, stack) {
+      AppLogger.error('iCloud sync status refresh failed', e, stack);
+    }
   }
 
   Future<void> _runAction(
@@ -59,6 +71,9 @@ class _IcloudSyncScreenState extends ConsumerState<IcloudSyncScreen> {
       final status = await action(ref.read(privateSyncServiceProvider));
       if (!mounted) return;
       setState(() => _status = status);
+      // enable()/disable() flipped the per-device flag — rebuild any widget
+      // watching it (e.g. the dashboard SyncOffBanner) so it reflects the change.
+      refreshSyncEnabled(ref);
     } catch (e, stack) {
       AppLogger.error('iCloud sync action failed', e, stack);
       // Re-read so the UI reflects the real state after a failure.

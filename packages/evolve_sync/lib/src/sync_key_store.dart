@@ -33,7 +33,15 @@ class SyncKeyStore {
   Future<Uint8List?> readKey() async {
     final b64 = await _store.read(keyKey);
     if (b64 == null || b64.isEmpty) return null;
-    final bytes = base64Decode(b64);
+    // A stored value that isn't valid base64 (corrupt Keychain item) must be
+    // treated as absent, exactly like the wrong-length case below — never let
+    // a FormatException escape readKey() and abort the whole enable/sync.
+    Uint8List bytes;
+    try {
+      bytes = base64Decode(b64);
+    } on FormatException {
+      return null; // malformed — treat as absent
+    }
     return bytes.length == SyncCrypto.keyLengthBytes
         ? Uint8List.fromList(bytes)
         : null; // malformed — treat as absent

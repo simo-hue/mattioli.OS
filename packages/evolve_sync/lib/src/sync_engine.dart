@@ -8,6 +8,14 @@ import 'sync_key_store.dart';
 import 'sync_local_store.dart';
 import 'sync_logger.dart';
 
+/// Outcome of applying ONE pulled record. Distinguishes a benign skip (we
+/// already hold a newer/equal copy, the record isn't applyable on this app, or
+/// it's structurally malformed) from a real [failed] apply (a transient DB
+/// error, a decrypt failure, a missing asset). A [failed] record must HOLD the
+/// change token so it's retried on a later sync rather than silently dropped —
+/// see [SyncEngine._pull].
+enum _ApplyOutcome { applied, skipped, failed }
+
 class SyncResult {
   final int pushed;
   final int applied;
@@ -82,6 +90,12 @@ class SyncEngine {
 
   /// Reject timestamps more than this far in the future (clock-skew guard, Q10).
   static const int _maxFutureSkewMs = 5 * 60 * 1000;
+
+  /// Hard cap on delta-fetch pages per pull. A correct CloudKit bridge sets
+  /// `moreComing` with a strictly-advancing token and terminates in a handful
+  /// of pages; this only backstops a misbehaving/regressed bridge so the pull
+  /// can't spin forever / grow unbounded in memory.
+  static const int _maxFetchPages = 10000;
 
   /// Turn sync on for this device: obtain the shared E2E key, establish/adopt
   /// the canonical owner (re-keying local data to it on a second device so
@@ -211,39 +225,70 @@ class SyncEngine {
     final all = <CloudRecord>[];
     final originalToken = await store.changeToken();
     String? token = originalToken;
+    var pages = 0;
     while (true) {
       final out = await bridge.fetchChanges(token);
       all.addAll(out.records);
-      token = out.newToken;
-      if (!out.moreComing) break;
+      if (!out.moreComing) {
+        token = out.newToken;
+        break;
+      }
+      // moreComing == true promises another page AND a strictly-advancing
+      // token. Guard against a misbehaving/regressed bridge that reports
+      // moreComing without advancing the token: otherwise this loops forever
+      // re-fetching the same page and grows `all` without bound (OOM). Bail
+      // with what we've gathered — a held token (below) re-fetches next sync.
+      final next = out.newToken;
+      if (next == null || next == token || ++pages > _maxFetchPages) {
+        logger.error(
+          '[CloudKit] Pull paging halted: moreComing but the change token did '
+          'not advance (or exceeded $_maxFetchPages pages)',
+          'paging-no-progress',
+          null,
+          {'pages': pages},
+        );
+        token = next ?? token;
+        break;
+      }
+      token = next;
     }
     all.sort((a, b) => (_applyPriority[a.tableName] ?? 9)
         .compareTo(_applyPriority[b.tableName] ?? 9));
 
     var applied = 0;
     var skipped = 0;
-    var deferredFutureRecord = false;
+    // Hold the change token at its pre-fetch value when ANY record in this
+    // batch must be re-fetched on a later sync rather than lost: a clock-skew
+    // deferral OR a real apply FAILURE (SQLite busy/locked, a decrypt error, a
+    // transient DB error, a missing avatar asset). CloudKit will not re-deliver
+    // a record once the token advances past it (unless it's edited again), so
+    // stepping past an unapplied record would silently and permanently drop it
+    // — the exact invariant the future-skew guard already protects. Re-applying
+    // an already-applied record on the next pull is idempotent (LWW skips it).
+    var holdToken = false;
     final nowMs = DateTime.now().toUtc().millisecondsSinceEpoch;
     for (final rec in all) {
       if (rec.updatedAtMs > nowMs + _maxFutureSkewMs) {
-        // Clock-skew guard: another device's clock is ahead of ours. DEFER this
-        // record rather than dropping it — see the token handling below.
-        deferredFutureRecord = true;
+        // Clock-skew guard: another device's clock is ahead of ours. DEFER.
+        holdToken = true;
         skipped++;
         continue;
       }
-      if (await _applyRemote(rec, key)) {
-        applied++;
-      } else {
-        skipped++;
+      switch (await _applyRemote(rec, key)) {
+        case _ApplyOutcome.applied:
+          applied++;
+        case _ApplyOutcome.skipped:
+          // Benign: an older/equal LWW copy, a not-wired avatar, or a
+          // structurally-malformed record — safe to let the token advance past.
+          skipped++;
+        case _ApplyOutcome.failed:
+          // A real, potentially-transient apply failure: keep the token back so
+          // the record is retried on a later sync instead of being dropped.
+          skipped++;
+          holdToken = true;
       }
     }
-    // Only advance the change token if nothing was deferred. A future-skewed
-    // record must be re-fetched on a later sync (once our clock catches up),
-    // so we hold the token at its pre-fetch value instead of stepping past the
-    // record and losing it forever. Re-applying the already-applied records on
-    // the next pull is harmless (LWW skips them).
-    await store.setChangeToken(deferredFutureRecord ? originalToken : token);
+    await store.setChangeToken(holdToken ? originalToken : token);
     return (applied, skipped);
   }
 
@@ -270,18 +315,33 @@ class SyncEngine {
     );
   }
 
-  Future<bool> _applyRemote(CloudRecord rec, Uint8List key) async {
+  Future<_ApplyOutcome> _applyRemote(CloudRecord rec, Uint8List key) async {
     final local = await store.stateOf(rec.recordName);
     final localMs = local == null ? -1 : _ms(local.updatedAt);
     // Strict >: equal timestamps keep the local copy. Exact-millisecond
     // conflicts on the same record are vanishingly rare for a single user.
-    if (rec.updatedAtMs <= localMs) return false;
+    if (rec.updatedAtMs <= localMs) return _ApplyOutcome.skipped;
 
     if (rec.tableName == PrivateDbSchema.avatarRecordTable) {
       return _applyRemoteAvatar(rec, key);
     }
 
-    final rowId = rec.recordName.substring(rec.tableName.length + 1);
+    // A well-formed record name is always "<tableName>:<id>". A name lacking
+    // that prefix is structurally invalid (a foreign/corrupt record) — it can
+    // never apply, so skip-with-error and let the token advance PAST it rather
+    // than letting an unguarded substring RangeError escape and wedge the pull.
+    final prefix = '${rec.tableName}:';
+    if (!rec.recordName.startsWith(prefix)) {
+      await store.markError(rec.recordName, 'malformed recordName');
+      logger.error(
+        '[CloudKit] Skipping malformed record (name has no "<table>:" prefix)',
+        'malformed recordName',
+        null,
+        {'recordName': rec.recordName, 'tableName': rec.tableName},
+      );
+      return _ApplyOutcome.skipped;
+    }
+    final rowId = rec.recordName.substring(prefix.length);
     try {
       if (rec.deleted) {
         await store.applyDelete(
@@ -300,7 +360,7 @@ class SyncEngine {
           _nowIso(),
         );
       }
-      return true;
+      return _ApplyOutcome.applied;
     } catch (e, stack) {
       await store.markError(rec.recordName, e.toString());
       logger.error(
@@ -309,7 +369,7 @@ class SyncEngine {
         stack,
         {'recordName': rec.recordName, 'tableName': rec.tableName},
       );
-      return false;
+      return _ApplyOutcome.failed;
     }
   }
 
@@ -317,9 +377,9 @@ class SyncEngine {
   /// otherwise the downloaded (encrypted) asset is opened with the sync key and
   /// re-localized by the app's avatar store. Bookkeeping mirrors the row paths:
   /// server edit time stamped, dirty cleared.
-  Future<bool> _applyRemoteAvatar(CloudRecord rec, Uint8List key) async {
+  Future<_ApplyOutcome> _applyRemoteAvatar(CloudRecord rec, Uint8List key) async {
     final files = avatarStore;
-    if (files == null) return false; // not wired — skip, don't error
+    if (files == null) return _ApplyOutcome.skipped; // not wired — skip, advance
     try {
       if (rec.deleted) {
         await files.removeAvatar();
@@ -337,8 +397,12 @@ class SyncEngine {
         _nowIso(),
         deleted: rec.deleted,
       );
-      return true;
+      return _ApplyOutcome.applied;
     } catch (e, stack) {
+      // A read/decrypt failure here is often transient — e.g. a CKAsset temp
+      // file that CloudKit hadn't materialized yet. Treat it as [failed] so the
+      // token holds and the avatar record is re-fetched next sync (the asset is
+      // re-staged), rather than advancing past it and losing the avatar.
       await store.markError(rec.recordName, e.toString());
       logger.error(
         '[CloudKit] Avatar apply failed',
@@ -346,7 +410,7 @@ class SyncEngine {
         stack,
         {'recordName': rec.recordName},
       );
-      return false;
+      return _ApplyOutcome.failed;
     }
   }
 

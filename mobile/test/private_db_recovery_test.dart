@@ -127,6 +127,55 @@ void main() {
     },
   );
 
+  const bak = '.recovery-bak';
+
+  test('stashLockedDatabase renames the db aside and clears the key', () async {
+    await dbFile().writeAsString('enc');
+    await File('${dbFile().path}-wal').writeAsString('wal');
+    keychain[keyStorageKey] = 'short';
+    expect(await db.isDatabaseLocked(), isTrue);
+
+    final stashed = await db.stashLockedDatabase();
+
+    expect(stashed, isTrue);
+    // Original moved aside to .bak (not deleted); key remnant cleared.
+    expect(await dbFile().exists(), isFalse);
+    expect(await File('${dbFile().path}$bak').exists(), isTrue);
+    expect(await File('${dbFile().path}-wal$bak').exists(), isTrue);
+    expect(keychain.containsKey(keyStorageKey), isFalse);
+    // With no db file present, a fresh open can proceed (no longer "locked").
+    expect(await db.isDatabaseLocked(), isFalse);
+  });
+
+  test('restoreStashedDatabase puts the stashed db back and re-locks', () async {
+    await dbFile().writeAsString('enc-original');
+    keychain[keyStorageKey] = 'short';
+    await db.stashLockedDatabase();
+    // Simulate the fresh empty DB + minted key a cloud re-pull would create.
+    await dbFile().writeAsString('fresh-empty');
+    keychain[keyStorageKey] = 'n' * 64;
+
+    await db.restoreStashedDatabase();
+
+    // Fresh DB discarded, the original restored byte-for-byte, .bak gone, and
+    // the store is LOCKED again so a later launch re-enters recovery.
+    expect(await dbFile().readAsString(), 'enc-original');
+    expect(await File('${dbFile().path}$bak').exists(), isFalse);
+    expect(keychain.containsKey(keyStorageKey), isFalse);
+    expect(await db.isDatabaseLocked(), isTrue);
+  });
+
+  test('discardStashedDatabase deletes the stashed .bak set', () async {
+    await dbFile().writeAsString('enc');
+    keychain[keyStorageKey] = 'short';
+    await db.stashLockedDatabase();
+    expect(await File('${dbFile().path}$bak').exists(), isTrue);
+
+    await db.discardStashedDatabase();
+
+    expect(await File('${dbFile().path}$bak').exists(), isFalse);
+  });
+
   test('the guard exception toString matches desktop parity', () {
     expect(
       const PrivateDatabaseLockedException().toString(),

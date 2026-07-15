@@ -45,12 +45,23 @@ class FakePrivateSyncService implements PrivateSyncService {
     bool isEnabled = false,
     DateTime? lastSyncedAt,
     CloudAccountStatus? account = CloudAccountStatus.available,
+    this.throwOnStatus = false,
+    this.throwOnAction = false,
   }) : _status = PrivateSyncStatus(
           isAvailable: isAvailable,
           isEnabled: isEnabled,
           lastSyncedAt: lastSyncedAt,
           account: account,
         );
+
+  /// When set, `status()` throws — simulates a Keychain/DB hiccup that must be
+  /// swallowed rather than escaping as an unhandled async error (the reported
+  /// crash class).
+  final bool throwOnStatus;
+
+  /// When set, `syncNow`/`enable`/`disable` throw — simulates a CloudKit/network
+  /// failure mid-action, which the screen must catch (not crash on).
+  final bool throwOnAction;
 
   PrivateSyncStatus _status;
   final List<String> calls = [];
@@ -68,6 +79,7 @@ class FakePrivateSyncService implements PrivateSyncService {
   @override
   Future<PrivateSyncStatus> status() async {
     calls.add('status');
+    if (throwOnStatus) throw StateError('status boom');
     return _status;
   }
 
@@ -80,6 +92,7 @@ class FakePrivateSyncService implements PrivateSyncService {
   @override
   Future<PrivateSyncStatus> enable() async {
     calls.add('enable');
+    if (throwOnAction) throw StateError('enable boom');
     _status = _copyWith(
       isEnabled: true,
       lastSyncedAt: DateTime.utc(2026, 6, 23, 10, 30),
@@ -90,6 +103,7 @@ class FakePrivateSyncService implements PrivateSyncService {
   @override
   Future<PrivateSyncStatus> disable() async {
     calls.add('disable');
+    if (throwOnAction) throw StateError('disable boom');
     _status = _copyWith(isEnabled: false);
     return _status;
   }
@@ -97,6 +111,7 @@ class FakePrivateSyncService implements PrivateSyncService {
   @override
   Future<PrivateSyncStatus> syncNow() async {
     calls.add('syncNow');
+    if (throwOnAction) throw StateError('syncNow boom');
     _status = _copyWith(lastSyncedAt: DateTime.utc(2026, 6, 23, 11, 0));
     return _status;
   }
@@ -111,8 +126,9 @@ class FakePrivateSyncService implements PrivateSyncService {
 
 Future<void> _pumpScreen(
   WidgetTester tester,
-  FakePrivateSyncService fake,
-) async {
+  FakePrivateSyncService fake, {
+  bool settle = true,
+}) async {
   // Private mode: `authProvider`/`settingsProvider` (read by `ref.hapticLight`)
   // short-circuit without Supabase, and the on-device store is faked.
   SharedPreferences.setMockInitialValues({'active_data_mode': 'private'});
@@ -138,8 +154,16 @@ Future<void> _pumpScreen(
       ),
     ),
   );
-  // Let the initState status() future resolve.
-  await tester.pumpAndSettle();
+  if (settle) {
+    // Let the initState status() future resolve.
+    await tester.pumpAndSettle();
+  } else {
+    // The status() future fails/hangs (screen stays on an infinite loading
+    // spinner), so pumpAndSettle would time out. Pump fixed frames instead and
+    // advance past AppLogger's 2s debounce so no timer outlives the test.
+    await tester.pump();
+    await tester.pump(const Duration(seconds: 3));
+  }
 }
 
 /// Runs [body] with the target platform forced to iOS for its whole duration.
@@ -251,6 +275,39 @@ void main() {
       await _pumpScreen(tester, fake);
 
       expect(find.text('Sign in to iCloud to sync'), findsOneWidget);
+    });
+  });
+
+  testWidgets('a failing status() on load is swallowed (no crash)',
+      (tester) async {
+    await _withIosPlatform(() async {
+      // initState -> _refresh() -> status() throws. Before the guard this was an
+      // unhandled async error at the global handler; now it is caught.
+      final fake = FakePrivateSyncService(throwOnStatus: true);
+      await _pumpScreen(tester, fake, settle: false);
+
+      expect(tester.takeException(), isNull);
+      // The screen stays on the loading state rather than crashing.
+      expect(find.byType(CircularProgressIndicator), findsOneWidget);
+    });
+  });
+
+  testWidgets('a failing sync action is caught and does not crash',
+      (tester) async {
+    await _withIosPlatform(() async {
+      // Action throws (CloudKit/network), then the catch-path refresh runs.
+      // Neither must escape as an unhandled exception.
+      final fake = FakePrivateSyncService(isEnabled: true, throwOnAction: true);
+      await _pumpScreen(tester, fake);
+
+      await tester.tap(find.text('Sync now'));
+      await tester.pump(); // start the async action + its rejection
+      await tester.pump(const Duration(seconds: 3)); // catch + refresh + logger
+
+      expect(tester.takeException(), isNull);
+      expect(fake.calls, contains('syncNow'));
+      // Still on the screen (its title is present).
+      expect(find.text('iCloud Sync'), findsOneWidget);
     });
   });
 }

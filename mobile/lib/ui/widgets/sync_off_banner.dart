@@ -7,13 +7,8 @@ import 'package:lucide_icons_flutter/lucide_icons.dart';
 import '../../core/data_mode.dart';
 import '../../core/theme.dart';
 import '../../i18n/translations.g.dart';
-import '../../providers/shared_prefs_provider.dart';
+import '../../providers/sync_refresh.dart'; // syncEnabledProvider
 import '../screens/icloud_sync_screen.dart';
-
-/// Per-device "sync enabled" flag key (mirrors `PrefsSyncEnabledStore._key` in
-/// the evolve_sync package). Kept in sync deliberately; the package keeps its
-/// copy private.
-const String _kSyncEnabledKey = 'private_sync_enabled_v1';
 
 /// Dismisses the banner for the current app session only. It returns next launch
 /// while sync stays off, because the data-loss risk it warns about is permanent.
@@ -43,9 +38,10 @@ class SyncOffBanner extends ConsumerWidget {
     }
     if (ref.watch(_syncBannerDismissedProvider)) return const SizedBox.shrink();
 
-    final prefs = ref.watch(sharedPrefsProvider);
-    final syncEnabled = prefs.getBool(_kSyncEnabledKey) ?? false;
-    if (syncEnabled) return const SizedBox.shrink();
+    // Reactive: rebuilds when sync is toggled (the toggle sites call
+    // refreshSyncEnabled), so the banner clears immediately after the user
+    // enables iCloud sync instead of lingering until an app restart.
+    if (ref.watch(syncEnabledProvider)) return const SizedBox.shrink();
 
     final colors = context.appColors;
     return Container(

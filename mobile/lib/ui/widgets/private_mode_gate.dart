@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:lucide_icons_flutter/lucide_icons.dart';
 
+import '../../core/app_logger.dart';
 import '../../core/private_local_database.dart'; // privateLocalDatabaseProvider
 import '../../core/private_mode_recovery.dart';
 import '../../core/private_sync_service.dart'; // privateSyncServiceProvider
@@ -9,7 +10,7 @@ import '../../core/theme.dart';
 import '../../i18n/translations.g.dart';
 import '../../providers/auth_provider.dart';
 import '../../providers/shared_prefs_provider.dart';
-import '../../providers/sync_refresh.dart'; // invalidatePrivateDataProviders
+import '../../providers/sync_refresh.dart'; // invalidatePrivateDataProviders, refreshSyncEnabled
 import '../kit/evolve_button.dart';
 import '../kit/evolve_dialog.dart'; // showEvolveConfirm
 import '../kit/evolve_toast.dart';
@@ -70,34 +71,44 @@ class _PrivateModeGateState extends ConsumerState<PrivateModeGate> {
   static const _syncPromptKey = 'private_sync_onboarding_shown_v1';
 
   Future<void> _maybePromptSync() async {
-    final prefs = ref.read(sharedPrefsProvider);
-    if (prefs.getBool(_syncPromptKey) ?? false) return;
-    final sync = ref.read(privateSyncServiceProvider);
-    final probe = await sync.probe();
-    if (probe.isEnabled) {
+    // Runs fire-and-forget from _run (itself launched in initState). probe() and
+    // enable() reach the Keychain / CloudKit and can throw; a throw here would
+    // become an unhandled async error at the global handler. Contain it — the
+    // one-time onboarding prompt must never crash entry into Private mode.
+    try {
+      final prefs = ref.read(sharedPrefsProvider);
+      if (prefs.getBool(_syncPromptKey) ?? false) return;
+      final sync = ref.read(privateSyncServiceProvider);
+      final probe = await sync.probe();
+      if (!mounted) return;
+      if (probe.isEnabled) {
+        await prefs.setBool(_syncPromptKey, true);
+        return;
+      }
+      // No iCloud account yet — don't burn the one-time prompt; offer again later.
+      if (!probe.isAvailable) return;
       await prefs.setBool(_syncPromptKey, true);
-      return;
+      if (!mounted) return;
+      final enable = await showEvolveConfirm(
+        context: context,
+        title: context.t.icloudSync.disclosureTitle,
+        message: context.t.icloudSync.disclosureBody,
+        confirmLabel: context.t.icloudSync.disclosureAccept,
+        ref: ref,
+      );
+      if (!enable || !mounted) return;
+      await ref.read(privateSyncServiceProvider).enable();
+      if (!mounted) return;
+      refreshSyncEnabled(ref);
+      invalidatePrivateDataProviders(ref);
+      showEvolveToast(
+        context,
+        message: context.t.icloudSync.statusIdle,
+        kind: EvolveToastKind.success,
+      );
+    } catch (e, stack) {
+      AppLogger.error('Private-mode sync onboarding failed', e, stack);
     }
-    // No iCloud account yet — don't burn the one-time prompt; offer again later.
-    if (!probe.isAvailable || !mounted) return;
-    await prefs.setBool(_syncPromptKey, true);
-    if (!mounted) return;
-    final enable = await showEvolveConfirm(
-      context: context,
-      title: context.t.icloudSync.disclosureTitle,
-      message: context.t.icloudSync.disclosureBody,
-      confirmLabel: context.t.icloudSync.disclosureAccept,
-      ref: ref,
-    );
-    if (!enable || !mounted) return;
-    await ref.read(privateSyncServiceProvider).enable();
-    if (!mounted) return;
-    invalidatePrivateDataProviders(ref);
-    showEvolveToast(
-      context,
-      message: context.t.icloudSync.statusIdle,
-      kind: EvolveToastKind.success,
-    );
   }
 
   Future<void> _reset({required bool enableSync}) async {

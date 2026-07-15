@@ -343,5 +343,63 @@ void main() {
       await dbA.close();
       await dbB.close();
     });
+
+    test(
+        'a record that FAILS to apply holds the change token (not lost) and is '
+        'recovered on a later successful sync', () async {
+      final cloud = FakeCloudKitBridge();
+      final dbA = await openFreshV3();
+      final dbB = await openFreshV3();
+      await seedOwner(dbA);
+      await seedOwner(dbB);
+
+      await insertGoal(dbA, 'g1', title: 'secret', at: t(10));
+      await engine(dbA, cloud).syncNow(key);
+
+      // Device B pulls with the WRONG key: decrypting g1's payload throws, so the
+      // apply fails. A failed apply must NOT advance the token (that would drop
+      // the record forever) — it must hold it for a later retry.
+      final wrongKey = crypto.generateKey();
+      final res = await engine(dbB, cloud).syncNow(wrongKey);
+      expect(res.applied, 0);
+      expect(await readGoal(dbB, 'g1'), isNull); // nothing applied
+      expect(await SyncLocalStore(dbB).changeToken(), isNull); // token HELD
+
+      // Once B can decrypt (correct key delivered), the SAME record is re-fetched
+      // (the token was held) and applied — no data lost.
+      final res2 = await engine(dbB, cloud).syncNow(key);
+      expect(res2.applied, 1);
+      expect((await readGoal(dbB, 'g1'))!['title'], 'secret');
+      expect(await SyncLocalStore(dbB).changeToken(), isNotNull); // now advanced
+      await dbA.close();
+      await dbB.close();
+    });
+
+    test('a malformed record name is skipped and lets the token advance',
+        () async {
+      // A structurally-invalid record (name without the "<table>:" prefix) can
+      // never apply; it must be skipped WITHOUT wedging the pull (no RangeError)
+      // and WITHOUT holding the token forever.
+      final cloud = FakeCloudKitBridge();
+      final db = await openFreshV3();
+      await seedOwner(db);
+
+      await cloud.saveRecords([
+        CloudRecord(
+          recordName: 'not-a-valid-name', // no "goals:" prefix
+          tableName: 'goals',
+          updatedAtMs: ms(t(10)),
+          deleted: false,
+          payload: crypto.encryptJson({'id': 'x', 'title': 'y'}, key),
+        ),
+      ]);
+
+      final res = await engine(db, cloud).syncNow(key);
+      expect(res.applied, 0);
+      // The token advanced past the malformed record (it will not be re-fetched
+      // and re-crash the pull every sync).
+      expect(await SyncLocalStore(db).changeToken(), isNotNull);
+      await db.close();
+    });
   });
 }

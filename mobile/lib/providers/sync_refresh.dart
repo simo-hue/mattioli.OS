@@ -6,7 +6,26 @@ import 'macro_goals_provider.dart';
 import 'macro_goals_stats_provider.dart';
 import 'mood_provider.dart';
 import 'settings_provider.dart';
+import 'shared_prefs_provider.dart';
 import 'user_provider.dart';
+
+/// Reactive mirror of the per-device "iCloud sync enabled" flag. The flag is a
+/// plain SharedPreferences bool the sync service writes (`enable`/`disable`);
+/// reading it directly inside `build()` is NOT reactive (the SharedPreferences
+/// instance identity never changes), so widgets that must reflect the toggle —
+/// e.g. the data-loss `SyncOffBanner` — watch THIS provider instead and the
+/// toggle sites call [refreshSyncEnabled] to force a rebuild. Keyed identically
+/// to `PrefsSyncEnabledStore._key` in the evolve_sync package.
+const String kSyncEnabledPrefKey = 'private_sync_enabled_v1';
+
+final syncEnabledProvider = Provider<bool>((ref) {
+  final prefs = ref.watch(sharedPrefsProvider);
+  return prefs.getBool(kSyncEnabledPrefKey) ?? false;
+});
+
+/// Re-read [syncEnabledProvider] after sync has been enabled/disabled so any
+/// widget watching it rebuilds. Call from every site that toggles sync.
+void refreshSyncEnabled(WidgetRef ref) => ref.invalidate(syncEnabledProvider);
 
 /// Invalidate the in-memory private-data providers after a sync applied remote
 /// changes, so the UI reflects the pulled data. The sync engine writes straight

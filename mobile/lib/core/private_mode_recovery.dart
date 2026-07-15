@@ -65,26 +65,63 @@ Future<PrivateRecoveryResult> openOrRecoverPrivate({
     return PrivateRecoveryResult(PrivateRecoveryStatus.error, error: error);
   }
 
-  final probe = await sync.probe();
+  // probe() reaches the Keychain / CloudKit and can throw; honor this function's
+  // "never throws" contract (it runs fire-and-forget from PrivateModeGate).
+  final PrivateSyncStatus probe;
+  try {
+    probe = await sync.probe();
+  } catch (error, stack) {
+    AppLogger.error('[PrivateRecovery] probe failed', error, stack);
+    return PrivateRecoveryResult(PrivateRecoveryStatus.error, error: error);
+  }
   switch (decidePrivateModeRecovery(probe)) {
     case PrivateModeRecoveryAction.autoRecoverFromCloud:
       try {
         AppLogger.warning(
-          '[PrivateRecovery] locked Private DB — resetting the local cache and '
+          '[PrivateRecovery] locked Private DB — stashing the local cache and '
           're-pulling from iCloud (its data is safe in CloudKit)',
         );
-        await store.resetLockedDatabase();
+        // Stash (don't delete) the locked cache so a deferred/blocked enable can
+        // be UNDONE — otherwise we'd destroy the only local copy before the
+        // cloud pull is confirmed and strand the user in an empty DB.
+        await store.stashLockedDatabase();
         // enable() re-joins sync: resolves + adopts the canonical owner from the
-        // synced Keychain and full-pulls the zone. Plain syncNow() would NOT
-        // adopt the owner, so the re-pulled rows would be orphaned until reopen.
-        await sync.enable();
-        await store.ensureReady(); // open the fresh, re-populated DB
+        // synced Keychain and full-pulls the zone. It can legitimately DEFER
+        // (key synced, canonical owner not yet — SyncResult.ownerPending, leaves
+        // sync disabled) or be BLOCKED (iCloud went unavailable between probe and
+        // now), in which case it populated NOTHING. Only claim success when it
+        // actually ran (isEnabled). Plain syncNow() would NOT adopt the owner.
+        final status = await sync.enable();
+        if (status.isEnabled) {
+          await store.ensureReady(); // open the fresh, re-populated DB
+          await store.discardStashedDatabase(); // recovery committed — drop .bak
+          return const PrivateRecoveryResult(
+            PrivateRecoveryStatus.ready,
+            restoredFromCloud: true,
+          );
+        }
+        // enable() did not run — restore the stashed cache (locked again) so a
+        // later retry can recover the real data instead of accepting an empty DB
+        // behind a misleading "restored from iCloud" toast.
+        await store.restoreStashedDatabase();
+        if (status.isAvailable && status.hasKey) {
+          // Key present but the canonical owner hasn't synced yet — wait & retry.
+          return const PrivateRecoveryResult(
+            PrivateRecoveryStatus.waitingForICloudKey,
+          );
+        }
+        // iCloud flipped unavailable in the gap — let the user retry / choose.
         return const PrivateRecoveryResult(
-          PrivateRecoveryStatus.ready,
-          restoredFromCloud: true,
+          PrivateRecoveryStatus.needsUserChoice,
+          iCloudUnavailable: true,
         );
       } catch (error, stack) {
         AppLogger.error('[PrivateRecovery] cloud recovery failed', error, stack);
+        // Put the stashed cache back so a mid-recovery failure doesn't strand
+        // the user in an empty DB (best-effort; safe if nothing was stashed).
+        try {
+          await store.restoreStashedDatabase();
+        } catch (_) {}
         return PrivateRecoveryResult(PrivateRecoveryStatus.error, error: error);
       }
     case PrivateModeRecoveryAction.waitForICloudKey:

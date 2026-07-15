@@ -210,6 +210,30 @@ class FakePrivateDataStore implements PrivateDataStore {
     locked = false;
   }
 
+  /// Whether a locked DB is currently stashed aside (recovery in progress).
+  bool stashed = false;
+
+  @override
+  Future<bool> stashLockedDatabase() async {
+    calls.add('stashLockedDatabase');
+    stashed = true;
+    locked = false;
+    return true;
+  }
+
+  @override
+  Future<void> restoreStashedDatabase() async {
+    calls.add('restoreStashedDatabase');
+    stashed = false;
+    locked = true;
+  }
+
+  @override
+  Future<void> discardStashedDatabase() async {
+    calls.add('discardStashedDatabase');
+    stashed = false;
+  }
+
   // ── Analytics (return harmless empties so the fake stays reusable) ───────
   @override
   Future<List<Map<String, dynamic>>> habitStats() async =>

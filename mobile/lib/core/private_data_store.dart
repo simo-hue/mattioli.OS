@@ -111,6 +111,22 @@ abstract interface class PrivateDataStore {
   /// `PrivateLocalDatabase.resetLockedDatabase`.
   Future<void> resetLockedDatabase();
 
+  /// Auto-recovery: renames the locked DB (+ sidecars) ASIDE to a `.bak` set
+  /// (instead of deleting) and clears the unreadable key, so a fresh empty DB
+  /// can be re-pulled from iCloud. Reversible via [restoreStashedDatabase] if
+  /// the pull doesn't actually run. Returns true if a DB file was stashed.
+  /// Never throws. See `PrivateLocalDatabase.stashLockedDatabase`.
+  Future<bool> stashLockedDatabase();
+
+  /// Undo [stashLockedDatabase]: discards the fresh (empty) DB and restores the
+  /// stashed copy, leaving it LOCKED again so a later launch retries recovery.
+  /// Never throws.
+  Future<void> restoreStashedDatabase();
+
+  /// Commit [stashLockedDatabase]: the cloud re-pull succeeded, so delete the
+  /// stashed `.bak` set for good. Never throws.
+  Future<void> discardStashedDatabase();
+
   Future<List<Map<String, dynamic>>> habitStats();
 
   Future<Map<String, Map<String, dynamic>>> habitAnalytics();

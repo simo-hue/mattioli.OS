@@ -58,6 +58,10 @@ class PrivateLocalDatabase implements PrivateDataStore {
   static const _dbPasswordKey = 'private_mode_db_password_v1';
   static const _ownerIdKey = 'private_mode_owner_id_v1';
 
+  /// Suffix for the temporary "stashed" copy of a locked DB kept during an
+  /// auto-recovery cloud re-pull so it can be restored if the pull didn't run.
+  static const _bakSuffix = '.recovery-bak';
+
   /// Whether the encrypted private database file already exists on disk.
   ///
   /// Used at bootstrap to detect a private-mode user whose `active_data_mode`
@@ -79,6 +83,12 @@ class PrivateLocalDatabase implements PrivateDataStore {
   Database? _db;
   Future<Database>? _opening;
   String? _ownerId;
+
+  /// Bumped whenever the DB file is reset/stashed/restored out from under an
+  /// in-flight [_open] (those paths run outside the sync-service lock). An open
+  /// that started before the bump discards its handle instead of caching one
+  /// that points at a since-renamed/deleted (or freshly re-created empty) file.
+  int _openGeneration = 0;
 
   /// After-write sync hook (iCloud sync trigger #2): set at app bootstrap to
   /// the [SyncWriteDebouncer]'s notifyWrite, called by every mutating method
@@ -147,6 +157,7 @@ class PrivateLocalDatabase implements PrivateDataStore {
   }
 
   Future<Database> _open() async {
+    final gen = _openGeneration;
     final dir = await getApplicationSupportDirectory();
     await dir.create(recursive: true);
     final dbPath = p.join(dir.path, _dbName);
@@ -165,9 +176,29 @@ class PrivateLocalDatabase implements PrivateDataStore {
       onCreate: PrivateDbSchema.onCreate,
       onUpgrade: PrivateDbSchema.onUpgrade,
     );
+    // A reset/stash/restore may have run WHILE this open was in flight (those
+    // paths mutate the DB file outside the sync-service lock). If so, this
+    // handle points at a since-renamed/deleted (or re-created empty) file —
+    // discard it rather than caching a stale/empty handle, and surface it as a
+    // lock so the caller re-opens cleanly.
+    if (gen != _openGeneration) {
+      await db.close().catchError((_) {});
+      throw const PrivateDatabaseLockedException();
+    }
+    // Publish the handle only AFTER init succeeds. If _ensureProfile throws, a
+    // half-initialized handle must NOT be cached — that would permanently skip
+    // the orphaned-owner self-heal below for the rest of the process. Close it
+    // and leave _db null so the next _database() retries the full open.
+    // (_reconcileOrphanedOwner swallows its own errors, so only _ensureProfile
+    // can throw here.)
+    try {
+      await _ensureProfile(db);
+      await _reconcileOrphanedOwner(db);
+    } catch (_) {
+      await db.close().catchError((_) {});
+      rethrow;
+    }
     _db = db;
-    await _ensureProfile(db);
-    await _reconcileOrphanedOwner(db);
     return db;
   }
 
@@ -933,13 +964,7 @@ class PrivateLocalDatabase implements PrivateDataStore {
   /// file; a missing sidecar is not an error.
   @override
   Future<void> resetLockedDatabase() async {
-    try {
-      await _db?.close();
-    } catch (_) {
-      // A locked DB was never opened; closing a stale handle is best-effort.
-    }
-    _db = null;
-    _opening = null;
+    await _quiesceForFileMutation();
 
     final dir = await getApplicationSupportDirectory();
     final dbPath = p.join(dir.path, _dbName);
@@ -985,6 +1010,98 @@ class PrivateLocalDatabase implements PrivateDataStore {
       '[PrivateDB] locked database reset: orphaned file + key cleared; the '
       'next open mints a fresh key.',
     );
+  }
+
+  /// Bump the open generation, wait out any in-flight [_open] (so it can't
+  /// re-create a file we're about to move/delete), and drop the cached handle.
+  /// Shared by [resetLockedDatabase]/[stashLockedDatabase]/[restoreStashedDatabase],
+  /// which all mutate the DB file directly and run outside the sync lock.
+  Future<void> _quiesceForFileMutation() async {
+    _openGeneration++;
+    final pending = _opening;
+    if (pending != null) {
+      try {
+        await pending;
+      } catch (_) {
+        // The in-flight open observes the generation bump and throws; ignore.
+      }
+    }
+    try {
+      await _db?.close();
+    } catch (_) {
+      // Best-effort: a locked DB was never opened / the handle is already dead.
+    }
+    _db = null;
+    _opening = null;
+  }
+
+  @override
+  Future<bool> stashLockedDatabase() async {
+    await _quiesceForFileMutation();
+    final dir = await getApplicationSupportDirectory();
+    final dbPath = p.join(dir.path, _dbName);
+    var stashed = false;
+    for (final suffix in ['', '-wal', '-shm']) {
+      final src = File('$dbPath$suffix');
+      final dst = File('$dbPath$suffix$_bakSuffix');
+      try {
+        if (await dst.exists()) await dst.delete();
+        if (await src.exists()) {
+          await src.rename(dst.path);
+          if (suffix.isEmpty) stashed = true;
+        }
+      } catch (error, stack) {
+        AppLogger.error('[PrivateDB] stash failed for $suffix', error, stack);
+      }
+    }
+    // Drop the unreadable key remnant so the next open mints a fresh key for the
+    // empty DB the cloud re-pull will populate. The stashed .bak still holds the
+    // real (old-key-encrypted) data until we discard or restore it.
+    try {
+      await SecureStorageUtils.deleteDeviceLocal(_dbPasswordKey);
+    } catch (error, stack) {
+      AppLogger.warning('[PrivateDB] stash: key remnant delete failed', error, stack);
+    }
+    return stashed;
+  }
+
+  @override
+  Future<void> restoreStashedDatabase() async {
+    await _quiesceForFileMutation();
+    final dir = await getApplicationSupportDirectory();
+    final dbPath = p.join(dir.path, _dbName);
+    for (final suffix in ['', '-wal', '-shm']) {
+      final fresh = File('$dbPath$suffix');
+      final bak = File('$dbPath$suffix$_bakSuffix');
+      try {
+        if (await fresh.exists()) await fresh.delete();
+        if (await bak.exists()) await bak.rename(fresh.path);
+      } catch (error, stack) {
+        AppLogger.error('[PrivateDB] restore failed for $suffix', error, stack);
+      }
+    }
+    // The restored DB is encrypted with the OLD (now-lost) key; drop the fresh
+    // key minted for the discarded empty DB so isDatabaseLocked() reads true
+    // again and a later launch re-enters the recovery flow.
+    try {
+      await SecureStorageUtils.deleteDeviceLocal(_dbPasswordKey);
+    } catch (error, stack) {
+      AppLogger.warning('[PrivateDB] restore: key remnant delete failed', error, stack);
+    }
+  }
+
+  @override
+  Future<void> discardStashedDatabase() async {
+    final dir = await getApplicationSupportDirectory();
+    final dbPath = p.join(dir.path, _dbName);
+    for (final suffix in ['', '-wal', '-shm']) {
+      final bak = File('$dbPath$suffix$_bakSuffix');
+      try {
+        if (await bak.exists()) await bak.delete();
+      } catch (error, stack) {
+        AppLogger.warning('[PrivateDB] discard stash failed for $suffix', error, stack);
+      }
+    }
   }
 
   @override

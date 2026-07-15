@@ -43,6 +43,7 @@ class TranslationsIt extends Translations with BaseTranslations<AppLocale, Trans
 	@override late final _Translations$privateAi$it privateAi = _Translations$privateAi$it._(_root);
 	@override late final _Translations$privateData$it privateData = _Translations$privateData$it._(_root);
 	@override late final _Translations$icloudSync$it icloudSync = _Translations$icloudSync$it._(_root);
+	@override late final _Translations$privateRecovery$it privateRecovery = _Translations$privateRecovery$it._(_root);
 	@override late final _Translations$namePrompt$it namePrompt = _Translations$namePrompt$it._(_root);
 	@override late final _Translations$nav$it nav = _Translations$nav$it._(_root);
 	@override late final _Translations$shell$it shell = _Translations$shell$it._(_root);
@@ -167,6 +168,28 @@ class _Translations$icloudSync$it extends Translations$icloudSync$en {
 	@override String get lastSyncedNever => 'Mai sincronizzato';
 	@override String lastSyncedAt({required Object time}) => 'Ultima sincronizzazione ${time}';
 	@override String get deleteSyncNote => 'La sincronizzazione iCloud è attiva: verrà eliminata anche la copia sincronizzata nel tuo iCloud e la sincronizzazione verrà disattivata. Gli altri dispositivi conservano la loro copia locale — esegui questa operazione su ciascun dispositivo per eliminare tutto ovunque.';
+}
+
+// Path: privateRecovery
+class _Translations$privateRecovery$it extends Translations$privateRecovery$en {
+	_Translations$privateRecovery$it._(TranslationsIt root) : this._root = root, super.internal(root);
+
+	final TranslationsIt _root; // ignore: unused_field
+
+	// Translations
+	@override String get preparing => 'Preparazione del tuo spazio privato…';
+	@override String get restoredFromCloudToast => 'Impossibile sbloccare il database locale: i tuoi dati sono stati ripristinati da iCloud.';
+	@override String get waitingTitle => 'In attesa di iCloud';
+	@override String get waitingMessage => 'La sincronizzazione è attiva, ma la tua chiave di crittografia non è ancora arrivata dal Portachiavi iCloud. Attendi un momento e riprova.';
+	@override String get lockedTitle => 'Impossibile sbloccare i dati privati';
+	@override String get lockedMessageLocalOnly => 'Questo dispositivo non può sbloccare il database privato locale — la chiave di crittografia è mancante — e la sincronizzazione iCloud è disattivata, quindi non c\'è una copia cloud da ripristinare. Puoi reimpostare e ricominciare.';
+	@override String get lockedMessageICloudUnavailable => 'Questo dispositivo non può sbloccare il database privato locale. La sincronizzazione iCloud è attiva ma l\'account non è disponibile: accedi a iCloud e riprova.';
+	@override String get errorTitle => 'Impossibile aprire la modalità privata';
+	@override String get errorMessage => 'Si è verificato un problema durante l\'apertura del database privato. Riprova oppure reimpostalo e ricomincia.';
+	@override String get enableSyncHint => 'Hai questi dati su un altro dispositivo? Attiva la sincronizzazione iCloud nelle Impostazioni dopo la reimpostazione per recuperarli qui.';
+	@override String get retry => 'Riprova';
+	@override String get resetFresh => 'Reimposta e ricomincia';
+	@override String get backToSignIn => 'Torna all\'accesso';
 }
 
 // Path: namePrompt
@@ -1614,6 +1637,19 @@ extension on TranslationsIt {
 			'icloudSync.lastSyncedNever' => 'Mai sincronizzato',
 			'icloudSync.lastSyncedAt' => ({required Object time}) => 'Ultima sincronizzazione ${time}',
 			'icloudSync.deleteSyncNote' => 'La sincronizzazione iCloud è attiva: verrà eliminata anche la copia sincronizzata nel tuo iCloud e la sincronizzazione verrà disattivata. Gli altri dispositivi conservano la loro copia locale — esegui questa operazione su ciascun dispositivo per eliminare tutto ovunque.',
+			'privateRecovery.preparing' => 'Preparazione del tuo spazio privato…',
+			'privateRecovery.restoredFromCloudToast' => 'Impossibile sbloccare il database locale: i tuoi dati sono stati ripristinati da iCloud.',
+			'privateRecovery.waitingTitle' => 'In attesa di iCloud',
+			'privateRecovery.waitingMessage' => 'La sincronizzazione è attiva, ma la tua chiave di crittografia non è ancora arrivata dal Portachiavi iCloud. Attendi un momento e riprova.',
+			'privateRecovery.lockedTitle' => 'Impossibile sbloccare i dati privati',
+			'privateRecovery.lockedMessageLocalOnly' => 'Questo dispositivo non può sbloccare il database privato locale — la chiave di crittografia è mancante — e la sincronizzazione iCloud è disattivata, quindi non c\'è una copia cloud da ripristinare. Puoi reimpostare e ricominciare.',
+			'privateRecovery.lockedMessageICloudUnavailable' => 'Questo dispositivo non può sbloccare il database privato locale. La sincronizzazione iCloud è attiva ma l\'account non è disponibile: accedi a iCloud e riprova.',
+			'privateRecovery.errorTitle' => 'Impossibile aprire la modalità privata',
+			'privateRecovery.errorMessage' => 'Si è verificato un problema durante l\'apertura del database privato. Riprova oppure reimpostalo e ricomincia.',
+			'privateRecovery.enableSyncHint' => 'Hai questi dati su un altro dispositivo? Attiva la sincronizzazione iCloud nelle Impostazioni dopo la reimpostazione per recuperarli qui.',
+			'privateRecovery.retry' => 'Riprova',
+			'privateRecovery.resetFresh' => 'Reimposta e ricomincia',
+			'privateRecovery.backToSignIn' => 'Torna all\'accesso',
 			'namePrompt.title' => 'Come ti chiami?',
 			'namePrompt.subtitle' => 'Inserisci il tuo nome per personalizzare la dashboard.',
 			'namePrompt.hint' => 'Es. Simo',
@@ -2066,6 +2102,8 @@ extension on TranslationsIt {
 			'habitsPage.weekdayAbbrevUpper.4' => 'VEN',
 			'habitsPage.weekdayAbbrevUpper.5' => 'SAB',
 			'habitsPage.weekdayAbbrevUpper.6' => 'DOM',
+			_ => null,
+		} ?? switch (path) {
 			'habitsPage.lifeView' => 'Vista vita',
 			'habitsPage.lifeViewSubtitle' => 'Una cella rappresenta un mese del percorso fino a 85 anni.',
 			'habitsPage.monthsLived' => 'Mesi vissuti',
@@ -2079,8 +2117,6 @@ extension on TranslationsIt {
 			'habitsPage.reminderHint' => 'es. 08:30',
 			'habitsPage.close' => 'Chiudi',
 			'habitsPage.statusDone' => 'Completata',
-			_ => null,
-		} ?? switch (path) {
 			'habitsPage.statusSkipped' => 'Saltata',
 			'habitsPage.statusUnrecorded' => 'Non registrata',
 			'habitsPage.weekOf' => ({required Object day, required Object month}) => 'Settimana del ${day} ${month}',
@@ -2580,6 +2616,8 @@ extension on TranslationsIt {
 			'tour.habitsAddTitle' => 'Aggiungi un\'abitudine',
 			'tour.habitsAddDesc' => 'Crea una nuova abitudine qui — nome, categoria, colore e un promemoria opzionale.',
 			'tour.habitsCheckoffTitle' => 'Segnala come fatta',
+			_ => null,
+		} ?? switch (path) {
 			'tour.habitsCheckoffDesc' => 'Spunta questa casella per completare un\'abitudine oggi. Basta questo per mantenere viva una serie.',
 			'tour.habitsStreakTitle' => 'Serie e cronologia',
 			'tour.habitsStreakDesc' => 'Guarda crescere la tua serie e vedi gli ultimi sette giorni a colpo d\'occhio.',
@@ -2593,8 +2631,6 @@ extension on TranslationsIt {
 			'tour.insightsTabsDesc' => 'Passa tra le sezioni per tendenze, avvisi, progressi delle abitudini e umore.',
 			'tour.goalsOrientationTitle' => 'La pagina Obiettivi',
 			'tour.goalsOrientationDesc' => 'Imposta e monitora i tuoi obiettivi più grandi — ciò a cui puntano le tue abitudini quotidiane.',
-			_ => null,
-		} ?? switch (path) {
 			'tour.goalsPlanTitle' => 'Tipo di pianificazione',
 			'tour.goalsPlanDesc' => 'Scegli come pianificare — giornaliera, settimanale o più lunga — in base a come pensi i tuoi obiettivi.',
 			'tour.goalsAddTitle' => 'Aggiungi un obiettivo',

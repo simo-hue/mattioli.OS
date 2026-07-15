@@ -72,6 +72,12 @@ class FakePrivateSyncService implements PrivateSyncService {
   }
 
   @override
+  Future<PrivateSyncStatus> probe() async {
+    calls.add('probe');
+    return _status;
+  }
+
+  @override
   Future<PrivateSyncStatus> enable() async {
     calls.add('enable');
     _status = _copyWith(

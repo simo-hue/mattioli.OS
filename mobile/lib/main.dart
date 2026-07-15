@@ -18,6 +18,7 @@ import 'providers/auth_provider.dart';
 import 'ui/screens/dashboard_screen.dart';
 import 'ui/screens/auth_screen.dart';
 import 'ui/screens/consent_screen.dart';
+import 'ui/widgets/private_mode_gate.dart';
 import 'ui/widgets/biometric_lock_gate.dart';
 import 'providers/consent_provider.dart';
 import 'core/notifications.dart';
@@ -268,7 +269,7 @@ final routerProvider = Provider<GoRouter>((ref) {
       if (dataMode != AppDataMode.private) SentryNavigatorObserver(),
     ],
     routes: [
-      GoRoute(path: '/', builder: (context, state) => const HomeScreen()),
+      GoRoute(path: '/', builder: (context, state) => const _PrivateAwareHome()),
       GoRoute(path: '/login', builder: (context, state) => const AuthScreen()),
       GoRoute(
         path: '/consent',
@@ -303,6 +304,23 @@ final routerProvider = Provider<GoRouter>((ref) {
 });
 
 // ── App ──────────────────────────────────────────────────────────────────────
+/// The home route. In Private mode it wraps the dashboard in [PrivateModeGate]
+/// so the encrypted DB is opened — and a LOCKED one recovered (auto re-pull from
+/// iCloud when safe, else an explicit choice) — before the dashboard loads. This
+/// covers both a fresh "continue privately" and a restored Private session.
+class _PrivateAwareHome extends ConsumerWidget {
+  const _PrivateAwareHome();
+
+  @override
+  Widget build(BuildContext context, WidgetRef ref) {
+    final isPrivate =
+        ref.watch(activeDataModeProvider) == AppDataMode.private;
+    return isPrivate
+        ? const PrivateModeGate(child: HomeScreen())
+        : const HomeScreen();
+  }
+}
+
 /// Replays notification-queued habit logs whenever the app returns to the
 /// foreground (NOTIF-1). [NotificationService.replayPendingHabitLogs] cheaply
 /// no-ops when the queue is empty, so this is safe on every resume.

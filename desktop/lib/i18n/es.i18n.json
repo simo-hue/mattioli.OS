@@ -54,6 +54,21 @@
     "lastSyncedAt": "Última sincronización {time}",
     "deleteSyncNote": "La sincronización de iCloud está activada: también se eliminará la copia sincronizada de tu iCloud y se desactivará la sincronización. Los demás dispositivos conservan su copia local — ejecuta esta acción en cada dispositivo para borrarlo todo en todas partes."
   },
+  "privateRecovery": {
+    "preparing": "Preparando tu espacio privado…",
+    "restoredFromCloudToast": "No se pudo desbloquear la base de datos local: tus datos se restauraron desde iCloud.",
+    "waitingTitle": "Esperando a iCloud",
+    "waitingMessage": "La sincronización está activada, pero tu clave de cifrado aún no ha llegado desde el Llavero de iCloud. Espera un momento y vuelve a intentarlo.",
+    "lockedTitle": "No se pueden desbloquear los datos privados",
+    "lockedMessageLocalOnly": "Este dispositivo no puede desbloquear tu base de datos privada local —falta su clave de cifrado— y la sincronización de iCloud está desactivada, así que no hay copia en la nube para restaurar. Puedes restablecer y empezar de nuevo.",
+    "lockedMessageICloudUnavailable": "Este dispositivo no puede desbloquear tu base de datos privada local. La sincronización de iCloud está activada, pero la cuenta no está disponible: inicia sesión en iCloud y vuelve a intentarlo.",
+    "errorTitle": "No se pudo abrir el modo privado",
+    "errorMessage": "Algo salió mal al abrir tu base de datos privada. Vuelve a intentarlo o restablécela y empieza de nuevo.",
+    "enableSyncHint": "¿Tienes estos datos en otro dispositivo? Activa la sincronización de iCloud en Ajustes después de restablecer para traerlos aquí.",
+    "retry": "Reintentar",
+    "resetFresh": "Restablecer y empezar de nuevo",
+    "backToSignIn": "Volver al inicio de sesión"
+  },
   "namePrompt": {
     "title": "¿Cómo te llamas?",
     "subtitle": "Introduce tu nombre para personalizar el panel.",

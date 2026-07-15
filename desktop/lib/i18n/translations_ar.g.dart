@@ -43,6 +43,7 @@ class TranslationsAr extends Translations with BaseTranslations<AppLocale, Trans
 	@override late final _Translations$privateAi$ar privateAi = _Translations$privateAi$ar._(_root);
 	@override late final _Translations$privateData$ar privateData = _Translations$privateData$ar._(_root);
 	@override late final _Translations$icloudSync$ar icloudSync = _Translations$icloudSync$ar._(_root);
+	@override late final _Translations$privateRecovery$ar privateRecovery = _Translations$privateRecovery$ar._(_root);
 	@override late final _Translations$namePrompt$ar namePrompt = _Translations$namePrompt$ar._(_root);
 	@override late final _Translations$nav$ar nav = _Translations$nav$ar._(_root);
 	@override late final _Translations$shell$ar shell = _Translations$shell$ar._(_root);
@@ -167,6 +168,28 @@ class _Translations$icloudSync$ar extends Translations$icloudSync$en {
 	@override String get lastSyncedNever => 'لم تتم المزامنة مطلقًا';
 	@override String lastSyncedAt({required Object time}) => 'آخر مزامنة ${time}';
 	@override String get deleteSyncNote => 'مزامنة iCloud مفعّلة: سيؤدي هذا أيضًا إلى حذف النسخة المتزامنة من iCloud الخاص بك وإيقاف المزامنة. تحتفظ الأجهزة الأخرى بنسختها المحلية — نفّذ هذا الإجراء على كل جهاز للحذف في كل مكان.';
+}
+
+// Path: privateRecovery
+class _Translations$privateRecovery$ar extends Translations$privateRecovery$en {
+	_Translations$privateRecovery$ar._(TranslationsAr root) : this._root = root, super.internal(root);
+
+	final TranslationsAr _root; // ignore: unused_field
+
+	// Translations
+	@override String get preparing => 'جارٍ تجهيز مساحتك الخاصة…';
+	@override String get restoredFromCloudToast => 'تعذّر فتح قاعدة البيانات المحلية — تمت استعادة بياناتك من iCloud.';
+	@override String get waitingTitle => 'بانتظار iCloud';
+	@override String get waitingMessage => 'المزامنة مفعّلة، لكن مفتاح التشفير لم يصل بعد من سلسلة مفاتيح iCloud. انتظر لحظة ثم أعد المحاولة.';
+	@override String get lockedTitle => 'تعذّر فتح البيانات الخاصة';
+	@override String get lockedMessageLocalOnly => 'لا يستطيع هذا الجهاز فتح قاعدة بياناتك الخاصة المحلية — مفتاح التشفير مفقود — ومزامنة iCloud متوقّفة، لذا لا توجد نسخة سحابية للاستعادة. يمكنك إعادة التعيين والبدء من جديد.';
+	@override String get lockedMessageICloudUnavailable => 'لا يستطيع هذا الجهاز فتح قاعدة بياناتك الخاصة المحلية. مزامنة iCloud مفعّلة لكن الحساب غير متاح — سجّل الدخول إلى iCloud ثم أعد المحاولة.';
+	@override String get errorTitle => 'تعذّر فتح الوضع الخاص';
+	@override String get errorMessage => 'حدث خطأ أثناء فتح قاعدة بياناتك الخاصة. أعد المحاولة، أو أعد تعيينها وابدأ من جديد.';
+	@override String get enableSyncHint => 'هل لديك هذه البيانات على جهاز آخر؟ فعّل مزامنة iCloud من الإعدادات بعد إعادة التعيين لجلبها إلى هنا.';
+	@override String get retry => 'إعادة المحاولة';
+	@override String get resetFresh => 'إعادة التعيين والبدء من جديد';
+	@override String get backToSignIn => 'العودة إلى تسجيل الدخول';
 }
 
 // Path: namePrompt
@@ -1614,6 +1637,19 @@ extension on TranslationsAr {
 			'icloudSync.lastSyncedNever' => 'لم تتم المزامنة مطلقًا',
 			'icloudSync.lastSyncedAt' => ({required Object time}) => 'آخر مزامنة ${time}',
 			'icloudSync.deleteSyncNote' => 'مزامنة iCloud مفعّلة: سيؤدي هذا أيضًا إلى حذف النسخة المتزامنة من iCloud الخاص بك وإيقاف المزامنة. تحتفظ الأجهزة الأخرى بنسختها المحلية — نفّذ هذا الإجراء على كل جهاز للحذف في كل مكان.',
+			'privateRecovery.preparing' => 'جارٍ تجهيز مساحتك الخاصة…',
+			'privateRecovery.restoredFromCloudToast' => 'تعذّر فتح قاعدة البيانات المحلية — تمت استعادة بياناتك من iCloud.',
+			'privateRecovery.waitingTitle' => 'بانتظار iCloud',
+			'privateRecovery.waitingMessage' => 'المزامنة مفعّلة، لكن مفتاح التشفير لم يصل بعد من سلسلة مفاتيح iCloud. انتظر لحظة ثم أعد المحاولة.',
+			'privateRecovery.lockedTitle' => 'تعذّر فتح البيانات الخاصة',
+			'privateRecovery.lockedMessageLocalOnly' => 'لا يستطيع هذا الجهاز فتح قاعدة بياناتك الخاصة المحلية — مفتاح التشفير مفقود — ومزامنة iCloud متوقّفة، لذا لا توجد نسخة سحابية للاستعادة. يمكنك إعادة التعيين والبدء من جديد.',
+			'privateRecovery.lockedMessageICloudUnavailable' => 'لا يستطيع هذا الجهاز فتح قاعدة بياناتك الخاصة المحلية. مزامنة iCloud مفعّلة لكن الحساب غير متاح — سجّل الدخول إلى iCloud ثم أعد المحاولة.',
+			'privateRecovery.errorTitle' => 'تعذّر فتح الوضع الخاص',
+			'privateRecovery.errorMessage' => 'حدث خطأ أثناء فتح قاعدة بياناتك الخاصة. أعد المحاولة، أو أعد تعيينها وابدأ من جديد.',
+			'privateRecovery.enableSyncHint' => 'هل لديك هذه البيانات على جهاز آخر؟ فعّل مزامنة iCloud من الإعدادات بعد إعادة التعيين لجلبها إلى هنا.',
+			'privateRecovery.retry' => 'إعادة المحاولة',
+			'privateRecovery.resetFresh' => 'إعادة التعيين والبدء من جديد',
+			'privateRecovery.backToSignIn' => 'العودة إلى تسجيل الدخول',
 			'namePrompt.title' => 'ما اسمك؟',
 			'namePrompt.subtitle' => 'أدخل اسمك لتخصيص لوحة المعلومات.',
 			'namePrompt.hint' => 'مثال: Simo',
@@ -2066,6 +2102,8 @@ extension on TranslationsAr {
 			'habitsPage.weekdayAbbrevUpper.4' => 'جمع',
 			'habitsPage.weekdayAbbrevUpper.5' => 'سبت',
 			'habitsPage.weekdayAbbrevUpper.6' => 'أحد',
+			_ => null,
+		} ?? switch (path) {
 			'habitsPage.lifeView' => 'عرض الحياة',
 			'habitsPage.lifeViewSubtitle' => 'تمثّل كل خلية شهرًا من المسار حتى سن 85.',
 			'habitsPage.monthsLived' => 'الأشهر المُعاشة',
@@ -2079,8 +2117,6 @@ extension on TranslationsAr {
 			'habitsPage.reminderHint' => 'مثال: 08:30',
 			'habitsPage.close' => 'إغلاق',
 			'habitsPage.statusDone' => 'مكتملة',
-			_ => null,
-		} ?? switch (path) {
 			'habitsPage.statusSkipped' => 'متخطاة',
 			'habitsPage.statusUnrecorded' => 'غير مسجلة',
 			'habitsPage.weekOf' => ({required Object day, required Object month}) => 'أسبوع ${day} ${month}',
@@ -2580,6 +2616,8 @@ extension on TranslationsAr {
 			'tour.habitsAddTitle' => 'أضف عادة',
 			'tour.habitsAddDesc' => 'أنشئ عادة جديدة هنا — بالاسم والفئة واللون وتذكير اختياري.',
 			'tour.habitsCheckoffTitle' => 'علّمها كمنجزة',
+			_ => null,
+		} ?? switch (path) {
 			'tour.habitsCheckoffDesc' => 'علّم هذا المربع لإكمال عادة اليوم. هذا كل ما يلزم للحفاظ على السلسلة.',
 			'tour.habitsStreakTitle' => 'السلاسل والسجل',
 			'tour.habitsStreakDesc' => 'شاهد سلسلتك تنمو وألقِ نظرة على آخر سبعة أيام دفعة واحدة.',
@@ -2593,8 +2631,6 @@ extension on TranslationsAr {
 			'tour.insightsTabsDesc' => 'بدّل بين الأقسام للاتجاهات والتنبيهات وتقدّم العادات ومزاجك.',
 			'tour.goalsOrientationTitle' => 'صفحة الأهداف',
 			'tour.goalsOrientationDesc' => 'حدّد وتابع أهدافك الأكبر — ما تبني نحوه عاداتك اليومية.',
-			_ => null,
-		} ?? switch (path) {
 			'tour.goalsPlanTitle' => 'نوع التخطيط',
 			'tour.goalsPlanDesc' => 'اختر كيف تخطّط — يوميًا أو أسبوعيًا أو لمدى أطول — بما يناسب طريقة تفكيرك في أهدافك.',
 			'tour.goalsAddTitle' => 'أضف هدفًا',

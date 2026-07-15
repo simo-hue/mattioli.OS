@@ -10,7 +10,6 @@ import 'package:crypto/crypto.dart';
 import '../core/supabase_config.dart';
 import '../core/app_logger.dart';
 import '../core/data_mode.dart';
-import '../core/private_local_database.dart';
 import '../core/secure_local_storage.dart';
 import '../i18n/translations.g.dart';
 
@@ -294,22 +293,15 @@ class AuthNotifier extends Notifier<AuthState> with ChangeNotifier {
   }
 
   Future<void> startPrivateMode() async {
-    final previousMode = ref.read(activeDataModeProvider);
-    state = state.copyWith(isLoading: true, clearError: true);
     AppLogger.setExternalReportingDisabled(true);
-    try {
-      await ref.read(privateLocalDatabaseProvider).ensureReady();
-      await ref.read(activeDataModeProvider.notifier).enterPrivateMode();
-      state = const AuthState(isLoggedIn: false, dataMode: AppDataMode.private);
-      notifyListeners();
-    } catch (e, stack) {
-      AppLogger.error('[Auth] Private mode startup error', e, stack);
-      AppLogger.setExternalReportingDisabled(previousMode.isPrivate);
-      state = state.copyWith(
-        isLoading: false,
-        error: t.auth.errors.privateModeStart,
-      );
-    }
+    // Flip to Private mode; AuthNotifier.build() rebuilds to a private AuthState
+    // (canAccessApp ⇒ routes to '/'), where PrivateModeGate opens the encrypted
+    // DB and runs the locked-DB recovery flow — auto re-pull from iCloud when
+    // safe, else an explicit recovery choice — instead of dead-ending here on a
+    // missing SQLCipher key. Mirrors desktop's `enterPrivateMode`.
+    await ref.read(activeDataModeProvider.notifier).enterPrivateMode();
+    state = const AuthState(isLoggedIn: false, dataMode: AppDataMode.private);
+    notifyListeners();
   }
 
   Future<void> returnToLoginFromPrivateMode() async {

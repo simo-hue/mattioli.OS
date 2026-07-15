@@ -6,7 +6,8 @@
 - [ ] Cloud mode for AI, in both mobile and desktop implementation, we need to implement the fact that they need to insert their API Keys, we can also give a possibility to add two of them so they can have a back up in case the first one is not working ( if you think it does make sense )
 - [ ] For the desktop implementation what has been done with ollama is outstanding and I want to replicate the same thing also with LMStudio so the major local LLM providers are supported
 - [ ] Curor of AI Coach Response
-- [ ] 
+- [ ] From mobile implementation, in the settings the "App logs" field has to few bottom margin from the button "Go to login", I want you to increase it.
+- [ ] mobile animation between lateral scroll on the goals page? Improve it
 
 
 ## Auto-Verified Habits — Xcode setup (feature is dark behind `VerificationConfig.enabled`)
@@ -51,3 +52,22 @@ pending. Run `flutter run -d macos` and verify:
 - [ ] **BOTH DATA MODES**: run the above once in Cloud (Supabase) mode and once in Private mode — behaviour
       should be identical (search is in-memory; writes go through the active repository).
 - [ ] **RTL**: with Arabic UI, confirm the palette + new period pickers read correctly.
+
+
+## Private-mode locked-DB recovery + iCloud onboarding — on-device QA (desktop + mobile)
+Built + `flutter analyze`-clean + unit-tested here, but no Xcode/CloudKit on this Mac. The dead-end where
+"continue privately" showed "Operazione non riuscita" is replaced by a recovery gate. To unblock the Mac Mini
+you can now just enter Private mode → **Reset & start fresh** on the recovery screen (dev data is disposable),
+OR delete `~/Library/Containers/com.simo.evolve/.../evolve_private_v2.db*`. Then verify on a real device:
+- [ ] **Sync OFF, locked DB** → the recovery screen appears ("Can't unlock private data"), **Reset & start
+      fresh** works (fresh empty DB, no crash), **Back to sign in** returns to the login page (not stranded).
+- [ ] **Sync ON, locked DB** (enable iCloud sync on another device first, then lock/rotate signing) → the gate
+      **auto-resets + re-pulls from iCloud** and shows the "restored from iCloud" toast — data is back, no prompt.
+- [ ] **Onboarding prompt**: first time entering Private mode on an iCloud-signed-in device with sync OFF, the
+      one-time "enable iCloud sync?" (E2E disclosure) prompt shows; **Not now** = stays off; **Enable** turns sync
+      on. It must NOT reappear on later entries, and must NOT show when iCloud is signed out (offer later instead).
+- [ ] **Startup path**: with `active_data_mode = private` persisted and a locked DB, cold-launch routes through
+      the gate (not a broken empty dashboard).
+- [ ] **Coherence**: confirm desktop and mobile behave identically for all of the above.
+- [ ] **Signing (prevention)**: keep the `Apple Development` cert/team `8528AN28A3` present on BOTH Macs so
+      `flutter run` never falls back to ad-hoc (`CODE_SIGN_IDENTITY = "-"`), which is what orphans the key.

@@ -533,6 +533,21 @@
     "bannerText": "iCloud sync is off — your habits live only on this device and are lost if you change or reset your phone.",
     "bannerAction": "Turn on"
   },
+  "privateRecovery": {
+    "preparing": "Preparing your private space…",
+    "restoredFromCloudToast": "Couldn't unlock the local database — restored your data from iCloud.",
+    "waitingTitle": "Waiting for iCloud",
+    "waitingMessage": "Sync is on, but your encryption key hasn't arrived from iCloud Keychain yet. Give it a moment, then retry.",
+    "lockedTitle": "Can't unlock private data",
+    "lockedMessageLocalOnly": "This device can't unlock your local private database — its encryption key is missing — and iCloud sync is off, so there's no cloud copy to restore. You can reset and start fresh.",
+    "lockedMessageICloudUnavailable": "This device can't unlock your local private database. iCloud sync is on but the account is unavailable — sign in to iCloud, then retry.",
+    "errorTitle": "Couldn't open private mode",
+    "errorMessage": "Something went wrong opening your private database. Retry, or reset it and start fresh.",
+    "enableSyncHint": "Have this data on another device? Turn on iCloud sync in Settings after resetting to pull it here.",
+    "retry": "Retry",
+    "resetFresh": "Reset & start fresh",
+    "backToSignIn": "Back to sign in"
+  },
   "consent": {
     "systemNotifications": "System Notifications",
     "termsAndPrivacy": "Terms and Privacy Policy",

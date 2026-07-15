@@ -8,6 +8,7 @@ import 'package:evolve_desktop/features/auth/application/auth_controller.dart';
 import 'package:evolve_desktop/features/auth/application/consent_controller.dart';
 import 'package:evolve_desktop/features/auth/presentation/auth_page.dart';
 import 'package:evolve_desktop/features/auth/presentation/consent_page.dart';
+import 'package:evolve_desktop/features/auth/presentation/private_mode_gate.dart';
 import 'package:evolve_desktop/features/shell/presentation/desktop_shell.dart';
 import 'package:evolve_desktop/features/settings/application/desktop_biometric_controller.dart';
 import 'package:flutter/material.dart';
@@ -75,7 +76,11 @@ class EvolveDesktopApp extends ConsumerWidget {
           ? const _DesktopBackendConfigurationErrorPage()
           : !consent.hasCompletedOnboarding
           ? const DesktopConsentPage()
-          : isPrivateMode || auth.isLoggedIn
+          : isPrivateMode
+          ? const PrivateModeGate(
+              child: DesktopBiometricGate(child: DesktopShell()),
+            )
+          : auth.isLoggedIn
           ? const DesktopBiometricGate(child: DesktopShell())
           : const DesktopAuthPage(),
     );

@@ -113,6 +113,19 @@ class CloudKitPrivateSyncService implements PrivateSyncService {
   }
 
   @override
+  Future<PrivateSyncStatus> probe() async {
+    // Store-FREE (never calls storeProvider()), so it works when the local DB is
+    // locked — exactly when the recovery flow needs it. See PrivateSyncService.probe.
+    final account = await bridge.accountStatus();
+    return PrivateSyncStatus(
+      isAvailable: account == CloudAccountStatus.available,
+      isEnabled: await enabledStore.isEnabled(),
+      account: account,
+      hasKey: await keys.readKey() != null,
+    );
+  }
+
+  @override
   Future<PrivateSyncStatus> enable() => _runExclusive(_enable);
 
   Future<PrivateSyncStatus> _enable() async {

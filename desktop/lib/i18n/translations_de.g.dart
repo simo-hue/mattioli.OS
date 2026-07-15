@@ -43,6 +43,7 @@ class TranslationsDe extends Translations with BaseTranslations<AppLocale, Trans
 	@override late final _Translations$privateAi$de privateAi = _Translations$privateAi$de._(_root);
 	@override late final _Translations$privateData$de privateData = _Translations$privateData$de._(_root);
 	@override late final _Translations$icloudSync$de icloudSync = _Translations$icloudSync$de._(_root);
+	@override late final _Translations$privateRecovery$de privateRecovery = _Translations$privateRecovery$de._(_root);
 	@override late final _Translations$namePrompt$de namePrompt = _Translations$namePrompt$de._(_root);
 	@override late final _Translations$nav$de nav = _Translations$nav$de._(_root);
 	@override late final _Translations$shell$de shell = _Translations$shell$de._(_root);
@@ -167,6 +168,28 @@ class _Translations$icloudSync$de extends Translations$icloudSync$en {
 	@override String get lastSyncedNever => 'Noch nie synchronisiert';
 	@override String lastSyncedAt({required Object time}) => 'Zuletzt synchronisiert ${time}';
 	@override String get deleteSyncNote => 'Die iCloud-Synchronisierung ist aktiv: Dabei wird auch die synchronisierte Kopie in deiner iCloud gelöscht und die Synchronisierung deaktiviert. Andere Geräte behalten ihre lokale Kopie — führe dies auf jedem Gerät aus, um überall zu löschen.';
+}
+
+// Path: privateRecovery
+class _Translations$privateRecovery$de extends Translations$privateRecovery$en {
+	_Translations$privateRecovery$de._(TranslationsDe root) : this._root = root, super.internal(root);
+
+	final TranslationsDe _root; // ignore: unused_field
+
+	// Translations
+	@override String get preparing => 'Dein privater Bereich wird vorbereitet…';
+	@override String get restoredFromCloudToast => 'Lokale Datenbank konnte nicht entsperrt werden – deine Daten wurden aus iCloud wiederhergestellt.';
+	@override String get waitingTitle => 'Warten auf iCloud';
+	@override String get waitingMessage => 'Die Synchronisierung ist aktiv, aber dein Verschlüsselungsschlüssel ist noch nicht aus dem iCloud-Schlüsselbund eingetroffen. Warte einen Moment und versuche es erneut.';
+	@override String get lockedTitle => 'Private Daten können nicht entsperrt werden';
+	@override String get lockedMessageLocalOnly => 'Dieses Gerät kann deine lokale private Datenbank nicht entsperren – der Verschlüsselungsschlüssel fehlt – und die iCloud-Synchronisierung ist aus, es gibt also keine Cloud-Kopie zum Wiederherstellen. Du kannst zurücksetzen und neu beginnen.';
+	@override String get lockedMessageICloudUnavailable => 'Dieses Gerät kann deine lokale private Datenbank nicht entsperren. Die iCloud-Synchronisierung ist aktiv, aber das Konto ist nicht verfügbar – melde dich bei iCloud an und versuche es erneut.';
+	@override String get errorTitle => 'Privater Modus konnte nicht geöffnet werden';
+	@override String get errorMessage => 'Beim Öffnen deiner privaten Datenbank ist etwas schiefgelaufen. Versuche es erneut oder setze sie zurück und beginne neu.';
+	@override String get enableSyncHint => 'Hast du diese Daten auf einem anderen Gerät? Aktiviere nach dem Zurücksetzen die iCloud-Synchronisierung in den Einstellungen, um sie hierher zu holen.';
+	@override String get retry => 'Erneut versuchen';
+	@override String get resetFresh => 'Zurücksetzen und neu beginnen';
+	@override String get backToSignIn => 'Zurück zur Anmeldung';
 }
 
 // Path: namePrompt
@@ -1614,6 +1637,19 @@ extension on TranslationsDe {
 			'icloudSync.lastSyncedNever' => 'Noch nie synchronisiert',
 			'icloudSync.lastSyncedAt' => ({required Object time}) => 'Zuletzt synchronisiert ${time}',
 			'icloudSync.deleteSyncNote' => 'Die iCloud-Synchronisierung ist aktiv: Dabei wird auch die synchronisierte Kopie in deiner iCloud gelöscht und die Synchronisierung deaktiviert. Andere Geräte behalten ihre lokale Kopie — führe dies auf jedem Gerät aus, um überall zu löschen.',
+			'privateRecovery.preparing' => 'Dein privater Bereich wird vorbereitet…',
+			'privateRecovery.restoredFromCloudToast' => 'Lokale Datenbank konnte nicht entsperrt werden – deine Daten wurden aus iCloud wiederhergestellt.',
+			'privateRecovery.waitingTitle' => 'Warten auf iCloud',
+			'privateRecovery.waitingMessage' => 'Die Synchronisierung ist aktiv, aber dein Verschlüsselungsschlüssel ist noch nicht aus dem iCloud-Schlüsselbund eingetroffen. Warte einen Moment und versuche es erneut.',
+			'privateRecovery.lockedTitle' => 'Private Daten können nicht entsperrt werden',
+			'privateRecovery.lockedMessageLocalOnly' => 'Dieses Gerät kann deine lokale private Datenbank nicht entsperren – der Verschlüsselungsschlüssel fehlt – und die iCloud-Synchronisierung ist aus, es gibt also keine Cloud-Kopie zum Wiederherstellen. Du kannst zurücksetzen und neu beginnen.',
+			'privateRecovery.lockedMessageICloudUnavailable' => 'Dieses Gerät kann deine lokale private Datenbank nicht entsperren. Die iCloud-Synchronisierung ist aktiv, aber das Konto ist nicht verfügbar – melde dich bei iCloud an und versuche es erneut.',
+			'privateRecovery.errorTitle' => 'Privater Modus konnte nicht geöffnet werden',
+			'privateRecovery.errorMessage' => 'Beim Öffnen deiner privaten Datenbank ist etwas schiefgelaufen. Versuche es erneut oder setze sie zurück und beginne neu.',
+			'privateRecovery.enableSyncHint' => 'Hast du diese Daten auf einem anderen Gerät? Aktiviere nach dem Zurücksetzen die iCloud-Synchronisierung in den Einstellungen, um sie hierher zu holen.',
+			'privateRecovery.retry' => 'Erneut versuchen',
+			'privateRecovery.resetFresh' => 'Zurücksetzen und neu beginnen',
+			'privateRecovery.backToSignIn' => 'Zurück zur Anmeldung',
 			'namePrompt.title' => 'Wie heißt du?',
 			'namePrompt.subtitle' => 'Gib deinen Namen ein, um das Dashboard zu personalisieren.',
 			'namePrompt.hint' => 'z. B. Simo',
@@ -2066,6 +2102,8 @@ extension on TranslationsDe {
 			'habitsPage.weekdayAbbrevUpper.4' => 'FR',
 			'habitsPage.weekdayAbbrevUpper.5' => 'SA',
 			'habitsPage.weekdayAbbrevUpper.6' => 'SO',
+			_ => null,
+		} ?? switch (path) {
 			'habitsPage.lifeView' => 'Lebensansicht',
 			'habitsPage.lifeViewSubtitle' => 'Eine Zelle steht für einen Monat des Weges bis zum Alter von 85.',
 			'habitsPage.monthsLived' => 'Gelebte Monate',
@@ -2079,8 +2117,6 @@ extension on TranslationsDe {
 			'habitsPage.reminderHint' => 'z. B. 08:30',
 			'habitsPage.close' => 'Schließen',
 			'habitsPage.statusDone' => 'Erledigt',
-			_ => null,
-		} ?? switch (path) {
 			'habitsPage.statusSkipped' => 'Übersprungen',
 			'habitsPage.statusUnrecorded' => 'Nicht erfasst',
 			'habitsPage.weekOf' => ({required Object day, required Object month}) => 'Woche vom ${day}. ${month}',
@@ -2580,6 +2616,8 @@ extension on TranslationsDe {
 			'tour.habitsAddTitle' => 'Gewohnheit hinzufügen',
 			'tour.habitsAddDesc' => 'Erstelle hier eine neue Gewohnheit — mit Name, Kategorie, Farbe und optionaler Erinnerung.',
 			'tour.habitsCheckoffTitle' => 'Als erledigt markieren',
+			_ => null,
+		} ?? switch (path) {
 			'tour.habitsCheckoffDesc' => 'Setze hier ein Häkchen, um eine Gewohnheit für heute abzuschließen. Mehr braucht es nicht, um eine Serie am Leben zu halten.',
 			'tour.habitsStreakTitle' => 'Serien & Verlauf',
 			'tour.habitsStreakDesc' => 'Sieh deine Serie wachsen und deine letzten sieben Tage auf einen Blick.',
@@ -2593,8 +2631,6 @@ extension on TranslationsDe {
 			'tour.insightsTabsDesc' => 'Wechsle zwischen den Bereichen für Trends, Hinweise, Gewohnheits-Fortschritt und deine Stimmung.',
 			'tour.goalsOrientationTitle' => 'Die Ziele-Seite',
 			'tour.goalsOrientationDesc' => 'Setze und verfolge deine größeren Ziele — das, worauf deine täglichen Gewohnheiten hinarbeiten.',
-			_ => null,
-		} ?? switch (path) {
 			'tour.goalsPlanTitle' => 'Planungsart',
 			'tour.goalsPlanDesc' => 'Wähle, wie du planst — täglich, wöchentlich oder länger — passend zu deiner Denkweise über Ziele.',
 			'tour.goalsAddTitle' => 'Ziel hinzufügen',

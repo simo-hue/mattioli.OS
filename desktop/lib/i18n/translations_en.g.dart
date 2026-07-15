@@ -44,6 +44,7 @@ class Translations with BaseTranslations<AppLocale, Translations> {
 	late final Translations$privateAi$en privateAi = Translations$privateAi$en.internal(_root);
 	late final Translations$privateData$en privateData = Translations$privateData$en.internal(_root);
 	late final Translations$icloudSync$en icloudSync = Translations$icloudSync$en.internal(_root);
+	late final Translations$privateRecovery$en privateRecovery = Translations$privateRecovery$en.internal(_root);
 	late final Translations$namePrompt$en namePrompt = Translations$namePrompt$en.internal(_root);
 	late final Translations$nav$en nav = Translations$nav$en.internal(_root);
 	late final Translations$shell$en shell = Translations$shell$en.internal(_root);
@@ -279,6 +280,54 @@ class Translations$icloudSync$en {
 
 	/// en: 'iCloud Sync is on: this also deletes the synced copy in your iCloud and turns sync off. Other devices keep their local copy — run this on each device to erase everywhere.'
 	String get deleteSyncNote => 'iCloud Sync is on: this also deletes the synced copy in your iCloud and turns sync off. Other devices keep their local copy — run this on each device to erase everywhere.';
+}
+
+// Path: privateRecovery
+class Translations$privateRecovery$en {
+	Translations$privateRecovery$en.internal(this._root);
+
+	final Translations _root; // ignore: unused_field
+
+	// Translations
+
+	/// en: 'Preparing your private space…'
+	String get preparing => 'Preparing your private space…';
+
+	/// en: 'Couldn't unlock the local database — restored your data from iCloud.'
+	String get restoredFromCloudToast => 'Couldn\'t unlock the local database — restored your data from iCloud.';
+
+	/// en: 'Waiting for iCloud'
+	String get waitingTitle => 'Waiting for iCloud';
+
+	/// en: 'Sync is on, but your encryption key hasn't arrived from iCloud Keychain yet. Give it a moment, then retry.'
+	String get waitingMessage => 'Sync is on, but your encryption key hasn\'t arrived from iCloud Keychain yet. Give it a moment, then retry.';
+
+	/// en: 'Can't unlock private data'
+	String get lockedTitle => 'Can\'t unlock private data';
+
+	/// en: 'This device can't unlock your local private database — its encryption key is missing — and iCloud sync is off, so there's no cloud copy to restore. You can reset and start fresh.'
+	String get lockedMessageLocalOnly => 'This device can\'t unlock your local private database — its encryption key is missing — and iCloud sync is off, so there\'s no cloud copy to restore. You can reset and start fresh.';
+
+	/// en: 'This device can't unlock your local private database. iCloud sync is on but the account is unavailable — sign in to iCloud, then retry.'
+	String get lockedMessageICloudUnavailable => 'This device can\'t unlock your local private database. iCloud sync is on but the account is unavailable — sign in to iCloud, then retry.';
+
+	/// en: 'Couldn't open private mode'
+	String get errorTitle => 'Couldn\'t open private mode';
+
+	/// en: 'Something went wrong opening your private database. Retry, or reset it and start fresh.'
+	String get errorMessage => 'Something went wrong opening your private database. Retry, or reset it and start fresh.';
+
+	/// en: 'Have this data on another device? Turn on iCloud sync in Settings after resetting to pull it here.'
+	String get enableSyncHint => 'Have this data on another device? Turn on iCloud sync in Settings after resetting to pull it here.';
+
+	/// en: 'Retry'
+	String get retry => 'Retry';
+
+	/// en: 'Reset & start fresh'
+	String get resetFresh => 'Reset & start fresh';
+
+	/// en: 'Back to sign in'
+	String get backToSignIn => 'Back to sign in';
 }
 
 // Path: namePrompt
@@ -3693,6 +3742,19 @@ extension on Translations {
 			'icloudSync.lastSyncedNever' => 'Never synced',
 			'icloudSync.lastSyncedAt' => ({required Object time}) => 'Last synced ${time}',
 			'icloudSync.deleteSyncNote' => 'iCloud Sync is on: this also deletes the synced copy in your iCloud and turns sync off. Other devices keep their local copy — run this on each device to erase everywhere.',
+			'privateRecovery.preparing' => 'Preparing your private space…',
+			'privateRecovery.restoredFromCloudToast' => 'Couldn\'t unlock the local database — restored your data from iCloud.',
+			'privateRecovery.waitingTitle' => 'Waiting for iCloud',
+			'privateRecovery.waitingMessage' => 'Sync is on, but your encryption key hasn\'t arrived from iCloud Keychain yet. Give it a moment, then retry.',
+			'privateRecovery.lockedTitle' => 'Can\'t unlock private data',
+			'privateRecovery.lockedMessageLocalOnly' => 'This device can\'t unlock your local private database — its encryption key is missing — and iCloud sync is off, so there\'s no cloud copy to restore. You can reset and start fresh.',
+			'privateRecovery.lockedMessageICloudUnavailable' => 'This device can\'t unlock your local private database. iCloud sync is on but the account is unavailable — sign in to iCloud, then retry.',
+			'privateRecovery.errorTitle' => 'Couldn\'t open private mode',
+			'privateRecovery.errorMessage' => 'Something went wrong opening your private database. Retry, or reset it and start fresh.',
+			'privateRecovery.enableSyncHint' => 'Have this data on another device? Turn on iCloud sync in Settings after resetting to pull it here.',
+			'privateRecovery.retry' => 'Retry',
+			'privateRecovery.resetFresh' => 'Reset & start fresh',
+			'privateRecovery.backToSignIn' => 'Back to sign in',
 			'namePrompt.title' => 'What is your name?',
 			'namePrompt.subtitle' => 'Enter your name to personalize the dashboard.',
 			'namePrompt.hint' => 'e.g. Simo',
@@ -4145,6 +4207,8 @@ extension on Translations {
 			'habitsPage.weekdayAbbrevUpper.4' => 'FRI',
 			'habitsPage.weekdayAbbrevUpper.5' => 'SAT',
 			'habitsPage.weekdayAbbrevUpper.6' => 'SUN',
+			_ => null,
+		} ?? switch (path) {
 			'habitsPage.lifeView' => 'Life view',
 			'habitsPage.lifeViewSubtitle' => 'One cell represents a month of the journey up to age 85.',
 			'habitsPage.monthsLived' => 'Months lived',
@@ -4158,8 +4222,6 @@ extension on Translations {
 			'habitsPage.reminderHint' => 'e.g. 08:30',
 			'habitsPage.close' => 'Close',
 			'habitsPage.statusDone' => 'Completed',
-			_ => null,
-		} ?? switch (path) {
 			'habitsPage.statusSkipped' => 'Skipped',
 			'habitsPage.statusUnrecorded' => 'Not recorded',
 			'habitsPage.weekOf' => ({required Object day, required Object month}) => 'Week of ${day} ${month}',
@@ -4659,6 +4721,8 @@ extension on Translations {
 			'tour.habitsAddTitle' => 'Add a habit',
 			'tour.habitsAddDesc' => 'Create a new habit here — give it a name, a category, a colour and an optional reminder.',
 			'tour.habitsCheckoffTitle' => 'Mark it done',
+			_ => null,
+		} ?? switch (path) {
 			'tour.habitsCheckoffDesc' => 'Tick this box to complete a habit for today. That\'s all it takes to keep a streak alive.',
 			'tour.habitsStreakTitle' => 'Streaks & history',
 			'tour.habitsStreakDesc' => 'Watch your streak grow, and see your last seven days at a glance.',
@@ -4672,8 +4736,6 @@ extension on Translations {
 			'tour.insightsTabsDesc' => 'Switch between the sections for trends, alerts, habit progress and your mood.',
 			'tour.goalsOrientationTitle' => 'The Goals page',
 			'tour.goalsOrientationDesc' => 'Set and track your bigger objectives — the things your daily habits build toward.',
-			_ => null,
-		} ?? switch (path) {
 			'tour.goalsPlanTitle' => 'Planning type',
 			'tour.goalsPlanDesc' => 'Choose how you plan — daily, weekly or longer — to match how you think about your goals.',
 			'tour.goalsAddTitle' => 'Add a goal',

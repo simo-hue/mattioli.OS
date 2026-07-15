@@ -34,6 +34,9 @@ class _FakeSyncService implements PrivateSyncService {
   Future<PrivateSyncStatus> status() async => current;
 
   @override
+  Future<PrivateSyncStatus> probe() async => current;
+
+  @override
   Future<PrivateSyncStatus> enable() async {
     enableCalls++;
     current = PrivateSyncStatus(

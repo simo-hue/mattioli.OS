@@ -533,6 +533,21 @@
     "bannerText": "La sincronizzazione iCloud è disattivata: le tue abitudini sono solo su questo dispositivo e vanno perse se cambi o ripristini il telefono.",
     "bannerAction": "Attiva"
   },
+  "privateRecovery": {
+    "preparing": "Preparazione del tuo spazio privato…",
+    "restoredFromCloudToast": "Impossibile sbloccare il database locale: i tuoi dati sono stati ripristinati da iCloud.",
+    "waitingTitle": "In attesa di iCloud",
+    "waitingMessage": "La sincronizzazione è attiva, ma la tua chiave di crittografia non è ancora arrivata dal Portachiavi iCloud. Attendi un momento e riprova.",
+    "lockedTitle": "Impossibile sbloccare i dati privati",
+    "lockedMessageLocalOnly": "Questo dispositivo non può sbloccare il database privato locale — la chiave di crittografia è mancante — e la sincronizzazione iCloud è disattivata, quindi non c'è una copia cloud da ripristinare. Puoi reimpostare e ricominciare.",
+    "lockedMessageICloudUnavailable": "Questo dispositivo non può sbloccare il database privato locale. La sincronizzazione iCloud è attiva ma l'account non è disponibile: accedi a iCloud e riprova.",
+    "errorTitle": "Impossibile aprire la modalità privata",
+    "errorMessage": "Si è verificato un problema durante l'apertura del database privato. Riprova oppure reimpostalo e ricomincia.",
+    "enableSyncHint": "Hai questi dati su un altro dispositivo? Attiva la sincronizzazione iCloud nelle Impostazioni dopo la reimpostazione per recuperarli qui.",
+    "retry": "Riprova",
+    "resetFresh": "Reimposta e ricomincia",
+    "backToSignIn": "Torna all'accesso"
+  },
   "consent": {
     "systemNotifications": "Notifiche di Sistema",
     "termsAndPrivacy": "Termini e Privacy Policy",

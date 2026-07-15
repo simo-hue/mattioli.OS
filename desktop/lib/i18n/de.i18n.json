@@ -54,6 +54,21 @@
     "lastSyncedAt": "Zuletzt synchronisiert {time}",
     "deleteSyncNote": "Die iCloud-Synchronisierung ist aktiv: Dabei wird auch die synchronisierte Kopie in deiner iCloud gelöscht und die Synchronisierung deaktiviert. Andere Geräte behalten ihre lokale Kopie — führe dies auf jedem Gerät aus, um überall zu löschen."
   },
+  "privateRecovery": {
+    "preparing": "Dein privater Bereich wird vorbereitet…",
+    "restoredFromCloudToast": "Lokale Datenbank konnte nicht entsperrt werden – deine Daten wurden aus iCloud wiederhergestellt.",
+    "waitingTitle": "Warten auf iCloud",
+    "waitingMessage": "Die Synchronisierung ist aktiv, aber dein Verschlüsselungsschlüssel ist noch nicht aus dem iCloud-Schlüsselbund eingetroffen. Warte einen Moment und versuche es erneut.",
+    "lockedTitle": "Private Daten können nicht entsperrt werden",
+    "lockedMessageLocalOnly": "Dieses Gerät kann deine lokale private Datenbank nicht entsperren – der Verschlüsselungsschlüssel fehlt – und die iCloud-Synchronisierung ist aus, es gibt also keine Cloud-Kopie zum Wiederherstellen. Du kannst zurücksetzen und neu beginnen.",
+    "lockedMessageICloudUnavailable": "Dieses Gerät kann deine lokale private Datenbank nicht entsperren. Die iCloud-Synchronisierung ist aktiv, aber das Konto ist nicht verfügbar – melde dich bei iCloud an und versuche es erneut.",
+    "errorTitle": "Privater Modus konnte nicht geöffnet werden",
+    "errorMessage": "Beim Öffnen deiner privaten Datenbank ist etwas schiefgelaufen. Versuche es erneut oder setze sie zurück und beginne neu.",
+    "enableSyncHint": "Hast du diese Daten auf einem anderen Gerät? Aktiviere nach dem Zurücksetzen die iCloud-Synchronisierung in den Einstellungen, um sie hierher zu holen.",
+    "retry": "Erneut versuchen",
+    "resetFresh": "Zurücksetzen und neu beginnen",
+    "backToSignIn": "Zurück zur Anmeldung"
+  },
   "namePrompt": {
     "title": "Wie heißt du?",
     "subtitle": "Gib deinen Namen ein, um das Dashboard zu personalisieren.",

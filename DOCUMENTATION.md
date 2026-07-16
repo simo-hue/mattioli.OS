@@ -1460,3 +1460,7 @@ state. Added a per-user last-applied-event timestamp and a monotonic apply.
 *Tech Notes*: Independently reviewed GOOD with all five ordering cases traced. No app (Dart) code
 changed, so Flutter suites are unaffected. Edge functions have no runnable harness here
 (no deno/tsc) — verified by review + static inspection. Adds one migration to the manual apply list.
+
+- [2026-07-16 22:28]: App Store Connect What's New metadata translation & Fastfile Update
+  - *Details*: The user wanted to release version 1.1.2 and only update the What's New section across all locales. I generated translations for "Security enhancements and bug fixes." in 18 languages and updated the fastlane Fastfile lane update_notes.
+  - *Tech Notes*: mobile/ios/fastlane/Fastfile was modified. The translations hash was updated. User will execute the lane manually due to Apple ID auth.

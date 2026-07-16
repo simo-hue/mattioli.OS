@@ -454,6 +454,7 @@
 		};
 		A1B2C3D4E5F60000DEADBEEF /* Copy SPM dSYMs */ = {
 			isa = PBXShellScriptBuildPhase;
+			alwaysOutOfDate = 1;
 			buildActionMask = 2147483647;
 			files = (
 			);
@@ -468,7 +469,7 @@
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 			shellPath = /bin/sh;
-			shellScript = "# Copy dSYMs from SPM binary dependencies into the archive.\n# This fixes missing dSYMs for pre-built xcframeworks (e.g. Sentry).\nif [ \"${ACTION}\" = \"install\" ] && [ -d \"${DWARF_DSYM_FOLDER_PATH}\" ]; then\n  PACKAGES_PATH=\"${BUILD_DIR%Build/*}SourcePackages/artifacts\"\n  if [ -d \"${PACKAGES_PATH}\" ]; then\n    find \"${PACKAGES_PATH}\" -name \"*.dSYM\" -type d | while read dsym; do\n      echo \"Copying ${dsym} to ${DWARF_DSYM_FOLDER_PATH}\"\n      cp -a \"${dsym}\" \"${DWARF_DSYM_FOLDER_PATH}\"\n    done\n  fi\nfi\n";
+			shellScript = "sh \"$SRCROOT/../scripts/copy_archive_dsyms.sh\"\n";
 		};
 /* End PBXShellScriptBuildPhase section */
 

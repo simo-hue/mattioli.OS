@@ -992,3 +992,40 @@ heading ellipsizing. `flutter analyze` clean; `tour_flow_test` still passes.
     `test/goals_page_keyboard_test.dart` (5 tests, incl. the quick-add caret
     guard) still passes. On-device visual glance pending (no Xcode here) — see
     TO_SIMO_DO.md.
+
+- 2026-07-17: Fix macOS archive dSYM upload failure + "runs every build" warning
+  - *Details*: App Store Connect rejected symbol upload with "The archive did
+    not include a dSYM ... with the UUIDs [...]" for the `objective_c.framework`
+    code asset (2 UUIDs = the x86_64 + arm64 slices). That framework is a Flutter
+    native/code asset pulled in by `flutter_secure_storage_darwin` (via
+    `package:objective_c`). Flutter DOES generate a fully-symbolicated
+    `objective_c.framework.dSYM` (its `native_assets.dart` runs `dsymutil` on the
+    dylib *before* `strip`), but `macos_assemble.sh embed` only copies that dSYM
+    into `BUILT_PRODUCTS_DIR` — which during an archive is NOT the archive dSYMs
+    folder (`DWARF_DSYM_FOLDER_PATH`). So the dSYM was generated but never reached
+    `Runner.xcarchive/dSYMs/`. Extended the Runner target's "Copy SPM dSYMs"
+    build phase to also forward any `*.framework.dSYM` found in
+    `BUILT_PRODUCTS_DIR` (+ `/native_assets`) into `DWARF_DSYM_FOLDER_PATH` at
+    archive time. Also set `alwaysOutOfDate = 1` on that phase to silence Xcode's
+    "will be run during every build because it does not specify any outputs"
+    warning (the phase legitimately must run every archive).
+  - *Tech Notes*: New file `desktop/scripts/copy_archive_dsyms.sh` (POSIX sh,
+    `set -eu`, archive/`ACTION=install`-only, idempotent, guards against
+    empty-glob `rm -rf` of the dSYMs folder). `desktop/macos/Runner.xcodeproj/
+    project.pbxproj`: phase `A1B2C3D4E5F60000DEADBEEF` now runs
+    `sh "$SRCROOT/../scripts/copy_archive_dsyms.sh"` + `alwaysOutOfDate = 1`.
+    Handles both SPM-artifact dSYMs (Sentry) and Flutter code-asset dSYMs
+    (objective_c, and any future native-asset plugin). No Dart/pubspec changes,
+    no new deps. Verified on this Mac (CLT only, no full Xcode): shell syntax
+    (`sh -n`), simulated-archive behavior (copies Sentry + objective_c dSYMs,
+    idempotent on duplicates, empty-glob does not delete the folder), pbxproj
+    validity (`plutil -lint` OK), and empirically reproduced the objective_c
+    build to confirm the pre-strip dSYM contains real DWARF (183 DW_TAG, 1726
+    line rows) vs an empty shell post-strip. Final end-to-end archive+upload
+    proof must run on the Mac mini (has Xcode) — see TO_SIMO_DO.md.
+    NOTE: The remaining "Code asset objective_c.dylib has different framework
+    names for different architectures (objective_c vs objective_c1)" warning is a
+    benign Flutter SDK bug in `fatAssetTargetLocations` (shares
+    `alreadyTakenNames` across a single asset's two arch slices); both slices
+    still lipo into one correct `objective_c.framework`. It does not block
+    publishing and is not fixed here (would require patching the Flutter SDK).

@@ -1,4 +1,8 @@
+import 'package:sentry_flutter/sentry_flutter.dart';
+
 /// Configurazione Sentry per il tracking degli errori in produzione.
+///
+/// Copia questo file in `sentry_config.dart` (gitignored) prima di compilare.
 ///
 /// Per ottenere il DSN:
 /// 1. Registrati su https://sentry.io
@@ -17,4 +21,16 @@ class SentryConfig {
   /// 1.0 = 100% delle transazioni (utile solo per debug locale).
   /// In produzione tieni un valore basso per contenere volume e costi: 0.2 = 20%.
   static const double tracesSampleRate = 0.2;
+
+  /// Rimuove i dati personali da ogni evento prima dell'invio a Sentry.
+  ///
+  /// È il `beforeSend` applicato da `SentryService.configure`, quindi ogni copia
+  /// di questo file DEVE definirlo: senza, `sentry_service.dart` non compila.
+  /// L'implementazione qui sotto è il minimo richiesto (rimuove l'email
+  /// dell'utente, come fa il desktop in `DesktopSentryService`); estendila se il
+  /// progetto invia altri campi personali.
+  static SentryEvent sanitizeEvent(SentryEvent event) {
+    event.user?.email = null;
+    return event;
+  }
 }

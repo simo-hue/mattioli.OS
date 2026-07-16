@@ -1943,6 +1943,7 @@ class Translations$ai$en {
 	String get macroGoals => 'Macro goals';
 
 	late final Translations$ai$openRouter$en openRouter = Translations$ai$openRouter$en.internal(_root);
+	late final Translations$ai$apiKey$en apiKey = Translations$ai$apiKey$en.internal(_root);
 	late final Translations$ai$suggestions$en suggestions = Translations$ai$suggestions$en.internal(_root);
 	late final Translations$ai$local$en local = Translations$ai$local$en.internal(_root);
 }
@@ -2191,6 +2192,9 @@ class Translations$settingsPage$en {
 
 	/// en: 'Default calendar view'
 	String get defaultCalendarView => 'Default calendar view';
+
+	late final Translations$settingsPage$calendarViewOptions$en calendarViewOptions = Translations$settingsPage$calendarViewOptions$en.internal(_root);
+	late final Translations$settingsPage$languageOptions$en languageOptions = Translations$settingsPage$languageOptions$en.internal(_root);
 
 	/// en: 'Use times like 20:30 instead of 8:30 PM.'
 	String get timeFormat24hDetail => 'Use times like 20:30 instead of 8:30 PM.';
@@ -2468,14 +2472,23 @@ class Translations$settingsPage$en {
 	/// en: 'Replace current data'
 	String get importReplaceTitle => 'Replace current data';
 
-	/// en: 'Deletes all existing local data before importing. (Recommended)'
-	String get importReplaceSubtitle => 'Deletes all existing local data before importing. (Recommended)';
+	/// en: 'Permanently deletes every existing record that isn't in this backup.'
+	String get importReplaceSubtitle => 'Permanently deletes every existing record that isn\'t in this backup.';
 
 	/// en: 'Merge with current data'
 	String get importMergeTitle => 'Merge with current data';
 
 	/// en: 'Combines with your data, keeping the newest version of each item.'
 	String get importMergeSubtitle => 'Combines with your data, keeping the newest version of each item.';
+
+	/// en: 'Replace all data?'
+	String get importReplaceConfirmTitle => 'Replace all data?';
+
+	/// en: 'This permanently deletes your current data (about {count} habit logs) and keeps only what's in this backup. This can't be undone.'
+	String importReplaceConfirmMessage({required Object count}) => 'This permanently deletes your current data (about ${count} habit logs) and keeps only what\'s in this backup. This can\'t be undone.';
+
+	/// en: 'Delete & Replace'
+	String get importReplaceConfirmButton => 'Delete & Replace';
 
 	/// en: 'Confirm import'
 	String get importConfirmButton => 'Confirm import';
@@ -2543,23 +2556,35 @@ class Translations$settingsPage$en {
 	/// en: 'Plan, purchase restore and subscription management'
 	String get proSubtitle => 'Plan, purchase restore and subscription management';
 
-	/// en: 'RevenueCat macOS'
-	String get revenueCatMacos => 'RevenueCat macOS';
+	/// en: 'Billed through Apple'
+	String get billingAppleTitle => 'Billed through Apple';
 
-	/// en: 'Commercial channel required'
-	String get commercialChannelRequired => 'Commercial channel required';
+	/// en: 'Purchases unavailable'
+	String get commercialChannelRequired => 'Purchases unavailable';
 
-	/// en: 'Offers and entitlement status are read from RevenueCat.'
-	String get revenueCatOffersRead => 'Offers and entitlement status are read from RevenueCat.';
+	/// en: 'Your subscription is purchased and managed with your Apple account.'
+	String get billingAppleDetail => 'Your subscription is purchased and managed with your Apple account.';
 
-	/// en: 'Configure the RevenueCat public key of the desktop client.'
-	String get revenueCatConfigureKey => 'Configure the RevenueCat public key of the desktop client.';
+	/// en: 'Subscriptions are temporarily unavailable. Please try again later.'
+	String get billingUnavailableDetail => 'Subscriptions are temporarily unavailable. Please try again later.';
 
-	/// en: 'RevenueCat Flutter does not expose in-app purchases on Windows and Linux.'
-	String get revenueCatNotSupported => 'RevenueCat Flutter does not expose in-app purchases on Windows and Linux.';
+	/// en: 'In-app purchases aren't available on this platform.'
+	String get billingPlatformUnsupported => 'In-app purchases aren\'t available on this platform.';
 
 	/// en: 'Best value'
 	String get bestValue => 'Best value';
+
+	/// en: 'Price unavailable'
+	String get priceUnavailable => 'Price unavailable';
+
+	/// en: 'The subscription renews automatically unless auto-renew is turned off in Apple account settings at least 24 hours before the end of the period.'
+	String get renewalDisclaimer => 'The subscription renews automatically unless auto-renew is turned off in Apple account settings at least 24 hours before the end of the period.';
+
+	/// en: 'Privacy Policy'
+	String get privacyPolicy => 'Privacy Policy';
+
+	/// en: 'Terms of Use (EULA)'
+	String get termsEula => 'Terms of Use (EULA)';
 
 	/// en: 'Plan management'
 	String get planManagement => 'Plan management';
@@ -2570,11 +2595,11 @@ class Translations$settingsPage$en {
 	/// en: 'Evolve Pro entitlement active.'
 	String get activateEvolveProActive => 'Evolve Pro entitlement active.';
 
-	/// en: 'Start the native StoreKit checkout on macOS.'
-	String get activateEvolveProStart => 'Start the native StoreKit checkout on macOS.';
+	/// en: 'Subscribe with your Apple account.'
+	String get activateEvolveProStart => 'Subscribe with your Apple account.';
 
-	/// en: 'Recovers the entitlement status from the provider.'
-	String get restorePurchasesDetail => 'Recovers the entitlement status from the provider.';
+	/// en: 'Restores a subscription you already bought.'
+	String get restorePurchasesDetail => 'Restores a subscription you already bought.';
 
 	/// en: 'Manage subscription'
 	String get manageSubscription => 'Manage subscription';
@@ -3050,8 +3075,8 @@ class Translations$coachSettings$en {
 	/// en: 'Local · private'
 	String get backendLocal => 'Local · private';
 
-	/// en: 'Google Gemini via OpenRouter. Fast, zero setup — the context you share is sent to the provider.'
-	String get cloudDesc => 'Google Gemini via OpenRouter. Fast, zero setup — the context you share is sent to the provider.';
+	/// en: 'Google Gemini via OpenRouter, billed to your own API key. The context you share is sent to the provider.'
+	String get cloudDesc => 'Google Gemini via OpenRouter, billed to your own API key. The context you share is sent to the provider.';
 
 	/// en: 'Your own model via Ollama, LM Studio or any OpenAI-compatible server. Nothing leaves this device.'
 	String get localDesc => 'Your own model via Ollama, LM Studio or any OpenAI-compatible server. Nothing leaves this device.';
@@ -3170,8 +3195,8 @@ class Translations$coachSettings$en {
 	/// en: 'Engine & local server'
 	String get settingsRowConfigure => 'Engine & local server';
 
-	/// en: 'Cloud API key isn't configured — cloud replies will fail. Switch to a local server or set OPENROUTER_API_KEY.'
-	String get cloudKeyMissing => 'Cloud API key isn\'t configured — cloud replies will fail. Switch to a local server or set OPENROUTER_API_KEY.';
+	/// en: 'No API key yet — cloud replies won't work. Paste your OpenRouter key below, or switch to a local server.'
+	String get cloudKeyMissing => 'No API key yet — cloud replies won\'t work. Paste your OpenRouter key below, or switch to a local server.';
 
 	/// en: 'Lower temperature'
 	String get temperatureLower => 'Lower temperature';
@@ -3575,11 +3600,11 @@ class Translations$ai$openRouter$en {
 
 	// Translations
 
-	/// en: '⚠️ Error: OpenRouter API key is not configured. Please add your API key in `lib/core/openrouter_config.dart`.'
-	String get apiKeyMissingFull => '⚠️ Error: OpenRouter API key is not configured.\n\nPlease add your API key in `lib/core/openrouter_config.dart`.';
+	/// en: '⚠️ The AI Coach needs your own OpenRouter API key. Add one in Settings to start chatting.'
+	String get apiKeyMissingShort => '⚠️ The AI Coach needs your own OpenRouter API key. Add one in Settings to start chatting.';
 
-	/// en: '⚠️ Error: OpenRouter API key is not configured.'
-	String get apiKeyMissingShort => '⚠️ Error: OpenRouter API key is not configured.';
+	/// en: '⚠️ OpenRouter rejected this API key. Check it in Settings, or create a new one at openrouter.ai/keys.'
+	String get apiKeyInvalid => '⚠️ OpenRouter rejected this API key. Check it in Settings, or create a new one at openrouter.ai/keys.';
 
 	/// en: 'You are the "Discipline Coach", a virtual assistant focused on helping the user stay disciplined, reach goals, and build healthy habits. Be motivating but concrete, direct, and practical. Use a professional but friendly tone.'
 	String get defaultSystemPrompt => 'You are the "Discipline Coach", a virtual assistant focused on helping the user stay disciplined, reach goals, and build healthy habits. Be motivating but concrete, direct, and practical. Use a professional but friendly tone.';
@@ -3607,6 +3632,63 @@ class Translations$ai$openRouter$en {
 
 	/// en: '❌ API error: {code} (check Sentry for details)'
 	String apiError({required Object code}) => '❌ API error: ${code} (check Sentry for details)';
+}
+
+// Path: ai.apiKey
+class Translations$ai$apiKey$en {
+	Translations$ai$apiKey$en.internal(this._root);
+
+	final Translations _root; // ignore: unused_field
+
+	// Translations
+
+	/// en: 'OpenRouter API key'
+	String get rowTitle => 'OpenRouter API key';
+
+	/// en: 'The AI Coach runs on your own OpenRouter account, so your usage stays yours. Create a key at openrouter.ai/keys and paste it below — it is stored in this device's keychain and only ever sent to OpenRouter.'
+	String get description => 'The AI Coach runs on your own OpenRouter account, so your usage stays yours. Create a key at openrouter.ai/keys and paste it below — it is stored in this device\'s keychain and only ever sent to OpenRouter.';
+
+	/// en: 'API key'
+	String get fieldLabel => 'API key';
+
+	/// en: 'sk-or-v1-…'
+	String get hint => 'sk-or-v1-…';
+
+	/// en: 'Save key'
+	String get save => 'Save key';
+
+	/// en: 'API key saved'
+	String get saved => 'API key saved';
+
+	/// en: 'Remove key'
+	String get remove => 'Remove key';
+
+	/// en: 'API key removed'
+	String get removed => 'API key removed';
+
+	/// en: 'Remove API key?'
+	String get removeConfirmTitle => 'Remove API key?';
+
+	/// en: 'The AI Coach will stop replying until you add a key again.'
+	String get removeConfirmBody => 'The AI Coach will stop replying until you add a key again.';
+
+	/// en: 'Saved'
+	String get statusSet => 'Saved';
+
+	/// en: 'Not set'
+	String get statusMissing => 'Not set';
+
+	/// en: 'Couldn't save the key to the keychain. Try again.'
+	String get saveFailed => 'Couldn\'t save the key to the keychain. Try again.';
+
+	/// en: 'Add your OpenRouter API key'
+	String get setupTitle => 'Add your OpenRouter API key';
+
+	/// en: 'The AI Coach runs on your own OpenRouter account. Add a key to start chatting — or switch the engine to a local model.'
+	String get setupBody => 'The AI Coach runs on your own OpenRouter account. Add a key to start chatting — or switch the engine to a local model.';
+
+	/// en: 'Add API key'
+	String get setupAction => 'Add API key';
 }
 
 // Path: ai.suggestions
@@ -3700,6 +3782,54 @@ class Translations$ai$local$en {
 
 	/// en: '❌ That model isn't available on the server. Open the model picker to choose or load one.'
 	String get modelNotFound => '❌ That model isn\'t available on the server. Open the model picker to choose or load one.';
+}
+
+// Path: settingsPage.calendarViewOptions
+class Translations$settingsPage$calendarViewOptions$en {
+	Translations$settingsPage$calendarViewOptions$en.internal(this._root);
+
+	final Translations _root; // ignore: unused_field
+
+	// Translations
+
+	/// en: 'Month'
+	String get month => 'Month';
+
+	/// en: 'Week'
+	String get week => 'Week';
+
+	/// en: 'Year'
+	String get year => 'Year';
+
+	/// en: 'Life'
+	String get life => 'Life';
+}
+
+// Path: settingsPage.languageOptions
+class Translations$settingsPage$languageOptions$en {
+	Translations$settingsPage$languageOptions$en.internal(this._root);
+
+	final Translations _root; // ignore: unused_field
+
+	// Translations
+
+	/// en: 'System'
+	String get system => 'System';
+
+	/// en: 'Italian'
+	String get italian => 'Italian';
+
+	/// en: 'English'
+	String get english => 'English';
+
+	/// en: 'Spanish'
+	String get spanish => 'Spanish';
+
+	/// en: 'German'
+	String get german => 'German';
+
+	/// en: 'Arabic'
+	String get arabic => 'Arabic';
 }
 
 /// The flat map containing all translations for locale <en>.
@@ -4300,8 +4430,8 @@ extension on Translations {
 			'ai.coach' => 'AI Coach',
 			'ai.dailyHabits' => 'Daily habits',
 			'ai.macroGoals' => 'Macro goals',
-			'ai.openRouter.apiKeyMissingFull' => '⚠️ Error: OpenRouter API key is not configured.\n\nPlease add your API key in `lib/core/openrouter_config.dart`.',
-			'ai.openRouter.apiKeyMissingShort' => '⚠️ Error: OpenRouter API key is not configured.',
+			'ai.openRouter.apiKeyMissingShort' => '⚠️ The AI Coach needs your own OpenRouter API key. Add one in Settings to start chatting.',
+			'ai.openRouter.apiKeyInvalid' => '⚠️ OpenRouter rejected this API key. Check it in Settings, or create a new one at openrouter.ai/keys.',
 			'ai.openRouter.defaultSystemPrompt' => 'You are the "Discipline Coach", a virtual assistant focused on helping the user stay disciplined, reach goals, and build healthy habits. Be motivating but concrete, direct, and practical. Use a professional but friendly tone.',
 			'ai.openRouter.communicationError' => ({required Object code}) => '❌ Error communicating with the AI. (Code: ${code})',
 			'ai.openRouter.connectionError' => '❌ Connection error. Make sure you are online and try again.',
@@ -4311,6 +4441,22 @@ extension on Translations {
 			'ai.openRouter.noInternet' => '❌ Error: No internet connection. Check your network.',
 			'ai.openRouter.serverTimeout' => '❌ Error: The server is taking too long to respond. Try again.',
 			'ai.openRouter.apiError' => ({required Object code}) => '❌ API error: ${code} (check Sentry for details)',
+			'ai.apiKey.rowTitle' => 'OpenRouter API key',
+			'ai.apiKey.description' => 'The AI Coach runs on your own OpenRouter account, so your usage stays yours. Create a key at openrouter.ai/keys and paste it below — it is stored in this device\'s keychain and only ever sent to OpenRouter.',
+			'ai.apiKey.fieldLabel' => 'API key',
+			'ai.apiKey.hint' => 'sk-or-v1-…',
+			'ai.apiKey.save' => 'Save key',
+			'ai.apiKey.saved' => 'API key saved',
+			'ai.apiKey.remove' => 'Remove key',
+			'ai.apiKey.removed' => 'API key removed',
+			'ai.apiKey.removeConfirmTitle' => 'Remove API key?',
+			'ai.apiKey.removeConfirmBody' => 'The AI Coach will stop replying until you add a key again.',
+			'ai.apiKey.statusSet' => 'Saved',
+			'ai.apiKey.statusMissing' => 'Not set',
+			'ai.apiKey.saveFailed' => 'Couldn\'t save the key to the keychain. Try again.',
+			'ai.apiKey.setupTitle' => 'Add your OpenRouter API key',
+			'ai.apiKey.setupBody' => 'The AI Coach runs on your own OpenRouter account. Add a key to start chatting — or switch the engine to a local model.',
+			'ai.apiKey.setupAction' => 'Add API key',
 			'ai.suggestions.morningBoost' => '🔥 Give me a boost to get started!',
 			'ai.suggestions.avoidDistractions' => '🧠 How can I avoid distractions?',
 			'ai.suggestions.lowEnergy' => '⚡ My energy is dropping. What should I do?',
@@ -4412,6 +4558,16 @@ extension on Translations {
 			'settingsPage.accentColor' => 'Accent color',
 			'settingsPage.accentColorDetail' => 'Extended palette reserved for Evolve Pro.',
 			'settingsPage.defaultCalendarView' => 'Default calendar view',
+			'settingsPage.calendarViewOptions.month' => 'Month',
+			'settingsPage.calendarViewOptions.week' => 'Week',
+			'settingsPage.calendarViewOptions.year' => 'Year',
+			'settingsPage.calendarViewOptions.life' => 'Life',
+			'settingsPage.languageOptions.system' => 'System',
+			'settingsPage.languageOptions.italian' => 'Italian',
+			'settingsPage.languageOptions.english' => 'English',
+			'settingsPage.languageOptions.spanish' => 'Spanish',
+			'settingsPage.languageOptions.german' => 'German',
+			'settingsPage.languageOptions.arabic' => 'Arabic',
 			'settingsPage.timeFormat24hDetail' => 'Use times like 20:30 instead of 8:30 PM.',
 			'settingsPage.hapticFeedback' => 'Haptic feedback',
 			'settingsPage.hapticFeedbackDetail' => 'The desktop keeps the preference but does not generate vibrations.',
@@ -4504,9 +4660,12 @@ extension on Translations {
 			'settingsPage.importCategoriesCount' => ({required Object count}) => '${count} Categories',
 			'settingsPage.importMoodsCount' => ({required Object count}) => '${count} Mood Records',
 			'settingsPage.importReplaceTitle' => 'Replace current data',
-			'settingsPage.importReplaceSubtitle' => 'Deletes all existing local data before importing. (Recommended)',
+			'settingsPage.importReplaceSubtitle' => 'Permanently deletes every existing record that isn\'t in this backup.',
 			'settingsPage.importMergeTitle' => 'Merge with current data',
 			'settingsPage.importMergeSubtitle' => 'Combines with your data, keeping the newest version of each item.',
+			'settingsPage.importReplaceConfirmTitle' => 'Replace all data?',
+			'settingsPage.importReplaceConfirmMessage' => ({required Object count}) => 'This permanently deletes your current data (about ${count} habit logs) and keeps only what\'s in this backup. This can\'t be undone.',
+			'settingsPage.importReplaceConfirmButton' => 'Delete & Replace',
 			'settingsPage.importConfirmButton' => 'Confirm import',
 			'settingsPage.importSuccess' => 'Import completed successfully!',
 			'settingsPage.importError' => ({required Object error}) => 'Error during import: ${error}',
@@ -4529,17 +4688,21 @@ extension on Translations {
 			'settingsPage.exportDoneSaved' => 'The JSON file was saved to the selected location.',
 			'settingsPage.proTitle' => 'Evolve Pro',
 			'settingsPage.proSubtitle' => 'Plan, purchase restore and subscription management',
-			'settingsPage.revenueCatMacos' => 'RevenueCat macOS',
-			'settingsPage.commercialChannelRequired' => 'Commercial channel required',
-			'settingsPage.revenueCatOffersRead' => 'Offers and entitlement status are read from RevenueCat.',
-			'settingsPage.revenueCatConfigureKey' => 'Configure the RevenueCat public key of the desktop client.',
-			'settingsPage.revenueCatNotSupported' => 'RevenueCat Flutter does not expose in-app purchases on Windows and Linux.',
+			'settingsPage.billingAppleTitle' => 'Billed through Apple',
+			'settingsPage.commercialChannelRequired' => 'Purchases unavailable',
+			'settingsPage.billingAppleDetail' => 'Your subscription is purchased and managed with your Apple account.',
+			'settingsPage.billingUnavailableDetail' => 'Subscriptions are temporarily unavailable. Please try again later.',
+			'settingsPage.billingPlatformUnsupported' => 'In-app purchases aren\'t available on this platform.',
 			'settingsPage.bestValue' => 'Best value',
+			'settingsPage.priceUnavailable' => 'Price unavailable',
+			'settingsPage.renewalDisclaimer' => 'The subscription renews automatically unless auto-renew is turned off in Apple account settings at least 24 hours before the end of the period.',
+			'settingsPage.privacyPolicy' => 'Privacy Policy',
+			'settingsPage.termsEula' => 'Terms of Use (EULA)',
 			'settingsPage.planManagement' => 'Plan management',
 			'settingsPage.activateEvolvePro' => 'Activate Evolve Pro',
 			'settingsPage.activateEvolveProActive' => 'Evolve Pro entitlement active.',
-			'settingsPage.activateEvolveProStart' => 'Start the native StoreKit checkout on macOS.',
-			'settingsPage.restorePurchasesDetail' => 'Recovers the entitlement status from the provider.',
+			'settingsPage.activateEvolveProStart' => 'Subscribe with your Apple account.',
+			'settingsPage.restorePurchasesDetail' => 'Restores a subscription you already bought.',
 			'settingsPage.manageSubscription' => 'Manage subscription',
 			'settingsPage.manageSubscriptionDetail' => 'Opens the subscription management of the Apple account.',
 			'settingsPage.notAuthenticated' => 'Not authenticated',
@@ -4662,7 +4825,7 @@ extension on Translations {
 			'coachSettings.subtitle' => 'Choose where the coach runs. Local models keep every message on this device.',
 			'coachSettings.backendCloud' => 'Cloud',
 			'coachSettings.backendLocal' => 'Local · private',
-			'coachSettings.cloudDesc' => 'Google Gemini via OpenRouter. Fast, zero setup — the context you share is sent to the provider.',
+			'coachSettings.cloudDesc' => 'Google Gemini via OpenRouter, billed to your own API key. The context you share is sent to the provider.',
 			'coachSettings.localDesc' => 'Your own model via Ollama, LM Studio or any OpenAI-compatible server. Nothing leaves this device.',
 			'coachSettings.presetLabel' => 'Server',
 			'coachSettings.presetOllama' => 'Ollama',
@@ -4702,7 +4865,9 @@ extension on Translations {
 			'coachSettings.settingsSubtitle' => 'Pick the engine that powers your coach and point it at a local server for full privacy.',
 			'coachSettings.settingsRowStatus' => 'Active engine',
 			'coachSettings.settingsRowConfigure' => 'Engine & local server',
-			'coachSettings.cloudKeyMissing' => 'Cloud API key isn\'t configured — cloud replies will fail. Switch to a local server or set OPENROUTER_API_KEY.',
+			'coachSettings.cloudKeyMissing' => 'No API key yet — cloud replies won\'t work. Paste your OpenRouter key below, or switch to a local server.',
+			_ => null,
+		} ?? switch (path) {
 			'coachSettings.temperatureLower' => 'Lower temperature',
 			'coachSettings.temperatureRaise' => 'Raise temperature',
 			'coachSettings.sendMessage' => 'Send',
@@ -4736,8 +4901,6 @@ extension on Translations {
 			'tour.overviewHabitsDesc' => 'The habits you\'ve planned for today live here — tick them off as you go.',
 			'tour.overviewGoalsTitle' => 'Focus goals',
 			'tour.overviewGoalsDesc' => 'The goals you\'re focused on surface here so nothing slips.',
-			_ => null,
-		} ?? switch (path) {
 			'tour.habitsOrientationTitle' => 'The Habits page',
 			'tour.habitsOrientationDesc' => 'This is where you build your daily protocol and track how consistent you are.',
 			'tour.habitsAddTitle' => 'Add a habit',

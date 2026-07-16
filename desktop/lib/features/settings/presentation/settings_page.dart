@@ -3,6 +3,8 @@ import 'package:file_picker/file_picker.dart';
 import 'dart:async';
 import 'dart:convert';
 import 'dart:io';
+import 'dart:math' as math;
+import 'dart:ui' as ui;
 
 import 'package:evolve_desktop/app/theme/desktop_appearance_controller.dart';
 import 'package:evolve_desktop/app/theme/evolve_theme.dart';
@@ -45,6 +47,7 @@ import 'package:image_picker/image_picker.dart';
 import 'package:lucide_icons_flutter/lucide_icons.dart';
 import 'package:share_plus/share_plus.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
+import 'package:url_launcher/url_launcher.dart';
 import 'package:evolve_desktop/features/auth/application/desktop_profile_controller.dart';
 import 'package:evolve_desktop/features/goals/application/goal_categories_controller.dart';
 import 'package:evolve_desktop/i18n/translations.g.dart';
@@ -59,6 +62,272 @@ enum _SettingsSection {
   aiCoach,
   privacy,
   subscription,
+}
+
+/// Page size for the windowed export reads. A single unbounded PostgREST
+/// `select` is capped by the project's `db-max-rows` (1000 by default), so a
+/// backup built from one has to page or it silently ships incomplete.
+const int kExportPageSize = 1000;
+
+/// Fetches one window of rows. Abstracted so the paging loop is unit-testable
+/// without a live Supabase client.
+typedef ExportPageFetcher =
+    Future<List<Map<String, dynamic>>> Function(int offset, int limit);
+
+/// Concatenates every page from [fetchPage], requesting successive windows
+/// until a short (final) page comes back. [fetchPage] must impose a stable
+/// total order, otherwise windows can repeat or skip rows.
+Future<List<Map<String, dynamic>>> fetchAllRowsPaginated(
+  ExportPageFetcher fetchPage, {
+  int pageSize = kExportPageSize,
+}) async {
+  final rows = <Map<String, dynamic>>[];
+  var offset = 0;
+  while (true) {
+    final page = await fetchPage(offset, pageSize);
+    rows.addAll(page);
+    if (page.length < pageSize) break;
+    offset += pageSize;
+  }
+  return rows;
+}
+
+/// Canonical language codes for the Settings language picker. These are the
+/// values persisted to `pref_language` and to the profiles `language` column,
+/// and the ones [DesktopLocaleController.setLanguage] normalizes to.
+const String _kLanguageSystem = 'system';
+const List<String> _kLanguageCodes = [
+  _kLanguageSystem,
+  'it',
+  'en',
+  'es',
+  'de',
+  'ar',
+];
+
+/// Calendar-view codes in picker order.
+const List<String> _kCalendarViewCodes = [
+  kCalendarViewMonth,
+  kCalendarViewWeek,
+  kCalendarViewYear,
+  kCalendarViewLife,
+];
+
+/// Longest edge, in pixels, of a stored avatar. The image is encrypted here and
+/// decrypted on every device that pulls it by synchronous pure-Dart AES-GCM on
+/// the UI isolate (~1.9 MB/s), so a multi-MB camera original freezes both this
+/// app and the paired iPhone. Mirrors mobile's picker cap.
+const int kAvatarMaxDimension = 512;
+
+/// Re-encodes [bytes] so the longest edge is at most [maxDimension]. Returns
+/// the original bytes unchanged when they already fit, when the re-encode would
+/// be larger, or when the image cannot be decoded — so this never returns more
+/// bytes than it was handed.
+///
+/// image_picker's `maxWidth`/`maxHeight`/`imageQuality` cannot do this here:
+/// image_picker_macos routes gallery picks to file_selector and silently
+/// ignores all three, so the downscale has to happen in Dart.
+Future<Uint8List> downscaleAvatarBytes(
+  Uint8List bytes, {
+  int maxDimension = kAvatarMaxDimension,
+}) async {
+  ui.ImmutableBuffer? buffer;
+  ui.ImageDescriptor? descriptor;
+  ui.Codec? codec;
+  ui.Image? image;
+  try {
+    buffer = await ui.ImmutableBuffer.fromUint8List(bytes);
+    descriptor = await ui.ImageDescriptor.encoded(buffer);
+    final longestEdge = math.max(descriptor.width, descriptor.height);
+    if (longestEdge <= maxDimension) return bytes;
+
+    final scale = maxDimension / longestEdge;
+    codec = await descriptor.instantiateCodec(
+      targetWidth: (descriptor.width * scale).round().clamp(1, maxDimension),
+      targetHeight: (descriptor.height * scale).round().clamp(1, maxDimension),
+    );
+    image = (await codec.getNextFrame()).image;
+    final encoded = await image.toByteData(format: ui.ImageByteFormat.png);
+    if (encoded == null) return bytes;
+    // PNG is lossless, so re-encoding a small, heavily compressed photo can
+    // come out BIGGER than the source. What costs the sync path is bytes, not
+    // pixels, so keep whichever payload is smaller.
+    if (encoded.lengthInBytes >= bytes.length) return bytes;
+    return encoded.buffer.asUint8List();
+  } catch (error, stack) {
+    // The downscale is an optimisation, never a gate: an undecodable or exotic
+    // format still has to be usable as an avatar.
+    AppLogger.error('Unable to downscale desktop avatar', error, stack);
+    return bytes;
+  } finally {
+    image?.dispose();
+    codec?.dispose();
+    descriptor?.dispose();
+    // The buffer has to outlive instantiateCodec — dart:ui's own
+    // instantiateImageCodecWithSize holds it until the codec exists — so it is
+    // released here rather than right after ImageDescriptor.encoded.
+    buffer?.dispose();
+  }
+}
+
+/// One `icon + text` line of an import summary.
+Widget _importSummaryRow(BuildContext context, IconData icon, String text) {
+  return Padding(
+    padding: const EdgeInsets.symmetric(vertical: 4),
+    child: Row(
+      children: [
+        Icon(
+          icon,
+          size: 16,
+          color: context.evolveColors.foreground.withValues(alpha: 0.7),
+        ),
+        const SizedBox(width: 8),
+        Expanded(
+          child: Text(
+            text,
+            style: TextStyle(
+              color: context.evolveColors.foreground,
+              fontSize: 13,
+            ),
+          ),
+        ),
+      ],
+    ),
+  );
+}
+
+/// Pre-import chooser for [preview]. Returns the selected mode — `false` =
+/// merge, `true` = replace — or null when cancelled or dismissed.
+///
+/// The initial selection MUST stay merge: replace wipes every existing record
+/// not in the backup, and in private mode the wipe is tombstoned to iCloud, so
+/// it destroys the copy on the user's other devices too. It has to be an
+/// explicit opt-in, never the pre-selected default. Mirrors mobile.
+///
+/// Top-level rather than a `_SettingsPageState` method so that default is
+/// reachable from a test without going through the native file picker.
+Future<bool?> showImportModeDialog(
+  BuildContext context,
+  BackupImportPreview preview,
+) {
+  bool replaceExisting = false;
+  return showEvolveDialog<bool>(
+    context: context,
+    builder: (ctx) {
+      return StatefulBuilder(
+        builder: (context, setState) {
+          return EvolveAlertDialog(
+            maxWidth: 470,
+            icon: LucideIcons.upload,
+            title: Text(t.settingsPage.importSummaryTitle),
+            content: Column(
+              mainAxisSize: MainAxisSize.min,
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                // Same per-entity icons as the post-import summary dialog so
+                // the two read as one flow.
+                _importSummaryRow(
+                  context,
+                  LucideIcons.check,
+                  t.settingsPage.importHabitsCount(count: preview.habitsCount),
+                ),
+                _importSummaryRow(
+                  context,
+                  LucideIcons.history,
+                  t.settingsPage.importLogsCount(count: preview.logsCount),
+                ),
+                _importSummaryRow(
+                  context,
+                  LucideIcons.target,
+                  t.settingsPage.importMacroGoalsCount(
+                    count: preview.macroGoalsCount,
+                  ),
+                ),
+                _importSummaryRow(
+                  context,
+                  LucideIcons.folder,
+                  t.settingsPage.importCategoriesCount(
+                    count: preview.categoriesCount,
+                  ),
+                ),
+                _importSummaryRow(
+                  context,
+                  LucideIcons.smile,
+                  t.settingsPage.importMoodsCount(count: preview.moodsCount),
+                ),
+                if (preview.totalSkipped > 0) ...[
+                  const SizedBox(height: 10),
+                  Container(
+                    padding: const EdgeInsets.symmetric(
+                      horizontal: 11,
+                      vertical: 9,
+                    ),
+                    decoration: BoxDecoration(
+                      color: EvolveColors.destructive.withValues(alpha: 0.08),
+                      borderRadius: BorderRadius.circular(10),
+                      border: Border.all(
+                        color: EvolveColors.destructive.withValues(alpha: 0.25),
+                      ),
+                    ),
+                    child: Row(
+                      children: [
+                        const Icon(
+                          LucideIcons.triangleAlert,
+                          size: 14,
+                          color: EvolveColors.destructive,
+                        ),
+                        const SizedBox(width: 8),
+                        Expanded(
+                          child: Text(
+                            t.settingsPage.importPreviewSkipped(
+                              count: preview.totalSkipped,
+                            ),
+                            style: const TextStyle(
+                              color: EvolveColors.destructive,
+                              fontSize: 12,
+                              fontWeight: FontWeight.w600,
+                            ),
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
+                ],
+                const SizedBox(height: 18),
+                EvolveRadioRow<bool>(
+                  value: false,
+                  groupValue: replaceExisting,
+                  onChanged: (val) => setState(() => replaceExisting = val),
+                  title: t.settingsPage.importMergeTitle,
+                  subtitle: t.settingsPage.importMergeSubtitle,
+                ),
+                const SizedBox(height: 8),
+                EvolveRadioRow<bool>(
+                  value: true,
+                  groupValue: replaceExisting,
+                  onChanged: (val) => setState(() => replaceExisting = val),
+                  title: t.settingsPage.importReplaceTitle,
+                  subtitle: t.settingsPage.importReplaceSubtitle,
+                ),
+              ],
+            ),
+            actions: [
+              // Cancel returns null, NOT false: false is a real answer here
+              // (merge), so popping it would silently start an import.
+              TextButton(
+                onPressed: () => Navigator.pop(ctx),
+                child: Text(t.settingsPage.cancel),
+              ),
+              FilledButton(
+                onPressed: () => Navigator.pop(ctx, replaceExisting),
+                child: Text(t.settingsPage.importConfirmButton),
+              ),
+            ],
+          );
+        },
+      );
+    },
+  );
 }
 
 class SettingsPage extends ConsumerStatefulWidget {
@@ -84,8 +353,10 @@ class _SettingsPageState extends ConsumerState<SettingsPage> {
   bool _focusMode = false;
   bool _milestones = true;
   bool _deepWorkInsights = false;
-  String _calendarView = 'Settimana';
-  String _language = 'Sistema';
+  // Canonical CODES, not display labels: these are what gets persisted, and the
+  // pickers match on them, so they must not move when the UI language does.
+  String _calendarView = kCalendarViewWeek;
+  String _language = _kLanguageSystem;
   String _morningTime = '08:00';
   String _eveningTime = '20:30';
   Color _accent = EvolveColors.primaryStrong;
@@ -131,11 +402,11 @@ class _SettingsPageState extends ConsumerState<SettingsPage> {
     _milestones = preferences.getBool('pref_milestones') ?? true;
     _deepWorkInsights = preferences.getBool('pref_deep_work_insights') ?? false;
     // The pref stores the canonical CODE ('mese'…); older builds stored the
-    // display label — calendarViewLabel normalizes both to the label.
-    _calendarView = calendarViewLabel(
+    // display label — normalizeCalendarViewCode accepts both.
+    _calendarView = normalizeCalendarViewCode(
       preferences.getString('pref_default_calendar_view'),
     );
-    _language = _languageLabel(
+    _language = _languageCode(
       preferences.getString('pref_language') ??
           preferences.getString('language'),
     );
@@ -399,33 +670,37 @@ class _SettingsPageState extends ConsumerState<SettingsPage> {
                   onCustomLocked: () =>
                       unawaited(showProFeaturesDialog(context, ref)),
                 ),
-                _SelectRow(
+                _SelectRow<String>(
                   icon: LucideIcons.calendar,
                   label: t.settingsPage.defaultCalendarView,
                   value: _calendarView,
-                  options: const ['Mese', 'Settimana', 'Anno', 'Vita'],
+                  options: [
+                    for (final code in _kCalendarViewCodes)
+                      EvolveSelectOption(
+                        value: code,
+                        label: _calendarViewOptionLabel(code),
+                      ),
+                  ],
                   // Persist the canonical CODE ('mese'…) in BOTH
                   // SharedPreferences and the profiles row (they used to
-                  // diverge: prefs got the label, the profile the code); the
-                  // widget state keeps the display label.
+                  // diverge: prefs got the label, the profile the code).
                   onChanged: (value) => _setString(
                     'pref_default_calendar_view',
-                    normalizeCalendarViewCode(value),
+                    value,
                     () => _calendarView = value,
                     profileColumn: 'pref_default_calendar_view',
                   ),
                 ),
-                _SelectRow(
+                _SelectRow<String>(
                   icon: LucideIcons.languages,
                   label: t.settingsPage.language,
                   value: _language,
-                  options: const [
-                    'Sistema',
-                    'Italiano',
-                    'English',
-                    'Espanol',
-                    'Deutsch',
-                    'Arabic',
+                  options: [
+                    for (final code in _kLanguageCodes)
+                      EvolveSelectOption(
+                        value: code,
+                        label: _languageOptionLabel(code),
+                      ),
                   ],
                   onChanged: (value) => _setString(
                     'pref_language',
@@ -434,10 +709,10 @@ class _SettingsPageState extends ConsumerState<SettingsPage> {
                       _language = value;
                       ref
                           .read(desktopLocaleControllerProvider.notifier)
-                          .setLanguage(_languageProfileValue(value));
+                          .setLanguage(value);
                     },
                     profileColumn: 'language',
-                    profileValue: _languageProfileValue(value),
+                    profileValue: value,
                   ),
                 ),
                 _SwitchRow(
@@ -822,9 +1097,21 @@ class _SettingsPageState extends ConsumerState<SettingsPage> {
           );
           return;
         }
-        Future<List<Map<String, dynamic>>> rows(String table) async {
-          final res = await client.from(table).select().eq('user_id', userId);
-          return List<Map<String, dynamic>>.from(res);
+        // Every table is paged: a single unbounded PostgREST select is capped by
+        // the project's db-max-rows, which would silently truncate the backup
+        // for any user with a long history. The `id` order is what makes the
+        // windows a stable total order — ranges over an unordered select can
+        // repeat or skip rows between pages.
+        Future<List<Map<String, dynamic>>> rows(String table) {
+          return fetchAllRowsPaginated((offset, limit) async {
+            final res = await client
+                .from(table)
+                .select()
+                .eq('user_id', userId)
+                .order('id')
+                .range(offset, offset + limit - 1);
+            return List<Map<String, dynamic>>.from(res);
+          });
         }
 
         final profileRow = await client
@@ -919,13 +1206,18 @@ class _SettingsPageState extends ConsumerState<SettingsPage> {
 
       final isPrivateMode = ref.read(activeDesktopDataModeProvider).isPrivate;
       if (isPrivateMode) {
+        final original = await File(image.path).readAsBytes();
+        final resized = await downscaleAvatarBytes(original);
+        // Keep the source extension when the bytes were passed through, since
+        // the downscale re-encodes to PNG whenever it does any work.
+        final extension = identical(resized, original)
+            ? p.extension(image.path)
+            : '.png';
         final supportDir = await getApplicationSupportDirectory();
         final avatarDir = Directory(p.join(supportDir.path, 'private_profile'));
         await avatarDir.create(recursive: true);
-        final avatarFile = File(
-          p.join(avatarDir.path, 'avatar${p.extension(image.path)}'),
-        );
-        final selectedFile = await File(image.path).copy(avatarFile.path);
+        final selectedFile = File(p.join(avatarDir.path, 'avatar$extension'));
+        await selectedFile.writeAsBytes(resized, flush: true);
         // Evict the (path-keyed) cached decode so the UI re-reads the new bytes.
         // The avatar is written to a STABLE path (avatar.<ext>), so an in-place
         // overwrite otherwise keeps showing the previous photo (settings avatar
@@ -1159,11 +1451,21 @@ class _SettingsPageState extends ConsumerState<SettingsPage> {
       );
       return;
     }
+    // The spinner lives on the root navigator and outlives this page: deleting
+    // the account signs out, which swaps the shell for the sign-in page and
+    // disposes this state. gotrue notifies its auth subscribers BEFORE awaiting
+    // the /logout round trip, so that swap lands while we are still suspended
+    // here — a `mounted`-gated pop would leave a barrier-blocking, buttonless
+    // spinner over the sign-in page with force-quit as the only way out. Hold
+    // the navigator captured before the await and pop it unconditionally.
+    final navigator = Navigator.of(context, rootNavigator: true);
     _showLoadingDialog(t.settingsPage.deleteAccountGateTitle);
     try {
       await ref.read(desktopAuthControllerProvider.notifier).deleteAccount();
+      navigator.pop();
+      // Success disposes this page, so the confirmation is best-effort: it can
+      // only render on the rare path where the swap has not landed yet.
       if (mounted) {
-        Navigator.pop(context); // close loading dialog
         _showResultDialog(
           t.settingsPage.deleteAccountGateTitle,
           t.settingsPage.accountDeleted,
@@ -1171,8 +1473,8 @@ class _SettingsPageState extends ConsumerState<SettingsPage> {
       }
     } catch (error, stack) {
       AppLogger.error('Unable to delete desktop account', error, stack);
+      navigator.pop();
       if (mounted) {
-        Navigator.pop(context); // close loading dialog
         _showResultDialog(
           t.settingsPage.deleteAccountGateTitle,
           t.settingsPage.operationFailed,
@@ -1224,134 +1526,31 @@ class _SettingsPageState extends ConsumerState<SettingsPage> {
 
       if (!mounted) return;
 
-      // 2. Ask for Replace/Merge
-      bool replaceExisting = true;
-      final confirm = await showEvolveDialog<bool>(
-        context: context,
-        builder: (ctx) {
-          return StatefulBuilder(
-            builder: (context, setState) {
-              return EvolveAlertDialog(
-                maxWidth: 470,
-                icon: LucideIcons.upload,
-                title: Text(t.settingsPage.importSummaryTitle),
-                content: Column(
-                  mainAxisSize: MainAxisSize.min,
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    // Same per-entity icons as the post-import summary dialog
-                    // so the two read as one flow.
-                    _importSummaryRow(
-                      context,
-                      LucideIcons.check,
-                      t.settingsPage.importHabitsCount(
-                        count: preview.habitsCount,
-                      ),
-                    ),
-                    _importSummaryRow(
-                      context,
-                      LucideIcons.history,
-                      t.settingsPage.importLogsCount(count: preview.logsCount),
-                    ),
-                    _importSummaryRow(
-                      context,
-                      LucideIcons.target,
-                      t.settingsPage.importMacroGoalsCount(
-                        count: preview.macroGoalsCount,
-                      ),
-                    ),
-                    _importSummaryRow(
-                      context,
-                      LucideIcons.folder,
-                      t.settingsPage.importCategoriesCount(
-                        count: preview.categoriesCount,
-                      ),
-                    ),
-                    _importSummaryRow(
-                      context,
-                      LucideIcons.smile,
-                      t.settingsPage.importMoodsCount(
-                        count: preview.moodsCount,
-                      ),
-                    ),
-                    if (preview.totalSkipped > 0) ...[
-                      const SizedBox(height: 10),
-                      Container(
-                        padding: const EdgeInsets.symmetric(
-                          horizontal: 11,
-                          vertical: 9,
-                        ),
-                        decoration: BoxDecoration(
-                          color: EvolveColors.destructive.withValues(
-                            alpha: 0.08,
-                          ),
-                          borderRadius: BorderRadius.circular(10),
-                          border: Border.all(
-                            color: EvolveColors.destructive.withValues(
-                              alpha: 0.25,
-                            ),
-                          ),
-                        ),
-                        child: Row(
-                          children: [
-                            const Icon(
-                              LucideIcons.triangleAlert,
-                              size: 14,
-                              color: EvolveColors.destructive,
-                            ),
-                            const SizedBox(width: 8),
-                            Expanded(
-                              child: Text(
-                                t.settingsPage.importPreviewSkipped(
-                                  count: preview.totalSkipped,
-                                ),
-                                style: const TextStyle(
-                                  color: EvolveColors.destructive,
-                                  fontSize: 12,
-                                  fontWeight: FontWeight.w600,
-                                ),
-                              ),
-                            ),
-                          ],
-                        ),
-                      ),
-                    ],
-                    const SizedBox(height: 18),
-                    EvolveRadioRow<bool>(
-                      value: true,
-                      groupValue: replaceExisting,
-                      onChanged: (val) => setState(() => replaceExisting = val),
-                      title: t.settingsPage.importReplaceTitle,
-                      subtitle: t.settingsPage.importReplaceSubtitle,
-                    ),
-                    const SizedBox(height: 8),
-                    EvolveRadioRow<bool>(
-                      value: false,
-                      groupValue: replaceExisting,
-                      onChanged: (val) => setState(() => replaceExisting = val),
-                      title: t.settingsPage.importMergeTitle,
-                      subtitle: t.settingsPage.importMergeSubtitle,
-                    ),
-                  ],
-                ),
-                actions: [
-                  TextButton(
-                    onPressed: () => Navigator.pop(ctx, false),
-                    child: Text(t.settingsPage.cancel),
-                  ),
-                  FilledButton(
-                    onPressed: () => Navigator.pop(ctx, true),
-                    child: Text(t.settingsPage.importConfirmButton),
-                  ),
-                ],
-              );
-            },
-          );
-        },
-      );
+      // 2. Ask for Replace/Merge.
+      final replaceExisting = await showImportModeDialog(context, preview);
 
-      if (confirm != true) return;
+      if (replaceExisting == null) return;
       if (!mounted) return;
+
+      // Replace deletes every record not in the backup and, in private mode,
+      // tombstones the deletions to iCloud — so a stale or partial backup can
+      // take out a full history on every device at once. Require a second,
+      // explicit confirmation that names the loss with a real count.
+      if (replaceExisting) {
+        final logCount = ref
+            .read(dashboardControllerProvider)
+            .habitLogs
+            .values
+            .fold<int>(0, (sum, day) => sum + day.length);
+        final proceed = await _confirm(
+          title: t.settingsPage.importReplaceConfirmTitle,
+          message: t.settingsPage.importReplaceConfirmMessage(count: logCount),
+          confirmLabel: t.settingsPage.importReplaceConfirmButton,
+          destructive: true,
+        );
+        if (!proceed) return;
+        if (!mounted) return;
+      }
 
       // 3. Execute
       _showLoadingDialog(t.settingsPage.importInProgress);
@@ -1479,31 +1678,6 @@ class _SettingsPageState extends ConsumerState<SettingsPage> {
     return m.skipped > 0
         ? '$base${t.settingsPage.importRowSkipped(count: m.skipped)}'
         : base;
-  }
-
-  Widget _importSummaryRow(BuildContext context, IconData icon, String text) {
-    return Padding(
-      padding: const EdgeInsets.symmetric(vertical: 4),
-      child: Row(
-        children: [
-          Icon(
-            icon,
-            size: 16,
-            color: context.evolveColors.foreground.withValues(alpha: 0.7),
-          ),
-          const SizedBox(width: 8),
-          Expanded(
-            child: Text(
-              text,
-              style: TextStyle(
-                color: context.evolveColors.foreground,
-                fontSize: 13,
-              ),
-            ),
-          ),
-        ],
-      ),
-    );
   }
 
   // ---------------------------------------------------------------------------
@@ -1710,8 +1884,8 @@ class _SettingsPageState extends ConsumerState<SettingsPage> {
     setState(() {
       _darkMode = true;
       _accent = DesktopAppearanceController.defaultAccent;
-      _calendarView = 'Settimana';
-      _language = 'Sistema';
+      _calendarView = kCalendarViewWeek;
+      _language = _kLanguageSystem;
       _timeFormat24h = true;
       _habitReminders = true;
       _goalDeadlines = true;
@@ -1833,10 +2007,10 @@ class _SettingsPageState extends ConsumerState<SettingsPage> {
         _aiInsights = profile['notif_ai_insights'] as bool? ?? _aiInsights;
         _weeklyReport =
             profile['notif_weekly_reports'] as bool? ?? _weeklyReport;
-        _calendarView = calendarViewLabel(
+        _calendarView = normalizeCalendarViewCode(
           profile['pref_default_calendar_view'] as String?,
         );
-        _language = _languageLabel(profile['language'] as String?);
+        _language = _languageCode(profile['language'] as String?);
         _morningTime = profile['morning_brief_time'] as String? ?? _morningTime;
         _eveningTime =
             profile['evening_review_time'] as String? ?? _eveningTime;
@@ -1853,14 +2027,8 @@ class _SettingsPageState extends ConsumerState<SettingsPage> {
           preferences.setBool('notif_ai_insights', _aiInsights),
           preferences.setBool('notif_weekly_reports', _weeklyReport),
           // Prefs hold the canonical code, never the display label.
-          preferences.setString(
-            'pref_default_calendar_view',
-            normalizeCalendarViewCode(_calendarView),
-          ),
-          preferences.setString(
-            'pref_language',
-            _languageProfileValue(_language),
-          ),
+          preferences.setString('pref_default_calendar_view', _calendarView),
+          preferences.setString('pref_language', _language),
           preferences.setString('notif_morning_brief_time', _morningTime),
           preferences.setString('notif_evening_review_time', _eveningTime),
           preferences.setInt('accent_color', _accent.toARGB32()),
@@ -1895,22 +2063,32 @@ class _SettingsPageState extends ConsumerState<SettingsPage> {
     }
   }
 
-  String _languageProfileValue(String label) => switch (label) {
-    'Italiano' => 'it',
-    'English' => 'en',
-    'Espanol' => 'es',
-    'Deutsch' => 'de',
-    'Arabic' => 'ar',
-    _ => 'system',
+  /// Maps any persisted value to a canonical language code. Older builds wrote
+  /// the display LABEL to `pref_language`, so those are accepted too; anything
+  /// unrecognised falls back to [_kLanguageSystem].
+  String _languageCode(String? value) => switch (value?.trim().toLowerCase()) {
+    'it' || 'italiano' => 'it',
+    'en' || 'english' => 'en',
+    'es' || 'espanol' => 'es',
+    'de' || 'deutsch' => 'de',
+    'ar' || 'arabic' => 'ar',
+    _ => _kLanguageSystem,
   };
 
-  String _languageLabel(String? value) => switch (value?.toLowerCase()) {
-    'it' => 'Italiano',
-    'en' => 'English',
-    'es' => 'Espanol',
-    'de' => 'Deutsch',
-    'ar' => 'Arabic',
-    _ => 'Sistema',
+  String _languageOptionLabel(String code) => switch (code) {
+    'it' => t.settingsPage.languageOptions.italian,
+    'en' => t.settingsPage.languageOptions.english,
+    'es' => t.settingsPage.languageOptions.spanish,
+    'de' => t.settingsPage.languageOptions.german,
+    'ar' => t.settingsPage.languageOptions.arabic,
+    _ => t.settingsPage.languageOptions.system,
+  };
+
+  String _calendarViewOptionLabel(String code) => switch (code) {
+    kCalendarViewMonth => t.settingsPage.calendarViewOptions.month,
+    kCalendarViewYear => t.settingsPage.calendarViewOptions.year,
+    kCalendarViewLife => t.settingsPage.calendarViewOptions.life,
+    _ => t.settingsPage.calendarViewOptions.week,
   };
 
   void _showGate(String title, String detail) {
@@ -2343,7 +2521,11 @@ class _SwitchRow extends StatelessWidget {
   }
 }
 
-class _SelectRow extends StatelessWidget {
+/// Settings row wrapping an [EvolveSelect]. [value] and the options' values are
+/// canonical CODES, never the rendered labels: [EvolveSelect] matches [value]
+/// against the option values, so a localized label must not be the identity —
+/// it would stop matching as soon as the UI language changes.
+class _SelectRow<T> extends StatelessWidget {
   const _SelectRow({
     required this.icon,
     required this.label,
@@ -2354,9 +2536,9 @@ class _SelectRow extends StatelessWidget {
 
   final IconData icon;
   final String label;
-  final String value;
-  final List<String> options;
-  final ValueChanged<String> onChanged;
+  final T value;
+  final List<EvolveSelectOption<T>> options;
+  final ValueChanged<T> onChanged;
 
   @override
   Widget build(BuildContext context) {
@@ -2364,12 +2546,9 @@ class _SelectRow extends StatelessWidget {
       contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 2),
       leading: _rowIconChip(context, icon),
       title: Text(label, style: _rowTitleStyle(context)),
-      trailing: EvolveSelect<String>(
+      trailing: EvolveSelect<T>(
         value: value,
-        options: [
-          for (final option in options)
-            EvolveSelectOption(value: option, label: option),
-        ],
+        options: options,
         onChanged: onChanged,
       ),
     );
@@ -2879,13 +3058,13 @@ class _SubscriptionSettingsState extends ConsumerState<_SubscriptionSettings> {
         ],
         _PlatformNote(
           title: subscription.isSupportedPlatform
-              ? t.settingsPage.revenueCatMacos
+              ? t.settingsPage.billingAppleTitle
               : t.settingsPage.commercialChannelRequired,
           detail: subscription.isSupportedPlatform
               ? subscription.isConfigured
-                    ? t.settingsPage.revenueCatOffersRead
-                    : t.settingsPage.revenueCatConfigureKey
-              : t.settingsPage.revenueCatNotSupported,
+                    ? t.settingsPage.billingAppleDetail
+                    : t.settingsPage.billingUnavailableDetail
+              : t.settingsPage.billingPlatformUnsupported,
         ),
         const SizedBox(height: 16),
         Row(
@@ -2893,9 +3072,9 @@ class _SubscriptionSettingsState extends ConsumerState<_SubscriptionSettings> {
             Expanded(
               child: _PlanCard(
                 title: t.settingsPage.planMonthly,
-                price:
-                    monthly?.storeProduct.priceString ??
-                    t.settingsPage.planMonthly,
+                // Never fall back to the plan NAME here: that renders the title
+                // twice where Guideline 3.1.2 requires the price per period.
+                price: monthly?.storeProduct.priceString,
                 selected: _plan == 'monthly',
                 onTap: () => setState(() => _plan = 'monthly'),
               ),
@@ -2904,9 +3083,7 @@ class _SubscriptionSettingsState extends ConsumerState<_SubscriptionSettings> {
             Expanded(
               child: _PlanCard(
                 title: t.settingsPage.planAnnual,
-                price:
-                    yearly?.storeProduct.priceString ??
-                    t.settingsPage.planAnnual,
+                price: yearly?.storeProduct.priceString,
                 detail: t.settingsPage.bestValue,
                 selected: _plan == 'yearly',
                 onTap: () => setState(() => _plan = 'yearly'),
@@ -2914,6 +3091,8 @@ class _SubscriptionSettingsState extends ConsumerState<_SubscriptionSettings> {
             ),
           ],
         ),
+        const SizedBox(height: 16),
+        const _ComplianceLinks(),
         const SizedBox(height: 24),
         _GroupGrid(
           twoColumn: widget.twoColumn,
@@ -3065,6 +3244,82 @@ class _SubscriptionSettingsState extends ConsumerState<_SubscriptionSettings> {
   }
 }
 
+/// Guideline 3.1.2 disclosures for the purchase surface: the auto-renewal
+/// statement plus functional links to the Privacy Policy and the EULA. Same
+/// copy and same targets as the mobile paywall.
+class _ComplianceLinks extends StatelessWidget {
+  const _ComplianceLinks();
+
+  static final Uri _privacyPolicy = Uri.parse(
+    'https://simo-hue.github.io/evolve/privacy.html',
+  );
+  static final Uri _termsEula = Uri.parse(
+    'https://www.apple.com/legal/internet-services/itunes/dev/stdeula/',
+  );
+
+  @override
+  Widget build(BuildContext context) {
+    return Column(
+      children: [
+        Text(
+          t.settingsPage.renewalDisclaimer,
+          textAlign: TextAlign.center,
+          style: TextStyle(
+            color: context.evolveColors.muted,
+            fontSize: 11,
+            fontWeight: FontWeight.w500,
+            height: 1.4,
+          ),
+        ),
+        const SizedBox(height: 12),
+        Row(
+          mainAxisAlignment: MainAxisAlignment.center,
+          children: [
+            _LegalLink(label: t.settingsPage.privacyPolicy, url: _privacyPolicy),
+            Text(
+              '  •  ',
+              style: TextStyle(
+                color: context.evolveColors.muted,
+                fontSize: 12,
+              ),
+            ),
+            _LegalLink(label: t.settingsPage.termsEula, url: _termsEula),
+          ],
+        ),
+      ],
+    );
+  }
+}
+
+class _LegalLink extends StatelessWidget {
+  const _LegalLink({required this.label, required this.url});
+
+  final String label;
+  final Uri url;
+
+  @override
+  Widget build(BuildContext context) {
+    return MouseRegion(
+      cursor: SystemMouseCursors.click,
+      child: GestureDetector(
+        onTap: () => unawaited(
+          launchUrl(url, mode: LaunchMode.externalApplication),
+        ),
+        child: Text(
+          label,
+          style: TextStyle(
+            color: context.evolveAccent,
+            fontSize: 12,
+            fontWeight: FontWeight.w600,
+            decoration: TextDecoration.underline,
+            decorationColor: context.evolveAccent,
+          ),
+        ),
+      ),
+    );
+  }
+}
+
 class _PlanCard extends StatelessWidget {
   const _PlanCard({
     required this.title,
@@ -3075,7 +3330,11 @@ class _PlanCard extends StatelessWidget {
   });
 
   final String title;
-  final String price;
+
+  /// Localized store price, or null when the offering has not resolved. Never
+  /// substitute the plan name: the price slot must read as a price or as an
+  /// explicit absence of one.
+  final String? price;
   final String? detail;
   final bool selected;
   final VoidCallback onTap;
@@ -3115,13 +3374,19 @@ class _PlanCard extends StatelessWidget {
             Text(title, style: Theme.of(context).textTheme.titleLarge),
             const SizedBox(height: 8),
             Text(
-              price,
-              style: TextStyle(
-                color: context.evolveAccent,
-                fontSize: 22,
-                fontWeight: FontWeight.w800,
-                letterSpacing: -0.8,
-              ),
+              price ?? t.settingsPage.priceUnavailable,
+              style: price == null
+                  ? TextStyle(
+                      color: context.evolveColors.muted,
+                      fontSize: 13,
+                      fontWeight: FontWeight.w600,
+                    )
+                  : TextStyle(
+                      color: context.evolveAccent,
+                      fontSize: 22,
+                      fontWeight: FontWeight.w800,
+                      letterSpacing: -0.8,
+                    ),
             ),
             if (detail != null) ...[
               const SizedBox(height: 5),

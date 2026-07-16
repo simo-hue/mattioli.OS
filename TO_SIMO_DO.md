@@ -157,3 +157,156 @@ Audit found + fixed 5 desktop-vs-mobile gaps (analyze clean, 317/317). Confirm t
       the LOCAL data (not just a "failed" toast).
 - [ ] **Global error boundary (#4)**: a forced error shows a friendly localized dialog (no raw stack) in a
       release build, not Flutter's grey box.
+
+---
+
+# 🚨 PRE-APP-STORE AUDIT (2026-07-16) — MANUAL ACTIONS REQUIRED
+
+Deep multi-agent audit of `desktop/` + `mobile/` (23 dimensions, 87 candidate findings,
+83 confirmed after adversarial verification, 4 refuted). Blockers + high-severity issues
+fixed across 3 waves; every fix independently reviewed. **The items below are things ONLY
+YOU can do — the code is inert or wrong until they are done.**
+
+## ⛔ BLOCKING — do these BEFORE you submit, in this order
+
+- [ ] **`REVENUECAT_WEBHOOK_SECRET` — FAIL-CLOSED, will break Pro sync if skipped.**
+      The webhook previously accepted **unauthenticated** calls: anyone on the internet could
+      grant or revoke Pro on any account. It is now fail-closed, so with the secret unset it
+      returns 500 to EVERY request **including real RevenueCat ones**, and Pro entitlements
+      silently stop syncing to `profiles.is_pro`. Steps:
+      1. Generate a high-entropy secret.
+      2. `supabase secrets set REVENUECAT_WEBHOOK_SECRET=<value>`
+      3. RevenueCat dashboard → webhook → Authorization header = **exactly** `Bearer <value>`
+         (the code compares the full header string, `Bearer ` prefix included).
+      4. Smoke-test after deploy: a wrong/absent header must 401; a real event must land.
+
+- [ ] **Run the two new migrations** (fix a live privilege-escalation hole — any authenticated
+      user could self-grant Pro by writing `is_pro=true` to their own `profiles` row):
+      - `migrations/20260716_pin_profiles_entitlement_columns.sql`
+      - `migrations/20260716_close_legacy_table_rls.sql`
+      Both are additive and safe to run on the existing DB. `mobile/mobile_schema.sql` and
+      `public/schema.sql` were also fixed so a FRESH provision is secure by default.
+
+- [ ] **Deploy + configure `supabase/functions/revoke-apple-token`** (App Store Guideline
+      5.1.1(v): a Sign in with Apple app MUST revoke the Apple token on account deletion —
+      reviewers explicitly test this). **Until this is deployed AND configured, the mobile
+      deletion flow is WORSE than before**: the user gets an Apple credential sheet, then a red
+      error toast (the account still deletes — fail-safe by design — but it looks broken).
+      1. Apple Developer → Certificates, IDs & Profiles → Keys → create a key with
+         **Sign in with Apple** enabled. The `.p8` downloads **ONCE ONLY**.
+      2. `supabase functions deploy revoke-apple-token`
+      3. `supabase secrets set` all four (nothing is hardcoded; nothing ships in the binary):
+         - `APPLE_TEAM_ID` — 10-char Team ID (Membership)
+         - `APPLE_KEY_ID` — 10-char Key ID of that SIWA key
+         - `APPLE_PRIVATE_KEY` — full `.p8` contents, BEGIN/END lines included (literal `\n` ok)
+         - `APPLE_CLIENT_ID` — **the iOS bundle id `com.simo.evolve`, NOT the Service ID**
+           (mobile uses native SIWA, so the authorizationCode is bound to the bundle id; a
+           Service ID here makes Apple reject with `invalid_client`). **Confirm the bundle id.**
+      4. Do **NOT** add a `[functions.revoke-apple-token]` block to `supabase/config.toml` —
+         edge functions default to `verify_jwt = true`, which is what this function needs.
+         Setting `verify_jwt = false` would let anyone revoke anyone's Apple grant.
+      - NOTE: this function has **never been executed** (`deno` is not installed on this Mac).
+        The ES256/djwt signing + Apple `/auth/token` exchange are reasoned from docs only.
+        **Test it on a throwaway account before relying on it.**
+
+- [ ] **Export compliance (BIS)** — you chose "declare true + claim the 5D992.c exemption".
+      `ITSAppUsesNonExemptEncryption` is now `true` on **both** platforms (the app bundles
+      SQLCipher + custom AES-GCM E2E, which fits none of Apple's listed exemptions).
+      You must file the **annual self-classification report to BIS**. After you have it, add
+      `ITSEncryptionExportComplianceCode` to both Info.plists to stop App Store Connect asking
+      the questionnaire on every single build.
+
+## ⚠️ RESIDUAL RISK YOU ACCEPTED (stated once, your call — but know it before you submit)
+
+- [ ] **HealthKit values still sync to iCloud/CloudKit.** You chose "keep values in Private/E2E
+      mode only, never Supabase". The Supabase upload path is now closed (BOTH paths — the goal
+      upload *and* a second one via backup import that the first fix missed). **But Apple's
+      HealthKit terms prohibit storing HealthKit data in iCloud _regardless of encryption_.**
+      This is a real, not theoretical, rejection risk, and the HealthKit + CloudKit entitlement
+      pair is visible in your entitlements file. If you want it fully compliant, the fix is to
+      recompute verdicts on-device and sync nothing health-derived. Your call — flagging it once.
+
+## 📱 ON-DEVICE QA — I could NOT verify any of this (no Xcode on this Mac)
+
+- [ ] **macOS RELEASE build sign-in (was THE top blocker).** `Release.entitlements` was missing
+      `com.apple.security.network.server`, so the sandbox blocked the loopback OAuth callback
+      bind — **every Google/Apple sign-in was dead in the shipped build only** (it works under
+      `flutter run`, which is why it was never caught). Fixed, but **structurally unverifiable
+      here**: entitlements are not embedded in an unsigned local build. **Do a real signed
+      archive and actually sign in with Google AND Apple.** This is the single highest-value
+      thing to test.
+- [ ] **Private mode data survives a relaunch (was a catastrophic data-loss blocker).**
+      `desktop/lib/main.dart:24` called `FlutterSecureStorage.setMockInitialValues({})`
+      **unconditionally in production**, replacing the Keychain with an in-memory map — so the
+      SQLCipher key, the Supabase session AND the E2E sync secret were destroyed on every quit.
+      Removed entirely. ⚠️ **This line was probably YOUR local dev workaround** (unsigned macOS
+      builds can't reach the Keychain). If your local `flutter run` now fails on Keychain access,
+      that is expected — tell me and I'll add a debug-only, release-impossible escape hatch.
+      Verify: Private mode → add data → quit → reopen → **data still there, no reset prompt.**
+- [ ] **Private mode shows data on launch** (was: empty dashboard/habits/goals every launch until
+      manual Refresh — data was intact on disk, the app just looked wiped).
+- [ ] **HealthKit permission sheet is in the user's language.** `NSHealthShareUsageDescription`
+      was Italian-only and missing from all 5 `InfoPlist.strings` — every non-Italian user, and
+      the reviewer, saw an Italian prompt. Now localized (en/it/es/de/ar). Check on a non-Italian device.
+- [ ] **iPhone-only.** `TARGETED_DEVICE_FAMILY` is now `"1"` (was `"1,2"` — iPad, which the
+      portrait-locked UI was never designed for). Confirm iPad is gone from App Store Connect.
+- [ ] **Paywall prices** now come from real StoreKit products (they were hardcoded `€4,99`/`€29,99`
+      — every non-Eurozone user saw the WRONG currency and amount). Check a non-EUR storefront.
+      When products can't load, the UI now says "Unavailable" rather than inventing a price.
+- [ ] **Account deletion** (mobile + desktop) end-to-end on a throwaway account.
+- [ ] **CloudKit sync across two devices** — the sync engine changed materially (batching,
+      lost-write guard, forward-compat, poison-pill quarantine). Test iPhone ↔ Mac both ways.
+
+## 📋 App Store Connect — privacy labels
+
+- [ ] **ADD "Other User Content"** → Linked to user, not tracking, purpose App Functionality
+      (goal/habit titles + descriptions go to Supabase; titles + your first name go to openrouter.ai).
+- [ ] **Do NOT declare Health/Fitness** — correct now that no health measurement reaches Supabase.
+      If the label currently claims health collection, remove it.
+      (`PrivacyInfo.xcprivacy` was updated to match — keep the two consistent.)
+
+## 🔑 BYOK AI Coach (your decision: "the user must insert his own API Key")
+
+Implemented on **both** platforms. The key now lives in the **Keychain** (`flutter_secure_storage`,
+never SharedPreferences), is never logged/sent to Sentry/included in any export, and is never
+rendered back into the UI. No key can be compiled into a build any more: desktop's
+`String.fromEnvironment('OPENROUTER_API_KEY')` is gone and the live `cloud_coach_backend`
+takes an injected, Keychain-backed key. A 401/403 surfaces a localized "check your API key"
+message. With no key, the Coach shows a localized setup card (never a dead button — Guideline 2.1).
+New `ai.apiKey` i18n block (16 keys × 5 locales × both apps).
+
+- [ ] **🚨 ROTATE YOUR OPENROUTER KEY — the code fix cannot undo this.** Any desktop bundle you
+      already built or distributed with `--dart-define=OPENROUTER_API_KEY=sk-or-v1-…` **still
+      carries that key, extractable from the binary**. The fix guarantees no FUTURE build can
+      embed one; it cannot un-ship a past one. Rotate at openrouter.ai and treat the old key as
+      compromised.
+- [ ] **Delete your local `mobile/lib/core/openrouter_config.dart`.** It is gitignored (so no
+      reviewer ever sees it) and now has **ZERO importers** — it cannot reach a binary — but on
+      your machine it may still hold a real key. On this machine it held only the placeholder.
+      The tracked `.example` was deleted, so a fresh clone builds with no OpenRouter config at all.
+- [ ] **Product change to be aware of**: the AI Coach now requires every user to supply their own
+      OpenRouter account + key. (The audit's original suggested fix was a server-side proxy, which
+      would keep the Coach working out-of-the-box — BYOK is the stricter remediation you chose.)
+      Desktop still has the keyless local Ollama/LM Studio backend as a fallback; mobile does not.
+- [ ] **Dual-key backup** (your "if you think it does make sense" musing): **not built** — I
+      recommend against it. A second key on the same provider fails identically for the realistic
+      outages (OpenRouter down, or account out of credit); it only helps if one key is revoked
+      while another on the same account lives, which is already covered by a clear localized error.
+      It would cost a failover state machine + doubled settings UI + doubled i18n right before
+      submission. If you want real redundancy later, the higher-value version is a second
+      *provider* (or a local model on mobile), not a second key. Say the word and I'll add it.
+- [ ] **On-device QA**: the real Keychain round-trip is only exercised via mocks here. Verify
+      entering/replacing/clearing a key on both platforms, and that a bad key shows the localized
+      error rather than failing silently.
+
+## 📄 Stale docs now contradicting the code (low priority, not fixed — out of the audit's scope)
+- [ ] `desktop/FEATURE_PARITY.md:40`, `DOCUMENTATION.md:1086`, `apple/TO_SIMO_DO.md:14` all still
+      describe the removed build-time `OPENROUTER_API_KEY` flow.
+
+## 🧮 Deferred owner decision — historical streak data
+- [ ] The DST streak bug (`Duration` day-walking skipped the spring-forward day) is fixed on BOTH
+      platforms, so **no new corruption**. But `goal_logs.streak` rows already written across past
+      transitions keep their wrong values: `best_streak` is a stored `math.max` that only ratchets
+      upward, so a fabricated record streak can never self-heal. A one-off `recomputeStreaksForGoals`
+      backfill is the only cure — but it would visibly LOWER some users' "best streak" with no
+      explanation. That is a product/trust call, not an engineering one. Doing nothing is defensible.

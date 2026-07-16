@@ -1266,3 +1266,95 @@ NEXT ACTION: Ensure device is running the latest built version of the codebase.
   - *Tech Notes*: All 5 implemented by sequential subagents mirroring the cited mobile code; no shared-engine or schema changes. New files: `sync_off_banner.dart`, `navigator_key.dart`. i18n regenerated via `dart run slang`.
   - *Verification*: `flutter analyze` — 0 errors / 0 warnings from the changes (only the pre-existing `main.dart setMockInitialValues`). **Full desktop suite = 317/317 green** (with the Supabase build-time defines); #1 is exercised by `backup_roundtrip_test`/`import_merge_lww_test`, the banner + dashboard render under `widget_test`. `main.dart`'s boundary and the #1 reorder were also hand-reviewed. Could not run the GUI here.
   - *Current Status*: **Complete and Dart-verified.** Desktop is now at correctness/robustness parity with mobile for release; remaining items are on-device QA (`TO_SIMO_DO.md`).
+
+---
+
+## [2026-07-16]: Pre-App-Store deep audit + blocker remediation (desktop macOS + mobile iOS)
+
+*Details*: Full pre-release audit of both Flutter apps ahead of App Store submission, followed
+by three remediation waves. The web app (`src/`, `public/`) was explicitly out of scope.
+
+**Method.** 23 parallel audit dimensions (Apple native config, App Store guidelines, build/release,
+async+lifecycle, crash risk, Riverpod state, crypto/key management, sync engine, private DB,
+import/export, auth, IAP, notifications, HealthKit/Screen Time verification, date/streak math,
+i18n/RTL, security/privacy, performance, cross-platform parity) across ~120k lines of Dart +
+the iOS/macOS native layer. **Every candidate finding was then adversarially verified by two
+independent skeptics** (reachability lens + technical-correctness lens) instructed to REFUTE it.
+87 candidates → **83 confirmed, 4 refuted, 26 severity-corrected**. Each subsequent fix was
+reviewed by an independent agent that re-ran the suites and mutation-tested the regression tests.
+
+**Baseline before/after**: analyze clean on both apps throughout; tests **676 → 741 passing**
+(desktop 317→333, mobile 230→267, evolve_sync 78→90, evolve_verification 51). No test was
+weakened or deleted; ~65 regression tests added.
+
+### Release blockers fixed
+- **macOS release builds could not sign in at all.** `Release.entitlements` lacked
+  `com.apple.security.network.server`; the App Sandbox therefore blocked the loopback
+  (`127.0.0.1:39876`) OAuth callback bind, killing BOTH Google and Apple sign-in — **in the
+  shipped build only** (DebugProfile has the entitlement, so `flutter run` always worked).
+  Found independently by 3 audit dimensions; verified against Apple's own sandbox profile
+  (`/System/Library/Sandbox/Profiles/application.sb:111`).
+- **Private-mode encryption key destroyed on every quit.** `desktop/lib/main.dart:24` called
+  `FlutterSecureStorage.setMockInitialValues({})` **unconditionally in production `main()`**,
+  swapping the Keychain for a process-lifetime in-memory map. It backed the SQLCipher DB key,
+  the Supabase session AND the E2E sync secret — so a Private-mode user lost everything on first
+  relaunch and was offered an irreversible reset. Removed. (`flutter analyze` had been flagging
+  this line as `invalid_use_of_visible_for_testing_member`; it was mistaken for a style lint.)
+- **Private mode never performed an initial data load** — empty dashboard/habits/goals on every
+  launch until manual Refresh (`dashboard_controller.dart`).
+- **Account deletion never revoked the Sign in with Apple token** (Guideline 5.1.1(v)) — new
+  `supabase/functions/revoke-apple-token` edge function + client wiring.
+- **HealthKit data left the device to Supabase.** Both upload paths closed (the goal upload, and
+  a second path via backup import that the first pass missed).
+
+### Security
+- **Privilege escalation**: any authenticated user could self-grant Pro by writing `is_pro=true`
+  to their own `profiles` row. Pinned via trigger (RLS cannot express column-level intent);
+  fresh-provision templates (`mobile/mobile_schema.sql`, `public/schema.sql`) fixed too.
+- **RevenueCat webhook failed open**: unauthenticated callers could grant/revoke Pro on any
+  account (`verify_jwt = false` + no signature check). Now requires a shared secret with a
+  timing-safe compare and **fails closed**.
+- Permissive `USING (true)` RLS on `reading_logs` / `user_settings` scoped to the owner.
+- Release-build `debugPrint` of habit titles/IDs removed; mobile now tears down Sentry on
+  consent withdrawal / Private mode (mirroring desktop's existing `Sentry.close()`).
+
+### Correctness / data integrity
+- **Sync engine**: lost-write on edit-during-push; same-natural-key replacing a different local
+  row; unbounded `CKModifyRecordsOperation` (first sync on a real account would fail); forward-
+  incompatibility with newer-schema rows; **poison-pill quarantine** so one unparseable row can
+  no longer wedge the change token forever (the two apps ship independently, so version skew is
+  guaranteed). macOS `saveRecords`/`deleteRecords` no longer report a wholly-failed push as success.
+- **Import/export**: an unparseable date silently deleted ALL habits; unvalidated `frequency_days`
+  / `reminder_time` / category colour; destructive "Replace" was the pre-selected default;
+  unbounded PostgREST selects silently truncated backups.
+- **Cross-account leakage**: the offline cache was read at cold start without an owner check,
+  showing the previous user's goals to a new one; analytics providers survived sign-out.
+- **Streaks**: `Duration`-based day walking skipped the spring-forward DST day (replaced with
+  calendar arithmetic).
+- **Notifications**: tapping "Skip" permanently destroyed the habit's recurring reminder.
+
+### Apple / store compliance
+- `ITSAppUsesNonExemptEncryption = true` on both platforms (owner decision: claim the 5D992.c
+  exemption; BIS self-classification is a manual step — see TO_SIMO_DO.md).
+- `NSHealthShareUsageDescription` localized into all 5 `InfoPlist.strings` (it was Italian-only,
+  so every non-Italian user — and the reviewer — saw an Italian HealthKit prompt).
+- `TARGETED_DEVICE_FAMILY` `"1,2"` → `"1"` (iPhone-only; the portrait-locked UI was never
+  designed for iPad).
+- Paywall: real StoreKit `priceString` instead of hardcoded `€4,99`/`€29,99` (wrong currency in
+  every non-EUR storefront); fabricated "next renewal" date (today+30d) replaced with the real
+  expiry or omitted; deferred/Ask-to-Buy purchases no longer reported as failures; macOS paywall
+  gained the Guideline 3.1.2 Terms/Privacy/auto-renewal disclosures.
+- `PrivacyInfo.xcprivacy` corrected to be truthful post-fix.
+- Duplicate `icloud-container-identifiers` key removed from `DebugProfile.entitlements`.
+
+*Tech Notes*: New edge function `supabase/functions/revoke-apple-token` (Deno, ES256/djwt →
+Apple `/auth/revoke`) — **never executed locally; `deno` is not installed on this Mac**. New
+migrations `20260716_pin_profiles_entitlement_columns.sql`, `20260716_close_legacy_table_rls.sql`.
+New env vars: `REVENUECAT_WEBHOOK_SECRET` (fail-closed), `APPLE_TEAM_ID`, `APPLE_KEY_ID`,
+`APPLE_PRIVATE_KEY`, `APPLE_CLIENT_ID`. No new Dart dependencies. Screen Time remains dark behind
+`VerificationConfig.screenTimeEnabled = false` (correctly gated — not a bug).
+
+**Current Status**: audit complete; blockers + high-severity findings remediated and verified
+green. Remaining: BYOK OpenRouter key (owner decision — user supplies their own key; already on
+the roadmap) and a tail of low-severity findings. **Nothing here has been run on a real device —
+no Xcode on this Mac. See TO_SIMO_DO.md for the blocking manual steps and the on-device QA list.**

@@ -7,14 +7,21 @@ import 'openrouter_config.dart';
 
 /// The hosted engine: OpenRouter's OpenAI-compatible endpoint. Data leaves the
 /// device, so the caller gates this behind the private-mode consent dialog.
+///
+/// BYOK — [apiKey] is the user's own key, read from the Keychain by
+/// `coachApiKeyProvider`. It is injected rather than read from a constant so no
+/// build can bake a provider key into the binary; an empty [apiKey] means "not
+/// configured yet", and the backend answers with the setup message instead of
+/// calling out.
 class CloudCoachBackend implements CoachBackend {
-  CloudCoachBackend({OpenAiCompatibleClient? client})
-    : _client =
+  CloudCoachBackend({required String apiKey, OpenAiCompatibleClient? client})
+    : _apiKey = apiKey.trim(),
+      _client =
           client ??
           OpenAiCompatibleClient(
             baseUrl: OpenRouterConfig.baseUrl,
             headers: {
-              'Authorization': 'Bearer ${OpenRouterConfig.apiKey}',
+              'Authorization': 'Bearer ${apiKey.trim()}',
               'HTTP-Referer': 'https://github.com/simo/mattioli.OS',
               'X-Title': 'Mattioli OS (Desktop)',
             },
@@ -24,6 +31,7 @@ class CloudCoachBackend implements CoachBackend {
             errors: CoachErrorMessages(
               preflightFailed: t.ai.openRouter.noInternet,
               modelNotFound: t.ai.openRouter.apiError(code: 404),
+              unauthorized: t.ai.openRouter.apiKeyInvalid,
               contextTooLong: t.ai.openRouter.contextTooLong,
               serverTimeout: t.ai.openRouter.serverTimeout,
               connectionError: t.ai.openRouter.connectionErrorShort,
@@ -31,11 +39,13 @@ class CloudCoachBackend implements CoachBackend {
             ),
           );
 
+  final String _apiKey;
+
   final OpenAiCompatibleClient _client;
 
-  static bool get hasApiKey =>
-      OpenRouterConfig.apiKey.isNotEmpty &&
-      OpenRouterConfig.apiKey != 'YOUR_OPENROUTER_API_KEY';
+  /// Whether the user has supplied a key — drives the setup banner, the
+  /// settings warning, and the send gate.
+  bool get hasApiKey => _apiKey.isNotEmpty;
 
   @override
   CoachBackendKind get kind => CoachBackendKind.cloud;

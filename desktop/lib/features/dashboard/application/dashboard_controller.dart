@@ -25,9 +25,11 @@ class DashboardController extends Notifier<DashboardSnapshot> {
   DashboardSnapshot build() {
     final repository = ref.watch(dashboardRepositoryProvider);
     final snapshot = repository.load();
-    if (repository.isCloudBacked) {
-      unawaited(Future<void>.microtask(refresh));
-    }
+    // load() is only ever a synchronous best-effort cache: Supabase has nothing
+    // until it hits the network, and the private proxy returns empty until
+    // refresh() has resolved the owner ID and built the real repository. Both
+    // modes need this async follow-up, so it is never gated.
+    unawaited(Future<void>.microtask(refresh));
     return snapshot;
   }
 
@@ -122,6 +124,7 @@ class DashboardController extends Notifier<DashboardSnapshot> {
     required String title,
     required Color color,
     String? reminderTime,
+    List<int>? frequencyDays,
   }) async {
     if (!ref.read(desktopIsProProvider) && state.habits.length >= 5) {
       return false;
@@ -134,6 +137,7 @@ class DashboardController extends Notifier<DashboardSnapshot> {
       weeklyProgress: const [false, false, false, false, false, false, false],
       state: HabitState.pending,
       reminderTime: reminderTime,
+      frequencyDays: _canonicalFrequencyDays(frequencyDays),
       startDate: DateTime.now(),
     );
     state = state.copyWith(habits: [...state.habits, draft]);
@@ -414,6 +418,21 @@ class DashboardController extends Notifier<DashboardSnapshot> {
   void _recordSyncError(String message, Object error, StackTrace stack) {
     AppLogger.error(message, error, stack);
     state = state.copyWith(errorMessage: t.sync.editSavedLocally);
+  }
+
+  /// Canonical `goals.frequency_days` shape for the shared private DB: sorted
+  /// ISO weekdays (1 = Monday), with an every-day habit stored as null rather
+  /// than [1..7]. Null is the encoding the scheduled-day guards on both
+  /// platforms already read (`frequencyDays == null` ⇒ due every day), so
+  /// normalizing here keeps a full selection from writing a value that means
+  /// the same thing but churns sync.
+  static const _everyWeekday = {1, 2, 3, 4, 5, 6, 7};
+
+  static List<int>? _canonicalFrequencyDays(List<int>? days) {
+    if (days == null) return null;
+    final unique = days.toSet();
+    if (unique.containsAll(_everyWeekday)) return null;
+    return unique.toList()..sort();
   }
 
   String? _nextHabitStatus(String? currentStatus) {

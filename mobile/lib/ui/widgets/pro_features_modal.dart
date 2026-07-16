@@ -1,14 +1,19 @@
 import 'package:flutter/material.dart';
 import 'package:lucide_icons_flutter/lucide_icons.dart';
 import 'package:google_fonts/google_fonts.dart';
+import 'package:purchases_flutter/purchases_flutter.dart';
 import '../../core/theme.dart';
 import '../../core/haptics.dart';
+import '../../core/app_logger.dart';
+import '../../core/subscription_service.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../screens/subscription_screen.dart';
 import '../../i18n/translations.g.dart';
 import '../kit/evolve_sheet.dart';
 
-class ProFeaturesModal extends ConsumerWidget {
+const String _monthlyProductId = 'com.simo.evolve.pro.monthly';
+
+class ProFeaturesModal extends ConsumerStatefulWidget {
   const ProFeaturesModal({super.key});
 
   static Future<void> show(BuildContext context) {
@@ -21,7 +26,43 @@ class ProFeaturesModal extends ConsumerWidget {
   }
 
   @override
-  Widget build(BuildContext context, WidgetRef ref) {
+  ConsumerState<ProFeaturesModal> createState() => _ProFeaturesModalState();
+}
+
+class _ProFeaturesModalState extends ConsumerState<ProFeaturesModal> {
+  /// Only ever holds a localized `StoreProduct.priceString`; null means no
+  /// price could be resolved and none may be shown.
+  String? _monthlyPrice;
+
+  @override
+  void initState() {
+    super.initState();
+    _loadMonthlyPrice();
+  }
+
+  Future<void> _loadMonthlyPrice() async {
+    final monthly = (await ref.read(subscriptionServiceProvider).getOfferings())
+        ?.current
+        ?.monthly;
+    if (monthly != null) {
+      if (!mounted) return;
+      setState(() => _monthlyPrice = monthly.storeProduct.priceString);
+      return;
+    }
+
+    // The offering may not be published yet; the raw product still carries the
+    // storefront-correct price.
+    try {
+      final products = await Purchases.getProducts([_monthlyProductId]);
+      if (products.isEmpty || !mounted) return;
+      setState(() => _monthlyPrice = products.first.priceString);
+    } catch (e, stack) {
+      AppLogger.error('[ProFeaturesModal] Monthly price fetch failed', e, stack);
+    }
+  }
+
+  @override
+  Widget build(BuildContext context) {
 
     return Container(
       padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 32),
@@ -149,7 +190,11 @@ class ProFeaturesModal extends ConsumerWidget {
               ),
               child: Center(
                 child: Text(
-                  context.t.subscription.getProAt499Month,
+                  _monthlyPrice == null
+                      ? context.t.subscription.actions.seePlans
+                      : context.t.subscription.getProAtPrice(
+                          price: _monthlyPrice!,
+                        ),
                   style: const TextStyle(
                     color: Colors.black,
                     fontSize: 16,

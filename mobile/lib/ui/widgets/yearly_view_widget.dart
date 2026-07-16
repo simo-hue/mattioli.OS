@@ -280,12 +280,21 @@ class _MonthBarsPainter extends CustomPainter {
     }
   }
 
+  // `now` reaches the canvas only through the day-granularity `isFuture` check,
+  // so two rebuilds on the same calendar day paint identically.
+  static bool _sameDay(DateTime a, DateTime b) =>
+      a.year == b.year && a.month == b.month && a.day == b.day;
+
   @override
   bool shouldRepaint(covariant _MonthBarsPainter oldDelegate) {
     return oldDelegate.year != year ||
            oldDelegate.month != month ||
+           oldDelegate.daysInMonth != daysInMonth ||
            oldDelegate.habits != habits ||
-           oldDelegate.logs != logs;
+           oldDelegate.logs != logs ||
+           !_sameDay(oldDelegate.now, now) ||
+           oldDelegate.foregroundColor != foregroundColor ||
+           oldDelegate.borderColor != borderColor;
   }
 }
 

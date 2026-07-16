@@ -26,6 +26,13 @@ typedef StreakLogs = Map<String, Map<String, String>>;
 String _dateKey(DateTime d) =>
     '${d.year}-${d.month.toString().padLeft(2, '0')}-${d.day.toString().padLeft(2, '0')}';
 
+/// Shifts [d] by [n] calendar days, mirroring `_shiftDays` in
+/// `features/statistics/data/private_analytics.dart`. Replaces
+/// `d.subtract(Duration(days: n))`, which is a fixed 24h multiple: stepping it
+/// back over a 23h spring-forward day lands at 23:00 of the day *before* that
+/// day, so the transition day is never keyed at all.
+DateTime _shiftDays(DateTime d, int n) => DateTime(d.year, d.month, d.day + n);
+
 int computeStreak({
   required String habitId,
   required DateTime date,
@@ -54,7 +61,7 @@ int computeStreak({
     count = 1;
   } else {
     // [date] is pending: look at yesterday so an ongoing streak still shows.
-    final yesterday = day.subtract(const Duration(days: 1));
+    final yesterday = _shiftDays(day, -1);
     if (yesterday.isBefore(start)) return 0;
     final yStatus = statusAt(yesterday);
     if (yStatus == 'done') {
@@ -72,7 +79,7 @@ int computeStreak({
 
   var daysBack = 1;
   while (true) {
-    final pastDate = checkDate.subtract(Duration(days: daysBack));
+    final pastDate = _shiftDays(checkDate, -daysBack);
     if (pastDate.isBefore(start)) break;
 
     final pastStatus = statusAt(pastDate);

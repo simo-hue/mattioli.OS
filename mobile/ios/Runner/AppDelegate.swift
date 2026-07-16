@@ -190,8 +190,24 @@ enum CloudKitSyncBridge {
         }
       }
     }
-    op.modifyRecordsResultBlock = { _ in
-      main { result(["saved": saved, "conflicts": conflicts, "errors": errors]) }
+    op.modifyRecordsResultBlock = { res in
+      main {
+        switch res {
+        case .success:
+          result(["saved": saved, "conflicts": conflicts, "errors": errors])
+        case .failure(let error):
+          // .partialFailure already fired perRecordSaveBlock for every record,
+          // so the collected lists are authoritative and the engine can act on
+          // them. Any other failure (limitExceeded, quotaExceeded, …) fires no
+          // per-record block at all: reporting the empty lists as success would
+          // be indistinguishable from "nothing to push".
+          if let ck = error as? CKError, ck.code == .partialFailure {
+            result(["saved": saved, "conflicts": conflicts, "errors": errors])
+          } else {
+            result(flutterError(error))
+          }
+        }
+      }
     }
     database.add(op)
   }
@@ -234,8 +250,19 @@ enum CloudKitSyncBridge {
         errors.append(["recordName": recordID.recordName, "code": "\(code)"])
       }
     }
-    op.modifyRecordsResultBlock = { _ in
-      main { result(["deleted": deleted, "errors": errors]) }
+    op.modifyRecordsResultBlock = { res in
+      main {
+        switch res {
+        case .success:
+          result(["deleted": deleted, "errors": errors])
+        case .failure(let error):
+          if let ck = error as? CKError, ck.code == .partialFailure {
+            result(["deleted": deleted, "errors": errors])
+          } else {
+            result(flutterError(error))
+          }
+        }
+      }
     }
     database.add(op)
   }
@@ -456,27 +483,56 @@ enum HealthKitBridge {
     guard let samples = samples else { return nil }
     switch id {
     case "sleepAnalysis":
-      // Sum "asleep" durations, in hours. (Night-window attribution is a known
+      // "Asleep" wall-clock time, in hours. (Night-window attribution is a known
       // follow-up; for now we sum asleep samples overlapping the day window.)
       let asleep = samples.compactMap { $0 as? HKCategorySample }.filter { isAsleep($0.value) }
       if asleep.isEmpty { return nil }
-      let seconds = asleep.reduce(0.0) { $0 + $1.endDate.timeIntervalSince($1.startDate) }
-      return seconds / 3600.0
+      return mergedSeconds(asleep) / 3600.0
     case "mindfulSession":
       let mindful = samples.compactMap { $0 as? HKCategorySample }
       if mindful.isEmpty { return nil }
-      let seconds = mindful.reduce(0.0) { $0 + $1.endDate.timeIntervalSince($1.startDate) }
-      return seconds / 60.0
+      return mergedSeconds(mindful) / 60.0
     case "appleStandHour":
-      // Count hours the user stood (value == .stood).
+      // Count hours the user stood (value == .stood). A worn Watch writes an
+      // `.idle` sample for every hour the user did not stand, so samples with no
+      // `.stood` among them is a real 0 — but NO samples at all is the
+      // "no data or read denied" case the null contract reserves for
+      // couldn't-verify, and must never become a measured 0.
+      if samples.isEmpty { return nil }
       let stood = samples.compactMap { $0 as? HKCategorySample }
         .filter { $0.value == HKCategoryValueAppleStandHour.stood.rawValue }
       return Double(stood.count)
     case "workout":
+      // Same null contract: HealthKit returns [] both for a workout-free day and
+      // for a denied read, and they are indistinguishable, so a zero here is not
+      // a measurement. Reporting couldn't-verify matches the quantity path,
+      // where a 0-step day already yields nil rather than a `missed`.
+      if samples.isEmpty { return nil }
       return aggregation == "count" ? Double(samples.count) : nil
     default:
       return nil
     }
+  }
+
+  /// Wall-clock seconds covered by [samples], unioning overlapping intervals.
+  /// Several sources commonly describe the same night (Watch sleep stages plus a
+  /// third-party sleep app), and adding their durations would count it twice.
+  private static func mergedSeconds(_ samples: [HKCategorySample]) -> Double {
+    let sorted = samples.sorted { $0.startDate < $1.startDate }
+    guard let first = sorted.first else { return 0 }
+    var total = 0.0
+    var start = first.startDate
+    var end = first.endDate
+    for sample in sorted.dropFirst() {
+      if sample.startDate > end {
+        total += end.timeIntervalSince(start)
+        start = sample.startDate
+        end = sample.endDate
+      } else if sample.endDate > end {
+        end = sample.endDate
+      }
+    }
+    return total + end.timeIntervalSince(start)
   }
 
   private static func isAsleep(_ value: Int) -> Bool {

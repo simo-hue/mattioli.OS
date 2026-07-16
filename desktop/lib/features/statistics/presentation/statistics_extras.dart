@@ -10,6 +10,30 @@ part of 'statistics_page.dart';
 
 // ─── shared helpers ──────────────────────────────────────────────────────────
 
+/// [d] shifted by [n] calendar days, landing on local midnight. Mirrors
+/// `_shiftDays` in `features/statistics/data/private_analytics.dart` and
+/// `core/streak_utils.dart`. Replaces `d.add(Duration(days: n))`, which steps a
+/// fixed 24h and so lands on the wrong calendar day across a DST transition: a
+/// 23h day is skipped entirely and a 25h day is visited twice.
+DateTime _shiftDays(DateTime d, int n) => DateTime(d.year, d.month, d.day + n);
+
+/// The 365 calendar days ending on [today], oldest → newest — the window every
+/// year heatmap renders. Shared so the grids cannot drift apart, and so the
+/// walk matches `computeYearlyGrid`, which keys the same window server-side.
+@visibleForTesting
+List<DateTime> yearHeatmapDays(DateTime today) {
+  final start = _shiftDays(today, -364);
+  return [for (var i = 0; i < 365; i++) _shiftDays(start, i)];
+}
+
+/// Mean completion across every habit active on each of [yearHeatmapDays] — the
+/// GitHub-style contribution grid's data.
+@visibleForTesting
+List<double> yearContributionValues(
+  DashboardSnapshot snapshot,
+  DateTime today,
+) => [for (final day in yearHeatmapDays(today)) snapshot.completionFor(day)];
+
 Color _momentumColor(double score) {
   if (score >= 66) return EvolveColors.success;
   if (score >= 40) return EvolveColors.amber;
@@ -287,12 +311,8 @@ class _YearContributionHeatmap extends StatelessWidget {
   Widget build(BuildContext context) {
     final now = DateTime.now();
     final today = DateTime(now.year, now.month, now.day);
-    final start = today.subtract(const Duration(days: 364));
-    final values = [
-      for (var i = 0; i < 365; i++)
-        snapshot.completionFor(start.add(Duration(days: i))),
-    ];
-    final leadPad = start.weekday - 1; // Monday-aligned rows
+    final values = yearContributionValues(snapshot, today);
+    final leadPad = _shiftDays(today, -364).weekday - 1; // Monday-aligned rows
     final weeks = ((leadPad + 365) / 7).ceil();
     final accent = context.evolveAccent;
     final activeDays = values.where((v) => v > 0).length;

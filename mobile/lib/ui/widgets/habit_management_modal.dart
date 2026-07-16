@@ -20,6 +20,7 @@ import '../kit/evolve_dialog.dart';
 import '../kit/evolve_button.dart';
 import '../kit/evolve_section_header.dart';
 import '../kit/evolve_sheet.dart';
+import '../kit/evolve_spinner.dart';
 import '../kit/evolve_toast.dart';
 
 class HabitManagementModal extends ConsumerStatefulWidget {
@@ -55,6 +56,12 @@ class _HabitManagementModalState extends ConsumerState<HabitManagementModal> {
   /// the metric can update it, but a name the user typed is never overwritten).
   bool _nameAutoFilled = false;
 
+  /// True while a save is in flight. The form is only reset once the write
+  /// returns, so without this both entry points (the button and the name
+  /// field's keyboard Done action) can re-enter `_onSave` on the still-filled
+  /// controller and mint a second habit with a fresh id.
+  bool _isSaving = false;
+
   @override
   void initState() {
     super.initState();
@@ -78,6 +85,7 @@ class _HabitManagementModalState extends ConsumerState<HabitManagementModal> {
   }
 
   Future<void> _onSave() async {
+    if (_isSaving) return;
     final name = _nameController.text.trim();
     // Required-field validation: show an inline red-bordered error instead of a
     // silent no-op. (Auto-verified habits pre-fill the name from their metric,
@@ -102,18 +110,7 @@ class _HabitManagementModalState extends ConsumerState<HabitManagementModal> {
         ? context.t.habits.habitUpdated
         : context.t.habits.habitAdded;
 
-    final bool ok;
-    if (isEditing) {
-      final updated = _editingHabit!.copyWith(
-        title: name,
-        color: _selectedColor,
-        reminderTime: _reminderTime,
-        clearReminderTime: _reminderTime == null,
-        verificationRule: _verificationRule,
-        clearVerificationRule: _verificationRule == null,
-      );
-      ok = await ref.read(goalsProvider.notifier).updateHabit(updated);
-    } else {
+    if (!isEditing) {
       final settings = ref.read(settingsProvider);
       final isPro = settings.isPro;
       final currentHabitsCount = ref.read(goalsProvider).length;
@@ -130,22 +127,44 @@ class _HabitManagementModalState extends ConsumerState<HabitManagementModal> {
         ); // Redirect to payment!
         return;
       }
+    }
 
-      final newHabit = Goal(
-        id: DateTime.now().millisecondsSinceEpoch.toString(),
-        title: name,
-        description: '',
-        icon: 'circle',
-        color: _selectedColor,
-        startDate: DateTime(
-          DateTime.now().year,
-          DateTime.now().month,
-          DateTime.now().day,
-        ),
-        reminderTime: _reminderTime,
-        verificationRule: _verificationRule,
-      );
-      ok = await ref.read(goalsProvider.notifier).addHabit(newHabit);
+    setState(() => _isSaving = true);
+    final bool ok;
+    try {
+      if (isEditing) {
+        final updated = _editingHabit!.copyWith(
+          title: name,
+          color: _selectedColor,
+          reminderTime: _reminderTime,
+          clearReminderTime: _reminderTime == null,
+          verificationRule: _verificationRule,
+          clearVerificationRule: _verificationRule == null,
+        );
+        ok = await ref.read(goalsProvider.notifier).updateHabit(updated);
+      } else {
+        final newHabit = Goal(
+          id: DateTime.now().millisecondsSinceEpoch.toString(),
+          title: name,
+          description: '',
+          icon: 'circle',
+          color: _selectedColor,
+          startDate: DateTime(
+            DateTime.now().year,
+            DateTime.now().month,
+            DateTime.now().day,
+          ),
+          reminderTime: _reminderTime,
+          verificationRule: _verificationRule,
+        );
+        ok = await ref.read(goalsProvider.notifier).addHabit(newHabit);
+      }
+    } finally {
+      if (mounted) {
+        setState(() => _isSaving = false);
+      } else {
+        _isSaving = false;
+      }
     }
 
     // On failure the provider already surfaced its own error modal + rolled the
@@ -591,6 +610,7 @@ class _HabitManagementModalState extends ConsumerState<HabitManagementModal> {
                             Expanded(
                               child: EvolveButton(
                                 label: context.t.habits.update,
+                                loading: _isSaving,
                                 onPressed: _onSave,
                               ),
                             ),
@@ -613,18 +633,21 @@ class _HabitManagementModalState extends ConsumerState<HabitManagementModal> {
                                 width: 1,
                               ),
                             ),
-                            child: const Row(
+                            child: Row(
                               children: [
-                                Icon(
+                                const Icon(
                                   LucideIcons.lock,
                                   color: Color(0xFFEAB308),
                                   size: 16,
                                 ),
-                                SizedBox(width: 10),
+                                const SizedBox(width: 10),
                                 Expanded(
                                   child: Text(
-                                    'Hai riempito gli slot abitudini gratuite (5/5). Sblocca slot illimitati con Evolve Pro.',
-                                    style: TextStyle(
+                                    context.t.habits.freeSlotsFullBanner(
+                                      used: currentHabitsCount,
+                                      limit: 5,
+                                    ),
+                                    style: const TextStyle(
                                       fontFamily: 'Inter',
                                       color: Color(0xFFEAB308),
                                       fontSize: 12,
@@ -642,6 +665,11 @@ class _HabitManagementModalState extends ConsumerState<HabitManagementModal> {
                           height: 48,
                           child: ElevatedButton(
                             onPressed: () {
+                              // Tap is swallowed rather than disabled while the
+                              // save is in flight so the button keeps its filled
+                              // accent under the spinner, as EvolveButton does
+                              // for its own `loading` state.
+                              if (_isSaving) return;
                               if (!isPro && currentHabitsCount >= 5) {
                                 ref.hapticHeavy();
                                 Navigator.pop(
@@ -671,35 +699,48 @@ class _HabitManagementModalState extends ConsumerState<HabitManagementModal> {
                               ),
                               elevation: 0,
                             ),
-                            child: Row(
-                              mainAxisAlignment: MainAxisAlignment.center,
-                              children: [
-                                if (!isPro && currentHabitsCount >= 5) ...[
-                                  const Icon(
-                                    LucideIcons.sparkles,
-                                    size: 16,
-                                    color: Colors.black,
+                            child: _isSaving
+                                ? EvolveSpinner(
+                                    color:
+                                        Theme.of(context).colorScheme.primary
+                                                    .computeLuminance() >
+                                                0.5
+                                            ? Colors.black
+                                            : Colors.white,
+                                    radius: 10,
+                                  )
+                                : Row(
+                                    mainAxisAlignment: MainAxisAlignment.center,
+                                    children: [
+                                      if (!isPro && currentHabitsCount >= 5) ...[
+                                        const Icon(
+                                          LucideIcons.sparkles,
+                                          size: 16,
+                                          color: Colors.black,
+                                        ),
+                                        const SizedBox(width: 8),
+                                      ],
+                                      Text(
+                                        (!isPro && currentHabitsCount >= 5)
+                                            ? context.t.common.unlockEvolvePro
+                                            : context.t.habits.addHabit,
+                                        style: TextStyle(
+                                          fontFamily: 'Inter',
+                                          fontWeight: FontWeight.w700,
+                                          color:
+                                              (!isPro && currentHabitsCount >= 5)
+                                                  ? Colors.black
+                                                  : (Theme.of(context)
+                                                                  .colorScheme
+                                                                  .primary
+                                                                  .computeLuminance() >
+                                                              0.5
+                                                          ? Colors.black
+                                                          : Colors.white),
+                                        ),
+                                      ),
+                                    ],
                                   ),
-                                  const SizedBox(width: 8),
-                                ],
-                                Text(
-                                  (!isPro && currentHabitsCount >= 5)
-                                      ? context.t.common.unlockEvolvePro
-                                      : context.t.habits.addHabit,
-                                  style: TextStyle(
-                                    fontFamily: 'Inter',
-                                    fontWeight: FontWeight.w700,
-                                    color: (!isPro && currentHabitsCount >= 5)
-                                        ? Colors.black
-                                        : (Theme.of(context).colorScheme.primary
-                                                      .computeLuminance() >
-                                                  0.5
-                                              ? Colors.black
-                                              : Colors.white),
-                                  ),
-                                ),
-                              ],
-                            ),
                           ),
                         ),
                       ],

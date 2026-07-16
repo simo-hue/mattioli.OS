@@ -20,6 +20,9 @@ import '../../i18n/translations.g.dart';
 import '../kit/evolve_dialog.dart';
 import '../kit/evolve_spinner.dart';
 
+const String _monthlyProductId = 'com.simo.evolve.pro.monthly';
+const String _yearlyProductId = 'com.simo.evolve.pro.yearly';
+
 class SubscriptionScreen extends ConsumerStatefulWidget {
   const SubscriptionScreen({super.key});
 
@@ -37,17 +40,34 @@ class _SubscriptionScreenState extends ConsumerState<SubscriptionScreen> {
   Package? _monthlyPackage;
   Package? _yearlyPackage;
   Package? _selectedPackage;
+  CustomerInfo? _customerInfo;
 
   bool _isLoading = false;
   bool _isFetchingProducts = true;
   String _selectedMockPackage = 'yearly';
-  String _mockMonthlyPrice = '€4,99';
-  String _mockYearlyPrice = '€29,99';
+
+  /// These only ever hold a localized `StoreProduct.priceString`; null means no
+  /// price could be resolved and none may be shown.
+  String? _fallbackMonthlyPrice;
+  String? _fallbackYearlyPrice;
 
   @override
   void initState() {
     super.initState();
     _loadOfferings();
+    _loadCustomerInfo();
+  }
+
+  /// Loads the real subscription state; the details panel renders only what
+  /// this returns and omits any row it cannot resolve.
+  Future<void> _loadCustomerInfo() async {
+    try {
+      final customerInfo = await Purchases.getCustomerInfo();
+      if (!mounted) return;
+      setState(() => _customerInfo = customerInfo);
+    } catch (e, stack) {
+      AppLogger.warning('[Subscription] CustomerInfo unavailable', e, stack);
+    }
   }
 
   /// Loads the active offerings from the App Store dynamically via RevenueCat
@@ -75,16 +95,16 @@ class _SubscriptionScreenState extends ConsumerState<SubscriptionScreen> {
     // Secondary attempt: Fetch raw products directly from App Store Connect to pull dynamic prices even before Offering is published!
     try {
       final products = await Purchases.getProducts([
-        'com.simo.evolve.pro.monthly',
-        'com.simo.evolve.pro.yearly',
+        _monthlyProductId,
+        _yearlyProductId,
       ]);
       if (products.isNotEmpty && mounted) {
         setState(() {
           for (final product in products) {
-            if (product.identifier == 'com.simo.evolve.pro.monthly') {
-              _mockMonthlyPrice = product.priceString;
-            } else if (product.identifier == 'com.simo.evolve.pro.yearly') {
-              _mockYearlyPrice = product.priceString;
+            if (product.identifier == _monthlyProductId) {
+              _fallbackMonthlyPrice = product.priceString;
+            } else if (product.identifier == _yearlyProductId) {
+              _fallbackYearlyPrice = product.priceString;
             }
           }
         });
@@ -116,6 +136,7 @@ class _SubscriptionScreenState extends ConsumerState<SubscriptionScreen> {
           .read(subscriptionServiceProvider)
           .restorePurchasesWithResult();
       if (!mounted) return;
+      setState(() => _customerInfo = result.customerInfo);
 
       if (result.isProActive) {
         unawaited(
@@ -169,6 +190,7 @@ class _SubscriptionScreenState extends ConsumerState<SubscriptionScreen> {
           .read(subscriptionServiceProvider)
           .purchasePackageWithResult(_selectedPackage!);
       if (!mounted) return;
+      setState(() => _customerInfo = result.customerInfo);
 
       if (result.isProActive) {
         _showSuccessDialog(context);
@@ -190,13 +212,21 @@ class _SubscriptionScreenState extends ConsumerState<SubscriptionScreen> {
         return;
       }
 
+      // A deferred/pending transaction has not failed — it is parked awaiting
+      // approval and completes through the CustomerInfo listener.
+      final isPending = _isPurchasePending(e);
+
       unawaited(
         SubscriptionAlertModal.show(
           context,
-          title: context.t.subscription.errors.purchaseFailedTitle,
+          title: isPending
+              ? context.t.subscription.status.processing
+              : context.t.subscription.errors.purchaseFailedTitle,
           message: _purchaseErrorMessage(e),
-          type: SubscriptionAlertType.error,
-          details: e.toString(),
+          type: isPending
+              ? SubscriptionAlertType.warning
+              : SubscriptionAlertType.error,
+          details: isPending ? null : e.toString(),
           ref: ref,
         ),
       );
@@ -211,6 +241,13 @@ class _SubscriptionScreenState extends ConsumerState<SubscriptionScreen> {
     if (error is! PlatformException) return false;
     return SubscriptionService.purchasesErrorCode(error) ==
         PurchasesErrorCode.purchaseCancelledError;
+  }
+
+  bool _isPurchasePending(Object error) {
+    if (error is! PlatformException) return false;
+    final errorCode = SubscriptionService.purchasesErrorCode(error);
+    return errorCode == PurchasesErrorCode.paymentPendingError ||
+        errorCode == PurchasesErrorCode.operationAlreadyInProgressError;
   }
 
   String _purchaseErrorMessage(Object error) {
@@ -324,9 +361,7 @@ class _SubscriptionScreenState extends ConsumerState<SubscriptionScreen> {
             centerTitle: true,
           ),
           body: _isFetchingProducts
-              ? const Center(
-                  child: EvolveSpinner(color: Colors.amber),
-                )
+              ? const Center(child: EvolveSpinner(color: Colors.amber))
               : RefreshIndicator(
                   color: Colors.amber,
                   backgroundColor: context.appColors.card,
@@ -334,7 +369,7 @@ class _SubscriptionScreenState extends ConsumerState<SubscriptionScreen> {
                     setState(() {
                       _isFetchingProducts = true;
                     });
-                    await _loadOfferings();
+                    await Future.wait([_loadOfferings(), _loadCustomerInfo()]);
                   },
                   child: SingleChildScrollView(
                     physics: const AlwaysScrollableScrollPhysics(),
@@ -365,9 +400,7 @@ class _SubscriptionScreenState extends ConsumerState<SubscriptionScreen> {
         if (_isLoading)
           Container(
             color: Colors.black.withValues(alpha: 0.5),
-            child: const Center(
-              child: EvolveSpinner(color: Colors.amber),
-            ),
+            child: const Center(child: EvolveSpinner(color: Colors.amber)),
           ),
       ],
     );
@@ -437,7 +470,7 @@ class _SubscriptionScreenState extends ConsumerState<SubscriptionScreen> {
         _buildFeatureRow(
           context,
           LucideIcons.brainCircuit,
-          'AI Coach Personalizzato',
+          context.t.subscription.personalizedAiCoach,
           context.t.subscription.features.smartSuggestions,
         ),
         const SizedBox(height: 16),
@@ -451,7 +484,7 @@ class _SubscriptionScreenState extends ConsumerState<SubscriptionScreen> {
         _buildFeatureRow(
           context,
           LucideIcons.infinity,
-          'Abitudini Illimitate',
+          context.t.subscription.unlimitedHabits,
           context.t.subscription.features.unlimitedHabits,
         ),
         const SizedBox(height: 16),
@@ -527,7 +560,7 @@ class _SubscriptionScreenState extends ConsumerState<SubscriptionScreen> {
           const SizedBox(height: 12),
           _buildMockPlanCard(
             context.t.subscription.plans.monthly,
-            _mockMonthlyPrice,
+            _fallbackMonthlyPrice,
             context.t.subscription.plans.cancelAnytime,
             _selectedMockPackage == 'monthly',
             onTap: () {
@@ -537,7 +570,7 @@ class _SubscriptionScreenState extends ConsumerState<SubscriptionScreen> {
           const SizedBox(height: 12),
           _buildMockPlanCard(
             context.t.subscription.plans.annual,
-            _mockYearlyPrice,
+            _fallbackYearlyPrice,
             context.t.subscription.plans.savings,
             _selectedMockPackage == 'yearly',
             isBestValue: true,
@@ -545,6 +578,18 @@ class _SubscriptionScreenState extends ConsumerState<SubscriptionScreen> {
               setState(() => _selectedMockPackage = 'yearly');
             },
           ),
+          if (_fallbackMonthlyPrice == null ||
+              _fallbackYearlyPrice == null) ...[
+            const SizedBox(height: 12),
+            Text(
+              context.t.subscription.errors.pricesUnavailable,
+              style: GoogleFonts.inter(
+                fontSize: 11,
+                color: context.appColors.mutedForeground,
+                height: 1.4,
+              ),
+            ),
+          ],
           const SizedBox(height: 32),
           GestureDetector(
             onTap: () async {
@@ -911,8 +956,40 @@ class _SubscriptionScreenState extends ConsumerState<SubscriptionScreen> {
     );
   }
 
+  /// The entitlement that actually grants Pro, or null when RevenueCat could
+  /// not be reached or Pro comes from somewhere other than a purchase.
+  EntitlementInfo? _activeProEntitlement() {
+    final customerInfo = _customerInfo;
+    if (customerInfo == null) return null;
+
+    final entitlementId = SubscriptionService.evaluateProAccess(
+      customerInfo,
+    ).matchedEntitlementId;
+    if (entitlementId == null) return null;
+
+    return customerInfo.entitlements.all[entitlementId];
+  }
+
+  String _planLabel(BuildContext context, EntitlementInfo? entitlement) {
+    return switch (entitlement?.productIdentifier) {
+      _monthlyProductId =>
+        '${context.t.subscription.proName} ${context.t.subscription.plans.monthly}',
+      _yearlyProductId =>
+        '${context.t.subscription.proName} ${context.t.subscription.plans.annual}',
+      _ => context.t.subscription.proActiveName,
+    };
+  }
+
   Widget _buildSubscriptionDetails(BuildContext context) {
-    final nextRenewal = DateTime.now().add(const Duration(days: 30));
+    final entitlement = _activeProEntitlement();
+    // `expirationDate` is a nullable ISO-8601 string, absent for non-expiring
+    // entitlements. Unparseable or absent means the row is omitted, never faked.
+    final expiration = entitlement?.expirationDate == null
+        ? null
+        : DateTime.tryParse(entitlement!.expirationDate!)?.toLocal();
+    final isAppStorePurchase =
+        entitlement?.store == Store.appStore ||
+        entitlement?.store == Store.macAppStore;
     final dateFormat = DateFormat(
       'dd MMMM yyyy',
       LocaleSettings.currentLocale.languageCode,
@@ -943,7 +1020,7 @@ class _SubscriptionScreenState extends ConsumerState<SubscriptionScreen> {
               _buildDetailRow(
                 context,
                 context.t.subscription.plans.label,
-                context.t.subscription.proActiveName,
+                _planLabel(context, entitlement),
               ),
               const Divider(height: 32),
               _buildDetailRow(
@@ -952,18 +1029,24 @@ class _SubscriptionScreenState extends ConsumerState<SubscriptionScreen> {
                 context.t.subscription.status.active,
                 valueColor: Colors.green,
               ),
-              const Divider(height: 32),
-              _buildDetailRow(
-                context,
-                context.t.subscription.nextRenewal,
-                dateFormat.format(nextRenewal),
-              ),
-              const Divider(height: 32),
-              _buildDetailRow(
-                context,
-                context.t.subscription.paymentMethod,
-                context.t.subscription.paymentMethodValue,
-              ),
+              if (expiration != null) ...[
+                const Divider(height: 32),
+                _buildDetailRow(
+                  context,
+                  entitlement!.willRenew
+                      ? context.t.subscription.nextRenewal
+                      : context.t.subscription.expiresOn,
+                  dateFormat.format(expiration),
+                ),
+              ],
+              if (isAppStorePurchase) ...[
+                const Divider(height: 32),
+                _buildDetailRow(
+                  context,
+                  context.t.subscription.paymentMethod,
+                  context.t.subscription.paymentMethodValue,
+                ),
+              ],
             ],
           ),
         ),
@@ -1193,7 +1276,7 @@ class _SubscriptionScreenState extends ConsumerState<SubscriptionScreen> {
 
   Widget _buildMockPlanCard(
     String title,
-    String priceStr,
+    String? priceStr,
     String subtitle,
     bool isSelected, {
     bool isBestValue = false,
@@ -1281,12 +1364,21 @@ class _SubscriptionScreenState extends ConsumerState<SubscriptionScreen> {
                 ],
               ),
             ),
+            // Must stay non-flexible: a flex child is measured against its
+            // share of the row's free space instead of its own content, which
+            // pulls the price off the right edge and squeezes the title
+            // Expanded above to a fixed half of the row. See
+            // test/paywall_plan_card_layout_test.dart.
             Text(
-              priceStr,
+              priceStr ?? context.t.subscription.plans.priceUnavailable,
               style: GoogleFonts.inter(
-                fontSize: 16,
-                fontWeight: FontWeight.w800,
-                color: context.appColors.foreground,
+                fontSize: priceStr == null ? 13 : 16,
+                fontWeight: priceStr == null
+                    ? FontWeight.w600
+                    : FontWeight.w800,
+                color: priceStr == null
+                    ? context.appColors.mutedForeground
+                    : context.appColors.foreground,
               ),
             ),
           ],

@@ -21,11 +21,19 @@ class CoachErrorMessages {
     required this.connectionError,
     required this.apiError,
     required this.modelNotFound,
+    this.unauthorized,
   });
 
   /// Connection refused / host unreachable — offline (cloud) or the local
   /// server isn't running.
   final String preflightFailed;
+
+  /// The server rejected the credentials (HTTP 401/403). The BYOK cloud backend
+  /// sets this because there it means the user's own API key is wrong, revoked,
+  /// or out of credit — a "go fix your key" problem, not a transport failure.
+  /// Null (a local server, which has no key of its own) falls back to the coded
+  /// [apiError].
+  final String? unauthorized;
 
   /// The selected model isn't available/loaded on the server (HTTP 404 or a
   /// model-not-found error body) — the most common local first-run mistake.
@@ -210,6 +218,12 @@ class OpenAiCompatibleClient {
   /// generic "request failed". A 400 is only treated as context-length when the
   /// body actually says so; otherwise it falls through to the coded error.
   String _mapHttpError(int statusCode, String body) {
+    // Checked first: 401/403 is unambiguous, and its body often also mentions
+    // the model, which would otherwise be mistaken for a model-not-found.
+    if (statusCode == 401 || statusCode == 403) {
+      return errors.unauthorized ?? errors.apiError(statusCode);
+    }
+
     final lower = body.toLowerCase();
     final looksModelMissing = statusCode == 404 ||
         (lower.contains('model') &&

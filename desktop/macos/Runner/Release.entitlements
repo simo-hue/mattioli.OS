@@ -6,6 +6,10 @@
 	<true/>
 	<key>com.apple.security.network.client</key>
 	<true/>
+	<!-- Required to bind the 127.0.0.1 loopback listener that receives the
+	     OAuth callback; the sandbox denies the bind without it. -->
+	<key>com.apple.security.network.server</key>
+	<true/>
 	<key>com.apple.security.files.user-selected.read-write</key>
 	<true/>
 	<!-- iCloud sync: the same CloudKit container the iOS app uses. -->

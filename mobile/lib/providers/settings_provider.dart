@@ -1,3 +1,4 @@
+import 'dart:async';
 import 'dart:ui';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../core/notifications.dart';
@@ -6,6 +7,7 @@ import '../core/subscription_service.dart';
 import '../core/secure_storage_utils.dart';
 import '../core/data_mode.dart';
 import '../core/private_local_database.dart';
+import '../models/goal.dart';
 import 'shared_prefs_provider.dart';
 import 'auth_provider.dart';
 import 'goal_provider.dart';
@@ -239,8 +241,7 @@ class AppSettingsNotifier extends Notifier<AppSettings> {
       if (next.dataMode == AppDataMode.supabase &&
           next.isLoggedIn &&
           next.user != null) {
-        _syncFromSupabase(next.user!.id);
-        ref.read(subscriptionServiceProvider).init(next.user!.id);
+        unawaited(_syncAccount(next.user!.id));
       }
     });
 
@@ -249,11 +250,21 @@ class AppSettingsNotifier extends Notifier<AppSettings> {
     if (dataMode == AppDataMode.supabase &&
         authState.isLoggedIn &&
         authState.user != null) {
-      _syncFromSupabase(authState.user!.id);
-      ref.read(subscriptionServiceProvider).init(authState.user!.id);
+      unawaited(_syncAccount(authState.user!.id));
     }
 
     return state;
+  }
+
+  /// Pulls the account's server settings, then lets RevenueCat re-assert the
+  /// entitlement. Ordered, not concurrent: `profiles.is_pro` is a mirror the
+  /// webhook maintains, so RevenueCat — the actual source of truth, and the
+  /// only one that sees a purchase before the webhook lands — must have the
+  /// last word, or a briefly-stale row would strand a paying user on free.
+  /// Neither call rethrows, so a failure in one never blocks the other.
+  Future<void> _syncAccount(String userId) async {
+    await _syncFromSupabase(userId);
+    await ref.read(subscriptionServiceProvider).init(userId);
   }
 
   Future<void> _loadSecureSettings() async {
@@ -311,7 +322,14 @@ class AppSettingsNotifier extends Notifier<AppSettings> {
       await ref
           .read(sharedPrefsProvider)
           .setBool('pref_biometric_lock', state.biometricLock);
-      syncNotifications();
+      // Deliberately NOT syncNotifications() here. This is a cold-start restore,
+      // not a user gesture, and every schedule* call opens with
+      // requestPermissions() — so re-syncing here fires the iOS permission alert
+      // unprompted on the first Private-mode launch, which is exactly what the
+      // deferred-prompt design (NOTIF-3) exists to avoid. Reminders are daily
+      // repeats that iOS keeps pending across launches, and the cloud branch of
+      // build() never re-syncs either; the prompt belongs to the notification
+      // settings toggles and the habit add/edit path that already own it.
     } catch (e, stack) {
       AppLogger.error('[Settings] Private settings load error', e, stack);
       state = state.copyWith(isPro: true);
@@ -702,7 +720,13 @@ class AppSettingsNotifier extends Notifier<AppSettings> {
             data['language']?.toString() ?? state.language,
           ),
           timeFormat24h: data['pref_time_format_24h'] ?? state.timeFormat24h,
-          isPro: state.isPro || (data['is_pro'] ?? false),
+          // The server column is authoritative, not merely a grant: it is
+          // written only by the RevenueCat webhook, so OR-ing it with the local
+          // flag would make a legitimate expiry or refund unable to revoke Pro
+          // for the rest of the session. Offline (or with no profile row) this
+          // whole block never runs and the cached entitlement stands, and
+          // RevenueCat re-asserts the truth right after — see _syncAccount.
+          isPro: data['is_pro'] ?? false,
           habitReminders: data['notif_habit_reminders'] ?? state.habitReminders,
           goalDeadlines: data['notif_goal_deadlines'] ?? state.goalDeadlines,
           aiInsights: data['notif_ai_insights'] ?? state.aiInsights,
@@ -772,50 +796,73 @@ class AppSettingsNotifier extends Notifier<AppSettings> {
 
   // ── Notifiche ─────────────────────────────────────────────────────────────
 
-  void syncNotifications() {
-    _notificationService.cancelAll().then((_) {
-      if (state.focusMode) return;
+  void syncNotifications() => unawaited(_runNotificationSync());
 
-      if (state.habitReminders) {
-        _notificationService.scheduleDailyHabitReminder(
-          timeStr: state.morningBriefTime,
+  Future<void> _runNotificationSync() async {
+    // Snapshot every input before the first await. The schedules below are
+    // awaited one at a time, which leaves the provider room to be disposed
+    // (data-mode switch) part-way through — and a disposed Ref throws on both
+    // `state` and `ref.read`.
+    final settings = state;
+    var goals = const <Goal>[];
+    try {
+      goals = ref.read(goalsProvider);
+    } catch (e, stack) {
+      AppLogger.error(
+        '[Settings] Errore nella lettura delle abitudini',
+        e,
+        stack,
+      );
+    }
+
+    try {
+      await _notificationService.cancelAll();
+      if (settings.focusMode) return;
+
+      // Every schedule is awaited in turn. scheduleHabitReminder's iOS
+      // pending-cap guard (NOTIF-4) reads the live pending count, so firing
+      // these concurrently would have every call read the same near-zero count
+      // taken just after cancelAll and pass — leaving iOS to silently drop
+      // everything past 64. Awaiting is what makes the guard observe the count
+      // it is guarding, and it counts the two briefs (which have no guard of
+      // their own) against the cap.
+      if (settings.habitReminders) {
+        await _notificationService.scheduleDailyHabitReminder(
+          timeStr: settings.morningBriefTime,
         );
       }
 
-      if (state.eveningReview) {
-        _notificationService.scheduleEveningReview(
-          timeStr: state.eveningReviewTime,
+      if (settings.eveningReview) {
+        await _notificationService.scheduleEveningReview(
+          timeStr: settings.eveningReviewTime,
         );
       }
 
       // Schedule specific habit reminders
-      try {
-        final goals = ref.read(goalsProvider);
-        for (final goal in goals) {
-          if (goal.reminderTime != null) {
-            _notificationService.scheduleHabitReminder(
-              goal.id,
-              goal.title,
-              goal.reminderTime,
-            );
-          }
+      for (final goal in goals) {
+        if (goal.reminderTime != null) {
+          await _notificationService.scheduleHabitReminder(
+            goal.id,
+            goal.title,
+            goal.reminderTime,
+          );
         }
-      } catch (e, stack) {
-        AppLogger.error(
-          '[Settings] Errore nella schedulazione promemoria abitudini',
-          e,
-          stack,
-        );
       }
+    } catch (e, stack) {
+      AppLogger.error(
+        '[Settings] Errore nella schedulazione promemoria abitudini',
+        e,
+        stack,
+      );
+    }
 
-      if (state.aiInsights && state.isPro) {
-        // Placeholder for AI scheduling
-      }
+    if (settings.aiInsights && settings.isPro) {
+      // Placeholder for AI scheduling
+    }
 
-      if (state.weeklyReports && state.isPro) {
-        // Placeholder for weekly scheduling
-      }
-    });
+    if (settings.weeklyReports && settings.isPro) {
+      // Placeholder for weekly scheduling
+    }
   }
 }
 

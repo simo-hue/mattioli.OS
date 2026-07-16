@@ -176,6 +176,7 @@
       "appearance": "ERSCHEINUNGSBILD & OBERFLÄCHE",
       "calendar": "KALENDER & DASHBOARD",
       "experience": "NUTZERERLEBNIS",
+      "aiCoach": "AI-COACH",
       "unitsLanguage": "EINHEITEN & SPRACHE"
     },
     "appearance": {
@@ -477,6 +478,7 @@
     "deleteAccountData": "Konto und Daten löschen",
     "deleteAccount": "Konto löschen",
     "accountDeletedSuccess": "Konto erfolgreich gelöscht",
+    "accountDeletedAppleRevokeFailed": "Konto gelöscht. Entferne Evolve manuell unter Einstellungen › Apple-ID › Mit Apple anmelden.",
     "permissionsManagement": "Berechtigungen verwalten",
     "permissionsSubtitle": "Benachrichtigungen, Kalender usw.",
     "sendCrashReports": "Absturzberichte senden",
@@ -575,7 +577,8 @@
       "annual": "Jährlich",
       "label": "Plan",
       "savings": "Spare über 40 %",
-      "cancelAnytime": "Jederzeit kündbar"
+      "cancelAnytime": "Jederzeit kündbar",
+      "priceUnavailable": "Nicht verfügbar"
     },
     "features": {
       "unlimitedHabits": "Erstelle alle Gewohnheiten, die du möchtest, ohne Limit.",
@@ -596,6 +599,7 @@
     "paymentMethod": "Zahlungsmethode",
     "paymentMethodValue": "Apple Pay / App Store",
     "nextRenewal": "Nächste Verlängerung",
+    "expiresOn": "Läuft ab am",
     "privacyPolicy": "Datenschutzerklärung",
     "termsEula": "Nutzungsbedingungen (EULA)",
     "continueButton": "Weiter",
@@ -603,7 +607,8 @@
       "activate": "Abonnement aktivieren",
       "cancel": "Abonnement kündigen",
       "manage": "Abonnement verwalten",
-      "restore": "Käufe wiederherstellen"
+      "restore": "Käufe wiederherstellen",
+      "seePlans": "Pläne ansehen"
     },
     "renewalDisclaimer": "Das Abonnement verlängert sich automatisch, sofern die automatische Verlängerung nicht mindestens 24 Stunden vor Ablauf des Zeitraums in den Apple-Kontoeinstellungen deaktiviert wird.",
     "manageDisclaimer": "Um Ihr Pro-Abonnement zu ändern, zu aktualisieren oder zu kündigen, werden Sie zum offiziellen RevenueCat- oder Apple-Kontoportal weitergeleitet.",
@@ -626,7 +631,8 @@
       "alreadyPurchased": "Dieses Abonnement ist bereits gekauft. Verwenden Sie „Käufe wiederherstellen“, um den Pro-Zugriff erneut zu aktivieren.",
       "linkedToAnotherAccount": "Dieser Kauf ist bereits mit einem anderen Evolve-Konto verknüpft. Melden Sie sich mit diesem Konto an oder wenden Sie sich an den Support.",
       "restoreInProgress": "Eine Wiederherstellung wird bereits durchgeführt. Warten Sie ein paar Sekunden.",
-      "purchaseInProgress": "Ein Kaufvorgang ist bereits im Gange. Warten Sie ein paar Sekunden."
+      "purchaseInProgress": "Ein Kaufvorgang ist bereits im Gange. Warten Sie ein paar Sekunden.",
+      "pricesUnavailable": "Die Preise konnten nicht aus dem App Store geladen werden. Überprüfen Sie Ihre Verbindung und ziehen Sie nach unten, um zu aktualisieren."
     },
     "personalizedAiCoach": "Personalisierter AI-Coach",
     "unlimitedHabits": "Unbegrenzte Gewohnheiten",
@@ -635,7 +641,7 @@
     "maybeLater": "Vielleicht später",
     "keyInsightsToBoostYourProductivity": "Wichtige Erkenntnisse zur Steigerung Ihrer Produktivität.",
     "advancedGoalMetrics": "Erweiterte Zielmetriken",
-    "getProAt499Month": "Holen Sie sich Pro für 4,99 €/Monat",
+    "getProAtPrice": "Holen Sie sich Pro für {price} / Monat",
     "takeYourHabitSystemToThe": "Bringen Sie Ihr Gewohnheitssystem auf die nächste Stufe",
     "habitSpecificStatistics": "Gewohnheitsspezifische Statistiken",
     "viewDetailedChartsAndDeepPerformance": "Sehen Sie sich detaillierte Diagramme und detaillierte Leistungsstatistiken für jedes Jahr an."
@@ -677,8 +683,9 @@
     "privateConsentTitle": "KI-Zustimmung im privaten Modus",
     "privateConsentBody": "Um den KI-Coach zu nutzen, werden deine Nachricht, dein Anzeigename und der ausgewählte Kontext an den externen KI-Anbieter gesendet. Deine private Datenbank bleibt auf dem Gerät.",
     "openRouter": {
-      "apiKeyMissingFull": "⚠️ Fehler: Der OpenRouter-API-Schlüssel ist nicht konfiguriert.\n\nFüge deinen API-Schlüssel in `lib/core/openrouter_config.dart` hinzu.",
-      "apiKeyMissingShort": "⚠️ Fehler: Der OpenRouter-API-Schlüssel ist nicht konfiguriert.",
+      "apiKeyMissingFull": "⚠️ Der AI-Coach braucht deinen eigenen OpenRouter-API-Schlüssel.\n\nErstelle einen auf openrouter.ai/keys und füge ihn in den Einstellungen hinzu.",
+      "apiKeyMissingShort": "⚠️ Der AI-Coach braucht deinen eigenen OpenRouter-API-Schlüssel. Füge ihn in den Einstellungen hinzu, um loszulegen.",
+      "apiKeyInvalid": "⚠️ OpenRouter hat diesen API-Schlüssel abgelehnt. Prüfe ihn in den Einstellungen oder erstelle einen neuen auf openrouter.ai/keys.",
       "defaultSystemPrompt": "Du bist der \"Discipline Coach\", ein virtueller Assistent, der dem Nutzer hilft, diszipliniert zu bleiben, Ziele zu erreichen und gesunde Gewohnheiten aufzubauen. Sei motivierend, aber konkret, direkt und praktisch. Verwende einen professionellen, aber freundlichen Ton.",
       "communicationError": "❌ Fehler bei der Kommunikation mit der AI. (Code: {code})",
       "connectionError": "❌ Verbindungsfehler. Stelle sicher, dass du online bist, und versuche es erneut.",
@@ -688,6 +695,24 @@
       "noInternet": "❌ Fehler: Keine Internetverbindung. Prüfe dein Netzwerk.",
       "serverTimeout": "❌ Fehler: Der Server braucht zu lange für die Antwort. Versuche es erneut.",
       "apiError": "❌ API-Fehler: {code} (Details in Sentry prüfen)"
+    },
+    "apiKey": {
+      "rowTitle": "OpenRouter-API-Schlüssel",
+      "description": "Der AI-Coach läuft über dein eigenes OpenRouter-Konto — deine Nutzung bleibt deine Sache. Erstelle einen Schlüssel auf openrouter.ai/keys und füge ihn unten ein: Er wird im Schlüsselbund dieses Geräts gespeichert und ausschließlich an OpenRouter gesendet.",
+      "fieldLabel": "API-Schlüssel",
+      "hint": "sk-or-v1-…",
+      "save": "Schlüssel speichern",
+      "saved": "API-Schlüssel gespeichert",
+      "remove": "Schlüssel entfernen",
+      "removed": "API-Schlüssel entfernt",
+      "removeConfirmTitle": "API-Schlüssel entfernen?",
+      "removeConfirmBody": "Der AI-Coach antwortet erst wieder, wenn du einen neuen Schlüssel hinzufügst.",
+      "statusSet": "Gespeichert",
+      "statusMissing": "Nicht gesetzt",
+      "saveFailed": "Der Schlüssel konnte nicht im Schlüsselbund gespeichert werden. Versuch es noch einmal.",
+      "setupTitle": "Füge deinen OpenRouter-API-Schlüssel hinzu",
+      "setupBody": "Der AI-Coach läuft über dein eigenes OpenRouter-Konto. Füge in den Einstellungen einen Schlüssel hinzu, um loszulegen.",
+      "setupAction": "Einstellungen öffnen"
     },
     "prompts": {
       "defaultUserName": "Nutzer",
@@ -1001,7 +1026,8 @@
     "reminder": "Erinnerung",
     "nameRequired": "Bitte gib deiner Gewohnheit einen Namen",
     "habitAdded": "Gewohnheit hinzugefügt",
-    "habitUpdated": "Gewohnheit aktualisiert"
+    "habitUpdated": "Gewohnheit aktualisiert",
+    "freeSlotsFullBanner": "Sie haben Ihre kostenlosen Gewohnheits-Plätze belegt ({used}/{limit}). Schalten Sie mit Evolve Pro unbegrenzte Plätze frei."
   },
   "tutorial": {
     "aiChat": "AI-Chat",

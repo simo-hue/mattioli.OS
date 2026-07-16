@@ -190,8 +190,24 @@ enum CloudKitSyncBridge {
         }
       }
     }
-    op.modifyRecordsResultBlock = { _ in
-      main { result(["saved": saved, "conflicts": conflicts, "errors": errors]) }
+    op.modifyRecordsResultBlock = { res in
+      main {
+        switch res {
+        case .success:
+          result(["saved": saved, "conflicts": conflicts, "errors": errors])
+        case .failure(let error):
+          // .partialFailure already fired perRecordSaveBlock for every record,
+          // so the collected lists are authoritative and the engine can act on
+          // them. Any other failure (limitExceeded, quotaExceeded, …) fires no
+          // per-record block at all: reporting the empty lists as success would
+          // be indistinguishable from "nothing to push".
+          if let ck = error as? CKError, ck.code == .partialFailure {
+            result(["saved": saved, "conflicts": conflicts, "errors": errors])
+          } else {
+            result(flutterError(error))
+          }
+        }
+      }
     }
     database.add(op)
   }
@@ -234,8 +250,19 @@ enum CloudKitSyncBridge {
         errors.append(["recordName": recordID.recordName, "code": "\(code)"])
       }
     }
-    op.modifyRecordsResultBlock = { _ in
-      main { result(["deleted": deleted, "errors": errors]) }
+    op.modifyRecordsResultBlock = { res in
+      main {
+        switch res {
+        case .success:
+          result(["deleted": deleted, "errors": errors])
+        case .failure(let error):
+          if let ck = error as? CKError, ck.code == .partialFailure {
+            result(["deleted": deleted, "errors": errors])
+          } else {
+            result(flutterError(error))
+          }
+        }
+      }
     }
     database.add(op)
   }

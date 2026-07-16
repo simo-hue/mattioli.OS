@@ -23,6 +23,14 @@ class AuthScreen extends ConsumerStatefulWidget {
 class _AuthScreenState extends ConsumerState<AuthScreen>
     with SingleTickerProviderStateMixin {
   AuthMode _mode = AuthMode.login;
+
+  /// The one message AuthNotifier leaves on `AuthState.error` that is NOT a
+  /// failure: signUp returns true and parks the "confirm your registration"
+  /// notice there. Every other write to `error` accompanies a false return, so
+  /// the returned bool — not the translated text — is what tells the two apart.
+  /// Held here so the banner can skip the notice it already showed as a toast.
+  String? _notice;
+
   final _emailController = TextEditingController();
   final _passwordController = TextEditingController();
   final _formKey = GlobalKey<FormState>();
@@ -72,6 +80,7 @@ class _AuthScreenState extends ConsumerState<AuthScreen>
     if (_formKey.currentState?.validate() ?? false) {
       bool success;
       final hapticsEnabled = ref.read(settingsProvider).hapticFeedback;
+      setState(() => _notice = null);
       if (_mode == AuthMode.login) {
         success = await ref
             .read(authProvider.notifier)
@@ -82,11 +91,12 @@ class _AuthScreenState extends ConsumerState<AuthScreen>
             .signUp(_emailController.text, _passwordController.text);
         // signup potrebbe richiedere conferma email
         if (success && mounted) {
-          final error = ref.read(authProvider).error;
-          if (error != null && error.contains('email')) {
+          final notice = ref.read(authProvider).error;
+          if (notice != null) {
+            setState(() => _notice = notice);
             showEvolveToast(
               context,
-              message: error,
+              message: notice,
               kind: EvolveToastKind.success,
             );
           }
@@ -95,6 +105,8 @@ class _AuthScreenState extends ConsumerState<AuthScreen>
 
       if (success) {
         AppHaptics.mediumImpactWithFlag(hapticsEnabled);
+      } else if (mounted) {
+        ref.hapticError();
       }
     } else {
       ref.hapticHeavy();
@@ -313,8 +325,7 @@ class _AuthScreenState extends ConsumerState<AuthScreen>
                               Builder(
                                 builder: (context) {
                                   final error = ref.watch(authProvider).error;
-                                  if (error == null ||
-                                      error.contains('email')) {
+                                  if (error == null || error == _notice) {
                                     return const SizedBox.shrink();
                                   }
                                   return Padding(

@@ -9,11 +9,16 @@ import 'sync_local_store.dart';
 import 'sync_logger.dart';
 
 /// Outcome of applying ONE pulled record. Distinguishes a benign skip (we
-/// already hold a newer/equal copy, the record isn't applyable on this app, or
-/// it's structurally malformed) from a real [failed] apply (a transient DB
-/// error, a decrypt failure, a missing asset). A [failed] record must HOLD the
-/// change token so it's retried on a later sync rather than silently dropped —
-/// see [SyncEngine._pull].
+/// already hold a newer/equal copy, the record isn't applyable on this app, it's
+/// structurally malformed, or it was quarantined) from a real [failed] apply (a
+/// transient DB error, a decrypt failure, a missing asset). A [failed] record
+/// must HOLD the change token so it's retried on a later sync rather than
+/// silently dropped — see [SyncEngine._pull].
+///
+/// The split turns on whether a RETRY could ever succeed: only a failure that
+/// might resolve on its own earns the token-hold. A permanently-unapplyable
+/// record is quarantined ([_ApplyOutcome.skipped]) precisely so it cannot pin
+/// the token forever — see [SyncLocalStore.quarantineRecord].
 enum _ApplyOutcome { applied, skipped, failed }
 
 class SyncResult {
@@ -90,6 +95,18 @@ class SyncEngine {
 
   /// Reject timestamps more than this far in the future (clock-skew guard, Q10).
   static const int _maxFutureSkewMs = 5 * 60 * 1000;
+
+  /// Records per `saveRecords` call — see [_batches]. Apple documents no hard
+  /// constant (the server bounds a modify operation by record count AND total
+  /// request size, and returns `CKError.limitExceeded` with guidance to split
+  /// and retry); 400 is the long-standing practical ceiling.
+  static const int _maxRecordsPerBatch = 400;
+
+  /// Cumulative encrypted-payload bytes per `saveRecords` call, covering the
+  /// request-size half of the limit: row payloads are arbitrarily wide (a long
+  /// goal description encrypts to a large blob), so a record count alone does
+  /// not bound the request.
+  static const int _maxPayloadBytesPerBatch = 2 * 1024 * 1024;
 
   /// Hard cap on delta-fetch pages per pull. A correct CloudKit bridge sets
   /// `moreComing` with a strictly-advancing token and terminates in a handful
@@ -170,7 +187,12 @@ class SyncEngine {
     if (entries.isEmpty) return 0;
 
     final records = <CloudRecord>[];
+    // `sync_state.updated_at` as observed when each record was serialized. A
+    // record is only cleared of `dirty` if the row still carries its stamp, so
+    // an app write racing the upload is re-pushed rather than dropped.
+    final pushedStamp = <String, String>{};
     for (final e in entries) {
+      pushedStamp[e.recordName] = e.updatedAt;
       if (e.deleted) {
         records.add(_tombstone(e.recordName, e.tableName, e.updatedAt));
         continue;
@@ -201,23 +223,62 @@ class SyncEngine {
       ));
     }
 
-    final outcome = await bridge.saveRecords(records);
-    final at = _nowIso();
-    for (final rn in outcome.saved) {
-      await store.markSynced(rn, at);
+    var pushed = 0;
+    // Each batch is committed to sync_state before the next is sent, so a batch
+    // that fails (or throws) leaves the batches already saved marked synced and
+    // the rest still dirty for the next sync — never a silent all-or-nothing.
+    for (final batch in _batches(records)) {
+      final outcome = await bridge.saveRecords(batch);
+      final at = _nowIso();
+      for (final rn in outcome.saved) {
+        final stamp = pushedStamp[rn];
+        if (stamp != null) await store.markSynced(rn, at, stamp);
+      }
+      for (final err in outcome.errors) {
+        await store.markError(err.recordName, err.code);
+        logger.error(
+          '[CloudKit] Record push failed',
+          err.code,
+          null,
+          {'recordName': err.recordName},
+        );
+      }
+      // Conflicts (server has a newer version) are intentionally left dirty: the
+      // pull below fetches the newer record and LWW-applies it, clearing dirty.
+      pushed += outcome.saved.length;
     }
-    for (final err in outcome.errors) {
-      await store.markError(err.recordName, err.code);
-      logger.error(
-        '[CloudKit] Record push failed',
-        err.code,
-        null,
-        {'recordName': err.recordName},
-      );
+    return pushed;
+  }
+
+  /// Split the push into operations CloudKit will accept. One unbounded
+  /// `CKModifyRecordsOperation` is rejected wholesale with `CKError
+  /// .limitExceeded` — a request-level failure, so no per-record block runs and
+  /// NOTHING uploads. That is not hypothetical: [enable] marks the user's entire
+  /// history dirty (both the first-device [SyncLocalStore.markAllDirty] path and
+  /// the second-device [SyncLocalStore.reKeyOwner] one), so the very first push
+  /// on an established dataset is thousands of records.
+  ///
+  /// A single record is never held back, even if it alone exceeds the byte cap.
+  Iterable<List<CloudRecord>> _batches(List<CloudRecord> records) sync* {
+    var batch = <CloudRecord>[];
+    var bytes = 0;
+    for (final r in records) {
+      // An avatar record's payload is EMPTY by construction — its image travels
+      // as the CKAsset at `assetPath` (see [_encodeAvatar]) — so it counts ~0
+      // against the byte cap. Not a gap worth closing: `avatar:<owner>` is one
+      // record per profile, so the record cap alone bounds any batch holding it.
+      final size = r.payload?.lengthInBytes ?? 0;
+      if (batch.isNotEmpty &&
+          (batch.length >= _maxRecordsPerBatch ||
+              bytes + size > _maxPayloadBytesPerBatch)) {
+        yield batch;
+        batch = [];
+        bytes = 0;
+      }
+      batch.add(r);
+      bytes += size;
     }
-    // Conflicts (server has a newer version) are intentionally left dirty: the
-    // pull below fetches the newer record and LWW-applies it, clearing dirty.
-    return outcome.saved.length;
+    if (batch.isNotEmpty) yield batch;
   }
 
   Future<(int, int)> _pull(Uint8List key) async {
@@ -278,8 +339,9 @@ class SyncEngine {
         case _ApplyOutcome.applied:
           applied++;
         case _ApplyOutcome.skipped:
-          // Benign: an older/equal LWW copy, a not-wired avatar, or a
-          // structurally-malformed record — safe to let the token advance past.
+          // Benign: an older/equal LWW copy, a not-wired avatar, or a record
+          // this build can never apply (quarantined, so it is recorded and
+          // re-appliable) — safe to let the token advance past.
           skipped++;
         case _ApplyOutcome.failed:
           // A real, potentially-transient apply failure: keep the token back so
@@ -341,7 +403,30 @@ class SyncEngine {
       );
       return _ApplyOutcome.skipped;
     }
+
     final rowId = rec.recordName.substring(prefix.length);
+
+    // A table this build's schema doesn't have — a newer client shipped an
+    // additive migration first. There is nowhere to put the record and no
+    // retry can change that, so quarantine it and let the token advance rather
+    // than wedging the pull on it forever. The clients that DO have the table
+    // keep it; this one simply can't see it until the app updates.
+    if (!PrivateDbSchema.syncedTables.contains(rec.tableName)) {
+      await store.quarantineRecord(
+        rec.recordName,
+        rec.tableName,
+        rowId,
+        'no schema for this table in this build',
+      );
+      logger.error(
+        '[CloudKit] Skipping record for a table this build has no schema for',
+        'unknown table',
+        null,
+        {'recordName': rec.recordName, 'tableName': rec.tableName},
+      );
+      return _ApplyOutcome.skipped;
+    }
+
     try {
       if (rec.deleted) {
         await store.applyDelete(
@@ -353,14 +438,41 @@ class SyncEngine {
         );
       } else {
         final row = crypto.decryptJson(rec.payload!, key);
-        await store.applyUpsert(
+        final applied = await store.applyUpsert(
           rec.tableName,
           rec.recordName,
           Map<String, Object?>.from(row),
+          rec.updatedAtMs,
           _nowIso(),
         );
+        // The record lost a natural-key contest: the local row for that slot is
+        // the deterministic winner on every device, so this one is dead and the
+        // token may advance past it (the device holding it pushes its tombstone).
+        if (!applied) return _ApplyOutcome.skipped;
       }
       return _ApplyOutcome.applied;
+    } on UnstorableRowException catch (e) {
+      // This build's schema can never store this record (e.g. a status value a
+      // newer client's widened CHECK allows), so every retry fails identically.
+      // Holding the token for it would pin the pull on this one record FOREVER
+      // and re-download the whole delta on every sync, with the rest of the zone
+      // stuck behind it. QUARANTINE instead: skip it, record why, advance. The
+      // record is untouched in the cloud and parked (not marked applied), so the
+      // client re-applies it whenever it is delivered again — see
+      // [SyncLocalStore.quarantineRecord].
+      await store.quarantineRecord(
+        rec.recordName,
+        rec.tableName,
+        rowId,
+        e.reason,
+      );
+      logger.error(
+        '[CloudKit] Quarantined a record this build cannot store',
+        e.reason,
+        null,
+        {'recordName': rec.recordName, 'tableName': rec.tableName},
+      );
+      return _ApplyOutcome.skipped;
     } catch (e, stack) {
       await store.markError(rec.recordName, e.toString());
       logger.error(

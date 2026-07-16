@@ -176,6 +176,7 @@
       "appearance": "APARIENCIA E INTERFAZ",
       "calendar": "CALENDARIO Y PANEL",
       "experience": "EXPERIENCIA DE USUARIO",
+      "aiCoach": "COACH AI",
       "unitsLanguage": "UNIDADES E IDIOMA"
     },
     "appearance": {
@@ -477,6 +478,7 @@
     "deleteAccountData": "Eliminar cuenta y datos",
     "deleteAccount": "Eliminar cuenta",
     "accountDeletedSuccess": "Cuenta eliminada correctamente",
+    "accountDeletedAppleRevokeFailed": "Cuenta eliminada. Quita Evolve manualmente en Ajustes › ID de Apple › Iniciar sesión con Apple.",
     "permissionsManagement": "Gestión de permisos",
     "permissionsSubtitle": "Notificaciones, calendario, etc.",
     "sendCrashReports": "Enviar informes de fallos",
@@ -575,7 +577,8 @@
       "annual": "Anual",
       "label": "Plan",
       "savings": "Ahorra más del 40%",
-      "cancelAnytime": "Cancela cuando quieras"
+      "cancelAnytime": "Cancela cuando quieras",
+      "priceUnavailable": "No disponible"
     },
     "features": {
       "unlimitedHabits": "Crea todos los hábitos que quieras, sin límites.",
@@ -596,6 +599,7 @@
     "paymentMethod": "Método de pago",
     "paymentMethodValue": "Apple Pay / App Store",
     "nextRenewal": "Próxima renovación",
+    "expiresOn": "Caduca el",
     "privacyPolicy": "Política de privacidad",
     "termsEula": "Términos de uso (EULA)",
     "continueButton": "Continuar",
@@ -603,7 +607,8 @@
       "activate": "Activar suscripción",
       "cancel": "Cancelar suscripción",
       "manage": "Gestionar suscripción",
-      "restore": "Restaurar compras"
+      "restore": "Restaurar compras",
+      "seePlans": "Ver planes"
     },
     "renewalDisclaimer": "La suscripción se renueva automáticamente a menos que se desactive la renovación automática en la configuración de la cuenta de Apple al menos 24 horas antes del final del período.",
     "manageDisclaimer": "Para modificar, actualizar o cancelar su suscripción Pro, se lo dirigirá al portal oficial de RevenueCat o Apple Account.",
@@ -626,7 +631,8 @@
       "alreadyPurchased": "Esta suscripción ya está comprada. Utilice Restaurar compras para reactivar el acceso Pro.",
       "linkedToAnotherAccount": "Esta compra ya está vinculada a otra cuenta de Evolve. Inicie sesión con esa cuenta o comuníquese con el soporte.",
       "restoreInProgress": "Ya hay una restauración en curso. Espere unos segundos.",
-      "purchaseInProgress": "Ya hay una operación de compra en curso. Espere unos segundos."
+      "purchaseInProgress": "Ya hay una operación de compra en curso. Espere unos segundos.",
+      "pricesUnavailable": "No se han podido cargar los precios de la App Store. Verifique su conexión y deslice hacia abajo para actualizar."
     },
     "personalizedAiCoach": "Coach AI personalizado",
     "unlimitedHabits": "Hábitos ilimitados",
@@ -635,7 +641,7 @@
     "maybeLater": "Quizá más tarde",
     "keyInsightsToBoostYourProductivity": "Información clave para aumentar su productividad.",
     "advancedGoalMetrics": "Métricas avanzadas de objetivos",
-    "getProAt499Month": "Consigue Pro a 4,99 € / mes",
+    "getProAtPrice": "Consigue Pro a {price} / mes",
     "takeYourHabitSystemToThe": "Lleva tu sistema de hábitos al siguiente nivel",
     "habitSpecificStatistics": "Estadísticas específicas por hábito",
     "viewDetailedChartsAndDeepPerformance": "Vea gráficos detallados y estadísticas detalladas de rendimiento para cada año."
@@ -677,8 +683,9 @@
     "privateConsentTitle": "Consentimiento de IA en modo privado",
     "privateConsentBody": "Para usar el Coach de IA, tu mensaje, tu nombre y cualquier contexto seleccionado se envían al proveedor de IA externo. Tu base de datos privada permanece en el dispositivo.",
     "openRouter": {
-      "apiKeyMissingFull": "⚠️ Error: la clave API de OpenRouter no está configurada.\n\nAñade tu clave API en `lib/core/openrouter_config.dart`.",
-      "apiKeyMissingShort": "⚠️ Error: la clave API de OpenRouter no está configurada.",
+      "apiKeyMissingFull": "⚠️ El Coach AI necesita tu propia clave de API de OpenRouter.\n\nCrea una en openrouter.ai/keys y añádela en los ajustes.",
+      "apiKeyMissingShort": "⚠️ El Coach AI necesita tu propia clave de API de OpenRouter. Añádela en los ajustes para empezar a chatear.",
+      "apiKeyInvalid": "⚠️ OpenRouter ha rechazado esta clave de API. Revísala en los ajustes o crea una nueva en openrouter.ai/keys.",
       "defaultSystemPrompt": "Eres el \"Coach de Disciplina\", un asistente virtual centrado en ayudar al usuario a mantener la disciplina, alcanzar objetivos y construir hábitos saludables. Sé motivador pero concreto, directo y práctico. Usa un tono profesional pero cercano.",
       "communicationError": "❌ Error al comunicarse con la IA. (Código: {code})",
       "connectionError": "❌ Error de conexión. Asegúrate de estar online e inténtalo de nuevo.",
@@ -688,6 +695,24 @@
       "noInternet": "❌ Error: no hay conexión a internet. Revisa tu red.",
       "serverTimeout": "❌ Error: el servidor tarda demasiado en responder. Inténtalo de nuevo.",
       "apiError": "❌ Error de API: {code} (consulta Sentry para más detalles)"
+    },
+    "apiKey": {
+      "rowTitle": "Clave de API de OpenRouter",
+      "description": "El Coach AI funciona con tu propia cuenta de OpenRouter, así que tu consumo es solo tuyo. Crea una clave en openrouter.ai/keys y pégala aquí abajo: se guarda en el llavero de este dispositivo y solo se envía a OpenRouter.",
+      "fieldLabel": "Clave de API",
+      "hint": "sk-or-v1-…",
+      "save": "Guardar clave",
+      "saved": "Clave de API guardada",
+      "remove": "Eliminar clave",
+      "removed": "Clave de API eliminada",
+      "removeConfirmTitle": "¿Eliminar la clave de API?",
+      "removeConfirmBody": "El Coach AI dejará de responder hasta que vuelvas a añadir una clave.",
+      "statusSet": "Guardada",
+      "statusMissing": "Sin configurar",
+      "saveFailed": "No se ha podido guardar la clave en el llavero. Inténtalo de nuevo.",
+      "setupTitle": "Añade tu clave de API de OpenRouter",
+      "setupBody": "El Coach AI funciona con tu propia cuenta de OpenRouter. Añade una clave en los ajustes para empezar a chatear.",
+      "setupAction": "Abrir ajustes"
     },
     "prompts": {
       "defaultUserName": "Usuario",
@@ -1001,7 +1026,8 @@
     "reminder": "Recordatorio",
     "nameRequired": "Escribe un nombre para tu hábito",
     "habitAdded": "Hábito añadido",
-    "habitUpdated": "Hábito actualizado"
+    "habitUpdated": "Hábito actualizado",
+    "freeSlotsFullBanner": "Has ocupado todos tus espacios de hábitos gratuitos ({used}/{limit}). Desbloquea espacios ilimitados con Evolve Pro."
   },
   "tutorial": {
     "aiChat": "Chat AI",

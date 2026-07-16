@@ -32,6 +32,7 @@ import '../domain/coach_backend.dart';
 import '../domain/coach_chat_logic.dart';
 import '../domain/coach_config.dart';
 import 'coach_model_chip.dart';
+import 'coach_settings_dialog.dart';
 import 'start_ollama_button.dart';
 
 /// Pure prompt-suggestion selection (time of day + which context switches are
@@ -233,8 +234,34 @@ class _AiCoachPageState extends ConsumerState<AiCoachPage> {
     _sending = true;
 
     final coachConfig = ref.read(coachConfigProvider);
-    final backend = ref.read(activeCoachBackendProvider);
     final isCloud = coachConfig.backend == CoachBackendKind.cloud;
+
+    // Cloud is BYOK. Await the Keychain read (rather than reading the possibly
+    // still-loading snapshot) so a send during the first frames can't be
+    // mistaken for "no key" — then send the user to the setup dialog instead of
+    // posting a message that can only fail.
+    //
+    // The read can throw (a rotated keychain access-group prefix locks the item
+    // out). It MUST NOT escape: `_sending` is already latched, and an uncaught
+    // throw here would leave it latched for the page's lifetime, silently
+    // blocking every later send. An unreadable key is treated as no key.
+    if (isCloud) {
+      String? apiKey;
+      try {
+        apiKey = await ref.read(coachApiKeyProvider.future);
+      } catch (_) {
+        apiKey = null;
+      }
+      if (apiKey == null) {
+        _sending = false;
+        if (mounted) showCoachSettingsDialog(context);
+        return;
+      }
+    }
+    if (!mounted) {
+      _sending = false;
+      return;
+    }
 
     // Cloud sends leave the device, so in Private mode they require explicit
     // consent. Local sends never leave the device → no consent gate, no
@@ -248,6 +275,9 @@ class _AiCoachPageState extends ConsumerState<AiCoachPage> {
       _sending = false;
       return;
     }
+
+    // Read AFTER the awaits: the key that just resolved rebuilds this provider.
+    final backend = ref.read(activeCoachBackendProvider);
 
     _controller.clear();
     setState(() {
@@ -652,6 +682,7 @@ class _AiCoachPageState extends ConsumerState<AiCoachPage> {
             ],
           ),
           const SizedBox(height: 20),
+          const _CloudKeyMissingBanner(),
           _LocalDetectedBanner(
             dismissed: _localNudgeDismissed,
             onDismiss: _dismissLocalNudge,
@@ -1547,6 +1578,78 @@ class _ContextSwitchRow extends StatelessWidget {
           child: EvolveSwitch(value: value, onChanged: onChanged),
         ),
       ],
+    );
+  }
+}
+
+/// BYOK setup state: the cloud engine ships without a key, so until the user
+/// supplies their own this banner says so and opens the dialog that takes it.
+/// Renders nothing while the Keychain read is in flight, so a configured key
+/// never flashes a spurious setup prompt on open.
+class _CloudKeyMissingBanner extends ConsumerWidget {
+  const _CloudKeyMissingBanner();
+
+  @override
+  Widget build(BuildContext context, WidgetRef ref) {
+    final backend = ref.watch(coachConfigProvider.select((c) => c.backend));
+    if (backend != CoachBackendKind.cloud) return const SizedBox.shrink();
+    final key = ref.watch(coachApiKeyProvider);
+    if (key.isLoading || key.asData?.value != null) {
+      return const SizedBox.shrink();
+    }
+
+    final colors = context.evolveColors;
+    return Padding(
+      padding: const EdgeInsets.only(bottom: 16),
+      child: Container(
+        padding: const EdgeInsetsDirectional.fromSTEB(14, 12, 12, 12),
+        decoration: BoxDecoration(
+          color: EvolveColors.amber.withValues(alpha: 0.08),
+          borderRadius: BorderRadius.circular(14),
+          border: Border.all(color: EvolveColors.amber.withValues(alpha: 0.3)),
+        ),
+        child: Row(
+          children: [
+            const EvolveIconChip(
+              icon: LucideIcons.keyRound,
+              color: EvolveColors.amber,
+              size: 34,
+              iconSize: 16,
+            ),
+            const SizedBox(width: 12),
+            Expanded(
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text(
+                    t.ai.apiKey.setupTitle,
+                    style: TextStyle(
+                      color: colors.foreground,
+                      fontSize: 13.5,
+                      fontWeight: FontWeight.w700,
+                    ),
+                  ),
+                  const SizedBox(height: 2),
+                  Text(
+                    t.ai.apiKey.setupBody,
+                    style: TextStyle(
+                      color: colors.muted,
+                      fontSize: 12,
+                      fontWeight: FontWeight.w500,
+                      height: 1.35,
+                    ),
+                  ),
+                ],
+              ),
+            ),
+            const SizedBox(width: 12),
+            FilledButton(
+              onPressed: () => showCoachSettingsDialog(context),
+              child: Text(t.ai.apiKey.setupAction),
+            ),
+          ],
+        ),
+      ),
     );
   }
 }

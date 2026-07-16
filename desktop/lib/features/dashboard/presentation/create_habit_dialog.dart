@@ -65,6 +65,7 @@ class _CreateHabitDialogState extends ConsumerState<CreateHabitDialog> {
           .addHabit(
             title: title,
             color: _selectedColor,
+            frequencyDays: _selectedDays,
           );
       if (!added) {
         // Free-tier 5-habit cap reached → present the paywall, keep the dialog.

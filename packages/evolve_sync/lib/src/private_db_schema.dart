@@ -52,6 +52,22 @@ class PrivateDbSchema {
   /// image itself rides along as a CloudKit asset, but the path is meaningless
   /// (and different) on another device. The engine strips these from the push
   /// payload and the local store preserves the existing local value on apply.
+  ///
+  /// `goal_logs.value` — which carries HealthKit measurements — is deliberately
+  /// absent: it is meant to reach the user's other devices, and this zone is the
+  /// user's own CloudKit private database, AES-GCM encrypted under a key we never
+  /// hold.
+  ///
+  /// That is a decision, not a settled reading of the rules. App Store guideline
+  /// 5.1.3(ii) is written about storage location — apps "may not store personal
+  /// health information in iCloud" — and carves out no exception for encrypted or
+  /// developer-unreadable storage, so syncing measurements through this zone is a
+  /// risk the owner has chosen to carry on the grounds that the container is the
+  /// user's own and the payload is opaque to us. Revisit if review says otherwise.
+  ///
+  /// The separate rule the owner treats as absolute — a measurement never reaches
+  /// Supabase — is enforced where those payloads are built (the mobile app's
+  /// `applyAutoVerdict` and `stripHealthMeasurements`), not here.
   static const Map<String, List<String>> localOnlyColumns = {
     'profiles': ['avatar_url'],
   };

@@ -257,12 +257,16 @@ class _RgbColorInputState extends State<_RgbColorInput> {
   late FocusNode _gFocus;
   late FocusNode _bFocus;
 
+  /// `Color.r`/`.g`/`.b` are normalized 0.0-1.0 doubles, but these fields and
+  /// `_updateColor` speak 0-255, so scale rather than truncate on the way in.
+  int _channel(double value) => (value * 255).round();
+
   @override
   void initState() {
     super.initState();
-    _rController = TextEditingController(text: widget.color.r.toInt().toString());
-    _gController = TextEditingController(text: widget.color.g.toInt().toString());
-    _bController = TextEditingController(text: widget.color.b.toInt().toString());
+    _rController = TextEditingController(text: _channel(widget.color.r).toString());
+    _gController = TextEditingController(text: _channel(widget.color.g).toString());
+    _bController = TextEditingController(text: _channel(widget.color.b).toString());
 
     _rFocus = FocusNode()..addListener(_onFocusChange);
     _gFocus = FocusNode()..addListener(_onFocusChange);
@@ -280,9 +284,9 @@ class _RgbColorInputState extends State<_RgbColorInput> {
     super.didUpdateWidget(oldWidget);
     if (oldWidget.color != widget.color && 
         !_rFocus.hasFocus && !_gFocus.hasFocus && !_bFocus.hasFocus) {
-      _rController.text = widget.color.r.toInt().toString();
-      _gController.text = widget.color.g.toInt().toString();
-      _bController.text = widget.color.b.toInt().toString();
+      _rController.text = _channel(widget.color.r).toString();
+      _gController.text = _channel(widget.color.g).toString();
+      _bController.text = _channel(widget.color.b).toString();
     }
   }
 

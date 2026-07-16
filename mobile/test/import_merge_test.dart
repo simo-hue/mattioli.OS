@@ -3,10 +3,16 @@
 // seeded with the real PrivateDbSchema — encryption is orthogonal to the merge
 // logic, so this exercises identity matching, last-write-wins, category dedup,
 // orphan/FK handling and streak recomputation without SQLCipher or the network.
+import 'dart:convert';
+
+import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:evolve_verification/evolve_verification.dart';
 import 'package:mattioli_os/core/import_merge.dart';
 import 'package:mattioli_os/core/import_merge_stats.dart';
+import 'package:mattioli_os/core/time_formatting.dart';
+import 'package:mattioli_os/models/goal.dart';
+import 'package:mattioli_os/models/macro_goal.dart';
 import 'package:evolve_sync/evolve_sync.dart';
 import 'package:sqflite_common_ffi/sqflite_ffi.dart';
 
@@ -560,6 +566,243 @@ void main() {
       expect(row['created_at'], '2020-01-01T00:00:00.000Z',
           reason: "existing created_at kept, not the file's future value");
       await db.close();
+    });
+  });
+
+  // ── Malformed-import hardening ────────────────────────────────────────────
+  //
+  // The read paths these guard are eager (`rows.map(...).toList()`), so a single
+  // poisoned row throws for the WHOLE list and the provider's catch turns that
+  // into an empty screen. Each test therefore imports a bad row ALONGSIDE a good
+  // one and reads the merged table back through the real decode.
+
+  /// Mirrors PrivateLocalDatabase._goalFromRow + loadGoals: the strict decode a
+  /// poisoned row has to survive. Kept here because loadGoals itself needs
+  /// SQLCipher, which the FFI harness deliberately does not use.
+  List<Goal> readGoals(List<Map<String, Object?>> rows) => rows
+      .map((row) => Goal.fromJson({
+            'id': row['id'],
+            'title': row['title'],
+            'description': row['description'],
+            'icon': row['icon'],
+            'color': row['color'],
+            'frequency_days': row['frequency_days'] == null
+                ? null
+                : List<int>.from(jsonDecode(row['frequency_days'] as String)),
+            'start_date': row['start_date'],
+            'end_date': row['end_date'],
+            'display_order': row['display_order'],
+            'reminder_time': row['reminder_time'],
+          }))
+      .toList();
+
+  group('malformed import hardening', () {
+    test('#16: an unparseable start_date drops the goal instead of poisoning '
+        'the whole habit list', () async {
+      final db = await openDb();
+      final v = validateCanonical(normalizeBackup({
+        'mode': 'private',
+        'habits': [
+          nativeGoal(id: 'good', updatedAt: now),
+          {
+            'id': 'bad',
+            'title': 'Locale date',
+            'color': '#fff',
+            'start_date': '01/02/2024', // parses nowhere
+            'updated_at': now,
+          },
+          {
+            'id': 'bad2',
+            'title': 'Junk date',
+            'color': '#fff',
+            'start_date': 'not-a-date',
+            'updated_at': now,
+          },
+        ],
+      }));
+      expect((v.canonical[kGoalsKey] as List).length, 1);
+      expect(v.skipped['habits'], 2, reason: 'reported to the user, not silent');
+
+      await merge(db, v.canonical);
+      final goals = readGoals(await db.query('goals')); // must NOT throw
+      expect(goals.map((g) => g.id), ['good']);
+      expect(goals.single.startDate, DateTime.parse('2026-01-01'));
+      await db.close();
+    });
+
+    test('#16: an unparseable end_date drops the goal too', () async {
+      final v = validateCanonical(normalizeBackup({
+        'mode': 'private',
+        'habits': [
+          nativeGoal(id: 'good', updatedAt: now),
+          {
+            'id': 'bad',
+            'title': 'Bad end',
+            'color': '#fff',
+            'start_date': '2026-01-01',
+            'end_date': '31-12-2026',
+            'updated_at': now,
+          },
+        ],
+      }));
+      expect((v.canonical[kGoalsKey] as List).single['id'], 'good');
+      expect(v.skipped['habits'], 1);
+    });
+
+    test('#16: well-formed dates survive validation unchanged', () {
+      final v = validateCanonical(normalizeBackup({
+        'mode': 'private',
+        'habits': [
+          {
+            'id': 'g1',
+            'title': 'Run',
+            'color': '#fff',
+            'start_date': '2026-01-01',
+            'end_date': '2026-12-31T23:59:59.000Z',
+            'updated_at': now,
+          },
+        ],
+      }));
+      final g = (v.canonical[kGoalsKey] as List).single;
+      expect(g['start_date'], '2026-01-01');
+      expect(g['end_date'], '2026-12-31T23:59:59.000Z');
+      expect(v.skipped['habits'], 0);
+    });
+
+    test('#16: Goal.fromJson tolerates an already-persisted bad date rather '
+        'than throwing for the whole list', () {
+      final goal = Goal.fromJson({
+        'id': 'g1',
+        'title': 'Run',
+        'color': '#3B82F6',
+        'start_date': '01/02/2024',
+        'end_date': 'nope',
+      });
+      expect(goal.startDate, DateTime(2000));
+      expect(goal.endDate, isNull);
+      expect(goal.isActiveOn(DateTime(2026, 1, 1)), isTrue,
+          reason: 'the habit stays visible and repairable');
+    });
+
+    test('#50: a non-int-list frequency_days is sanitized, never jsonEncoded '
+        'verbatim into the column', () async {
+      final db = await openDb();
+      final v = validateCanonical(normalizeBackup({
+        'mode': 'private',
+        'habits': [
+          {...nativeGoal(id: 'strings', updatedAt: now), 'frequency_days': ['1', '3']},
+          {...nativeGoal(id: 'doubles', updatedAt: now), 'frequency_days': [1.0, 2.0]},
+          {...nativeGoal(id: 'bare', updatedAt: now), 'frequency_days': 'mon,tue'},
+          {...nativeGoal(id: 'map', updatedAt: now), 'frequency_days': {'a': 1}},
+          {...nativeGoal(id: 'junk', updatedAt: now), 'frequency_days': ['a', 'b']},
+          {...nativeGoal(id: 'range', updatedAt: now), 'frequency_days': [1, 9, 0]},
+          {...nativeGoal(id: 'ok', updatedAt: now), 'frequency_days': [2, 4]},
+        ],
+      }));
+      expect(v.skipped['habits'], 0, reason: 'coerced, not dropped');
+      final byId = {
+        for (final g in (v.canonical[kGoalsKey] as List).cast<Map<String, dynamic>>())
+          g['id'] as String: g['frequency_days'],
+      };
+      expect(byId['strings'], [1, 3]);
+      expect(byId['doubles'], [1, 2]);
+      expect(byId['bare'], isNull);
+      expect(byId['map'], isNull);
+      expect(byId['junk'], isNull, reason: 'null = every day, not "no day"');
+      expect(byId['range'], [1]);
+      expect(byId['ok'], [2, 4]);
+
+      await merge(db, v.canonical);
+      final goals = readGoals(await db.query('goals')); // must NOT throw
+      expect(goals.length, 7);
+      expect(
+        goals.firstWhere((g) => g.id == 'strings').frequencyDays,
+        [1, 3],
+      );
+      await db.close();
+    });
+
+    test('#63: a malformed reminder_time is nulled so the edit modal can '
+        'render it', () async {
+      final db = await openDb();
+      final v = validateCanonical(normalizeBackup({
+        'mode': 'private',
+        'habits': [
+          {...nativeGoal(id: 'ampm', updatedAt: now), 'reminder_time': '9am'},
+          {...nativeGoal(id: 'dots', updatedAt: now), 'reminder_time': '09.00'},
+          {...nativeGoal(id: 'letters', updatedAt: now), 'reminder_time': '9:aa'},
+          {...nativeGoal(id: 'hour', updatedAt: now), 'reminder_time': '25:00'},
+          {...nativeGoal(id: 'minute', updatedAt: now), 'reminder_time': '10:75'},
+          {...nativeGoal(id: 'unpadded', updatedAt: now), 'reminder_time': '9:30'},
+          {...nativeGoal(id: 'ok', updatedAt: now), 'reminder_time': '07:45'},
+        ],
+      }));
+      expect(v.skipped['habits'], 0, reason: 'the field is optional; null it');
+
+      await merge(db, v.canonical);
+      for (final goal in readGoals(await db.query('goals'))) {
+        if (goal.id == 'ok') {
+          expect(goal.reminderTime, '07:45');
+        } else {
+          expect(goal.reminderTime, isNull, reason: goal.id);
+        }
+        // The consumer that throws inside build(): every surviving value parses.
+        if (goal.reminderTime != null) {
+          expect(AppTimeFormatting.parseTimeOfDay(goal.reminderTime!),
+              const TimeOfDay(hour: 7, minute: 45));
+        }
+      }
+      await db.close();
+    });
+
+    test('#64: a non-hex category colour drops the row instead of wiping the '
+        'category list', () async {
+      final db = await openDb();
+      final v = validateCanonical(normalizeBackup({
+        'mode': 'private',
+        'macroGoalCategories': [
+          {'id': 'c1', 'name': 'Health', 'color': '#10B981'},
+          {'id': 'c2', 'name': 'Work', 'color': 'blue'},
+          {'id': 'c3', 'name': 'Home', 'color': 'hsl(210 40% 50%)'},
+          {'id': 'c4', 'name': 'Money', 'color': 'rgb(1,2,3)'},
+        ],
+      }));
+      expect((v.canonical[kCategoriesKey] as List).map((c) => c['id']), ['c1']);
+      expect(v.skipped['categories'], 3,
+          reason: 'reported to the user, not silently admitted');
+
+      await merge(db, v.canonical);
+      final cats = (await db.query('macro_goal_categories'))
+          .map(GoalCategory.fromJson) // must NOT throw
+          .toList();
+      expect(cats.map((c) => c.key), ['c1']);
+      expect(cats.single.color, const Color(0xFF10B981));
+      await db.close();
+    });
+
+    test('#64: a 3-digit hex is expanded, not read as a near-transparent '
+        'colour', () {
+      final v = validateCanonical(normalizeBackup({
+        'mode': 'private',
+        'macroGoalCategories': [
+          {'id': 'c1', 'name': 'Health', 'color': '#fff'},
+        ],
+      }));
+      final cat = (v.canonical[kCategoriesKey] as List).single;
+      expect(cat['color'], '#FFFFFF');
+      expect(GoalCategory.fromJson(cat).color, const Color(0xFFFFFFFF));
+    });
+
+    test('#64: GoalCategory.fromJson falls back to grey on an unparseable '
+        'persisted colour, mirroring Goal.fromJson', () {
+      final cat = GoalCategory.fromJson({
+        'id': 'c1',
+        'name': 'Work',
+        'color': 'blue',
+        'archived_at': 'yesterday',
+      });
+      expect(cat.color, const Color(0xFF6B7280));
+      expect(cat.archivedAt, isNull);
     });
   });
 }

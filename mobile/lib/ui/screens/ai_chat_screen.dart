@@ -11,7 +11,6 @@ import '../../core/private_local_database.dart';
 import '../../core/rtl.dart';
 import 'package:flutter_markdown/flutter_markdown.dart';
 
-
 import '../../models/macro_goal.dart';
 import '../../models/chat_message.dart';
 import '../../providers/goal_provider.dart';
@@ -23,6 +22,7 @@ import '../kit/evolve_toast.dart';
 import '../kit/evolve_sheet.dart';
 import '../kit/evolve_switch.dart';
 import '../../core/haptics.dart';
+import 'app_settings_screen.dart';
 
 class AIChatScreen extends ConsumerStatefulWidget {
   const AIChatScreen({super.key});
@@ -122,8 +122,6 @@ class _AIChatScreenState extends ConsumerState<AIChatScreen> {
       },
     );
   }
-
-  
 
   @override
   void dispose() {
@@ -402,10 +400,84 @@ class _AIChatScreenState extends ConsumerState<AIChatScreen> {
     });
   }
 
+  /// BYOK setup state: the app ships no OpenRouter key, so until the user adds
+  /// their own, this card replaces the composer. Its only action opens
+  /// Settings, so there is no button here that can fail (Guideline 2.1).
+  Widget _buildApiKeySetupCard(AppColorsExtension colors) {
+    return Padding(
+      padding: const EdgeInsets.all(16),
+      child: Container(
+        padding: const EdgeInsets.all(20),
+        decoration: AppTheme.glassCardDecoration(context, radius: 16),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Row(
+              children: [
+                Container(
+                  width: 40,
+                  height: 40,
+                  decoration: const BoxDecoration(
+                    shape: BoxShape.circle,
+                    gradient: LinearGradient(
+                      colors: [Color(0xFF8B5CF6), Color(0xFF6366F1)],
+                    ),
+                  ),
+                  child: const Icon(
+                    LucideIcons.keyRound,
+                    size: 20,
+                    color: Colors.white,
+                  ),
+                ),
+                const SizedBox(width: 12),
+                Expanded(
+                  child: Text(
+                    context.t.ai.apiKey.setupTitle,
+                    style: TextStyle(
+                      color: colors.foreground,
+                      fontSize: 15,
+                      fontWeight: FontWeight.w600,
+                    ),
+                  ),
+                ),
+              ],
+            ),
+            const SizedBox(height: 12),
+            Text(
+              context.t.ai.apiKey.setupBody,
+              style: TextStyle(
+                color: colors.mutedForeground,
+                fontSize: 13,
+                height: 1.45,
+              ),
+            ),
+            const SizedBox(height: 16),
+            SizedBox(
+              width: double.infinity,
+              child: FilledButton(
+                onPressed: () {
+                  ref.hapticLight();
+                  Navigator.push(context, AppSettingsScreen.route());
+                },
+                child: Text(context.t.ai.apiKey.setupAction),
+              ),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
   @override
   Widget build(BuildContext context) {
     final colors = context.appColors;
     final userProfile = ref.watch(userProfileProvider);
+    // Cloud is BYOK. Treat a failed Keychain read as "no key" too: either way
+    // there is nothing to authenticate with, so offer setup rather than a
+    // composer whose every send would fail.
+    final apiKeyState = ref.watch(openRouterApiKeyProvider);
+    final needsApiKey =
+        !apiKeyState.isLoading && apiKeyState.asData?.value == null;
 
     return Scaffold(
       backgroundColor: colors.background,
@@ -589,121 +661,134 @@ class _AIChatScreenState extends ConsumerState<AIChatScreen> {
                 ),
               ),
 
-            // 2. Suggested Prompts (Always active, collapsible)
-            Padding(
-              padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  GestureDetector(
-                    onTap: () {
-                      setState(() {
-                        _showPrompts = !_showPrompts;
-                      });
-                      ref.hapticLight();
-                    },
-                    child: Row(
-                      children: [
-                        Text(
-                          context.t.tutorial.suggestions,
-                          style: TextStyle(
-                            color: colors.mutedForeground,
-                            fontSize: 12,
-                            fontWeight: FontWeight.w600,
-                            letterSpacing: 0.5,
+            // Without a key there is nothing to send to: the setup card
+            // replaces the suggestions + composer entirely.
+            if (needsApiKey)
+              _buildApiKeySetupCard(colors)
+            else ...[
+              // 2. Suggested Prompts (Always active, collapsible)
+              Padding(
+                padding: const EdgeInsets.symmetric(
+                  horizontal: 16,
+                  vertical: 8,
+                ),
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    GestureDetector(
+                      onTap: () {
+                        setState(() {
+                          _showPrompts = !_showPrompts;
+                        });
+                        ref.hapticLight();
+                      },
+                      child: Row(
+                        children: [
+                          Text(
+                            context.t.tutorial.suggestions,
+                            style: TextStyle(
+                              color: colors.mutedForeground,
+                              fontSize: 12,
+                              fontWeight: FontWeight.w600,
+                              letterSpacing: 0.5,
+                            ),
                           ),
-                        ),
-                        const SizedBox(width: 4),
-                        Icon(
-                          _showPrompts
-                              ? LucideIcons.chevronDown
-                              : directionalIcon(
-                                  context,
-                                  LucideIcons.chevronRight,
-                                  LucideIcons.chevronLeft,
-                                ),
-                          size: 14,
-                          color: colors.mutedForeground,
-                        ),
-                      ],
+                          const SizedBox(width: 4),
+                          Icon(
+                            _showPrompts
+                                ? LucideIcons.chevronDown
+                                : directionalIcon(
+                                    context,
+                                    LucideIcons.chevronRight,
+                                    LucideIcons.chevronLeft,
+                                  ),
+                            size: 14,
+                            color: colors.mutedForeground,
+                          ),
+                        ],
+                      ),
                     ),
-                  ),
-                  if (_showPrompts) ...[
-                    const SizedBox(height: 8),
-                    Wrap(
-                      spacing: 8,
-                      runSpacing: 8,
-                      children: _getDynamicSuggestions()
-                          .map((text) => _buildSuggestedPrompt(text, colors))
-                          .toList(),
+                    if (_showPrompts) ...[
+                      const SizedBox(height: 8),
+                      Wrap(
+                        spacing: 8,
+                        runSpacing: 8,
+                        children: _getDynamicSuggestions()
+                            .map((text) => _buildSuggestedPrompt(text, colors))
+                            .toList(),
+                      ),
+                    ],
+                  ],
+                ),
+              ),
+
+              // 3. Input Area
+              Container(
+                padding: const EdgeInsets.all(16),
+                decoration: BoxDecoration(
+                  color: colors.background,
+                  border: Border(top: BorderSide(color: colors.borderSubtle)),
+                ),
+                child: Row(
+                  children: [
+                    Expanded(
+                      child: Container(
+                        decoration: AppTheme.glassCardDecoration(
+                          context,
+                          radius: 24,
+                        ),
+                        child: TextField(
+                          controller: _controller,
+                          style: TextStyle(color: colors.foreground),
+                          decoration: InputDecoration(
+                            hintText: context.t.ai.ask,
+                            hintStyle: TextStyle(color: colors.mutedForeground),
+                            border: InputBorder.none,
+                            contentPadding: const EdgeInsets.symmetric(
+                              horizontal: 20,
+                              vertical: 12,
+                            ),
+                          ),
+                          onSubmitted: _sendMessage,
+                        ),
+                      ),
+                    ),
+                    const SizedBox(width: 12),
+                    GestureDetector(
+                      onTap: (_isTyping || (!_shareHabits && !_shareGoals))
+                          ? null
+                          : () => _sendMessage(_controller.text),
+                      child: AnimatedContainer(
+                        duration: const Duration(milliseconds: 200),
+                        padding: const EdgeInsets.all(12),
+                        decoration: BoxDecoration(
+                          gradient:
+                              (_isTyping || (!_shareHabits && !_shareGoals))
+                              ? null
+                              : const LinearGradient(
+                                  colors: [
+                                    Color(0xFF8B5CF6),
+                                    Color(0xFF6366F1),
+                                  ],
+                                ),
+                          color: (_isTyping || (!_shareHabits && !_shareGoals))
+                              ? colors.muted
+                              : null,
+                          shape: BoxShape.circle,
+                        ),
+                        child: Icon(
+                          LucideIcons.arrowUp,
+                          size: 20,
+                          color: (_isTyping || (!_shareHabits && !_shareGoals))
+                              ? colors.mutedForeground
+                              : Colors.white,
+                        ),
+                      ),
                     ),
                   ],
-                ],
+                ),
               ),
-            ),
-
-            // 3. Input Area
-            Container(
-              padding: const EdgeInsets.all(16),
-              decoration: BoxDecoration(
-                color: colors.background,
-                border: Border(top: BorderSide(color: colors.borderSubtle)),
-              ),
-              child: Row(
-                children: [
-                  Expanded(
-                    child: Container(
-                      decoration: AppTheme.glassCardDecoration(
-                        context,
-                        radius: 24,
-                      ),
-                      child: TextField(
-                        controller: _controller,
-                        style: TextStyle(color: colors.foreground),
-                        decoration: InputDecoration(
-                          hintText: context.t.ai.ask,
-                          hintStyle: TextStyle(color: colors.mutedForeground),
-                          border: InputBorder.none,
-                          contentPadding: const EdgeInsets.symmetric(
-                            horizontal: 20,
-                            vertical: 12,
-                          ),
-                        ),
-                        onSubmitted: _sendMessage,
-                      ),
-                    ),
-                  ),
-                  const SizedBox(width: 12),
-                  GestureDetector(
-                    onTap: (_isTyping || (!_shareHabits && !_shareGoals))
-                        ? null
-                        : () => _sendMessage(_controller.text),
-                    child: AnimatedContainer(
-                      duration: const Duration(milliseconds: 200),
-                      padding: const EdgeInsets.all(12),
-                      decoration: BoxDecoration(
-                        gradient: (_isTyping || (!_shareHabits && !_shareGoals))
-                            ? null
-                            : const LinearGradient(
-                                colors: [Color(0xFF8B5CF6), Color(0xFF6366F1)],
-                              ),
-                        color: (_isTyping || (!_shareHabits && !_shareGoals))
-                            ? colors.muted
-                            : null,
-                        shape: BoxShape.circle,
-                      ),
-                      child: Icon(
-                        LucideIcons.arrowUp,
-                        size: 20,
-                        color: (_isTyping || (!_shareHabits && !_shareGoals))
-                            ? colors.mutedForeground
-                            : Colors.white,
-                      ),
-                    ),
-                  ),
-                ],
-              ),
-            ),
+            ],
           ],
         ),
       ),
@@ -779,10 +864,7 @@ class _AIChatScreenState extends ConsumerState<AIChatScreen> {
     final bubble = GestureDetector(
       onLongPress: () {
         Clipboard.setData(ClipboardData(text: message.text));
-        showEvolveToast(
-          context,
-          message: context.t.tutorial.messageCopied,
-        );
+        showEvolveToast(context, message: context.t.tutorial.messageCopied);
         ref.hapticLight();
       },
       child: Container(

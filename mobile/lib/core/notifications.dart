@@ -1,3 +1,4 @@
+import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_local_notifications/flutter_local_notifications.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
@@ -110,9 +111,11 @@ class NotificationService {
   }
 
   void _onNotificationResponse(NotificationResponse response) async {
-    debugPrint(
-      'Notification response: ${response.payload}, action: ${response.actionId}',
-    );
+    // Never log the payload: it carries the habit title, which is free-text
+    // user content. Console output only in debug (SEC-8).
+    if (kDebugMode) {
+      debugPrint('[Notifications] Response action: ${response.actionId}');
+    }
 
     final payload = response.payload;
     if (payload == null) return;
@@ -193,11 +196,17 @@ class NotificationService {
       androidScheduleMode: AndroidScheduleMode.exactAllowWhileIdle,
       payload: 'habit|$habitId|$title',
     );
-    debugPrint('[Notifications] Habit $habitId snoozed for 10 minutes');
+    if (kDebugMode) {
+      debugPrint('[Notifications] Habit $habitId snoozed for 10 minutes');
+    }
   }
 
+  /// Skip only dismisses the current occurrence — the OS already clears the
+  /// delivered banner when an action is tapped. Never cancel `habitId.hashCode`
+  /// here: that is the id of the *recurring* reminder registered by
+  /// [scheduleHabitReminder], and cancelling it removes the whole repeating
+  /// request (iOS) / the alarm and its restore-on-boot record (Android).
   Future<void> _skipHabit(String habitId) async {
-    await _notifications.cancel(id: habitId.hashCode);
     await _writeHabitLogFromNotification(habitId, 'missed');
   }
 
@@ -224,7 +233,9 @@ class NotificationService {
           date: dateKey,
           status: status,
         );
-        debugPrint('[Notifications] Private habit $habitId set to $status');
+        if (kDebugMode) {
+          debugPrint('[Notifications] Private habit $habitId set to $status');
+        }
       } catch (e, stack) {
         AppLogger.error(
           '[Notifications] Error writing private habit log',
@@ -249,7 +260,9 @@ class NotificationService {
         'date': dateKey,
         'status': status,
       }, onConflict: 'goal_id, date');
-      debugPrint('[Notifications] Habit $habitId set to $status');
+      if (kDebugMode) {
+        debugPrint('[Notifications] Habit $habitId set to $status');
+      }
     } catch (e, stack) {
       AppLogger.error('[Notifications] Error writing habit log', e, stack);
       await _enqueuePendingLog(habitId, dateKey, status);
@@ -274,7 +287,9 @@ class NotificationService {
       }).toList();
       deduped.add('$habitId|$date|$status');
       await prefs.setStringList(_pendingLogsKey, deduped);
-      debugPrint('[Notifications] Queued pending log $habitId/$date=$status');
+      if (kDebugMode) {
+        debugPrint('[Notifications] Queued pending log $habitId/$date=$status');
+      }
     } catch (e, stack) {
       AppLogger.error('[Notifications] Failed to queue pending log', e, stack);
     }
@@ -309,9 +324,11 @@ class NotificationService {
         }
       }
       await prefs.setStringList(_pendingLogsKey, remaining);
-      debugPrint(
-        '[Notifications] Replayed pending logs; ${remaining.length} remaining',
-      );
+      if (kDebugMode) {
+        debugPrint(
+          '[Notifications] Replayed pending logs; ${remaining.length} remaining',
+        );
+      }
     } catch (e, stack) {
       AppLogger.error('[Notifications] replayPendingHabitLogs error', e, stack);
     }

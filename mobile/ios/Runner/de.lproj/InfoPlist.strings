@@ -1,4 +1,5 @@
 "CFBundleDisplayName" = "Evolve";
 "NSCameraUsageDescription" = "Diese App benötigt Zugriff auf die Kamera, damit du ein Profilfoto aufnehmen kannst.";
 "NSFaceIDUsageDescription" = "Diese App verwendet Face ID, um deine persönlichen Daten zu schützen.";
+"NSHealthShareUsageDescription" = "Diese App greift auf deine Gesundheits- und Fitnessdaten zu, um Gewohnheiten wie Schritte, Aktivität und Schlaf automatisch zu überprüfen.";
 "NSPhotoLibraryUsageDescription" = "Diese App benötigt Zugriff auf die Fotomediathek, damit du dein Profilfoto hochladen kannst.";

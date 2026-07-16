@@ -1,4 +1,7 @@
 project_id = "mattioli-os-local"
 
+# RevenueCat cannot mint a Supabase JWT, so this function must stay unverified at
+# the gateway. It authenticates callers itself against REVENUECAT_WEBHOOK_SECRET
+# and rejects every request while that secret is unset — see index.ts.
 [functions.revenuecat-webhook]
 verify_jwt = false

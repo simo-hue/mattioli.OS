@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'dart:io';
 import '../../core/rtl.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
+import 'package:sign_in_with_apple/sign_in_with_apple.dart';
 import 'package:share_plus/share_plus.dart';
 import 'package:file_picker/file_picker.dart';
 import 'dart:convert';
@@ -30,6 +31,7 @@ import '../../core/data_mode.dart';
 import '../../core/private_local_database.dart';
 import '../../core/private_sync_service.dart';
 import '../../core/notifications.dart';
+import '../../core/secure_storage_utils.dart';
 import '../widgets/animations/pulsing_sync_animation.dart';
 import 'icloud_sync_screen.dart';
 import '../../providers/settings_provider.dart';
@@ -679,14 +681,52 @@ class PrivacySettingsScreen extends ConsumerWidget {
         return;
       }
 
+      // Read before the awaits below: the share text is the last use of
+      // `context` in this branch and would otherwise cross an async gap.
+      final shareText = context.t.privacy.exportedDataTitle;
       final settings = ref.read(settingsProvider);
       final goals = ref.read(goalsProvider);
       final macroGoals = ref.read(macroGoalsProvider).goals;
-      final habitLogs = ref.read(habitLogsProvider);
       final moods = ref.read(dailyMoodsProvider);
       final categories =
           ref.read(macroGoalCategoriesProvider).value ?? const [];
       final profile = ref.read(userProfileProvider);
+
+      // Read the logs from the table, NOT from habitLogsProvider. That map is
+      // `{date: {goalId: status}}` built from a `id, goal_id, date, status`
+      // select whose fold also drops the id (goal_provider.dart), so `value`,
+      // `streak`, `notes` and the timestamps can never reach it — exporting it
+      // hands the user a file that nulls every logged quantity (steps/minutes/
+      // reps, incl. HealthKit-measured ones) and zeroes every streak on restore,
+      // while reporting success. Emitting full rows as a LIST also routes the
+      // file through normalizeBackup's lossless branch instead of its lossy
+      // legacy-Map branch.
+      //
+      // `select()` names no columns on purpose: the deployed table carries
+      // columns absent from schema.sql (e.g. `streak`, written on every cloud
+      // check-in), so an explicit list would silently drop whatever it omits.
+      //
+      // Paged for the reason kGoalLogsSyncPageSize documents: a single
+      // unbounded PostgREST select is capped by the project's db-max-rows and
+      // would truncate a long history with no error. The id tiebreaker keeps the
+      // order total across pages.
+      final supabase = Supabase.instance.client;
+      final userId = supabase.auth.currentUser?.id;
+      if (userId == null) throw Exception('Utente non trovato.');
+
+      final habitLogs = <Map<String, dynamic>>[];
+      for (var offset = 0; ; offset += kGoalLogsSyncPageSize) {
+        final page = await supabase
+            .from('goal_logs')
+            .select()
+            .eq('user_id', userId)
+            .order('date', ascending: true)
+            .order('id', ascending: true)
+            .range(offset, offset + kGoalLogsSyncPageSize - 1);
+        final rows = List<Map<String, dynamic>>.from(page);
+        habitLogs.addAll(rows);
+        if (rows.length < kGoalLogsSyncPageSize) break;
+      }
 
       String colorToHex(Color c) =>
           '#${c.toARGB32().toRadixString(16).substring(2)}';
@@ -759,7 +799,7 @@ class PrivacySettingsScreen extends ConsumerWidget {
       await SharePlus.instance.share(
         ShareParams(
           files: [file],
-          text: context.t.privacy.exportedDataTitle,
+          text: shareText,
         ),
       );
     } catch (e, stack) {
@@ -1274,6 +1314,32 @@ class PrivacySettingsScreen extends ConsumerWidget {
       ref.read(macroGoalsProvider.notifier).clearAll();
       ref.read(settingsProvider.notifier).resetToDefaults();
 
+      // The analytics providers are keepAlive'd and depend on nothing this reset
+      // changes (the user id is the same), so without an explicit invalidate they
+      // keep serving pre-reset statistics for habits that no longer exist. In
+      // cloud mode each re-reads Supabase, which the deletes above already
+      // emptied, so they recompute correctly.
+      //
+      // Only the DERIVED providers belong here. invalidatePrivateDataProviders
+      // must NOT be used in this branch: it also invalidates the notifiers
+      // cleared just above, and their cloud build() re-seeds from
+      // initialGoalsProvider / initialLogsProvider — overrideWithValue blobs
+      // frozen at cold start (main.dart), so they still hold the pre-reset data
+      // and would resurrect exactly what was deleted. The private branch can use
+      // the helper because its build() re-reads the emptied local DB instead.
+      ref.invalidate(habitStatsProvider);
+      ref.invalidate(habitAnalyticsProvider);
+      ref.invalidate(globalCriticalDayProvider);
+      ref.invalidate(globalTrendProvider);
+      ref.invalidate(criticalHabitsProvider);
+      ref.invalidate(bestHabitsProvider);
+      ref.invalidate(habitPerformanceProvider);
+      ref.invalidate(habitAlertsProvider);
+      ref.invalidate(habitYearlyGridProvider);
+      ref.invalidate(habitCorrelationsProvider);
+      ref.invalidate(allHabitCorrelationsProvider);
+      ref.invalidate(macroGoalsStatsProvider);
+
       if (context.mounted) {
         showEvolveToast(
           context,
@@ -1291,23 +1357,82 @@ class PrivacySettingsScreen extends ConsumerWidget {
     }
   }
 
+  /// Revokes the Sign in with Apple grant bound to this account, as Apple asks
+  /// apps offering SIWA to do when the account is deleted.
+  ///
+  /// Apple's `authorizationCode` is single-use and expires in ~5 minutes, so it
+  /// cannot be captured at sign-in and kept for a deletion that happens months
+  /// later; re-running the credential request mints a fresh one seconds before
+  /// it is exchanged. Exchanging and revoking it both need the team's .p8
+  /// signing key, which must never ship inside the app — hence the edge
+  /// function, which the caller's own JWT authenticates against.
+  ///
+  /// Returns false when the grant could not be revoked. The caller must still
+  /// delete: a user asking to be erased is never trapped by an Apple-side step
+  /// failing (or by them dismissing the credential sheet).
+  Future<bool> _revokeAppleToken(User user) async {
+    final hasAppleIdentity =
+        user.identities?.any((identity) => identity.provider == 'apple') ??
+        false;
+    if (!Platform.isIOS || !hasAppleIdentity) return true;
+
+    try {
+      final credential = await SignInWithApple.getAppleIDCredential(
+        scopes: const [],
+      );
+      await Supabase.instance.client.functions.invoke(
+        'revoke-apple-token',
+        body: {'authorization_code': credential.authorizationCode},
+      );
+      return true;
+    } catch (e, stack) {
+      AppLogger.error('Apple token revocation failed', e, stack);
+      return false;
+    }
+  }
+
   Future<void> _deleteAccount(BuildContext context, WidgetRef ref) async {
     try {
       final supabase = Supabase.instance.client;
       final user = supabase.auth.currentUser;
       if (user == null) throw Exception('Utente non trovato.');
 
+      // Revoke before the RPC: the edge function authenticates as this user, and
+      // once auth.users is gone there is no session left to authorize it with.
+      final appleRevoked = await _revokeAppleToken(user);
+
       // Elimina l'utente e tutti i dati associati tramite RPC (security definer)
       await supabase.rpc('delete_user_account');
 
-      await supabase.auth.signOut();
+      // The cloud row is gone; drop the on-device mirror of it too, or the
+      // habits and history the user just erased outlive the account in the
+      // keychain (which survives even an uninstall). Same teardown as the
+      // Supabase branch of _resetData, plus the cache-owner marker: deletion is
+      // permanent, so unlike a transient logout there is nothing to keep. The
+      // marker must go or the next account's empty first sync is refused as
+      // cross-account contamination and this account's cache is served to them
+      // at cold start.
+      await NotificationService().cancelAll();
+      ref.read(goalsProvider.notifier).clearAll();
+      ref.read(habitLogsProvider.notifier).clearAll();
+      ref.read(macroGoalsProvider.notifier).clearAll();
+      ref.read(settingsProvider.notifier).resetToDefaults();
+      await SecureStorageUtils.delete(kCacheOwnerKey);
 
+      // Report before signing out: signOut redirects to /login and disposes this
+      // screen, so a toast deferred past it would never reach a live context.
       if (context.mounted) {
         showEvolveToast(
           context,
-          message: context.t.privacy.accountDeletedSuccess,
+          message: appleRevoked
+              ? context.t.privacy.accountDeletedSuccess
+              : context.t.privacy.accountDeletedAppleRevokeFailed,
+          kind: appleRevoked ? EvolveToastKind.neutral : EvolveToastKind.error,
+          duration: Duration(seconds: appleRevoked ? 2 : 6),
         );
       }
+
+      await supabase.auth.signOut();
     } catch (e, stack) {
       AppLogger.error('Errore durante eliminazione account', e, stack);
       if (context.mounted) {

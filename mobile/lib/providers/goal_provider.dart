@@ -43,6 +43,22 @@ Future<bool> cacheOverwriteAllowed(
   return owner == null || owner == userId;
 }
 
+/// Whether the on-disk cache may be served to [userId] as their initial state.
+/// Mirror of [cacheOverwriteAllowed] for the READ side: because a single cache
+/// is shared by every account on the device, only the account recorded in
+/// [kCacheOwnerKey] may be seeded from it — otherwise the previous account's
+/// habits and completion history become the next account's initial state.
+///
+/// A blob with no recorded owner is refused rather than trusted. Every write of
+/// the blob now records the owner alongside it, so an unmarked blob can only be
+/// a leftover from a build that didn't, and its account is unknowable. Refusing
+/// costs that user one empty cold start before their first sync re-seeds both.
+Future<bool> cacheSeedAllowed(String? userId) async {
+  if (userId == null) return false;
+  final owner = await SecureStorageUtils.read(kCacheOwnerKey);
+  return owner != null && owner == userId;
+}
+
 Future<void> rememberCacheOwner(String userId) => SecureStorageUtils.tryWrite(
       kCacheOwnerKey,
       userId,
@@ -54,6 +70,10 @@ Future<void> rememberCacheOwner(String userId) => SecureStorageUtils.tryWrite(
 class GoalsNotifier extends Notifier<List<Goal>> {
   static const String _cacheKey = 'goals_cache';
 
+  /// Set once the server's answer has been applied, so a cache seed that
+  /// resolves after it can't overwrite fresher state with the mirror.
+  bool _serverStateApplied = false;
+
   @override
   List<Goal> build() {
     final dataMode = ref.watch(activeDataModeProvider);
@@ -62,7 +82,7 @@ class GoalsNotifier extends Notifier<List<Goal>> {
       return [];
     }
 
-    final initialState = _loadFromCache();
+    _serverStateApplied = false;
 
     ref.listen(authProvider, (previous, next) {
       if (next.isLoggedIn && next.user != null) {
@@ -79,11 +99,31 @@ class GoalsNotifier extends Notifier<List<Goal>> {
     });
 
     final authState = ref.read(authProvider);
-    if (authState.isLoggedIn && authState.user != null) {
+    final user = authState.user;
+    if (authState.isLoggedIn && user != null) {
+      _seedFromCache(user.id);
       _syncFromSupabase();
     }
 
-    return initialState;
+    return [];
+  }
+
+  /// Serves the offline mirror as initial state, but only once the cache is
+  /// confirmed to belong to [userId] — the owner marker lives in the keychain,
+  /// so the check is async and the notifier starts empty rather than showing
+  /// whatever the last account left behind (see [cacheSeedAllowed]).
+  Future<void> _seedFromCache(String userId) async {
+    if (!await cacheSeedAllowed(userId)) return;
+    // The provider may have been disposed, or the session moved on, while the
+    // marker was being read.
+    if (!ref.mounted ||
+        _serverStateApplied ||
+        supabase.auth.currentUser?.id != userId) {
+      return;
+    }
+    final cached = _loadFromCache();
+    if (cached.isEmpty) return;
+    state = cached;
   }
 
   Future<void> _loadFromPrivateStore() async {
@@ -111,11 +151,24 @@ class GoalsNotifier extends Notifier<List<Goal>> {
   void _saveToCache(List<Goal> goals) {
     final jsonList = goals.map((g) => g.toJson()).toList();
     // Salva in modo asincrono nel portachiavi sicuro senza propagare errori UI.
-    SecureStorageUtils.tryWrite(
+    unawaited(_writeCache(jsonEncode(jsonList), isEmpty: goals.isEmpty));
+  }
+
+  Future<void> _writeCache(String blob, {required bool isEmpty}) async {
+    await SecureStorageUtils.tryWrite(
       _cacheKey,
-      jsonEncode(jsonList),
+      blob,
       context: '[Goals] cache',
     );
+    // The blob and its owner marker must move together: the marker is what both
+    // the cold-start seed and the empty-fetch overwrite guard read, so a write
+    // that leaves it naming another account either strands this account's
+    // mirror or offers it to theirs. An EMPTY blob is deliberately left
+    // unowned — there is nothing to protect, and claiming it would resurrect
+    // the marker that account deletion clears right after calling clearAll().
+    if (isEmpty) return;
+    final userId = supabase.auth.currentUser?.id;
+    if (userId != null) await rememberCacheOwner(userId);
   }
 
   /// Surface a persistence failure to the user (strings via the global `t`).
@@ -148,10 +201,10 @@ class GoalsNotifier extends Notifier<List<Goal>> {
           .order('created_at', ascending: true);
 
       final goals = (response as List).map((j) => Goal.fromJson(j)).toList();
+      _serverStateApplied = true;
       state = goals;
       if (await cacheOverwriteAllowed(user.id, isEmptyResult: goals.isEmpty)) {
         _saveToCache(goals);
-        await rememberCacheOwner(user.id);
       }
     } catch (e, stack) {
       AppLogger.error('[Goals] Sync error', e, stack);
@@ -450,15 +503,31 @@ Future<HabitLogsMap> fetchGoalLogsPaginated(
 class HabitLogsNotifier extends Notifier<HabitLogsMap> {
   static const String _cacheKey = 'goal_logs_cache';
 
+  /// Every write mirrors the user's WHOLE (unbounded) history, so a burst of
+  /// check-ins — or a reconcile pass applying one verdict per pending day —
+  /// would re-encode and rewrite the entire keychain item once per write.
+  /// Coalescing them is not a durability trade: the blob only ever mirrors
+  /// state already accepted by the server (a rejected write is rolled back
+  /// before it is saved), so an unwritten tail is re-derived by the next sync.
+  static const Duration _cacheWriteDebounce = Duration(seconds: 2);
+
+  Timer? _cacheWriteTimer;
+  HabitLogsMap? _pendingCacheWrite;
+
+  /// See [GoalsNotifier._serverStateApplied].
+  bool _serverStateApplied = false;
+
   @override
   HabitLogsMap build() {
     final dataMode = ref.watch(activeDataModeProvider);
+    ref.onDispose(_flushCache);
+
     if (dataMode == AppDataMode.private) {
       _loadFromPrivateStore();
       return {};
     }
 
-    final initialState = _loadFromCache();
+    _serverStateApplied = false;
 
     ref.listen(authProvider, (previous, next) {
       if (next.isLoggedIn && next.user != null) {
@@ -472,11 +541,27 @@ class HabitLogsNotifier extends Notifier<HabitLogsMap> {
     });
 
     final authState = ref.read(authProvider);
-    if (authState.isLoggedIn && authState.user != null) {
+    final user = authState.user;
+    if (authState.isLoggedIn && user != null) {
+      _seedFromCache(user.id);
       _syncFromSupabase();
     }
 
-    return initialState;
+    return {};
+  }
+
+  /// See [GoalsNotifier._seedFromCache] — the logs cache is the same shared,
+  /// non-user-keyed blob and needs the same owner guard.
+  Future<void> _seedFromCache(String userId) async {
+    if (!await cacheSeedAllowed(userId)) return;
+    if (!ref.mounted ||
+        _serverStateApplied ||
+        supabase.auth.currentUser?.id != userId) {
+      return;
+    }
+    final cached = _loadFromCache();
+    if (cached.isEmpty) return;
+    state = cached;
   }
 
   Future<void> _loadFromPrivateStore() async {
@@ -505,13 +590,35 @@ class HabitLogsNotifier extends Notifier<HabitLogsMap> {
     }
   }
 
+  /// Queues [logs] to be mirrored to the keychain, collapsing anything already
+  /// queued into it (see [_cacheWriteDebounce]).
   void _saveToCache(HabitLogsMap logs) {
+    _pendingCacheWrite = logs;
+    _cacheWriteTimer?.cancel();
+    _cacheWriteTimer = Timer(_cacheWriteDebounce, _flushCache);
+  }
+
+  void _flushCache() {
+    _cacheWriteTimer?.cancel();
+    _cacheWriteTimer = null;
+    final logs = _pendingCacheWrite;
+    if (logs == null) return;
+    _pendingCacheWrite = null;
     // Salva in modo asincrono nel portachiavi sicuro senza propagare errori UI.
-    SecureStorageUtils.tryWrite(
+    unawaited(_writeCache(jsonEncode(logs), isEmpty: logs.isEmpty));
+  }
+
+  Future<void> _writeCache(String blob, {required bool isEmpty}) async {
+    await SecureStorageUtils.tryWrite(
       _cacheKey,
-      jsonEncode(logs),
+      blob,
       context: '[HabitLogs] cache',
     );
+    // See GoalsNotifier._writeCache: the blob and its owner marker move
+    // together, and an empty blob is left unowned.
+    if (isEmpty) return;
+    final userId = supabase.auth.currentUser?.id;
+    if (userId != null) await rememberCacheOwner(userId);
   }
 
   Future<void> _syncFromSupabase() async {
@@ -534,10 +641,10 @@ class HabitLogsNotifier extends Notifier<HabitLogsMap> {
         return List<Map<String, dynamic>>.from(page);
       });
 
+      _serverStateApplied = true;
       state = newLogs;
       if (await cacheOverwriteAllowed(user.id, isEmptyResult: newLogs.isEmpty)) {
         _saveToCache(newLogs);
-        await rememberCacheOwner(user.id);
       }
     } catch (e, stack) {
       AppLogger.error('[HabitLogs] Sync error', e, stack);
@@ -699,6 +806,10 @@ class HabitLogsNotifier extends Notifier<HabitLogsMap> {
   /// `goal_logs.value`, recomputes the streak from full history, and persists to
   /// the active backend. Driven by the verification reconcile pass, not the UI.
   /// Idempotent at the caller (the controller only calls it on a changed verdict).
+  ///
+  /// A HealthKit-measured [value] is persisted only by the private (SQLCipher +
+  /// end-to-end-encrypted iCloud) backend, never by the Supabase one — see the
+  /// cloud branch below.
   Future<void> applyAutoVerdict({
     required String goalId,
     required String dateKey,
@@ -738,13 +849,21 @@ class HabitLogsNotifier extends Notifier<HabitLogsMap> {
             );
       } else {
         _saveToCache(newState);
+        // A HealthKit measurement must never reach Supabase: the verdict is
+        // uploaded, the quantity behind it stays on the device that read it. An
+        // unresolvable goal is treated as health-derived — this path only ever
+        // carries a value for HealthKit rules, Screen Time verdicts and manual
+        // check-ins both leave it null. Written as an explicit null rather than
+        // omitted from the payload so a value a previous build uploaded is
+        // cleared on the next verdict.
+        final isHealthDerived = goal?.verificationRule?.isHealthKit ?? true;
         await supabase.from('goal_logs').upsert({
           'user_id': user!.id,
           'goal_id': goalId,
           'date': dateKey,
           'status': status,
           'streak': newStreak,
-          'value': value,
+          'value': isHealthDerived ? null : value,
         }, onConflict: 'goal_id, date');
       }
       ref.invalidate(habitStatsProvider);
@@ -774,13 +893,13 @@ final habitStatsProvider = FutureProvider<List<Map<String, dynamic>>>((
     return ref.read(privateLocalDatabaseProvider).habitStats();
   }
 
-  final user = Supabase.instance.client.auth.currentUser;
-  if (user == null) return [];
+  final userId = ref.watch(authProvider.select((s) => s.userId));
+  if (userId == null) return [];
 
   final response = await Supabase.instance.client
       .from('habit_stats')
       .select('*')
-      .eq('user_id', user.id);
+      .eq('user_id', userId);
 
   return List<Map<String, dynamic>>.from(response);
 });
@@ -792,12 +911,12 @@ final habitAnalyticsProvider =
         return ref.read(privateLocalDatabaseProvider).habitAnalytics();
       }
 
-      final user = Supabase.instance.client.auth.currentUser;
-      if (user == null) return {};
+      final userId = ref.watch(authProvider.select((s) => s.userId));
+      if (userId == null) return {};
 
       final response = await Supabase.instance.client.rpc(
         'get_habit_analytics',
-        params: {'p_user_id': user.id},
+        params: {'p_user_id': userId},
       );
 
       final list = List<Map<String, dynamic>>.from(response);
@@ -816,13 +935,13 @@ final globalCriticalDayProvider = FutureProvider<String>((ref) async {
     return ref.read(privateLocalDatabaseProvider).globalCriticalDay();
   }
 
-  final user = Supabase.instance.client.auth.currentUser;
-  if (user == null) return 'N/A';
+  final userId = ref.watch(authProvider.select((s) => s.userId));
+  if (userId == null) return 'N/A';
 
   try {
     final response = await Supabase.instance.client.rpc(
       'get_global_critical_day',
-      params: {'p_user_id': user.id},
+      params: {'p_user_id': userId},
     );
 
     return response as String;
@@ -842,12 +961,12 @@ final globalTrendProvider =
         return ref.read(privateLocalDatabaseProvider).globalTrend(timeframe);
       }
 
-      final user = Supabase.instance.client.auth.currentUser;
-      if (user == null) return [];
+      final userId = ref.watch(authProvider.select((s) => s.userId));
+      if (userId == null) return [];
 
       final response = await Supabase.instance.client.rpc(
         'get_global_trend',
-        params: {'p_user_id': user.id, 'p_timeframe': timeframe},
+        params: {'p_user_id': userId, 'p_timeframe': timeframe},
       );
 
       return List<Map<String, dynamic>>.from(response);
@@ -861,12 +980,12 @@ final criticalHabitsProvider = FutureProvider<List<Map<String, dynamic>>>((
     return ref.read(privateLocalDatabaseProvider).criticalHabits();
   }
 
-  final user = Supabase.instance.client.auth.currentUser;
-  if (user == null) return [];
+  final userId = ref.watch(authProvider.select((s) => s.userId));
+  if (userId == null) return [];
 
   final response = await Supabase.instance.client.rpc(
     'get_critical_habits',
-    params: {'p_user_id': user.id},
+    params: {'p_user_id': userId},
   );
 
   return List<Map<String, dynamic>>.from(response);
@@ -896,12 +1015,12 @@ final bestHabitsProvider =
         return ref.read(privateLocalDatabaseProvider).bestHabits(canonical);
       }
 
-      final user = Supabase.instance.client.auth.currentUser;
-      if (user == null) return [];
+      final userId = ref.watch(authProvider.select((s) => s.userId));
+      if (userId == null) return [];
 
       final response = await Supabase.instance.client.rpc(
         'get_best_habits',
-        params: {'p_user_id': user.id, 'p_timeframe': canonical},
+        params: {'p_user_id': userId, 'p_timeframe': canonical},
       );
 
       return List<Map<String, dynamic>>.from(response);
@@ -919,12 +1038,12 @@ final habitPerformanceProvider =
             .habitPerformanceByDay(goalId);
       }
 
-      final user = Supabase.instance.client.auth.currentUser;
-      if (user == null) return [];
+      final userId = ref.watch(authProvider.select((s) => s.userId));
+      if (userId == null) return [];
 
       final response = await Supabase.instance.client.rpc(
         'get_habit_performance_by_day',
-        params: {'p_user_id': user.id, 'p_goal_id': goalId},
+        params: {'p_user_id': userId, 'p_goal_id': goalId},
       );
 
       return List<Map<String, dynamic>>.from(response);
@@ -937,12 +1056,12 @@ final habitAlertsProvider = FutureProvider.family<Map<String, dynamic>, String>(
       return ref.read(privateLocalDatabaseProvider).habitAlerts(goalId);
     }
 
-    final user = Supabase.instance.client.auth.currentUser;
-    if (user == null) return {};
+    final userId = ref.watch(authProvider.select((s) => s.userId));
+    if (userId == null) return {};
 
     final response = await Supabase.instance.client.rpc(
       'get_habit_alerts',
-      params: {'p_user_id': user.id, 'p_goal_id': goalId},
+      params: {'p_user_id': userId, 'p_goal_id': goalId},
     );
 
     if (response is List && response.isNotEmpty) {
@@ -961,12 +1080,12 @@ final habitYearlyGridProvider = FutureProvider.family<List<int>, String>((
     return ref.read(privateLocalDatabaseProvider).habitYearlyGrid(goalId);
   }
 
-  final user = Supabase.instance.client.auth.currentUser;
-  if (user == null) return [];
+  final userId = ref.watch(authProvider.select((s) => s.userId));
+  if (userId == null) return [];
 
   final response = await Supabase.instance.client.rpc(
     'get_habit_yearly_grid',
-    params: {'p_user_id': user.id, 'p_goal_id': goalId},
+    params: {'p_user_id': userId, 'p_goal_id': goalId},
   );
 
   if (response is List) {
@@ -985,12 +1104,12 @@ final habitCorrelationsProvider =
         return ref.read(privateLocalDatabaseProvider).habitCorrelations(goalId);
       }
 
-      final user = Supabase.instance.client.auth.currentUser;
-      if (user == null) return [];
+      final userId = ref.watch(authProvider.select((s) => s.userId));
+      if (userId == null) return [];
 
       final response = await Supabase.instance.client.rpc(
         'get_habit_correlations',
-        params: {'p_user_id': user.id, 'p_target_goal_id': goalId},
+        params: {'p_user_id': userId, 'p_target_goal_id': goalId},
       );
 
       return List<Map<String, dynamic>>.from(response);
@@ -1003,13 +1122,13 @@ final allHabitCorrelationsProvider = FutureProvider<List<Map<String, dynamic>>>(
       return ref.read(privateLocalDatabaseProvider).allHabitCorrelations();
     }
 
-    final user = Supabase.instance.client.auth.currentUser;
-    if (user == null) return [];
+    final userId = ref.watch(authProvider.select((s) => s.userId));
+    if (userId == null) return [];
 
     try {
       final response = await Supabase.instance.client.rpc(
         'get_all_habit_correlations',
-        params: {'p_user_id': user.id},
+        params: {'p_user_id': userId},
       );
 
       return List<Map<String, dynamic>>.from(response);

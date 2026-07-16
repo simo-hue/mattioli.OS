@@ -48,4 +48,35 @@ class SentryService {
       configure(options, release: info.release, dist: info.dist);
     });
   }
+
+  /// Whether the SDK is allowed to run right now.
+  ///
+  /// [hasCompletedConsent] is load-bearing, not redundant: `has_sentry_consent`
+  /// is absent on a fresh install and reads back as `true`, so gating on it
+  /// alone starts the SDK at cold start before the consent screen has ever been
+  /// shown. Requiring the answer to exist keeps a first launch silent until the
+  /// user has actually been asked.
+  static bool shouldRun({
+    required bool hasCompletedConsent,
+    required bool hasSentryConsent,
+    required bool isPrivateMode,
+  }) => hasCompletedConsent && hasSentryConsent && !isPrivateMode;
+
+  /// Start or stop the SDK to match the user's current choice — entering Private
+  /// Mode, or withdrawing crash-report consent. Mirrors desktop's
+  /// `DesktopSentryService.setEnabled`.
+  ///
+  /// Tearing the client down is what makes the choice effective:
+  /// `AppLogger.setExternalReportingDisabled` only gates AppLogger's own capture
+  /// calls, while the SDK's `FlutterError.onError` hook, the native crash
+  /// handler, `tracesSampleRate` transactions and debugPrint breadcrumbs keep
+  /// reporting until `Sentry.close()` runs.
+  static Future<void> setEnabled(bool enabled) async {
+    if (enabled) {
+      await ensureInitialized();
+      return;
+    }
+    if (!Sentry.isEnabled) return;
+    await Sentry.close();
+  }
 }

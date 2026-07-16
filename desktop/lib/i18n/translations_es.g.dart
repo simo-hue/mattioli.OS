@@ -860,6 +860,7 @@ class _Translations$ai$es extends Translations$ai$en {
 	@override String get dailyHabits => 'Hábitos diarios';
 	@override String get macroGoals => 'Macroobjetivos';
 	@override late final _Translations$ai$openRouter$es openRouter = _Translations$ai$openRouter$es._(_root);
+	@override late final _Translations$ai$apiKey$es apiKey = _Translations$ai$apiKey$es._(_root);
 	@override late final _Translations$ai$suggestions$es suggestions = _Translations$ai$suggestions$es._(_root);
 	@override late final _Translations$ai$local$es local = _Translations$ai$local$es._(_root);
 }
@@ -956,6 +957,8 @@ class _Translations$settingsPage$es extends Translations$settingsPage$en {
 	@override String get accentColor => 'Color de acento';
 	@override String get accentColorDetail => 'Paleta ampliada reservada para Evolve Pro.';
 	@override String get defaultCalendarView => 'Vista de calendario predeterminada';
+	@override late final _Translations$settingsPage$calendarViewOptions$es calendarViewOptions = _Translations$settingsPage$calendarViewOptions$es._(_root);
+	@override late final _Translations$settingsPage$languageOptions$es languageOptions = _Translations$settingsPage$languageOptions$es._(_root);
 	@override String get timeFormat24hDetail => 'Usa horas como 20:30 en lugar de 8:30 PM.';
 	@override String get hapticFeedback => 'Respuesta háptica';
 	@override String get hapticFeedbackDetail => 'El escritorio conserva la preferencia pero no genera vibraciones.';
@@ -1048,9 +1051,12 @@ class _Translations$settingsPage$es extends Translations$settingsPage$en {
 	@override String importCategoriesCount({required Object count}) => '${count} Categorías';
 	@override String importMoodsCount({required Object count}) => '${count} Registros de Estado de Ánimo';
 	@override String get importReplaceTitle => 'Reemplazar los datos actuales';
-	@override String get importReplaceSubtitle => 'Elimina todos los datos locales existentes antes de importar. (Recomendado)';
+	@override String get importReplaceSubtitle => 'Elimina permanentemente todos los registros existentes que no estén en esta copia.';
 	@override String get importMergeTitle => 'Combinar con los datos actuales';
 	@override String get importMergeSubtitle => 'Combina con tus datos, conservando la versión más reciente de cada elemento.';
+	@override String get importReplaceConfirmTitle => '¿Reemplazar todos los datos?';
+	@override String importReplaceConfirmMessage({required Object count}) => 'Esto elimina permanentemente tus datos actuales (unos ${count} registros) y conserva solo lo que hay en esta copia. No se puede deshacer.';
+	@override String get importReplaceConfirmButton => 'Eliminar y reemplazar';
 	@override String get importConfirmButton => 'Confirmar importación';
 	@override String get importSuccess => '¡Importación completada correctamente!';
 	@override String importError({required Object error}) => 'Error durante la importación: ${error}';
@@ -1073,17 +1079,21 @@ class _Translations$settingsPage$es extends Translations$settingsPage$en {
 	@override String get exportDoneSaved => 'El archivo JSON se guardó en la ubicación elegida.';
 	@override String get proTitle => 'Evolve Pro';
 	@override String get proSubtitle => 'Plan, restauración de compras y gestión de suscripción';
-	@override String get revenueCatMacos => 'RevenueCat macOS';
-	@override String get commercialChannelRequired => 'Se requiere un canal comercial';
-	@override String get revenueCatOffersRead => 'Las ofertas y el estado de los derechos se leen desde RevenueCat.';
-	@override String get revenueCatConfigureKey => 'Configura la clave pública de RevenueCat del cliente de escritorio.';
-	@override String get revenueCatNotSupported => 'RevenueCat Flutter no admite compras dentro de la aplicación en Windows y Linux.';
+	@override String get billingAppleTitle => 'Facturado a través de Apple';
+	@override String get commercialChannelRequired => 'Compras no disponibles';
+	@override String get billingAppleDetail => 'Tu suscripción se compra y gestiona con tu cuenta de Apple.';
+	@override String get billingUnavailableDetail => 'Las suscripciones no están disponibles temporalmente. Inténtalo de nuevo más tarde.';
+	@override String get billingPlatformUnsupported => 'Las compras dentro de la aplicación no están disponibles en esta plataforma.';
 	@override String get bestValue => 'Mejor valor';
+	@override String get priceUnavailable => 'Precio no disponible';
+	@override String get renewalDisclaimer => 'La suscripción se renueva automáticamente a menos que se desactive la renovación automática en la configuración de la cuenta de Apple al menos 24 horas antes del final del período.';
+	@override String get privacyPolicy => 'Política de privacidad';
+	@override String get termsEula => 'Términos de uso (EULA)';
 	@override String get planManagement => 'Gestión del plan';
 	@override String get activateEvolvePro => 'Activar Evolve Pro';
 	@override String get activateEvolveProActive => 'Derecho de Evolve Pro activo.';
-	@override String get activateEvolveProStart => 'Inicia el proceso de pago nativo de StoreKit en macOS.';
-	@override String get restorePurchasesDetail => 'Recupera el estado de los derechos desde el proveedor.';
+	@override String get activateEvolveProStart => 'Suscríbete con tu cuenta de Apple.';
+	@override String get restorePurchasesDetail => 'Restaura una suscripción que ya compraste.';
 	@override String get manageSubscription => 'Gestionar suscripción';
 	@override String get manageSubscriptionDetail => 'Abre la gestión de suscripciones de la cuenta de Apple.';
 	@override String get notAuthenticated => 'No autenticado';
@@ -1314,7 +1324,7 @@ class _Translations$coachSettings$es extends Translations$coachSettings$en {
 	@override String get subtitle => 'Elige dónde se ejecuta el coach. Los modelos locales mantienen cada mensaje en este dispositivo.';
 	@override String get backendCloud => 'Nube';
 	@override String get backendLocal => 'Local · privado';
-	@override String get cloudDesc => 'Google Gemini vía OpenRouter. Rápido, sin configuración — el contexto que compartes se envía al proveedor.';
+	@override String get cloudDesc => 'Google Gemini vía OpenRouter, con tu propia clave de API. El contexto que compartes se envía al proveedor.';
 	@override String get localDesc => 'Tu propio modelo vía Ollama, LM Studio o cualquier servidor compatible con OpenAI. Nada sale de este dispositivo.';
 	@override String get presetLabel => 'Servidor';
 	@override String get presetOllama => 'Ollama';
@@ -1354,7 +1364,7 @@ class _Translations$coachSettings$es extends Translations$coachSettings$en {
 	@override String get settingsSubtitle => 'Elige el motor que impulsa tu coach y conéctalo a un servidor local para máxima privacidad.';
 	@override String get settingsRowStatus => 'Motor activo';
 	@override String get settingsRowConfigure => 'Motor y servidor local';
-	@override String get cloudKeyMissing => 'La clave de API en la nube no está configurada — las respuestas en la nube fallarán. Cambia a un servidor local o define OPENROUTER_API_KEY.';
+	@override String get cloudKeyMissing => 'Todavía no hay clave de API: las respuestas en la nube no funcionarán. Pega abajo tu clave de OpenRouter o cambia a un servidor local.';
 	@override String get temperatureLower => 'Bajar la temperatura';
 	@override String get temperatureRaise => 'Subir la temperatura';
 	@override String get sendMessage => 'Enviar';
@@ -1531,8 +1541,8 @@ class _Translations$ai$openRouter$es extends Translations$ai$openRouter$en {
 	final TranslationsEs _root; // ignore: unused_field
 
 	// Translations
-	@override String get apiKeyMissingFull => '⚠️ Error: la clave API de OpenRouter no está configurada.\n\nAñade tu clave API en `lib/core/openrouter_config.dart`.';
-	@override String get apiKeyMissingShort => '⚠️ Error: la clave API de OpenRouter no está configurada.';
+	@override String get apiKeyMissingShort => '⚠️ El Coach AI necesita tu propia clave de API de OpenRouter. Añádela en los ajustes para empezar a chatear.';
+	@override String get apiKeyInvalid => '⚠️ OpenRouter ha rechazado esta clave de API. Revísala en los ajustes o crea una nueva en openrouter.ai/keys.';
 	@override String get defaultSystemPrompt => 'Eres el "Coach de Disciplina", un asistente virtual centrado en ayudar al usuario a mantener la disciplina, alcanzar objetivos y construir hábitos saludables. Sé motivador pero concreto, directo y práctico. Usa un tono profesional pero cercano.';
 	@override String communicationError({required Object code}) => '❌ Error al comunicarse con la IA. (Código: ${code})';
 	@override String get connectionError => '❌ Error de conexión. Asegúrate de estar online e inténtalo de nuevo.';
@@ -1542,6 +1552,31 @@ class _Translations$ai$openRouter$es extends Translations$ai$openRouter$en {
 	@override String get noInternet => '❌ Error: no hay conexión a internet. Revisa tu red.';
 	@override String get serverTimeout => '❌ Error: el servidor tarda demasiado en responder. Inténtalo de nuevo.';
 	@override String apiError({required Object code}) => '❌ Error de API: ${code} (consulta Sentry para más detalles)';
+}
+
+// Path: ai.apiKey
+class _Translations$ai$apiKey$es extends Translations$ai$apiKey$en {
+	_Translations$ai$apiKey$es._(TranslationsEs root) : this._root = root, super.internal(root);
+
+	final TranslationsEs _root; // ignore: unused_field
+
+	// Translations
+	@override String get rowTitle => 'Clave de API de OpenRouter';
+	@override String get description => 'El Coach AI funciona con tu propia cuenta de OpenRouter, así que tu consumo es solo tuyo. Crea una clave en openrouter.ai/keys y pégala aquí abajo: se guarda en el llavero de este dispositivo y solo se envía a OpenRouter.';
+	@override String get fieldLabel => 'Clave de API';
+	@override String get hint => 'sk-or-v1-…';
+	@override String get save => 'Guardar clave';
+	@override String get saved => 'Clave de API guardada';
+	@override String get remove => 'Eliminar clave';
+	@override String get removed => 'Clave de API eliminada';
+	@override String get removeConfirmTitle => '¿Eliminar la clave de API?';
+	@override String get removeConfirmBody => 'El Coach AI dejará de responder hasta que vuelvas a añadir una clave.';
+	@override String get statusSet => 'Guardada';
+	@override String get statusMissing => 'Sin configurar';
+	@override String get saveFailed => 'No se ha podido guardar la clave en el llavero. Inténtalo de nuevo.';
+	@override String get setupTitle => 'Añade tu clave de API de OpenRouter';
+	@override String get setupBody => 'El Coach AI funciona con tu propia cuenta de OpenRouter. Añade una clave para empezar a chatear o cambia el motor a un modelo local.';
+	@override String get setupAction => 'Añadir clave de API';
 }
 
 // Path: ai.suggestions
@@ -1585,6 +1620,34 @@ class _Translations$ai$local$es extends Translations$ai$local$en {
 	@override String get streamError => '❌ Error de conexión con el modelo local.';
 	@override String get timeout => '❌ El modelo local está tardando demasiado — puede que aún se esté cargando. Inténtalo de nuevo.';
 	@override String get modelNotFound => '❌ Ese modelo no está disponible en el servidor. Abre el selector para elegir o cargar uno.';
+}
+
+// Path: settingsPage.calendarViewOptions
+class _Translations$settingsPage$calendarViewOptions$es extends Translations$settingsPage$calendarViewOptions$en {
+	_Translations$settingsPage$calendarViewOptions$es._(TranslationsEs root) : this._root = root, super.internal(root);
+
+	final TranslationsEs _root; // ignore: unused_field
+
+	// Translations
+	@override String get month => 'Mes';
+	@override String get week => 'Semana';
+	@override String get year => 'Año';
+	@override String get life => 'Vida';
+}
+
+// Path: settingsPage.languageOptions
+class _Translations$settingsPage$languageOptions$es extends Translations$settingsPage$languageOptions$en {
+	_Translations$settingsPage$languageOptions$es._(TranslationsEs root) : this._root = root, super.internal(root);
+
+	final TranslationsEs _root; // ignore: unused_field
+
+	// Translations
+	@override String get system => 'Sistema';
+	@override String get italian => 'Italiano';
+	@override String get english => 'Inglés';
+	@override String get spanish => 'Español';
+	@override String get german => 'Alemán';
+	@override String get arabic => 'Árabe';
 }
 
 /// The flat map containing all translations for locale <es>.
@@ -2185,8 +2248,8 @@ extension on TranslationsEs {
 			'ai.coach' => 'Coach AI',
 			'ai.dailyHabits' => 'Hábitos diarios',
 			'ai.macroGoals' => 'Macroobjetivos',
-			'ai.openRouter.apiKeyMissingFull' => '⚠️ Error: la clave API de OpenRouter no está configurada.\n\nAñade tu clave API en `lib/core/openrouter_config.dart`.',
-			'ai.openRouter.apiKeyMissingShort' => '⚠️ Error: la clave API de OpenRouter no está configurada.',
+			'ai.openRouter.apiKeyMissingShort' => '⚠️ El Coach AI necesita tu propia clave de API de OpenRouter. Añádela en los ajustes para empezar a chatear.',
+			'ai.openRouter.apiKeyInvalid' => '⚠️ OpenRouter ha rechazado esta clave de API. Revísala en los ajustes o crea una nueva en openrouter.ai/keys.',
 			'ai.openRouter.defaultSystemPrompt' => 'Eres el "Coach de Disciplina", un asistente virtual centrado en ayudar al usuario a mantener la disciplina, alcanzar objetivos y construir hábitos saludables. Sé motivador pero concreto, directo y práctico. Usa un tono profesional pero cercano.',
 			'ai.openRouter.communicationError' => ({required Object code}) => '❌ Error al comunicarse con la IA. (Código: ${code})',
 			'ai.openRouter.connectionError' => '❌ Error de conexión. Asegúrate de estar online e inténtalo de nuevo.',
@@ -2196,6 +2259,22 @@ extension on TranslationsEs {
 			'ai.openRouter.noInternet' => '❌ Error: no hay conexión a internet. Revisa tu red.',
 			'ai.openRouter.serverTimeout' => '❌ Error: el servidor tarda demasiado en responder. Inténtalo de nuevo.',
 			'ai.openRouter.apiError' => ({required Object code}) => '❌ Error de API: ${code} (consulta Sentry para más detalles)',
+			'ai.apiKey.rowTitle' => 'Clave de API de OpenRouter',
+			'ai.apiKey.description' => 'El Coach AI funciona con tu propia cuenta de OpenRouter, así que tu consumo es solo tuyo. Crea una clave en openrouter.ai/keys y pégala aquí abajo: se guarda en el llavero de este dispositivo y solo se envía a OpenRouter.',
+			'ai.apiKey.fieldLabel' => 'Clave de API',
+			'ai.apiKey.hint' => 'sk-or-v1-…',
+			'ai.apiKey.save' => 'Guardar clave',
+			'ai.apiKey.saved' => 'Clave de API guardada',
+			'ai.apiKey.remove' => 'Eliminar clave',
+			'ai.apiKey.removed' => 'Clave de API eliminada',
+			'ai.apiKey.removeConfirmTitle' => '¿Eliminar la clave de API?',
+			'ai.apiKey.removeConfirmBody' => 'El Coach AI dejará de responder hasta que vuelvas a añadir una clave.',
+			'ai.apiKey.statusSet' => 'Guardada',
+			'ai.apiKey.statusMissing' => 'Sin configurar',
+			'ai.apiKey.saveFailed' => 'No se ha podido guardar la clave en el llavero. Inténtalo de nuevo.',
+			'ai.apiKey.setupTitle' => 'Añade tu clave de API de OpenRouter',
+			'ai.apiKey.setupBody' => 'El Coach AI funciona con tu propia cuenta de OpenRouter. Añade una clave para empezar a chatear o cambia el motor a un modelo local.',
+			'ai.apiKey.setupAction' => 'Añadir clave de API',
 			'ai.suggestions.morningBoost' => '🔥 ¡Dame un empujón para empezar!',
 			'ai.suggestions.avoidDistractions' => '🧠 ¿Cómo puedo evitar distracciones?',
 			'ai.suggestions.lowEnergy' => '⚡ Mi energía está bajando. ¿Qué debo hacer?',
@@ -2297,6 +2376,16 @@ extension on TranslationsEs {
 			'settingsPage.accentColor' => 'Color de acento',
 			'settingsPage.accentColorDetail' => 'Paleta ampliada reservada para Evolve Pro.',
 			'settingsPage.defaultCalendarView' => 'Vista de calendario predeterminada',
+			'settingsPage.calendarViewOptions.month' => 'Mes',
+			'settingsPage.calendarViewOptions.week' => 'Semana',
+			'settingsPage.calendarViewOptions.year' => 'Año',
+			'settingsPage.calendarViewOptions.life' => 'Vida',
+			'settingsPage.languageOptions.system' => 'Sistema',
+			'settingsPage.languageOptions.italian' => 'Italiano',
+			'settingsPage.languageOptions.english' => 'Inglés',
+			'settingsPage.languageOptions.spanish' => 'Español',
+			'settingsPage.languageOptions.german' => 'Alemán',
+			'settingsPage.languageOptions.arabic' => 'Árabe',
 			'settingsPage.timeFormat24hDetail' => 'Usa horas como 20:30 en lugar de 8:30 PM.',
 			'settingsPage.hapticFeedback' => 'Respuesta háptica',
 			'settingsPage.hapticFeedbackDetail' => 'El escritorio conserva la preferencia pero no genera vibraciones.',
@@ -2389,9 +2478,12 @@ extension on TranslationsEs {
 			'settingsPage.importCategoriesCount' => ({required Object count}) => '${count} Categorías',
 			'settingsPage.importMoodsCount' => ({required Object count}) => '${count} Registros de Estado de Ánimo',
 			'settingsPage.importReplaceTitle' => 'Reemplazar los datos actuales',
-			'settingsPage.importReplaceSubtitle' => 'Elimina todos los datos locales existentes antes de importar. (Recomendado)',
+			'settingsPage.importReplaceSubtitle' => 'Elimina permanentemente todos los registros existentes que no estén en esta copia.',
 			'settingsPage.importMergeTitle' => 'Combinar con los datos actuales',
 			'settingsPage.importMergeSubtitle' => 'Combina con tus datos, conservando la versión más reciente de cada elemento.',
+			'settingsPage.importReplaceConfirmTitle' => '¿Reemplazar todos los datos?',
+			'settingsPage.importReplaceConfirmMessage' => ({required Object count}) => 'Esto elimina permanentemente tus datos actuales (unos ${count} registros) y conserva solo lo que hay en esta copia. No se puede deshacer.',
+			'settingsPage.importReplaceConfirmButton' => 'Eliminar y reemplazar',
 			'settingsPage.importConfirmButton' => 'Confirmar importación',
 			'settingsPage.importSuccess' => '¡Importación completada correctamente!',
 			'settingsPage.importError' => ({required Object error}) => 'Error durante la importación: ${error}',
@@ -2414,17 +2506,21 @@ extension on TranslationsEs {
 			'settingsPage.exportDoneSaved' => 'El archivo JSON se guardó en la ubicación elegida.',
 			'settingsPage.proTitle' => 'Evolve Pro',
 			'settingsPage.proSubtitle' => 'Plan, restauración de compras y gestión de suscripción',
-			'settingsPage.revenueCatMacos' => 'RevenueCat macOS',
-			'settingsPage.commercialChannelRequired' => 'Se requiere un canal comercial',
-			'settingsPage.revenueCatOffersRead' => 'Las ofertas y el estado de los derechos se leen desde RevenueCat.',
-			'settingsPage.revenueCatConfigureKey' => 'Configura la clave pública de RevenueCat del cliente de escritorio.',
-			'settingsPage.revenueCatNotSupported' => 'RevenueCat Flutter no admite compras dentro de la aplicación en Windows y Linux.',
+			'settingsPage.billingAppleTitle' => 'Facturado a través de Apple',
+			'settingsPage.commercialChannelRequired' => 'Compras no disponibles',
+			'settingsPage.billingAppleDetail' => 'Tu suscripción se compra y gestiona con tu cuenta de Apple.',
+			'settingsPage.billingUnavailableDetail' => 'Las suscripciones no están disponibles temporalmente. Inténtalo de nuevo más tarde.',
+			'settingsPage.billingPlatformUnsupported' => 'Las compras dentro de la aplicación no están disponibles en esta plataforma.',
 			'settingsPage.bestValue' => 'Mejor valor',
+			'settingsPage.priceUnavailable' => 'Precio no disponible',
+			'settingsPage.renewalDisclaimer' => 'La suscripción se renueva automáticamente a menos que se desactive la renovación automática en la configuración de la cuenta de Apple al menos 24 horas antes del final del período.',
+			'settingsPage.privacyPolicy' => 'Política de privacidad',
+			'settingsPage.termsEula' => 'Términos de uso (EULA)',
 			'settingsPage.planManagement' => 'Gestión del plan',
 			'settingsPage.activateEvolvePro' => 'Activar Evolve Pro',
 			'settingsPage.activateEvolveProActive' => 'Derecho de Evolve Pro activo.',
-			'settingsPage.activateEvolveProStart' => 'Inicia el proceso de pago nativo de StoreKit en macOS.',
-			'settingsPage.restorePurchasesDetail' => 'Recupera el estado de los derechos desde el proveedor.',
+			'settingsPage.activateEvolveProStart' => 'Suscríbete con tu cuenta de Apple.',
+			'settingsPage.restorePurchasesDetail' => 'Restaura una suscripción que ya compraste.',
 			'settingsPage.manageSubscription' => 'Gestionar suscripción',
 			'settingsPage.manageSubscriptionDetail' => 'Abre la gestión de suscripciones de la cuenta de Apple.',
 			'settingsPage.notAuthenticated' => 'No autenticado',
@@ -2547,7 +2643,7 @@ extension on TranslationsEs {
 			'coachSettings.subtitle' => 'Elige dónde se ejecuta el coach. Los modelos locales mantienen cada mensaje en este dispositivo.',
 			'coachSettings.backendCloud' => 'Nube',
 			'coachSettings.backendLocal' => 'Local · privado',
-			'coachSettings.cloudDesc' => 'Google Gemini vía OpenRouter. Rápido, sin configuración — el contexto que compartes se envía al proveedor.',
+			'coachSettings.cloudDesc' => 'Google Gemini vía OpenRouter, con tu propia clave de API. El contexto que compartes se envía al proveedor.',
 			'coachSettings.localDesc' => 'Tu propio modelo vía Ollama, LM Studio o cualquier servidor compatible con OpenAI. Nada sale de este dispositivo.',
 			'coachSettings.presetLabel' => 'Servidor',
 			'coachSettings.presetOllama' => 'Ollama',
@@ -2587,7 +2683,9 @@ extension on TranslationsEs {
 			'coachSettings.settingsSubtitle' => 'Elige el motor que impulsa tu coach y conéctalo a un servidor local para máxima privacidad.',
 			'coachSettings.settingsRowStatus' => 'Motor activo',
 			'coachSettings.settingsRowConfigure' => 'Motor y servidor local',
-			'coachSettings.cloudKeyMissing' => 'La clave de API en la nube no está configurada — las respuestas en la nube fallarán. Cambia a un servidor local o define OPENROUTER_API_KEY.',
+			'coachSettings.cloudKeyMissing' => 'Todavía no hay clave de API: las respuestas en la nube no funcionarán. Pega abajo tu clave de OpenRouter o cambia a un servidor local.',
+			_ => null,
+		} ?? switch (path) {
 			'coachSettings.temperatureLower' => 'Bajar la temperatura',
 			'coachSettings.temperatureRaise' => 'Subir la temperatura',
 			'coachSettings.sendMessage' => 'Enviar',
@@ -2621,8 +2719,6 @@ extension on TranslationsEs {
 			'tour.overviewHabitsDesc' => 'Los hábitos que planificaste para hoy están aquí — márcalos a medida que avanzas.',
 			'tour.overviewGoalsTitle' => 'Metas en foco',
 			'tour.overviewGoalsDesc' => 'Las metas en las que te concentras aparecen aquí para que nada se te escape.',
-			_ => null,
-		} ?? switch (path) {
 			'tour.habitsOrientationTitle' => 'La página de Hábitos',
 			'tour.habitsOrientationDesc' => 'Aquí construyes tu protocolo diario y controlas tu constancia.',
 			'tour.habitsAddTitle' => 'Añadir un hábito',

@@ -10,7 +10,6 @@ import 'package:lucide_icons_flutter/lucide_icons.dart';
 
 import '../application/coach_controllers.dart';
 import '../application/ollama_start_controller.dart';
-import '../data/cloud_coach_backend.dart';
 import '../domain/coach_backend.dart';
 import '../domain/coach_config.dart';
 import 'start_ollama_button.dart';
@@ -129,10 +128,9 @@ class _CoachSettingsDialogState extends ConsumerState<CoachSettingsDialog> {
               height: 1.45,
             ),
           ),
-          if (config.backend == CoachBackendKind.cloud &&
-              !CloudCoachBackend.hasApiKey) ...[
-            const SizedBox(height: 12),
-            _WarningNote(text: t.coachSettings.cloudKeyMissing),
+          if (config.backend == CoachBackendKind.cloud) ...[
+            const SizedBox(height: 18),
+            const _CloudApiKeySection(),
           ],
           if (config.backend == CoachBackendKind.local) ...[
             const SizedBox(height: 18),
@@ -163,6 +161,165 @@ class _CoachSettingsDialogState extends ConsumerState<CoachSettingsDialog> {
           },
           child: Text(t.coachSettings.save),
         ),
+      ],
+    );
+  }
+}
+
+/// BYOK block: the user's own OpenRouter key. The app ships no key, so this is
+/// what makes the cloud engine work at all.
+///
+/// A stored key is NEVER rendered back into the field — the pill reports that
+/// one exists, and saving simply overwrites it. That keeps the secret off the
+/// screen (and out of any screenshot) while still letting the user replace it.
+class _CloudApiKeySection extends ConsumerStatefulWidget {
+  const _CloudApiKeySection();
+
+  @override
+  ConsumerState<_CloudApiKeySection> createState() =>
+      _CloudApiKeySectionState();
+}
+
+class _CloudApiKeySectionState extends ConsumerState<_CloudApiKeySection> {
+  final TextEditingController _field = TextEditingController();
+  bool _busy = false;
+  bool _saveFailed = false;
+
+  @override
+  void dispose() {
+    _field.dispose();
+    super.dispose();
+  }
+
+  Future<void> _save() async {
+    if (_busy || _field.text.trim().isEmpty) return;
+    setState(() {
+      _busy = true;
+      _saveFailed = false;
+    });
+    final saved = await ref
+        .read(coachApiKeyProvider.notifier)
+        .save(_field.text);
+    if (!mounted) return;
+    if (saved) _field.clear();
+    setState(() {
+      _busy = false;
+      _saveFailed = !saved;
+    });
+  }
+
+  Future<void> _remove() async {
+    final confirmed = await showEvolveDialog<bool>(
+      context: context,
+      builder: (context) => EvolveAlertDialog(
+        icon: LucideIcons.triangleAlert,
+        iconColor: EvolveColors.destructive,
+        title: Text(t.ai.apiKey.removeConfirmTitle),
+        content: Text(
+          t.ai.apiKey.removeConfirmBody,
+          style: TextStyle(
+            color: context.evolveColors.muted,
+            fontSize: 13,
+            fontWeight: FontWeight.w500,
+            height: 1.5,
+          ),
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(context, false),
+            child: Text(t.common.actions.cancel),
+          ),
+          FilledButton(
+            onPressed: () => Navigator.pop(context, true),
+            child: Text(t.ai.apiKey.remove),
+          ),
+        ],
+      ),
+    );
+    if (confirmed != true || !mounted) return;
+    await ref.read(coachApiKeyProvider.notifier).clear();
+    if (!mounted) return;
+    setState(() => _saveFailed = false);
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final colors = context.evolveColors;
+    final hasKey = ref.watch(coachApiKeyProvider).asData?.value != null;
+
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.stretch,
+      children: [
+        Row(
+          children: [
+            Expanded(child: EvolveFieldLabel(t.ai.apiKey.fieldLabel)),
+            StatusPill(
+              label: hasKey
+                  ? t.ai.apiKey.statusSet
+                  : t.ai.apiKey.statusMissing,
+              color: hasKey ? EvolveColors.success : EvolveColors.amber,
+              icon: hasKey ? LucideIcons.circleCheck : LucideIcons.keyRound,
+            ),
+          ],
+        ),
+        const SizedBox(height: 8),
+        Text(
+          t.ai.apiKey.description,
+          style: TextStyle(
+            color: colors.muted,
+            fontSize: 12,
+            fontWeight: FontWeight.w500,
+            height: 1.45,
+          ),
+        ),
+        if (!hasKey) ...[
+          const SizedBox(height: 12),
+          _WarningNote(text: t.coachSettings.cloudKeyMissing),
+        ],
+        const SizedBox(height: 12),
+        Row(
+          children: [
+            Expanded(
+              child: TextField(
+                controller: _field,
+                obscureText: true,
+                autocorrect: false,
+                enableSuggestions: false,
+                style: TextStyle(color: colors.foreground, fontSize: 13),
+                decoration: InputDecoration(hintText: t.ai.apiKey.hint),
+                onSubmitted: (_) => _save(),
+              ),
+            ),
+            const SizedBox(width: 10),
+            FilledButton(
+              onPressed: _busy ? null : _save,
+              child: Text(t.ai.apiKey.save),
+            ),
+          ],
+        ),
+        if (_saveFailed) ...[
+          const SizedBox(height: 10),
+          _WarningNote(text: t.ai.apiKey.saveFailed),
+        ],
+        if (hasKey)
+          Align(
+            alignment: AlignmentDirectional.centerStart,
+            child: TextButton(
+              onPressed: _remove,
+              style: TextButton.styleFrom(
+                padding: const EdgeInsets.symmetric(horizontal: 8),
+                minimumSize: const Size(0, 30),
+                tapTargetSize: MaterialTapTargetSize.shrinkWrap,
+              ),
+              child: Text(
+                t.ai.apiKey.remove,
+                style: const TextStyle(
+                  color: EvolveColors.destructive,
+                  fontSize: 12,
+                ),
+              ),
+            ),
+          ),
       ],
     );
   }

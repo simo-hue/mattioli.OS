@@ -1949,24 +1949,23 @@ class _GridLegend extends StatelessWidget {
 }
 
 /// Yearly per-day statuses for a habit (1=done, 2=missed, 0=untracked) over the
-/// last 365 days — the same encoding as `computeYearlyGrid`, derived from the
-/// snapshot when the RPC/local grid isn't available.
-List<int> _habitYearlyStatuses(DashboardSnapshot snapshot, String habitId) {
-  final today = DateTime.now();
-  final start = DateTime(
-    today.year,
-    today.month,
-    today.day,
-  ).subtract(const Duration(days: 364));
-  return [
-    for (var i = 0; i < 365; i++)
-      switch (snapshot.habitStatusFor(habitId, start.add(Duration(days: i)))) {
-        'done' => 1,
-        'missed' => 2,
-        _ => 0,
-      },
-  ];
-}
+/// 365 days ending on [today] — the same encoding as `computeYearlyGrid`,
+/// derived from the snapshot when the RPC/local grid isn't available. It walks
+/// [yearHeatmapDays] so this fallback keys the same calendar days as the
+/// `computeYearlyGrid` result it stands in for.
+@visibleForTesting
+List<int> habitYearlyStatuses(
+  DashboardSnapshot snapshot,
+  String habitId,
+  DateTime today,
+) => [
+  for (final day in yearHeatmapDays(today))
+    switch (snapshot.habitStatusFor(habitId, day)) {
+      'done' => 1,
+      'missed' => 2,
+      _ => 0,
+    },
+];
 
 class _HabitCalendar extends ConsumerWidget {
   const _HabitCalendar({required this.habit, required this.snapshot});
@@ -1977,8 +1976,13 @@ class _HabitCalendar extends ConsumerWidget {
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final yearlyGrid = ref.watch(habitYearlyGridRpcProvider(habit.id)).value;
+    final now = DateTime.now();
     final statuses = (yearlyGrid == null || yearlyGrid.isEmpty)
-        ? _habitYearlyStatuses(snapshot, habit.id)
+        ? habitYearlyStatuses(
+            snapshot,
+            habit.id,
+            DateTime(now.year, now.month, now.day),
+          )
         : yearlyGrid;
     return Column(
       children: [

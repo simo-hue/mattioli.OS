@@ -5,6 +5,7 @@ import 'package:shared_preferences/shared_preferences.dart';
 import '../data/cloud_coach_backend.dart';
 import '../data/local_coach_backend.dart';
 import '../data/openai_compatible_client.dart';
+import '../data/openrouter_key_store.dart';
 import '../domain/coach_backend.dart';
 import '../domain/coach_config.dart';
 
@@ -113,9 +114,46 @@ class CoachConfigController extends Notifier<CoachConfig> {
   }
 }
 
-/// The engine that answers the coach. Depends only on the backend + local base
-/// URL, so an unrelated config edit (temperature, system prompt, model memory)
-/// doesn't needlessly rebuild the backend.
+/// The user's own OpenRouter API key (BYOK), read from the Keychain. Null means
+/// the cloud coach isn't configured yet. Unlike [coachConfigProvider] this is
+/// NOT in SharedPreferences: it is a credential, so it lives only in the
+/// Keychain and is never synced, exported, or logged.
+final coachApiKeyProvider =
+    AsyncNotifierProvider<CoachApiKeyController, String?>(
+      CoachApiKeyController.new,
+    );
+
+class CoachApiKeyController extends AsyncNotifier<String?> {
+  static const OpenRouterKeyStore _store = OpenRouterKeyStore();
+
+  @override
+  Future<String?> build() => _store.read();
+
+  /// Stores [key] and publishes it. Returns false (leaving the previous state
+  /// intact) when the Keychain write fails, so the dialog can say so rather
+  /// than pretend the key was saved. Never logs [key].
+  Future<bool> save(String key) async {
+    final trimmed = key.trim();
+    if (trimmed.isEmpty) return false;
+    try {
+      await _store.write(trimmed);
+    } catch (_) {
+      // SecureStorageUtils has already logged the failure (by item name only).
+      return false;
+    }
+    state = AsyncValue.data(trimmed);
+    return true;
+  }
+
+  Future<void> clear() async {
+    await _store.clear();
+    state = const AsyncValue.data(null);
+  }
+}
+
+/// The engine that answers the coach. Depends on the backend + local base URL
+/// (so an unrelated config edit — temperature, system prompt, model memory —
+/// doesn't needlessly rebuild it) and, for cloud, on the BYOK key.
 final activeCoachBackendProvider = Provider<CoachBackend>((ref) {
   final (backend, localBaseUrl) = ref.watch(
     coachConfigProvider.select((c) => (c.backend, c.localBaseUrl)),
@@ -123,7 +161,13 @@ final activeCoachBackendProvider = Provider<CoachBackend>((ref) {
   if (backend == CoachBackendKind.local) {
     return LocalCoachBackend(baseUrl: localBaseUrl);
   }
-  return CloudCoachBackend();
+  // While the Keychain read is in flight (or if it failed) the key reads as
+  // absent here and the backend reports itself unconfigured; it rebuilds with
+  // the real key the moment the read resolves. `.asData?.value` is what makes a
+  // failed read degrade to absent — senders awaiting `coachApiKeyProvider.future`
+  // instead see it THROW, so they must catch it themselves.
+  final apiKey = ref.watch(coachApiKeyProvider).asData?.value ?? '';
+  return CloudCoachBackend(apiKey: apiKey);
 });
 
 /// Live model discovery for a local server, keyed by its (normalized) base URL

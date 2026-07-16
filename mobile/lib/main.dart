@@ -141,7 +141,16 @@ void main() async {
   }
 
   // ── Sentry init ──────────────────────────────────────────────────────────
-  final hasSentryConsent = prefs.getBool('has_sentry_consent') ?? true;
+  // Gated on the consent question having been ANSWERED, not just on the answer:
+  // 'has_sentry_consent' is absent on a fresh install and reads back as true, so
+  // gating on it alone initializes Sentry before the consent screen is shown.
+  // Once the user answers, ConsentScreen starts the SDK itself, and
+  // _EvolveAppState keeps it aligned for the rest of the session.
+  final shouldStartSentry = SentryService.shouldRun(
+    hasCompletedConsent: prefs.getBool('has_completed_consent') ?? false,
+    hasSentryConsent: prefs.getBool('has_sentry_consent') ?? true,
+    isPrivateMode: startsInPrivateMode,
+  );
 
   void startApp() {
     // ── Global error handler (UI modale per l'utente) ─────────────────
@@ -225,7 +234,7 @@ void main() async {
   // EvolveApp re-syncs once those settings load.)
   await LocaleSettings.setLocale(_appLocaleFor(prefs.getString('pref_language')));
 
-  if (hasSentryConsent && !startsInPrivateMode) {
+  if (shouldStartSentry) {
     final info = await SentryService.releaseInfo();
     await SentryFlutter.init((options) {
       SentryService.configure(
@@ -401,6 +410,34 @@ class _EvolveAppState extends ConsumerState<EvolveApp>
     }
   }
 
+  /// Bring the Sentry SDK back in line with the user's current privacy choice.
+  ///
+  /// Closing the client is what makes a withdrawn consent or Private Mode
+  /// effective mid-session: `AppLogger.setExternalReportingDisabled` only gates
+  /// AppLogger's own capture calls, while the SDK keeps its own
+  /// `FlutterError.onError` hook, the native crash handler, `tracesSampleRate`
+  /// transactions and debugPrint breadcrumbs installed until `Sentry.close()`
+  /// runs. Both revoke paths (the Privacy Settings crash-report switch and any
+  /// entry into Private Mode) write through the providers listened to in
+  /// [build], so reconciling here covers them without each call site
+  /// remembering to.
+  Future<void> _reconcileSentry() async {
+    final consent = ref.read(consentProvider);
+    final isPrivate =
+        ref.read(activeDataModeProvider) == AppDataMode.private;
+    try {
+      await SentryService.setEnabled(
+        SentryService.shouldRun(
+          hasCompletedConsent: consent.hasCompletedOnboarding,
+          hasSentryConsent: consent.hasSentryConsent,
+          isPrivateMode: isPrivate,
+        ),
+      );
+    } catch (e, stack) {
+      AppLogger.error('[Sentry] Applying the privacy choice failed', e, stack);
+    }
+  }
+
   Future<void> _syncAndRefresh() async {
     final status = await ref.read(privateSyncServiceProvider).syncNow();
     // If the sync pulled remote changes, refresh the cached providers so the UI
@@ -423,6 +460,21 @@ class _EvolveAppState extends ConsumerState<EvolveApp>
       if (LocaleSettings.currentLocale != target) {
         LocaleSettings.setLocale(target);
       }
+    });
+
+    // Start/stop the Sentry SDK whenever the user's answer or the data mode
+    // changes, so the choice takes effect immediately rather than at the next
+    // cold start. See [_reconcileSentry].
+    ref.listen<ConsentState>(consentProvider, (previous, next) {
+      if (previous?.hasSentryConsent == next.hasSentryConsent &&
+          previous?.hasCompletedOnboarding == next.hasCompletedOnboarding) {
+        return;
+      }
+      unawaited(_reconcileSentry());
+    });
+    ref.listen<AppDataMode>(activeDataModeProvider, (previous, next) {
+      if (previous == next) return;
+      unawaited(_reconcileSentry());
     });
 
     return MaterialApp.router(

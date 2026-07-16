@@ -5,10 +5,9 @@ import 'package:lucide_icons_flutter/lucide_icons.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:url_launcher/url_launcher.dart';
 import 'package:permission_handler/permission_handler.dart';
-import 'package:sentry_flutter/sentry_flutter.dart';
-import '../../core/sentry_config.dart';
 import '../../core/app_logger.dart';
 import '../../core/data_mode.dart';
+import '../../core/sentry_service.dart';
 import '../../providers/consent_provider.dart';
 import '../../providers/auth_provider.dart';
 import '../../core/theme.dart';
@@ -74,43 +73,36 @@ class _ConsentScreenState extends ConsumerState<ConsentScreen> {
       return;
     }
 
-    if (!mounted) return;
     setState(() => _isLoading = true);
     ref.hapticMedium();
 
-    // Salva il consenso nel provider
-    await ref
-        .read(consentProvider.notifier)
-        .setConsent(
-          acceptedTerms: _acceptedTerms,
-          sentryConsent: _sentryConsent,
-          completed: true,
-        );
-
-    // Se l'utente è già loggato, salva il consenso anche nel DB
+    // Every `ref` read has to happen before the first await. Persisting the
+    // consent flips consentProvider, which rebuilds the router and unmounts this
+    // screen; a `ref` read after that throws a StateError in release builds too.
+    final consentNotifier = ref.read(consentProvider.notifier);
+    final authNotifier = ref.read(authProvider.notifier);
     final isLoggedIn = ref.read(authProvider).isLoggedIn;
-    if (isLoggedIn) {
-      await ref
-          .read(authProvider.notifier)
-          .updateConsentInDb(_acceptedTerms, _sentryConsent);
-    }
-
-    // Inizializza Sentry immediatamente se l'utente ha dato il consenso
     final isPrivateMode =
         ref.read(activeDataModeProvider) == AppDataMode.private;
-    if (_sentryConsent && !isPrivateMode) {
-      AppLogger.setExternalReportingDisabled(false);
-      await SentryFlutter.init((options) {
-        options.dsn = SentryConfig.dsn;
-        options.environment = SentryConfig.environment;
-        options.tracesSampleRate = SentryConfig.tracesSampleRate;
-        options.reportPackages = true;
-        options.debug = false;
-        options.beforeSend = (event, hint) {
-          return SentryConfig.sanitizeEvent(event);
-        };
-      });
+
+    // Salva il consenso nel provider
+    await consentNotifier.setConsent(
+      acceptedTerms: _acceptedTerms,
+      sentryConsent: _sentryConsent,
+      completed: true,
+    );
+
+    // Se l'utente è già loggato, salva il consenso anche nel DB
+    if (isLoggedIn) {
+      await authNotifier.updateConsentInDb(_acceptedTerms, _sentryConsent);
     }
+
+    // Allinea Sentry alla risposta dell'utente.
+    final sentryEnabled = _sentryConsent && !isPrivateMode;
+    if (sentryEnabled) {
+      AppLogger.setExternalReportingDisabled(false);
+    }
+    await SentryService.setEnabled(sentryEnabled);
 
     if (!mounted) return;
     setState(() => _isLoading = false);

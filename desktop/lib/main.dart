@@ -17,11 +17,14 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 
-import 'package:flutter_secure_storage/flutter_secure_storage.dart';
-
 Future<void> main() async {
   WidgetsFlutterBinding.ensureInitialized();
-  FlutterSecureStorage.setMockInitialValues({});
+  // NEVER install a mock secure-storage backend here. `setMockInitialValues`
+  // swaps the *static* FlutterSecureStoragePlatform.instance for an in-memory
+  // map, so nothing reaches the Keychain: the SQLCipher key would exist only in
+  // this process's heap and every Private-mode user would hit the fail-closed
+  // guard in DesktopPrivateDb — locked out of intact data — on the next launch.
+  // Tests that need a mock install it in the test itself.
   final sharedPreferences = await SharedPreferences.getInstance();
 
   // Determine the saved data mode *before* initializing backends.

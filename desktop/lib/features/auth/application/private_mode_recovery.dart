@@ -93,12 +93,17 @@ Future<PrivateRecoveryResult> openOrRecoverPrivate(
         await db.stashLockedDatabase();
         // enable() re-joins sync: resolves + adopts the canonical owner from the
         // synced Keychain and full-re-pulls the zone. It can legitimately DEFER
-        // (key synced, canonical owner not yet — leaves sync disabled) or be
-        // BLOCKED (iCloud went unavailable in the gap), in which case it
-        // populated NOTHING. Only claim success when it actually ran (isEnabled).
+        // (key synced, canonical owner not yet) or be BLOCKED (iCloud went
+        // unavailable in the gap), in which case it populated NOTHING.
         // Plain syncNow() would NOT adopt the owner.
         final status = await sync.enable();
-        if (status.isEnabled) {
+        // Records actually landed from the zone ⇒ the re-pull ran AND restored
+        // data. That is the only evidence that makes dropping the stash safe.
+        // isEnabled must NOT stand in for it: it reports the persisted
+        // per-device pref, which is ALREADY true on this branch
+        // (decidePrivateModeRecovery only returns autoRecoverFromCloud when
+        // probe.isEnabled) and stays true across a deferred/blocked enable.
+        if (status.appliedChanges > 0) {
           await db.ensureReady(); // open the fresh, re-populated DB
           await db.discardStashedDatabase(); // recovery committed — drop .bak
           return const PrivateRecoveryResult(
@@ -106,14 +111,25 @@ Future<PrivateRecoveryResult> openOrRecoverPrivate(
             restoredFromCloud: true,
           );
         }
-        // enable() did not run — restore the stashed cache (locked again) so a
+        // Nothing was restored — put the stashed cache back (locked again) so a
         // later retry can recover the real data instead of accepting an empty DB
         // behind a misleading "restored from iCloud" notice.
         await db.restoreStashedDatabase();
         if (status.isAvailable && status.hasKey) {
-          // Key present but the canonical owner hasn't synced yet — wait & retry.
+          // lastSyncedAt lives IN the DB, which the stash just replaced with a
+          // fresh one (schema default NULL), and only a full sync that actually
+          // ran stamps it. Null ⇒ enable() deferred: key present, canonical
+          // owner not synced yet — wait & retry.
+          if (status.lastSyncedAt == null) {
+            return const PrivateRecoveryResult(
+              PrivateRecoveryStatus.waitingForICloudKey,
+            );
+          }
+          // The pull ran but the zone held nothing to restore, so the locked
+          // local copy is the only one left: let the user choose (reset / import)
+          // rather than discarding it behind a false "restored" notice.
           return const PrivateRecoveryResult(
-            PrivateRecoveryStatus.waitingForICloudKey,
+            PrivateRecoveryStatus.needsUserChoice,
           );
         }
         // iCloud flipped unavailable in the gap — let the user retry / choose.

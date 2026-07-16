@@ -100,6 +100,49 @@ CREATE TRIGGER update_profiles_updated_at
     BEFORE UPDATE ON public.profiles
     FOR EACH ROW EXECUTE FUNCTION public.update_updated_at_column();
 
+-- ------------------------------------------------------------
+-- Blocco entitlement: is_pro / pro_expires_at
+-- Copia fedele di migrations/20260716_pin_profiles_entitlement_columns.sql
+-- (che resta la fonte di verità): le policy qui sopra decidono quali RIGHE
+-- l'utente può scrivere, mai quali COLONNE, quindi senza questo trigger
+-- chiunque può fare PATCH del proprio is_pro e sbloccarsi il piano Pro.
+-- ------------------------------------------------------------
+CREATE OR REPLACE FUNCTION public.profiles_pin_entitlement_columns()
+RETURNS trigger
+LANGUAGE plpgsql
+SET search_path = ''
+AS $$
+BEGIN
+  -- SECURITY INVOKER (the default) is load-bearing: current_user must resolve to
+  -- the role PostgREST switched to for the caller — anon/authenticated for the
+  -- apps, service_role for the webhook — and not to this function's owner.
+  -- Unknown roles fall through to the pinning branch, so the guard fails closed.
+  IF current_user IN ('service_role', 'postgres', 'supabase_admin') THEN
+    RETURN NEW;
+  END IF;
+
+  IF TG_OP = 'INSERT' THEN
+    -- The apps create the profile row themselves (auth_controller upsert), so an
+    -- INSERT is a grant vector too until the row exists.
+    NEW.is_pro := false;
+    NEW.pro_expires_at := NULL;
+  ELSE
+    NEW.is_pro := OLD.is_pro;
+    NEW.pro_expires_at := OLD.pro_expires_at;
+  END IF;
+
+  RETURN NEW;
+END;
+$$;
+
+-- Silently pinning rather than raising: a backup import upserts a caller-supplied
+-- profile map, and an exception there would fail the whole restore over a field
+-- the user is not allowed to set anyway.
+DROP TRIGGER IF EXISTS profiles_pin_entitlement_columns ON public.profiles;
+CREATE TRIGGER profiles_pin_entitlement_columns
+  BEFORE INSERT OR UPDATE ON public.profiles
+  FOR EACH ROW EXECUTE FUNCTION public.profiles_pin_entitlement_columns();
+
 -- Trigger: crea il profilo automaticamente ad ogni nuovo signup
 CREATE OR REPLACE FUNCTION public.handle_new_user()
 RETURNS trigger

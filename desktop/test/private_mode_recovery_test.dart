@@ -3,10 +3,15 @@
 //
 // Focus: the auto-recover-from-cloud branch must NOT destroy the only local copy
 // before the cloud re-pull is confirmed. It stashes the locked DB, runs enable(),
-// and only claims "restored from iCloud" when enable actually RAN. A deferred
-// (owner not yet synced) or blocked (iCloud unavailable) enable must restore the
-// stash and surface the correct recovery state — never a false success over an
-// empty DB.
+// and only claims "restored from iCloud" when records actually came back. A
+// deferred (owner not yet synced) or blocked (iCloud unavailable) enable must
+// restore the stash and surface the correct recovery state — never a false
+// success over an empty DB.
+//
+// The fakes below mirror what CloudKitPrivateSyncService really returns: enable()
+// reports isEnabled from the persisted per-device pref, which is already true on
+// this branch, so it is true for the ran, deferred AND blocked cases alike. Only
+// appliedChanges / lastSyncedAt distinguish them.
 
 import 'package:evolve_desktop/core/desktop_private_db.dart'
     show PrivateRecoveryStore, PrivateDatabaseLockedException;
@@ -101,11 +106,15 @@ void main() {
     test('enable() RAN → ready + restoredFromCloud, stash discarded', () async {
       final store = _LockedFakeStore();
       final sync = _FakeSync(
-        enableResult: const PrivateSyncStatus(
+        enableResult: PrivateSyncStatus(
           isAvailable: true,
-          isEnabled: true, // enable ran and pulled
+          isEnabled: true,
           hasKey: true,
           account: CloudAccountStatus.available,
+          // enable ran: the full re-pull applied records and stamped the fresh
+          // DB's sync_meta.
+          appliedChanges: 12,
+          lastSyncedAt: DateTime.utc(2026, 7, 15),
         ),
       );
 
@@ -125,7 +134,9 @@ void main() {
       final sync = _FakeSync(
         enableResult: const PrivateSyncStatus(
           isAvailable: true,
-          isEnabled: false, // ownerPending: enable did NOT run
+          // ownerPending: enable did NOT run. The real service still reports the
+          // pref as enabled here — nothing cleared it — and applied nothing.
+          isEnabled: true,
           hasKey: true,
           account: CloudAccountStatus.available,
         ),
@@ -149,7 +160,7 @@ void main() {
       final sync = _FakeSync(
         enableResult: const PrivateSyncStatus(
           isAvailable: false, // iCloud flipped unavailable in the gap
-          isEnabled: false,
+          isEnabled: true, // the per-device pref is untouched by a blocked enable
           hasKey: true,
           account: CloudAccountStatus.noAccount,
         ),

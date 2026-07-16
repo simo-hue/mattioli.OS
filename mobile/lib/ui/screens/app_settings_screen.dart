@@ -6,10 +6,12 @@ import 'package:google_fonts/google_fonts.dart';
 import '../../core/theme.dart';
 import '../../providers/settings_provider.dart';
 import '../../core/haptics.dart';
+import '../../core/openrouter_service.dart';
 import '../../core/rtl.dart';
 import '../../i18n/translations.g.dart';
 import '../widgets/pro_features_modal.dart';
 import '../kit/evolve_color_picker.dart';
+import '../kit/evolve_dialog.dart';
 import '../kit/evolve_sheet.dart';
 import '../kit/evolve_switch.dart';
 import '../kit/evolve_section_header.dart';
@@ -169,9 +171,11 @@ class AppSettingsScreen extends ConsumerWidget {
                               ref
                                   .read(settingsProvider.notifier)
                                   .updateSettings(
-                                    ref.read(settingsProvider).copyWith(
-                                      defaultCalendarView: 'settimana',
-                                    ),
+                                    ref
+                                        .read(settingsProvider)
+                                        .copyWith(
+                                          defaultCalendarView: 'settimana',
+                                        ),
                                   );
                               Navigator.pop(sheetContext);
                             },
@@ -238,6 +242,25 @@ class AppSettingsScreen extends ConsumerWidget {
                     currentSettings.copyWith(hapticFeedback: val),
                   );
                   if (val) ref.hapticMedium();
+                },
+              ),
+            ]),
+            const SizedBox(height: 32),
+            _buildSectionHeader(context, context.t.settings.sections.aiCoach),
+            _buildSettingsCard(context, [
+              _buildActionRow(
+                context: context,
+                icon: LucideIcons.keyRound,
+                title: context.t.ai.apiKey.rowTitle,
+                // Reports only whether a key exists — the key itself is never
+                // rendered back out of the Keychain.
+                trailingText:
+                    ref.watch(openRouterApiKeyProvider).asData?.value != null
+                    ? context.t.ai.apiKey.statusSet
+                    : context.t.ai.apiKey.statusMissing,
+                onTap: () {
+                  ref.hapticLight();
+                  _showApiKeySheet(context);
                 },
               ),
             ]),
@@ -482,6 +505,18 @@ class AppSettingsScreen extends ConsumerWidget {
       indent: 60,
       endIndent: 16,
       color: context.appColors.border.withValues(alpha: 0.5),
+    );
+  }
+
+  void _showApiKeySheet(BuildContext context) {
+    showEvolveFormSheet<void>(
+      context: context,
+      title: context.t.ai.apiKey.rowTitle,
+      trailing: EvolveTextAction(
+        label: context.t.common.actions.done,
+        onPressed: () => Navigator.pop(context),
+      ),
+      builder: (sheetContext) => const _ApiKeyForm(),
     );
   }
 
@@ -821,6 +856,139 @@ class AppSettingsScreen extends ConsumerWidget {
     Future.delayed(const Duration(milliseconds: 1200), () {
       overlay.remove();
     });
+  }
+}
+
+/// BYOK form: the user's own OpenRouter API key. The app ships no key, so this
+/// is what makes the AI Coach work at all.
+///
+/// A stored key is NEVER read back into the field — the Settings row reports
+/// that one exists, and saving simply overwrites it. That keeps the secret off
+/// the screen (and out of any screenshot) while still allowing a replacement.
+class _ApiKeyForm extends ConsumerStatefulWidget {
+  const _ApiKeyForm();
+
+  @override
+  ConsumerState<_ApiKeyForm> createState() => _ApiKeyFormState();
+}
+
+class _ApiKeyFormState extends ConsumerState<_ApiKeyForm> {
+  final TextEditingController _field = TextEditingController();
+  bool _busy = false;
+  bool _saveFailed = false;
+
+  @override
+  void dispose() {
+    _field.dispose();
+    super.dispose();
+  }
+
+  Future<void> _save() async {
+    if (_busy || _field.text.trim().isEmpty) return;
+    setState(() {
+      _busy = true;
+      _saveFailed = false;
+    });
+    final saved = await ref
+        .read(openRouterApiKeyProvider.notifier)
+        .save(_field.text);
+    if (!mounted) return;
+    if (saved) {
+      // Close on success: the Settings row behind the sheet flips to "Saved",
+      // which is the confirmation.
+      ref.hapticMedium();
+      Navigator.pop(context);
+      return;
+    }
+    setState(() {
+      _busy = false;
+      _saveFailed = true;
+    });
+  }
+
+  Future<void> _remove() async {
+    final confirmed = await showEvolveConfirm(
+      context: context,
+      title: context.t.ai.apiKey.removeConfirmTitle,
+      message: context.t.ai.apiKey.removeConfirmBody,
+      confirmLabel: context.t.ai.apiKey.remove,
+      isDestructive: true,
+      ref: ref,
+    );
+    if (!confirmed || !mounted) return;
+    await ref.read(openRouterApiKeyProvider.notifier).clear();
+    if (!mounted) return;
+    Navigator.pop(context);
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final colors = context.appColors;
+    final hasKey = ref.watch(openRouterApiKeyProvider).asData?.value != null;
+
+    return Padding(
+      padding: const EdgeInsets.fromLTRB(16, 0, 16, 16),
+      child: Column(
+        mainAxisSize: MainAxisSize.min,
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Text(
+            context.t.ai.apiKey.description,
+            style: GoogleFonts.inter(
+              fontSize: 13,
+              height: 1.45,
+              color: colors.mutedForeground,
+            ),
+          ),
+          const SizedBox(height: 16),
+          TextField(
+            controller: _field,
+            obscureText: true,
+            autocorrect: false,
+            enableSuggestions: false,
+            style: GoogleFonts.inter(fontSize: 15, color: colors.foreground),
+            decoration: InputDecoration(
+              labelText: context.t.ai.apiKey.fieldLabel,
+              hintText: context.t.ai.apiKey.hint,
+            ),
+            onSubmitted: (_) => _save(),
+          ),
+          if (_saveFailed) ...[
+            const SizedBox(height: 10),
+            Text(
+              context.t.ai.apiKey.saveFailed,
+              style: GoogleFonts.inter(
+                fontSize: 12.5,
+                color: Theme.of(context).colorScheme.error,
+                fontWeight: FontWeight.w600,
+              ),
+            ),
+          ],
+          const SizedBox(height: 16),
+          SizedBox(
+            width: double.infinity,
+            child: FilledButton(
+              onPressed: _busy ? null : _save,
+              child: Text(context.t.ai.apiKey.save),
+            ),
+          ),
+          if (hasKey)
+            Align(
+              alignment: AlignmentDirectional.centerStart,
+              child: TextButton(
+                onPressed: _remove,
+                child: Text(
+                  context.t.ai.apiKey.remove,
+                  style: GoogleFonts.inter(
+                    fontSize: 13,
+                    color: Theme.of(context).colorScheme.error,
+                  ),
+                ),
+              ),
+            ),
+        ],
+      ),
+    );
   }
 }
 

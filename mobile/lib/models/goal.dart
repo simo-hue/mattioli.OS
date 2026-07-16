@@ -94,6 +94,13 @@ class Goal {
       }
     }
 
+    // Goals are read back through an eager `rows.map(...).toList()`, so throwing
+    // on one bad date would hide EVERY goal rather than just this one. A row
+    // predating the import validator's date check falls back to a start that
+    // keeps the habit visible and editable, so the user can repair it.
+    DateTime? parseDate(dynamic value) =>
+        value is String ? DateTime.tryParse(value) : null;
+
     return Goal(
       id: json['id'] as String,
       title: json['title'] as String,
@@ -101,8 +108,8 @@ class Goal {
       icon: json['icon'] as String?,
       color: parseColor(json['color'] as String),
       frequencyDays: (json['frequency_days'] as List<dynamic>?)?.map((e) => e as int).toList(),
-      startDate: DateTime.parse(json['start_date'] as String),
-      endDate: json['end_date'] != null ? DateTime.parse(json['end_date'] as String) : null,
+      startDate: parseDate(json['start_date']) ?? DateTime(2000),
+      endDate: parseDate(json['end_date']),
       displayOrder: json['display_order'] as int?,
       reminderTime: json['reminder_time'] as String?,
       verificationRule: VerificationRule.fromColumns(json),

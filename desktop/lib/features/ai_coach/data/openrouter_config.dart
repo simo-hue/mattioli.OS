@@ -1,8 +1,11 @@
+/// Non-secret OpenRouter endpoint constants.
+///
+/// Deliberately holds NO API key. The coach is BYOK: the key belongs to the
+/// user, is entered in the coach settings dialog, and lives in the Keychain
+/// (see `openrouter_key_store.dart`) — a compile-time constant (a literal or
+/// `String.fromEnvironment`) would be baked into the AOT snapshot and
+/// recoverable from a shipped build with `strings`.
 class OpenRouterConfig {
-  /// Supplied at build time via `--dart-define=OPENROUTER_API_KEY=...` so the key
-  /// is never committed. Empty by default → the AI stays inert (the service
-  /// short-circuits to an "API key missing" message).
-  static const String apiKey = String.fromEnvironment('OPENROUTER_API_KEY');
   static const String baseUrl = 'https://openrouter.ai/api/v1';
   static const String defaultModel = 'google/gemini-2.5-flash';
 }

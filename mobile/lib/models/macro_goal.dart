@@ -117,13 +117,24 @@ class GoalCategory {
   bool get isArchived => archivedAt != null;
 
   factory GoalCategory.fromJson(Map<String, dynamic> json) {
+    // Categories are read back through an eager `rows.map(...).toList()`, so a
+    // single unparseable value would throw for the WHOLE list and empty every
+    // picker. Mirrors the guarded parse in `Goal.fromJson`.
+    Color parseColor(String hexString) {
+      try {
+        return Color(int.parse(hexString.replaceAll('#', '0xFF')));
+      } catch (_) {
+        return const Color(0xFF6B7280);
+      }
+    }
+
     final colorStr = json['color'] as String? ?? '#6B7280';
     final archivedAtStr = json['archived_at'] as String?;
     return GoalCategory(
       key: json['id'] as String,
       label: json['name'] as String,
-      color: Color(int.parse(colorStr.replaceAll('#', '0xFF'))),
-      archivedAt: archivedAtStr == null ? null : DateTime.parse(archivedAtStr),
+      color: parseColor(colorStr),
+      archivedAt: archivedAtStr == null ? null : DateTime.tryParse(archivedAtStr),
     );
   }
 }

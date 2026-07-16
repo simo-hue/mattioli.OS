@@ -154,11 +154,13 @@ ALTER TABLE public.goal_category_settings ENABLE ROW LEVEL SECURITY;
 -- RLS Policies
 --
 
--- reading_logs (Open access as per original migration, though usually strict user access is better)
-CREATE POLICY "Allow all access to reading_logs" ON public.reading_logs USING (true) WITH CHECK (true);
-
--- user_settings
-CREATE POLICY "Allow all access to user_settings" ON public.user_settings USING (true) WITH CHECK (true);
+-- reading_logs / user_settings: legacy tables from the retired src/ web client,
+-- referenced by neither Flutter app. They carry no ownership column, so no policy
+-- can scope them to auth.uid(); they are left with RLS enabled and NO policy,
+-- which denies every row to anon and authenticated. See
+-- migrations/20260716_close_legacy_table_rls.sql.
+REVOKE ALL ON public.reading_logs FROM anon, authenticated;
+REVOKE ALL ON public.user_settings FROM anon, authenticated;
 
 -- goals
 CREATE POLICY "Users can view their own goals" ON public.goals FOR SELECT USING (auth.uid() = user_id);

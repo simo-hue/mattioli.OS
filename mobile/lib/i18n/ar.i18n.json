@@ -176,6 +176,7 @@
       "appearance": "المظهر والعرض",
       "calendar": "التقويم ولوحة التحكم",
       "experience": "تجربة المستخدم",
+      "aiCoach": "مدرّب AI",
       "unitsLanguage": "الوحدات واللغة"
     },
     "appearance": {
@@ -477,6 +478,7 @@
     "deleteAccountData": "حذف الحساب والبيانات",
     "deleteAccount": "حذف الحساب",
     "accountDeletedSuccess": "تم حذف الحساب بنجاح!",
+    "accountDeletedAppleRevokeFailed": "تم حذف الحساب. أزل Evolve يدويًا من الإعدادات › Apple ID › تسجيل الدخول باستخدام Apple.",
     "permissionsManagement": "إدارة الأذونات",
     "permissionsSubtitle": "الإشعارات، التقويم، إلخ.",
     "sendCrashReports": "إرسال تقارير الأعطال",
@@ -514,6 +516,24 @@
     "allFieldsRequired": "جميع الحقول مطلوبة.",
     "newPasswordMin8": "يجب أن تتكوّن كلمة المرور الجديدة من 8 أحرف على الأقل.",
     "passwordsDontMatch": "كلمتا المرور غير متطابقتين."
+  },
+  "icloudSync": {
+    "title": "مزامنة iCloud",
+    "entrySubtitle": "زامِن بياناتك الخاصة بين أجهزة Apple الخاصة بك",
+    "enableTitle": "تفعيل مزامنة iCloud",
+    "syncNow": "زامِن الآن",
+    "disclosureTitle": "مشفّرة من طرف إلى طرف",
+    "disclosureBody": "تتم مزامنة بياناتك الخاصة عبر حساب iCloud الخاص بك فقط، بتشفير من طرف إلى طرف — ولا تمرّ أبداً عبر خوادمنا. يوجد مفتاح التشفير في سلسلة مفاتيح iCloud لديك؛ وإذا أوقفت سلسلة مفاتيح iCloud، فلن يمكن استرجاع البيانات المزامَنة.",
+    "disclosureAccept": "تفعيل",
+    "statusIdle": "محدَّث",
+    "statusSyncing": "جارٍ المزامنة…",
+    "statusOff": "المزامنة متوقفة",
+    "statusNoAccount": "سجّل الدخول إلى iCloud للمزامنة",
+    "statusUnavailable": "iCloud غير متاح في الوقت الحالي",
+    "lastSyncedNever": "لم تتم المزامنة مطلقاً",
+    "lastSyncedAt": "آخر مزامنة {time}",
+    "bannerText": "مزامنة iCloud متوقفة — عاداتك موجودة على هذا الجهاز فقط وستُفقد إذا غيّرت هاتفك أو أعدت ضبطه.",
+    "bannerAction": "تفعيل"
   },
   "privateRecovery": {
     "preparing": "جارٍ تجهيز مساحتك الخاصة…",
@@ -557,7 +577,8 @@
       "annual": "سنوي",
       "label": "الخطة",
       "savings": "وفّر أكثر من 40%",
-      "cancelAnytime": "إلغاء في أي وقت"
+      "cancelAnytime": "إلغاء في أي وقت",
+      "priceUnavailable": "غير متوفر"
     },
     "features": {
       "unlimitedHabits": "أنشئ كل العادات التي تريدها دون حدود.",
@@ -578,6 +599,7 @@
     "paymentMethod": "طريقة الدفع",
     "paymentMethodValue": "Apple Pay / App Store",
     "nextRenewal": "التجديد التالي",
+    "expiresOn": "ينتهي في",
     "privacyPolicy": "سياسة الخصوصية",
     "termsEula": "شروط الاستخدام (EULA)",
     "continueButton": "متابعة",
@@ -585,7 +607,8 @@
       "activate": "تفعيل الاشتراك",
       "cancel": "إلغاء الاشتراك",
       "manage": "إدارة الاشتراك",
-      "restore": "استعادة المشتريات"
+      "restore": "استعادة المشتريات",
+      "seePlans": "عرض الخطط"
     },
     "renewalDisclaimer": "يتجدّد الاشتراك تلقائياً ما لم يتم إيقاف التجديد التلقائي في إعدادات حساب Apple قبل 24 ساعة على الأقل من نهاية الفترة.",
     "manageDisclaimer": "لتعديل اشتراك Pro أو تحديثه أو إلغائه، ستتم إحالتك إلى بوابة RevenueCat الرسمية أو حساب Apple.",
@@ -608,7 +631,8 @@
       "alreadyPurchased": "هذا الاشتراك تم شراؤه بالفعل. استخدم استعادة المشتريات لإعادة تفعيل وصول Pro.",
       "linkedToAnotherAccount": "عملية الشراء هذه مرتبطة بالفعل بحساب Evolve آخر. سجّل الدخول بذلك الحساب أو تواصل مع الدعم.",
       "restoreInProgress": "هناك عملية استعادة جارية بالفعل. انتظر بضع ثوانٍ.",
-      "purchaseInProgress": "هناك عملية شراء جارية بالفعل. انتظر بضع ثوانٍ."
+      "purchaseInProgress": "هناك عملية شراء جارية بالفعل. انتظر بضع ثوانٍ.",
+      "pricesUnavailable": "تعذّر تحميل الأسعار من App Store. تحقّق من اتصالك واسحب للأسفل للتحديث."
     },
     "personalizedAiCoach": "مدرّب AI مخصّص",
     "unlimitedHabits": "عادات غير محدودة",
@@ -617,7 +641,7 @@
     "maybeLater": "ربما لاحقاً",
     "keyInsightsToBoostYourProductivity": "رؤى أساسية لتعزيز إنتاجيتك.",
     "advancedGoalMetrics": "مقاييس متقدّمة للأهداف",
-    "getProAt499Month": "احصل على Pro مقابل 4.99 € / شهرياً",
+    "getProAtPrice": "احصل على Pro مقابل {price} / شهرياً",
     "takeYourHabitSystemToThe": "ارتقِ بنظام عاداتك إلى المستوى التالي",
     "habitSpecificStatistics": "إحصاءات خاصة بكل عادة",
     "viewDetailedChartsAndDeepPerformance": "اعرض رسوماً بيانية مفصّلة وإحصاءات أداء معمّقة لكل سنة."
@@ -659,8 +683,9 @@
     "privateConsentTitle": "موافقة AI في الوضع الخاص",
     "privateConsentBody": "لاستخدام مدرّب AI، يُرسَل نصّ رسالتك واسمك المعروض وأي سياق محدّد إلى مزوّد AI الخارجي. تبقى قاعدة بياناتك الخاصة على الجهاز.",
     "openRouter": {
-      "apiKeyMissingFull": "⚠️ خطأ: مفتاح OpenRouter API غير مهيّأ.\n\nيُرجى إضافة مفتاح API في `lib/core/openrouter_config.dart`.",
-      "apiKeyMissingShort": "⚠️ خطأ: مفتاح OpenRouter API غير مهيّأ.",
+      "apiKeyMissingFull": "⚠️ يحتاج مدرّب AI إلى مفتاح OpenRouter API خاص بك.\n\nأنشئ مفتاحًا على openrouter.ai/keys ثم أضِفه في الإعدادات.",
+      "apiKeyMissingShort": "⚠️ يحتاج مدرّب AI إلى مفتاح OpenRouter API خاص بك. أضِفه من الإعدادات لبدء المحادثة.",
+      "apiKeyInvalid": "⚠️ رفض OpenRouter مفتاح API هذا. تحقّق منه في الإعدادات أو أنشئ مفتاحًا جديدًا على openrouter.ai/keys.",
       "defaultSystemPrompt": "أنت \"مدرّب الانضباط\"، مساعد افتراضي يركّز على مساعدة المستخدم على الالتزام بالانضباط وتحقيق أهدافه وبناء عادات صحية. كن محفّزاً لكن واقعياً ومباشراً وعملياً. استخدم نبرة احترافية وودودة.",
       "communicationError": "❌ خطأ في الاتصال بالـ AI. (الرمز: {code})",
       "connectionError": "❌ خطأ في الاتصال. تأكّد من اتصالك بالإنترنت وحاول مرة أخرى.",
@@ -670,6 +695,24 @@
       "noInternet": "❌ خطأ: لا يوجد اتصال بالإنترنت. تحقّق من شبكتك.",
       "serverTimeout": "❌ خطأ: يستغرق الخادم وقتاً طويلاً للرد. حاول مرة أخرى.",
       "apiError": "❌ خطأ في API: {code} (راجع Sentry للتفاصيل)"
+    },
+    "apiKey": {
+      "rowTitle": "مفتاح OpenRouter API",
+      "description": "يعمل مدرّب AI عبر حساب OpenRouter الخاص بك، لذا يبقى استهلاكك ملكك وحدك. أنشئ مفتاحًا على openrouter.ai/keys وألصقه أدناه: يُحفَظ في سلسلة مفاتيح هذا الجهاز ولا يُرسَل إلا إلى OpenRouter.",
+      "fieldLabel": "مفتاح API",
+      "hint": "sk-or-v1-…",
+      "save": "حفظ المفتاح",
+      "saved": "تم حفظ مفتاح API",
+      "remove": "إزالة المفتاح",
+      "removed": "تمت إزالة مفتاح API",
+      "removeConfirmTitle": "إزالة مفتاح API؟",
+      "removeConfirmBody": "سيتوقّف مدرّب AI عن الردّ حتى تُضيف مفتاحًا من جديد.",
+      "statusSet": "محفوظ",
+      "statusMissing": "غير مُعيَّن",
+      "saveFailed": "تعذّر حفظ المفتاح في سلسلة المفاتيح. حاول مرة أخرى.",
+      "setupTitle": "أضِف مفتاح OpenRouter API الخاص بك",
+      "setupBody": "يعمل مدرّب AI عبر حساب OpenRouter الخاص بك. أضِف مفتاحًا من الإعدادات لبدء المحادثة.",
+      "setupAction": "فتح الإعدادات"
     },
     "prompts": {
       "defaultUserName": "المستخدم",
@@ -983,7 +1026,8 @@
     "reminder": "تذكير",
     "nameRequired": "الرجاء إدخال اسم للعادة",
     "habitAdded": "تمت إضافة العادة",
-    "habitUpdated": "تم تحديث العادة"
+    "habitUpdated": "تم تحديث العادة",
+    "freeSlotsFullBanner": "لقد استنفدت خانات العادات المجانية ({used}/{limit}). افتح خانات غير محدودة مع Evolve Pro."
   },
   "tutorial": {
     "aiChat": "محادثة AI",

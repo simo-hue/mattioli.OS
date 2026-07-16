@@ -390,6 +390,60 @@ num? _num(dynamic v) {
 
 bool _inRange(int? v, int lo, int hi) => v == null || (v >= lo && v <= hi);
 
+/// Coerce to a date string the read path can parse, or null. `goals.start_date`
+/// / `end_date` are TEXT columns that accept anything, but `Goal.fromJson` reads
+/// them back with a strict `DateTime.parse` inside an eager `rows.map(...)`, so
+/// one unparseable date hides EVERY goal, not just its own row. The original
+/// string is kept (not normalized) so a `yyyy-MM-dd` value stays a bare date for
+/// the cloud plan's `date` column.
+String? _date(dynamic v) {
+  final s = _str(v);
+  if (s == null) return null;
+  return DateTime.tryParse(s) == null ? null : s;
+}
+
+/// Coerce `goals.frequency_days` to ISO weekdays (1-7), or null. The column is
+/// read back with a strict `List<int>.from(jsonDecode(...))`, so a list of
+/// strings/doubles, a bare string or a map would throw for the whole goal list.
+/// A present-but-entirely-unusable value becomes null — i.e. the documented
+/// "every day" default — rather than an empty list, which means "no day".
+List<int>? _frequencyDays(dynamic v) {
+  if (v is! List) return null;
+  final days =
+      v.map(_int).whereType<int>().where((d) => d >= 1 && d <= 7).toList();
+  if (days.isEmpty && v.isNotEmpty) return null;
+  return days;
+}
+
+final _reminderTimeRe = RegExp(r'^([01]\d|2[0-3]):[0-5]\d$');
+
+/// Coerce `goals.reminder_time` to a strict zero-padded "HH:mm", or null.
+/// Consumers parse it with `AppTimeFormatting.parseTimeOfDay`, which throws by
+/// design — including inside a widget `build()`, where no provider try/catch can
+/// catch it — so anything malformed is dropped to null here.
+String? _reminderTime(dynamic v) {
+  final s = _str(v);
+  if (s == null) return null;
+  return _reminderTimeRe.hasMatch(s) ? s : null;
+}
+
+final _hexColorRe = RegExp(r'^#?([0-9a-fA-F]{3}|[0-9a-fA-F]{6})$');
+
+/// Normalize a hex colour to `#RRGGBB`, or null when the value is not a hex
+/// colour. Shorthand is expanded because `GoalCategory.fromJson` parses `#FFF`
+/// to a near-transparent colour without throwing.
+String? _hexColor(dynamic v) {
+  final s = _str(v);
+  if (s == null) return null;
+  final m = _hexColorRe.firstMatch(s);
+  if (m == null) return null;
+  final digits = m.group(1)!;
+  final rrggbb = digits.length == 3
+      ? digits.split('').map((c) => '$c$c').join()
+      : digits;
+  return '#${rrggbb.toUpperCase()}';
+}
+
 /// Validates + sanitizes a canonical backup (output of [normalizeBackup]).
 /// Rows that cannot be made to satisfy the local schema are DROPPED (never
 /// coerced with invented values) and counted in [ValidatedBackup.skipped], so a
@@ -409,7 +463,7 @@ ValidatedBackup validateCanonical(Map<String, dynamic> canonical) {
   final categories = <Map<String, dynamic>>[];
   for (final c in _asList(canonical[kCategoriesKey])) {
     final name = _str(c['name']);
-    final color = _str(c['color']);
+    final color = _hexColor(c['color']);
     if (name == null || color == null) {
       drop('categories');
       continue;
@@ -428,8 +482,14 @@ ValidatedBackup validateCanonical(Map<String, dynamic> canonical) {
   for (final g in _asList(canonical[kGoalsKey])) {
     final title = _str(g['title']);
     final color = _str(g['color']);
-    final start = _str(g['start_date']);
-    if (title == null || color == null || start == null) {
+    final start = _date(g['start_date']);
+    final rawEnd = _str(g['end_date']);
+    final end = _date(rawEnd);
+    // A present-but-unparseable end_date drops the row rather than importing the
+    // habit without its end: `Goal.fromJson` parses end_date just as strictly as
+    // start_date, so silently nulling it would hide a real constraint.
+    if (title == null || color == null || start == null ||
+        (rawEnd != null && end == null)) {
       drop('habits');
       continue;
     }
@@ -439,13 +499,13 @@ ValidatedBackup validateCanonical(Map<String, dynamic> canonical) {
       'description': _str(g['description']),
       'icon': _str(g['icon']),
       'color': color,
-      'frequency_days': g['frequency_days'],
+      'frequency_days': _frequencyDays(g['frequency_days']),
       'start_date': start,
-      'end_date': _str(g['end_date']),
+      'end_date': end,
       'display_order': _int(g['display_order']),
       'created_at': _str(g['created_at']),
       'updated_at': _str(g['updated_at']),
-      'reminder_time': _str(g['reminder_time']),
+      'reminder_time': _reminderTime(g['reminder_time']),
       'verify_provider': _str(g['verify_provider']),
       'verify_metric': _str(g['verify_metric']),
       'verify_comparator': _str(g['verify_comparator']),

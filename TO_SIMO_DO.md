@@ -1184,3 +1184,17 @@ UPLOAD FAILED with 1 error
 ".
 
 I've also inserted in the "TMP_IMAGES/**.png" some screenshot from app store connect if could help.
+
+---
+
+## 2026-07-17 — iOS export-compliance fix: manual re-upload required
+
+The code fix is done (`ITSAppUsesNonExemptEncryption` → `false` in `mobile/ios/Runner/Info.plist`). On the Mac mini (full Xcode), you now need to:
+
+1. Pull/sync the updated `mobile/ios/Runner/Info.plist`.
+2. Rebuild the IPA (e.g. `flutter build ipa --release`, then archive/export in Xcode as usual).
+3. Re-upload via Transporter.
+   - Build 20 was auto-deleted server-side after the failed validation, so `1.1.2 (20)` should be reusable. If App Store Connect rejects it as "already used", bump the build number to 21 and rebuild.
+4. NO App Store Connect changes are needed — do NOT upload encryption documentation. With the exempt declaration, the "Export Compliance" question is auto-answered and the build will validate cleanly.
+
+NOTE (legal self-declaration): `false` = "app uses only exempt encryption." This is correct for Evolve (HTTPS + Apple crypto + Face ID + SQLCipher/AES-256, all standard/exempt). Confirm you're comfortable with that declaration before submitting.

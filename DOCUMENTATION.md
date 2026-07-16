@@ -1489,3 +1489,11 @@ suites green — desktop 395, mobile 299, evolve_sync 99):
 *Tech Notes*: New file `desktop/lib/core/dev_device_local_store.dart`. Interface change on
 `evolve_sync`'s `PrivateSyncService` (one method). No release/production behavior change; no new
 dependencies. On-device QA on a SIGNED build still required to confirm key persistence.
+
+- [2026-07-17 00:02:16]: iOS Info.plist Update
+  - *Details*: Added `NSHealthUpdateUsageDescription` string to resolve App Store Connect validation error 409.
+  - *Tech Notes*: Apple static analyzer requires the update usage string when linking HealthKit APIs, even if only reading data.
+
+- [2026-07-17 00:08:32]: iOS Info.plist Update
+  - *Details*: Fixed `ITSEncryptionExportComplianceCode` string to use the iOS-specific UUID provided by App Store Connect.
+  - *Tech Notes*: We mistakenly used the desktop compliance UUID for the iOS app. Replaced it with `18799185-b04d-4bfe-8a61-b2ef269b477f`.

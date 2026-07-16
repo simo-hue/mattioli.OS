@@ -57,6 +57,8 @@
 	<string>Questa app richiede l'accesso alla galleria per permetterti di caricare la tua foto profilo.</string>
 	<key>NSHealthShareUsageDescription</key>
 	<string>Questa app accede ai tuoi dati su salute e fitness per verificare automaticamente le abitudini, come i passi, l'attività e il sonno.</string>
+	<key>NSHealthUpdateUsageDescription</key>
+	<string>Questa app sincronizza in modo sicuro i dati di salute e fitness per aiutarti a tracciare i tuoi progressi.</string>
 	<key>UIApplicationSceneManifest</key>
 	<dict>
 		<key>UIApplicationSupportsMultipleScenes</key>

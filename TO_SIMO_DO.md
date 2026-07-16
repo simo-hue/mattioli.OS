@@ -345,3 +345,36 @@ EXPIRATION redelivered after a RENEWAL can no longer wrongly revoke a paying use
 - Still no runnable test harness here (no `deno`/`tsc`), so the webhook change is verified by
       review + static inspection, not execution — worth a staging check of a reordered event if you
       have one, but it degrades safely either way.
+
+## 🍏 PREVIOUS APP REVIEW REJECTION (Submission 4a3fcd37, macOS v1.0(1), July 15 2026)
+
+Two guidelines were cited. The CODE side of both is now addressed & verified, but each has a
+MANUAL App Store Connect half that code cannot do. **Do NOT resubmit without the manual steps.**
+
+### Guideline 3.1.2(c) — subscription disclosures
+CODE (verified in the current desktop paywall, Settings → Evolve Pro): plan titles (Monthly/Annual),
+length, real StoreKit price (`storeProduct.priceString`, never the plan name), auto-renewal
+disclaimer, functional Privacy Policy link (https://simo-hue.github.io/evolve/privacy.html — confirmed
+live, 200), functional Terms/EULA link (Apple standard EULA), Restore Purchases, Manage Subscription.
+Mobile paywall has the same. **This half is done.**
+
+- [ ] **MANUAL (required — the code fix alone does NOT clear this):** in App Store Connect, add the
+      **Terms of Use (EULA) link to the App Description** (or the custom-EULA field), and the
+      **Privacy Policy URL to the Privacy Policy field**. The reviewer explicitly required the links
+      in the *metadata*, not just the app. Use the same two URLs the app uses.
+
+### Guideline 2.1(b) — "cannot locate the In-App Purchases"
+Most likely CODE cause is now fixed: macOS OAuth sign-in was DEAD in release builds (the missing
+`com.apple.security.network.server` entitlement), and the paywall sits behind the login gate in
+Supabase mode — so the reviewer couldn't sign in → couldn't reach Settings → couldn't find the IAP.
+That entitlement is now present, and the paywall loads real products (public RevenueCat key committed,
+`isConfigured` = true). **But 2.1(b) is mostly manual/config + a required reply:**
+
+- [ ] **Accept the Paid Apps Agreement** (App Store Connect → Business). IAP will not function at all
+      until the Account Holder accepts it — a prime suspect for "cannot locate the IAP."
+- [ ] **Confirm the IAP products are submitted & in a review-ready state** and configured for the
+      Apple sandbox (the monthly + yearly subscriptions).
+- [ ] **Reply to the reviewer with the navigation steps**, e.g.: "Launch app → complete onboarding →
+      sign in → open **Settings** → **Evolve Pro** section → the Monthly/Annual plans and prices are
+      shown there, with Restore Purchases." Put this in the App Review Information → Notes field too.
+- [ ] Provide a **screen recording** of the paywall (the reviewer asked for one to confirm).

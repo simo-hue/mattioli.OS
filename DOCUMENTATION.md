@@ -1460,3 +1460,32 @@ state. Added a per-user last-applied-event timestamp and a monotonic apply.
 *Tech Notes*: Independently reviewed GOOD with all five ordering cases traced. No app (Dart) code
 changed, so Flutter suites are unaffected. Edge functions have no runnable harness here
 (no deno/tsc) — verified by review + static inspection. Adds one migration to the manual apply list.
+
+---
+
+## [2026-07-16]: Local `flutter run` private-DB reset — dev escape hatch + recovery hardening
+
+*Details*: The owner reported the macOS private DB failing to open ("file is not a database") and
+resetting on every `flutter run`. Diagnosed as a local-dev signing artifact: the device-local
+SQLCipher key is Keychain-scoped to `$(AppIdentifierPrefix)com.simo.evolve`, which is unstable on an
+unsigned/ad-hoc `flutter run` (no stable Team ID), so the key isn't found across builds. A signed
+release build has a stable prefix and is unaffected. Two changes (both independently reviewed, all
+suites green — desktop 395, mobile 299, evolve_sync 99):
+
+- **Debug-only escape hatch** (`secure_storage_utils.dart` + new `dev_device_local_store.dart`): in
+  DEBUG builds, the device-local tier (SQLCipher key + owner UUID) persists to a JSON file under
+  Application Support so `flutter run` stops resetting the DB. Gated on `kDebugMode` (compile-time
+  const), so the file path is tree-shaken out of release — release behavior is byte-for-byte the
+  real Keychain, and the general `storage` tier is untouched. The dev file holds the key in plaintext
+  (debug-only, never shipped). `setMockInitialValues` was NOT reintroduced.
+- **Recovery race hardening** (`private_sync_service.dart`, `cloudkit_private_sync_service.dart`,
+  `private_mode_recovery.dart`): added `runExclusive` to `PrivateSyncService` (delegating to the
+  existing `_runExclusive`/`_tail` chain). `resetAndReopenPrivate` now runs the reset+reopen under
+  that exclusion so the auto CloudKit sync can't be mid-open during the file delete/recreate — the
+  cause of the SQLCipher "out of memory" on BEGIN EXCLUSIVE + double-reset in the owner's log. `enable()`
+  stays sequential AFTER the block (nesting it would re-enter the lock and deadlock). NoOp + all
+  desktop/mobile `PrivateSyncService` test doubles got the passthrough.
+
+*Tech Notes*: New file `desktop/lib/core/dev_device_local_store.dart`. Interface change on
+`evolve_sync`'s `PrivateSyncService` (one method). No release/production behavior change; no new
+dependencies. On-device QA on a SIGNED build still required to confirm key persistence.

@@ -104,6 +104,9 @@ class _FakeSync implements PrivateSyncService {
 
   @override
   Future<PrivateSyncStatus> requestFullReset() async => enableResult;
+
+  @override
+  Future<T> runExclusive<T>(Future<T> Function() action) => action();
 }
 
 void main() {

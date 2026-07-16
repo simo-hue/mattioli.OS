@@ -172,9 +172,21 @@ Future<bool> resetAndReopenPrivate(
 }) async {
   final db = store ?? DesktopPrivateDb.instance;
   try {
-    await db.resetLockedDatabase();
+    // Route the file delete + recreate through the sync engine's op chain so an
+    // auto-sync opened on launch can't be mid-open over the file while we delete
+    // and recreate it — the race that surfaced as SQLCipher "out of memory" on
+    // BEGIN EXCLUSIVE plus a double reset. runExclusive REUSES the same lock
+    // enable/syncNow take, so this section and any in-flight sync op serialize.
+    await sync.runExclusive(() async {
+      await db.resetLockedDatabase();
+      await db.ensureReady();
+    });
+    // enable() takes that SAME lock internally (_runExclusive), so it must run
+    // AFTER — outside — the block above, never nested inside it: nesting would
+    // re-enter the lock and deadlock (the inner op would wait on the outer one,
+    // which is waiting on the inner). The reset + reopen is already committed by
+    // the time this runs, so a later enable/pull sees the fresh, open DB.
     if (enableSync) await sync.enable();
-    await db.ensureReady();
     return true;
   } catch (error, stack) {
     AppLogger.error('[PrivateRecovery] reset & reopen failed', error, stack);

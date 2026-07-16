@@ -73,6 +73,9 @@ class _FakeSyncService implements PrivateSyncService {
         account: CloudAccountStatus.available);
     return current;
   }
+
+  @override
+  Future<T> runExclusive<T>(Future<T> Function() action) => action();
 }
 
 /// Pumps the settings page in Private mode with [fake] as the sync service and

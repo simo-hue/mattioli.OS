@@ -378,3 +378,28 @@ That entitlement is now present, and the paywall loads real products (public Rev
       sign in → open **Settings** → **Evolve Pro** section → the Monthly/Annual plans and prices are
       shown there, with Restore Purchases." Put this in the App Review Information → Notes field too.
 - [ ] Provide a **screen recording** of the paywall (the reviewer asked for one to confirm).
+
+## 🖥️ Local `flutter run` DB reset — explained + smoothed (2026-07-16)
+
+The "DB Error 26 / file is not a database → reset in Private mode on launch" you saw is a
+**local-dev signing artifact, NOT a release bug**: the SQLCipher key is stored in the Keychain
+scoped to `$(AppIdentifierPrefix)com.simo.evolve`, and an unsigned/ad-hoc `flutter run` has an
+unstable Team ID prefix, so the key written one run isn't found the next → the old DB can't be
+decrypted → recovery resets it. A signed/notarized/App Store build has a stable Team ID, so the
+key persists and this does NOT happen.
+
+Two things landed to make dev smooth + recovery robust (both green, independently reviewed):
+- **Debug-only escape hatch**: in DEBUG builds only, the Private-mode device-local secrets (SQLCipher
+  key + owner UUID) now persist in a file (`<AppSupport>/dev_device_local_secrets.json`) so your
+  `flutter run` stops resetting the DB every launch. Gated on `kDebugMode` → **impossible in release**
+  (the branch is compiled out; release uses the real Keychain, byte-for-byte unchanged).
+  ⚠️ Heads-up: that dev file holds the DB key in **plaintext**. It's outside the repo, debug-only,
+  and never created by a release build — but delete it if you ever want a clean dev slate.
+- **Recovery hardening**: the "Reset & start fresh" reset+reopen now runs under the sync engine's
+  exclusion lock, so the auto CloudKit sync can't be mid-open while the file is deleted/recreated —
+  fixing the `out of memory` on `BEGIN EXCLUSIVE` + double-reset you saw in the log.
+
+- [ ] **STILL VERIFY on a SIGNED build** (unchanged from before): the whole point is that a properly
+      signed build persists the key. Do a signed/notarized (or TestFlight) build → Private mode →
+      add data → quit → reopen → **data still there, no reset**. If it DOES reset on a signed build,
+      your Xcode signing Team / provisioning for the keychain-access-group is misconfigured — tell me.

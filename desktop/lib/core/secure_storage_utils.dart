@@ -1,7 +1,11 @@
+import 'dart:io';
+
+import 'package:flutter/foundation.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_secure_storage/flutter_secure_storage.dart';
 
 import 'app_logger.dart';
+import 'dev_device_local_store.dart';
 
 class SecureStorageUtils {
   const SecureStorageUtils._();
@@ -29,6 +33,38 @@ class SecureStorageUtils {
   /// tier pinned from day one (no legacy items to migrate) — desktop cannot
   /// retroactively change the accessibility of already-written keys.
   static const FlutterSecureStorage _deviceLocalStorage = FlutterSecureStorage();
+
+  /// DEBUG-only file-backed replacement for the device-local Keychain tier (see
+  /// [DevDeviceLocalStore]). Only ever referenced from inside the `kDebugMode`
+  /// branch of [readDeviceLocal] / [writeDeviceLocal] / [deleteDeviceLocal], so
+  /// release builds const-fold that branch away and tree-shake this field —
+  /// and [DevDeviceLocalStore] — out entirely.
+  static final DevDeviceLocalStore _devDeviceLocalStore = DevDeviceLocalStore();
+
+  /// True only while running under `flutter test` (the runner sets FLUTTER_TEST).
+  /// Used ONLY to keep the debug escape hatch OFF during tests, so the existing
+  /// device-local tests keep exercising the real (channel-mocked) Keychain path
+  /// instead of the file store. Never affects release: the outer [kDebugMode]
+  /// gate is const-false there, so this is never evaluated in a release build.
+  static final bool _isFlutterTest =
+      Platform.environment.containsKey('FLUTTER_TEST');
+
+  static bool _devDeviceLocalStoreWarned = false;
+
+  /// One-time debug breadcrumb making it obvious that the file-backed dev
+  /// keystore is active (and, by its absence, that release never takes this
+  /// path).
+  static void _warnDevDeviceLocalStoreOnce() {
+    if (_devDeviceLocalStoreWarned) return;
+    _devDeviceLocalStoreWarned = true;
+    AppLogger.warning(
+      '[SecureStorage] DEBUG build: Private-mode device-local secrets (the '
+      'SQLCipher DB key + owner id) are read/written from a PLAINTEXT dev file '
+      'instead of the Keychain, so a local `flutter run` keeps the same '
+      'encrypted DB across restarts. This escape hatch is compiled out of '
+      'release builds (gated on kDebugMode).',
+    );
+  }
 
   static Future<String?> read(String key) => storage.read(key: key);
 
@@ -92,21 +128,46 @@ class SecureStorageUtils {
       writeScoped(storage, key, value, context: context);
 
   /// Read a Private-Mode device-local secret (see [_deviceLocalStorage]).
-  static Future<String?> readDeviceLocal(String key) =>
-      _deviceLocalStorage.read(key: key);
+  ///
+  /// In DEBUG builds only, routes to the file-backed [_devDeviceLocalStore] so a
+  /// local `flutter run` survives the unstable ad-hoc Team ID (see
+  /// [DevDeviceLocalStore]). `kDebugMode` is a compile-time const, so the file
+  /// branch is tree-shaken out of release builds — release reads the Keychain
+  /// byte-for-byte as before.
+  static Future<String?> readDeviceLocal(String key) {
+    if (kDebugMode && !_isFlutterTest) {
+      _warnDevDeviceLocalStoreOnce();
+      return _devDeviceLocalStore.read(key);
+    }
+    return _deviceLocalStorage.read(key: key);
+  }
 
   /// Delete a Private-Mode device-local secret (see [_deviceLocalStorage]).
-  static Future<void> deleteDeviceLocal(String key) =>
-      _deviceLocalStorage.delete(key: key);
+  /// DEBUG-only file-backed in dev; real Keychain in release (see
+  /// [readDeviceLocal]).
+  static Future<void> deleteDeviceLocal(String key) {
+    if (kDebugMode && !_isFlutterTest) {
+      _warnDevDeviceLocalStoreOnce();
+      return _devDeviceLocalStore.delete(key);
+    }
+    return _deviceLocalStorage.delete(key: key);
+  }
 
   /// Write a Private-Mode device-local secret (see [_deviceLocalStorage]) with
-  /// scoped -25299 recovery (never `deleteAll`).
+  /// scoped -25299 recovery (never `deleteAll`). DEBUG-only file-backed in dev
+  /// (the -25299 recovery is Keychain-specific and does not apply); real
+  /// Keychain in release (see [readDeviceLocal]).
   static Future<void> writeDeviceLocal(
     String key,
     String value, {
     String context = 'SecureStorage(device-local)',
-  }) =>
-      writeScoped(_deviceLocalStorage, key, value, context: context);
+  }) {
+    if (kDebugMode && !_isFlutterTest) {
+      _warnDevDeviceLocalStoreOnce();
+      return _devDeviceLocalStore.write(key, value);
+    }
+    return writeScoped(_deviceLocalStorage, key, value, context: context);
+  }
 
   static bool _isDuplicateKeychainItem(Object error) {
     if (error is! PlatformException) return false;

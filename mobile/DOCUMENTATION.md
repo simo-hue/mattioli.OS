@@ -2427,3 +2427,53 @@ iCloud Sync core is implemented, unit-tested (160), and iOS-compiling. Remaining
       fields + constructor args (they only fed the dots). No behavior change to
       the performance coloring. Suite **194/194 green**; `flutter analyze` clean.
       Visual best confirmed on device.
+
+- **2026-07-16: iOS — fixed "Cycle inside Runner" archive failure (app-extension build-phase order)**
+  - *Details*: `flutter build ipa` failed at the archive step with
+    `Error (Xcode): Cycle inside Runner; building could produce unreliable
+    results.` The cause was the `DeviceActivityMonitorExtension` app-extension
+    (added to the Runner target as an "Embed Foundation Extensions" copy phase):
+    Xcode appended that phase **last**, after Flutter's "Thin Binary" phase.
+    Flutter's "Thin Binary" phase declares `${TARGET_BUILD_DIR}/${INFOPLIST_PATH}`
+    (Runner.app/Info.plist) as an **input**, but Info.plist can't finalize until
+    the `.appex` is copied into `Runner.app/PlugIns/` — and that copy was gated
+    *after* Thin Binary → dependency cycle
+    (EmbedPodsFrameworks → ThinBinary → Info.plist → appex → CopyPodsResources →
+    EmbedPodsFrameworks). This is the canonical Flutter + app-extension + Xcode 15/16
+    cycle (flutter/flutter#135056).
+  - *Tech Notes*:
+    - `ios/Runner.xcodeproj/project.pbxproj`, Runner target `buildPhases`: moved
+      `Embed Foundation Extensions` (2438998C…) to run **immediately after
+      `Embed Frameworks` and before `Thin Binary`** (and before both `[CP]` Pods
+      phases). Single-line reorder; no other project changes. New order:
+      … Embed Frameworks → **Embed Foundation Extensions** → Thin Binary →
+      [CP] Embed Pods Frameworks → [CP] Copy Pods Resources.
+    - Deliberately did **not** add a Podfile `post_install` auto-reorder hook: the
+      only robust way (opening `Runner.xcodeproj` with the `xcodeproj` gem and
+      `save`) rewrites the whole project, and this project uses Xcode-16
+      `PBXFileSystemSynchronizedRootGroup` objects (the extension's
+      file-sync group) that older `xcodeproj` gem versions may not round-trip —
+      risking corruption of the extension target. The manual reorder lives in the
+      committed pbxproj and survives `flutter clean` / `pod install`, so a hook is
+      unnecessary.
+    - Verified as far as possible off-device (this Mac has no full Xcode):
+      `plutil -lint project.pbxproj` → OK; new phase order confirmed;
+      `flutter analyze` clean (0 errors). Final `flutter build ipa` must be
+      re-run on the Mac mini (Xcode host) to confirm the archive completes.
+    - Separately confirmed the Dart translation errors seen in the older Xcode
+      log (missing slang getters: apiKey, apiKeyInvalid, privateRecovery.*,
+      freeSlotsFullBanner, accountDeletedAppleRevokeFailed, expiresOn,
+      priceUnavailable, pricesUnavailable, aiCoach) were a **stale pre-regeneration
+      artifact** — all getters are now defined in `lib/i18n/translations_*.g.dart`
+      and `flutter analyze` is clean. Not a current blocker.
+
+- **2026-07-16: iOS — DeviceActivityMonitorExtension min-iOS 26.5 → 16.0**
+  - *Details*: The extension target had `IPHONEOS_DEPLOYMENT_TARGET = 26.5`
+    (Xcode auto-set it to the current SDK at target creation) while the app is
+    15.0. iOS would not load the extension below 26.5, so Screen-Time
+    auto-verification would silently never run for ~all users. Lowered to 16.0
+    (floor for individual FamilyControls authorization).
+  - *Tech Notes*: `ios/Runner.xcodeproj/project.pbxproj` — extension configs
+    Debug/Release/Profile (2438998D/8E/8F), `IPHONEOS_DEPLOYMENT_TARGET = 16.0`.
+    `plutil -lint` OK. Runtime availability on 16.0–26.4 devices to be confirmed
+    on device.

@@ -310,3 +310,21 @@ New `ai.apiKey` i18n block (16 keys × 5 locales × both apps).
       upward, so a fabricated record streak can never self-heal. A one-off `recomputeStreaksForGoals`
       backfill is the only cure — but it would visibly LOWER some users' "best streak" with no
       explanation. That is a product/trust call, not an engineering one. Doing nothing is defensible.
+
+## 🔎 New-code review (2026-07-16, follow-up) — one item is YOURS to decide
+
+After committing the fixes, I audited the code the fix-waves themselves wrote (the two edge
+functions, the migrations, BYOK) — since that code never went through the original audit. The
+revoke-apple-token function and mobile BYOK came back CLEAN. Six smaller issues surfaced; I'm
+fixing the four that are in-scope. This one is web-adjacent, so I left it for you:
+
+- [ ] **`public/schema.sql` is served on the public internet.** It sits in the Vite `public/`
+      dir, so `vite build` copies it into `dist/` and `.github/workflows/deploy.yml` publishes it to
+      GitHub Pages — it's fetchable at `https://simo-hue.github.io/mattioli.OS/schema.sql` (robots
+      `Allow: /`). It's a full DB schema dump (table/column names + RLS policy definitions) of the
+      SAME Supabase backend the mobile/desktop apps use. No secrets or data rows — it's information
+      disclosure, LOW severity, and the same content is already public in your source repo. But a
+      DB DDL dump has no reason to be a shipped static web asset. You told me to leave the web app
+      alone, so I did not touch it. Fix when convenient: remove `schema.sql` from `public/` (the
+      root-level `schema.sql` copy is not served and can stay). The `schema.sql` at the repo root
+      and in `public/` are not identical — the public one is actually a staler subset.

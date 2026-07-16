@@ -31,6 +31,7 @@ import '../../core/data_mode.dart';
 import '../../core/private_local_database.dart';
 import '../../core/private_sync_service.dart';
 import '../../core/notifications.dart';
+import '../../core/openrouter_service.dart';
 import '../../core/secure_storage_utils.dart';
 import '../widgets/animations/pulsing_sync_animation.dart';
 import 'icloud_sync_screen.dart';
@@ -1412,12 +1413,31 @@ class PrivacySettingsScreen extends ConsumerWidget {
       // marker must go or the next account's empty first sync is refused as
       // cross-account contamination and this account's cache is served to them
       // at cold start.
-      await NotificationService().cancelAll();
-      ref.read(goalsProvider.notifier).clearAll();
-      ref.read(habitLogsProvider.notifier).clearAll();
-      ref.read(macroGoalsProvider.notifier).clearAll();
-      ref.read(settingsProvider.notifier).resetToDefaults();
-      await SecureStorageUtils.delete(kCacheOwnerKey);
+      try {
+        await NotificationService().cancelAll();
+        ref.read(goalsProvider.notifier).clearAll();
+        ref.read(habitLogsProvider.notifier).clearAll();
+        ref.read(macroGoalsProvider.notifier).clearAll();
+        ref.read(settingsProvider.notifier).resetToDefaults();
+        await SecureStorageUtils.delete(kCacheOwnerKey);
+      } finally {
+        // The BYOK OpenRouter key is a Keychain secret that, like the cache
+        // marker, survives even an uninstall — so this permanent erasure must
+        // purge it too, or the next user of a shared/resold device inherits it
+        // and spends this account's OpenRouter credits. It runs in the finally so
+        // a throw from any teardown step above can't skip it, and is guarded so
+        // its own failure can't abort the sign-out that frees the user. Same
+        // mechanism as the Settings "remove key" action.
+        try {
+          await ref.read(openRouterApiKeyProvider.notifier).clear();
+        } catch (e, stack) {
+          AppLogger.error(
+            'BYOK key purge failed during account deletion',
+            e,
+            stack,
+          );
+        }
+      }
 
       // Report before signing out: signOut redirects to /login and disposes this
       // screen, so a toast deferred past it would never reach a live context.

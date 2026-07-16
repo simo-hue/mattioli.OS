@@ -1398,3 +1398,37 @@ audit (676 → 827 passing). All four packages analyze-clean.
 evolve_sync 99, evolve_verification 51). **Nothing has been run on a real device (no Xcode on this
 Mac)** — the blocking manual steps and on-device QA list remain in TO_SIMO_DO.md. Next: Simone does
 the manual deploy/config steps, then a signed macOS archive + on-device QA before submission.
+
+---
+
+## [2026-07-16]: Audit of the fix-wave code itself (edge functions, migrations, BYOK)
+
+*Details*: After the 83 findings were closed, the code the fix effort ITSELF wrote had never been
+independently audited. Ran an adversarial review over the net-new surfaces (revoke-apple-token +
+revenuecat-webhook edge functions, the 2026-07-16 migrations, BYOK on both platforms). Result:
+7 candidates → 6 confirmed / 1 refuted, no blockers/highs. The revoke-apple-token function and
+mobile BYOK reviewed CLEAN. Fixed 4 of the 6 (each independently reviewed + mutation-tested):
+
+- **RevenueCat webhook wrongly revoked Pro from paying users.** It read `event.subscriber.entitlements`
+  — the REST/CustomerInfo shape, absent from webhook payloads — so every event fell to a type check
+  that left `is_pro` at its `false` initializer and wrote `is_pro=false` for BILLING_ISSUE,
+  PRODUCT_CHANGE, CANCELLATION (still entitled), etc. Replaced with explicit GRANT/REVOKE event sets;
+  CANCELLATION and unknown types now early-return 200 without writing (never default-false). Also:
+  reads the current row for idempotency (no-op on exact redelivery), and detects zero-row updates
+  (grant→500 so RevenueCat retries the signup race; `$RCAnonymousID`→200 to avoid futile retries).
+  Fail-closed shared-secret auth untouched.
+- **Desktop AI-coach send-lock latch** — the same key-guard-lockout throw class fixed earlier this
+  session, on the next await (`_ensurePrivateAiConsent`). Now every exit path of `_sendMessage`
+  resets `_sending`, so a locked private DB can no longer permanently wedge the composer.
+- **BYOK key purged on account deletion** — `_deleteAccount` now clears the OpenRouter key from the
+  Keychain (in a `finally`, via the same `clear()` the manual "remove key" uses), so a shared/resold
+  device can't leak it to the next user. Regression test added + mutation-verified.
+
+Deferred (disclosed, not blocking): full webhook out-of-order guard needs a new `profiles`
+`revenuecat_event_timestamp_ms` column (no migration invented in the function file); the idempotency
+no-op absorbs exact redeliveries only. `public/schema.sql` is served on GitHub Pages (web deploy,
+out of scope) — logged in TO_SIMO_DO.md for the owner.
+
+*Tech Notes*: New env var still required: `REVENUECAT_WEBHOOK_SECRET` (fail-closed). Edge functions
+have no runnable test harness here (`deno`/`tsc` not installed) — the webhook fix is verified by
+review + static inspection, NOT execution. Suites green (desktop 380, mobile 299).

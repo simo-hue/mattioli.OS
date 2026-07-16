@@ -266,9 +266,25 @@ class _AiCoachPageState extends ConsumerState<AiCoachPage> {
     // Cloud sends leave the device, so in Private mode they require explicit
     // consent. Local sends never leave the device → no consent gate, no
     // internet check.
-    if (isCloud && !await _ensurePrivateAiConsent()) {
-      _sending = false;
-      return;
+    //
+    // The consent check reads the private DB (`_ensurePrivateAiConsent` →
+    // `hasPrivateAiExternalConsent`), whose `database` getter throws
+    // `PrivateDatabaseLockedException` when the SQLCipher key is locked out. As
+    // with the key read above, that throw MUST NOT escape: `_sending` is
+    // already latched, so an uncaught throw would leave it latched for the
+    // page's lifetime, silently blocking every later send. A failed check is
+    // treated as "consent not granted" (the send does not proceed).
+    if (isCloud) {
+      bool consented;
+      try {
+        consented = await _ensurePrivateAiConsent();
+      } catch (_) {
+        consented = false;
+      }
+      if (!consented) {
+        _sending = false;
+        return;
+      }
     }
     // The consent dialog is async; bail if the page went away meanwhile.
     if (!mounted) {

@@ -23,6 +23,21 @@ async function secureEquals(a: string, b: string): Promise<boolean> {
   return diff === 0
 }
 
+// PostgREST surfaces a select against a not-yet-migrated column as Postgres
+// undefined_column (SQLSTATE 42703). This function may be deployed before its
+// migration is applied (migrations are run manually), so we detect that specific
+// error and degrade to idempotency-only instead of returning 500. The message
+// fallback covers deployments where the code is absent but the text still names
+// the column or "does not exist".
+function isMissingColumnError(err: unknown, columnName: string): boolean {
+  if (!err || typeof err !== 'object') return false
+  const code = (err as { code?: unknown }).code
+  if (code === '42703') return true
+  const rawMessage = (err as { message?: unknown }).message
+  const message = typeof rawMessage === 'string' ? rawMessage.toLowerCase() : ''
+  return message.includes(columnName.toLowerCase()) || message.includes('does not exist')
+}
+
 serve(async (req) => {
   // Handle CORS
   if (req.method === 'OPTIONS') {
@@ -69,7 +84,12 @@ serve(async (req) => {
 
     const userId = event.app_user_id
     const eventType = event.type
-    
+    // Milliseconds-since-epoch when the event occurred, per the RevenueCat webhook
+    // payload. Some events may omit it; when absent we cannot order this delivery
+    // and fall back to idempotency-only for this request.
+    const incomingTs: number | null =
+      typeof event.event_timestamp_ms === 'number' ? event.event_timestamp_ms : null
+
     console.log(`[RevenueCat Webhook] Ricevuto evento ${eventType} per l'utente ${userId}`)
 
     if (!userId) {
@@ -135,13 +155,39 @@ serve(async (req) => {
 
     // 4. Load the current profile first. A blind update reports success even
     // when it matches zero rows, so reading lets us (a) make the write
-    // idempotent — absorbing exact redeliveries — and (b) detect a missing row.
-    // maybeSingle() returns data=null (not an error) when no row matches.
-    const { data: profile, error: readError } = await supabase
+    // idempotent — absorbing exact redeliveries — (b) detect a missing row, and
+    // (c) compare the incoming event time against the last-applied one to drop
+    // reordered redeliveries. maybeSingle() returns data=null (not an error)
+    // when no row matches.
+    //
+    // Deploy-order-safe: this function may ship before the migration that adds
+    // revenuecat_event_timestamp_ms. If the column is absent the primary select
+    // fails with undefined_column; we then re-read the pre-migration column set
+    // and disable ordering, so the endpoint behaves exactly as it did before the
+    // ordering guard existed. Only a missing-column error triggers the fallback —
+    // every other read error keeps the 500-and-retry behavior.
+    let orderingAvailable = true
+    let profile: { id: string; is_pro: boolean; revenuecat_event_timestamp_ms?: number | null } | null = null
+    let readError: unknown = null
+
+    const primaryRead = await supabase
       .from('profiles')
-      .select('id, is_pro')
+      .select('id, is_pro, revenuecat_event_timestamp_ms')
       .eq('id', userId)
       .maybeSingle()
+    profile = primaryRead.data
+    readError = primaryRead.error
+
+    if (readError && isMissingColumnError(readError, 'revenuecat_event_timestamp_ms')) {
+      orderingAvailable = false
+      const fallbackRead = await supabase
+        .from('profiles')
+        .select('id, is_pro')
+        .eq('id', userId)
+        .maybeSingle()
+      profile = fallbackRead.data
+      readError = fallbackRead.error
+    }
 
     if (readError) {
       console.error(`[Error] Impossibile leggere il profilo per ${userId}:`, readError)
@@ -181,8 +227,50 @@ serve(async (req) => {
       )
     }
 
-    // Idempotent: nothing to do when the stored state already matches.
-    if (profile.is_pro === intendedIsPro) {
+    // Ordering guard. RevenueCat does not guarantee delivery order and retries on
+    // non-2xx, so a stale EXPIRATION can be redelivered after the RENEWAL that
+    // supersedes it. Ordering is only possible when the column exists and both
+    // the stored and incoming timestamps are present; otherwise idempotency on
+    // is_pro is the only guard, exactly as before this column existed.
+    const storedTs: number | null =
+      orderingAvailable && typeof profile.revenuecat_event_timestamp_ms === 'number'
+        ? profile.revenuecat_event_timestamp_ms
+        : null
+
+    // Strictly-older incoming event: a reordered redelivery of something already
+    // superseded. Drop it without touching is_pro or the stored timestamp. Equal
+    // timestamps are exact redeliveries handled by the idempotency check below,
+    // so this comparison is strict.
+    if (orderingAvailable && incomingTs !== null && storedTs !== null && incomingTs < storedTs) {
+      console.log(`[RevenueCat Webhook] Evento ${eventType} obsoleto per ${userId} (ts ${incomingTs} < ${storedTs}): nessuna scrittura.`)
+      return new Response(
+        JSON.stringify({ success: true, ignored: true, reason: 'stale_event' }),
+        { status: 200, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+      )
+    }
+
+    const alreadyMatches = profile.is_pro === intendedIsPro
+    const updatePayload: { is_pro: boolean; revenuecat_event_timestamp_ms?: number } = { is_pro: intendedIsPro }
+
+    if (orderingAvailable && incomingTs !== null) {
+      // Advance the stored timestamp on every non-stale event, even when is_pro is
+      // already correct: a RENEWAL (newer ts) that finds is_pro already true must
+      // still record its ts, otherwise a later stale EXPIRATION (older ts) would
+      // be seen as newer and wrongly applied. The only true no-op is an exact
+      // redelivery — is_pro matches AND the stored ts is already at least as new
+      // (equal, since a strictly-newer stored ts was rejected as stale above).
+      if (alreadyMatches && storedTs !== null && storedTs >= incomingTs) {
+        console.log(`[RevenueCat Webhook] is_pro già ${intendedIsPro} e ts ${incomingTs} non più recente di ${storedTs} per ${userId}: nessuna scrittura.`)
+        return new Response(
+          JSON.stringify({ success: true, is_pro: intendedIsPro, unchanged: true }),
+          { status: 200, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+        )
+      }
+      updatePayload.revenuecat_event_timestamp_ms = incomingTs
+    } else if (alreadyMatches) {
+      // Ordering unavailable (column absent, or the event carried no timestamp):
+      // fall back to the pre-existing idempotency — nothing to do when the stored
+      // state already matches, and leave any stored timestamp untouched.
       console.log(`[RevenueCat Webhook] is_pro già ${intendedIsPro} per ${userId}: nessuna scrittura.`)
       return new Response(
         JSON.stringify({ success: true, is_pro: intendedIsPro, unchanged: true }),
@@ -194,9 +282,11 @@ serve(async (req) => {
 
     // 5. Apply the change and confirm a row was actually written. .select()
     // returns the updated rows, so a zero-row match is not mistaken for success.
+    // The added column in the update payload does not affect the id-only select,
+    // so the zero-row detection below still works.
     const { data: updated, error } = await supabase
       .from('profiles')
-      .update({ is_pro: intendedIsPro })
+      .update(updatePayload)
       .eq('id', userId)
       .select('id')
 

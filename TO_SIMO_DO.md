@@ -328,3 +328,20 @@ fixing the four that are in-scope. This one is web-adjacent, so I left it for yo
       alone, so I did not touch it. Fix when convenient: remove `schema.sql` from `public/` (the
       root-level `schema.sql` copy is not served and can stay). The `schema.sql` at the repo root
       and in `public/` are not identical — the public one is actually a staler subset.
+
+## ✅ Webhook out-of-order guard — now IMPLEMENTED (adds one migration to your list)
+
+The deferred item from the new-code review is done in code (independently reviewed GOOD, all
+ordering cases traced). It makes the RevenueCat webhook reject stale/reordered redeliveries (an
+EXPIRATION redelivered after a RENEWAL can no longer wrongly revoke a paying user).
+
+- [ ] **Apply the new migration** `migrations/20260716_add_revenuecat_event_timestamp.sql`
+      (alongside the other two 2026-07-16 migrations). It adds a nullable
+      `profiles.revenuecat_event_timestamp_ms` column and pins it (only the service-role webhook
+      may write it — a user who could set it would be able to freeze their own `is_pro=true`).
+- **Deploy order does NOT matter.** The webhook is deploy-order-safe: if you deploy the function
+      before applying the migration, it silently behaves as it did before (idempotency only) and
+      starts enforcing ordering automatically once the column exists — no redeploy needed.
+- Still no runnable test harness here (no `deno`/`tsc`), so the webhook change is verified by
+      review + static inspection, not execution — worth a staging check of a reordered event if you
+      have one, but it degrades safely either way.

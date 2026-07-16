@@ -1432,3 +1432,31 @@ out of scope) — logged in TO_SIMO_DO.md for the owner.
 *Tech Notes*: New env var still required: `REVENUECAT_WEBHOOK_SECRET` (fail-closed). Edge functions
 have no runnable test harness here (`deno`/`tsc` not installed) — the webhook fix is verified by
 review + static inspection, NOT execution. Suites green (desktop 380, mobile 299).
+
+---
+
+## [2026-07-16]: RevenueCat webhook — full out-of-order guard (deferred item, now done)
+
+*Details*: Completed the one code item deferred from the new-code review. The webhook previously
+had idempotency (absorbs exact redeliveries) but no ordering guard, so a stale/reordered event
+(e.g. an EXPIRATION redelivered after the RENEWAL that superseded it) could overwrite correct
+state. Added a per-user last-applied-event timestamp and a monotonic apply.
+
+- New migration `migrations/20260716_add_revenuecat_event_timestamp.sql`: nullable
+  `profiles.revenuecat_event_timestamp_ms bigint`, pinned against anon/authenticated by a NEW
+  self-contained BEFORE trigger `profiles_pin_revenuecat_timestamp` (service-role/postgres/
+  supabase_admin exempt, fail-closed for unknown roles, silent pin). Pinning is load-bearing: an
+  unpinned column would be a fresh escalation vector — a user setting a huge timestamp would make
+  the webhook treat their own future EXPIRATION as stale and freeze `is_pro=true` forever.
+- `revenuecat-webhook/index.ts`: reads the column, drops any event with a strictly-older
+  timestamp (`stale_event` 200 no-op), and advances the stored timestamp on every newer event —
+  including idempotent-but-newer ones (a RENEWAL that finds is_pro already true still records its
+  timestamp, so a later stale EXPIRATION can't apply). **Deploy-order-safe**: if the column is
+  absent (migration not yet applied) it detects the undefined_column error, falls back to the
+  prior idempotency-only behavior, and begins enforcing ordering automatically once the column
+  exists — no redeploy. All prior behavior (fail-closed auth, GRANT/REVOKE classification,
+  missing-profile handling, zero-row detection) preserved.
+
+*Tech Notes*: Independently reviewed GOOD with all five ordering cases traced. No app (Dart) code
+changed, so Flutter suites are unaffected. Edge functions have no runnable harness here
+(no deno/tsc) — verified by review + static inspection. Adds one migration to the manual apply list.

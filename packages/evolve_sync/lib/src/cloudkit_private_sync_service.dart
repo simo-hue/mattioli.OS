@@ -219,6 +219,14 @@ class CloudKitPrivateSyncService implements PrivateSyncService {
     }
   }
 
+  // Share the ONE op chain with enable/disable/syncNow (don't create a second
+  // lock) so a recovery reset routed through here can't run while an auto-sync
+  // op still holds/reopens the store. _runExclusive isolates a failing action so
+  // it doesn't poison the chain for later ops.
+  @override
+  Future<T> runExclusive<T>(Future<T> Function() action) =>
+      _runExclusive(action);
+
   @override
   Future<PrivateSyncStatus> requestFullReset() => _runExclusive(() async {
         try {

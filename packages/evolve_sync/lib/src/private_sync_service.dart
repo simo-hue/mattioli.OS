@@ -61,6 +61,14 @@ abstract class PrivateSyncService {
   /// (offline → queued and finished on the next sync). The LOCAL wipe is done
   /// separately by the app's private store (`deleteAllPrivateData`).
   Future<PrivateSyncStatus> requestFullReset();
+
+  /// Runs [action] inside the SAME serialization as enable/disable/syncNow so a
+  /// caller's own critical section can't interleave with an in-flight sync op.
+  /// The Private-mode recovery uses this to delete + recreate the encrypted DB
+  /// file while no auto-sync is mid-open over it (the race that surfaced as
+  /// SQLCipher "out of memory" on BEGIN EXCLUSIVE and a double reset). A failing
+  /// [action] must not poison the chain for later ops.
+  Future<T> runExclusive<T>(Future<T> Function() action);
 }
 
 /// Used wherever CloudKit sync isn't available (Android; Windows/Linux
@@ -91,6 +99,11 @@ class NoOpPrivateSyncService implements PrivateSyncService {
   @override
   Future<PrivateSyncStatus> requestFullReset() async =>
       const PrivateSyncStatus.localOnly();
+
+  // No sync engine here, so there is no op chain to serialize against — just run
+  // the action.
+  @override
+  Future<T> runExclusive<T>(Future<T> Function() action) => action();
 }
 
 /// The recovery action for a LOCKED private DB — its file exists but the

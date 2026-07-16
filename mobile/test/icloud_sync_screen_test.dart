@@ -122,6 +122,9 @@ class FakePrivateSyncService implements PrivateSyncService {
     _status = _copyWith(isEnabled: false);
     return _status;
   }
+
+  @override
+  Future<T> runExclusive<T>(Future<T> Function() action) => action();
 }
 
 Future<void> _pumpScreen(

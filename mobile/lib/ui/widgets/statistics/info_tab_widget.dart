@@ -144,7 +144,7 @@ class InfoTabWidget extends ConsumerWidget {
           ),
           const SizedBox(height: 12),
           Text(
-            'Le tue statistiche globali appariranno qui non appena inizierai a tracciare le tue abitudini. Completa i tuoi task per sbloccare questa panoramica.',
+            context.t.statistics.statsCollectingFirstDataDescription,
             textAlign: TextAlign.center,
             style: TextStyle(
               fontFamily: 'Inter',

@@ -49,6 +49,19 @@ class MacroGoalCategoriesNotifier extends AsyncNotifier<List<GoalCategory>> {
         return id;
       } catch (e, stack) {
         AppLogger.error('[Categories] Private add error', e, stack);
+        // A genuine failure (e.g. a live same-name collision, a locked private
+        // DB) must surface — mirror the Supabase branch below instead of
+        // swallowing into a bare null, which left the create button silently
+        // dead with the sheet stuck open.
+        final context = navigatorKey.currentContext;
+        if (context != null && context.mounted) {
+          ErrorModal.show(
+            context,
+            title: context.t.common.errorCreatingCategory,
+            message: context.t.common.categoryCreateFailed,
+            details: e.toString(),
+          );
+        }
         return null;
       }
     }

@@ -118,9 +118,14 @@ class AppLogger {
         extras: extras,
       ),
     );
-    debugPrint('$message: $error');
-    if (stackTrace != null) {
-      debugPrintStack(stackTrace: stackTrace);
+    // Console output only in debug — never leak raw error text to device logs
+    // in release builds (SEC-8). `debugPrint` writes to the console in release
+    // too, so the guard is what keeps it out of Console.app.
+    if (kDebugMode) {
+      debugPrint('${PrivacyUtils.sanitizeString(message)}: $error');
+      if (stackTrace != null) {
+        debugPrintStack(stackTrace: stackTrace);
+      }
     }
     if (kReleaseMode && !_externalReportingDisabled) {
       Sentry.captureException(
@@ -158,9 +163,12 @@ class AppLogger {
         extras: extras,
       ),
     );
-    debugPrint(
-      '[Warning] $sanitizedMessage${error != null ? ': $error' : ''}',
-    );
+    // Debug-only for the same reason as `error()`: `$error` is raw (SEC-8).
+    if (kDebugMode) {
+      debugPrint(
+        '[Warning] $sanitizedMessage${error != null ? ': $error' : ''}',
+      );
+    }
     if (kReleaseMode && !_externalReportingDisabled) {
       Sentry.captureMessage(
         sanitizedMessage,

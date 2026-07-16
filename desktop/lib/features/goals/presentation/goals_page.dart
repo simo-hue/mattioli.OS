@@ -18,6 +18,7 @@ import 'package:evolve_desktop/shared/widgets/evolve_dialog.dart';
 import 'goals_stats_view.dart';
 import 'package:evolve_desktop/shared/widgets/evolve_panel.dart';
 import 'package:evolve_desktop/shared/widgets/evolve_period_switcher.dart';
+import 'package:evolve_desktop/shared/widgets/evolve_spinner.dart';
 import 'package:evolve_desktop/shared/widgets/evolve_toast.dart';
 import 'package:evolve_desktop/core/tutorial_provider.dart';
 import 'package:evolve_desktop/shared/widgets/coach_tutorial.dart';
@@ -41,6 +42,12 @@ class _GoalsPageState extends ConsumerState<GoalsPage> {
   late int _selectedWeek;
   bool _showStats = false;
   final _quickGoalController = TextEditingController();
+  // Synchronous in-flight guard for the quick-add bar, armed BEFORE the addGoal
+  // await. The field is only cleared once that resolves (a Supabase round-trip
+  // in cloud mode), so without this a second click / Enter inside the window
+  // reads the same still-populated title and files a duplicate goal — addGoal
+  // mints a fresh id per call and does not dedupe.
+  bool _quickAdding = false;
   _GoalCategory? _quickGoalCategory;
   // User-created goal categories only — the previous hard-coded/default preset
   // categories (lavoro, salute, …) were removed; the picker now starts empty and
@@ -330,6 +337,7 @@ class _GoalsPageState extends ConsumerState<GoalsPage> {
                       setState(() => _quickGoalCategory = category),
                   onCreateCategory: _createCategoryInline,
                   onQuickSubmit: _submitQuickGoal,
+                  quickSubmitting: _quickAdding,
                   quickGoalHint: _quickGoalHint,
                 ),
                 const SizedBox(height: 22),
@@ -548,6 +556,7 @@ class _GoalsPageState extends ConsumerState<GoalsPage> {
   }
 
   Future<void> _submitQuickGoal() async {
+    if (_quickAdding) return;
     final title = _quickGoalController.text.trim();
     if (title.isEmpty) return;
 
@@ -559,21 +568,30 @@ class _GoalsPageState extends ConsumerState<GoalsPage> {
     }
 
     final category = _quickGoalCategory;
-    await ref
-        .read(dashboardControllerProvider.notifier)
-        .addGoal(
-          title: title,
-          category: category?.key ?? '',
-          color: category?.color ?? dashboardGoalColor(category?.key),
-          type: _selectedType,
-          dueLabel: _periodLabel,
-          categoryId: category?.id,
-          year: _selectedYear,
-          quarter: _selectedQuarter,
-          month: _selectedMonth,
-          weekNumber: _selectedWeek,
-        );
-    _quickGoalController.clear();
+    // Everything above is synchronous, so arming here still closes the window;
+    // the flag must be cleared on EVERY exit path (hence the finally) or a throw
+    // would wedge the bar for the page's lifetime.
+    setState(() => _quickAdding = true);
+    try {
+      await ref
+          .read(dashboardControllerProvider.notifier)
+          .addGoal(
+            title: title,
+            category: category?.key ?? '',
+            color: category?.color ?? dashboardGoalColor(category?.key),
+            type: _selectedType,
+            dueLabel: _periodLabel,
+            categoryId: category?.id,
+            year: _selectedYear,
+            quarter: _selectedQuarter,
+            month: _selectedMonth,
+            weekNumber: _selectedWeek,
+          );
+      _quickGoalController.clear();
+    } finally {
+      _quickAdding = false;
+      if (mounted) setState(() {});
+    }
   }
 
   Future<void> _cycleGoalStatus(
@@ -976,6 +994,7 @@ class _GoalCommandBar extends StatelessWidget {
     required this.onQuickCategoryChanged,
     required this.onCreateCategory,
     required this.onQuickSubmit,
+    required this.quickSubmitting,
     required this.quickGoalHint,
   });
 
@@ -1004,6 +1023,9 @@ class _GoalCommandBar extends StatelessWidget {
   final ValueChanged<_GoalCategory?> onQuickCategoryChanged;
   final VoidCallback onCreateCategory;
   final VoidCallback onQuickSubmit;
+
+  /// True while a quick-add write is in flight; disables the submit button.
+  final bool quickSubmitting;
   final String quickGoalHint;
 
   List<Widget> _periodSelectors(BuildContext context) {
@@ -1171,6 +1193,7 @@ class _GoalCommandBar extends StatelessWidget {
       onCategoryChanged: onQuickCategoryChanged,
       onCreateCategory: onCreateCategory,
       onSubmit: onQuickSubmit,
+      submitting: quickSubmitting,
       hintText: quickGoalHint,
       onMenuOpenChanged: onMenuOpenChanged,
     );
@@ -1584,6 +1607,7 @@ class _QuickGoalBar extends StatelessWidget {
     required this.onCategoryChanged,
     required this.onCreateCategory,
     required this.onSubmit,
+    required this.submitting,
     required this.hintText,
     required this.onMenuOpenChanged,
   });
@@ -1595,6 +1619,7 @@ class _QuickGoalBar extends StatelessWidget {
   final ValueChanged<_GoalCategory?> onCategoryChanged;
   final VoidCallback onCreateCategory;
   final VoidCallback onSubmit;
+  final bool submitting;
   final ValueChanged<bool> onMenuOpenChanged;
 
   @override
@@ -1656,16 +1681,23 @@ class _QuickGoalBar extends StatelessWidget {
           color: context.evolveAccent,
           borderRadius: BorderRadius.circular(12),
           child: InkWell(
-            onTap: onSubmit,
+            onTap: submitting ? null : onSubmit,
             borderRadius: BorderRadius.circular(12),
             child: SizedBox(
               width: 44,
               height: 44,
-              child: Icon(
-                LucideIcons.plus,
-                size: 20,
-                color: Theme.of(context).colorScheme.onPrimary,
-              ),
+              child: submitting
+                  ? Center(
+                      child: EvolveSpinner(
+                        radius: 8,
+                        color: Theme.of(context).colorScheme.onPrimary,
+                      ),
+                    )
+                  : Icon(
+                      LucideIcons.plus,
+                      size: 20,
+                      color: Theme.of(context).colorScheme.onPrimary,
+                    ),
             ),
           ),
         ),

@@ -43,6 +43,15 @@ class _GoalItemWidgetState extends ConsumerState<GoalItemWidget>
   bool _isPressed = false;
   GoalStatus? _visualStatusOverride;
   Timer? _debounceTimer;
+  ProviderContainer? _container;
+
+  @override
+  void didChangeDependencies() {
+    super.didChangeDependencies();
+    // Captured for dispose(): `ref` throws once the element is unmounted, but
+    // the container outlives this widget.
+    _container = ProviderScope.containerOf(context, listen: false);
+  }
 
   // ── Status cycle: active → completed → failed → active ──────────────────
   GoalStatus get _nextStatus {
@@ -84,6 +93,18 @@ class _GoalItemWidgetState extends ConsumerState<GoalItemWidget>
 
   @override
   void dispose() {
+    // The debounced timer is the only persistence path for a status tap, so a
+    // teardown inside the window must flush it rather than drop it: the user
+    // already got haptic + visual confirmation that the change applied.
+    final pendingStatus = _visualStatusOverride;
+    final container = _container;
+    if ((_debounceTimer?.isActive ?? false) &&
+        pendingStatus != null &&
+        container != null) {
+      container
+          .read(macroGoalsProvider.notifier)
+          .updateStatus(widget.goal.id, pendingStatus);
+    }
     _debounceTimer?.cancel();
     super.dispose();
   }

@@ -39,9 +39,15 @@ class SecureStorageUtils {
   /// Write [value] under [key] to [store], recovering from a duplicate-item
   /// (-25299) error with a delete+rewrite scoped to [key]. NEVER calls
   /// `deleteAll()`: several secrets — including the Private-Mode SQLCipher key —
-  /// can share one macOS keychain service (they differ only by accessibility,
-  /// which delete ignores, and macOS ignores access groups), so a blanket wipe
-  /// would destroy unrelated, unrecoverable data. Rethrows on unrecoverable
+  /// can share one macOS keychain service. They differ only by accessibility,
+  /// which delete ignores, and by access group, which never distinguishes them
+  /// here: `flutter_secure_storage_darwin` 0.3.2 sets `kSecAttrAccessGroup`
+  /// under `#if os(iOS)` only (`FlutterSecureStorage.swift:233-236`), so every
+  /// macOS query this class issues is group-less — including the recovery
+  /// delete below. (macOS itself does honour access groups: `MacOsOptions`
+  /// defaults `usesDataProtectionKeychain` to true. It is the plugin dropping
+  /// the parameter, not the platform ignoring it.) A blanket wipe would
+  /// therefore destroy unrelated, unrecoverable data. Rethrows on unrecoverable
   /// failure so callers can fail closed. Mirrors mobile's `_writeTo`.
   static Future<void> writeScoped(
     FlutterSecureStorage store,

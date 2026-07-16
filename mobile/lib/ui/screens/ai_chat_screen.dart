@@ -27,6 +27,16 @@ import 'app_settings_screen.dart';
 class AIChatScreen extends ConsumerStatefulWidget {
   const AIChatScreen({super.key});
 
+  /// Test seam for the coach's token stream. Production never reassigns this;
+  /// the real call needs the network and the user's Keychain key, so a widget
+  /// test that has to drive tokens one at a time swaps it (and restores it).
+  @visibleForTesting
+  static Stream<String> Function(
+    List<ChatMessage> history, {
+    String? systemPrompt,
+  })
+  streamFactory = OpenRouterService.generateStreamResponse;
+
   static Route route() {
     return MaterialPageRoute(builder: (context) => const AIChatScreen());
   }
@@ -41,6 +51,7 @@ class _AIChatScreenState extends ConsumerState<AIChatScreen> {
   final List<ChatMessage> _messages = [];
   bool _isTyping = false;
   bool _showPrompts = true;
+  StreamSubscription<String>? _responseSub;
   bool _shareHabits = true;
   bool _shareGoals = false;
 
@@ -123,8 +134,20 @@ class _AIChatScreenState extends ConsumerState<AIChatScreen> {
     );
   }
 
+  /// Drops any in-flight response. `cancel()` stops event delivery at once, so
+  /// callers never need to await it; awaiting it would also block on the
+  /// generator's `finally`, which is where the HTTP client is closed.
+  void _cancelResponseStream() {
+    final sub = _responseSub;
+    _responseSub = null;
+    if (sub != null) unawaited(sub.cancel());
+  }
+
   @override
   void dispose() {
+    // Without this the SSE stream outlives the screen: the generator's
+    // `finally { client.close(); }` only runs on completion or cancellation.
+    _cancelResponseStream();
     _controller.dispose();
     _scrollController.dispose();
     super.dispose();
@@ -134,6 +157,12 @@ class _AIChatScreenState extends ConsumerState<AIChatScreen> {
     if (text.trim().isEmpty) return;
     if (!await _ensurePrivateAiConsent()) return;
     if (!mounted) return;
+
+    // A previous response can still be streaming — `_isTyping` flips false on
+    // its first token, and `onSubmitted` isn't gated at all — and its listener
+    // writes to an index captured from the list we are about to grow. Drop it
+    // before touching `_messages`.
+    _cancelResponseStream();
 
     ref.hapticMedium();
 
@@ -155,16 +184,21 @@ class _AIChatScreenState extends ConsumerState<AIChatScreen> {
       );
     });
 
-    final stream = OpenRouterService.generateStreamResponse(
+    final stream = AIChatScreen.streamFactory(
       _messages.sublist(0, assistantMessageIndex),
       systemPrompt: _getSystemPrompt(),
     );
 
     bool receivedFirstToken = false;
 
-    stream.listen(
+    _responseSub = stream.listen(
       (chunk) {
         if (!mounted) return;
+        // Backstop: an event that outlives the list it was indexed against
+        // would throw from inside onData, which Dart routes to the zone's
+        // uncaught handler (never to `onError` below) — one global error modal
+        // per remaining chunk.
+        if (assistantMessageIndex >= _messages.length) return;
         if (!receivedFirstToken && chunk.trim().isNotEmpty) {
           receivedFirstToken = true;
           ref.hapticLight();
@@ -183,8 +217,10 @@ class _AIChatScreenState extends ConsumerState<AIChatScreen> {
         _scrollToBottom();
       },
       onError: (e, stack) {
+        _responseSub = null;
         if (!mounted) return;
         AppLogger.error('[AIChatScreen] Errore stream listener', e, stack);
+        if (assistantMessageIndex >= _messages.length) return;
 
         setState(() {
           _isTyping = false;
@@ -206,6 +242,7 @@ class _AIChatScreenState extends ConsumerState<AIChatScreen> {
       },
 
       onDone: () {
+        _responseSub = null;
         if (!mounted) return;
         if (_isTyping) {
           setState(() {
@@ -562,7 +599,12 @@ class _AIChatScreenState extends ConsumerState<AIChatScreen> {
                   ref: ref,
                 );
                 if (confirmed) {
+                  // The trash button is live for the whole streaming window, so
+                  // the reply being cleared may still be arriving. Cancelling
+                  // means no onDone, hence the explicit `_isTyping` reset.
+                  _cancelResponseStream();
                   setState(() {
+                    _isTyping = false;
                     _messages.clear();
                     _addInitialMessages();
                   });

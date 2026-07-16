@@ -199,13 +199,44 @@ class DesktopGoalCategoriesController
     try {
       final db = await DesktopPrivateDb.instance.database;
       final ownerId = await DesktopPrivateDb.instance.ownerId;
-      final id = _uuid.v4();
       final now = DateTime.now().toUtc().toIso8601String();
+      final colorHex = dashboardColorToHex(color);
+      // macro_goal_categories is UNIQUE(user_id, name) (case-sensitive) and
+      // delete is a SOFT archive that keeps the row in that uniqueness slot. A
+      // bare insert of a previously-deleted name hits "UNIQUE constraint
+      // failed", which mobile silently swallowed and desktop reported as a
+      // causeless toast. Revive the archived row instead — clear archived_at,
+      // apply the new colour, bump updated_at — mirroring the import path's
+      // reconcileCategoriesByName and mobile's addMacroGoalCategory. This
+      // resurrects the category's prior macro-goal associations, which the
+      // owner accepts. Match the name with the same (binary) collation the
+      // UNIQUE constraint enforces. A LIVE same-name row is a genuine
+      // duplicate: fall through to the insert so the violation surfaces.
+      final existing = await db.query(
+        'macro_goal_categories',
+        columns: ['id', 'archived_at'],
+        where: 'user_id = ? AND name = ?',
+        whereArgs: [ownerId, label],
+        limit: 1,
+      );
+      if (existing.isNotEmpty && existing.first['archived_at'] != null) {
+        final revivedId = existing.first['id'] as String;
+        await db.update(
+          'macro_goal_categories',
+          {'archived_at': null, 'color': colorHex, 'updated_at': now},
+          where: 'id = ?',
+          whereArgs: [revivedId],
+        );
+        DesktopPrivateDb.notifyWrite();
+        ref.invalidateSelf();
+        return DesktopGoalCategory(id: revivedId, label: label, color: color);
+      }
+      final id = _uuid.v4();
       await db.insert('macro_goal_categories', {
         'id': id,
         'user_id': ownerId,
         'name': label,
-        'color': dashboardColorToHex(color),
+        'color': colorHex,
         'created_at': now,
         'updated_at': now,
       });

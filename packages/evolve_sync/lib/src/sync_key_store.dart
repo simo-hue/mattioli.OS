@@ -5,10 +5,15 @@ import 'sync_crypto.dart';
 
 /// The two iCloud-sync secrets the key store manages, abstracted so the logic
 /// is unit-testable with an in-memory fake. Each app provides the production
-/// implementation over its keychain plugin, writing into the SHARED
-/// synchronizable keychain access group — the iCloud Keychain is what carries
-/// the secrets to the user's other devices, and the shared access group is what
-/// lets the iOS and macOS apps read the same items.
+/// implementation over its keychain plugin, using a synchronizable item so the
+/// iCloud Keychain carries the secrets to the user's other devices.
+///
+/// On iOS the items are scoped to the SHARED access group, which is what lets
+/// the two apps read each other's items. On macOS that group scoping is
+/// currently INERT — flutter_secure_storage_darwin drops `kSecAttrAccessGroup`
+/// under an `#if os(iOS)` guard — so cross-app reads there ride on the legacy
+/// group-less tier in [MigratingSyncSecretStore], which MUST NOT be removed
+/// until macOS writes are genuinely group-scoped. See finding #66.
 abstract class SyncSecretStore {
   Future<String?> read(String key);
   Future<void> write(String key, String value);

@@ -76,6 +76,17 @@ class DesktopSubscriptionController extends Notifier<DesktopSubscriptionState> {
     'com.simo.evolve.pro.yearly',
   };
 
+  /// Entitlement cache key, scoped per account like the dashboard cache
+  /// (`desktop_dashboard_cache_$userId`). This provider is never autoDisposed
+  /// nor invalidated on sign-out, so an unscoped key would hand the previous
+  /// account's Pro to whoever signs in next on the same Mac.
+  static String _proCacheKey(String userId) => 'pref_is_pro_$userId';
+
+  /// The unscoped key this cache used before it was per-account. It records no
+  /// owner, so it can only ever re-seed the wrong account: drop it, never
+  /// migrate it. An affected payer is re-seeded by the first online refresh.
+  static const _legacyProCacheKey = 'pref_is_pro';
+
   String? _configuredUserId;
   bool _customerInfoListenerRegistered = false;
 
@@ -83,20 +94,37 @@ class DesktopSubscriptionController extends Notifier<DesktopSubscriptionState> {
   DesktopSubscriptionState build() {
     final supported = Platform.isMacOS;
     final configured = supported && DesktopRevenueCatConfig.isConfigured;
-    ref.listen(desktopAuthControllerProvider, (_, next) {
-      if (next.user != null) unawaited(refresh());
+    ref.listen(desktopAuthControllerProvider, (previous, next) {
+      final nextUser = next.user;
+      if (nextUser == null) {
+        // Nothing else resets this provider on sign-out, so the entitlement has
+        // to be dropped here or it survives into the next account's session.
+        state = state.copyWith(isPro: false);
+        final wasConfigured = _configuredUserId != null;
+        _configuredUserId = null;
+        if (wasConfigured) unawaited(_logOutRevenueCat());
+        return;
+      }
+      // Supabase re-emits this state on every token refresh; only a real
+      // account change needs a round-trip.
+      if (previous?.user?.id != nextUser.id) unawaited(refresh());
     });
-    // Seed isPro offline-first from the cached pref so a paying user launching
-    // offline (or during a transient RevenueCat failure) keeps Pro until the
-    // async refresh resolves — mobile hydrates the same way. Self-heals online.
-    final cachedPro =
-        ref.read(sharedPreferencesProvider)?.getBool('pref_is_pro') ?? false;
+    final userId = ref.read(desktopAuthControllerProvider).user?.id;
+    final preferences = ref.read(sharedPreferencesProvider);
+    unawaited(preferences?.remove(_legacyProCacheKey));
+    // Seed isPro offline-first from the signed-in account's cached pref so a
+    // paying user launching offline (or during a transient RevenueCat failure)
+    // keeps Pro until the async refresh resolves — mobile hydrates the same way.
+    // Self-heals online. No account signed in means no entitlement to seed.
+    final cachedPro = userId == null
+        ? false
+        : (preferences?.getBool(_proCacheKey(userId)) ?? false);
     final initial = DesktopSubscriptionState(
       isSupportedPlatform: supported,
       isConfigured: configured,
       isPro: cachedPro,
     );
-    if (ref.read(desktopAuthControllerProvider).user != null) {
+    if (userId != null) {
       unawaited(Future<void>.microtask(refresh));
     }
     return initial;
@@ -268,6 +296,18 @@ class DesktopSubscriptionController extends Notifier<DesktopSubscriptionState> {
     _ensureCustomerInfoListener();
   }
 
+  /// Detaches RevenueCat from the account that just signed out, so a later
+  /// CustomerInfo push carries no entitlement of theirs. Best-effort: it fails
+  /// offline or when Purchases was never configured, and neither is worth
+  /// surfacing on a sign-out the user already completed.
+  Future<void> _logOutRevenueCat() async {
+    try {
+      if (await Purchases.isConfigured) await Purchases.logOut();
+    } catch (error, stack) {
+      AppLogger.warning('RevenueCat sign-out failed', error, stack);
+    }
+  }
+
   /// Keeps isPro live: RevenueCat pushes CustomerInfo on renewal, expiry,
   /// cross-device purchase, or billing lapse — without this, desktop only
   /// recomputes on auth change or an explicit refresh/purchase/restore. Mirrors
@@ -275,6 +315,14 @@ class DesktopSubscriptionController extends Notifier<DesktopSubscriptionState> {
   void _ensureCustomerInfoListener() {
     if (_customerInfoListenerRegistered) return;
     Purchases.addCustomerInfoUpdateListener((customerInfo) {
+      // The push carries the CustomerInfo of whoever Purchases is logged in as.
+      // If that is no longer the signed-in account — a sign-out whose logOut
+      // failed offline, or a push landing before _configure() switched user —
+      // applying it would hand the previous account's entitlement to this one.
+      if (_configuredUserId == null ||
+          _configuredUserId != ref.read(desktopAuthControllerProvider).user?.id) {
+        return;
+      }
       final isPro = _hasActiveProAccess(customerInfo);
       state = state.copyWith(isPro: isPro);
       unawaited(_persistProStatus(isPro));
@@ -306,7 +354,14 @@ class DesktopSubscriptionController extends Notifier<DesktopSubscriptionState> {
   }
 
   Future<void> _persistProStatus(bool isPro) async {
+    // Read the account at write time, not at call time: the awaits upstream of
+    // this leave room for a sign-out, and a cache written without an owner is
+    // the leak this key is scoped to prevent.
+    final userId = ref.read(desktopAuthControllerProvider).user?.id;
+    if (userId == null) return;
     final preferences = ref.read(sharedPreferencesProvider);
-    if (preferences != null) await preferences.setBool('pref_is_pro', isPro);
+    if (preferences != null) {
+      await preferences.setBool(_proCacheKey(userId), isPro);
+    }
   }
 }

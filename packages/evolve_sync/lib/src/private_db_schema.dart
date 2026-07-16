@@ -106,6 +106,30 @@ class PrivateDbSchema {
     }
   }
 
+  /// Fail closed on a schema downgrade. With NO onDowngrade, sqflite's default
+  /// is neither a throw nor a delete: it silently stamps `user_version` DOWN
+  /// while leaving the newer physical schema in place (sqflite_common
+  /// database_mixin.dart). The next upgrade then re-runs a migration against
+  /// columns that already exist and the database permanently fails to open.
+  /// Throwing here keeps `user_version` at the newer version, so the newer
+  /// build still opens cleanly and the older build refuses a database it does
+  /// not understand rather than corrupting its migration bookkeeping.
+  ///
+  /// Realistic on these apps: iOS and macOS ship independently and share a
+  /// synced private DB, so a user WILL open an older build after a newer one
+  /// (TestFlight, a kept macOS .app). Never use `onDatabaseDowngradeDelete` —
+  /// it would wipe the user's private data, which is intact and decryptable.
+  static Future<void> onDowngrade(
+    Database db,
+    int oldVersion,
+    int newVersion,
+  ) async {
+    throw StateError(
+      'Private DB is at schema v$oldVersion; this build only knows '
+      'v$newVersion. Refusing to downgrade.',
+    );
+  }
+
   // ── v4 migration ──────────────────────────────────────────────────────────
 
   static Future<void> _upgradeToV4(DatabaseExecutor db) async {
@@ -113,6 +137,17 @@ class PrivateDbSchema {
     // (null ⇒ manual habit). Additive, so plain ADD COLUMNs; existing rows get
     // NULLs. Synced rows carry these automatically — the sync engine serializes
     // whole rows (SELECT *), so no push/pull code changes are required.
+    //
+    // Idempotent: read the existing columns first and skip any already present.
+    // A version round-trip (v4 → a downgrade silently stamps user_version to 3
+    // → v4) re-enters this migration against a `goals` table that already has
+    // these columns; a bare `ADD COLUMN` would then raise "duplicate column
+    // name" and permanently fail every open. Skipping present columns makes the
+    // re-run a harmless no-op that re-stamps user_version to 4, data intact.
+    final existing = <String>{
+      for (final row in await db.rawQuery('PRAGMA table_info(goals)'))
+        row['name'] as String,
+    };
     for (final col in const [
       'verify_provider TEXT',
       'verify_metric TEXT',
@@ -120,6 +155,7 @@ class PrivateDbSchema {
       'verify_threshold REAL',
       'verify_unit TEXT',
     ]) {
+      if (existing.contains(col.split(' ').first)) continue;
       await db.execute('ALTER TABLE goals ADD COLUMN $col');
     }
   }

@@ -560,7 +560,7 @@ class _MiglioriAbitudiniSectionState
             ),
             const SizedBox(height: 4),
             Text(
-              'Le abitudini in cui sei più costante.',
+              context.t.statistics.bestHabitsDescription,
               style: TextStyle(
                 fontFamily: 'Inter',
                 fontSize: 11,

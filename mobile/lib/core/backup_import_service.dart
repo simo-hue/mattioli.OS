@@ -92,6 +92,40 @@ List<Map<String, dynamic>> stripHealthMeasurements({
   ];
 }
 
+/// Page size for the windowed existing-state reads of the cloud import. A single
+/// unbounded PostgREST `select` is capped by the project's `db-max-rows` (1000
+/// by default), so a read built from one silently returns a PARTIAL view of the
+/// account: Replace would then prune only the rows it happened to see, and the
+/// streak recompute would derive streaks from a truncated history and write them
+/// back over the correct values.
+const int kImportPageSize = 1000;
+
+/// Fetches one window of rows. Abstracted so the paging loop is unit-testable
+/// without a live Supabase client.
+typedef ImportPageFetcher =
+    Future<List<Map<String, dynamic>>> Function(int offset, int limit);
+
+/// Concatenates every page from [fetchPage], requesting successive windows
+/// until a short (final) page comes back. [fetchPage] must impose a stable
+/// total order, otherwise windows can repeat or skip rows.
+///
+/// Mirrors `fetchAllRowsPaginated` in the desktop app's settings page, which
+/// windows the export reads for the same reason.
+Future<List<Map<String, dynamic>>> fetchAllRowsPaginated(
+  ImportPageFetcher fetchPage, {
+  int pageSize = kImportPageSize,
+}) async {
+  final rows = <Map<String, dynamic>>[];
+  var offset = 0;
+  while (true) {
+    final page = await fetchPage(offset, pageSize);
+    rows.addAll(page);
+    if (page.length < pageSize) break;
+    offset += pageSize;
+  }
+  return rows;
+}
+
 /// Reads a backup file (the app's own `.json` export OR a web `.zip` backup),
 /// normalizes it, and imports it into the active store (Private or Cloud) either
 /// by replacing existing data or by a true identity-based merge.
@@ -192,12 +226,22 @@ class BackupImportService {
     final now = DateTime.now().toUtc().toIso8601String();
 
     // Fetch existing state (empty in replace mode) BEFORE building the plan.
+    // Windowed: the plan classifies an incoming row as new when it finds no
+    // match here, so a row hidden past the row cap would be re-inserted under a
+    // fresh id and collide with the table's natural-key UNIQUE constraint.
     Future<List<Map<String, dynamic>>> fetch(String table, String cols) async {
       if (replaceExisting) return const [];
-      final res = await client.from(table).select(cols).eq('user_id', userId);
-      return (res as List)
-          .map((e) => (e as Map).cast<String, dynamic>())
-          .toList();
+      return fetchAllRowsPaginated((offset, limit) async {
+        final res = await client
+            .from(table)
+            .select(cols)
+            .eq('user_id', userId)
+            .order('id')
+            .range(offset, offset + limit - 1);
+        return (res as List)
+            .map((e) => (e as Map).cast<String, dynamic>())
+            .toList();
+      });
     }
 
     final existingCategories =
@@ -281,6 +325,10 @@ class BackupImportService {
   /// backup rows [keep]. Fetches the existing ids and deletes only the
   /// difference (in id chunks), so replacing never empties the table first — the
   /// atomicity guarantee the delete-then-upsert order lacked.
+  ///
+  /// The id read is windowed: the complement is only as complete as the set it
+  /// is computed against, so a single capped read would silently leave every
+  /// row past the cap in place — the opposite of what Replace promises.
   Future<void> _deleteComplement(
     SupabaseClient client,
     String table,
@@ -288,9 +336,19 @@ class BackupImportService {
     List<Map<String, dynamic>> keep,
   ) async {
     final keepIds = keep.map((r) => r['id'] as String).toSet();
-    final existing = await client.from(table).select('id').eq('user_id', userId);
-    final toDelete = (existing as List)
-        .map((e) => (e as Map)['id'] as String)
+    final existing = await fetchAllRowsPaginated((offset, limit) async {
+      final res = await client
+          .from(table)
+          .select('id')
+          .eq('user_id', userId)
+          .order('id')
+          .range(offset, offset + limit - 1);
+      return (res as List)
+          .map((e) => (e as Map).cast<String, dynamic>())
+          .toList();
+    });
+    final toDelete = existing
+        .map((r) => r['id'] as String)
         .where((id) => !keepIds.contains(id))
         .toList();
     if (toDelete.isEmpty) return;
@@ -341,11 +399,22 @@ class BackupImportService {
                   DateTime(2000),
       };
 
-      final logRes =
-          await client.from('goal_logs').select().inFilter('goal_id', ids);
+      // Windowed: a streak computed from a truncated history is wrong, and it
+      // gets written back over the correct value — so the full log set for the
+      // affected goals has to be read past the row cap.
+      final logRes = await fetchAllRowsPaginated((offset, limit) async {
+        final res = await client
+            .from('goal_logs')
+            .select()
+            .inFilter('goal_id', ids)
+            .order('id')
+            .range(offset, offset + limit - 1);
+        return (res as List)
+            .map((e) => (e as Map).cast<String, dynamic>())
+            .toList();
+      });
       final byGoal = <String, List<Map<String, dynamic>>>{};
-      for (final r in (logRes as List)
-          .map((e) => (e as Map).cast<String, dynamic>())) {
+      for (final r in logRes) {
         (byGoal[r['goal_id'] as String] ??= []).add(r);
       }
 

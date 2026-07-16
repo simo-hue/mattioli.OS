@@ -175,6 +175,11 @@ class PrivateLocalDatabase implements PrivateDataStore {
       },
       onCreate: PrivateDbSchema.onCreate,
       onUpgrade: PrivateDbSchema.onUpgrade,
+      // Fail closed on a downgrade so a version round-trip (iOS/macOS ship
+      // independently and share this synced DB) never silently stamps
+      // user_version down and re-runs a migration against an already-migrated
+      // schema. See PrivateDbSchema.onDowngrade.
+      onDowngrade: PrivateDbSchema.onDowngrade,
     );
     // A reset/stash/restore may have run WHILE this open was in flight (those
     // paths mutate the DB file outside the sync-service lock). If so, this
@@ -661,6 +666,36 @@ class PrivateLocalDatabase implements PrivateDataStore {
     final db = await _database();
     final owner = await ownerId();
     final now = _now();
+    // macro_goal_categories is UNIQUE(user_id, name) (case-sensitive: the
+    // column has no COLLATE NOCASE) and delete is a SOFT archive that keeps the
+    // row in that uniqueness slot forever. A bare insert of a previously-deleted
+    // name therefore hits "UNIQUE constraint failed" and the create silently
+    // fails. Revive the archived row instead — clear archived_at, apply the
+    // newly-picked colour, bump updated_at — mirroring the import path's
+    // reconcileCategoriesByName. This resurrects the category's prior macro-goal
+    // associations, which the owner accepts. Match the name with the same
+    // (binary) collation the UNIQUE constraint enforces, so we revive exactly
+    // the row that would have collided. A LIVE same-name row is a genuine
+    // duplicate: fall through to the insert so the UNIQUE violation surfaces as
+    // an error rather than silently merging onto an existing live category.
+    final existing = await db.query(
+      'macro_goal_categories',
+      columns: ['id', 'archived_at'],
+      where: 'user_id = ? AND name = ?',
+      whereArgs: [owner, name],
+      limit: 1,
+    );
+    if (existing.isNotEmpty && existing.first['archived_at'] != null) {
+      final id = existing.first['id'] as String;
+      await db.update(
+        'macro_goal_categories',
+        {'archived_at': null, 'color': colorHex, 'updated_at': now},
+        where: 'id = ?',
+        whereArgs: [id],
+      );
+      _notifyWrite();
+      return id;
+    }
     final id = _uuid.v4();
     await db.insert('macro_goal_categories', {
       'id': id,

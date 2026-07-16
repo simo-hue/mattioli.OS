@@ -1358,3 +1358,43 @@ New env vars: `REVENUECAT_WEBHOOK_SECRET` (fail-closed), `APPLE_TEAM_ID`, `APPLE
 green. Remaining: BYOK OpenRouter key (owner decision — user supplies their own key; already on
 the roadmap) and a tail of low-severity findings. **Nothing here has been run on a real device —
 no Xcode on this Mac. See TO_SIMO_DO.md for the blocking manual steps and the on-device QA list.**
+
+---
+
+## [2026-07-16]: Pre-App-Store audit — remaining findings closed (waves 5-6)
+
+*Details*: Continuation of the 2026-07-16 audit. The final 10 open findings were fixed
+(waves 5-6), each independently reviewed and mutation-tested. **All 83 confirmed findings are
+now addressed.**
+
+- #39 (HIGH) — cloud import's existing-state reads were unbounded, silently truncated at
+  PostgREST's ~1000-row cap → "Replace" left stale rows and streaks were recomputed from a
+  partial history and written back. Paginated (`.order('id')` + `.range()`) on BOTH platforms.
+- #46 (MEDIUM) — Pro entitlement leaked across sign-out/account switch on desktop (a second user
+  on the same Mac inherited the first's Pro). Per-user cache key + real sign-out reset.
+- #67 (MEDIUM) — re-creating a soft-deleted macro-goal category hit the archived row's
+  `UNIQUE(user_id,name)` slot and silently failed (dead button). Owner chose REVIVE: clear
+  `archived_at`, apply the new colour, return the existing id (both platforms).
+- #78 (LOW) — no `onDowngrade` guard: a version round-trip could re-run a non-idempotent
+  migration and permanently break DB open. Added a downgrade guard + made the migration idempotent.
+- #47, #77 — un-cancelled AI-chat stream subscription (RangeError on delete-mid-stream); macro-goal
+  status change dropped if the widget unmounted inside its debounce window (now flushed on dispose).
+- #45 — Goals quick-add double-click filed two goals (in-flight guard added).
+- #74 — desktop `AppLogger.error` printed raw error text unguarded into release logs / Sentry
+  (now `kDebugMode`-gated + `PrivacyUtils.sanitizeString`, mirroring mobile's SEC-8).
+- #80 — two hardcoded Italian strings on the mobile Statistics tab moved to i18n (all 5 locales).
+- #66 (owner decision: documentation-only) — `MacOsOptions(groupId:)` is a no-op on macOS
+  (`flutter_secure_storage_darwin` guards `kSecAttrAccessGroup` behind `#if os(iOS)`), so desktop
+  E2E sync secrets land in the app's own keychain group; cross-app interop rides on the legacy
+  group-less tier. Did NOT patch the plugin or reorder entitlements (both risky pre-submission).
+  Instead added an unmissable guard comment blocking removal of `MigratingSyncSecretStore`'s
+  legacy tier until macOS is genuinely group-scoped, and corrected three inaccurate comments
+  (incl. `sync_key_store.dart`, fixed by hand after review flagged the fix agent missed it).
+
+*Tech Notes*: No new dependencies, env vars, or migrations. +151 regression tests over the whole
+audit (676 → 827 passing). All four packages analyze-clean.
+
+**Current Status**: All 83 audit findings addressed and verified green (desktop 380, mobile 297,
+evolve_sync 99, evolve_verification 51). **Nothing has been run on a real device (no Xcode on this
+Mac)** — the blocking manual steps and on-device QA list remain in TO_SIMO_DO.md. Next: Simone does
+the manual deploy/config steps, then a signed macOS archive + on-device QA before submission.

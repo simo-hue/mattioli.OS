@@ -403,3 +403,23 @@ Two things landed to make dev smooth + recovery robust (both green, independentl
       signed build persists the key. Do a signed/notarized (or TestFlight) build → Private mode →
       add data → quit → reopen → **data still there, no reset**. If it DOES reset on a signed build,
       your Xcode signing Team / provisioning for the keychain-access-group is misconfigured — tell me.
+
+## [2026-07-16] App Store 409 — iPad support restored (MANUAL re-upload needed)
+
+Fixed in code: `mobile/ios/Runner.xcodeproj/project.pbxproj` — `TARGETED_DEVICE_FAMILY` restored
+from `"1"` back to `"1,2"` (iPhone + iPad). The 409 happened because a prior build dropped iPad,
+which Apple forbids for an update.
+
+You must do these by hand (I can't build/sign/upload on this Mac):
+
+- [ ] **Bump the build number** in `mobile/pubspec.yaml` (currently `1.1.1+16`) — App Store Connect
+      will reject a re-upload that reuses build number 16. Change to e.g. `1.1.1+17`.
+- [ ] **Rebuild the IPA**: `cd mobile && flutter build ipa` (or Archive in Xcode). Confirm the
+      Xcode target's General tab shows BOTH iPhone and iPad under "Supported Destinations".
+- [ ] **Re-upload** to App Store Connect (Transporter / Xcode Organizer). The 409 should be gone.
+- [ ] **Sanity-check iPad**: because the app is portrait-only and universal, briefly confirm it at
+      least launches/looks acceptable on an iPad simulator. (Not a blocker — previous versions already
+      shipped this way — but worth a glance since iPad users can install it.)
+
+Note: going iPhone-only for THIS app is not an option for an update — Apple only allows that by
+removing the app and publishing a brand-new one. So restoring `1,2` is the correct/only path.

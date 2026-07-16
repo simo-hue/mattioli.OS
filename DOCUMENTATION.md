@@ -1489,18 +1489,3 @@ suites green — desktop 395, mobile 299, evolve_sync 99):
 *Tech Notes*: New file `desktop/lib/core/dev_device_local_store.dart`. Interface change on
 `evolve_sync`'s `PrivateSyncService` (one method). No release/production behavior change; no new
 dependencies. On-device QA on a SIGNED build still required to confirm key persistence.
-
-- [2026-07-16]: Fix App Store upload 409 — restore iPad support (Targeted Device Family)
-  - *Details*: App Store Connect rejected the mobile upload with Validation failed (409):
-    "This bundle does not support one or more of the devices supported by the previous app version"
-    (QA1623). Root cause: `TARGETED_DEVICE_FAMILY` in `mobile/ios/Runner.xcodeproj/project.pbxproj`
-    had been changed from `"1,2"` (iPhone + iPad) to `"1"` (iPhone only) inside commit 7156a4f
-    ("first real bug fix") — an incidental, undocumented change bundled with unrelated fixes. Apple
-    forbids dropping a device family that a previously-shipped version supported. Restored `"1,2"`
-    in all three build configs (Debug/Release/Profile). This returns the target to the exact known-good
-    state that previous App Store versions shipped with.
-  - *Tech Notes*: Only edit is 3 lines in `project.pbxproj` (`1` -> `1,2`). `plutil -lint` passes.
-    IPHONEOS_DEPLOYMENT_TARGET unchanged (15.0); no `UIRequiredDeviceCapabilities` present; no new
-    deps. Requires a fresh build with a bumped build number before re-upload (see TO_SIMO_DO.md).
-    Could NOT run `flutter build ipa` here (no Xcode/signing on this Mac) — verification is
-    config-level (lint + diff) only.

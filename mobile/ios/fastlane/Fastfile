@@ -24,24 +24,24 @@ platform :ios do
     UI.message("Lingue da aggiornare: #{all_locales.join(', ')}")
     
     translations = {
-      "it" => "Nuova UI",
-      "en" => "New UI",
-      "fr" => "Nouvelle interface utilisateur",
-      "vi" => "Giao diện người dùng mới",
-      "ko" => "새로운 UI",
-      "es" => "Nueva interfaz de usuario",
-      "id" => "UI Baru",
-      "de" => "Neue Benutzeroberfläche",
-      "sk" => "Nové používateľské rozhranie",
-      "sv" => "Nytt användargränssnitt",
-      "da" => "Ny brugergrænseflade",
-      "pt" => "Nova interface de utilizador",
-      "he" => "ממשק משתמש חדש",
-      "el" => "Νέο περιβάλλον χρήστη",
-      "zh" => "全新的 UI 界面",
-      "ja" => "新しいUI",
-      "ru" => "Новый интерфейс",
-      "ar" => "واجهة مستخدم جديدة"
+      "it" => "Miglioramenti alla sicurezza e correzione di bug.",
+      "en" => "Security enhancements and bug fixes.",
+      "fr" => "Améliorations de la sécurité et corrections de bugs.",
+      "vi" => "Cải tiến bảo mật và sửa lỗi.",
+      "ko" => "보안 강화 및 버그 수정.",
+      "es" => "Mejoras de seguridad y corrección de errores.",
+      "id" => "Peningkatan keamanan dan perbaikan bug.",
+      "de" => "Sicherheitsverbesserungen und Fehlerbehebungen.",
+      "sk" => "Vylepšenia zabezpečenia a opravy chýb.",
+      "sv" => "Säkerhetsförbättringar och buggfixar.",
+      "da" => "Sikkerhedsforbedringer og fejlrettelser.",
+      "pt" => "Melhorias de segurança e correção de bugs.",
+      "he" => "שיפורי אבטחה ותיקוני באגים.",
+      "el" => "Βελτιώσεις ασφαλείας και διορθώσεις σφαλμάτων.",
+      "zh" => "安全增强和错误修复。",
+      "ja" => "セキュリティの向上とバグ修正。",
+      "ru" => "Улучшения безопасности и исправление ошибок.",
+      "ar" => "تحسينات الأمان وإصلاح الأخطاء."
     }
     
     all_locales.each do |locale|

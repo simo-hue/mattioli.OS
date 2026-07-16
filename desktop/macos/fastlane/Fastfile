@@ -17,4 +17,83 @@ platform :mac do
       force: true
     )
   end
+
+  desc "Build the .pkg for Transporter upload"
+  lane :build_for_transporter do
+    build_mac_app(
+      workspace: "Runner.xcworkspace",
+      scheme: "Runner",
+      export_method: "app-store"
+    )
+    UI.success("The .pkg has been built and is ready for Transporter!")
+  end
+
+  desc "Aggiorna 'What's New in This Version' per macOS"
+  lane :update_notes do
+    ENV['FASTLANE_ITC_TEAM_ID'] = "128920131"
+    Spaceship::ConnectAPI.login("mattioli.simone.10@gmail.com")
+    app = Spaceship::ConnectAPI::App.find("com.simo.evolve")
+    
+    version = app.get_edit_app_store_version(platform: Spaceship::ConnectAPI::Platform::MAC_OS)
+    
+    if version.nil?
+      UI.user_error!("Nessuna versione macOS in stato editabile trovata!")
+    end
+    
+    UI.success("Trovata versione in modifica: #{version.version_string}")
+    required_locales = ["fr-FR", "vi", "ko", "en-AU", "es-MX", "id", "en-CA", "de-DE", "sk", "sv", "da", "fr-CA", "pt-PT", "he", "el", "en-GB"]
+    
+    existing_locs = version.get_app_store_version_localizations
+    existing_locales = existing_locs.map(&:locale)
+    
+    all_locales = (required_locales + existing_locales).uniq
+    UI.message("Lingue da aggiornare: #{all_locales.join(', ')}")
+    
+    translations = {
+      "it" => "Miglioramenti alla sicurezza e correzione di bug.",
+      "en" => "Security enhancements and bug fixes.",
+      "fr" => "Améliorations de la sécurité et corrections de bugs.",
+      "vi" => "Cải tiến bảo mật và sửa lỗi.",
+      "ko" => "보안 강화 및 버그 수정.",
+      "es" => "Mejoras de seguridad y corrección de errores.",
+      "id" => "Peningkatan keamanan dan perbaikan bug.",
+      "de" => "Sicherheitsverbesserungen und Fehlerbehebungen.",
+      "sk" => "Vylepšenia zabezpečenia a opravy chýb.",
+      "sv" => "Säkerhetsförbättringar och buggfixar.",
+      "da" => "Sikkerhedsforbedringer og fejlrettelser.",
+      "pt" => "Melhorias de segurança e correção de bugs.",
+      "he" => "שיפורי אבטחה ותיקוני באגים.",
+      "el" => "Βελτιώσεις ασφαλείας και διορθώσεις σφαλμάτων.",
+      "zh" => "安全增强和错误修复。",
+      "ja" => "セキュリティの向上とバグ修正。",
+      "ru" => "Улучшения безопасности и исправление ошибок.",
+      "ar" => "تحسينات الأمان وإصلاح الأخطاء."
+    }
+    
+    all_locales.each do |locale|
+      lang_code = locale.split('-').first
+      localized_whats_new = translations[lang_code] || translations["en"]
+      
+      begin
+        if existing_locales.include?(locale)
+          UI.message("Aggiorno lingua esistente: #{locale}...")
+          loc = existing_locs.find { |l| l.locale == locale }
+          loc.update(attributes: { whatsNew: localized_whats_new })
+        else
+          UI.message("Creo nuova localizzazione per versione: #{locale}...")
+          Spaceship::ConnectAPI.post_app_store_version_localization(
+            app_store_version_id: version.id,
+            attributes: {
+              locale: locale,
+              whatsNew: localized_whats_new
+            }
+          )
+        end
+      rescue => ex
+        UI.important("Non aggiornato per #{locale}: #{ex.message}. Se e' la v1.0, Apple non supporta What's New.")
+      end
+    end
+    
+    UI.success("Completato l'aggiornamento dei metadati macOS (se consentito).")
+  end
 end

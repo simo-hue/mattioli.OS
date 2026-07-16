@@ -23,6 +23,22 @@ For _fastlane_ installation instructions, see [Installing _fastlane_](https://do
 
 Build and upload a new macOS release to App Store Connect
 
+### mac build_for_transporter
+
+```sh
+[bundle exec] fastlane mac build_for_transporter
+```
+
+Build the .pkg for Transporter upload
+
+### mac update_notes
+
+```sh
+[bundle exec] fastlane mac update_notes
+```
+
+Aggiorna 'What's New in This Version' per macOS
+
 ----
 
 This README.md is auto-generated and will be re-generated every time [_fastlane_](https://fastlane.tools) is run.

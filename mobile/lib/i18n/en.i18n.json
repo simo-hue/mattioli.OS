@@ -1216,6 +1216,7 @@
       "changeSelection": "Change apps & categories",
       "selectionSummary": "{count} selected",
       "selectionEmpty": "No apps chosen yet",
+      "authorizationUnavailable": "Screen Time access is unavailable — another app may be using it, or access was declined. Free it up and try again.",
       "needsSelectionNote": "Pick the apps and categories this habit should track.",
       "tooManyMonitors": "You can auto-verify up to 20 Screen Time habits. Turn one off to add another.",
       "limitReachedTitle": "Screen time limit reached",

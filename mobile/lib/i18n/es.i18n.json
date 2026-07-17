@@ -1216,6 +1216,7 @@
       "changeSelection": "Cambiar apps y categorías",
       "selectionSummary": "{count} seleccionados",
       "selectionEmpty": "Ninguna app elegida",
+      "authorizationUnavailable": "El acceso a Tiempo de uso no está disponible: puede que otra app lo esté usando o que se haya denegado. Libéralo e inténtalo de nuevo.",
       "needsSelectionNote": "Elige las apps y categorías que este hábito debe seguir.",
       "tooManyMonitors": "Puedes verificar automáticamente hasta 20 hábitos de Tiempo de pantalla. Desactiva uno para añadir otro.",
       "limitReachedTitle": "Límite de tiempo de pantalla alcanzado",

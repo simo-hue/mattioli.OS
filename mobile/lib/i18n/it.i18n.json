@@ -1216,6 +1216,7 @@
       "changeSelection": "Modifica app e categorie",
       "selectionSummary": "{count} selezionati",
       "selectionEmpty": "Nessuna app scelta",
+      "authorizationUnavailable": "Accesso a Tempo di utilizzo non disponibile: potrebbe essere in uso da un'altra app o l'accesso è stato negato. Liberalo e riprova.",
       "needsSelectionNote": "Scegli le app e le categorie che questa abitudine deve monitorare.",
       "tooManyMonitors": "Puoi verificare automaticamente fino a 20 abitudini di Tempo di utilizzo. Disattivane una per aggiungerne un'altra.",
       "limitReachedTitle": "Limite di tempo di utilizzo raggiunto",

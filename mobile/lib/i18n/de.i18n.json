@@ -1216,6 +1216,7 @@
       "changeSelection": "Apps & Kategorien ändern",
       "selectionSummary": "{count} ausgewählt",
       "selectionEmpty": "Noch keine Apps gewählt",
+      "authorizationUnavailable": "Bildschirmzeit-Zugriff nicht verfügbar – eine andere App verwendet ihn möglicherweise, oder der Zugriff wurde abgelehnt. Gib ihn frei und versuche es erneut.",
       "needsSelectionNote": "Wähle die Apps und Kategorien, die diese Gewohnheit erfassen soll.",
       "tooManyMonitors": "Du kannst bis zu 20 Bildschirmzeit-Gewohnheiten automatisch prüfen. Deaktiviere eine, um eine weitere hinzuzufügen.",
       "limitReachedTitle": "Bildschirmzeit-Limit erreicht",

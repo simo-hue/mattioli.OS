@@ -1,10 +1,12 @@
 import 'dart:async';
 import 'package:flutter/material.dart';
 import 'package:flutter/cupertino.dart';
+import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:evolve_verification/evolve_verification.dart';
 import 'package:lucide_icons_flutter/lucide_icons.dart';
 import '../../core/theme.dart';
+import '../../core/app_logger.dart';
 import '../../core/haptics.dart';
 import '../../core/verification_config.dart';
 import '../../core/verification_providers.dart';
@@ -320,10 +322,33 @@ class _HabitManagementModalState extends ConsumerState<HabitManagementModal> {
     final tr = context.t; // capture before async gaps
     final bridge = ref.read(screenTimeBridgeProvider);
     ref.hapticMedium();
-    final status = await bridge.authorizationStatus();
+    var status = await bridge.authorizationStatus();
     if (status != ScreenTimeAuthorizationStatus.approved) {
-      await bridge.requestIndividualAuthorization();
+      try {
+        await bridge.requestIndividualAuthorization();
+      } on PlatformException catch (e) {
+        // FamilyControls grants individual authorization to only ONE app per
+        // device at a time (and also throws on denial). Surface a friendly
+        // inline message instead of an unhandled exception — a review device may
+        // already hold the slot, and a crash here reads as a Screen Time (2.1)
+        // failure.
+        AppLogger.warning('[ScreenTime] authorization request failed: ${e.message}');
+        if (!mounted) return;
+        setState(() =>
+            _verifyError = tr.verification.screenTime.authorizationUnavailable);
+        return;
+      }
       ref.invalidate(screenTimeAuthStatusProvider);
+      // The request can return without granting (declined / still
+      // notDetermined); don't try to present the picker (it would fail) — ask
+      // the user to enable access first.
+      status = await bridge.authorizationStatus();
+      if (!mounted) return;
+      if (status != ScreenTimeAuthorizationStatus.approved) {
+        setState(() =>
+            _verifyError = tr.verification.screenTime.authorizationUnavailable);
+        return;
+      }
     }
     final result = await bridge.presentActivityPicker(
       initialSelectionBlob: _appsSelection?.blob,

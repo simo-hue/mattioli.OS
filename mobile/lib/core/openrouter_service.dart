@@ -18,7 +18,21 @@ import 'secure_storage_utils.dart';
 /// the AOT snapshot and recoverable from a shipped IPA with `strings`. The
 /// user's own key lives in the Keychain — see [OpenRouterKeyStore].
 const String kOpenRouterBaseUrl = 'https://openrouter.ai/api/v1';
-const String kOpenRouterDefaultModel = 'google/gemini-2.5-flash';
+
+/// The model BYOK sends. Sent ONLY on the BYOK path (`endpoint.sendModel`); the
+/// Standard proxy names no model — the Edge Function pins one server-side.
+///
+/// A **free** OpenRouter model, on purpose. BYOK bills the user's own account,
+/// so a free model makes the coach genuinely $0 for anyone who connects a key.
+/// Free-tier trade-offs (a ~50/day per-account cap, and a provider that may
+/// train on the data) live entirely on the user's side of the line — which is
+/// exactly what BYOK's consent copy already discloses ("OpenRouter routes it
+/// under your account settings"), so no privacy-policy change rides on this.
+///
+/// NOT usable on the Standard proxy: that pins `google-vertex` with
+/// `data_collection: 'deny'`, and no free model is served by Vertex — free
+/// inference is the data-funded tier, which the deny flag deliberately excludes.
+const String kOpenRouterDefaultModel = 'google/gemma-4-26b-a4b-it:free';
 
 /// Keychain-backed home of the user's own OpenRouter API key (BYOK).
 ///

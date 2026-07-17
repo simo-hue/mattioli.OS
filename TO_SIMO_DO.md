@@ -1,7 +1,9 @@
 # TO_SIMO_DO.md
 
 - [ ] Widget for iPhone & MacOS
-- [ ] I want to use the "google/gemma-4-26b-a4b-it:free" model from open router
+- [x] Use "google/gemma-4-26b-a4b-it:free" from OpenRouter — **done for BYOK, NOT for the Pro proxy, and the split is deliberate.** BYOK bills the user's own account, so a free model there costs $0 and its trade-offs (a ~50/day per-account cap, a provider that may train on the data) sit on the user's side of the line — which BYOK's consent copy already discloses, so no privacy change was needed. The **Standard proxy cannot use it**: it pins `google-vertex` with `data_collection: 'deny'`, and no free model is served by Vertex (free inference is the data-funded tier the deny flag excludes). Pointing the proxy at a free model would force renaming the recipient in `privacy.html` (away from Google LLC, which you're the named controller for), dropping the "not used to train" promise, and capping the WHOLE app at ~1,000 req/day — I would not do that without your explicit sign-off. If you want the *proxy* free too, say so and I'll lay out that change in full. **To run the coach free yourself:** use it in a non-Pro cloud account or Private mode (both route to BYOK), connect your own OpenRouter key, done.
+  - Optional later: BYOK has no in-app model picker — the model is a constant. If you want users to choose (free vs paid on their own key), that's a small feature, not done here.
+  - Vestigial: `mobile/lib/core/openrouter_config.dart` (git-ignored) is dead — BYOK reads the key from the Keychain now, nothing imports that file. Harmless, left in place; delete it and its `.example`/gitignore entry whenever you next tidy secrets.
 - [ ] Update for the habits to decide the day of the week to decide when it should be completed and obviously when it should appear on the day's pop up calendar view. The desktop UI element is already in place but from mobile is totally missing
 - [ ] In the habits protocol tab view I want to see only the current habits and not also the past ones
 - [ ] MacOS app doesn't have the log in phase, I want to have the same logic of the mobile iOS app as it's professional and complete

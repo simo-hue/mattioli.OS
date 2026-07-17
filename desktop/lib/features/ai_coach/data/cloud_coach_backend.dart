@@ -73,7 +73,7 @@ class CloudCoachBackend implements CoachBackend {
   /// hundreds). Kept as a list so the picker treats cloud and local uniformly.
   @override
   Future<List<CoachModel>> listModels() async => const [
-    CoachModel(id: OpenRouterConfig.defaultModel, label: 'Gemini 2.5 Flash'),
+    CoachModel(id: OpenRouterConfig.defaultModel, label: 'Gemma 4 26B (free)'),
   ];
 
   @override

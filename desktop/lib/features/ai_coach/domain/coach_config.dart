@@ -5,10 +5,17 @@ import 'coach_backend.dart';
 /// `/chat/completions` and `/models` (mirrors `OpenRouterConfig.baseUrl`).
 const String kDefaultLocalBaseUrl = 'http://localhost:11434/v1';
 
-/// The cloud model shipped by default (kept in sync with
-/// `OpenRouterConfig.defaultModel`; duplicated here so the domain layer stays
-/// free of a data-layer import).
-const String kDefaultCloudModel = 'google/gemini-2.5-flash';
+/// The model the "Your OpenRouter account" (BYOK) engine sends by default (kept
+/// in sync with `OpenRouterConfig.defaultModel`; duplicated here so the domain
+/// layer stays free of a data-layer import).
+///
+/// A **free** OpenRouter model, on purpose: BYOK bills the user's own account,
+/// so a free model makes the coach genuinely $0 for anyone who connects a key.
+/// The free-tier trade-offs (a per-account daily cap; a provider that may train
+/// on the data) sit on the user's side of the line, which BYOK's consent copy
+/// already discloses — so no privacy change rides on this. NOT usable on the
+/// Standard proxy, which pins `google-vertex` (no free model is served there).
+const String kDefaultCloudModel = 'google/gemma-4-26b-a4b-it:free';
 
 /// The model the Standard proxy runs. Display only: the client does not choose
 /// it — the Edge Function reads it from `ai_coach_limits.model` and ignores

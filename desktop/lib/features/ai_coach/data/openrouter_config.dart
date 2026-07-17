@@ -7,5 +7,8 @@
 /// recoverable from a shipped build with `strings`.
 class OpenRouterConfig {
   static const String baseUrl = 'https://openrouter.ai/api/v1';
-  static const String defaultModel = 'google/gemini-2.5-flash';
+
+  /// The BYOK default — a FREE model, so connecting a key costs the user nothing
+  /// (see [kDefaultCloudModel] for the full rationale). Kept in sync with it.
+  static const String defaultModel = 'google/gemma-4-26b-a4b-it:free';
 }

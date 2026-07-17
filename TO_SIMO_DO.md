@@ -9,4 +9,13 @@
 - [ ] From mobile implementation, in the settings the "App logs" field has to few bottom margin from the button "Go to login", I want you to increase it.
 - [ ] mobile animation between lateral scroll on the goals page? Improve it
 
+## Repo reorganisation (2026-07-17) — web client moved into `web-app/`
+
+- [ ] **Next web deploy must run from `web-app/`, not the repo root**: `cd web-app && npm run deploy`. The build is verified, but the deploy itself is NOT — proving it would have meant publishing to the live site (https://simo-hue.github.io/mattioli.OS/), which I did not do uninvited. The reasoning is sound (git resolves from any subdirectory, `gh-pages -d dist` resolves `dist/` relative to cwd), but it is reasoning, not evidence. First deploy after this change: watch it.
+- [ ] Dev/CI habit change: `npm install` / `npm run dev` / `npm run build` / `npm run lint` all now run from `web-app/`. The repo root has no `package.json`.
+- [ ] `npm run lint` is red — 96 problems (83 errors, 13 warnings) in `web-app/src`. **Pre-existing**, verified identical before and after the move. Worth a cleanup pass at some point; it means lint can never gate anything today.
+- [ ] `npm ci` reports 14 vulnerabilities (7 moderate, 7 high). Pre-existing, untouched. Needs a deliberate `npm audit` review.
+- [ ] Decide the fate of the web tracker. You said you don't use it and only care about the website. It stayed in this move (deleting a live, publicly-marketed surface that strangers may hold Supabase accounts on is a product decision, not a refactor). The code already splits cleanly — 9 public marketing routes vs everything under `/sw` behind `ProtectedRoute` — so removing it later is cheap. Check the Supabase dashboard for active non-you accounts before deciding.
+- [ ] Related: root `README.md` still markets the tracker as "Free Forever" and `/get-started` still onboards strangers into signing up. If the tracker is effectively abandoned, that's a truthfulness problem independent of the code.
+
 ---

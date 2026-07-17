@@ -48,6 +48,8 @@ app.*.map.json
 lib/core/supabase_config.dart
 lib/core/sentry_config.dart
 lib/core/openrouter_config.dart
+.env*
+!.env.example
 
 # Keystore and Play Store related
 *.jks

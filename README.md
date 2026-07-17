@@ -6,7 +6,7 @@
 
 [![Watch the Tutorial](https://img.shields.io/badge/▶_Watch_Tutorial-YouTube-red?style=for-the-badge&logo=youtube)](YOUR_YOUTUBE_VIDEO_LINK_HERE)
 [![License: PolyForm NC](https://img.shields.io/badge/License-PolyForm_Noncommercial_1.0.0-yellow.svg?style=for-the-badge)](./LICENSE)
-[![Stack](https://img.shields.io/badge/Tech-React%20|%20Supabase%20|%20Tailwind-blue?style=for-the-badge)](./docs/TECHNICAL_DEEP_DIVE.md)
+[![Stack](https://img.shields.io/badge/Tech-Flutter%20|%20React%20|%20Supabase-blue?style=for-the-badge)](./web-app/docs/TECHNICAL_DEEP_DIVE.md)
 [![Status](https://img.shields.io/badge/Status-Active_Development-success?style=for-the-badge)]()
 
 <br />
@@ -18,22 +18,42 @@
   <i>"We don't rise to the level of our goals. We fall to the level of our systems." — James Clear</i>
 </p>
 
-[🏁 Quick Start](#-quick-start) • [✨ Features](#-key-features) • [📚 Documentation](#-documentation-hub) • [🧠 Philosophy](#--philosophy)
+[🧭 Surfaces](#-surfaces) • [🏁 Quick Start](#-quick-start) • [✨ Features](#-key-features) • [📚 Documentation](#-documentation-hub) • [🧠 Philosophy](#--philosophy)
 
 </div>
 
 ---
 
+## 🧭 Surfaces
+
+Mattioli.OS ships as three clients against one shared Supabase backend.
+
+| Folder | Surface | Stack | Docs |
+| :--- | :--- | :--- | :--- |
+| [`web-app/`](./web-app) | Public website + browser tracker | React 18 · Vite 7 · Tailwind | [README](./web-app/README.md) |
+| [`mobile/`](./mobile) | iOS · Android | Flutter · Riverpod | [README](./mobile/README.md) |
+| [`desktop/`](./desktop) | macOS · Windows · Linux | Flutter · Riverpod | [README](./desktop/README.md) |
+
+Shared across all three:
+
+| Folder | Contents |
+| :--- | :--- |
+| [`schema.sql`](./schema.sql) + [`migrations/`](./migrations) | Database schema — the single source of truth |
+| [`supabase/`](./supabase) | Edge functions (RevenueCat webhook, Apple token revocation) |
+| [`packages/`](./packages) | Shared Dart packages (`evolve_sync`, `evolve_verification`) |
+
+---
+
 ## ⚡️ Quick Start
 
-Get up and running in **seconds**.
+Get the **web client** running in **seconds**.
 
 ```bash
 # 1. Clone the repo
 git clone https://github.com/simo-hue/mattioli.OS.git
 
-# 2. Enter the directory
-cd mattioli.OS
+# 2. Enter the web app
+cd mattioli.OS/web-app
 
 # 3. Install dependencies
 npm install
@@ -42,7 +62,12 @@ npm install
 npm run dev
 ```
 
-> **Note**: For full backend functionality, run the provided `schema.sql` in your Supabase project. See the [Technical Setup Guide](./docs/TUTORIAL_TECH_EN.md) for details.
+> **Note**: For full backend functionality, run the provided `schema.sql` — at the
+> repository root, since it's shared with the native clients — in your Supabase
+> project. See the [Technical Setup Guide](./web-app/docs/TUTORIAL_TECH_EN.md) for details.
+
+Building the **native** clients instead? See [`mobile/README.md`](./mobile/README.md)
+or [`desktop/README.md`](./desktop/README.md).
 
 ---
 
@@ -91,13 +116,15 @@ We have crafted distinct paths for every type of user.
 | 🇮🇹 Italian Docs | 🇺🇸 English Docs |
 | :--- | :--- |
 | **[Manuale Utente](./docs/TUTORIAL_USER_IT.md)** <br> *Per chi vuole solo usare l'app.* | **[User Manual](./docs/TUTORIAL_USER_EN.md)** <br> *For those who just want to use the app.* |
-| **[Guida Tecnica](./docs/TUTORIAL_TECH_IT.md)** <br> *Setup locale e deploy.* | **[Technical Guide](./docs/TUTORIAL_TECH_EN.md)** <br> *Local setup and deployment.* |
+| **[Guida Tecnica](./web-app/docs/TUTORIAL_TECH_IT.md)** <br> *Setup locale e deploy del client web.* | **[Technical Guide](./web-app/docs/TUTORIAL_TECH_EN.md)** <br> *Local setup and deployment of the web client.* |
 
 ### 🧠 For Engineers
-Check out the **[Technical Deep Dive](./docs/TECHNICAL_DEEP_DIVE.md)** for:
+Check out the **[Technical Deep Dive](./web-app/docs/TECHNICAL_DEEP_DIVE.md)** for:
 *   Architecture Diagrams (Mermaid.js)
 *   State Management Philosophy (React Query)
 *   Supabase Security Rules (RLS) explanations.
+
+Stuck? See **[Troubleshooting](./web-app/docs/TROUBLESHOOTING.md)**.
 
 ---
 
@@ -124,6 +151,6 @@ We love contributions! Please read our [CONTRIBUTING.md](./docs/CONTRIBUTING.md)
 
 <div align="center">
   <br />
-  Made with ❤️, ☕, and <b>React</b> | Mattioli Simone.
+  Made with ❤️, ☕, <b>Flutter</b> and <b>React</b> | Mattioli Simone.
   <br />
 </div>

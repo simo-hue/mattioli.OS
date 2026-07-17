@@ -114,6 +114,23 @@ export function quotaExceeded(
   return null
 }
 
+/**
+ * Whether the provider that actually served the request is one we did NOT pin —
+ * i.e. the recipient disclosed in the privacy policy is wrong.
+ *
+ * Exported and pure because this is the Guideline 5.1.2(i) alarm and it must be
+ * testable without a live upstream: a `null` provider (nothing observed) is NOT
+ * a leak, and a served provider absent from the pinned list IS. The pin is off
+ * one provider now (`google-ai-studio`); the failure mode is Darkbloom, the
+ * free model's other server, quietly serving a request.
+ */
+export function pinLeaked(
+  served: string | null,
+  pinnedProviders: string[],
+): boolean {
+  return served !== null && !pinnedProviders.includes(served)
+}
+
 export interface StreamObservations {
   /** The provider that actually served the request, per the chunks themselves. */
   provider: string | null
@@ -411,7 +428,7 @@ serve(async (req) => {
       // what actually served the request rather than trusting what we asked for.
       // If this ever fires, our privacy policy names the wrong recipient and
       // Guideline 5.1.2(i) is breached until it is fixed.
-      if (observations.provider && !limits.providers.includes(observations.provider)) {
+      if (pinLeaked(observations.provider, limits.providers)) {
         console.error(
           `[AI Coach] PROVIDER PIN LEAKED: served by "${observations.provider}", ` +
           `pinned to ${JSON.stringify(limits.providers)}. The disclosed recipient ` +

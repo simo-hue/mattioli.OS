@@ -4,7 +4,7 @@
 // claims: the input clamp, the quota windows, and the stream observer that
 // proves the provider pin held.
 import { assertEquals } from "https://deno.land/std@0.224.0/assert/mod.ts"
-import { observeSseStream, quotaExceeded, totalInputChars } from "./index.ts"
+import { observeSseStream, pinLeaked, quotaExceeded, totalInputChars } from "./index.ts"
 
 const enc = new TextEncoder()
 const dec = new TextDecoder()
@@ -82,7 +82,7 @@ Deno.test("quota: limits are boundaries, so the Nth request is refused", () => {
 })
 
 Deno.test("observer forwards every byte unchanged", async () => {
-  const body = 'data: {"provider":"google-vertex","choices":[{"delta":{"content":"hi"}}]}\n\n' +
+  const body = 'data: {"provider":"google-ai-studio","choices":[{"delta":{"content":"hi"}}]}\n\n' +
     "data: [DONE]\n\n"
   const { out } = await pump([body])
   assertEquals(out, body, "the user's stream must be byte-identical")
@@ -94,11 +94,11 @@ Deno.test("observer survives OPENROUTER PROCESSING keep-alive comments", async (
   // their own docs warn about exactly this.
   const body = ": OPENROUTER PROCESSING\n\n" +
     ": OPENROUTER PROCESSING\n\n" +
-    'data: {"provider":"google-vertex","choices":[{"delta":{"content":"hi"}}]}\n\n' +
+    'data: {"provider":"google-ai-studio","choices":[{"delta":{"content":"hi"}}]}\n\n' +
     "data: [DONE]\n\n"
   const { out, observations } = await pump([body])
   assertEquals(out, body)
-  assertEquals(observations.provider, "google-vertex")
+  assertEquals(observations.provider, "google-ai-studio")
   assertEquals(observations.errors, [])
 })
 
@@ -106,26 +106,26 @@ Deno.test("observer reassembles JSON split across a chunk boundary", async () =>
   // TCP does not respect line boundaries. Splitting mid-payload must not lose
   // the provider — that value is our only proof the pin held.
   const chunks = [
-    'data: {"provider":"goog',
-    'le-vertex","choices":[{"delta":{"content":"hi"}}]}\n\n',
+    'data: {"provider":"google-ai',
+    '-studio","choices":[{"delta":{"content":"hi"}}]}\n\n',
     "data: [DONE]\n\n",
   ]
   const { out, observations } = await pump(chunks)
   assertEquals(out, chunks.join(""))
-  assertEquals(observations.provider, "google-vertex")
+  assertEquals(observations.provider, "google-ai-studio")
 })
 
 Deno.test("observer survives a payload split byte-by-byte", async () => {
-  const body = 'data: {"provider":"google-vertex","choices":[]}\n\ndata: [DONE]\n\n'
+  const body = 'data: {"provider":"google-ai-studio","choices":[]}\n\ndata: [DONE]\n\n'
   const { out, observations } = await pump([...body])
   assertEquals(out, body)
-  assertEquals(observations.provider, "google-vertex")
+  assertEquals(observations.provider, "google-ai-studio")
 })
 
 Deno.test("observer catches mid-stream errors, which arrive on an HTTP 200", async () => {
   // A status check never sees these: OpenRouter returns 200 and then puts the
   // error in a normal data: event with finish_reason "error".
-  const body = 'data: {"provider":"google-vertex","error":{"code":429,' +
+  const body = 'data: {"provider":"google-ai-studio","error":{"code":429,' +
     '"message":"Rate limit exceeded"},"choices":[{"delta":{"content":""},' +
     '"finish_reason":"error"}]}\n\n'
   const { out, observations } = await pump([body])
@@ -147,6 +147,22 @@ Deno.test("observer reports the provider that actually served, not the one we as
     "darkbloom",
     "an unpinned provider must be observable, or the leak is silent",
   )
+})
+
+Deno.test("pinLeaked: the served provider must be in the pinned list", () => {
+  // The Guideline 5.1.2(i) alarm. The proxy pins google-ai-studio; anything else
+  // serving means the privacy policy names the wrong recipient.
+  assertEquals(pinLeaked("google-ai-studio", ["google-ai-studio"]), false)
+  assertEquals(pinLeaked("darkbloom", ["google-ai-studio"]), true,
+    "Darkbloom (the free model's other server) serving is a leak")
+  assertEquals(pinLeaked("google-vertex", ["google-ai-studio"]), true,
+    "even the OLD pin serving now is a leak — the disclosure changed")
+})
+
+Deno.test("pinLeaked: a null provider is not a leak", () => {
+  // Nothing observed (an empty or provider-less stream) is not proof of a leak;
+  // flagging it would cry wolf on every chunk that omits the field.
+  assertEquals(pinLeaked(null, ["google-ai-studio"]), false)
 })
 
 Deno.test("observer does not choke on an empty stream", async () => {

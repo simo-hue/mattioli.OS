@@ -737,7 +737,9 @@
       "activeByok": "يتم استخدام حساب OpenRouter الخاص بك",
       "activeRowTitle": "المحرّك النشط",
       "byokShortName": "حساب OpenRouter الخاص بك",
-      "notConfigured": "غير مُعَدّ"
+      "notConfigured": "غير مُعَدّ",
+      "standardSessionExpired": "انتهت صلاحية جلستك. سجّل الدخول مجددًا لمتابعة استخدام AI Coach.",
+      "standardUnavailable": "AI Coach غير متاح الآن. المشكلة من جانبنا — حاول مرة أخرى بعد قليل."
     },
     "consent": {
       "standardTitle": "إرسال رسائلك إلى الذكاء الاصطناعي؟",

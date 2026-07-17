@@ -8,9 +8,11 @@
 /// consenting to the other:
 ///
 /// - [CoachMode.standard] — WE choose the recipients. The Edge Function holds
-///   our key and pins `google-vertex` with fallbacks disabled, so the receiving
-///   parties are exactly OpenRouter, Inc. and Google LLC (Google Cloud Vertex
-///   AI). A closed list, nameable, and none of it the user's choosing.
+///   our key and pins `google-ai-studio` with fallbacks disabled, so the
+///   receiving parties are exactly OpenRouter, Inc. and Google LLC (Google AI
+///   Studio, the free tier). A closed list, nameable, and none of it the user's
+///   choosing. The free tier may retain and learn from the data — disclosed in
+///   the consent copy and the privacy policy.
 /// - [CoachMode.byok] — the USER chose OpenRouter and holds the account. We
 ///   send no provider pin, so OpenRouter routes to whichever provider serves the
 ///   model under *their* account settings. We cannot enumerate that list, and it
@@ -34,7 +36,8 @@ import '../providers/shared_prefs_provider.dart';
 /// the machine-readable fact behind it, and the reason the two consents are
 /// separate.
 enum CoachDisclosure {
-  /// OpenRouter, Inc. → Google LLC (Google Cloud Vertex AI). Pinned server-side.
+  /// OpenRouter, Inc. → Google LLC (Google AI Studio, free tier). Pinned
+  /// server-side.
   standard,
 
   /// OpenRouter, Inc., routing on the user's own account.

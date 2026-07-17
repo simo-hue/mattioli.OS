@@ -737,7 +737,9 @@
       "activeByok": "Usando tu cuenta de OpenRouter",
       "activeRowTitle": "Motor activo",
       "byokShortName": "Tu cuenta de OpenRouter",
-      "notConfigured": "Sin configurar"
+      "notConfigured": "Sin configurar",
+      "standardSessionExpired": "Tu sesión ha caducado. Inicia sesión de nuevo para seguir usando el AI Coach.",
+      "standardUnavailable": "El AI Coach no está disponible ahora mismo. Es cosa nuestra: inténtalo de nuevo en un momento."
     },
     "consent": {
       "standardTitle": "¿Enviar tus mensajes a la IA?",

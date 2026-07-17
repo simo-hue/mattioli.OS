@@ -27,11 +27,12 @@ const String kOpenRouterBaseUrl = 'https://openrouter.ai/api/v1';
 /// Free-tier trade-offs (a ~50/day per-account cap, and a provider that may
 /// train on the data) live entirely on the user's side of the line — which is
 /// exactly what BYOK's consent copy already discloses ("OpenRouter routes it
-/// under your account settings"), so no privacy-policy change rides on this.
+/// under your account settings").
 ///
-/// NOT usable on the Standard proxy: that pins `google-vertex` with
-/// `data_collection: 'deny'`, and no free model is served by Vertex — free
-/// inference is the data-funded tier, which the deny flag deliberately excludes.
+/// The Standard proxy now runs the SAME free model (2026-07-17 product
+/// decision), via `google-ai-studio` rather than Vertex, with the free-tier data
+/// posture disclosed in the Standard consent copy and the privacy policy. See
+/// `migrations/20260717_add_ai_coach_proxy.sql`.
 const String kOpenRouterDefaultModel = 'google/gemma-4-26b-a4b-it:free';
 
 /// Keychain-backed home of the user's own OpenRouter API key (BYOK).
@@ -285,16 +286,38 @@ String _errorMessage(CoachMode mode, int statusCode, String body) {
     // A proxy that fell over may not answer in JSON; fall back to the status.
   }
 
+  // Keyed on the proxy's own `error.code`, because the status alone is
+  // ambiguous where it matters most: 401 `unauthorized` (session expired) and
+  // 403 `not_subscribed` are both "the server said no", but one means *sign in
+  // again* and the other means *this is what Pro buys*. Mapping them the same —
+  // as this used to, collapsing both to standardNeedsPro via `isUnauthorized` —
+  // tells a subscriber whose session lapsed to buy the subscription they hold.
+  // Mirrors desktop's mapStandardCoachError so the two apps report the same
+  // failure the same way over the same proxy.
   switch (code) {
+    case 'unauthorized':
+      return t.ai.coachModes.standardSessionExpired;
     case 'not_subscribed':
       return t.ai.coachModes.standardNeedsPro;
     case 'rate_limited':
       return t.ai.coachModes.standardRateLimited;
     case 'context_too_long':
       return t.ai.openRouter.contextTooLong;
+    case 'not_configured':
+    case 'server_error':
+    case 'upstream_unavailable':
+    case 'upstream_rate_limited':
+    case 'upstream_error':
+      // Our problem, not the user's — nothing for them to fix, so it must not
+      // read like a misconfiguration on their side.
+      return t.ai.coachModes.standardUnavailable;
   }
+  // Body not ours to read (a Supabase gateway error, a truncated response): fall
+  // back to the status, which still separates the cases the user can act on.
   if (statusCode == 413) return t.ai.openRouter.contextTooLong;
   if (statusCode == 429) return t.ai.coachModes.standardRateLimited;
-  if (isUnauthorized(statusCode)) return t.ai.coachModes.standardNeedsPro;
+  if (statusCode == 403) return t.ai.coachModes.standardNeedsPro;
+  if (statusCode == 401) return t.ai.coachModes.standardSessionExpired;
+  if (statusCode >= 500) return t.ai.coachModes.standardUnavailable;
   return t.ai.openRouter.apiError(code: statusCode);
 }

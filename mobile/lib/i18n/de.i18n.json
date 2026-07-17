@@ -737,7 +737,9 @@
       "activeByok": "Dein OpenRouter-Konto wird verwendet",
       "activeRowTitle": "Aktive Engine",
       "byokShortName": "Dein OpenRouter-Konto",
-      "notConfigured": "Nicht eingerichtet"
+      "notConfigured": "Nicht eingerichtet",
+      "standardSessionExpired": "Deine Sitzung ist abgelaufen. Melde dich erneut an, um den AI Coach weiter zu nutzen.",
+      "standardUnavailable": "Der AI Coach ist gerade nicht verfügbar. Das liegt an uns — bitte versuch es gleich noch einmal."
     },
     "consent": {
       "standardTitle": "Deine Nachrichten an die KI senden?",

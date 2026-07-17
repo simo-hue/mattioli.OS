@@ -22,8 +22,8 @@ class CloudCoachBackend implements CoachBackend {
             baseUrl: OpenRouterConfig.baseUrl,
             headers: {
               'Authorization': 'Bearer ${apiKey.trim()}',
-              'HTTP-Referer': 'https://github.com/simo/mattioli.OS',
-              'X-Title': 'Mattioli OS (Desktop)',
+              'HTTP-Referer': 'https://github.com/simo-hue/mattioli.OS',
+              'X-Title': 'Evolve',
             },
             // Cloud is fast; no cold-model start to wait on.
             firstTokenTimeout: const Duration(seconds: 20),

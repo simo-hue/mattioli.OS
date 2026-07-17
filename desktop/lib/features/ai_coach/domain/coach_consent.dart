@@ -17,9 +17,11 @@ import 'coach_backend.dart';
 /// to one is not consenting to the other:
 ///
 /// - [standard] — WE choose the recipients. The Edge Function holds our key and
-///   pins `google-vertex` with fallbacks disabled, so the receiving parties are
-///   exactly OpenRouter, Inc. and Google LLC (Google Cloud Vertex AI). A closed
-///   list, nameable, and none of it the user's choosing.
+///   pins `google-ai-studio` with fallbacks disabled, so the receiving parties
+///   are exactly OpenRouter, Inc. and Google LLC (Google AI Studio, the free
+///   tier). A closed list, nameable, and none of it the user's choosing. The
+///   free tier may retain and learn from the data — disclosed in the consent
+///   copy and the privacy policy.
 /// - [byok] — the USER chose OpenRouter and holds the account. We send no
 ///   provider pin, so OpenRouter routes to whichever provider serves the model
 ///   under *their* account settings. We cannot enumerate that list, and it is

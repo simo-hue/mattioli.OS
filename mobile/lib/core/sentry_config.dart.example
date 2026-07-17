@@ -11,7 +11,12 @@ import 'package:sentry_flutter/sentry_flutter.dart';
 /// 4. Incollalo qui sotto
 class SentryConfig {
   /// Il DSN (Data Source Name) del tuo progetto Sentry.
-  /// Formato: https://<key>@<organization>.ingest.sentry.io/<project-id>
+  ///
+  /// Formato: `https://<key>@<organization>.ingest.sentry.io/<project-id>`
+  /// (i backtick sono necessari: CI copia questo template in
+  /// `sentry_config.dart` e lo analizza con `--fatal-infos`, quindi angle
+  /// bracket nudi in un doc comment fanno fallire la build —
+  /// `unintended_html_in_doc_comment`).
   static const String dsn = 'YOUR_SENTRY_DSN_HERE';
 
   /// Nome dell'ambiente (production, staging, development).

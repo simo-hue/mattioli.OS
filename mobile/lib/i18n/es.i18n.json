@@ -177,7 +177,8 @@
       "calendar": "CALENDARIO Y PANEL",
       "experience": "EXPERIENCIA DE USUARIO",
       "aiCoach": "COACH AI",
-      "unitsLanguage": "UNIDADES E IDIOMA"
+      "unitsLanguage": "UNIDADES E IDIOMA",
+      "appleHealth": "SALUD"
     },
     "appearance": {
       "darkMode": "Modo oscuro",
@@ -1168,5 +1169,21 @@
       "sleep": "Sueño",
       "screenTime": "Tiempo de pantalla"
     }
+  },
+  "health": {
+    "appName": "Salud",
+    "rowTitle": "Datos de salud",
+    "statusUnavailable": "No disponible",
+    "statusNotConnected": "Sin configurar",
+    "statusConnected": "Configurado",
+    "worksWith": "Evolve funciona con la app {app} para verificar algunos hábitos automáticamente.",
+    "readsTitle": "Qué lee Evolve",
+    "readsBody": "Solo las métricas de los hábitos que elijas verificar automáticamente:",
+    "readOnly": "Solo lectura. Evolve nunca escribe nada en {app}.",
+    "noData": "Este dispositivo no tiene datos de {app}. Los pasos, la actividad y el sueño los registra tu iPhone o Apple Watch y se sincronizan desde ahí.",
+    "unavailableOnDevice": "{app} no está disponible en este dispositivo.",
+    "allowAccess": "Permitir acceso",
+    "manageHint": "El acceso se concede por tipo de dato. Para revisarlo o cambiarlo, abre la app {app}, luego Compartir, Apps y servicios, Evolve.",
+    "grantNote": "iOS no informa a las apps de si se concedió el acceso de lectura, así que Evolve no puede mostrártelo aquí. Si un hábito no se verifica, compruébalo en la app {app}."
   }
 }

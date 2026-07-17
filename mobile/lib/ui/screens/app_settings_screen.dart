@@ -8,6 +8,9 @@ import '../../providers/settings_provider.dart';
 import '../../core/haptics.dart';
 import '../../core/openrouter_service.dart';
 import '../../core/rtl.dart';
+import '../../core/verification_config.dart';
+import '../../core/verification_providers.dart';
+import '../widgets/apple_health_form.dart';
 import '../../i18n/translations.g.dart';
 import '../widgets/pro_features_modal.dart';
 import '../kit/evolve_color_picker.dart';
@@ -265,6 +268,33 @@ class AppSettingsScreen extends ConsumerWidget {
               ),
             ]),
             const SizedBox(height: 32),
+            // Apple Health (Guideline 2.5.1). Unconditional and permanent: it
+            // renders whether or not permission was ever requested, whether or
+            // not any habit uses it, and on devices with no Health data at all.
+            // The only previous mention of Health lived three levels deep in the
+            // habit modal behind an Auto-verify switch that defaults off, and
+            // hid itself for good once tapped — identification that can
+            // disappear is not identification. This is also the surface to point
+            // a screen recording at: launch, Settings, Apple Health.
+            if (VerificationConfig.healthKitEnabled) ...[
+              _buildSectionHeader(
+                context,
+                context.t.settings.sections.appleHealth,
+              ),
+              _buildSettingsCard(context, [
+                _buildActionRow(
+                  context: context,
+                  icon: LucideIcons.heartPulse,
+                  title: context.t.health.rowTitle,
+                  trailingText: _healthStatus(context, ref),
+                  onTap: () {
+                    ref.hapticLight();
+                    _showAppleHealthSheet(context);
+                  },
+                ),
+              ]),
+              const SizedBox(height: 32),
+            ],
             _buildSectionHeader(
               context,
               context.t.settings.sections.unitsLanguage,
@@ -505,6 +535,33 @@ class AppSettingsScreen extends ConsumerWidget {
       indent: 60,
       endIndent: 16,
       color: context.appColors.border.withValues(alpha: 0.5),
+    );
+  }
+
+  /// Status for the Apple Health row.
+  ///
+  /// Deliberately never claims "connected". iOS does not report read-grant, so
+  /// the honest signals are only: does this device have Health at all, and has
+  /// the user been through the prompt. Saying "Connected" for someone who tapped
+  /// Deny would be a lie the app cannot detect.
+  String? _healthStatus(BuildContext context, WidgetRef ref) {
+    final t = context.t.health;
+    final available = ref.watch(healthDataAvailableProvider).asData?.value;
+    if (available == false) return t.statusUnavailable;
+    final requested = ref.watch(healthAuthRequestedTypesProvider);
+    return requested.isEmpty ? t.statusNotConnected : t.statusConnected;
+  }
+
+  void _showAppleHealthSheet(BuildContext context) {
+    showEvolveFormSheet<void>(
+      context: context,
+      // The app's own localized name for Health — see AppleHealthForm.
+      title: context.t.health.appName,
+      trailing: EvolveTextAction(
+        label: context.t.common.actions.done,
+        onPressed: () => Navigator.pop(context),
+      ),
+      builder: (sheetContext) => const AppleHealthForm(),
     );
   }
 

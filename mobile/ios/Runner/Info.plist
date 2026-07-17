@@ -55,10 +55,16 @@
 	<string>Questa app richiede l'accesso al FaceID per proteggere i tuoi dati personali.</string>
 	<key>NSPhotoLibraryUsageDescription</key>
 	<string>Questa app richiede l'accesso alla galleria per permetterti di caricare la tua foto profilo.</string>
+	<!-- Read-only, deliberately. AppDelegate requests
+	     `requestAuthorization(toShare: nil, read: readTypes)` and nothing in the
+	     app ever writes a sample, so there is no NSHealthUpdateUsageDescription:
+	     declaring write intent we do not have invites a reviewer to ask why we
+	     want it, and it was the only usage string missing from every
+	     InfoPlist.strings, so it would have shown Italian to everyone if it had
+	     ever fired. This Italian value is the base; the localized strings live in
+	     Runner/<lang>.lproj/InfoPlist.strings. -->
 	<key>NSHealthShareUsageDescription</key>
 	<string>Questa app accede ai tuoi dati su salute e fitness per verificare automaticamente le abitudini, come i passi, l'attività e il sonno.</string>
-	<key>NSHealthUpdateUsageDescription</key>
-	<string>Questa app sincronizza in modo sicuro i dati di salute e fitness per aiutarti a tracciare i tuoi progressi.</string>
 	<key>UIApplicationSceneManifest</key>
 	<dict>
 		<key>UIApplicationSupportsMultipleScenes</key>

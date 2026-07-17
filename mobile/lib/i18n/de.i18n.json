@@ -177,7 +177,8 @@
       "calendar": "KALENDER & DASHBOARD",
       "experience": "NUTZERERLEBNIS",
       "aiCoach": "AI-COACH",
-      "unitsLanguage": "EINHEITEN & SPRACHE"
+      "unitsLanguage": "EINHEITEN & SPRACHE",
+      "appleHealth": "APPLE HEALTH"
     },
     "appearance": {
       "darkMode": "Dunkler Modus",
@@ -1135,7 +1136,7 @@
     "autoVerified": "Automatisch geprüft",
     "couldNotVerifyTapToResolve": "Konnte nicht geprüft werden — zum Auflösen tippen",
     "needsAppleWatch": "Erfordert eine Apple Watch zur automatischen Prüfung",
-    "grantHealthAccess": "Health-Zugriff erlauben",
+    "grantHealthAccess": "Zugriff auf Apple Health erlauben",
     "templates": {
       "steps": "Schritte",
       "exerciseMinutes": "Trainingsminuten",
@@ -1168,5 +1169,21 @@
       "sleep": "Schlaf",
       "screenTime": "Bildschirmzeit"
     }
+  },
+  "health": {
+    "appName": "Apple Health",
+    "rowTitle": "Gesundheitsdaten",
+    "statusUnavailable": "Nicht verfügbar",
+    "statusNotConnected": "Nicht eingerichtet",
+    "statusConnected": "Eingerichtet",
+    "worksWith": "Evolve arbeitet mit der {app}-App, um einige Gewohnheiten automatisch zu prüfen.",
+    "readsTitle": "Was Evolve liest",
+    "readsBody": "Nur die Werte der Gewohnheiten, die du automatisch prüfen lässt:",
+    "readOnly": "Nur Lesezugriff. Evolve schreibt nie etwas in {app}.",
+    "noData": "Auf diesem Gerät gibt es keine {app}-Daten. Schritte, Aktivität und Schlaf werden von deinem iPhone oder deiner Apple Watch aufgezeichnet und von dort synchronisiert.",
+    "unavailableOnDevice": "{app} ist auf diesem Gerät nicht verfügbar.",
+    "allowAccess": "Zugriff erlauben",
+    "manageHint": "Der Zugriff wird pro Datentyp erteilt. Zum Prüfen oder Ändern öffne die {app}-App, dann Teilen, Apps und Dienste, Evolve.",
+    "grantNote": "iOS teilt Apps nicht mit, ob der Lesezugriff erteilt wurde — Evolve kann es dir hier also nicht anzeigen. Wenn eine Gewohnheit nicht geprüft wird, sieh in der {app}-App nach."
   }
 }

@@ -5,6 +5,7 @@ import 'package:sqflite_sqlcipher/sqflite.dart';
 
 import '../providers/shared_prefs_provider.dart';
 import 'method_channel_health_kit_bridge.dart';
+import 'verification_config.dart';
 import 'method_channel_screen_time_bridge.dart';
 import 'verification_state_store.dart';
 
@@ -21,6 +22,20 @@ final healthKitBridgeProvider = Provider<HealthKitBridge>(
 final screenTimeBridgeProvider = Provider<ScreenTimeBridge>(
   (_) => const MethodChannelScreenTimeBridge(),
 );
+
+/// Whether this device has Apple Health at all.
+///
+/// `HealthKitBridge.isHealthDataAvailable()` has existed — declared, bridged to
+/// `HKHealthStore.isHealthDataAvailable()`, faked and unit-tested — with no
+/// production caller. It matters now: the app is universal, and on a device
+/// with no paired iPhone or Watch every one of our eight types returns empty.
+/// The reviewer who rejected us under Guideline 2.5.1 was on an iPad Air, so an
+/// honest "there is no Health data here, and here is why" is the difference
+/// between a feature that looks broken and one that explains itself.
+final healthDataAvailableProvider = FutureProvider<bool>((ref) async {
+  if (!VerificationConfig.healthKitEnabled) return false;
+  return ref.read(healthKitBridgeProvider).isHealthDataAvailable();
+});
 
 /// The HealthKit sample identifiers the user has already been prompted to
 /// authorize. iOS deliberately never reports read-authorization grant status,

@@ -177,7 +177,8 @@
       "calendar": "التقويم ولوحة التحكم",
       "experience": "تجربة المستخدم",
       "aiCoach": "مدرّب AI",
-      "unitsLanguage": "الوحدات واللغة"
+      "unitsLanguage": "الوحدات واللغة",
+      "appleHealth": "صحتي"
     },
     "appearance": {
       "darkMode": "الوضع الداكن",
@@ -1135,7 +1136,7 @@
     "autoVerified": "تم التحقق تلقائيًا",
     "couldNotVerifyTapToResolve": "تعذّر التحقق — اضغط للحل",
     "needsAppleWatch": "يتطلب Apple Watch للتحقق التلقائي",
-    "grantHealthAccess": "السماح بالوصول إلى الصحة",
+    "grantHealthAccess": "السماح بالوصول إلى صحتي",
     "templates": {
       "steps": "الخطوات",
       "exerciseMinutes": "دقائق التمرين",
@@ -1168,5 +1169,21 @@
       "sleep": "النوم",
       "screenTime": "وقت الشاشة"
     }
+  },
+  "health": {
+    "appName": "صحتي",
+    "rowTitle": "البيانات الصحية",
+    "statusUnavailable": "غير متوفر",
+    "statusNotConnected": "لم يتم الإعداد",
+    "statusConnected": "تم الإعداد",
+    "worksWith": "يعمل Evolve مع تطبيق {app} للتحقق تلقائيًا من بعض العادات.",
+    "readsTitle": "ما الذي يقرأه Evolve",
+    "readsBody": "فقط مقاييس العادات التي تختار التحقق منها تلقائيًا:",
+    "readOnly": "قراءة فقط. لا يكتب Evolve أي شيء في {app} إطلاقًا.",
+    "noData": "لا توجد بيانات {app} على هذا الجهاز. تُسجَّل الخطوات والنشاط والنوم بواسطة iPhone أو Apple Watch وتتم مزامنتها من هناك.",
+    "unavailableOnDevice": "{app} غير متوفر على هذا الجهاز.",
+    "allowAccess": "السماح بالوصول",
+    "manageHint": "يُمنح الوصول لكل نوع بيانات على حدة. لمراجعته أو تغييره، افتح تطبيق {app}، ثم المشاركة، التطبيقات والخدمات، Evolve.",
+    "grantNote": "لا يخبر iOS التطبيقات بما إذا كان وصول القراءة قد مُنح، لذا لا يمكن لـ Evolve عرضه هنا. إذا لم يتم التحقق من عادة ما، فتحقق من تطبيق {app}."
   }
 }

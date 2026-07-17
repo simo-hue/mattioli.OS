@@ -14,24 +14,31 @@
 	  App Store Connect privacy "nutrition labels". Profile photos are stored
 	  only on-device (never uploaded) and are intentionally NOT declared.
 
-	  HealthKit: no Health or Fitness type is declared. A HealthKit rule's
-	  measured quantity (steps, sleep hours, active kcal, …) decides a habit's
-	  daily verdict and is persisted only by the private backend — the on-device
-	  SQLCipher database and, if the user enables sync, the user's own CloudKit
-	  private container, AES-GCM encrypted under a key we never hold. Both
-	  Supabase writers of goal_logs.value null it out for a HealthKit-verified
-	  goal — HabitLogsNotifier.applyAutoVerdict (the reconcile pass) and
-	  stripHealthMeasurements (the Cloud-mode backup restore) — so no measured
-	  quantity reaches a server we can read.
+	  HealthKit: Health IS declared below. The data minimisation described here is
+	  real and still holds — a HealthKit rule's measured quantity (steps, sleep
+	  hours, active kcal, …) decides a habit's daily verdict and is persisted only
+	  by the private backend: the on-device SQLCipher database and, if the user
+	  enables sync, the user's own CloudKit private container, AES-GCM encrypted
+	  under a key we never hold. Both Supabase writers of goal_logs.value null it
+	  out for a HealthKit-verified goal — HabitLogsNotifier.applyAutoVerdict (the
+	  reconcile pass) and stripHealthMeasurements (the Cloud-mode backup restore)
+	  — so no measured quantity reaches a server we can read. What DOES reach
+	  Supabase is the verdict (goal_logs.status) and the rule behind it
+	  (goals.verify_*): "hit the 10000-step target on 2026-07-14" without the
+	  count.
 
-	  What DOES reach Supabase for such a habit is the verdict (goal_logs.status)
-	  and the rule behind it (goals.verify_*): the account holds "hit the
-	  10000-step target on 2026-07-14" without the count. Treating that as habit
-	  state rather than as collected health data is a product decision, not a
-	  settled reading of Apple's definition, and it is the only reason no
-	  Health/Fitness entry appears below. Revisit this file and the nutrition
-	  labels together if that decision changes, or if a measured quantity is ever
-	  added to a Supabase payload.
+	  This file previously declared no Health type, on the reading that such a
+	  verdict is habit state rather than collected health data. That reading is
+	  coherent but unsettled — a per-habit "verified: true" derived from step
+	  counts, uploaded and tied to an account, is still a health-derived signal
+	  about a user — and the risk is asymmetric: declaring costs one nutrition
+	  label row, while not declaring costs a rejection cycle and reads as
+	  concealment on a build already rejected under Guideline 2.5.1. So we
+	  declare, and keep the nuance recorded here.
+
+	  Health, not Fitness: every type we read comes from the HealthKit API, which
+	  Apple's own definition places under Health. The Motion & Fitness API is not
+	  used, so declaring Fitness would name a source we never touch.
 	-->
 	<key>NSPrivacyTracking</key>
 	<false/>
@@ -84,6 +91,24 @@
 		<dict>
 			<key>NSPrivacyCollectedDataType</key>
 			<string>NSPrivacyCollectedDataTypeOtherUserContent</string>
+			<key>NSPrivacyCollectedDataTypeLinked</key>
+			<true/>
+			<key>NSPrivacyCollectedDataTypeTracking</key>
+			<false/>
+			<key>NSPrivacyCollectedDataTypePurposes</key>
+			<array>
+				<string>NSPrivacyCollectedDataTypePurposeAppFunctionality</string>
+			</array>
+		</dict>
+		<!-- Health: HealthKit types read for auto-verified habits (steps, exercise
+		     minutes, active energy, walking/running distance, stand hours, mindful
+		     minutes, sleep, workouts). Read-only — the app never writes a sample.
+		     Linked, because the resulting verdict is stored against the account in
+		     Cloud mode. See the note at the top of this file: the measured quantity
+		     itself never reaches a server we can read. -->
+		<dict>
+			<key>NSPrivacyCollectedDataType</key>
+			<string>NSPrivacyCollectedDataTypeHealth</string>
 			<key>NSPrivacyCollectedDataTypeLinked</key>
 			<true/>
 			<key>NSPrivacyCollectedDataTypeTracking</key>

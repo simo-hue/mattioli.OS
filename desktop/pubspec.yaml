@@ -16,7 +16,10 @@ publish_to: 'none' # Remove this line if you wish to publish to pub.dev
 # https://developer.apple.com/library/archive/documentation/General/Reference/InfoPlistKeyReference/Articles/CoreFoundationKeys.html
 # In Windows, build-name is used as the major, minor, and patch parts
 # of the product and file versions while build-number is used as the build suffix.
-version: 1.0.0+1
+# CFBundleShortVersionString is pinned to 1.0 in macos/Runner/Info.plist; only
+# the build number (after the +) feeds CFBundleVersion. Bump it every upload —
+# App Store Connect already has macOS builds 1, 2 and 3, so the next free one is 4.
+version: 1.0.0+4
 
 environment:
   sdk: ^3.11.5

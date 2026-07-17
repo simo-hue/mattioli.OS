@@ -10,6 +10,16 @@ const String kDefaultLocalBaseUrl = 'http://localhost:11434/v1';
 /// free of a data-layer import).
 const String kDefaultCloudModel = 'google/gemini-2.5-flash';
 
+/// The model the Standard proxy runs. Display only: the client does not choose
+/// it — the Edge Function reads it from `ai_coach_limits.model` and ignores
+/// whatever the body names, which is what stops a client from billing us for a
+/// model we never priced. Kept here so the chip can say what is answering.
+///
+/// If `ai_coach_limits.model` is ever retuned server-side (the point of it being
+/// a row rather than a constant), this label goes stale until the next release.
+/// It is a caption, not a control — but it is the only thing here that can lie.
+const String kStandardCoachModel = 'google/gemini-2.5-flash';
+
 /// Neutral sampling temperature — the historical coach value.
 const double kDefaultTemperature = 0.7;
 
@@ -54,8 +64,21 @@ class CoachConfig {
     this.systemPromptOverride,
   });
 
+  /// A fresh install: [CoachBackendKind.standard], the zero-setup engine.
+  ///
+  /// This used to be [CoachBackendKind.cloud], which made "paste an OpenRouter
+  /// key" the coach's front door — the exact surface Guideline 3.1.1 objected
+  /// to. A user who has never chosen an engine now lands on the subscription,
+  /// not on a key prompt.
+  ///
+  /// The cost: an existing BYOK user who never touched the setting (cloud was
+  /// the default, so most never did) reads back as Standard and must re-pick
+  /// "Your OpenRouter account" once. Their key is untouched, and Standard says
+  /// exactly that when it can't serve — so this is one visible tap, not a silent
+  /// break. Distinguishing "never chose" from "chose cloud" would need the
+  /// Keychain, which `build()` cannot await.
   factory CoachConfig.defaults() => const CoachConfig(
-    backend: CoachBackendKind.cloud,
+    backend: CoachBackendKind.standard,
     localBaseUrl: kDefaultLocalBaseUrl,
     cloudModel: kDefaultCloudModel,
     localModel: null,
@@ -84,8 +107,16 @@ class CoachConfig {
 
   /// The model id that will actually be sent for the active [backend]. Empty
   /// string when the user is on local but hasn't chosen a model yet.
-  String get activeModel =>
-      backend == CoachBackendKind.local ? (localModel ?? '') : cloudModel;
+  ///
+  /// Standard reports the server's pinned model rather than [cloudModel]: the
+  /// two are different facts that happen to hold the same string today, and
+  /// reading the user's BYOK preference here would let a stale pick misreport
+  /// what the proxy is actually running.
+  String get activeModel => switch (backend) {
+    CoachBackendKind.local => localModel ?? '',
+    CoachBackendKind.standard => kStandardCoachModel,
+    CoachBackendKind.cloud => cloudModel,
+  };
 
   /// Whether the configured local endpoint is a private (loopback/LAN) host.
   bool get localIsPrivate => isLoopbackOrLan(localBaseUrl);
@@ -218,6 +249,79 @@ bool isLoopbackOrLan(String baseUrl) {
 
 /// Clamps a temperature into the accepted [0.0, 2.0] range (OpenAI's bound).
 double clampTemperature(double value) => value.clamp(0.0, 2.0);
+
+/// The engine that can actually serve, given the engine the user picked.
+///
+/// Only Private mode overrides the choice, and only for
+/// [CoachBackendKind.standard], which it cannot reach for two independent
+/// reasons — either sufficient on its own:
+///
+///  1. Private mode keeps no account. The Edge Function takes identity from the
+///     caller's JWT and entitlement from `profiles.is_pro`; with neither, there
+///     is nothing to authenticate and nothing to check.
+///  2. `Supabase.initialize` is skipped entirely in Private mode (main.dart:
+///     51-58), so there is no client to mint a token from. Desktop degrades that
+///     to null in `supabaseClientProvider` rather than throwing — but a request
+///     built from it would still go out with no bearer and come back 401.
+///
+/// Note that `desktopIsProProvider` reports **true** in Private mode
+/// unconditionally (desktop_subscription_controller.dart:68-71). So entitlement
+/// must never be read before the data mode: the `isPro` the client sees and the
+/// `profiles.is_pro` the proxy checks are different facts that share a name.
+///
+/// Falling back to [CoachBackendKind.cloud] rather than [CoachBackendKind.local]
+/// keeps the user's own remote key working if they have one, and shows the
+/// "add your key" prompt if they don't — which is the honest end state for a
+/// mode that has no account to bill.
+CoachBackendKind effectiveCoachBackend({
+  required CoachBackendKind chosen,
+  required bool isPrivate,
+}) {
+  if (isPrivate && chosen == CoachBackendKind.standard) {
+    return CoachBackendKind.cloud;
+  }
+  return chosen;
+}
+
+/// Why the Standard engine can or cannot answer right now.
+enum StandardCoachStatus {
+  /// Signed in, subscribed, and pointed at a configured backend.
+  ready,
+
+  /// Private mode: no account, so the proxy is not an option at all. The picker
+  /// hides the segment rather than offering a mode that can only fail.
+  unavailablePrivate,
+
+  /// This build shipped without a Supabase URL/key, so there is no function to
+  /// call. Distinct from [needsSignIn]: the user cannot fix it.
+  unavailableUnconfigured,
+
+  /// Signed out (or mid token refresh) — the proxy authenticates the JWT.
+  needsSignIn,
+
+  /// Signed in without an active Evolve Pro entitlement. This is the state
+  /// Guideline 3.1.1 wants: the purchase unlocks the feature.
+  needsPro,
+}
+
+/// Which [StandardCoachStatus] applies. Pure so the rule is stated once, in one
+/// place, where it can be read and tested.
+///
+/// **The order is load-bearing**: `isPrivate` must be checked before [isPro] for
+/// the reasons documented on [effectiveCoachBackend] — in Private mode `isPro`
+/// is a placeholder, not a fact.
+StandardCoachStatus resolveStandardCoachStatus({
+  required bool isPrivate,
+  required bool isConfigured,
+  required bool hasSession,
+  required bool isPro,
+}) {
+  if (isPrivate) return StandardCoachStatus.unavailablePrivate;
+  if (!isConfigured) return StandardCoachStatus.unavailableUnconfigured;
+  if (!hasSession) return StandardCoachStatus.needsSignIn;
+  if (!isPro) return StandardCoachStatus.needsPro;
+  return StandardCoachStatus.ready;
+}
 
 /// The models to offer in the local picker: the server's [discovered] list,
 /// plus the currently-selected [current] id when the server didn't list it (a

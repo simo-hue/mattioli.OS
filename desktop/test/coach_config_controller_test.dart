@@ -3,9 +3,11 @@
 // and the active-backend provider switching engines. Uses mock prefs so no
 // network or DB is touched.
 import 'package:evolve_desktop/core/app_bootstrap.dart';
+import 'package:evolve_desktop/core/desktop_data_mode.dart';
 import 'package:evolve_desktop/features/ai_coach/application/coach_controllers.dart';
 import 'package:evolve_desktop/features/ai_coach/data/cloud_coach_backend.dart';
 import 'package:evolve_desktop/features/ai_coach/data/local_coach_backend.dart';
+import 'package:evolve_desktop/features/ai_coach/data/standard_coach_backend.dart';
 import 'package:evolve_desktop/features/ai_coach/domain/coach_backend.dart';
 import 'package:evolve_desktop/features/ai_coach/domain/coach_config.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
@@ -23,12 +25,23 @@ Future<ProviderContainer> _container([Map<String, Object> seed = const {}]) asyn
 }
 
 void main() {
-  test('defaults to cloud when nothing is persisted', () async {
+  test('defaults to standard when nothing is persisted', () async {
     final container = await _container();
     final config = container.read(coachConfigProvider);
-    expect(config.backend, CoachBackendKind.cloud);
+    // A fresh install lands on the subscription, not on a key prompt.
+    expect(config.backend, CoachBackendKind.standard);
     expect(config.localBaseUrl, kDefaultLocalBaseUrl);
     expect(config.localModel, isNull);
+  });
+
+  test('hydrates a persisted standard choice as standard', () async {
+    // Regression: the old binary `fromCode` mapped anything that wasn't 'local'
+    // to cloud, so a subscriber's saved engine would silently come back as BYOK.
+    final container = await _container({'coach_backend': 'standard'});
+    expect(
+      container.read(coachConfigProvider).backend,
+      CoachBackendKind.standard,
+    );
   });
 
   test('hydrates a persisted local configuration', () async {
@@ -121,6 +134,13 @@ void main() {
     final container = await _container();
     expect(
       container.read(activeCoachBackendProvider),
+      isA<StandardCoachBackend>(),
+    );
+    await container
+        .read(coachConfigProvider.notifier)
+        .setBackend(CoachBackendKind.cloud);
+    expect(
+      container.read(activeCoachBackendProvider),
       isA<CloudCoachBackend>(),
     );
     await container
@@ -131,4 +151,43 @@ void main() {
       isA<LocalCoachBackend>(),
     );
   });
+
+  test('PRIVATE MODE + a stored standard choice builds the BYOK engine', () {
+    // The end-to-end version of the effectiveCoachBackend rule: not just that
+    // the enum is rewritten, but that the object actually constructed is the one
+    // that can serve. A StandardCoachBackend here would 401 every send for a
+    // user whose whole mode is "I keep no account".
+    final container = ProviderContainer(
+      overrides: [
+        coachConfigProvider.overrideWith(_FixedConfigController.new),
+        activeDesktopDataModeProvider.overrideWith(
+          () => _FixedDataMode(DesktopDataMode.private),
+        ),
+      ],
+    );
+    addTearDown(container.dispose);
+
+    expect(
+      container.read(effectiveCoachBackendProvider),
+      CoachBackendKind.cloud,
+    );
+    expect(container.read(activeCoachBackendProvider), isA<CloudCoachBackend>());
+  });
+}
+
+/// A config pinned to Standard, as a private-mode user who chose it before
+/// switching modes would have persisted.
+class _FixedConfigController extends CoachConfigController {
+  @override
+  CoachConfig build() =>
+      CoachConfig.defaults().copyWith(backend: CoachBackendKind.standard);
+}
+
+class _FixedDataMode extends ActiveDesktopDataModeNotifier {
+  _FixedDataMode(this._mode);
+
+  final DesktopDataMode _mode;
+
+  @override
+  DesktopDataMode build() => _mode;
 }

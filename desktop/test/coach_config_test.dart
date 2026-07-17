@@ -131,20 +131,139 @@ void main() {
     });
   });
 
+  group('effectiveCoachBackend', () {
+    test('PRIVATE MODE NEVER GETS STANDARD', () {
+      // The reason this function exists. Private mode keeps no account, and
+      // `Supabase.initialize` is skipped there entirely — so a persisted
+      // Standard choice must not route at a proxy that can only refuse it.
+      expect(
+        effectiveCoachBackend(
+          chosen: CoachBackendKind.standard,
+          isPrivate: true,
+        ),
+        CoachBackendKind.cloud,
+        reason: 'falls back to BYOK, which still works without an account',
+      );
+    });
+
+    test('private mode leaves the two engines it CAN serve alone', () {
+      for (final kind in [CoachBackendKind.cloud, CoachBackendKind.local]) {
+        expect(
+          effectiveCoachBackend(chosen: kind, isPrivate: true),
+          kind,
+          reason: '${kind.name} needs no account and must not be rewritten',
+        );
+      }
+    });
+
+    test('outside private mode the user\'s choice is honoured verbatim', () {
+      for (final kind in CoachBackendKind.values) {
+        expect(effectiveCoachBackend(chosen: kind, isPrivate: false), kind);
+      }
+    });
+  });
+
+  group('resolveStandardCoachStatus', () {
+    test('signed-in subscriber on a configured build is ready', () {
+      expect(
+        resolveStandardCoachStatus(
+          isPrivate: false,
+          isConfigured: true,
+          hasSession: true,
+          isPro: true,
+        ),
+        StandardCoachStatus.ready,
+      );
+    });
+
+    test('PRIVATE MODE IS UNAVAILABLE even reporting Pro and a session', () {
+      // `desktopIsProProvider` returns true unconditionally in private mode, so
+      // an entitlement check that ran before the data-mode check would call this
+      // ready and send the request to a function with nothing to authenticate.
+      expect(
+        resolveStandardCoachStatus(
+          isPrivate: true,
+          isConfigured: true,
+          hasSession: true,
+          isPro: true, // as private mode ALWAYS reports
+        ),
+        StandardCoachStatus.unavailablePrivate,
+      );
+    });
+
+    test('a signed-in free user needs Pro — this is the 3.1.1 shape', () {
+      // The purchase is the unlock. Not a key, not a code: the subscription.
+      expect(
+        resolveStandardCoachStatus(
+          isPrivate: false,
+          isConfigured: true,
+          hasSession: true,
+          isPro: false,
+        ),
+        StandardCoachStatus.needsPro,
+      );
+    });
+
+    test('signed out reads as needsSignIn, not needsPro', () {
+      // Distinct on purpose: telling a subscriber mid-token-refresh to buy a
+      // subscription they already own is worse than saying nothing.
+      expect(
+        resolveStandardCoachStatus(
+          isPrivate: false,
+          isConfigured: true,
+          hasSession: false,
+          isPro: true,
+        ),
+        StandardCoachStatus.needsSignIn,
+      );
+    });
+
+    test('an unconfigured build is our problem, not the user\'s', () {
+      // No Supabase URL compiled in → there is no function to call. Must not
+      // read as "sign in" or "subscribe": neither would fix it.
+      expect(
+        resolveStandardCoachStatus(
+          isPrivate: false,
+          isConfigured: false,
+          hasSession: true,
+          isPro: true,
+        ),
+        StandardCoachStatus.unavailableUnconfigured,
+      );
+    });
+  });
+
   group('CoachBackendKind.fromCode', () {
-    test('parses local, defaults everything else to cloud', () {
+    test('parses every value by name, defaulting to standard', () {
       expect(CoachBackendKind.fromCode('local'), CoachBackendKind.local);
       expect(CoachBackendKind.fromCode(' LOCAL '), CoachBackendKind.local);
       expect(CoachBackendKind.fromCode('cloud'), CoachBackendKind.cloud);
-      expect(CoachBackendKind.fromCode(null), CoachBackendKind.cloud);
-      expect(CoachBackendKind.fromCode('nonsense'), CoachBackendKind.cloud);
+      expect(CoachBackendKind.fromCode('standard'), CoachBackendKind.standard);
+      expect(CoachBackendKind.fromCode(null), CoachBackendKind.standard);
+      expect(CoachBackendKind.fromCode('nonsense'), CoachBackendKind.standard);
+    });
+
+    test('EVERY value round-trips through its own code', () {
+      // The parse was a binary `== local ? local : cloud`, which would have read
+      // a persisted 'standard' back as cloud — sending a subscriber to a key
+      // prompt for the mode they had already paid for. A fourth engine would
+      // walk into the same trap, so assert the property, not the cases.
+      for (final kind in CoachBackendKind.values) {
+        expect(
+          CoachBackendKind.fromCode(kind.code),
+          kind,
+          reason: '${kind.name} must survive a save/load round-trip',
+        );
+      }
     });
   });
 
   group('CoachConfig', () {
-    test('defaults are cloud + Ollama URL + neutral temperature', () {
+    test('defaults are standard + Ollama URL + neutral temperature', () {
       final config = CoachConfig.defaults();
-      expect(config.backend, CoachBackendKind.cloud);
+      // Standard, not cloud: a fresh install must not land on "paste an API
+      // key", which is the surface Guideline 3.1.1 objected to.
+      expect(config.backend, CoachBackendKind.standard);
       expect(config.localBaseUrl, kDefaultLocalBaseUrl);
       expect(config.cloudModel, kDefaultCloudModel);
       expect(config.localModel, isNull);
@@ -156,11 +275,26 @@ void main() {
       final config = CoachConfig.defaults().copyWith(
         localModel: 'llama3.1:8b',
       );
-      expect(config.activeModel, kDefaultCloudModel); // still on cloud
+      expect(config.activeModel, kStandardCoachModel); // still on standard
       expect(
         config.copyWith(backend: CoachBackendKind.local).activeModel,
         'llama3.1:8b',
       );
+      expect(
+        config.copyWith(backend: CoachBackendKind.cloud).activeModel,
+        kDefaultCloudModel,
+      );
+    });
+
+    test('standard reports the server pin, not the BYOK model preference', () {
+      // The two are different facts that happen to share a string today. If a
+      // user hand-picks a cloud model, Standard must not claim to be running it
+      // — the Edge Function pins the model server-side and ignores the body.
+      final config = CoachConfig.defaults().copyWith(
+        backend: CoachBackendKind.standard,
+        cloudModel: 'anthropic/claude-sonnet-4.5',
+      );
+      expect(config.activeModel, kStandardCoachModel);
     });
 
     test('activeModel is empty when local has no model yet', () {

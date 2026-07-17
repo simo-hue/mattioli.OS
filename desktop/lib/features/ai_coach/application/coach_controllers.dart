@@ -1,4 +1,8 @@
 import 'package:evolve_desktop/core/app_bootstrap.dart';
+import 'package:evolve_desktop/core/desktop_data_mode.dart';
+import 'package:evolve_desktop/core/desktop_supabase_config.dart';
+import 'package:evolve_desktop/features/auth/application/auth_controller.dart';
+import 'package:evolve_desktop/features/settings/application/desktop_subscription_controller.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
@@ -6,6 +10,7 @@ import '../data/cloud_coach_backend.dart';
 import '../data/local_coach_backend.dart';
 import '../data/openai_compatible_client.dart';
 import '../data/openrouter_key_store.dart';
+import '../data/standard_coach_backend.dart';
 import '../domain/coach_backend.dart';
 import '../domain/coach_config.dart';
 
@@ -151,23 +156,79 @@ class CoachApiKeyController extends AsyncNotifier<String?> {
   }
 }
 
-/// The engine that answers the coach. Depends on the backend + local base URL
-/// (so an unrelated config edit — temperature, system prompt, model memory —
-/// doesn't needlessly rebuild it) and, for cloud, on the BYOK key.
-final activeCoachBackendProvider = Provider<CoachBackend>((ref) {
-  final (backend, localBaseUrl) = ref.watch(
-    coachConfigProvider.select((c) => (c.backend, c.localBaseUrl)),
+/// The live Supabase session's access token, or null when signed out.
+///
+/// Injected as a closure rather than read inline so it resolves at SEND time.
+/// The Standard backend authenticates with this JWT, which rotates roughly
+/// hourly; a token read once and captured would 401 forever after the first
+/// refresh. The client object is stable, the session is not — so the closure
+/// holds the client and re-reads the session on every call.
+///
+/// `supabaseClientProvider` is null in Private mode (Supabase is never
+/// initialised there), which makes this null-safe by construction.
+final coachSessionTokenProvider = Provider<Future<String?> Function()>((ref) {
+  final client = ref.watch(supabaseClientProvider);
+  return () async => client?.auth.currentSession?.accessToken;
+});
+
+/// Whether the Standard engine can serve, and if not, why.
+///
+/// Watches the auth controller rather than reading `currentSession` directly so
+/// the picker and the banner update the moment the user signs in or out, instead
+/// of on the next unrelated rebuild.
+final standardCoachStatusProvider = Provider<StandardCoachStatus>((ref) {
+  final isPrivate = ref.watch(activeDesktopDataModeProvider).isPrivate;
+  return resolveStandardCoachStatus(
+    isPrivate: isPrivate,
+    isConfigured: DesktopSupabaseConfig.isConfigured,
+    hasSession: ref.watch(desktopAuthControllerProvider).isLoggedIn,
+    // Only read where it means something: `desktopIsProProvider` returns true
+    // unconditionally in Private mode, where it is a placeholder rather than a
+    // fact about `profiles.is_pro` — which is what the proxy actually checks.
+    isPro: !isPrivate && ref.watch(desktopIsProProvider),
   );
-  if (backend == CoachBackendKind.local) {
-    return LocalCoachBackend(baseUrl: localBaseUrl);
+});
+
+/// The engine that will actually serve, given the one the user picked.
+///
+/// Private mode cannot reach the proxy (no account, no client), so a persisted
+/// Standard choice resolves to BYOK there. Every gate — the send path, the setup
+/// banners, the chip — must read THIS rather than `config.backend`, or a
+/// Private-mode user would be routed at a function that can only 401.
+final effectiveCoachBackendProvider = Provider<CoachBackendKind>((ref) {
+  return effectiveCoachBackend(
+    chosen: ref.watch(coachConfigProvider.select((c) => c.backend)),
+    isPrivate: ref.watch(activeDesktopDataModeProvider).isPrivate,
+  );
+});
+
+/// The engine that answers the coach. Depends on the effective backend + local
+/// base URL (so an unrelated config edit — temperature, system prompt, model
+/// memory — doesn't needlessly rebuild it), on the BYOK key for cloud, and on
+/// the entitlement status for standard.
+final activeCoachBackendProvider = Provider<CoachBackend>((ref) {
+  final backend = ref.watch(effectiveCoachBackendProvider);
+  final localBaseUrl = ref.watch(
+    coachConfigProvider.select((c) => c.localBaseUrl),
+  );
+  switch (backend) {
+    case CoachBackendKind.local:
+      return LocalCoachBackend(baseUrl: localBaseUrl);
+    case CoachBackendKind.standard:
+      return StandardCoachBackend(
+        status: ref.watch(standardCoachStatusProvider),
+        authorization: ref.watch(coachSessionTokenProvider),
+      );
+    case CoachBackendKind.cloud:
+      // While the Keychain read is in flight (or if it failed) the key reads as
+      // absent here and the backend reports itself unconfigured; it rebuilds
+      // with the real key the moment the read resolves. `.asData?.value` is what
+      // makes a failed read degrade to absent — senders awaiting
+      // `coachApiKeyProvider.future` instead see it THROW, so they must catch it
+      // themselves.
+      final apiKey = ref.watch(coachApiKeyProvider).asData?.value ?? '';
+      return CloudCoachBackend(apiKey: apiKey);
   }
-  // While the Keychain read is in flight (or if it failed) the key reads as
-  // absent here and the backend reports itself unconfigured; it rebuilds with
-  // the real key the moment the read resolves. `.asData?.value` is what makes a
-  // failed read degrade to absent — senders awaiting `coachApiKeyProvider.future`
-  // instead see it THROW, so they must catch it themselves.
-  final apiKey = ref.watch(coachApiKeyProvider).asData?.value ?? '';
-  return CloudCoachBackend(apiKey: apiKey);
 });
 
 /// Live model discovery for a local server, keyed by its (normalized) base URL

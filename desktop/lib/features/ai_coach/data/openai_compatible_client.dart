@@ -62,6 +62,9 @@ class OpenAiCompatibleClient {
     required this.baseUrl,
     required this.headers,
     required this.errors,
+    this.chatPath = '/chat/completions',
+    this.authorization,
+    this.errorMapper,
     this.connectTimeout = const Duration(seconds: 15),
     this.firstTokenTimeout = const Duration(seconds: 20),
     this.interChunkTimeout = const Duration(seconds: 15),
@@ -70,8 +73,38 @@ class OpenAiCompatibleClient {
 
   /// OpenAI-compatible base, ending in `/v1` (e.g. `http://localhost:11434/v1`).
   final String baseUrl;
+
+  /// Static headers sent on every request. For a credential that changes over
+  /// the client's life, use [authorization] instead — anything captured here is
+  /// frozen for good.
   final Map<String, String> headers;
   final CoachErrorMessages errors;
+
+  /// Appended to [baseUrl] to reach chat completions. Defaults to the OpenAI
+  /// dialect's `/chat/completions`; the Standard backend passes `''` because its
+  /// [baseUrl] *is* the endpoint — a Supabase Edge Function, addressed exactly
+  /// as the mobile client addresses it rather than relying on sub-path routing
+  /// that cannot be exercised from a unit test.
+  final String chatPath;
+
+  /// Resolves the bearer token per request, when the credential is not a
+  /// constant.
+  ///
+  /// The Standard backend authenticates with the Supabase session JWT, which
+  /// rotates roughly hourly. A token baked into [headers] at construction would
+  /// 401 forever after the first refresh, with no way back short of restarting
+  /// the app — so it is resolved at send time, never captured. Null (BYOK, a
+  /// local server) leaves [headers] untouched.
+  final Future<String?> Function()? authorization;
+
+  /// Overrides the OpenAI-dialect error heuristics.
+  ///
+  /// [_mapHttpError] guesses from the body text because OpenAI-compatible
+  /// servers only offer prose. Our own Edge Function returns a machine-readable
+  /// `error.code`, and the heuristics are actively wrong for it: its 403 means
+  /// "not subscribed" (buy Pro), not "bad credentials", and its 413 means the
+  /// conversation is too long, which no amount of body-sniffing would catch.
+  final String Function(int status, String body)? errorMapper;
 
   /// Time allowed to establish the HTTP connection.
   final Duration connectTimeout;
@@ -85,8 +118,20 @@ class OpenAiCompatibleClient {
 
   final http.Client Function() _clientFactory;
 
-  Uri get _chatUrl => Uri.parse('$baseUrl/chat/completions');
+  Uri get _chatUrl => Uri.parse('$baseUrl$chatPath');
   Uri get _modelsUrl => Uri.parse('$baseUrl/models');
+
+  /// [headers] plus a freshly-resolved bearer token, when [authorization] is
+  /// set. A null/empty token leaves the header off rather than sending
+  /// `Bearer null` — the caller (the Standard backend) refuses to send at all
+  /// without a session, so reaching here unauthenticated means the token expired
+  /// between the check and the send, and a 401 is the honest answer.
+  Future<Map<String, String>> _resolveHeaders() async {
+    if (authorization == null) return headers;
+    final token = (await authorization!())?.trim();
+    if (token == null || token.isEmpty) return headers;
+    return {...headers, 'Authorization': 'Bearer $token'};
+  }
 
   /// Cheap reachability probe (`GET /models`) used by the status pill and local
   /// auto-detection. Never throws — returns false on any error/timeout.
@@ -94,7 +139,7 @@ class OpenAiCompatibleClient {
     final client = _clientFactory();
     try {
       final response = await client
-          .get(_modelsUrl, headers: headers)
+          .get(_modelsUrl, headers: await _resolveHeaders())
           .timeout(connectTimeout);
       return response.statusCode < 500;
     } catch (_) {
@@ -110,7 +155,7 @@ class OpenAiCompatibleClient {
     final client = _clientFactory();
     try {
       final response = await client
-          .get(_modelsUrl, headers: headers)
+          .get(_modelsUrl, headers: await _resolveHeaders())
           .timeout(connectTimeout);
       if (response.statusCode != 200) return const [];
       return parseModelsResponse(response.body);
@@ -143,8 +188,10 @@ class OpenAiCompatibleClient {
     );
 
     final client = _clientFactory();
+    // Resolved here, per send — see [authorization]. Anything captured at
+    // construction is frozen past the first token refresh.
     final request = http.Request('POST', _chatUrl)
-      ..headers.addAll(headers)
+      ..headers.addAll(await _resolveHeaders())
       ..headers['Content-Type'] = 'application/json'
       ..body = body;
 
@@ -218,6 +265,11 @@ class OpenAiCompatibleClient {
   /// generic "request failed". A 400 is only treated as context-length when the
   /// body actually says so; otherwise it falls through to the coded error.
   String _mapHttpError(int statusCode, String body) {
+    // A server that reports a machine-readable code deserves better than a
+    // guess at its prose.
+    final mapper = errorMapper;
+    if (mapper != null) return mapper(statusCode, body);
+
     // Checked first: 401/403 is unambiguous, and its body often also mentions
     // the model, which would otherwise be mistaken for a model-not-found.
     if (statusCode == 401 || statusCode == 403) {

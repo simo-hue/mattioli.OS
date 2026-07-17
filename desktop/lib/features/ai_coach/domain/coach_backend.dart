@@ -1,22 +1,42 @@
 import 'chat_message.dart';
 
 /// Which engine answers the coach. Persisted as its [code] in SharedPreferences.
+///
+/// There are three rather than two because of App Store Guideline 3.1.1, which
+/// rejected the app for unlocking paid functionality with a user-supplied
+/// OpenRouter key. The compliant shape is the inverse: [standard] is ours, held
+/// server-side and unlocked by the IAP, while [cloud] — bring-your-own-key —
+/// stays free and first-class for anyone who prefers to pay the provider direct.
+/// Nothing is unlocked by a key any more, because nothing is locked.
 enum CoachBackendKind {
-  /// The hosted OpenRouter endpoint (data leaves the device).
+  /// Our Supabase Edge Function, holding our OpenRouter key, funded by the Evolve
+  /// Pro subscription. Zero setup — and unreachable in Private mode, which keeps
+  /// no account for the function to authenticate.
+  standard,
+
+  /// The user's own OpenRouter account, billed to their own key (data leaves the
+  /// device). Free, and the only remote option in Private mode.
   cloud,
 
   /// A user-run OpenAI-compatible server on this machine / LAN — Ollama, LM
   /// Studio, llama.cpp, Jan… (data never leaves the device when loopback).
   local;
 
-  String get code => name; // 'cloud' | 'local'
+  String get code => name; // 'standard' | 'cloud' | 'local'
 
-  /// Tolerant parse of a persisted value; anything unrecognised → [cloud], the
-  /// zero-setup default.
-  static CoachBackendKind fromCode(String? code) =>
-      code?.trim().toLowerCase() == local.name
-      ? CoachBackendKind.local
-      : CoachBackendKind.cloud;
+  /// Tolerant parse of a persisted value; anything unrecognised → [standard],
+  /// the zero-setup default.
+  ///
+  /// This was a binary `== local ? local : cloud`, which would have silently
+  /// read a persisted 'standard' back as [cloud] — sending a subscriber to a
+  /// key prompt for a mode they had already paid for. Match every value by name.
+  static CoachBackendKind fromCode(String? code) {
+    final normalized = code?.trim().toLowerCase();
+    for (final kind in values) {
+      if (kind.name == normalized) return kind;
+    }
+    return CoachBackendKind.standard;
+  }
 }
 
 /// A model the coach can talk to, as reported by the server (or entered by

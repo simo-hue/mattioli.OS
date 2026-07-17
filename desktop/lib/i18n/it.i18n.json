@@ -660,8 +660,8 @@
       "apiError": "❌ Errore API: {code} (verifica Sentry per i dettagli)"
     },
     "apiKey": {
-      "rowTitle": "Chiave API OpenRouter",
-      "description": "L'AI Coach funziona con il tuo account OpenRouter, così i consumi restano tuoi. Crea una chiave su openrouter.ai/keys e incollala qui sotto: viene salvata nel portachiavi di questo dispositivo e inviata solo a OpenRouter.",
+      "rowTitle": "Il tuo account OpenRouter",
+      "description": "Preferisci far girare il coach sul tuo account? Collega una chiave OpenRouter e paghi direttamente il provider — nessun abbonamento Evolve richiesto. Creane una su openrouter.ai/keys: viene salvata nel portachiavi di questo dispositivo e inviata solo a OpenRouter.",
       "fieldLabel": "Chiave API",
       "hint": "sk-or-v1-…",
       "save": "Salva chiave",
@@ -669,13 +669,13 @@
       "remove": "Rimuovi chiave",
       "removed": "Chiave API rimossa",
       "removeConfirmTitle": "Rimuovere la chiave API?",
-      "removeConfirmBody": "L'AI Coach smetterà di rispondere finché non aggiungi di nuovo una chiave.",
+      "removeConfirmBody": "Questo motore smetterà di rispondere finché non colleghi di nuovo un account. Evolve AI e i modelli locali non sono interessati.",
       "statusSet": "Salvata",
       "statusMissing": "Non impostata",
       "saveFailed": "Impossibile salvare la chiave nel portachiavi. Riprova.",
-      "setupTitle": "Aggiungi la tua chiave API di OpenRouter",
-      "setupBody": "L'AI Coach funziona con il tuo account OpenRouter. Aggiungi una chiave per iniziare a chattare, oppure passa a un modello locale.",
-      "setupAction": "Aggiungi chiave API"
+      "setupTitle": "Collega il tuo account OpenRouter",
+      "setupBody": "Questo motore funziona con il tuo account OpenRouter. Collegalo per iniziare a chattare — oppure passa a Evolve AI, incluso in Pro.",
+      "setupAction": "Collega account"
     },
     "suggestions": {
       "morningBoost": "🔥 Dammi la carica per iniziare!",
@@ -705,6 +705,12 @@
       "streamError": "❌ Connessione al modello locale non riuscita.",
       "timeout": "❌ Il modello locale sta impiegando troppo tempo — potrebbe essere ancora in caricamento. Riprova.",
       "modelNotFound": "❌ Quel modello non è disponibile sul server. Apri il selettore per sceglierne o caricarne uno."
+    },
+    "standard": {
+      "sessionExpired": "⚠️ La sessione è scaduta. Accedi di nuovo per continuare a usare Evolve AI.",
+      "needsPro": "⚠️ Evolve AI fa parte di Evolve Pro. Abbonati nelle Impostazioni — oppure passa al tuo account OpenRouter, che è gratis.",
+      "rateLimited": "⚠️ Hai raggiunto il limite di uso corretto di Evolve AI per ora. Riprova più tardi oppure passa al tuo account OpenRouter.",
+      "unavailable": "❌ Evolve AI non è disponibile in questo momento. È un problema nostro: riprova tra poco."
     }
   },
   "aiCoach": {
@@ -1079,9 +1085,9 @@
   "coachSettings": {
     "title": "Motore dell'AI Coach",
     "subtitle": "Scegli dove gira il coach. I modelli locali tengono ogni messaggio su questo dispositivo.",
-    "backendCloud": "Cloud",
+    "backendCloud": "Il tuo OpenRouter",
     "backendLocal": "Locale · privato",
-    "cloudDesc": "Google Gemini tramite OpenRouter, con la tua chiave API. Il contesto che condividi viene inviato al provider.",
+    "cloudDesc": "Collega il tuo account OpenRouter e paghi direttamente il provider. Gratis — nessun abbonamento richiesto. Il contesto che condividi viene inviato al provider.",
     "localDesc": "Il tuo modello tramite Ollama, LM Studio o qualsiasi server compatibile con OpenAI. Nulla lascia questo dispositivo.",
     "presetLabel": "Server",
     "presetOllama": "Ollama",
@@ -1114,14 +1120,14 @@
     "activeCloud": "Cloud · {model}",
     "activeLocal": "Locale · {model}",
     "activeLocalNoModel": "Locale · scegli un modello",
-    "cloudSection": "Cloud",
+    "cloudSection": "Il tuo OpenRouter",
     "serverSettings": "Impostazioni server…",
     "settingsSectionLabel": "AI Coach",
     "settingsTitle": "AI Coach",
     "settingsSubtitle": "Scegli il motore che alimenta il coach e collegalo a un server locale per la massima privacy.",
     "settingsRowStatus": "Motore attivo",
     "settingsRowConfigure": "Motore e server locale",
-    "cloudKeyMissing": "Nessuna chiave API — le risposte cloud non funzioneranno. Incolla qui sotto la tua chiave OpenRouter oppure passa a un server locale.",
+    "cloudKeyMissing": "Nessuna chiave — questo motore non risponderà. Collega qui sotto il tuo account OpenRouter, passa a Evolve AI oppure usa un server locale.",
     "temperatureLower": "Riduci la temperatura",
     "temperatureRaise": "Aumenta la temperatura",
     "sendMessage": "Invia",
@@ -1136,7 +1142,19 @@
     "ollamaStartTimeout": "Sta impiegando più tempo del previsto — controlla l'icona di Ollama nella barra dei menu (il primo avvio potrebbe richiedere un'autorizzazione).",
     "ollamaStartingBody": "Può richiedere qualche secondo…",
     "ollamaStartFailed": "Impossibile avviare Ollama — prova ad aprirlo dalla cartella Applicazioni.",
-    "ollamaDownloadFailed": "Impossibile aprire il browser — visita ollama.com/download"
+    "ollamaDownloadFailed": "Impossibile aprire il browser — visita ollama.com/download",
+    "backendStandard": "Evolve AI",
+    "standardDesc": "Incluso in Evolve Pro. Eseguiamo Gemini 2.5 Flash per te — nessuna chiave, nessuna configurazione. Il contesto che condividi viene inviato al provider.",
+    "activeStandard": "Evolve AI · {model}",
+    "standardSection": "Evolve AI",
+    "standardStatusReady": "Incluso in Pro",
+    "standardStatusNeedsPro": "Richiede Pro",
+    "standardStatusNeedsSignIn": "Accesso richiesto",
+    "standardStatusUnavailable": "Non disponibile",
+    "standardNeedsProNote": "Evolve AI fa parte di Evolve Pro. Abbonati per usarlo — oppure collega il tuo account OpenRouter, che è gratis.",
+    "standardNeedsSignInNote": "Accedi per usare Evolve AI. L'abbonamento lo sblocca su ogni dispositivo.",
+    "standardUnavailableNote": "Evolve AI non è disponibile in questa build. Collega il tuo account OpenRouter oppure usa un modello locale.",
+    "standardPrivateNote": "Evolve AI richiede un account Evolve, e la modalità Privata non ne conserva uno. Collega il tuo account OpenRouter oppure usa un modello locale: qui funzionano entrambi."
   },
   "tour": {
     "back": "Indietro",

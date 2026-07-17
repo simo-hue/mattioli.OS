@@ -660,8 +660,8 @@
       "apiError": "❌ خطأ في API: {code} (راجع Sentry للتفاصيل)"
     },
     "apiKey": {
-      "rowTitle": "مفتاح OpenRouter API",
-      "description": "يعمل مدرّب AI عبر حساب OpenRouter الخاص بك، لذا يبقى استهلاكك ملكك وحدك. أنشئ مفتاحًا على openrouter.ai/keys وألصقه أدناه: يُحفَظ في سلسلة مفاتيح هذا الجهاز ولا يُرسَل إلا إلى OpenRouter.",
+      "rowTitle": "حساب OpenRouter الخاص بك",
+      "description": "تفضّل تشغيل الكوتش على حسابك؟ اربط مفتاح OpenRouter وستدفع للمزوّد مباشرةً — بلا اشتراك في Evolve. أنشئ مفتاحًا على openrouter.ai/keys: يُحفَظ في سلسلة مفاتيح هذا الجهاز ولا يُرسَل إلا إلى OpenRouter.",
       "fieldLabel": "مفتاح API",
       "hint": "sk-or-v1-…",
       "save": "حفظ المفتاح",
@@ -669,13 +669,13 @@
       "remove": "إزالة المفتاح",
       "removed": "تمت إزالة مفتاح API",
       "removeConfirmTitle": "إزالة مفتاح API؟",
-      "removeConfirmBody": "سيتوقّف مدرّب AI عن الردّ حتى تُضيف مفتاحًا من جديد.",
+      "removeConfirmBody": "سيتوقف هذا المحرّك عن الردّ حتى تربط حسابًا مرة أخرى. لا يتأثر Evolve AI ولا النماذج المحلية.",
       "statusSet": "محفوظ",
       "statusMissing": "غير مُعيَّن",
       "saveFailed": "تعذّر حفظ المفتاح في سلسلة المفاتيح. حاول مرة أخرى.",
-      "setupTitle": "أضِف مفتاح OpenRouter API الخاص بك",
-      "setupBody": "يعمل مدرّب AI عبر حساب OpenRouter الخاص بك. أضِف مفتاحًا لبدء المحادثة، أو بدّل المحرّك إلى نموذج محلي.",
-      "setupAction": "إضافة مفتاح API"
+      "setupTitle": "اربط حساب OpenRouter الخاص بك",
+      "setupBody": "يعمل هذا المحرّك عبر حساب OpenRouter الخاص بك. اربطه لبدء المحادثة — أو انتقل إلى Evolve AI المُضمَّن في Pro.",
+      "setupAction": "ربط الحساب"
     },
     "suggestions": {
       "morningBoost": "🔥 امنحني دفعة للبدء!",
@@ -705,6 +705,12 @@
       "streamError": "❌ فشل الاتصال بالنموذج المحلي.",
       "timeout": "❌ النموذج المحلي يستغرق وقتًا طويلًا — قد يكون ما زال قيد التحميل. حاول مرة أخرى.",
       "modelNotFound": "❌ هذا النموذج غير متوفر على الخادم. افتح مُحدِّد النماذج لاختيار نموذج أو تحميله."
+    },
+    "standard": {
+      "sessionExpired": "⚠️ انتهت صلاحية جلستك. سجّل الدخول مجددًا لمتابعة استخدام Evolve AI.",
+      "needsPro": "⚠️ Evolve AI جزء من Evolve Pro. اشترك من الإعدادات — أو بدّل المحرّك إلى حساب OpenRouter الخاص بك، وهو مجاني.",
+      "rateLimited": "⚠️ لقد بلغت حد الاستخدام العادل لـ Evolve AI في الوقت الحالي. حاول لاحقًا أو بدّل المحرّك إلى حساب OpenRouter الخاص بك.",
+      "unavailable": "❌ Evolve AI غير متاح الآن. المشكلة من جانبنا — حاول مرة أخرى بعد قليل."
     }
   },
   "aiCoach": {
@@ -1079,9 +1085,9 @@
   "coachSettings": {
     "title": "محرّك مدرّب الذكاء الاصطناعي",
     "subtitle": "اختر مكان تشغيل المدرّب. تُبقي النماذج المحلية كل رسالة على هذا الجهاز.",
-    "backendCloud": "السحابة",
+    "backendCloud": "OpenRouter الخاص بك",
     "backendLocal": "محلي · خاص",
-    "cloudDesc": "Google Gemini عبر OpenRouter، باستخدام مفتاح API الخاص بك. يُرسَل السياق الذي تشاركه إلى المزوّد.",
+    "cloudDesc": "اربط حساب OpenRouter الخاص بك وادفع للمزوّد مباشرةً. مجاني — لا يتطلب اشتراكًا. يُرسَل السياق الذي تشاركه إلى المزوّد.",
     "localDesc": "نموذجك الخاص عبر Ollama أو LM Studio أو أي خادم متوافق مع OpenAI. لا شيء يغادر هذا الجهاز.",
     "presetLabel": "الخادم",
     "presetOllama": "Ollama",
@@ -1114,14 +1120,14 @@
     "activeCloud": "السحابة · {model}",
     "activeLocal": "محلي · {model}",
     "activeLocalNoModel": "محلي · اختر نموذجًا",
-    "cloudSection": "السحابة",
+    "cloudSection": "OpenRouter الخاص بك",
     "serverSettings": "إعدادات الخادم…",
     "settingsSectionLabel": "مدرّب الذكاء الاصطناعي",
     "settingsTitle": "مدرّب الذكاء الاصطناعي",
     "settingsSubtitle": "اختر المحرّك الذي يشغّل مدرّبك ووجّهه إلى خادم محلي لخصوصية كاملة.",
     "settingsRowStatus": "المحرّك النشط",
     "settingsRowConfigure": "المحرّك والخادم المحلي",
-    "cloudKeyMissing": "لا يوجد مفتاح API بعد — لن تعمل الردود السحابية. ألصق مفتاح OpenRouter أدناه أو بدّل إلى خادم محلي.",
+    "cloudKeyMissing": "لا يوجد مفتاح بعد — لن يردّ هذا المحرّك. اربط حساب OpenRouter الخاص بك أدناه، أو انتقل إلى Evolve AI، أو استخدم خادمًا محليًا.",
     "temperatureLower": "خفض درجة الحرارة",
     "temperatureRaise": "رفع درجة الحرارة",
     "sendMessage": "إرسال",
@@ -1136,7 +1142,19 @@
     "ollamaStartTimeout": "يستغرق وقتًا أطول من المتوقع — تحقّق من أيقونة Ollama في شريط القوائم (قد يتطلب التشغيل الأول موافقة).",
     "ollamaStartingBody": "قد يستغرق ذلك بضع ثوانٍ…",
     "ollamaStartFailed": "تعذّر تشغيل Ollama — جرّب فتحه من مجلد التطبيقات.",
-    "ollamaDownloadFailed": "تعذّر فتح المتصفح — تفضّل بزيارة ollama.com/download"
+    "ollamaDownloadFailed": "تعذّر فتح المتصفح — تفضّل بزيارة ollama.com/download",
+    "backendStandard": "Evolve AI",
+    "standardDesc": "مُضمَّن في Evolve Pro. نشغّل Gemini 2.5 Flash نيابةً عنك — بلا مفاتيح وبلا إعداد. يُرسَل السياق الذي تشاركه إلى المزوّد.",
+    "activeStandard": "Evolve AI · {model}",
+    "standardSection": "Evolve AI",
+    "standardStatusReady": "مُضمَّن في Pro",
+    "standardStatusNeedsPro": "يتطلب Pro",
+    "standardStatusNeedsSignIn": "يلزم تسجيل الدخول",
+    "standardStatusUnavailable": "غير متاح",
+    "standardNeedsProNote": "Evolve AI جزء من Evolve Pro. اشترك لاستخدامه — أو اربط حساب OpenRouter الخاص بك، وهو مجاني.",
+    "standardNeedsSignInNote": "سجّل الدخول لاستخدام Evolve AI. اشتراكك يفتحه على كل أجهزتك.",
+    "standardUnavailableNote": "Evolve AI غير متاح في هذه النسخة. اربط حساب OpenRouter الخاص بك أو استخدم نموذجًا محليًا.",
+    "standardPrivateNote": "يحتاج Evolve AI إلى حساب Evolve، والوضع الخاص لا يحتفظ بحساب. اربط حساب OpenRouter الخاص بك أو استخدم نموذجًا محليًا — كلاهما يعمل هنا."
   },
   "tour": {
     "back": "رجوع",

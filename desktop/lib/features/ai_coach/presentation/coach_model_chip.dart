@@ -11,26 +11,39 @@ import '../domain/coach_config.dart';
 import 'coach_settings_dialog.dart';
 
 /// Header pill showing the active coach engine + model. Tapping it opens a
-/// one-tap switcher of Cloud + discovered Local models, plus an entry into the
-/// full server settings. Honors the "decide the model in the chat" requirement.
+/// one-tap switcher of the remote engines + discovered Local models, plus an
+/// entry into the full server settings. Honors the "decide the model in the
+/// chat" requirement.
 class CoachModelChip extends ConsumerWidget {
   const CoachModelChip({super.key});
 
-  static String activeLabel(CoachConfig config) {
-    if (config.backend == CoachBackendKind.local) {
-      final model = config.localModel;
-      return (model == null || model.isEmpty)
-          ? t.coachSettings.activeLocalNoModel
-          : t.coachSettings.activeLocal(model: model);
+  /// The label for [backend] — which is the EFFECTIVE engine, not necessarily
+  /// the persisted one. A Private-mode user with Standard stored is on BYOK, and
+  /// a chip reading "Evolve AI" would name an engine that is not answering them.
+  static String activeLabel(CoachConfig config, CoachBackendKind backend) {
+    switch (backend) {
+      case CoachBackendKind.local:
+        final model = config.localModel;
+        return (model == null || model.isEmpty)
+            ? t.coachSettings.activeLocalNoModel
+            : t.coachSettings.activeLocal(model: model);
+      case CoachBackendKind.standard:
+        return t.coachSettings.activeStandard(model: kStandardCoachModel);
+      case CoachBackendKind.cloud:
+        return t.coachSettings.activeCloud(model: config.cloudModel);
     }
-    return t.coachSettings.activeCloud(model: config.cloudModel);
   }
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final config = ref.watch(coachConfigProvider);
     final controller = ref.read(coachConfigProvider.notifier);
-    final isLocal = config.backend == CoachBackendKind.local;
+    final backend = ref.watch(effectiveCoachBackendProvider);
+    final isLocal = backend == CoachBackendKind.local;
+    final offerStandard =
+        ref.watch(standardCoachStatusProvider) !=
+        StandardCoachStatus.unavailablePrivate;
+    final label = activeLabel(config, backend);
 
     // Discovered local models (empty until/unless the server answers).
     final localModels = ref
@@ -39,17 +52,28 @@ class CoachModelChip extends ConsumerWidget {
 
     return EvolveMenu(
       minWidth: 260,
-      tooltip: activeLabel(config),
+      tooltip: label,
       triggerBuilder: (context, menu) => _ChipButton(
-        label: activeLabel(config),
+        label: label,
         isLocal: isLocal,
         onTap: () => menu.isOpen ? menu.close() : menu.open(),
       ),
       children: [
+        if (offerStandard)
+          EvolveMenuItem(
+            label: t.coachSettings.standardSection,
+            leading: const Icon(
+              LucideIcons.sparkles,
+              size: 15,
+              color: EvolveColors.violet,
+            ),
+            selected: backend == CoachBackendKind.standard,
+            onTap: () => controller.setBackend(CoachBackendKind.standard),
+          ),
         EvolveMenuItem(
           label: t.coachSettings.cloudSection,
           leading: const Icon(LucideIcons.cloud, size: 15, color: EvolveColors.cyan),
-          selected: !isLocal,
+          selected: backend == CoachBackendKind.cloud,
           onTap: () => controller.setBackend(CoachBackendKind.cloud),
         ),
         if (localModels.isNotEmpty) ...[

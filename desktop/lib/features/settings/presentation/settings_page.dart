@@ -22,6 +22,7 @@ import 'package:evolve_desktop/features/auth/application/consent_controller.dart
 import 'package:evolve_desktop/core/desktop_data_mode.dart';
 import 'package:evolve_desktop/features/ai_coach/application/coach_controllers.dart';
 import 'package:evolve_desktop/features/ai_coach/domain/coach_backend.dart';
+import 'package:evolve_desktop/features/ai_coach/presentation/coach_model_chip.dart';
 import 'package:evolve_desktop/features/ai_coach/presentation/coach_settings_dialog.dart';
 import 'package:evolve_desktop/features/dashboard/application/dashboard_controller.dart';
 import 'package:evolve_desktop/features/dashboard/domain/dashboard_models.dart';
@@ -2226,13 +2227,16 @@ extension _AiCoachSection on _SettingsPageState {
   /// editor shared with the chat header).
   Widget _aiCoach(bool twoColumn) {
     final config = ref.watch(coachConfigProvider);
-    final isLocal = config.backend == CoachBackendKind.local;
-    final localModel = config.localModel;
-    final engineValue = isLocal
-        ? ((localModel == null || localModel.isEmpty)
-              ? t.coachSettings.activeLocalNoModel
-              : t.coachSettings.activeLocal(model: localModel))
-        : t.coachSettings.activeCloud(model: config.cloudModel);
+    // Shared with the chat header's chip rather than restated here: the two
+    // labels naming the same engine differently is a bug waiting to be written,
+    // and this copy had already grown its own three-way conditional.
+    final backend = ref.watch(effectiveCoachBackendProvider);
+    final engineValue = CoachModelChip.activeLabel(config, backend);
+    final engineIcon = switch (backend) {
+      CoachBackendKind.local => LucideIcons.cpu,
+      CoachBackendKind.standard => LucideIcons.sparkles,
+      CoachBackendKind.cloud => LucideIcons.cloud,
+    };
 
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
@@ -2250,7 +2254,7 @@ extension _AiCoachSection on _SettingsPageState {
               title: t.coachSettings.title,
               children: [
                 _InfoRow(
-                  icon: isLocal ? LucideIcons.cpu : LucideIcons.cloud,
+                  icon: engineIcon,
                   label: t.coachSettings.settingsRowStatus,
                   value: engineValue,
                 ),

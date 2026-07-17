@@ -234,18 +234,29 @@ class _AiCoachPageState extends ConsumerState<AiCoachPage> {
     _sending = true;
 
     final coachConfig = ref.read(coachConfigProvider);
-    final isCloud = coachConfig.backend == CoachBackendKind.cloud;
+    // The EFFECTIVE engine: in Private mode a stored Standard choice is BYOK,
+    // and gating on the persisted value would skip the key check for a user who
+    // very much needs it.
+    final kind = ref.read(effectiveCoachBackendProvider);
+    // Only the BYOK engine needs a key of the user's. Standard is unlocked by
+    // the subscription and has nothing to paste; local has no credential at all.
+    final needsOwnKey = kind == CoachBackendKind.cloud;
+    // Both remote engines send the conversation off this Mac. This used to read
+    // `isCloud`, which was true of the only remote engine there was — with two,
+    // the question the consent gate is actually asking is "does this leave the
+    // device", so ask that.
+    final leavesDevice = kind != CoachBackendKind.local;
 
-    // Cloud is BYOK. Await the Keychain read (rather than reading the possibly
-    // still-loading snapshot) so a send during the first frames can't be
-    // mistaken for "no key" — then send the user to the setup dialog instead of
-    // posting a message that can only fail.
+    // Await the Keychain read (rather than reading the possibly still-loading
+    // snapshot) so a send during the first frames can't be mistaken for "no key"
+    // — then send the user to the setup dialog instead of posting a message that
+    // can only fail.
     //
     // The read can throw (a rotated keychain access-group prefix locks the item
     // out). It MUST NOT escape: `_sending` is already latched, and an uncaught
     // throw here would leave it latched for the page's lifetime, silently
     // blocking every later send. An unreadable key is treated as no key.
-    if (isCloud) {
+    if (needsOwnKey) {
       String? apiKey;
       try {
         apiKey = await ref.read(coachApiKeyProvider.future);
@@ -263,7 +274,7 @@ class _AiCoachPageState extends ConsumerState<AiCoachPage> {
       return;
     }
 
-    // Cloud sends leave the device, so in Private mode they require explicit
+    // Remote sends leave the device, so in Private mode they require explicit
     // consent. Local sends never leave the device → no consent gate, no
     // internet check.
     //
@@ -274,7 +285,7 @@ class _AiCoachPageState extends ConsumerState<AiCoachPage> {
     // already latched, so an uncaught throw would leave it latched for the
     // page's lifetime, silently blocking every later send. A failed check is
     // treated as "consent not granted" (the send does not proceed).
-    if (isCloud) {
+    if (leavesDevice) {
       bool consented;
       try {
         consented = await _ensurePrivateAiConsent();
@@ -1607,7 +1618,9 @@ class _CloudKeyMissingBanner extends ConsumerWidget {
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
-    final backend = ref.watch(coachConfigProvider.select((c) => c.backend));
+    // Effective, not persisted: a Private-mode user with Standard stored is on
+    // BYOK and needs this prompt — reading `config.backend` would hide it.
+    final backend = ref.watch(effectiveCoachBackendProvider);
     if (backend != CoachBackendKind.cloud) return const SizedBox.shrink();
     final key = ref.watch(coachApiKeyProvider);
     if (key.isLoading || key.asData?.value != null) {
@@ -1670,9 +1683,10 @@ class _CloudKeyMissingBanner extends ConsumerWidget {
   }
 }
 
-/// First-run privacy nudge: when the coach is on Cloud and a local AI server is
-/// detected on this machine, offer a one-tap switch to running 100% privately.
-/// Only probes while it could actually show (Cloud + not yet dismissed).
+/// First-run privacy nudge: when the coach is on a remote engine and a local AI
+/// server is detected on this machine, offer a one-tap switch to running 100%
+/// privately. Only probes while it could actually show (remote + not yet
+/// dismissed).
 class _LocalDetectedBanner extends ConsumerWidget {
   const _LocalDetectedBanner({
     required this.dismissed,
@@ -1685,8 +1699,11 @@ class _LocalDetectedBanner extends ConsumerWidget {
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     if (dismissed) return const SizedBox.shrink();
-    final backend = ref.watch(coachConfigProvider.select((c) => c.backend));
-    if (backend != CoachBackendKind.cloud) return const SizedBox.shrink();
+    // Worth offering on either remote engine, not just BYOK: "your messages
+    // never leave this Mac" is as true a win for a subscriber as for someone
+    // paying OpenRouter directly.
+    final backend = ref.watch(effectiveCoachBackendProvider);
+    if (backend == CoachBackendKind.local) return const SizedBox.shrink();
     final detected = ref.watch(coachLocalDetectionProvider).asData?.value;
     if (detected == null) return const SizedBox.shrink();
 

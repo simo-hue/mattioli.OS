@@ -96,6 +96,16 @@ class _CoachSettingsDialogState extends ConsumerState<CoachSettingsDialog> {
   @override
   Widget build(BuildContext context) {
     final config = ref.watch(coachConfigProvider);
+    // What will actually serve — not what is persisted. In Private mode a stored
+    // Standard choice resolves to BYOK, and the dialog must show the section the
+    // user can act on rather than one that can only fail.
+    final backend = ref.watch(effectiveCoachBackendProvider);
+    final standardStatus = ref.watch(standardCoachStatusProvider);
+    // Private mode keeps no account, so Standard is not a choice there — offering
+    // it would be offering a mode that cannot answer. The note in its place
+    // explains why and points at the two engines that do work.
+    final offerStandard =
+        standardStatus != StandardCoachStatus.unavailablePrivate;
     final colors = context.evolveColors;
 
     return EvolveAlertDialog(
@@ -110,17 +120,21 @@ class _CoachSettingsDialogState extends ConsumerState<CoachSettingsDialog> {
         children: [
           EvolveSegmentedControl<CoachBackendKind>(
             segments: {
+              if (offerStandard)
+                CoachBackendKind.standard: t.coachSettings.backendStandard,
               CoachBackendKind.cloud: t.coachSettings.backendCloud,
               CoachBackendKind.local: t.coachSettings.backendLocal,
             },
-            selected: config.backend,
+            selected: backend,
             onSelected: _controller.setBackend,
           ),
           const SizedBox(height: 12),
           Text(
-            config.backend == CoachBackendKind.local
-                ? t.coachSettings.localDesc
-                : t.coachSettings.cloudDesc,
+            switch (backend) {
+              CoachBackendKind.local => t.coachSettings.localDesc,
+              CoachBackendKind.standard => t.coachSettings.standardDesc,
+              CoachBackendKind.cloud => t.coachSettings.cloudDesc,
+            },
             style: TextStyle(
               color: colors.muted,
               fontSize: 12.5,
@@ -128,11 +142,19 @@ class _CoachSettingsDialogState extends ConsumerState<CoachSettingsDialog> {
               height: 1.45,
             ),
           ),
-          if (config.backend == CoachBackendKind.cloud) ...[
+          if (!offerStandard) ...[
+            const SizedBox(height: 12),
+            _WarningNote(text: t.coachSettings.standardPrivateNote),
+          ],
+          if (backend == CoachBackendKind.standard) ...[
+            const SizedBox(height: 18),
+            _StandardSection(status: standardStatus),
+          ],
+          if (backend == CoachBackendKind.cloud) ...[
             const SizedBox(height: 18),
             const _CloudApiKeySection(),
           ],
-          if (config.backend == CoachBackendKind.local) ...[
+          if (backend == CoachBackendKind.local) ...[
             const SizedBox(height: 18),
             _LocalServerSection(
               config: config,
@@ -166,8 +188,90 @@ class _CoachSettingsDialogState extends ConsumerState<CoachSettingsDialog> {
   }
 }
 
-/// BYOK block: the user's own OpenRouter key. The app ships no key, so this is
-/// what makes the cloud engine work at all.
+/// Standard block: what the Evolve Pro subscription buys, and — when it cannot
+/// serve — which of the two free engines to use instead.
+///
+/// Deliberately has no key field, no URL, and no model picker. That absence is
+/// the point: Guideline 3.1.1 rejected the app because paid functionality was
+/// enabled by a key the user pasted. Here the purchase is the only unlock, and
+/// there is nothing to configure.
+class _StandardSection extends StatelessWidget {
+  const _StandardSection({required this.status});
+
+  final StandardCoachStatus status;
+
+  @override
+  Widget build(BuildContext context) {
+    final colors = context.evolveColors;
+    final ready = status == StandardCoachStatus.ready;
+
+    final (label, pillColor, icon) = switch (status) {
+      StandardCoachStatus.ready => (
+        t.coachSettings.standardStatusReady,
+        EvolveColors.success,
+        LucideIcons.circleCheck,
+      ),
+      StandardCoachStatus.needsPro => (
+        t.coachSettings.standardStatusNeedsPro,
+        EvolveColors.amber,
+        LucideIcons.sparkles,
+      ),
+      StandardCoachStatus.needsSignIn => (
+        t.coachSettings.standardStatusNeedsSignIn,
+        EvolveColors.amber,
+        LucideIcons.logIn,
+      ),
+      StandardCoachStatus.unavailablePrivate ||
+      StandardCoachStatus.unavailableUnconfigured => (
+        t.coachSettings.standardStatusUnavailable,
+        EvolveColors.destructive,
+        LucideIcons.circleX,
+      ),
+    };
+
+    final note = switch (status) {
+      StandardCoachStatus.ready => null,
+      StandardCoachStatus.needsPro => t.coachSettings.standardNeedsProNote,
+      StandardCoachStatus.needsSignIn =>
+        t.coachSettings.standardNeedsSignInNote,
+      StandardCoachStatus.unavailablePrivate =>
+        t.coachSettings.standardPrivateNote,
+      StandardCoachStatus.unavailableUnconfigured =>
+        t.coachSettings.standardUnavailableNote,
+    };
+
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.stretch,
+      children: [
+        Row(
+          children: [
+            Expanded(
+              child: EvolveFieldLabel(t.coachSettings.standardSection),
+            ),
+            StatusPill(label: label, color: pillColor, icon: icon),
+          ],
+        ),
+        const SizedBox(height: 8),
+        Text(
+          // The one model the proxy runs. The server pins it; this only says so.
+          t.coachSettings.activeStandard(model: kStandardCoachModel),
+          style: TextStyle(
+            color: ready ? colors.foreground : colors.muted,
+            fontSize: 12.5,
+            fontWeight: FontWeight.w600,
+          ),
+        ),
+        if (note != null) ...[
+          const SizedBox(height: 12),
+          _WarningNote(text: note),
+        ],
+      ],
+    );
+  }
+}
+
+/// BYOK block: the user's own OpenRouter key — a free alternative to the
+/// subscription, not a second unlock on top of it.
 ///
 /// A stored key is NEVER rendered back into the field — the pill reports that
 /// one exists, and saving simply overwrites it. That keeps the secret off the

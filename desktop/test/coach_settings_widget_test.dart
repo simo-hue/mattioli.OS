@@ -1,7 +1,7 @@
 // Widget coverage for the AI Coach settings surface: the Settings rail exposes
 // an "AI Coach" section whose Configure row opens the shared engine dialog with
-// the Cloud/Local switch. Stays on the default Cloud backend so no local-server
-// network probe is triggered.
+// the three-way engine switch. Stays on the default Standard backend, which
+// probes nothing — so no local-server network call is triggered.
 import 'package:evolve_desktop/app/theme/evolve_theme.dart';
 import 'package:evolve_desktop/core/app_bootstrap.dart';
 import 'package:evolve_desktop/features/settings/presentation/settings_page.dart';
@@ -58,12 +58,23 @@ void main() {
     await tester.tap(find.text(t.coachSettings.settingsRowConfigure));
     await tester.pumpAndSettle();
 
-    // The Cloud/Local backend switch is unique to the dialog (the title string
-    // is also the settings card label, so it legitimately appears twice).
+    // The engine switch is unique to the dialog (the title string is also the
+    // settings card label, so it legitimately appears twice).
     expect(find.text(t.coachSettings.title), findsWidgets);
+    // "Evolve AI" names both the segment and the section below it, so it is
+    // expected twice — like the title above.
+    expect(find.text(t.coachSettings.backendStandard), findsWidgets);
     expect(find.text(t.coachSettings.backendCloud), findsOneWidget);
     expect(find.text(t.coachSettings.backendLocal), findsOneWidget);
-    // Default backend is Cloud → no local section (and no network probe).
+
+    // THE Guideline 3.1.1 PROPERTY, as a reviewer would see it: a fresh install
+    // opens on Standard, where there is no key field at all. The rejection was
+    // for unlocking paid functionality with a pasted API key, and the reviewer
+    // met that key prompt here, as the default. Now the purchase is the unlock
+    // and BYOK is one segment over — free, and chosen rather than required.
+    expect(find.text(t.ai.apiKey.fieldLabel), findsNothing);
+    expect(find.text(t.ai.apiKey.hint), findsNothing);
+    // Standard → no local section either (and so no network probe).
     expect(find.text(t.coachSettings.baseUrlLabel), findsNothing);
   });
 }

@@ -863,6 +863,7 @@ class _Translations$ai$it extends Translations$ai$en {
 	@override late final _Translations$ai$apiKey$it apiKey = _Translations$ai$apiKey$it._(_root);
 	@override late final _Translations$ai$suggestions$it suggestions = _Translations$ai$suggestions$it._(_root);
 	@override late final _Translations$ai$local$it local = _Translations$ai$local$it._(_root);
+	@override late final _Translations$ai$standard$it standard = _Translations$ai$standard$it._(_root);
 }
 
 // Path: aiCoach
@@ -1322,9 +1323,9 @@ class _Translations$coachSettings$it extends Translations$coachSettings$en {
 	// Translations
 	@override String get title => 'Motore dell\'AI Coach';
 	@override String get subtitle => 'Scegli dove gira il coach. I modelli locali tengono ogni messaggio su questo dispositivo.';
-	@override String get backendCloud => 'Cloud';
+	@override String get backendCloud => 'Il tuo OpenRouter';
 	@override String get backendLocal => 'Locale · privato';
-	@override String get cloudDesc => 'Google Gemini tramite OpenRouter, con la tua chiave API. Il contesto che condividi viene inviato al provider.';
+	@override String get cloudDesc => 'Collega il tuo account OpenRouter e paghi direttamente il provider. Gratis — nessun abbonamento richiesto. Il contesto che condividi viene inviato al provider.';
 	@override String get localDesc => 'Il tuo modello tramite Ollama, LM Studio o qualsiasi server compatibile con OpenAI. Nulla lascia questo dispositivo.';
 	@override String get presetLabel => 'Server';
 	@override String get presetOllama => 'Ollama';
@@ -1357,14 +1358,14 @@ class _Translations$coachSettings$it extends Translations$coachSettings$en {
 	@override String activeCloud({required Object model}) => 'Cloud · ${model}';
 	@override String activeLocal({required Object model}) => 'Locale · ${model}';
 	@override String get activeLocalNoModel => 'Locale · scegli un modello';
-	@override String get cloudSection => 'Cloud';
+	@override String get cloudSection => 'Il tuo OpenRouter';
 	@override String get serverSettings => 'Impostazioni server…';
 	@override String get settingsSectionLabel => 'AI Coach';
 	@override String get settingsTitle => 'AI Coach';
 	@override String get settingsSubtitle => 'Scegli il motore che alimenta il coach e collegalo a un server locale per la massima privacy.';
 	@override String get settingsRowStatus => 'Motore attivo';
 	@override String get settingsRowConfigure => 'Motore e server locale';
-	@override String get cloudKeyMissing => 'Nessuna chiave API — le risposte cloud non funzioneranno. Incolla qui sotto la tua chiave OpenRouter oppure passa a un server locale.';
+	@override String get cloudKeyMissing => 'Nessuna chiave — questo motore non risponderà. Collega qui sotto il tuo account OpenRouter, passa a Evolve AI oppure usa un server locale.';
 	@override String get temperatureLower => 'Riduci la temperatura';
 	@override String get temperatureRaise => 'Aumenta la temperatura';
 	@override String get sendMessage => 'Invia';
@@ -1380,6 +1381,18 @@ class _Translations$coachSettings$it extends Translations$coachSettings$en {
 	@override String get ollamaStartingBody => 'Può richiedere qualche secondo…';
 	@override String get ollamaStartFailed => 'Impossibile avviare Ollama — prova ad aprirlo dalla cartella Applicazioni.';
 	@override String get ollamaDownloadFailed => 'Impossibile aprire il browser — visita ollama.com/download';
+	@override String get backendStandard => 'Evolve AI';
+	@override String get standardDesc => 'Incluso in Evolve Pro. Eseguiamo Gemini 2.5 Flash per te — nessuna chiave, nessuna configurazione. Il contesto che condividi viene inviato al provider.';
+	@override String activeStandard({required Object model}) => 'Evolve AI · ${model}';
+	@override String get standardSection => 'Evolve AI';
+	@override String get standardStatusReady => 'Incluso in Pro';
+	@override String get standardStatusNeedsPro => 'Richiede Pro';
+	@override String get standardStatusNeedsSignIn => 'Accesso richiesto';
+	@override String get standardStatusUnavailable => 'Non disponibile';
+	@override String get standardNeedsProNote => 'Evolve AI fa parte di Evolve Pro. Abbonati per usarlo — oppure collega il tuo account OpenRouter, che è gratis.';
+	@override String get standardNeedsSignInNote => 'Accedi per usare Evolve AI. L\'abbonamento lo sblocca su ogni dispositivo.';
+	@override String get standardUnavailableNote => 'Evolve AI non è disponibile in questa build. Collega il tuo account OpenRouter oppure usa un modello locale.';
+	@override String get standardPrivateNote => 'Evolve AI richiede un account Evolve, e la modalità Privata non ne conserva uno. Collega il tuo account OpenRouter oppure usa un modello locale: qui funzionano entrambi.';
 }
 
 // Path: tour
@@ -1561,8 +1574,8 @@ class _Translations$ai$apiKey$it extends Translations$ai$apiKey$en {
 	final TranslationsIt _root; // ignore: unused_field
 
 	// Translations
-	@override String get rowTitle => 'Chiave API OpenRouter';
-	@override String get description => 'L\'AI Coach funziona con il tuo account OpenRouter, così i consumi restano tuoi. Crea una chiave su openrouter.ai/keys e incollala qui sotto: viene salvata nel portachiavi di questo dispositivo e inviata solo a OpenRouter.';
+	@override String get rowTitle => 'Il tuo account OpenRouter';
+	@override String get description => 'Preferisci far girare il coach sul tuo account? Collega una chiave OpenRouter e paghi direttamente il provider — nessun abbonamento Evolve richiesto. Creane una su openrouter.ai/keys: viene salvata nel portachiavi di questo dispositivo e inviata solo a OpenRouter.';
 	@override String get fieldLabel => 'Chiave API';
 	@override String get hint => 'sk-or-v1-…';
 	@override String get save => 'Salva chiave';
@@ -1570,13 +1583,13 @@ class _Translations$ai$apiKey$it extends Translations$ai$apiKey$en {
 	@override String get remove => 'Rimuovi chiave';
 	@override String get removed => 'Chiave API rimossa';
 	@override String get removeConfirmTitle => 'Rimuovere la chiave API?';
-	@override String get removeConfirmBody => 'L\'AI Coach smetterà di rispondere finché non aggiungi di nuovo una chiave.';
+	@override String get removeConfirmBody => 'Questo motore smetterà di rispondere finché non colleghi di nuovo un account. Evolve AI e i modelli locali non sono interessati.';
 	@override String get statusSet => 'Salvata';
 	@override String get statusMissing => 'Non impostata';
 	@override String get saveFailed => 'Impossibile salvare la chiave nel portachiavi. Riprova.';
-	@override String get setupTitle => 'Aggiungi la tua chiave API di OpenRouter';
-	@override String get setupBody => 'L\'AI Coach funziona con il tuo account OpenRouter. Aggiungi una chiave per iniziare a chattare, oppure passa a un modello locale.';
-	@override String get setupAction => 'Aggiungi chiave API';
+	@override String get setupTitle => 'Collega il tuo account OpenRouter';
+	@override String get setupBody => 'Questo motore funziona con il tuo account OpenRouter. Collegalo per iniziare a chattare — oppure passa a Evolve AI, incluso in Pro.';
+	@override String get setupAction => 'Collega account';
 }
 
 // Path: ai.suggestions
@@ -1620,6 +1633,19 @@ class _Translations$ai$local$it extends Translations$ai$local$en {
 	@override String get streamError => '❌ Connessione al modello locale non riuscita.';
 	@override String get timeout => '❌ Il modello locale sta impiegando troppo tempo — potrebbe essere ancora in caricamento. Riprova.';
 	@override String get modelNotFound => '❌ Quel modello non è disponibile sul server. Apri il selettore per sceglierne o caricarne uno.';
+}
+
+// Path: ai.standard
+class _Translations$ai$standard$it extends Translations$ai$standard$en {
+	_Translations$ai$standard$it._(TranslationsIt root) : this._root = root, super.internal(root);
+
+	final TranslationsIt _root; // ignore: unused_field
+
+	// Translations
+	@override String get sessionExpired => '⚠️ La sessione è scaduta. Accedi di nuovo per continuare a usare Evolve AI.';
+	@override String get needsPro => '⚠️ Evolve AI fa parte di Evolve Pro. Abbonati nelle Impostazioni — oppure passa al tuo account OpenRouter, che è gratis.';
+	@override String get rateLimited => '⚠️ Hai raggiunto il limite di uso corretto di Evolve AI per ora. Riprova più tardi oppure passa al tuo account OpenRouter.';
+	@override String get unavailable => '❌ Evolve AI non è disponibile in questo momento. È un problema nostro: riprova tra poco.';
 }
 
 // Path: settingsPage.calendarViewOptions
@@ -2259,8 +2285,8 @@ extension on TranslationsIt {
 			'ai.openRouter.noInternet' => '❌ Errore: nessuna connessione a internet. Verifica la rete.',
 			'ai.openRouter.serverTimeout' => '❌ Errore: il server sta impiegando troppo tempo a rispondere. Riprova.',
 			'ai.openRouter.apiError' => ({required Object code}) => '❌ Errore API: ${code} (verifica Sentry per i dettagli)',
-			'ai.apiKey.rowTitle' => 'Chiave API OpenRouter',
-			'ai.apiKey.description' => 'L\'AI Coach funziona con il tuo account OpenRouter, così i consumi restano tuoi. Crea una chiave su openrouter.ai/keys e incollala qui sotto: viene salvata nel portachiavi di questo dispositivo e inviata solo a OpenRouter.',
+			'ai.apiKey.rowTitle' => 'Il tuo account OpenRouter',
+			'ai.apiKey.description' => 'Preferisci far girare il coach sul tuo account? Collega una chiave OpenRouter e paghi direttamente il provider — nessun abbonamento Evolve richiesto. Creane una su openrouter.ai/keys: viene salvata nel portachiavi di questo dispositivo e inviata solo a OpenRouter.',
 			'ai.apiKey.fieldLabel' => 'Chiave API',
 			'ai.apiKey.hint' => 'sk-or-v1-…',
 			'ai.apiKey.save' => 'Salva chiave',
@@ -2268,13 +2294,13 @@ extension on TranslationsIt {
 			'ai.apiKey.remove' => 'Rimuovi chiave',
 			'ai.apiKey.removed' => 'Chiave API rimossa',
 			'ai.apiKey.removeConfirmTitle' => 'Rimuovere la chiave API?',
-			'ai.apiKey.removeConfirmBody' => 'L\'AI Coach smetterà di rispondere finché non aggiungi di nuovo una chiave.',
+			'ai.apiKey.removeConfirmBody' => 'Questo motore smetterà di rispondere finché non colleghi di nuovo un account. Evolve AI e i modelli locali non sono interessati.',
 			'ai.apiKey.statusSet' => 'Salvata',
 			'ai.apiKey.statusMissing' => 'Non impostata',
 			'ai.apiKey.saveFailed' => 'Impossibile salvare la chiave nel portachiavi. Riprova.',
-			'ai.apiKey.setupTitle' => 'Aggiungi la tua chiave API di OpenRouter',
-			'ai.apiKey.setupBody' => 'L\'AI Coach funziona con il tuo account OpenRouter. Aggiungi una chiave per iniziare a chattare, oppure passa a un modello locale.',
-			'ai.apiKey.setupAction' => 'Aggiungi chiave API',
+			'ai.apiKey.setupTitle' => 'Collega il tuo account OpenRouter',
+			'ai.apiKey.setupBody' => 'Questo motore funziona con il tuo account OpenRouter. Collegalo per iniziare a chattare — oppure passa a Evolve AI, incluso in Pro.',
+			'ai.apiKey.setupAction' => 'Collega account',
 			'ai.suggestions.morningBoost' => '🔥 Dammi la carica per iniziare!',
 			'ai.suggestions.avoidDistractions' => '🧠 Come evitare le distrazioni?',
 			'ai.suggestions.lowEnergy' => '⚡ Ho un calo di energia, cosa faccio?',
@@ -2300,6 +2326,10 @@ extension on TranslationsIt {
 			'ai.local.streamError' => '❌ Connessione al modello locale non riuscita.',
 			'ai.local.timeout' => '❌ Il modello locale sta impiegando troppo tempo — potrebbe essere ancora in caricamento. Riprova.',
 			'ai.local.modelNotFound' => '❌ Quel modello non è disponibile sul server. Apri il selettore per sceglierne o caricarne uno.',
+			'ai.standard.sessionExpired' => '⚠️ La sessione è scaduta. Accedi di nuovo per continuare a usare Evolve AI.',
+			'ai.standard.needsPro' => '⚠️ Evolve AI fa parte di Evolve Pro. Abbonati nelle Impostazioni — oppure passa al tuo account OpenRouter, che è gratis.',
+			'ai.standard.rateLimited' => '⚠️ Hai raggiunto il limite di uso corretto di Evolve AI per ora. Riprova più tardi oppure passa al tuo account OpenRouter.',
+			'ai.standard.unavailable' => '❌ Evolve AI non è disponibile in questo momento. È un problema nostro: riprova tra poco.',
 			'aiCoach.greeting' => 'Ciao! Sono Evolve AI Coach. Sono qui per aiutarti a ottimizzare il tuo protocollo e raggiungere i tuoi obiettivi. Come posso esserti utile oggi?',
 			'aiCoach.systemPersona' => 'Sei Evolve AI Coach, un assistente virtuale per la disciplina personale.',
 			'aiCoach.habitsHeader' => 'ABITUDINI ATTIVE:',
@@ -2641,9 +2671,9 @@ extension on TranslationsIt {
 			'appLogs.exportDone' => 'Log esportati',
 			'coachSettings.title' => 'Motore dell\'AI Coach',
 			'coachSettings.subtitle' => 'Scegli dove gira il coach. I modelli locali tengono ogni messaggio su questo dispositivo.',
-			'coachSettings.backendCloud' => 'Cloud',
+			'coachSettings.backendCloud' => 'Il tuo OpenRouter',
 			'coachSettings.backendLocal' => 'Locale · privato',
-			'coachSettings.cloudDesc' => 'Google Gemini tramite OpenRouter, con la tua chiave API. Il contesto che condividi viene inviato al provider.',
+			'coachSettings.cloudDesc' => 'Collega il tuo account OpenRouter e paghi direttamente il provider. Gratis — nessun abbonamento richiesto. Il contesto che condividi viene inviato al provider.',
 			'coachSettings.localDesc' => 'Il tuo modello tramite Ollama, LM Studio o qualsiasi server compatibile con OpenAI. Nulla lascia questo dispositivo.',
 			'coachSettings.presetLabel' => 'Server',
 			'coachSettings.presetOllama' => 'Ollama',
@@ -2676,16 +2706,16 @@ extension on TranslationsIt {
 			'coachSettings.activeCloud' => ({required Object model}) => 'Cloud · ${model}',
 			'coachSettings.activeLocal' => ({required Object model}) => 'Locale · ${model}',
 			'coachSettings.activeLocalNoModel' => 'Locale · scegli un modello',
-			'coachSettings.cloudSection' => 'Cloud',
+			'coachSettings.cloudSection' => 'Il tuo OpenRouter',
 			'coachSettings.serverSettings' => 'Impostazioni server…',
 			'coachSettings.settingsSectionLabel' => 'AI Coach',
 			'coachSettings.settingsTitle' => 'AI Coach',
+			_ => null,
+		} ?? switch (path) {
 			'coachSettings.settingsSubtitle' => 'Scegli il motore che alimenta il coach e collegalo a un server locale per la massima privacy.',
 			'coachSettings.settingsRowStatus' => 'Motore attivo',
 			'coachSettings.settingsRowConfigure' => 'Motore e server locale',
-			'coachSettings.cloudKeyMissing' => 'Nessuna chiave API — le risposte cloud non funzioneranno. Incolla qui sotto la tua chiave OpenRouter oppure passa a un server locale.',
-			_ => null,
-		} ?? switch (path) {
+			'coachSettings.cloudKeyMissing' => 'Nessuna chiave — questo motore non risponderà. Collega qui sotto il tuo account OpenRouter, passa a Evolve AI oppure usa un server locale.',
 			'coachSettings.temperatureLower' => 'Riduci la temperatura',
 			'coachSettings.temperatureRaise' => 'Aumenta la temperatura',
 			'coachSettings.sendMessage' => 'Invia',
@@ -2701,6 +2731,18 @@ extension on TranslationsIt {
 			'coachSettings.ollamaStartingBody' => 'Può richiedere qualche secondo…',
 			'coachSettings.ollamaStartFailed' => 'Impossibile avviare Ollama — prova ad aprirlo dalla cartella Applicazioni.',
 			'coachSettings.ollamaDownloadFailed' => 'Impossibile aprire il browser — visita ollama.com/download',
+			'coachSettings.backendStandard' => 'Evolve AI',
+			'coachSettings.standardDesc' => 'Incluso in Evolve Pro. Eseguiamo Gemini 2.5 Flash per te — nessuna chiave, nessuna configurazione. Il contesto che condividi viene inviato al provider.',
+			'coachSettings.activeStandard' => ({required Object model}) => 'Evolve AI · ${model}',
+			'coachSettings.standardSection' => 'Evolve AI',
+			'coachSettings.standardStatusReady' => 'Incluso in Pro',
+			'coachSettings.standardStatusNeedsPro' => 'Richiede Pro',
+			'coachSettings.standardStatusNeedsSignIn' => 'Accesso richiesto',
+			'coachSettings.standardStatusUnavailable' => 'Non disponibile',
+			'coachSettings.standardNeedsProNote' => 'Evolve AI fa parte di Evolve Pro. Abbonati per usarlo — oppure collega il tuo account OpenRouter, che è gratis.',
+			'coachSettings.standardNeedsSignInNote' => 'Accedi per usare Evolve AI. L\'abbonamento lo sblocca su ogni dispositivo.',
+			'coachSettings.standardUnavailableNote' => 'Evolve AI non è disponibile in questa build. Collega il tuo account OpenRouter oppure usa un modello locale.',
+			'coachSettings.standardPrivateNote' => 'Evolve AI richiede un account Evolve, e la modalità Privata non ne conserva uno. Collega il tuo account OpenRouter oppure usa un modello locale: qui funzionano entrambi.',
 			'tour.back' => 'Indietro',
 			'tour.next' => 'Avanti',
 			'tour.continueLabel' => 'Continua',

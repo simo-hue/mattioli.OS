@@ -1,4 +1,5 @@
 import 'package:evolve_verification/evolve_verification.dart';
+import 'package:flutter/foundation.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../models/goal.dart';
@@ -115,6 +116,115 @@ List<ScreenTimeGoalSpec> screenTimeSpecsFrom(List<VerifiableGoal> goals) => [
             activeWeekdays: g.activeWeekdays,
           ),
     ];
+
+/// Whether [next] differs from the specs last handed to DeviceActivity, and so
+/// whether the native sync is worth doing at all.
+///
+/// **`last == null` always re-syncs**, and that is the load-bearing case: the
+/// cache is per-process, so the first reconcile after any launch re-registers
+/// unconditionally. iOS may have dropped the monitoring while we were not
+/// running (reboot, force-quit, an OS purge) and nothing tells us. A persisted
+/// cache would let a stale entry convince us monitoring was live when it was
+/// not — the one failure this guard must never introduce.
+///
+/// Compared order-independently: the spec list is built from goal order, which
+/// changes on an unrelated reorder and means nothing to DeviceActivity.
+@visibleForTesting
+bool screenTimeSpecsChanged(
+  List<ScreenTimeGoalSpec>? last,
+  List<ScreenTimeGoalSpec> next,
+) {
+  if (last == null) return true;
+  if (last.length != next.length) return true;
+  final a = [...last]..sort((x, y) => x.goalId.compareTo(y.goalId));
+  final b = [...next]..sort((x, y) => x.goalId.compareTo(y.goalId));
+  for (var i = 0; i < a.length; i++) {
+    if (a[i] != b[i]) return true;
+  }
+  return false;
+}
+
+/// Remembers the Screen Time specs last successfully handed to DeviceActivity in
+/// THIS process.
+///
+/// Deliberately in memory and never persisted — see [screenTimeSpecsChanged].
+class ScreenTimeSyncCache {
+  List<ScreenTimeGoalSpec>? _last;
+
+  List<ScreenTimeGoalSpec>? get last => _last;
+
+  /// Records a sync that actually succeeded. A failed sync must NOT be recorded:
+  /// it has to be retried on the next foreground, not remembered as done.
+  void record(List<ScreenTimeGoalSpec> specs) => _last = List.of(specs);
+
+  @visibleForTesting
+  void reset() => _last = null;
+}
+
+final screenTimeSyncCacheProvider = Provider<ScreenTimeSyncCache>(
+  (_) => ScreenTimeSyncCache(),
+);
+
+/// Reconciles DeviceActivity monitoring with [goals].
+///
+/// Two bugs this exists to fix:
+///
+///  1. **The sync used to sit after `if (goals.isEmpty) return`**, so deleting
+///     your last verifiable habit never called `syncMonitoredGoals([])` — and
+///     the native side only stops monitoring when it is called. DeviceActivity
+///     went on watching for a goal that no longer existed, for the life of the
+///     install, with no UI anywhere admitting it. Syncing an empty list is the
+///     whole point of the empty case, not a case to skip.
+///  2. **It ran on every single foreground**, and the native handler answers
+///     with a bare `center.stopMonitoring()` — every activity, unconditionally —
+///     followed by re-registering the same set from scratch
+///     (`AppDelegate.swift:621-660`). Whether that resets DeviceActivity's
+///     accumulated usage counters is a claim about the framework that CANNOT be
+///     verified on this machine (no iOS SDK, and FamilyControls does not run in
+///     the Simulator), so it is not asserted here. What is verifiable is that
+///     the churn is pure waste when nothing changed, and the guard removes it.
+/// Takes its collaborators directly rather than a `WidgetRef` so the ordering
+/// above — the part that actually broke — is testable without pumping a widget.
+@visibleForTesting
+Future<void> syncScreenTimeMonitoring({
+  required ScreenTimeBridge bridge,
+  required ScreenTimeSyncCache cache,
+  required List<VerifiableGoal> goals,
+}) async {
+  final specs = screenTimeSpecsFrom(goals);
+  if (!screenTimeSpecsChanged(cache.last, specs)) return;
+
+  try {
+    // Checked before dialling: the native side calls `center.startMonitoring`
+    // with no authorization check of its own (AppDelegate.swift:644), and
+    // DeviceActivity throws when unauthorized. Nothing in the app requests this
+    // authorization yet — there is no Screen Time opt-in UI, because the feature
+    // is dark (`VerificationConfig.screenTimeEnabled == false`). When it ships,
+    // the REQUEST belongs at that opt-in, where the user has just asked for the
+    // feature and a system prompt makes sense; a prompt fired from a background
+    // reconcile arrives out of nowhere. Until then this stays a check, not a
+    // request, so an unauthorized install degrades to "no signal" rather than to
+    // a thrown channel call on every foreground.
+    //
+    // Skipping an empty sync would strand monitoring (bug 1 above), so the
+    // authorization gate deliberately does not apply to it: telling
+    // DeviceActivity to stop needs no permission.
+    if (specs.isNotEmpty) {
+      final status = await bridge.authorizationStatus();
+      if (status != ScreenTimeAuthorizationStatus.approved) {
+        AppLogger.warning(
+          '[Verification] Screen Time not authorized ($status) — '
+          'skipping sync of ${specs.length} goal(s)',
+        );
+        return;
+      }
+    }
+    await bridge.syncMonitoredGoals(specs);
+    cache.record(specs);
+  } catch (e, stack) {
+    AppLogger.error('[Verification] syncMonitoredGoals failed', e, stack);
+  }
+}
 
 /// A single couldn't-verify nudge to surface to the user (D11).
 class VerificationNudge {
@@ -256,19 +366,24 @@ Future<ReconcileReport> runVerificationReconcile(WidgetRef ref) async {
     healthKitEnabled: VerificationConfig.healthKitEnabled,
     screenTimeEnabled: VerificationConfig.screenTimeEnabled,
   );
-  if (goals.isEmpty) return const ReconcileReport();
 
-  // Keep DeviceActivity monitoring in sync with the current Screen Time goals —
-  // but only when Screen Time is enabled, so a HealthKit-only build never calls
-  // into FamilyControls/DeviceActivity (no entitlement there yet).
+  // BEFORE the empty-goals return, not after. An empty list is exactly when
+  // DeviceActivity most needs telling: it is the "you deleted your last Screen
+  // Time habit, stop watching" case, and the native side only stops when it is
+  // called. Returning first left monitoring running forever — see
+  // [_syncScreenTimeMonitoring].
+  //
+  // Gated on the flag so a HealthKit-only build never calls into
+  // FamilyControls/DeviceActivity at all.
   if (VerificationConfig.screenTimeEnabled) {
-    final specs = screenTimeSpecsFrom(goals);
-    try {
-      await ref.read(screenTimeBridgeProvider).syncMonitoredGoals(specs);
-    } catch (e, stack) {
-      AppLogger.error('[Verification] syncMonitoredGoals failed', e, stack);
-    }
+    await syncScreenTimeMonitoring(
+      bridge: ref.read(screenTimeBridgeProvider),
+      cache: ref.read(screenTimeSyncCacheProvider),
+      goals: goals,
+    );
   }
+
+  if (goals.isEmpty) return const ReconcileReport();
 
   final store = await ref.read(verificationStateStoreProvider.future);
   final controller = VerificationController(

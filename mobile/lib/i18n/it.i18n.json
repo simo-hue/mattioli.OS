@@ -682,8 +682,6 @@
       "createNewHabit": "💡 Come creare una nuova abitudine?"
     },
     "accept": "Accetto",
-    "privateConsentTitle": "Consenso AI in modalità privata",
-    "privateConsentBody": "Per usare il Coach AI, il tuo messaggio, il tuo nome e l'eventuale contesto selezionato vengono inviati al provider AI esterno. Il tuo database privato resta sul dispositivo.",
     "openRouter": {
       "apiKeyMissingShort": "⚠️ L'AI Coach non è ancora configurato. Apri le Impostazioni per completare la configurazione.",
       "apiKeyInvalid": "⚠️ OpenRouter ha rifiutato questa chiave API. Controllala nelle Impostazioni o creane una nuova su openrouter.ai/keys.",
@@ -740,6 +738,21 @@
       "activeRowTitle": "Motore attivo",
       "byokShortName": "Il tuo account OpenRouter",
       "notConfigured": "Non configurato"
+    },
+    "consent": {
+      "standardTitle": "Inviare i tuoi messaggi all'AI?",
+      "standardBody": "Per rispondere, l'AI Coach invia il tuo messaggio, il tuo nome e il contesto che scegli di condividere a OpenRouter, Inc., che li instrada a Google LLC per eseguire il modello (Google Cloud Vertex AI). Li trattano solo per generare la risposta. Puoi revocare il consenso in qualsiasi momento dalle Impostazioni e tutto il resto di Evolve continua a funzionare.",
+      "byokTitle": "Inviare i tuoi messaggi a OpenRouter?",
+      "byokBody": "Per rispondere, l'AI Coach invia il tuo messaggio, il tuo nome e il contesto che scegli di condividere a OpenRouter, Inc. usando il tuo account OpenRouter. OpenRouter lo instrada a un provider di modelli in base alle impostazioni del tuo account. Puoi revocare il consenso in qualsiasi momento dalle Impostazioni e tutto il resto di Evolve continua a funzionare.",
+      "privateNote": "Il tuo database privato resta su questo dispositivo: esce solo ciò che invii in chat.",
+      "allow": "Consenti",
+      "decline": "Non ora",
+      "rowTitle": "Condivisione dati con l'AI",
+      "statusGranted": "Consentita",
+      "statusNone": "Non consentita",
+      "revokeTitle": "Interrompere la condivisione con l'AI?",
+      "revokeBody": "L'AI Coach chiederà di nuovo il consenso prima di inviare qualcosa. Nient'altro cambia.",
+      "revokeAction": "Interrompi condivisione"
     }
   },
   "macroGoals": {

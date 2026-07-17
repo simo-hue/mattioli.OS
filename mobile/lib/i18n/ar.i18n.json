@@ -682,8 +682,6 @@
       "createNewHabit": "💡 كيف أنشئ عادة جديدة؟"
     },
     "accept": "أوافق",
-    "privateConsentTitle": "موافقة AI في الوضع الخاص",
-    "privateConsentBody": "لاستخدام مدرّب AI، يُرسَل نصّ رسالتك واسمك المعروض وأي سياق محدّد إلى مزوّد AI الخارجي. تبقى قاعدة بياناتك الخاصة على الجهاز.",
     "openRouter": {
       "apiKeyMissingShort": "⚠️ لم يتم إعداد الـ AI Coach بعد. افتح الإعدادات لإكمال الإعداد.",
       "apiKeyInvalid": "⚠️ رفض OpenRouter مفتاح API هذا. تحقّق منه في الإعدادات أو أنشئ مفتاحًا جديدًا على openrouter.ai/keys.",
@@ -740,6 +738,21 @@
       "activeRowTitle": "المحرّك النشط",
       "byokShortName": "حساب OpenRouter الخاص بك",
       "notConfigured": "غير مُعَدّ"
+    },
+    "consent": {
+      "standardTitle": "إرسال رسائلك إلى الذكاء الاصطناعي؟",
+      "standardBody": "للردّ، يرسل AI Coach رسالتك واسمك والسياق الذي تختار مشاركته إلى OpenRouter, Inc.، التي توجّهها إلى Google LLC لتشغيل النموذج (Google Cloud Vertex AI). تُعالَج فقط لتوليد الردّ. يمكنك سحب الموافقة في أي وقت من الإعدادات، وكل شيء آخر في Evolve يستمر في العمل.",
+      "byokTitle": "إرسال رسائلك إلى OpenRouter؟",
+      "byokBody": "للردّ، يرسل AI Coach رسالتك واسمك والسياق الذي تختار مشاركته إلى OpenRouter, Inc. عبر حساب OpenRouter الخاص بك. توجّهها OpenRouter إلى مزوّد نماذج وفقًا لإعدادات حسابك. يمكنك سحب الموافقة في أي وقت من الإعدادات، وكل شيء آخر في Evolve يستمر في العمل.",
+      "privateNote": "قاعدة بياناتك الخاصة تبقى على هذا الجهاز — لا يغادره سوى ما ترسله في المحادثة.",
+      "allow": "السماح",
+      "decline": "ليس الآن",
+      "rowTitle": "مشاركة البيانات مع الذكاء الاصطناعي",
+      "statusGranted": "مسموح",
+      "statusNone": "غير مسموح",
+      "revokeTitle": "إيقاف المشاركة مع الذكاء الاصطناعي؟",
+      "revokeBody": "سيطلب AI Coach الإذن مرة أخرى قبل إرسال أي شيء. لا يتغيّر شيء آخر.",
+      "revokeAction": "إيقاف المشاركة"
     }
   },
   "macroGoals": {

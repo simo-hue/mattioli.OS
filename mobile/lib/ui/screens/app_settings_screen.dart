@@ -5,6 +5,7 @@ import 'package:flutter_colorpicker/flutter_colorpicker.dart';
 import 'package:google_fonts/google_fonts.dart';
 import '../../core/theme.dart';
 import '../../providers/settings_provider.dart';
+import '../../core/coach_consent.dart';
 import '../../core/coach_endpoint.dart';
 import '../../core/haptics.dart';
 import '../../core/openrouter_service.dart';
@@ -259,6 +260,11 @@ class AppSettingsScreen extends ConsumerWidget {
               // what Guideline 3.1.1 rejected. The engine is named first; the
               // key below it is an alternative, not a requirement.
               const _CoachEngineRow(),
+              // Withdrawing consent must be as easy as giving it (GDPR Art.
+              // 7(3) — Simone is the named controller), and Guideline 5.1.2
+              // expects the same. Granting is one tap in a dialog, so taking it
+              // back is one tap here.
+              const _CoachConsentRow(),
               _buildActionRow(
                 context: context,
                 icon: LucideIcons.keyRound,
@@ -930,6 +936,93 @@ class AppSettingsScreen extends ConsumerWidget {
 /// A stored key is NEVER read back into the field — the Settings row reports
 /// that one exists, and saving simply overwrites it. That keeps the secret off
 /// the screen (and out of any screenshot) while still allowing a replacement.
+/// Reports whether the user has allowed the coach to send their conversation to
+/// a third party, and lets them take it back.
+///
+/// Only rendered once a consent exists: a row saying "Not allowed" to someone
+/// who has never opened the coach is noise, and there is nothing to withdraw.
+/// The pre-send dialog is where consent is *given*; this is only where it is
+/// revoked (Guideline 5.1.2 / GDPR Art. 7(3): as easy to withdraw as to grant).
+class _CoachConsentRow extends ConsumerWidget {
+  const _CoachConsentRow();
+
+  Future<void> _revoke(BuildContext context, WidgetRef ref) async {
+    final confirmed = await showEvolveConfirm(
+      context: context,
+      title: context.t.ai.consent.revokeTitle,
+      message: context.t.ai.consent.revokeBody,
+      confirmLabel: context.t.ai.consent.revokeAction,
+      isDestructive: true,
+      ref: ref,
+    );
+    if (!confirmed) return;
+    await ref.read(coachConsentStoreProvider).revokeAll();
+    ref.invalidate(hasAnyCoachConsentProvider);
+  }
+
+  @override
+  Widget build(BuildContext context, WidgetRef ref) {
+    final granted =
+        ref.watch(hasAnyCoachConsentProvider).asData?.value ?? false;
+    if (!granted) return const SizedBox.shrink();
+
+    final colors = context.appColors;
+    return InkWell(
+      onTap: () {
+        ref.hapticLight();
+        _revoke(context, ref);
+      },
+      child: Padding(
+        padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
+        child: Row(
+          children: [
+            Container(
+              width: 38,
+              height: 38,
+              decoration: BoxDecoration(
+                color: colors.card,
+                borderRadius: BorderRadius.circular(10),
+                border: Border.all(color: colors.border),
+              ),
+              child: Icon(
+                LucideIcons.shieldCheck,
+                size: 18,
+                color: Theme.of(context).colorScheme.primary,
+              ),
+            ),
+            const SizedBox(width: 16),
+            Expanded(
+              child: Text(
+                context.t.ai.consent.rowTitle,
+                style: GoogleFonts.inter(
+                  color: colors.foreground,
+                  fontSize: 15,
+                  fontWeight: FontWeight.w600,
+                ),
+              ),
+            ),
+            Text(
+              context.t.ai.consent.statusGranted,
+              style: GoogleFonts.inter(
+                color: colors.mutedForeground,
+                fontSize: 13,
+                fontWeight: FontWeight.w500,
+              ),
+            ),
+            const SizedBox(width: 4),
+            DirectionalIcon(
+              LucideIcons.chevronRight,
+              LucideIcons.chevronLeft,
+              size: 16,
+              color: colors.mutedForeground,
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+}
+
 /// Names the engine that is actually answering the coach: the Pro-funded proxy,
 /// the user's own OpenRouter account, or nothing yet.
 ///

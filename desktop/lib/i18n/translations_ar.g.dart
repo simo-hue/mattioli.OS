@@ -40,7 +40,6 @@ class TranslationsAr extends Translations with BaseTranslations<AppLocale, Trans
 
 	// Translations
 	@override late final _Translations$auth$ar auth = _Translations$auth$ar._(_root);
-	@override late final _Translations$privateAi$ar privateAi = _Translations$privateAi$ar._(_root);
 	@override late final _Translations$privateData$ar privateData = _Translations$privateData$ar._(_root);
 	@override late final _Translations$icloudSync$ar icloudSync = _Translations$icloudSync$ar._(_root);
 	@override late final _Translations$privateRecovery$ar privateRecovery = _Translations$privateRecovery$ar._(_root);
@@ -115,19 +114,6 @@ class _Translations$auth$ar extends Translations$auth$en {
 	@override String get emailLabel => 'البريد الإلكتروني';
 	@override String get passwordMin8 => 'استخدم 8 أحرف على الأقل.';
 	@override String get sendResetLink => 'إرسال رابط الاستعادة';
-}
-
-// Path: privateAi
-class _Translations$privateAi$ar extends Translations$privateAi$en {
-	_Translations$privateAi$ar._(TranslationsAr root) : this._root = root, super.internal(root);
-
-	final TranslationsAr _root; // ignore: unused_field
-
-	// Translations
-	@override String get consentTitle => 'السماح بالإرسال إلى الذكاء الاصطناعي';
-	@override String get consentBody => 'في الوضع الخاص تبقى بياناتك على جهازك. لاستخدام مدرب الذكاء الاصطناعي، تُرسَل العادات والأهداف التي تختار مشاركتها إلى مزوّد ذكاء اصطناعي خارجي (OpenRouter). هل تريد المتابعة؟';
-	@override String get cancel => 'إلغاء';
-	@override String get accept => 'أوافق';
 }
 
 // Path: privateData
@@ -864,6 +850,7 @@ class _Translations$ai$ar extends Translations$ai$en {
 	@override late final _Translations$ai$suggestions$ar suggestions = _Translations$ai$suggestions$ar._(_root);
 	@override late final _Translations$ai$local$ar local = _Translations$ai$local$ar._(_root);
 	@override late final _Translations$ai$standard$ar standard = _Translations$ai$standard$ar._(_root);
+	@override late final _Translations$ai$consent$ar consent = _Translations$ai$consent$ar._(_root);
 }
 
 // Path: aiCoach
@@ -1648,6 +1635,28 @@ class _Translations$ai$standard$ar extends Translations$ai$standard$en {
 	@override String get unavailable => '❌ Evolve AI غير متاح الآن. المشكلة من جانبنا — حاول مرة أخرى بعد قليل.';
 }
 
+// Path: ai.consent
+class _Translations$ai$consent$ar extends Translations$ai$consent$en {
+	_Translations$ai$consent$ar._(TranslationsAr root) : this._root = root, super.internal(root);
+
+	final TranslationsAr _root; // ignore: unused_field
+
+	// Translations
+	@override String get standardTitle => 'إرسال رسائلك إلى الذكاء الاصطناعي؟';
+	@override String get standardBody => 'للردّ، يرسل AI Coach رسالتك واسمك والسياق الذي تختار مشاركته إلى OpenRouter, Inc.، التي توجّهها إلى Google LLC لتشغيل النموذج (Google Cloud Vertex AI). تُعالَج فقط لتوليد الردّ. يمكنك سحب الموافقة في أي وقت من الإعدادات، وكل شيء آخر في Evolve يستمر في العمل.';
+	@override String get byokTitle => 'إرسال رسائلك إلى OpenRouter؟';
+	@override String get byokBody => 'للردّ، يرسل AI Coach رسالتك واسمك والسياق الذي تختار مشاركته إلى OpenRouter, Inc. عبر حساب OpenRouter الخاص بك. توجّهها OpenRouter إلى مزوّد نماذج وفقًا لإعدادات حسابك. يمكنك سحب الموافقة في أي وقت من الإعدادات، وكل شيء آخر في Evolve يستمر في العمل.';
+	@override String get privateNote => 'قاعدة بياناتك الخاصة تبقى على هذا الجهاز — لا يغادره سوى ما ترسله في المحادثة.';
+	@override String get allow => 'السماح';
+	@override String get decline => 'ليس الآن';
+	@override String get rowTitle => 'مشاركة البيانات مع الذكاء الاصطناعي';
+	@override String get statusGranted => 'مسموح';
+	@override String get statusNone => 'غير مسموح';
+	@override String get revokeTitle => 'إيقاف المشاركة مع الذكاء الاصطناعي؟';
+	@override String get revokeBody => 'سيطلب AI Coach الإذن مرة أخرى قبل إرسال أي شيء. لا يتغيّر شيء آخر.';
+	@override String get revokeAction => 'إيقاف المشاركة';
+}
+
 // Path: settingsPage.calendarViewOptions
 class _Translations$settingsPage$calendarViewOptions$ar extends Translations$settingsPage$calendarViewOptions$en {
 	_Translations$settingsPage$calendarViewOptions$ar._(TranslationsAr root) : this._root = root, super.internal(root);
@@ -1705,10 +1714,6 @@ extension on TranslationsAr {
 			'auth.emailLabel' => 'البريد الإلكتروني',
 			'auth.passwordMin8' => 'استخدم 8 أحرف على الأقل.',
 			'auth.sendResetLink' => 'إرسال رابط الاستعادة',
-			'privateAi.consentTitle' => 'السماح بالإرسال إلى الذكاء الاصطناعي',
-			'privateAi.consentBody' => 'في الوضع الخاص تبقى بياناتك على جهازك. لاستخدام مدرب الذكاء الاصطناعي، تُرسَل العادات والأهداف التي تختار مشاركتها إلى مزوّد ذكاء اصطناعي خارجي (OpenRouter). هل تريد المتابعة؟',
-			'privateAi.cancel' => 'إلغاء',
-			'privateAi.accept' => 'أوافق',
 			'privateData.deleteTitle' => 'حذف البيانات الخاصة',
 			'privateData.deleteMessage' => 'هل أنت متأكد أنك تريد حذف كامل قاعدة البيانات المحلية المشفّرة؟ هذا الإجراء لا يمكن التراجع عنه ولا يمكن استرجاع البيانات.',
 			'privateData.deleteSuccess' => 'تم حذف البيانات الخاصة.',
@@ -2196,12 +2201,12 @@ extension on TranslationsAr {
 			'habitsPage.nextPeriod' => 'الفترة التالية',
 			'habitsPage.weekdayAbbrevUpper.0' => 'اثن',
 			'habitsPage.weekdayAbbrevUpper.1' => 'ثلا',
-			_ => null,
-		} ?? switch (path) {
 			'habitsPage.weekdayAbbrevUpper.2' => 'أرب',
 			'habitsPage.weekdayAbbrevUpper.3' => 'خمي',
 			'habitsPage.weekdayAbbrevUpper.4' => 'جمع',
 			'habitsPage.weekdayAbbrevUpper.5' => 'سبت',
+			_ => null,
+		} ?? switch (path) {
 			'habitsPage.weekdayAbbrevUpper.6' => 'أحد',
 			'habitsPage.lifeView' => 'عرض الحياة',
 			'habitsPage.lifeViewSubtitle' => 'تمثّل كل خلية شهرًا من المسار حتى سن 85.',
@@ -2330,6 +2335,19 @@ extension on TranslationsAr {
 			'ai.standard.needsPro' => '⚠️ Evolve AI جزء من Evolve Pro. اشترك من الإعدادات — أو بدّل المحرّك إلى حساب OpenRouter الخاص بك، وهو مجاني.',
 			'ai.standard.rateLimited' => '⚠️ لقد بلغت حد الاستخدام العادل لـ Evolve AI في الوقت الحالي. حاول لاحقًا أو بدّل المحرّك إلى حساب OpenRouter الخاص بك.',
 			'ai.standard.unavailable' => '❌ Evolve AI غير متاح الآن. المشكلة من جانبنا — حاول مرة أخرى بعد قليل.',
+			'ai.consent.standardTitle' => 'إرسال رسائلك إلى الذكاء الاصطناعي؟',
+			'ai.consent.standardBody' => 'للردّ، يرسل AI Coach رسالتك واسمك والسياق الذي تختار مشاركته إلى OpenRouter, Inc.، التي توجّهها إلى Google LLC لتشغيل النموذج (Google Cloud Vertex AI). تُعالَج فقط لتوليد الردّ. يمكنك سحب الموافقة في أي وقت من الإعدادات، وكل شيء آخر في Evolve يستمر في العمل.',
+			'ai.consent.byokTitle' => 'إرسال رسائلك إلى OpenRouter؟',
+			'ai.consent.byokBody' => 'للردّ، يرسل AI Coach رسالتك واسمك والسياق الذي تختار مشاركته إلى OpenRouter, Inc. عبر حساب OpenRouter الخاص بك. توجّهها OpenRouter إلى مزوّد نماذج وفقًا لإعدادات حسابك. يمكنك سحب الموافقة في أي وقت من الإعدادات، وكل شيء آخر في Evolve يستمر في العمل.',
+			'ai.consent.privateNote' => 'قاعدة بياناتك الخاصة تبقى على هذا الجهاز — لا يغادره سوى ما ترسله في المحادثة.',
+			'ai.consent.allow' => 'السماح',
+			'ai.consent.decline' => 'ليس الآن',
+			'ai.consent.rowTitle' => 'مشاركة البيانات مع الذكاء الاصطناعي',
+			'ai.consent.statusGranted' => 'مسموح',
+			'ai.consent.statusNone' => 'غير مسموح',
+			'ai.consent.revokeTitle' => 'إيقاف المشاركة مع الذكاء الاصطناعي؟',
+			'ai.consent.revokeBody' => 'سيطلب AI Coach الإذن مرة أخرى قبل إرسال أي شيء. لا يتغيّر شيء آخر.',
+			'ai.consent.revokeAction' => 'إيقاف المشاركة',
 			'aiCoach.greeting' => 'مرحبًا! أنا Evolve AI Coach. أنا هنا لمساعدتك على تحسين بروتوكولك وتحقيق أهدافك. كيف يمكنني مساعدتك اليوم؟',
 			'aiCoach.systemPersona' => 'أنت Evolve AI Coach، مساعد افتراضي للانضباط الشخصي.',
 			'aiCoach.habitsHeader' => 'العادات النشطة:',
@@ -2701,6 +2719,8 @@ extension on TranslationsAr {
 			'coachSettings.save' => 'تم',
 			'coachSettings.detectedTitle' => 'تم اكتشاف نموذج محلي',
 			'coachSettings.detectedBody' => 'يعمل خادم ذكاء اصطناعي محلي على هذا الـ Mac. هل تريد تشغيل المدرّب بخصوصية كاملة؟',
+			_ => null,
+		} ?? switch (path) {
 			'coachSettings.detectedAction' => 'استخدام المحلي',
 			'coachSettings.detectedDismiss' => 'ليس الآن',
 			'coachSettings.activeCloud' => ({required Object model}) => 'السحابة · ${model}',
@@ -2710,8 +2730,6 @@ extension on TranslationsAr {
 			'coachSettings.serverSettings' => 'إعدادات الخادم…',
 			'coachSettings.settingsSectionLabel' => 'مدرّب الذكاء الاصطناعي',
 			'coachSettings.settingsTitle' => 'مدرّب الذكاء الاصطناعي',
-			_ => null,
-		} ?? switch (path) {
 			'coachSettings.settingsSubtitle' => 'اختر المحرّك الذي يشغّل مدرّبك ووجّهه إلى خادم محلي لخصوصية كاملة.',
 			'coachSettings.settingsRowStatus' => 'المحرّك النشط',
 			'coachSettings.settingsRowConfigure' => 'المحرّك والخادم المحلي',

@@ -22,12 +22,6 @@
     "passwordMin8": "Usa al menos 8 caracteres.",
     "sendResetLink": "Enviar enlace de recuperación"
   },
-  "privateAi": {
-    "consentTitle": "Permitir el envío a la IA",
-    "consentBody": "En el modo privado tus datos permanecen en tu dispositivo. Para usar el Coach de IA, los hábitos y objetivos que elijas compartir se envían a un proveedor de IA externo (OpenRouter). ¿Quieres continuar?",
-    "cancel": "Cancelar",
-    "accept": "Acepto"
-  },
   "privateData": {
     "deleteTitle": "Eliminar datos privados",
     "deleteMessage": "¿Seguro que quieres eliminar toda la base de datos local cifrada? Esta acción es irreversible y los datos no se podrán recuperar.",
@@ -711,6 +705,21 @@
       "needsPro": "⚠️ Evolve AI forma parte de Evolve Pro. Suscríbete en Ajustes o cambia el motor a tu propia cuenta de OpenRouter, que es gratis.",
       "rateLimited": "⚠️ Has alcanzado el límite de uso razonable de Evolve AI por ahora. Inténtalo más tarde o cambia el motor a tu propia cuenta de OpenRouter.",
       "unavailable": "❌ Evolve AI no está disponible ahora mismo. Es cosa nuestra: inténtalo de nuevo en un momento."
+    },
+    "consent": {
+      "standardTitle": "¿Enviar tus mensajes a la IA?",
+      "standardBody": "Para responder, el AI Coach envía tu mensaje, tu nombre y el contexto que elijas compartir a OpenRouter, Inc., que lo dirige a Google LLC para ejecutar el modelo (Google Cloud Vertex AI). Solo lo tratan para generar la respuesta. Puedes retirar el consentimiento cuando quieras en Ajustes, y todo lo demás de Evolve sigue funcionando.",
+      "byokTitle": "¿Enviar tus mensajes a OpenRouter?",
+      "byokBody": "Para responder, el AI Coach envía tu mensaje, tu nombre y el contexto que elijas compartir a OpenRouter, Inc. usando tu propia cuenta de OpenRouter. OpenRouter lo dirige a un proveedor de modelos según los ajustes de tu cuenta. Puedes retirar el consentimiento cuando quieras en Ajustes, y todo lo demás de Evolve sigue funcionando.",
+      "privateNote": "Tu base de datos privada permanece en este dispositivo: solo sale lo que envías en el chat.",
+      "allow": "Permitir",
+      "decline": "Ahora no",
+      "rowTitle": "Compartir datos con la IA",
+      "statusGranted": "Permitido",
+      "statusNone": "No permitido",
+      "revokeTitle": "¿Dejar de compartir con la IA?",
+      "revokeBody": "El AI Coach volverá a pedir permiso antes de enviar nada. No cambia nada más.",
+      "revokeAction": "Dejar de compartir"
     }
   },
   "aiCoach": {

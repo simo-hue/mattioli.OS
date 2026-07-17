@@ -5,7 +5,6 @@ import 'package:evolve_desktop/app/theme/evolve_theme.dart';
 import 'package:evolve_desktop/core/app_bootstrap.dart';
 import 'package:evolve_desktop/core/desktop_data_mode.dart';
 import 'package:evolve_desktop/i18n/translations.g.dart';
-import 'package:evolve_desktop/core/desktop_private_db.dart';
 import 'package:evolve_desktop/core/tutorial_provider.dart';
 import 'package:evolve_desktop/features/auth/application/auth_controller.dart';
 import 'package:evolve_desktop/features/auth/application/desktop_profile_controller.dart';
@@ -25,10 +24,12 @@ import 'package:flutter_markdown/flutter_markdown.dart';
 import 'package:lucide_icons_flutter/lucide_icons.dart';
 import 'package:url_launcher/url_launcher.dart';
 
+import '../application/coach_consent_controller.dart';
 import '../application/coach_controllers.dart';
 import '../application/ollama_start_controller.dart';
 import '../domain/chat_message.dart';
 import '../domain/coach_backend.dart';
+import '../domain/coach_consent.dart';
 import '../domain/coach_chat_logic.dart';
 import '../domain/coach_config.dart';
 import 'coach_model_chip.dart';
@@ -182,22 +183,46 @@ class _AiCoachPageState extends ConsumerState<AiCoachPage> {
     super.dispose();
   }
 
-  /// In Private mode, never send personal context to the external AI provider
-  /// without explicit, persisted consent (mirrors the mobile client). Returns
-  /// true if the send may proceed.
-  Future<bool> _ensurePrivateAiConsent() async {
-    final isPrivate = ref.read(activeDesktopDataModeProvider).isPrivate;
-    if (!isPrivate) return true;
-    final db = DesktopPrivateDb.instance;
-    if (await db.hasPrivateAiExternalConsent()) return true;
+  /// Explicit consent to send this conversation to a third party, for the engine
+  /// it is actually going out through — App Store Guideline 5.1.2(i).
+  ///
+  /// This used to be `_ensurePrivateAiConsent`, and its second line was
+  /// `if (!isPrivate) return true;`. So the only users ever asked were the ones
+  /// in the mode that keeps their data on the device, and every cloud user's
+  /// message went to OpenRouter having been asked nothing. Private mode was
+  /// never the case that needed the permission; it was the case someone
+  /// remembered.
+  ///
+  /// Asked per [CoachDisclosure], because the recipients differ and consent to
+  /// one is not consent to the other. Returns true if the send may proceed.
+  Future<bool> _ensureCoachConsent(CoachBackendKind kind) async {
+    final disclosure = disclosureFor(kind);
+    // Local receives nothing: there is no third party to ask about.
+    if (disclosure == null) return true;
+
+    final store = ref.read(coachConsentStoreProvider);
+    if (await store.has(disclosure)) return true;
     if (!mounted) return false;
+
+    final isPrivate = ref.read(activeDesktopDataModeProvider).isPrivate;
+    final body = switch (disclosure) {
+      CoachDisclosure.standard => t.ai.consent.standardBody,
+      CoachDisclosure.byok => t.ai.consent.byokBody,
+    };
+
     final granted = await showEvolveDialog<bool>(
       context: context,
       builder: (context) => EvolveAlertDialog(
         icon: LucideIcons.shield,
-        title: Text(t.privateAi.consentTitle),
+        title: Text(switch (disclosure) {
+          CoachDisclosure.standard => t.ai.consent.standardTitle,
+          CoachDisclosure.byok => t.ai.consent.byokTitle,
+        }),
         content: Text(
-          t.privateAi.consentBody,
+          // Private mode's own reassurance, kept: the recipient disclosure is
+          // the same either way, but "your database stays here" is only true
+          // there.
+          isPrivate ? '$body\n\n${t.ai.consent.privateNote}' : body,
           style: TextStyle(
             color: context.evolveColors.muted,
             fontSize: 13,
@@ -208,17 +233,20 @@ class _AiCoachPageState extends ConsumerState<AiCoachPage> {
         actions: [
           TextButton(
             onPressed: () => Navigator.pop(context, false),
-            child: Text(t.privateAi.cancel),
+            child: Text(t.ai.consent.decline),
           ),
           FilledButton(
             onPressed: () => Navigator.pop(context, true),
-            child: Text(t.privateAi.accept),
+            child: Text(t.ai.consent.allow),
           ),
         ],
       ),
     );
+    // Recorded ONLY on an affirmative tap. Dismissing the dialog returns null,
+    // which is a refusal, not a deferral to be quietly treated as yes.
     if (granted == true) {
-      await db.setPrivateAiExternalConsent(true);
+      await store.grant(disclosure);
+      ref.invalidate(hasAnyCoachConsentProvider);
       return true;
     }
     return false;
@@ -274,12 +302,12 @@ class _AiCoachPageState extends ConsumerState<AiCoachPage> {
       return;
     }
 
-    // Remote sends leave the device, so in Private mode they require explicit
-    // consent. Local sends never leave the device → no consent gate, no
-    // internet check.
+    // Remote sends leave the device, so they require explicit consent naming
+    // who receives them — in EVERY data mode, not just Private (Guideline
+    // 5.1.2(i)). Local sends never leave the device → no consent gate, no
+    // internet check, and `_ensureCoachConsent` returns true for it anyway.
     //
-    // The consent check reads the private DB (`_ensurePrivateAiConsent` →
-    // `hasPrivateAiExternalConsent`), whose `database` getter throws
+    // The consent check can read the private DB, whose `database` getter throws
     // `PrivateDatabaseLockedException` when the SQLCipher key is locked out. As
     // with the key read above, that throw MUST NOT escape: `_sending` is
     // already latched, so an uncaught throw would leave it latched for the
@@ -288,7 +316,7 @@ class _AiCoachPageState extends ConsumerState<AiCoachPage> {
     if (leavesDevice) {
       bool consented;
       try {
-        consented = await _ensurePrivateAiConsent();
+        consented = await _ensureCoachConsent(kind);
       } catch (_) {
         consented = false;
       }

@@ -40,7 +40,6 @@ class TranslationsDe extends Translations with BaseTranslations<AppLocale, Trans
 
 	// Translations
 	@override late final _Translations$auth$de auth = _Translations$auth$de._(_root);
-	@override late final _Translations$privateAi$de privateAi = _Translations$privateAi$de._(_root);
 	@override late final _Translations$privateData$de privateData = _Translations$privateData$de._(_root);
 	@override late final _Translations$icloudSync$de icloudSync = _Translations$icloudSync$de._(_root);
 	@override late final _Translations$privateRecovery$de privateRecovery = _Translations$privateRecovery$de._(_root);
@@ -115,19 +114,6 @@ class _Translations$auth$de extends Translations$auth$en {
 	@override String get emailLabel => 'E-Mail';
 	@override String get passwordMin8 => 'Verwende mindestens 8 Zeichen.';
 	@override String get sendResetLink => 'Wiederherstellungslink senden';
-}
-
-// Path: privateAi
-class _Translations$privateAi$de extends Translations$privateAi$en {
-	_Translations$privateAi$de._(TranslationsDe root) : this._root = root, super.internal(root);
-
-	final TranslationsDe _root; // ignore: unused_field
-
-	// Translations
-	@override String get consentTitle => 'Senden an die KI erlauben';
-	@override String get consentBody => 'Im privaten Modus bleiben deine Daten auf deinem Gerät. Um den KI-Coach zu nutzen, werden die Gewohnheiten und Ziele, die du teilst, an einen externen KI-Anbieter (OpenRouter) gesendet. Möchtest du fortfahren?';
-	@override String get cancel => 'Abbrechen';
-	@override String get accept => 'Akzeptieren';
 }
 
 // Path: privateData
@@ -864,6 +850,7 @@ class _Translations$ai$de extends Translations$ai$en {
 	@override late final _Translations$ai$suggestions$de suggestions = _Translations$ai$suggestions$de._(_root);
 	@override late final _Translations$ai$local$de local = _Translations$ai$local$de._(_root);
 	@override late final _Translations$ai$standard$de standard = _Translations$ai$standard$de._(_root);
+	@override late final _Translations$ai$consent$de consent = _Translations$ai$consent$de._(_root);
 }
 
 // Path: aiCoach
@@ -1648,6 +1635,28 @@ class _Translations$ai$standard$de extends Translations$ai$standard$en {
 	@override String get unavailable => '❌ Evolve AI ist gerade nicht verfügbar. Das liegt an uns — bitte versuch es gleich noch einmal.';
 }
 
+// Path: ai.consent
+class _Translations$ai$consent$de extends Translations$ai$consent$en {
+	_Translations$ai$consent$de._(TranslationsDe root) : this._root = root, super.internal(root);
+
+	final TranslationsDe _root; // ignore: unused_field
+
+	// Translations
+	@override String get standardTitle => 'Deine Nachrichten an die KI senden?';
+	@override String get standardBody => 'Zum Antworten sendet der AI Coach deine Nachricht, deinen Vornamen und den Kontext, den du teilst, an OpenRouter, Inc., das sie zur Ausführung des Modells an Google LLC weiterleitet (Google Cloud Vertex AI). Sie verarbeiten das nur, um die Antwort zu erzeugen. Du kannst die Einwilligung jederzeit in den Einstellungen widerrufen; alles andere in Evolve funktioniert weiter.';
+	@override String get byokTitle => 'Deine Nachrichten an OpenRouter senden?';
+	@override String get byokBody => 'Zum Antworten sendet der AI Coach deine Nachricht, deinen Vornamen und den Kontext, den du teilst, über dein eigenes OpenRouter-Konto an OpenRouter, Inc. OpenRouter leitet sie gemäß den Einstellungen deines Kontos an einen Modellanbieter weiter. Du kannst die Einwilligung jederzeit in den Einstellungen widerrufen; alles andere in Evolve funktioniert weiter.';
+	@override String get privateNote => 'Deine private Datenbank bleibt auf diesem Gerät — nur was du im Chat sendest, verlässt es.';
+	@override String get allow => 'Erlauben';
+	@override String get decline => 'Jetzt nicht';
+	@override String get rowTitle => 'Datenweitergabe an die KI';
+	@override String get statusGranted => 'Erlaubt';
+	@override String get statusNone => 'Nicht erlaubt';
+	@override String get revokeTitle => 'Weitergabe an die KI beenden?';
+	@override String get revokeBody => 'Der AI Coach fragt erneut, bevor er etwas sendet. Sonst ändert sich nichts.';
+	@override String get revokeAction => 'Weitergabe beenden';
+}
+
 // Path: settingsPage.calendarViewOptions
 class _Translations$settingsPage$calendarViewOptions$de extends Translations$settingsPage$calendarViewOptions$en {
 	_Translations$settingsPage$calendarViewOptions$de._(TranslationsDe root) : this._root = root, super.internal(root);
@@ -1705,10 +1714,6 @@ extension on TranslationsDe {
 			'auth.emailLabel' => 'E-Mail',
 			'auth.passwordMin8' => 'Verwende mindestens 8 Zeichen.',
 			'auth.sendResetLink' => 'Wiederherstellungslink senden',
-			'privateAi.consentTitle' => 'Senden an die KI erlauben',
-			'privateAi.consentBody' => 'Im privaten Modus bleiben deine Daten auf deinem Gerät. Um den KI-Coach zu nutzen, werden die Gewohnheiten und Ziele, die du teilst, an einen externen KI-Anbieter (OpenRouter) gesendet. Möchtest du fortfahren?',
-			'privateAi.cancel' => 'Abbrechen',
-			'privateAi.accept' => 'Akzeptieren',
 			'privateData.deleteTitle' => 'Private Daten löschen',
 			'privateData.deleteMessage' => 'Möchtest du wirklich die gesamte verschlüsselte lokale Datenbank löschen? Dieser Vorgang ist unwiderruflich und die Daten können nicht wiederhergestellt werden.',
 			'privateData.deleteSuccess' => 'Private Daten gelöscht.',
@@ -2196,12 +2201,12 @@ extension on TranslationsDe {
 			'habitsPage.nextPeriod' => 'Nächster Zeitraum',
 			'habitsPage.weekdayAbbrevUpper.0' => 'MO',
 			'habitsPage.weekdayAbbrevUpper.1' => 'DI',
-			_ => null,
-		} ?? switch (path) {
 			'habitsPage.weekdayAbbrevUpper.2' => 'MI',
 			'habitsPage.weekdayAbbrevUpper.3' => 'DO',
 			'habitsPage.weekdayAbbrevUpper.4' => 'FR',
 			'habitsPage.weekdayAbbrevUpper.5' => 'SA',
+			_ => null,
+		} ?? switch (path) {
 			'habitsPage.weekdayAbbrevUpper.6' => 'SO',
 			'habitsPage.lifeView' => 'Lebensansicht',
 			'habitsPage.lifeViewSubtitle' => 'Eine Zelle steht für einen Monat des Weges bis zum Alter von 85.',
@@ -2330,6 +2335,19 @@ extension on TranslationsDe {
 			'ai.standard.needsPro' => '⚠️ Evolve AI ist Teil von Evolve Pro. Schließe in den Einstellungen ein Abo ab — oder wechsle die Engine zu deinem eigenen OpenRouter-Konto, das ist kostenlos.',
 			'ai.standard.rateLimited' => '⚠️ Du hast das Fair-Use-Limit von Evolve AI vorerst erreicht. Versuch es später noch einmal oder wechsle zu deinem eigenen OpenRouter-Konto.',
 			'ai.standard.unavailable' => '❌ Evolve AI ist gerade nicht verfügbar. Das liegt an uns — bitte versuch es gleich noch einmal.',
+			'ai.consent.standardTitle' => 'Deine Nachrichten an die KI senden?',
+			'ai.consent.standardBody' => 'Zum Antworten sendet der AI Coach deine Nachricht, deinen Vornamen und den Kontext, den du teilst, an OpenRouter, Inc., das sie zur Ausführung des Modells an Google LLC weiterleitet (Google Cloud Vertex AI). Sie verarbeiten das nur, um die Antwort zu erzeugen. Du kannst die Einwilligung jederzeit in den Einstellungen widerrufen; alles andere in Evolve funktioniert weiter.',
+			'ai.consent.byokTitle' => 'Deine Nachrichten an OpenRouter senden?',
+			'ai.consent.byokBody' => 'Zum Antworten sendet der AI Coach deine Nachricht, deinen Vornamen und den Kontext, den du teilst, über dein eigenes OpenRouter-Konto an OpenRouter, Inc. OpenRouter leitet sie gemäß den Einstellungen deines Kontos an einen Modellanbieter weiter. Du kannst die Einwilligung jederzeit in den Einstellungen widerrufen; alles andere in Evolve funktioniert weiter.',
+			'ai.consent.privateNote' => 'Deine private Datenbank bleibt auf diesem Gerät — nur was du im Chat sendest, verlässt es.',
+			'ai.consent.allow' => 'Erlauben',
+			'ai.consent.decline' => 'Jetzt nicht',
+			'ai.consent.rowTitle' => 'Datenweitergabe an die KI',
+			'ai.consent.statusGranted' => 'Erlaubt',
+			'ai.consent.statusNone' => 'Nicht erlaubt',
+			'ai.consent.revokeTitle' => 'Weitergabe an die KI beenden?',
+			'ai.consent.revokeBody' => 'Der AI Coach fragt erneut, bevor er etwas sendet. Sonst ändert sich nichts.',
+			'ai.consent.revokeAction' => 'Weitergabe beenden',
 			'aiCoach.greeting' => 'Hallo! Ich bin Evolve AI Coach. Ich helfe dir, dein Protokoll zu optimieren und deine Ziele zu erreichen. Wie kann ich dir heute helfen?',
 			'aiCoach.systemPersona' => 'Du bist Evolve AI Coach, ein virtueller Assistent für persönliche Disziplin.',
 			'aiCoach.habitsHeader' => 'AKTIVE GEWOHNHEITEN:',
@@ -2701,6 +2719,8 @@ extension on TranslationsDe {
 			'coachSettings.save' => 'Fertig',
 			'coachSettings.detectedTitle' => 'Lokales Modell erkannt',
 			'coachSettings.detectedBody' => 'Auf diesem Mac läuft ein lokaler KI-Server. Den Coach zu 100 % privat ausführen?',
+			_ => null,
+		} ?? switch (path) {
 			'coachSettings.detectedAction' => 'Lokal verwenden',
 			'coachSettings.detectedDismiss' => 'Jetzt nicht',
 			'coachSettings.activeCloud' => ({required Object model}) => 'Cloud · ${model}',
@@ -2710,8 +2730,6 @@ extension on TranslationsDe {
 			'coachSettings.serverSettings' => 'Servereinstellungen…',
 			'coachSettings.settingsSectionLabel' => 'KI-Coach',
 			'coachSettings.settingsTitle' => 'KI-Coach',
-			_ => null,
-		} ?? switch (path) {
 			'coachSettings.settingsSubtitle' => 'Wähle die Engine für deinen Coach und verbinde sie für volle Privatsphäre mit einem lokalen Server.',
 			'coachSettings.settingsRowStatus' => 'Aktive Engine',
 			'coachSettings.settingsRowConfigure' => 'Engine & lokaler Server',

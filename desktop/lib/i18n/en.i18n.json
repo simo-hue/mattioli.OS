@@ -22,12 +22,6 @@
     "passwordMin8": "Use at least 8 characters.",
     "sendResetLink": "Send recovery link"
   },
-  "privateAi": {
-    "consentTitle": "Allow sending to the AI",
-    "consentBody": "In Private mode your data stays on your device. To use the AI Coach, the habits and goals you choose to share are sent to an external AI provider (OpenRouter). Do you want to proceed?",
-    "cancel": "Cancel",
-    "accept": "Accept"
-  },
   "privateData": {
     "deleteTitle": "Delete private data",
     "deleteMessage": "Are you sure you want to delete the entire encrypted local database? This action is irreversible and the data cannot be recovered.",
@@ -711,6 +705,21 @@
       "needsPro": "⚠️ Evolve AI is part of Evolve Pro. Subscribe in Settings — or switch the engine to your own OpenRouter account, which is free.",
       "rateLimited": "⚠️ You've reached the Evolve AI fair-use limit for now. Try again later, or switch the engine to your own OpenRouter account.",
       "unavailable": "❌ Evolve AI is unavailable right now. This one's on us — please try again in a moment."
+    },
+    "consent": {
+      "standardTitle": "Send your messages to the AI?",
+      "standardBody": "To reply, the AI Coach sends your message, your first name and any context you choose to share to OpenRouter, Inc., which routes it to Google LLC to run the model (Google Cloud Vertex AI). They process it only to generate the reply. You can withdraw this any time in Settings, and everything else in Evolve keeps working without it.",
+      "byokTitle": "Send your messages to OpenRouter?",
+      "byokBody": "To reply, the AI Coach sends your message, your first name and any context you choose to share to OpenRouter, Inc. using your own OpenRouter account. OpenRouter routes it to a model provider according to your account settings. You can withdraw this any time in Settings, and everything else in Evolve keeps working without it.",
+      "privateNote": "Your private database stays on this device — only what you send in the chat leaves it.",
+      "allow": "Allow",
+      "decline": "Not now",
+      "rowTitle": "AI data sharing",
+      "statusGranted": "Allowed",
+      "statusNone": "Not allowed",
+      "revokeTitle": "Stop sharing with the AI?",
+      "revokeBody": "The AI Coach will ask again before it sends anything. Nothing else changes.",
+      "revokeAction": "Stop sharing"
     }
   },
   "aiCoach": {

@@ -682,8 +682,6 @@
       "createNewHabit": "💡 How can I create a new habit?"
     },
     "accept": "Accept",
-    "privateConsentTitle": "AI Consent in Private Mode",
-    "privateConsentBody": "To use the AI Coach, your message, your display name, and any selected context are sent to the external AI provider. Your private database stays on the device.",
     "openRouter": {
       "apiKeyMissingShort": "⚠️ The AI Coach isn't set up yet. Open Settings to finish setting it up.",
       "apiKeyInvalid": "⚠️ OpenRouter rejected this API key. Check it in Settings, or create a new one at openrouter.ai/keys.",
@@ -740,6 +738,21 @@
       "activeRowTitle": "Active engine",
       "byokShortName": "Your OpenRouter account",
       "notConfigured": "Not set up"
+    },
+    "consent": {
+      "standardTitle": "Send your messages to the AI?",
+      "standardBody": "To reply, the AI Coach sends your message, your first name and any context you choose to share to OpenRouter, Inc., which routes it to Google LLC to run the model (Google Cloud Vertex AI). They process it only to generate the reply. You can withdraw this any time in Settings, and everything else in Evolve keeps working without it.",
+      "byokTitle": "Send your messages to OpenRouter?",
+      "byokBody": "To reply, the AI Coach sends your message, your first name and any context you choose to share to OpenRouter, Inc. using your own OpenRouter account. OpenRouter routes it to a model provider according to your account settings. You can withdraw this any time in Settings, and everything else in Evolve keeps working without it.",
+      "privateNote": "Your private database stays on this device — only what you send in the chat leaves it.",
+      "allow": "Allow",
+      "decline": "Not now",
+      "rowTitle": "AI data sharing",
+      "statusGranted": "Allowed",
+      "statusNone": "Not allowed",
+      "revokeTitle": "Stop sharing with the AI?",
+      "revokeBody": "The AI Coach will ask again before it sends anything. Nothing else changes.",
+      "revokeAction": "Stop sharing"
     }
   },
   "macroGoals": {

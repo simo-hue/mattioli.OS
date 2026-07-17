@@ -682,8 +682,6 @@
       "createNewHabit": "💡 Wie kann ich eine neue Gewohnheit aufbauen?"
     },
     "accept": "Ich akzeptiere",
-    "privateConsentTitle": "KI-Zustimmung im privaten Modus",
-    "privateConsentBody": "Um den KI-Coach zu nutzen, werden deine Nachricht, dein Anzeigename und der ausgewählte Kontext an den externen KI-Anbieter gesendet. Deine private Datenbank bleibt auf dem Gerät.",
     "openRouter": {
       "apiKeyMissingShort": "⚠️ Der AI Coach ist noch nicht eingerichtet. Öffne die Einstellungen, um die Einrichtung abzuschließen.",
       "apiKeyInvalid": "⚠️ OpenRouter hat diesen API-Schlüssel abgelehnt. Prüfe ihn in den Einstellungen oder erstelle einen neuen auf openrouter.ai/keys.",
@@ -740,6 +738,21 @@
       "activeRowTitle": "Aktive Engine",
       "byokShortName": "Dein OpenRouter-Konto",
       "notConfigured": "Nicht eingerichtet"
+    },
+    "consent": {
+      "standardTitle": "Deine Nachrichten an die KI senden?",
+      "standardBody": "Zum Antworten sendet der AI Coach deine Nachricht, deinen Vornamen und den Kontext, den du teilst, an OpenRouter, Inc., das sie zur Ausführung des Modells an Google LLC weiterleitet (Google Cloud Vertex AI). Sie verarbeiten das nur, um die Antwort zu erzeugen. Du kannst die Einwilligung jederzeit in den Einstellungen widerrufen; alles andere in Evolve funktioniert weiter.",
+      "byokTitle": "Deine Nachrichten an OpenRouter senden?",
+      "byokBody": "Zum Antworten sendet der AI Coach deine Nachricht, deinen Vornamen und den Kontext, den du teilst, über dein eigenes OpenRouter-Konto an OpenRouter, Inc. OpenRouter leitet sie gemäß den Einstellungen deines Kontos an einen Modellanbieter weiter. Du kannst die Einwilligung jederzeit in den Einstellungen widerrufen; alles andere in Evolve funktioniert weiter.",
+      "privateNote": "Deine private Datenbank bleibt auf diesem Gerät — nur was du im Chat sendest, verlässt es.",
+      "allow": "Erlauben",
+      "decline": "Jetzt nicht",
+      "rowTitle": "Datenweitergabe an die KI",
+      "statusGranted": "Erlaubt",
+      "statusNone": "Nicht erlaubt",
+      "revokeTitle": "Weitergabe an die KI beenden?",
+      "revokeBody": "Der AI Coach fragt erneut, bevor er etwas sendet. Sonst ändert sich nichts.",
+      "revokeAction": "Weitergabe beenden"
     }
   },
   "macroGoals": {

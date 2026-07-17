@@ -21,6 +21,7 @@ import 'package:evolve_desktop/features/auth/application/auth_controller.dart';
 import 'package:evolve_desktop/features/auth/application/consent_controller.dart';
 import 'package:evolve_desktop/core/desktop_data_mode.dart';
 import 'package:evolve_desktop/features/ai_coach/application/coach_controllers.dart';
+import 'package:evolve_desktop/features/ai_coach/application/coach_consent_controller.dart';
 import 'package:evolve_desktop/features/ai_coach/domain/coach_backend.dart';
 import 'package:evolve_desktop/features/ai_coach/presentation/coach_model_chip.dart';
 import 'package:evolve_desktop/features/ai_coach/presentation/coach_settings_dialog.dart';
@@ -2264,12 +2265,57 @@ extension _AiCoachSection on _SettingsPageState {
                   detail: t.coachSettings.subtitle,
                   onTap: () => showCoachSettingsDialog(context),
                 ),
+                // Withdrawing consent must be as easy as giving it (GDPR Art.
+                // 7(3) — Simone is the named controller), and Guideline 5.1.2
+                // expects the same. Granting is one click in a dialog, so taking
+                // it back is one click here. Renders only once a consent exists:
+                // there is nothing to withdraw before that.
+                if (ref.watch(hasAnyCoachConsentProvider).asData?.value ?? false)
+                  _ActionRow(
+                    icon: LucideIcons.shieldCheck,
+                    title: t.ai.consent.rowTitle,
+                    detail: t.ai.consent.statusGranted,
+                    onTap: () => _revokeCoachConsent(context),
+                  ),
               ],
             ),
           ],
         ),
       ],
     );
+  }
+
+  Future<void> _revokeCoachConsent(BuildContext context) async {
+    final confirmed = await showEvolveDialog<bool>(
+      context: context,
+      builder: (dialogContext) => EvolveAlertDialog(
+        icon: LucideIcons.triangleAlert,
+        iconColor: EvolveColors.destructive,
+        title: Text(t.ai.consent.revokeTitle),
+        content: Text(
+          t.ai.consent.revokeBody,
+          style: TextStyle(
+            color: dialogContext.evolveColors.muted,
+            fontSize: 13,
+            fontWeight: FontWeight.w500,
+            height: 1.5,
+          ),
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(dialogContext, false),
+            child: Text(t.common.actions.cancel),
+          ),
+          FilledButton(
+            onPressed: () => Navigator.pop(dialogContext, true),
+            child: Text(t.ai.consent.revokeAction),
+          ),
+        ],
+      ),
+    );
+    if (confirmed != true) return;
+    await ref.read(coachConsentStoreProvider).revokeAll();
+    ref.invalidate(hasAnyCoachConsentProvider);
   }
 }
 

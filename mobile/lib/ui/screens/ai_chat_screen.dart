@@ -4,11 +4,11 @@ import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:lucide_icons_flutter/lucide_icons.dart';
 import '../../core/theme.dart';
+import '../../core/coach_consent.dart';
 import '../../core/coach_endpoint.dart';
 import '../../core/openrouter_service.dart';
 import '../../core/app_logger.dart';
 import '../../core/data_mode.dart';
-import '../../core/private_local_database.dart';
 import '../../core/rtl.dart';
 import 'package:flutter_markdown/flutter_markdown.dart';
 
@@ -158,7 +158,30 @@ class _AIChatScreenState extends ConsumerState<AIChatScreen> {
 
   Future<void> _sendMessage(String text) async {
     if (text.trim().isEmpty) return;
-    if (!await _ensurePrivateAiConsent()) return;
+
+    // Resolved FIRST, because which third party receives this decides which
+    // permission we need for it. Resolving reads the Keychain and the session;
+    // it transmits nothing, so this still happens strictly before the send —
+    // which is what Guideline 5.1.2(i) requires of the consent below.
+    //
+    // The read can throw: a rotated Keychain access-group prefix locks the item
+    // out, and `.future` rethrows it. It MUST NOT escape — this used to run
+    // AFTER the user's bubble and the empty assistant bubble were already in
+    // the list with `_isTyping` true, so a throw left the chat typing forever
+    // at a reply that was never coming. An unresolvable endpoint is no endpoint.
+    CoachEndpoint? endpoint;
+    try {
+      endpoint = await ref.read(coachEndpointProvider.future);
+    } catch (error, stack) {
+      AppLogger.error('[AIChatScreen] Coach endpoint unresolved', error, stack);
+      endpoint = null;
+    }
+    if (!mounted) return;
+    // Nothing to send to. The setup card replaces the composer in this state,
+    // so this is the belt-and-braces path (`onSubmitted` is not gated).
+    if (endpoint == null) return;
+
+    if (!await _ensureCoachConsent(endpoint.mode)) return;
     if (!mounted) return;
 
     // A previous response can still be streaming — `_isTyping` flips false on
@@ -187,12 +210,9 @@ class _AIChatScreenState extends ConsumerState<AIChatScreen> {
       );
     });
 
-    // Resolved per send, not once per screen: it depends on the Pro entitlement
-    // and on there being a live session, both of which can change while the
-    // chat is open.
-    final endpoint = await ref.read(coachEndpointProvider.future);
-    if (!mounted) return;
-
+    // `endpoint` was resolved at the top of this method, per send rather than
+    // once per screen: it depends on the Pro entitlement and on there being a
+    // live session, both of which can change while the chat is open.
     final stream = AIChatScreen.streamFactory(
       _messages.sublist(0, assistantMessageIndex),
       systemPrompt: _getSystemPrompt(),
@@ -263,23 +283,49 @@ class _AIChatScreenState extends ConsumerState<AIChatScreen> {
     );
   }
 
-  Future<bool> _ensurePrivateAiConsent() async {
-    if (ref.read(activeDataModeProvider) != AppDataMode.private) return true;
-
-    final db = ref.read(privateLocalDatabaseProvider);
-    if (await db.hasPrivateAiExternalConsent()) return true;
+  /// Explicit consent to send this conversation to a third party, for the mode
+  /// it is actually going out through — App Store Guideline 5.1.2(i).
+  ///
+  /// This used to be `_ensurePrivateAiConsent`, and its first line returned true
+  /// for anyone not in Private mode. So the ONLY users ever asked were the ones
+  /// whose data was least at risk, and every cloud user's message went to a
+  /// third party having been asked nothing. Private mode was never the case that
+  /// needed the permission; it was just the case someone remembered.
+  ///
+  /// Asked per [CoachMode], because the recipients differ and consent to one is
+  /// not consent to the other — see [CoachDisclosure].
+  Future<bool> _ensureCoachConsent(CoachMode mode) async {
+    final disclosure = disclosureFor(mode);
+    final store = ref.read(coachConsentStoreProvider);
+    if (await store.has(disclosure)) return true;
     if (!mounted) return false;
+
+    final isPrivate = ref.read(activeDataModeProvider).isPrivate;
+    final consent = context.t.ai.consent;
+    final body = switch (disclosure) {
+      CoachDisclosure.standard => consent.standardBody,
+      CoachDisclosure.byok => consent.byokBody,
+    };
 
     final accepted = await showEvolveConfirm(
       context: context,
-      title: context.t.ai.privateConsentTitle,
-      message: context.t.ai.privateConsentBody,
-      confirmLabel: context.t.ai.accept,
+      title: switch (disclosure) {
+        CoachDisclosure.standard => consent.standardTitle,
+        CoachDisclosure.byok => consent.byokTitle,
+      },
+      // Private mode's own reassurance, kept: the recipient disclosure is the
+      // same either way, but "your database stays here" is only true there.
+      message: isPrivate ? '$body\n\n${consent.privateNote}' : body,
+      confirmLabel: consent.allow,
+      cancelLabel: consent.decline,
       ref: ref,
     );
 
+    // Recorded ONLY on an affirmative tap. Dismissing the barrier resolves to
+    // false, which is a refusal, not a deferral to be quietly treated as yes.
     if (accepted) {
-      await db.setPrivateAiExternalConsent(true);
+      await store.grant(disclosure);
+      ref.invalidate(hasAnyCoachConsentProvider);
       return true;
     }
     return false;

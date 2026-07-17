@@ -22,12 +22,6 @@
     "passwordMin8": "Verwende mindestens 8 Zeichen.",
     "sendResetLink": "Wiederherstellungslink senden"
   },
-  "privateAi": {
-    "consentTitle": "Senden an die KI erlauben",
-    "consentBody": "Im privaten Modus bleiben deine Daten auf deinem Gerät. Um den KI-Coach zu nutzen, werden die Gewohnheiten und Ziele, die du teilst, an einen externen KI-Anbieter (OpenRouter) gesendet. Möchtest du fortfahren?",
-    "cancel": "Abbrechen",
-    "accept": "Akzeptieren"
-  },
   "privateData": {
     "deleteTitle": "Private Daten löschen",
     "deleteMessage": "Möchtest du wirklich die gesamte verschlüsselte lokale Datenbank löschen? Dieser Vorgang ist unwiderruflich und die Daten können nicht wiederhergestellt werden.",
@@ -711,6 +705,21 @@
       "needsPro": "⚠️ Evolve AI ist Teil von Evolve Pro. Schließe in den Einstellungen ein Abo ab — oder wechsle die Engine zu deinem eigenen OpenRouter-Konto, das ist kostenlos.",
       "rateLimited": "⚠️ Du hast das Fair-Use-Limit von Evolve AI vorerst erreicht. Versuch es später noch einmal oder wechsle zu deinem eigenen OpenRouter-Konto.",
       "unavailable": "❌ Evolve AI ist gerade nicht verfügbar. Das liegt an uns — bitte versuch es gleich noch einmal."
+    },
+    "consent": {
+      "standardTitle": "Deine Nachrichten an die KI senden?",
+      "standardBody": "Zum Antworten sendet der AI Coach deine Nachricht, deinen Vornamen und den Kontext, den du teilst, an OpenRouter, Inc., das sie zur Ausführung des Modells an Google LLC weiterleitet (Google Cloud Vertex AI). Sie verarbeiten das nur, um die Antwort zu erzeugen. Du kannst die Einwilligung jederzeit in den Einstellungen widerrufen; alles andere in Evolve funktioniert weiter.",
+      "byokTitle": "Deine Nachrichten an OpenRouter senden?",
+      "byokBody": "Zum Antworten sendet der AI Coach deine Nachricht, deinen Vornamen und den Kontext, den du teilst, über dein eigenes OpenRouter-Konto an OpenRouter, Inc. OpenRouter leitet sie gemäß den Einstellungen deines Kontos an einen Modellanbieter weiter. Du kannst die Einwilligung jederzeit in den Einstellungen widerrufen; alles andere in Evolve funktioniert weiter.",
+      "privateNote": "Deine private Datenbank bleibt auf diesem Gerät — nur was du im Chat sendest, verlässt es.",
+      "allow": "Erlauben",
+      "decline": "Jetzt nicht",
+      "rowTitle": "Datenweitergabe an die KI",
+      "statusGranted": "Erlaubt",
+      "statusNone": "Nicht erlaubt",
+      "revokeTitle": "Weitergabe an die KI beenden?",
+      "revokeBody": "Der AI Coach fragt erneut, bevor er etwas sendet. Sonst ändert sich nichts.",
+      "revokeAction": "Weitergabe beenden"
     }
   },
   "aiCoach": {

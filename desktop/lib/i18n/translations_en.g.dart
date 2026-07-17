@@ -41,7 +41,6 @@ class Translations with BaseTranslations<AppLocale, Translations> {
 
 	// Translations
 	late final Translations$auth$en auth = Translations$auth$en.internal(_root);
-	late final Translations$privateAi$en privateAi = Translations$privateAi$en.internal(_root);
 	late final Translations$privateData$en privateData = Translations$privateData$en.internal(_root);
 	late final Translations$icloudSync$en icloudSync = Translations$icloudSync$en.internal(_root);
 	late final Translations$privateRecovery$en privateRecovery = Translations$privateRecovery$en.internal(_root);
@@ -175,27 +174,6 @@ class Translations$auth$en {
 
 	/// en: 'Send recovery link'
 	String get sendResetLink => 'Send recovery link';
-}
-
-// Path: privateAi
-class Translations$privateAi$en {
-	Translations$privateAi$en.internal(this._root);
-
-	final Translations _root; // ignore: unused_field
-
-	// Translations
-
-	/// en: 'Allow sending to the AI'
-	String get consentTitle => 'Allow sending to the AI';
-
-	/// en: 'In Private mode your data stays on your device. To use the AI Coach, the habits and goals you choose to share are sent to an external AI provider (OpenRouter). Do you want to proceed?'
-	String get consentBody => 'In Private mode your data stays on your device. To use the AI Coach, the habits and goals you choose to share are sent to an external AI provider (OpenRouter). Do you want to proceed?';
-
-	/// en: 'Cancel'
-	String get cancel => 'Cancel';
-
-	/// en: 'Accept'
-	String get accept => 'Accept';
 }
 
 // Path: privateData
@@ -1947,6 +1925,7 @@ class Translations$ai$en {
 	late final Translations$ai$suggestions$en suggestions = Translations$ai$suggestions$en.internal(_root);
 	late final Translations$ai$local$en local = Translations$ai$local$en.internal(_root);
 	late final Translations$ai$standard$en standard = Translations$ai$standard$en.internal(_root);
+	late final Translations$ai$consent$en consent = Translations$ai$consent$en.internal(_root);
 }
 
 // Path: aiCoach
@@ -3842,6 +3821,54 @@ class Translations$ai$standard$en {
 	String get unavailable => '❌ Evolve AI is unavailable right now. This one\'s on us — please try again in a moment.';
 }
 
+// Path: ai.consent
+class Translations$ai$consent$en {
+	Translations$ai$consent$en.internal(this._root);
+
+	final Translations _root; // ignore: unused_field
+
+	// Translations
+
+	/// en: 'Send your messages to the AI?'
+	String get standardTitle => 'Send your messages to the AI?';
+
+	/// en: 'To reply, the AI Coach sends your message, your first name and any context you choose to share to OpenRouter, Inc., which routes it to Google LLC to run the model (Google Cloud Vertex AI). They process it only to generate the reply. You can withdraw this any time in Settings, and everything else in Evolve keeps working without it.'
+	String get standardBody => 'To reply, the AI Coach sends your message, your first name and any context you choose to share to OpenRouter, Inc., which routes it to Google LLC to run the model (Google Cloud Vertex AI). They process it only to generate the reply. You can withdraw this any time in Settings, and everything else in Evolve keeps working without it.';
+
+	/// en: 'Send your messages to OpenRouter?'
+	String get byokTitle => 'Send your messages to OpenRouter?';
+
+	/// en: 'To reply, the AI Coach sends your message, your first name and any context you choose to share to OpenRouter, Inc. using your own OpenRouter account. OpenRouter routes it to a model provider according to your account settings. You can withdraw this any time in Settings, and everything else in Evolve keeps working without it.'
+	String get byokBody => 'To reply, the AI Coach sends your message, your first name and any context you choose to share to OpenRouter, Inc. using your own OpenRouter account. OpenRouter routes it to a model provider according to your account settings. You can withdraw this any time in Settings, and everything else in Evolve keeps working without it.';
+
+	/// en: 'Your private database stays on this device — only what you send in the chat leaves it.'
+	String get privateNote => 'Your private database stays on this device — only what you send in the chat leaves it.';
+
+	/// en: 'Allow'
+	String get allow => 'Allow';
+
+	/// en: 'Not now'
+	String get decline => 'Not now';
+
+	/// en: 'AI data sharing'
+	String get rowTitle => 'AI data sharing';
+
+	/// en: 'Allowed'
+	String get statusGranted => 'Allowed';
+
+	/// en: 'Not allowed'
+	String get statusNone => 'Not allowed';
+
+	/// en: 'Stop sharing with the AI?'
+	String get revokeTitle => 'Stop sharing with the AI?';
+
+	/// en: 'The AI Coach will ask again before it sends anything. Nothing else changes.'
+	String get revokeBody => 'The AI Coach will ask again before it sends anything. Nothing else changes.';
+
+	/// en: 'Stop sharing'
+	String get revokeAction => 'Stop sharing';
+}
+
 // Path: settingsPage.calendarViewOptions
 class Translations$settingsPage$calendarViewOptions$en {
 	Translations$settingsPage$calendarViewOptions$en.internal(this._root);
@@ -3919,10 +3946,6 @@ extension on Translations {
 			'auth.emailLabel' => 'Email',
 			'auth.passwordMin8' => 'Use at least 8 characters.',
 			'auth.sendResetLink' => 'Send recovery link',
-			'privateAi.consentTitle' => 'Allow sending to the AI',
-			'privateAi.consentBody' => 'In Private mode your data stays on your device. To use the AI Coach, the habits and goals you choose to share are sent to an external AI provider (OpenRouter). Do you want to proceed?',
-			'privateAi.cancel' => 'Cancel',
-			'privateAi.accept' => 'Accept',
 			'privateData.deleteTitle' => 'Delete private data',
 			'privateData.deleteMessage' => 'Are you sure you want to delete the entire encrypted local database? This action is irreversible and the data cannot be recovered.',
 			'privateData.deleteSuccess' => 'Private data deleted.',
@@ -4410,12 +4433,12 @@ extension on Translations {
 			'habitsPage.nextPeriod' => 'Next period',
 			'habitsPage.weekdayAbbrevUpper.0' => 'MON',
 			'habitsPage.weekdayAbbrevUpper.1' => 'TUE',
-			_ => null,
-		} ?? switch (path) {
 			'habitsPage.weekdayAbbrevUpper.2' => 'WED',
 			'habitsPage.weekdayAbbrevUpper.3' => 'THU',
 			'habitsPage.weekdayAbbrevUpper.4' => 'FRI',
 			'habitsPage.weekdayAbbrevUpper.5' => 'SAT',
+			_ => null,
+		} ?? switch (path) {
 			'habitsPage.weekdayAbbrevUpper.6' => 'SUN',
 			'habitsPage.lifeView' => 'Life view',
 			'habitsPage.lifeViewSubtitle' => 'One cell represents a month of the journey up to age 85.',
@@ -4544,6 +4567,19 @@ extension on Translations {
 			'ai.standard.needsPro' => '⚠️ Evolve AI is part of Evolve Pro. Subscribe in Settings — or switch the engine to your own OpenRouter account, which is free.',
 			'ai.standard.rateLimited' => '⚠️ You\'ve reached the Evolve AI fair-use limit for now. Try again later, or switch the engine to your own OpenRouter account.',
 			'ai.standard.unavailable' => '❌ Evolve AI is unavailable right now. This one\'s on us — please try again in a moment.',
+			'ai.consent.standardTitle' => 'Send your messages to the AI?',
+			'ai.consent.standardBody' => 'To reply, the AI Coach sends your message, your first name and any context you choose to share to OpenRouter, Inc., which routes it to Google LLC to run the model (Google Cloud Vertex AI). They process it only to generate the reply. You can withdraw this any time in Settings, and everything else in Evolve keeps working without it.',
+			'ai.consent.byokTitle' => 'Send your messages to OpenRouter?',
+			'ai.consent.byokBody' => 'To reply, the AI Coach sends your message, your first name and any context you choose to share to OpenRouter, Inc. using your own OpenRouter account. OpenRouter routes it to a model provider according to your account settings. You can withdraw this any time in Settings, and everything else in Evolve keeps working without it.',
+			'ai.consent.privateNote' => 'Your private database stays on this device — only what you send in the chat leaves it.',
+			'ai.consent.allow' => 'Allow',
+			'ai.consent.decline' => 'Not now',
+			'ai.consent.rowTitle' => 'AI data sharing',
+			'ai.consent.statusGranted' => 'Allowed',
+			'ai.consent.statusNone' => 'Not allowed',
+			'ai.consent.revokeTitle' => 'Stop sharing with the AI?',
+			'ai.consent.revokeBody' => 'The AI Coach will ask again before it sends anything. Nothing else changes.',
+			'ai.consent.revokeAction' => 'Stop sharing',
 			'aiCoach.greeting' => 'Hi! I\'m Evolve AI Coach. I\'m here to help you optimize your protocol and reach your goals. How can I help you today?',
 			'aiCoach.systemPersona' => 'You are Evolve AI Coach, a virtual assistant for personal discipline.',
 			'aiCoach.habitsHeader' => 'ACTIVE HABITS:',
@@ -4915,6 +4951,8 @@ extension on Translations {
 			'coachSettings.save' => 'Done',
 			'coachSettings.detectedTitle' => 'Local model detected',
 			'coachSettings.detectedBody' => 'A local AI server is running on this Mac. Run the coach 100% privately?',
+			_ => null,
+		} ?? switch (path) {
 			'coachSettings.detectedAction' => 'Use local',
 			'coachSettings.detectedDismiss' => 'Not now',
 			'coachSettings.activeCloud' => ({required Object model}) => 'Cloud · ${model}',
@@ -4924,8 +4962,6 @@ extension on Translations {
 			'coachSettings.serverSettings' => 'Server settings…',
 			'coachSettings.settingsSectionLabel' => 'AI Coach',
 			'coachSettings.settingsTitle' => 'AI Coach',
-			_ => null,
-		} ?? switch (path) {
 			'coachSettings.settingsSubtitle' => 'Pick the engine that powers your coach and point it at a local server for full privacy.',
 			'coachSettings.settingsRowStatus' => 'Active engine',
 			'coachSettings.settingsRowConfigure' => 'Engine & local server',

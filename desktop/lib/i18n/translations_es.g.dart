@@ -40,7 +40,6 @@ class TranslationsEs extends Translations with BaseTranslations<AppLocale, Trans
 
 	// Translations
 	@override late final _Translations$auth$es auth = _Translations$auth$es._(_root);
-	@override late final _Translations$privateAi$es privateAi = _Translations$privateAi$es._(_root);
 	@override late final _Translations$privateData$es privateData = _Translations$privateData$es._(_root);
 	@override late final _Translations$icloudSync$es icloudSync = _Translations$icloudSync$es._(_root);
 	@override late final _Translations$privateRecovery$es privateRecovery = _Translations$privateRecovery$es._(_root);
@@ -115,19 +114,6 @@ class _Translations$auth$es extends Translations$auth$en {
 	@override String get emailLabel => 'Correo electrónico';
 	@override String get passwordMin8 => 'Usa al menos 8 caracteres.';
 	@override String get sendResetLink => 'Enviar enlace de recuperación';
-}
-
-// Path: privateAi
-class _Translations$privateAi$es extends Translations$privateAi$en {
-	_Translations$privateAi$es._(TranslationsEs root) : this._root = root, super.internal(root);
-
-	final TranslationsEs _root; // ignore: unused_field
-
-	// Translations
-	@override String get consentTitle => 'Permitir el envío a la IA';
-	@override String get consentBody => 'En el modo privado tus datos permanecen en tu dispositivo. Para usar el Coach de IA, los hábitos y objetivos que elijas compartir se envían a un proveedor de IA externo (OpenRouter). ¿Quieres continuar?';
-	@override String get cancel => 'Cancelar';
-	@override String get accept => 'Acepto';
 }
 
 // Path: privateData
@@ -864,6 +850,7 @@ class _Translations$ai$es extends Translations$ai$en {
 	@override late final _Translations$ai$suggestions$es suggestions = _Translations$ai$suggestions$es._(_root);
 	@override late final _Translations$ai$local$es local = _Translations$ai$local$es._(_root);
 	@override late final _Translations$ai$standard$es standard = _Translations$ai$standard$es._(_root);
+	@override late final _Translations$ai$consent$es consent = _Translations$ai$consent$es._(_root);
 }
 
 // Path: aiCoach
@@ -1648,6 +1635,28 @@ class _Translations$ai$standard$es extends Translations$ai$standard$en {
 	@override String get unavailable => '❌ Evolve AI no está disponible ahora mismo. Es cosa nuestra: inténtalo de nuevo en un momento.';
 }
 
+// Path: ai.consent
+class _Translations$ai$consent$es extends Translations$ai$consent$en {
+	_Translations$ai$consent$es._(TranslationsEs root) : this._root = root, super.internal(root);
+
+	final TranslationsEs _root; // ignore: unused_field
+
+	// Translations
+	@override String get standardTitle => '¿Enviar tus mensajes a la IA?';
+	@override String get standardBody => 'Para responder, el AI Coach envía tu mensaje, tu nombre y el contexto que elijas compartir a OpenRouter, Inc., que lo dirige a Google LLC para ejecutar el modelo (Google Cloud Vertex AI). Solo lo tratan para generar la respuesta. Puedes retirar el consentimiento cuando quieras en Ajustes, y todo lo demás de Evolve sigue funcionando.';
+	@override String get byokTitle => '¿Enviar tus mensajes a OpenRouter?';
+	@override String get byokBody => 'Para responder, el AI Coach envía tu mensaje, tu nombre y el contexto que elijas compartir a OpenRouter, Inc. usando tu propia cuenta de OpenRouter. OpenRouter lo dirige a un proveedor de modelos según los ajustes de tu cuenta. Puedes retirar el consentimiento cuando quieras en Ajustes, y todo lo demás de Evolve sigue funcionando.';
+	@override String get privateNote => 'Tu base de datos privada permanece en este dispositivo: solo sale lo que envías en el chat.';
+	@override String get allow => 'Permitir';
+	@override String get decline => 'Ahora no';
+	@override String get rowTitle => 'Compartir datos con la IA';
+	@override String get statusGranted => 'Permitido';
+	@override String get statusNone => 'No permitido';
+	@override String get revokeTitle => '¿Dejar de compartir con la IA?';
+	@override String get revokeBody => 'El AI Coach volverá a pedir permiso antes de enviar nada. No cambia nada más.';
+	@override String get revokeAction => 'Dejar de compartir';
+}
+
 // Path: settingsPage.calendarViewOptions
 class _Translations$settingsPage$calendarViewOptions$es extends Translations$settingsPage$calendarViewOptions$en {
 	_Translations$settingsPage$calendarViewOptions$es._(TranslationsEs root) : this._root = root, super.internal(root);
@@ -1705,10 +1714,6 @@ extension on TranslationsEs {
 			'auth.emailLabel' => 'Correo electrónico',
 			'auth.passwordMin8' => 'Usa al menos 8 caracteres.',
 			'auth.sendResetLink' => 'Enviar enlace de recuperación',
-			'privateAi.consentTitle' => 'Permitir el envío a la IA',
-			'privateAi.consentBody' => 'En el modo privado tus datos permanecen en tu dispositivo. Para usar el Coach de IA, los hábitos y objetivos que elijas compartir se envían a un proveedor de IA externo (OpenRouter). ¿Quieres continuar?',
-			'privateAi.cancel' => 'Cancelar',
-			'privateAi.accept' => 'Acepto',
 			'privateData.deleteTitle' => 'Eliminar datos privados',
 			'privateData.deleteMessage' => '¿Seguro que quieres eliminar toda la base de datos local cifrada? Esta acción es irreversible y los datos no se podrán recuperar.',
 			'privateData.deleteSuccess' => 'Datos privados eliminados.',
@@ -2196,12 +2201,12 @@ extension on TranslationsEs {
 			'habitsPage.nextPeriod' => 'Período siguiente',
 			'habitsPage.weekdayAbbrevUpper.0' => 'LUN',
 			'habitsPage.weekdayAbbrevUpper.1' => 'MAR',
-			_ => null,
-		} ?? switch (path) {
 			'habitsPage.weekdayAbbrevUpper.2' => 'MIÉ',
 			'habitsPage.weekdayAbbrevUpper.3' => 'JUE',
 			'habitsPage.weekdayAbbrevUpper.4' => 'VIE',
 			'habitsPage.weekdayAbbrevUpper.5' => 'SÁB',
+			_ => null,
+		} ?? switch (path) {
 			'habitsPage.weekdayAbbrevUpper.6' => 'DOM',
 			'habitsPage.lifeView' => 'Vista de vida',
 			'habitsPage.lifeViewSubtitle' => 'Una celda representa un mes del camino hasta los 85 años.',
@@ -2330,6 +2335,19 @@ extension on TranslationsEs {
 			'ai.standard.needsPro' => '⚠️ Evolve AI forma parte de Evolve Pro. Suscríbete en Ajustes o cambia el motor a tu propia cuenta de OpenRouter, que es gratis.',
 			'ai.standard.rateLimited' => '⚠️ Has alcanzado el límite de uso razonable de Evolve AI por ahora. Inténtalo más tarde o cambia el motor a tu propia cuenta de OpenRouter.',
 			'ai.standard.unavailable' => '❌ Evolve AI no está disponible ahora mismo. Es cosa nuestra: inténtalo de nuevo en un momento.',
+			'ai.consent.standardTitle' => '¿Enviar tus mensajes a la IA?',
+			'ai.consent.standardBody' => 'Para responder, el AI Coach envía tu mensaje, tu nombre y el contexto que elijas compartir a OpenRouter, Inc., que lo dirige a Google LLC para ejecutar el modelo (Google Cloud Vertex AI). Solo lo tratan para generar la respuesta. Puedes retirar el consentimiento cuando quieras en Ajustes, y todo lo demás de Evolve sigue funcionando.',
+			'ai.consent.byokTitle' => '¿Enviar tus mensajes a OpenRouter?',
+			'ai.consent.byokBody' => 'Para responder, el AI Coach envía tu mensaje, tu nombre y el contexto que elijas compartir a OpenRouter, Inc. usando tu propia cuenta de OpenRouter. OpenRouter lo dirige a un proveedor de modelos según los ajustes de tu cuenta. Puedes retirar el consentimiento cuando quieras en Ajustes, y todo lo demás de Evolve sigue funcionando.',
+			'ai.consent.privateNote' => 'Tu base de datos privada permanece en este dispositivo: solo sale lo que envías en el chat.',
+			'ai.consent.allow' => 'Permitir',
+			'ai.consent.decline' => 'Ahora no',
+			'ai.consent.rowTitle' => 'Compartir datos con la IA',
+			'ai.consent.statusGranted' => 'Permitido',
+			'ai.consent.statusNone' => 'No permitido',
+			'ai.consent.revokeTitle' => '¿Dejar de compartir con la IA?',
+			'ai.consent.revokeBody' => 'El AI Coach volverá a pedir permiso antes de enviar nada. No cambia nada más.',
+			'ai.consent.revokeAction' => 'Dejar de compartir',
 			'aiCoach.greeting' => '¡Hola! Soy Evolve AI Coach. Estoy aquí para ayudarte a optimizar tu protocolo y alcanzar tus objetivos. ¿Cómo puedo ayudarte hoy?',
 			'aiCoach.systemPersona' => 'Eres Evolve AI Coach, un asistente virtual para la disciplina personal.',
 			'aiCoach.habitsHeader' => 'HÁBITOS ACTIVOS:',
@@ -2701,6 +2719,8 @@ extension on TranslationsEs {
 			'coachSettings.save' => 'Listo',
 			'coachSettings.detectedTitle' => 'Modelo local detectado',
 			'coachSettings.detectedBody' => 'Hay un servidor de IA local ejecutándose en este Mac. ¿Ejecutar el coach de forma 100 % privada?',
+			_ => null,
+		} ?? switch (path) {
 			'coachSettings.detectedAction' => 'Usar local',
 			'coachSettings.detectedDismiss' => 'Ahora no',
 			'coachSettings.activeCloud' => ({required Object model}) => 'Nube · ${model}',
@@ -2710,8 +2730,6 @@ extension on TranslationsEs {
 			'coachSettings.serverSettings' => 'Ajustes del servidor…',
 			'coachSettings.settingsSectionLabel' => 'Coach de IA',
 			'coachSettings.settingsTitle' => 'Coach de IA',
-			_ => null,
-		} ?? switch (path) {
 			'coachSettings.settingsSubtitle' => 'Elige el motor que impulsa tu coach y conéctalo a un servidor local para máxima privacidad.',
 			'coachSettings.settingsRowStatus' => 'Motor activo',
 			'coachSettings.settingsRowConfigure' => 'Motor y servidor local',

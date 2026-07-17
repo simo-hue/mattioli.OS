@@ -22,12 +22,6 @@
     "passwordMin8": "Usa almeno 8 caratteri.",
     "sendResetLink": "Invia link di recupero"
   },
-  "privateAi": {
-    "consentTitle": "Consenti l'invio all'AI",
-    "consentBody": "In modalità privata i tuoi dati restano sul dispositivo. Per usare l'AI Coach, le abitudini e gli obiettivi che scegli di condividere vengono inviati a un provider AI esterno (OpenRouter). Vuoi procedere?",
-    "cancel": "Annulla",
-    "accept": "Accetto"
-  },
   "privateData": {
     "deleteTitle": "Elimina dati privati",
     "deleteMessage": "Sei sicuro di voler eliminare tutto il database locale crittografato? Questa operazione è irreversibile e i dati non potranno essere recuperati.",
@@ -711,6 +705,21 @@
       "needsPro": "⚠️ Evolve AI fa parte di Evolve Pro. Abbonati nelle Impostazioni — oppure passa al tuo account OpenRouter, che è gratis.",
       "rateLimited": "⚠️ Hai raggiunto il limite di uso corretto di Evolve AI per ora. Riprova più tardi oppure passa al tuo account OpenRouter.",
       "unavailable": "❌ Evolve AI non è disponibile in questo momento. È un problema nostro: riprova tra poco."
+    },
+    "consent": {
+      "standardTitle": "Inviare i tuoi messaggi all'AI?",
+      "standardBody": "Per rispondere, l'AI Coach invia il tuo messaggio, il tuo nome e il contesto che scegli di condividere a OpenRouter, Inc., che li instrada a Google LLC per eseguire il modello (Google Cloud Vertex AI). Li trattano solo per generare la risposta. Puoi revocare il consenso in qualsiasi momento dalle Impostazioni e tutto il resto di Evolve continua a funzionare.",
+      "byokTitle": "Inviare i tuoi messaggi a OpenRouter?",
+      "byokBody": "Per rispondere, l'AI Coach invia il tuo messaggio, il tuo nome e il contesto che scegli di condividere a OpenRouter, Inc. usando il tuo account OpenRouter. OpenRouter lo instrada a un provider di modelli in base alle impostazioni del tuo account. Puoi revocare il consenso in qualsiasi momento dalle Impostazioni e tutto il resto di Evolve continua a funzionare.",
+      "privateNote": "Il tuo database privato resta su questo dispositivo: esce solo ciò che invii in chat.",
+      "allow": "Consenti",
+      "decline": "Non ora",
+      "rowTitle": "Condivisione dati con l'AI",
+      "statusGranted": "Consentita",
+      "statusNone": "Non consentita",
+      "revokeTitle": "Interrompere la condivisione con l'AI?",
+      "revokeBody": "L'AI Coach chiederà di nuovo il consenso prima di inviare qualcosa. Nient'altro cambia.",
+      "revokeAction": "Interrompi condivisione"
     }
   },
   "aiCoach": {

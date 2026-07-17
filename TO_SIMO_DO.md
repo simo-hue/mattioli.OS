@@ -1,5 +1,5 @@
 # TO_SIMO_DO.md
-
+## h
 - [ ] Widget for iPhone & MacOS
 - [ ] Cloud mode for AI, in both mobile and desktop implementation, we need to implement the fact that they need to insert their API Keys, we can also give a possibility to add two of them so they can have a back up in case the first one is not working ( if you think it does make sense )
 - [ ] For the desktop implementation what has been done with ollama is outstanding and I want to replicate the same thing also with LMStudio so the major local LLM providers are supported
@@ -59,9 +59,5 @@ Already verified in code (no action): `screenTimeEnabled = false`; ungated coach
   - **`PrivacyInfo.xcprivacy` declares nothing for Screen Time**, and the extension bundle has no manifest at all despite reading/writing UserDefaults. The file's own recorded reasoning about Health ("declaring costs one nutrition label row; not declaring reads as concealment") applies verbatim here.
 
 ## Habit day-of-week scheduling — on-device QA (added 2026-07-17)
-No manual code/DB steps are required to build: `frequency_days` already exists in the DB schema (private `evolve_sync` + Supabase), and the mobile slang keys were regenerated (`dart run slang`). Logic is covered by unit/widget tests (`flutter analyze` clean; mobile 396/396, desktop 447/448 — the 1 failure is the unrelated Supabase dart-defines env test). The following can only be verified on a device/emulator:
-- [ ] **Reminders fire only on scheduled days.** Create a Mon/Wed/Fri habit with a reminder and confirm on iOS it pings on Mon/Wed/Fri and NOT Tue/Thu/Sat/Sun. Repeat on **macOS** and, importantly, **Windows** — `DateTimeComponents.dayOfWeekAndTime` weekly recurrence support in `flutter_local_notifications` on Windows is unverified; if it doesn't recur, the code falls back to firing once, so decide whether Windows should degrade to a daily reminder instead.
-- [ ] **iOS 64-pending budget** under a Pro power-user: many day-restricted habits each with a reminder fan out to up to 7 pending each. Every-day habits stay at 1 (the mitigation). Confirm no silent drops; add a tighter cap only if a real stress case overflows.
-- [ ] **RTL layout** of the weekday chips in **Arabic** (mobile + desktop): the row should read right-to-left with Monday on the right, using the single-letter set (ن ث ر خ ج س ح).
-- [ ] **Editing a habit's days retroactively**: mark a habit done on a day, then deschedule that weekday — confirm the habit disappears from that day's popup, past stats/streak recompute, and the completion is *not* deleted (re-add the day → it reappears).
+
 - [ ] **Verified (HealthKit/Screen Time) habits** with a restricted schedule only verify/nag on scheduled days (verification already maps `frequencyDays → activeWeekdays`; confirm end-to-end on device).

@@ -432,6 +432,25 @@
 			shellScript = "\"${PODS_ROOT}/Target Support Files/Pods-Runner/Pods-Runner-frameworks.sh\"\n";
 			showEnvVarsInLog = 0;
 		};
+		A1B2C3D4E5F60000DEADBEEF /* Copy SPM dSYMs */ = {
+			isa = PBXShellScriptBuildPhase;
+			alwaysOutOfDate = 1;
+			buildActionMask = 2147483647;
+			files = (
+			);
+			inputFileListPaths = (
+			);
+			inputPaths = (
+			);
+			name = "Copy SPM dSYMs";
+			outputFileListPaths = (
+			);
+			outputPaths = (
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+			shellPath = /bin/sh;
+			shellScript = "sh \"$SRCROOT/../scripts/copy_archive_dsyms.sh\"\n";
+		};
 		E0C0D3A10000000000000001 /* Check Required Dart Defines */ = {
 			isa = PBXShellScriptBuildPhase;
 			alwaysOutOfDate = 1;
@@ -451,25 +470,6 @@
 			shellPath = /bin/sh;
 			shellScript = "sh \"$SRCROOT/../scripts/check_required_dart_defines.sh\"\n";
 			showEnvVarsInLog = 0;
-		};
-		A1B2C3D4E5F60000DEADBEEF /* Copy SPM dSYMs */ = {
-			isa = PBXShellScriptBuildPhase;
-			alwaysOutOfDate = 1;
-			buildActionMask = 2147483647;
-			files = (
-			);
-			inputFileListPaths = (
-			);
-			inputPaths = (
-			);
-			name = "Copy SPM dSYMs";
-			outputFileListPaths = (
-			);
-			outputPaths = (
-			);
-			runOnlyForDeploymentPostprocessing = 0;
-			shellPath = /bin/sh;
-			shellScript = "sh \"$SRCROOT/../scripts/copy_archive_dsyms.sh\"\n";
 		};
 /* End PBXShellScriptBuildPhase section */
 

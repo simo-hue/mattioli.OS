@@ -8,6 +8,7 @@ import 'package:evolve_desktop/shared/widgets/evolve_toast.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:lucide_icons_flutter/lucide_icons.dart';
+import 'package:sign_in_with_apple/sign_in_with_apple.dart';
 import 'package:url_launcher/url_launcher.dart';
 
 enum _AuthMode { signIn, signUp, resetPassword }
@@ -225,10 +226,29 @@ class _DesktopAuthPageState extends ConsumerState<DesktopAuthPage> {
                     const SizedBox(height: 18),
                     _AuthDivider(label: t.auth.or),
                     const SizedBox(height: 18),
-                    _SocialAuthButton(
-                      icon: LucideIcons.apple,
-                      label: t.auth.continueWithApple,
-                      onPressed: auth.isLoading ? null : _signInWithApple,
+                    // Apple's own button widget, not _SocialAuthButton:
+                    // Guideline 4 requires the real Apple mark, and we
+                    // previously drew LucideIcons.apple -- a generic outlined
+                    // fruit that is not Apple's logo. The widget also owns the
+                    // label sizing, icon proportions and padding the HIG
+                    // prescribes. Height and radius are matched to
+                    // _SocialAuthButton so the stack stays coherent; Opacity
+                    // mirrors its disabled treatment, which the widget lacks.
+                    Opacity(
+                      opacity: auth.isLoading ? 0.55 : 1,
+                      child: SignInWithAppleButton(
+                        text: t.auth.continueWithApple,
+                        height: 48,
+                        borderRadius: BorderRadius.circular(14),
+                        // The style enum is black/white only and is NOT
+                        // theme-reactive, so pick it from our theme: the HIG
+                        // wants a white button on dark backgrounds, black on
+                        // light.
+                        style: Theme.of(context).brightness == Brightness.dark
+                            ? SignInWithAppleButtonStyle.white
+                            : SignInWithAppleButtonStyle.black,
+                        onPressed: auth.isLoading ? null : _signInWithApple,
+                      ),
                     ),
                     const SizedBox(height: 10),
                     _SocialAuthButton(

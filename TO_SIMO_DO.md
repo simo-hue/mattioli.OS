@@ -9,3 +9,35 @@
 - [ ] Curor of AI Coach Response
 - [ ] From mobile implementation, in the settings the "App logs" field has to few bottom margin from the button "Go to login", I want you to increase it.
 - [ ] mobile animation between lateral scroll on the goals page? Improve it
+
+## App Store rejection 2026-07-17 — manual actions (submission 70f9af73, iOS 1.1.2 build 20)
+
+### Do now — not blocked on any code
+
+- [ ] **REVOKE the old OpenRouter key** at https://openrouter.ai/keys. It lived in gitignored `mobile/lib/core/openrouter_config.dart` and was compiled into every IPA from 2026-05-15 to 2026-07-16; desktop's came via `--dart-define`, same exposure. Git history is clean (all 5,135 blobs scanned — only dummy test fixtures), but the **binaries never were**: an IPA is a zip, and `strings Runner | grep sk-or` recovers it. Empirical test: if the AI chat worked in a shipped App Store build, a real key was in it. Unrelated to Apple — this is the only item actively bleeding.
+- [ ] **Set the macOS submission to Manual release** in App Store Connect, before it is reviewed. Decision: let it ride rather than withdraw. If it is *approved* with the same BYOK flow + Lucide Apple button that iOS was *rejected* for, that inconsistency is the strongest possible Resolution Center evidence. Manual release makes an approval pure intelligence with no accidental ship.
+- [ ] **Set an account-level spending cap at OpenRouter.** Deliberately high — it is the fire alarm, not the lock. It is global, so tripping it kills the AI Coach for every paying user at once; the per-user quota in the Edge Function is what actually contains a bad actor.
+
+### Blocked on the implementation landing
+
+- [ ] **`supabase secrets set OPENROUTER_API_KEY=…`** — you run this yourself, from your own terminal. The key must never be in a Dart file, a `--dart-define`, a `.env`, or a chat message. The Edge Function reads it via `Deno.env.get()`.
+- [ ] **On-device Screen Time verification on the Mac mini.** FamilyControls does not work in the Simulator at all — `AuthorizationCenter.requestAuthorization` fails, `DeviceActivityMonitor` extensions never fire, the App Group hand-off cannot be exercised. Needs a real device, real elapsed time, a real threshold crossing. All `mobile/ios/**` Swift is written blind on this machine (no iOS SDK — cannot even be typechecked), so your build there is the first honest signal.
+- [ ] **Review the generated legal translations before pushing the site.** `es`/`de`/`ar` privacy + terms will be drafted but must not go live unread: `privacy.html` names you personally as GDPR data controller and Supabase as an Art. 28 sub-processor, and `terms.html` carries an Italian consumer-forum clause. Legal terms of art do not survive literal translation.
+- [ ] **Verify GitHub Pages settings** on `simo-hue/evolve`: Settings → Pages should read `main` / `/ (root)`. Inferred from the site being live, never confirmed.
+
+### App Store Connect fields (cannot be done from code)
+
+- [ ] **Support URL** → `https://simo-hue.github.io/evolve/support.html` — the direct fix for Guideline 1.5. Only after the page is pushed and you have seen a 200 in a browser.
+- [ ] **Marketing URL** (optional) → `https://simo-hue.github.io/evolve/` — separates "marketing" from "support" in the reviewer's mind.
+- [ ] **App Description** → append the EULA line, e.g. `Termini di utilizzo (EULA): https://www.apple.com/legal/internet-services/itunes/dev/stdeula/`. **This is the actual 3.1.2(c) fix.** The paywall is already compliant.
+- [ ] **License Agreement / EULA field** → **leave it as Apple's Standard EULA. Do not paste a custom one.** Designating `terms.html` as the EULA would oblige it to carry all nine of Apple's minimum clauses — it currently has *none* of them, including the third-party-beneficiary clause reviewers check for.
+- [ ] **Privacy Policy URL** per localisation → `…/evolve/privacy.html` for `it`, `…/evolve/en/privacy.html` for `en`, etc. Confirm what is actually in the field today; nobody has read it.
+- [ ] **Subscriptions** → confirm both products' display names, durations (1 month / 1 year) and prices (EUR 4,99 / EUR 29,99) are populated. The paywall reads the localized `priceString` from StoreKit, so ASC is the single source of truth — the website copy must follow ASC, not the reverse.
+- [ ] **App Review Information → Notes** → walk the reviewer through it: where the support page, privacy policy and EULA link live; the account-deletion path; the Apple Health section (Settings → Apple Health); and the Screen Time path (habit → Auto-verify → Screen Time). A six-point rejection benefits from being led by the hand.
+
+### Deferred (logged, not in this resubmission)
+
+- [ ] **The Google button uses `LucideIcons.mail` — an envelope — as Google's logo** (`auth_screen.dart:434`, `auth_page.dart:235`). Same class of violation as the Apple button. Apple will not flag it (not their brand), but it breaks Google's identity guidelines and Google can pull the OAuth client over it. Needs the official "G" mark from Google's branding page — an asset only you can fetch.
+- [ ] The site hotlinks Google Fonts and cdnjs on pages whose own privacy policy claims no tracking. Google Fonts hotlinking transmits visitor IPs to Google and has been litigated under GDPR in the EU. Self-hosting the two font families + the FontAwesome subset resolves it. Not an App Store issue.
+- [ ] `openrouter_service.dart:129`/`:208` and `cloud_coach_backend.dart:25` send `HTTP-Referer: https://github.com/simo/mattioli.OS` — org slug `simo` where everything else uses `simo-hue`. It is a ranking referer, not a fetched URL, so nothing breaks. Likely a typo.
+- [ ] **Line 7 above is now partly superseded** — "Cloud mode for AI … they need to insert their API Keys" was the design Apple rejected under 3.1.1. The agreed model is: Standard (Pro, via our proxy, no key) / Connect your OpenRouter account (free, everyone) / Local (desktop). The backup-second-key idea still stands for the BYOK path if you want it.

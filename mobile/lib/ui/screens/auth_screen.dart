@@ -2,6 +2,7 @@ import 'dart:ui';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:lucide_icons_flutter/lucide_icons.dart';
+import 'package:sign_in_with_apple/sign_in_with_apple.dart';
 import 'package:url_launcher/url_launcher.dart';
 import 'package:google_fonts/google_fonts.dart';
 import '../../core/theme.dart';
@@ -413,9 +414,24 @@ class _AuthScreenState extends ConsumerState<AuthScreen>
                         SizedBox(height: isCompact ? 10 : 24),
 
                         // Social Logins
-                        _buildSocialButton(
-                          label: context.t.auth.continueWithApple,
-                          icon: LucideIcons.apple,
+                        //
+                        // Apple's own button widget, not our chrome: Guideline 4
+                        // requires the real Apple mark, and we previously drew
+                        // LucideIcons.apple -- a generic outlined fruit that is
+                        // not Apple's logo at all. The widget also owns the
+                        // label sizing, icon proportions and padding that the
+                        // HIG prescribes, so don't reimplement it.
+                        SignInWithAppleButton(
+                          text: context.t.auth.continueWithApple,
+                          height: isCompact ? 46 : 52,
+                          borderRadius: BorderRadius.circular(18),
+                          // The style enum is black/white only and is NOT
+                          // theme-reactive, so pick it from our theme: the HIG
+                          // wants a white button on dark backgrounds and a
+                          // black one on light.
+                          style: Theme.of(context).brightness == Brightness.dark
+                              ? SignInWithAppleButtonStyle.white
+                              : SignInWithAppleButtonStyle.black,
                           onPressed: () async {
                             final hapticsEnabled = ref
                                 .read(settingsProvider)

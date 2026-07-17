@@ -576,9 +576,10 @@
       "monthly": "شهري",
       "annual": "سنوي",
       "label": "الخطة",
-      "savings": "وفّر أكثر من 40%",
       "cancelAnytime": "إلغاء في أي وقت",
-      "priceUnavailable": "غير متوفر"
+      "priceUnavailable": "غير متوفر",
+      "perMonth": "{price} شهريًا",
+      "perMonthWithSavings": "{price} شهريًا · وفّر {percent}%"
     },
     "features": {
       "unlimitedHabits": "أنشئ كل العادات التي تريدها دون حدود.",

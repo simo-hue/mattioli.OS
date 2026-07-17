@@ -576,9 +576,10 @@
       "monthly": "Mensual",
       "annual": "Anual",
       "label": "Plan",
-      "savings": "Ahorra más del 40%",
       "cancelAnytime": "Cancela cuando quieras",
-      "priceUnavailable": "No disponible"
+      "priceUnavailable": "No disponible",
+      "perMonth": "{price} al mes",
+      "perMonthWithSavings": "{price} al mes · Ahorra un {percent}%"
     },
     "features": {
       "unlimitedHabits": "Crea todos los hábitos que quieras, sin límites.",

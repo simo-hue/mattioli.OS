@@ -2,6 +2,7 @@ import 'dart:ui';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:lucide_icons_flutter/lucide_icons.dart';
+import 'package:evolve_legal/evolve_legal.dart';
 import 'package:sign_in_with_apple/sign_in_with_apple.dart';
 import 'package:url_launcher/url_launcher.dart';
 import 'package:google_fonts/google_fonts.dart';
@@ -141,8 +142,12 @@ class _AuthScreenState extends ConsumerState<AuthScreen>
     await ref.read(authProvider.notifier).startPrivateMode();
   }
 
-  Future<void> _openUrl(String urlString) async {
-    final Uri url = Uri.parse(urlString);
+  /// The site publishes each language from its own directory, so legal links
+  /// follow the app's language — an App Review engineer on an English device
+  /// must not land in an Italian privacy policy.
+  String get _lang => LocaleSettings.currentLocale.languageCode;
+
+  Future<void> _openUrl(Uri url) async {
     if (!await launchUrl(url, mode: LaunchMode.externalApplication)) {
       if (mounted) {
         showEvolveToast(
@@ -505,9 +510,7 @@ class _AuthScreenState extends ConsumerState<AuthScreen>
                           mainAxisAlignment: MainAxisAlignment.center,
                           children: [
                             TextButton(
-                              onPressed: () => _openUrl(
-                                'https://simo-hue.github.io/evolve/privacy.html',
-                              ),
+                              onPressed: () => _openUrl(LegalUrls.privacy(_lang)),
                               style: TextButton.styleFrom(
                                 padding: EdgeInsets.symmetric(
                                   horizontal: isCompact ? 4 : 8,
@@ -533,9 +536,11 @@ class _AuthScreenState extends ConsumerState<AuthScreen>
                               ),
                             ),
                             TextButton(
-                              onPressed: () => _openUrl(
-                                'https://simo-hue.github.io/evolve/privacy.html',
-                              ),
+                              // Was pointing at privacy.html — the same URL as
+                              // the link beside it. A "Terms of Service" link
+                              // that opens the privacy policy is not a
+                              // functional Terms link (Guideline 3.1.2).
+                              onPressed: () => _openUrl(LegalUrls.terms(_lang)),
                               style: TextButton.styleFrom(
                                 padding: EdgeInsets.symmetric(
                                   horizontal: isCompact ? 4 : 8,

@@ -1,3 +1,4 @@
+import 'package:evolve_legal/evolve_legal.dart';
 import 'package:evolve_desktop/app/theme/evolve_theme.dart';
 import 'package:evolve_desktop/features/auth/application/auth_controller.dart';
 import 'package:evolve_desktop/i18n/translations.g.dart';
@@ -382,7 +383,9 @@ class _DesktopAuthPageState extends ConsumerState<DesktopAuthPage> {
 
   Future<void> _openPrivacyPolicy() async {
     await launchUrl(
-      Uri.parse('https://simo-hue.github.io/evolve/privacy.html'),
+      // Follows the app's language: the site serves each locale from its own
+      // directory, and a reviewer on an English device must not land in Italian.
+      LegalUrls.privacy(LocaleSettings.currentLocale.languageCode),
       mode: LaunchMode.externalApplication,
     );
   }

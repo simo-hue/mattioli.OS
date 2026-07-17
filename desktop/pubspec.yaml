@@ -44,6 +44,10 @@ dependencies:
   # synced verified goals read-only (macOS cannot verify).
   evolve_verification:
     path: ../packages/evolve_verification
+  # The public legal + support URLs, defined once for both apps. These are App
+  # Store compliance surfaces (Guidelines 1.5 and 3.1.2), not ordinary links.
+  evolve_legal:
+    path: ../packages/evolve_legal
   flutter_riverpod: ^3.3.1
   flutter_colorpicker: ^1.1.0
   flutter_local_notifications: ^21.0.0

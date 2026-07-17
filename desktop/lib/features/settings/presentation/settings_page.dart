@@ -1,3 +1,4 @@
+import 'package:evolve_legal/evolve_legal.dart';
 import 'package:evolve_desktop/core/desktop_backup_import_service.dart';
 import 'package:file_picker/file_picker.dart';
 import 'dart:async';
@@ -3250,15 +3251,13 @@ class _SubscriptionSettingsState extends ConsumerState<_SubscriptionSettings> {
 class _ComplianceLinks extends StatelessWidget {
   const _ComplianceLinks();
 
-  static final Uri _privacyPolicy = Uri.parse(
-    'https://simo-hue.github.io/evolve/privacy.html',
-  );
-  static final Uri _termsEula = Uri.parse(
-    'https://www.apple.com/legal/internet-services/itunes/dev/stdeula/',
-  );
-
   @override
   Widget build(BuildContext context) {
+    // Privacy follows the app's language; the EULA is Apple's, which Apple
+    // hosts and localises itself.
+    final privacyPolicy = LegalUrls.privacy(
+      LocaleSettings.currentLocale.languageCode,
+    );
     return Column(
       children: [
         Text(
@@ -3275,7 +3274,7 @@ class _ComplianceLinks extends StatelessWidget {
         Row(
           mainAxisAlignment: MainAxisAlignment.center,
           children: [
-            _LegalLink(label: t.settingsPage.privacyPolicy, url: _privacyPolicy),
+            _LegalLink(label: t.settingsPage.privacyPolicy, url: privacyPolicy),
             Text(
               '  •  ',
               style: TextStyle(
@@ -3283,7 +3282,7 @@ class _ComplianceLinks extends StatelessWidget {
                 fontSize: 12,
               ),
             ),
-            _LegalLink(label: t.settingsPage.termsEula, url: _termsEula),
+            _LegalLink(label: t.settingsPage.termsEula, url: LegalUrls.appleEula),
           ],
         ),
       ],

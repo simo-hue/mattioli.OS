@@ -61,6 +61,10 @@ dependencies:
   # reconcile/verdict engine, HealthKit + Screen Time bridge contracts).
   evolve_verification:
     path: ../packages/evolve_verification
+  # The public legal + support URLs, defined once for both apps. These are App
+  # Store compliance surfaces (Guidelines 1.5 and 3.1.2), not ordinary links.
+  evolve_legal:
+    path: ../packages/evolve_legal
   intl: ^0.20.2
   permission_handler: ^12.0.1
   tutorial_coach_mark: ^1.3.3

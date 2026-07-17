@@ -1,0 +1,22 @@
+name: evolve_legal
+description: >-
+  The public legal and support URLs for the Evolve apps, defined once.
+
+  These are compliance surfaces, not ordinary links: App Store Guideline 3.1.2
+  requires functional privacy and Terms of Use links, and Guideline 1.5 requires
+  a working support route. They were previously eight scattered string literals
+  across mobile/ and desktop/, which is how a link labelled "Terms of Service"
+  came to open the privacy policy in three different places. One definition, two
+  apps, no drift.
+
+  Pure Dart on purpose — no Flutter — so it is trivially unit-testable and cannot
+  acquire UI concerns.
+publish_to: none
+version: 1.0.0
+
+environment:
+  sdk: ^3.9.0
+
+dev_dependencies:
+  flutter_lints: ^6.0.0
+  test: ^1.25.0

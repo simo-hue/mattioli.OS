@@ -1,0 +1,8 @@
+# Mirrors the apps' baseline (recommended Flutter lints). The engine is shared
+# correctness-critical code, so context-across-async hardening is kept even
+# though the package has no UI today.
+include: package:flutter_lints/flutter.yaml
+
+analyzer:
+  errors:
+    use_build_context_synchronously: error

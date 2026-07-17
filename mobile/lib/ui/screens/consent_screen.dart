@@ -1,6 +1,7 @@
 import 'dart:ui';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:evolve_legal/evolve_legal.dart';
 import 'package:lucide_icons_flutter/lucide_icons.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:url_launcher/url_launcher.dart';
@@ -51,8 +52,11 @@ class _ConsentScreenState extends ConsumerState<ConsentScreen> {
     });
   }
 
-  Future<void> _openUrl(String urlString) async {
-    final Uri url = Uri.parse(urlString);
+  /// The site publishes each language from its own directory, so legal links
+  /// follow the app's language.
+  String get _lang => LocaleSettings.currentLocale.languageCode;
+
+  Future<void> _openUrl(Uri url) async {
     if (!await launchUrl(url, mode: LaunchMode.externalApplication)) {
       if (mounted) {
         showEvolveToast(
@@ -219,13 +223,25 @@ class _ConsentScreenState extends ConsumerState<ConsentScreen> {
                               borderRadius: BorderRadius.circular(4),
                             ),
                           ),
+                          // Both documents, because the checkbox accepts both.
+                          // This card asked the user to accept Terms it never
+                          // linked — you cannot consent to a document you were
+                          // not shown (Guideline 3.1.2).
                           links: [
                             TextButton(
-                              onPressed: () => _openUrl(
-                                'https://simo-hue.github.io/evolve/privacy.html',
-                              ),
+                              onPressed: () => _openUrl(LegalUrls.privacy(_lang)),
                               child: Text(
                                 context.t.auth.readPrivacyPolicy,
+                                style: TextStyle(
+                                  color: primaryColor,
+                                  fontSize: 12,
+                                ),
+                              ),
+                            ),
+                            TextButton(
+                              onPressed: () => _openUrl(LegalUrls.terms(_lang)),
+                              child: Text(
+                                context.t.auth.termsOfService,
                                 style: TextStyle(
                                   color: primaryColor,
                                   fontSize: 12,

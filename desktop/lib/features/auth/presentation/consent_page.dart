@@ -1,3 +1,4 @@
+import 'package:evolve_legal/evolve_legal.dart';
 import 'package:evolve_desktop/app/theme/evolve_theme.dart';
 import 'package:evolve_desktop/features/auth/application/consent_controller.dart';
 import 'package:evolve_desktop/features/settings/data/desktop_notification_service.dart';
@@ -252,17 +253,24 @@ class _DesktopConsentPageState extends ConsumerState<DesktopConsentPage> {
     if (mounted) setState(() => _notificationsAllowed = granted);
   }
 
+  /// The site publishes each language from its own directory, so legal links
+  /// follow the app's language.
+  String get _lang => LocaleSettings.currentLocale.languageCode;
+
+  /// Opened the privacy policy, on the premise that "the app's single legal page
+  /// covers terms + privacy". That premise was never true: terms.html has been
+  /// live on the site all along, and a "Terms of Service" link that opens the
+  /// privacy policy is not a functional Terms link (Guideline 3.1.2).
   Future<void> _openTerms() async {
-    // The app's single legal page covers terms + privacy (mirrors mobile).
     await launchUrl(
-      Uri.parse('https://simo-hue.github.io/evolve/privacy.html'),
+      LegalUrls.terms(_lang),
       mode: LaunchMode.externalApplication,
     );
   }
 
   Future<void> _openPrivacyPolicy() async {
     await launchUrl(
-      Uri.parse('https://simo-hue.github.io/evolve/privacy.html'),
+      LegalUrls.privacy(_lang),
       mode: LaunchMode.externalApplication,
     );
   }

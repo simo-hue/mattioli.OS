@@ -1,6 +1,7 @@
 import 'dart:async';
 import 'dart:io';
 
+import 'package:evolve_legal/evolve_legal.dart';
 import 'package:evolve_desktop/core/app_logger.dart';
 import 'package:evolve_desktop/i18n/translations.g.dart';
 import 'package:evolve_desktop/core/app_bootstrap.dart';
@@ -257,7 +258,7 @@ class DesktopSubscriptionController extends Notifier<DesktopSubscriptionState> {
   }
 
   Future<void> manageSubscription() async {
-    final uri = Uri.parse('https://apps.apple.com/account/subscriptions');
+    final uri = LegalUrls.manageSubscriptions;
     if (!await launchUrl(uri, mode: LaunchMode.externalApplication)) {
       state = state.copyWith(message: t.subscriptionCtrl.cantOpenApple);
     }

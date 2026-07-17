@@ -4,6 +4,7 @@ import 'package:lucide_icons_flutter/lucide_icons.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter/services.dart';
+import 'package:evolve_legal/evolve_legal.dart';
 import 'package:purchases_flutter/purchases_flutter.dart';
 import 'package:url_launcher/url_launcher.dart';
 import 'package:intl/intl.dart';
@@ -19,9 +20,33 @@ import '../widgets/subscription_alert_modal.dart';
 import '../../i18n/translations.g.dart';
 import '../kit/evolve_dialog.dart';
 import '../kit/evolve_spinner.dart';
+import '../kit/evolve_toast.dart';
 
 const String _monthlyProductId = 'com.simo.evolve.pro.monthly';
 const String _yearlyProductId = 'com.simo.evolve.pro.yearly';
+
+/// Whole-percent saving of the annual plan against twelve months of the monthly
+/// plan, or null when there is no honest saving to claim.
+///
+/// Computed from live StoreKit prices rather than stated as a constant. The old
+/// copy said "Save over 40%" in every storefront; Apple's price tiers are not
+/// linear across currencies, so that was a fixed claim about a variable number —
+/// understated in EUR (the real figure is 50%) and potentially false elsewhere.
+///
+/// Returns null when either price is unusable or the annual plan is not actually
+/// cheaper, so the UI can fall back to a neutral line instead of inventing one.
+@visibleForTesting
+int? annualSavingPercent({
+  required double monthlyPrice,
+  required double yearlyPrice,
+}) {
+  if (monthlyPrice <= 0 || yearlyPrice <= 0) return null;
+  final saving = (1 - yearlyPrice / (monthlyPrice * 12)) * 100;
+  // Round first: 0.6% would otherwise survive the check and render as "Save 1%".
+  final rounded = saving.round();
+  if (rounded < 1) return null;
+  return rounded;
+}
 
 class SubscriptionScreen extends ConsumerStatefulWidget {
   const SubscriptionScreen({super.key});
@@ -46,10 +71,75 @@ class _SubscriptionScreenState extends ConsumerState<SubscriptionScreen> {
   bool _isFetchingProducts = true;
   String _selectedMockPackage = 'yearly';
 
-  /// These only ever hold a localized `StoreProduct.priceString`; null means no
-  /// price could be resolved and none may be shown.
-  String? _fallbackMonthlyPrice;
-  String? _fallbackYearlyPrice;
+  /// Products resolved directly from the store when no Offering is published.
+  /// Null means nothing could be resolved and no price may be shown — never
+  /// substitute a hardcoded one, it would be wrong in every other storefront.
+  StoreProduct? _fallbackMonthlyProduct;
+  StoreProduct? _fallbackYearlyProduct;
+
+  /// The store products in play, whichever path resolved them. Everything
+  /// price-related reads these so the Offering and direct-fetch paths cannot
+  /// drift apart.
+  StoreProduct? get _monthlyProduct =>
+      _monthlyPackage?.storeProduct ?? _fallbackMonthlyProduct;
+  StoreProduct? get _yearlyProduct =>
+      _yearlyPackage?.storeProduct ?? _fallbackYearlyProduct;
+
+  /// The site publishes each language from its own directory, so legal links
+  /// follow the app's language — an App Review engineer on an English device
+  /// must not land in an Italian privacy policy.
+  String get _lang => LocaleSettings.currentLocale.languageCode;
+
+  /// Opens one of the paywall's mandatory legal links.
+  ///
+  /// These were fire-and-forget `launchUrl(...)` calls: the Future was neither
+  /// awaited nor checked, so a failure was swallowed and the link did nothing
+  /// at all. Guideline 3.1.2 requires *functional* privacy and Terms links, and
+  /// a link that silently does nothing is the failure it describes — so surface
+  /// it instead.
+  Future<void> _openLegalUrl(Uri url) async {
+    bool ok = false;
+    try {
+      ok = await launchUrl(url, mode: LaunchMode.externalApplication);
+    } catch (e, stack) {
+      AppLogger.warning('[Subscription] legal link failed: $url', e, stack);
+    }
+    if (!ok && mounted) {
+      showEvolveToast(
+        context,
+        message: context.t.common.unableToOpenTheLink,
+        kind: EvolveToastKind.error,
+      );
+    }
+  }
+
+  /// Subtitle for the annual plan, carrying the two things Guideline 3.1.2 asks
+  /// for beyond the headline price: the price per unit, and a saving that is
+  /// actually true.
+  ///
+  /// Both come from StoreKit at runtime, never from constants. Apple's price
+  /// tiers are not linear across currencies, so the old hardcoded "Save over
+  /// 40%" was only ever checkable in euros (where it is really 50%) and could
+  /// be plainly false elsewhere. `pricePerMonthString` is RevenueCat's own
+  /// localized per-month figure — dividing and formatting it ourselves would
+  /// just reintroduce the currency bug.
+  String? _annualSubtitle(BuildContext context) {
+    final yearly = _yearlyProduct;
+    final perMonth = yearly?.pricePerMonthString;
+    // Null for non-subscription products: show nothing rather than guess.
+    if (yearly == null || perMonth == null) return null;
+
+    final monthly = _monthlyProduct;
+    final t = context.t.subscription.plans;
+    final percent = monthly == null
+        ? null
+        : annualSavingPercent(
+            monthlyPrice: monthly.price,
+            yearlyPrice: yearly.price,
+          );
+    if (percent == null) return t.perMonth(price: perMonth);
+    return t.perMonthWithSavings(price: perMonth, percent: percent);
+  }
 
   @override
   void initState() {
@@ -102,9 +192,9 @@ class _SubscriptionScreenState extends ConsumerState<SubscriptionScreen> {
         setState(() {
           for (final product in products) {
             if (product.identifier == _monthlyProductId) {
-              _fallbackMonthlyPrice = product.priceString;
+              _fallbackMonthlyProduct = product;
             } else if (product.identifier == _yearlyProductId) {
-              _fallbackYearlyPrice = product.priceString;
+              _fallbackYearlyProduct = product;
             }
           }
         });
@@ -560,7 +650,7 @@ class _SubscriptionScreenState extends ConsumerState<SubscriptionScreen> {
           const SizedBox(height: 12),
           _buildMockPlanCard(
             context.t.subscription.plans.monthly,
-            _fallbackMonthlyPrice,
+            _fallbackMonthlyProduct?.priceString,
             context.t.subscription.plans.cancelAnytime,
             _selectedMockPackage == 'monthly',
             onTap: () {
@@ -570,16 +660,20 @@ class _SubscriptionScreenState extends ConsumerState<SubscriptionScreen> {
           const SizedBox(height: 12),
           _buildMockPlanCard(
             context.t.subscription.plans.annual,
-            _fallbackYearlyPrice,
-            context.t.subscription.plans.savings,
+            _fallbackYearlyProduct?.priceString,
+            // No claim we cannot substantiate: if the store gave us no
+            // per-month figure, fall back to the neutral line rather than
+            // asserting a saving.
+            _annualSubtitle(context) ??
+                context.t.subscription.plans.cancelAnytime,
             _selectedMockPackage == 'yearly',
             isBestValue: true,
             onTap: () {
               setState(() => _selectedMockPackage = 'yearly');
             },
           ),
-          if (_fallbackMonthlyPrice == null ||
-              _fallbackYearlyPrice == null) ...[
+          if (_fallbackMonthlyProduct == null ||
+              _fallbackYearlyProduct == null) ...[
             const SizedBox(height: 12),
             Text(
               context.t.subscription.errors.pricesUnavailable,
@@ -690,7 +784,8 @@ class _SubscriptionScreenState extends ConsumerState<SubscriptionScreen> {
           _buildPlanCard(
             _yearlyPackage!,
             context.t.subscription.plans.annual,
-            context.t.subscription.plans.savings,
+            _annualSubtitle(context) ??
+                context.t.subscription.plans.cancelAnytime,
             isBestValue: true,
           ),
         ],
@@ -870,9 +965,7 @@ class _SubscriptionScreenState extends ConsumerState<SubscriptionScreen> {
           mainAxisAlignment: MainAxisAlignment.center,
           children: [
             GestureDetector(
-              onTap: () => launchUrl(
-                Uri.parse('https://simo-hue.github.io/evolve/privacy.html'),
-              ),
+              onTap: () => _openLegalUrl(LegalUrls.privacy(_lang)),
               child: Text(
                 context.t.subscription.privacyPolicy,
                 style: GoogleFonts.inter(
@@ -888,11 +981,7 @@ class _SubscriptionScreenState extends ConsumerState<SubscriptionScreen> {
               style: TextStyle(color: context.appColors.mutedForeground),
             ),
             GestureDetector(
-              onTap: () => launchUrl(
-                Uri.parse(
-                  'https://www.apple.com/legal/internet-services/itunes/dev/stdeula/',
-                ),
-              ),
+              onTap: () => _openLegalUrl(LegalUrls.appleEula),
               child: Text(
                 context.t.subscription.termsEula,
                 style: GoogleFonts.inter(

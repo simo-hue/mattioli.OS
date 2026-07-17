@@ -12,6 +12,10 @@
 
 - [ ] **Stop pasting raw Apple Transporter / altool logs into tracked files.** `TO_SIMO_DO.md` history (commits `d84fe5f`, `63db5e8`, `c828849`) contains a ~1200-line verbose upload log with a live `dqsid` session cookie for `contentdelivery.itunes.apple.com`. It expired 2026-07-16 23:06 UTC so there's no action needed — but you got lucky: Apple's logger happened to redact `X-Apple-GS-Token` itself. A different tool, or a different day, and that's a real Apple session in a public repo. Dump those logs to an ignored path.
 
+- [ ] **Mobile CI has NEVER passed — 0 successes in 60 runs since 2026-06-22.** Your only automated gate, on your release-critical iOS client, is red and always has been. It is protecting nothing.
+  **Root cause** (`.github/workflows/mobile-ci.yml`): `subosito/flutter-action@v2` with `channel: stable` (unpinned) + `flutter analyze --fatal-infos --fatal-warnings`. An unpinned toolchain plus fatal *info*-level lints means every Flutter release that adds a lint or deprecation breaks the build with no code change on your side. Currently 17 info issues, mostly `Radio.groupValue`/`onChanged` deprecated after Flutter 3.32 (`privacy_settings_screen.dart`), plus `curly_braces_in_flow_control_structures`, `prefer_final_locals`, `unawaited_futures`.
+  **Options**: (a) fix the 17 lints and pin `flutter-version:` so the toolchain can't move under you — the honest fix; (b) drop `--fatal-infos`, keep `--fatal-warnings` — CI goes green immediately and still catches real problems; (c) delete the workflow if you don't want the gate. Doing nothing is the worst option: a permanently-red check trains you to ignore it. Ask me and I'll do (a) or (b).
+
 - [ ] **Consider adding secret scanning to CI** — GitHub's free push protection (Settings → Code security → Secret scanning), or a `gitleaks` step. Nothing would have caught a hand-written password like that one automatically, but push protection catches the classes that matter (cloud keys, tokens) before they land.
 
 - [ ] Widget for iPhone & MacOS

@@ -17,6 +17,7 @@ String verificationTemplateLabel(Translations t, String key) => switch (key) {
       'sleep_hours' => t.verification.templates.sleepHours,
       'workout' => t.verification.templates.workout,
       'screen_time_total' => t.verification.templates.screenTimeTotal,
+      'screen_time_apps' => t.verification.templates.screenTimeApps,
       _ => key,
     };
 

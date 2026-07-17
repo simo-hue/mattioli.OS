@@ -3,8 +3,8 @@ import 'package:flutter_test/flutter_test.dart';
 
 void main() {
   group('VerificationCatalog', () {
-    test('ships exactly the nine v1 templates', () {
-      expect(VerificationCatalog.all, hasLength(9));
+    test('ships exactly the ten v1 templates', () {
+      expect(VerificationCatalog.all, hasLength(10));
     });
 
     test('template keys are unique', () {
@@ -23,14 +23,20 @@ void main() {
       }
     });
 
-    test('screen time is the only atMost template and has no HK identifier', () {
+    test('both Screen Time templates are atMost minutes with no HK identifier',
+        () {
       final screen = VerificationCatalog.all
           .where((t) => t.provider == VerificationProvider.screenTime)
           .toList();
-      expect(screen, hasLength(1));
-      expect(screen.single.key, 'screen_time_total');
-      expect(screen.single.comparator, VerificationComparator.atMost);
-      expect(screen.single.healthKitTypeIdentifier, isNull);
+      expect(screen, hasLength(2));
+      expect(screen.map((t) => t.key).toSet(),
+          {'screen_time_total', 'screen_time_apps'});
+      for (final t in screen) {
+        expect(t.comparator, VerificationComparator.atMost, reason: t.key);
+        expect(t.unit, VerificationUnit.minutes, reason: t.key);
+        expect(t.category, VerificationCategory.screenTime, reason: t.key);
+        expect(t.healthKitTypeIdentifier, isNull, reason: t.key);
+      }
     });
 
     test('only stand hours requires a Watch', () {

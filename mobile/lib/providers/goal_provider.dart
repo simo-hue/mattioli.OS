@@ -1,5 +1,6 @@
 import 'dart:async';
 import 'dart:convert';
+import 'package:evolve_verification/evolve_verification.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 import '../models/goal.dart';
@@ -211,10 +212,13 @@ class GoalsNotifier extends Notifier<List<Goal>> {
     }
   }
 
-  /// Adds [habit], returning true only when it was persisted (so the caller can
-  /// confirm success and never show "added ✓" over a failure — failures already
-  /// surface their own error modal + optimistic rollback here).
-  Future<bool> addHabit(Goal habit) async {
+  /// Adds [habit], returning the PERSISTED goal (with its final id) on success,
+  /// or null on failure. In cloud mode the client mints a throwaway temp id and
+  /// Supabase assigns the real UUID, so the persisted goal — not the input — is
+  /// what carries the id a caller must key any per-goal local state by (e.g. a
+  /// Mode-A Screen Time selection blob). Failures already surface their own
+  /// error modal + optimistic rollback here.
+  Future<Goal?> addHabit(Goal habit) async {
     // Snapshot for optimistic rollback if persistence fails.
     final previousGoals = state;
     final newGoals = [...state, habit];
@@ -240,15 +244,28 @@ class GoalsNotifier extends Notifier<List<Goal>> {
           t.common.habitSaveFailed,
           e,
         );
-        return false;
+        return null;
       }
-      return true;
+      return habit; // private mode keeps the client id
     }
 
     _saveToCache(newGoals);
 
     final user = supabase.auth.currentUser;
-    if (user == null) return false;
+    if (user == null) {
+      // No session (token expiry/rotation race between opening the modal and
+      // saving): undo the optimistic insert instead of stranding a ghost
+      // temp-id habit in state + cache, and surface the failure — matching this
+      // method's contract and the catch block below.
+      state = previousGoals;
+      _saveToCache(previousGoals);
+      _showGoalError(
+        t.common.errorDuringSaving,
+        t.common.habitSaveFailed,
+        StateError('no authenticated user'),
+      );
+      return null;
+    }
 
     try {
       final payload = habit.toJson();
@@ -278,7 +295,7 @@ class GoalsNotifier extends Notifier<List<Goal>> {
           ),
         );
       }
-      return true;
+      return realGoal; // cloud mode: the server-assigned id
     } catch (e, stack) {
       AppLogger.error('[Goals] Insert error', e, stack);
       // Remove the optimistic (temp-id) ghost row on failure.
@@ -289,7 +306,7 @@ class GoalsNotifier extends Notifier<List<Goal>> {
         t.common.habitSaveFailed,
         e,
       );
-      return false;
+      return null;
     }
   }
 
@@ -332,6 +349,15 @@ class GoalsNotifier extends Notifier<List<Goal>> {
     try {
       final payload = updatedHabit.toJson();
       payload.remove('id');
+      // Goal.toJson OMITS the verify_* columns when the rule is null, and a
+      // Supabase UPDATE leaves omitted columns untouched — so clearing a rule
+      // would leave the server row still verified, and it would resurrect on the
+      // next sync (a Mode-A habit would come back with no selection → stuck at
+      // couldn't-verify forever). Explicitly null them, mirroring the private
+      // path (private_local_database writes VerificationRule.nullColumns).
+      if (updatedHabit.verificationRule == null) {
+        payload.addAll(VerificationRule.nullColumns);
+      }
       await supabase.from('goals').update(payload).eq('id', updatedHabit.id);
 
       // Schedula promemoria
@@ -369,6 +395,8 @@ class GoalsNotifier extends Notifier<List<Goal>> {
       try {
         await ref.read(privateLocalDatabaseProvider).deleteGoal(id);
         unawaited(NotificationService().cancelHabitReminder(id));
+        // Drop any device-local Mode-A Screen Time selection for this goal.
+        unawaited(ref.read(screenTimeSelectionsProvider.notifier).remove(id));
       } catch (e, stack) {
         AppLogger.error('[Goals] Private delete error', e, stack);
         state = previousGoals;
@@ -387,6 +415,8 @@ class GoalsNotifier extends Notifier<List<Goal>> {
       await supabase.from('goals').delete().eq('id', id);
       // Cancella promemoria
       unawaited(NotificationService().cancelHabitReminder(id));
+      // Drop any device-local Mode-A Screen Time selection for this goal.
+      unawaited(ref.read(screenTimeSelectionsProvider.notifier).remove(id));
     } catch (e, stack) {
       AppLogger.error('[Goals] Delete error', e, stack);
       // Restore the habit that failed to delete.

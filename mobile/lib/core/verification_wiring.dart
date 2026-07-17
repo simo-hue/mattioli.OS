@@ -2,6 +2,7 @@ import 'package:evolve_verification/evolve_verification.dart';
 import 'package:flutter/foundation.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
+import '../i18n/translations.g.dart';
 import '../models/goal.dart';
 import '../providers/goal_provider.dart';
 import '../providers/settings_provider.dart';
@@ -25,23 +26,49 @@ import 'verification_providers.dart';
 List<VerifiableGoal> verifiableGoalsFrom(
   List<Goal> goals, {
   required bool healthKitEnabled,
-  required bool screenTimeEnabled,
+  required bool screenTimeAppsEnabled,
+  required bool screenTimeTotalEnabled,
+  String? Function(String goalId)? screenTimeSelectionFor,
 }) {
   final out = <VerifiableGoal>[];
   for (final g in goals) {
     final rule = g.verificationRule;
     if (rule == null) continue;
     if (rule.isHealthKit && !healthKitEnabled) continue;
-    if (rule.isScreenTime && !screenTimeEnabled) continue;
+    if (rule.isScreenTime) {
+      // Per-template gating so Mode A can be live while Mode B stays dark. An
+      // unknown screen-time key (a newer client's template) can't be monitored,
+      // so it is skipped rather than guessed at.
+      final key = rule.metricKey;
+      if (key == screenTimeAppsKey) {
+        if (!screenTimeAppsEnabled) continue;
+      } else if (key == screenTimeTotalKey) {
+        if (!screenTimeTotalEnabled) continue;
+      } else {
+        continue;
+      }
+    }
+    // A Mode-A goal with no resolvable device-local selection is not being
+    // monitored; flag it so the engine records couldn't-verify (never a silent
+    // pass). Mode B and HealthKit goals are never "selection missing".
+    final selectionMissing = rule.isScreenTime &&
+        rule.metricKey == screenTimeAppsKey &&
+        (screenTimeSelectionFor?.call(g.id) == null);
     out.add(VerifiableGoal(
       goalId: g.id,
       rule: rule,
       effectiveFrom: g.startDate,
       activeWeekdays: g.frequencyDays?.toSet() ?? const {},
+      screenTimeSelectionMissing: selectionMissing,
     ));
   }
   return out;
 }
+
+/// The catalog keys for the two Screen Time templates, used to derive mode and
+/// gate per-template. Kept here so the wiring doesn't depend on catalog order.
+const String screenTimeAppsKey = 'screen_time_apps';
+const String screenTimeTotalKey = 'screen_time_total';
 
 /// The app's terminal outcomes per goal-day (done→pass, missed→fail), restricted
 /// to [goalIds]. `skipped`/unknown statuses are ignored.
@@ -84,7 +111,10 @@ final couldNotVerifyDaysProvider =
   final goals = verifiableGoalsFrom(
     ref.watch(goalsProvider),
     healthKitEnabled: VerificationConfig.healthKitEnabled,
-    screenTimeEnabled: VerificationConfig.screenTimeEnabled,
+    screenTimeAppsEnabled: VerificationConfig.screenTimeAppsEnabled,
+    screenTimeTotalEnabled: VerificationConfig.screenTimeTotalEnabled,
+    screenTimeSelectionFor: (id) =>
+        ref.watch(screenTimeSelectionsProvider)[id]?.blob,
   );
   if (goals.isEmpty) return const {};
   final now = DateTime.now();
@@ -107,15 +137,37 @@ final couldNotVerifyDaysProvider =
 });
 
 /// The DeviceActivity monitor specs for the current Screen Time goals.
-List<ScreenTimeGoalSpec> screenTimeSpecsFrom(List<VerifiableGoal> goals) => [
-      for (final g in goals)
-        if (g.rule.isScreenTime)
-          ScreenTimeGoalSpec(
-            goalId: g.goalId,
-            thresholdMinutes: g.rule.threshold.round(),
-            activeWeekdays: g.activeWeekdays,
-          ),
-    ];
+///
+/// Mode A (`screen_time_apps`) carries the device-local selection blob resolved
+/// by [selectionFor]; a goal with no resolvable selection emits **no spec** —
+/// native never registers it, so it stays couldn't-verify rather than being
+/// silently monitored as "everything". Mode B (`screen_time_total`) carries a
+/// null blob (empty selection = total usage).
+List<ScreenTimeGoalSpec> screenTimeSpecsFrom(
+  List<VerifiableGoal> goals, {
+  String? Function(String goalId)? selectionFor,
+}) {
+  final out = <ScreenTimeGoalSpec>[];
+  for (final g in goals) {
+    if (!g.rule.isScreenTime) continue;
+    final isApps = g.rule.metricKey == screenTimeAppsKey;
+    String? blob;
+    if (isApps) {
+      blob = selectionFor?.call(g.goalId);
+      if (blob == null) continue; // nothing to monitor → couldn't-verify
+    }
+    out.add(ScreenTimeGoalSpec(
+      goalId: g.goalId,
+      thresholdMinutes: g.rule.threshold.round(),
+      activeWeekdays: g.activeWeekdays,
+      mode: isApps
+          ? ScreenTimeMode.appsAndCategories
+          : ScreenTimeMode.totalUsage,
+      selectionBlob: blob,
+    ));
+  }
+  return out;
+}
 
 /// Whether [next] differs from the specs last handed to DeviceActivity, and so
 /// whether the native sync is worth doing at all.
@@ -190,8 +242,10 @@ Future<void> syncScreenTimeMonitoring({
   required ScreenTimeBridge bridge,
   required ScreenTimeSyncCache cache,
   required List<VerifiableGoal> goals,
+  String? Function(String goalId)? selectionFor,
+  void Function(ScreenTimeMonitorLimitException)? onMonitorLimit,
 }) async {
-  final specs = screenTimeSpecsFrom(goals);
+  final specs = screenTimeSpecsFrom(goals, selectionFor: selectionFor);
   if (!screenTimeSpecsChanged(cache.last, specs)) return;
 
   try {
@@ -221,6 +275,11 @@ Future<void> syncScreenTimeMonitoring({
     }
     await bridge.syncMonitoredGoals(specs);
     cache.record(specs);
+  } on ScreenTimeMonitorLimitException catch (e) {
+    // Apple's 20-activity cap (D10). Surface it to the UI and DO NOT cache —
+    // the sync must retry next foreground once the user removes a habit.
+    AppLogger.warning('[Verification] Screen Time monitor limit: $e');
+    onMonitorLimit?.call(e);
   } catch (e, stack) {
     AppLogger.error('[Verification] syncMonitoredGoals failed', e, stack);
   }
@@ -364,7 +423,10 @@ Future<ReconcileReport> runVerificationReconcile(WidgetRef ref) async {
   final goals = verifiableGoalsFrom(
     ref.read(goalsProvider),
     healthKitEnabled: VerificationConfig.healthKitEnabled,
-    screenTimeEnabled: VerificationConfig.screenTimeEnabled,
+    screenTimeAppsEnabled: VerificationConfig.screenTimeAppsEnabled,
+    screenTimeTotalEnabled: VerificationConfig.screenTimeTotalEnabled,
+    screenTimeSelectionFor: (id) =>
+        ref.read(screenTimeSelectionsProvider)[id]?.blob,
   );
 
   // BEFORE the empty-goals return, not after. An empty list is exactly when
@@ -376,10 +438,21 @@ Future<ReconcileReport> runVerificationReconcile(WidgetRef ref) async {
   // Gated on the flag so a HealthKit-only build never calls into
   // FamilyControls/DeviceActivity at all.
   if (VerificationConfig.screenTimeEnabled) {
+    final bridge = ref.read(screenTimeBridgeProvider);
+    // Hand the extension the current-locale copy for its "limit reached" local
+    // notification — the DeviceActivityMonitor extension can't read Flutter's
+    // translations, so the app writes them into the shared App Group.
+    await bridge.setLocalizedNotificationCopy(
+      title: t.verification.screenTime.limitReachedTitle,
+      body: t.verification.screenTime.limitReachedBody,
+    );
     await syncScreenTimeMonitoring(
-      bridge: ref.read(screenTimeBridgeProvider),
+      bridge: bridge,
       cache: ref.read(screenTimeSyncCacheProvider),
       goals: goals,
+      selectionFor: (id) => ref.read(screenTimeSelectionsProvider)[id]?.blob,
+      onMonitorLimit: (e) =>
+          ref.read(screenTimeMonitorLimitProvider.notifier).report(e),
     );
   }
 

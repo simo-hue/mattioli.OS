@@ -12,7 +12,9 @@ import '../../core/openrouter_service.dart';
 import '../../core/rtl.dart';
 import '../../core/verification_config.dart';
 import '../../core/verification_providers.dart';
+import 'package:evolve_verification/evolve_verification.dart';
 import '../widgets/apple_health_form.dart';
+import '../widgets/screen_time_form.dart';
 import '../../i18n/translations.g.dart';
 import '../widgets/pro_features_modal.dart';
 import '../kit/evolve_color_picker.dart';
@@ -309,6 +311,28 @@ class AppSettingsScreen extends ConsumerWidget {
               ]),
               const SizedBox(height: 32),
             ],
+            // Screen Time (Guideline 2.1). Same discipline as Apple Health:
+            // reachable in two taps from launch, never hides, independent of any
+            // habit existing — the surface to point a screen recording at.
+            if (VerificationConfig.screenTimeEnabled) ...[
+              _buildSectionHeader(
+                context,
+                context.t.settings.sections.screenTime,
+              ),
+              _buildSettingsCard(context, [
+                _buildActionRow(
+                  context: context,
+                  icon: LucideIcons.smartphone,
+                  title: context.t.screenTime.rowTitle,
+                  trailingText: _screenTimeStatus(context, ref),
+                  onTap: () {
+                    ref.hapticLight();
+                    _showScreenTimeSheet(context);
+                  },
+                ),
+              ]),
+              const SizedBox(height: 32),
+            ],
             _buildSectionHeader(
               context,
               context.t.settings.sections.unitsLanguage,
@@ -576,6 +600,30 @@ class AppSettingsScreen extends ConsumerWidget {
         onPressed: () => Navigator.pop(context),
       ),
       builder: (sheetContext) => const AppleHealthForm(),
+    );
+  }
+
+  /// Status for the Screen Time row. Unlike Health, FamilyControls
+  /// authorization IS queryable (D9), so denied/approved are honest.
+  String? _screenTimeStatus(BuildContext context, WidgetRef ref) {
+    final t = context.t.screenTime;
+    final status = ref.watch(screenTimeAuthStatusProvider).asData?.value;
+    return switch (status) {
+      ScreenTimeAuthorizationStatus.approved => t.statusConnected,
+      ScreenTimeAuthorizationStatus.denied => t.statusDenied,
+      _ => t.statusNotConnected,
+    };
+  }
+
+  void _showScreenTimeSheet(BuildContext context) {
+    showEvolveFormSheet<void>(
+      context: context,
+      title: context.t.screenTime.rowTitle,
+      trailing: EvolveTextAction(
+        label: context.t.common.actions.done,
+        onPressed: () => Navigator.pop(context),
+      ),
+      builder: (sheetContext) => const ScreenTimeForm(),
     );
   }
 

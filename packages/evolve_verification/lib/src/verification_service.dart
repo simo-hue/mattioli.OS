@@ -21,11 +21,19 @@ class VerifiableGoal {
   /// (D6). Off-days are never evaluated, nudged, or written.
   final Set<int> activeWeekdays;
 
+  /// True for a Mode-A Screen Time goal (`screen_time_apps`) whose device-local
+  /// `FamilyActivitySelection` can't be resolved — e.g. the goal was synced to a
+  /// new device (the blob never syncs), a reinstall dropped it, or the picker
+  /// was cancelled. Such a goal is *not* being monitored, so it must never emit
+  /// a `pass`; reconcile treats it as "no signal" so it records couldn't-verify.
+  final bool screenTimeSelectionMissing;
+
   const VerifiableGoal({
     required this.goalId,
     required this.rule,
     required this.effectiveFrom,
     this.activeWeekdays = const {},
+    this.screenTimeSelectionMissing = false,
   });
 }
 
@@ -276,8 +284,14 @@ class VerificationService {
             isToday: isToday,
           );
         } else {
+          // A Mode-A goal with no resolvable selection isn't being monitored:
+          // force "no signal" so a stale monitor's stayed-under can never pass
+          // it off — it records couldn't-verify (past) / pending (today).
+          final signal = goal.screenTimeSelectionMissing
+              ? null
+              : signalIndex[goal.goalId]?[day];
           verdict = evaluateScreenTimeDay(
-            signal: signalIndex[goal.goalId]?[day],
+            signal: signal,
             isToday: isToday,
           );
         }

@@ -178,7 +178,8 @@
       "experience": "EXPERIENCIA DE USUARIO",
       "aiCoach": "COACH AI",
       "unitsLanguage": "UNIDADES E IDIOMA",
-      "appleHealth": "SALUD"
+      "appleHealth": "SALUD",
+      "screenTime": "TIEMPO DE PANTALLA"
     },
     "appearance": {
       "darkMode": "Modo oscuro",
@@ -1176,7 +1177,8 @@
       "mindfulMinutes": "Minutos de mindfulness",
       "sleepHours": "Horas de sueño",
       "workout": "Entrenamiento",
-      "screenTimeTotal": "Tiempo de pantalla"
+      "screenTimeTotal": "Uso total del dispositivo",
+      "screenTimeApps": "Tiempo en apps elegidas"
     },
     "units": {
       "minutes": "min",
@@ -1198,6 +1200,16 @@
       "mindfulness": "Mindfulness",
       "sleep": "Sueño",
       "screenTime": "Tiempo de pantalla"
+    },
+    "screenTime": {
+      "chooseApps": "Elegir apps y categorías",
+      "changeSelection": "Cambiar apps y categorías",
+      "selectionSummary": "{count} seleccionados",
+      "selectionEmpty": "Ninguna app elegida",
+      "needsSelectionNote": "Elige las apps y categorías que este hábito debe seguir.",
+      "tooManyMonitors": "Puedes verificar automáticamente hasta 20 hábitos de Tiempo de pantalla. Desactiva uno para añadir otro.",
+      "limitReachedTitle": "Límite de tiempo de pantalla alcanzado",
+      "limitReachedBody": "Has alcanzado tu límite de tiempo de pantalla de hoy."
     }
   },
   "health": {
@@ -1215,5 +1227,18 @@
     "allowAccess": "Permitir acceso",
     "manageHint": "El acceso se concede por tipo de dato. Para revisarlo o cambiarlo, abre la app {app}, luego Compartir, Apps y servicios, Evolve.",
     "grantNote": "iOS no informa a las apps de si se concedió el acceso de lectura, así que Evolve no puede mostrártelo aquí. Si un hábito no se verifica, compruébalo en la app {app}."
+  },
+  "screenTime": {
+    "rowTitle": "Tiempo de pantalla",
+    "statusNotConnected": "Desactivado",
+    "statusConnected": "Activado",
+    "statusDenied": "Acceso denegado",
+    "worksWith": "Evolve usa Tiempo de pantalla para verificar hábitos sobre cuánto usas tus apps — de forma privada, en este dispositivo.",
+    "privacyNote": "Las apps que elijas permanecen en este iPhone y nunca se sincronizan ni se envían a ningún sitio.",
+    "permissionNote": "Se te pedirá permitir el acceso a Tiempo de pantalla. Evolve solo lee los totales de las apps y categorías que elijas.",
+    "optIn": "Activar Tiempo de pantalla",
+    "deniedNote": "El acceso a Tiempo de pantalla está desactivado. Para usarlo, abre Ajustes, Tiempo de pantalla y permite Evolve.",
+    "manageHint": "Puedes cambiarlo o desactivarlo cuando quieras en la app Ajustes de iOS.",
+    "enabledNote": "La verificación con Tiempo de pantalla está activada. Añade un hábito de Tiempo de pantalla para empezar."
   }
 }

@@ -33,10 +33,20 @@ void main() {
             VerificationCatalog.screenTimeTotal.ruleWith(threshold),
       );
 
+  Goal appsGoal(String id, {double threshold = 60}) => Goal(
+        id: id,
+        title: id,
+        color: const Color(0xFF3B82F6),
+        startDate: DateTime(2026, 1, 1),
+        verificationRule:
+            VerificationCatalog.screenTimeApps.ruleWith(threshold),
+      );
+
   List<VerifiableGoal> verifiable(List<Goal> goals) => verifiableGoalsFrom(
         goals,
         healthKitEnabled: false,
-        screenTimeEnabled: true,
+        screenTimeAppsEnabled: true,
+        screenTimeTotalEnabled: true,
       );
 
   group('screenTimeSpecsChanged', () {
@@ -252,5 +262,91 @@ void main() {
       expect(screenTimeSpecsFrom(const []), isEmpty);
       expect(screenRule.isScreenTime, isTrue);
     });
+
+    test('monitor-limit is surfaced via onMonitorLimit and does not escape',
+        () async {
+      // The cap throw is caught, reported to the UI hook, and NOT cached — the
+      // sync must retry once the user removes a habit.
+      final bridge = FakeScreenTimeBridge(monitorLimit: 0); // every sync throws
+      final cache = ScreenTimeSyncCache();
+      ScreenTimeMonitorLimitException? captured;
+      await expectLater(
+        syncScreenTimeMonitoring(
+          bridge: bridge,
+          cache: cache,
+          goals: verifiable([goal('a')]),
+          onMonitorLimit: (e) => captured = e,
+        ),
+        completes,
+      );
+      expect(captured, isNotNull);
+      expect(cache.last, isNull, reason: 'a cap throw must not be cached');
+    });
+
+    test('a generic sync failure is swallowed and onMonitorLimit is NOT called',
+        () async {
+      var limitCalled = false;
+      await expectLater(
+        syncScreenTimeMonitoring(
+          bridge: _ThrowingBridge(),
+          cache: ScreenTimeSyncCache(),
+          goals: verifiable([goal('a')]),
+          onMonitorLimit: (_) => limitCalled = true,
+        ),
+        completes,
+      );
+      expect(limitCalled, isFalse);
+    });
   });
+
+  group('screenTimeSpecsFrom — modes & selection', () {
+    test('Mode B (total) goal → one spec, mode=total, null blob', () {
+      final specs = screenTimeSpecsFrom(verifiable([goal('a')]));
+      expect(specs.single.mode, ScreenTimeMode.totalUsage);
+      expect(specs.single.selectionBlob, isNull);
+    });
+
+    test('Mode A goal WITH a resolved selection → spec carries mode=apps + blob',
+        () {
+      final specs = screenTimeSpecsFrom(
+        verifiable([appsGoal('a')]),
+        selectionFor: (id) => id == 'a' ? 'BLOB' : null,
+      );
+      expect(specs.single.mode, ScreenTimeMode.appsAndCategories);
+      expect(specs.single.selectionBlob, 'BLOB');
+    });
+
+    test('Mode A goal with NO resolvable selection → NO spec', () {
+      // Never registered ⇒ stays couldn't-verify, never a silent pass.
+      final specs = screenTimeSpecsFrom(
+        verifiable([appsGoal('a')]),
+        selectionFor: (_) => null,
+      );
+      expect(specs, isEmpty);
+    });
+
+    test('a changed selection blob counts as a re-sync', () {
+      const before = ScreenTimeGoalSpec(
+        goalId: 'a',
+        thresholdMinutes: 60,
+        mode: ScreenTimeMode.appsAndCategories,
+        selectionBlob: 'X',
+      );
+      const after = ScreenTimeGoalSpec(
+        goalId: 'a',
+        thresholdMinutes: 60,
+        mode: ScreenTimeMode.appsAndCategories,
+        selectionBlob: 'Y',
+      );
+      expect(screenTimeSpecsChanged(const [before], const [after]), isTrue);
+    });
+  });
+}
+
+/// A bridge whose sync throws a NON-limit error, to prove the generic failure
+/// path is swallowed without being mistaken for the cap.
+class _ThrowingBridge extends FakeScreenTimeBridge {
+  @override
+  Future<void> syncMonitoredGoals(List<ScreenTimeGoalSpec> specs) async =>
+      throw StateError('boom');
 }

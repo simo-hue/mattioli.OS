@@ -34,6 +34,53 @@ class MethodChannelScreenTimeBridge implements ScreenTimeBridge {
   }
 
   @override
+  Future<ScreenTimeSelectionResult?> presentActivityPicker({
+    String? initialSelectionBlob,
+    String? pickerTitle,
+    String? doneLabel,
+    String? cancelLabel,
+  }) async {
+    try {
+      final raw = await channel.invokeMethod<Map<Object?, Object?>>(
+        'presentActivityPicker',
+        {
+          'selection': initialSelectionBlob,
+          'title': pickerTitle,
+          'done': doneLabel,
+          'cancel': cancelLabel,
+        },
+      );
+      if (raw == null) return null; // cancelled
+      final m = Map<String, Object?>.from(raw);
+      final blob = m['blob'] as String?;
+      if (blob == null) return null;
+      return ScreenTimeSelectionResult(
+        blob: blob,
+        applicationCount: (m['appCount'] as num?)?.toInt() ?? 0,
+        categoryCount: (m['categoryCount'] as num?)?.toInt() ?? 0,
+      );
+    } on MissingPluginException {
+      // Picker unavailable (dark build / entitlement absent / pre-iOS 16).
+      return null;
+    }
+  }
+
+  @override
+  Future<void> setLocalizedNotificationCopy({
+    required String title,
+    required String body,
+  }) async {
+    try {
+      await channel.invokeMethod<void>('setLocalizedNotificationCopy', {
+        'title': title,
+        'body': body,
+      });
+    } on MissingPluginException {
+      // no-op: no extension to read the copy.
+    }
+  }
+
+  @override
   Future<void> syncMonitoredGoals(List<ScreenTimeGoalSpec> specs) async {
     try {
       await channel.invokeMethod<void>('syncMonitoredGoals', {
@@ -43,6 +90,9 @@ class MethodChannelScreenTimeBridge implements ScreenTimeBridge {
               'goalId': s.goalId,
               'thresholdMinutes': s.thresholdMinutes,
               'weekdays': s.activeWeekdays.toList()..sort(),
+              'mode': s.mode.wireName,
+              // Opaque base64 FamilyActivitySelection; null for total-usage.
+              'selection': s.selectionBlob,
             },
         ],
       });

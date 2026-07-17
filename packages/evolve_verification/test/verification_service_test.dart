@@ -251,6 +251,30 @@ void main() {
       final drained = await screen.drainSignals();
       expect(drained, hasLength(1));
     });
+
+    test('a selection-missing Mode-A goal never passes off a stale signal',
+        () async {
+      // A Mode-A goal whose device-local selection is unresolvable isn't being
+      // monitored; a stale monitor's stayed-under must be ignored so a past day
+      // records couldn't-verify, never a silent pass.
+      screen.addSignal(ScreenTimeSignal(
+          goalId: 'g_apps',
+          day: daysAgo(1),
+          kind: ScreenTimeSignalKind.stayedUnder));
+      final missing = VerifiableGoal(
+        goalId: 'g_apps',
+        rule: VerificationCatalog.screenTimeApps.ruleWith(60),
+        effectiveFrom: daysAgo(30),
+        screenTimeSelectionMissing: true,
+      );
+      final plan = await service().reconcile(goals: [missing], today: today);
+      expect(
+        plan.writes.any((w) => w.outcome == VerificationOutcome.pass),
+        isFalse,
+        reason: 'a selection-missing goal must never pass',
+      );
+      expect(plan.couldNotVerify.any((e) => e.goalId == 'g_apps'), isTrue);
+    });
   });
 
   // Regressions for defects caught by the adversarial review of the engine.

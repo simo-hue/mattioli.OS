@@ -1,0 +1,40 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
+<plist version="1.0">
+<dict>
+	<!--
+	  Privacy manifest for the DeviceActivityMonitor app extension.
+
+	  The extension collects and sends NOTHING off-device. When a Screen Time
+	  threshold is reached (or the day ends) it writes only {goalId, date, kind}
+	  into the shared App Group (group.com.simo.evolve.verification) for the app
+	  to drain, and reads the app-written localized notification copy back from
+	  the same suite. No data leaves the device, so NSPrivacyCollectedDataTypes is
+	  empty — nothing to add to the App Store Connect nutrition labels for it.
+
+	  Required-reason API: it reads/writes UserDefaults via UserDefaults(suiteName:)
+	  on an App Group shared with the containing app, so the reason code is 1C8F.1
+	  (App Group members) — NOT CA92.1 (app-internal only) which the Runner
+	  manifest uses for shared_preferences. See TO_SIMO_DO: confirm 1C8F.1 against
+	  Apple's current "Describing use of required reason API" before submission.
+	-->
+	<key>NSPrivacyTracking</key>
+	<false/>
+	<key>NSPrivacyTrackingDomains</key>
+	<array/>
+	<key>NSPrivacyCollectedDataTypes</key>
+	<array/>
+	<key>NSPrivacyAccessedAPITypes</key>
+	<array>
+		<!-- App Group shared UserDefaults (signal buffer + notification copy) -->
+		<dict>
+			<key>NSPrivacyAccessedAPIType</key>
+			<string>NSPrivacyAccessedAPICategoryUserDefaults</string>
+			<key>NSPrivacyAccessedAPITypeReasons</key>
+			<array>
+				<string>1C8F.1</string>
+			</array>
+		</dict>
+	</array>
+</dict>
+</plist>

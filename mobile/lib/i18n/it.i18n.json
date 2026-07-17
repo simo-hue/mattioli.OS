@@ -178,7 +178,8 @@
       "experience": "ESPERIENZA UTENTE",
       "aiCoach": "AI COACH",
       "unitsLanguage": "UNITÀ E LINGUA",
-      "appleHealth": "SALUTE"
+      "appleHealth": "SALUTE",
+      "screenTime": "TEMPO DI UTILIZZO"
     },
     "appearance": {
       "darkMode": "Modalità Scura",
@@ -1176,7 +1177,8 @@
       "mindfulMinutes": "Minuti di mindfulness",
       "sleepHours": "Ore di sonno",
       "workout": "Allenamento",
-      "screenTimeTotal": "Tempo di utilizzo"
+      "screenTimeTotal": "Utilizzo totale del dispositivo",
+      "screenTimeApps": "Tempo nelle app scelte"
     },
     "units": {
       "minutes": "min",
@@ -1198,6 +1200,16 @@
       "mindfulness": "Mindfulness",
       "sleep": "Sonno",
       "screenTime": "Tempo di utilizzo"
+    },
+    "screenTime": {
+      "chooseApps": "Scegli app e categorie",
+      "changeSelection": "Modifica app e categorie",
+      "selectionSummary": "{count} selezionati",
+      "selectionEmpty": "Nessuna app scelta",
+      "needsSelectionNote": "Scegli le app e le categorie che questa abitudine deve monitorare.",
+      "tooManyMonitors": "Puoi verificare automaticamente fino a 20 abitudini di Tempo di utilizzo. Disattivane una per aggiungerne un'altra.",
+      "limitReachedTitle": "Limite di tempo di utilizzo raggiunto",
+      "limitReachedBody": "Hai raggiunto il tuo limite di tempo di utilizzo per oggi."
     }
   },
   "health": {
@@ -1215,5 +1227,18 @@
     "allowAccess": "Consenti accesso",
     "manageHint": "L'accesso viene concesso per singolo tipo di dato. Per rivederlo o modificarlo, apri l'app {app}, poi Condivisione, App e servizi, Evolve.",
     "grantNote": "iOS non comunica alle app se l'accesso in lettura è stato concesso, quindi Evolve non può mostrartelo qui. Se un'abitudine non si verifica, controlla nell'app {app}."
+  },
+  "screenTime": {
+    "rowTitle": "Tempo di utilizzo",
+    "statusNotConnected": "Disattivato",
+    "statusConnected": "Attivo",
+    "statusDenied": "Accesso negato",
+    "worksWith": "Evolve usa Tempo di utilizzo per verificare le abitudini su quanto usi le tue app — in privato, su questo dispositivo.",
+    "privacyNote": "Le app che scegli restano su questo iPhone e non vengono mai sincronizzate o inviate altrove.",
+    "permissionNote": "Ti verrà chiesto di consentire l'accesso a Tempo di utilizzo. Evolve legge solo i totali delle app e categorie che scegli.",
+    "optIn": "Attiva Tempo di utilizzo",
+    "deniedNote": "L'accesso a Tempo di utilizzo è disattivato. Per usarlo, apri Impostazioni, Tempo di utilizzo e consenti a Evolve.",
+    "manageHint": "Puoi modificarlo o disattivarlo in qualsiasi momento nell'app Impostazioni di iOS.",
+    "enabledNote": "La verifica con Tempo di utilizzo è attiva. Aggiungi un'abitudine di Tempo di utilizzo per iniziare."
   }
 }

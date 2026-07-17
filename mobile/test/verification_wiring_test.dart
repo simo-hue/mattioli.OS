@@ -31,19 +31,27 @@ void main() {
         goal('screen', rule: screen),
       ];
       final all = verifiableGoalsFrom(goals,
-          healthKitEnabled: true, screenTimeEnabled: true);
+          healthKitEnabled: true,
+          screenTimeAppsEnabled: true,
+          screenTimeTotalEnabled: true);
       expect(all.map((g) => g.goalId), ['steps', 'screen']);
 
       final hkOnly = verifiableGoalsFrom(goals,
-          healthKitEnabled: true, screenTimeEnabled: false);
+          healthKitEnabled: true,
+          screenTimeAppsEnabled: false,
+          screenTimeTotalEnabled: false);
       expect(hkOnly.map((g) => g.goalId), ['steps']);
 
       final stOnly = verifiableGoalsFrom(goals,
-          healthKitEnabled: false, screenTimeEnabled: true);
+          healthKitEnabled: false,
+          screenTimeAppsEnabled: true,
+          screenTimeTotalEnabled: true);
       expect(stOnly.map((g) => g.goalId), ['screen']);
 
       final none = verifiableGoalsFrom(goals,
-          healthKitEnabled: false, screenTimeEnabled: false);
+          healthKitEnabled: false,
+          screenTimeAppsEnabled: false,
+          screenTimeTotalEnabled: false);
       expect(none, isEmpty);
     });
 
@@ -51,7 +59,8 @@ void main() {
       final v = verifiableGoalsFrom(
         [goal('steps', rule: steps, frequencyDays: [1, 3, 5], startDate: DateTime(2026, 6, 1))],
         healthKitEnabled: true,
-        screenTimeEnabled: true,
+        screenTimeAppsEnabled: true,
+        screenTimeTotalEnabled: true,
       ).single;
       expect(v.rule, steps);
       expect(v.effectiveFrom, DateTime(2026, 6, 1));
@@ -62,9 +71,58 @@ void main() {
       final v = verifiableGoalsFrom(
         [goal('steps', rule: steps)],
         healthKitEnabled: true,
-        screenTimeEnabled: true,
+        screenTimeAppsEnabled: true,
+        screenTimeTotalEnabled: true,
       ).single;
       expect(v.activeWeekdays, isEmpty);
+    });
+
+    test('Mode A and Mode B gate independently', () {
+      final apps = VerificationCatalog.screenTimeApps.ruleWith(60);
+      final total = VerificationCatalog.screenTimeTotal.ruleWith(120);
+      final goals = [goal('apps', rule: apps), goal('total', rule: total)];
+      // Mode A live, Mode B dark → only the apps goal survives.
+      expect(
+        verifiableGoalsFrom(goals,
+                healthKitEnabled: false,
+                screenTimeAppsEnabled: true,
+                screenTimeTotalEnabled: false)
+            .map((g) => g.goalId),
+        ['apps'],
+      );
+      // The reverse.
+      expect(
+        verifiableGoalsFrom(goals,
+                healthKitEnabled: false,
+                screenTimeAppsEnabled: false,
+                screenTimeTotalEnabled: true)
+            .map((g) => g.goalId),
+        ['total'],
+      );
+    });
+
+    test('a Mode-A goal with no resolvable selection is flagged missing', () {
+      final apps = VerificationCatalog.screenTimeApps.ruleWith(60);
+      VerifiableGoal build(String? Function(String)? resolver) =>
+          verifiableGoalsFrom(
+            [goal('a', rule: apps)],
+            healthKitEnabled: false,
+            screenTimeAppsEnabled: true,
+            screenTimeTotalEnabled: false,
+            screenTimeSelectionFor: resolver,
+          ).single;
+
+      expect(build((_) => 'BLOB').screenTimeSelectionMissing, isFalse);
+      expect(build((_) => null).screenTimeSelectionMissing, isTrue);
+
+      // Mode B is never "selection missing".
+      final total = verifiableGoalsFrom(
+        [goal('t', rule: VerificationCatalog.screenTimeTotal.ruleWith(120))],
+        healthKitEnabled: false,
+        screenTimeAppsEnabled: false,
+        screenTimeTotalEnabled: true,
+      ).single;
+      expect(total.screenTimeSelectionMissing, isFalse);
     });
   });
 
@@ -91,7 +149,8 @@ void main() {
           goal('screen', rule: VerificationCatalog.screenTimeTotal.ruleWith(90), frequencyDays: [6, 7]),
         ],
         healthKitEnabled: true,
-        screenTimeEnabled: true,
+        screenTimeAppsEnabled: true,
+        screenTimeTotalEnabled: true,
       );
       final specs = screenTimeSpecsFrom(goals);
       expect(specs, hasLength(1));

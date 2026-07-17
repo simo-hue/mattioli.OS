@@ -134,6 +134,65 @@ void main() {
       expect(g['goalId'], 'g1');
       expect(g['thresholdMinutes'], 120);
       expect(g['weekdays'], [1, 3, 5]);
+      // Default spec is Mode B (total usage), no selection.
+      expect(g['mode'], 'total');
+      expect(g['selection'], isNull);
+    });
+
+    test('syncMonitoredGoals encodes Mode A with mode=apps + selection blob',
+        () async {
+      mock(channel, (_) => null);
+      await bridge.syncMonitoredGoals([
+        const ScreenTimeGoalSpec(
+          goalId: 'g1',
+          thresholdMinutes: 60,
+          mode: ScreenTimeMode.appsAndCategories,
+          selectionBlob: 'B64',
+        ),
+      ]);
+      final g = ((lastCall!.arguments as Map)['goals'] as List).single as Map;
+      expect(g['mode'], 'apps');
+      expect(g['selection'], 'B64');
+    });
+
+    test('presentActivityPicker decodes result and forwards initial + labels',
+        () async {
+      mock(channel, (_) => {'blob': 'B64', 'appCount': 3, 'categoryCount': 2});
+      final result = await bridge.presentActivityPicker(
+        initialSelectionBlob: 'PREV',
+        pickerTitle: 'T',
+        doneLabel: 'D',
+        cancelLabel: 'C',
+      );
+      expect(result, isNotNull);
+      expect(result!.blob, 'B64');
+      expect(result.applicationCount, 3);
+      expect(result.categoryCount, 2);
+      expect(lastCall!.method, 'presentActivityPicker');
+      final args = lastCall!.arguments as Map;
+      expect(args['selection'], 'PREV');
+      expect(args['title'], 'T');
+      expect(args['done'], 'D');
+      expect(args['cancel'], 'C');
+    });
+
+    test('presentActivityPicker null result → null (cancelled)', () async {
+      mock(channel, (_) => null);
+      expect(await bridge.presentActivityPicker(), isNull);
+    });
+
+    test('presentActivityPicker missing plugin → null', () async {
+      unregister(channel);
+      expect(await bridge.presentActivityPicker(), isNull);
+    });
+
+    test('setLocalizedNotificationCopy forwards title + body', () async {
+      mock(channel, (_) => null);
+      await bridge.setLocalizedNotificationCopy(title: 'Ti', body: 'Bo');
+      expect(lastCall!.method, 'setLocalizedNotificationCopy');
+      final args = lastCall!.arguments as Map;
+      expect(args['title'], 'Ti');
+      expect(args['body'], 'Bo');
     });
 
     test('syncMonitoredGoals maps a monitor_limit error to the typed exception',

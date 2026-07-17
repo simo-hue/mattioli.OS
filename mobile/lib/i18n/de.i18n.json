@@ -178,7 +178,8 @@
       "experience": "NUTZERERLEBNIS",
       "aiCoach": "AI-COACH",
       "unitsLanguage": "EINHEITEN & SPRACHE",
-      "appleHealth": "APPLE HEALTH"
+      "appleHealth": "APPLE HEALTH",
+      "screenTime": "BILDSCHIRMZEIT"
     },
     "appearance": {
       "darkMode": "Dunkler Modus",
@@ -1176,7 +1177,8 @@
       "mindfulMinutes": "Achtsamkeitsminuten",
       "sleepHours": "Schlafstunden",
       "workout": "Training",
-      "screenTimeTotal": "Bildschirmzeit"
+      "screenTimeTotal": "Gesamte Gerätenutzung",
+      "screenTimeApps": "Zeit in ausgewählten Apps"
     },
     "units": {
       "minutes": "Min.",
@@ -1198,6 +1200,16 @@
       "mindfulness": "Achtsamkeit",
       "sleep": "Schlaf",
       "screenTime": "Bildschirmzeit"
+    },
+    "screenTime": {
+      "chooseApps": "Apps & Kategorien wählen",
+      "changeSelection": "Apps & Kategorien ändern",
+      "selectionSummary": "{count} ausgewählt",
+      "selectionEmpty": "Noch keine Apps gewählt",
+      "needsSelectionNote": "Wähle die Apps und Kategorien, die diese Gewohnheit erfassen soll.",
+      "tooManyMonitors": "Du kannst bis zu 20 Bildschirmzeit-Gewohnheiten automatisch prüfen. Deaktiviere eine, um eine weitere hinzuzufügen.",
+      "limitReachedTitle": "Bildschirmzeit-Limit erreicht",
+      "limitReachedBody": "Du hast dein Bildschirmzeit-Limit für heute erreicht."
     }
   },
   "health": {
@@ -1215,5 +1227,18 @@
     "allowAccess": "Zugriff erlauben",
     "manageHint": "Der Zugriff wird pro Datentyp erteilt. Zum Prüfen oder Ändern öffne die {app}-App, dann Teilen, Apps und Dienste, Evolve.",
     "grantNote": "iOS teilt Apps nicht mit, ob der Lesezugriff erteilt wurde — Evolve kann es dir hier also nicht anzeigen. Wenn eine Gewohnheit nicht geprüft wird, sieh in der {app}-App nach."
+  },
+  "screenTime": {
+    "rowTitle": "Bildschirmzeit",
+    "statusNotConnected": "Aus",
+    "statusConnected": "Ein",
+    "statusDenied": "Zugriff verweigert",
+    "worksWith": "Evolve nutzt die Bildschirmzeit, um Gewohnheiten zur Nutzungsdauer deiner Apps zu prüfen — privat, auf diesem Gerät.",
+    "privacyNote": "Die von dir gewählten Apps bleiben auf diesem iPhone und werden nie synchronisiert oder irgendwohin gesendet.",
+    "permissionNote": "Du wirst gebeten, den Zugriff auf die Bildschirmzeit zu erlauben. Evolve liest nur die Summen der von dir gewählten Apps und Kategorien.",
+    "optIn": "Bildschirmzeit aktivieren",
+    "deniedNote": "Der Zugriff auf die Bildschirmzeit ist deaktiviert. Zum Verwenden öffne Einstellungen, Bildschirmzeit und erlaube Evolve.",
+    "manageHint": "Du kannst dies jederzeit in der iOS-App „Einstellungen“ ändern oder deaktivieren.",
+    "enabledNote": "Die Bildschirmzeit-Verifizierung ist aktiv. Füge eine Bildschirmzeit-Gewohnheit hinzu, um zu starten."
   }
 }

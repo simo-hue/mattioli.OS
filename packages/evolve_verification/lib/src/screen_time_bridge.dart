@@ -5,11 +5,33 @@ import 'package:flutter/foundation.dart';
 /// (D9).
 enum ScreenTimeAuthorizationStatus { notDetermined, approved, denied }
 
+/// How a Screen Time goal is scoped on the device (Mode A vs Mode B).
+///
+/// - [appsAndCategories] (Mode A): the threshold measures the **combined** usage
+///   of the apps/categories the user picked with `FamilyActivityPicker`, carried
+///   as an opaque [ScreenTimeGoalSpec.selectionBlob]. Ships live.
+/// - [totalUsage] (Mode B): the threshold measures **total** device usage,
+///   expressed as an empty DeviceActivity event. Its on-device semantics are
+///   still unverified, so it ships dark behind a feature flag.
+enum ScreenTimeMode {
+  appsAndCategories,
+  totalUsage;
+
+  /// The wire value the native side switches on. Must match Swift exactly.
+  String get wireName => switch (this) {
+        ScreenTimeMode.appsAndCategories => 'apps',
+        ScreenTimeMode.totalUsage => 'total',
+      };
+}
+
 /// A goal the DeviceActivity monitor should watch (D2/D6).
 ///
-/// v1 measures *total* device usage, expressed as an **empty** DeviceActivity
-/// event (all activity) with a per-day threshold. [activeWeekdays] lets the app
-/// ignore off-day threshold fires; empty means every day.
+/// A [mode] of [ScreenTimeMode.appsAndCategories] carries a [selectionBlob] — an
+/// opaque, base64-encoded `FamilyActivitySelection` the native side decodes into
+/// the app/category tokens the threshold measures. The blob is device-local and
+/// keyed by [goalId] by the app; it is NEVER synced. [ScreenTimeMode.totalUsage]
+/// carries a null blob (empty selection = all activity). [activeWeekdays] lets
+/// the app ignore off-day threshold fires; empty means every day.
 @immutable
 class ScreenTimeGoalSpec {
   final String goalId;
@@ -18,10 +40,20 @@ class ScreenTimeGoalSpec {
   /// ISO weekday numbers (1 = Mon … 7 = Sun); empty = daily.
   final Set<int> activeWeekdays;
 
+  /// How the goal is scoped (Mode A = picked apps, Mode B = total usage).
+  final ScreenTimeMode mode;
+
+  /// Opaque base64 `FamilyActivitySelection` for
+  /// [ScreenTimeMode.appsAndCategories]; null for [ScreenTimeMode.totalUsage].
+  /// Device-local, never synced.
+  final String? selectionBlob;
+
   const ScreenTimeGoalSpec({
     required this.goalId,
     required this.thresholdMinutes,
     this.activeWeekdays = const {},
+    this.mode = ScreenTimeMode.totalUsage,
+    this.selectionBlob,
   });
 
   @override
@@ -29,15 +61,43 @@ class ScreenTimeGoalSpec {
       other is ScreenTimeGoalSpec &&
       other.goalId == goalId &&
       other.thresholdMinutes == thresholdMinutes &&
+      other.mode == mode &&
+      other.selectionBlob == selectionBlob &&
       setEquals(other.activeWeekdays, activeWeekdays);
 
   @override
-  int get hashCode =>
-      Object.hash(goalId, thresholdMinutes, Object.hashAllUnordered(activeWeekdays));
+  int get hashCode => Object.hash(goalId, thresholdMinutes, mode, selectionBlob,
+      Object.hashAllUnordered(activeWeekdays));
 
   @override
   String toString() =>
-      'ScreenTimeGoalSpec($goalId, ≤$thresholdMinutes min, days: $activeWeekdays)';
+      'ScreenTimeGoalSpec($goalId, ≤$thresholdMinutes min, ${mode.name}, '
+      'days: $activeWeekdays, selection: ${selectionBlob == null ? 'none' : 'set'})';
+}
+
+/// The outcome of presenting `FamilyActivityPicker` (Mode A). The [blob] is an
+/// opaque base64 `FamilyActivitySelection` the caller persists device-locally
+/// keyed by goalId (never synced); the counts drive the "N apps, M categories"
+/// summary shown in the habit editor.
+@immutable
+class ScreenTimeSelectionResult {
+  final String blob;
+  final int applicationCount;
+  final int categoryCount;
+
+  const ScreenTimeSelectionResult({
+    required this.blob,
+    required this.applicationCount,
+    required this.categoryCount,
+  });
+
+  /// Whether the user actually picked anything. An empty selection cannot be
+  /// monitored and must not be treated as "watch everything".
+  bool get isEmpty => applicationCount == 0 && categoryCount == 0;
+
+  @override
+  String toString() =>
+      'ScreenTimeSelectionResult(apps: $applicationCount, categories: $categoryCount)';
 }
 
 /// What the `DeviceActivityMonitor` extension observed for a goal-day.
@@ -107,6 +167,28 @@ abstract interface class ScreenTimeBridge {
   /// new goals, updates changed thresholds, and deregisters removed ones.
   /// Throws [ScreenTimeMonitorLimitException] past the 20-activity cap.
   Future<void> syncMonitoredGoals(List<ScreenTimeGoalSpec> specs);
+
+  /// Presents Apple's `FamilyActivityPicker` (Mode A) and returns the encoded
+  /// selection, or null if the user cancelled or the picker is unavailable
+  /// (dark build / entitlement absent / pre-iOS 16). [initialSelectionBlob]
+  /// pre-seeds the picker when editing an existing goal. The label params
+  /// localize the picker's own chrome (title / Done / Cancel); the app passes
+  /// them because this package is i18n-free — native falls back to English.
+  Future<ScreenTimeSelectionResult?> presentActivityPicker({
+    String? initialSelectionBlob,
+    String? pickerTitle,
+    String? doneLabel,
+    String? cancelLabel,
+  });
+
+  /// Hands the extension the current-locale copy for its "limit reached" local
+  /// notification. The DeviceActivityMonitor extension cannot read Flutter's
+  /// translations, so the app writes them into the shared App Group and the
+  /// extension reads them back (falling back to English if absent).
+  Future<void> setLocalizedNotificationCopy({
+    required String title,
+    required String body,
+  });
 
   /// Reads and clears the App Group buffer of signals the Monitor extension
   /// has written since the last drain.

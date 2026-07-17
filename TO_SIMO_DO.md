@@ -1,7 +1,6 @@
 # TO_SIMO_DO.md
 
 - [ ] Widget for iPhone & MacOS
-- [ ] Update for the habits to decide the day of the week to decide when it should be completed and obviously when it should appear on the day's pop up calendar view. The desktop UI element is already in place but from mobile is totally missing
 - [ ] In the habits protocol tab view I want to see only the current habits and not also the past ones
 - [ ] MacOS app doesn't have the log in phase, I want to have the same logic of the mobile iOS app as it's professional and complete
 - [ ] Cloud mode for AI, in both mobile and desktop implementation, we need to implement the fact that they need to insert their API Keys, we can also give a possibility to add two of them so they can have a back up in case the first one is not working ( if you think it does make sense )
@@ -21,23 +20,28 @@ Code is verified/fixed where noted. The rest is yours in Xcode + App Store Conne
 - [x] **iOS build number bumped 20 → 21** in `mobile/pubspec.yaml`. Build 20 is the rejected one; App Store Connect refuses a re-used number. Just rebuild.
 - [ ] **macOS build number**: confirm the last build you uploaded and set `desktop/pubspec.yaml version:` past it (currently `1.0.0+4`).
 
-### Family Controls / Screen Time (Guideline 2.1) — RESOLVE THIS, it's the top risk
-The build ships the `family-controls` entitlement + the DeviceActivityMonitor extension, but you're answering Apple **"no Screen Time functionality"**. That contradiction is almost certainly what triggered their 2.1 question. Pick one:
-- [ ] **Recommended — remove it from this build so the binary matches the answer:** Xcode → Runner → Signing & Capabilities → delete **Family Controls**; remove the DeviceActivityMonitorExtension from the Runner *Embed App Extensions* phase (or delete the target); delete the two `family-controls*` keys from `Runner.entitlements`. Re-add all of it when Screen Time actually ships (see the Screen Time section).
-- [ ] **Alternative — keep it:** in Review Notes state the Family Controls entitlement is approved for a feature in development, disabled and not user-accessible in this build. Riskier: an unused sensitive entitlement invites "why do you have this?".
+### Screen Time (Guideline 2.1) — NOW SHIPPING (Mode A live) — device work required
+Screen Time verification is implemented and ON (`screenTimeAppsEnabled = true`); the 2.1 answer is now **yes**. This is the top risk to re-clear **on a device** before you submit — none of the native Swift has run here (no iOS SDK; FamilyControls does not run in the Simulator).
+- [ ] **Register the extension App ID** in the Developer portal: `com.simo.evolve.DeviceActivityMonitorExtension` needs **Family Controls + App Groups** capabilities and its own distribution profile. The Family Controls approval is **per-App-ID** — the approved `com.simo.evolve` does NOT cover the extension. Archiving fails to sign without this.
+- [ ] **App Group** `group.com.simo.evolve.verification`: confirm it exists in the portal and is enabled on BOTH App IDs (both `.entitlements` already list it).
+- [ ] **`pod install`** in `mobile/ios` — Runner's deployment target was raised **15 → 16** (DeviceActivity threshold APIs need 16; `project.pbxproj` + `Podfile` already changed). Then Archive → Validate.
+- [ ] **Device-verify Mode A end-to-end** (iPhone): Settings → Screen Time → enable (grant Family Controls + notifications) → create a "Time in chosen apps" habit → Choose apps → use them past the limit across several app foregrounds → confirm the localized "limit reached" notification fires and the habit logs a miss.
+- [ ] **Confirm the `evolve/screentime` channel is reachable** under the SceneDelegate. CloudKit had to be re-registered in `SceneDelegate`; Screen Time is registered only in `AppDelegate.didFinishLaunching`. If the picker / auth prompt silently no-op on device, re-register the channel in `SceneDelegate` too.
+- [ ] **Mode B (`screen_time_total`) is DARK** (`screenTimeTotalEnabled = false`). Flip it to true ONLY after a device test proves an empty `DeviceActivityEvent` actually fires `eventDidReachThreshold` on total usage — the exact unknown it's gated on. If it never fires, leave it off; Mode A stands alone.
+- [ ] **Extension `PrivacyInfo.xcprivacy`** (new file) declares UserDefaults reason **`1C8F.1`** (App Group). Confirm it lands in the extension target's *Copy Bundle Resources*, and double-check `1C8F.1` against Apple's current "Describing use of required reason API" docs before submitting (ITMS-91053 risk if wrong).
+- [ ] **Appex version** was aligned to Runner (`MARKETING_VERSION 1.1.0`, `CURRENT_PROJECT_VERSION $(FLUTTER_BUILD_NUMBER)`) — this fixed a validation blocker. Just confirm Validate is clean.
 
 ### Xcode (both apps)
 - [ ] **Archive → Validate** before uploading — catches version/entitlement/signing errors before a human does.
-- [ ] If you removed Family Controls, **re-sign** so the provisioning profile no longer carries it (automatic signing regenerates it).
-- [ ] Capabilities present: iOS = HealthKit, Sign in with Apple, iCloud/CloudKit, App Groups. macOS = none of HealthKit/Family Controls (correct today — don't add them).
+- [ ] iOS capabilities: **Family Controls + App Groups** now required on BOTH the Runner and the extension App IDs (for Screen Time), plus HealthKit, Sign in with Apple, iCloud/CloudKit on Runner. macOS = none of HealthKit/Family Controls (correct — the Screen Time engine is iOS/iPadOS-only; the Mac app shows only a read-only "Verified" badge).
 - [ ] **Run on a physical iPad** (Apple reviewed 1.1.2 on an iPad Air): the Health, paywall, and coach flows must all work there.
 
 ### App Store Connect — metadata (this is where 4 of the 6 rejections live)
 - [ ] **Support URL** (1.5) → `https://simo-hue.github.io/evolve/support.html`. NOT the old root that was rejected.
 - [ ] **Privacy Policy URL**, per localization → `…/evolve/privacy.html` (it), `…/evolve/en/privacy.html`, `/es/`, `/de/`, `/ar/`.
 - [ ] **EULA** (3.1.2c): App Description → append `Termini di utilizzo (EULA): https://www.apple.com/legal/internet-services/itunes/dev/stdeula/`. Leave the **License Agreement** field as Apple's Standard EULA — do NOT paste a custom one.
-- [ ] **App Privacy → nutrition labels → add Health** (Linked to You · App Functionality · not used for tracking). Must match `PrivacyInfo.xcprivacy`, which already declares it. Keep Email + Name.
-- [ ] **Reviewer Notes:** (a) 2.1 → "No, the app has no Screen Time functionality"; (b) Health identification lives at Settings → Apple Health; (c) account deletion at Settings → Delete Account; (d) support/privacy/EULA links. **Do NOT describe any Screen Time path.**
+- [ ] **App Privacy → nutrition labels → add Health** (Linked to You · App Functionality · not used for tracking). Must match `PrivacyInfo.xcprivacy`, which already declares it. Keep Email + Name. **Screen Time adds no new row**: the extension collects nothing off-device (only threshold verdicts/rules travel, same minimisation as Health), and the picked app selection never leaves the phone.
+- [ ] **Reviewer Notes:** (a) 2.1 → "**Yes.** Screen Time habit verification is at **Settings → Screen Time** (tap to enable and grant access). Per-habit app selection is in the habit editor: Auto-verify → **Time in chosen apps** → **Choose apps & categories**. A screen recording of this path is attached."; (b) Health identification lives at Settings → Apple Health; (c) account deletion at Settings → Delete Account; (d) support/privacy/EULA links. **Attach a device screen recording of the Settings → Screen Time path.**
 
 ### Verify on-device before submitting (all `ios/**` Swift is written blind here)
 - [ ] **Sign in with Apple** shows the real Apple mark (fixed: now the `sign_in_with_apple` button on iOS + macOS). Low residual 4.0 risk; if Apple is strict again, swap to the official asset from Apple Design Resources.

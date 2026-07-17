@@ -1,9 +1,9 @@
 // Auto-verified habits — the DeviceActivityMonitor app-extension principal class.
 //
-// ⚠️ UNVERIFIED ON THIS DEV MACHINE (no iOS SDK). This file belongs to a SEPARATE
-// Xcode target you must create (see TO_SIMO_DO.md). It is SELF-CONTAINED (its own
-// App Group constant below), so ONLY this one file needs to be added to the
-// extension target. Keep it tiny — it runs under a ~6 MB memory cap.
+// ⚠️ UNVERIFIED ON THIS DEV MACHINE (no iOS SDK). This file is a member of the
+// existing `DeviceActivityMonitorExtension` target (a synchronized-folder group
+// in Runner.xcodeproj). It is SELF-CONTAINED (its own App Group constants below).
+// Keep it tiny — it runs under a ~6 MB memory cap.
 //
 // It is woken by the system (surviving app force-quit / reboot, though not
 // perfectly reliably — the Dart engine tolerates missed/duplicate/late signals):
@@ -23,6 +23,10 @@ import UserNotifications
 private enum AppGroup {
   static let suiteName = "group.com.simo.evolve.verification"
   static let pendingSignalsKey = "pending_screen_time_signals"
+  /// `["title": String, "body": String]` written by the app in the current
+  /// locale (the extension can't read Flutter's translations). MUST match
+  /// `VerificationAppGroup.notificationCopyKey` in Runner/AppDelegate.swift.
+  static let notificationCopyKey = "screen_time_notification_copy"
 }
 
 class DeviceActivityMonitorExtension: DeviceActivityMonitor {
@@ -46,8 +50,13 @@ class DeviceActivityMonitorExtension: DeviceActivityMonitor {
 
   private func postLimitReachedNotification() {
     let content = UNMutableNotificationContent()
-    content.title = "Screen time limit reached"
-    content.body = "You've hit your screen time goal for today."
+    // Localized copy the app wrote for the current locale; English fallback if
+    // the app hasn't run a reconcile yet (mirrors en.i18n.json).
+    let copy = UserDefaults(suiteName: AppGroup.suiteName)?
+      .dictionary(forKey: AppGroup.notificationCopyKey)
+    content.title = (copy?["title"] as? String) ?? "Screen time limit reached"
+    content.body =
+      (copy?["body"] as? String) ?? "You've reached your screen time limit for today."
     content.sound = .default
     // nil trigger ⇒ deliver immediately. Unique id per fire so it isn't coalesced.
     let request = UNNotificationRequest(

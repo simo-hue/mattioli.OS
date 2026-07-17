@@ -48,6 +48,15 @@ class _HabitManagementModalState extends ConsumerState<HabitManagementModal> {
   String? _reminderTime;
   VerificationRule? _verificationRule;
 
+  /// Draft Mode-A (`screen_time_apps`) selection, held transiently until save
+  /// (the create-flow goalId isn't final until then). Persisted device-local,
+  /// keyed by the FINAL goalId — never part of Goal.
+  ScreenTimeSelectionEntry? _appsSelection;
+
+  /// Inline error for the verification block (20-activity cap / missing
+  /// selection), separate from the name field's [_nameError].
+  String? _verifyError;
+
   /// Inline validation message for the name field (null = valid). Drives the red
   /// border + helper text.
   String? _nameError;
@@ -110,6 +119,32 @@ class _HabitManagementModalState extends ConsumerState<HabitManagementModal> {
         ? context.t.habits.habitUpdated
         : context.t.habits.habitAdded;
 
+    // Screen Time guards — run for create AND manual→screen-time edits.
+    final savingScreenTime = _verificationRule?.isScreenTime ?? false;
+    if (savingScreenTime) {
+      // Mode A can't verify without a picked selection.
+      if (_isAppsRule && _appsSelection == null) {
+        ref.hapticMedium();
+        setState(() => _verifyError =
+            context.t.verification.screenTime.needsSelectionNote);
+        return;
+      }
+      // Apple caps DeviceActivity at 20 simultaneous activities (D10). Count the
+      // existing screen-time goals, excluding the one being edited.
+      final existingScreenTime = ref
+          .read(goalsProvider)
+          .where((g) =>
+              g.verificationRule?.isScreenTime == true &&
+              g.id != _editingHabit?.id)
+          .length;
+      if (existingScreenTime >= 20) {
+        ref.hapticMedium();
+        setState(() => _verifyError =
+            context.t.verification.screenTime.tooManyMonitors);
+        return;
+      }
+    }
+
     if (!isEditing) {
       final settings = ref.read(settingsProvider);
       final isPro = settings.isPro;
@@ -129,8 +164,12 @@ class _HabitManagementModalState extends ConsumerState<HabitManagementModal> {
       }
     }
 
-    setState(() => _isSaving = true);
+    setState(() {
+      _isSaving = true;
+      _verifyError = null;
+    });
     final bool ok;
+    Goal? createdGoal;
     try {
       if (isEditing) {
         final updated = _editingHabit!.copyWith(
@@ -157,7 +196,10 @@ class _HabitManagementModalState extends ConsumerState<HabitManagementModal> {
           reminderTime: _reminderTime,
           verificationRule: _verificationRule,
         );
-        ok = await ref.read(goalsProvider.notifier).addHabit(newHabit);
+        // addHabit returns the PERSISTED goal (its id is the server UUID in
+        // cloud mode, not the throwaway temp id above).
+        createdGoal = await ref.read(goalsProvider.notifier).addHabit(newHabit);
+        ok = createdGoal != null;
       }
     } finally {
       if (mounted) {
@@ -171,12 +213,31 @@ class _HabitManagementModalState extends ConsumerState<HabitManagementModal> {
     // optimistic add back, so we neither reset the form nor confirm success.
     if (!ok || !mounted) return;
 
+    // Commit / clean up the Mode-A selection now the FINAL goalId is known.
+    // Keying by the persisted id (not the create-time temp id) is what makes a
+    // Mode-A habit actually verifiable in cloud mode.
+    if (VerificationConfig.screenTimeEnabled) {
+      final goalId = isEditing ? _editingHabit!.id : createdGoal!.id;
+      final selections = ref.read(screenTimeSelectionsProvider.notifier);
+      final sel = _appsSelection;
+      if (_isAppsRule && sel != null) {
+        await selections.setSelection(goalId, sel);
+      } else if (isEditing) {
+        // Rule switched away from screen_time_apps (or cleared) → drop the blob.
+        await selections.remove(goalId);
+      }
+    }
+
+    if (!mounted) return; // selection writes above are async gaps
+
     _nameController.clear();
     setState(() {
       _editingHabit = null;
       _selectedColor = kEvolveDefaultPalette[0];
       _reminderTime = null;
       _verificationRule = null;
+      _appsSelection = null;
+      _verifyError = null;
       _nameError = null;
       _nameAutoFilled = false;
     });
@@ -195,6 +256,14 @@ class _HabitManagementModalState extends ConsumerState<HabitManagementModal> {
       _selectedColor = habit.color;
       _reminderTime = habit.reminderTime;
       _verificationRule = habit.verificationRule;
+      // Mode A: rehydrate the picked selection from the device-local store. If
+      // it isn't resolvable here (e.g. synced from another device), leave it
+      // null so the habit reads as couldn't-verify until re-picked — never a
+      // silent pass.
+      _appsSelection = habit.verificationRule?.metricKey == 'screen_time_apps'
+          ? ref.read(screenTimeSelectionsProvider)[habit.id]
+          : null;
+      _verifyError = null;
       _nameError = null;
       _nameAutoFilled = false; // the loaded title is the user's real name
     });
@@ -205,14 +274,62 @@ class _HabitManagementModalState extends ConsumerState<HabitManagementModal> {
     );
   }
 
-  /// The verification templates to offer — only those whose provider is enabled
-  /// (HealthKit-only while Screen Time stays dark).
+  /// The verification templates to offer — only those whose provider/mode is
+  /// enabled. Screen Time is gated per template so Mode A (`screen_time_apps`)
+  /// can ship live while Mode B (`screen_time_total`) stays dark.
   List<VerificationTemplate> get _availableTemplates => [
         for (final t in VerificationCatalog.all)
-          if ((t.isHealthKit && VerificationConfig.healthKitEnabled) ||
-              (t.isScreenTime && VerificationConfig.screenTimeEnabled))
-            t,
+          if (_templateEnabled(t)) t,
       ];
+
+  bool _templateEnabled(VerificationTemplate t) {
+    if (t.isHealthKit) return VerificationConfig.healthKitEnabled;
+    return switch (t.key) {
+      'screen_time_apps' => VerificationConfig.screenTimeAppsEnabled,
+      'screen_time_total' => VerificationConfig.screenTimeTotalEnabled,
+      _ => false,
+    };
+  }
+
+  /// Whether the current draft rule is the Mode-A (picked-apps) template.
+  bool get _isAppsRule => _verificationRule?.metricKey == 'screen_time_apps';
+
+  /// Presents the native FamilyActivityPicker (Mode A). Requests FamilyControls
+  /// authorization first (the picker needs it to render), stores the returned
+  /// selection in the transient draft, and rejects an empty pick (it can't be
+  /// monitored, so it must not masquerade as "watch everything").
+  Future<void> _pickAppsAndCategories() async {
+    final tr = context.t; // capture before async gaps
+    final bridge = ref.read(screenTimeBridgeProvider);
+    ref.hapticMedium();
+    final status = await bridge.authorizationStatus();
+    if (status != ScreenTimeAuthorizationStatus.approved) {
+      await bridge.requestIndividualAuthorization();
+      ref.invalidate(screenTimeAuthStatusProvider);
+    }
+    final result = await bridge.presentActivityPicker(
+      initialSelectionBlob: _appsSelection?.blob,
+      pickerTitle: tr.verification.screenTime.chooseApps,
+      doneLabel: tr.common.actions.done,
+      cancelLabel: tr.common.actions.cancel,
+    );
+    if (!mounted || result == null) return; // cancelled / unavailable
+    if (result.isEmpty) {
+      setState(() {
+        _appsSelection = null;
+        _verifyError = tr.verification.screenTime.selectionEmpty;
+      });
+      return;
+    }
+    setState(() {
+      _appsSelection = ScreenTimeSelectionEntry(
+        blob: result.blob,
+        applicationCount: result.applicationCount,
+        categoryCount: result.categoryCount,
+      );
+      _verifyError = null;
+    });
+  }
 
   Future<void> _grantHealthAccess() async {
     final rule = _verificationRule;
@@ -558,6 +675,12 @@ class _HabitManagementModalState extends ConsumerState<HabitManagementModal> {
                             final prevKey = _verificationRule?.metricKey;
                             setState(() {
                               _verificationRule = r;
+                              // A stale selection must not leak onto a different
+                              // metric (or a cleared rule).
+                              if (r?.metricKey != 'screen_time_apps') {
+                                _appsSelection = null;
+                              }
+                              _verifyError = null;
                               // Offer the metric's label as a default name when
                               // the metric changes — but only while the field is
                               // empty or still holds an untouched auto-fill, so a
@@ -587,6 +710,43 @@ class _HabitManagementModalState extends ConsumerState<HabitManagementModal> {
                             onPressed: _grantHealthAccess,
                           ),
                         ],
+                        // Mode A — pick which apps/categories this habit limits.
+                        // A selection is required for the habit to verify.
+                        if (_isAppsRule) ...[
+                          const SizedBox(height: 8),
+                          EvolveButton(
+                            label: _appsSelection == null
+                                ? context.t.verification.screenTime.chooseApps
+                                : context
+                                    .t.verification.screenTime.changeSelection,
+                            style: EvolveButtonStyle.secondary,
+                            onPressed: _pickAppsAndCategories,
+                          ),
+                          const SizedBox(height: 6),
+                          Text(
+                            _appsSelection == null
+                                ? context
+                                    .t.verification.screenTime.needsSelectionNote
+                                : context.t.verification.screenTime
+                                    .selectionSummary(
+                                    count: _appsSelection!.totalCount,
+                                  ),
+                            style: TextStyle(
+                              fontSize: 12,
+                              color: context.appColors.mutedForeground,
+                            ),
+                          ),
+                        ],
+                        if (_verifyError != null) ...[
+                          const SizedBox(height: 6),
+                          Text(
+                            _verifyError!,
+                            style: TextStyle(
+                              fontSize: 12,
+                              color: Theme.of(context).colorScheme.error,
+                            ),
+                          ),
+                        ],
                       ],
                       const SizedBox(height: 24),
                       if (_editingHabit != null)
@@ -601,6 +761,8 @@ class _HabitManagementModalState extends ConsumerState<HabitManagementModal> {
                                   _nameController.clear();
                                   _reminderTime = null;
                                   _verificationRule = null;
+                                  _appsSelection = null;
+                                  _verifyError = null;
                                   _nameError = null;
                                   _nameAutoFilled = false;
                                 }),

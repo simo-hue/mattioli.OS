@@ -41,7 +41,7 @@ void main() {
       expect(
         verificationRuleSummary(
             t, VerificationCatalog.screenTimeTotal.ruleWith(120)),
-        '≤ 120 min Screen time',
+        '≤ 120 min Total device usage',
       );
       expect(
         verificationRuleSummary(t, VerificationCatalog.sleepHours.ruleWith(8)),
@@ -102,15 +102,15 @@ void main() {
       await tester.tap(find.byType(CupertinoSwitch));
       await tester.pumpAndSettle();
       expect(find.text('≥ 10,000 Steps'), findsOneWidget);
-      expect(find.byType(ChoiceChip), findsNWidgets(9));
+      expect(find.byType(ChoiceChip), findsNWidgets(10));
     });
 
     testWidgets('selecting a template switches the rule + its default',
         (tester) async {
       await tester.pumpWidget(_Harness(VerificationCatalog.steps.ruleWith(10000)));
-      await tester.tap(find.widgetWithText(ChoiceChip, 'Screen time'));
+      await tester.tap(find.widgetWithText(ChoiceChip, 'Total device usage'));
       await tester.pumpAndSettle();
-      expect(find.text('≤ 120 min Screen time'), findsOneWidget);
+      expect(find.text('≤ 120 min Total device usage'), findsOneWidget);
     });
 
     testWidgets('stepper increments the threshold by the template step',

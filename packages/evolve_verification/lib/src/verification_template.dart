@@ -74,7 +74,8 @@ class VerificationTemplate {
 
 /// The v1 template catalog (D5): eight HealthKit "reach a target" habits
 /// covering all three Activity rings plus sleep/mindful/distance/workout, and
-/// one Screen Time "stay under a limit" habit. Per-app and compound rules are
+/// two Screen Time "stay under a limit" habits — total device usage (Mode B)
+/// and combined usage of picked apps/categories (Mode A). Compound rules are
 /// deliberately excluded from v1.
 abstract final class VerificationCatalog {
   // ---- HealthKit (atLeast) --------------------------------------------------
@@ -194,6 +195,9 @@ abstract final class VerificationCatalog {
 
   // ---- Screen Time (atMost) -------------------------------------------------
 
+  /// Mode B — total device usage. Its "empty selection = all activity" native
+  /// semantics are unverified on-device, so it ships dark behind
+  /// `screenTimeTotalEnabled`.
   static const screenTimeTotal = VerificationTemplate(
     key: 'screen_time_total',
     provider: VerificationProvider.screenTime,
@@ -202,6 +206,22 @@ abstract final class VerificationCatalog {
     unit: VerificationUnit.minutes,
     aggregation: VerificationAggregation.sum,
     defaultThreshold: 120,
+    minThreshold: 15,
+    maxThreshold: 1440,
+    step: 15,
+  );
+
+  /// Mode A — combined usage of the apps/categories the user picks with
+  /// `FamilyActivityPicker`. The picked selection is stored device-local and
+  /// keyed by goalId; the threshold measures the whole set as one activity.
+  static const screenTimeApps = VerificationTemplate(
+    key: 'screen_time_apps',
+    provider: VerificationProvider.screenTime,
+    category: VerificationCategory.screenTime,
+    comparator: VerificationComparator.atMost,
+    unit: VerificationUnit.minutes,
+    aggregation: VerificationAggregation.sum,
+    defaultThreshold: 60,
     minThreshold: 15,
     maxThreshold: 1440,
     step: 15,
@@ -217,6 +237,7 @@ abstract final class VerificationCatalog {
     mindfulMinutes,
     sleepHours,
     workout,
+    screenTimeApps,
     screenTimeTotal,
   ];
 

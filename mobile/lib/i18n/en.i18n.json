@@ -178,7 +178,8 @@
       "experience": "USER EXPERIENCE",
       "aiCoach": "AI COACH",
       "unitsLanguage": "UNITS & LANGUAGE",
-      "appleHealth": "APPLE HEALTH"
+      "appleHealth": "APPLE HEALTH",
+      "screenTime": "SCREEN TIME"
     },
     "appearance": {
       "darkMode": "Dark Mode",
@@ -1176,7 +1177,8 @@
       "mindfulMinutes": "Mindful minutes",
       "sleepHours": "Sleep hours",
       "workout": "Workout",
-      "screenTimeTotal": "Screen time"
+      "screenTimeTotal": "Total device usage",
+      "screenTimeApps": "Time in chosen apps"
     },
     "units": {
       "minutes": "min",
@@ -1198,6 +1200,16 @@
       "mindfulness": "Mindfulness",
       "sleep": "Sleep",
       "screenTime": "Screen Time"
+    },
+    "screenTime": {
+      "chooseApps": "Choose apps & categories",
+      "changeSelection": "Change apps & categories",
+      "selectionSummary": "{count} selected",
+      "selectionEmpty": "No apps chosen yet",
+      "needsSelectionNote": "Pick the apps and categories this habit should track.",
+      "tooManyMonitors": "You can auto-verify up to 20 Screen Time habits. Turn one off to add another.",
+      "limitReachedTitle": "Screen time limit reached",
+      "limitReachedBody": "You've reached your screen time limit for today."
     }
   },
   "health": {
@@ -1215,5 +1227,18 @@
     "allowAccess": "Allow access",
     "manageHint": "Access is granted per data type. To review or change it, open the {app} app, then Sharing, Apps and services, Evolve.",
     "grantNote": "iOS does not tell apps whether read access was granted, so Evolve cannot show you here. If a habit will not verify, check the {app} app."
+  },
+  "screenTime": {
+    "rowTitle": "Screen Time",
+    "statusNotConnected": "Off",
+    "statusConnected": "On",
+    "statusDenied": "Access denied",
+    "worksWith": "Evolve uses Screen Time to verify habits about how much you use your apps — privately, on this device.",
+    "privacyNote": "The apps you choose stay on this iPhone and are never synced or sent anywhere.",
+    "permissionNote": "You'll be asked to allow Screen Time access. Evolve only reads the totals for the apps and categories you pick.",
+    "optIn": "Turn on Screen Time",
+    "deniedNote": "Screen Time access is turned off. To use it, open Settings, Screen Time, and allow Evolve.",
+    "manageHint": "You can change or turn this off anytime in the iOS Settings app.",
+    "enabledNote": "Screen Time verification is on. Add a Screen Time habit to start tracking."
   }
 }

@@ -3,6 +3,7 @@ import DeviceActivity
 import FamilyControls
 import Flutter
 import HealthKit
+import SwiftUI
 import UIKit
 
 @main
@@ -378,6 +379,12 @@ enum VerificationAppGroup {
   /// `["<eventName>": ["goalId": String]]`.
   static let monitorSpecsKey = "screen_time_monitor_specs"
 
+  /// Key holding the current-locale copy for the extension's "limit reached"
+  /// local notification: `["title": String, "body": String]`. Written by the app
+  /// (which alone can read Flutter's translations); the extension reads it and
+  /// falls back to English if absent.
+  static let notificationCopyKey = "screen_time_notification_copy"
+
   static var defaults: UserDefaults? { UserDefaults(suiteName: suiteName) }
 }
 
@@ -584,6 +591,8 @@ enum ScreenTimeBridge {
     case "authorizationStatus": authorizationStatus(result)
     case "requestIndividualAuthorization": requestIndividualAuthorization(result)
     case "syncMonitoredGoals": syncMonitoredGoals(args, result)
+    case "presentActivityPicker": presentActivityPicker(args, result)
+    case "setLocalizedNotificationCopy": setLocalizedNotificationCopy(args, result)
     case "drainSignals": drainSignals(result)
     default: result(FlutterMethodNotImplemented)
     }
@@ -617,6 +626,9 @@ enum ScreenTimeBridge {
   // MARK: - Monitoring
 
   private static func syncMonitoredGoals(_ args: [String: Any]?, _ result: @escaping FlutterResult) {
+    // DeviceActivity threshold monitoring is iOS 16+. On iOS 15 there is nothing
+    // to reconcile — the Dart side never reaches an approved status there.
+    guard #available(iOS 16.0, *) else { result(nil); return }
     let goals = (args?["goals"] as? [[String: Any]]) ?? []
     let center = DeviceActivityCenter()
     // Reconcile by clearing everything and re-adding the current set (idempotent,
@@ -635,12 +647,33 @@ enum ScreenTimeBridge {
           let goalId = goal["goalId"] as? String,
           let minutes = (goal["thresholdMinutes"] as? NSNumber)?.intValue
         else { continue }
-        let event = DeviceActivityEvent(
-          applications: [],
-          categories: [],
-          webDomains: [],
-          threshold: DateComponents(minute: minutes)
-        )
+
+        let event: DeviceActivityEvent
+        if (goal["mode"] as? String) == "apps" {
+          // Mode A: decode the picked FamilyActivitySelection and monitor its
+          // COMBINED app/category/web usage. A goal whose selection can't be
+          // decoded is SKIPPED (never registered), so it records couldn't-verify
+          // rather than silently monitoring nothing.
+          guard
+            let blob = goal["selection"] as? String,
+            let selection = decodeSelection(blob)
+          else { continue }
+          event = DeviceActivityEvent(
+            applications: selection.applicationTokens,
+            categories: selection.categoryTokens,
+            webDomains: selection.webDomainTokens,
+            threshold: DateComponents(minute: minutes)
+          )
+        } else {
+          // Mode B: empty selection = total device usage.
+          event = DeviceActivityEvent(
+            applications: [],
+            categories: [],
+            webDomains: [],
+            threshold: DateComponents(minute: minutes)
+          )
+        }
+
         try center.startMonitoring(
           DeviceActivityName(goalId),
           during: schedule,
@@ -660,6 +693,99 @@ enum ScreenTimeBridge {
     }
   }
 
+  // MARK: - Mode A: FamilyActivityPicker + selection codec
+
+  @available(iOS 16.0, *)
+  private static func decodeSelection(_ blob: String) -> FamilyActivitySelection? {
+    guard let data = Data(base64Encoded: blob) else { return nil }
+    return try? JSONDecoder().decode(FamilyActivitySelection.self, from: data)
+  }
+
+  @available(iOS 16.0, *)
+  private static func encodeSelection(_ selection: FamilyActivitySelection) -> String? {
+    guard let data = try? JSONEncoder().encode(selection) else { return nil }
+    return data.base64EncodedString()
+  }
+
+  /// Presents `FamilyActivityPicker` in a hosting controller and returns the
+  /// encoded selection (or nil on cancel / unavailable). Requires FamilyControls
+  /// `.approved` authorization (requested Dart-side before this is called) to
+  /// render real content.
+  private static func presentActivityPicker(
+    _ args: [String: Any]?, _ result: @escaping FlutterResult
+  ) {
+    guard #available(iOS 16.0, *) else { result(nil); return }
+    let initialBlob = args?["selection"] as? String
+    let title = args?["title"] as? String ?? "Choose apps & categories"
+    let doneLabel = args?["done"] as? String ?? "Done"
+    let cancelLabel = args?["cancel"] as? String ?? "Cancel"
+
+    DispatchQueue.main.async {
+      guard let top = topViewController() else { result(nil); return }
+      var initial = FamilyActivitySelection()
+      if let blob = initialBlob, let decoded = decodeSelection(blob) {
+        initial = decoded
+      }
+      // Return exactly once, whether the sheet finishes via Done/Cancel.
+      var didReturn = false
+      let finish: (FamilyActivitySelection?) -> Void = { selection in
+        guard !didReturn else { return }
+        didReturn = true
+        top.dismiss(animated: true)
+        guard let selection = selection, let blob = encodeSelection(selection) else {
+          result(nil)
+          return
+        }
+        result([
+          "blob": blob,
+          "appCount": selection.applicationTokens.count,
+          "categoryCount": selection.categoryTokens.count,
+        ])
+      }
+      let sheet = ActivityPickerSheet(
+        selection: initial,
+        title: title,
+        doneLabel: doneLabel,
+        cancelLabel: cancelLabel,
+        onFinish: finish
+      )
+      let host = UIHostingController(rootView: sheet)
+      // Disable interactive swipe-to-dismiss so the Cancel/Done toolbar — which
+      // always calls `finish` — is the ONLY exit. Otherwise a page-sheet swipe
+      // down tears the sheet down without firing `result`, leaking the reply and
+      // hanging the Dart `await` on presentActivityPicker forever.
+      host.isModalInPresentation = true
+      top.present(host, animated: true)
+    }
+  }
+
+  /// Stores the current-locale "limit reached" copy for the extension to read.
+  private static func setLocalizedNotificationCopy(
+    _ args: [String: Any]?, _ result: @escaping FlutterResult
+  ) {
+    guard let title = args?["title"] as? String,
+          let body = args?["body"] as? String else {
+      result(nil); return
+    }
+    VerificationAppGroup.defaults?.set(
+      ["title": title, "body": body],
+      forKey: VerificationAppGroup.notificationCopyKey
+    )
+    result(nil)
+  }
+
+  /// The topmost presented view controller in the active window scene. The app
+  /// is scene-based, so `AppDelegate.window` is nil — reach the root via
+  /// `connectedScenes`.
+  private static func topViewController() -> UIViewController? {
+    let scenes = UIApplication.shared.connectedScenes.compactMap { $0 as? UIWindowScene }
+    let scene = scenes.first { $0.activationState == .foregroundActive } ?? scenes.first
+    guard let window = scene?.windows.first(where: { $0.isKeyWindow }) ?? scene?.windows.first,
+          var top = window.rootViewController else { return nil }
+    while let presented = top.presentedViewController { top = presented }
+    return top
+  }
+
   // MARK: - Drain signals written by the extension
 
   private static func drainSignals(_ result: @escaping FlutterResult) {
@@ -671,5 +797,32 @@ enum ScreenTimeBridge {
 
   private static func main(_ work: @escaping () -> Void) {
     DispatchQueue.main.async(execute: work)
+  }
+}
+
+/// SwiftUI container hosting `FamilyActivityPicker` with a localized Done/Cancel
+/// toolbar. `onFinish(nil)` = cancelled; `onFinish(selection)` = confirmed.
+@available(iOS 16.0, *)
+private struct ActivityPickerSheet: View {
+  @State var selection: FamilyActivitySelection
+  let title: String
+  let doneLabel: String
+  let cancelLabel: String
+  let onFinish: (FamilyActivitySelection?) -> Void
+
+  var body: some View {
+    NavigationView {
+      FamilyActivityPicker(selection: $selection)
+        .navigationTitle(title)
+        .navigationBarTitleDisplayMode(.inline)
+        .toolbar {
+          ToolbarItem(placement: .cancellationAction) {
+            Button(cancelLabel) { onFinish(nil) }
+          }
+          ToolbarItem(placement: .confirmationAction) {
+            Button(doneLabel) { onFinish(selection) }
+          }
+        }
+    }
   }
 }

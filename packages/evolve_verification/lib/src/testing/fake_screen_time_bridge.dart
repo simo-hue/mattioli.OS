@@ -18,6 +18,14 @@ class FakeScreenTimeBridge implements ScreenTimeBridge {
   int syncCallCount = 0;
   int requestAuthorizationCount = 0;
 
+  /// What [presentActivityPicker] returns; defaults to null (cancelled).
+  ScreenTimeSelectionResult? nextPickerResult;
+  int presentPickerCount = 0;
+  String? lastPickerInitialBlob;
+
+  /// The most recent localized notification copy handed to the extension.
+  ({String title, String body})? lastNotificationCopy;
+
   void addSignal(ScreenTimeSignal signal) => _buffer.add(signal);
 
   @override
@@ -36,6 +44,26 @@ class FakeScreenTimeBridge implements ScreenTimeBridge {
     }
     syncCallCount++;
     lastSyncedSpecs = List.unmodifiable(specs);
+  }
+
+  @override
+  Future<ScreenTimeSelectionResult?> presentActivityPicker({
+    String? initialSelectionBlob,
+    String? pickerTitle,
+    String? doneLabel,
+    String? cancelLabel,
+  }) async {
+    presentPickerCount++;
+    lastPickerInitialBlob = initialSelectionBlob;
+    return nextPickerResult;
+  }
+
+  @override
+  Future<void> setLocalizedNotificationCopy({
+    required String title,
+    required String body,
+  }) async {
+    lastNotificationCopy = (title: title, body: body);
   }
 
   @override

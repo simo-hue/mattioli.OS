@@ -761,15 +761,23 @@ class DesktopBackupImportService {
       // which intentionally left its equivalent `goals` read unwindowed too.
       final goalRes = await client
           .from('goals')
-          .select('id,start_date')
+          .select('id,start_date,frequency_days')
           .inFilter('id', ids);
+      final goalRows = (goalRes as List)
+          .map((e) => (e as Map).cast<String, dynamic>())
+          .toList();
       final startById = {
-        for (final r in (goalRes as List).map(
-          (e) => (e as Map).cast<String, dynamic>(),
-        ))
+        for (final r in goalRows)
           r['id'] as String:
               DateTime.tryParse((r['start_date'] as String?) ?? '') ??
               DateTime(2000),
+      };
+      // Cloud stores frequency_days as a native integer[]; honor it so a
+      // recomputed streak skips off-days like the live one.
+      final freqById = <String, List<int>?>{
+        for (final r in goalRows)
+          r['id'] as String:
+              DesktopPrivateDb.frequencyDaysList(r['frequency_days']),
       };
 
       // Windowed: a streak computed from a truncated history is wrong, and it
@@ -813,6 +821,7 @@ class DesktopBackupImportService {
             date: d,
             logs: map,
             startDate: startDate,
+            frequencyDays: freqById[goalId],
           );
           if (newStreak != ((r['streak'] as num?)?.toInt() ?? 0)) {
             changed.add({...r, 'streak': newStreak});

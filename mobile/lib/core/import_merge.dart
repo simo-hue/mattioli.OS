@@ -991,11 +991,20 @@ String _dateKey(DateTime d) =>
 Future<void> _recomputeStreaks(Transaction txn, Set<String> goalIds) async {
   for (final goalId in goalIds) {
     final goalRows = await txn.query('goals',
-        columns: ['start_date'], where: 'id = ?', whereArgs: [goalId], limit: 1);
+        columns: ['start_date', 'frequency_days'],
+        where: 'id = ?',
+        whereArgs: [goalId],
+        limit: 1);
     if (goalRows.isEmpty) continue;
     final startDate =
         DateTime.tryParse(goalRows.first['start_date'] as String? ?? '') ??
             DateTime(2000);
+    // The private DB stores frequency_days as a JSON string ("[1,3,5]"); decode
+    // it so a recomputed streak skips off-days like the live one.
+    final rawFreq = goalRows.first['frequency_days'];
+    final frequencyDays = _frequencyDays(
+      rawFreq is String ? jsonDecode(rawFreq) : rawFreq,
+    );
 
     final logRows = await txn.query('goal_logs',
         columns: ['id', 'date', 'status', 'streak'],
@@ -1016,7 +1025,11 @@ Future<void> _recomputeStreaks(Transaction txn, Set<String> goalIds) async {
       final d = dateById[id];
       if (d == null) continue;
       final newStreak = computeStreak(
-          habitId: goalId, date: d, logs: map, startDate: startDate);
+          habitId: goalId,
+          date: d,
+          logs: map,
+          startDate: startDate,
+          frequencyDays: frequencyDays);
       final old = (r['streak'] as num?)?.toInt() ?? 0;
       if (newStreak != old) {
         await txn.update('goal_logs', {'streak': newStreak},

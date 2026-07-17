@@ -233,6 +233,7 @@ class GoalsNotifier extends Notifier<List<Goal>> {
               habit.id,
               habit.title,
               habit.reminderTime,
+              frequencyDays: habit.frequencyDays,
             ),
           );
         }
@@ -292,6 +293,7 @@ class GoalsNotifier extends Notifier<List<Goal>> {
             realGoal.id,
             realGoal.title,
             realGoal.reminderTime,
+            frequencyDays: realGoal.frequencyDays,
           ),
         );
       }
@@ -310,6 +312,24 @@ class GoalsNotifier extends Notifier<List<Goal>> {
     }
   }
 
+  /// Cancels then (if set) reschedules [habit]'s reminder, **sequenced**: the
+  /// cancel now clears the every-day id plus all 7 per-weekday ids, so racing it
+  /// against the schedule (two independent unawaited futures on the same method
+  /// channel) could let a late cancel delete a freshly-registered weekday
+  /// reminder. Awaiting cancel first guarantees the new reminders survive.
+  Future<void> _rescheduleReminder(Goal habit) async {
+    final notifications = NotificationService();
+    await notifications.cancelHabitReminder(habit.id);
+    if (habit.reminderTime != null) {
+      await notifications.scheduleHabitReminder(
+        habit.id,
+        habit.title,
+        habit.reminderTime,
+        frequencyDays: habit.frequencyDays,
+      );
+    }
+  }
+
   Future<bool> updateHabit(Goal updatedHabit) async {
     // Snapshot for optimistic rollback if persistence fails.
     final previousGoals = state;
@@ -321,16 +341,7 @@ class GoalsNotifier extends Notifier<List<Goal>> {
     if (ref.read(activeDataModeProvider) == AppDataMode.private) {
       try {
         await ref.read(privateLocalDatabaseProvider).upsertGoal(updatedHabit);
-        unawaited(NotificationService().cancelHabitReminder(updatedHabit.id));
-        if (updatedHabit.reminderTime != null) {
-          unawaited(
-            NotificationService().scheduleHabitReminder(
-              updatedHabit.id,
-              updatedHabit.title,
-              updatedHabit.reminderTime,
-            ),
-          );
-        }
+        unawaited(_rescheduleReminder(updatedHabit));
       } catch (e, stack) {
         AppLogger.error('[Goals] Private update error', e, stack);
         state = previousGoals;
@@ -358,19 +369,16 @@ class GoalsNotifier extends Notifier<List<Goal>> {
       if (updatedHabit.verificationRule == null) {
         payload.addAll(VerificationRule.nullColumns);
       }
+      // Goal.toJson OMITS frequency_days when null (every-day), and an UPDATE
+      // leaves omitted columns untouched — so clearing a restricted schedule to
+      // every-day would keep the old days on the server and resurrect on the
+      // next sync. Write it explicitly (null clears the column) — same reasoning
+      // as the verify_* columns above.
+      payload['frequency_days'] = updatedHabit.frequencyDays;
       await supabase.from('goals').update(payload).eq('id', updatedHabit.id);
 
-      // Schedula promemoria
-      unawaited(NotificationService().cancelHabitReminder(updatedHabit.id));
-      if (updatedHabit.reminderTime != null) {
-        unawaited(
-          NotificationService().scheduleHabitReminder(
-            updatedHabit.id,
-            updatedHabit.title,
-            updatedHabit.reminderTime,
-          ),
-        );
-      }
+      // Schedule the reminder(s); cancel → schedule is sequenced inside.
+      unawaited(_rescheduleReminder(updatedHabit));
       return true;
     } catch (e, stack) {
       AppLogger.error('[Goals] Update error', e, stack);
@@ -736,6 +744,7 @@ class HabitLogsNotifier extends Notifier<HabitLogsMap> {
             date: date,
             logs: newState,
             startDate: goal?.startDate ?? date,
+            frequencyDays: goal?.frequencyDays,
           );
 
     if (isPrivateMode) {
@@ -866,6 +875,7 @@ class HabitLogsNotifier extends Notifier<HabitLogsMap> {
       date: parsedDate,
       logs: newState,
       startDate: goal?.startDate ?? parsedDate,
+      frequencyDays: goal?.frequencyDays,
     );
 
     try {

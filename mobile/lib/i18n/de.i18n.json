@@ -307,6 +307,15 @@
       "sat": "Sa",
       "sun": "So"
     },
+    "weekdayInitials": [
+      "M",
+      "D",
+      "M",
+      "D",
+      "F",
+      "S",
+      "S"
+    ],
     "moodSaveErrorTitle": "Fehler beim Speichern der Stimmung",
     "moodSaveFailed": "Deine Stimmung konnte nicht gespeichert werden. Versuche es erneut."
   },
@@ -1022,6 +1031,7 @@
     "goodMorning": "Guten Morgen",
     "dailyCheckIn": "Täglicher Check-in",
     "color": "Farbe",
+    "weeklyFrequency": "Wöchentliche Häufigkeit",
     "createHabit": "Gewohnheit erstellen",
     "createYourFirstHabitToStart": "Erstellen Sie Ihre erste Gewohnheit, um Ihre Fortschritte zu verfolgen und Ihre Routine aufzubauen.",
     "currentAge": "Aktuelles Alter",

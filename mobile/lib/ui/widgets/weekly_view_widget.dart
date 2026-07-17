@@ -75,7 +75,7 @@ class _WeeklyViewWidgetState extends ConsumerState<WeeklyViewWidget> {
       int doneCount = 0;
       
       for (final habit in habits) {
-        if (habit.isActiveOn(dayDate)) {
+        if (habit.isScheduledOn(dayDate)) {
           activeCount++;
           if (logs[dayKey]?[habit.id] == 'done') {
             doneCount++;

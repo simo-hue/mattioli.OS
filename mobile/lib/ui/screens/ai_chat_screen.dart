@@ -348,7 +348,7 @@ class _AIChatScreenState extends ConsumerState<AIChatScreen> {
     final todayKey = _todayKey();
     final todayLogs = habitLogs[todayKey] ?? {};
     final todayDone = todayLogs.values.where((s) => s == 'done').length;
-    final todayTotal = habits.where((h) => h.isActiveOn(DateTime.now())).length;
+    final todayTotal = habits.where((h) => h.isScheduledOn(DateTime.now())).length;
 
     final goalsList = activeGoals.isNotEmpty
         ? activeGoals.map((g) => '  • ${g.title}').join('\n')
@@ -413,7 +413,7 @@ class _AIChatScreenState extends ConsumerState<AIChatScreen> {
     final todayKey = _todayKey();
     final todayLogs = habitLogs[todayKey] ?? {};
     final todayDone = todayLogs.values.where((s) => s == 'done').length;
-    final todayTotal = habits.where((h) => h.isActiveOn(DateTime.now())).length;
+    final todayTotal = habits.where((h) => h.isScheduledOn(DateTime.now())).length;
 
     // 2. Suggerimenti specifici in base agli switch attivi
     if (_shareGoals && !_shareHabits) {

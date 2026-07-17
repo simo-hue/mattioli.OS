@@ -22,6 +22,7 @@ import '../kit/evolve_section_header.dart';
 import '../kit/evolve_sheet.dart';
 import '../kit/evolve_spinner.dart';
 import '../kit/evolve_toast.dart';
+import '../kit/evolve_weekday_selector.dart';
 
 class HabitManagementModal extends ConsumerStatefulWidget {
   const HabitManagementModal({super.key});
@@ -47,6 +48,12 @@ class _HabitManagementModalState extends ConsumerState<HabitManagementModal> {
   Goal? _editingHabit;
   String? _reminderTime;
   VerificationRule? _verificationRule;
+
+  /// Weekly-schedule selection (ISO 1=Mon…7=Sun). Defaults to every day; an
+  /// all-7 selection is persisted as `null` (every-day) via
+  /// [Goal.canonicalFrequencyDays]. Never empty — the picker enforces ≥1 day.
+  List<int> _selectedDays = const [1, 2, 3, 4, 5, 6, 7];
+  static const List<int> _everyDay = [1, 2, 3, 4, 5, 6, 7];
 
   /// Draft Mode-A (`screen_time_apps`) selection, held transiently until save
   /// (the create-flow goalId isn't final until then). Persisted device-local,
@@ -171,12 +178,16 @@ class _HabitManagementModalState extends ConsumerState<HabitManagementModal> {
     final bool ok;
     Goal? createdGoal;
     try {
+      // All-7 collapses to null (every-day) — the canonical shared encoding.
+      final frequencyDays = Goal.canonicalFrequencyDays(_selectedDays);
       if (isEditing) {
         final updated = _editingHabit!.copyWith(
           title: name,
           color: _selectedColor,
           reminderTime: _reminderTime,
           clearReminderTime: _reminderTime == null,
+          frequencyDays: frequencyDays,
+          clearFrequency: frequencyDays == null,
           verificationRule: _verificationRule,
           clearVerificationRule: _verificationRule == null,
         );
@@ -188,6 +199,7 @@ class _HabitManagementModalState extends ConsumerState<HabitManagementModal> {
           description: '',
           icon: 'circle',
           color: _selectedColor,
+          frequencyDays: frequencyDays,
           startDate: DateTime(
             DateTime.now().year,
             DateTime.now().month,
@@ -235,6 +247,7 @@ class _HabitManagementModalState extends ConsumerState<HabitManagementModal> {
       _editingHabit = null;
       _selectedColor = kEvolveDefaultPalette[0];
       _reminderTime = null;
+      _selectedDays = _everyDay;
       _verificationRule = null;
       _appsSelection = null;
       _verifyError = null;
@@ -255,6 +268,11 @@ class _HabitManagementModalState extends ConsumerState<HabitManagementModal> {
       _nameController.text = habit.title;
       _selectedColor = habit.color;
       _reminderTime = habit.reminderTime;
+      // null/empty frequencyDays means "every day" → all chips selected.
+      final freq = habit.frequencyDays;
+      _selectedDays = (freq == null || freq.isEmpty)
+          ? _everyDay
+          : (List<int>.from(freq)..sort());
       _verificationRule = habit.verificationRule;
       // Mode A: rehydrate the picked selection from the device-local store. If
       // it isn't resolvable here (e.g. synced from another device), leave it
@@ -607,6 +625,17 @@ class _HabitManagementModalState extends ConsumerState<HabitManagementModal> {
                       ),
                       const SizedBox(height: 16),
                       EvolveSectionHeader(
+                        context.t.habits.weeklyFrequency,
+                        padding: EdgeInsets.zero,
+                      ),
+                      const SizedBox(height: 10),
+                      EvolveWeekdaySelector(
+                        selectedDays: _selectedDays,
+                        onChanged: (days) =>
+                            setState(() => _selectedDays = days),
+                      ),
+                      const SizedBox(height: 16),
+                      EvolveSectionHeader(
                         context.t.habits.reminder,
                         padding: EdgeInsets.zero,
                       ),
@@ -760,6 +789,7 @@ class _HabitManagementModalState extends ConsumerState<HabitManagementModal> {
                                   _editingHabit = null;
                                   _nameController.clear();
                                   _reminderTime = null;
+                                  _selectedDays = _everyDay;
                                   _verificationRule = null;
                                   _appsSelection = null;
                                   _verifyError = null;

@@ -321,6 +321,11 @@ class SupabaseDashboardRepository extends DashboardRepository {
   @override
   Future<void> updateHabit(DashboardHabit habit) async {
     final payload = habit.toRemoteJson()..remove('id');
+    // toRemoteJson OMITS frequency_days when null (every-day), and an UPDATE
+    // leaves omitted columns untouched — so clearing a restricted schedule to
+    // every-day would keep the old days on the server and resurrect on the next
+    // refetch. Write it explicitly (null clears the column).
+    payload['frequency_days'] = habit.frequencyDays;
     await _runOrQueue(
       _PendingMutation.update('goals', payload, {'id': habit.id}),
       () => _client.from('goals').update(payload).eq('id', habit.id),

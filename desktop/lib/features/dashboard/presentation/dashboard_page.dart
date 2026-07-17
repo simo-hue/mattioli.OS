@@ -18,7 +18,7 @@ import 'package:evolve_desktop/shared/widgets/verified_habit_badge.dart';
 import 'package:evolve_desktop/shared/widgets/evolve_dialog.dart';
 import 'package:evolve_desktop/shared/widgets/evolve_panel.dart';
 import 'package:evolve_desktop/features/dashboard/presentation/create_goal_dialog.dart';
-import 'package:evolve_desktop/features/dashboard/presentation/create_habit_dialog.dart';
+import 'package:evolve_desktop/features/habits/presentation/habits_page.dart';
 import 'package:evolve_desktop/features/dashboard/presentation/sync_off_banner.dart';
 import 'package:evolve_desktop/features/shell/application/navigation_controller.dart';
 import 'package:flutter/material.dart';
@@ -876,10 +876,12 @@ class _HabitPanel extends ConsumerWidget {
                 EvolveSquareIconButton(
                   icon: LucideIcons.plus,
                   tooltip: t.createHabit.title,
-                  onTap: () => showEvolveDialog<void>(
-                    context: context,
-                    builder: (context) => const CreateHabitDialog(),
-                  ),
+                  // Consolidated habit editor (title + color + weekday + reminder),
+                  // shared with the Habits page and ⌘K palette. Stays on the
+                  // dashboard when the new habit is scheduled today; otherwise
+                  // showCreateHabitDialog jumps to Habits so it isn't hidden.
+                  onTap: () =>
+                      showCreateHabitDialog(context, ref, navigateToHabits: false),
                 ),
               ],
             ),

@@ -845,6 +845,7 @@ class AppSettingsNotifier extends Notifier<AppSettings> {
             goal.id,
             goal.title,
             goal.reminderTime,
+            frequencyDays: goal.frequencyDays,
           );
         }
       }

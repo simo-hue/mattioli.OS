@@ -369,7 +369,7 @@ class _AiCoachPageState extends ConsumerState<AiCoachPage> {
               "- ${t.aiCoach.habitLine(title: h.title, done: done, streak: h.streak)}\n";
         }
       }
-      final activeToday = habits.where((h) => h.isActiveOn(now)).toList();
+      final activeToday = habits.where((h) => h.isScheduledOn(now)).toList();
       final todayDone = activeToday
           .where((h) => snapshot.habitStatusFor(h.id, now) == 'done')
           .length;
@@ -506,7 +506,7 @@ class _AiCoachPageState extends ConsumerState<AiCoachPage> {
       (g) => g.state == GoalState.active,
     );
     final activeToday = snapshot.habits
-        .where((h) => h.isActiveOn(now))
+        .where((h) => h.isScheduledOn(now))
         .toList();
     final todayDone = activeToday
         .where((h) => snapshot.habitStatusFor(h.id, now) == 'done')

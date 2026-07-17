@@ -242,7 +242,7 @@ class PrivateDashboardRepository extends DashboardRepository {
     logs.putIfAbsent(dashboardDateKey(date), () => {})[habitId] = nextStatus;
     final startRows = await db.query(
       'goals',
-      columns: ['start_date'],
+      columns: ['start_date', 'frequency_days'],
       where: 'id = ?',
       whereArgs: [habitId],
       limit: 1,
@@ -254,11 +254,15 @@ class PrivateDashboardRepository extends DashboardRepository {
               : '',
         ) ??
         date;
+    final frequencyDays = startRows.isEmpty
+        ? null
+        : DesktopPrivateDb.frequencyDaysList(startRows.first['frequency_days']);
     return computeStreak(
       habitId: habitId,
       date: date,
       logs: logs,
       startDate: startDate,
+      frequencyDays: frequencyDays,
     );
   }
 
@@ -444,6 +448,7 @@ class PrivateDashboardRepository extends DashboardRepository {
         date: now,
         logs: logs,
         startDate: DateTime.tryParse(row['start_date'] as String? ?? '') ?? now,
+        frequencyDays: frequencyDays,
       ),
       weeklyProgress: [
         for (var day = 0; day < 7; day++)

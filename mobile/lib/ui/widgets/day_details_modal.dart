@@ -31,8 +31,9 @@ class DayDetailsModal extends ConsumerWidget {
     final couldNotVerifyByGoal =
         ref.watch(couldNotVerifyDaysProvider).asData?.value ?? const {};
 
-    // Filter habits active on this date
-    final activeHabits = habits.where((h) => h.isActiveOn(date)).toList();
+    // Habits scheduled on this date (active range AND this weekday). Off-day
+    // habits are hidden here, not shown-and-uncompletable.
+    final activeHabits = habits.where((h) => h.isScheduledOn(date)).toList();
 
     return Container(
       decoration: BoxDecoration(
@@ -152,6 +153,7 @@ class DayDetailsModal extends ConsumerWidget {
                         date: date,
                         logs: logs,
                         startDate: habit.startDate,
+                        frequencyDays: habit.frequencyDays,
                       );
 
                       return GoalLogCard(

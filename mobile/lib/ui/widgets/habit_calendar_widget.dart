@@ -269,7 +269,7 @@ class _HabitCalendarWidgetState extends ConsumerState<HabitCalendarWidget> {
 
                     // Valid habits for this date
                     final dayDate = DateTime(year, month, day);
-                    final validHabits = habits.where((h) => h.isActiveOn(dayDate)).toList();
+                    final validHabits = habits.where((h) => h.isScheduledOn(dayDate)).toList();
 
                     final totalHabits = validHabits.length;
                     final completedCount = validHabits

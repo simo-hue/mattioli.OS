@@ -261,7 +261,7 @@ class _MonthBarsPainter extends CustomPainter {
       // started counted against completion and skewed the bar short/red.
       final dayDate = DateTime(year, month, day);
       final validHabits =
-          habits.where((h) => h.isActiveOn(dayDate) == true).toList();
+          habits.where((h) => h.isScheduledOn(dayDate) == true).toList();
       if (validHabits.isNotEmpty) {
         final doneCount =
             validHabits.where((h) => dayLogs[h.id] == 'done').length;

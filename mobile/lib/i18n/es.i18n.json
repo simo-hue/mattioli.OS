@@ -307,6 +307,15 @@
       "sat": "Sáb",
       "sun": "Dom"
     },
+    "weekdayInitials": [
+      "L",
+      "M",
+      "X",
+      "J",
+      "V",
+      "S",
+      "D"
+    ],
     "moodSaveErrorTitle": "Error al guardar el ánimo",
     "moodSaveFailed": "No hemos podido guardar tu estado de ánimo. Inténtalo de nuevo."
   },
@@ -1022,6 +1031,7 @@
     "goodMorning": "Buenos días",
     "dailyCheckIn": "Check-in diario",
     "color": "Color",
+    "weeklyFrequency": "Frecuencia semanal",
     "createHabit": "Crear hábito",
     "createYourFirstHabitToStart": "Crea tu primer hábito para comenzar a seguir tu progreso y desarrollar tu rutina.",
     "currentAge": "Edad actual",

@@ -20,6 +20,7 @@ import 'package:evolve_desktop/shared/widgets/evolve_controls.dart';
 import 'package:evolve_desktop/shared/widgets/evolve_dialog.dart';
 import 'package:evolve_desktop/shared/widgets/evolve_panel.dart';
 import 'package:evolve_desktop/shared/widgets/evolve_period_switcher.dart';
+import 'package:evolve_desktop/shared/widgets/evolve_weekday_selector.dart';
 import 'package:evolve_desktop/shared/widgets/verified_habit_badge.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
@@ -311,6 +312,7 @@ class _HabitsPageState extends ConsumerState<HabitsPage> {
         title: draft.title,
         color: draft.color,
         reminderTime: draft.reminderTime,
+        frequencyDays: draft.frequencyDays,
       );
       if (!added && mounted) {
         // Free-tier 5-habit cap reached → present the paywall (mobile parity).
@@ -322,6 +324,7 @@ class _HabitsPageState extends ConsumerState<HabitsPage> {
         title: draft.title,
         color: draft.color,
         reminderTime: draft.reminderTime,
+        frequencyDays: draft.frequencyDays,
       );
     }
   }
@@ -2012,6 +2015,7 @@ Future<void> showCreateHabitDialog(
   BuildContext context,
   WidgetRef ref, {
   String? initialTitle,
+  bool navigateToHabits = true,
 }) async {
   final draft = await showEvolveDialog<_HabitDraft>(
     context: context,
@@ -2024,12 +2028,22 @@ Future<void> showCreateHabitDialog(
         title: draft.title,
         color: draft.color,
         reminderTime: draft.reminderTime,
+        frequencyDays: draft.frequencyDays,
       );
   if (!added) {
     if (context.mounted) await showProFeaturesDialog(context, ref);
     return;
   }
-  ref.read(navigationControllerProvider.notifier).select(DesktopSection.habits);
+  // The ⌘K palette always jumps to Habits so the new one is visible. The
+  // dashboard's own "+" stays put when the habit shows in today's list — but if
+  // its schedule excludes today (it'd be hidden by isScheduledOn), jump to
+  // Habits anyway so the create isn't a silent no-op.
+  final scheduledToday = draft.frequencyDays.contains(DateTime.now().weekday);
+  if (navigateToHabits || !scheduledToday) {
+    ref
+        .read(navigationControllerProvider.notifier)
+        .select(DesktopSection.habits);
+  }
 }
 
 class _HabitEditorDialog extends StatefulWidget {
@@ -2050,6 +2064,11 @@ class _HabitEditorDialogState extends State<_HabitEditorDialog> {
   late Color _color;
   var _usesDefaultColor = false;
 
+  /// Weekly-schedule selection (ISO 1=Mon…7=Sun). Seeded from the habit
+  /// (null/empty ⇒ every day → all chips) and collapsed back to null (every-day)
+  /// by the controller's canonicalizer on save. Never empty — the picker keeps ≥1.
+  late List<int> _selectedDays;
+
   @override
   void initState() {
     super.initState();
@@ -2059,6 +2078,10 @@ class _HabitEditorDialogState extends State<_HabitEditorDialog> {
     _reminder = TextEditingController(text: widget.habit?.reminderTime);
     _usesDefaultColor = widget.habit == null;
     _color = widget.habit?.color ?? EvolveColors.primaryStrong;
+    final freq = widget.habit?.frequencyDays;
+    _selectedDays = (freq == null || freq.isEmpty)
+        ? [1, 2, 3, 4, 5, 6, 7]
+        : (List<int>.from(freq)..sort());
   }
 
   @override
@@ -2093,6 +2116,21 @@ class _HabitEditorDialogState extends State<_HabitEditorDialog> {
             EvolveFieldLabel(t.form.title),
             const SizedBox(height: 8),
             TextField(controller: _title, autofocus: true),
+            const SizedBox(height: 20),
+            EvolveFieldLabel(t.form.color),
+            const SizedBox(height: 10),
+            ColorPickerButton(
+              color: _color,
+              onColorChanged: (color) => setState(() => _color = color),
+              presetColors: _habitColors,
+            ),
+            const SizedBox(height: 20),
+            EvolveFieldLabel(t.createHabit.weeklyFrequency),
+            const SizedBox(height: 10),
+            EvolveWeekdaySelector(
+              selectedDays: _selectedDays,
+              onChanged: (days) => setState(() => _selectedDays = days),
+            ),
             const SizedBox(height: 16),
             EvolveFieldLabel(t.habitsPage.optionalReminder),
             const SizedBox(height: 8),
@@ -2124,14 +2162,6 @@ class _HabitEditorDialogState extends State<_HabitEditorDialog> {
                 }
               },
             ),
-            const SizedBox(height: 20),
-            EvolveFieldLabel(t.form.color),
-            const SizedBox(height: 10),
-            ColorPickerButton(
-              color: _color,
-              onColorChanged: (color) => setState(() => _color = color),
-              presetColors: _habitColors,
-            ),
           ],
         ),
       ),
@@ -2152,6 +2182,7 @@ class _HabitEditorDialogState extends State<_HabitEditorDialog> {
                 reminderTime: _reminder.text.trim().isEmpty
                     ? null
                     : _reminder.text.trim(),
+                frequencyDays: _selectedDays,
               ),
             );
           },
@@ -2185,12 +2216,17 @@ class _HabitDraft {
   const _HabitDraft({
     required this.title,
     required this.color,
+    required this.frequencyDays,
     this.reminderTime,
   });
 
   final String title;
   final Color color;
   final String? reminderTime;
+
+  /// Selected weekdays (ISO 1-7), non-empty. The controller collapses an all-7
+  /// selection to null (every-day) via `_canonicalFrequencyDays` on save.
+  final List<int> frequencyDays;
 }
 
 double _completionFor(DashboardSnapshot snapshot, DateTime date) {

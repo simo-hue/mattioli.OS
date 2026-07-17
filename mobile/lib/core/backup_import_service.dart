@@ -389,14 +389,24 @@ class BackupImportService {
     try {
       final ids = goalIds.toList();
 
-      final goalRes = await client.from('goals').select('id,start_date').inFilter(
-          'id', ids);
+      final goalRes = await client
+          .from('goals')
+          .select('id,start_date,frequency_days')
+          .inFilter('id', ids);
+      final goalRows = (goalRes as List)
+          .map((e) => (e as Map).cast<String, dynamic>())
+          .toList();
       final startById = {
-        for (final r in (goalRes as List)
-            .map((e) => (e as Map).cast<String, dynamic>()))
+        for (final r in goalRows)
           r['id'] as String:
               DateTime.tryParse((r['start_date'] as String?) ?? '') ??
                   DateTime(2000),
+      };
+      // Cloud stores `frequency_days` as a native integer[]; honor it so a
+      // recomputed streak skips off-days like the live one does.
+      final freqById = <String, List<int>?>{
+        for (final r in goalRows)
+          r['id'] as String: _importFrequencyDays(r['frequency_days']),
       };
 
       // Windowed: a streak computed from a truncated history is wrong, and it
@@ -436,7 +446,11 @@ class BackupImportService {
           final d = dateByRow[r];
           if (d == null) continue;
           final newStreak = computeStreak(
-              habitId: goalId, date: d, logs: map, startDate: startDate);
+              habitId: goalId,
+              date: d,
+              logs: map,
+              startDate: startDate,
+              frequencyDays: freqById[goalId]);
           if (newStreak != ((r['streak'] as num?)?.toInt() ?? 0)) {
             changed.add({...r, 'streak': newStreak});
           }
@@ -449,4 +463,18 @@ class BackupImportService {
     }
   }
 
+}
+
+/// Coerce a cloud `goals.frequency_days` value (a native integer[] from
+/// Supabase) to ISO weekdays 1-7, or null. An empty/entirely-unusable value
+/// becomes null — the documented "every day" default — never an empty list
+/// (which would mean "no day" and spin the streak's scheduled-day search).
+List<int>? _importFrequencyDays(dynamic v) {
+  if (v is! List) return null;
+  final days = v
+      .map((e) => e is int ? e : (e is num ? e.toInt() : int.tryParse('$e')))
+      .whereType<int>()
+      .where((d) => d >= 1 && d <= 7)
+      .toList();
+  return days.isEmpty ? null : days;
 }

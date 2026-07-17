@@ -92,9 +92,18 @@ void main() {
     expect(platform.cancelAllCalled, isFalse);
   });
 
-  test('cancelHabitReminder still cancels the reminder id on request', () async {
+  test('cancelHabitReminder clears the daily id and every per-weekday id',
+      () async {
     await NotificationService().cancelHabitReminder(habitId);
 
-    expect(platform.cancelledIds, <int>[habitId.hashCode]);
+    // The every-day instance (habitId.hashCode) plus all 7 per-weekday
+    // instances: the previously-scheduled day set isn't known at cancel time,
+    // so every possible reminder id for this habit is cleared.
+    final expected = <int>[
+      habitId.hashCode,
+      for (var weekday = 1; weekday <= 7; weekday++)
+        '$habitId#wd$weekday'.hashCode,
+    ];
+    expect(platform.cancelledIds, expected);
   });
 }

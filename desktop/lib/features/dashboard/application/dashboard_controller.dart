@@ -91,6 +91,7 @@ class DashboardController extends Notifier<DashboardSnapshot> {
             date: date,
             logs: logs,
             startDate: habit.startDate ?? date,
+            frequencyDays: habit.frequencyDays,
           );
     final habits = [
       for (final habit in state.habits)
@@ -163,7 +164,9 @@ class DashboardController extends Notifier<DashboardSnapshot> {
     required String title,
     required Color color,
     String? reminderTime,
+    List<int>? frequencyDays,
   }) async {
+    final canonicalDays = _canonicalFrequencyDays(frequencyDays);
     final habits = [
       for (final habit in state.habits)
         if (habit.id == id)
@@ -172,6 +175,8 @@ class DashboardController extends Notifier<DashboardSnapshot> {
             color: color,
             reminderTime: reminderTime,
             clearReminder: reminderTime == null,
+            frequencyDays: canonicalDays,
+            clearFrequencyDays: canonicalDays == null,
           )
         else
           habit,
@@ -429,7 +434,7 @@ class DashboardController extends Notifier<DashboardSnapshot> {
   static const _everyWeekday = {1, 2, 3, 4, 5, 6, 7};
 
   static List<int>? _canonicalFrequencyDays(List<int>? days) {
-    if (days == null) return null;
+    if (days == null || days.isEmpty) return null;
     final unique = days.toSet();
     if (unique.containsAll(_everyWeekday)) return null;
     return unique.toList()..sort();

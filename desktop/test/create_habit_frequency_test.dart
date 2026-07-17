@@ -1,13 +1,13 @@
-// Finding #38 — the Create Habit dialog's weekly-frequency picker used to be
-// inert: `_selectedDays` only painted the chips and was never passed to
-// `addHabit`, so every habit was persisted with frequency_days = NULL (= every
-// day) no matter what the user picked. These tests drive the real dialog and
-// assert on what reaches the repository, so the whole dialog → controller →
-// repository chain is covered rather than the controller alone.
+// The weekly-frequency picker in the (now consolidated) habit editor must not
+// be inert: a habit created via the editor has to persist the picked
+// `frequency_days`, and an untouched all-7 selection has to collapse to null
+// (the every-day encoding both platforms' scheduled-day guards read). These
+// tests drive the real public entry point [showCreateHabitDialog] so the whole
+// editor → controller → repository chain is covered, not the controller alone.
 import 'package:evolve_desktop/app/theme/evolve_theme.dart';
 import 'package:evolve_desktop/features/dashboard/data/dashboard_repository.dart';
 import 'package:evolve_desktop/features/dashboard/domain/dashboard_models.dart';
-import 'package:evolve_desktop/features/dashboard/presentation/create_habit_dialog.dart';
+import 'package:evolve_desktop/features/habits/presentation/habits_page.dart';
 import 'package:evolve_desktop/i18n/translations.g.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
@@ -21,13 +21,13 @@ void main() {
     overrides: [dashboardRepositoryProvider.overrideWithValue(repository)],
     child: MaterialApp(
       theme: EvolveTheme.dark(),
-      home: Builder(
-        builder: (context) => Scaffold(
+      home: Consumer(
+        builder: (context, ref, _) => Scaffold(
+          // `navigateToHabits: false` keeps the create flow self-contained (no
+          // navigation provider needed) — the same path the dashboard "+" uses.
           body: FilledButton(
-            onPressed: () => showDialog<void>(
-              context: context,
-              builder: (_) => const CreateHabitDialog(),
-            ),
+            onPressed: () =>
+                showCreateHabitDialog(context, ref, navigateToHabits: false),
             child: const Text('Apri'),
           ),
         ),
@@ -35,10 +35,10 @@ void main() {
     ),
   );
 
-  // The 7 weekday chips are the only InkWells in the dialog wrapping an
-  // AnimatedContainer (the color picker uses GestureDetector). Locating them
-  // positionally is required: `weekdayInitials` is ['L','M','M','G','V','S','D']
-  // in Italian, so 'M' does not identify a single chip.
+  // The 7 weekday chips are the only InkWells wrapping an AnimatedContainer (the
+  // color picker uses GestureDetector). Locating them positionally is required:
+  // `weekdayInitials` is ['L','M','M','G','V','S','D'] in Italian, so 'M' does
+  // not identify a single chip.
   final chips = find.byWidgetPredicate(
     (widget) => widget is InkWell && widget.child is AnimatedContainer,
   );
@@ -50,18 +50,19 @@ void main() {
     expect(chips, findsNWidgets(7));
   }
 
-  testWidgets('the weekly frequency picked in the dialog reaches the '
+  testWidgets('the weekly frequency picked in the editor reaches the '
       'repository', (tester) async {
     final repository = _RecordingDashboardRepository();
     await openDialog(tester, repository);
 
-    await tester.enterText(find.byType(TextField), 'Palestra');
+    // The title field is the first TextField (the reminder field is read-only).
+    await tester.enterText(find.byType(TextField).first, 'Palestra');
     // All 7 start selected; deselect Tue/Thu/Sat/Sun to leave Mon/Wed/Fri.
     for (final index in [1, 3, 5, 6]) {
       await tester.tap(chips.at(index));
       await tester.pump();
     }
-    await tester.tap(find.text('Aggiungi'));
+    await tester.tap(find.text('Salva'));
     await tester.pumpAndSettle();
 
     final created = repository.created;
@@ -77,8 +78,8 @@ void main() {
     final repository = _RecordingDashboardRepository();
     await openDialog(tester, repository);
 
-    await tester.enterText(find.byType(TextField), 'Lettura');
-    await tester.tap(find.text('Aggiungi'));
+    await tester.enterText(find.byType(TextField).first, 'Lettura');
+    await tester.tap(find.text('Salva'));
     await tester.pumpAndSettle();
 
     // All 7 selected must not write [1..7]: null is the every-day encoding the

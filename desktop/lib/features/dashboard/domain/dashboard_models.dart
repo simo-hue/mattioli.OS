@@ -49,6 +49,8 @@ class DashboardHabit {
   final VerificationRule? verificationRule;
   final bool isActive;
 
+  /// Whether the habit's active *range* covers [date] (start ≤ date ≤ end),
+  /// ignoring the weekly schedule. Use [isScheduledOn] for day-view display.
   bool isActiveOn(DateTime date) {
     final viewingDate = DateTime(date.year, date.month, date.day);
     final start = startDate == null
@@ -60,6 +62,18 @@ class DashboardHabit {
     return isActive &&
         (start == null || !start.isAfter(viewingDate)) &&
         (end == null || !end.isBefore(viewingDate));
+  }
+
+  /// Whether the habit should actually appear on [date]: inside its active
+  /// range AND scheduled for that weekday. `frequencyDays == null`/empty means
+  /// "every day", matching the shared `frequency_days` convention. Every
+  /// day-scoped list ([DashboardSnapshot.habitsFor]) uses this so an off-day
+  /// habit is hidden rather than shown-and-uncompletable.
+  bool isScheduledOn(DateTime date) {
+    if (!isActiveOn(date)) return false;
+    final freq = frequencyDays;
+    if (freq == null || freq.isEmpty) return true;
+    return freq.contains(date.weekday);
   }
 
   DashboardHabit copyWith({
@@ -75,6 +89,7 @@ class DashboardHabit {
     String? description,
     String? icon,
     List<int>? frequencyDays,
+    bool clearFrequencyDays = false,
     DateTime? startDate,
     DateTime? endDate,
     int? displayOrder,
@@ -90,7 +105,9 @@ class DashboardHabit {
       state: state ?? this.state,
       description: description ?? this.description,
       icon: icon ?? this.icon,
-      frequencyDays: frequencyDays ?? this.frequencyDays,
+      frequencyDays: clearFrequencyDays
+          ? null
+          : (frequencyDays ?? this.frequencyDays),
       startDate: startDate ?? this.startDate,
       endDate: endDate ?? this.endDate,
       displayOrder: displayOrder ?? this.displayOrder,
@@ -362,7 +379,7 @@ class DashboardSnapshot {
   }
 
   List<DashboardHabit> habitsFor(DateTime date) =>
-      habits.where((habit) => habit.isActiveOn(date)).toList();
+      habits.where((habit) => habit.isScheduledOn(date)).toList();
 
   double _weekCompletionRate(DateTime anchor) {
     final monday = DateTime(

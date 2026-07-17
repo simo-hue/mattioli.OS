@@ -399,11 +399,19 @@ class NotificationService {
     );
   }
 
+  /// Schedules the recurring reminder(s) for a habit.
+  ///
+  /// [frequencyDays] are the ISO weekdays the habit is scheduled on (1=Mon…
+  /// 7=Sun); `null`/empty means every day. An every-day habit registers a single
+  /// daily repeat (keeping the iOS pending count at 1 for the common case); a
+  /// day-restricted habit registers one weekly repeat per selected weekday, so a
+  /// reminder never fires on an off-day the UI now hides.
   Future<void> scheduleHabitReminder(
     String id,
     String title,
-    String? reminderTime,
-  ) async {
+    String? reminderTime, {
+    List<int>? frequencyDays,
+  }) async {
     if (reminderTime == null) return;
 
     // The user is enabling a reminder — request permission now (NOTIF-3).
@@ -413,8 +421,46 @@ class NotificationService {
     final hour = int.parse(parts[0]);
     final minute = int.parse(parts[1]);
 
-    final AndroidNotificationDetails
-    androidDetails = AndroidNotificationDetails(
+    final platformDetails = _habitReminderDetails();
+    final payload = 'habit|$id|$title';
+
+    // Clamp to valid ISO weekdays (1-7): a corrupt/legacy row carrying e.g. [0]
+    // or [8] must not reach the weekday-seek loop, which would spin forever.
+    final valid = frequencyDays
+        ?.where((d) => d >= 1 && d <= 7)
+        .toSet()
+        .toList()
+      ?..sort();
+    final freq = (valid == null || valid.isEmpty) ? null : valid;
+
+    if (freq == null) {
+      await _scheduleReminderInstance(
+        notificationId: id.hashCode,
+        scheduledDate: _nextInstanceOfTime(hour, minute),
+        match: DateTimeComponents.time,
+        title: title,
+        payload: payload,
+        details: platformDetails,
+      );
+      return;
+    }
+
+    for (final weekday in freq) {
+      await _scheduleReminderInstance(
+        notificationId: _weekdayReminderId(id, weekday),
+        scheduledDate: _nextInstanceOfWeekdayTime(weekday, hour, minute),
+        match: DateTimeComponents.dayOfWeekAndTime,
+        title: title,
+        payload: payload,
+        details: platformDetails,
+      );
+    }
+  }
+
+  /// Notification-channel + action config shared by every habit reminder
+  /// instance (the daily one and the per-weekday ones).
+  NotificationDetails _habitReminderDetails() {
+    final AndroidNotificationDetails androidDetails = AndroidNotificationDetails(
       'habit_reminders',
       t.notifications.habitChannelName,
       channelDescription: t.notifications.specificHabitChannelDescription,
@@ -429,20 +475,26 @@ class NotificationService {
         AndroidNotificationAction('action_skip', t.notifications.actionSkip),
       ],
     );
-
-    final NotificationDetails platformDetails = NotificationDetails(
+    return NotificationDetails(
       android: androidDetails,
       iOS: const DarwinNotificationDetails(categoryIdentifier: 'habit_actions'),
     );
+  }
 
-    final notificationId = id.hashCode;
-
-    // Respect the iOS 64 pending-notification cap (NOTIF-4): if there's no
-    // headroom and this reminder isn't already scheduled, skip rather than let
-    // iOS silently drop it.
+  /// Schedules one recurring reminder instance, honoring the iOS 64 pending-cap
+  /// guard (NOTIF-4): if there's no headroom and this id isn't already pending,
+  /// skip rather than let iOS silently drop it.
+  Future<void> _scheduleReminderInstance({
+    required int notificationId,
+    required tz.TZDateTime scheduledDate,
+    required DateTimeComponents match,
+    required String title,
+    required String payload,
+    required NotificationDetails details,
+  }) async {
     if (!await _canSchedule(notificationId)) {
       AppLogger.warning(
-        '[Notifications] iOS pending cap reached; skipping reminder for $id',
+        '[Notifications] iOS pending cap reached; skipping reminder $notificationId',
       );
       return;
     }
@@ -451,13 +503,17 @@ class NotificationService {
       id: notificationId,
       title: 'Evolve • $title',
       body: _getHabitMessage(title),
-      scheduledDate: _nextInstanceOfTime(hour, minute),
-      notificationDetails: platformDetails,
+      scheduledDate: scheduledDate,
+      notificationDetails: details,
       androidScheduleMode: AndroidScheduleMode.exactAllowWhileIdle,
-      matchDateTimeComponents: DateTimeComponents.time,
-      payload: 'habit|$id|$title',
+      matchDateTimeComponents: match,
+      payload: payload,
     );
   }
+
+  /// Stable per-(habit, weekday) notification id, distinct from the every-day
+  /// id (`id.hashCode`) and from other habits' ids.
+  int _weekdayReminderId(String id, int weekday) => '$id#wd$weekday'.hashCode;
 
   /// Immediate "couldn't-verify — did you keep it?" nudge for an auto-verified
   /// habit whose day ended without a definitive signal (D6/D11). The id is
@@ -541,7 +597,13 @@ class NotificationService {
   }
 
   Future<void> cancelHabitReminder(String id) async {
+    // Clear the every-day instance and every possible per-weekday instance: the
+    // previously-scheduled day set isn't known here, and cancelling an id that
+    // was never scheduled is a harmless no-op.
     await _notifications.cancel(id: id.hashCode);
+    for (var weekday = 1; weekday <= 7; weekday++) {
+      await _notifications.cancel(id: _weekdayReminderId(id, weekday));
+    }
   }
 
   Future<void> cancelAll() async {
@@ -584,6 +646,16 @@ class NotificationService {
       minute,
     );
     if (scheduledDate.isBefore(now)) {
+      scheduledDate = scheduledDate.add(const Duration(days: 1));
+    }
+    return scheduledDate;
+  }
+
+  /// Next occurrence of [hour]:[minute] falling on ISO [weekday] (1=Mon…7=Sun),
+  /// the seed date for a `dayOfWeekAndTime` weekly repeat.
+  tz.TZDateTime _nextInstanceOfWeekdayTime(int weekday, int hour, int minute) {
+    tz.TZDateTime scheduledDate = _nextInstanceOfTime(hour, minute);
+    while (scheduledDate.weekday != weekday) {
       scheduledDate = scheduledDate.add(const Duration(days: 1));
     }
     return scheduledDate;

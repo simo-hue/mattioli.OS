@@ -19,6 +19,8 @@
 ///      data and then fail halfway.
 library;
 
+import 'dart:convert';
+
 import 'package:sqflite_sqlcipher/sqflite.dart';
 
 import 'import_merge_stats.dart';
@@ -351,6 +353,28 @@ CategoryReconciliation reconcileCategoriesByName({
 String _dateKey(DateTime d) =>
     '${d.year}-${d.month.toString().padLeft(2, '0')}-${d.day.toString().padLeft(2, '0')}';
 
+/// Decode a stored `frequency_days` value (JSON string in the private DB, or a
+/// raw list) to canonical ISO weekdays 1-7, or null for "every day". An empty
+/// or unusable value becomes null — never an empty list (which would mean "no
+/// day" and spin the streak's scheduled-day search).
+List<int>? _decodeFrequencyDays(Object? stored) {
+  Object? value = stored;
+  if (value is String) {
+    try {
+      value = jsonDecode(value);
+    } catch (_) {
+      return null;
+    }
+  }
+  if (value is! List) return null;
+  final days = value
+      .map((e) => e is int ? e : (e is num ? e.toInt() : int.tryParse('$e')))
+      .whereType<int>()
+      .where((d) => d >= 1 && d <= 7)
+      .toList();
+  return days.isEmpty ? null : days;
+}
+
 /// Recomputes the signed `streak` for every log of each goal in [goalIds] from
 /// the full persisted history, and writes back only the rows whose streak
 /// actually changed (minimizing sync churn — every write here re-dirties the
@@ -362,7 +386,7 @@ Future<void> recomputeStreaksForGoals(
   for (final goalId in goalIds) {
     final goalRows = await txn.query(
       'goals',
-      columns: ['start_date'],
+      columns: ['start_date', 'frequency_days'],
       where: 'id = ?',
       whereArgs: [goalId],
       limit: 1,
@@ -371,6 +395,9 @@ Future<void> recomputeStreaksForGoals(
     final startDate =
         DateTime.tryParse(goalRows.first['start_date'] as String? ?? '') ??
         DateTime(2000);
+    // Private DB stores frequency_days as a JSON string ("[1,3,5]"); decode it
+    // so a recomputed streak skips off-days like the live one.
+    final frequencyDays = _decodeFrequencyDays(goalRows.first['frequency_days']);
 
     final logRows = await txn.query(
       'goal_logs',
@@ -397,6 +424,7 @@ Future<void> recomputeStreaksForGoals(
         date: d,
         logs: map,
         startDate: startDate,
+        frequencyDays: frequencyDays,
       );
       final old = (r['streak'] as num?)?.toInt() ?? 0;
       if (newStreak != old) {

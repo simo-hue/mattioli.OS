@@ -539,6 +539,21 @@ class DesktopPrivateDb implements PrivateRecoveryStore {
     return stored;
   }
 
+  /// Decodes a stored `frequency_days` value to canonical ISO weekdays for the
+  /// streak/scheduling helpers: a `List<int>` (1-7), or null for "every day". An
+  /// empty or entirely-unusable value becomes null — never an empty list, which
+  /// would mean "no day" and spin the streak's scheduled-day search.
+  static List<int>? frequencyDaysList(Object? stored) {
+    final decoded = decodeFrequencyDays(stored);
+    if (decoded is! List) return null;
+    final days = decoded
+        .map((e) => e is int ? e : (e is num ? e.toInt() : int.tryParse('$e')))
+        .whereType<int>()
+        .where((d) => d >= 1 && d <= 7)
+        .toList();
+    return days.isEmpty ? null : days;
+  }
+
   /// Whether the user has opted in to sending private context to the external AI
   /// provider (persisted in the profiles row; false until explicitly granted).
   Future<bool> hasPrivateAiExternalConsent() async {
@@ -783,10 +798,11 @@ class DesktopPrivateDb implements PrivateRecoveryStore {
     }
     (logs[dayKey] ??= <String, String>{})[goalId] = status;
 
-    // Resolve the habit's start_date so the run can't walk before it.
+    // Resolve the habit's start_date (so the run can't walk before it) and its
+    // weekly schedule (so off-days are transparent to the streak).
     final goalRows = await db.query(
       'goals',
-      columns: ['start_date'],
+      columns: ['start_date', 'frequency_days'],
       where: 'id = ?',
       whereArgs: [goalId],
       limit: 1,
@@ -795,12 +811,16 @@ class DesktopPrivateDb implements PrivateRecoveryStore {
         ? DateTime(day.year, day.month, day.day)
         : DateTime.tryParse(goalRows.first['start_date'] as String? ?? '') ??
               DateTime(day.year, day.month, day.day);
+    final frequencyDays = goalRows.isEmpty
+        ? null
+        : frequencyDaysList(goalRows.first['frequency_days']);
 
     final streak = computeStreak(
       habitId: goalId,
       date: day,
       logs: logs,
       startDate: startDate,
+      frequencyDays: frequencyDays,
     );
 
     // Upsert by (goal_id, date) with an explicit update-or-insert rather than

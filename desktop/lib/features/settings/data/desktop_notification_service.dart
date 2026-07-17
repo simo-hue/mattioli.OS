@@ -150,26 +150,14 @@ class DesktopNotificationService {
     // Per-goal reminders schedule INDEPENDENTLY of the Morning Brief toggle —
     // turning off 'Habit Reminders' must not silence them (mobile parity).
     // Guarded by the macOS 64 pending-notification cap so overflow is
-    // deterministic + logged instead of silently dropped by the OS.
+    // deterministic + logged instead of silently dropped by the OS. A
+    // day-restricted habit fans out to one weekly reminder per selected weekday
+    // so it never fires on an off-day the UI now hides; an every-day habit keeps
+    // a single daily entry (holding the pending count at 1 for the common case).
     for (final habit in habits) {
       final reminderTime = habit.reminderTime;
       if (reminderTime == null) continue;
-      final id = habit.id.hashCode;
-      if (!await _canSchedule(id)) {
-        AppLogger.warning(
-          '[Notifications] pending cap reached; skipping reminder for '
-          '${habit.id}',
-        );
-        continue;
-      }
-      await _scheduleDaily(
-        id: id,
-        time: reminderTime,
-        title: 'Evolve - ${habit.title}',
-        body: t.notif.habitReminderBody,
-        payload: 'habit|${habit.id}|${habit.title}',
-        categoryId: _habitCategoryId,
-      );
+      await _scheduleHabitReminders(habit, reminderTime);
     }
 
     if (eveningReview) {
@@ -181,6 +169,69 @@ class DesktopNotificationService {
       );
     }
   }
+
+  /// Registers the recurring reminder(s) for one habit, honoring its weekly
+  /// schedule. Every-day habits (`frequencyDays` null/empty) get a single daily
+  /// repeat; day-restricted habits get one weekly repeat per selected weekday.
+  Future<void> _scheduleHabitReminders(
+    DashboardHabit habit,
+    String reminderTime,
+  ) async {
+    // Clamp to valid ISO weekdays (1-7): a corrupt/imported row carrying e.g.
+    // [0] or [8] must not reach the weekday-seek loop, which would spin forever.
+    final valid = habit.frequencyDays
+        ?.where((d) => d >= 1 && d <= 7)
+        .toSet()
+        .toList()
+      ?..sort();
+    final freq = (valid == null || valid.isEmpty) ? null : valid;
+    final title = 'Evolve - ${habit.title}';
+    final payload = 'habit|${habit.id}|${habit.title}';
+
+    if (freq == null) {
+      final id = habit.id.hashCode;
+      if (!await _canSchedule(id)) {
+        AppLogger.warning(
+          '[Notifications] pending cap reached; skipping reminder for '
+          '${habit.id}',
+        );
+        return;
+      }
+      await _scheduleDaily(
+        id: id,
+        time: reminderTime,
+        title: title,
+        body: t.notif.habitReminderBody,
+        payload: payload,
+        categoryId: _habitCategoryId,
+      );
+      return;
+    }
+
+    for (final weekday in freq) {
+      final id = _weekdayReminderId(habit.id, weekday);
+      if (!await _canSchedule(id)) {
+        AppLogger.warning(
+          '[Notifications] pending cap reached; skipping reminder for '
+          '${habit.id} (weekday $weekday)',
+        );
+        continue;
+      }
+      await _scheduleWeekly(
+        id: id,
+        weekday: weekday,
+        time: reminderTime,
+        title: title,
+        body: t.notif.habitReminderBody,
+        payload: payload,
+        categoryId: _habitCategoryId,
+      );
+    }
+  }
+
+  /// Stable per-(habit, weekday) notification id, distinct from the every-day id
+  /// (`id.hashCode`) and from other habits'. Mirrors mobile's `_weekdayReminderId`.
+  int _weekdayReminderId(String id, int weekday) => '$id#wd$weekday'.hashCode;
 
   Future<void> _scheduleDaily({
     required int id,
@@ -205,6 +256,37 @@ class DesktopNotificationService {
       // scheduling and fires immediately — disclosed in [platformSummary].)
       matchDateTimeComponents: Platform.isMacOS || Platform.isWindows
           ? DateTimeComponents.time
+          : null,
+      payload: payload,
+    );
+  }
+
+  /// Like [_scheduleDaily] but recurs weekly on a single ISO [weekday]
+  /// (1=Mon…7=Sun) — used for a day-restricted habit's reminder.
+  Future<void> _scheduleWeekly({
+    required int id,
+    required int weekday,
+    required String time,
+    required String title,
+    required String body,
+    String? payload,
+    String? categoryId,
+  }) async {
+    final scheduledDate = _nextInstanceOnWeekday(time, weekday);
+    await _notifications.zonedSchedule(
+      id: id,
+      title: title,
+      body: body,
+      scheduledDate: scheduledDate,
+      notificationDetails: NotificationDetails(
+        macOS: DarwinNotificationDetails(categoryIdentifier: categoryId),
+        windows: const WindowsNotificationDetails(),
+      ),
+      androidScheduleMode: AndroidScheduleMode.inexactAllowWhileIdle,
+      // Recur weekly on this weekday at this time on macOS AND Windows. (Linux
+      // has no scheduling and fires immediately — disclosed in [platformSummary].)
+      matchDateTimeComponents: Platform.isMacOS || Platform.isWindows
+          ? DateTimeComponents.dayOfWeekAndTime
           : null,
       payload: payload,
     );
@@ -334,10 +416,11 @@ class DesktopNotificationService {
     }
     (logs[dayKey] ??= <String, String>{})[goalId] = status;
 
-    // Resolve the habit's start_date so the run can't walk before it.
+    // Resolve the habit's start_date (so the run can't walk before it) and its
+    // weekly schedule (so off-days are transparent to the streak).
     final goalRows = await client
         .from('goals')
-        .select('start_date')
+        .select('start_date, frequency_days')
         .eq('id', goalId)
         .limit(1);
     final goalList = List<Map<String, dynamic>>.from(goalRows);
@@ -348,12 +431,16 @@ class DesktopNotificationService {
                 goalList.first['start_date'] as String? ?? '',
               )) ??
         DateTime(now.year, now.month, now.day);
+    final frequencyDays = goalList.isEmpty
+        ? null
+        : DesktopPrivateDb.frequencyDaysList(goalList.first['frequency_days']);
 
     final streak = computeStreak(
       habitId: goalId,
       date: now,
       logs: logs,
       startDate: startDate,
+      frequencyDays: frequencyDays,
     );
 
     await client.from('goal_logs').upsert({
@@ -379,6 +466,16 @@ class DesktopNotificationService {
       minute,
     );
     if (!scheduled.isAfter(now)) {
+      scheduled = scheduled.add(const Duration(days: 1));
+    }
+    return scheduled;
+  }
+
+  /// Next occurrence of [time] falling on ISO [weekday] (1=Mon…7=Sun) — the seed
+  /// date for a `dayOfWeekAndTime` weekly repeat.
+  tz.TZDateTime _nextInstanceOnWeekday(String time, int weekday) {
+    var scheduled = _nextInstance(time);
+    while (scheduled.weekday != weekday) {
       scheduled = scheduled.add(const Duration(days: 1));
     }
     return scheduled;

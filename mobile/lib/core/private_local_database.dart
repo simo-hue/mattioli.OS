@@ -555,6 +555,7 @@ class PrivateLocalDatabase implements PrivateDataStore {
       date: parsedDate,
       logs: logs,
       startDate: goal?.startDate ?? parsedDate,
+      frequencyDays: goal?.frequencyDays,
     );
 
     await setHabitLog(

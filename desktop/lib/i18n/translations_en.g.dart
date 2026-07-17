@@ -2956,11 +2956,11 @@ class Translations$proModal$en {
 	/// en: 'WHAT THE PRO PLAN INCLUDES'
 	String get featuresHeader => 'WHAT THE PRO PLAN INCLUDES';
 
-	/// en: 'Personalized AI Coach'
-	String get aiCoachTitle => 'Personalized AI Coach';
+	/// en: 'AI Coach, with no setup'
+	String get aiCoachTitle => 'AI Coach, with no setup';
 
-	/// en: 'Advanced trend analysis and smart AI-generated suggestions.'
-	String get aiCoachDesc => 'Advanced trend analysis and smart AI-generated suggestions.';
+	/// en: 'We run it on our key — no API key to fetch, no second account. Prefer your own OpenRouter account? That's free too.'
+	String get aiCoachDesc => 'We run it on our key — no API key to fetch, no second account. Prefer your own OpenRouter account? That\'s free too.';
 
 	/// en: 'Habit-Specific Statistics'
 	String get statsTitle => 'Habit-Specific Statistics';
@@ -4853,8 +4853,8 @@ extension on Translations {
 			'proModal.title' => 'Unlock Evolve Pro',
 			'proModal.subtitle' => 'Take your habit system to the next level',
 			'proModal.featuresHeader' => 'WHAT THE PRO PLAN INCLUDES',
-			'proModal.aiCoachTitle' => 'Personalized AI Coach',
-			'proModal.aiCoachDesc' => 'Advanced trend analysis and smart AI-generated suggestions.',
+			'proModal.aiCoachTitle' => 'AI Coach, with no setup',
+			'proModal.aiCoachDesc' => 'We run it on our key — no API key to fetch, no second account. Prefer your own OpenRouter account? That\'s free too.',
 			'proModal.statsTitle' => 'Habit-Specific Statistics',
 			'proModal.statsDesc' => 'Key insights to boost your productivity.',
 			'proModal.metricsTitle' => 'Advanced Goal Metrics',

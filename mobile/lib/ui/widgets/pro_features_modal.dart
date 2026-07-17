@@ -129,12 +129,20 @@ class _ProFeaturesModalState extends ConsumerState<ProFeaturesModal> {
           ),
           const SizedBox(height: 32),
           
-          // Features List
+          // Features List — ordered by what the subscription ACTUALLY unlocks.
+          //
+          // The coach used to lead this list, from when it was Pro-gated. It is
+          // not any more: bring-your-own-key is free, which is the Guideline
+          // 3.1.1 fix. Leading a paywall with a feature you can have for nothing
+          // is an inaccurate subscription description — Guideline 3.1.2, which
+          // this app is already rejected under — so the real gates go first, and
+          // the coach goes last saying what Pro genuinely buys for it: no setup.
           _buildFeatureItem(
             context: context,
-            icon: LucideIcons.brainCircuit,
-            title: context.t.subscription.personalizedAiCoach,
-            description: context.t.subscription.advancedTrendAnalysisAndSmartAi,
+            icon: LucideIcons.infinity,
+            // The gate every free user actually meets, at five habits.
+            title: context.t.subscription.unlimitedHabits,
+            description: context.t.subscription.createAndTrackAllTheHabits,
           ),
           const SizedBox(height: 20),
           _buildFeatureItem(
@@ -153,11 +161,11 @@ class _ProFeaturesModalState extends ConsumerState<ProFeaturesModal> {
           const SizedBox(height: 20),
           _buildFeatureItem(
             context: context,
-            icon: LucideIcons.infinity,
-            title: context.t.subscription.unlimitedHabits,
-            description: context.t.subscription.createAndTrackAllTheHabits,
+            icon: LucideIcons.brainCircuit,
+            title: context.t.subscription.personalizedAiCoach,
+            description: context.t.subscription.advancedTrendAnalysisAndSmartAi,
           ),
-          
+
           const SizedBox(height: 40),
           
           // CTA Button

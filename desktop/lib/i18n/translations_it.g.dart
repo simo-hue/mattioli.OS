@@ -1273,8 +1273,8 @@ class _Translations$proModal$it extends Translations$proModal$en {
 	@override String get title => 'Sblocca Evolve Pro';
 	@override String get subtitle => 'Porta il tuo sistema di abitudini al livello successivo';
 	@override String get featuresHeader => 'COSA INCLUDE IL PIANO PRO';
-	@override String get aiCoachTitle => 'AI Coach Personalizzato';
-	@override String get aiCoachDesc => 'Analisi avanzata dei trend e suggerimenti intelligenti generati dall\'AI.';
+	@override String get aiCoachTitle => 'AI Coach, senza configurazione';
+	@override String get aiCoachDesc => 'Lo eseguiamo noi con la nostra chiave: nessuna chiave API da recuperare, nessun secondo account. Preferisci il tuo account OpenRouter? È gratis anche così.';
 	@override String get statsTitle => 'Statistiche Specifiche Per Abitudine';
 	@override String get statsDesc => 'Informazioni chiave per aumentare la tua produttività.';
 	@override String get metricsTitle => 'Metriche Avanzate Obiettivi';
@@ -2639,8 +2639,8 @@ extension on TranslationsIt {
 			'proModal.title' => 'Sblocca Evolve Pro',
 			'proModal.subtitle' => 'Porta il tuo sistema di abitudini al livello successivo',
 			'proModal.featuresHeader' => 'COSA INCLUDE IL PIANO PRO',
-			'proModal.aiCoachTitle' => 'AI Coach Personalizzato',
-			'proModal.aiCoachDesc' => 'Analisi avanzata dei trend e suggerimenti intelligenti generati dall\'AI.',
+			'proModal.aiCoachTitle' => 'AI Coach, senza configurazione',
+			'proModal.aiCoachDesc' => 'Lo eseguiamo noi con la nostra chiave: nessuna chiave API da recuperare, nessun secondo account. Preferisci il tuo account OpenRouter? È gratis anche così.',
 			'proModal.statsTitle' => 'Statistiche Specifiche Per Abitudine',
 			'proModal.statsDesc' => 'Informazioni chiave per aumentare la tua produttività.',
 			'proModal.metricsTitle' => 'Metriche Avanzate Obiettivi',

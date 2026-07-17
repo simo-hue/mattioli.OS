@@ -587,7 +587,7 @@
       "unlimitedMacroGoals": "أنشئ كل أهدافك الكبرى دون حدود.",
       "deepCharts": "رسوم بيانية معمّقة وتحليل للاتجاهات.",
       "advancedStats": "إحصاءات متقدّمة",
-      "smartSuggestions": "اقتراحات ذكية مبنيّة على بياناتك.",
+      "smartSuggestions": "نشغّله نيابةً عنك: بلا مفتاح API. ويمكنك أيضًا استخدام حساب OpenRouter الخاص بك مجانًا.",
       "unlimitedGoals": "أهداف غير محدودة"
     },
     "status": {
@@ -636,9 +636,9 @@
       "purchaseInProgress": "هناك عملية شراء جارية بالفعل. انتظر بضع ثوانٍ.",
       "pricesUnavailable": "تعذّر تحميل الأسعار من App Store. تحقّق من اتصالك واسحب للأسفل للتحديث."
     },
-    "personalizedAiCoach": "مدرّب AI مخصّص",
+    "personalizedAiCoach": "AI Coach بلا إعداد",
     "unlimitedHabits": "عادات غير محدودة",
-    "advancedTrendAnalysisAndSmartAi": "تحليل متقدّم للاتجاهات واقتراحات ذكية مولّدة بواسطة AI.",
+    "advancedTrendAnalysisAndSmartAi": "نشغّله نحن بمفتاحنا: لا مفتاح API تبحث عنه، ولا حساب ثانٍ. تفضّل حساب OpenRouter الخاص بك؟ هذا مجاني أيضًا.",
     "createAndTrackAllTheHabits": "أنشئ وتتبّع كل العادات التي تريدها دون أي حدود.",
     "maybeLater": "ربما لاحقاً",
     "keyInsightsToBoostYourProductivity": "رؤى أساسية لتعزيز إنتاجيتك.",

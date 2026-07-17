@@ -1273,8 +1273,8 @@ class _Translations$proModal$ar extends Translations$proModal$en {
 	@override String get title => 'افتح Evolve Pro';
 	@override String get subtitle => 'ارتقِ بنظام عاداتك إلى المستوى التالي';
 	@override String get featuresHeader => 'ما الذي تتضمّنه خطة PRO';
-	@override String get aiCoachTitle => 'مدرّب AI مخصّص';
-	@override String get aiCoachDesc => 'تحليل متقدّم للاتجاهات واقتراحات ذكية مولّدة بواسطة AI.';
+	@override String get aiCoachTitle => 'AI Coach بلا إعداد';
+	@override String get aiCoachDesc => 'نشغّله نحن بمفتاحنا: لا مفتاح API تبحث عنه، ولا حساب ثانٍ. تفضّل حساب OpenRouter الخاص بك؟ هذا مجاني أيضًا.';
 	@override String get statsTitle => 'إحصاءات خاصة بكل عادة';
 	@override String get statsDesc => 'رؤى أساسية لتعزيز إنتاجيتك.';
 	@override String get metricsTitle => 'مقاييس متقدّمة للأهداف';
@@ -2639,8 +2639,8 @@ extension on TranslationsAr {
 			'proModal.title' => 'افتح Evolve Pro',
 			'proModal.subtitle' => 'ارتقِ بنظام عاداتك إلى المستوى التالي',
 			'proModal.featuresHeader' => 'ما الذي تتضمّنه خطة PRO',
-			'proModal.aiCoachTitle' => 'مدرّب AI مخصّص',
-			'proModal.aiCoachDesc' => 'تحليل متقدّم للاتجاهات واقتراحات ذكية مولّدة بواسطة AI.',
+			'proModal.aiCoachTitle' => 'AI Coach بلا إعداد',
+			'proModal.aiCoachDesc' => 'نشغّله نحن بمفتاحنا: لا مفتاح API تبحث عنه، ولا حساب ثانٍ. تفضّل حساب OpenRouter الخاص بك؟ هذا مجاني أيضًا.',
 			'proModal.statsTitle' => 'إحصاءات خاصة بكل عادة',
 			'proModal.statsDesc' => 'رؤى أساسية لتعزيز إنتاجيتك.',
 			'proModal.metricsTitle' => 'مقاييس متقدّمة للأهداف',

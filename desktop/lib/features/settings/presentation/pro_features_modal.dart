@@ -20,11 +20,19 @@ class ProFeature {
 
 /// The four Pro features, localized. Shared by the upsell modal and the paywall
 /// feature list so the pitch stays in sync.
+///
+/// Ordered by what the subscription ACTUALLY unlocks. The coach led this list
+/// from when it was Pro-gated; it is not any more — bring-your-own-key is free,
+/// which is the Guideline 3.1.1 fix. Leading a paywall with a feature you can
+/// have for nothing is an inaccurate subscription description (Guideline 3.1.2,
+/// which this app is already rejected under), so the real gates go first and the
+/// coach goes last, saying what Pro genuinely buys for it: no setup.
 List<ProFeature> proFeatures() => [
   ProFeature(
-    LucideIcons.brainCircuit,
-    t.proModal.aiCoachTitle,
-    t.proModal.aiCoachDesc,
+    LucideIcons.infinity,
+    // The gate every free user actually meets, at five habits.
+    t.proModal.unlimitedTitle,
+    t.proModal.unlimitedDesc,
   ),
   ProFeature(LucideIcons.cloud, t.proModal.statsTitle, t.proModal.statsDesc),
   ProFeature(
@@ -33,9 +41,9 @@ List<ProFeature> proFeatures() => [
     t.proModal.metricsDesc,
   ),
   ProFeature(
-    LucideIcons.infinity,
-    t.proModal.unlimitedTitle,
-    t.proModal.unlimitedDesc,
+    LucideIcons.brainCircuit,
+    t.proModal.aiCoachTitle,
+    t.proModal.aiCoachDesc,
   ),
 ];
 

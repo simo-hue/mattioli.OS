@@ -587,7 +587,7 @@
       "unlimitedMacroGoals": "Erstelle alle deine Makroziele ohne Limit.",
       "deepCharts": "Detaillierte Diagramme und Trendanalysen.",
       "advancedStats": "Erweiterte Statistiken",
-      "smartSuggestions": "Intelligente Vorschläge basierend auf deinen Daten.",
+      "smartSuggestions": "Wir betreiben ihn für dich: kein API-Schlüssel nötig. Dein eigenes OpenRouter-Konto geht auch — kostenlos.",
       "unlimitedGoals": "Unbegrenzte Ziele"
     },
     "status": {
@@ -636,9 +636,9 @@
       "purchaseInProgress": "Ein Kaufvorgang ist bereits im Gange. Warten Sie ein paar Sekunden.",
       "pricesUnavailable": "Die Preise konnten nicht aus dem App Store geladen werden. Überprüfen Sie Ihre Verbindung und ziehen Sie nach unten, um zu aktualisieren."
     },
-    "personalizedAiCoach": "Personalisierter AI-Coach",
+    "personalizedAiCoach": "AI Coach, ohne Einrichtung",
     "unlimitedHabits": "Unbegrenzte Gewohnheiten",
-    "advancedTrendAnalysisAndSmartAi": "Erweiterte Trendanalyse und intelligente KI-generierte Vorschläge.",
+    "advancedTrendAnalysisAndSmartAi": "Wir betreiben ihn mit unserem Schlüssel: kein API-Schlüssel zu besorgen, kein zweites Konto. Lieber dein eigenes OpenRouter-Konto? Das ist ebenfalls kostenlos.",
     "createAndTrackAllTheHabits": "Erstellen und verfolgen Sie alle gewünschten Gewohnheiten ohne Einschränkungen.",
     "maybeLater": "Vielleicht später",
     "keyInsightsToBoostYourProductivity": "Wichtige Erkenntnisse zur Steigerung Ihrer Produktivität.",

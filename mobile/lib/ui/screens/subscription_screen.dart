@@ -557,11 +557,16 @@ class _SubscriptionScreenState extends ConsumerState<SubscriptionScreen> {
           ),
         ),
         const SizedBox(height: 16),
+        // Ordered by what the subscription ACTUALLY unlocks — see the same note
+        // in pro_features_modal.dart. The coach led this list from when it was
+        // Pro-gated; bring-your-own-key is now free, so leading with it would
+        // sell something you can have for nothing (Guideline 3.1.2). It goes
+        // last, describing what Pro genuinely buys for it: no setup.
         _buildFeatureRow(
           context,
-          LucideIcons.brainCircuit,
-          context.t.subscription.personalizedAiCoach,
-          context.t.subscription.features.smartSuggestions,
+          LucideIcons.infinity,
+          context.t.subscription.unlimitedHabits,
+          context.t.subscription.features.unlimitedHabits,
         ),
         const SizedBox(height: 16),
         _buildFeatureRow(
@@ -573,16 +578,16 @@ class _SubscriptionScreenState extends ConsumerState<SubscriptionScreen> {
         const SizedBox(height: 16),
         _buildFeatureRow(
           context,
-          LucideIcons.infinity,
-          context.t.subscription.unlimitedHabits,
-          context.t.subscription.features.unlimitedHabits,
+          LucideIcons.target,
+          context.t.subscription.features.unlimitedGoals,
+          context.t.subscription.features.unlimitedMacroGoals,
         ),
         const SizedBox(height: 16),
         _buildFeatureRow(
           context,
-          LucideIcons.target,
-          context.t.subscription.features.unlimitedGoals,
-          context.t.subscription.features.unlimitedMacroGoals,
+          LucideIcons.brainCircuit,
+          context.t.subscription.personalizedAiCoach,
+          context.t.subscription.features.smartSuggestions,
         ),
       ],
     );

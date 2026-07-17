@@ -1273,8 +1273,8 @@ class _Translations$proModal$de extends Translations$proModal$en {
 	@override String get title => 'Evolve PRO freischalten';
 	@override String get subtitle => 'Bringen Sie Ihr Gewohnheitssystem auf die nächste Stufe';
 	@override String get featuresHeader => 'Was der PRO-Plan enthält';
-	@override String get aiCoachTitle => 'Personalisierter AI-Coach';
-	@override String get aiCoachDesc => 'Erweiterte Trendanalyse und intelligente KI-generierte Vorschläge.';
+	@override String get aiCoachTitle => 'AI Coach, ohne Einrichtung';
+	@override String get aiCoachDesc => 'Wir betreiben ihn mit unserem Schlüssel: kein API-Schlüssel zu besorgen, kein zweites Konto. Lieber dein eigenes OpenRouter-Konto? Das ist ebenfalls kostenlos.';
 	@override String get statsTitle => 'Gewohnheitsspezifische Statistiken';
 	@override String get statsDesc => 'Wichtige Erkenntnisse zur Steigerung Ihrer Produktivität.';
 	@override String get metricsTitle => 'Erweiterte Zielmetriken';
@@ -2639,8 +2639,8 @@ extension on TranslationsDe {
 			'proModal.title' => 'Evolve PRO freischalten',
 			'proModal.subtitle' => 'Bringen Sie Ihr Gewohnheitssystem auf die nächste Stufe',
 			'proModal.featuresHeader' => 'Was der PRO-Plan enthält',
-			'proModal.aiCoachTitle' => 'Personalisierter AI-Coach',
-			'proModal.aiCoachDesc' => 'Erweiterte Trendanalyse und intelligente KI-generierte Vorschläge.',
+			'proModal.aiCoachTitle' => 'AI Coach, ohne Einrichtung',
+			'proModal.aiCoachDesc' => 'Wir betreiben ihn mit unserem Schlüssel: kein API-Schlüssel zu besorgen, kein zweites Konto. Lieber dein eigenes OpenRouter-Konto? Das ist ebenfalls kostenlos.',
 			'proModal.statsTitle' => 'Gewohnheitsspezifische Statistiken',
 			'proModal.statsDesc' => 'Wichtige Erkenntnisse zur Steigerung Ihrer Produktivität.',
 			'proModal.metricsTitle' => 'Erweiterte Zielmetriken',

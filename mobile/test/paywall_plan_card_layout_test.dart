@@ -168,4 +168,37 @@ void main() {
     // invariant holds.
     await tester.pump(const Duration(seconds: 3));
   });
+
+  testWidgets('the AI Coach does not head the paywall — it is free via BYOK', (
+    tester,
+  ) async {
+    // The coach led this list from when it was Pro-gated. It is not any more:
+    // bring-your-own-key is free, which is the Guideline 3.1.1 fix. Heading the
+    // IAP screen with a feature you can have for nothing is an inaccurate
+    // subscription description — Guideline 3.1.2, the one this app is already
+    // rejected under. The habit limit is the gate a free user actually meets
+    // (five habits), so it leads; the coach goes last, selling what Pro really
+    // buys for it: no setup.
+    await _pumpPaywall(tester);
+
+    final habits = find.text(t.subscription.unlimitedHabits);
+    final coach = find.text(t.subscription.personalizedAiCoach);
+    expect(habits, findsOneWidget);
+    expect(coach, findsOneWidget);
+
+    expect(
+      tester.getTopLeft(habits).dy,
+      lessThan(tester.getTopLeft(coach).dy),
+      reason: 'the coach must not head the Pro pitch',
+    );
+
+    // The pitch must not resell the coach as the thing being unlocked.
+    expect(
+      t.subscription.personalizedAiCoach,
+      isNot(contains('Personalized AI Coach')),
+      reason: 'the old headline framing is back',
+    );
+
+    await tester.pump(const Duration(seconds: 3));
+  });
 }

@@ -7,6 +7,7 @@ import 'package:evolve_desktop/i18n/translations.g.dart';
 import 'package:evolve_desktop/core/app_logger.dart';
 import 'package:evolve_desktop/core/desktop_data_mode.dart';
 import 'package:evolve_desktop/core/desktop_supabase_config.dart';
+import 'package:evolve_desktop/core/secure_local_storage.dart';
 import 'package:evolve_desktop/core/secure_storage_utils.dart';
 import 'package:evolve_desktop/features/auth/application/consent_controller.dart';
 import 'package:crypto/crypto.dart';
@@ -215,6 +216,17 @@ class DesktopAuthController extends Notifier<DesktopAuthState> {
 
   /// Exit Private mode without deleting private data.
   Future<void> goToLogin() async {
+    try {
+      final _ = Supabase.instance.client;
+    } catch (_) {
+      DesktopSupabaseConfig.validate();
+      await Supabase.initialize(
+        url: DesktopSupabaseConfig.url.trim(),
+        anonKey: DesktopSupabaseConfig.publishableKey.trim(),
+        authOptions: FlutterAuthClientOptions(localStorage: SecureLocalStorage()),
+      );
+      ref.invalidate(supabaseClientProvider);
+    }
     await ref.read(activeDesktopDataModeProvider.notifier).enterSupabaseMode();
   }
 

@@ -2,6 +2,10 @@
 
 ## Recent Changes
 
+- [2026-07-17 08:00]: **Deactivated Web App Deployment Workflow**
+  - *Details*: Deleted the `.github/workflows/deploy.yml` file to completely stop automatic deployments to GitHub pages on pushes. The current GitHub Pages website will remain online exactly as it is.
+  - *Tech Notes*: Removed `.github/workflows/deploy.yml`.
+
 - [2026-07-14 17:15]: **AI Coach UI Layout Fix**
   - *Details*: Fixed a UI issue in the desktop AI Coach page where the chat message container was constrained to 900px, creating a visual disconnect with the full-width input dock. The message container now spans the full width of the panel, and individual chat bubbles have been widened for improved readability.
   - *Tech Notes*:

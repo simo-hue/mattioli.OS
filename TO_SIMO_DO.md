@@ -10,4 +10,3 @@
 - [ ] mobile animation between lateral scroll on the goals page? Improve it
 
 ---
-

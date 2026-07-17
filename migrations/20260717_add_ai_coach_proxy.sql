@@ -28,47 +28,72 @@ CREATE TABLE IF NOT EXISTS public.ai_coach_limits (
   id boolean PRIMARY KEY DEFAULT true CHECK (id),
 
   -- Input is clamped in CHARACTERS, not tokens: the function has no tokenizer,
-  -- and a byte ceiling is the bound that actually matters for cost. ~4 chars per
-  -- token, so 32000 ≈ 8k tokens ≈ $0.0024 at $0.30/M.
+  -- and a byte ceiling is the bound that actually matters. ~4 chars per token,
+  -- so 32000 ≈ 8k tokens.
   --
-  -- This clamp is the whole ballgame. `max_tokens` limits OUTPUT only and
-  -- OpenRouter enforces NO input cap — the only input-side limit is the context
-  -- window itself, and google/gemini-2.5-flash has 1,048,576 tokens of it. One
-  -- crafted max-context request costs ~$0.31; a loop costs thousands per hour.
-  -- Without this line the endpoint is an unmetered hole.
+  -- Still the whole ballgame even on a FREE model. `max_tokens` limits OUTPUT
+  -- only and OpenRouter enforces NO input cap; the only input-side limit is the
+  -- context window, and the free tier's daily request quota is shared across the
+  -- whole app (one OpenRouter account, one key). An unbounded request wastes a
+  -- slot in that shared quota and can blow the model's context window — this
+  -- clamp is what stops one crafted message from starving everyone.
   max_input_chars integer NOT NULL DEFAULT 32000,
 
-  -- Output ceiling. Gemini 2.5 Flash is a REASONING model: its reasoning tokens
-  -- bill at the completion rate ($2.50/M) and never appear in the text we stream
-  -- back, so they are invisible spend. max_tokens caps the completion budget
-  -- they are drawn from.
+  -- Output ceiling. gemma-4-26b-a4b is a reasoning model: its reasoning tokens
+  -- never appear in the streamed text, so an uncapped completion runs long and
+  -- slow for no visible benefit. Free means no bill, but the cap still bounds
+  -- response length and keeps replies snappy.
   max_output_tokens integer NOT NULL DEFAULT 1000,
 
-  -- Request windows. A real user talking to a coach sends maybe 100 messages a
-  -- month, so these are ~10x a heavy human and no human will ever feel them.
-  -- With the clamps above bounding a request at ~$0.005, the monthly ceiling
-  -- bounds one account at ~$5 — against EUR 4.99/mo revenue, and only if someone
-  -- deliberately maxes every window every day.
+  -- Request windows. On the FREE tier these are the real ceiling that matters:
+  -- OpenRouter caps a free model at 20 req/min and 50 req/day (1000/day once the
+  -- account has ≥$10 of lifetime credits), PER ACCOUNT, globally — and the proxy
+  -- is one shared account. These per-user windows exist so one user cannot drain
+  -- that shared daily pool and lock everyone else out. Sized deliberately generous
+  -- for the current handful of Pro users; tighten them if the base grows.
   max_per_10min integer NOT NULL DEFAULT 20,
   max_per_day integer NOT NULL DEFAULT 150,
   max_per_month integer NOT NULL DEFAULT 1000,
 
-  model text NOT NULL DEFAULT 'google/gemini-2.5-flash',
+  -- The Pro proxy runs a FREE OpenRouter model, by explicit product decision
+  -- (2026-07-17): the coach costs the developer nothing. The trade-off is that
+  -- the free tier is not private the way a paid endpoint is — see the privacy
+  -- columns below. To switch back to a paid, zero-retention model later, this is
+  -- one UPDATE (model + providers + the two privacy columns) with NO redeploy —
+  -- that is the entire point of these being columns.
+  model text NOT NULL DEFAULT 'google/gemma-4-26b-a4b-it:free',
 
   -- Provider pinning, and it is a compliance control rather than a preference.
   -- Guideline 5.1.2(i) requires disclosing WHO receives personal data. OpenRouter
   -- is a router: unpinned, it may fan out to providers we never named, which
   -- would make our disclosure untrue the moment it happened.
   --
-  -- `google-vertex` is the only Zero-Data-Retention endpoint serving this model
-  -- (google-ai-studio retains prompts for 55 days and would have to be disclosed
-  -- as such). Conveniently, only Google serves gemini-2.5-flash at all, so the
-  -- honest recipient list is short: OpenRouter, Inc. and Google LLC.
+  -- `google-ai-studio` is Google LLC's free endpoint for this model. Pinned to it
+  -- ALONE (with allow_fallbacks off in the function) so the recipient list stays
+  -- exactly OpenRouter, Inc. and Google LLC — the free model's only other server,
+  -- Darkbloom, would otherwise become an unnamed recipient. This is the same
+  -- two-company disclosure as before; only the Google product (AI Studio, not
+  -- Vertex) and its data policy changed.
   --
   -- Changing this array changes who receives user data. Update the privacy
   -- policy and the in-app consent copy in the same breath, or the disclosure
   -- silently becomes a lie.
-  providers text[] NOT NULL DEFAULT ARRAY['google-vertex'],
+  providers text[] NOT NULL DEFAULT ARRAY['google-ai-studio'],
+
+  -- The privacy posture sent to OpenRouter's provider router, kept in the table
+  -- so it travels with the model choice rather than being hardcoded in the
+  -- function — otherwise a future model swap via SQL could silently keep or drop
+  -- the wrong posture. These are the 5.1.2(i) surface as much as `providers` is:
+  -- they decide whether the endpoint may retain and learn from the data, which
+  -- is exactly what the privacy policy discloses.
+  --
+  -- Both default to the FREE-tier reality: NOT zero-retention, and data
+  -- collection allowed (Google AI Studio's free tier may retain prompts and use
+  -- them to improve its services). A paid Vertex switch would set these back to
+  -- true / 'deny' in the same UPDATE.
+  zero_data_retention boolean NOT NULL DEFAULT false,
+  data_collection text NOT NULL DEFAULT 'allow'
+    CHECK (data_collection IN ('allow', 'deny')),
 
   updated_at timestamptz NOT NULL DEFAULT now()
 );
@@ -78,7 +103,14 @@ COMMENT ON TABLE public.ai_coach_limits IS
   'be tuned without an App Store release. Service role only.';
 COMMENT ON COLUMN public.ai_coach_limits.providers IS
   'Pinned OpenRouter provider slugs. This is the Guideline 5.1.2(i) recipient '
-  'list — changing it changes who receives user data.';
+  'list — changing it changes who receives user data. Update the privacy policy '
+  'and in-app consent copy in the same change.';
+COMMENT ON COLUMN public.ai_coach_limits.zero_data_retention IS
+  'Whether to restrict OpenRouter to Zero-Data-Retention endpoints (zdr). false '
+  'on the free tier, which offers none. Part of the 5.1.2(i) disclosure.';
+COMMENT ON COLUMN public.ai_coach_limits.data_collection IS
+  'OpenRouter provider data_collection policy: allow | deny. allow on the free '
+  'tier. deny requires a paid endpoint. Part of the 5.1.2(i) disclosure.';
 
 INSERT INTO public.ai_coach_limits (id) VALUES (true) ON CONFLICT (id) DO NOTHING;
 

@@ -13,19 +13,24 @@ const String kDefaultLocalBaseUrl = 'http://localhost:11434/v1';
 /// so a free model makes the coach genuinely $0 for anyone who connects a key.
 /// The free-tier trade-offs (a per-account daily cap; a provider that may train
 /// on the data) sit on the user's side of the line, which BYOK's consent copy
-/// already discloses — so no privacy change rides on this. NOT usable on the
-/// Standard proxy, which pins `google-vertex` (no free model is served there).
+/// already discloses.
+///
+/// The Standard proxy now runs the SAME free model (2026-07-17 product
+/// decision), via Google AI Studio rather than Vertex — see [kStandardCoachModel]
+/// and `migrations/20260717_add_ai_coach_proxy.sql`.
 const String kDefaultCloudModel = 'google/gemma-4-26b-a4b-it:free';
 
 /// The model the Standard proxy runs. Display only: the client does not choose
 /// it — the Edge Function reads it from `ai_coach_limits.model` and ignores
-/// whatever the body names, which is what stops a client from billing us for a
-/// model we never priced. Kept here so the chip can say what is answering.
+/// whatever the body names, which is what stops a client from picking a model we
+/// never disclosed. Kept here so the chip can say what is answering.
 ///
-/// If `ai_coach_limits.model` is ever retuned server-side (the point of it being
-/// a row rather than a constant), this label goes stale until the next release.
-/// It is a caption, not a control — but it is the only thing here that can lie.
-const String kStandardCoachModel = 'google/gemini-2.5-flash';
+/// The proxy runs the free tier by explicit product decision: the coach costs
+/// the developer nothing. If `ai_coach_limits.model` is ever retuned server-side
+/// (the point of it being a row rather than a constant), this label goes stale
+/// until the next release. It is a caption, not a control — but it is the only
+/// thing here that can lie.
+const String kStandardCoachModel = 'google/gemma-4-26b-a4b-it:free';
 
 /// Neutral sampling temperature — the historical coach value.
 const double kDefaultTemperature = 0.7;

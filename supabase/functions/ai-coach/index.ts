@@ -16,14 +16,25 @@
 //  1. Identity comes from the caller's JWT, never from the body.
 //  2. Entitlement is read server-side from profiles.is_pro, which only the
 //     RevenueCat webhook can write (pinned by a BEFORE trigger).
-//  3. Input is clamped in characters. OpenRouter enforces NO input cap and
-//     gemini-2.5-flash has a 1,048,576-token context, so one crafted request is
-//     ~$0.31 and a loop is thousands per hour. This is the hole.
-//  4. Output is clamped via max_tokens — which also bounds Gemini's reasoning
-//     tokens, billed at the completion rate and invisible in the streamed text.
-//  5. Providers are PINNED. Guideline 5.1.2(i) requires naming who receives
-//     personal data; an unpinned router may fan out to providers we never named.
-//  6. Quotas bound one account's monthly spend.
+//  3. Input is clamped in characters. OpenRouter enforces NO input cap, so one
+//     crafted request can fill the model's whole context window and waste a slot
+//     in the shared free-tier daily quota. On a free model the cost is not $ but
+//     that shared quota; the clamp bounds it either way. This is the hole.
+//  4. Output is clamped via max_tokens — which also bounds the model's reasoning
+//     tokens, invisible in the streamed text, so a reply cannot run away.
+//  5. Providers are PINNED, with fallbacks OFF. Guideline 5.1.2(i) requires
+//     naming who receives personal data; an unpinned router may fan out to
+//     providers we never named. The pinned posture (zdr / data_collection) is
+//     DB-driven so it stays in lockstep with the privacy policy.
+//  6. Quotas bound one account's share of the shared free-tier daily limit.
+//
+// The Pro proxy runs a FREE model (google/gemma-4-26b-a4b-it:free via Google AI
+// Studio) by explicit product decision — the coach costs the developer nothing.
+// The free tier is NOT private the way a paid endpoint is (Google may retain and
+// learn from the data); the privacy policy and the in-app consent copy disclose
+// exactly that. Switching back to a paid, zero-retention model is one UPDATE to
+// the ai_coach_limits row (model + providers + zero_data_retention +
+// data_collection), no redeploy — plus the matching privacy-copy change.
 //
 // Deploy:  supabase functions deploy ai-coach
 // Secret:  supabase secrets set OPENROUTER_API_KEY=...   (Simone runs this)
@@ -47,8 +58,10 @@ const FALLBACK_LIMITS: Limits = {
   max_per_10min: 20,
   max_per_day: 150,
   max_per_month: 1000,
-  model: 'google/gemini-2.5-flash',
-  providers: ['google-vertex'],
+  model: 'google/gemma-4-26b-a4b-it:free',
+  providers: ['google-ai-studio'],
+  zero_data_retention: false,
+  data_collection: 'allow',
 }
 
 interface Limits {
@@ -59,6 +72,11 @@ interface Limits {
   max_per_month: number
   model: string
   providers: string[]
+  // The privacy posture, DB-driven so it travels with the model choice. The free
+  // tier offers neither ZDR nor deny; a paid Vertex switch sets these to
+  // true / 'deny'. Part of the Guideline 5.1.2(i) disclosure.
+  zero_data_retention: boolean
+  data_collection: 'allow' | 'deny'
 }
 
 function json(body: unknown, status: number) {
@@ -326,9 +344,16 @@ serve(async (req) => {
     //    `only` is the hard restriction: `order` merely PRIORITISES and would
     //    still let the router reach anyone. `allow_fallbacks` defaults to TRUE
     //    and must be turned off explicitly, or the pin leaks the moment the
-    //    pinned provider hiccups. `zdr: true` restricts to Zero-Data-Retention
-    //    endpoints. Together they make the recipient list in our privacy policy
-    //    true rather than aspirational.
+    //    pinned provider hiccups — on the free tier that leak would hand the
+    //    conversation to Darkbloom (the model's other free server), an
+    //    undisclosed recipient. So it stays OFF: the recipient list is exactly
+    //    OpenRouter, Inc. and Google LLC, which is what the privacy policy names.
+    //
+    //    `zdr` and `data_collection` come from the limits row, not a constant, so
+    //    the privacy posture travels with the model choice: the free tier offers
+    //    neither (zdr:false / 'allow'), a paid Vertex switch turns both back on
+    //    in the same UPDATE. These are as much the 5.1.2(i) disclosure as
+    //    `providers` is — the privacy policy discloses exactly this posture.
     //
     //    No HTTP-Referer / X-OpenRouter-Title: both are optional for a server
     //    proxy and exist to list the app publicly in OpenRouter's rankings.
@@ -348,8 +373,8 @@ serve(async (req) => {
           provider: {
             only: limits.providers,
             allow_fallbacks: false,
-            zdr: true,
-            data_collection: 'deny',
+            zdr: limits.zero_data_retention,
+            data_collection: limits.data_collection,
           },
         }),
       })

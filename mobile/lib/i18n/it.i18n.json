@@ -741,7 +741,7 @@
     },
     "consent": {
       "standardTitle": "Inviare i tuoi messaggi all'AI?",
-      "standardBody": "Per rispondere, l'AI Coach invia il tuo messaggio, il tuo nome e il contesto che scegli di condividere a OpenRouter, Inc., che li instrada a Google LLC per eseguire il modello (Google Cloud Vertex AI). Li trattano solo per generare la risposta. Puoi revocare il consenso in qualsiasi momento dalle Impostazioni e tutto il resto di Evolve continua a funzionare.",
+      "standardBody": "Per rispondere, l'AI Coach invia il tuo messaggio, il tuo nome e il contesto che scegli di condividere a OpenRouter, Inc., che li instrada a Google LLC (Google AI Studio) per eseguire il modello. Trattandosi del piano gratuito di Google, Google può conservare il testo per un periodo limitato e usarlo per migliorare i propri servizi — non è privato come un piano a pagamento. Puoi revocare il consenso in qualsiasi momento dalle Impostazioni e tutto il resto di Evolve continua a funzionare.",
       "byokTitle": "Inviare i tuoi messaggi a OpenRouter?",
       "byokBody": "Per rispondere, l'AI Coach invia il tuo messaggio, il tuo nome e il contesto che scegli di condividere a OpenRouter, Inc. usando il tuo account OpenRouter. OpenRouter lo instrada a un provider di modelli in base alle impostazioni del tuo account. Puoi revocare il consenso in qualsiasi momento dalle Impostazioni e tutto il resto di Evolve continua a funzionare.",
       "privateNote": "Il tuo database privato resta su questo dispositivo: esce solo ciò che invii in chat.",

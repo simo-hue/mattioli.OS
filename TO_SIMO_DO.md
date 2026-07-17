@@ -13,6 +13,12 @@
 ---
 
 
+### AI Coach — the free-model switch (2026-07-17), before it goes live
+- [ ] **The migration and the Edge Function BOTH changed** for the free-model switch, so if you applied/deployed the earlier versions, redo them. `migrations/20260717_add_ai_coach_proxy.sql` now defaults `model` to `google/gemma-4-26b-a4b-it:free`, `providers` to `ARRAY['google-ai-studio']`, and adds `zero_data_retention`/`data_collection` columns. If you already ran the old migration, either drop the table and re-run, or `ALTER TABLE` to add the two columns and `UPDATE` model+providers — otherwise the function's SELECT gets the old paid Vertex row.
+- [ ] **Verify the pin against the NEW target.** The live SSE chunks must report `"provider":"google-ai-studio"`, not `google-vertex` and never `darkbloom` (the free model's other server — the function logs `PROVIDER PIN LEAKED` and it is NOT named in the privacy policy). This is the same load-bearing check as before, just a different expected provider.
+- [ ] **Confirm Google AI Studio's current free-tier terms** actually match what the privacy policy now says in your name: that Google may retain the text for a limited period and use it to improve their services (incl. training). If Google's terms are stricter or looser, adjust the policy copy (all 5 locales) to match. This is a legal claim you are the controller for.
+- [ ] **Sanity note:** the proxy is a free tier — 20 req/min, 50/day (1000/day with ≥$10 credits) across ALL Pro users on your one key. Fine for a handful of users; if the base grows, tighten `ai_coach_limits` or switch back to a paid Vertex model (one `UPDATE` of model+providers+the two privacy columns, plus reverting the privacy-copy change).
+
 ### Blocked on the implementation landing
 - [ ] **Before Screen Time can ever ship, these are open (found 2026-07-17, none fixable without a device):**
   - **Nothing selects which apps to watch.** Every `DeviceActivityEvent` is built with `applications: []`, `categories: []`, `webDomains: []` (`AppDelegate.swift:638-643`), and there is **no `FamilyActivitySelection` / `FamilyActivityPicker` anywhere in the repo**. The design assumes an empty set means "all activity". I could not verify that from here and I do not believe it: the usual reading is that an event scoped to nothing never fires, which would make every Screen Time habit silently pass forever. **Settle this on device first** — it decides whether v1 needs a picker UI (a real design change from "total device usage").

@@ -1369,7 +1369,7 @@ class _Translations$coachSettings$it extends Translations$coachSettings$en {
 	@override String get ollamaStartFailed => 'Impossibile avviare Ollama — prova ad aprirlo dalla cartella Applicazioni.';
 	@override String get ollamaDownloadFailed => 'Impossibile aprire il browser — visita ollama.com/download';
 	@override String get backendStandard => 'Evolve AI';
-	@override String get standardDesc => 'Incluso in Evolve Pro. Eseguiamo Gemini 2.5 Flash per te — nessuna chiave, nessuna configurazione. Il contesto che condividi viene inviato al provider.';
+	@override String get standardDesc => 'Incluso in Evolve Pro. Eseguiamo per te un modello gratuito di Google (Gemma) — nessuna chiave, nessuna configurazione. I tuoi messaggi vanno al piano gratuito di Google, che può usarli per migliorare i propri servizi.';
 	@override String activeStandard({required Object model}) => 'Evolve AI · ${model}';
 	@override String get standardSection => 'Evolve AI';
 	@override String get standardStatusReady => 'Incluso in Pro';
@@ -1643,7 +1643,7 @@ class _Translations$ai$consent$it extends Translations$ai$consent$en {
 
 	// Translations
 	@override String get standardTitle => 'Inviare i tuoi messaggi all\'AI?';
-	@override String get standardBody => 'Per rispondere, l\'AI Coach invia il tuo messaggio, il tuo nome e il contesto che scegli di condividere a OpenRouter, Inc., che li instrada a Google LLC per eseguire il modello (Google Cloud Vertex AI). Li trattano solo per generare la risposta. Puoi revocare il consenso in qualsiasi momento dalle Impostazioni e tutto il resto di Evolve continua a funzionare.';
+	@override String get standardBody => 'Per rispondere, l\'AI Coach invia il tuo messaggio, il tuo nome e il contesto che scegli di condividere a OpenRouter, Inc., che li instrada a Google LLC (Google AI Studio) per eseguire il modello. Trattandosi del piano gratuito di Google, Google può conservare il testo per un periodo limitato e usarlo per migliorare i propri servizi — non è privato come un piano a pagamento. Puoi revocare il consenso in qualsiasi momento dalle Impostazioni e tutto il resto di Evolve continua a funzionare.';
 	@override String get byokTitle => 'Inviare i tuoi messaggi a OpenRouter?';
 	@override String get byokBody => 'Per rispondere, l\'AI Coach invia il tuo messaggio, il tuo nome e il contesto che scegli di condividere a OpenRouter, Inc. usando il tuo account OpenRouter. OpenRouter lo instrada a un provider di modelli in base alle impostazioni del tuo account. Puoi revocare il consenso in qualsiasi momento dalle Impostazioni e tutto il resto di Evolve continua a funzionare.';
 	@override String get privateNote => 'Il tuo database privato resta su questo dispositivo: esce solo ciò che invii in chat.';
@@ -2336,7 +2336,7 @@ extension on TranslationsIt {
 			'ai.standard.rateLimited' => '⚠️ Hai raggiunto il limite di uso corretto di Evolve AI per ora. Riprova più tardi oppure passa al tuo account OpenRouter.',
 			'ai.standard.unavailable' => '❌ Evolve AI non è disponibile in questo momento. È un problema nostro: riprova tra poco.',
 			'ai.consent.standardTitle' => 'Inviare i tuoi messaggi all\'AI?',
-			'ai.consent.standardBody' => 'Per rispondere, l\'AI Coach invia il tuo messaggio, il tuo nome e il contesto che scegli di condividere a OpenRouter, Inc., che li instrada a Google LLC per eseguire il modello (Google Cloud Vertex AI). Li trattano solo per generare la risposta. Puoi revocare il consenso in qualsiasi momento dalle Impostazioni e tutto il resto di Evolve continua a funzionare.',
+			'ai.consent.standardBody' => 'Per rispondere, l\'AI Coach invia il tuo messaggio, il tuo nome e il contesto che scegli di condividere a OpenRouter, Inc., che li instrada a Google LLC (Google AI Studio) per eseguire il modello. Trattandosi del piano gratuito di Google, Google può conservare il testo per un periodo limitato e usarlo per migliorare i propri servizi — non è privato come un piano a pagamento. Puoi revocare il consenso in qualsiasi momento dalle Impostazioni e tutto il resto di Evolve continua a funzionare.',
 			'ai.consent.byokTitle' => 'Inviare i tuoi messaggi a OpenRouter?',
 			'ai.consent.byokBody' => 'Per rispondere, l\'AI Coach invia il tuo messaggio, il tuo nome e il contesto che scegli di condividere a OpenRouter, Inc. usando il tuo account OpenRouter. OpenRouter lo instrada a un provider di modelli in base alle impostazioni del tuo account. Puoi revocare il consenso in qualsiasi momento dalle Impostazioni e tutto il resto di Evolve continua a funzionare.',
 			'ai.consent.privateNote' => 'Il tuo database privato resta su questo dispositivo: esce solo ciò che invii in chat.',
@@ -2750,7 +2750,7 @@ extension on TranslationsIt {
 			'coachSettings.ollamaStartFailed' => 'Impossibile avviare Ollama — prova ad aprirlo dalla cartella Applicazioni.',
 			'coachSettings.ollamaDownloadFailed' => 'Impossibile aprire il browser — visita ollama.com/download',
 			'coachSettings.backendStandard' => 'Evolve AI',
-			'coachSettings.standardDesc' => 'Incluso in Evolve Pro. Eseguiamo Gemini 2.5 Flash per te — nessuna chiave, nessuna configurazione. Il contesto che condividi viene inviato al provider.',
+			'coachSettings.standardDesc' => 'Incluso in Evolve Pro. Eseguiamo per te un modello gratuito di Google (Gemma) — nessuna chiave, nessuna configurazione. I tuoi messaggi vanno al piano gratuito di Google, che può usarli per migliorare i propri servizi.',
 			'coachSettings.activeStandard' => ({required Object model}) => 'Evolve AI · ${model}',
 			'coachSettings.standardSection' => 'Evolve AI',
 			'coachSettings.standardStatusReady' => 'Incluso in Pro',

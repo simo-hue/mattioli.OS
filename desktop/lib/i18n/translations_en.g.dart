@@ -3226,8 +3226,8 @@ class Translations$coachSettings$en {
 	/// en: 'Evolve AI'
 	String get backendStandard => 'Evolve AI';
 
-	/// en: 'Included with Evolve Pro. We run Gemini 2.5 Flash for you — no keys, no setup. The context you share is sent to the provider.'
-	String get standardDesc => 'Included with Evolve Pro. We run Gemini 2.5 Flash for you — no keys, no setup. The context you share is sent to the provider.';
+	/// en: 'Included with Evolve Pro. We run a free Google model (Gemma) for you — no keys, no setup. Your messages go to Google's free tier, which may use them to improve their services.'
+	String get standardDesc => 'Included with Evolve Pro. We run a free Google model (Gemma) for you — no keys, no setup. Your messages go to Google\'s free tier, which may use them to improve their services.';
 
 	/// en: 'Evolve AI · {model}'
 	String activeStandard({required Object model}) => 'Evolve AI · ${model}';
@@ -3832,8 +3832,8 @@ class Translations$ai$consent$en {
 	/// en: 'Send your messages to the AI?'
 	String get standardTitle => 'Send your messages to the AI?';
 
-	/// en: 'To reply, the AI Coach sends your message, your first name and any context you choose to share to OpenRouter, Inc., which routes it to Google LLC to run the model (Google Cloud Vertex AI). They process it only to generate the reply. You can withdraw this any time in Settings, and everything else in Evolve keeps working without it.'
-	String get standardBody => 'To reply, the AI Coach sends your message, your first name and any context you choose to share to OpenRouter, Inc., which routes it to Google LLC to run the model (Google Cloud Vertex AI). They process it only to generate the reply. You can withdraw this any time in Settings, and everything else in Evolve keeps working without it.';
+	/// en: 'To reply, the AI Coach sends your message, your first name and any context you choose to share to OpenRouter, Inc., which routes it to Google LLC (Google AI Studio) to run the model. Because this uses Google's free tier, Google may keep the text for a limited period and use it to improve their services — it is not as private as a paid tier. You can withdraw this any time in Settings, and everything else in Evolve keeps working without it.'
+	String get standardBody => 'To reply, the AI Coach sends your message, your first name and any context you choose to share to OpenRouter, Inc., which routes it to Google LLC (Google AI Studio) to run the model. Because this uses Google\'s free tier, Google may keep the text for a limited period and use it to improve their services — it is not as private as a paid tier. You can withdraw this any time in Settings, and everything else in Evolve keeps working without it.';
 
 	/// en: 'Send your messages to OpenRouter?'
 	String get byokTitle => 'Send your messages to OpenRouter?';
@@ -4568,7 +4568,7 @@ extension on Translations {
 			'ai.standard.rateLimited' => '⚠️ You\'ve reached the Evolve AI fair-use limit for now. Try again later, or switch the engine to your own OpenRouter account.',
 			'ai.standard.unavailable' => '❌ Evolve AI is unavailable right now. This one\'s on us — please try again in a moment.',
 			'ai.consent.standardTitle' => 'Send your messages to the AI?',
-			'ai.consent.standardBody' => 'To reply, the AI Coach sends your message, your first name and any context you choose to share to OpenRouter, Inc., which routes it to Google LLC to run the model (Google Cloud Vertex AI). They process it only to generate the reply. You can withdraw this any time in Settings, and everything else in Evolve keeps working without it.',
+			'ai.consent.standardBody' => 'To reply, the AI Coach sends your message, your first name and any context you choose to share to OpenRouter, Inc., which routes it to Google LLC (Google AI Studio) to run the model. Because this uses Google\'s free tier, Google may keep the text for a limited period and use it to improve their services — it is not as private as a paid tier. You can withdraw this any time in Settings, and everything else in Evolve keeps working without it.',
 			'ai.consent.byokTitle' => 'Send your messages to OpenRouter?',
 			'ai.consent.byokBody' => 'To reply, the AI Coach sends your message, your first name and any context you choose to share to OpenRouter, Inc. using your own OpenRouter account. OpenRouter routes it to a model provider according to your account settings. You can withdraw this any time in Settings, and everything else in Evolve keeps working without it.',
 			'ai.consent.privateNote' => 'Your private database stays on this device — only what you send in the chat leaves it.',
@@ -4982,7 +4982,7 @@ extension on Translations {
 			'coachSettings.ollamaStartFailed' => 'Couldn\'t start Ollama — try opening it from your Applications folder.',
 			'coachSettings.ollamaDownloadFailed' => 'Couldn\'t open the browser — visit ollama.com/download',
 			'coachSettings.backendStandard' => 'Evolve AI',
-			'coachSettings.standardDesc' => 'Included with Evolve Pro. We run Gemini 2.5 Flash for you — no keys, no setup. The context you share is sent to the provider.',
+			'coachSettings.standardDesc' => 'Included with Evolve Pro. We run a free Google model (Gemma) for you — no keys, no setup. Your messages go to Google\'s free tier, which may use them to improve their services.',
 			'coachSettings.activeStandard' => ({required Object model}) => 'Evolve AI · ${model}',
 			'coachSettings.standardSection' => 'Evolve AI',
 			'coachSettings.standardStatusReady' => 'Included with Pro',

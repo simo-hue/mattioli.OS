@@ -708,7 +708,7 @@
     },
     "consent": {
       "standardTitle": "Deine Nachrichten an die KI senden?",
-      "standardBody": "Zum Antworten sendet der AI Coach deine Nachricht, deinen Vornamen und den Kontext, den du teilst, an OpenRouter, Inc., das sie zur Ausführung des Modells an Google LLC weiterleitet (Google Cloud Vertex AI). Sie verarbeiten das nur, um die Antwort zu erzeugen. Du kannst die Einwilligung jederzeit in den Einstellungen widerrufen; alles andere in Evolve funktioniert weiter.",
+      "standardBody": "Zum Antworten sendet der AI Coach deine Nachricht, deinen Vornamen und den Kontext, den du teilst, an OpenRouter, Inc., das sie zur Ausführung des Modells an Google LLC (Google AI Studio) weiterleitet. Da dies Googles kostenlose Stufe nutzt, kann Google den Text für begrenzte Zeit speichern und zur Verbesserung seiner Dienste verwenden — er ist nicht so privat wie eine kostenpflichtige Stufe. Du kannst die Einwilligung jederzeit in den Einstellungen widerrufen; alles andere in Evolve funktioniert weiter.",
       "byokTitle": "Deine Nachrichten an OpenRouter senden?",
       "byokBody": "Zum Antworten sendet der AI Coach deine Nachricht, deinen Vornamen und den Kontext, den du teilst, über dein eigenes OpenRouter-Konto an OpenRouter, Inc. OpenRouter leitet sie gemäß den Einstellungen deines Kontos an einen Modellanbieter weiter. Du kannst die Einwilligung jederzeit in den Einstellungen widerrufen; alles andere in Evolve funktioniert weiter.",
       "privateNote": "Deine private Datenbank bleibt auf diesem Gerät — nur was du im Chat sendest, verlässt es.",
@@ -1153,7 +1153,7 @@
     "ollamaStartFailed": "Ollama konnte nicht gestartet werden — versuche, es aus dem Programme-Ordner zu öffnen.",
     "ollamaDownloadFailed": "Browser konnte nicht geöffnet werden — besuche ollama.com/download",
     "backendStandard": "Evolve AI",
-    "standardDesc": "In Evolve Pro enthalten. Wir betreiben Gemini 2.5 Flash für dich — keine Schlüssel, keine Einrichtung. Der geteilte Kontext wird an den Anbieter gesendet.",
+    "standardDesc": "In Evolve Pro enthalten. Wir betreiben ein kostenloses Google-Modell (Gemma) für dich — keine Schlüssel, keine Einrichtung. Deine Nachrichten gehen an Googles kostenlose Stufe, die sie zur Verbesserung ihrer Dienste verwenden kann.",
     "activeStandard": "Evolve AI · {model}",
     "standardSection": "Evolve AI",
     "standardStatusReady": "In Pro enthalten",

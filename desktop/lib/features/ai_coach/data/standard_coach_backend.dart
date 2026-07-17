@@ -210,7 +210,7 @@ class StandardCoachBackend implements CoachBackend {
   /// what `ai_coach_limits.model` already decided.
   @override
   Future<List<CoachModel>> listModels() async => const [
-    CoachModel(id: kStandardCoachModel, label: 'Gemini 2.5 Flash'),
+    CoachModel(id: kStandardCoachModel, label: 'Gemma 4 (free)'),
   ];
 
   /// Entitlement, not connectivity — matching the cloud backend, whose

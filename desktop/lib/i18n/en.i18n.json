@@ -708,7 +708,7 @@
     },
     "consent": {
       "standardTitle": "Send your messages to the AI?",
-      "standardBody": "To reply, the AI Coach sends your message, your first name and any context you choose to share to OpenRouter, Inc., which routes it to Google LLC to run the model (Google Cloud Vertex AI). They process it only to generate the reply. You can withdraw this any time in Settings, and everything else in Evolve keeps working without it.",
+      "standardBody": "To reply, the AI Coach sends your message, your first name and any context you choose to share to OpenRouter, Inc., which routes it to Google LLC (Google AI Studio) to run the model. Because this uses Google's free tier, Google may keep the text for a limited period and use it to improve their services — it is not as private as a paid tier. You can withdraw this any time in Settings, and everything else in Evolve keeps working without it.",
       "byokTitle": "Send your messages to OpenRouter?",
       "byokBody": "To reply, the AI Coach sends your message, your first name and any context you choose to share to OpenRouter, Inc. using your own OpenRouter account. OpenRouter routes it to a model provider according to your account settings. You can withdraw this any time in Settings, and everything else in Evolve keeps working without it.",
       "privateNote": "Your private database stays on this device — only what you send in the chat leaves it.",
@@ -1153,7 +1153,7 @@
     "ollamaStartFailed": "Couldn't start Ollama — try opening it from your Applications folder.",
     "ollamaDownloadFailed": "Couldn't open the browser — visit ollama.com/download",
     "backendStandard": "Evolve AI",
-    "standardDesc": "Included with Evolve Pro. We run Gemini 2.5 Flash for you — no keys, no setup. The context you share is sent to the provider.",
+    "standardDesc": "Included with Evolve Pro. We run a free Google model (Gemma) for you — no keys, no setup. Your messages go to Google's free tier, which may use them to improve their services.",
     "activeStandard": "Evolve AI · {model}",
     "standardSection": "Evolve AI",
     "standardStatusReady": "Included with Pro",

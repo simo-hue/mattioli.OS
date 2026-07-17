@@ -137,12 +137,14 @@ Deno.test("observer catches mid-stream errors, which arrive on an HTTP 200", asy
 Deno.test("observer reports the provider that actually served, not the one we asked for", async () => {
   // The pin-leak alarm. OpenRouter's docs leave "merged with your account-wide
   // allowed providers" undefined (union or intersection?), so the request we
-  // sent is not proof. This is.
-  const body = 'data: {"provider":"google-ai-studio","choices":[]}\n\n'
+  // sent is not proof. This is. The proxy pins google-ai-studio; Darkbloom is
+  // the free model's OTHER server, and the one that must never silently serve —
+  // it is not named in the privacy policy.
+  const body = 'data: {"provider":"darkbloom","choices":[]}\n\n'
   const { observations } = await pump([body])
   assertEquals(
     observations.provider,
-    "google-ai-studio",
+    "darkbloom",
     "an unpinned provider must be observable, or the leak is silent",
   )
 })

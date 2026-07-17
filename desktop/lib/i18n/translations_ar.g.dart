@@ -1369,7 +1369,7 @@ class _Translations$coachSettings$ar extends Translations$coachSettings$en {
 	@override String get ollamaStartFailed => 'تعذّر تشغيل Ollama — جرّب فتحه من مجلد التطبيقات.';
 	@override String get ollamaDownloadFailed => 'تعذّر فتح المتصفح — تفضّل بزيارة ollama.com/download';
 	@override String get backendStandard => 'Evolve AI';
-	@override String get standardDesc => 'مُضمَّن في Evolve Pro. نشغّل Gemini 2.5 Flash نيابةً عنك — بلا مفاتيح وبلا إعداد. يُرسَل السياق الذي تشاركه إلى المزوّد.';
+	@override String get standardDesc => 'مُضمَّن في Evolve Pro. نشغّل لك نموذجًا مجانيًا من Google (Gemma) — بلا مفاتيح وبلا إعداد. تذهب رسائلك إلى الطبقة المجانية من Google، التي قد تستخدمها لتحسين خدماتها.';
 	@override String activeStandard({required Object model}) => 'Evolve AI · ${model}';
 	@override String get standardSection => 'Evolve AI';
 	@override String get standardStatusReady => 'مُضمَّن في Pro';
@@ -1643,7 +1643,7 @@ class _Translations$ai$consent$ar extends Translations$ai$consent$en {
 
 	// Translations
 	@override String get standardTitle => 'إرسال رسائلك إلى الذكاء الاصطناعي؟';
-	@override String get standardBody => 'للردّ، يرسل AI Coach رسالتك واسمك والسياق الذي تختار مشاركته إلى OpenRouter, Inc.، التي توجّهها إلى Google LLC لتشغيل النموذج (Google Cloud Vertex AI). تُعالَج فقط لتوليد الردّ. يمكنك سحب الموافقة في أي وقت من الإعدادات، وكل شيء آخر في Evolve يستمر في العمل.';
+	@override String get standardBody => 'للردّ، يرسل AI Coach رسالتك واسمك والسياق الذي تختار مشاركته إلى OpenRouter, Inc.، التي توجّهها إلى Google LLC (Google AI Studio) لتشغيل النموذج. ولأن ذلك يستخدم الطبقة المجانية من Google، فقد تحتفظ Google بالنص لفترة محدودة وتستخدمه لتحسين خدماتها — وهو ليس خاصًا كطبقة مدفوعة. يمكنك سحب الموافقة في أي وقت من الإعدادات، وكل شيء آخر في Evolve يستمر في العمل.';
 	@override String get byokTitle => 'إرسال رسائلك إلى OpenRouter؟';
 	@override String get byokBody => 'للردّ، يرسل AI Coach رسالتك واسمك والسياق الذي تختار مشاركته إلى OpenRouter, Inc. عبر حساب OpenRouter الخاص بك. توجّهها OpenRouter إلى مزوّد نماذج وفقًا لإعدادات حسابك. يمكنك سحب الموافقة في أي وقت من الإعدادات، وكل شيء آخر في Evolve يستمر في العمل.';
 	@override String get privateNote => 'قاعدة بياناتك الخاصة تبقى على هذا الجهاز — لا يغادره سوى ما ترسله في المحادثة.';
@@ -2336,7 +2336,7 @@ extension on TranslationsAr {
 			'ai.standard.rateLimited' => '⚠️ لقد بلغت حد الاستخدام العادل لـ Evolve AI في الوقت الحالي. حاول لاحقًا أو بدّل المحرّك إلى حساب OpenRouter الخاص بك.',
 			'ai.standard.unavailable' => '❌ Evolve AI غير متاح الآن. المشكلة من جانبنا — حاول مرة أخرى بعد قليل.',
 			'ai.consent.standardTitle' => 'إرسال رسائلك إلى الذكاء الاصطناعي؟',
-			'ai.consent.standardBody' => 'للردّ، يرسل AI Coach رسالتك واسمك والسياق الذي تختار مشاركته إلى OpenRouter, Inc.، التي توجّهها إلى Google LLC لتشغيل النموذج (Google Cloud Vertex AI). تُعالَج فقط لتوليد الردّ. يمكنك سحب الموافقة في أي وقت من الإعدادات، وكل شيء آخر في Evolve يستمر في العمل.',
+			'ai.consent.standardBody' => 'للردّ، يرسل AI Coach رسالتك واسمك والسياق الذي تختار مشاركته إلى OpenRouter, Inc.، التي توجّهها إلى Google LLC (Google AI Studio) لتشغيل النموذج. ولأن ذلك يستخدم الطبقة المجانية من Google، فقد تحتفظ Google بالنص لفترة محدودة وتستخدمه لتحسين خدماتها — وهو ليس خاصًا كطبقة مدفوعة. يمكنك سحب الموافقة في أي وقت من الإعدادات، وكل شيء آخر في Evolve يستمر في العمل.',
 			'ai.consent.byokTitle' => 'إرسال رسائلك إلى OpenRouter؟',
 			'ai.consent.byokBody' => 'للردّ، يرسل AI Coach رسالتك واسمك والسياق الذي تختار مشاركته إلى OpenRouter, Inc. عبر حساب OpenRouter الخاص بك. توجّهها OpenRouter إلى مزوّد نماذج وفقًا لإعدادات حسابك. يمكنك سحب الموافقة في أي وقت من الإعدادات، وكل شيء آخر في Evolve يستمر في العمل.',
 			'ai.consent.privateNote' => 'قاعدة بياناتك الخاصة تبقى على هذا الجهاز — لا يغادره سوى ما ترسله في المحادثة.',
@@ -2750,7 +2750,7 @@ extension on TranslationsAr {
 			'coachSettings.ollamaStartFailed' => 'تعذّر تشغيل Ollama — جرّب فتحه من مجلد التطبيقات.',
 			'coachSettings.ollamaDownloadFailed' => 'تعذّر فتح المتصفح — تفضّل بزيارة ollama.com/download',
 			'coachSettings.backendStandard' => 'Evolve AI',
-			'coachSettings.standardDesc' => 'مُضمَّن في Evolve Pro. نشغّل Gemini 2.5 Flash نيابةً عنك — بلا مفاتيح وبلا إعداد. يُرسَل السياق الذي تشاركه إلى المزوّد.',
+			'coachSettings.standardDesc' => 'مُضمَّن في Evolve Pro. نشغّل لك نموذجًا مجانيًا من Google (Gemma) — بلا مفاتيح وبلا إعداد. تذهب رسائلك إلى الطبقة المجانية من Google، التي قد تستخدمها لتحسين خدماتها.',
 			'coachSettings.activeStandard' => ({required Object model}) => 'Evolve AI · ${model}',
 			'coachSettings.standardSection' => 'Evolve AI',
 			'coachSettings.standardStatusReady' => 'مُضمَّن في Pro',

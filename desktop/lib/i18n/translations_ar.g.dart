@@ -1118,7 +1118,7 @@ class _Translations$settingsPage$ar extends Translations$settingsPage$en {
 	@override String get proUpsellTitle => 'الترقية إلى Evolve Pro';
 	@override String get proUpsellSubtitle => 'افتح جميع الميزات وسرّع نموّك.';
 	@override String get proWelcomeTitle => 'مرحباً بك في Evolve Pro!';
-	@override String get proActiveMessage => 'اشتراكك نشط. أصبح لديك الآن وصول كامل وغير محدود إلى مدرّب AI المخصّص، وإحصاءات الاتجاهات المتقدّمة، وجميع أدوات التطوّر الشخصي في Evolve.';
+	@override String get proActiveMessage => 'اشتراكك نشط. مدرّب الذكاء الاصطناعي مُضمَّن — بلا حساب OpenRouter وبلا مفتاح API — إلى جانب إحصاءات الاتجاهات المتقدمة وكل أدوات النمو الشخصي في Evolve.';
 	@override String get proStartJourney => 'ابدأ رحلتك';
 	@override String get systemSection => 'النظام';
 	@override String get appLogsTitle => 'سجلات التطبيق';
@@ -2545,7 +2545,7 @@ extension on TranslationsAr {
 			'settingsPage.proUpsellTitle' => 'الترقية إلى Evolve Pro',
 			'settingsPage.proUpsellSubtitle' => 'افتح جميع الميزات وسرّع نموّك.',
 			'settingsPage.proWelcomeTitle' => 'مرحباً بك في Evolve Pro!',
-			'settingsPage.proActiveMessage' => 'اشتراكك نشط. أصبح لديك الآن وصول كامل وغير محدود إلى مدرّب AI المخصّص، وإحصاءات الاتجاهات المتقدّمة، وجميع أدوات التطوّر الشخصي في Evolve.',
+			'settingsPage.proActiveMessage' => 'اشتراكك نشط. مدرّب الذكاء الاصطناعي مُضمَّن — بلا حساب OpenRouter وبلا مفتاح API — إلى جانب إحصاءات الاتجاهات المتقدمة وكل أدوات النمو الشخصي في Evolve.',
 			'settingsPage.proStartJourney' => 'ابدأ رحلتك',
 			'settingsPage.systemSection' => 'النظام',
 			'settingsPage.appLogsTitle' => 'سجلات التطبيق',

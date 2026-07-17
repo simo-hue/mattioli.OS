@@ -4,6 +4,7 @@ import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:lucide_icons_flutter/lucide_icons.dart';
 import '../../core/theme.dart';
+import '../../core/coach_endpoint.dart';
 import '../../core/openrouter_service.dart';
 import '../../core/app_logger.dart';
 import '../../core/data_mode.dart';
@@ -28,12 +29,14 @@ class AIChatScreen extends ConsumerStatefulWidget {
   const AIChatScreen({super.key});
 
   /// Test seam for the coach's token stream. Production never reassigns this;
-  /// the real call needs the network and the user's Keychain key, so a widget
-  /// test that has to drive tokens one at a time swaps it (and restores it).
+  /// the real call needs the network and either the Supabase session or the
+  /// user's Keychain key, so a widget test that has to drive tokens one at a
+  /// time swaps it (and restores it).
   @visibleForTesting
   static Stream<String> Function(
     List<ChatMessage> history, {
     String? systemPrompt,
+    CoachEndpoint? endpoint,
   })
   streamFactory = OpenRouterService.generateStreamResponse;
 
@@ -184,9 +187,16 @@ class _AIChatScreenState extends ConsumerState<AIChatScreen> {
       );
     });
 
+    // Resolved per send, not once per screen: it depends on the Pro entitlement
+    // and on there being a live session, both of which can change while the
+    // chat is open.
+    final endpoint = await ref.read(coachEndpointProvider.future);
+    if (!mounted) return;
+
     final stream = AIChatScreen.streamFactory(
       _messages.sublist(0, assistantMessageIndex),
       systemPrompt: _getSystemPrompt(),
+      endpoint: endpoint,
     );
 
     bool receivedFirstToken = false;
@@ -509,12 +519,15 @@ class _AIChatScreenState extends ConsumerState<AIChatScreen> {
   Widget build(BuildContext context) {
     final colors = context.appColors;
     final userProfile = ref.watch(userProfileProvider);
-    // Cloud is BYOK. Treat a failed Keychain read as "no key" too: either way
-    // there is nothing to authenticate with, so offer setup rather than a
+    // Setup is needed only when NEITHER transport is available: no Pro
+    // subscription to fund Standard mode, and no OpenRouter key of your own.
+    // This used to key off the key alone, which after the 3.1.1 rework would
+    // have told a paying subscriber to go and fetch an API key they do not need.
+    // A failed Keychain read resolves to null and counts as "no key" — either
+    // way there is nothing to authenticate with, so offer setup rather than a
     // composer whose every send would fail.
-    final apiKeyState = ref.watch(openRouterApiKeyProvider);
-    final needsApiKey =
-        !apiKeyState.isLoading && apiKeyState.asData?.value == null;
+    final endpointState = ref.watch(coachEndpointProvider);
+    final needsSetup = !endpointState.isLoading && endpointState.asData?.value == null;
 
     return Scaffold(
       backgroundColor: colors.background,
@@ -703,9 +716,9 @@ class _AIChatScreenState extends ConsumerState<AIChatScreen> {
                 ),
               ),
 
-            // Without a key there is nothing to send to: the setup card
+            // With no transport there is nothing to send to: the setup card
             // replaces the suggestions + composer entirely.
-            if (needsApiKey)
+            if (needsSetup)
               _buildApiKeySetupCard(colors)
             else ...[
               // 2. Suggested Prompts (Always active, collapsible)

@@ -90,6 +90,14 @@ dev_dependencies:
   # tests (no SQLCipher/Keychain needed). Version matches mobile.
   sqflite_common_ffi: ^2.3.3
 
+  # Mock UrlLauncherPlatform so the paywall's mandatory legal links can be
+  # asserted by DESTINATION rather than by label — asserting the label is how a
+  # link reading "Terms of Service" came to open the privacy policy. Both are
+  # transitive deps of url_launcher; declared so the analyzer stops flagging
+  # depend_on_referenced_packages.
+  plugin_platform_interface: ^2.1.8
+  url_launcher_platform_interface: ^2.3.2
+
   # slang localization codegen (standalone CLI: `dart run slang`).
   slang_build_runner: ^4.0.0
 

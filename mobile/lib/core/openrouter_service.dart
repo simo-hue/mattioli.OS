@@ -2,11 +2,13 @@ import 'dart:convert';
 import 'dart:async';
 import 'dart:io';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:flutter/foundation.dart';
 import 'package:http/http.dart' as http;
 
 import '../i18n/translations.g.dart';
 import '../models/chat_message.dart';
 import 'app_logger.dart';
+import 'coach_endpoint.dart';
 import 'secure_storage_utils.dart';
 
 /// Non-secret OpenRouter endpoint constants.
@@ -154,22 +156,36 @@ class OpenRouterService {
     }
   }
 
+  /// Streams a coach reply over [endpoint].
+  ///
+  /// [endpoint] decides both where this goes and how it authenticates — our
+  /// Supabase proxy for Pro subscribers (Guideline 3.1.1: the IAP unlocks the
+  /// coach, not a pasted key), or the user's own OpenRouter key. Null means
+  /// nothing is configured, which is the BYOK-with-no-key case.
   static Stream<String> generateStreamResponse(
     List<ChatMessage> history, {
     String? systemPrompt,
+    CoachEndpoint? endpoint,
   }) async* {
-    // Checked before the connectivity probe: a user with no key needs the setup
-    // message, not "you're offline".
-    final apiKey = await _keyStore.read();
-    if (apiKey == null) {
+    // Checked before the connectivity probe: a user with nothing configured
+    // needs the setup message, not "you're offline".
+    if (endpoint == null) {
+      yield t.ai.openRouter.apiKeyMissingShort;
+      return;
+    }
+    final authorization = await endpoint.authorization();
+    if (authorization == null) {
       yield t.ai.openRouter.apiKeyMissingShort;
       return;
     }
 
-    // Verifica preventiva della connessione a internet
+    // Probe the host we are ACTUALLY dialling. This used to be hardcoded to
+    // openrouter.ai, which in Standard mode tests a server we never talk to —
+    // and would report "you're offline" to someone whose connection is fine, or
+    // wave through a request to a Supabase project that is down.
     try {
       final result = await InternetAddress.lookup(
-        'openrouter.ai',
+        endpoint.host,
       ).timeout(const Duration(seconds: 5));
       if (result.isEmpty || result[0].rawAddress.isEmpty) {
         yield t.ai.openRouter.noInternet;
@@ -183,8 +199,6 @@ class OpenRouterService {
       return;
     }
 
-    final url = Uri.parse('$kOpenRouterBaseUrl/chat/completions');
-
     final messages = history.map((msg) {
       return {'role': msg.isUser ? 'user' : 'assistant', 'content': msg.text};
     }).toList();
@@ -195,19 +209,27 @@ class OpenRouterService {
     messages.insert(0, {'role': 'system', 'content': finalSystemPrompt});
 
     final body = jsonEncode({
-      'model': kOpenRouterDefaultModel,
+      // Standard mode names no model: the server picks it AND pins the provider
+      // that serves it. Letting the client choose would hand it our bill and
+      // break the recipient list our privacy policy commits to.
+      if (endpoint.sendModel) 'model': kOpenRouterDefaultModel,
+      if (endpoint.sendModel) 'temperature': 0.7,
       'messages': messages,
-      'temperature': 0.7,
       'stream': true,
     });
 
     final client = http.Client();
-    final request = http.Request('POST', url)
-      ..headers['Authorization'] = 'Bearer $apiKey'
+    final request = http.Request('POST', endpoint.url)
+      ..headers['Authorization'] = 'Bearer $authorization'
       ..headers['Content-Type'] = 'application/json'
-      ..headers['HTTP-Referer'] = 'https://github.com/simo/mattioli.OS'
-      ..headers['X-Title'] = 'Mattioli OS'
       ..body = body;
+    if (endpoint.mode == CoachMode.byok) {
+      // Attribution headers, and only OpenRouter understands them. They list the
+      // app in OpenRouter's public rankings, so they have no business on a
+      // request to our own function.
+      request.headers['HTTP-Referer'] = 'https://github.com/simo-hue/mattioli.OS';
+      request.headers['X-Title'] = 'Evolve';
+    }
 
     try {
       // Timeout di 15 secondi per stabilire la connessione
@@ -218,17 +240,10 @@ class OpenRouterService {
       if (response.statusCode != 200) {
         final errorBody = await response.stream.bytesToString();
         AppLogger.error(
-          '[OpenRouter] Errore API streaming',
+          '[${endpoint.mode.name}] Errore API streaming',
           'Status: ${response.statusCode}, Body: $errorBody',
         );
-
-        if (isUnauthorized(response.statusCode)) {
-          yield t.ai.openRouter.apiKeyInvalid;
-        } else if (response.statusCode == 400) {
-          yield t.ai.openRouter.contextTooLong;
-        } else {
-          yield t.ai.openRouter.apiError(code: response.statusCode);
-        }
+        yield _errorMessage(endpoint.mode, response.statusCode, errorBody);
         client.close();
         return;
       }
@@ -278,3 +293,49 @@ class OpenRouterService {
 /// i.e. the user's own key is wrong, revoked, or out of credit. 403 is included
 /// because OpenRouter returns it for a key that exists but isn't permitted.
 bool isUnauthorized(int statusCode) => statusCode == 401 || statusCode == 403;
+
+/// The user-facing message for a non-200, which depends on which transport
+/// produced it. The same status means different things:
+///
+/// - BYOK 403: the user's own key is wrong, revoked or out of credit.
+/// - Standard 403: our proxy says the subscription is not active. Telling that
+///   user their "API key is invalid" would be nonsense — they never entered one.
+///
+/// The proxy sends a machine-readable `error.code` precisely so this never has
+/// to guess from the status alone.
+@visibleForTesting
+String errorMessageFor(CoachMode mode, int statusCode, String body) =>
+    _errorMessage(mode, statusCode, body);
+
+String _errorMessage(CoachMode mode, int statusCode, String body) {
+  if (mode == CoachMode.byok) {
+    if (isUnauthorized(statusCode)) return t.ai.openRouter.apiKeyInvalid;
+    if (statusCode == 400) return t.ai.openRouter.contextTooLong;
+    return t.ai.openRouter.apiError(code: statusCode);
+  }
+
+  // Standard mode. Prefer the proxy's own code over the status: it knows why.
+  String? code;
+  try {
+    final decoded = jsonDecode(body);
+    if (decoded is Map && decoded['error'] is Map) {
+      final c = (decoded['error'] as Map)['code'];
+      if (c is String) code = c;
+    }
+  } catch (_) {
+    // A proxy that fell over may not answer in JSON; fall back to the status.
+  }
+
+  switch (code) {
+    case 'not_subscribed':
+      return t.ai.coachModes.standardNeedsPro;
+    case 'rate_limited':
+      return t.ai.coachModes.standardRateLimited;
+    case 'context_too_long':
+      return t.ai.openRouter.contextTooLong;
+  }
+  if (statusCode == 413) return t.ai.openRouter.contextTooLong;
+  if (statusCode == 429) return t.ai.coachModes.standardRateLimited;
+  if (isUnauthorized(statusCode)) return t.ai.coachModes.standardNeedsPro;
+  return t.ai.openRouter.apiError(code: statusCode);
+}

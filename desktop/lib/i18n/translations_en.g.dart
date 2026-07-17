@@ -2673,8 +2673,8 @@ class Translations$settingsPage$en {
 	/// en: 'Welcome to Evolve Pro!'
 	String get proWelcomeTitle => 'Welcome to Evolve Pro!';
 
-	/// en: 'Your subscription is active. You now have full and unlimited access to the personalized AI Coach, advanced trend statistics, and all Evolve's personal growth tools.'
-	String get proActiveMessage => 'Your subscription is active. You now have full and unlimited access to the personalized AI Coach, advanced trend statistics, and all Evolve\'s personal growth tools.';
+	/// en: 'Your subscription is active. The AI Coach is included — no OpenRouter account or API key needed — along with advanced trend statistics and all Evolve's personal growth tools.'
+	String get proActiveMessage => 'Your subscription is active. The AI Coach is included — no OpenRouter account or API key needed — along with advanced trend statistics and all Evolve\'s personal growth tools.';
 
 	/// en: 'Start your Journey'
 	String get proStartJourney => 'Start your Journey';
@@ -4727,7 +4727,7 @@ extension on Translations {
 			'settingsPage.proUpsellTitle' => 'Upgrade to Evolve Pro',
 			'settingsPage.proUpsellSubtitle' => 'Unlock all features and accelerate your growth.',
 			'settingsPage.proWelcomeTitle' => 'Welcome to Evolve Pro!',
-			'settingsPage.proActiveMessage' => 'Your subscription is active. You now have full and unlimited access to the personalized AI Coach, advanced trend statistics, and all Evolve\'s personal growth tools.',
+			'settingsPage.proActiveMessage' => 'Your subscription is active. The AI Coach is included — no OpenRouter account or API key needed — along with advanced trend statistics and all Evolve\'s personal growth tools.',
 			'settingsPage.proStartJourney' => 'Start your Journey',
 			'settingsPage.systemSection' => 'System',
 			'settingsPage.appLogsTitle' => 'App Logs',

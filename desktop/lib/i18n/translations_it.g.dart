@@ -1118,7 +1118,7 @@ class _Translations$settingsPage$it extends Translations$settingsPage$en {
 	@override String get proUpsellTitle => 'Passa a Evolve Pro';
 	@override String get proUpsellSubtitle => 'Sblocca tutte le funzionalità e accelera la tua crescita.';
 	@override String get proWelcomeTitle => 'Benvenuto in Evolve Pro!';
-	@override String get proActiveMessage => 'La tua iscrizione è attiva. Ora hai accesso completo ed illimitato all\'AI Coach personalizzato, alle statistiche avanzate dei trend e a tutti gli strumenti di crescita personale di Evolve.';
+	@override String get proActiveMessage => 'La tua iscrizione è attiva. L\'AI Coach è incluso — senza account OpenRouter né chiave API — insieme alle statistiche avanzate dei trend e a tutti gli strumenti di crescita personale di Evolve.';
 	@override String get proStartJourney => 'Inizia il tuo Percorso';
 	@override String get systemSection => 'Sistema';
 	@override String get appLogsTitle => 'Log dell\'app';
@@ -2545,7 +2545,7 @@ extension on TranslationsIt {
 			'settingsPage.proUpsellTitle' => 'Passa a Evolve Pro',
 			'settingsPage.proUpsellSubtitle' => 'Sblocca tutte le funzionalità e accelera la tua crescita.',
 			'settingsPage.proWelcomeTitle' => 'Benvenuto in Evolve Pro!',
-			'settingsPage.proActiveMessage' => 'La tua iscrizione è attiva. Ora hai accesso completo ed illimitato all\'AI Coach personalizzato, alle statistiche avanzate dei trend e a tutti gli strumenti di crescita personale di Evolve.',
+			'settingsPage.proActiveMessage' => 'La tua iscrizione è attiva. L\'AI Coach è incluso — senza account OpenRouter né chiave API — insieme alle statistiche avanzate dei trend e a tutti gli strumenti di crescita personale di Evolve.',
 			'settingsPage.proStartJourney' => 'Inizia il tuo Percorso',
 			'settingsPage.systemSection' => 'Sistema',
 			'settingsPage.appLogsTitle' => 'Log dell\'app',

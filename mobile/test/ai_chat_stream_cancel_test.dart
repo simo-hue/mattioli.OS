@@ -31,6 +31,7 @@ import 'package:mattioli_os/i18n/translations.g.dart';
 import 'package:mattioli_os/models/chat_message.dart';
 import 'package:mattioli_os/providers/goal_provider.dart';
 import 'package:mattioli_os/providers/shared_prefs_provider.dart';
+import 'package:mattioli_os/core/coach_endpoint.dart';
 import 'package:mattioli_os/ui/screens/ai_chat_screen.dart';
 import 'package:plugin_platform_interface/plugin_platform_interface.dart';
 import 'package:shared_preferences/shared_preferences.dart';
@@ -112,14 +113,21 @@ void main() {
     tz.initializeTimeZones();
     tz.setLocalLocation(tz.UTC);
     FlutterLocalNotificationsPlatform.instance = _NoopNotificationsPlatform();
-    // A key must be present or the screen shows the BYOK setup card instead of
-    // the composer and there is nothing to send.
+    // A transport must resolve or the screen shows the setup card instead of the
+    // composer and there is nothing to send. This test runs in Private mode,
+    // where the only transport is the user's own key — which is the mode's own
+    // logic, not a limitation: it keeps no account for our proxy to
+    // authenticate.
     FlutterSecureStorage.setMockInitialValues({
       'openrouter_api_key': 'sk-or-test',
     });
     _tokens = StreamController<String>();
     AIChatScreen.streamFactory =
-        (List<ChatMessage> history, {String? systemPrompt}) => _tokens.stream;
+        (
+          List<ChatMessage> history, {
+          String? systemPrompt,
+          CoachEndpoint? endpoint,
+        }) => _tokens.stream;
   });
 
   tearDown(() async {

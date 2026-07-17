@@ -685,8 +685,7 @@
     "privateConsentTitle": "Consentimiento de IA en modo privado",
     "privateConsentBody": "Para usar el Coach de IA, tu mensaje, tu nombre y cualquier contexto seleccionado se envían al proveedor de IA externo. Tu base de datos privada permanece en el dispositivo.",
     "openRouter": {
-      "apiKeyMissingFull": "⚠️ El Coach AI necesita tu propia clave de API de OpenRouter.\n\nCrea una en openrouter.ai/keys y añádela en los ajustes.",
-      "apiKeyMissingShort": "⚠️ El Coach AI necesita tu propia clave de API de OpenRouter. Añádela en los ajustes para empezar a chatear.",
+      "apiKeyMissingShort": "⚠️ El AI Coach aún no está configurado. Abre Ajustes para terminar de configurarlo.",
       "apiKeyInvalid": "⚠️ OpenRouter ha rechazado esta clave de API. Revísala en los ajustes o crea una nueva en openrouter.ai/keys.",
       "defaultSystemPrompt": "Eres el \"Coach de Disciplina\", un asistente virtual centrado en ayudar al usuario a mantener la disciplina, alcanzar objetivos y construir hábitos saludables. Sé motivador pero concreto, directo y práctico. Usa un tono profesional pero cercano.",
       "communicationError": "❌ Error al comunicarse con la IA. (Código: {code})",
@@ -699,8 +698,8 @@
       "apiError": "❌ Error de API: {code} (consulta Sentry para más detalles)"
     },
     "apiKey": {
-      "rowTitle": "Clave de API de OpenRouter",
-      "description": "El Coach AI funciona con tu propia cuenta de OpenRouter, así que tu consumo es solo tuyo. Crea una clave en openrouter.ai/keys y pégala aquí abajo: se guarda en el llavero de este dispositivo y solo se envía a OpenRouter.",
+      "rowTitle": "Tu cuenta de OpenRouter",
+      "description": "¿Prefieres ejecutar el coach en tu propia cuenta? Conecta una clave de OpenRouter y pagarás directamente al proveedor: es gratis, sin suscripción a Evolve. Crea una en openrouter.ai/keys: se guarda en el llavero de este dispositivo y solo se envía a OpenRouter.",
       "fieldLabel": "Clave de API",
       "hint": "sk-or-v1-…",
       "save": "Guardar clave",
@@ -708,13 +707,15 @@
       "remove": "Eliminar clave",
       "removed": "Clave de API eliminada",
       "removeConfirmTitle": "¿Eliminar la clave de API?",
-      "removeConfirmBody": "El Coach AI dejará de responder hasta que vuelvas a añadir una clave.",
+      "removeConfirmBody": "Este motor dejará de responder hasta que vuelvas a conectar una cuenta. Evolve Pro no se ve afectado.",
       "statusSet": "Guardada",
       "statusMissing": "Sin configurar",
       "saveFailed": "No se ha podido guardar la clave en el llavero. Inténtalo de nuevo.",
-      "setupTitle": "Añade tu clave de API de OpenRouter",
-      "setupBody": "El Coach AI funciona con tu propia cuenta de OpenRouter. Añade una clave en los ajustes para empezar a chatear.",
-      "setupAction": "Abrir ajustes"
+      "setupTitle": "Configura tu AI Coach",
+      "setupBody": "Dos formas de usarlo: Evolve Pro incluye el coach sin ninguna configuración, o conectas gratis tu propia cuenta de OpenRouter. Ambas están en Ajustes.",
+      "setupAction": "Abrir ajustes",
+      "descriptionProActive": "Evolve Pro ya ejecuta el coach por ti, sin necesidad de claves. Conecta tu cuenta de OpenRouter solo si prefieres usar la tuya.",
+      "setupBodyPrivate": "El modo Privado no guarda ninguna cuenta, así que el coach se ejecuta en tu cuenta de OpenRouter. Añade una clave en Ajustes para empezar a chatear."
     },
     "prompts": {
       "defaultUserName": "Usuario",
@@ -735,7 +736,10 @@
       "byokDesc": "Gratis. Usa tu propia cuenta de OpenRouter: el consumo es tuyo.",
       "byokPrivateNote": "El modo privado no guarda ninguna cuenta, así que el AI Coach funciona con tu cuenta de OpenRouter.",
       "activeStandard": "Usando Evolve Pro",
-      "activeByok": "Usando tu cuenta de OpenRouter"
+      "activeByok": "Usando tu cuenta de OpenRouter",
+      "activeRowTitle": "Motor activo",
+      "byokShortName": "Tu cuenta de OpenRouter",
+      "notConfigured": "Sin configurar"
     }
   },
   "macroGoals": {

@@ -685,8 +685,7 @@
     "privateConsentTitle": "KI-Zustimmung im privaten Modus",
     "privateConsentBody": "Um den KI-Coach zu nutzen, werden deine Nachricht, dein Anzeigename und der ausgewählte Kontext an den externen KI-Anbieter gesendet. Deine private Datenbank bleibt auf dem Gerät.",
     "openRouter": {
-      "apiKeyMissingFull": "⚠️ Der AI-Coach braucht deinen eigenen OpenRouter-API-Schlüssel.\n\nErstelle einen auf openrouter.ai/keys und füge ihn in den Einstellungen hinzu.",
-      "apiKeyMissingShort": "⚠️ Der AI-Coach braucht deinen eigenen OpenRouter-API-Schlüssel. Füge ihn in den Einstellungen hinzu, um loszulegen.",
+      "apiKeyMissingShort": "⚠️ Der AI Coach ist noch nicht eingerichtet. Öffne die Einstellungen, um die Einrichtung abzuschließen.",
       "apiKeyInvalid": "⚠️ OpenRouter hat diesen API-Schlüssel abgelehnt. Prüfe ihn in den Einstellungen oder erstelle einen neuen auf openrouter.ai/keys.",
       "defaultSystemPrompt": "Du bist der \"Discipline Coach\", ein virtueller Assistent, der dem Nutzer hilft, diszipliniert zu bleiben, Ziele zu erreichen und gesunde Gewohnheiten aufzubauen. Sei motivierend, aber konkret, direkt und praktisch. Verwende einen professionellen, aber freundlichen Ton.",
       "communicationError": "❌ Fehler bei der Kommunikation mit der AI. (Code: {code})",
@@ -699,8 +698,8 @@
       "apiError": "❌ API-Fehler: {code} (Details in Sentry prüfen)"
     },
     "apiKey": {
-      "rowTitle": "OpenRouter-API-Schlüssel",
-      "description": "Der AI-Coach läuft über dein eigenes OpenRouter-Konto — deine Nutzung bleibt deine Sache. Erstelle einen Schlüssel auf openrouter.ai/keys und füge ihn unten ein: Er wird im Schlüsselbund dieses Geräts gespeichert und ausschließlich an OpenRouter gesendet.",
+      "rowTitle": "Dein OpenRouter-Konto",
+      "description": "Lieber den Coach über dein eigenes Konto laufen lassen? Verbinde einen OpenRouter-Schlüssel und zahle direkt an den Anbieter — kostenlos, ohne Evolve-Abo. Erstelle einen auf openrouter.ai/keys: Er wird im Schlüsselbund dieses Geräts gespeichert und nur an OpenRouter gesendet.",
       "fieldLabel": "API-Schlüssel",
       "hint": "sk-or-v1-…",
       "save": "Schlüssel speichern",
@@ -708,13 +707,15 @@
       "remove": "Schlüssel entfernen",
       "removed": "API-Schlüssel entfernt",
       "removeConfirmTitle": "API-Schlüssel entfernen?",
-      "removeConfirmBody": "Der AI-Coach antwortet erst wieder, wenn du einen neuen Schlüssel hinzufügst.",
+      "removeConfirmBody": "Diese Engine antwortet nicht mehr, bis du wieder ein Konto verbindest. Evolve Pro ist nicht betroffen.",
       "statusSet": "Gespeichert",
       "statusMissing": "Nicht gesetzt",
       "saveFailed": "Der Schlüssel konnte nicht im Schlüsselbund gespeichert werden. Versuch es noch einmal.",
-      "setupTitle": "Füge deinen OpenRouter-API-Schlüssel hinzu",
-      "setupBody": "Der AI-Coach läuft über dein eigenes OpenRouter-Konto. Füge in den Einstellungen einen Schlüssel hinzu, um loszulegen.",
-      "setupAction": "Einstellungen öffnen"
+      "setupTitle": "Richte deinen AI Coach ein",
+      "setupBody": "Zwei Wege: Evolve Pro enthält den Coach ganz ohne Einrichtung, oder du verbindest kostenlos dein eigenes OpenRouter-Konto. Beides findest du in den Einstellungen.",
+      "setupAction": "Einstellungen öffnen",
+      "descriptionProActive": "Evolve Pro betreibt den Coach bereits für dich — ganz ohne Schlüssel. Verbinde dein OpenRouter-Konto nur, wenn du lieber deines nutzen möchtest.",
+      "setupBodyPrivate": "Der Private Modus führt kein Konto, daher läuft der Coach über dein eigenes OpenRouter-Konto. Füge in den Einstellungen einen Schlüssel hinzu, um zu chatten."
     },
     "prompts": {
       "defaultUserName": "Nutzer",
@@ -735,7 +736,10 @@
       "byokDesc": "Kostenlos. Nutze dein eigenes OpenRouter-Konto — der Verbrauch bleibt deiner.",
       "byokPrivateNote": "Der private Modus speichert kein Konto, daher läuft der AI Coach über dein eigenes OpenRouter-Konto.",
       "activeStandard": "Evolve Pro wird verwendet",
-      "activeByok": "Dein OpenRouter-Konto wird verwendet"
+      "activeByok": "Dein OpenRouter-Konto wird verwendet",
+      "activeRowTitle": "Aktive Engine",
+      "byokShortName": "Dein OpenRouter-Konto",
+      "notConfigured": "Nicht eingerichtet"
     }
   },
   "macroGoals": {

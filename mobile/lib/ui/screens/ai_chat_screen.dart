@@ -447,10 +447,16 @@ class _AIChatScreenState extends ConsumerState<AIChatScreen> {
     });
   }
 
-  /// BYOK setup state: the app ships no OpenRouter key, so until the user adds
-  /// their own, this card replaces the composer. Its only action opens
-  /// Settings, so there is no button here that can fail (Guideline 2.1).
+  /// Setup state: no transport resolves yet, so this card replaces the composer.
+  /// Its only action opens Settings, so there is no button here that can fail
+  /// (Guideline 2.1).
+  ///
+  /// Names BOTH ways to get a working coach, because there are two and only one
+  /// of them involves a key. In Private mode there is only one — it keeps no
+  /// account, so there is no subscription to unlock anything with, and offering
+  /// one would put monetization UI in the mode that promises none.
   Widget _buildApiKeySetupCard(AppColorsExtension colors) {
+    final canUseStandard = ref.watch(canUseStandardCoachProvider);
     return Padding(
       padding: const EdgeInsets.all(16),
       child: Container(
@@ -479,7 +485,9 @@ class _AIChatScreenState extends ConsumerState<AIChatScreen> {
                 const SizedBox(width: 12),
                 Expanded(
                   child: Text(
-                    context.t.ai.apiKey.setupTitle,
+                    canUseStandard
+                        ? context.t.ai.apiKey.setupTitle
+                        : context.t.ai.coachModes.byokName,
                     style: TextStyle(
                       color: colors.foreground,
                       fontSize: 15,
@@ -491,7 +499,9 @@ class _AIChatScreenState extends ConsumerState<AIChatScreen> {
             ),
             const SizedBox(height: 12),
             Text(
-              context.t.ai.apiKey.setupBody,
+              canUseStandard
+                  ? context.t.ai.apiKey.setupBody
+                  : context.t.ai.apiKey.setupBodyPrivate,
               style: TextStyle(
                 color: colors.mutedForeground,
                 fontSize: 13,

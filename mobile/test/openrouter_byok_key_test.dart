@@ -28,12 +28,9 @@ void main() {
     );
   });
 
-  test('with no key generateResponse returns the setup message', () async {
-    expect(
-      await OpenRouterService.generateResponse(const []),
-      t.ai.openRouter.apiKeyMissingFull,
-    );
-  });
+  // `generateResponse` was removed with its string on 2026-07-17: unused in
+  // production, and it bypassed the endpoint resolution — so it could only ever
+  // reach OpenRouter on the user's own key, never the Pro-funded proxy.
 
   test('isUnauthorized covers the credential-rejection codes only', () {
     expect(isUnauthorized(401), isTrue);

@@ -88,73 +88,18 @@ class OpenRouterApiKeyController extends AsyncNotifier<String?> {
 }
 
 class OpenRouterService {
-  static const OpenRouterKeyStore _keyStore = OpenRouterKeyStore();
+  // No key store here any more: the service does not read credentials, it is
+  // HANDED one. `CoachEndpoint.authorization` resolves the right credential for
+  // the right mode — the Keychain for BYOK, the live session JWT for Standard —
+  // per send. Reading the Keychain here is what made the removed
+  // `generateResponse` BYOK-only by construction.
 
-  /// Genera una risposta dall'LLM tramite Open Router.
-  /// Prende in input lo storico dei messaggi per mantenere il contesto.
-  static Future<String> generateResponse(
-    List<ChatMessage> history, {
-    String? systemPrompt,
-  }) async {
-    // BYOK: without the user's own key there is nothing to authenticate with.
-    final apiKey = await _keyStore.read();
-    if (apiKey == null) return t.ai.openRouter.apiKeyMissingFull;
-
-    final url = Uri.parse('$kOpenRouterBaseUrl/chat/completions');
-
-    // Convertiamo lo storico nel formato richiesto da Open Router (OpenAI style)
-    final messages = history.map((msg) {
-      return {'role': msg.isUser ? 'user' : 'assistant', 'content': msg.text};
-    }).toList();
-
-    // Usiamo il system prompt fornito o quello di default
-    final finalSystemPrompt =
-        systemPrompt ?? t.ai.openRouter.defaultSystemPrompt;
-
-    messages.insert(0, {'role': 'system', 'content': finalSystemPrompt});
-
-    final body = jsonEncode({
-      'model': kOpenRouterDefaultModel,
-      'messages': messages,
-      'temperature': 0.7,
-    });
-
-    try {
-      AppLogger.info('[OpenRouter] Invio richiesta a $kOpenRouterDefaultModel');
-
-      final response = await http.post(
-        url,
-        headers: {
-          'Authorization': 'Bearer $apiKey',
-          'Content-Type': 'application/json',
-          'HTTP-Referer':
-              'https://github.com/simo/mattioli.OS', // Richiesto da OpenRouter per il ranking
-          'X-Title': 'Mattioli OS',
-        },
-        body: body,
-      );
-
-      if (response.statusCode == 200) {
-        final data = jsonDecode(response.body);
-        final content = data['choices'][0]['message']['content'];
-        return content.toString().trim();
-      } else if (isUnauthorized(response.statusCode)) {
-        // The user's key is wrong / revoked / out of credit — actionable, and
-        // not the generic "the AI broke" message.
-        return t.ai.openRouter.apiKeyInvalid;
-      } else {
-        AppLogger.error(
-          '[OpenRouter] Errore API: ${response.statusCode} - ${response.body}',
-          null,
-          null,
-        );
-        return t.ai.openRouter.communicationError(code: response.statusCode);
-      }
-    } catch (e, stack) {
-      AppLogger.error('[OpenRouter] Eccezione durante la chiamata', e, stack);
-      return t.ai.openRouter.connectionError;
-    }
-  }
+  // `generateResponse` (non-streaming, BYOK-only) was removed on 2026-07-17. It
+  // had zero production call sites — only a test — and it read the Keychain
+  // directly, bypassing `coachEndpointProvider` entirely: it could only ever
+  // reach OpenRouter with the user's own key, never the Pro-funded proxy. Any
+  // future caller would therefore have silently bypassed the Guideline 3.1.1
+  // fix. `generateStreamResponse` is the only way to talk to the coach.
 
   /// Streams a coach reply over [endpoint].
   ///

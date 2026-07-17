@@ -5,6 +5,7 @@ import 'package:flutter_colorpicker/flutter_colorpicker.dart';
 import 'package:google_fonts/google_fonts.dart';
 import '../../core/theme.dart';
 import '../../providers/settings_provider.dart';
+import '../../core/coach_endpoint.dart';
 import '../../core/haptics.dart';
 import '../../core/openrouter_service.dart';
 import '../../core/rtl.dart';
@@ -251,6 +252,13 @@ class AppSettingsScreen extends ConsumerWidget {
             const SizedBox(height: 32),
             _buildSectionHeader(context, context.t.settings.sections.aiCoach),
             _buildSettingsCard(context, [
+              // Which engine is actually answering. Without this row the whole
+              // AI Coach section was a single "OpenRouter API key" entry — so a
+              // paying subscriber, who needs no key at all, saw nothing here but
+              // a key prompt. That reads as a licence-key gate, which is exactly
+              // what Guideline 3.1.1 rejected. The engine is named first; the
+              // key below it is an alternative, not a requirement.
+              const _CoachEngineRow(),
               _buildActionRow(
                 context: context,
                 icon: LucideIcons.keyRound,
@@ -922,6 +930,75 @@ class AppSettingsScreen extends ConsumerWidget {
 /// A stored key is NEVER read back into the field — the Settings row reports
 /// that one exists, and saving simply overwrites it. That keeps the secret off
 /// the screen (and out of any screenshot) while still allowing a replacement.
+/// Names the engine that is actually answering the coach: the Pro-funded proxy,
+/// the user's own OpenRouter account, or nothing yet.
+///
+/// Read-only on purpose — there is no switch here. Which engine serves is a
+/// consequence of facts the user changes elsewhere (subscribe, sign in, add a
+/// key, enter Private mode), and offering a picker would imply you could select
+/// an engine you are not entitled to.
+class _CoachEngineRow extends ConsumerWidget {
+  const _CoachEngineRow();
+
+  @override
+  Widget build(BuildContext context, WidgetRef ref) {
+    final colors = context.appColors;
+    final endpoint = ref.watch(coachEndpointProvider);
+
+    // While the Keychain read is in flight, say nothing rather than flash
+    // "Not set up" at someone who is perfectly well set up.
+    final value = switch (endpoint.asData?.value?.mode) {
+      CoachMode.standard => context.t.ai.coachModes.standardName,
+      CoachMode.byok => context.t.ai.coachModes.byokShortName,
+      null => endpoint.isLoading
+          ? null
+          : context.t.ai.coachModes.notConfigured,
+    };
+    if (value == null) return const SizedBox.shrink();
+
+    return Padding(
+      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
+      child: Row(
+        children: [
+          Container(
+            width: 38,
+            height: 38,
+            decoration: BoxDecoration(
+              color: colors.card,
+              borderRadius: BorderRadius.circular(10),
+              border: Border.all(color: colors.border),
+            ),
+            child: Icon(
+              LucideIcons.sparkles,
+              size: 18,
+              color: Theme.of(context).colorScheme.primary,
+            ),
+          ),
+          const SizedBox(width: 16),
+          Expanded(
+            child: Text(
+              context.t.ai.coachModes.activeRowTitle,
+              style: GoogleFonts.inter(
+                color: colors.foreground,
+                fontSize: 15,
+                fontWeight: FontWeight.w600,
+              ),
+            ),
+          ),
+          Text(
+            value,
+            style: GoogleFonts.inter(
+              color: colors.mutedForeground,
+              fontSize: 13,
+              fontWeight: FontWeight.w500,
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+}
+
 class _ApiKeyForm extends ConsumerStatefulWidget {
   const _ApiKeyForm();
 
@@ -990,7 +1067,14 @@ class _ApiKeyFormState extends ConsumerState<_ApiKeyForm> {
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           Text(
-            context.t.ai.apiKey.description,
+            // A subscriber opening this sheet is not missing a prerequisite —
+            // their coach already works. Saying "the AI Coach runs on your own
+            // OpenRouter account" to them is both false and the exact claim
+            // Guideline 3.1.1 read as a licence-key gate.
+            ref.watch(coachEndpointProvider).asData?.value?.mode ==
+                    CoachMode.standard
+                ? context.t.ai.apiKey.descriptionProActive
+                : context.t.ai.apiKey.description,
             style: GoogleFonts.inter(
               fontSize: 13,
               height: 1.45,

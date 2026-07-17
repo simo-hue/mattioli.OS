@@ -685,8 +685,7 @@
     "privateConsentTitle": "Consenso AI in modalità privata",
     "privateConsentBody": "Per usare il Coach AI, il tuo messaggio, il tuo nome e l'eventuale contesto selezionato vengono inviati al provider AI esterno. Il tuo database privato resta sul dispositivo.",
     "openRouter": {
-      "apiKeyMissingFull": "⚠️ L'AI Coach ha bisogno della tua chiave API di OpenRouter.\n\nCreane una su openrouter.ai/keys, poi aggiungila nelle Impostazioni.",
-      "apiKeyMissingShort": "⚠️ L'AI Coach ha bisogno della tua chiave API di OpenRouter. Aggiungila nelle Impostazioni per iniziare a chattare.",
+      "apiKeyMissingShort": "⚠️ L'AI Coach non è ancora configurato. Apri le Impostazioni per completare la configurazione.",
       "apiKeyInvalid": "⚠️ OpenRouter ha rifiutato questa chiave API. Controllala nelle Impostazioni o creane una nuova su openrouter.ai/keys.",
       "defaultSystemPrompt": "Sei il \"Coach di Disciplina\", un assistente virtuale focalizzato sull’aiutare la persona a mantenere la disciplina, raggiungere i propri obiettivi e costruire abitudini sane. Sii motivante ma concreto, diretto e pratico. Usa un tono professionale ma amichevole.",
       "communicationError": "❌ Errore nella comunicazione con l’AI. (Codice: {code})",
@@ -699,8 +698,8 @@
       "apiError": "❌ Errore API: {code} (verifica Sentry per i dettagli)"
     },
     "apiKey": {
-      "rowTitle": "Chiave API OpenRouter",
-      "description": "L'AI Coach funziona con il tuo account OpenRouter, così i consumi restano tuoi. Crea una chiave su openrouter.ai/keys e incollala qui sotto: viene salvata nel portachiavi di questo dispositivo e inviata solo a OpenRouter.",
+      "rowTitle": "Il tuo account OpenRouter",
+      "description": "Preferisci far girare il coach sul tuo account? Collega una chiave OpenRouter e paghi direttamente il provider: è gratis, nessun abbonamento Evolve richiesto. Creane una su openrouter.ai/keys: viene salvata nel portachiavi di questo dispositivo e inviata solo a OpenRouter.",
       "fieldLabel": "Chiave API",
       "hint": "sk-or-v1-…",
       "save": "Salva chiave",
@@ -708,13 +707,15 @@
       "remove": "Rimuovi chiave",
       "removed": "Chiave API rimossa",
       "removeConfirmTitle": "Rimuovere la chiave API?",
-      "removeConfirmBody": "L'AI Coach smetterà di rispondere finché non aggiungi di nuovo una chiave.",
+      "removeConfirmBody": "Questo motore smetterà di rispondere finché non colleghi di nuovo un account. Evolve Pro non è interessato.",
       "statusSet": "Salvata",
       "statusMissing": "Non impostata",
       "saveFailed": "Impossibile salvare la chiave nel portachiavi. Riprova.",
-      "setupTitle": "Aggiungi la tua chiave API di OpenRouter",
-      "setupBody": "L'AI Coach funziona con il tuo account OpenRouter. Aggiungi una chiave nelle Impostazioni per iniziare a chattare.",
-      "setupAction": "Apri Impostazioni"
+      "setupTitle": "Configura il tuo AI Coach",
+      "setupBody": "Due modi per usarlo: Evolve Pro include il coach senza alcuna configurazione, oppure colleghi gratis il tuo account OpenRouter. Trovi entrambi nelle Impostazioni.",
+      "setupAction": "Apri Impostazioni",
+      "descriptionProActive": "Evolve Pro fa già girare il coach per te, senza bisogno di chiavi. Collega il tuo account OpenRouter solo se preferisci usare il tuo.",
+      "setupBodyPrivate": "La modalità Privata non conserva un account, quindi il coach gira sul tuo account OpenRouter. Aggiungi una chiave nelle Impostazioni per iniziare a chattare."
     },
     "prompts": {
       "defaultUserName": "utente",
@@ -735,7 +736,10 @@
       "byokDesc": "Gratis. Usa il tuo account OpenRouter — i consumi restano tuoi.",
       "byokPrivateNote": "La modalità privata non conserva alcun account, quindi l'AI Coach funziona con il tuo account OpenRouter.",
       "activeStandard": "Stai usando Evolve Pro",
-      "activeByok": "Stai usando il tuo account OpenRouter"
+      "activeByok": "Stai usando il tuo account OpenRouter",
+      "activeRowTitle": "Motore attivo",
+      "byokShortName": "Il tuo account OpenRouter",
+      "notConfigured": "Non configurato"
     }
   },
   "macroGoals": {

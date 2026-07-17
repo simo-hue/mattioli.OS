@@ -685,8 +685,7 @@
     "privateConsentTitle": "موافقة AI في الوضع الخاص",
     "privateConsentBody": "لاستخدام مدرّب AI، يُرسَل نصّ رسالتك واسمك المعروض وأي سياق محدّد إلى مزوّد AI الخارجي. تبقى قاعدة بياناتك الخاصة على الجهاز.",
     "openRouter": {
-      "apiKeyMissingFull": "⚠️ يحتاج مدرّب AI إلى مفتاح OpenRouter API خاص بك.\n\nأنشئ مفتاحًا على openrouter.ai/keys ثم أضِفه في الإعدادات.",
-      "apiKeyMissingShort": "⚠️ يحتاج مدرّب AI إلى مفتاح OpenRouter API خاص بك. أضِفه من الإعدادات لبدء المحادثة.",
+      "apiKeyMissingShort": "⚠️ لم يتم إعداد الـ AI Coach بعد. افتح الإعدادات لإكمال الإعداد.",
       "apiKeyInvalid": "⚠️ رفض OpenRouter مفتاح API هذا. تحقّق منه في الإعدادات أو أنشئ مفتاحًا جديدًا على openrouter.ai/keys.",
       "defaultSystemPrompt": "أنت \"مدرّب الانضباط\"، مساعد افتراضي يركّز على مساعدة المستخدم على الالتزام بالانضباط وتحقيق أهدافه وبناء عادات صحية. كن محفّزاً لكن واقعياً ومباشراً وعملياً. استخدم نبرة احترافية وودودة.",
       "communicationError": "❌ خطأ في الاتصال بالـ AI. (الرمز: {code})",
@@ -699,8 +698,8 @@
       "apiError": "❌ خطأ في API: {code} (راجع Sentry للتفاصيل)"
     },
     "apiKey": {
-      "rowTitle": "مفتاح OpenRouter API",
-      "description": "يعمل مدرّب AI عبر حساب OpenRouter الخاص بك، لذا يبقى استهلاكك ملكك وحدك. أنشئ مفتاحًا على openrouter.ai/keys وألصقه أدناه: يُحفَظ في سلسلة مفاتيح هذا الجهاز ولا يُرسَل إلا إلى OpenRouter.",
+      "rowTitle": "حساب OpenRouter الخاص بك",
+      "description": "تفضّل تشغيل الكوتش على حسابك؟ اربط مفتاح OpenRouter وستدفع للمزوّد مباشرةً — مجانًا وبلا اشتراك في Evolve. أنشئ مفتاحًا على openrouter.ai/keys: يُحفَظ في سلسلة مفاتيح هذا الجهاز ولا يُرسَل إلا إلى OpenRouter.",
       "fieldLabel": "مفتاح API",
       "hint": "sk-or-v1-…",
       "save": "حفظ المفتاح",
@@ -708,13 +707,15 @@
       "remove": "إزالة المفتاح",
       "removed": "تمت إزالة مفتاح API",
       "removeConfirmTitle": "إزالة مفتاح API؟",
-      "removeConfirmBody": "سيتوقّف مدرّب AI عن الردّ حتى تُضيف مفتاحًا من جديد.",
+      "removeConfirmBody": "سيتوقف هذا المحرّك عن الردّ حتى تربط حسابًا مرة أخرى. لا يتأثر Evolve Pro.",
       "statusSet": "محفوظ",
       "statusMissing": "غير مُعيَّن",
       "saveFailed": "تعذّر حفظ المفتاح في سلسلة المفاتيح. حاول مرة أخرى.",
-      "setupTitle": "أضِف مفتاح OpenRouter API الخاص بك",
-      "setupBody": "يعمل مدرّب AI عبر حساب OpenRouter الخاص بك. أضِف مفتاحًا من الإعدادات لبدء المحادثة.",
-      "setupAction": "فتح الإعدادات"
+      "setupTitle": "إعداد الـ AI Coach",
+      "setupBody": "طريقتان لتشغيله: Evolve Pro يتضمّن الكوتش بلا أي إعداد، أو تربط حساب OpenRouter الخاص بك مجانًا. كلاهما في الإعدادات.",
+      "setupAction": "فتح الإعدادات",
+      "descriptionProActive": "يشغّل Evolve Pro الكوتش نيابةً عنك بالفعل، دون الحاجة إلى أي مفتاح. اربط حساب OpenRouter الخاص بك فقط إذا كنت تفضّل استخدام حسابك.",
+      "setupBodyPrivate": "الوضع الخاص لا يحتفظ بحساب، لذا يعمل الكوتش عبر حساب OpenRouter الخاص بك. أضف مفتاحًا من الإعدادات لبدء المحادثة."
     },
     "prompts": {
       "defaultUserName": "المستخدم",
@@ -735,7 +736,10 @@
       "byokDesc": "مجانًا. استخدم حساب OpenRouter الخاص بك — الاستهلاك يبقى لك.",
       "byokPrivateNote": "الوضع الخاص لا يحتفظ بأي حساب، لذا يعمل مدرّب الذكاء الاصطناعي عبر حساب OpenRouter الخاص بك.",
       "activeStandard": "يتم استخدام Evolve Pro",
-      "activeByok": "يتم استخدام حساب OpenRouter الخاص بك"
+      "activeByok": "يتم استخدام حساب OpenRouter الخاص بك",
+      "activeRowTitle": "المحرّك النشط",
+      "byokShortName": "حساب OpenRouter الخاص بك",
+      "notConfigured": "غير مُعَدّ"
     }
   },
   "macroGoals": {

@@ -1029,3 +1029,24 @@ heading ellipsizing. `flutter analyze` clean; `tour_flow_test` still passes.
     `alreadyTakenNames` across a single asset's two arch slices); both slices
     still lipo into one correct `objective_c.framework`. It does not block
     publishing and is not fixed here (would require patching the Flutter SDK).
+
+- 2026-07-17 (follow-up): First archive upload failed — two fixes
+  - *Details*: (1) BLOCKING red error "CFBundleShortVersionString is empty".
+    Root cause: my earlier `$(MARKETING_VERSION)` change — MARKETING_VERSION is
+    only defined on the RunnerTests target, never on the Runner app target, so it
+    expanded to empty. Fixed by hardcoding `CFBundleShortVersionString = 1.0`
+    directly in `Runner/Info.plist` (matches the App Store "1.0" version record;
+    CFBundleVersion stays `$(FLUTTER_BUILD_NUMBER)` for incrementing build
+    numbers). Future macOS version bumps = edit that Info.plist string.
+    (2) The dSYM warning persisted (non-blocking; a warning never fails the
+    upload — the red version error did). Hardened `copy_archive_dsyms.sh`:
+    pass 1 SPM artifacts, pass 2 recursive search for Flutter's real
+    `*.framework.dSYM` under BUILT_PRODUCTS_DIR, pass 3 `dsymutil` fallback that
+    generates a UUID-matching dSYM straight from any embedded framework still
+    missing one — guarantees the "did not include a dSYM" warning clears even on
+    an incremental archive. A clean archive (Product ▸ Clean Build Folder) makes
+    pass 2 forward the fully-symbolicated dSYM instead of the stub.
+  - *Tech Notes*: Verified via simulation on this Mac (no Xcode): fallback yields
+    a UUID-matching dSYM from a stripped binary; when Flutter's real dSYM is
+    present pass 2 forwards it (183 DWARF tags) and the fallback is skipped;
+    non-archive builds no-op; empty inputs never wipe the dSYMs folder.

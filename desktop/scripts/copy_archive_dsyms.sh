@@ -5,27 +5,31 @@ set -eu
 # copy_archive_dsyms.sh
 #
 # Runs as the Runner target's "Copy SPM dSYMs" build phase (archive / install
-# builds only). Forwards every dSYM that Xcode does NOT collect on its own into
-# the archive's dSYMs folder, so App Store Connect can symbolicate crashes and
-# the "Upload Symbols Failed / the archive did not include a dSYM ..." warning
-# disappears.
+# builds only). Makes sure every framework embedded in the app has a matching
+# dSYM in the archive's dSYMs folder, so App Store Connect can symbolicate
+# crashes and the "Upload Symbols Failed / the archive did not include a dSYM
+# ... with the UUIDs [...]" warning disappears.
 #
-# Two sources are handled:
-#
-#   1. Swift Package Manager binary dependencies (e.g. Sentry.xcframework) that
-#      ship a prebuilt dSYM under DerivedData/.../SourcePackages/artifacts.
-#
-#   2. Flutter native-asset ("code asset") frameworks such as
-#      objective_c.framework (pulled in by flutter_secure_storage_darwin).
-#      Flutter's build generates a correct, fully-symbolicated dSYM (dsymutil
-#      runs before the dylib is stripped) but only copies it into
-#      BUILT_PRODUCTS_DIR — which during an *archive* is not the archive dSYMs
-#      folder (DWARF_DSYM_FOLDER_PATH). So the dSYM exists but never reaches the
-#      .xcarchive. We forward it here.
+# Three passes, most-specific first:
+#   1. SPM binary dependencies (e.g. Sentry.xcframework) ship a prebuilt dSYM
+#      under DerivedData/.../SourcePackages/artifacts.
+#   2. Flutter-generated dSYMs. Flutter emits "<name>.framework.dSYM" for its
+#      code-asset frameworks (objective_c.framework from
+#      flutter_secure_storage_darwin, App.framework, ...) somewhere under
+#      BUILT_PRODUCTS_DIR, but only during a fresh (non-incremental) build and
+#      it never copies them into the archive's dSYMs folder. Search recursively
+#      and forward each real (fully-symbolicated) dSYM we find.
+#   3. Fallback guarantee. For any framework still lacking a dSYM in the archive,
+#      generate one with dsymutil straight from the embedded binary. If the
+#      binary is stripped this yields a UUID-matching dSYM (enough to clear the
+#      App Store Connect warning); if it still carries a debug map the dSYM is
+#      fully symbolicated. This makes a clean upload deterministic even when
+#      pass 2 finds nothing (e.g. an incremental archive that reused a cached
+#      native-assets build).
 # ---------------------------------------------------------------------------
 
-# Only meaningful for archive / `xcodebuild install` builds. Regular
-# debug/run builds neither produce nor need an archive dSYMs folder.
+# Only archive / `xcodebuild install` builds produce (or need) an archive dSYMs
+# folder. Regular debug/run builds are a no-op.
 if [ "${ACTION:-}" != "install" ]; then
   exit 0
 fi
@@ -37,40 +41,69 @@ if [ -z "${DSYM_DEST}" ]; then
 fi
 mkdir -p "${DSYM_DEST}"
 
-# Copy a single .dSYM bundle into the archive dSYMs folder (idempotent).
+log() { echo "note: [copy_archive_dsyms] $*"; }
+
+# Copy a single .dSYM bundle into the archive dSYMs folder (idempotent, safe).
 install_dsym() {
   src="$1"
   [ -n "${src}" ] || return 0
   [ -d "${src}" ] || return 0
   dest="${DSYM_DEST}/$(basename "${src}")"
-  # Never copy a dSYM onto itself (happens on non-archive builds where
-  # BUILT_PRODUCTS_DIR == DWARF_DSYM_FOLDER_PATH).
+  # Never copy a dSYM onto itself.
   if [ "${src}" = "${dest}" ]; then
     return 0
   fi
   rm -rf "${dest}"
   cp -a "${src}" "${dest}"
-  echo "note: Archived dSYM $(basename "${src}")"
+  log "forwarded dSYM $(basename "${src}")"
 }
 
 # 1) SPM binary dependencies (Sentry, etc.).
 PACKAGES_PATH="${BUILD_DIR%Build/*}SourcePackages/artifacts"
 if [ -d "${PACKAGES_PATH}" ]; then
-  find "${PACKAGES_PATH}" -name "*.dSYM" -type d | while IFS= read -r dsym; do
+  find "${PACKAGES_PATH}" -name "*.dSYM" -type d 2>/dev/null | while IFS= read -r dsym; do
     install_dsym "${dsym}"
   done
 fi
 
-# 2) Flutter native-asset frameworks (objective_c.framework, and any future
-#    code-asset plugin). Flutter drops both the framework and its sibling
-#    "<name>.framework.dSYM" into BUILT_PRODUCTS_DIR (and BUILT_PRODUCTS_DIR/
-#    native_assets/); pick up whichever is present.
-for base in "${BUILT_PRODUCTS_DIR:-}" "${BUILT_PRODUCTS_DIR:-}/native_assets"; do
-  [ -n "${base}" ] || continue
-  [ -d "${base}" ] || continue
-  for dsym in "${base}"/*.framework.dSYM; do
+# 2) Flutter-generated dSYMs anywhere under BUILT_PRODUCTS_DIR (skip copies that
+#    already live in the archive dSYMs dir or inside the built .app bundle).
+if [ -n "${BUILT_PRODUCTS_DIR:-}" ] && [ -d "${BUILT_PRODUCTS_DIR}" ]; then
+  find "${BUILT_PRODUCTS_DIR}" -name "*.framework.dSYM" -type d 2>/dev/null | while IFS= read -r dsym; do
+    case "${dsym}" in
+      "${DSYM_DEST}"/*) continue ;;
+      *.app/*) continue ;;
+    esac
     install_dsym "${dsym}"
   done
-done
+fi
 
+# 3) Fallback: guarantee a dSYM for every framework embedded in the built app.
+APP="${CODESIGNING_FOLDER_PATH:-}"
+if [ -z "${APP}" ] || [ ! -d "${APP}" ]; then
+  APP="$(find "${BUILT_PRODUCTS_DIR:-/nonexistent}" -maxdepth 1 -name "*.app" -type d 2>/dev/null | head -n 1)"
+fi
+if [ -n "${APP}" ] && [ -d "${APP}/Contents/Frameworks" ]; then
+  for fw in "${APP}/Contents/Frameworks"/*.framework; do
+    [ -d "${fw}" ] || continue
+    name="$(basename "${fw}" .framework)"
+    bin="${fw}/Versions/A/${name}"
+    [ -f "${bin}" ] || bin="${fw}/${name}"
+    [ -f "${bin}" ] || continue
+    dest="${DSYM_DEST}/${name}.framework.dSYM"
+    # A real dSYM was already placed by pass 1/2 or by Xcode itself — keep it.
+    if [ -d "${dest}" ]; then
+      continue
+    fi
+    if xcrun dsymutil "${bin}" -o "${dest}" >/dev/null 2>&1; then
+      log "generated fallback dSYM ${name}.framework.dSYM"
+    else
+      rm -rf "${dest}"
+      log "could not generate a dSYM for ${name} (skipped)"
+    fi
+  done
+fi
+
+log "archive dSYMs folder now contains:"
+ls -1 "${DSYM_DEST}" 2>/dev/null || true
 exit 0

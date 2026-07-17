@@ -164,14 +164,14 @@ Poiché l'app richiede un'autenticazione per funzionare, **DEVI** fornire ad App
 
 1.  **Spunta "Accesso richiesto" (Sign-in required)**.
 2.  **Nome utente (Username)**: Fornisci la mail di test configurata come PRO su Supabase: `apple-tester@evolve.com`.
-3.  **Password**: La password per l'account di test (es. `TesterPass123!`).
+3.  **Password**: la password dell'account di test. **NON scriverla qui** — questa repo è pubblica. Tienila solo in App Store Connect → Review Notes e nel tuo password manager.
 4.  **Note per la verifica (Review Notes)**: Incolla queste istruzioni dettagliate in inglese (i reviewer sono spesso internazionali):
     ```text
     Hello Apple Review Team,
     
     To facilitate your review, we have provided a pre-configured, fully unlocked test account:
     - Username: apple-tester@evolve.com
-    - Password: TesterPass123!
+    - Password: <inserisci qui la password reale SOLO dentro App Store Connect — non committarla>
     
     This account has been pre-granted full "Pro" tier privileges, giving you immediate access to all statistical analysis, habit tracking, goal settings, custom accent colors, and wellness correlations without any paywall gates or restrictions.
     

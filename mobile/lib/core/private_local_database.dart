@@ -1558,15 +1558,18 @@ class PrivateLocalDatabase implements PrivateDataStore {
             g.quarter!,
             () => {'active': 0, 'failed': 0, 'completed': 0},
           );
-          if (g.status == GoalStatus.active)
+          if (g.status == GoalStatus.active) {
             seasonalityStats[g.quarter!]!['active'] =
                 seasonalityStats[g.quarter!]!['active']! + 1;
-          if (g.status == GoalStatus.failed)
+          }
+          if (g.status == GoalStatus.failed) {
             seasonalityStats[g.quarter!]!['failed'] =
                 seasonalityStats[g.quarter!]!['failed']! + 1;
-          if (g.status == GoalStatus.completed)
+          }
+          if (g.status == GoalStatus.completed) {
             seasonalityStats[g.quarter!]!['completed'] =
                 seasonalityStats[g.quarter!]!['completed']! + 1;
+          }
         }
       }
       final seasonality =
@@ -1683,15 +1686,18 @@ class PrivateLocalDatabase implements PrivateDataStore {
             () => {'total': 0, 'completed': 0, 'active': 0, 'failed': 0},
           );
           monthStats[g.month!]!['total'] = monthStats[g.month!]!['total']! + 1;
-          if (g.status == GoalStatus.completed)
+          if (g.status == GoalStatus.completed) {
             monthStats[g.month!]!['completed'] =
                 monthStats[g.month!]!['completed']! + 1;
-          if (g.status == GoalStatus.active)
+          }
+          if (g.status == GoalStatus.active) {
             monthStats[g.month!]!['active'] =
                 monthStats[g.month!]!['active']! + 1;
-          if (g.status == GoalStatus.failed)
+          }
+          if (g.status == GoalStatus.failed) {
             monthStats[g.month!]!['failed'] =
                 monthStats[g.month!]!['failed']! + 1;
+          }
         }
       }
 
@@ -1714,9 +1720,10 @@ class PrivateLocalDatabase implements PrivateDataStore {
         typeStats.putIfAbsent(g.type.name, () => {'total': 0, 'completed': 0});
         typeStats[g.type.name]!['total'] =
             typeStats[g.type.name]!['total']! + 1;
-        if (g.status == GoalStatus.completed)
+        if (g.status == GoalStatus.completed) {
           typeStats[g.type.name]!['completed'] =
               typeStats[g.type.name]!['completed']! + 1;
+        }
       }
 
       String? bestType;
@@ -1742,15 +1749,18 @@ class PrivateLocalDatabase implements PrivateDataStore {
           );
           quarterlyStats[g.quarter!]!['total'] =
               quarterlyStats[g.quarter!]!['total']! + 1;
-          if (g.status == GoalStatus.completed)
+          if (g.status == GoalStatus.completed) {
             quarterlyStats[g.quarter!]!['completed'] =
                 quarterlyStats[g.quarter!]!['completed']! + 1;
-          if (g.status == GoalStatus.active)
+          }
+          if (g.status == GoalStatus.active) {
             quarterlyStats[g.quarter!]!['active'] =
                 quarterlyStats[g.quarter!]!['active']! + 1;
-          if (g.status == GoalStatus.failed)
+          }
+          if (g.status == GoalStatus.failed) {
             quarterlyStats[g.quarter!]!['failed'] =
                 quarterlyStats[g.quarter!]!['failed']! + 1;
+          }
         }
       }
       final quarterlyActivity =

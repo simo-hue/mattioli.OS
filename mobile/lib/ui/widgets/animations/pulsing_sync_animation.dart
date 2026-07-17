@@ -100,7 +100,7 @@ class _PulsingRingsPainter extends CustomPainter {
     // Draw three staggered rings
     for (int i = 0; i < 3; i++) {
       // Offset the progress for each ring by 0.33
-      double ringProgress = (progress + (i * 0.33)) % 1.0;
+      final double ringProgress = (progress + (i * 0.33)) % 1.0;
       
       // We want it to start small and grow to maxRadius
       // We start the radius slightly larger than the center icon container

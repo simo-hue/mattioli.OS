@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'dart:async';
 import 'dart:io';
 import '../../core/rtl.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
@@ -904,21 +905,29 @@ class PrivacySettingsScreen extends ConsumerWidget {
                       const SizedBox(height: 24),
                       // Merge first (the safe, default choice); Replace below and
                       // marked destructive so it can't be tapped by reflex.
-                      RadioListTile<bool>(
-                        title: Text(context.t.privacy.importModeMerge, style: TextStyle(color: context.appColors.foreground)),
-                        subtitle: Text(context.t.privacy.importModeMergeDesc, style: TextStyle(color: context.appColors.mutedForeground, fontSize: 12)),
-                        value: false,
+                      // Flutter 3.32 deprecated per-tile groupValue/onChanged in
+                      // favour of a RadioGroup ancestor holding the selection.
+                      RadioGroup<bool>(
                         groupValue: replaceExisting,
-                        activeColor: Theme.of(context).colorScheme.primary,
                         onChanged: (val) => setState(() => replaceExisting = val!),
-                      ),
-                      RadioListTile<bool>(
-                        title: Text(context.t.privacy.importModeReplace, style: const TextStyle(color: AppColors.destructive)),
-                        subtitle: Text(context.t.privacy.importModeReplaceDesc, style: TextStyle(color: context.appColors.mutedForeground, fontSize: 12)),
-                        value: true,
-                        groupValue: replaceExisting,
-                        activeColor: AppColors.destructive,
-                        onChanged: (val) => setState(() => replaceExisting = val!),
+                        child: Column(
+                          mainAxisSize: MainAxisSize.min,
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            RadioListTile<bool>(
+                              title: Text(context.t.privacy.importModeMerge, style: TextStyle(color: context.appColors.foreground)),
+                              subtitle: Text(context.t.privacy.importModeMergeDesc, style: TextStyle(color: context.appColors.mutedForeground, fontSize: 12)),
+                              value: false,
+                              activeColor: Theme.of(context).colorScheme.primary,
+                            ),
+                            RadioListTile<bool>(
+                              title: Text(context.t.privacy.importModeReplace, style: const TextStyle(color: AppColors.destructive)),
+                              subtitle: Text(context.t.privacy.importModeReplaceDesc, style: TextStyle(color: context.appColors.mutedForeground, fontSize: 12)),
+                              value: true,
+                              activeColor: AppColors.destructive,
+                            ),
+                          ],
+                        ),
                       ),
                     ],
                   ),
@@ -974,7 +983,10 @@ class PrivacySettingsScreen extends ConsumerWidget {
       }
 
       progressShown = true;
-      showDialog(
+      // Deliberately not awaited: this is a blocking progress dialog shown while
+      // the import runs underneath it, and it is popped further down. Awaiting
+      // here would stall the import until the user dismissed it.
+      unawaited(showDialog(
         context: context,
         barrierDismissible: false,
         builder: (ctx) => Center(
@@ -1014,7 +1026,7 @@ class PrivacySettingsScreen extends ConsumerWidget {
             ),
           ),
         ),
-      );
+      ));
 
       // 3. Execute
       final importResult = await importService.executeImport(

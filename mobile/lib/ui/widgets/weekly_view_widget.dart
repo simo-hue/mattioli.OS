@@ -61,7 +61,7 @@ class _WeeklyViewWidgetState extends ConsumerState<WeeklyViewWidget> {
       '${date.year}-${date.month.toString().padLeft(2, '0')}-${date.day.toString().padLeft(2, '0')}';
 
   List<double> _calculateDailyCompletion(List<Goal> habits, Map<String, dynamic> logs) {
-    List<double> completion = List.filled(7, 0.0);
+    final List<double> completion = List.filled(7, 0.0);
     
     for (int i = 0; i < 7; i++) {
       final dayDate = _currentWeekStart.add(Duration(days: i));

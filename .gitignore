@@ -8,6 +8,10 @@
 logs
 *.log
 
+# Dependencies and Build Outputs
+node_modules/
+dist/
+
 # Editor directories and files
 .vscode/*
 !.vscode/extensions.json

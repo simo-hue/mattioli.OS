@@ -2,6 +2,10 @@
 
 ## Recent Changes
 
+- [2026-07-17 16:14]: **Updated `.gitignore`**
+  - *Details*: Added `node_modules/` and `dist/` to the repository root `.gitignore` to prevent generated dependency and build files from being tracked by git.
+  - *Tech Notes*: Modified `.gitignore`.
+
 - [2026-07-17 08:00]: **Deactivated Web App Deployment Workflow**
   - *Details*: Deleted the `.github/workflows/deploy.yml` file to completely stop automatic deployments to GitHub pages on pushes. The current GitHub Pages website will remain online exactly as it is.
   - *Tech Notes*: Removed `.github/workflows/deploy.yml`.

@@ -91,9 +91,15 @@ if [ -n "${APP}" ] && [ -d "${APP}/Contents/Frameworks" ]; then
     [ -f "${bin}" ] || bin="${fw}/${name}"
     [ -f "${bin}" ] || continue
     dest="${DSYM_DEST}/${name}.framework.dSYM"
-    # A real dSYM was already placed by pass 1/2 or by Xcode itself — keep it.
+    # A real dSYM was already placed by pass 1/2 or by Xcode itself — check UUIDs.
     if [ -d "${dest}" ]; then
-      continue
+      bin_uuid="$(dwarfdump --uuid "${bin}" | head -n 1 | awk '{print $2}')"
+      if [ -n "${bin_uuid}" ] && ! dwarfdump --uuid "${dest}" | grep -q "${bin_uuid}"; then
+        log "existing dSYM for ${name} has mismatched UUIDs. Regenerating..."
+        rm -rf "${dest}"
+      else
+        continue
+      fi
     fi
     if xcrun dsymutil "${bin}" -o "${dest}" >/dev/null 2>&1; then
       log "generated fallback dSYM ${name}.framework.dSYM"

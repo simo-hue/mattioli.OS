@@ -11,6 +11,7 @@ import '../../core/app_logger.dart';
 import '../../core/data_mode.dart';
 import '../../core/rtl.dart';
 import 'package:flutter_markdown/flutter_markdown.dart';
+import 'package:markdown/markdown.dart' as md;
 
 import '../../models/macro_goal.dart';
 import '../../models/chat_message.dart';
@@ -707,9 +708,10 @@ class _AIChatScreenState extends ConsumerState<AIChatScreen> {
                     return _buildTypingIndicator(colors);
                   }
                   final message = _messages[index];
+                  final isStreaming = !message.isUser && index == _messages.length - 1 && _responseSub != null;
                   return _FadeInSlide(
                     key: ValueKey(message.timestamp.millisecondsSinceEpoch),
-                    child: _buildMessageBubble(message, colors),
+                    child: _buildMessageBubble(message, colors, isStreaming: isStreaming),
                   );
                 },
               ),
@@ -970,7 +972,7 @@ class _AIChatScreenState extends ConsumerState<AIChatScreen> {
     );
   }
 
-  Widget _buildMessageBubble(ChatMessage message, AppColorsExtension colors) {
+  Widget _buildMessageBubble(ChatMessage message, AppColorsExtension colors, {bool isStreaming = false}) {
     final isUser = message.isUser;
     final bubble = GestureDetector(
       onLongPress: () {
@@ -1002,7 +1004,18 @@ class _AIChatScreenState extends ConsumerState<AIChatScreen> {
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
             MarkdownBody(
-              data: message.text,
+              data: isStreaming ? '${message.text}%%CURSOR%%' : message.text,
+              extensionSet: md.ExtensionSet(
+                md.ExtensionSet.gitHubFlavored.blockSyntaxes,
+                [
+                  md.EmojiSyntax(),
+                  ...md.ExtensionSet.gitHubFlavored.inlineSyntaxes,
+                  _CursorSyntax(),
+                ],
+              ),
+              builders: {
+                'cursor': _CursorBuilder(),
+              },
               styleSheet: MarkdownStyleSheet.fromTheme(Theme.of(context))
                   .copyWith(
                     p: TextStyle(
@@ -1202,5 +1215,62 @@ class _FadeInSlideState extends State<_FadeInSlide>
       opacity: _fadeAnimation,
       child: SlideTransition(position: _slideAnimation, child: widget.child),
     );
+  }
+}
+
+class _CursorSyntax extends md.InlineSyntax {
+  _CursorSyntax() : super(r'%%CURSOR%%');
+
+  @override
+  bool onMatch(md.InlineParser parser, Match match) {
+    parser.addNode(md.Element.empty('cursor'));
+    return true;
+  }
+}
+
+class _CursorBuilder extends MarkdownElementBuilder {
+  @override
+  Widget visitElementAfter(md.Element element, TextStyle? preferredStyle) {
+    return const _StreamingCaret();
+  }
+}
+
+class _StreamingCaret extends StatefulWidget {
+  const _StreamingCaret();
+
+  @override
+  State<_StreamingCaret> createState() => _StreamingCaretState();
+}
+
+class _StreamingCaretState extends State<_StreamingCaret>
+    with SingleTickerProviderStateMixin {
+  late final AnimationController _controller = AnimationController(
+    vsync: this,
+    duration: const Duration(milliseconds: 1060),
+  );
+
+  @override
+  void dispose() {
+    _controller.dispose();
+    super.dispose();
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final colors = context.appColors;
+    final bar = Container(
+      width: 2,
+      height: 14,
+      decoration: BoxDecoration(
+        color: colors.foreground.withValues(alpha: 0.75),
+        borderRadius: BorderRadius.circular(1),
+      ),
+    );
+    if (MediaQuery.of(context).disableAnimations) {
+      if (_controller.isAnimating) _controller.stop();
+      return bar;
+    }
+    if (!_controller.isAnimating) _controller.repeat(reverse: true);
+    return FadeTransition(opacity: _controller, child: bar);
   }
 }

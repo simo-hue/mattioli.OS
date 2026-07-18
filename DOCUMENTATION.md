@@ -1761,3 +1761,7 @@ All owner actions are itemized in **TO_SIMO_DO.md**.
 - **2026-07-18: HealthKit proactive permission trigger on habit creation (mobile)**
   - *Details*: When creating a new HealthKit-verified habit (e.g. sleep, steps), if the user had not yet tapped the "Grant Health Access" button, they were previously able to save the habit without ever seeing the Apple Health permission prompt. Now, tapping Save will automatically trigger the HealthKit permission prompt if it hasn't been shown yet.
   - *Tech Notes*: `habit_management_modal.dart`: Added a check in `_onSave` that awaits `_grantHealthAccess()` if `_showGrantHealthAccess` is true. Apple HealthKit's privacy model does not reveal if the user denied permission (only that the prompt was shown), so the save continues regardless of the user's choice in the Apple prompt.
+
+- [2026-07-18 14:05:00]: Mobile AI Coach Inline Streaming Cursor
+  - *Details*: Added an inline streaming cursor to the mobile AI Coach implementation for maximum coherence with the desktop app. The cursor appears inline while receiving responses from the LLM.
+  - *Tech Notes*: Implemented `_StreamingCaret` in `ai_chat_screen.dart` with a custom `md.InlineSyntax` to inject a `%%CURSOR%%` placeholder during streaming, exactly like the desktop counterpart. Added the `markdown` dependency in `mobile/pubspec.yaml`.

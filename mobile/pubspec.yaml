@@ -91,6 +91,7 @@ dependencies:
   slang_flutter: ^4.0.0
   archive: ^4.0.9
   file_picker: ^11.0.2
+  markdown: ^7.3.1
 
 dev_dependencies:
   flutter_test:

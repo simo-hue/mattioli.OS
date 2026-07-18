@@ -142,13 +142,22 @@ class VerificationService {
 
   /// How many days a couldn't-verify day keeps nudging before it goes quiet
   /// (D6).
+  ///
+  /// Defaults to 1 — a nudged day is only ever `today` or `yesterday`, which is
+  /// exactly the **resolvable window** the rest of the design enforces: the "?"
+  /// affordance renders only on `today`/`yesterday`
+  /// (`couldNotVerifyDaysProvider`) and the day-details editor rejects anything
+  /// before yesterday. A wider window (e.g. 2) would let `shouldNudge` fire for
+  /// an age-2 day whose nudge tap dead-ends — no "?" to tap, and the cell
+  /// refuses the edit. So the nag window must never exceed that resolvable
+  /// window.
   final int nagWindowDays;
 
   const VerificationService({
     required this.health,
     required this.screenTime,
     this.backfillDays = 7,
-    this.nagWindowDays = 2,
+    this.nagWindowDays = 1,
   });
 
   static DateTime _dateOnly(DateTime d) => DateTime(d.year, d.month, d.day);

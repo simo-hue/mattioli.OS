@@ -1,14 +1,17 @@
 import 'package:evolve_verification/evolve_verification.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:lucide_icons_flutter/lucide_icons.dart';
 
+import '../../core/app_logger.dart';
 import '../../core/haptics.dart';
 import '../../core/notifications.dart';
 import '../../core/theme.dart';
 import '../../core/verification_providers.dart';
 import '../../i18n/translations.g.dart';
+import '../kit/evolve_toast.dart';
 
 /// The Screen Time disclosure + opt-in, opened from Settings.
 ///
@@ -26,9 +29,25 @@ import '../../i18n/translations.g.dart';
 class ScreenTimeForm extends ConsumerWidget {
   const ScreenTimeForm({super.key});
 
-  Future<void> _enable(WidgetRef ref) async {
+  Future<void> _enable(BuildContext context, WidgetRef ref) async {
     ref.hapticMedium();
-    await ref.read(screenTimeBridgeProvider).requestIndividualAuthorization();
+    try {
+      await ref.read(screenTimeBridgeProvider).requestIndividualAuthorization();
+    } on PlatformException catch (e) {
+      // FamilyControls grants individual authorization to only ONE app per
+      // device at a time (and also throws on denial). Fail gracefully with a
+      // toast rather than an unhandled exception — this is the exact 2.1 opt-in
+      // surface a reviewer taps, and their device may already hold the slot.
+      AppLogger.warning('[ScreenTime] authorization request failed: ${e.message}');
+      if (context.mounted) {
+        showEvolveToast(
+          context,
+          message: context.t.verification.screenTime.authorizationUnavailable,
+          kind: EvolveToastKind.error,
+        );
+      }
+      return;
+    }
     // Verdicts — including the extension's "limit reached" alert — arrive as
     // local notifications, so bundle the notification prompt into this opt-in.
     await NotificationService().requestPermissions();
@@ -60,7 +79,7 @@ class ScreenTimeForm extends ConsumerWidget {
           const SizedBox(height: 20),
           status.when(
             loading: () => const SizedBox.shrink(),
-            error: (_, _) => _EnableButton(onPressed: () => _enable(ref)),
+            error: (_, _) => _EnableButton(onPressed: () => _enable(context, ref)),
             data: (s) => switch (s) {
               ScreenTimeAuthorizationStatus.approved =>
                 _Notice(icon: LucideIcons.check, text: t.enabledNote),
@@ -78,7 +97,7 @@ class ScreenTimeForm extends ConsumerWidget {
                       ),
                     ),
                     const SizedBox(height: 16),
-                    _EnableButton(onPressed: () => _enable(ref)),
+                    _EnableButton(onPressed: () => _enable(context, ref)),
                   ],
                 ),
             },

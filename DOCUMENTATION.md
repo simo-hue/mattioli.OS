@@ -1765,3 +1765,7 @@ All owner actions are itemized in **TO_SIMO_DO.md**.
 - [2026-07-18 14:05:00]: Mobile AI Coach Inline Streaming Cursor
   - *Details*: Added an inline streaming cursor to the mobile AI Coach implementation for maximum coherence with the desktop app. The cursor appears inline while receiving responses from the LLM.
   - *Tech Notes*: Implemented `_StreamingCaret` in `ai_chat_screen.dart` with a custom `md.InlineSyntax` to inject a `%%CURSOR%%` placeholder during streaming, exactly like the desktop counterpart. Added the `markdown` dependency in `mobile/pubspec.yaml`.
+
+- [2026-07-18 16:17:58]: Fastlane Metadata Branding Update
+  - *Details*: Replaced 'Mattioli.OS' with 'Evolve' in all localized App Store descriptions across desktop and mobile metadata folders.
+  - *Tech Notes*: Updated all .txt files in `desktop/macos/fastlane/metadata`. Attempted to upload using `fastlane deliver`, but was blocked by App Store Connect state.

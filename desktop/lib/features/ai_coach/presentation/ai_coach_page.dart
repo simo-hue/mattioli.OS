@@ -21,6 +21,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_markdown/flutter_markdown.dart';
+import 'package:markdown/markdown.dart' as md;
 import 'package:lucide_icons_flutter/lucide_icons.dart';
 import 'package:url_launcher/url_launcher.dart';
 
@@ -1182,21 +1183,11 @@ class _MessageBubbleState extends State<_MessageBubble> {
           height: 1.45,
         ),
       );
-    } else if (widget.isStreaming) {
-      // Caret is a separate decorative widget, NOT injected into the markdown
-      // source — so it can't trigger reparses, clear a selection, or reflow at
-      // block boundaries.
-      bubbleChild = Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        mainAxisSize: MainAxisSize.min,
-        children: [
-          _AssistantMarkdown(text: message.text),
-          const SizedBox(height: 3),
-          const _StreamingCaret(),
-        ],
-      );
     } else {
-      bubbleChild = _AssistantMarkdown(text: message.text);
+      bubbleChild = _AssistantMarkdown(
+        text: message.text,
+        isStreaming: widget.isStreaming && !isWaiting,
+      );
     }
 
     final bubble = Container(
@@ -1311,9 +1302,10 @@ class _MessageEntrance extends StatelessWidget {
 /// selectable text. The streaming caret is a separate sibling widget so it never
 /// touches the markdown source.
 class _AssistantMarkdown extends StatelessWidget {
-  const _AssistantMarkdown({required this.text});
+  const _AssistantMarkdown({required this.text, this.isStreaming = false});
 
   final String text;
+  final bool isStreaming;
 
   static const _allowedSchemes = {'http', 'https', 'mailto'};
 
@@ -1341,9 +1333,22 @@ class _AssistantMarkdown extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final colors = context.evolveColors;
+    final displayText = isStreaming ? '$text%%CURSOR%%' : text;
+
     return MarkdownBody(
-      data: text,
+      data: displayText,
       selectable: true,
+      extensionSet: md.ExtensionSet(
+        md.ExtensionSet.gitHubFlavored.blockSyntaxes,
+        [
+          md.EmojiSyntax(),
+          ...md.ExtensionSet.gitHubFlavored.inlineSyntaxes,
+          _CursorSyntax(),
+        ],
+      ),
+      builders: {
+        'cursor': _CursorBuilder(),
+      },
       onTapLink: (linkText, href, title) => _openLink(context, href),
       styleSheet: MarkdownStyleSheet(
         p: TextStyle(color: colors.foreground, fontSize: 14, height: 1.45),
@@ -1381,8 +1386,24 @@ class _AssistantMarkdown extends StatelessWidget {
   }
 }
 
-/// Blinking cursor bar at the end of a streaming reply — a decorative sibling of
-/// the markdown (never part of the selectable text). Respects Reduce Motion.
+class _CursorSyntax extends md.InlineSyntax {
+  _CursorSyntax() : super(r'%%CURSOR%%');
+
+  @override
+  bool onMatch(md.InlineParser parser, Match match) {
+    parser.addNode(md.Element.empty('cursor'));
+    return true;
+  }
+}
+
+class _CursorBuilder extends MarkdownElementBuilder {
+  @override
+  Widget visitElementAfter(md.Element element, TextStyle? preferredStyle) {
+    return const _StreamingCaret();
+  }
+}
+
+/// Blinking cursor bar at the end of a streaming reply. Respects Reduce Motion.
 class _StreamingCaret extends StatefulWidget {
   const _StreamingCaret();
 

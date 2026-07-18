@@ -1082,3 +1082,7 @@ heading ellipsizing. `flutter analyze` clean; `tour_flow_test` still passes.
     `PlistBuddy` confirms the capability, `dart format` clean, `flutter analyze`
     on the changed files reports no issues. Full macOS build/sign + on-device
     sign-in must be verified on the Xcode Mac.
+
+- [2026-07-18 13:58:00]: AI Coach Inline Streaming Cursor
+  - *Details*: Fixed a UI issue where the AI coach streaming cursor appeared on a new line during text generation. It now renders inline with the text, creating a more professional look.
+  - *Tech Notes*: Migrated `_StreamingCaret` from a sibling `Column` layout to an inline `MarkdownElementBuilder`. Appended `%%CURSOR%%` during streaming to correctly place the caret inside the `flutter_markdown` widget. Added the `markdown` dependency in `pubspec.yaml` to access `md.InlineSyntax` and `md.ExtensionSet`.

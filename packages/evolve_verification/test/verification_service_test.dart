@@ -87,6 +87,27 @@ void main() {
       expect(byDay[daysAgo(4)]!.shouldNudge, isFalse);
       expect(plan.writes, isEmpty);
     });
+
+    test('the default nag window only nudges inside the resolvable '
+        'today+yesterday window (age ≤ 1)', () async {
+      // Constructed with the PRODUCTION default nagWindowDays (no override), so
+      // this pins the shipped cadence: a nudge must never land on a day the user
+      // can't resolve. The "?" affordance renders only on today/yesterday and
+      // the day-details editor rejects anything before yesterday, so an age-2
+      // nudge would dead-end. No data programmed → every past day is
+      // couldn't-verify, exercising the full window.
+      final plan = await VerificationService(
+        health: health,
+        screenTime: screen,
+        backfillDays: 5,
+      ).reconcile(goals: [steps()], today: today);
+
+      final byDay = {for (final e in plan.couldNotVerify) e.day: e};
+      expect(byDay[daysAgo(1)]!.shouldNudge, isTrue); // yesterday — resolvable
+      expect(byDay[daysAgo(2)]!.shouldNudge, isFalse); // age 2 — dead-ended
+      expect(byDay[daysAgo(3)]!.shouldNudge, isFalse);
+      expect(byDay[daysAgo(4)]!.shouldNudge, isFalse);
+    });
   });
 
   group('reconcile — freezing and idempotency', () {

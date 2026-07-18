@@ -10,10 +10,17 @@ class DesktopSupabaseConfig {
     defaultValue: 'http://127.0.0.1:39876/auth/callback',
   );
 
-  // Requires the macOS Sign in with Apple capability and a valid signing team.
+  // Native Sign in with Apple on macOS — the same flow the iOS app uses. It
+  // relies on the `com.apple.developer.applesignin` entitlement (declared in
+  // macos/Runner/*.entitlements) and a signed build with a valid Apple team.
+  // Defaults to on so macOS uses the native credential sheet instead of the
+  // browser OAuth redirect (which needs an Apple OAuth secret configured on the
+  // Supabase provider). Set the define to false to force the browser flow — the
+  // only Apple path available on Windows/Linux, which ignore this flag anyway
+  // because the controller gates native behind Platform.isMacOS.
   static const useNativeAppleSignIn = bool.fromEnvironment(
     'EVOLVE_DESKTOP_NATIVE_APPLE_SIGN_IN',
-    defaultValue: false,
+    defaultValue: true,
   );
 
   static Uri get oauthRedirectUri => Uri.parse(oauthRedirectUrl);

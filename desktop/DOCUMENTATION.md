@@ -1050,3 +1050,35 @@ heading ellipsizing. `flutter analyze` clean; `tour_flow_test` still passes.
     a UUID-matching dSYM from a stripped binary; when Flutter's real dSYM is
     present pass 2 forwards it (183 DWARF tags) and the fallback is skipped;
     non-archive builds no-op; empty inputs never wipe the dSYMs folder.
+
+- [2026-07-18]: Desktop native "Sign in with Apple" fix (macOS)
+  - *Details*: The desktop "Log in with Apple" button failed two ways. With the
+    native flag off (the shipped default), macOS fell into the browser OAuth
+    redirect and Supabase returned `validation_failed: missing OAuth secret`
+    (the Apple provider has no OAuth secret configured — and native macOS should
+    not use that path anyway). With the native flag on, the flow died at
+    `SignInWithApple.getAppleIDCredential` and surfaced "Autenticazione Apple non
+    riuscita" (`authCtrl.appleAuthFailed`). Root cause: `macos/Runner`'s
+    `DebugProfile.entitlements` and `Release.entitlements` were **missing the
+    `com.apple.developer.applesignin` entitlement** that iOS's
+    `Runner.entitlements` has — so the native credential request is denied before
+    it ever reaches Supabase. The Dart controller flow itself was already a
+    correct mirror of mobile; no logic change was needed there.
+  - *Fix*: (1) Added `com.apple.developer.applesignin = ["Default"]` to both
+    macOS entitlements files (matching iOS). (2) Flipped
+    `DesktopSupabaseConfig.useNativeAppleSignIn` default `false → true` so macOS
+    uses the native credential sheet (like mobile) instead of the browser
+    redirect; the `Platform.isMacOS` gate means Windows/Linux are unaffected and
+    still use the browser flow. (3) `.env.example` now sets the define to `true`.
+    (4) README gained a "Sign in with Apple" section documenting the entitlement,
+    signing, and Supabase client-ID requirements.
+  - *Tech Notes*: No new dependencies (`sign_in_with_apple: ^7.0.1` already
+    present; framework already built). No new endpoints. Native Apple sign-in
+    uses `signInWithIdToken(provider: apple)` and needs the Supabase Apple
+    provider to list `com.simo.evolve` under authorized client IDs — the OAuth
+    *secret* is only for the browser flow. Manual steps (local `.env` flip,
+    Supabase client-ID allowlist, provisioning) tracked in `TO_SIMO_DO.md`.
+    Verified here (no Xcode on this Mac): `plutil -lint` OK on both entitlements,
+    `PlistBuddy` confirms the capability, `dart format` clean, `flutter analyze`
+    on the changed files reports no issues. Full macOS build/sign + on-device
+    sign-in must be verified on the Xcode Mac.

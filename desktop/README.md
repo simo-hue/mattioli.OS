@@ -83,6 +83,30 @@ defaults to the local loopback callback used by the desktop OAuth flow. Never
 add a Supabase `service_role` key or another server secret to the desktop
 binary or source tree.
 
+### Sign in with Apple
+
+On macOS the client uses **native** Sign in with Apple — the same
+`sign_in_with_apple` credential sheet the iOS app uses — instead of a browser
+redirect. This is controlled by `EVOLVE_DESKTOP_NATIVE_APPLE_SIGN_IN`
+(default `true`). Native sign-in requires:
+
+1. The `com.apple.developer.applesignin` entitlement, declared in both
+   `macos/Runner/DebugProfile.entitlements` and `macos/Runner/Release.entitlements`.
+2. A signed build with a valid Apple development team (automatic signing is
+   already wired in `Runner.xcodeproj`). The App ID `com.simo.evolve` is shared
+   with iOS, whose "Sign in with Apple" capability is already enabled.
+3. The Apple provider **enabled** in the Supabase dashboard with
+   `com.simo.evolve` listed under its authorized client IDs, so Supabase accepts
+   the native identity token. The Apple *OAuth secret* is **not** needed for the
+   native flow — it is only used by the browser redirect flow.
+
+Setting `EVOLVE_DESKTOP_NATIVE_APPLE_SIGN_IN=false` forces the browser OAuth
+redirect. That path returns `validation_failed: missing OAuth secret` until the
+Apple provider's OAuth secret is configured in Supabase, so it should stay off
+on macOS. Windows and Linux always use the browser flow regardless of this flag
+(native Apple sign-in is macOS-only), so enabling Apple there does require the
+Supabase OAuth secret.
+
 ## Run locally
 
 ```bash

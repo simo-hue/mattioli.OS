@@ -12,6 +12,16 @@
 	<true/>
 	<key>com.apple.security.network.server</key>
 	<true/>
+	<!-- Sign in with Apple: required for the native macOS credential flow
+	     (SignInWithApple.getAppleIDCredential). Without it the request is
+	     denied before it reaches Supabase and the UI shows "Apple
+	     authentication failed". Mirrors mobile/ios/Runner/Runner.entitlements;
+	     both apps share the App ID com.simo.evolve, whose Sign in with Apple
+	     capability is already enabled in the Apple Developer portal. -->
+	<key>com.apple.developer.applesignin</key>
+	<array>
+		<string>Default</string>
+	</array>
 	<!-- iCloud sync: the same CloudKit container the iOS app uses. -->
 	<key>com.apple.developer.icloud-container-identifiers</key>
 	<array>

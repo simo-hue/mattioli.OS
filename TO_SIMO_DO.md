@@ -48,3 +48,33 @@ Already verified in code (no action): `screenTimeEnabled = false`; ungated coach
 ## Habit day-of-week scheduling — on-device QA (added 2026-07-17)
 
 - [ ] **Verified (HealthKit/Screen Time) habits** with a restricted schedule only verify/nag on scheduled days (verification already maps `frequencyDays → activeWeekdays`; confirm end-to-end on device).
+
+## Desktop "Sign in with Apple" — make native flow work (added 2026-07-18)
+
+Code + entitlements are fixed in the repo (native flow now has the required
+`com.apple.developer.applesignin` entitlement in `macos/Runner/*.entitlements`,
+and `EVOLVE_DESKTOP_NATIVE_APPLE_SIGN_IN` now defaults to `true`). Remaining
+**manual** steps, all on the Mac with Xcode:
+
+- [ ] **Update your local `desktop/.env`** (gitignored, so the repo change didn't
+  touch it): set `EVOLVE_DESKTOP_NATIVE_APPLE_SIGN_IN=true` (it is currently
+  `false`, which overrides the new code default at compile time). Do this on
+  **both** Macs. Then rebuild — a define change requires a full rebuild, not hot
+  reload.
+- [ ] **Supabase dashboard → Authentication → Providers → Apple:** enable the
+  provider and add `com.simo.evolve` to the **authorized client IDs** list. The
+  native flow verifies the Apple identity token's `aud` against this list. The
+  Apple **OAuth secret / Services ID is NOT required** for native sign-in — leave
+  it blank unless you also want the browser flow (Windows/Linux). This is what
+  fixes the `validation_failed: missing OAuth secret` you saw in the browser.
+- [ ] **Apple Developer portal:** confirm the App ID `com.simo.evolve` has the
+  **Sign in with Apple** capability enabled (already true for iOS, same App ID).
+  With automatic signing (team `8528AN28A3`, already set in `Runner.xcodeproj`),
+  Xcode regenerates the macOS provisioning profile to include the capability on
+  the next signed build. If a stale profile is cached, delete it from
+  `~/Library/MobileDevice/Provisioning Profiles` or let Xcode re-fetch.
+- [ ] **Verify on device:** `flutter run -d macos --dart-define-from-file=.env`,
+  click "Continua con Apple" → the native macOS Apple sheet should appear (not a
+  browser) and complete sign-in. If the browser opens instead, the define is
+  still `false`; if the sheet appears but sign-in is rejected, the Supabase
+  client-ID allowlist (step 2) is missing `com.simo.evolve`.

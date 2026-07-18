@@ -17,6 +17,8 @@ class SceneDelegate: FlutterSceneDelegate {
       // `evolve/cloudkit` channel would otherwise be missing — every CloudKit
       // call from Dart would throw MissingPluginException.
       CloudKitSyncBridge.register(controller.binaryMessenger)
+      HealthKitBridge.register(controller.binaryMessenger)
+      ScreenTimeBridge.register(controller.binaryMessenger)
     }
   }
 }

@@ -1,6 +1,7 @@
 import 'package:evolve_verification/evolve_verification.dart';
 import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 
 import '../../i18n/translations.g.dart';
 
@@ -138,10 +139,25 @@ class VerificationBadge extends StatelessWidget {
   }
 }
 
+/// Whether [t]'s threshold is meaningfully fractional (e.g. distance in 0.5 km,
+/// sleep in 0.5 h steps) — decides whether the typed field accepts a decimal
+/// point and whether a typed value is rounded to a whole number.
+bool _templateAllowsDecimal(VerificationTemplate t) =>
+    t.step % 1 != 0 || t.minThreshold % 1 != 0;
+
+/// Plain, separator-free text for *editing* a threshold (e.g. "10000", "7.5"),
+/// as opposed to [_formatThreshold]'s display form ("10,000") which is nicer to
+/// read but awkward to type over.
+String _editThreshold(double value) => value == value.roundToDouble()
+    ? value.round().toString()
+    : value.toStringAsFixed(1);
+
 /// A self-contained control for a habit's auto-verification rule (D5): a switch
-/// to enable it, a template chooser, and a clamped threshold stepper. Emits a
+/// to enable it, a template chooser, and a threshold picker. The threshold can
+/// be nudged with the +/− steppers *or* typed in directly — the centre value is
+/// an editable numeric field, clamped to the template's range on commit. Emits a
 /// [VerificationRule] (or null for a manual habit) via [onChanged].
-class VerificationRuleField extends StatelessWidget {
+class VerificationRuleField extends StatefulWidget {
   const VerificationRuleField({
     super.key,
     required this.rule,
@@ -156,35 +172,132 @@ class VerificationRuleField extends StatelessWidget {
   /// (e.g. HealthKit-only) so disabled providers aren't offered. Defaults to all.
   final List<VerificationTemplate> templates;
 
+  @override
+  State<VerificationRuleField> createState() => _VerificationRuleFieldState();
+}
+
+class _VerificationRuleFieldState extends State<VerificationRuleField> {
+  final TextEditingController _controller = TextEditingController();
+  final FocusNode _focusNode = FocusNode();
+
+  @override
+  void initState() {
+    super.initState();
+    _focusNode.addListener(_onFocusChange);
+    final r = widget.rule;
+    if (r != null) _controller.text = _formatThreshold(r.threshold, r.unit);
+  }
+
+  @override
+  void didUpdateWidget(covariant VerificationRuleField oldWidget) {
+    super.didUpdateWidget(oldWidget);
+    // Keep the field in sync when the value changes from *outside* the field —
+    // a +/− tap, a template switch, an edit reset — but never overwrite what the
+    // user is actively typing.
+    final r = widget.rule;
+    if (r == null || _focusNode.hasFocus) return;
+    final desired = _formatThreshold(r.threshold, r.unit);
+    if (_controller.text != desired) _controller.text = desired;
+  }
+
+  @override
+  void dispose() {
+    _focusNode.removeListener(_onFocusChange);
+    _focusNode.dispose();
+    _controller.dispose();
+    super.dispose();
+  }
+
   VerificationTemplate get _currentTemplate =>
-      rule?.template ??
-      (templates.isNotEmpty ? templates.first : VerificationCatalog.steps);
+      widget.rule?.template ??
+      (widget.templates.isNotEmpty
+          ? widget.templates.first
+          : VerificationCatalog.steps);
 
   void _toggle(bool on) {
-    if (!on || templates.isEmpty) {
-      onChanged(null);
+    if (!on || widget.templates.isEmpty) {
+      widget.onChanged(null);
       return;
     }
-    final first = templates.first;
-    onChanged(first.ruleWith(first.defaultThreshold));
+    final first = widget.templates.first;
+    widget.onChanged(first.ruleWith(first.defaultThreshold));
   }
 
   void _selectTemplate(VerificationTemplate template) {
-    onChanged(template.ruleWith(template.defaultThreshold));
+    widget.onChanged(template.ruleWith(template.defaultThreshold));
   }
 
   void _step(int direction) {
-    final r = rule;
+    final r = widget.rule;
     if (r == null) return;
     final t = _currentTemplate;
-    onChanged(r.copyWith(
+    widget.onChanged(r.copyWith(
       threshold: t.clampThreshold(r.threshold + direction * t.step),
     ));
   }
 
+  /// Parses the raw field text into a threshold value, or null when it isn't a
+  /// number yet (empty / mid-typing) so the user can keep going. Rounds to a
+  /// whole number for count/integer metrics; honours a decimal point for the
+  /// fractional ones (distance, sleep).
+  double? _parse(String text) {
+    final allowsDecimal = _templateAllowsDecimal(_currentTemplate);
+    var s = text.trim();
+    // Accept a comma as the decimal separator (it/de keyboards) for fractional
+    // metrics; strip any non-digit for integer ones.
+    s = allowsDecimal
+        ? s.replaceAll(',', '.')
+        : s.replaceAll(RegExp(r'[^0-9]'), '');
+    if (s.isEmpty) return null;
+    final v = double.tryParse(s);
+    if (v == null) return null;
+    return allowsDecimal ? v : v.roundToDouble();
+  }
+
+  void _onType(String text) {
+    final r = widget.rule;
+    if (r == null) return;
+    final parsed = _parse(text);
+    if (parsed == null) return; // empty / not-a-number yet — don't emit
+    final clamped = _currentTemplate.clampThreshold(parsed);
+    if (clamped != r.threshold) {
+      widget.onChanged(r.copyWith(threshold: clamped));
+    }
+  }
+
+  void _onFocusChange() {
+    final r = widget.rule;
+    if (r == null) return;
+    if (_focusNode.hasFocus) {
+      // Entering edit mode: swap the pretty "10,000" for a plain "10000" and
+      // select it, so the first keystroke replaces the whole value.
+      final edit = _editThreshold(r.threshold);
+      _controller.value = TextEditingValue(
+        text: edit,
+        selection: TextSelection(baseOffset: 0, extentOffset: edit.length),
+      );
+    } else {
+      // Leaving edit mode: clamp whatever was typed into range, re-format, and
+      // commit the final value.
+      final value =
+          _currentTemplate.clampThreshold(_parse(_controller.text) ?? r.threshold);
+      _controller.text = _formatThreshold(value, r.unit);
+      if (value != r.threshold) widget.onChanged(r.copyWith(threshold: value));
+    }
+  }
+
+  /// "1,000–100,000" (plus a unit token) — the accepted range, shown under the
+  /// field so a typed value that gets clamped isn't a surprise.
+  String _rangeHint(Translations t, VerificationTemplate tmpl) {
+    final unit = verificationUnitSuffix(t, tmpl.unit);
+    final range = '${_formatThreshold(tmpl.minThreshold, tmpl.unit)}'
+        '–${_formatThreshold(tmpl.maxThreshold, tmpl.unit)}';
+    return unit.isEmpty ? range : '$range $unit';
+  }
+
   @override
   Widget build(BuildContext context) {
-    final r = rule;
+    final r = widget.rule;
     final theme = Theme.of(context);
     final tr = context.t;
     return Column(
@@ -201,7 +314,7 @@ class VerificationRuleField extends StatelessWidget {
           const SizedBox(height: 4),
           // Templates grouped into labelled sections (Activity / Mindfulness /
           // Sleep / Screen Time) for a scannable, organized picker.
-          for (final group in groupTemplatesByCategory(templates)) ...[
+          for (final group in groupTemplatesByCategory(widget.templates)) ...[
             Padding(
               padding: const EdgeInsets.only(top: 8, bottom: 6),
               child: Text(
@@ -227,6 +340,9 @@ class VerificationRuleField extends StatelessWidget {
             ),
           ],
           const SizedBox(height: 12),
+          // Threshold: −/+ steppers flanking a directly-editable number. The
+          // comparator and unit sit inline as read-only context; the metric name
+          // is already shown by the selected chip above.
           Row(
             children: [
               IconButton(
@@ -237,10 +353,50 @@ class VerificationRuleField extends StatelessWidget {
                     : () => _step(-1),
               ),
               Expanded(
-                child: Text(
-                  verificationRuleSummary(tr, r),
-                  textAlign: TextAlign.center,
-                  style: theme.textTheme.titleMedium,
+                child: Row(
+                  mainAxisAlignment: MainAxisAlignment.center,
+                  children: [
+                    Text(
+                      r.comparator == VerificationComparator.atLeast
+                          ? '≥'
+                          : '≤',
+                      style: theme.textTheme.titleMedium,
+                    ),
+                    const SizedBox(width: 8),
+                    SizedBox(
+                      width: 96,
+                      child: TextField(
+                        key: const Key('verify_threshold_input'),
+                        controller: _controller,
+                        focusNode: _focusNode,
+                        textAlign: TextAlign.center,
+                        keyboardType: TextInputType.numberWithOptions(
+                          decimal: _templateAllowsDecimal(_currentTemplate),
+                        ),
+                        inputFormatters: [
+                          FilteringTextInputFormatter.allow(
+                            _templateAllowsDecimal(_currentTemplate)
+                                ? RegExp(r'[0-9.,]')
+                                : RegExp(r'[0-9]'),
+                          ),
+                        ],
+                        style: theme.textTheme.titleMedium,
+                        decoration: const InputDecoration(
+                          isDense: true,
+                          contentPadding: EdgeInsets.symmetric(vertical: 6),
+                        ),
+                        onChanged: _onType,
+                        onSubmitted: (_) => _focusNode.unfocus(),
+                      ),
+                    ),
+                    if (verificationUnitSuffix(tr, r.unit).isNotEmpty) ...[
+                      const SizedBox(width: 8),
+                      Text(
+                        verificationUnitSuffix(tr, r.unit),
+                        style: theme.textTheme.titleMedium,
+                      ),
+                    ],
+                  ],
                 ),
               ),
               IconButton(
@@ -251,6 +407,14 @@ class VerificationRuleField extends StatelessWidget {
                     : () => _step(1),
               ),
             ],
+          ),
+          Center(
+            child: Text(
+              _rangeHint(tr, _currentTemplate),
+              style: theme.textTheme.bodySmall?.copyWith(
+                color: theme.colorScheme.onSurfaceVariant,
+              ),
+            ),
           ),
           if (_currentTemplate.requiresWatch)
             Padding(

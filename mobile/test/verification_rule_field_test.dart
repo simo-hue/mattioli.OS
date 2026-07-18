@@ -29,6 +29,35 @@ class _HarnessState extends State<_Harness> {
       );
 }
 
+/// Like [_Harness] but forwards every emitted rule to [onChanged] (so a test can
+/// assert the exact value) while still re-rendering with it. Not self-wrapped —
+/// pass it through [_app].
+class _Recorder extends StatefulWidget {
+  const _Recorder({required this.initial, required this.onChanged});
+  final VerificationRule? initial;
+  final ValueChanged<VerificationRule?> onChanged;
+  @override
+  State<_Recorder> createState() => _RecorderState();
+}
+
+class _RecorderState extends State<_Recorder> {
+  late VerificationRule? rule = widget.initial;
+  @override
+  Widget build(BuildContext context) => VerificationRuleField(
+        rule: rule,
+        onChanged: (r) {
+          widget.onChanged(r);
+          setState(() => rule = r);
+        },
+      );
+}
+
+/// The current text shown in the editable threshold field.
+String _thresholdText(WidgetTester tester) => tester
+    .widget<TextField>(find.byKey(const Key('verify_threshold_input')))
+    .controller!
+    .text;
+
 void main() {
   final t = AppLocale.en.buildSync();
 
@@ -101,7 +130,8 @@ void main() {
       await tester.pumpWidget(const _Harness(null));
       await tester.tap(find.byType(CupertinoSwitch));
       await tester.pumpAndSettle();
-      expect(find.text('≥ 10,000 Steps'), findsOneWidget);
+      expect(_thresholdText(tester), '10,000');
+      expect(find.text('≥'), findsOneWidget);
       expect(find.byType(ChoiceChip), findsNWidgets(10));
     });
 
@@ -110,7 +140,9 @@ void main() {
       await tester.pumpWidget(_Harness(VerificationCatalog.steps.ruleWith(10000)));
       await tester.tap(find.widgetWithText(ChoiceChip, 'Total device usage'));
       await tester.pumpAndSettle();
-      expect(find.text('≤ 120 min Total device usage'), findsOneWidget);
+      expect(_thresholdText(tester), '120');
+      expect(find.text('≤'), findsOneWidget);
+      expect(find.text('min'), findsOneWidget);
     });
 
     testWidgets('stepper increments the threshold by the template step',
@@ -118,7 +150,51 @@ void main() {
       await tester.pumpWidget(_Harness(VerificationCatalog.steps.ruleWith(10000)));
       await tester.tap(find.byKey(const Key('verify_threshold_up')));
       await tester.pumpAndSettle();
-      expect(find.text('≥ 10,500 Steps'), findsOneWidget);
+      expect(_thresholdText(tester), '10,500');
+    });
+
+    testWidgets('typing a specific number sets that threshold', (tester) async {
+      VerificationRule? emitted;
+      await tester.pumpWidget(_app(_Recorder(
+        initial: VerificationCatalog.steps.ruleWith(10000),
+        onChanged: (r) => emitted = r,
+      )));
+      await tester.enterText(
+          find.byKey(const Key('verify_threshold_input')), '8000');
+      await tester.testTextInput.receiveAction(TextInputAction.done);
+      await tester.pumpAndSettle();
+      expect(emitted?.threshold, 8000);
+      expect(_thresholdText(tester), '8,000'); // re-formatted on commit
+    });
+
+    testWidgets('a typed out-of-range number is clamped on commit',
+        (tester) async {
+      VerificationRule? emitted;
+      await tester.pumpWidget(_app(_Recorder(
+        initial: VerificationCatalog.steps.ruleWith(10000),
+        onChanged: (r) => emitted = r,
+      )));
+      await tester.enterText(
+          find.byKey(const Key('verify_threshold_input')), '999999');
+      await tester.testTextInput.receiveAction(TextInputAction.done);
+      await tester.pumpAndSettle();
+      expect(emitted?.threshold, VerificationCatalog.steps.maxThreshold);
+      expect(_thresholdText(tester), '100,000');
+    });
+
+    testWidgets('a fractional metric accepts a decimal value', (tester) async {
+      VerificationRule? emitted;
+      await tester.pumpWidget(_app(_Recorder(
+        initial: VerificationCatalog.distance.ruleWith(5),
+        onChanged: (r) => emitted = r,
+      )));
+      await tester.enterText(
+          find.byKey(const Key('verify_threshold_input')), '7.5');
+      await tester.testTextInput.receiveAction(TextInputAction.done);
+      await tester.pumpAndSettle();
+      expect(emitted?.threshold, 7.5);
+      expect(_thresholdText(tester), '7.5');
+      expect(find.text('km'), findsOneWidget);
     });
 
     testWidgets('down stepper is disabled at the minimum threshold',

@@ -2512,3 +2512,7 @@ iCloud Sync core is implemented, unit-tested (160), and iOS-compiling. Remaining
 - [2026-07-18 15:29]: Replace keyboard_actions with native OverlayEntry for iOS Done button
   - *Details*: The keyboard_actions package with disableScroll=true was found to intercept touches in the CustomScrollView, preventing the numeric text field from receiving focus. Reverted the keyboard_actions dependency and replaced it with a targeted `_DoneKeyboardAccessory` using `OverlayEntry` and `WidgetsBindingObserver` that cleanly floats the 'Done' button above the keyboard without modifying the widget tree.
   - *Tech Notes*: Removed keyboard_actions from pubspec.yaml. Removed KeyboardActions from HabitManagementModal. Implemented native Overlay in VerificationRuleField.
+
+- [2026-07-18 15:37]: Tap-to-dismiss behavior for Habit Management inputs
+  - *Details*: Added `onTapOutside: (_) => unfocus()` to the TextFields in the habit management modal (Habit Name and Verification Rule Threshold). This leverages Flutter's built-in TapRegion handling so clicking anywhere outside the active input instantly dismisses the keyboard without interfering with the local gestures.
+  - *Tech Notes*: Modified TextField configurations in habit_management_modal.dart and verification_rule_field.dart.

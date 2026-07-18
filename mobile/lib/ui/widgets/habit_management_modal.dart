@@ -599,6 +599,7 @@ class _HabitManagementModalState extends ConsumerState<HabitManagementModal> {
                       TextField(
                         controller: _nameController,
                         textInputAction: TextInputAction.done,
+                        onTapOutside: (_) => FocusManager.instance.primaryFocus?.unfocus(),
                         onChanged: (_) {
                           // The user is now the author of the name; stop
                           // auto-updating it from the metric, and clear any

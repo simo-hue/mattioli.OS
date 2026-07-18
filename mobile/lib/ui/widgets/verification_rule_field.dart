@@ -467,6 +467,7 @@ class _VerificationRuleFieldState extends State<VerificationRuleField> {
                           isDense: true,
                           contentPadding: EdgeInsets.symmetric(vertical: 6),
                         ),
+                        onTapOutside: (_) => _focusNode.unfocus(),
                         onChanged: _onType,
                         onSubmitted: (_) => _focusNode.unfocus(),
                       ),

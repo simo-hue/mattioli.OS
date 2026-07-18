@@ -1,4 +1,5 @@
 import 'dart:async';
+import 'dart:io';
 import 'dart:ui';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../core/notifications.dart';
@@ -451,7 +452,10 @@ class AppSettingsNotifier extends Notifier<AppSettings> {
       themeMode: prefs.getString('pref_theme_mode') ?? 'dark',
       accentColor: parseColor(prefs.getString('pref_accent_color')),
       defaultCalendarView:
-          prefs.getString('pref_default_calendar_view') ?? 'settimana',
+          prefs.getString('pref_default_calendar_view') ??
+          (Platform.isMacOS || Platform.isWindows || Platform.isLinux
+              ? 'mese'
+              : 'settimana'),
       hapticFeedback: prefs.getBool('pref_haptic_feedback') ?? true,
       language: AppLanguagePreference.normalize(
         prefs.getString('pref_language'),
@@ -488,7 +492,9 @@ class AppSettingsNotifier extends Notifier<AppSettings> {
     return AppSettings(
       themeMode: 'dark',
       accentColor: premiumAccentColors[0],
-      defaultCalendarView: 'settimana',
+      defaultCalendarView: Platform.isMacOS || Platform.isWindows || Platform.isLinux
+          ? 'mese'
+          : 'settimana',
       hapticFeedback: true,
       language: AppLanguagePreference.system,
       timeFormat24h: true,
@@ -536,7 +542,10 @@ class AppSettingsNotifier extends Notifier<AppSettings> {
       themeMode: row['theme_mode'] as String? ?? 'dark',
       accentColor: parseColor(row['accent_color'] as String?),
       defaultCalendarView:
-          row['pref_default_calendar_view'] as String? ?? 'settimana',
+          row['pref_default_calendar_view'] as String? ??
+          (Platform.isMacOS || Platform.isWindows || Platform.isLinux
+              ? 'mese'
+              : 'settimana'),
       hapticFeedback: boolValue('pref_haptic_feedback', true),
       language: AppLanguagePreference.normalize(row['language'] as String?),
       timeFormat24h: boolValue('pref_time_format_24h', true),

@@ -61,7 +61,7 @@ CREATE TABLE IF NOT EXISTS public.ai_coach_limits (
   -- columns below. To switch back to a paid, zero-retention model later, this is
   -- one UPDATE (model + providers + the two privacy columns) with NO redeploy —
   -- that is the entire point of these being columns.
-  model text NOT NULL DEFAULT 'google/gemma-4-26b-a4b-it:free',
+  model text NOT NULL DEFAULT 'nvidia/nemotron-3-nano-30b-a3b:free',
 
   -- Provider pinning, and it is a compliance control rather than a preference.
   -- Guideline 5.1.2(i) requires disclosing WHO receives personal data. OpenRouter

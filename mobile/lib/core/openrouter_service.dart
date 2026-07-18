@@ -33,7 +33,7 @@ const String kOpenRouterBaseUrl = 'https://openrouter.ai/api/v1';
 /// decision), via `google-ai-studio` rather than Vertex, with the free-tier data
 /// posture disclosed in the Standard consent copy and the privacy policy. See
 /// `migrations/20260717_add_ai_coach_proxy.sql`.
-const String kOpenRouterDefaultModel = 'google/gemma-4-26b-a4b-it:free';
+const String kOpenRouterDefaultModel = 'nvidia/nemotron-3-nano-30b-a3b:free';
 
 /// Keychain-backed home of the user's own OpenRouter API key (BYOK).
 ///

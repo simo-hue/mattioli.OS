@@ -28,7 +28,7 @@
 //     DB-driven so it stays in lockstep with the privacy policy.
 //  6. Quotas bound one account's share of the shared free-tier daily limit.
 //
-// The Pro proxy runs a FREE model (google/gemma-4-26b-a4b-it:free via Google AI
+// The Pro proxy runs a FREE model (nvidia/nemotron-3-nano-30b-a3b:free via Google AI
 // Studio) by explicit product decision — the coach costs the developer nothing.
 // The free tier is NOT private the way a paid endpoint is (Google may retain and
 // learn from the data); the privacy policy and the in-app consent copy disclose
@@ -58,7 +58,7 @@ const FALLBACK_LIMITS: Limits = {
   max_per_10min: 20,
   max_per_day: 150,
   max_per_month: 1000,
-  model: 'google/gemma-4-26b-a4b-it:free',
+  model: 'nvidia/nemotron-3-nano-30b-a3b:free',
   providers: ['google-ai-studio'],
   zero_data_retention: false,
   data_collection: 'allow',

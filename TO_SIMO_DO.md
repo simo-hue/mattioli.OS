@@ -36,19 +36,7 @@ Screen Time verification is implemented and ON (`screenTimeAppsEnabled = true`);
 - [ ] **App Privacy → nutrition labels → add Health** (Linked to You · App Functionality · not used for tracking). Must match `PrivacyInfo.xcprivacy`, which already declares it. Keep Email + Name. **Screen Time adds no new row**: the extension collects nothing off-device (only threshold verdicts/rules travel, same minimisation as Health), and the picked app selection never leaves the phone.
 - [ ] **Reviewer Notes:** (a) 2.1 → "**Yes.** Screen Time habit verification is at **Settings → Screen Time** (tap to enable and grant access). Per-habit app selection is in the habit editor: Auto-verify → **Time in chosen apps** → **Choose apps & categories**. A screen recording of this path is attached."; (b) Health identification lives at Settings → Apple Health; (c) account deletion at Settings → Delete Account; (d) support/privacy/EULA links. **Attach a device screen recording of the Settings → Screen Time path.**
 
-### Verify on-device before submitting (all `ios/**` Swift is written blind here)
-- [ ] **Sign in with Apple** shows the real Apple mark (fixed: now the `sign_in_with_apple` button on iOS + macOS). Low residual 4.0 risk; if Apple is strict again, swap to the official asset from Apple Design Resources.
-- [ ] **AI Coach** as a sandbox Pro user: Protocol tab → coach → the third-party-consent dialog appears → a reply streams. As non-Pro it offers BYOK/settings, never a dead end.
-- [ ] **Health**: Settings → Apple Health section is visible; enabling auto-verify on a habit prompts HealthKit permission.
-- [ ] **macOS**: set the Manual-release toggle if you want to control go-live; same support/privacy/EULA metadata as iOS.
-
 Already verified in code (no action): `screenTimeEnabled = false`; ungated coach entry (`protocollo_panel.dart:101`, 3.1.1); `NSHealthShareUsageDescription` present + no write-usage key; `PrivacyInfo` Health declared + tracking = false; legal/support URLs point at the live site; consent (5.1.2i) per-mode + revocable.
-
-### AI Coach — the free-model switch (2026-07-17), before it goes live
-- [ ] **The migration and the Edge Function BOTH changed** for the free-model switch, so if you applied/deployed the earlier versions, redo them. `migrations/20260717_add_ai_coach_proxy.sql` now defaults `model` to `google/gemma-4-26b-a4b-it:free`, `providers` to `ARRAY['google-ai-studio']`, and adds `zero_data_retention`/`data_collection` columns. If you already ran the old migration, either drop the table and re-run, or `ALTER TABLE` to add the two columns and `UPDATE` model+providers — otherwise the function's SELECT gets the old paid Vertex row.
-- [ ] **Verify the pin against the NEW target.** The live SSE chunks must report `"provider":"google-ai-studio"`, not `google-vertex` and never `darkbloom` (the free model's other server — the function logs `PROVIDER PIN LEAKED` and it is NOT named in the privacy policy). This is the same load-bearing check as before, just a different expected provider.
-- [ ] **Confirm Google AI Studio's current free-tier terms** actually match what the privacy policy now says in your name: that Google may retain the text for a limited period and use it to improve their services (incl. training). If Google's terms are stricter or looser, adjust the policy copy (all 5 locales) to match. This is a legal claim you are the controller for.
-- [ ] **Sanity note:** the proxy is a free tier — 20 req/min, 50/day (1000/day with ≥$10 credits) across ALL Pro users on your one key. Fine for a handful of users; if the base grows, tighten `ai_coach_limits` or switch back to a paid Vertex model (one `UPDATE` of model+providers+the two privacy columns, plus reverting the privacy-copy change).
 
 ### Blocked on the implementation landing
 - [ ] **Before Screen Time can ever ship, these are open (found 2026-07-17, none fixable without a device):**

@@ -306,10 +306,24 @@ class AuthNotifier extends Notifier<AuthState> with ChangeNotifier {
 
   Future<void> returnToLoginFromPrivateMode() async {
     await ensureSupabaseInitialized();
+
+    try {
+      // Force sign-out so the user actually lands on the login screen,
+      // as requested by the "Go to login" action, instead of being
+      // auto-redirected to the dashboard if a cached session exists.
+      await supabase.auth.signOut();
+    } catch (e, stack) {
+      AppLogger.warning(
+        '[Auth] Error signing out when returning from private mode',
+        e,
+        stack,
+      );
+    }
+
     await ref.read(activeDataModeProvider.notifier).enterSupabaseMode();
-    state = AuthState(
-      isLoggedIn: supabase.auth.currentSession != null,
-      user: supabase.auth.currentUser,
+    state = const AuthState(
+      isLoggedIn: false,
+      user: null,
       dataMode: AppDataMode.supabase,
     );
     notifyListeners();

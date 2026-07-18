@@ -18,7 +18,7 @@ const String kDefaultLocalBaseUrl = 'http://localhost:11434/v1';
 /// The Standard proxy now runs the SAME free model (2026-07-17 product
 /// decision), via Google AI Studio rather than Vertex — see [kStandardCoachModel]
 /// and `migrations/20260717_add_ai_coach_proxy.sql`.
-const String kDefaultCloudModel = 'google/gemma-4-26b-a4b-it:free';
+const String kDefaultCloudModel = 'nvidia/nemotron-3-nano-30b-a3b:free';
 
 /// The model the Standard proxy runs. Display only: the client does not choose
 /// it — the Edge Function reads it from `ai_coach_limits.model` and ignores
@@ -30,7 +30,7 @@ const String kDefaultCloudModel = 'google/gemma-4-26b-a4b-it:free';
 /// (the point of it being a row rather than a constant), this label goes stale
 /// until the next release. It is a caption, not a control — but it is the only
 /// thing here that can lie.
-const String kStandardCoachModel = 'google/gemma-4-26b-a4b-it:free';
+const String kStandardCoachModel = 'nvidia/nemotron-3-nano-30b-a3b:free';
 
 /// Neutral sampling temperature — the historical coach value.
 const double kDefaultTemperature = 0.7;

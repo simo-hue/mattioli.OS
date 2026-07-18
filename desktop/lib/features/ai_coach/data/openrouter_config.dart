@@ -10,5 +10,5 @@ class OpenRouterConfig {
 
   /// The BYOK default — a FREE model, so connecting a key costs the user nothing
   /// (see [kDefaultCloudModel] for the full rationale). Kept in sync with it.
-  static const String defaultModel = 'google/gemma-4-26b-a4b-it:free';
+  static const String defaultModel = 'nvidia/nemotron-3-nano-30b-a3b:free';
 }

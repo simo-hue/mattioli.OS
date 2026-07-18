@@ -2,6 +2,22 @@
 
 ## Recent Changes
 
+- [2026-07-18]: **App Store Connect Info.plist Validation Fixes**
+  - *Details*: Fixed 409 Validation Failed errors when uploading to App Store Connect by adding the `NSHealthUpdateUsageDescription` and `NSLocationWhenInUseUsageDescription` strings to `Info.plist` and all localized `.strings` files.
+  - *Tech Notes*:
+    - Inserted `<key>NSHealthUpdateUsageDescription</key>` and `<key>NSLocationWhenInUseUsageDescription</key>` into `mobile/ios/Runner/Info.plist`.
+    - Added the corresponding `"NSHealthUpdateUsageDescription"` and `"NSLocationWhenInUseUsageDescription"` translations into `en`, `ar`, `es`, `de`, and `it` `InfoPlist.strings` files inside `mobile/ios/Runner/`.
+    - Verified all `.strings` syntax and ran `plutil -lint` successfully on `Info.plist`.
+
+- [2026-07-18]: **Screen Time Authorization UX Fix**
+  - *Details*: Fixed a bug where trying to authorize a Screen Time habit when the system had denied/revoked the permission would repeatedly throw an unhandled `PlatformException` (surfaced as an error toast), rather than providing a clear recovery path. Added a reactive status badge to the habit editor and direct "Open Settings" actions.
+  - *Tech Notes*:
+    - Updated `_pickAppsAndCategories` in `habit_management_modal.dart` to check if `status == ScreenTimeAuthorizationStatus.denied` and immediately abort/prompt the user, bypassing `requestIndividualAuthorization()` which throws an exception under these conditions due to the exclusive `.individual` iOS mutex.
+    - Implemented a `_ScreenTimeAuthBadge` widget in the modal that reactively displays ✅ or ⚠️ along with an `openAppSettings()` action button using `permission_handler`.
+    - Added an "Open Settings" button to the `ScreenTimeForm` in `screen_time_form.dart` when rendered in the `denied` state.
+    - Added multi-language translation keys (`statusAuthorized`, `statusNotAuthorized`, `openSettings`) across all 5 `.i18n.json` files and regenerated `slang` files.
+    - Added a step-by-step guide in `TO_SIMO_DO.md` for manually regenerating Xcode provisioning profiles to permanently resolve the Family Controls distribution entitlement revocation issue.
+
 - [2026-07-17 21:44]: **Fix Privacy Mode Navigation Bug**
   - *Details*: Fixed a bug where returning from Privacy Mode to the login screen would unexpectedly drop the user into the Supabase Dashboard (or the Biometric Lock Gate) if a valid cached Supabase session existed.
   - *Tech Notes*: Modified `returnToLoginFromPrivateMode` in `auth_provider.dart` to explicitly call `supabase.auth.signOut()` before switching back to `AppDataMode.supabase`. This ensures `isLoggedIn` remains false, allowing `GoRouter` to properly route the user to `/login` as expected instead of auto-logging them into the cached session.
@@ -1741,3 +1757,7 @@ All owner actions are itemized in **TO_SIMO_DO.md**.
     - **Input hygiene**: `keyboardType: numberWithOptions(decimal: …)` + a `FilteringTextInputFormatter.allow` restricting to `[0-9]` (or `[0-9.,]` for fractional metrics). `onSubmitted` unfocuses to trigger the clamp-and-reformat commit.
     - No new dependencies, no i18n strings, no DB/schema changes. Feature remains gated behind `VerificationConfig.enabled` (HealthKit already on). The pure helper `verificationRuleSummary` is retained (still unit-tested / part of the widget library's public API) though it's no longer rendered inline.
     - **Tests** (`mobile/test/verification_rule_field_test.dart`): the 3 stepper/summary tests were updated to assert the field's text + inline comparator/unit; added 3 new cases — typing an exact number sets it, an out-of-range number clamps on commit, and a fractional metric accepts a decimal. `flutter analyze` clean; full mobile suite **399/399** pass.
+
+- **2026-07-18: HealthKit proactive permission trigger on habit creation (mobile)**
+  - *Details*: When creating a new HealthKit-verified habit (e.g. sleep, steps), if the user had not yet tapped the "Grant Health Access" button, they were previously able to save the habit without ever seeing the Apple Health permission prompt. Now, tapping Save will automatically trigger the HealthKit permission prompt if it hasn't been shown yet.
+  - *Tech Notes*: `habit_management_modal.dart`: Added a check in `_onSave` that awaits `_grantHealthAccess()` if `_showGrantHealthAccess` is true. Apple HealthKit's privacy model does not reveal if the user denied permission (only that the prompt was shown), so the save continues regardless of the user's choice in the Apple prompt.

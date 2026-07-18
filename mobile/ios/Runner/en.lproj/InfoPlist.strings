@@ -2,4 +2,6 @@
 "NSCameraUsageDescription" = "This app needs camera access so you can take a profile photo.";
 "NSFaceIDUsageDescription" = "This app uses Face ID to protect your personal data.";
 "NSHealthShareUsageDescription" = "This app reads your health and fitness data to automatically verify habits such as steps, activity and sleep.";
+"NSHealthUpdateUsageDescription" = "This app needs permission to update your health and fitness data, even though it currently only reads them to verify habits.";
+"NSLocationWhenInUseUsageDescription" = "This app requires location access for third-party integrations, even though it does not actively track it.";
 "NSPhotoLibraryUsageDescription" = "This app needs photo library access so you can upload your profile photo.";

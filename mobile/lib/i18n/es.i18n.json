@@ -1220,7 +1220,10 @@
       "needsSelectionNote": "Elige las apps y categorías que este hábito debe seguir.",
       "tooManyMonitors": "Puedes verificar automáticamente hasta 20 hábitos de Tiempo de pantalla. Desactiva uno para añadir otro.",
       "limitReachedTitle": "Límite de tiempo de pantalla alcanzado",
-      "limitReachedBody": "Has alcanzado tu límite de tiempo de pantalla de hoy."
+      "limitReachedBody": "Has alcanzado tu límite de tiempo de pantalla de hoy.",
+      "statusAuthorized": "El acceso a Tiempo de uso está activo",
+      "statusNotAuthorized": "El acceso a Tiempo de uso debe activarse",
+      "openSettings": "Abrir Ajustes"
     }
   },
   "health": {

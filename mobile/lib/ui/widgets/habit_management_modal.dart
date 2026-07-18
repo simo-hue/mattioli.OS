@@ -4,7 +4,9 @@ import 'package:flutter/cupertino.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:evolve_verification/evolve_verification.dart';
+import 'package:google_fonts/google_fonts.dart';
 import 'package:lucide_icons_flutter/lucide_icons.dart';
+import 'package:permission_handler/permission_handler.dart';
 import '../../core/theme.dart';
 import '../../core/app_logger.dart';
 import '../../core/haptics.dart';
@@ -152,6 +154,14 @@ class _HabitManagementModalState extends ConsumerState<HabitManagementModal> {
             context.t.verification.screenTime.tooManyMonitors);
         return;
       }
+    }
+
+    // HealthKit guards — trigger the proactive prompt if not already shown.
+    // If the user rejects the prompt, they can fix it later in Settings, as Apple HealthKit
+    // doesn't let apps know if permission was denied.
+    if (_showGrantHealthAccess) {
+      await _grantHealthAccess();
+      if (!mounted) return;
     }
 
     if (!isEditing) {
@@ -314,6 +324,9 @@ class _HabitManagementModalState extends ConsumerState<HabitManagementModal> {
   /// Whether the current draft rule is the Mode-A (picked-apps) template.
   bool get _isAppsRule => _verificationRule?.metricKey == 'screen_time_apps';
 
+  /// Whether the current draft rule is ANY Screen Time template (Mode A or B).
+  bool get _isScreenTimeRule => _verificationRule?.isScreenTime ?? false;
+
   /// Presents the native FamilyActivityPicker (Mode A). Requests FamilyControls
   /// authorization first (the picker needs it to render), stores the returned
   /// selection in the transient draft, and rejects an empty pick (it can't be
@@ -324,6 +337,19 @@ class _HabitManagementModalState extends ConsumerState<HabitManagementModal> {
     ref.hapticMedium();
     var status = await bridge.authorizationStatus();
     if (status != ScreenTimeAuthorizationStatus.approved) {
+      // `denied` means the user actively declined or iOS revoked the
+      // authorization. Re-requesting on `denied` throws a PlatformException
+      // (FamilyControls only allows one `.individual` holder per device). Direct
+      // the user to iOS Settings instead of re-requesting and catching the
+      // exception.
+      if (status == ScreenTimeAuthorizationStatus.denied) {
+        AppLogger.warning('[ScreenTime] authorization denied — directing to Settings');
+        if (!mounted) return;
+        setState(() =>
+            _verifyError = tr.verification.screenTime.statusNotAuthorized);
+        return;
+      }
+      // `notDetermined` — first-time prompt. Safe to request.
       try {
         await bridge.requestIndividualAuthorization();
       } on PlatformException catch (e) {
@@ -764,6 +790,15 @@ class _HabitManagementModalState extends ConsumerState<HabitManagementModal> {
                             onPressed: _grantHealthAccess,
                           ),
                         ],
+                        // Screen Time authorization status badge — shown for
+                        // all Screen Time templates so the user sees upfront
+                        // whether they can proceed.
+                        if (_isScreenTimeRule) ...[
+                          const SizedBox(height: 10),
+                          _ScreenTimeAuthBadge(
+                            status: ref.watch(screenTimeAuthStatusProvider),
+                          ),
+                        ],
                         // Mode A — pick which apps/categories this habit limits.
                         // A selection is required for the habit to verify.
                         if (_isAppsRule) ...[
@@ -1095,6 +1130,96 @@ class _HabitListItem extends StatelessWidget {
           ),
         ],
       ),
+    );
+  }
+}
+
+/// Inline authorization status badge for Screen Time habits — renders a compact
+/// container with ✅ "on" or ⚠️ "needs to be enabled" plus an action button
+/// that opens iOS Settings for recovery. Watches [screenTimeAuthStatusProvider]
+/// reactively so it updates when the user returns from Settings.
+class _ScreenTimeAuthBadge extends StatelessWidget {
+  const _ScreenTimeAuthBadge({required this.status});
+
+  final AsyncValue<ScreenTimeAuthorizationStatus> status;
+
+  @override
+  Widget build(BuildContext context) {
+    final colors = context.appColors;
+    final tr = context.t.verification.screenTime;
+
+    return status.when(
+      loading: () => const SizedBox.shrink(),
+      error: (_, _) => const SizedBox.shrink(),
+      data: (s) {
+        final isApproved = s == ScreenTimeAuthorizationStatus.approved;
+
+        final badgeColor = isApproved
+            ? AppColors.success.withValues(alpha: 0.12)
+            : const Color(0xFFEAB308).withValues(alpha: 0.12);
+        final borderColor = isApproved
+            ? AppColors.success.withValues(alpha: 0.3)
+            : const Color(0xFFEAB308).withValues(alpha: 0.3);
+        final iconColor = isApproved
+            ? AppColors.success
+            : const Color(0xFFEAB308);
+        final icon = isApproved
+            ? LucideIcons.shieldCheck
+            : LucideIcons.shieldAlert;
+        final label = isApproved
+            ? tr.statusAuthorized
+            : tr.statusNotAuthorized;
+
+        return Container(
+          padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
+          decoration: BoxDecoration(
+            color: badgeColor,
+            borderRadius: BorderRadius.circular(12),
+            border: Border.all(color: borderColor),
+          ),
+          child: Row(
+            children: [
+              Icon(icon, size: 16, color: iconColor),
+              const SizedBox(width: 8),
+              Expanded(
+                child: Text(
+                  label,
+                  style: GoogleFonts.inter(
+                    fontSize: 12.5,
+                    fontWeight: FontWeight.w500,
+                    height: 1.3,
+                    color: colors.foreground,
+                  ),
+                ),
+              ),
+              if (!isApproved) ...[
+                const SizedBox(width: 8),
+                GestureDetector(
+                  onTap: () => openAppSettings(),
+                  child: Container(
+                    padding: const EdgeInsets.symmetric(
+                      horizontal: 10,
+                      vertical: 5,
+                    ),
+                    decoration: BoxDecoration(
+                      color: colors.foreground.withValues(alpha: 0.08),
+                      borderRadius: BorderRadius.circular(8),
+                    ),
+                    child: Text(
+                      tr.openSettings,
+                      style: GoogleFonts.inter(
+                        fontSize: 11.5,
+                        fontWeight: FontWeight.w600,
+                        color: colors.foreground,
+                      ),
+                    ),
+                  ),
+                ),
+              ],
+            ],
+          ),
+        );
+      },
     );
   }
 }

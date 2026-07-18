@@ -2504,3 +2504,11 @@ iCloud Sync core is implemented, unit-tested (160), and iOS-compiling. Remaining
 - **2026-07-17**: Fixed `DeviceActivityMonitorExtension` missing `CFBundleVersion` error on `flutter run`
   - *Details*: The local `flutter run` was failing because `DeviceActivityMonitorExtension/Info.plist` had no `CFBundleVersion` or `CFBundleShortVersionString`. The previous note was completely correct about `baseConfigurationReference`: without it, `$(FLUTTER_BUILD_NUMBER)` expands to an empty string. The fix was applied: Added the standard keys to `DeviceActivityMonitorExtension/Info.plist` and linked the extension's build configurations (Debug/Release/Profile) to the respective `Runner` base configurations in `project.pbxproj` so they can successfully resolve `$(FLUTTER_BUILD_NUMBER)`.
   - *Tech Notes*: `ios/Runner.xcodeproj/project.pbxproj` was updated to include `baseConfigurationReference` pointing to `Debug.xcconfig` and `Release.xcconfig` for the extension target.
+
+- [2026-07-18 15:07]: Keyboard dismissal UX fix for habit numerical inputs
+  - *Details*: Resolved an issue where iOS numeric keyboards lacked a dismissal action. Implemented a 'Done' button above the number pad and enabled tap-to-dismiss behavior globally on the habit management modal.
+  - *Tech Notes*: Added keyboard_actions dependency (^4.2.0), wired a FocusNode from VerificationRuleField up to HabitManagementModal, and wrapped the view in KeyboardActions and GestureDetector.
+
+- [2026-07-18 15:29]: Replace keyboard_actions with native OverlayEntry for iOS Done button
+  - *Details*: The keyboard_actions package with disableScroll=true was found to intercept touches in the CustomScrollView, preventing the numeric text field from receiving focus. Reverted the keyboard_actions dependency and replaced it with a targeted `_DoneKeyboardAccessory` using `OverlayEntry` and `WidgetsBindingObserver` that cleanly floats the 'Done' button above the keyboard without modifying the widget tree.
+  - *Tech Notes*: Removed keyboard_actions from pubspec.yaml. Removed KeyboardActions from HabitManagementModal. Implemented native Overlay in VerificationRuleField.

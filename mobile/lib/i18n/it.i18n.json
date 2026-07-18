@@ -1220,7 +1220,10 @@
       "needsSelectionNote": "Scegli le app e le categorie che questa abitudine deve monitorare.",
       "tooManyMonitors": "Puoi verificare automaticamente fino a 20 abitudini di Tempo di utilizzo. Disattivane una per aggiungerne un'altra.",
       "limitReachedTitle": "Limite di tempo di utilizzo raggiunto",
-      "limitReachedBody": "Hai raggiunto il tuo limite di tempo di utilizzo per oggi."
+      "limitReachedBody": "Hai raggiunto il tuo limite di tempo di utilizzo per oggi.",
+      "statusAuthorized": "Accesso a Tempo di utilizzo attivo",
+      "statusNotAuthorized": "L'accesso a Tempo di utilizzo deve essere abilitato",
+      "openSettings": "Apri Impostazioni"
     }
   },
   "health": {

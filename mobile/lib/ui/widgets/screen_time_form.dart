@@ -4,6 +4,7 @@ import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:lucide_icons_flutter/lucide_icons.dart';
+import 'package:permission_handler/permission_handler.dart';
 
 import '../../core/app_logger.dart';
 import '../../core/haptics.dart';
@@ -84,7 +85,17 @@ class ScreenTimeForm extends ConsumerWidget {
               ScreenTimeAuthorizationStatus.approved =>
                 _Notice(icon: LucideIcons.check, text: t.enabledNote),
               ScreenTimeAuthorizationStatus.denied =>
-                _Notice(icon: LucideIcons.info, text: t.deniedNote),
+                Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    _Notice(icon: LucideIcons.info, text: t.deniedNote),
+                    const SizedBox(height: 12),
+                    _EnableButton(
+                      onPressed: () => openAppSettings(),
+                      label: context.t.verification.screenTime.openSettings,
+                    ),
+                  ],
+                ),
               ScreenTimeAuthorizationStatus.notDetermined => Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
@@ -118,9 +129,10 @@ class ScreenTimeForm extends ConsumerWidget {
 }
 
 class _EnableButton extends StatelessWidget {
-  const _EnableButton({required this.onPressed});
+  const _EnableButton({required this.onPressed, this.label});
 
   final VoidCallback onPressed;
+  final String? label;
 
   @override
   Widget build(BuildContext context) {
@@ -128,7 +140,7 @@ class _EnableButton extends StatelessWidget {
       width: double.infinity,
       child: FilledButton(
         onPressed: onPressed,
-        child: Text(context.t.screenTime.optIn),
+        child: Text(label ?? context.t.screenTime.optIn),
       ),
     );
   }

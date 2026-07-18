@@ -1220,7 +1220,10 @@
       "needsSelectionNote": "Wähle die Apps und Kategorien, die diese Gewohnheit erfassen soll.",
       "tooManyMonitors": "Du kannst bis zu 20 Bildschirmzeit-Gewohnheiten automatisch prüfen. Deaktiviere eine, um eine weitere hinzuzufügen.",
       "limitReachedTitle": "Bildschirmzeit-Limit erreicht",
-      "limitReachedBody": "Du hast dein Bildschirmzeit-Limit für heute erreicht."
+      "limitReachedBody": "Du hast dein Bildschirmzeit-Limit für heute erreicht.",
+      "statusAuthorized": "Bildschirmzeit-Zugriff ist aktiv",
+      "statusNotAuthorized": "Bildschirmzeit-Zugriff muss aktiviert werden",
+      "openSettings": "Einstellungen öffnen"
     }
   },
   "health": {

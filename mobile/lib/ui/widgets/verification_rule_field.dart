@@ -142,8 +142,73 @@ class VerificationBadge extends StatelessWidget {
 /// Whether [t]'s threshold is meaningfully fractional (e.g. distance in 0.5 km,
 /// sleep in 0.5 h steps) — decides whether the typed field accepts a decimal
 /// point and whether a typed value is rounded to a whole number.
-bool _templateAllowsDecimal(VerificationTemplate t) =>
-    t.step % 1 != 0 || t.minThreshold % 1 != 0;
+bool _templateAllowsDecimal(VerificationTemplate tmpl) =>
+    tmpl.step != tmpl.step.roundToDouble();
+
+class _DoneKeyboardAccessory extends StatefulWidget {
+  final VoidCallback onDone;
+  const _DoneKeyboardAccessory({required this.onDone});
+
+  @override
+  State<_DoneKeyboardAccessory> createState() => _DoneKeyboardAccessoryState();
+}
+
+class _DoneKeyboardAccessoryState extends State<_DoneKeyboardAccessory> with WidgetsBindingObserver {
+  double _bottom = 0.0;
+
+  @override
+  void initState() {
+    super.initState();
+    WidgetsBinding.instance.addObserver(this);
+  }
+
+  @override
+  void dispose() {
+    WidgetsBinding.instance.removeObserver(this);
+    super.dispose();
+  }
+
+  @override
+  void didChangeMetrics() {
+    final view = View.of(context);
+    final bottom = view.viewInsets.bottom / view.devicePixelRatio;
+    if (_bottom != bottom) {
+      setState(() {
+        _bottom = bottom;
+      });
+    }
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    if (_bottom == 0) return const SizedBox.shrink();
+    return Positioned(
+      bottom: _bottom,
+      left: 0,
+      right: 0,
+      child: Material(
+        color: Theme.of(context).colorScheme.surfaceContainerHighest,
+        child: Row(
+          mainAxisAlignment: MainAxisAlignment.end,
+          children: [
+            CupertinoButton(
+              padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+              onPressed: widget.onDone,
+              child: Text(
+                context.t.common.actions.done,
+                style: TextStyle(
+                  color: Theme.of(context).colorScheme.primary,
+                  fontWeight: FontWeight.w600,
+                  fontSize: 16,
+                ),
+              ),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+}
 
 /// Plain, separator-free text for *editing* a threshold (e.g. "10000", "7.5"),
 /// as opposed to [_formatThreshold]'s display form ("10,000") which is nicer to
@@ -179,6 +244,7 @@ class VerificationRuleField extends StatefulWidget {
 class _VerificationRuleFieldState extends State<VerificationRuleField> {
   final TextEditingController _controller = TextEditingController();
   final FocusNode _focusNode = FocusNode();
+  OverlayEntry? _overlayEntry;
 
   @override
   void initState() {
@@ -205,6 +271,7 @@ class _VerificationRuleFieldState extends State<VerificationRuleField> {
     _focusNode.removeListener(_onFocusChange);
     _focusNode.dispose();
     _controller.dispose();
+    _hideOverlay();
     super.dispose();
   }
 
@@ -269,6 +336,7 @@ class _VerificationRuleFieldState extends State<VerificationRuleField> {
     final r = widget.rule;
     if (r == null) return;
     if (_focusNode.hasFocus) {
+      _showOverlay();
       // Entering edit mode: swap the pretty "10,000" for a plain "10000" and
       // select it, so the first keystroke replaces the whole value.
       final edit = _editThreshold(r.threshold);
@@ -277,6 +345,7 @@ class _VerificationRuleFieldState extends State<VerificationRuleField> {
         selection: TextSelection(baseOffset: 0, extentOffset: edit.length),
       );
     } else {
+      _hideOverlay();
       // Leaving edit mode: clamp whatever was typed into range, re-format, and
       // commit the final value.
       final value =
@@ -284,6 +353,19 @@ class _VerificationRuleFieldState extends State<VerificationRuleField> {
       _controller.text = _formatThreshold(value, r.unit);
       if (value != r.threshold) widget.onChanged(r.copyWith(threshold: value));
     }
+  }
+
+  void _showOverlay() {
+    if (_overlayEntry != null) return;
+    _overlayEntry = OverlayEntry(
+      builder: (context) => _DoneKeyboardAccessory(onDone: () => _focusNode.unfocus()),
+    );
+    Overlay.of(context).insert(_overlayEntry!);
+  }
+
+  void _hideOverlay() {
+    _overlayEntry?.remove();
+    _overlayEntry = null;
   }
 
   /// "1,000–100,000" (plus a unit token) — the accepted range, shown under the

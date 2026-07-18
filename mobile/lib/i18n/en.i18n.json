@@ -1220,7 +1220,10 @@
       "needsSelectionNote": "Pick the apps and categories this habit should track.",
       "tooManyMonitors": "You can auto-verify up to 20 Screen Time habits. Turn one off to add another.",
       "limitReachedTitle": "Screen time limit reached",
-      "limitReachedBody": "You've reached your screen time limit for today."
+      "limitReachedBody": "You've reached your screen time limit for today.",
+      "statusAuthorized": "Screen Time access is on",
+      "statusNotAuthorized": "Screen Time access needs to be enabled",
+      "openSettings": "Open Settings"
     }
   },
   "health": {

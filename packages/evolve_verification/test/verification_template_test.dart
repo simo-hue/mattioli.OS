@@ -65,10 +65,10 @@ void main() {
 
   group('VerificationTemplate.ruleWith', () {
     test('clamps the threshold into the template bounds', () {
-      final tooHigh = VerificationCatalog.steps.ruleWith(999999);
+      final tooHigh = VerificationCatalog.steps.ruleWith(2000000);
       expect(tooHigh.threshold, VerificationCatalog.steps.maxThreshold);
 
-      final tooLow = VerificationCatalog.steps.ruleWith(1);
+      final tooLow = VerificationCatalog.steps.ruleWith(0);
       expect(tooLow.threshold, VerificationCatalog.steps.minThreshold);
 
       final ok = VerificationCatalog.steps.ruleWith(8000);

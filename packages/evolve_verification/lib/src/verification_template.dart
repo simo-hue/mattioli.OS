@@ -88,9 +88,9 @@ abstract final class VerificationCatalog {
     unit: VerificationUnit.count,
     aggregation: VerificationAggregation.sum,
     defaultThreshold: 10000,
-    minThreshold: 1000,
-    maxThreshold: 100000,
-    step: 500,
+    minThreshold: 1,
+    maxThreshold: 1000000,
+    step: 100,
     healthKitTypeIdentifier: 'stepCount',
   );
 
@@ -102,8 +102,8 @@ abstract final class VerificationCatalog {
     unit: VerificationUnit.minutes,
     aggregation: VerificationAggregation.sum,
     defaultThreshold: 30,
-    minThreshold: 5,
-    maxThreshold: 300,
+    minThreshold: 1,
+    maxThreshold: 1440,
     step: 5,
     healthKitTypeIdentifier: 'appleExerciseTime',
   );
@@ -116,8 +116,8 @@ abstract final class VerificationCatalog {
     unit: VerificationUnit.kilocalories,
     aggregation: VerificationAggregation.sum,
     defaultThreshold: 500,
-    minThreshold: 50,
-    maxThreshold: 3000,
+    minThreshold: 1,
+    maxThreshold: 10000,
     step: 50,
     healthKitTypeIdentifier: 'activeEnergyBurned',
   );
@@ -145,9 +145,9 @@ abstract final class VerificationCatalog {
     unit: VerificationUnit.kilometers,
     aggregation: VerificationAggregation.sum,
     defaultThreshold: 5,
-    minThreshold: 0.5,
-    maxThreshold: 100,
-    step: 0.5,
+    minThreshold: 0.1,
+    maxThreshold: 500,
+    step: 0.1,
     healthKitTypeIdentifier: 'distanceWalkingRunning',
   );
 
@@ -160,8 +160,8 @@ abstract final class VerificationCatalog {
     aggregation: VerificationAggregation.sum,
     defaultThreshold: 10,
     minThreshold: 1,
-    maxThreshold: 240,
-    step: 1,
+    maxThreshold: 1440,
+    step: 5,
     healthKitTypeIdentifier: 'mindfulSession',
   );
 
@@ -173,8 +173,8 @@ abstract final class VerificationCatalog {
     unit: VerificationUnit.hours,
     aggregation: VerificationAggregation.sum,
     defaultThreshold: 8,
-    minThreshold: 3,
-    maxThreshold: 14,
+    minThreshold: 0.5,
+    maxThreshold: 24,
     step: 0.5,
     healthKitTypeIdentifier: 'sleepAnalysis',
   );
@@ -188,7 +188,7 @@ abstract final class VerificationCatalog {
     aggregation: VerificationAggregation.count,
     defaultThreshold: 1,
     minThreshold: 1,
-    maxThreshold: 10,
+    maxThreshold: 100,
     step: 1,
     healthKitTypeIdentifier: 'workout',
   );
@@ -206,9 +206,9 @@ abstract final class VerificationCatalog {
     unit: VerificationUnit.minutes,
     aggregation: VerificationAggregation.sum,
     defaultThreshold: 120,
-    minThreshold: 15,
+    minThreshold: 1,
     maxThreshold: 1440,
-    step: 15,
+    step: 5,
   );
 
   /// Mode A — combined usage of the apps/categories the user picks with
@@ -222,9 +222,9 @@ abstract final class VerificationCatalog {
     unit: VerificationUnit.minutes,
     aggregation: VerificationAggregation.sum,
     defaultThreshold: 60,
-    minThreshold: 15,
+    minThreshold: 1,
     maxThreshold: 1440,
-    step: 15,
+    step: 5,
   );
 
   /// All templates, in a sensible display order.

@@ -46,6 +46,12 @@ class _MacroGoalsScreenState extends ConsumerState<MacroGoalsScreen>
   int _goalsTutorialIndex = 0;
   bool _isRefreshingGoalsTutorialGeometry = false;
 
+  static const int _basePage = 4000;
+  late PageController _pageController;
+  int _currentPageIndex = _basePage;
+  bool _isInternalChange = false;
+  MacroGoalsViewState? _anchorState;
+
   final GlobalKey _goalsTutorialOverlayKey = GlobalKey();
   final GlobalKey _planSelectorKey = GlobalKey();
   final GlobalKey _addGoalKey = GlobalKey();
@@ -56,6 +62,79 @@ class _MacroGoalsScreenState extends ConsumerState<MacroGoalsScreen>
   final GlobalKey _tutorialRescheduleKey = GlobalKey();
   final GlobalKey _tutorialEditKey = GlobalKey();
   final GlobalKey _tutorialDeleteKey = GlobalKey();
+
+  @override
+  void initState() {
+    super.initState();
+    _pageController = PageController(initialPage: _basePage);
+  }
+
+  @override
+  void dispose() {
+    _pageController.dispose();
+    super.dispose();
+  }
+
+  void _onPageChanged(int index) {
+    int delta = index - _currentPageIndex;
+    if (delta == 0) return;
+    _currentPageIndex = index;
+    
+    _isInternalChange = true;
+    final notifier = ref.read(macroGoalsViewProvider.notifier);
+    if (delta > 0) {
+      for (int i = 0; i < delta; i++) {
+        notifier.nextPeriod();
+      }
+    } else {
+      for (int i = 0; i < -delta; i++) {
+        notifier.prevPeriod();
+      }
+    }
+    
+    Future.microtask(() {
+      if (mounted) _isInternalChange = false;
+    });
+  }
+
+  void _goToNextPeriod() {
+    if (_pageController.hasClients) {
+      _pageController.nextPage(
+        duration: const Duration(milliseconds: 400),
+        curve: Curves.easeOutCubic,
+      );
+    } else {
+      ref.read(macroGoalsViewProvider.notifier).nextPeriod();
+    }
+    ref.hapticLight();
+  }
+
+  void _goToPrevPeriod() {
+    if (_pageController.hasClients) {
+      _pageController.previousPage(
+        duration: const Duration(milliseconds: 400),
+        curve: Curves.easeOutCubic,
+      );
+    } else {
+      ref.read(macroGoalsViewProvider.notifier).prevPeriod();
+    }
+    ref.hapticLight();
+  }
+
+  MacroGoalsViewState _getStateForIndex(MacroGoalsViewState base, int index) {
+    int delta = index - _basePage;
+    MacroGoalsViewState s = base;
+    if (delta > 0) {
+      for (int i = 0; i < delta; i++) {
+        s = s.getNextPeriod();
+      }
+    } else if (delta < 0) {
+      for (int i = 0; i < -delta; i++) {
+        s = s.getPrevPeriod();
+      }
+    }
+    return s;
+  }
 
   @override
   void didUpdateWidget(covariant MacroGoalsScreen oldWidget) {
@@ -457,22 +536,23 @@ class _MacroGoalsScreenState extends ConsumerState<MacroGoalsScreen>
     // Force re-compute on state change
     ref.watch(macroGoalsProvider);
 
+    _anchorState ??= viewState;
+    ref.listen(macroGoalsViewProvider, (prev, next) {
+      if (!_isInternalChange && prev != next) {
+        _currentPageIndex = _basePage;
+        _anchorState = next;
+        if (_pageController.hasClients) {
+          _pageController.jumpToPage(_basePage);
+        }
+      }
+    });
+
     ref.listen(goalsTutorialProvider, (previous, next) {
       if (next == false) {
         _didFinishGoalsTutorial = false;
         _clearGoalsTutorialState();
       }
     });
-
-    final filteredGoals = ref
-        .read(macroGoalsProvider.notifier)
-        .getFilteredGoals(
-          type: viewState.selectedType,
-          year: viewState.selectedYear,
-          quarter: viewState.selectedQuarter,
-          month: viewState.selectedMonth,
-          weekNumber: viewState.selectedWeek,
-        );
 
     final mainTutorialSeen = ref.watch(tutorialProvider);
     final goalsTutorialSeen = ref.watch(goalsTutorialProvider);
@@ -481,24 +561,6 @@ class _MacroGoalsScreenState extends ConsumerState<MacroGoalsScreen>
         !_didFinishGoalsTutorial &&
         mainTutorialSeen &&
         !goalsTutorialSeen;
-
-    final List<MacroGoal> displayGoals = List.from(filteredGoals);
-    if (isGoalsTutorialPending) {
-      displayGoals.insert(
-        0,
-        MacroGoal(
-          id: 'tutorial_fake_goal',
-          title: context.t.macroGoals.tutorialGoal,
-          status: GoalStatus.active,
-          type: viewState.selectedType,
-          year: viewState.selectedYear,
-          quarter: viewState.selectedQuarter,
-          month: viewState.selectedMonth,
-          weekNumber: viewState.selectedWeek,
-          createdAt: DateTime.now(),
-        ),
-      );
-    }
 
     return Scaffold(
       backgroundColor: context.appColors.background,
@@ -523,94 +585,87 @@ class _MacroGoalsScreenState extends ConsumerState<MacroGoalsScreen>
 
                     // ── Goals list ────────────────────────────────────────────────
                     Expanded(
-                      child: GestureDetector(
-                        behavior: HitTestBehavior.opaque,
-                        onHorizontalDragEnd: (details) {
-                          if (viewState.selectedType == GoalType.lifetime) {
-                            return;
-                          }
-                          const velocityThreshold = 300.0;
-                          final vx = details.primaryVelocity ?? 0.0;
-                          if (vx < -velocityThreshold) {
-                            setState(() => _isForward = true);
-                            ref
-                                .read(macroGoalsViewProvider.notifier)
-                                .nextPeriod();
-                            ref.hapticLight();
-                          } else if (vx > velocityThreshold) {
-                            setState(() => _isForward = false);
-                            ref
-                                .read(macroGoalsViewProvider.notifier)
-                                .prevPeriod();
-                            ref.hapticLight();
-                          }
-                        },
-                        child: AnimatedSwitcher(
-                          duration: const Duration(milliseconds: 450),
-                          switchInCurve: Curves.easeOutQuart,
-                          switchOutCurve: Curves.easeOutQuart,
-                          transitionBuilder: (child, animation) {
-                            final isIncoming =
-                                child.key ==
-                                ValueKey(
-                                  '${viewState.selectedType}-${viewState.selectedYear}-${viewState.selectedMonth}-${viewState.selectedWeek}-${viewState.selectedQuarter}',
-                                );
-                            final dir = _isForward ? 1 : -1;
-
-                            return AnimatedBuilder(
-                              animation: animation,
-                              builder: (context, child) {
-                                double pageOffset = 0.0;
-                                if (isIncoming) {
-                                  pageOffset = (1.0 - animation.value) * dir;
-                                } else {
-                                  pageOffset = (animation.value - 1.0) * dir;
-                                }
-
-                                final absOffset = pageOffset.abs();
-
-                                // Premium Parallax & Scale Effect (simulating Calendar PageView)
-                                final double scale =
-                                    1.0 - (absOffset * 0.05).clamp(0.0, 0.05);
-                                final double opacity = (1.0 - absOffset).clamp(
-                                  0.0,
-                                  1.0,
-                                );
-
-                                // We use the screen width to simulate the PageView horizontal scroll
-                                final double width = MediaQuery.of(
-                                  context,
-                                ).size.width;
-                                final double translation = pageOffset * width;
-
-                                return Transform.scale(
-                                  scale: scale,
-                                  child: Transform.translate(
-                                    offset: Offset(translation, 0),
-                                    child: Opacity(
-                                      opacity: opacity,
-                                      child: child,
-                                    ),
-                                  ),
-                                );
-                              },
-                              child: child,
+                      child: PageView.builder(
+                        controller: _pageController,
+                        onPageChanged: _onPageChanged,
+                        physics: viewState.selectedType == GoalType.lifetime
+                            ? const NeverScrollableScrollPhysics()
+                            : const ClampingScrollPhysics(),
+                        itemBuilder: (context, index) {
+                          final stateForIndex = _getStateForIndex(_anchorState!, index);
+                          final goalsForIndex = ref.read(macroGoalsProvider.notifier).getFilteredGoals(
+                                type: stateForIndex.selectedType,
+                                year: stateForIndex.selectedYear,
+                                quarter: stateForIndex.selectedQuarter,
+                                month: stateForIndex.selectedMonth,
+                                weekNumber: stateForIndex.selectedWeek,
+                              );
+                              
+                          final isCurrentPage = index == _currentPageIndex;
+                          final List<MacroGoal> pageGoals = List.from(goalsForIndex);
+                          
+                          if (isGoalsTutorialPending && isCurrentPage) {
+                            pageGoals.insert(
+                              0,
+                              MacroGoal(
+                                id: 'tutorial_fake_goal',
+                                title: context.t.macroGoals.tutorialGoal,
+                                status: GoalStatus.active,
+                                type: stateForIndex.selectedType,
+                                year: stateForIndex.selectedYear,
+                                quarter: stateForIndex.selectedQuarter,
+                                month: stateForIndex.selectedMonth,
+                                weekNumber: stateForIndex.selectedWeek,
+                                createdAt: DateTime.now(),
+                              ),
                             );
-                          },
-                          child: _GoalsList(
-                            key: ValueKey(
-                              '${viewState.selectedType}-${viewState.selectedYear}-${viewState.selectedMonth}-${viewState.selectedWeek}-${viewState.selectedQuarter}',
+                          }
+
+                          return AnimatedBuilder(
+                            animation: _pageController,
+                            builder: (context, child) {
+                              double pageOffset = 0.0;
+                              if (_pageController.position.haveDimensions) {
+                                pageOffset = _pageController.page! - index;
+                              } else {
+                                pageOffset = (_currentPageIndex - index).toDouble();
+                              }
+
+                              final absOffset = pageOffset.abs();
+
+                              // Premium Parallax & Scale Effect (matching home page)
+                              final double scale =
+                                  1.0 - (absOffset * 0.05).clamp(0.0, 0.05);
+                              final double opacity = (1.0 - absOffset).clamp(0.0, 1.0);
+                              
+                              final double translation = pageOffset * 60;
+
+                              return Transform.scale(
+                                scale: scale,
+                                child: Transform.translate(
+                                  offset: Offset(translation, 0),
+                                  child: Opacity(
+                                    opacity: opacity,
+                                    child: child,
+                                  ),
+                                ),
+                              );
+                            },
+                            child: _GoalsList(
+                              key: ValueKey(
+                                '${stateForIndex.selectedType}-${stateForIndex.selectedYear}-${stateForIndex.selectedMonth}-${stateForIndex.selectedWeek}-${stateForIndex.selectedQuarter}',
+                              ),
+                              goals: pageGoals,
+                              viewState: stateForIndex,
+                              emptyStateKey: isCurrentPage ? _goalsListKey : null,
+                              tutorialCheckboxKey: isCurrentPage ? _tutorialCheckboxKey : null,
+                              tutorialCategoryKey: isCurrentPage ? _tutorialCategoryKey : null,
+                              tutorialRescheduleKey: isCurrentPage ? _tutorialRescheduleKey : null,
+                              tutorialEditKey: isCurrentPage ? _tutorialEditKey : null,
+                              tutorialDeleteKey: isCurrentPage ? _tutorialDeleteKey : null,
                             ),
-                            goals: displayGoals,
-                            viewState: viewState,
-                            emptyStateKey: _goalsListKey,
-                            tutorialCheckboxKey: _tutorialCheckboxKey,
-                            tutorialCategoryKey: _tutorialCategoryKey,
-                            tutorialRescheduleKey: _tutorialRescheduleKey,
-                            tutorialEditKey: _tutorialEditKey,
-                            tutorialDeleteKey: _tutorialDeleteKey,
-                          ),
-                        ),
+                          );
+                        },
                       ),
                     ),
                     const SizedBox(height: 12),
@@ -816,11 +871,7 @@ class _MacroGoalsScreenState extends ConsumerState<MacroGoalsScreen>
         children: [
           // Previous Button
           GestureDetector(
-            onTap: () {
-              setState(() => _isForward = false);
-              ref.read(macroGoalsViewProvider.notifier).prevPeriod();
-              ref.hapticLight();
-            },
+            onTap: _goToPrevPeriod,
             child: Container(
               padding: const EdgeInsets.all(8),
               decoration: BoxDecoration(
@@ -857,11 +908,7 @@ class _MacroGoalsScreenState extends ConsumerState<MacroGoalsScreen>
 
           // Next Button
           GestureDetector(
-            onTap: () {
-              setState(() => _isForward = true);
-              ref.read(macroGoalsViewProvider.notifier).nextPeriod();
-              ref.hapticLight();
-            },
+            onTap: _goToNextPeriod,
             child: Container(
               padding: const EdgeInsets.all(8),
               decoration: BoxDecoration(
@@ -1002,7 +1049,7 @@ class _GoalsTutorialScrimPainter extends CustomPainter {
 class _GoalsList extends ConsumerWidget {
   final List<MacroGoal> goals;
   final MacroGoalsViewState viewState;
-  final GlobalKey emptyStateKey;
+  final GlobalKey? emptyStateKey;
   final GlobalKey? tutorialCheckboxKey;
   final GlobalKey? tutorialCategoryKey;
   final GlobalKey? tutorialRescheduleKey;
@@ -1013,7 +1060,7 @@ class _GoalsList extends ConsumerWidget {
     super.key,
     required this.goals,
     required this.viewState,
-    required this.emptyStateKey,
+    this.emptyStateKey,
     this.tutorialCheckboxKey,
     this.tutorialCategoryKey,
     this.tutorialRescheduleKey,

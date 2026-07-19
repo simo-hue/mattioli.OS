@@ -2,7 +2,6 @@
 - [ ] Widget for iPhone & MacOS
 - [ ] Different habits & goals types, not only checkboxes like status,progress bar
 - [ ] For the desktop implementation what has been done with ollama is outstanding and I want to replicate the same thing also with LMStudio so the major local LLM providers are supported
-- [ ] mobile animation between lateral scroll on the goals page? Improve it
 
 ## prompt to run 1
 /grill-me we are working on the mobile and desktop flutter implementations. I've activated the iCloud sync but I saw that not everything is being synchronized, an example are the Goals. Is there anything else that's missing? As I want to save all the important things there not only a part. My case is that I've imported the goals ( in privacy mode ) but they haven't sync.

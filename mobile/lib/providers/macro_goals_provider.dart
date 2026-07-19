@@ -563,6 +563,92 @@ class MacroGoalsViewState {
     selectedMonth: selectedMonth ?? this.selectedMonth,
     selectedWeek: selectedWeek ?? this.selectedWeek,
   );
+
+  MacroGoalsViewState getNextPeriod() {
+    final int y = selectedYear;
+    final int q = selectedQuarter;
+    final int m = selectedMonth;
+    final int w = selectedWeek;
+
+    switch (selectedType) {
+      case GoalType.lifetime:
+        return this;
+      case GoalType.annual:
+        return _clamp(copyWith(selectedYear: y + 1));
+      case GoalType.quarterly:
+        if (q < 4) {
+          return _clamp(copyWith(selectedQuarter: q + 1));
+        } else {
+          return _clamp(copyWith(selectedYear: y + 1, selectedQuarter: 1));
+        }
+      case GoalType.monthly:
+        if (m < 12) {
+          return _clamp(copyWith(selectedMonth: m + 1, selectedWeek: 1));
+        } else {
+          return _clamp(copyWith(selectedYear: y + 1, selectedMonth: 1, selectedWeek: 1));
+        }
+      case GoalType.weekly:
+        final maxW = weeksInMonth(y, m);
+        if (w < maxW) {
+          return _clamp(copyWith(selectedWeek: w + 1));
+        } else {
+          if (m < 12) {
+            return _clamp(copyWith(selectedMonth: m + 1, selectedWeek: 1));
+          } else {
+            return _clamp(
+              copyWith(selectedYear: y + 1, selectedMonth: 1, selectedWeek: 1),
+            );
+          }
+        }
+    }
+  }
+
+  MacroGoalsViewState getPrevPeriod() {
+    final int y = selectedYear;
+    final int q = selectedQuarter;
+    final int m = selectedMonth;
+    final int w = selectedWeek;
+
+    switch (selectedType) {
+      case GoalType.lifetime:
+        return this;
+      case GoalType.annual:
+        return _clamp(copyWith(selectedYear: y - 1));
+      case GoalType.quarterly:
+        if (q > 1) {
+          return _clamp(copyWith(selectedQuarter: q - 1));
+        } else {
+          return _clamp(copyWith(selectedYear: y - 1, selectedQuarter: 4));
+        }
+      case GoalType.monthly:
+        if (m > 1) {
+          return _clamp(copyWith(selectedMonth: m - 1, selectedWeek: 1));
+        } else {
+          return _clamp(copyWith(selectedYear: y - 1, selectedMonth: 12, selectedWeek: 1));
+        }
+      case GoalType.weekly:
+        if (w > 1) {
+          return _clamp(copyWith(selectedWeek: w - 1));
+        } else {
+          if (m > 1) {
+            final prevMonth = m - 1;
+            final maxW = weeksInMonth(y, prevMonth);
+            return _clamp(copyWith(selectedMonth: prevMonth, selectedWeek: maxW));
+          } else {
+            final maxW = weeksInMonth(y - 1, 12);
+            return _clamp(
+              copyWith(selectedYear: y - 1, selectedMonth: 12, selectedWeek: maxW),
+            );
+          }
+        }
+    }
+  }
+
+  MacroGoalsViewState _clamp(MacroGoalsViewState state) {
+    return state.copyWith(
+      selectedWeek: state.selectedWeek.clamp(1, weeksInMonth(state.selectedYear, state.selectedMonth)),
+    );
+  }
 }
 
 class MacroGoalsViewNotifier extends Notifier<MacroGoalsViewState> {
@@ -602,97 +688,11 @@ class MacroGoalsViewNotifier extends Notifier<MacroGoalsViewState> {
   }
 
   void nextPeriod() {
-    final s = state;
-    final int y = s.selectedYear;
-    final int q = s.selectedQuarter;
-    final int m = s.selectedMonth;
-    final int w = s.selectedWeek;
-
-    switch (s.selectedType) {
-      case GoalType.lifetime:
-        break;
-      case GoalType.annual:
-        setYear(y + 1);
-        break;
-      case GoalType.quarterly:
-        if (q < 4) {
-          setQuarter(q + 1);
-        } else {
-          state = s.copyWith(selectedYear: y + 1, selectedQuarter: 1);
-        }
-        break;
-      case GoalType.monthly:
-        if (m < 12) {
-          setMonth(m + 1);
-        } else {
-          state = s.copyWith(selectedYear: y + 1, selectedMonth: 1);
-        }
-        break;
-      case GoalType.weekly:
-        final maxW = weeksInMonth(y, m);
-        if (w < maxW) {
-          setWeek(w + 1);
-        } else {
-          if (m < 12) {
-            state = s.copyWith(selectedMonth: m + 1, selectedWeek: 1);
-          } else {
-            state = s.copyWith(
-              selectedYear: y + 1,
-              selectedMonth: 1,
-              selectedWeek: 1,
-            );
-          }
-        }
-        break;
-    }
+    state = state.getNextPeriod();
   }
 
   void prevPeriod() {
-    final s = state;
-    final int y = s.selectedYear;
-    final int q = s.selectedQuarter;
-    final int m = s.selectedMonth;
-    final int w = s.selectedWeek;
-
-    switch (s.selectedType) {
-      case GoalType.lifetime:
-        break;
-      case GoalType.annual:
-        setYear(y - 1);
-        break;
-      case GoalType.quarterly:
-        if (q > 1) {
-          setQuarter(q - 1);
-        } else {
-          state = s.copyWith(selectedYear: y - 1, selectedQuarter: 4);
-        }
-        break;
-      case GoalType.monthly:
-        if (m > 1) {
-          setMonth(m - 1);
-        } else {
-          state = s.copyWith(selectedYear: y - 1, selectedMonth: 12);
-        }
-        break;
-      case GoalType.weekly:
-        if (w > 1) {
-          setWeek(w - 1);
-        } else {
-          if (m > 1) {
-            final prevMonth = m - 1;
-            final maxW = weeksInMonth(y, prevMonth);
-            state = s.copyWith(selectedMonth: prevMonth, selectedWeek: maxW);
-          } else {
-            final maxW = weeksInMonth(y - 1, 12);
-            state = s.copyWith(
-              selectedYear: y - 1,
-              selectedMonth: 12,
-              selectedWeek: maxW,
-            );
-          }
-        }
-        break;
-    }
+    state = state.getPrevPeriod();
   }
 }
 

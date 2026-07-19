@@ -1796,3 +1796,7 @@ All owner actions are itemized in **TO_SIMO_DO.md**.
 - [Sun Jul 19 08:47:44 CEST 2026] Regenerated the private shield logo using a custom AI generated geometric wireframe design to better fit the minimal tech aesthetic. Removed black background programmatically and updated the assets in both mobile and desktop apps.
 - [Sun Jul 19 08:49:31 CEST 2026] Cropped the transparent padding around the generated private shield asset using a python script so it occupies its full bounds, ensuring it renders at the correct size alongside the Apple and Google logos.
 - [Sun Jul 19 08:51:10 CEST 2026] Removed the shield icon from the 'Continue Privately' button entirely as requested by the user, leaving only text. Cleaned up all generated python scripts and private_logo.png assets.
+
+- [2026-07-19 15:08:52]: Goals Page Parallax Animation
+  - *Details*: Migrated the goals page calendar rendering from `AnimatedSwitcher` to `PageView` to enable continuous drag gestures.
+  - *Tech Notes*: Implemented pure functions `getNextPeriod` and `getPrevPeriod` in `MacroGoalsViewState`. Replicated the home page parallax effect with `Transform.translate` offset of `pageOffset * 60`.

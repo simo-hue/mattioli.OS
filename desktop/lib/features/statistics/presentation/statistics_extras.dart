@@ -1914,13 +1914,46 @@ class _MoodEnergyLineChart extends StatelessWidget {
                   maxX: (days - 1).toDouble(),
                   minY: 0,
                   maxY: 10,
-                  gridData: FlGridData(
-                    drawVerticalLine: false,
-                    horizontalInterval: 2.5,
-                    getDrawingHorizontalLine: (v) => FlLine(
-                      color: colors.border.withValues(alpha: 0.5),
-                      strokeWidth: 1,
+                  gridData: const FlGridData(show: false),
+                  lineTouchData: LineTouchData(
+                    touchTooltipData: LineTouchTooltipData(
+                      getTooltipColor: (spot) => colors.panelSoft,
+                      tooltipBorderRadius: BorderRadius.circular(8),
+                      tooltipPadding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+                      getTooltipItems: (touchedSpots) {
+                        return touchedSpots.map((spot) {
+                          final color = spot.barIndex == 0 ? EvolveColors.violet : EvolveColors.amber;
+                          return LineTooltipItem(
+                            spot.y.toStringAsFixed(1),
+                            TextStyle(
+                              color: color,
+                              fontWeight: FontWeight.w800,
+                              fontSize: 14,
+                            ),
+                          );
+                        }).toList();
+                      },
                     ),
+                    getTouchedSpotIndicator: (barData, spotIndexes) {
+                      return spotIndexes.map((index) {
+                        return TouchedSpotIndicatorData(
+                          FlLine(
+                            color: barData.color?.withValues(alpha: 0.5) ?? colors.muted,
+                            strokeWidth: 2,
+                          ),
+                          FlDotData(
+                            show: true,
+                            getDotPainter: (spot, percent, barData, index) => FlDotCirclePainter(
+                              radius: 5,
+                              color: barData.color ?? colors.foreground,
+                              strokeWidth: 2,
+                              strokeColor: colors.panel,
+                            ),
+                          ),
+                        );
+                      }).toList();
+                    },
+                    handleBuiltInTouches: true,
                   ),
                   titlesData: FlTitlesData(
                     rightTitles: const AxisTitles(
@@ -1954,6 +1987,22 @@ class _MoodEnergyLineChart extends StatelessWidget {
                       barWidth: 3,
                       isStrokeCapRound: true,
                       dotData: const FlDotData(show: false),
+                      shadow: Shadow(
+                        color: EvolveColors.violet.withValues(alpha: 0.4),
+                        blurRadius: 8,
+                        offset: const Offset(0, 4),
+                      ),
+                      belowBarData: BarAreaData(
+                        show: true,
+                        gradient: LinearGradient(
+                          colors: [
+                            EvolveColors.violet.withValues(alpha: 0.3),
+                            EvolveColors.violet.withValues(alpha: 0.0),
+                          ],
+                          begin: Alignment.topCenter,
+                          end: Alignment.bottomCenter,
+                        ),
+                      ),
                     ),
                     LineChartBarData(
                       spots: energySpots,
@@ -1963,6 +2012,22 @@ class _MoodEnergyLineChart extends StatelessWidget {
                       barWidth: 3,
                       isStrokeCapRound: true,
                       dotData: const FlDotData(show: false),
+                      shadow: Shadow(
+                        color: EvolveColors.amber.withValues(alpha: 0.4),
+                        blurRadius: 8,
+                        offset: const Offset(0, 4),
+                      ),
+                      belowBarData: BarAreaData(
+                        show: true,
+                        gradient: LinearGradient(
+                          colors: [
+                            EvolveColors.amber.withValues(alpha: 0.3),
+                            EvolveColors.amber.withValues(alpha: 0.0),
+                          ],
+                          begin: Alignment.topCenter,
+                          end: Alignment.bottomCenter,
+                        ),
+                      ),
                     ),
                   ],
                 ),

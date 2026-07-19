@@ -1779,3 +1779,8 @@ All owner actions are itemized in **TO_SIMO_DO.md**.
 - [Sun Jul 19 08:25:25 CEST 2026] Added Google G logo to the 'Sign in with Google' button in both mobile and desktop apps to match Apple button's authenticity.
   - *Details*: Downloaded Google G logo PNG asset to assets/images/. Updated `_SocialAuthButton` on desktop and `_buildSocialButton` on mobile to support the image asset instead of defaulting to generic lucide icons.
 - [Sun Jul 19 08:33:38 CEST 2026] Fixed the 'Invalid image data' exception for the Google button by downloading a valid PNG image format instead of the previous HTML redirect document.
+- [Sun Jul 19 08:37:09 CEST 2026] Increased Google logo size from 18/20 to 24 on both mobile and desktop to match the dimensions of the Apple logo.
+- [Sun Jul 19 08:43:41 CEST 2026] Replaced the generic shield icon on the 'Continue Privately' button with a high-quality 3D shield asset (private_logo.png) to elevate its UI feel alongside Google and Apple on both desktop and mobile apps.
+- [Sun Jul 19 08:47:44 CEST 2026] Regenerated the private shield logo using a custom AI generated geometric wireframe design to better fit the minimal tech aesthetic. Removed black background programmatically and updated the assets in both mobile and desktop apps.
+- [Sun Jul 19 08:49:31 CEST 2026] Cropped the transparent padding around the generated private shield asset using a python script so it occupies its full bounds, ensuring it renders at the correct size alongside the Apple and Google logos.
+- [Sun Jul 19 08:51:10 CEST 2026] Removed the shield icon from the 'Continue Privately' button entirely as requested by the user, leaving only text. Cleaned up all generated python scripts and private_logo.png assets.

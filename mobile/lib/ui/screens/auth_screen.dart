@@ -452,8 +452,7 @@ class _AuthScreenState extends ConsumerState<AuthScreen>
                         SizedBox(height: isCompact ? 6 : 10),
                         _buildSocialButton(
                           label: context.t.auth.continueWithGoogle,
-                          icon: LucideIcons.mail,
-                          isGoogle: true,
+                          imageAsset: 'assets/images/google_logo.png',
                           onPressed: () async {
                             final hapticsEnabled = ref
                                 .read(settingsProvider)
@@ -470,7 +469,6 @@ class _AuthScreenState extends ConsumerState<AuthScreen>
                         SizedBox(height: isCompact ? 6 : 10),
                         _buildSocialButton(
                           label: context.t.auth.continuePrivately,
-                          icon: LucideIcons.shieldCheck,
                           onPressed: _handlePrivateMode,
                         ),
 
@@ -685,9 +683,9 @@ class _AuthScreenState extends ConsumerState<AuthScreen>
 
   Widget _buildSocialButton({
     required String label,
-    required IconData icon,
+    IconData? icon,
     required VoidCallback onPressed,
-    bool isGoogle = false,
+    String? imageAsset,
   }) {
     final isCompact = MediaQuery.sizeOf(context).height < 780;
 
@@ -705,11 +703,13 @@ class _AuthScreenState extends ConsumerState<AuthScreen>
         child: Row(
           mainAxisAlignment: MainAxisAlignment.center,
           children: [
-            if (isGoogle)
-              Image.asset('assets/images/google_logo.png', width: 20, height: 20)
-            else
+            if (imageAsset != null) ...[
+              Image.asset(imageAsset, width: 24, height: 24),
+              const SizedBox(width: 14),
+            ] else if (icon != null) ...[
               Icon(icon, size: 20, color: context.appColors.foreground),
-            const SizedBox(width: 12),
+              const SizedBox(width: 14),
+            ],
             Text(
               label,
               style: GoogleFonts.inter(

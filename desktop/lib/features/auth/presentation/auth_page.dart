@@ -327,7 +327,6 @@ class _DesktopAuthPageState extends ConsumerState<DesktopAuthPage> {
                   _AuthDivider(label: t.auth.or),
                   const SizedBox(height: 14),
                   _SocialAuthButton(
-                    icon: LucideIcons.shieldCheck,
                     label: t.auth.continuePrivately,
                     onPressed: auth.isLoading ? null : _enterPrivateMode,
                   ),
@@ -433,7 +432,7 @@ class _SocialAuthButton extends StatelessWidget {
     this.imageAsset,
     required this.label,
     required this.onPressed,
-  }) : assert(icon != null || imageAsset != null);
+  });
 
   final IconData? icon;
   final String? imageAsset;
@@ -460,11 +459,13 @@ class _SocialAuthButton extends StatelessWidget {
             child: Row(
               mainAxisAlignment: MainAxisAlignment.center,
               children: [
-                if (imageAsset != null)
-                  Image.asset(imageAsset!, width: 18, height: 18)
-                else if (icon != null)
+                if (imageAsset != null) ...[
+                  Image.asset(imageAsset!, width: 24, height: 24),
+                  const SizedBox(width: 12),
+                ] else if (icon != null) ...[
                   Icon(icon, size: 18, color: colors.foreground),
-                const SizedBox(width: 10),
+                  const SizedBox(width: 12),
+                ],
                 Text(
                   label,
                   style: TextStyle(

@@ -1,6 +1,7 @@
 import 'package:evolve_desktop/app/theme/evolve_theme.dart';
 import 'package:evolve_desktop/i18n/translations.g.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:lucide_icons_flutter/lucide_icons.dart';
 
 Future<T?> showEvolveDialog<T>({
@@ -33,8 +34,14 @@ class EvolveDialog extends StatelessWidget {
   Widget build(BuildContext context) {
     final colors = context.evolveColors;
     final isDark = Theme.of(context).brightness == Brightness.dark;
-    return Dialog(
-      alignment: alignment,
+    return CallbackShortcuts(
+      bindings: {
+        const SingleActivator(LogicalKeyboardKey.escape): () => Navigator.maybePop(context),
+      },
+      child: Focus(
+        autofocus: true,
+        child: Dialog(
+          alignment: alignment,
       elevation: 0,
       insetPadding: const EdgeInsets.symmetric(horizontal: 24, vertical: 28),
       backgroundColor: Colors.transparent,
@@ -80,7 +87,7 @@ class EvolveDialog extends StatelessWidget {
           ),
         ),
       ),
-    );
+    )));
   }
 }
 

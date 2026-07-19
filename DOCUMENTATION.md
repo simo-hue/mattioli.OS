@@ -2,6 +2,12 @@
 
 ## Recent Changes
 
+- [2026-07-19]: **Desktop Escape Key Dialog Dismissal**
+  - *Details*: Added global support for closing all dialogs by pressing the Escape key on the keyboard, even when `barrierDismissible` is set to false.
+  - *Tech Notes*:
+    - Modified `EvolveDialog` in `evolve_dialog.dart` to wrap its core `Dialog` widget with `CallbackShortcuts` and a `Focus(autofocus: true)` widget.
+    - Bound `LogicalKeyboardKey.escape` to `Navigator.maybePop(context)`.
+
 - [2026-07-19]: **Desktop Lateral Scroll Navigation (Macro Goals)**
   - *Details*: Implemented two-finger lateral scroll navigation on the desktop Macro Goals page to allow users to switch periods (weeks/months/years) via trackpad swipe, mirroring the mobile experience.
   - *Tech Notes*:
@@ -1858,3 +1864,11 @@ All owner actions are itemized in **TO_SIMO_DO.md**.
 - [2026-07-19 20:26]: Enhance Mood and Energy Chart
   - *Details*: Completely redesigned the humor (mood and energy) graph in the statistics view to feature a modern, elegant "tech" aesthetic, as requested.
   - *Tech Notes*: Updated `_MoodEnergyLineChart` in `statistics_extras.dart`. Added `LinearGradient` under both line curves (`belowBarData`), introduced a neon-style glow effect using `shadow` on `LineChartBarData`, removed background grid lines for a cleaner look, and configured `lineTouchData` to display a polished tooltip and vertical tracking line on hover.
+
+- [2026-07-19 20:31]: Enhance Trend and Radar Charts
+  - *Details*: Aligned the styling of the Performance Evolution chart and the Weekly Radar chart with the new modern, elegant 'tech' aesthetic.
+  - *Tech Notes*: Removed gridlines, added a glowing shadow, and implemented polished tooltips and hover indicators for `_TrendLineChart` in `statistics_page.dart`. For `RadarChart` in `statistics_extras.dart`, added a neon glow by stacking two `RadarDataSet` layers (one thick/faint, one thin/solid) and cleaned up the background grid and borders.
+
+- [2026-07-19 20:34]: Enhance Overview Dashboard Chart
+  - *Details*: Updated the 'Andamento settimanale' (Weekly Trend) chart on the overview page to match the new elegant/tech aesthetic.
+  - *Tech Notes*: Modified the `_TrendChartPainter` in `dashboard_page.dart`. Removed the manual `canvas.drawLine` grid lines, boosted the fill gradient alpha from 0.14 to 0.3, and added a glowing effect using a blurred `MaskFilter` on an underlying stroke path.

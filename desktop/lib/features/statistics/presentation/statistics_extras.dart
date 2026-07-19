@@ -889,30 +889,30 @@ class _WeeklyRadarPanel extends ConsumerWidget {
                           dataEntries: [
                             for (final v in values) RadarEntry(value: v),
                           ],
-                          fillColor: context.evolveAccent.withValues(
-                            alpha: 0.18,
-                          ),
+                          fillColor: Colors.transparent,
+                          borderColor: context.evolveAccent.withValues(alpha: 0.3),
+                          borderWidth: 8,
+                          entryRadius: 0,
+                        ),
+                        RadarDataSet(
+                          dataEntries: [
+                            for (final v in values) RadarEntry(value: v),
+                          ],
+                          fillColor: context.evolveAccent.withValues(alpha: 0.15),
                           borderColor: context.evolveAccent,
                           borderWidth: 2.5,
-                          entryRadius: 2,
+                          entryRadius: 3,
                         ),
                       ],
                       radarBackgroundColor: Colors.transparent,
-                      radarBorderData: BorderSide(
-                        color: context.evolveColors.border.withValues(
-                          alpha: 0.5,
-                        ),
-                      ),
+                      radarBorderData: BorderSide.none,
                       gridBorderData: BorderSide(
                         color: context.evolveColors.border.withValues(
-                          alpha: 0.4,
+                          alpha: 0.15,
                         ),
+                        width: 1,
                       ),
-                      tickBorderData: BorderSide(
-                        color: context.evolveColors.border.withValues(
-                          alpha: 0.3,
-                        ),
-                      ),
+                      tickBorderData: BorderSide.none,
                       tickCount: 4,
                       ticksTextStyle: const TextStyle(
                         color: Colors.transparent,

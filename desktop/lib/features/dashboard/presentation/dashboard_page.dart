@@ -782,7 +782,6 @@ class _TrendChartPainter extends CustomPainter {
 
     for (var i = 0; i <= 4; i++) {
       final y = chart.bottom - (chart.height * i / 4);
-      canvas.drawLine(Offset(chart.left, y), Offset(chart.right, y), gridPaint);
       labelPainter
         ..text = TextSpan(
           text: '${i * 25}%',
@@ -826,9 +825,22 @@ class _TrendChartPainter extends CustomPainter {
         ..shader = LinearGradient(
           begin: Alignment.topCenter,
           end: Alignment.bottomCenter,
-          colors: [accent.withValues(alpha: 0.14), accent.withValues(alpha: 0)],
+          colors: [accent.withValues(alpha: 0.3), accent.withValues(alpha: 0)],
         ).createShader(chart),
     );
+
+    // Draw the neon glow/shadow effect
+    canvas.drawPath(
+      linePath,
+      Paint()
+        ..color = accent.withValues(alpha: 0.4)
+        ..strokeWidth = 3
+        ..style = PaintingStyle.stroke
+        ..strokeCap = StrokeCap.round
+        ..strokeJoin = StrokeJoin.round
+        ..maskFilter = const MaskFilter.blur(BlurStyle.normal, 8),
+    );
+
     // Mobile draws a clean white stroke with no data-point dots.
     canvas.drawPath(
       linePath,

@@ -1830,3 +1830,14 @@ All owner actions are itemized in **TO_SIMO_DO.md**.
 - [2026-07-19]: Failed State UI for Calendar Checkbox
   - *Details*: Added a visual failed state (subtle red border with a red X) to the checkbox in the daily details dialog to clearly indicate missed habits.
   - *Tech Notes*: Updated _DayHabitRow in habits_page.dart to receive a missed boolean and render the EvolveColors.rose styling when true.
+
+- [2026-07-19]: Semantic Ring Colors for DayBox
+  - *Details*: Changed the progress ring segments in the calendar day cell to use standard semantic colors (Green for done, Red for missed, Faint Gray for pending) instead of the individual habit's color. This provides an intuitive, at-a-glance view of the day's overall outcome.
+  - *Tech Notes*: Updated  calculation in  to map to , , and .
+
+- [2026-07-19]: Semantic Ring Colors for DayBox
+  - *Details*: Changed the progress ring segments in the calendar day cell to use standard semantic colors (Green for done, Red for missed, Faint Gray for pending) instead of the individual habit's color. This provides an intuitive, at-a-glance view of the day's overall outcome.
+  - *Tech Notes*: Updated `ringData` calculation in `_DayCell` to map to `EvolveColors.successBright`, `EvolveColors.rose`, and `context.evolveColors.borderStrong.withValues(alpha: 0.3)`.
+
+- [2026-07-19]: True Red for Failed State UI
+  - *Details*: Swapped the "Failed" habit visual state (both in the ring segment and the dialog checkbox) from pink (`EvolveColors.rose`) to pure red (`EvolveColors.destructive`) to improve visual distinction and better match the design intent for missed goals.

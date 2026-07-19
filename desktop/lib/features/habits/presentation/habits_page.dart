@@ -1533,11 +1533,11 @@ class _DayCellState extends State<_DayCell> with SingleTickerProviderStateMixin 
       final status = widget.snapshot.habitStatusFor(h.id, widget.date);
       Color color;
       if (status == 'done') {
-        color = h.color;
+        color = EvolveColors.successBright;
       } else if (status == 'missed') {
-        color = EvolveColors.rose;
+        color = EvolveColors.destructive;
       } else {
-        color = h.color.withValues(alpha: 0.22);
+        color = context.evolveColors.borderStrong.withValues(alpha: 0.3);
       }
       return color;
     }).toList();
@@ -2055,13 +2055,13 @@ class _DayHabitRow extends StatelessWidget {
       width: 22,
       height: 22,
       decoration: BoxDecoration(
-        color: done ? color : (missed ? EvolveColors.rose.withValues(alpha: 0.1) : Colors.transparent),
-        border: Border.all(color: done ? color : (missed ? EvolveColors.rose : colors.borderStrong)),
+        color: done ? color : (missed ? EvolveColors.destructive.withValues(alpha: 0.1) : Colors.transparent),
+        border: Border.all(color: done ? color : (missed ? EvolveColors.destructive : colors.borderStrong)),
         borderRadius: BorderRadius.circular(7),
       ),
       child: done
           ? const Icon(LucideIcons.check, color: Color(0xFF092113), size: 14)
-          : (missed ? const Icon(LucideIcons.x, color: EvolveColors.rose, size: 14) : null),
+          : (missed ? const Icon(LucideIcons.x, color: EvolveColors.destructive, size: 14) : null),
     );
     return Padding(
       padding: const EdgeInsets.symmetric(vertical: 6),

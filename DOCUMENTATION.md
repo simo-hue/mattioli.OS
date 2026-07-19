@@ -2,6 +2,17 @@
 
 ## Recent Changes
 
+- [2026-07-19]: **Screen Time Auto-Verification Logic Update (At Least vs At Most)**
+  - *Details*: Fixed the logic in `VerificationService.evaluateScreenTimeDay` to accurately map iOS `DeviceActivityMonitor` signals (`reachedThreshold` and `stayedUnder`) based on the habit's type: Limits (At most) vs Goals (At least).
+  - *Tech Notes*:
+    - Limits: `reachedThreshold` -> `fail()`, `stayedUnder` -> `pass()`.
+    - Goals: `reachedThreshold` -> `pass()`, `stayedUnder` -> `fail()`.
+    - Updated `blockedFlip` logic to ensure that once a permanent state (e.g. `fail` for Limits, or `pass` for Goals) is reached, it is not overturned by duplicate or late signals.
+    - Updated `day_verdict_test.dart` to cover both `VerificationComparator.atLeast` and `VerificationComparator.atMost` scenarios.
+    - Updated `VerificationRuleField` to include an `EvolveSegmentedControl` for Screen Time habits, allowing users to toggle between Goal (At least) and Limit (At most).
+    - Added translations for `comparatorAtLeast` and `comparatorAtMost` across all 5 languages.
+    - Omitted background sync via `BGTaskScheduler` per user request to only track from iOS and visualize on macOS; opening the iOS app triggers `runVerificationReconcile` and syncs the data to Supabase.
+
 - [2026-07-18]: **App Store Connect Info.plist Validation Fixes**
   - *Details*: Fixed 409 Validation Failed errors when uploading to App Store Connect by adding the `NSHealthUpdateUsageDescription` and `NSLocationWhenInUseUsageDescription` strings to `Info.plist` and all localized `.strings` files.
   - *Tech Notes*:

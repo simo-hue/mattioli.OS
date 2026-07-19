@@ -1175,6 +1175,8 @@
   "verification": {
     "autoVerify": "Auto-verify",
     "autoVerified": "Auto-verified",
+    "comparatorAtLeast": "Goal (At least)",
+    "comparatorAtMost": "Limit (At most)",
     "couldNotVerifyTapToResolve": "Couldn't verify — tap to resolve",
     "needsAppleWatch": "Needs an Apple Watch to auto-verify",
     "grantHealthAccess": "Allow Apple Health access",

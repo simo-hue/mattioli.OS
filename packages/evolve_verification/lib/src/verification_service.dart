@@ -207,20 +207,33 @@ class VerificationService {
 
   /// Pure decision table for one Screen Time day (D2/D4). Driven by the
   /// extension's signal, not a query.
-  @visibleForTesting
   static DayVerdict evaluateScreenTimeDay({
+    required VerificationRule rule,
     required ScreenTimeSignalKind? signal,
     required bool isToday,
   }) {
-    switch (signal) {
-      case ScreenTimeSignalKind.reachedThreshold:
-        return const DayVerdict.fail();
-      case ScreenTimeSignalKind.stayedUnder:
-        return const DayVerdict.pass();
-      case null:
-        return isToday
-            ? const DayVerdict.pending()
-            : const DayVerdict.couldNotVerify();
+    if (signal == null) {
+      return isToday
+          ? const DayVerdict.pending()
+          : const DayVerdict.couldNotVerify();
+    }
+
+    if (rule.comparator == VerificationComparator.atLeast) {
+      // Goal: At least X minutes.
+      switch (signal) {
+        case ScreenTimeSignalKind.reachedThreshold:
+          return const DayVerdict.pass();
+        case ScreenTimeSignalKind.stayedUnder:
+          return const DayVerdict.fail();
+      }
+    } else {
+      // Limit: At most X minutes.
+      switch (signal) {
+        case ScreenTimeSignalKind.reachedThreshold:
+          return const DayVerdict.fail();
+        case ScreenTimeSignalKind.stayedUnder:
+          return const DayVerdict.pass();
+      }
     }
   }
 
@@ -300,6 +313,7 @@ class VerificationService {
               ? null
               : signalIndex[goal.goalId]?[day];
           verdict = evaluateScreenTimeDay(
+            rule: goal.rule,
             signal: signal,
             isToday: isToday,
           );
@@ -309,13 +323,17 @@ class VerificationService {
         switch (verdict.outcome) {
           case VerificationOutcome.pass:
           case VerificationOutcome.fail:
-            // A Screen Time over-limit is permanent (D2): once a day is logged
-            // `fail`, a late/duplicate stayed-under signal in a later drain must
-            // never flip it back to `pass`. (HealthKit fail→pass on late data is
-            // intended and still allowed.)
+            // A Screen Time threshold event (reachedThreshold) is permanent.
+            // For Limits (atMost), `fail` is permanent.
+            // For Goals (atLeast), `pass` is permanent.
+            // A late/duplicate `stayedUnder` must never overturn it.
             final blockedFlip = goal.rule.isScreenTime &&
-                existingOutcome == VerificationOutcome.fail &&
-                verdict.outcome == VerificationOutcome.pass;
+                ((goal.rule.comparator == VerificationComparator.atMost &&
+                    existingOutcome == VerificationOutcome.fail &&
+                    verdict.outcome == VerificationOutcome.pass) ||
+                 (goal.rule.comparator == VerificationComparator.atLeast &&
+                    existingOutcome == VerificationOutcome.pass &&
+                    verdict.outcome == VerificationOutcome.fail));
             // Idempotent: only write when the verdict actually changed.
             if (!blockedFlip && existingOutcome != verdict.outcome) {
               writes.add(LogWrite(

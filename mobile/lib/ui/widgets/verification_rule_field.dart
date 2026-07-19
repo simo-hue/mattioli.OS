@@ -4,6 +4,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 
 import '../../i18n/translations.g.dart';
+import '../kit/evolve_kit.dart';
 
 /// Display helpers for a verification template/rule. Localized via slang — the
 /// [Translations] instance is passed in so the pure helpers stay testable
@@ -422,6 +423,19 @@ class _VerificationRuleFieldState extends State<VerificationRuleField> {
             ),
           ],
           const SizedBox(height: 12),
+          if (r.isScreenTime) ...[
+            Padding(
+              padding: const EdgeInsets.only(bottom: 12.0),
+              child: EvolveSegmentedControl<VerificationComparator>(
+                segments: {
+                  VerificationComparator.atLeast: tr.verification.comparatorAtLeast,
+                  VerificationComparator.atMost: tr.verification.comparatorAtMost,
+                },
+                groupValue: r.comparator,
+                onValueChanged: (c) => widget.onChanged(r.copyWith(comparator: c)),
+              ),
+            ),
+          ],
           // Threshold: −/+ steppers flanking a directly-editable number. The
           // comparator and unit sit inline as read-only context; the metric name
           // is already shown by the selected chip above.

@@ -1175,6 +1175,8 @@
   "verification": {
     "autoVerify": "التحقق التلقائي",
     "autoVerified": "تم التحقق تلقائيًا",
+    "comparatorAtLeast": "هدف (على الأقل)",
+    "comparatorAtMost": "حد (على الأكثر)",
     "couldNotVerifyTapToResolve": "تعذّر التحقق — اضغط للحل",
     "needsAppleWatch": "يتطلب Apple Watch للتحقق التلقائي",
     "grantHealthAccess": "السماح بالوصول إلى صحتي",

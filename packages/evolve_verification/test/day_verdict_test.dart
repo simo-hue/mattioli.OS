@@ -74,12 +74,12 @@ void main() {
     });
   });
 
-  group('evaluateScreenTimeDay', () {
+  group('evaluateScreenTimeDay — atMost (Limits)', () {
     test('a reached-threshold signal always fails', () {
       for (final isToday in [true, false]) {
         expect(
           VerificationService.evaluateScreenTimeDay(
-              signal: ScreenTimeSignalKind.reachedThreshold, isToday: isToday),
+              rule: atMost, signal: ScreenTimeSignalKind.reachedThreshold, isToday: isToday),
           const DayVerdict.fail(),
         );
       }
@@ -88,26 +88,46 @@ void main() {
     test('a stayed-under signal always passes', () {
       expect(
         VerificationService.evaluateScreenTimeDay(
-            signal: ScreenTimeSignalKind.stayedUnder, isToday: false),
+            rule: atMost, signal: ScreenTimeSignalKind.stayedUnder, isToday: false),
         const DayVerdict.pass(),
       );
     });
 
     test('no signal is pending today, couldn\'t-verify in the past', () {
       expect(
-        VerificationService.evaluateScreenTimeDay(signal: null, isToday: true),
+        VerificationService.evaluateScreenTimeDay(rule: atMost, signal: null, isToday: true),
         const DayVerdict.pending(),
       );
       expect(
-        VerificationService.evaluateScreenTimeDay(signal: null, isToday: false),
+        VerificationService.evaluateScreenTimeDay(rule: atMost, signal: null, isToday: false),
         const DayVerdict.couldNotVerify(),
       );
     });
 
     test('screen time verdicts never carry a measured value', () {
       final v = VerificationService.evaluateScreenTimeDay(
-          signal: ScreenTimeSignalKind.reachedThreshold, isToday: false);
+          rule: atMost, signal: ScreenTimeSignalKind.reachedThreshold, isToday: false);
       expect(v.measuredValue, isNull);
+    });
+  });
+
+  group('evaluateScreenTimeDay — atLeast (Goals)', () {
+    test('a reached-threshold signal always passes', () {
+      for (final isToday in [true, false]) {
+        expect(
+          VerificationService.evaluateScreenTimeDay(
+              rule: atLeast, signal: ScreenTimeSignalKind.reachedThreshold, isToday: isToday),
+          const DayVerdict.pass(),
+        );
+      }
+    });
+
+    test('a stayed-under signal always fails', () {
+      expect(
+        VerificationService.evaluateScreenTimeDay(
+            rule: atLeast, signal: ScreenTimeSignalKind.stayedUnder, isToday: false),
+        const DayVerdict.fail(),
+      );
     });
   });
 }

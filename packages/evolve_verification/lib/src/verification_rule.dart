@@ -80,10 +80,13 @@ class VerificationRule {
     );
   }
 
-  VerificationRule copyWith({double? threshold}) => VerificationRule(
+  VerificationRule copyWith({
+    VerificationComparator? comparator,
+    double? threshold,
+  }) => VerificationRule(
         provider: provider,
         metricKey: metricKey,
-        comparator: comparator,
+        comparator: comparator ?? this.comparator,
         threshold: threshold ?? this.threshold,
         unit: unit,
       );

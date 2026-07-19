@@ -1175,6 +1175,8 @@
   "verification": {
     "autoVerify": "Automatisch prüfen",
     "autoVerified": "Automatisch geprüft",
+    "comparatorAtLeast": "Ziel (Mindestens)",
+    "comparatorAtMost": "Limit (Höchstens)",
     "couldNotVerifyTapToResolve": "Konnte nicht geprüft werden — zum Auflösen tippen",
     "needsAppleWatch": "Erfordert eine Apple Watch zur automatischen Prüfung",
     "grantHealthAccess": "Zugriff auf Apple Health erlauben",

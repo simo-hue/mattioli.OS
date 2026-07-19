@@ -1,6 +1,7 @@
 import 'dart:convert';
 
 import 'package:evolve_verification/evolve_verification.dart';
+import 'package:flutter/widgets.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:path/path.dart' as p;
 import 'package:sqflite_sqlcipher/sqflite.dart';
@@ -78,6 +79,12 @@ final screenTimeAuthStatusProvider =
   if (!VerificationConfig.screenTimeEnabled) {
     return ScreenTimeAuthorizationStatus.notDetermined;
   }
+  
+  final listener = AppLifecycleListener(
+    onResume: ref.invalidateSelf,
+  );
+  ref.onDispose(listener.dispose);
+
   return ref.read(screenTimeBridgeProvider).authorizationStatus();
 });
 

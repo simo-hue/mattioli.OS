@@ -11,6 +11,7 @@
     - Updated `day_verdict_test.dart` to cover both `VerificationComparator.atLeast` and `VerificationComparator.atMost` scenarios.
     - Updated `VerificationRuleField` to include an `EvolveSegmentedControl` for Screen Time habits, allowing users to toggle between Goal (At least) and Limit (At most).
     - Added translations for `comparatorAtLeast` and `comparatorAtMost` across all 5 languages.
+    - Fixed a UI stale cache issue where `screenTimeAuthStatusProvider` wouldn't clear the "needs access" warning after returning from Settings. Added an `AppLifecycleListener` to the `FutureProvider` so it auto-invalidates and reads fresh OS authorization status on `onResume`.
     - Omitted background sync via `BGTaskScheduler` per user request to only track from iOS and visualize on macOS; opening the iOS app triggers `runVerificationReconcile` and syncs the data to Supabase.
 
 - [2026-07-18]: **App Store Connect Info.plist Validation Fixes**

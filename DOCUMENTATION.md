@@ -1849,3 +1849,8 @@ All owner actions are itemized in **TO_SIMO_DO.md**.
 - [2026-07-19]: Statistics Page Layout Adjustments
   - *Details*: Moved 'Key Correlation' panel precisely under the 'Momentum' box to fill the visual hole, expanding the column slightly from 300px to 350px for proper fit. Extended the '365 activity' heatmap panel to use the full display width by removing its width constraint.
   - *Tech Notes*: Modified `_GlobalInfo.build` in `statistics_page.dart`. Extracted `_YearContributionHeatmap` out of the Row that shared width with correlations, and created a unified column for `_MomentumRing` and `_CorrelationPanel`.
+
+- [2026-07-19 22:19]: Consistent Error Coloring
+  - *Details*: Replaced 'EvolveColors.rose' with 'EvolveColors.destructive' for negative UI metrics and statuses across the application for a more coherent look.
+  - *Tech Notes*: Updated 'statistics_page.dart', 'statistics_extras.dart', 'dashboard_page.dart', and 'habits_page.dart'. Kept 'EvolveColors.rose' purely as a user-selectable tag color.
+

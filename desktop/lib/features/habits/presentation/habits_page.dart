@@ -901,12 +901,12 @@ class _HabitRowState extends State<_HabitRow> {
                       width: 22,
                       height: 22,
                       decoration: BoxDecoration(
-                        color: completed ? habit.color : missed ? EvolveColors.rose.withValues(alpha: 0.2) : Colors.transparent,
+                        color: completed ? habit.color : missed ? EvolveColors.destructive.withValues(alpha: 0.2) : Colors.transparent,
                         border: Border.all(
                           color: completed
                               ? habit.color
                               : missed
-                                  ? EvolveColors.rose.withValues(alpha: 0.4)
+                                  ? EvolveColors.destructive.withValues(alpha: 0.4)
                                   : context.evolveColors.borderStrong,
                         ),
                         borderRadius: BorderRadius.circular(7),
@@ -920,7 +920,7 @@ class _HabitRowState extends State<_HabitRow> {
                           : missed
                               ? const Icon(
                                   LucideIcons.x,
-                                  color: EvolveColors.rose,
+                                  color: EvolveColors.destructive,
                                   size: 14,
                                 )
                               : null,

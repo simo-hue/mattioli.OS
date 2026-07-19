@@ -962,7 +962,7 @@ class _HabitRow extends StatelessWidget {
                   color: isDone
                       ? habit.color
                       : isMissed
-                      ? EvolveColors.rose
+                      ? EvolveColors.destructive
                       : context.evolveColors.borderStrong,
                 ),
                 borderRadius: BorderRadius.circular(7),
@@ -976,7 +976,7 @@ class _HabitRow extends StatelessWidget {
                   : isMissed
                   ? const Icon(
                       LucideIcons.x,
-                      color: EvolveColors.rose,
+                      color: EvolveColors.destructive,
                       size: 13,
                     )
                   : null,

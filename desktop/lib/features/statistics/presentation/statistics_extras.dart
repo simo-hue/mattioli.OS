@@ -37,7 +37,7 @@ List<double> yearContributionValues(
 Color _momentumColor(double score) {
   if (score >= 66) return EvolveColors.success;
   if (score >= 40) return EvolveColors.amber;
-  return EvolveColors.rose;
+  return EvolveColors.destructive;
 }
 
 Color _habitColor(DashboardSnapshot snapshot, String? goalId, Color fallback) {
@@ -592,10 +592,10 @@ class _TrendExtras extends ConsumerWidget {
       criticalItems.add(
         _RankRow(
           rank: criticalItems.length + 1,
-          color: _habitColor(snapshot, id, EvolveColors.rose),
+          color: _habitColor(snapshot, id, EvolveColors.destructive),
           title: title,
           valueLabel: drop > 0 ? '-$drop%' : t.stats.criticalStalled(days: neg),
-          valueColor: EvolveColors.rose,
+          valueColor: EvolveColors.destructive,
           subLabel: drop > 0 ? t.stats.criticalStalled(days: neg) : null,
         ),
       );
@@ -610,7 +610,7 @@ class _TrendExtras extends ConsumerWidget {
     );
     final criticalPanel = _RankPanel(
       icon: LucideIcons.circleAlert,
-      iconColor: EvolveColors.rose,
+      iconColor: EvolveColors.destructive,
       title: t.stats.criticalHabitsTitle,
       subtitle: t.stats.criticalHabitsSubtitle,
       items: criticalItems,
@@ -1193,7 +1193,7 @@ class _DangerZonePanel extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return EvolvePanel(
-      glowColor: EvolveColors.rose,
+      glowColor: EvolveColors.destructive,
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
@@ -1201,7 +1201,7 @@ class _DangerZonePanel extends StatelessWidget {
             children: [
               const EvolveIconChip(
                 icon: LucideIcons.triangleAlert,
-                color: EvolveColors.rose,
+                color: EvolveColors.destructive,
                 size: 36,
                 iconSize: 18,
               ),
@@ -1227,7 +1227,7 @@ class _DangerZonePanel extends StatelessWidget {
                 fontSize: 30,
                 fontWeight: FontWeight.w800,
                 letterSpacing: -0.6,
-                color: EvolveColors.rose,
+                color: EvolveColors.destructive,
               ),
             ),
             const SizedBox(height: 6),
@@ -1428,14 +1428,14 @@ class _ConsistencyPanel extends ConsumerWidget {
               Text(
                 t.stats.consistencyErratic,
                 style: const TextStyle(
-                  color: EvolveColors.rose,
+                  color: EvolveColors.destructive,
                   fontSize: 13,
                   fontWeight: FontWeight.w700,
                 ),
               ),
               const SizedBox(height: 10),
               for (final s in scores.reversed.take(2))
-                row(s, EvolveColors.rose),
+                row(s, EvolveColors.destructive),
             ],
           ],
         ],
@@ -2089,7 +2089,7 @@ class _MoodCorrelationAnalysisPanel extends StatelessWidget {
             _LevelBar(
               label: t.statistics.withLowMood,
               percentage: c.lowMoodPct,
-              color: EvolveColors.rose,
+              color: EvolveColors.destructive,
             ),
             const SizedBox(height: 18),
           ],
@@ -2205,7 +2205,7 @@ class _HabitHero extends ConsumerWidget {
           label: t.statistics.missed,
           value: '$missed',
           detail: t.stats.trend30Detail,
-          color: EvolveColors.rose,
+          color: EvolveColors.destructive,
           icon: LucideIcons.circleAlert,
         ),
         _Metric(
@@ -2344,7 +2344,7 @@ class _HabitGapPanel extends StatelessWidget {
                   label: t.stats.gapSince,
                   value: '${gap.daysSinceLastDone}${t.stats.daysUnit}',
                   color: gap.daysSinceLastDone > gap.avgGap * 1.5
-                      ? EvolveColors.rose
+                      ? EvolveColors.destructive
                       : EvolveColors.success,
                 ),
               ],
@@ -2568,7 +2568,7 @@ class _HabitImprovementExtras extends ConsumerWidget {
           label: t.stats.atRiskTitle,
           value: atRisk ? t.stats.atRiskYes : t.stats.atRiskNo,
           detail: t.stats.atRiskDetail(days: bundle.gap.daysSinceLastDone),
-          color: atRisk ? EvolveColors.rose : EvolveColors.success,
+          color: atRisk ? EvolveColors.destructive : EvolveColors.success,
           icon: atRisk ? LucideIcons.triangleAlert : LucideIcons.shieldCheck,
         ),
         _Metric(

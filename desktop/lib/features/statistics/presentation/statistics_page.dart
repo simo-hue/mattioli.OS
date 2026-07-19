@@ -534,7 +534,7 @@ class _GlobalInfo extends ConsumerWidget {
           label: t.stats.criticalDay,
           value: _criticalDayLabel(criticalDay),
           detail: t.stats.completePrioritiesFirst,
-          color: EvolveColors.rose,
+          color: EvolveColors.destructive,
           icon: LucideIcons.circleAlert,
         ),
       ],
@@ -648,7 +648,7 @@ class _GlobalTrend extends ConsumerWidget {
         );
         final criticalCard = _TrendInsightCard(
           icon: LucideIcons.circleAlert,
-          color: EvolveColors.rose,
+          color: EvolveColors.destructive,
           label: t.stats.criticalArea,
           value: criticalValue,
         );
@@ -716,7 +716,7 @@ class _GlobalTrend extends ConsumerWidget {
                 child: _InlineInsight(
                   title: t.stats.criticalArea,
                   value: criticalValue,
-                  color: EvolveColors.rose,
+                  color: EvolveColors.destructive,
                 ),
               ),
             ],
@@ -1768,7 +1768,7 @@ class _HabitStatsRowState extends State<_HabitStatsRow> {
             _StatBadge(
               label: t.stats.worstStreakLabel,
               value: '$worst',
-              color: EvolveColors.rose,
+              color: EvolveColors.destructive,
             ),
           ],
         ),
@@ -1947,7 +1947,7 @@ class _Last30DaysGrid extends StatelessWidget {
                     decoration: BoxDecoration(
                       color: switch (status) {
                         1 => EvolveColors.success,
-                        2 => EvolveColors.rose,
+                        2 => EvolveColors.destructive,
                         _ => context.evolveColors.panelSoft,
                       },
                       borderRadius: BorderRadius.circular(4),
@@ -1965,7 +1965,7 @@ class _Last30DaysGrid extends StatelessWidget {
                   label: t.statistics.completed2,
                 ),
                 _GridLegend(
-                  color: EvolveColors.rose,
+                  color: EvolveColors.destructive,
                   label: t.statistics.notCompleted,
                 ),
                 _GridLegend(
@@ -2095,7 +2095,7 @@ class _YearlyHabitHeatmap extends StatelessWidget {
               _CalendarSummaryStat(
                 value: '$missed',
                 label: t.statistics.notCompleted,
-                color: EvolveColors.rose,
+                color: EvolveColors.destructive,
               ),
               const Spacer(),
               StatusPill(label: t.stats.successRate(rate: rate)),
@@ -2113,7 +2113,7 @@ class _YearlyHabitHeatmap extends StatelessWidget {
                   decoration: BoxDecoration(
                     color: switch (s) {
                       1 => color,
-                      2 => EvolveColors.rose.withValues(alpha: 0.85),
+                      2 => EvolveColors.destructive.withValues(alpha: 0.85),
                       _ => context.evolveColors.panelSoft,
                     },
                     borderRadius: BorderRadius.circular(2),
@@ -2246,7 +2246,7 @@ class _HabitCorrelationsPanel extends ConsumerWidget {
             Text(
               t.statistics.negativeCorrelations,
               style: const TextStyle(
-                color: EvolveColors.rose,
+                color: EvolveColors.destructive,
                 fontSize: 13,
                 fontWeight: FontWeight.w700,
                 letterSpacing: -0.1,
@@ -2263,7 +2263,7 @@ class _HabitCorrelationsPanel extends ConsumerWidget {
                 _InlineInsight(
                   title: c.title,
                   value: t.stats.togetherProbability(percentage: c.percentage),
-                  color: EvolveColors.rose,
+                  color: EvolveColors.destructive,
                 ),
                 const SizedBox(height: 8),
               ],
@@ -2368,7 +2368,7 @@ class _HabitPerformance extends ConsumerWidget {
             done: extremes.weakest!.done,
             total: extremes.weakest!.total,
           ),
-          color: EvolveColors.rose,
+          color: EvolveColors.destructive,
           icon: LucideIcons.circleAlert,
         ),
     ];
@@ -2672,7 +2672,7 @@ class _HabitMood extends ConsumerWidget {
               value: correlation.avgMoodDone.toStringAsFixed(1),
               detail: t.statistics.onCompletedDays,
               color: correlation.avgMoodDone < 4
-                  ? EvolveColors.rose
+                  ? EvolveColors.destructive
                   : context.evolveAccent,
               icon: LucideIcons.smile,
             ),
@@ -2681,7 +2681,7 @@ class _HabitMood extends ConsumerWidget {
               value: correlation.avgEnergyDone.toStringAsFixed(1),
               detail: t.statistics.onCompletedDays,
               color: correlation.avgEnergyDone < 4
-                  ? EvolveColors.rose
+                  ? EvolveColors.destructive
                   : EvolveColors.amber,
               icon: LucideIcons.zap,
             ),
@@ -2889,7 +2889,7 @@ class _PerformancePerLevelPanel extends StatelessWidget {
           _LevelBar(
             label: t.statistics.withLowMood,
             percentage: correlation.lowMoodPct,
-            color: EvolveColors.rose,
+            color: EvolveColors.destructive,
           ),
         ],
       ),

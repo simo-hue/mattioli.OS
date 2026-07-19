@@ -22,6 +22,7 @@ import 'package:evolve_desktop/shared/widgets/evolve_panel.dart';
 import 'package:evolve_desktop/shared/widgets/evolve_period_switcher.dart';
 import 'package:evolve_desktop/shared/widgets/evolve_weekday_selector.dart';
 import 'package:evolve_desktop/shared/widgets/verified_habit_badge.dart';
+import 'package:flutter/gestures.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
@@ -57,6 +58,35 @@ class _HabitsPageState extends ConsumerState<HabitsPage> {
   final _checkoffKey = GlobalKey();
   final _streakKey = GlobalKey();
   final _surfaceKey = GlobalKey();
+
+  double _horizontalScrollDelta = 0.0;
+  DateTime _lastSwipeTime = DateTime.fromMillisecondsSinceEpoch(0);
+
+  void _processScrollDelta(double dx, double dy) {
+    final now = DateTime.now();
+
+    if (now.difference(_lastSwipeTime).inMilliseconds < 300) {
+      _horizontalScrollDelta = 0.0;
+      return;
+    }
+
+    if (dy.abs() > dx.abs()) {
+      _horizontalScrollDelta = 0.0;
+      return;
+    }
+
+    _horizontalScrollDelta += dx;
+
+    if (_horizontalScrollDelta.abs() > 40.0) {
+      if (_horizontalScrollDelta > 0) {
+        setState(() => _surface = _HabitSurface.protocol);
+      } else {
+        setState(() => _surface = _HabitSurface.calendar);
+      }
+      _horizontalScrollDelta = 0.0;
+      _lastSwipeTime = now;
+    }
+  }
 
   @override
   void initState() {
@@ -195,7 +225,17 @@ class _HabitsPageState extends ConsumerState<HabitsPage> {
       onKeyEvent: _handleCalendarKey,
       child: Stack(
         children: [
-          page,
+          Listener(
+            onPointerSignal: (event) {
+              if (event is PointerScrollEvent) {
+                _processScrollDelta(event.scrollDelta.dx, event.scrollDelta.dy);
+              }
+            },
+            onPointerPanZoomUpdate: (event) {
+              _processScrollDelta(event.panDelta.dx, event.panDelta.dy);
+            },
+            child: page,
+          ),
           if (showTour)
             CoachTutorialOverlay(
               steps: _habitsTourSteps(),

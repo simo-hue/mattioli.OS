@@ -23,6 +23,7 @@ import 'package:evolve_desktop/shared/widgets/evolve_toast.dart';
 import 'package:evolve_desktop/core/tutorial_provider.dart';
 import 'package:evolve_desktop/shared/widgets/coach_tutorial.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter/gestures.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:lucide_icons_flutter/lucide_icons.dart';
@@ -41,6 +42,8 @@ class _GoalsPageState extends ConsumerState<GoalsPage> {
   late int _selectedMonth;
   late int _selectedWeek;
   bool _showStats = false;
+  bool _isHoveringBoard = false;
+  bool _isHoveringStats = false;
   final _quickGoalController = TextEditingController();
   // Synchronous in-flight guard for the quick-add bar, armed BEFORE the addGoal
   // await. The field is only cleared once that resolves (a Supabase round-trip
@@ -93,6 +96,9 @@ class _GoalsPageState extends ConsumerState<GoalsPage> {
   /// Set when a ⌘K "Edit" jump lands here: after scrolling the goal into view we
   /// open its editor (reusing this page's own editor + category context).
   bool _pendingOpenEditor = false;
+
+  double _horizontalScrollDelta = 0.0;
+  DateTime _lastSwipeTime = DateTime.fromMillisecondsSinceEpoch(0);
 
   /// Structural identity of the shown period: any visible change (type, year,
   /// quarter, month or week) flips it, which drives the board transition.
@@ -276,101 +282,119 @@ class _GoalsPageState extends ConsumerState<GoalsPage> {
     return Focus(
       focusNode: _periodFocusNode,
       onKeyEvent: _handlePeriodKey,
-      child: DesktopPage(
-        title: t.goalsPage.title,
-        subtitle: t.goalsPage.subtitle,
-        child: Stack(
-          children: [
-            Column(
-              crossAxisAlignment: CrossAxisAlignment.stretch,
-              children: [
-                _GoalToolbar(
-                  statsToggleKey: _performanceToggleKey,
-                  selectedType: _selectedType,
-                  showStats: _showStats,
-                  onTypeChanged: (type) => setState(() {
-                    _lastDirection = 0; // plan switch — neutral fade
-                    _selectedType = type;
-                    _showStats = false;
-                  }),
-                  onShowStats: () => setState(() => _showStats = true),
-                ),
-                const SizedBox(height: 22),
-                _GoalCommandBar(
-                  periodClusterKey: _planSelectorKey,
-                  addGoalKey: _addGoalKey,
-                  onMenuOpenChanged: _onMenuOpenChanged,
-                  selectedType: _selectedType,
-                  selectedYear: _selectedYear,
-                  selectedQuarter: _selectedQuarter,
-                  selectedMonth: _selectedMonth,
-                  selectedWeek: _selectedWeek,
-                  onYearChanged: (year) => setState(() {
-                    _lastDirection = year.compareTo(_selectedYear);
-                    _selectedYear = year;
-                    _selectedWeek = _selectedWeek.clamp(
-                      1,
-                      logicalWeeksInMonth(_selectedYear, _selectedMonth),
-                    );
-                  }),
-                  onQuarterChanged: (quarter) => setState(() {
-                    _lastDirection = quarter.compareTo(_selectedQuarter);
-                    _selectedQuarter = quarter;
-                  }),
-                  onMonthChanged: (month) => setState(() {
-                    _lastDirection = month.compareTo(_selectedMonth);
-                    _selectedMonth = month;
-                    _selectedWeek = 1;
-                  }),
-                  onWeekChanged: (week) => setState(() {
-                    _lastDirection = week.compareTo(_selectedWeek);
-                    _selectedWeek = week;
-                  }),
-                  onPrevious: () => _movePeriod(-1),
-                  onNext: () => _movePeriod(1),
-                  onManageCategories: _openCategoryManager,
-                  showQuickAdd: !_showStats,
-                  quickGoalController: _quickGoalController,
-                  quickGoalCategory: _quickGoalCategory,
-                  categories: categories,
-                  onQuickCategoryChanged: (category) =>
-                      setState(() => _quickGoalCategory = category),
-                  onCreateCategory: _createCategoryInline,
-                  onQuickSubmit: _submitQuickGoal,
-                  quickSubmitting: _quickAdding,
-                  quickGoalHint: _quickGoalHint,
-                ),
-                const SizedBox(height: 22),
-                if (_showStats)
-                  const GoalsStatsView()
-                else
-                  // Slide+fade the board on every period change so arrow-key /
-                  // ‹ › navigation is always visibly reflected. The tutorial
-                  // GlobalKey is attached only during the tour so the brief
-                  // two-board overlap of a transition can't duplicate it.
-                  EvolvePeriodSwitcher(
-                    periodKey: _periodSignature,
-                    direction: _lastDirection,
-                    child: _GoalBoard(
-                      periodTitle: _periodTitle,
-                      periodSubtitle: _periodSubtitle,
-                      tutorialCheckboxKey: showTour
-                          ? _tutorialCheckboxKey
-                          : null,
-                      highlightGoalId: _highlightGoalId,
-                      highlightRowKey: _highlightRowKey,
-                      categories: categories,
-                      activeGoals: activeGoals,
-                      completedGoals: completedGoals,
-                      failedGoals: failedGoals,
-                      onToggleStatus: _cycleGoalStatus,
-                      onEdit: _openGoalEditorFor,
-                      onReschedule: (goal) => ref
-                          .read(dashboardControllerProvider.notifier)
-                          .rescheduleGoal(goal.id),
-                      onDelete: (goal) => ref
-                          .read(dashboardControllerProvider.notifier)
-                          .deleteGoal(goal.id),
+      child: Listener(
+        behavior: HitTestBehavior.opaque,
+        onPointerSignal: (event) {
+          if (event is PointerScrollEvent) {
+            _processScrollDelta(event.scrollDelta.dx, event.scrollDelta.dy);
+          }
+        },
+        onPointerPanZoomUpdate: (event) {
+          _processScrollDelta(event.panDelta.dx, event.panDelta.dy);
+        },
+        child: DesktopPage(
+          title: t.goalsPage.title,
+          subtitle: t.goalsPage.subtitle,
+          child: Stack(
+            children: [
+              Column(
+                crossAxisAlignment: CrossAxisAlignment.stretch,
+                children: [
+                  _GoalToolbar(
+                        statsToggleKey: _performanceToggleKey,
+                        selectedType: _selectedType,
+                        showStats: _showStats,
+                        onTypeChanged: (type) => setState(() {
+                          _lastDirection = 0; // plan switch — neutral fade
+                          _selectedType = type;
+                          _showStats = false;
+                        }),
+                        onShowStats: () => setState(() => _showStats = true),
+                      ),
+                      const SizedBox(height: 22),
+                      _GoalCommandBar(
+                        periodClusterKey: _planSelectorKey,
+                        addGoalKey: _addGoalKey,
+                        onMenuOpenChanged: _onMenuOpenChanged,
+                        selectedType: _selectedType,
+                        selectedYear: _selectedYear,
+                        selectedQuarter: _selectedQuarter,
+                        selectedMonth: _selectedMonth,
+                        selectedWeek: _selectedWeek,
+                        onYearChanged: (year) => setState(() {
+                          _lastDirection = year.compareTo(_selectedYear);
+                          _selectedYear = year;
+                          _selectedWeek = _selectedWeek.clamp(
+                            1,
+                            logicalWeeksInMonth(_selectedYear, _selectedMonth),
+                          );
+                        }),
+                        onQuarterChanged: (quarter) => setState(() {
+                          _lastDirection = quarter.compareTo(_selectedQuarter);
+                          _selectedQuarter = quarter;
+                        }),
+                        onMonthChanged: (month) => setState(() {
+                          _lastDirection = month.compareTo(_selectedMonth);
+                          _selectedMonth = month;
+                          _selectedWeek = 1;
+                        }),
+                        onWeekChanged: (week) => setState(() {
+                          _lastDirection = week.compareTo(_selectedWeek);
+                          _selectedWeek = week;
+                        }),
+                        onPrevious: () => _movePeriod(-1),
+                        onNext: () => _movePeriod(1),
+                        onManageCategories: _openCategoryManager,
+                        showQuickAdd: !_showStats,
+                        quickGoalController: _quickGoalController,
+                        quickGoalCategory: _quickGoalCategory,
+                        categories: categories,
+                        onQuickCategoryChanged: (category) =>
+                            setState(() => _quickGoalCategory = category),
+                        onCreateCategory: _createCategoryInline,
+                        onQuickSubmit: _submitQuickGoal,
+                        quickSubmitting: _quickAdding,
+                        quickGoalHint: _quickGoalHint,
+                      ),
+                  const SizedBox(height: 22),
+                  if (_showStats)
+                    MouseRegion(
+                      onEnter: (_) => _isHoveringStats = true,
+                      onExit: (_) => _isHoveringStats = false,
+                      child: const GoalsStatsView(),
+                    )
+                  else
+                    // Slide+fade the board on every period change so arrow-key /
+                    // ‹ › navigation is always visibly reflected. The tutorial
+                    // GlobalKey is attached only during the tour so the brief
+                    // two-board overlap of a transition can't duplicate it.
+                    MouseRegion(
+                      onEnter: (_) => _isHoveringBoard = true,
+                      onExit: (_) => _isHoveringBoard = false,
+                      child: EvolvePeriodSwitcher(
+                        periodKey: _periodSignature,
+                      direction: _lastDirection,
+                      child: _GoalBoard(
+                        periodTitle: _periodTitle,
+                        periodSubtitle: _periodSubtitle,
+                        tutorialCheckboxKey: showTour
+                            ? _tutorialCheckboxKey
+                            : null,
+                        highlightGoalId: _highlightGoalId,
+                        highlightRowKey: _highlightRowKey,
+                        categories: categories,
+                        activeGoals: activeGoals,
+                        completedGoals: completedGoals,
+                        failedGoals: failedGoals,
+                        onToggleStatus: _cycleGoalStatus,
+                        onEdit: _openGoalEditorFor,
+                        onReschedule: (goal) => ref
+                            .read(dashboardControllerProvider.notifier)
+                            .rescheduleGoal(goal.id),
+                        onDelete: (goal) => ref
+                            .read(dashboardControllerProvider.notifier)
+                            .deleteGoal(goal.id),
+                      ),
                     ),
                   ),
               ],
@@ -390,7 +414,7 @@ class _GoalsPageState extends ConsumerState<GoalsPage> {
           ],
         ),
       ),
-    );
+    ));
   }
 
   /// Left/right arrow keys page through the selected plan's timeline (previous
@@ -547,6 +571,70 @@ class _GoalsPageState extends ConsumerState<GoalsPage> {
           }
       }
     });
+  }
+
+  void _moveType(int direction) {
+    const values = [
+      GoalType.lifetime,
+      GoalType.annual,
+      GoalType.quarterly,
+      GoalType.monthly,
+      GoalType.weekly,
+    ];
+    
+    final currentIndex = _showStats ? values.length : values.indexOf(_selectedType);
+    final newIndex = currentIndex + direction;
+    
+    if (newIndex >= 0 && newIndex <= values.length) {
+      setState(() {
+        _lastDirection = 0; // plan switch — neutral fade
+        if (newIndex == values.length) {
+          _showStats = true;
+        } else {
+          _selectedType = values[newIndex];
+          _showStats = false;
+        }
+      });
+    }
+  }
+
+  void _processScrollDelta(double dx, double dy) {
+    if (_isHoveringStats) return;
+
+    final now = DateTime.now();
+
+    if (now.difference(_lastSwipeTime).inMilliseconds < 300) {
+      // Clear the inertia accumulator so massive swipes don't bleed past the cooldown
+      _horizontalScrollDelta = 0.0;
+      return;
+    }
+
+    if (dy.abs() > dx.abs()) {
+      _horizontalScrollDelta = 0.0;
+      return;
+    }
+
+    _horizontalScrollDelta += dx;
+
+    if (_horizontalScrollDelta.abs() > 40.0) {
+      if (_horizontalScrollDelta > 0) {
+        // Swiping right reveals what's on the left (the past)
+        if (_isHoveringBoard) {
+          _movePeriod(-1);
+        } else {
+          _moveType(-1);
+        }
+      } else {
+        // Swiping left reveals what's on the right (the future)
+        if (_isHoveringBoard) {
+          _movePeriod(1);
+        } else {
+          _moveType(1);
+        }
+      }
+      _horizontalScrollDelta = 0.0;
+      _lastSwipeTime = now;
+    }
   }
 
   int _sortGoals(DashboardGoal a, DashboardGoal b) {

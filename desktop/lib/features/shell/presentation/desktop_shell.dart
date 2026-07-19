@@ -62,6 +62,13 @@ class _DesktopShellState extends ConsumerState<DesktopShell> {
     if (dx.abs() <= dy.abs() * 1.5) return;
 
     final navigation = ref.read(navigationControllerProvider.notifier);
+    final section = ref.read(navigationControllerProvider);
+    
+    // The macro goals page uses two-finger swipes to page through the calendar;
+    // do not steal the gesture for shell navigation when on that section.
+    // The statistics and habits pages also use horizontal swipes to navigate tabs.
+    if (section == DesktopSection.goals || section == DesktopSection.insights || section == DesktopSection.habits) return;
+
     // In LTR, swiping the content to the right (fingers move right, dx > 0) is
     // "back" and swiping left is "forward"; both flip in RTL.
     final isRtl = Directionality.of(context) == TextDirection.rtl;

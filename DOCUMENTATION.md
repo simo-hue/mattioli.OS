@@ -2,6 +2,20 @@
 
 ## Recent Changes
 
+- [2026-07-19]: **Desktop Lateral Scroll Navigation (Macro Goals)**
+  - *Details*: Implemented two-finger lateral scroll navigation on the desktop Macro Goals page to allow users to switch periods (weeks/months/years) via trackpad swipe, mirroring the mobile experience.
+  - *Tech Notes*:
+    - Added a `Listener` around `EvolvePeriodSwitcher` in `goals_page.dart` to capture `PointerScrollEvent` and `PointerPanZoomUpdateEvent`.
+    - Tracked `_horizontalScrollDelta` with a `40.0` pixel threshold to trigger period changes via `_movePeriod()`.
+    - Added a 300ms cooldown using `_lastSwipeTime` to prevent skipping multiple months with a single fast swipe, explicitly clearing the inertia accumulator to prevent bleed-through.
+    - Swiping right (pulling content right) reveals the left (past) -> `_movePeriod(-1)`. Swiping left reveals the right (future) -> `_movePeriod(1)`.
+    - Ignored primarily vertical scrolling (`dy.abs() > dx.abs()`) to avoid disrupting normal list interaction.
+    - Updated `desktop_shell.dart`'s `_onTrackpadPanUpdate` to ignore swipe navigation if the current section is `DesktopSection.goals` or `DesktopSection.statistics`, allowing the calendar and tabs to fully consume the horizontal swipe gesture without inadvertently navigating back in the app history.
+    - Extended the lateral swipe feature to the `GoalsStatsView` widget, allowing users to scroll between "All Time" and available specific years (locked behind Pro feature checks where applicable).
+    - Added the lateral swipe feature to `StatisticsPage` to allow seamless tab switching across both global (`_GlobalTab`) and habit-specific (`_HabitTab`) scopes.
+    - Implemented a full-window dual-zone lateral swipe logic in `GoalsPage`: Swiping anywhere outside the goals list switches between `GoalType`s (e.g., Weekly -> Monthly), while swiping over the goals list itself switches the calendar period (e.g., Next/Previous Week).
+    - Extended the lateral swipe feature to the `HabitsPage`, enabling users to quickly toggle between the `Protocol` and `Calendar` views (`_HabitSurface`) by swiping anywhere on the page.
+
 - [2026-07-19]: **Screen Time Auto-Verification Logic Update (At Least vs At Most)**
   - *Details*: Fixed the logic in `VerificationService.evaluateScreenTimeDay` to accurately map iOS `DeviceActivityMonitor` signals (`reachedThreshold` and `stayedUnder`) based on the habit's type: Limits (At most) vs Goals (At least).
   - *Tech Notes*:

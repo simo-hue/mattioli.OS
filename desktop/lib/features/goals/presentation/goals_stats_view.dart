@@ -12,6 +12,7 @@ import 'package:evolve_desktop/shared/widgets/evolve_dialog.dart';
 import 'package:evolve_desktop/shared/widgets/evolve_panel.dart';
 import 'package:evolve_desktop/shared/widgets/evolve_spinner.dart';
 import 'package:fl_chart/fl_chart.dart';
+import 'package:flutter/gestures.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:lucide_icons_flutter/lucide_icons.dart';
@@ -25,6 +26,66 @@ class GoalsStatsView extends ConsumerStatefulWidget {
 
 class _GoalsStatsViewState extends ConsumerState<GoalsStatsView> {
   String _selectedYear = 'all';
+  double _horizontalScrollDelta = 0.0;
+  DateTime _lastSwipeTime = DateTime.fromMillisecondsSinceEpoch(0);
+
+  List<String> _getAvailablePeriods() {
+    final allGoals = ref.read(dashboardControllerProvider).goals;
+    final years = allGoals.map((g) => g.year).whereType<int>().toSet().toList()
+      ..sort((a, b) => b.compareTo(a));
+
+    if (!years.contains(DateTime.now().year)) {
+      years.insert(0, DateTime.now().year);
+    }
+    
+    return ['all', ...years.map((y) => '$y')];
+  }
+
+  void _movePeriod(int direction) {
+    final isPro = ref.read(desktopIsProProvider);
+    final periods = _getAvailablePeriods();
+    final currentIndex = periods.indexOf(_selectedYear);
+    if (currentIndex == -1) return;
+    
+    final newIndex = currentIndex - direction;
+    
+    if (newIndex >= 0 && newIndex < periods.length) {
+      final newPeriod = periods[newIndex];
+      
+      if (!isPro && newPeriod != 'all') {
+        unawaited(showProFeaturesDialog(context, ref));
+        return;
+      }
+      
+      setState(() => _selectedYear = newPeriod);
+    }
+  }
+
+  void _processScrollDelta(double dx, double dy) {
+    final now = DateTime.now();
+
+    if (now.difference(_lastSwipeTime).inMilliseconds < 300) {
+      _horizontalScrollDelta = 0.0;
+      return;
+    }
+
+    if (dy.abs() > dx.abs()) {
+      _horizontalScrollDelta = 0.0;
+      return;
+    }
+
+    _horizontalScrollDelta += dx;
+
+    if (_horizontalScrollDelta.abs() > 40.0) {
+      if (_horizontalScrollDelta > 0) {
+        _movePeriod(-1);
+      } else {
+        _movePeriod(1);
+      }
+      _horizontalScrollDelta = 0.0;
+      _lastSwipeTime = now;
+    }
+  }
 
   String _goalTypeLabel(String type) {
     switch (type) {
@@ -98,12 +159,21 @@ class _GoalsStatsViewState extends ConsumerState<GoalsStatsView> {
               320.0,
             );
 
-            return SingleChildScrollView(
-              physics: const BouncingScrollPhysics(),
-              padding: const EdgeInsets.symmetric(vertical: 4),
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
+            return Listener(
+              onPointerSignal: (event) {
+                if (event is PointerScrollEvent) {
+                  _processScrollDelta(event.scrollDelta.dx, event.scrollDelta.dy);
+                }
+              },
+              onPointerPanZoomUpdate: (event) {
+                _processScrollDelta(event.panDelta.dx, event.panDelta.dy);
+              },
+              child: SingleChildScrollView(
+                physics: const BouncingScrollPhysics(),
+                padding: const EdgeInsets.symmetric(vertical: 4),
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
                   // Header & Year Selector
                   SectionHeading(
                     title: t.stats.tabPerformance,
@@ -126,7 +196,8 @@ class _GoalsStatsViewState extends ConsumerState<GoalsStatsView> {
                       cardWidth: cardWidth,
                       chartHeight: chartHeight,
                     ),
-                ],
+                  ],
+                ),
               ),
             );
           },

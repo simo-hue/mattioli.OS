@@ -92,6 +92,7 @@ dependencies:
   archive: ^4.0.9
   file_picker: ^11.0.2
   markdown: ^7.3.1
+  crop_image: ^1.0.17
 
 dev_dependencies:
   flutter_test:

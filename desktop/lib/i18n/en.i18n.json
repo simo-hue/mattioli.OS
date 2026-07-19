@@ -1173,6 +1173,7 @@
     "welcomeTitle": "Welcome to Evolve",
     "welcomeBody": "Let's take a quick tour of your workspace — from your daily overview all the way to your AI coach. It only takes a minute.",
     "welcomeStart": "Start tour",
+    "welcomeSkip": "Skip tutorial",
     "doneTitle": "You're all set",
     "doneBody": "That's the whole app. Jump in anywhere from the sidebar — and you can replay this tour any time from Settings.",
     "doneButton": "Get started",

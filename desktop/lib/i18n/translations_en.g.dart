@@ -3289,6 +3289,9 @@ class Translations$tour$en {
 	/// en: 'Start tour'
 	String get welcomeStart => 'Start tour';
 
+	/// en: 'Skip tutorial'
+	String get welcomeSkip => 'Skip tutorial';
+
 	/// en: 'You're all set'
 	String get doneTitle => 'You\'re all set';
 
@@ -5000,6 +5003,7 @@ extension on Translations {
 			'tour.welcomeTitle' => 'Welcome to Evolve',
 			'tour.welcomeBody' => 'Let\'s take a quick tour of your workspace — from your daily overview all the way to your AI coach. It only takes a minute.',
 			'tour.welcomeStart' => 'Start tour',
+			'tour.welcomeSkip' => 'Skip tutorial',
 			'tour.doneTitle' => 'You\'re all set',
 			'tour.doneBody' => 'That\'s the whole app. Jump in anywhere from the sidebar — and you can replay this tour any time from Settings.',
 			'tour.doneButton' => 'Get started',

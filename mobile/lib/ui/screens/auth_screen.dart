@@ -705,7 +705,10 @@ class _AuthScreenState extends ConsumerState<AuthScreen>
         child: Row(
           mainAxisAlignment: MainAxisAlignment.center,
           children: [
-            Icon(icon, size: 20, color: context.appColors.foreground),
+            if (isGoogle)
+              Image.asset('assets/images/google_logo.png', width: 20, height: 20)
+            else
+              Icon(icon, size: 20, color: context.appColors.foreground),
             const SizedBox(width: 12),
             Text(
               label,

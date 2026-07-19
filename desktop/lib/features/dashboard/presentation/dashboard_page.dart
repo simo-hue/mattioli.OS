@@ -154,11 +154,24 @@ class _DashboardPageState extends ConsumerState<DashboardPage> {
                   onPressed: () {
                     Navigator.pop(context);
                     // Start the continuous tour: locks navigation and shows the
-                    // Overview segment. There is no skip — pressing Start tour
-                    // is the only way past this dialog.
+                    // Overview segment.
                     ref.read(tourControllerProvider.notifier).activate();
                   },
                   child: Text(t.tour.welcomeStart),
+                ),
+              ),
+              const SizedBox(height: 8),
+              SizedBox(
+                width: double.infinity,
+                child: TextButton(
+                  onPressed: () {
+                    Navigator.pop(context);
+                    ref.read(tourControllerProvider.notifier).complete();
+                  },
+                  style: TextButton.styleFrom(
+                    foregroundColor: context.evolveColors.subtle,
+                  ),
+                  child: Text(t.tour.welcomeSkip),
                 ),
               ),
             ],

@@ -1,9 +1,6 @@
 # TO_SIMO_DO.md
 - [ ] Widget for iPhone & MacOS
-- [ ] Goals non sono sincronizzati su iCloud, solamente habits, che cos'altro manca?
-- [ ] failed habits seems pending on desktop
-- [ ] I want to have in the log in page on both implementations ( mobile and desktop ) the original google logo on the sign in with google button ( as we did with apple ) 
-- [ ] the image picker for the profile I want to change it from automatic to choosable from the user wich portion of the image to use
+- [ ]  
 - [ ] For the desktop implementation what has been done with ollama is outstanding and I want to replicate the same thing also with LMStudio so the major local LLM providers are supported
 - [ ] mobile animation between lateral scroll on the goals page? Improve it
 
@@ -16,3 +13,10 @@
 The mobile implementation is different ( and it's a problem ) as I want the implementations to be coherent as they are reppresenting the same app.
 
 The mobile has already the paywall configured perfectly but the problem is the fact that the AI coach is accessible even from non pro users and it's a problem I want you to fix.
+
+---
+
+```bash
+flutter run -d macos --dart-define-from-file=.env
+flutter build macos --release --dart-define-from-file=.env
+```

@@ -253,7 +253,7 @@ class _DesktopAuthPageState extends ConsumerState<DesktopAuthPage> {
                     ),
                     const SizedBox(height: 10),
                     _SocialAuthButton(
-                      icon: LucideIcons.mail,
+                      imageAsset: 'assets/images/google_logo.png',
                       label: t.auth.continueWithGoogle,
                       onPressed: auth.isLoading ? null : _signInWithGoogle,
                     ),
@@ -427,16 +427,16 @@ class _AuthDivider extends StatelessWidget {
   }
 }
 
-/// Secondary auth button (OAuth providers + private mode): translucent card
-/// fill, half-strength border, radius 14, leading icon — mirrors mobile.
 class _SocialAuthButton extends StatelessWidget {
   const _SocialAuthButton({
-    required this.icon,
+    this.icon,
+    this.imageAsset,
     required this.label,
     required this.onPressed,
-  });
+  }) : assert(icon != null || imageAsset != null);
 
-  final IconData icon;
+  final IconData? icon;
+  final String? imageAsset;
   final String label;
   final VoidCallback? onPressed;
 
@@ -460,7 +460,10 @@ class _SocialAuthButton extends StatelessWidget {
             child: Row(
               mainAxisAlignment: MainAxisAlignment.center,
               children: [
-                Icon(icon, size: 18, color: colors.foreground),
+                if (imageAsset != null)
+                  Image.asset(imageAsset!, width: 18, height: 18)
+                else if (icon != null)
+                  Icon(icon, size: 18, color: colors.foreground),
                 const SizedBox(width: 10),
                 Text(
                   label,

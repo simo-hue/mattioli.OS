@@ -590,6 +590,7 @@ class _ProtocolPanelState extends State<_ProtocolPanel> {
                         return _HabitRow(
                           key: ValueKey(habit.id),
                           habit: habit,
+                          todayStatus: widget.snapshot.habitStatusFor(habit.id, DateTime.now()),
                           metrics: metrics,
                           checkoffKey: isFirst ? widget.checkoffKey : null,
                           streakKey: isFirst ? widget.streakKey : null,
@@ -774,6 +775,7 @@ class _WeekdayLabel extends StatelessWidget {
 class _HabitRow extends StatefulWidget {
   const _HabitRow({
     required this.habit,
+    this.todayStatus,
     required this.metrics,
     required this.onToggle,
     required this.onEdit,
@@ -785,6 +787,7 @@ class _HabitRow extends StatefulWidget {
   });
 
   final DashboardHabit habit;
+  final String? todayStatus;
   final _HabitRowMetrics metrics;
   final Widget? dragHandle;
   final VoidCallback onToggle;
@@ -807,7 +810,8 @@ class _HabitRowState extends State<_HabitRow> {
   Widget build(BuildContext context) {
     final habit = widget.habit;
     final metrics = widget.metrics;
-    final completed = habit.state == HabitState.completed;
+    final completed = widget.todayStatus == 'done' || (widget.todayStatus == null && habit.state == HabitState.completed);
+    final missed = widget.todayStatus == 'missed';
     // Desktop affordance: the row card brightens slightly under the pointer.
     return MouseRegion(
       onEnter: (_) => setState(() => _hovered = true),
@@ -855,11 +859,13 @@ class _HabitRowState extends State<_HabitRow> {
                       width: 22,
                       height: 22,
                       decoration: BoxDecoration(
-                        color: completed ? habit.color : Colors.transparent,
+                        color: completed ? habit.color : missed ? EvolveColors.rose.withValues(alpha: 0.2) : Colors.transparent,
                         border: Border.all(
                           color: completed
                               ? habit.color
-                              : context.evolveColors.borderStrong,
+                              : missed
+                                  ? EvolveColors.rose.withValues(alpha: 0.4)
+                                  : context.evolveColors.borderStrong,
                         ),
                         borderRadius: BorderRadius.circular(7),
                       ),
@@ -869,7 +875,13 @@ class _HabitRowState extends State<_HabitRow> {
                               color: Color(0xFF092113),
                               size: 14,
                             )
-                          : null,
+                          : missed
+                              ? const Icon(
+                                  LucideIcons.x,
+                                  color: EvolveColors.rose,
+                                  size: 14,
+                                )
+                              : null,
                     ),
                   ),
                 ),

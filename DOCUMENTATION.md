@@ -1769,3 +1769,13 @@ All owner actions are itemized in **TO_SIMO_DO.md**.
 - [2026-07-18 16:17:58]: Fastlane Metadata Branding Update
   - *Details*: Replaced 'Mattioli.OS' with 'Evolve' in all localized App Store descriptions across desktop and mobile metadata folders.
   - *Tech Notes*: Updated all .txt files in `desktop/macos/fastlane/metadata`. Attempted to upload using `fastlane deliver`, but was blocked by App Store Connect state.
+
+- [2026-07-19 06:05:00]: Feature/Fix Name: Welcome Dialog Skip Tutorial Button
+  - *Details*: Added an explicit 'Skip tutorial' button to the app's first-launch welcome dialog. Clicking it marks the tutorial as completed, ensuring the dialog doesn't reappear on subsequent launches.
+  - *Tech Notes*:
+    - Added `welcomeSkip` translation key to all 5 `lib/i18n/*.json` files and regenerated `translations.g.dart` using slang.
+    - Updated `_showWelcomeScreen` in `desktop/lib/features/dashboard/presentation/dashboard_page.dart` to include a `TextButton` below the Start tour button.
+    - The button calls `ref.read(tourControllerProvider.notifier).complete()`, persisting the completion state in `SharedPreferences`.
+- [Sun Jul 19 08:25:25 CEST 2026] Added Google G logo to the 'Sign in with Google' button in both mobile and desktop apps to match Apple button's authenticity.
+  - *Details*: Downloaded Google G logo PNG asset to assets/images/. Updated `_SocialAuthButton` on desktop and `_buildSocialButton` on mobile to support the image asset instead of defaulting to generic lucide icons.
+- [Sun Jul 19 08:33:38 CEST 2026] Fixed the 'Invalid image data' exception for the Google button by downloading a valid PNG image format instead of the previous HTML redirect document.

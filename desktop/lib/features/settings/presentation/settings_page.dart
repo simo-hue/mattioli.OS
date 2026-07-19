@@ -41,6 +41,7 @@ import 'package:evolve_desktop/shared/widgets/evolve_dialog.dart';
 import 'package:evolve_desktop/shared/widgets/evolve_panel.dart';
 import 'package:evolve_desktop/shared/widgets/evolve_spinner.dart';
 import 'package:evolve_desktop/shared/widgets/evolve_toast.dart';
+import 'package:evolve_desktop/shared/widgets/evolve_image_crop_dialog.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:evolve_desktop/shared/widgets/evolve_color_picker.dart';
@@ -1207,9 +1208,21 @@ class _SettingsPageState extends ConsumerState<SettingsPage> {
       final image = await ImagePicker().pickImage(source: ImageSource.gallery);
       if (image == null || !mounted) return;
 
+      final selectedFile = File(image.path);
+      
+      final Uint8List? croppedBytes = await showEvolveDialog<Uint8List>(
+        context: context,
+        builder: (context) => EvolveImageCropDialog(
+          image: FileImage(selectedFile),
+        ),
+      );
+
+      if (croppedBytes == null) return;
+      await selectedFile.writeAsBytes(croppedBytes, flush: true);
+
       final isPrivateMode = ref.read(activeDesktopDataModeProvider).isPrivate;
       if (isPrivateMode) {
-        final original = await File(image.path).readAsBytes();
+        final original = croppedBytes;
         final resized = await downscaleAvatarBytes(original);
         // Keep the source extension when the bytes were passed through, since
         // the downscale re-encodes to PNG whenever it does any work.

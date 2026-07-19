@@ -1,5 +1,6 @@
 import 'dart:async';
 import 'dart:io';
+import 'dart:typed_data';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
@@ -15,6 +16,7 @@ import '../../providers/user_provider.dart';
 import '../../providers/auth_provider.dart';
 import '../../providers/settings_provider.dart';
 import '../widgets/profile_avatar_image.dart';
+import '../widgets/profile_image_cropper.dart';
 import 'personal_info_screen.dart';
 import 'app_settings_screen.dart';
 import 'notification_settings_screen.dart';
@@ -71,6 +73,20 @@ class _ProfileScreenState extends ConsumerState<ProfileScreen> {
 
       if (image != null) {
         var selectedFile = File(image.path);
+        
+        // Let the user crop the image
+        if (!mounted) return;
+        final Uint8List? croppedBytes = await Navigator.of(context).push(
+          MaterialPageRoute(
+            builder: (context) => ProfileImageCropper(
+              image: FileImage(selectedFile),
+            ),
+          ),
+        );
+
+        if (croppedBytes == null) return;
+        await selectedFile.writeAsBytes(croppedBytes, flush: true);
+
         if (ref.read(activeDataModeProvider) == AppDataMode.private) {
           final supportDir = await getApplicationSupportDirectory();
           final avatarDir = Directory(
@@ -78,7 +94,7 @@ class _ProfileScreenState extends ConsumerState<ProfileScreen> {
           );
           await avatarDir.create(recursive: true);
           final avatarFile = File(
-            p.join(avatarDir.path, 'avatar${p.extension(image.path)}'),
+            p.join(avatarDir.path, 'avatar.png'), // cropped image is always png
           );
           selectedFile = await selectedFile.copy(avatarFile.path);
           // The avatar path is stable (avatar.<ext>), so overwriting it leaves

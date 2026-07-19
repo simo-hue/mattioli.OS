@@ -1086,3 +1086,6 @@ heading ellipsizing. `flutter analyze` clean; `tour_flow_test` still passes.
 - [2026-07-18 13:58:00]: AI Coach Inline Streaming Cursor
   - *Details*: Fixed a UI issue where the AI coach streaming cursor appeared on a new line during text generation. It now renders inline with the text, creating a more professional look.
   - *Tech Notes*: Migrated `_StreamingCaret` from a sibling `Column` layout to an inline `MarkdownElementBuilder`. Appended `%%CURSOR%%` during streaming to correctly place the caret inside the `flutter_markdown` widget. Added the `markdown` dependency in `pubspec.yaml` to access `md.InlineSyntax` and `md.ExtensionSet`.
+- [2026-07-19]: Display Failed Habits in Desktop Protocol
+  - *Details*: Updated the `_HabitRow` widget in the desktop `habits_page.dart` to correctly reflect "missed" habit states using a red cross (`LucideIcons.x`), bringing parity with the mobile app.
+  - *Tech Notes*: `_HabitRow` now receives the `todayStatus` dynamically from `DashboardSnapshot.habitStatusFor`, which ensures the UI handles 'done' and 'missed' states correctly without altering the underlying data models and cache structure.

@@ -1396,6 +1396,7 @@ class _Translations$tour$es extends Translations$tour$en {
 	@override String get welcomeTitle => 'Bienvenido a Evolve';
 	@override String get welcomeBody => 'Hagamos un recorrido rápido por tu espacio — desde tu resumen diario hasta tu coach de IA. Solo toma un momento.';
 	@override String get welcomeStart => 'Iniciar recorrido';
+	@override String get welcomeSkip => 'Omitir tutorial';
 	@override String get doneTitle => 'Todo listo';
 	@override String get doneBody => 'Esta es toda la app. Empieza donde quieras desde la barra lateral — y puedes repetir el recorrido cuando quieras desde Ajustes.';
 	@override String get doneButton => 'Empezar';
@@ -2768,6 +2769,7 @@ extension on TranslationsEs {
 			'tour.welcomeTitle' => 'Bienvenido a Evolve',
 			'tour.welcomeBody' => 'Hagamos un recorrido rápido por tu espacio — desde tu resumen diario hasta tu coach de IA. Solo toma un momento.',
 			'tour.welcomeStart' => 'Iniciar recorrido',
+			'tour.welcomeSkip' => 'Omitir tutorial',
 			'tour.doneTitle' => 'Todo listo',
 			'tour.doneBody' => 'Esta es toda la app. Empieza donde quieras desde la barra lateral — y puedes repetir el recorrido cuando quieras desde Ajustes.',
 			'tour.doneButton' => 'Empezar',
